@@ -14,6 +14,10 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
+const FAST_PULL_POLLS = 6;
+const FAST_PULL_INTERVAL_MS = 50;
+const IDLE_PULL_INTERVAL_MS = 250;
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -85,6 +89,8 @@ async function pull(body: Record<string, unknown>) {
   const tokenHash = await sha256(body.token.toLowerCase());
   const waitMs = clamp(body.waitMs, 0, 25000, 12000);
   const deadline = Date.now() + waitMs;
+  let emptyPolls = 0;
+
   do {
     const result = await rpc("opera_claim_next", {
       p_device_name: body.deviceName.trim(),
@@ -95,8 +101,15 @@ async function pull(body: Record<string, unknown>) {
     });
     if (!(result as any)?.ok) return json(result || { ok: false }, 401);
     if ((result as any)?.command) return json(result, 200);
-    if (Date.now() >= deadline) return json({ ok: true, command: null, serverTime: new Date().toISOString() }, 200);
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    if (Date.now() >= deadline) {
+      return json({ ok: true, command: null, serverTime: new Date().toISOString() }, 200);
+    }
+
+    const intervalMs = emptyPolls < FAST_PULL_POLLS
+      ? FAST_PULL_INTERVAL_MS
+      : IDLE_PULL_INTERVAL_MS;
+    emptyPolls += 1;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   } while (true);
 }
 
