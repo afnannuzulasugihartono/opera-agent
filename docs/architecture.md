@@ -6,20 +6,27 @@
 ChatGPT
    |
    v
-Supabase
-Command / Workflow Layer
+Supabase workflow / command layer
+   |
+   +--> versioned workflow registry / runner
    |
    v
-Opera Agent Extension
+opera_commands
+   |
+   v
+opera-agent-bridge
+   |
+   v
+Opera Agent extension
    |
    v
 Local Opera Browser
    |
    v
-Result / DOM / Media / Input State
+DOM / tabs / media / trusted input
    |
    v
-Opera Agent Extension
+structured result
    |
    v
 Supabase
@@ -28,49 +35,93 @@ Supabase
 ChatGPT
 ```
 
-## Extension responsibilities
+## Core boundary
 
-The extension should:
+The browser extension is deliberately generic and should be updated rarely. Its responsibility is:
 
-1. Receive a command.
-2. Validate it against an allowlist.
-3. Execute a browser primitive.
-4. Collect structured results.
-5. Return the result.
+1. receive a command;
+2. validate the command against the browser-method allowlist;
+3. execute one generic browser primitive;
+4. enforce local safety boundaries;
+5. collect a bounded structured result;
+6. report completion durably.
 
-The extension should not own product-level workflows such as "learn a YouTube video" or "deep research this site" unless a browser-local primitive is genuinely required.
+The extension should **not** own product/site workflows such as "learn a YouTube video", "fill LinkedIn", or "research this site". Those are composed in the versioned Supabase workflow layer.
 
 ## Supabase responsibilities
 
-Supabase should own:
+Supabase owns:
 
-- command registry
-- workflow definitions
-- orchestration
-- retries and timeouts
-- audit logs
-- workflow versioning
-- cross-chat access
-- rollback of server-side commands
+- pairing/device registry;
+- command queue and expiry;
+- workflow definitions and versions;
+- orchestration, conditions, bounded repeats and foreach;
+- retries/timeouts;
+- audit logs;
+- cross-chat access;
+- rollback of workflow definitions;
+- signed release metadata/update delivery.
 
-## Primitive examples
+## Current generic browser primitives
 
-- `tabs.list`
-- `tabs.open`
-- `tabs.close`
-- `tabs.activate`
-- `tabs.navigate`
-- `page.read`
-- `page.elements`
-- `page.click`
-- `page.fill`
-- `page.key`
-- `page.scroll`
-- `page.wait`
-- `media.state`
-- `cdp.click`
-- `cdp.key`
+The 1.0.1 protocol exposes 23 methods:
+
+```text
+browser.ping
+
+tabs.list
+tabs.get
+tabs.find
+tabs.open
+tabs.activate
+tabs.close
+tabs.navigate
+tabs.reload
+
+page.read
+page.query
+page.find
+page.collect_links
+page.click
+page.fill
+page.focus
+page.scroll
+page.key
+page.wait_for
+
+media.state
+media.play
+media.pause
+media.seek
+```
+
+Trusted click/key behavior is selected through parameters on the generic page primitives; it is not a site-specific method.
+
+## Latency architecture
+
+The performance target is not "make every selector faster". The preferred order is:
+
+1. remove redundant browser operations;
+2. collapse chat-side sequences into one server workflow;
+3. replace fixed waits with observable state waits;
+4. avoid unnecessary page reload/navigation;
+5. minimize result payload size;
+6. optimize queue/claim polling without increasing permanent idle load;
+7. only then optimize individual primitive implementation details.
+
+The bridge therefore uses a short fast-start polling window for active command chains, then returns to the conservative idle poll interval. Text-heavy workflows request 12k chunks and minimal element metadata by default while the underlying `page.read` primitive remains caller-configurable.
+
+See [efficiency.md](efficiency.md) for the detailed plan and benchmarks.
+
+## Version boundary
+
+Server workflow versions and extension versions are intentionally independent:
+
+- workflow improvements can be deployed/rolled back without replacing the browser extension;
+- extension changes require a normal signed release and same signing identity;
+- a new signing key must not be used as a shortcut because it would break extension identity continuity;
+- historical migrations and release notes remain preserved.
 
 ## Design goal
 
-The browser extension should be stable and rarely updated. Most new behavior should be expressible as server-side workflows built from generic primitives.
+Most future behavior should be expressible as versioned server workflows built from generic primitives. A future local plan/batch executor is acceptable only if it stays generic, bounded, recursively prohibited, and validates every contained primitive against the same allowlist.
