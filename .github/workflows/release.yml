@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate
+        run: |
+          npm test
+          npm run check
+      - name: Package extension
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd extension
+          zip -r "../Opera-Agent-${VERSION}-extension.zip" .
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          NOTES="docs/releases/${VERSION}.md"
+          if [ ! -f "$NOTES" ]; then NOTES="CHANGELOG.md"; fi
+          gh release create "$GITHUB_REF_NAME" "Opera-Agent-${VERSION}-extension.zip" --title "Opera Agent ${VERSION}" --notes-file "$NOTES"
