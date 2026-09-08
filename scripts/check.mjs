@@ -1,12 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import { ALLOWED_METHODS } from '../extension/lib/protocol.js';
+import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 
 const root = path.resolve(new URL('..', import.meta.url).pathname);
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.equal(manifest.name, 'Opera Agent');
-assert.equal(manifest.version, '1.0.0');
+assert.equal(manifest.version, '1.0.1');
+assert.equal(PRODUCT_VERSION, '1.0.1');
+assert.equal(pkg.version, '1.0.1');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));
@@ -33,6 +36,8 @@ for (const file of files) {
   assert.doesNotMatch(text, /\beval\s*\(/, `${file} must not use eval`);
   assert.doesNotMatch(text, /new\s+Function\s*\(/, `${file} must not use Function constructor`);
 }
+const background = fs.readFileSync(path.join(root, 'extension/background.js'), 'utf8');
+for (const marker of ['pendingCompletion','completeWithRetry','flushPendingCompletion']) assert.ok(background.includes(marker), marker);
 const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);
-console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives`);
+console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, version ${manifest.version}`);
