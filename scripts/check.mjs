@@ -29,7 +29,8 @@ const files = [
   'supabase/migrations/20260908025018_opera_agent_lock_internal_workflow_functions.sql',
   'supabase/migrations/20260908025218_opera_agent_command_method_index.sql',
   'supabase/migrations/20260908031800_opera_agent_async_workflow_runner.sql',
-  'supabase/migrations/20260908040000_opera_agent_two_phase_command_api.sql'
+  'supabase/migrations/20260908040000_opera_agent_two_phase_command_api.sql',
+  'supabase/migrations/20260908073800_opera_agent_update_telemetry.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
@@ -40,4 +41,6 @@ const background = fs.readFileSync(path.join(root, 'extension/background.js'), '
 for (const marker of ['pendingCompletion','completeWithRetry','flushPendingCompletion']) assert.ok(background.includes(marker), marker);
 const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);
+const updateFunction = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-update/index.ts'), 'utf8');
+for (const marker of ['opera_update_events', 'update_xml', 'passiveUpdateTelemetry']) assert.ok(updateFunction.includes(marker), marker);
 console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, version ${manifest.version}`);
