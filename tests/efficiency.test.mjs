@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const bridge = fs.readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8');
+const runner = fs.readFileSync(new URL('../supabase/functions/opera-agent-runner/index.ts', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
+const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
 
 test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
   assert.match(bridge, /FAST_PULL_POLLS\s*=\s*6/);
@@ -11,6 +13,15 @@ test('bridge uses a short fast-start polling window then returns to conservative
   assert.match(bridge, /IDLE_PULL_INTERVAL_MS\s*=\s*250/);
   assert.match(bridge, /emptyPolls\s*<\s*FAST_PULL_POLLS/);
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
+});
+
+test('runner detects command completion with bounded adaptive polling and safe transient retries', () => {
+  assert.match(runner, /COMMAND_POLL_MIN_MS\s*=\s*25/);
+  assert.match(runner, /COMMAND_POLL_MAX_MS\s*=\s*100/);
+  assert.match(runner, /SAFE_RETRY_DELAY_MS\s*=\s*75/);
+  assert.match(runner, /page\.wait_for/);
+  assert.match(runner, /transientFailure/);
+  assert.match(runner, /commandTiming/);
 });
 
 test('full-text workflows use bounded adaptive continuation rather than fixed 6k reads', () => {
@@ -22,6 +33,18 @@ test('full-text workflows use bounded adaptive continuation rather than fixed 6k
   assert.match(migration, /"failOnLimit":false/);
 });
 
+test('default crawl stays low-overhead while parallel crawl is explicit and bounded', () => {
+  const defaultSection = migration.slice(migration.indexOf("'research.crawl_urls'"), migration.indexOf("'youtube.search'"));
+  assert.match(defaultSection, /reuse one background tab/i);
+  assert.doesNotMatch(defaultSection, /"parallel":true/);
+
+  assert.match(parallelMigration, /research\.crawl_urls_parallel/);
+  assert.match(parallelMigration, /"parallel":true/);
+  assert.match(parallelMigration, /"maxConcurrency":4/);
+  assert.match(runner, /MAX_PARALLEL_ITEMS\s*=\s*4/);
+  assert.match(runner, /structuredClone\(ctx\)/);
+});
+
 test('YouTube recommendation skips ad polling entirely when no ad is present', () => {
   const section = migration.slice(migration.indexOf("'youtube.play_recommendation'"), migration.indexOf("'youtube.get_transcript'"));
   assert.match(section, /"id":"adinitial"/);
@@ -30,8 +53,10 @@ test('YouTube recommendation skips ad polling entirely when no ad is present', (
   assert.doesNotMatch(section, /"ms":600/);
 });
 
-test('historical migrations are not rewritten by the efficiency migration', () => {
-  assert.doesNotMatch(migration, /alter\s+table\s+.*loa_v3_/i);
-  assert.doesNotMatch(migration, /drop\s+table/i);
-  assert.doesNotMatch(migration, /update\s+public\.opera_workflow_versions/i);
+test('historical migrations and legacy fallback objects are not rewritten by efficiency work', () => {
+  for (const sql of [migration, parallelMigration]) {
+    assert.doesNotMatch(sql, /alter\s+table\s+.*loa_v3_/i);
+    assert.doesNotMatch(sql, /drop\s+table/i);
+    assert.doesNotMatch(sql, /update\s+public\.opera_workflow_versions/i);
+  }
 });
