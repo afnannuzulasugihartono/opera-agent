@@ -347,19 +347,62 @@ async function unpair() {
   return { ok: true };
 }
 
-async function complete(cfg, commandId, execution) {
-  const body = {
-    action: 'complete',
-    deviceName: cfg.deviceName,
-    token: cfg.deviceToken,
+function completionPayload(commandId, execution) {
+  return {
     commandId,
     ok: execution.ok,
     result: execution.ok ? execution.result : null,
     error: execution.ok ? null : execution.error,
+    createdAt: nowIso()
+  };
+}
+
+async function complete(cfg, pending) {
+  const body = {
+    action: 'complete',
+    deviceName: cfg.deviceName,
+    token: cfg.deviceToken,
+    commandId: pending.commandId,
+    ok: pending.ok,
+    result: pending.ok ? pending.result : null,
+    error: pending.ok ? null : pending.error,
     extensionVersion: PRODUCT_VERSION,
     protocolVersion: PROTOCOL_VERSION
   };
   return fetchJson(cfg.bridgeUrl, body, 15000);
+}
+
+async function completeWithRetry(cfg, pending) {
+  let delayMs = 150;
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const result = await complete(cfg, pending);
+      await chrome.storage.local.remove('pendingCompletion');
+      return result;
+    } catch (error) {
+      lastError = error;
+      const message = String(error?.message || error).toLowerCase();
+      if (message.includes('no longer completable') || message.includes('command not found')) {
+        await chrome.storage.local.remove('pendingCompletion');
+        return { ok: false, discarded: true, reason: message };
+      }
+      if (attempt < 4) await sleep(delayMs);
+      delayMs = Math.min(2400, Math.round(delayMs * 2));
+    }
+  }
+  throw lastError || new Error('Unable to report command completion.');
+}
+
+async function flushPendingCompletion(cfg) {
+  const { pendingCompletion } = await chrome.storage.local.get('pendingCompletion');
+  if (!pendingCompletion?.commandId) return;
+  const createdAt = Date.parse(String(pendingCompletion.createdAt || ''));
+  if (Number.isFinite(createdAt) && Date.now() - createdAt > 5 * 60 * 1000) {
+    await chrome.storage.local.remove('pendingCompletion');
+    return;
+  }
+  await completeWithRetry(cfg, pendingCompletion);
 }
 
 async function pullOnce(cfg) {
@@ -383,12 +426,15 @@ async function pullLoop(generation) {
       return;
     }
     try {
+      await flushPendingCompletion(cfg);
       const data = await pullOnce(cfg);
       retryMs = 250;
       await setState({ status: 'ready', lastError: null, lastConnectedAt: nowIso(), retryMs });
       if (!data.command) continue;
       const execution = await executeCommand(data.command);
-      await complete(cfg, data.command.id, execution);
+      const pending = completionPayload(data.command.id, execution);
+      await chrome.storage.local.set({ pendingCompletion: pending });
+      await completeWithRetry(cfg, pending);
       await setState({ status: 'ready', lastCommandAt: nowIso(), lastError: null });
     } catch (error) {
       const message = String(error?.message || error).slice(0, 1000);
