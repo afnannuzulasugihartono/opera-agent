@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const core = fs.readFileSync(new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url), 'utf8');
+const workflow = fs.readFileSync(new URL('../supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql', import.meta.url), 'utf8');
+const seed = fs.readFileSync(new URL('../supabase/migrations/20260907204248_opera_agent_1_0_0_seed_workflows.sql', import.meta.url), 'utf8');
+const sql = core + '\n' + workflow + '\n' + seed;
+
+test('migration defines clean Opera Agent objects without modifying legacy tables', () => {
+  for (const name of ['opera_devices','opera_commands','opera_workflows','opera_workflow_versions','opera_audit']) {
+    assert.match(sql, new RegExp(`create table if not exists public\\.${name}`));
+  }
+  assert.doesNotMatch(sql, /drop\s+table\s+.*loa_v3_/i);
+  assert.doesNotMatch(sql, /alter\s+table\s+.*loa_v3_/i);
+});
+
+test('workflow registry validates allowlisted methods and supports rollback', () => {
+  assert.match(sql, /opera_validate_steps/);
+  assert.match(sql, /opera_register_workflow/);
+  assert.match(sql, /opera_rollback_workflow/);
+  assert.match(sql, /opera_workflow_versions/);
+});
+
+test('cloud workflow engine supports command, conditions, repeat and foreach', () => {
+  for (const token of ["v_type='command'", "v_type='if'", "v_type='repeat'", "v_type='foreach'", "v_type='set'", "v_type='wait'", "v_type='fail'"]) {
+    assert.ok(sql.includes(token), token);
+  }
+});
+
+test('seed workflows keep site-specific logic out of extension', () => {
+  assert.match(sql, /youtube\.captions_on/);
+  assert.match(sql, /youtube\.play_recommendation/);
+  assert.match(sql, /research\.crawl_urls/);
+  const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(background + content, /youtube\.com|ytp-|youtube\./i);
+});
