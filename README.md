@@ -2,7 +2,7 @@
 
 Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-**Version:** `1.0.0`  
+**Version:** `1.0.1`  
 **Protocol:** `1`  
 **Stable extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 
@@ -38,7 +38,7 @@ ChatGPT
 
 The extension is deliberately thin: **receive → validate → execute → collect → return**. Site-specific behavior belongs in Supabase workflows, not in the extension.
 
-## What 1.0.0 includes
+## What 1.0.x includes
 
 - 23 allowlisted generic browser primitives.
 - Tab list/find/open/activate/close/navigate/reload.
@@ -86,4 +86,4 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 
 ## Status
 
-The 1.0.0 core has passed local unit/security tests, a real Chromium extension regression suite, Supabase cloud integration tests, signed CRX validation, and managed Chromium self-hosted update testing. The remaining target-specific acceptance layer is the one-time installation/pairing on the user's actual Opera browser.
+Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, ping, tab operations, trusted debugger input transport, 6,000-character chunked reads with continuation, ARIA state, and media state. Version 1.0.1 adds durable completion retry handling and the backend now uses a two-phase command/workflow API so queued work is committed before the browser is asked to consume it. Real Opera acceptance now includes the signed self-hosted CRX update from 1.0.0 to 1.0.1 with the same extension ID, preserved pairing, and successful post-update commands. Passive background auto-update without pressing Opera's Update button remains intentionally unverified and will be tested in a later patch release.
