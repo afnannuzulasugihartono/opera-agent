@@ -18,22 +18,23 @@
 
     <section class="card">
       <div class="row"><span>Device</span><strong id="deviceName">opera</strong></div>
-      <div class="row"><span>Connection</span><strong id="connection">starting</strong></div>
+      <div class="row"><span>Connection</span><strong id="connection">—</strong></div>
       <div class="row"><span>Last command</span><strong id="lastCommand">—</strong></div>
+      <p id="error" class="error" hidden></p>
     </section>
 
-    <section id="pairingCard" class="card hidden">
+    <section id="pairSection" class="card">
       <label for="pairCode">Pairing code</label>
-      <input id="pairCode" autocomplete="off" maxlength="64" spellcheck="false" />
-      <button id="pairButton" type="button">Pair device</button>
+      <input id="pairCode" type="text" autocomplete="off" maxlength="64" placeholder="Paste pairing code" />
+      <button id="pairButton" class="primary">Pair device</button>
+      <p class="hint">Create a one-time pairing code from Supabase/ChatGPT, then enter it here once.</p>
     </section>
 
-    <section id="readyCard" class="card hidden">
-      <button id="testButton" type="button">Run self-test</button>
-      <button id="unpairButton" class="secondary" type="button">Unpair device</button>
+    <section id="pairedSection" class="card" hidden>
+      <button id="selfTestButton">Run self-test</button>
+      <pre id="selfTestResult" hidden></pre>
+      <button id="unpairButton" class="danger">Unpair device</button>
     </section>
-
-    <p id="message" class="message" aria-live="polite"></p>
   </main>
   <script type="module" src="popup.js"></script>
 </body>
