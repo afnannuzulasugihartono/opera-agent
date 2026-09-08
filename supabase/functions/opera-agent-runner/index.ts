@@ -14,8 +14,6 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-const COMMAND_POLL_MIN_MS = 25;
-const COMMAND_POLL_MAX_MS = 100;
 const SAFE_RETRY_DELAY_MS = 75;
 const MAX_PARALLEL_ITEMS = 4;
 
@@ -105,14 +103,15 @@ function timestampMs(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function commandTiming(row: any) {
-  const created = timestampMs(row?.created_at);
-  const claimed = timestampMs(row?.claimed_at);
-  const completed = timestampMs(row?.completed_at);
+function normalizeAwaitTiming(timing: any) {
+  const queuedMs = Number(timing?.queuedMs);
+  const totalMs = Number(timing?.totalMs);
+  const queueMs = Number.isFinite(queuedMs) ? Math.max(0, queuedMs) : null;
+  const normalizedTotal = Number.isFinite(totalMs) ? Math.max(0, totalMs) : null;
   return {
-    queueMs: created != null && claimed != null ? Math.max(0, claimed - created) : null,
-    executionMs: claimed != null && completed != null ? Math.max(0, completed - claimed) : null,
-    totalMs: created != null && completed != null ? Math.max(0, completed - created) : null
+    queueMs,
+    executionMs: queueMs != null && normalizedTotal != null ? Math.max(0, normalizedTotal - queueMs) : null,
+    totalMs: normalizedTotal
   };
 }
 
@@ -164,42 +163,30 @@ async function runCommandOnce(
   }
 
   const commandId = String(enqueued.commandId);
-  let commandDeadline = workflowDeadline;
-  let pollMs = COMMAND_POLL_MIN_MS;
+  const remainingMs = Math.max(100, Math.min(55000, workflowDeadline - Date.now()));
+  const awaited = await rpc("opera_await", {
+    p_command_id: commandId,
+    p_timeout_ms: remainingMs
+  });
 
-  while (Date.now() < commandDeadline) {
-    const { data, error } = await supabase
-      .from("opera_commands")
-      .select("status,result,error,created_at,claimed_at,completed_at,expires_at")
-      .eq("id", commandId)
-      .maybeSingle();
-    if (error) throw new WorkflowError("COMMAND_STATUS_ERROR", error.message);
-    if (!data) throw new WorkflowError("COMMAND_NOT_FOUND", `Command ${commandId} disappeared.`);
-
-    const expiresAt = Date.parse(String(data.expires_at || ""));
-    if (Number.isFinite(expiresAt)) commandDeadline = Math.min(workflowDeadline, expiresAt + 2000);
-
-    if (data.status === "completed") {
-      return { ok: true, commandId, status: data.status, result: data.result, timing: commandTiming(data) };
-    }
-    if (["failed", "expired", "cancelled"].includes(data.status)) {
-      return {
-        ok: false,
-        commandId,
-        status: data.status,
-        error: data.error || { code: "COMMAND_FAILED", message: "Command failed." },
-        timing: commandTiming(data)
-      };
-    }
-    await sleep(pollMs);
-    pollMs = Math.min(COMMAND_POLL_MAX_MS, Math.max(COMMAND_POLL_MIN_MS, Math.round(pollMs * 1.6)));
+  if (awaited?.ok) {
+    return {
+      ok: true,
+      commandId,
+      status: String(awaited.status || "completed"),
+      result: awaited.result,
+      timing: normalizeAwaitTiming(awaited.timing)
+    };
   }
 
+  const error = awaited?.error || { code: "COMMAND_FAILED", message: `Command ${method} failed.` };
+  const awaitTimedOut = String(error?.code || "").toUpperCase() === "AWAIT_TIMEOUT";
   return {
     ok: false,
     commandId,
-    status: "timeout",
-    error: { code: "COMMAND_TIMEOUT", message: `Command ${method} did not complete before its deadline.` }
+    status: awaitTimedOut ? "timeout" : String(awaited?.status || "failed"),
+    error,
+    timing: normalizeAwaitTiming(awaited?.timing)
   };
 }
 
