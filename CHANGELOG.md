@@ -2,6 +2,27 @@
 
 All notable changes to Opera Agent are documented here. The project follows Semantic Versioning.
 
+## [1.0.1] - 2026-09-08
+
+### Fixed
+- Persist command-completion payloads locally until the Supabase bridge acknowledges them, with bounded retry/backoff across transient network failures.
+- Replace the transactionally unsafe synchronous `opera_run()` pattern with a two-phase command API: enqueue first, then await in a separate transaction.
+- Route server-side workflows through the asynchronous `opera-agent-runner`, so workflow commands are committed before the local browser can claim them.
+- Preserve compatibility names (`opera_run`, `opera_run_workflow`) while returning deferred command/run IDs for the separate await step.
+
+### Verified on real Opera
+- Production `browser.ping` and the 23-capability handshake.
+- Live tab listing/open/activate/close operations.
+- 6,000-character semantic chunks with continuation to offset 12,000 on a 247,964-character page.
+- Structured ARIA state including YouTube closed captions reporting `ariaPressed="true"`.
+- Real YouTube media-state extraction.
+- Browser restart reconnect with pairing preserved.
+- Signed self-hosted CRX update `1.0.0 → 1.0.1` with the stable extension ID and pairing preserved.
+
+### Distribution note
+- Manual update checking from Opera's Extensions page is verified.
+- Passive background auto-update without pressing Opera's Update button remains unverified and is deferred to a later patch test.
+
 ## [1.0.0] - 2026-09-08
 
 ### Added
