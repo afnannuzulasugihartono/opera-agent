@@ -21,7 +21,8 @@ const files = [
   'supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql',
   'supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql',
   'supabase/migrations/20260907204248_opera_agent_1_0_0_seed_workflows.sql',
-  'supabase/migrations/20260908021000_opera_agent_releases.sql'
+  'supabase/migrations/20260908021000_opera_agent_releases.sql',
+  'supabase/migrations/20260908025018_opera_agent_lock_internal_workflow_functions.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
