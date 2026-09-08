@@ -36,6 +36,27 @@ async function activeRelease() {
   return data;
 }
 
+async function logUpdateEvent(
+  requestKind: "update_xml" | "crx",
+  req: Request,
+  release: { version: string; sha256: string },
+  url: URL
+) {
+  const userAgent = req.headers.get("user-agent");
+  const accept = req.headers.get("accept");
+  const { error } = await supabase.from("opera_update_events").insert({
+    request_kind: requestKind,
+    method: req.method,
+    path: url.pathname.slice(0, 1000),
+    query_string: url.search.slice(0, 2000),
+    served_version: release.version,
+    release_sha256: release.sha256,
+    user_agent: userAgent ? userAgent.slice(0, 512) : null,
+    accept_header: accept ? accept.slice(0, 512) : null
+  });
+  if (error) console.warn("opera-agent-update telemetry", error.message);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
     return response("Method Not Allowed", 405, { "Allow": "GET, HEAD" });
@@ -48,6 +69,7 @@ Deno.serve(async (req: Request) => {
     const base = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update";
 
     if (path.endsWith("/update.xml")) {
+      await logUpdateEvent("update_xml", req, release, url);
       const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">\n  <app appid="${release.extension_id}">\n    <updatecheck codebase="${base}/opera-agent-${release.version}.crx" version="${release.version}" />\n  </app>\n</gupdate>\n`;
       return response(req.method === "HEAD" ? null : xml, 200, {
         "Content-Type": "application/xml; charset=utf-8",
@@ -56,6 +78,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (path.endsWith(`/opera-agent-${release.version}.crx`)) {
+      await logUpdateEvent("crx", req, release, url);
       const bytes = bytesFromBase64(release.crx_base64);
       return response(req.method === "HEAD" ? null : bytes, 200, {
         "Content-Type": "application/x-chrome-extension",
@@ -71,7 +94,8 @@ Deno.serve(async (req: Request) => {
         product: "Opera Agent",
         version: release.version,
         extensionId: release.extension_id,
-        sha256: release.sha256
+        sha256: release.sha256,
+        passiveUpdateTelemetry: true
       });
       return response(req.method === "HEAD" ? null : body, 200, {
         "Content-Type": "application/json; charset=utf-8",
