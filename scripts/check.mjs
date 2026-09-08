@@ -31,7 +31,8 @@ const files = [
   'supabase/migrations/20260908031800_opera_agent_async_workflow_runner.sql',
   'supabase/migrations/20260908040000_opera_agent_two_phase_command_api.sql',
   'supabase/migrations/20260908073800_opera_agent_update_telemetry.sql',
-  'supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql'
+  'supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql',
+  'supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
@@ -44,8 +45,12 @@ const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8')
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);
 const bridge = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-bridge/index.ts'), 'utf8');
 for (const marker of ['FAST_PULL_POLLS', 'FAST_PULL_INTERVAL_MS', 'IDLE_PULL_INTERVAL_MS']) assert.ok(bridge.includes(marker), marker);
+const runner = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-runner/index.ts'), 'utf8');
+for (const marker of ['COMMAND_POLL_MIN_MS', 'COMMAND_POLL_MAX_MS', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'commandTiming', 'MAX_PARALLEL_ITEMS']) assert.ok(runner.includes(marker), marker);
 const efficiency = fs.readFileSync(path.join(root, 'supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql'), 'utf8');
 for (const marker of ['research.read_current_full', 'research.read_url_full', 'youtube.get_transcript', '"limit":12000', '"maxElements":1']) assert.ok(efficiency.includes(marker), marker);
+const parallel = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql'), 'utf8');
+for (const marker of ['research.crawl_urls_parallel', '"parallel":true', '"maxConcurrency":4']) assert.ok(parallel.includes(marker), marker);
 const updateFunction = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-update/index.ts'), 'utf8');
 for (const marker of ['opera_update_events', 'update_xml', 'passiveUpdateTelemetry']) assert.ok(updateFunction.includes(marker), marker);
 console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, version ${manifest.version}`);
