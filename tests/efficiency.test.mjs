@@ -35,7 +35,10 @@ test('full-text workflows use bounded adaptive continuation rather than fixed 6k
 
 test('default crawl stays low-overhead while parallel crawl is explicit and bounded', () => {
   const defaultSection = migration.slice(migration.indexOf("'research.crawl_urls'"), migration.indexOf("'youtube.search'"));
-  assert.match(defaultSection, /reuse one background tab/i);
+  assert.match(defaultSection, /"id":"open"/);
+  assert.match(defaultSection, /"id":"navigate"/);
+  assert.match(defaultSection, /"method":"tabs\.navigate"/);
+  assert.match(defaultSection, /"id":"close"/);
   assert.doesNotMatch(defaultSection, /"parallel":true/);
 
   assert.match(parallelMigration, /research\.crawl_urls_parallel/);
