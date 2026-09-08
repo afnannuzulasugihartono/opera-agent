@@ -171,7 +171,7 @@ async def run():
         await popup.reload()
         await popup.fill('#pairCode', PAIR_CODE)
         await popup.click('#pairButton')
-        await popup.locator('#readyCard').wait_for(state='visible', timeout=10000)
+        await popup.locator('#pairedSection').wait_for(state='visible', timeout=10000)
         assert STATE.paired
 
         cid = STATE.push('browser.ping')
