@@ -2,6 +2,23 @@
 
 All notable changes to Opera Agent are documented here. The project follows Semantic Versioning.
 
+## [Unreleased]
+
+### Changed — server-side efficiency
+- Added a short fast-start polling window to `opera-agent-bridge`: six 50 ms polls at the start of a pull, then the existing 250 ms conservative idle interval.
+- Added `research.read_current_full` and `research.read_url_full` for bounded adaptive 12,000-character continuation reads.
+- Updated `research.read_url` to use a 12,000-character / one-element efficient default while retaining caller overrides.
+- Updated `research.crawl_urls` to reuse one background tab instead of repeatedly opening and closing temporary tabs.
+- Updated `youtube.search` to use the existing YouTube search box without forcing a redundant Home navigation.
+- Updated `youtube.captions_on` to verify state with `page.wait_for` instead of a fixed 200 ms post-click delay.
+- Updated `youtube.play_recommendation` so ad polling starts only when an ad is detected and uses a shorter bounded wait while the ad remains present.
+- Added `youtube.get_transcript` so transcript opening and long-text collection can be orchestrated inside one server workflow instead of from repeated chat-side commands.
+
+### Documentation / history
+- Added an explicit efficiency architecture and benchmark plan.
+- Formalized release notes and legacy Final 1/Final 2 documents as historical records rather than mutable descriptions of current behavior.
+- Kept the installed extension version at `1.0.1`; no unsigned or differently signed browser build is treated as a new stable release.
+
 ## [1.0.1] - 2026-09-08
 
 ### Fixed
