@@ -1,8 +1,10 @@
 # Opera Agent
 
-Opera Agent is a local browser-control bridge for Opera. It connects ChatGPT and Supabase workflows to the user's local Opera browser without moving the browsing session to a cloud browser.
+Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-The rebuilt project starts at **1.0.0** and follows Semantic Versioning.
+**Version:** `1.0.0`  
+**Protocol:** `1`  
+**Stable extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 
 ## Architecture
 
@@ -10,17 +12,22 @@ The rebuilt project starts at **1.0.0** and follows Semantic Versioning.
 ChatGPT
    |
    v
-Supabase
-Command / Workflow Layer
+Supabase workflow/command layer
    |
    v
-Opera Agent Extension
+opera_commands
    |
    v
-Local Opera Browser
+opera-agent-bridge (Edge Function)
    |
    v
-Structured Results
+Opera Agent extension
+   |
+   v
+Local Opera
+   |
+   v
+structured result
    |
    v
 Supabase
@@ -29,31 +36,54 @@ Supabase
 ChatGPT
 ```
 
-The extension is intentionally thin: receive, validate, execute, collect, and return. Higher-level workflows belong in Supabase whenever possible.
+The extension is deliberately thin: **receive → validate → execute → collect → return**. Site-specific behavior belongs in Supabase workflows, not in the extension.
 
-## Repository structure
+## What 1.0.0 includes
+
+- 23 allowlisted generic browser primitives.
+- Tab list/find/open/activate/close/navigate/reload.
+- Bounded semantic page reads up to 12,000 characters per chunk.
+- Structured element state including `aria-pressed`, `aria-checked`, `aria-expanded`, `aria-selected`, `checked`, `selected`, `disabled`, visibility, and geometry.
+- CSS query, semantic find, link collection, wait-for, focus, fill, scroll, and navigation keys.
+- Trusted debugger/CDP click and key paths.
+- Generic media state/play/pause/seek.
+- Password/PIN/OTP/2FA/CVV/CVC/security-code protection.
+- File-upload interaction protection.
+- One-time pairing with per-device token hashing.
+- Reconnect/retry behavior after network and browser restarts.
+- Idempotent command completion and request IDs.
+- Versioned Supabase workflow registry with rollback.
+- Server-side workflow DSL (`command`, `set`, `if`, `wait`, `repeat`, `foreach`, `fail`).
+- Seed workflows for browser status, research, YouTube search, recommendations/ad handling, and captions.
+
+## Repository
 
 ```text
-extension/   Browser-local bridge and primitives
-supabase/    Database, Edge Functions, commands, workflows
-scripts/     Development and release utilities
-tests/       Unit, integration, browser, and regression tests
-docs/        Architecture, history, versioning, and releases
+extension/                 MV3 Opera extension
+supabase/migrations/       Database schema, command helpers, workflow registry
+supabase/functions/        Edge bridge and signed extension update service
+scripts/                   Validation/build scripts
+tests/                     Unit, security, and Chromium regression tests
+docs/                      Architecture, protocol, install, testing, releases
+.github/workflows/         CI and release automation
 ```
+
+## Quick start
+
+See [docs/install.md](docs/install.md). The initial installation/pairing is a one-time trust step. After that, most new behavior is hot-updated through Supabase workflows; core extension releases are served as signed CRX updates from the Opera Agent update service.
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Protocol](docs/protocol.md)
+- [Installation](docs/install.md)
+- [Testing](docs/testing.md)
 - [Versioning](docs/versioning.md)
 - [Release process](docs/release-process.md)
 - [Project history](docs/history.md)
-- [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
-- [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)
 
 ## Status
 
-The project is being rebuilt from scratch. The first stable release will be **Opera Agent 1.0.0**.
-
-Previous Local Opera Agent v3 builds are preserved only as historical references during the rebuild.
+The 1.0.0 core has passed local unit/security tests, a real Chromium extension regression suite, Supabase cloud integration tests, signed CRX validation, and managed Chromium self-hosted update testing. The remaining target-specific acceptance layer is the one-time installation/pairing on the user's actual Opera browser.
