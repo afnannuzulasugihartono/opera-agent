@@ -18,12 +18,15 @@ const files = [
   'extension/background.js', 'extension/content.js', 'extension/popup.js',
   'supabase/functions/opera-agent-bridge/index.ts',
   'supabase/functions/opera-agent-update/index.ts',
+  'supabase/functions/opera-agent-runner/index.ts',
   'supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql',
   'supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql',
   'supabase/migrations/20260907204248_opera_agent_1_0_0_seed_workflows.sql',
   'supabase/migrations/20260908021000_opera_agent_releases.sql',
   'supabase/migrations/20260908025018_opera_agent_lock_internal_workflow_functions.sql',
-  'supabase/migrations/20260908025218_opera_agent_command_method_index.sql'
+  'supabase/migrations/20260908025218_opera_agent_command_method_index.sql',
+  'supabase/migrations/20260908031800_opera_agent_async_workflow_runner.sql',
+  'supabase/migrations/20260908040000_opera_agent_two_phase_command_api.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
