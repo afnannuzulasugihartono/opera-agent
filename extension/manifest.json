@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Opera Agent",
+  "version": "1.0.0",
+  "description": "Private local Opera bridge for secure browser control through Supabase workflows.",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "alarms",
+    "activeTab",
+    "debugger"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_title": "Opera Agent",
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://127.0.0.1:* https://*.supabase.co"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0dMy7UbHH9vUg/0PAvP5geUA7nPqLFSbmEmbl6itwxhrfX4dhsqozCO1oEgcgapweTxpff7cO/f2BFFYkgraZ4Q5IbPbZjlEfk7AdUeRp93exoom8Pfqh4Y8KY+1cUAE3dEJRI/0uI5cb6MSlrVWBRa+4VPaLDwhGtJRzPhgjywtNUmyQmVq9oUX/AcZTQvtfhKxHQHW/qhynaedO0q/O5xkq/GbdDEB7+5tfzNT6OmCYTYCzGtxaXr+jNzJyRrv7FT3mNNbmqgxh4BmOoQsOMFZMbRX3AndVBwa1kz6t8U6UJSZ/15SMsWa7y6KhjoajeUZl0oUBmzMGgvEeuXHVQIDAQAB",
+  "update_url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml"
+}
