@@ -171,12 +171,12 @@ async def run():
         await popup.reload()
         await popup.fill('#pairCode', PAIR_CODE)
         await popup.click('#pairButton')
-        await popup.locator('#pairedSection').wait_for(state='visible', timeout=10000)
+        await popup.locator('#readyCard').wait_for(state='visible', timeout=10000)
         assert STATE.paired
 
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.0.0'
+        assert result['version'] == '1.0.1'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{PORT}/page', 'active': True, 'wait': True})
@@ -237,7 +237,7 @@ async def run():
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.0.0'
+        assert result['version'] == '1.0.1'
 
         await context.close()
         import os
