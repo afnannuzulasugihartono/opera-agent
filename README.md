@@ -2,7 +2,7 @@
 
 Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-**Version:** `1.0.1`  
+**Stable extension:** `1.0.1`  
 **Protocol:** `1`  
 **Stable extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 
@@ -56,14 +56,31 @@ The extension is deliberately thin: **receive → validate → execute → colle
 - Server-side workflow DSL (`command`, `set`, `if`, `wait`, `repeat`, `foreach`, `fail`).
 - Seed workflows for browser status, research, YouTube search, recommendations/ad handling, and captions.
 
+## Efficiency model
+
+Opera Agent optimizes **round trips first** while keeping the browser layer generic. Server-side workflow revisions can improve performance without replacing the installed extension.
+
+Current efficiency work includes:
+
+- adaptive 12k text reads with continuation instead of repeated default-size reads;
+- text-oriented workflows that request minimal element metadata by default;
+- one workflow per higher-level intent so ChatGPT does not orchestrate every browser primitive separately;
+- state-based waits instead of fixed sleeps where possible;
+- fast paths that avoid unnecessary navigation/reload;
+- ad polling only when an ad is actually detected;
+- a short fast-start bridge polling window that returns to conservative idle polling afterward;
+- versioned workflow rollback and preserved historical migrations/releases.
+
+See [Efficiency and flexibility plan](docs/efficiency.md) for the latency model, completed server-side work, extension-level next steps, benchmarks, and rollback rules.
+
 ## Repository
 
 ```text
 extension/                 MV3 Opera extension
 supabase/migrations/       Database schema, command helpers, workflow registry
-supabase/functions/        Edge bridge and signed extension update service
+supabase/functions/        Edge bridge, workflow runner, signed update service
 scripts/                   Validation/build scripts
-tests/                     Unit, security, and Chromium regression tests
+tests/                     Unit, security, efficiency, and Chromium regression tests
 docs/                      Architecture, protocol, install, testing, releases
 .github/workflows/         CI and release automation
 ```
@@ -75,15 +92,19 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Efficiency and flexibility](docs/efficiency.md)
 - [Protocol](docs/protocol.md)
 - [Installation](docs/install.md)
 - [Testing](docs/testing.md)
 - [Versioning](docs/versioning.md)
 - [Release process](docs/release-process.md)
+- [Release archive](docs/releases/README.md)
 - [Project history](docs/history.md)
 - [Changelog](CHANGELOG.md)
 - [Security](SECURITY.md)
 
 ## Status
 
-Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, ping, tab operations, trusted debugger input transport, 6,000-character chunked reads with continuation, ARIA state, and media state. Version 1.0.1 adds durable completion retry handling and the backend now uses a two-phase command/workflow API so queued work is committed before the browser is asked to consume it. Real Opera acceptance now includes the signed self-hosted CRX update from 1.0.0 to 1.0.1 with the same extension ID, preserved pairing, and successful post-update commands. Passive background auto-update without pressing Opera's Update button remains intentionally unverified and will be tested in a later patch release.
+Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, ping, tab operations, trusted debugger input transport, chunked semantic reads with continuation, ARIA state, and media state. Version 1.0.1 adds durable completion retry handling and the backend uses a two-phase command/workflow API so queued work is committed before the browser is asked to consume it. Real Opera acceptance includes the signed self-hosted CRX update from 1.0.0 to 1.0.1 with the same extension ID and preserved pairing.
+
+The installed/stable browser build remains **1.0.1**. Efficiency improvements that only change server workflows/Edge Functions are versioned independently. Extension-level performance work must wait for a same-signing-key build and must not replace the stable identity with a newly generated key. Passive background auto-update without pressing Opera's Update button is tracked separately in [PASSIVE_UPDATE_TEST.md](docs/PASSIVE_UPDATE_TEST.md).
