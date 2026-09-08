@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opera Agent</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Opera Agent</h1>
+        <p id="version">1.0.0</p>
+      </div>
+      <span id="statusBadge" class="badge">Starting</span>
+    </header>
+
+    <section class="card">
+      <div class="row"><span>Device</span><strong id="deviceName">opera</strong></div>
+      <div class="row"><span>Connection</span><strong id="connection">—</strong></div>
+      <div class="row"><span>Last command</span><strong id="lastCommand">—</strong></div>
+      <p id="error" class="error" hidden></p>
+    </section>
+
+    <section id="pairSection" class="card">
+      <label for="pairCode">Pairing code</label>
+      <input id="pairCode" type="text" autocomplete="off" maxlength="64" placeholder="Paste pairing code" />
+      <button id="pairButton" class="primary">Pair device</button>
+      <p class="hint">Create a one-time pairing code from Supabase/ChatGPT, then enter it here once.</p>
+    </section>
+
+    <section id="pairedSection" class="card" hidden>
+      <button id="selfTestButton">Run self-test</button>
+      <pre id="selfTestResult" hidden></pre>
+      <button id="unpairButton" class="danger">Unpair device</button>
+    </section>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
