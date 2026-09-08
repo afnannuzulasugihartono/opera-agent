@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
+    paths:
+      - 'release-trigger/**'
 
 permissions:
   contents: write
@@ -16,20 +20,67 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Resolve version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(node -p "require('./package.json').version")"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "TAG=v${VERSION}" >> "$GITHUB_ENV"
+
       - name: Validate
         run: |
           npm test
           npm run check
-      - name: Package extension
+          node -e "const p=require('./package.json'); const m=require('./extension/manifest.json'); if(p.version!==process.env.VERSION||m.version!==process.env.VERSION) process.exit(1)"
+
+      - name: Package extension and source
+        shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          cd extension
-          zip -r "../Opera-Agent-${VERSION}-extension.zip" .
+          (cd extension && zip -r "../Opera-Agent-${VERSION}-extension.zip" .)
+          git archive --format=zip --output="Opera-Agent-${VERSION}-source.zip" HEAD
+
+      - name: Fetch and verify signed CRX
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-${VERSION}.crx" \
+            --output "Opera-Agent-${VERSION}.crx"
+          test -f "docs/releases/${VERSION}.crx.sha256"
+          sha256sum -c "docs/releases/${VERSION}.crx.sha256"
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          sha256sum \
+            "Opera-Agent-${VERSION}-extension.zip" \
+            "Opera-Agent-${VERSION}-source.zip" \
+            "Opera-Agent-${VERSION}.crx" > SHA256SUMS
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
           NOTES="docs/releases/${VERSION}.md"
           if [ ! -f "$NOTES" ]; then NOTES="CHANGELOG.md"; fi
-          gh release create "$GITHUB_REF_NAME" "Opera-Agent-${VERSION}-extension.zip" --title "Opera Agent ${VERSION}" --notes-file "$NOTES"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              "Opera-Agent-${VERSION}-extension.zip" \
+              "Opera-Agent-${VERSION}-source.zip" \
+              "Opera-Agent-${VERSION}.crx" \
+              SHA256SUMS --clobber
+          else
+            gh release create "$TAG" \
+              "Opera-Agent-${VERSION}-extension.zip" \
+              "Opera-Agent-${VERSION}-source.zip" \
+              "Opera-Agent-${VERSION}.crx" \
+              SHA256SUMS \
+              --target "$GITHUB_SHA" \
+              --title "Opera Agent ${VERSION}" \
+              --notes-file "$NOTES"
+          fi
