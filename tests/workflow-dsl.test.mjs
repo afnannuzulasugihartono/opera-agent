@@ -5,7 +5,8 @@ import fs from 'node:fs';
 const core = fs.readFileSync(new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url), 'utf8');
 const workflow = fs.readFileSync(new URL('../supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql', import.meta.url), 'utf8');
 const seed = fs.readFileSync(new URL('../supabase/migrations/20260907204248_opera_agent_1_0_0_seed_workflows.sql', import.meta.url), 'utf8');
-const sql = core + '\n' + workflow + '\n' + seed;
+const efficiency = fs.readFileSync(new URL('../supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
+const sql = core + '\n' + workflow + '\n' + seed + '\n' + efficiency;
 
 test('migration defines clean Opera Agent objects without modifying legacy tables', () => {
   for (const name of ['opera_devices','opera_commands','opera_workflows','opera_workflow_versions','opera_audit']) {
@@ -28,9 +29,27 @@ test('cloud workflow engine supports command, conditions, repeat and foreach', (
   }
 });
 
-test('seed workflows keep site-specific logic out of extension', () => {
+test('efficiency workflows keep generic primitives flexible', () => {
+  for (const name of [
+    'research.read_current_full',
+    'research.read_url_full',
+    'youtube.get_transcript',
+    'youtube.search',
+    'youtube.play_recommendation',
+    'youtube.captions_on'
+  ]) assert.ok(efficiency.includes(name), name);
+
+  assert.match(efficiency, /"limit":12000/);
+  assert.match(efficiency, /"maxElements":1/);
+  assert.match(efficiency, /"maxIterations":30/);
+  assert.match(efficiency, /"selector":"ytd-search"/);
+  assert.doesNotMatch(efficiency, /"ms":600/);
+});
+
+test('site-specific logic remains outside the extension', () => {
   assert.match(sql, /youtube\.captions_on/);
   assert.match(sql, /youtube\.play_recommendation/);
+  assert.match(sql, /youtube\.get_transcript/);
   assert.match(sql, /research\.crawl_urls/);
   const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
   const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');

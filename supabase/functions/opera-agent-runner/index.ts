@@ -14,10 +14,13 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
+const SAFE_RETRY_DELAY_MS = 75;
+const MAX_PARALLEL_ITEMS = 4;
+
 const RETRY_SAFE_METHODS = new Set([
   "browser.ping",
   "tabs.list", "tabs.get", "tabs.find",
-  "page.read", "page.query", "page.find", "page.collect_links",
+  "page.read", "page.query", "page.find", "page.collect_links", "page.wait_for",
   "media.state"
 ]);
 
@@ -95,6 +98,43 @@ function evaluateCondition(condition: any, ctx: any) {
   return truthy(left);
 }
 
+function timestampMs(value: unknown) {
+  const parsed = Date.parse(String(value || ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeAwaitTiming(timing: any) {
+  const queuedMs = Number(timing?.queuedMs);
+  const totalMs = Number(timing?.totalMs);
+  const queueMs = Number.isFinite(queuedMs) ? Math.max(0, queuedMs) : null;
+  const normalizedTotal = Number.isFinite(totalMs) ? Math.max(0, totalMs) : null;
+  return {
+    queueMs,
+    executionMs: queueMs != null && normalizedTotal != null ? Math.max(0, normalizedTotal - queueMs) : null,
+    totalMs: normalizedTotal
+  };
+}
+
+function transientFailure(result: any) {
+  if (result?.status !== "failed") return false;
+  const message = String(result?.error?.message || result?.error || "").toLowerCase();
+  return [
+    "no response from page bridge",
+    "receiving end does not exist",
+    "could not establish connection",
+    "extension context invalidated",
+    "message port closed",
+    "the message port closed"
+  ].some((needle) => message.includes(needle));
+}
+
+function normalizeWorkflowError(error: unknown) {
+  if (error instanceof WorkflowError) {
+    return { code: error.code, message: error.message, details: error.details ?? null };
+  }
+  return { code: "WORKFLOW_ERROR", message: error instanceof Error ? error.message : String(error) };
+}
+
 async function rpc(name: string, args: Record<string, unknown>) {
   const { data, error } = await supabase.rpc(name, args);
   if (error) throw new WorkflowError("RPC_ERROR", `${name}: ${error.message}`);
@@ -123,39 +163,30 @@ async function runCommandOnce(
   }
 
   const commandId = String(enqueued.commandId);
-  let commandDeadline = workflowDeadline;
+  const remainingMs = Math.max(100, Math.min(55000, workflowDeadline - Date.now()));
+  const awaited = await rpc("opera_await", {
+    p_command_id: commandId,
+    p_timeout_ms: remainingMs
+  });
 
-  while (Date.now() < commandDeadline) {
-    const { data, error } = await supabase
-      .from("opera_commands")
-      .select("status,result,error,created_at,claimed_at,completed_at,expires_at")
-      .eq("id", commandId)
-      .maybeSingle();
-    if (error) throw new WorkflowError("COMMAND_STATUS_ERROR", error.message);
-    if (!data) throw new WorkflowError("COMMAND_NOT_FOUND", `Command ${commandId} disappeared.`);
-
-    const expiresAt = Date.parse(String(data.expires_at || ""));
-    if (Number.isFinite(expiresAt)) commandDeadline = Math.min(workflowDeadline, expiresAt + 2000);
-
-    if (data.status === "completed") {
-      return { ok: true, commandId, status: data.status, result: data.result };
-    }
-    if (["failed", "expired", "cancelled"].includes(data.status)) {
-      return {
-        ok: false,
-        commandId,
-        status: data.status,
-        error: data.error || { code: "COMMAND_FAILED", message: "Command failed." }
-      };
-    }
-    await sleep(100);
+  if (awaited?.ok) {
+    return {
+      ok: true,
+      commandId,
+      status: String(awaited.status || "completed"),
+      result: awaited.result,
+      timing: normalizeAwaitTiming(awaited.timing)
+    };
   }
 
+  const error = awaited?.error || { code: "COMMAND_FAILED", message: `Command ${method} failed.` };
+  const awaitTimedOut = String(error?.code || "").toUpperCase() === "AWAIT_TIMEOUT";
   return {
     ok: false,
     commandId,
-    status: "timeout",
-    error: { code: "COMMAND_TIMEOUT", message: `Command ${method} did not complete before its deadline.` }
+    status: awaitTimedOut ? "timeout" : String(awaited?.status || "failed"),
+    error,
+    timing: normalizeAwaitTiming(awaited?.timing)
   };
 }
 
@@ -170,10 +201,11 @@ async function runCommand(
   const first = await runCommandOnce(run, method, params, timeoutMs, workflowDeadline, requestId);
   if (first.ok) return first;
 
-  if (RETRY_SAFE_METHODS.has(method) && ["expired", "timeout"].includes(first.status) && Date.now() + 750 < workflowDeadline) {
-    await sleep(150);
+  const retryable = ["expired", "timeout"].includes(first.status) || transientFailure(first);
+  if (RETRY_SAFE_METHODS.has(method) && retryable && Date.now() + 400 < workflowDeadline) {
+    await sleep(SAFE_RETRY_DELAY_MS);
     const second = await runCommandOnce(run, method, params, timeoutMs, workflowDeadline, null);
-    return second.ok ? { ...second, retried: true } : { ...second, retried: true, previous: first };
+    return second.ok ? { ...second, retried: true, previous: first } : { ...second, retried: true, previous: first };
   }
   return first;
 }
@@ -228,6 +260,7 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
       const max = Math.max(1, Math.min(30, Number(step?.maxIterations || 5)));
       let satisfied = false;
       for (let index = 0; index < max; index += 1) {
+        ctx.vars.repeatIndex = index;
         await executeSteps(step?.steps || [], ctx, run, deadline);
         if (evaluateCondition(step?.until || {}, ctx)) {
           satisfied = true;
@@ -244,16 +277,57 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
       const items = resolveValue(step?.items || [], ctx);
       if (!Array.isArray(items)) throw new WorkflowError("INVALID_WORKFLOW", "foreach items must resolve to an array.");
       const max = Math.max(1, Math.min(30, Number(step?.maxItems || 20)));
+      const count = Math.min(max, items.length);
       const itemVar = String(step?.itemVar || "item");
       const collectVar = step?.collectVar ? String(step.collectVar) : null;
+      const hasCollect = collectVar && Object.prototype.hasOwnProperty.call(step, "collect");
+
+      if (step?.parallel === true && count > 1) {
+        const concurrency = Math.max(1, Math.min(MAX_PARALLEL_ITEMS, count, Number(step?.maxConcurrency || MAX_PARALLEL_ITEMS)));
+        const collected: any[] = new Array(count).fill(null);
+        let cursor = 0;
+        let firstError: unknown = null;
+        const continueOnItemError = step?.continueOnItemError === true;
+
+        const worker = async () => {
+          while (true) {
+            if (firstError && !continueOnItemError) return;
+            const index = cursor;
+            cursor += 1;
+            if (index >= count) return;
+
+            const branchCtx = structuredClone(ctx);
+            branchCtx.vars = branchCtx.vars || {};
+            branchCtx.steps = branchCtx.steps || {};
+            branchCtx.vars[itemVar] = items[index];
+            branchCtx.vars.index = index;
+
+            try {
+              await executeSteps(step?.steps || [], branchCtx, run, deadline);
+              if (hasCollect) collected[index] = resolveValue(step.collect, branchCtx);
+            } catch (error) {
+              if (continueOnItemError) {
+                branchCtx.vars.itemError = normalizeWorkflowError(error);
+                if (hasCollect) collected[index] = resolveValue(step.collect, branchCtx);
+              } else if (!firstError) {
+                firstError = error;
+              }
+            }
+          }
+        };
+
+        await Promise.all(Array.from({ length: concurrency }, () => worker()));
+        if (firstError) throw firstError;
+        if (collectVar) ctx.vars[collectVar] = collected;
+        continue;
+      }
+
       const collected: any[] = [];
-      for (let index = 0; index < Math.min(max, items.length); index += 1) {
+      for (let index = 0; index < count; index += 1) {
         ctx.vars[itemVar] = items[index];
         ctx.vars.index = index;
         await executeSteps(step?.steps || [], ctx, run, deadline);
-        if (collectVar && Object.prototype.hasOwnProperty.call(step, "collect")) {
-          collected.push(resolveValue(step.collect, ctx));
-        }
+        if (hasCollect) collected.push(resolveValue(step.collect, ctx));
       }
       if (collectVar) ctx.vars[collectVar] = collected;
       continue;
@@ -289,6 +363,7 @@ async function processRun(runId: string, token: string) {
   ctx.vars = ctx.vars || {};
   ctx.steps = ctx.steps || {};
   const deadline = Date.now() + Number(activeRun.timeout_ms || 60000);
+  const runStartedAt = timestampMs(activeRun.started_at) ?? Date.now();
 
   try {
     await executeSteps(activeRun.definition?.steps || [], ctx, activeRun, deadline);
@@ -296,6 +371,7 @@ async function processRun(runId: string, token: string) {
       ? resolveValue(activeRun.definition.output, ctx)
       : ctx;
     const completedAt = new Date().toISOString();
+    const durationMs = Math.max(0, Date.parse(completedAt) - runStartedAt);
     await supabase.from("opera_workflow_runs").update({
       status: "completed",
       context: ctx,
@@ -307,14 +383,13 @@ async function processRun(runId: string, token: string) {
     await supabase.from("opera_audit").insert({
       event_type: "workflow.completed",
       workflow_name: activeRun.workflow_name,
-      details: { runId, version: activeRun.workflow_version }
+      details: { runId, version: activeRun.workflow_version, durationMs }
     });
-    return { ok: true, runId, status: "completed" };
+    return { ok: true, runId, status: "completed", durationMs };
   } catch (error) {
-    const normalized = error instanceof WorkflowError
-      ? { code: error.code, message: error.message, details: error.details ?? null }
-      : { code: "WORKFLOW_ERROR", message: error instanceof Error ? error.message : String(error) };
+    const normalized = normalizeWorkflowError(error);
     const completedAt = new Date().toISOString();
+    const durationMs = Math.max(0, Date.parse(completedAt) - runStartedAt);
     const status = normalized.code === "WORKFLOW_TIMEOUT" ? "expired" : "failed";
     await supabase.from("opera_workflow_runs").update({
       status,
@@ -327,9 +402,9 @@ async function processRun(runId: string, token: string) {
     await supabase.from("opera_audit").insert({
       event_type: "workflow.failed",
       workflow_name: activeRun.workflow_name,
-      details: { runId, version: activeRun.workflow_version, error: normalized }
+      details: { runId, version: activeRun.workflow_version, error: normalized, durationMs }
     });
-    return { ok: false, runId, status, error: normalized };
+    return { ok: false, runId, status, error: normalized, durationMs };
   }
 }
 
