@@ -36,6 +36,7 @@ This release must remain site-agnostic and requires the original signing identit
 - [x] Preserve password/payment/file-upload protections and prohibit remote JavaScript/eval.
 - [x] Verify the source build in real Opera with the stable extension ID, reconnect, restart, sensitive-field, and file-upload protections.
 - [x] Deploy runner v6 and the rollback-capable workflow revisions to production Supabase.
+- [x] Verify runner v6 telemetry with a paired Opera 1.0.1 `browser.status` production smoke.
 - [ ] Repeat live production workflow benchmarks with an active paired Opera session.
 - [ ] Sign the CRX with the original private key and verify same-ID update acceptance before publishing.
 

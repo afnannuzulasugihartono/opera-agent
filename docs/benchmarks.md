@@ -37,9 +37,13 @@ For the element-heavy synthetic page, text-only mode reduced the page payload by
 
 The earlier production measurements in `docs/efficiency.md` found that replacing repeated Edge-side command-status requests with one `opera_await` reduced median runner overhead not explained by browser command totals from roughly 363 ms to 271 ms (about 25%). No end-to-end speedup was claimed because the browser/network sample was noisy.
 
+## Production smoke after runner v6
+
+An online paired Opera 1.0.1 client completed `browser.status` after the merge using protocol 1 and all 23 capabilities. The workflow reported 3,228 ms queue time and 571 ms execution time. Its single `browser.ping` command reported 84 ms queue time, 302 ms execution time, and 386 ms total time. Telemetry recorded 471 returned bytes, zero retries, zero fixed waits, and no truncation. This verifies compatibility and telemetry wiring; the queue-heavy single sample is not a throughput claim.
+
 ## Production benchmarks still required
 
-Runner v5 and migration `20260909021225_extension_1_1_text_only_workflows` are deployed. The following cases still require an active paired Opera/YouTube session, so post-deployment timings were not fabricated:
+Runner v6 and migration `20260909021225_extension_1_1_text_only_workflows` are deployed. The following cases still require an active paired Opera/YouTube session, so their post-deployment timings were not fabricated:
 
 - YouTube open/search workflow;
 - recommendation/play no-ad and naturally encountered ad paths;
