@@ -4,10 +4,10 @@ import fs from 'node:fs';
 
 const bridge = fs.readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8');
 const runner = fs.readFileSync(new URL('../supabase/functions/opera-agent-runner/index.ts', import.meta.url), 'utf8');
-const migration = fs.readFileSync(new URL('../supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
-const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
-const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql', import.meta.url), 'utf8');
-const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001500_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
+const migration = fs.readFileSync(new URL('../supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
+const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
+const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql', import.meta.url), 'utf8');
+const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
 
 test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
   assert.match(bridge, /FAST_PULL_POLLS\s*=\s*6/);
