@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const core = fs.readFileSync(new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url), 'utf8');
 const workflow = fs.readFileSync(new URL('../supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql', import.meta.url), 'utf8');
 const seed = fs.readFileSync(new URL('../supabase/migrations/20260907204248_opera_agent_1_0_0_seed_workflows.sql', import.meta.url), 'utf8');
-const efficiency = fs.readFileSync(new URL('../supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
+const efficiency = fs.readFileSync(new URL('../supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
 const sql = core + '\n' + workflow + '\n' + seed + '\n' + efficiency;
 
 test('migration defines clean Opera Agent objects without modifying legacy tables', () => {
