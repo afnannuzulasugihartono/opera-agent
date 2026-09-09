@@ -17,6 +17,12 @@ Future stable releases should use simple SemVer filenames:
 
 Each stable extension release should have a matching changelog entry, GitHub Release, signed CRX/hash evidence, and acceptance record. Server-side workflow revisions do **not** retroactively change an extension release document.
 
+## Unreleased experiments
+
+- [Experimental v2 local-plan work](experimental-v2.md) — `browser.plan`/v2 workflow experiment preserved for history and quarantined because stable extension 1.0.1 does not advertise or implement the method.
+
+An experiment is not a release. It must not be added to the stable SemVer line until the matching extension artifact is signed with the established identity and passes acceptance.
+
 ## Legacy Local Opera Agent archive
 
 The pre-rebuild versions remain available as historical/fallback documentation and are not renamed into the new SemVer line:
