@@ -153,6 +153,37 @@ async function trustedClick(tabId, ref) {
   }
 }
 
+async function trustedPointer(tabId, params) {
+  const tab = await chrome.tabs.get(tabId);
+  const window = await chrome.windows.get(tab.windowId);
+  if (!tab.active || !window.focused) throw new Error('Pointer actions require the active, focused tab.');
+  const action = String(params.action || 'click');
+  const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: params.showCursor !== false, action });
+  const end = action === 'drag'
+    ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: params.showCursor !== false, action })
+    : null;
+  const target = { tabId };
+  let attached = false;
+  try {
+    await chrome.debugger.attach(target, '1.3');
+    attached = true;
+    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
+    if (action === 'click') {
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1 });
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x: start.x, y: start.y, button: 'left', clickCount: 1 });
+    } else if (action === 'drag') {
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1 });
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: end.x, y: end.y, button: 'left', buttons: 1 });
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x: end.x, y: end.y, button: 'left', clickCount: 1 });
+    } else if (action === 'wheel') {
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseWheel', x: start.x, y: start.y, deltaX: clamp(params.deltaX, -1200, 1200, 0), deltaY: clamp(params.deltaY, -1200, 1200, 0) });
+    }
+    return { ok: true, method: 'debugger', action, start, end };
+  } finally {
+    if (attached) try { await chrome.debugger.detach(target); } catch {}
+  }
+}
+
 const KEY_MAP = {
   Enter: { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 },
   Tab: { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 },
@@ -291,6 +322,11 @@ async function dispatch(method, params = {}) {
     case 'page.click': {
       const tabId = await resolveTabId(params);
       const result = params.trusted ? await trustedClick(tabId, params.ref) : await contentCall(tabId, 'page.click', params);
+      return { ...result, tabId };
+    }
+    case 'page.pointer': {
+      const tabId = await resolveTabId(params);
+      const result = await trustedPointer(tabId, params);
       return { ...result, tabId };
     }
     case 'page.key': {

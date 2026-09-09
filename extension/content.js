@@ -314,6 +314,28 @@
     return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el) };
   }
 
+  function pointerTarget(args) {
+    const x = Number(args.x);
+    const y = Number(args.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) {
+      throw new Error('Pointer coordinates must be inside the visible viewport.');
+    }
+    const el = document.elementFromPoint(x, y);
+    const blocked = el && sensitiveDescriptor(el);
+    if (blocked) throw new Error(`Pointer blocked on sensitive target (${blocked}).`);
+    if (args.showCursor) {
+      const existing = document.getElementById('__opera_agent_pointer_cursor');
+      existing?.remove();
+      const cursor = document.createElement('div');
+      cursor.id = '__opera_agent_pointer_cursor';
+      cursor.setAttribute('aria-hidden', 'true');
+      cursor.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:16px;height:16px;border:2px solid #ef4444;border-radius:50%;background:#ef444433;transform:translate(-50%,-50%);pointer-events:none;z-index:2147483647;`;
+      document.documentElement.append(cursor);
+      setTimeout(() => cursor.remove(), 900);
+    }
+    return { ok: true, x, y, viewport: { width: innerWidth, height: innerHeight }, target: el ? { tag: el.tagName.toLowerCase(), label: getAssociatedLabel(el) } : null };
+  }
+
   function scroll(args) {
     const x = clamp(args.x, -1000000, 1000000, 0);
     const y = clamp(args.y, -1000000, 1000000, 0);
@@ -439,6 +461,7 @@
       case 'page.collect_links': return collectLinks(args);
       case 'page.click': return clickSynthetic(args);
       case 'page.click_info': return clickInfo(args);
+      case 'page.pointer_target': return pointerTarget(args);
       case 'page.fill': return fill(args);
       case 'page.focus': return focus(args);
       case 'page.scroll': return scroll(args);

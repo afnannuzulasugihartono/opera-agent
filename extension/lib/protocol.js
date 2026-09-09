@@ -1,4 +1,4 @@
-export const PRODUCT_VERSION = '1.1.0';
+export const PRODUCT_VERSION = '1.1.1';
 export const PROTOCOL_VERSION = 1;
 
 export const METHOD_SPECS = Object.freeze({
@@ -16,6 +16,7 @@ export const METHOD_SPECS = Object.freeze({
   'page.find': { timeoutMs: 8000 },
   'page.collect_links': { timeoutMs: 10000 },
   'page.click': { timeoutMs: 8000 },
+  'page.pointer': { timeoutMs: 8000 },
   'page.fill': { timeoutMs: 8000 },
   'page.focus': { timeoutMs: 5000 },
   'page.scroll': { timeoutMs: 5000 },
@@ -49,6 +50,14 @@ export function validateCommand(command) {
   }
   if (command.params != null && !isPlainObject(command.params)) {
     return { ok: false, error: 'Command params must be an object.' };
+  }
+  if (command.method === 'page.pointer') {
+    const params = command.params || {};
+    const action = String(params.action || 'click');
+    if (!['move', 'click', 'drag', 'wheel'].includes(action)) return { ok: false, error: 'Invalid pointer action.' };
+    for (const key of ['x', 'y']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+    if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+    if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
   }
   return {
     ok: true,
