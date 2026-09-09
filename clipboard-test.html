@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Opera Agent Clipboard Test</title></head>
+<body>
+<button id="copy" style="font-size:24px;padding:20px">Copy document test text</button>
+<div id="status" aria-live="polite"></div>
+<script>
+const text = `Dokumen ini dibuat langsung melalui Opera Agent.\n\nPengujian berhasil jika teks ini muncul di Google Docs tanpa diketik manual.`;
+document.getElementById('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(text);
+    document.getElementById('status').textContent = 'COPIED_OK';
+  } catch (e) {
+    document.getElementById('status').textContent = 'COPY_FAILED: ' + String(e);
+  }
+});
+</script>
+</body>
+</html>
