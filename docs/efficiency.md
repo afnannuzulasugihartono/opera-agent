@@ -15,7 +15,7 @@ Opera Agent should feel fast without becoming site-specific or fragile. The perf
 
 ## Performance model
 
-A multi-step task currently has several possible costs:
+A multi-step task has several possible costs:
 
 ```text
 workflow dispatch
@@ -43,6 +43,20 @@ Why this shape:
 - the short fast window reduces active-work latency;
 - idle connections return to the old 250 ms interval, avoiding permanent high database polling load.
 
+### Command completion wait
+
+The Edge workflow runner uses the existing two-phase command boundary:
+
+```text
+opera_enqueue → commit
+Opera claims / executes / completes command
+opera_await → result
+```
+
+The runner should not repeatedly fetch `opera_commands` over Edge-to-database HTTP while waiting. A single `opera_await` RPC keeps the wait loop inside PostgreSQL, where completion is checked at the existing bounded 50 ms cadence. This preserves the transaction fix introduced in 1.0.1 because enqueue and await remain separate RPC transactions, while reducing repeated network requests from the runner.
+
+Safe retry remains limited to read-only/idempotent primitives and known transient browser-message failures. Mutating browser actions are not blindly replayed.
+
 ### Adaptive text reads
 
 New/updated research workflows use:
@@ -64,10 +78,11 @@ Added/updated workflows:
 - `research.read_current_full` — collect the current tab in adaptive 12k chunks.
 - `research.read_url_full` — open, collect adaptive chunks, close.
 - `research.crawl_urls` — reuse one background tab instead of opening/closing one tab per URL.
+- `research.crawl_urls_parallel` — explicit bounded parallel mode for independent URLs, maximum four concurrent temporary tabs.
 - `youtube.search` — do not force a redundant Home navigation before using the existing search box.
 - `youtube.captions_on` — verify caption state with `page.wait_for` instead of a fixed post-click delay.
 - `youtube.play_recommendation` — check for an ad first; only enter bounded ad polling when an ad is actually present.
-- `youtube.get_transcript` — open the transcript panel and collect long page text internally instead of asking ChatGPT to issue each read chunk separately.
+- `youtube.get_transcript` — reuse an already-open transcript panel, prefer a normal DOM click, fall back to trusted input only when necessary, and collect long text internally.
 
 ## Phase 2 — extension efficiency (next backward-compatible feature release)
 
@@ -111,7 +126,7 @@ Record at least:
 - whether a fixed wait was entered;
 - whether retry/fallback occurred.
 
-### Baseline captured before Phase 1 deployment
+### Foundation baseline
 
 On 2026-09-08, a production `browser.status` workflow using extension 1.0.1 reported approximately:
 
@@ -122,7 +137,19 @@ workflow total: 1,613 ms
 
 This is a baseline for the complete asynchronous workflow path, not a claim that the browser primitive itself took 1.6 seconds.
 
-Post-deployment measurements should be appended here rather than replacing this baseline.
+### Phase 1 pre-`opera_await` runner baseline
+
+Before replacing repeated Edge-side command-status reads with one `opera_await` RPC, production `research.read_url` v2 was run three times against `https://example.com/` using extension 1.0.1. Each run performed three browser commands: open, read, close.
+
+| Run | Workflow queue | Workflow total | Runner duration |
+| --- | ---: | ---: | ---: |
+| 1 | 632 ms | 3,400 ms | 2,768 ms |
+| 2 | 336 ms | 2,935 ms | 2,599 ms |
+| 3 | 314 ms | 3,294 ms | 2,980 ms |
+
+Median workflow queue: **336 ms**. Median workflow total: **3,294 ms**. These measurements include browser/network variability and are retained as the comparison baseline for the Postgres-await runner deployment.
+
+Post-deployment measurements must be appended rather than replacing these baselines.
 
 ## Version and history policy
 
