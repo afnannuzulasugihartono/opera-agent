@@ -71,5 +71,7 @@ for (const marker of ['panelWasOpen', 'openSynthetic', 'openTrusted', 'openMetho
 const transcriptRender = fs.readFileSync(path.join(root, 'supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql'), 'utf8');
 for (const marker of ['ytd-transcript-segment-renderer', 'ENGAGEMENT_PANEL_VISIBILITY_EXPANDED', 'activatedForRender', 'activateForRender', 'restoreActive', '"limit":12000']) assert.ok(transcriptRender.includes(marker), marker);
 const updateFunction = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-update/index.ts'), 'utf8');
-for (const marker of ['opera_update_events', 'update_xml', 'passiveUpdateTelemetry']) assert.ok(updateFunction.includes(marker), marker);
+for (const marker of ['opera_update_events', 'update_xml', 'passiveUpdateTelemetry', 'requestedExtensionId', 'opera-agent-${release.extension_id}-${release.version}.crx']) assert.ok(updateFunction.includes(marker), marker);
+const perIdentityUpdateMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260909045456_opera_agent_per_identity_update_channels.sql'), 'utf8');
+for (const marker of ['drop constraint if exists opera_releases_pkey', 'add primary key (extension_id, version)', 'opera_releases_one_active_per_identity_idx']) assert.ok(perIdentityUpdateMigration.includes(marker), marker);
 console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, version ${manifest.version}`);
