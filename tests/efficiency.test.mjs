@@ -6,6 +6,7 @@ const bridge = fs.readFileSync(new URL('../supabase/functions/opera-agent-bridge
 const runner = fs.readFileSync(new URL('../supabase/functions/opera-agent-runner/index.ts', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
 const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
+const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql', import.meta.url), 'utf8');
 
 test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
   assert.match(bridge, /FAST_PULL_POLLS\s*=\s*6/);
@@ -15,13 +16,14 @@ test('bridge uses a short fast-start polling window then returns to conservative
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
 });
 
-test('runner detects command completion with bounded adaptive polling and safe transient retries', () => {
-  assert.match(runner, /COMMAND_POLL_MIN_MS\s*=\s*25/);
-  assert.match(runner, /COMMAND_POLL_MAX_MS\s*=\s*100/);
+test('runner awaits command completion inside Postgres and keeps safe transient retries', () => {
+  assert.match(runner, /rpc\("opera_await"/);
+  assert.match(runner, /normalizeAwaitTiming/);
   assert.match(runner, /SAFE_RETRY_DELAY_MS\s*=\s*75/);
   assert.match(runner, /page\.wait_for/);
   assert.match(runner, /transientFailure/);
-  assert.match(runner, /commandTiming/);
+  assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);
+  assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
 });
 
 test('full-text workflows use bounded adaptive continuation rather than fixed 6k reads', () => {
@@ -56,8 +58,19 @@ test('YouTube recommendation skips ad polling entirely when no ad is present', (
   assert.doesNotMatch(section, /"ms":600/);
 });
 
+test('YouTube transcript workflow reuses an open panel and prefers synthetic input before trusted fallback', () => {
+  assert.match(transcriptMigration, /youtube\.get_transcript/);
+  assert.match(transcriptMigration, /panelWasOpen/);
+  assert.match(transcriptMigration, /openMethod/);
+  assert.match(transcriptMigration, /"id":"openSynthetic"/);
+  assert.match(transcriptMigration, /"trusted":false/);
+  assert.match(transcriptMigration, /"id":"openTrusted"/);
+  assert.match(transcriptMigration, /"trusted":true/);
+  assert.match(transcriptMigration, /"limit":12000/);
+});
+
 test('historical migrations and legacy fallback objects are not rewritten by efficiency work', () => {
-  for (const sql of [migration, parallelMigration]) {
+  for (const sql of [migration, parallelMigration, transcriptMigration]) {
     assert.doesNotMatch(sql, /alter\s+table\s+.*loa_v3_/i);
     assert.doesNotMatch(sql, /drop\s+table/i);
     assert.doesNotMatch(sql, /update\s+public\.opera_workflow_versions/i);
