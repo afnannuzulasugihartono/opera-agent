@@ -36,7 +36,7 @@ const files = [
   'supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql',
   'supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql',
   'supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql',
-  'supabase/migrations/20260909015026_extension_1_1_text_only_workflows.sql'
+  'supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');

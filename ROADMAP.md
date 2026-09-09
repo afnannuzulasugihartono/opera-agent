@@ -35,7 +35,8 @@ This release must remain site-agnostic and requires the original signing identit
 - [x] Version text-oriented workflows to use text-only reads without mutating their history.
 - [x] Preserve password/payment/file-upload protections and prohibit remote JavaScript/eval.
 - [x] Verify the source build in real Opera with the stable extension ID, reconnect, restart, sensitive-field, and file-upload protections.
-- [ ] Deploy the workflow revision and runner, then repeat production workflow benchmarks.
+- [x] Deploy runner v5 and the rollback-capable workflow revisions to production Supabase.
+- [ ] Repeat live production workflow benchmarks with an active paired Opera session.
 - [ ] Sign the CRX with the original private key and verify same-ID update acceptance before publishing.
 
 The quarantined local-plan/v2 experiment is not part of 1.1.0. Protocol 1 and the 23-method public allowlist remain unchanged.

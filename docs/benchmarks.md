@@ -39,11 +39,11 @@ The earlier production measurements in `docs/efficiency.md` found that replacing
 
 ## Production benchmarks still required
 
-The following cases require the production Supabase runner/workflow revision and a user's active YouTube session, so they were not rerun or fabricated during source-only validation:
+Runner v5 and migration `20260909021225_extension_1_1_text_only_workflows` are deployed. The following cases still require an active paired Opera/YouTube session, so post-deployment timings were not fabricated:
 
 - YouTube open/search workflow;
 - recommendation/play no-ad and naturally encountered ad paths;
 - long transcript extraction;
 - production generic article extraction with workflow telemetry.
 
-After safe deployment, record workflow queue time, execution time, command count, browser timing, returned bytes, retries, and fixed waits. Do not turn one machine's timings into test assertions.
+During the next live workflow run, record workflow queue time, execution time, command count, browser timing, returned bytes, retries, and fixed waits. Do not turn one machine's timings into test assertions.

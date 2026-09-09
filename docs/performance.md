@@ -45,4 +45,4 @@ Per-command telemetry is capped at 200 records. It does not store URLs, selector
 
 ## Deployment boundary
 
-The source candidate is version 1.1.0, but stable production remains 1.0.1 until the original private signing key is available, the same extension identity is verified, and the signed update passes acceptance. Runner and workflow deployment also remains separate and rollback-capable.
+The source candidate is version 1.1.0, but stable production remains 1.0.1 until the original private signing key is available, the same extension identity is verified, and the signed update passes acceptance. Runner v5 and the workflow revisions are deployed separately and remain rollback-capable; the retained `maxElements:1` fallback keeps installed 1.0.1 clients bounded.

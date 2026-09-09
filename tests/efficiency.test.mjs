@@ -10,7 +10,7 @@ const migration = fs.readFileSync(new URL('../supabase/migrations/20260908233759
 const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
 const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql', import.meta.url), 'utf8');
 const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
-const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909015026_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
+const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
 
 test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
   assert.match(bridge, /FAST_PULL_POLLS\s*=\s*6/);
