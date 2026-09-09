@@ -31,10 +31,13 @@ test('runner awaits command completion inside Postgres and keeps safe transient 
 });
 
 test('runner records bounded metadata-only workflow performance metrics', () => {
-  for (const marker of ['workflowQueueMs', 'workflowExecutionMs', 'commandCount', 'commandQueueMs', 'commandExecutionMs', 'returnedBytes', 'fixedWaitCount', 'intentionalWaitMs', 'commandsTruncated']) {
+  for (const marker of ['workflowQueueMs', 'workflowExecutionMs', 'commandCount', 'commandQueueMs', 'commandExecutionMs', 'returnedBytes', 'returnedBytesTruncated', 'fixedWaitCount', 'intentionalWaitMs', 'commandsTruncated']) {
     assert.match(runner, new RegExp(marker));
   }
   assert.match(runner, /metrics\.commands\.length < 200/);
+  assert.match(runner, /METRIC_SAMPLE_CHARS\s*=\s*16384/);
+  assert.match(runner, /METRIC_SAMPLE_NODES\s*=\s*200/);
+  assert.doesNotMatch(runner, /JSON\.stringify\(value/);
   assert.doesNotMatch(runner, /metrics\.(?:pageText|content|formValue|password)/i);
 });
 

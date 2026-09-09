@@ -155,14 +155,24 @@ async def wait_worker(context, timeout_ms=10000):
         await asyncio.sleep(0.1)
     raise RuntimeError('extension service worker did not start')
 
-async def run():
-    server = ThreadingHTTPServer((HOST, 0), Handler)
-    port = server.server_address[1]
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    await asyncio.sleep(0.2)
-    profile_dir = tempfile.TemporaryDirectory(prefix='opera-agent-browser-')
-    profile = Path(profile_dir.name)
+def managed_browser_resources(func):
+    async def wrapped():
+        server = ThreadingHTTPServer((HOST, 0), Handler)
+        port = server.server_address[1]
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        profile_dir = tempfile.TemporaryDirectory(prefix='opera-agent-browser-')
+        try:
+            await asyncio.sleep(0.2)
+            return await func(port, Path(profile_dir.name))
+        finally:
+            server.shutdown()
+            server.server_close()
+            profile_dir.cleanup()
+    return wrapped
 
+
+@managed_browser_resources
+async def run(port, profile):
     async with async_playwright() as p:
         import os
         default_headless = '0' if os.name == 'nt' else '1'
@@ -321,9 +331,6 @@ async def run():
         assert result['protocolVersion'] == 1
 
         await context.close()
-        server.shutdown()
-        server.server_close()
-        profile_dir.cleanup()
         print(json.dumps({
             'ok': True,
             'extensionId': ext_id,

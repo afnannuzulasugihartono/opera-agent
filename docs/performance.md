@@ -27,8 +27,8 @@ The runner records operational metadata in the workflow context and completion/f
 
 - workflow queue and execution milliseconds;
 - command count;
-- per-command method, status, queue/execution/total milliseconds, response byte count, and retry flag;
-- aggregate command timing and returned bytes;
+- per-command method, status, queue/execution/total milliseconds, bounded response-byte sample, truncation flag, and retry flag;
+- aggregate command timing and sampled returned bytes, using a 16,384-character traversal budget so telemetry never re-serializes an unbounded page result;
 - retry count;
 - fixed-wait count and total intentional wait milliseconds.
 

@@ -18,18 +18,18 @@ Environment: installed Opera on Windows, isolated profile, protocol 1, extension
 
 | Case | Commands | Observed latency | Result |
 |---|---:|---:|---|
-| `browser.ping` | 1 | 6.74 ms | passed |
-| `tabs.find` | 1 | 116.66 ms | passed |
-| `tabs.open` + complete wait | 1 | 106.03 ms | passed |
-| small `page.read` | 1 | 10.13 ms | 300 characters + one element |
-| 10k semantic `page.read` | 1 | 13.84 ms | 33,801-byte page payload |
-| 12k text-only `page.read` | 1 | 9.54 ms | 12,266-byte page payload |
-| two-chunk long article read | 2 | 18.56 ms | 23,866 characters, no extra read |
-| generic query + trusted click | 2 | 26.82 ms | passed |
-| generic fill + Enter | 2 | 19.41 ms | passed |
-| already-active tab | 1 | 7.39 ms | `reused:true` |
-| already-current navigation | 1 | 5.32 ms | `reused:true` |
-| reconnect + browser restart | 2 pings | 9.60 ms observed ping total | passed |
+| `browser.ping` | 1 | 7.15 ms | passed |
+| `tabs.find` | 1 | 119.55 ms | passed |
+| `tabs.open` + complete wait | 1 | 104.34 ms | passed |
+| small `page.read` | 1 | 12.04 ms | 300 characters + one element |
+| 10k semantic `page.read` | 1 | 14.18 ms | 33,801-byte page payload |
+| 12k text-only `page.read` | 1 | 9.30 ms | 12,266-byte page payload |
+| two-chunk long article read | 2 | 20.58 ms | 23,866 characters, no extra read |
+| generic query + trusted click | 2 | 30.29 ms | passed |
+| generic fill + Enter | 2 | 24.51 ms | passed |
+| already-active tab | 1 | 9.17 ms | `reused:true` |
+| already-current navigation | 1 | 7.30 ms | `reused:true` |
+| reconnect + browser restart | 2 pings | 7.99 ms observed ping total | passed |
 
 For the element-heavy synthetic page, text-only mode reduced the page payload by 21,535 bytes, from 33,801 to 12,266 bytes (about 63.7%), while returning more text per chunk. This is one controlled observation, not a universal speed claim.
 

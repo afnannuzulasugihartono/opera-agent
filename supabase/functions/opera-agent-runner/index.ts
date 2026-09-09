@@ -115,11 +115,60 @@ function normalizeAwaitTiming(timing: any) {
   };
 }
 
-function jsonBytes(value: unknown) {
+const METRIC_SAMPLE_CHARS = 16384;
+const METRIC_SAMPLE_DEPTH = 6;
+const METRIC_SAMPLE_ITEMS = 50;
+const METRIC_SAMPLE_NODES = 200;
+
+function metricSample(value: any, budget: { remainingChars: number; remainingNodes: number; truncated: boolean }, depth = 0): any {
+  if (budget.remainingNodes <= 0) {
+    budget.truncated = true;
+    return null;
+  }
+  budget.remainingNodes -= 1;
+  if (value == null || typeof value === "boolean" || typeof value === "number") return value;
+  if (typeof value === "string") {
+    const take = Math.min(value.length, budget.remainingChars);
+    budget.remainingChars -= take;
+    if (take < value.length) budget.truncated = true;
+    return value.slice(0, take);
+  }
+  if (depth >= METRIC_SAMPLE_DEPTH || budget.remainingChars <= 0) {
+    budget.truncated = true;
+    return null;
+  }
+  if (Array.isArray(value)) {
+    if (value.length > METRIC_SAMPLE_ITEMS) budget.truncated = true;
+    return value.slice(0, METRIC_SAMPLE_ITEMS).map((item) => metricSample(item, budget, depth + 1));
+  }
+  if (typeof value === "object") {
+    const sampled: Record<string, unknown> = {};
+    let itemCount = 0;
+    for (const rawKey in value) {
+      if (!Object.prototype.hasOwnProperty.call(value, rawKey)) continue;
+      if (itemCount >= METRIC_SAMPLE_ITEMS) {
+        budget.truncated = true;
+        break;
+      }
+      const key = rawKey.slice(0, 128);
+      if (key.length < rawKey.length) budget.truncated = true;
+      sampled[key] = metricSample(value[rawKey], budget, depth + 1);
+      itemCount += 1;
+      if (budget.remainingChars <= 0 || budget.remainingNodes <= 0) break;
+    }
+    return sampled;
+  }
+  budget.truncated = true;
+  return null;
+}
+
+function sampledJsonBytes(value: unknown) {
+  const budget = { remainingChars: METRIC_SAMPLE_CHARS, remainingNodes: METRIC_SAMPLE_NODES, truncated: false };
   try {
-    return new TextEncoder().encode(JSON.stringify(value ?? null)).byteLength;
+    const bytes = new TextEncoder().encode(JSON.stringify(metricSample(value, budget))).byteLength;
+    return { bytes, truncated: budget.truncated };
   } catch {
-    return 0;
+    return { bytes: 0, truncated: true };
   }
 }
 
@@ -133,6 +182,7 @@ function createWorkflowMetrics(workflowQueueMs: number | null) {
     commandExecutionMs: 0,
     commandTotalMs: 0,
     returnedBytes: 0,
+    returnedBytesTruncated: false,
     retries: 0,
     fixedWaitCount: 0,
     intentionalWaitMs: 0,
@@ -146,12 +196,14 @@ function recordCommandMetrics(metrics: any, method: string, result: any) {
   const queueMs = Number(result?.timing?.queueMs);
   const executionMs = Number(result?.timing?.executionMs);
   const totalMs = Number(result?.timing?.totalMs);
-  const returnedBytes = jsonBytes(result?.ok ? result?.result : result?.error);
+  const returned = sampledJsonBytes(result?.ok ? result?.result : result?.error);
+  const returnedBytes = returned.bytes;
   metrics.commandCount += 1;
   if (Number.isFinite(queueMs)) metrics.commandQueueMs += Math.max(0, queueMs);
   if (Number.isFinite(executionMs)) metrics.commandExecutionMs += Math.max(0, executionMs);
   if (Number.isFinite(totalMs)) metrics.commandTotalMs += Math.max(0, totalMs);
   metrics.returnedBytes += returnedBytes;
+  if (returned.truncated) metrics.returnedBytesTruncated = true;
   if (result?.retried) metrics.retries += 1;
   if (metrics.commands.length < 200) {
     metrics.commands.push({
@@ -161,6 +213,7 @@ function recordCommandMetrics(metrics: any, method: string, result: any) {
       executionMs: Number.isFinite(executionMs) ? Math.max(0, executionMs) : null,
       totalMs: Number.isFinite(totalMs) ? Math.max(0, totalMs) : null,
       returnedBytes,
+      returnedBytesTruncated: returned.truncated,
       retried: !!result?.retried
     });
   } else {
