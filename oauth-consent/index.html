@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hubungkan Opera Agent</title>
+  <style>
+    :root { color-scheme:dark; font-family:Inter,system-ui,sans-serif; background:#0b1020; color:#eef2ff }
+    body { min-height:100vh; margin:0; display:grid; place-items:center; padding:24px; box-sizing:border-box }
+    main { width:min(520px,100%); background:#141a2d; border:1px solid #293252; border-radius:18px; padding:28px; box-shadow:0 24px 80px #0008 }
+    h1 { margin:0 0 8px; font-size:26px } p { color:#b8c0dc; line-height:1.55 }
+    label { display:block; margin:14px 0 6px; font-size:14px }
+    input { width:100%; box-sizing:border-box; padding:12px; border-radius:10px; border:1px solid #3a456b; background:#0c1223; color:#fff }
+    .buttons { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px }
+    button { border:0; border-radius:10px; padding:11px 16px; font-weight:700; cursor:pointer; background:#7c3aed; color:#fff }
+    button.secondary { background:#303a5e } button.danger { background:#9f2942 } button:disabled { opacity:.45; cursor:not-allowed }
+    #consent, #session { display:none } #status { min-height:24px; color:#c7d2fe }
+    .client { padding:14px; background:#0c1223; border-radius:12px; margin:14px 0 }
+    code { color:#c4b5fd; overflow-wrap:anywhere }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Opera Agent</h1>
+  <p>Masuk untuk memberi ChatGPT akses ke alat browser lokalmu. Opera Agent tetap memblokir password, OTP, data pembayaran, dan upload file.</p>
+  <div id="status">Memuat permintaan…</div>
+  <section id="login">
+    <label for="email">Email</label><input id="email" type="email" autocomplete="email">
+    <label for="password">Password</label><input id="password" type="password" autocomplete="current-password">
+    <div class="buttons"><button id="signin">Masuk</button><button id="signup" class="secondary">Buat akun</button></div>
+  </section>
+  <section id="session"><p>Masuk sebagai <strong id="user"></strong>.</p><button id="signout" class="secondary">Keluar</button></section>
+  <section id="consent">
+    <div class="client"><strong id="client"></strong><br><small>Redirect: <code id="redirect"></code></small><br><small>Scope: <code id="scope"></code></small></div>
+    <p>Izinkan aplikasi ini memakai tool Opera Agent untuk mengoperasikan browser sesuai permintaanmu?</p>
+    <div class="buttons"><button id="approve">Izinkan</button><button id="deny" class="danger">Tolak</button></div>
+  </section>
+</main>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.116.0';
+  const configEndpoint = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-auth/config';
+  const config = await fetch(configEndpoint).then((response) => {
+    if (!response.ok) throw new Error('Konfigurasi autentikasi tidak tersedia.');
+    return response.json();
+  });
+  const supabase = createClient(config.url, config.key);
+  const authorizationId = new URLSearchParams(location.search).get('authorization_id');
+  const byId = (id) => document.getElementById(id);
+  const status = (message) => { byId('status').textContent = message || ''; };
+  const show = (id, visible) => { byId(id).style.display = visible ? 'block' : 'none'; };
+
+  async function refresh() {
+    const { data: { session } } = await supabase.auth.getSession();
+    show('login', !session); show('session', !!session); show('consent', false);
+    if (!session) { status('Silakan masuk terlebih dahulu.'); return; }
+    byId('user').textContent = session.user.email || session.user.id;
+    if (!authorizationId) { status('Tidak ada permintaan OAuth aktif. Mulai koneksi dari ChatGPT.'); return; }
+    status('Memeriksa detail izin…');
+    const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+    if (error) { status(error.message); return; }
+    if (data.redirect_url) { location.assign(data.redirect_url); return; }
+    byId('client').textContent = data.client?.name || 'Aplikasi MCP';
+    byId('redirect').textContent = data.redirect_uri || '';
+    byId('scope').textContent = data.scope || 'email';
+    show('consent', true); status('Tinjau dan pilih izin.');
+  }
+
+  byId('signin').onclick = async () => {
+    status('Masuk…');
+    const { error } = await supabase.auth.signInWithPassword({ email: byId('email').value, password: byId('password').value });
+    if (error) status(error.message); else refresh();
+  };
+  byId('signup').onclick = async () => {
+    status('Membuat akun…');
+    const { data, error } = await supabase.auth.signUp({ email: byId('email').value, password: byId('password').value });
+    if (error) status(error.message); else if (!data.session) status('Cek email untuk konfirmasi, lalu kembali dan masuk.'); else refresh();
+  };
+  byId('signout').onclick = async () => { await supabase.auth.signOut(); refresh(); };
+  byId('approve').onclick = async () => {
+    byId('approve').disabled = true; status('Memberi izin…');
+    const { data, error } = await supabase.auth.oauth.approveAuthorization(authorizationId, { skipBrowserRedirect:true });
+    if (error) { byId('approve').disabled = false; status(error.message); } else location.assign(data.redirect_url);
+  };
+  byId('deny').onclick = async () => {
+    const { data, error } = await supabase.auth.oauth.denyAuthorization(authorizationId, { skipBrowserRedirect:true });
+    if (error) status(error.message); else location.assign(data.redirect_url);
+  };
+  refresh();
+</script>
+</body>
+</html>

@@ -4,6 +4,11 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Added — MCP
+- Added an authenticated stateless Streamable HTTP MCP server with 16 focused browser tools and model-facing instructions that make Opera Agent discoverable without mentioning Supabase.
+- Added static Bearer authentication for controlled testing plus allowlisted Supabase Auth JWT support for OAuth clients.
+- Added MCP schema, authentication, canonical discovery URL, Deno type-check, Inspector strict, and real-Opera acceptance coverage.
+
 ### Added — 1.1.1
 - Added the generic `page.pointer` primitive for viewport-bounded move, click, drag, and wheel input on dynamic and canvas-based interfaces.
 - Added an optional temporary pointer indicator, active/focused-tab enforcement, coordinate validation, and sensitive-target blocking.

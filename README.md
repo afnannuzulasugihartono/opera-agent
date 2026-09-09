@@ -14,6 +14,9 @@ Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabas
 ChatGPT
    |
    v
+opera-agent-mcp (tool discovery and authentication)
+   |
+   v
 Supabase workflow/command layer
    |
    v
@@ -97,6 +100,7 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 - [Efficiency and flexibility](docs/efficiency.md)
 - [Protocol](docs/protocol.md)
 - [Installation](docs/install.md)
+- [MCP server](docs/mcp.md)
 - [Testing](docs/testing.md)
 - [Versioning](docs/versioning.md)
 - [Release process](docs/release-process.md)

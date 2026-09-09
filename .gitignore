@@ -17,6 +17,7 @@ coverage/
 
 # Supabase local state
 .supabase/
+supabase/.temp/
 
 # Editor / OS
 .vscode/
