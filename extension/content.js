@@ -178,21 +178,22 @@
     const limit = clamp(args.limit ?? args.maxText, 300, MAX_TEXT_CHUNK, 6000);
     const text = fullText.slice(offset, offset + limit);
     const nextOffset = offset + text.length;
+    const page = {
+      documentId,
+      title: document.title,
+      url: location.href,
+      readyState: document.readyState,
+      text,
+      textOffset: offset,
+      textChars: text.length,
+      totalTextChars: fullText.length,
+      nextOffset: nextOffset < fullText.length ? nextOffset : null,
+      hasMore: nextOffset < fullText.length
+    };
+    if (args.includeElements !== false) page.elements = interactiveElements(args.maxElements);
     return {
       ok: true,
-      page: {
-        documentId,
-        title: document.title,
-        url: location.href,
-        readyState: document.readyState,
-        text,
-        textOffset: offset,
-        textChars: text.length,
-        totalTextChars: fullText.length,
-        nextOffset: nextOffset < fullText.length ? nextOffset : null,
-        hasMore: nextOffset < fullText.length,
-        elements: interactiveElements(args.maxElements)
-      }
+      page
     };
   }
 
@@ -431,6 +432,7 @@
   async function handle(method, args = {}) {
     if (disposed) throw new Error('Extension context invalidated.');
     switch (method) {
+      case 'content.ping': return { ok: true, documentId, readyState: document.readyState };
       case 'page.read': return pageRead(args);
       case 'page.query': return pageQuery(args);
       case 'page.find': return pageFind(args);

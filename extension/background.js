@@ -118,11 +118,10 @@ async function ensureContent(tabId) {
   const tab = await chrome.tabs.get(tabId);
   if (!HTTP_URL_RE.test(tab.url || '')) throw new Error('Page primitives only support http/https tabs.');
   try {
-    const pong = await chrome.tabs.sendMessage(tabId, { scope: 'opera-agent-content', method: 'page.read', params: { limit: 300, maxElements: 1 } });
-    if (pong) return;
+    const pong = await chrome.tabs.sendMessage(tabId, { scope: 'opera-agent-content', method: 'content.ping', params: {} });
+    if (pong?.ok) return;
   } catch {}
   await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
-  await sleep(20);
 }
 
 async function contentCall(tabId, method, params = {}) {
@@ -234,9 +233,20 @@ async function dispatch(method, params = {}) {
     }
     case 'tabs.activate': {
       const tabId = requireTabId(params.tabId);
-      const tab = await chrome.tabs.update(tabId, { active: true });
-      if (params.focusWindow !== false) await chrome.windows.update(tab.windowId, { focused: true });
-      return { ok: true, tab: publicTab(tab) };
+      let tab = await chrome.tabs.get(tabId);
+      let reused = !!tab.active;
+      if (!tab.active) {
+        tab = await chrome.tabs.update(tabId, { active: true });
+        reused = false;
+      }
+      if (params.focusWindow !== false) {
+        const window = await chrome.windows.get(tab.windowId);
+        if (!window.focused) {
+          await chrome.windows.update(tab.windowId, { focused: true });
+          reused = false;
+        }
+      }
+      return { ok: true, tab: publicTab(tab), reused };
     }
     case 'tabs.close': {
       const tabId = requireTabId(params.tabId);
@@ -247,9 +257,14 @@ async function dispatch(method, params = {}) {
       const tabId = await resolveTabId(params);
       const url = safeUrl(params.url);
       if (!url) throw new Error('Only http/https URLs are allowed.');
+      const current = await chrome.tabs.get(tabId);
+      if (safeUrl(current.url) === url) {
+        const ready = params.wait === false ? publicTab(current) : await waitTabReady(tabId, params.waitTimeoutMs);
+        return { ok: true, tab: ready, reused: true };
+      }
       const tab = await chrome.tabs.update(tabId, { url });
       const ready = params.wait === false ? publicTab(tab) : await waitTabReady(tabId, params.waitTimeoutMs);
-      return { ok: true, tab: ready };
+      return { ok: true, tab: ready, reused: false };
     }
     case 'tabs.reload': {
       const tabId = await resolveTabId(params);
