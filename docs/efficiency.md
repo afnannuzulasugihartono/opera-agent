@@ -53,7 +53,7 @@ Opera claims / executes / completes command
 opera_await → result
 ```
 
-The runner should not repeatedly fetch `opera_commands` over Edge-to-database HTTP while waiting. A single `opera_await` RPC keeps the wait loop inside PostgreSQL, where completion is checked at the existing bounded 50 ms cadence. This preserves the transaction fix introduced in 1.0.1 because enqueue and await remain separate RPC transactions, while reducing repeated network requests from the runner.
+The runner does not repeatedly fetch `opera_commands` over Edge-to-database HTTP while waiting. A single `opera_await` RPC keeps the wait loop inside PostgreSQL, where completion is checked at the existing bounded 50 ms cadence. This preserves the transaction fix introduced in 1.0.1 because enqueue and await remain separate RPC transactions, while reducing repeated network requests from the runner.
 
 Safe retry remains limited to read-only/idempotent primitives and known transient browser-message failures. Mutating browser actions are not blindly replayed.
 
@@ -82,7 +82,7 @@ Added/updated workflows:
 - `youtube.search` — do not force a redundant Home navigation before using the existing search box.
 - `youtube.captions_on` — verify caption state with `page.wait_for` instead of a fixed post-click delay.
 - `youtube.play_recommendation` — check for an ad first; only enter bounded ad polling when an ad is actually present.
-- `youtube.get_transcript` — reuse an already-open transcript panel, prefer a normal DOM click, fall back to trusted input only when necessary, and collect long text internally.
+- `youtube.get_transcript` — reuse an already-open transcript panel, prefer a normal DOM click, wait for actual transcript rows, activate an inactive YouTube tab only when rendering is throttled, restore the previously active tab, and collect long text internally.
 
 ## Phase 2 — extension efficiency (next backward-compatible feature release)
 
@@ -147,9 +147,40 @@ Before replacing repeated Edge-side command-status reads with one `opera_await` 
 | 2 | 336 ms | 2,935 ms | 2,599 ms |
 | 3 | 314 ms | 3,294 ms | 2,980 ms |
 
-Median workflow queue: **336 ms**. Median workflow total: **3,294 ms**. These measurements include browser/network variability and are retained as the comparison baseline for the Postgres-await runner deployment.
+Median workflow queue: **336 ms**. Median workflow total: **3,294 ms**.
 
-Post-deployment measurements must be appended rather than replacing these baselines.
+The median runner time not explained by the three browser-command totals was approximately **363 ms**.
+
+### Phase 1 production acceptance after `opera_await`
+
+The same three-command `research.read_url` workload was repeated after deploying runner v4:
+
+| Run | Workflow queue | Workflow total | Runner duration |
+| --- | ---: | ---: | ---: |
+| 1 | 3,139 ms | 4,844 ms | 1,705 ms |
+| 2 | 286 ms | 3,393 ms | 3,107 ms |
+| 3 | 276 ms | 5,976 ms | 5,700 ms |
+
+The browser/network path was visibly noisy during these runs, so the end-to-end median did **not** improve in this small sample and must not be presented as a speedup. However, the median runner time not explained by the command totals fell from roughly **363 ms to 271 ms** (about 25%). This supports keeping the single-`opera_await` design because it removes repeated Edge HTTP status reads without changing browser semantics.
+
+A one-command `browser.status` smoke test after runner v4 completed in **1,382 ms** total with a **278 ms** workflow queue; a later sample completed in **1,571 ms**, while another noisy sample reached **3,509 ms** because command queue time spiked. Queue/extension scheduling therefore remains a larger source of variance than the runner's completion-detection loop.
+
+### YouTube transcript acceptance
+
+Real Opera testing on NASA Goddard's 20-minute Apollo 11 documentary exposed a background-tab rendering edge case: YouTube could mark the transcript engagement panel expanded before any `ytd-transcript-segment-renderer` rows existed.
+
+Workflow v3 now waits for an actual transcript row. If rows do not render while the tab is inactive, it activates the YouTube tab without focusing the window, waits for rows, extracts the transcript, and restores the previously active tab.
+
+Observed production runs:
+
+| State | Result | Total |
+| --- | --- | ---: |
+| Panel already open/rendered | ~20,525 page-text chars, 12k continuation completed, no activation fallback | 4,622 ms |
+| Cold/reloaded inactive tab | ~20,428 page-text chars, activation fallback used, previous active tab restored | 13,368 ms |
+
+The cold path is slower because YouTube itself delays transcript-row rendering in an inactive tab, but it is bounded, verified, and no longer returns a false 2k “transcript” consisting mostly of page chrome.
+
+These measurements are intentionally retained even when noisy; later improvements should append new evidence instead of rewriting history.
 
 ## Version and history policy
 
@@ -161,4 +192,4 @@ Post-deployment measurements must be appended rather than replacing these baseli
 
 ## Rollback
 
-Server workflow changes are designed to be reversible through the existing workflow version registry. Edge Function changes should retain the previous Git revision so an earlier implementation can be redeployed. Extension 1.0.1 remains the browser-side fallback while Phase 2 is unreleased.
+Server workflow changes are designed to be reversible through the existing workflow version registry. Edge Function changes retain prior Git revisions so an earlier implementation can be redeployed. Extension 1.0.1 remains the browser-side fallback while Phase 2 is unreleased.
