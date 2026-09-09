@@ -7,6 +7,7 @@ const runner = fs.readFileSync(new URL('../supabase/functions/opera-agent-runner
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
 const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
 const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql', import.meta.url), 'utf8');
+const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001500_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
 
 test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
   assert.match(bridge, /FAST_PULL_POLLS\s*=\s*6/);
@@ -69,8 +70,18 @@ test('YouTube transcript workflow reuses an open panel and prefers synthetic inp
   assert.match(transcriptMigration, /"limit":12000/);
 });
 
+test('YouTube transcript waits for actual rows and restores active-tab state after render fallback', () => {
+  assert.match(transcriptRenderMigration, /ytd-transcript-segment-renderer/);
+  assert.match(transcriptRenderMigration, /ENGAGEMENT_PANEL_VISIBILITY_EXPANDED/);
+  assert.match(transcriptRenderMigration, /activatedForRender/);
+  assert.match(transcriptRenderMigration, /"id":"activateForRender"/);
+  assert.match(transcriptRenderMigration, /"focusWindow":false/);
+  assert.match(transcriptRenderMigration, /"id":"restoreActive"/);
+  assert.match(transcriptRenderMigration, /"limit":12000/);
+});
+
 test('historical migrations and legacy fallback objects are not rewritten by efficiency work', () => {
-  for (const sql of [migration, parallelMigration, transcriptMigration]) {
+  for (const sql of [migration, parallelMigration, transcriptMigration, transcriptRenderMigration]) {
     assert.doesNotMatch(sql, /alter\s+table\s+.*loa_v3_/i);
     assert.doesNotMatch(sql, /drop\s+table/i);
     assert.doesNotMatch(sql, /update\s+public\.opera_workflow_versions/i);
