@@ -120,8 +120,8 @@ See [performance.md](performance.md), [workflow-design.md](workflow-design.md), 
 Server workflow versions and extension versions are intentionally independent:
 
 - workflow improvements can be deployed/rolled back without replacing the browser extension;
-- extension changes require a normal signed release and same signing identity;
-- a new signing key must not be used as a shortcut because it would break extension identity continuity;
+- extension changes require a normal signed release; legacy updates require the legacy signing identity;
+- the explicitly authorized 1.1.0 new-key build is a separate installation, so it does not claim legacy identity continuity;
 - historical migrations and release notes remain preserved.
 
 ## Design goal

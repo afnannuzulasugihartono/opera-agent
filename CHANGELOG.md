@@ -10,7 +10,7 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 - Added generic no-op fast paths for activating an already-active tab and navigating to an already-current URL.
 - Added bounded metadata-only workflow telemetry for queue time, execution time, command count and timings, response bytes, retries, and intentional fixed waits.
 - Added versioned workflow revisions that opt full-text and transcript workflows into text-only reads while preserving rollback history.
-- Advanced the source release version to `1.1.0` while keeping protocol 1, all 23 public primitives, and the stable extension key unchanged.
+- Advanced the source release version to `1.1.0` while keeping protocol 1 and all 23 public primitives. Because the legacy private signing key is unavailable, the explicitly authorized candidate uses a separate signing identity and requires fresh pairing.
 
 ### Fixed
 - Made the static validation script resolve repository paths correctly on Windows.
