@@ -1,0 +1,17 @@
+:root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+body { margin: 0; min-width: 330px; background: #151515; color: #f5f5f5; }
+main { padding: 16px; }
+header { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 12px; }
+h1 { font-size: 18px; margin: 0; }
+header p { margin: 3px 0 0; opacity: .65; font-size: 12px; }
+.badge { padding: 5px 8px; border: 1px solid #555; border-radius: 999px; font-size: 11px; }
+.card { border: 1px solid #333; border-radius: 12px; padding: 12px; margin-top: 10px; background: #1d1d1d; }
+.row { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0; font-size: 12px; }
+.row span { opacity: .65; }
+input { width: 100%; box-sizing: border-box; margin: 8px 0; padding: 9px; border-radius: 8px; border: 1px solid #444; background: #111; color: inherit; }
+button { width: 100%; padding: 9px 10px; margin-top: 8px; border: 0; border-radius: 8px; cursor: pointer; }
+.primary { font-weight: 700; }
+.danger { opacity: .8; }
+.hint { font-size: 11px; opacity: .6; line-height: 1.4; }
+.error { color: #ffb4b4; font-size: 11px; white-space: pre-wrap; }
+pre { max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 10px; background: #111; padding: 8px; border-radius: 8px; }
