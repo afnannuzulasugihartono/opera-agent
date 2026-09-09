@@ -32,7 +32,8 @@ const files = [
   'supabase/migrations/20260908040000_opera_agent_two_phase_command_api.sql',
   'supabase/migrations/20260908073800_opera_agent_update_telemetry.sql',
   'supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql',
-  'supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql'
+  'supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql',
+  'supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
@@ -46,11 +47,15 @@ for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\''
 const bridge = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-bridge/index.ts'), 'utf8');
 for (const marker of ['FAST_PULL_POLLS', 'FAST_PULL_INTERVAL_MS', 'IDLE_PULL_INTERVAL_MS']) assert.ok(bridge.includes(marker), marker);
 const runner = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-runner/index.ts'), 'utf8');
-for (const marker of ['COMMAND_POLL_MIN_MS', 'COMMAND_POLL_MAX_MS', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'commandTiming', 'MAX_PARALLEL_ITEMS']) assert.ok(runner.includes(marker), marker);
+for (const marker of ['opera_await', 'normalizeAwaitTiming', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'MAX_PARALLEL_ITEMS']) assert.ok(runner.includes(marker), marker);
+assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);
+assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
 const efficiency = fs.readFileSync(path.join(root, 'supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql'), 'utf8');
 for (const marker of ['research.read_current_full', 'research.read_url_full', 'youtube.get_transcript', '"limit":12000', '"maxElements":1']) assert.ok(efficiency.includes(marker), marker);
 const parallel = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql'), 'utf8');
 for (const marker of ['research.crawl_urls_parallel', '"parallel":true', '"maxConcurrency":4']) assert.ok(parallel.includes(marker), marker);
+const transcript = fs.readFileSync(path.join(root, 'supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql'), 'utf8');
+for (const marker of ['panelWasOpen', 'openSynthetic', 'openTrusted', 'openMethod', '"limit":12000']) assert.ok(transcript.includes(marker), marker);
 const updateFunction = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-update/index.ts'), 'utf8');
 for (const marker of ['opera_update_events', 'update_xml', 'passiveUpdateTelemetry']) assert.ok(updateFunction.includes(marker), marker);
 console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, version ${manifest.version}`);
