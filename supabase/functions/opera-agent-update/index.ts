@@ -7,6 +7,9 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
+const LEGACY_EXTENSION_ID = "pagjlnohdemoohcncicjmaejedcmcocm";
+const EXTENSION_ID_PATTERN = /^[a-p]{32}$/;
+
 function response(body: BodyInit | null, status: number, headers: Record<string,string>) {
   return new Response(body, {
     status,
@@ -25,11 +28,22 @@ function bytesFromBase64(value: string) {
   return out;
 }
 
-async function activeRelease() {
+function requestedExtensionId(url: URL) {
+  // Chromium update clients send their app metadata inside the `x` query
+  // parameter (for example: ?x=id%3D...%26v%3D1.1.0). Supporting `id` too
+  // keeps the endpoint easy to diagnose without weakening the ID boundary.
+  const nested = new URLSearchParams(url.searchParams.get("x") ?? "");
+  const candidate = nested.get("id") ?? url.searchParams.get("id");
+  if (candidate === null) return LEGACY_EXTENSION_ID;
+  return EXTENSION_ID_PATTERN.test(candidate) ? candidate : null;
+}
+
+async function activeRelease(extensionId: string) {
   const { data, error } = await supabase
     .from("opera_releases")
     .select("version, extension_id, crx_base64, sha256")
     .eq("active", true)
+    .eq("extension_id", extensionId)
     .limit(1)
     .maybeSingle();
   if (error) throw error;
@@ -62,22 +76,34 @@ Deno.serve(async (req: Request) => {
     return response("Method Not Allowed", 405, { "Allow": "GET, HEAD" });
   }
   try {
-    const release = await activeRelease();
-    if (!release) return response("No active release", 503, { "Content-Type": "text/plain; charset=utf-8" });
     const url = new URL(req.url);
     const path = url.pathname;
     const base = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update";
+    // CRX downloads do not carry the updater's `x` metadata. Their canonical
+    // path embeds the ID, so resolve that request from the path instead.
+    const identityCrxMatch = path.match(/\/opera-agent-([a-p]{32})-([0-9]+\.[0-9]+\.[0-9]+)\.crx$/);
+    const extensionId = identityCrxMatch?.[1] ?? requestedExtensionId(url);
+    if (!extensionId) return response("Invalid extension ID", 400, { "Content-Type": "text/plain; charset=utf-8" });
+    const release = await activeRelease(extensionId);
+    if (!release) return response("No active release for extension ID", 404, { "Content-Type": "text/plain; charset=utf-8" });
+    if (identityCrxMatch && identityCrxMatch[2] !== release.version) {
+      return response("Release not found", 404, { "Content-Type": "text/plain; charset=utf-8" });
+    }
 
     if (path.endsWith("/update.xml")) {
       await logUpdateEvent("update_xml", req, release, url);
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">\n  <app appid="${release.extension_id}">\n    <updatecheck codebase="${base}/opera-agent-${release.version}.crx" version="${release.version}" />\n  </app>\n</gupdate>\n`;
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">\n  <app appid="${release.extension_id}">\n    <updatecheck codebase="${base}/opera-agent-${release.extension_id}-${release.version}.crx" version="${release.version}" />\n  </app>\n</gupdate>\n`;
       return response(req.method === "HEAD" ? null : xml, 200, {
         "Content-Type": "application/xml; charset=utf-8",
         "Cache-Control": "no-store, max-age=0"
       });
     }
 
-    if (path.endsWith(`/opera-agent-${release.version}.crx`)) {
+    const identityCrxPath = `/opera-agent-${release.extension_id}-${release.version}.crx`;
+    const legacyCrxPath = release.extension_id === LEGACY_EXTENSION_ID
+      ? `/opera-agent-${release.version}.crx`
+      : null;
+    if (path.endsWith(identityCrxPath) || (legacyCrxPath !== null && path.endsWith(legacyCrxPath))) {
       await logUpdateEvent("crx", req, release, url);
       const bytes = bytesFromBase64(release.crx_base64);
       return response(req.method === "HEAD" ? null : bytes, 200, {
