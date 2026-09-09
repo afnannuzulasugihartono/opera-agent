@@ -4,6 +4,11 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Added — 1.1.1
+- Added the generic `page.pointer` primitive for viewport-bounded move, click, drag, and wheel input on dynamic and canvas-based interfaces.
+- Added an optional temporary pointer indicator, active/focused-tab enforcement, coordinate validation, and sensitive-target blocking.
+- Registered the 24th protocol-1 primitive in the production backend and published a same-identity signed CRX update.
+
 ### Added — 1.1.0 source candidate
 - Added `page.read.includeElements=false` for bounded text-only reads without interactive-element serialization; existing callers retain element-rich reads by default.
 - Replaced the semantic `page.read` content-bridge probe with an internal zero-payload `content.ping` message that is not exposed as a public primitive.

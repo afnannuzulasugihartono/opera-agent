@@ -73,6 +73,7 @@ PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head
 <input id="safe" aria-label="Normal field" value="" />
 <input id="secret" type="password" aria-label="Password" value="" />
 <input id="file" type="file" aria-label="Upload file" />
+<div id="surface" aria-label="Pointer test surface" style="width:240px;height:120px;background:#ddd" onmousemove="if(event.buttons)this.textContent='dragged'" onwheel="this.textContent='wheel'">surface</div>
 <a href="/page?next=1">Next internal</a>
 <a href="https://example.com/">External</a>
 {EXTRA_CONTROLS}
@@ -210,7 +211,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.1.0'
+        assert result['version'] == '1.1.1'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -268,6 +269,25 @@ async def run(port, profile):
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#toggle', 'index': 0, 'limit': 5})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['item']['ariaPressed'] == 'true'
+        toggle = result['item']
+
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': toggle['rect']['centerX'], 'y': toggle['rect']['centerY']})
+        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert result['action'] == 'click'
+        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#toggle'})
+        assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ariaPressed'] == 'false'
+
+        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#surface'})
+        surface = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        sx, sy = surface['rect']['centerX'], surface['rect']['centerY']
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'drag', 'x': sx - 30, 'y': sy, 'endX': sx + 30, 'endY': sy})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#surface'})
+        assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['text'] == 'dragged'
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'wheel', 'x': sx, 'y': sy, 'deltaY': 120})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#surface'})
+        assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['text'] == 'wheel'
 
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#safe', 'includeValue': True})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -282,6 +302,10 @@ async def run(port, profile):
 
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#secret'})
         secret = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': secret['rect']['centerX'], 'y': secret['rect']['centerY']})
+        failed = await asyncio.to_thread(STATE.wait, cid)
+        assert failed['ok'] is False
+        assert 'Pointer blocked on sensitive target' in failed['error']['message']
         cid = STATE.push('page.fill', {'tabId': tab_id, 'ref': secret['ref'], 'value': 'should-not-enter'})
         failed = await asyncio.to_thread(STATE.wait, cid)
         assert failed['ok'] is False
@@ -303,7 +327,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.1.0'
+        assert result['version'] == '1.1.1'
 
         await context.close()
         import os
@@ -344,6 +368,7 @@ async def run(port, profile):
             'payloadReductionBytes': semantic_payload_bytes - text_only_payload_bytes,
             'navigationFastPath': True,
             'trustedClick': True,
+            'genericPointer': True,
             'sensitiveFillBlocked': True,
             'fileUploadBlocked': True,
             'networkReconnect': True,
