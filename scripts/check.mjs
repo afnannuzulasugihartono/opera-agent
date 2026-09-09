@@ -33,7 +33,8 @@ const files = [
   'supabase/migrations/20260908073800_opera_agent_update_telemetry.sql',
   'supabase/migrations/20260908133000_opera_agent_efficiency_workflows.sql',
   'supabase/migrations/20260908233500_opera_agent_parallel_crawl_workflow.sql',
-  'supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql'
+  'supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql',
+  'supabase/migrations/20260909001500_opera_agent_youtube_transcript_render_ready.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
@@ -56,6 +57,8 @@ const parallel = fs.readFileSync(path.join(root, 'supabase/migrations/2026090823
 for (const marker of ['research.crawl_urls_parallel', '"parallel":true', '"maxConcurrency":4']) assert.ok(parallel.includes(marker), marker);
 const transcript = fs.readFileSync(path.join(root, 'supabase/migrations/20260908234500_opera_agent_youtube_transcript_fast_path.sql'), 'utf8');
 for (const marker of ['panelWasOpen', 'openSynthetic', 'openTrusted', 'openMethod', '"limit":12000']) assert.ok(transcript.includes(marker), marker);
+const transcriptRender = fs.readFileSync(path.join(root, 'supabase/migrations/20260909001500_opera_agent_youtube_transcript_render_ready.sql'), 'utf8');
+for (const marker of ['ytd-transcript-segment-renderer', 'ENGAGEMENT_PANEL_VISIBILITY_EXPANDED', 'activatedForRender', 'activateForRender', 'restoreActive', '"limit":12000']) assert.ok(transcriptRender.includes(marker), marker);
 const updateFunction = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-update/index.ts'), 'utf8');
 for (const marker of ['opera_update_events', 'update_xml', 'passiveUpdateTelemetry']) assert.ok(updateFunction.includes(marker), marker);
 console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, version ${manifest.version}`);
