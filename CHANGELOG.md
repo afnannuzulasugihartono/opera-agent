@@ -6,13 +6,23 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ### Changed — server-side efficiency
 - Added a short fast-start polling window to `opera-agent-bridge`: six 50 ms polls at the start of a pull, then the existing 250 ms conservative idle interval.
+- Updated `opera-agent-runner` to await command completion through one separate `opera_await` RPC instead of repeatedly fetching `opera_commands` over Edge-to-database HTTP.
+- Kept retries bounded to read-only/idempotent primitives and recognized transient browser-message failures.
+- Added bounded parallel `foreach` execution with a maximum concurrency of four for explicitly parallel-safe workflows.
 - Added `research.read_current_full` and `research.read_url_full` for bounded adaptive 12,000-character continuation reads.
 - Updated `research.read_url` to use a 12,000-character / one-element efficient default while retaining caller overrides.
 - Updated `research.crawl_urls` to reuse one background tab instead of repeatedly opening and closing temporary tabs.
+- Added `research.crawl_urls_parallel` as an explicit bounded parallel alternative for independent URLs.
 - Updated `youtube.search` to use the existing YouTube search box without forcing a redundant Home navigation.
 - Updated `youtube.captions_on` to verify state with `page.wait_for` instead of a fixed 200 ms post-click delay.
 - Updated `youtube.play_recommendation` so ad polling starts only when an ad is detected and uses a shorter bounded wait while the ad remains present.
-- Added `youtube.get_transcript` so transcript opening and long-text collection can be orchestrated inside one server workflow instead of from repeated chat-side commands.
+- Added and iterated `youtube.get_transcript` so transcript opening and long-text collection are orchestrated inside one server workflow. Real Opera testing added an already-open fast path, normal-click preference, trusted fallback, actual transcript-row readiness checks, temporary activation for background-render throttling, and restoration of the previously active tab.
+
+### Verified on real Opera — server-side efficiency
+- Runner v4 and the existing Opera Agent 1.0.1 browser build completed live workflow smoke tests with protocol 1 and all 23 capabilities unchanged.
+- `youtube.get_transcript` v3 collected roughly 20.5k characters from a 20-minute NASA video in two adaptive page-read chunks when already rendered.
+- A cold inactive-tab transcript run detected YouTube's delayed transcript-row rendering, temporarily activated the tab, collected roughly 20.4k characters, and restored the previously active tab.
+- Benchmark results, including noisy runs that did not show an end-to-end speedup, are retained in `docs/efficiency.md` rather than being omitted.
 
 ### Documentation / history
 - Added an explicit efficiency architecture and benchmark plan.
