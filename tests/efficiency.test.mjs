@@ -4,10 +4,13 @@ import fs from 'node:fs';
 
 const bridge = fs.readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8');
 const runner = fs.readFileSync(new URL('../supabase/functions/opera-agent-runner/index.ts', import.meta.url), 'utf8');
+const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
 const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
 const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql', import.meta.url), 'utf8');
 const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
+const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909015026_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
 
 test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
   assert.match(bridge, /FAST_PULL_POLLS\s*=\s*6/);
@@ -27,6 +30,33 @@ test('runner awaits command completion inside Postgres and keeps safe transient 
   assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
 });
 
+test('runner records bounded metadata-only workflow performance metrics', () => {
+  for (const marker of ['workflowQueueMs', 'workflowExecutionMs', 'commandCount', 'commandQueueMs', 'commandExecutionMs', 'returnedBytes', 'fixedWaitCount', 'intentionalWaitMs', 'commandsTruncated']) {
+    assert.match(runner, new RegExp(marker));
+  }
+  assert.match(runner, /metrics\.commands\.length < 200/);
+  assert.doesNotMatch(runner, /metrics\.(?:pageText|content|formValue|password)/i);
+});
+
+test('content readiness uses an internal zero-payload ping instead of a semantic read', () => {
+  const ensureContent = background.slice(background.indexOf('async function ensureContent'), background.indexOf('async function contentCall'));
+  assert.match(ensureContent, /method: 'content\.ping'/);
+  assert.doesNotMatch(ensureContent, /method: 'page\.read'/);
+  assert.match(content, /case 'content\.ping'/);
+});
+
+test('page.read supports a backward-compatible text-only response', () => {
+  assert.match(content, /args\.includeElements !== false/);
+  assert.match(content, /page\.elements = interactiveElements/);
+  assert.equal((content.match(/case 'page\.read'/g) || []).length, 1);
+});
+
+test('tab activation and navigation have generic no-op fast paths', () => {
+  assert.match(background, /let reused = !!tab\.active/);
+  assert.match(background, /safeUrl\(current\.url\) === url/);
+  assert.match(background, /reused: true/);
+});
+
 test('full-text workflows use bounded adaptive continuation rather than fixed 6k reads', () => {
   assert.match(migration, /research\.read_current_full/);
   assert.match(migration, /research\.read_url_full/);
@@ -34,6 +64,18 @@ test('full-text workflows use bounded adaptive continuation rather than fixed 6k
   assert.match(migration, /"nextOffset"/);
   assert.match(migration, /"hasMore"/);
   assert.match(migration, /"failOnLimit":false/);
+});
+
+test('text-oriented workflows are versioned to request no element payload', () => {
+  for (const name of ['research.read_current_full', 'research.read_url_full', 'youtube.get_transcript']) {
+    assert.match(textOnlyMigration, new RegExp(name.replaceAll('.', '\\.')));
+  }
+  assert.match(textOnlyMigration, /'"maxElements": 1'/);
+  assert.match(textOnlyMigration, /'"maxElements": 1, "includeElements": false'/);
+  assert.match(textOnlyMigration, /"includeElements": false/);
+  assert.match(textOnlyMigration, /opera_register_workflow/);
+  assert.match(textOnlyMigration, /Unable to register workflow/);
+  assert.doesNotMatch(textOnlyMigration, /update\s+public\.opera_workflow_versions/i);
 });
 
 test('default crawl stays low-overhead while parallel crawl is explicit and bounded', () => {
@@ -81,7 +123,7 @@ test('YouTube transcript waits for actual rows and restores active-tab state aft
 });
 
 test('historical migrations and legacy fallback objects are not rewritten by efficiency work', () => {
-  for (const sql of [migration, parallelMigration, transcriptMigration, transcriptRenderMigration]) {
+  for (const sql of [migration, parallelMigration, transcriptMigration, transcriptRenderMigration, textOnlyMigration]) {
     assert.doesNotMatch(sql, /alter\s+table\s+.*loa_v3_/i);
     assert.doesNotMatch(sql, /drop\s+table/i);
     assert.doesNotMatch(sql, /update\s+public\.opera_workflow_versions/i);

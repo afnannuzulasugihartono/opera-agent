@@ -1,6 +1,7 @@
 import asyncio
 import json
 import queue
+import tempfile
 import threading
 import time
 import uuid
@@ -11,25 +12,43 @@ from playwright.async_api import async_playwright
 ROOT = Path(__file__).resolve().parents[1]
 EXT = ROOT / 'extension'
 HOST = '127.0.0.1'
-PORT = 8765
 PAIR_CODE = 'TEST-PAIR-1234'
 
 class BridgeState:
     def __init__(self):
         self.commands = queue.Queue()
         self.completed = {}
+        self.started = {}
+        self.metrics = []
         self.cv = threading.Condition()
         self.paired = False
         self.fail_pull_until = 0.0
 
-    def push(self, method, params=None, timeout=12000):
+    def push(self, method, params=None, timeout=12000, benchmark=None):
         cid = str(uuid.uuid4())
-        self.commands.put({'id': cid, 'method': method, 'params': params or {}, 'timeoutMs': timeout})
+        command = {'id': cid, 'method': method, 'params': params or {}, 'timeoutMs': timeout}
+        self.started[cid] = {
+            'name': benchmark or method,
+            'method': method,
+            'started': time.perf_counter(),
+            'requestBytes': len(json.dumps(command).encode())
+        }
+        self.commands.put(command)
         return cid
 
     def complete(self, cid, body):
         with self.cv:
             self.completed[cid] = body
+            started = self.started.pop(cid, None)
+            if started:
+                self.metrics.append({
+                    'name': started['name'],
+                    'method': started['method'],
+                    'latencyMs': round((time.perf_counter() - started['started']) * 1000, 2),
+                    'requestBytes': started['requestBytes'],
+                    'responseBytes': len(json.dumps(body).encode()),
+                    'ok': body.get('ok') is True
+                })
             self.cv.notify_all()
 
     def wait(self, cid, timeout=20):
@@ -43,7 +62,8 @@ class BridgeState:
 
 STATE = BridgeState()
 
-LONG_TEXT = 'BEGIN ' + ('civil-engineering-semantic-reader ' * 220) + ' END'
+LONG_TEXT = 'BEGIN ' + ('civil-engineering-semantic-reader ' * 700) + ' END'
+EXTRA_CONTROLS = ''.join(f'<button aria-label="Synthetic action {index}"></button>' for index in range(100))
 PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head>
 <body>
 <h1>Opera Agent Browser Test</h1>
@@ -54,6 +74,7 @@ PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head
 <input id="file" type="file" aria-label="Upload file" />
 <a href="/page?next=1">Next internal</a>
 <a href="https://example.com/">External</a>
+{EXTRA_CONTROLS}
 </body></html>'''
 
 class Handler(BaseHTTPRequestHandler):
@@ -70,7 +91,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         try:
             self.wfile.write(payload)
-        except BrokenPipeError:
+        except (BrokenPipeError, ConnectionError, OSError):
             pass
 
     def do_OPTIONS(self):
@@ -88,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             try:
                 self.wfile.write(payload)
-            except BrokenPipeError:
+            except (BrokenPipeError, ConnectionError, OSError):
                 pass
         else:
             self.send_response(404); self.end_headers()
@@ -120,11 +141,6 @@ class Handler(BaseHTTPRequestHandler):
         return self._send_json({'ok': False, 'error': 'unknown action'}, 400)
 
 
-def server_thread():
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
-    server.serve_forever()
-
-
 def assert_completed_ok(body):
     assert body['ok'] is True, body
     assert body.get('result') is not None, body
@@ -140,20 +156,26 @@ async def wait_worker(context, timeout_ms=10000):
     raise RuntimeError('extension service worker did not start')
 
 async def run():
-    threading.Thread(target=server_thread, daemon=True).start()
+    server = ThreadingHTTPServer((HOST, 0), Handler)
+    port = server.server_address[1]
+    threading.Thread(target=server.serve_forever, daemon=True).start()
     await asyncio.sleep(0.2)
-    profile = ROOT / '.tmp-browser-profile'
-    if profile.exists():
-        import shutil; shutil.rmtree(profile)
+    profile_dir = tempfile.TemporaryDirectory(prefix='opera-agent-browser-')
+    profile = Path(profile_dir.name)
 
     async with async_playwright() as p:
         import os
+        default_headless = '0' if os.name == 'nt' else '1'
+        headless = os.environ.get('OA_BROWSER_HEADLESS', default_headless) != '0'
         launch_kwargs = {}
-        if os.path.exists('/usr/bin/chromium'):
+        browser_executable = os.environ.get('OA_BROWSER_EXECUTABLE', '')
+        if browser_executable:
+            launch_kwargs['executable_path'] = browser_executable
+        elif os.path.exists('/usr/bin/chromium'):
             launch_kwargs['executable_path'] = '/usr/bin/chromium'
         context = await p.chromium.launch_persistent_context(
             str(profile),
-            headless=True,
+            headless=headless,
             ignore_default_args=['--disable-extensions'],
             **launch_kwargs,
             args=[
@@ -167,37 +189,67 @@ async def run():
         ext_id = worker.url.split('/')[2]
         popup = await context.new_page()
         await popup.goto(f'chrome-extension://{ext_id}/popup.html')
-        await popup.evaluate(f"chrome.storage.local.set({{bridgeUrl:'http://{HOST}:{PORT}/bridge'}})")
+        await popup.evaluate(f"chrome.storage.local.set({{bridgeUrl:'http://{HOST}:{port}/bridge'}})")
         await popup.reload()
         await popup.fill('#pairCode', PAIR_CODE)
         await popup.click('#pairButton')
         await popup.locator('#pairedSection').wait_for(state='visible', timeout=10000)
         assert STATE.paired
 
-        cid = STATE.push('browser.ping')
+        cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.0.1'
+        assert result['version'] == '1.1.0'
         assert result['protocolVersion'] == 1
 
-        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{PORT}/page', 'active': True, 'wait': True})
+        cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
+        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert result['count'] == 0
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/page', 'active': True, 'wait': True}, benchmark='tabs.open+complete')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         tab_id = result['tab']['id']
         assert result['tab']['title'] == 'Opera Agent Test Page'
 
-        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 10000, 'maxElements': 50})
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 1}, benchmark='page.read.small')
+        small_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert small_page['textChars'] == 300
+        assert len(small_page['elements']) == 1
+
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 10000, 'maxElements': 50}, benchmark='page.read.semantic')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         page = result['page']
         assert page['textChars'] > 2400, page['textChars']
         assert page['totalTextChars'] > 2400
         assert page['text'].startswith('Opera Agent Browser Test')
 
-        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#toggle', 'index': 0, 'limit': 5})
+        semantic_payload_bytes = len(json.dumps(page).encode())
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 12000, 'includeElements': False}, benchmark='page.read.text-only.chunk-1')
+        text_only = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        text_only_payload_bytes = len(json.dumps(text_only).encode())
+        assert text_only['textChars'] == 12000
+        assert text_only['hasMore'] is True
+        assert 'elements' not in text_only
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': text_only['nextOffset'], 'limit': 12000, 'includeElements': False}, benchmark='page.read.text-only.chunk-2')
+        final_chunk = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert final_chunk['hasMore'] is False
+        assert final_chunk['nextOffset'] is None
+        assert 'elements' not in final_chunk
+
+        cid = STATE.push('tabs.activate', {'tabId': tab_id, 'focusWindow': False})
+        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert result['reused'] is True
+
+        cid = STATE.push('tabs.navigate', {'tabId': tab_id, 'url': f'http://{HOST}:{port}/page', 'wait': True})
+        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert result['reused'] is True
+
+        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#toggle', 'index': 0, 'limit': 5}, benchmark='query+click.query')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         toggle = result['item']
         assert toggle['ariaPressed'] == 'false'
         toggle_ref = toggle['ref']
 
-        cid = STATE.push('page.click', {'tabId': tab_id, 'ref': toggle_ref, 'trusted': True})
+        cid = STATE.push('page.click', {'tabId': tab_id, 'ref': toggle_ref, 'trusted': True}, benchmark='query+click.click')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['method'] == 'debugger'
 
@@ -208,7 +260,9 @@ async def run():
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#safe', 'includeValue': True})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         safe_ref = result['item']['ref']
-        cid = STATE.push('page.fill', {'tabId': tab_id, 'ref': safe_ref, 'value': 'hello opera agent'})
+        cid = STATE.push('page.fill', {'tabId': tab_id, 'ref': safe_ref, 'value': 'hello opera agent'}, benchmark='fill+enter.fill')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.key', {'tabId': tab_id, 'key': 'Enter', 'trusted': False}, benchmark='fill+enter.enter')
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#safe', 'includeValue': True})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -231,22 +285,25 @@ async def run():
         cid = STATE.push('page.collect_links', {'tabId': tab_id, 'sameOrigin': True, 'limit': 20})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['count'] == 1
-        assert result['links'][0]['url'].startswith(f'http://{HOST}:{PORT}/page')
+        assert result['links'][0]['url'].startswith(f'http://{HOST}:{port}/page')
 
         STATE.fail_pull_until = time.time() + 1.2
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.0.1'
+        assert result['version'] == '1.1.0'
 
         await context.close()
         import os
         launch_kwargs = {}
-        if os.path.exists('/usr/bin/chromium'):
+        browser_executable = os.environ.get('OA_BROWSER_EXECUTABLE', '')
+        if browser_executable:
+            launch_kwargs['executable_path'] = browser_executable
+        elif os.path.exists('/usr/bin/chromium'):
             launch_kwargs['executable_path'] = '/usr/bin/chromium'
         context = await p.chromium.launch_persistent_context(
             str(profile),
-            headless=True,
+            headless=headless,
             ignore_default_args=['--disable-extensions'],
             **launch_kwargs,
             args=[
@@ -264,15 +321,25 @@ async def run():
         assert result['protocolVersion'] == 1
 
         await context.close()
+        server.shutdown()
+        server.server_close()
+        profile_dir.cleanup()
         print(json.dumps({
             'ok': True,
             'extensionId': ext_id,
             'semanticReadChars': page['textChars'],
+            'textOnlyReadChars': text_only['textChars'] + final_chunk['textChars'],
+            'textOnlyElementsOmitted': True,
+            'semanticPayloadBytes': semantic_payload_bytes,
+            'textOnlyPayloadBytes': text_only_payload_bytes,
+            'payloadReductionBytes': semantic_payload_bytes - text_only_payload_bytes,
+            'navigationFastPath': True,
             'trustedClick': True,
             'sensitiveFillBlocked': True,
             'fileUploadBlocked': True,
             'networkReconnect': True,
-            'browserRestartReconnect': True
+            'browserRestartReconnect': True,
+            'benchmarks': STATE.metrics
         }, indent=2))
 
 if __name__ == '__main__':

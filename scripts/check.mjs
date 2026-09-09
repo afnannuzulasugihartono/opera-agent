@@ -1,15 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 
-const root = path.resolve(new URL('..', import.meta.url).pathname);
+const root = fileURLToPath(new URL('..', import.meta.url));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.equal(manifest.name, 'Opera Agent');
-assert.equal(manifest.version, '1.0.1');
-assert.equal(PRODUCT_VERSION, '1.0.1');
-assert.equal(pkg.version, '1.0.1');
+assert.equal(manifest.version, '1.1.0');
+assert.equal(PRODUCT_VERSION, '1.1.0');
+assert.equal(pkg.version, '1.1.0');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));
@@ -34,7 +35,8 @@ const files = [
   'supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql',
   'supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql',
   'supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql',
-  'supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql'
+  'supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql',
+  'supabase/migrations/20260909015026_extension_1_1_text_only_workflows.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
@@ -45,10 +47,15 @@ const background = fs.readFileSync(path.join(root, 'extension/background.js'), '
 for (const marker of ['pendingCompletion','completeWithRetry','flushPendingCompletion']) assert.ok(background.includes(marker), marker);
 const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);
+const ensureContent = background.slice(background.indexOf('async function ensureContent'), background.indexOf('async function contentCall'));
+assert.match(ensureContent, /method: 'content\.ping'/);
+assert.doesNotMatch(ensureContent, /method: 'page\.read'/);
+assert.match(content, /args\.includeElements !== false/);
+assert.match(content, /case 'content\.ping'/);
 const bridge = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-bridge/index.ts'), 'utf8');
 for (const marker of ['FAST_PULL_POLLS', 'FAST_PULL_INTERVAL_MS', 'IDLE_PULL_INTERVAL_MS']) assert.ok(bridge.includes(marker), marker);
 const runner = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-runner/index.ts'), 'utf8');
-for (const marker of ['opera_await', 'normalizeAwaitTiming', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'MAX_PARALLEL_ITEMS']) assert.ok(runner.includes(marker), marker);
+for (const marker of ['opera_await', 'normalizeAwaitTiming', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'MAX_PARALLEL_ITEMS', 'createWorkflowMetrics', 'recordCommandMetrics', 'intentionalWaitMs']) assert.ok(runner.includes(marker), marker);
 assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);
 assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
 const efficiency = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql'), 'utf8');

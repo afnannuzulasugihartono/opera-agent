@@ -115,6 +115,59 @@ function normalizeAwaitTiming(timing: any) {
   };
 }
 
+function jsonBytes(value: unknown) {
+  try {
+    return new TextEncoder().encode(JSON.stringify(value ?? null)).byteLength;
+  } catch {
+    return 0;
+  }
+}
+
+function createWorkflowMetrics(workflowQueueMs: number | null) {
+  return {
+    version: 1,
+    workflowQueueMs,
+    workflowExecutionMs: null as number | null,
+    commandCount: 0,
+    commandQueueMs: 0,
+    commandExecutionMs: 0,
+    commandTotalMs: 0,
+    returnedBytes: 0,
+    retries: 0,
+    fixedWaitCount: 0,
+    intentionalWaitMs: 0,
+    commands: [] as Array<Record<string, unknown>>,
+    commandsTruncated: false
+  };
+}
+
+function recordCommandMetrics(metrics: any, method: string, result: any) {
+  if (!metrics) return;
+  const queueMs = Number(result?.timing?.queueMs);
+  const executionMs = Number(result?.timing?.executionMs);
+  const totalMs = Number(result?.timing?.totalMs);
+  const returnedBytes = jsonBytes(result?.ok ? result?.result : result?.error);
+  metrics.commandCount += 1;
+  if (Number.isFinite(queueMs)) metrics.commandQueueMs += Math.max(0, queueMs);
+  if (Number.isFinite(executionMs)) metrics.commandExecutionMs += Math.max(0, executionMs);
+  if (Number.isFinite(totalMs)) metrics.commandTotalMs += Math.max(0, totalMs);
+  metrics.returnedBytes += returnedBytes;
+  if (result?.retried) metrics.retries += 1;
+  if (metrics.commands.length < 200) {
+    metrics.commands.push({
+      method,
+      status: String(result?.status || (result?.ok ? "completed" : "failed")),
+      queueMs: Number.isFinite(queueMs) ? Math.max(0, queueMs) : null,
+      executionMs: Number.isFinite(executionMs) ? Math.max(0, executionMs) : null,
+      totalMs: Number.isFinite(totalMs) ? Math.max(0, totalMs) : null,
+      returnedBytes,
+      retried: !!result?.retried
+    });
+  } else {
+    metrics.commandsTruncated = true;
+  }
+}
+
 function transientFailure(result: any) {
   if (result?.status !== "failed") return false;
   const message = String(result?.error?.message || result?.error || "").toLowerCase();
@@ -227,6 +280,7 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
         : null;
       const result = await runCommand(run, method, params, timeoutMs, deadline, step?.requestId ? String(step.requestId) : null);
       ctx.steps[id] = result;
+      recordCommandMetrics(ctx.metrics, method, result);
       if (!result.ok && !step?.continueOnError) {
         const error = result.error || { code: "COMMAND_FAILED", message: "Workflow command failed." };
         throw new WorkflowError(String(error.code || "COMMAND_FAILED"), String(error.message || "Workflow command failed."), error);
@@ -243,7 +297,13 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
 
     if (type === "wait") {
       const ms = Math.max(0, Math.min(5000, Number(step?.ms || 100)));
-      if (ms) await sleep(ms);
+      if (ms) {
+        if (ctx.metrics) {
+          ctx.metrics.fixedWaitCount += 1;
+          ctx.metrics.intentionalWaitMs += ms;
+        }
+        await sleep(ms);
+      }
       continue;
     }
 
@@ -299,6 +359,7 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
             const branchCtx = structuredClone(ctx);
             branchCtx.vars = branchCtx.vars || {};
             branchCtx.steps = branchCtx.steps || {};
+            branchCtx.metrics = ctx.metrics;
             branchCtx.vars[itemVar] = items[index];
             branchCtx.vars.index = index;
 
@@ -364,6 +425,8 @@ async function processRun(runId: string, token: string) {
   ctx.steps = ctx.steps || {};
   const deadline = Date.now() + Number(activeRun.timeout_ms || 60000);
   const runStartedAt = timestampMs(activeRun.started_at) ?? Date.now();
+  const runCreatedAt = timestampMs(activeRun.created_at);
+  ctx.metrics = createWorkflowMetrics(runCreatedAt == null ? null : Math.max(0, runStartedAt - runCreatedAt));
 
   try {
     await executeSteps(activeRun.definition?.steps || [], ctx, activeRun, deadline);
@@ -372,6 +435,7 @@ async function processRun(runId: string, token: string) {
       : ctx;
     const completedAt = new Date().toISOString();
     const durationMs = Math.max(0, Date.parse(completedAt) - runStartedAt);
+    ctx.metrics.workflowExecutionMs = durationMs;
     await supabase.from("opera_workflow_runs").update({
       status: "completed",
       context: ctx,
@@ -383,13 +447,14 @@ async function processRun(runId: string, token: string) {
     await supabase.from("opera_audit").insert({
       event_type: "workflow.completed",
       workflow_name: activeRun.workflow_name,
-      details: { runId, version: activeRun.workflow_version, durationMs }
+      details: { runId, version: activeRun.workflow_version, durationMs, metrics: ctx.metrics }
     });
-    return { ok: true, runId, status: "completed", durationMs };
+    return { ok: true, runId, status: "completed", durationMs, metrics: ctx.metrics };
   } catch (error) {
     const normalized = normalizeWorkflowError(error);
     const completedAt = new Date().toISOString();
     const durationMs = Math.max(0, Date.parse(completedAt) - runStartedAt);
+    ctx.metrics.workflowExecutionMs = durationMs;
     const status = normalized.code === "WORKFLOW_TIMEOUT" ? "expired" : "failed";
     await supabase.from("opera_workflow_runs").update({
       status,
@@ -402,9 +467,9 @@ async function processRun(runId: string, token: string) {
     await supabase.from("opera_audit").insert({
       event_type: "workflow.failed",
       workflow_name: activeRun.workflow_name,
-      details: { runId, version: activeRun.workflow_version, error: normalized, durationMs }
+      details: { runId, version: activeRun.workflow_version, error: normalized, durationMs, metrics: ctx.metrics }
     });
-    return { ok: false, runId, status, error: normalized, durationMs };
+    return { ok: false, runId, status, error: normalized, durationMs, metrics: ctx.metrics };
   }
 }
 
