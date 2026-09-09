@@ -1,0 +1,9 @@
+project_id = "opera-agent"
+
+[auth]
+site_url = "https://oauth-consent-three.vercel.app"
+
+[auth.oauth_server]
+enabled = true
+authorization_path = "/oauth/consent"
+allow_dynamic_registration = true
