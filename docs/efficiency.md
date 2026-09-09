@@ -86,7 +86,7 @@ Added/updated workflows:
 
 ## Phase 2 — extension efficiency (next backward-compatible feature release)
 
-These changes require a newly signed CRX with the **same signing identity** as the installed extension. They must not be activated with a new key.
+These changes originally required the installed extension's signing identity for an in-place update. Because that private key is unavailable, the explicitly authorized 1.1.0 build uses a new identity and must be installed and paired separately; the installed extension is not replaced.
 
 Planned generic changes:
 
@@ -96,7 +96,7 @@ Planned generic changes:
 4. **Bounded local plan/batch execution** — evaluate a generic, allowlisted sequence of existing primitives locally in the extension. Site-specific workflow definitions still live on the server; the extension only executes a validated declarative plan. This is intended to collapse many backend command round trips into one claimed command.
 5. Keep strict bounds on number of local plan steps, loops, waits, total result bytes, and command deadline. Recursive plan execution and remote JavaScript remain forbidden.
 
-Phase 2 should be released as a normal SemVer feature release only after Chromium regression, real Opera acceptance, same-ID CRX verification, and signing-key restoration.
+Phase 2 can be released as a normal SemVer feature build only after Chromium regression, real Opera acceptance, CRX identity verification, and fresh-pairing acceptance. Same-ID update acceptance remains specific to the legacy signing key.
 
 ## What must not be optimized away
 

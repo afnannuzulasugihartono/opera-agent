@@ -33,6 +33,10 @@ Environment: installed Opera on Windows, isolated profile, protocol 1, extension
 
 For the element-heavy synthetic page, text-only mode reduced the page payload by 21,535 bytes, from 33,801 to 12,266 bytes (about 63.7%), while returning more text per chunk. This is one controlled observation, not a universal speed claim.
 
+## New-identity Opera acceptance
+
+The separately signed 1.1.0 candidate was loaded in real Opera with extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`. The full regression passed: 10,000-character semantic reads, 23,866-character text-only continuation, tab fast paths, trusted click/fill, sensitive-field and file-upload protection, network reconnection, and browser-restart reconnection. Its text-only payload remained 12,266 bytes versus 33,801 bytes for the semantic read.
+
 ## Existing production workflow baseline
 
 The earlier production measurements in `docs/efficiency.md` found that replacing repeated Edge-side command-status requests with one `opera_await` reduced median runner overhead not explained by browser command totals from roughly 363 ms to 271 ms (about 25%). No end-to-end speedup was claimed because the browser/network sample was noisy.

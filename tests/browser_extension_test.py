@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXT = ROOT / 'extension'
 HOST = '127.0.0.1'
 PAIR_CODE = 'TEST-PAIR-1234'
+EXPECTED_EXTENSION_ID = 'ohbbpamcljckmjhcpkcmefdobkoeaick'
 
 class BridgeState:
     def __init__(self):
@@ -197,6 +198,7 @@ async def run(port, profile):
         )
         worker = await wait_worker(context)
         ext_id = worker.url.split('/')[2]
+        assert ext_id == EXPECTED_EXTENSION_ID, ext_id
         popup = await context.new_page()
         await popup.goto(f'chrome-extension://{ext_id}/popup.html')
         await popup.evaluate(f"chrome.storage.local.set({{bridgeUrl:'http://{HOST}:{port}/bridge'}})")

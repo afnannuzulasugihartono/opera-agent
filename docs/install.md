@@ -8,6 +8,10 @@ Opera Agent 1.0.0 is distributed as a signed CRX with a stable extension identit
 pagjlnohdemoohcncicjmaejedcmcocm
 ```
 
+## New identity candidate (1.1.0)
+
+The 1.1.0 candidate is signed with a newly generated key because the legacy private key is unavailable. Its extension ID is `ohbbpamcljckmjhcpkcmefdobkoeaick`. Opera treats it as a separate extension: install it separately, create a new pairing code, and pair again. Do not remove the 1.0.1 extension until the new installation has passed acceptance. This candidate is manual-install only: do not publish it through the legacy single-identity update channel, because that channel cannot migrate the 1.0.1 installation.
+
 Update manifest:
 
 ```text

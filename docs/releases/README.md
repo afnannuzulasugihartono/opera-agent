@@ -19,7 +19,7 @@ Each stable extension release should have a matching changelog entry, GitHub Rel
 
 ## Prepared release candidates
 
-- [1.1.0](1.1.0.md) — protocol-1 generic efficiency candidate; source and real-Opera regression verified, signed CRX publication pending the original key.
+- [1.1.0](1.1.0.md) — protocol-1 generic efficiency candidate with a deliberately separate signing identity; manual installation and fresh pairing are required.
 
 ## Unreleased experiments
 

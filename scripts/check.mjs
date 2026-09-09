@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
@@ -17,6 +18,9 @@ assert.ok(manifest.permissions.includes('storage'));
 assert.equal(ALLOWED_METHODS.length, 23);
 assert.match(manifest.update_url, /^https:\/\/.*\.supabase\.co\//);
 assert.ok(typeof manifest.key === 'string' && manifest.key.length > 100);
+const identityDigest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
+const extensionId = [...identityDigest].map((byte) => `${String.fromCharCode(97 + (byte >> 4))}${String.fromCharCode(97 + (byte & 15))}`).join('');
+assert.equal(extensionId, 'ohbbpamcljckmjhcpkcmefdobkoeaick');
 
 const files = [
   'extension/background.js', 'extension/content.js', 'extension/popup.js',
