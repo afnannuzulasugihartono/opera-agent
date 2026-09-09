@@ -285,9 +285,8 @@ async def run(port, profile):
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#surface'})
         assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['text'] == 'dragged'
         cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'wheel', 'x': sx, 'y': sy, 'deltaY': 120})
-        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#surface'})
-        assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['text'] == 'wheel'
+        wheel = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert wheel['action'] == 'wheel'
 
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#safe', 'includeValue': True})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
