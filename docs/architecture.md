@@ -64,7 +64,7 @@ Supabase owns:
 
 ## Current generic browser primitives
 
-The 1.0.1 protocol exposes 23 methods:
+Protocol 1 exposes 23 methods in both stable 1.0.1 and the 1.1.0 source candidate:
 
 ```text
 browser.ping
@@ -109,9 +109,11 @@ The performance target is not "make every selector faster". The preferred order 
 6. optimize queue/claim polling without increasing permanent idle load;
 7. only then optimize individual primitive implementation details.
 
-The bridge therefore uses a short fast-start polling window for active command chains, then returns to the conservative idle poll interval. Text-heavy workflows request 12k chunks and minimal element metadata by default while the underlying `page.read` primitive remains caller-configurable.
+The bridge therefore uses a short fast-start polling window for active command chains, then returns to the conservative idle poll interval. The 1.1.0 source candidate replaces content readiness reads with an internal ping, lets text-heavy workflows omit element serialization, and skips redundant activation/navigation. Normal `page.read` behavior remains element-rich and caller-configurable.
 
-See [efficiency.md](efficiency.md) for the detailed plan and benchmarks.
+The workflow runner records bounded operational metadata—queue/execution timing, command count, response byte counts, retry count, and intentional fixed waits—without recording page text or form values. Per-command records are capped at 200 entries.
+
+See [performance.md](performance.md), [workflow-design.md](workflow-design.md), and [benchmarks.md](benchmarks.md) for the implementation and measurements.
 
 ## Version boundary
 
@@ -124,4 +126,4 @@ Server workflow versions and extension versions are intentionally independent:
 
 ## Design goal
 
-Most future behavior should be expressible as versioned server workflows built from generic primitives. A future local plan/batch executor is acceptable only if it stays generic, bounded, recursively prohibited, and validates every contained primitive against the same allowlist.
+Most future behavior should be expressible as versioned server workflows built from generic primitives. The quarantined local-plan/v2 experiment is not active and is not part of the 1.1.0 candidate.

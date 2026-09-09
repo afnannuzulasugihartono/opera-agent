@@ -17,6 +17,9 @@ These cover protocol validation, workflow DSL invariants, manifest constraints, 
 
 - the bridge keeps a short 50 ms fast-start window but returns to the 250 ms idle interval;
 - long-text workflows use 12k chunks plus `hasMore` / `nextOffset` continuation;
+- content readiness uses internal `content.ping`, not semantic `page.read`;
+- text-only reads omit interactive elements while the default remains compatible;
+- workflow telemetry remains bounded and metadata-only;
 - YouTube recommendation handling does not enter the old 600 ms ad loop when no ad exists;
 - efficiency migrations do not rewrite/drop legacy history.
 
@@ -28,11 +31,23 @@ Static structure is not enough. For production benchmarks also capture end-to-en
 python tests/browser_extension_test.py
 ```
 
+On Windows, the test defaults to headed mode because the bundled Chromium service worker is not reliably started in headless mode. To exercise installed Opera explicitly:
+
+```powershell
+$env:OA_BROWSER_EXECUTABLE='C:\Users\ASUS\AppData\Local\Programs\Opera\opera.exe'
+$env:OA_BROWSER_HEADLESS='0'
+py -3 tests/browser_extension_test.py
+```
+
+The test uses an OS-assigned loopback port and a temporary browser profile; it does not alter the user's normal Opera profile.
+
 The regression suite launches a real Chromium extension profile and validates:
 
 - extension startup;
 - page query/read;
 - explicit semantic reads beyond the legacy 2,400-character cap;
+- 12k text-only reads, continuation, and omission of element payloads;
+- already-active/already-current tab fast paths;
 - trusted debugger click;
 - ARIA state change after trusted input;
 - normal field fill;

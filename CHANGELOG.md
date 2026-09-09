@@ -4,6 +4,18 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Added — 1.1.0 source candidate
+- Added `page.read.includeElements=false` for bounded text-only reads without interactive-element serialization; existing callers retain element-rich reads by default.
+- Replaced the semantic `page.read` content-bridge probe with an internal zero-payload `content.ping` message that is not exposed as a public primitive.
+- Added generic no-op fast paths for activating an already-active tab and navigating to an already-current URL.
+- Added bounded metadata-only workflow telemetry for queue time, execution time, command count and timings, response bytes, retries, and intentional fixed waits.
+- Added versioned workflow revisions that opt full-text and transcript workflows into text-only reads while preserving rollback history.
+- Advanced the source release version to `1.1.0` while keeping protocol 1, all 23 public primitives, and the stable extension key unchanged.
+
+### Fixed
+- Made the static validation script resolve repository paths correctly on Windows.
+- Made browser regression tests use an available dynamic port and support explicit real-Opera execution without touching the user's browser profile.
+
 ### Changed — server-side efficiency
 - Added a short fast-start polling window to `opera-agent-bridge`: six 50 ms polls at the start of a pull, then the existing 250 ms conservative idle interval.
 - Updated `opera-agent-runner` to await command completion through one separate `opera_await` RPC instead of repeatedly fetching `opera_commands` over Edge-to-database HTTP.

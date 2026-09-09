@@ -28,12 +28,17 @@
 
 This release must remain site-agnostic and requires the original signing identity.
 
-- Add an internal zero-payload content-script ping so `ensureContent()` does not probe with `page.read`.
-- Add a backward-compatible text-only `page.read` mode that can omit interactive element serialization.
-- Add generic navigation readiness modes so workflows can wait for navigation commit instead of full resource completion when appropriate.
-- Evaluate a bounded generic local plan/batch executor composed only of allowlisted primitives, with strict step/loop/wait/result/deadline limits.
-- Preserve password/payment/file-upload protections and prohibit remote JavaScript/eval.
-- Verify same extension ID, Chromium regression, real Opera acceptance, reconnect, and rollback before release.
+- [x] Add an internal zero-payload content-script ping so `ensureContent()` does not probe with `page.read`.
+- [x] Add a backward-compatible text-only `page.read` mode that can omit interactive element serialization.
+- [x] Add generic no-op fast paths while retaining `wait:false` plus semantic `page.wait_for` navigation flows.
+- [x] Add metadata-only workflow performance telemetry with bounded per-command records.
+- [x] Version text-oriented workflows to use text-only reads without mutating their history.
+- [x] Preserve password/payment/file-upload protections and prohibit remote JavaScript/eval.
+- [x] Verify the source build in real Opera with the stable extension ID, reconnect, restart, sensitive-field, and file-upload protections.
+- [ ] Deploy the workflow revision and runner, then repeat production workflow benchmarks.
+- [ ] Sign the CRX with the original private key and verify same-ID update acceptance before publishing.
+
+The quarantined local-plan/v2 experiment is not part of 1.1.0. Protocol 1 and the 23-method public allowlist remain unchanged.
 
 ## Higher-level workflows
 

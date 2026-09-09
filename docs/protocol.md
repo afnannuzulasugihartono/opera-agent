@@ -40,3 +40,21 @@ All low-level methods are registered in `opera_methods` and mirrored by the exte
 - `media.*`
 
 Trusted input is selected through safe parameters on supported page actions rather than through arbitrary debugger commands.
+
+## Backward-compatible read shaping
+
+`page.read` keeps its existing element-rich response by default. Text-oriented callers can request a smaller response without adding a public primitive:
+
+```json
+{
+  "method": "page.read",
+  "params": {
+    "tabId": 123,
+    "offset": 0,
+    "limit": 12000,
+    "includeElements": false
+  }
+}
+```
+
+When `includeElements` is `false`, the `elements` field is omitted. Text continuation still uses `hasMore` and `nextOffset`. The internal `content.ping` message is restricted to extension-to-content-script readiness checks and is not part of the remote protocol allowlist.
