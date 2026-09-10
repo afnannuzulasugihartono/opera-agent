@@ -2,7 +2,7 @@
 
 ## Recommended one-time installation
 
-Opera Agent 1.4.0 is the stable release. The same private channel currently serves the signed 1.5.0 acceptance candidate under the unchanged extension identity:
+Opera Agent 1.5.0 is the stable release. The private update channel serves it under the unchanged extension identity:
 
 ```text
 ohbbpamcljckmjhcpkcmefdobkoeaick
@@ -40,7 +40,7 @@ If Opera refuses a private CRX install without enterprise policy:
 6. Accept requested permissions, including debugger access for trusted input.
 7. Open the Opera Agent popup.
 
-Expected candidate version: `1.5.0`.
+Expected version: `1.5.0`.
 
 ## Pairing
 

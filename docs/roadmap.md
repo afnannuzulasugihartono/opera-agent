@@ -114,7 +114,7 @@ Exit criterion met: an inactive HTTP/HTTPS tab was captured without changing the
 
 Priority: **P1**, built on background execution and adaptive capture.
 
-Status: **Checkpoint 4A implemented, signed, and passing controlled Chromium plus isolated real-Opera regression in the 1.5.0 candidate**. Existing tool responses now expose generic scroll/viewport observability, mutation settling, and stable element identity. MCP version 12 is deployed with the same tool inventory and passes public health/auth checks. The same-identity update channel serves the verified candidate; installed-Opera and multi-site acceptance remain before stable release.
+Status: **Complete and released in 1.5.0**. Existing tool responses now expose generic scroll/viewport observability, mutation settling, and stable element identity. The normal Opera device and the already-connected ChatGPT UI both report 1.5.0, protocol 1, 26 capabilities, and preserved pairing without logout, reconnect, or tab changes. MCP version 12 is active with the unchanged 18-tool inventory and passes public health/auth checks. The production Maps run preserved active tabs, tracked repeated lazy-load extent changes, deduplicated 120 Place links to 116 stable identities, proved final result-feed exhaustion with an unchanged verification wheel, recovered safely from a bounded burst timeout, and suppressed a duplicate cropped screenshot by hash. This is `BOUNDED_COMPLETE` evidence for the defined feed protocol, not universal geographic completeness. Cross-site acceptance then passed on background YouTube and GitHub tabs: delayed verification retained all 30 and 85 deduplicated link identities respectively, while the active tab in both Opera windows remained unchanged. The signed update artifact, local artifact, release registry, and identity-aware update channel agree on the 1.5.0 version, 25,462-byte length, and recorded SHA-256; 1.4.0 remains the inactive same-identity rollback.
 
 - Implement a bounded `observe -> decide -> browser.burst -> verify` loop.
 - Prefer DOM refs and accessibility data; use visual coordinates only when semantic targeting is unavailable.
@@ -127,6 +127,21 @@ Status: **Checkpoint 4A implemented, signed, and passing controlled Chromium plu
 Checkpoint 4A details and its bounded decision contract are recorded in [Vision-guided navigation](vision-navigation.md).
 
 Exit criterion: representative visual tasks complete without foreground takeover, unbounded screenshot loops, or site-specific extension code.
+
+## Milestone 5 — semantic runtime foundation
+
+Priority: **P1**, only after the 1.5.0 production gate closes. Target: a normal
+backward-compatible feature release expected to be 1.6.0; protocol 1, the 26 browser
+capabilities, and the existing 18 MCP tool names/input schemas remain unchanged.
+
+The release adds bounded observational semantic identity, entity deltas, generic
+regions, a materialized-view prototype, and the minimum causal/proof vocabulary.
+Semantic IDs are not action targets in this release. Later goal compilation,
+reactive programs, transactions, planning, learned skills, and parallel workers are
+separate gated milestones.
+
+The complete checkpoint plan, acceptance matrix, security boundary, rollout order,
+and rollback rules are recorded in [Semantic Runtime implementation plan](semantic-runtime-plan.md).
 
 ## Explicitly deferred
 

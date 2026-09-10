@@ -2,9 +2,9 @@
 
 Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-- **Stable extension:** `1.4.0`
-- **Current stable release:** `1.4.0`
-- **Current development candidate:** `1.5.0` (vision-navigation observability)
+- **Stable extension:** `1.5.0`
+- **Current stable release:** `1.5.0`
+- **Next planned release:** `1.6.0` (Semantic Runtime Foundation)
 - **Protocol:** `1`
 - **Legacy extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 - **Current extension ID:** `ohbbpamcljckmjhcpkcmefdobkoeaick`
@@ -118,4 +118,4 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 
 Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, updates, ping, tab operations, bounded bursts, trusted debugger input, chunked semantic reads, ARIA state, media state, and bounded background screenshots. The backend uses a two-phase command/workflow API so queued work is committed before the browser consumes it.
 
-The stable release is **1.4.0** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; **1.3.1** remains the immediate same-identity rollback. Both retain protocol 1; 1.4.0 advertises 26 capabilities and adds adaptive screenshot vision without foreground takeover.
+The stable release is **1.5.0** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; **1.4.0** remains the immediate same-identity rollback. Both retain protocol 1 and 26 capabilities. Version 1.5.0 adds generic stable element identity, viewport state, mutation metadata, and deterministic nested-scroll observability without changing the 18-tool MCP inventory or taking foreground focus.

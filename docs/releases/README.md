@@ -9,9 +9,6 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.2.0](1.2.0.md) — bounded same-tab action bursts through one relay command.
 - [1.3.1](1.3.1.md) — stable background CDP input with bounded page-focus emulation and no real tab activation.
 - [1.4.0](1.4.0.md) — bounded adaptive screenshots with native ChatGPT image delivery and background-focus preservation.
-
-## Current release candidate
-
 - [1.5.0](1.5.0.md) — generic vision-navigation observability and deterministic nested scrolling with an unchanged MCP tool inventory.
 
 Future stable releases should use simple SemVer filenames:

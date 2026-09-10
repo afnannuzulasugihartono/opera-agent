@@ -4,16 +4,24 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
-### Added — 1.5.0 development candidate
+## [1.5.0] - 2026-09-11
+
+### Added
 - Added stable element keys, separate `visible`/`inViewport` state, document mutation counters, and viewport/zoom metadata to existing page-reading results.
 - Added generic before/after scroll-container metrics, movement detection, DOM-change detection, bounded settling, and directional boundary detection to existing scroll and wheel results.
 - Added a deterministic DOM scroll fallback when a background CDP wheel event cannot move an available container, while preserving debugger input as the primary path and reporting the path used.
 - Added a lazy-loaded nested-scroll regression fixture that proves two-pass collection, stable-key deduplication, true viewport state, and active-tab/window preservation in controlled Chromium and isolated real Opera.
 - Published a verified same-identity signed candidate through the private update channel while retaining 1.4.0 as the immediate rollback.
 
-### Compatibility — 1.5.0 development candidate
-- Protocol remains 1 with the same 26 allowlisted capabilities and the same 17 MCP tool names; no new tool discovery is required.
+### Compatibility
+- Protocol remains 1 with the same 26 allowlisted capabilities and the same 18 MCP tool names; no new tool discovery is required.
 - Google Maps-specific collection remains outside the extension. The new signals are generic inputs for bounded site workflows and model-side `observe → decide → act → verify` loops.
+
+### Verified in production
+- Updated the normal Opera profile in place with the established extension identity and preserved pairing, OAuth, protocol 1, 26 capabilities, and the existing ChatGPT connection.
+- Completed bounded background acceptance on Google Maps, YouTube, and GitHub with zero foreground takeovers, stable element identities, measured scrolling, lazy-load/boundary evidence, and duplicate screenshot suppression.
+- Passed all 40 Node tests, static validation, controlled Chromium, isolated real Opera, Supabase `system.self_test`, a fresh normal-profile ping, MCP health/auth checks, and identity-aware update download verification.
+- Verified that the signed 25,462-byte served CRX and local release artifact share SHA-256 `7f23c265b78ea3b9e09ce5e07cb9e77ab0d33c85f9e5dfe7288178a5d7f21c44`.
 
 ## [1.4.0] - 2026-09-10
 
