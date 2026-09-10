@@ -2,15 +2,15 @@
 
 ## Recommended one-time installation
 
-Opera Agent 1.0.0 is distributed as a signed CRX with a stable extension identity. The current stable extension ID is:
+Opera Agent 1.3.1 is distributed as a signed CRX with a stable extension identity. The current stable extension ID is:
 
 ```text
-pagjlnohdemoohcncicjmaejedcmcocm
+ohbbpamcljckmjhcpkcmefdobkoeaick
 ```
 
-## New identity candidate (1.1.0)
+## Signing identity history
 
-The 1.1.0 candidate is signed with a newly generated key because the legacy private key is unavailable. Its extension ID is `ohbbpamcljckmjhcpkcmefdobkoeaick`. Opera treats it as a separate extension: install it separately, create a new pairing code, and pair again. Do not remove the 1.0.1 extension until the new installation has passed acceptance. Its private auto-update channel is separate from the legacy identity; after its one-time installation, later CRXs signed with this same key can update automatically.
+The 1.1.0 line introduced the current signing identity because the legacy private key was unavailable. Releases 1.1.0 through 1.3.1 use extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, so updates in this line preserve the installed identity and pairing. The older 1.0.x identity is retained only as historical documentation.
 
 Update manifest:
 
@@ -21,7 +21,7 @@ https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.
 Signed CRX:
 
 ```text
-https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-1.0.0.crx
+https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-1.3.1.crx
 ```
 
 The initial install is a browser trust boundary and may require a one-time Opera confirmation. Private self-hosted update delivery has been verified end-to-end in managed Chromium with the same CRX3 signing model. Actual Opera/Windows policy behavior is verified during the target-browser acceptance pass.
@@ -30,7 +30,7 @@ The initial install is a browser trust boundary and may require a one-time Opera
 
 If Opera refuses a private CRX install without enterprise policy:
 
-1. Extract `Opera-Agent-1.0.0-extension.zip` to a permanent folder.
+1. Extract `opera-agent-1.3.1-extension.zip` to a permanent folder.
 2. Open `opera://extensions`.
 3. Enable **Developer mode**.
 4. Choose **Load unpacked**.
@@ -38,7 +38,7 @@ If Opera refuses a private CRX install without enterprise policy:
 6. Accept requested permissions, including debugger access for trusted input.
 7. Open the Opera Agent popup.
 
-Expected version: `1.0.0`.
+Expected version: `1.3.1`.
 
 ## Pairing
 

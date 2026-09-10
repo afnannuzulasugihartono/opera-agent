@@ -1,6 +1,6 @@
 # Opera Agent roadmap
 
-This is the current execution plan after the stable 1.2.0 bounded-burst release. Historical phase descriptions remain in the repository as evidence; this document is the source of truth for upcoming work.
+This is the current execution plan after the stable 1.3.1 background-input release. Historical phase descriptions remain in the repository as evidence; this document is the source of truth for upcoming work.
 
 ## Product invariant
 
@@ -78,7 +78,7 @@ Exit criterion: the support matrix documents which input paths work in backgroun
 
 ### Checkpoint 2D — background-native burst and production acceptance
 
-Status: **release candidate in progress**. Production acceptance installed 1.3.0 with identity and pairing preserved, then exposed a Google Maps page-focus limitation. Patch 1.3.1 adds bounded CDP page-focus emulation during input only; 1.2.0 remains the rollback until the patch passes acceptance.
+Status: **complete**. Production acceptance installed 1.3.0 with identity and pairing preserved, exposed a Google Maps page-focus limitation, and verified the 1.3.1 patch with bounded CDP page-focus emulation during input only. The signed installed extension completed the seven-step background Maps scenario and a coordinate result click without activating its tab; foreground mode still rejected the inactive target.
 
 - Make a burst pin one explicit automation target for its lifetime.
 - Reject steps that attempt to activate, focus, or switch tabs.
@@ -86,11 +86,11 @@ Status: **release candidate in progress**. Production acceptance installed 1.3.0
 - Run a production scenario in which tab A remains active while tab B performs `read -> find -> click -> wait -> fill -> key -> read`.
 - Verify concurrent manual typing/mouse use is unaffected, then test restart, reconnect, timeout, partial failure, and rollback.
 
-Exit criterion: repeated production runs complete without focus theft. Publish the signed feature release only after this evidence is recorded.
+Exit criterion met: production runs completed without focus theft, the evidence is recorded in the 1.3.1 release note, and MCP version 10 passed health, OAuth metadata, and unauthenticated-rejection checks.
 
 ### Milestone 2 rollback
 
-- Preserve Opera Agent 1.2.0 as the active rollback CRX until acceptance completes.
+- Preserve Opera Agent 1.2.0 as the inactive rollback CRX after 1.3.1 acceptance.
 - Keep new MCP fields optional during rollout so the 1.2.0 client remains compatible.
 - If a site needs foreground, return a structured failure rather than weakening the global default.
 

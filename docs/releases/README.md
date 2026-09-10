@@ -6,6 +6,8 @@ Detailed release notes are stored in this directory. Release documents are histo
 
 - [1.0.0](1.0.0.md) — first clean Opera Agent release.
 - [1.0.1](1.0.1.md) — durable completion/two-phase command fix and verified same-ID signed update.
+- [1.2.0](1.2.0.md) — bounded same-tab action bursts through one relay command.
+- [1.3.1](1.3.1.md) — stable background CDP input with bounded page-focus emulation and no real tab activation.
 
 Future stable releases should use simple SemVer filenames:
 
@@ -17,11 +19,9 @@ Future stable releases should use simple SemVer filenames:
 
 Each stable extension release should have a matching changelog entry, GitHub Release, signed CRX/hash evidence, and acceptance record. Server-side workflow revisions do **not** retroactively change an extension release document.
 
-## Prepared release candidates
+## Superseded release candidates
 
-- [1.3.1](1.3.1.md) — bounded page-focus emulation for reliable background input without activating the real tab or window.
 - [1.3.0](1.3.0.md) — background CDP input and no-focus execution, retaining protocol 1 and the established signing identity.
-- [1.2.0](1.2.0.md) — bounded same-tab action bursts through one relay command, retaining protocol 1 and the established signing identity.
 - [1.1.1](1.1.1.md) — generic pointer input for dynamic and canvas-based interfaces, retaining protocol 1 and the new signing identity.
 - [1.1.0](1.1.0.md) — protocol-1 generic efficiency candidate with a deliberately separate signing identity; manual installation and fresh pairing are required.
 
