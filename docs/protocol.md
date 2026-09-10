@@ -62,6 +62,14 @@ Trusted input is selected through safe parameters on supported page actions rath
 
 Background trusted input may temporarily emulate a focused page through CDP for site compatibility. The emulation is scoped to the individual input dispatch and is always cleared afterward; it does not activate the browser tab or focus the Opera window.
 
+## Adaptive screenshot capture
+
+Opera Agent 1.4.0 adds `page.capture` without changing protocol version 1. It captures only the current viewport or a validated viewport-relative crop using target-tab CDP `Page.captureScreenshot`; it never uses `captureVisibleTab`, activates the tab, or stores images persistently.
+
+The default output is a JPEG bounded to 1280×900. Callers may request quality 40–80 and maximum dimensions up to 1600×1200. The extension adaptively lowers quality/scale when necessary and rejects any image that cannot fit below 220 KiB. A 750 ms in-memory per-tab cache bounds capture frequency. Each result includes SHA-256 metadata; passing it back as `previousHash` suppresses duplicate image bytes when the capture is unchanged.
+
+Capture is rejected locally for non-HTTP(S) pages, incognito tabs, visible password/OTP/payment or other sensitive fields, and tabs marked private by the user in the extension popup. MCP returns the JPEG as native image content and removes its base64 bytes from the parallel structured metadata.
+
 ## Bounded same-tab bursts
 
 Opera Agent 1.2.0 adds `browser.burst` without changing protocol version 1. A burst executes 1-8 already-allowlisted page actions sequentially on one explicit target tab and returns per-step results and timings. Supported actions are `read`, `find`, `click`, `fill`, `key`, `scroll`, `wait`, and `pointer`.

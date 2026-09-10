@@ -4,6 +4,7 @@ Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabas
 
 - **Stable extension:** `1.3.1`
 - **Current stable release:** `1.3.1`
+- **Current development candidate:** `1.4.0` (adaptive screenshots)
 - **Protocol:** `1`
 - **Legacy extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 - **Current extension ID:** `ohbbpamcljckmjhcpkcmefdobkoeaick`
@@ -32,7 +33,7 @@ Opera Agent extension
 Local Opera
    |
    v
-structured result
+structured result or bounded image
    |
    v
 Supabase

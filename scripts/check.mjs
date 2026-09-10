@@ -9,13 +9,13 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.equal(manifest.name, 'Opera Agent');
-assert.equal(manifest.version, '1.3.1');
-assert.equal(PRODUCT_VERSION, '1.3.1');
-assert.equal(pkg.version, '1.3.1');
+assert.equal(manifest.version, '1.4.0');
+assert.equal(PRODUCT_VERSION, '1.4.0');
+assert.equal(pkg.version, '1.4.0');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));
-assert.equal(ALLOWED_METHODS.length, 25);
+assert.equal(ALLOWED_METHODS.length, 26);
 assert.match(manifest.update_url, /^https:\/\/.*\.supabase\.co\//);
 assert.ok(typeof manifest.key === 'string' && manifest.key.length > 100);
 const identityDigest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
@@ -40,7 +40,8 @@ const files = [
   'supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql',
   'supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql',
   'supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql',
-  'supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql'
+  'supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql',
+  'supabase/migrations/20260910114405_opera_agent_adaptive_screenshot.sql'
 ];
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
@@ -62,6 +63,8 @@ const runner = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-r
 for (const marker of ['opera_await', 'normalizeAwaitTiming', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'MAX_PARALLEL_ITEMS', 'createWorkflowMetrics', 'recordCommandMetrics', 'intentionalWaitMs']) assert.ok(runner.includes(marker), marker);
 assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);
 assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
+const mcp = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-mcp/index.ts'), 'utf8');
+assert.match(mcp, /method === "page\.capture" \? "opera_await_capture" : "opera_await"/);
 const efficiency = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql'), 'utf8');
 for (const marker of ['research.read_current_full', 'research.read_url_full', 'youtube.get_transcript', '"limit":12000', '"maxElements":1']) assert.ok(efficiency.includes(marker), marker);
 const parallel = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql'), 'utf8');
@@ -77,6 +80,7 @@ for (const marker of ['drop constraint if exists opera_releases_pkey', 'add prim
 const genericPointerMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260909063406_opera_agent_generic_pointer.sql'), 'utf8');
 assert.match(genericPointerMigration, /page\.pointer/);
 for (const marker of ['trustedPointer', 'page.pointer_target', 'Pointer blocked on sensitive target']) assert.ok(`${background}\n${content}`.includes(marker), marker);
+for (const marker of ['capturePage', 'Page.captureScreenshot', 'page.capture_policy', 'captureFramePrivacyProbe', 'allFrames: true', 'MAX_SCREENSHOT_BYTES', 'previousHash', 'privateTabIds', 'screenshotLooksBlank', 'BLANK_SCREENSHOT']) assert.ok(`${background}\n${content}`.includes(marker), marker);
 const burstMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260910024820_opera_agent_bounded_browser_burst.sql'), 'utf8');
 assert.match(burstMigration, /browser\.burst/);
 for (const marker of ['BURST_MAX_STEPS', 'BURST_MAX_TIMEOUT_MS', 'runBurst', 'MAX_BURST_RESULT_BYTES']) assert.ok(`${fs.readFileSync(path.join(root, 'extension/lib/protocol.js'), 'utf8')}\n${background}`.includes(marker), marker);

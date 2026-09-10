@@ -199,7 +199,8 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   if (!queued?.ok || !queued.commandId) {
     throw new Error(String(queued?.error || `Unable to queue ${method}.`));
   }
-  const completed = await rpc("opera_await", {
+  const awaitFunction = method === "page.capture" ? "opera_await_capture" : "opera_await";
+  const completed = await rpc(awaitFunction, {
     p_command_id: queued.commandId,
     p_timeout_ms: Math.min(32000, boundedTimeout + 2000)
   });
@@ -230,11 +231,31 @@ function execute(method: string, params: Record<string, unknown>, timeoutMs?: nu
   return runCommand(method, params, timeoutMs).then(textResult).catch(toolError);
 }
 
+function screenshotResult(value: Record<string, unknown>) {
+  const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
+  const screenshot = result.screenshot && typeof result.screenshot === "object" ? result.screenshot as Record<string, unknown> : {};
+  const data = typeof screenshot.data === "string" ? screenshot.data : "";
+  const mimeType = typeof screenshot.mimeType === "string" ? screenshot.mimeType : "image/jpeg";
+  const metadataScreenshot = { ...screenshot };
+  delete metadataScreenshot.data;
+  const structuredContent = { ...value, result: { ...result, screenshot: metadataScreenshot } };
+  const content: Array<
+    { type: "text"; text: string } |
+    { type: "image"; data: string; mimeType: string }
+  > = [{ type: "text", text: JSON.stringify(structuredContent) }];
+  if (data) content.unshift({ type: "image", data, mimeType });
+  return { content, structuredContent };
+}
+
+function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number) {
+  return runCommand("page.capture", params, timeoutMs).then(screenshotResult).catch(toolError);
+}
+
 function createServer() {
   const server = new McpServer(
-    { name: "opera-agent", version: "1.3.1" },
+    { name: "opera-agent", version: "1.4.0" },
     {
-      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Coordinate actions default to invisible background CDP input; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
+      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Coordinate actions default to invisible background CDP input; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
     }
   );
@@ -323,6 +344,33 @@ function createServer() {
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, (args: TargetTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) => execute("page.read", args));
+
+  server.registerTool("capture_page", {
+    title: "Capture Opera page",
+    description: "Capture a bounded JPEG of an explicit Opera tab without activating it. Use adaptively for visual pages, canvas, low-confidence targets, state changes, or failed verification—not after every action. Pass the previous SHA-256 hash to suppress unchanged image data. The extension blocks incognito, user-private, password, OTP, payment, and other sensitive surfaces locally.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      crop: z.object({
+        x: z.number().nonnegative(),
+        y: z.number().nonnegative(),
+        width: z.number().positive(),
+        height: z.number().positive()
+      }).strict().optional().describe("Optional viewport-relative crop rectangle; it must remain fully inside the visible viewport."),
+      quality: z.number().int().min(40).max(80).optional().describe("JPEG quality. Defaults to 60 and may be reduced locally to satisfy the byte limit."),
+      maxWidth: z.number().int().min(320).max(1600).optional().describe("Maximum returned image width. Defaults to 1280."),
+      maxHeight: z.number().int().min(240).max(1200).optional().describe("Maximum returned image height. Defaults to 900."),
+      previousHash: z.string().regex(/^[a-f0-9]{64}$/i).optional().describe("SHA-256 from the prior capture; matching images return metadata without duplicate image bytes."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ tabId, crop, quality, maxWidth, maxHeight, previousHash, timeoutMs }: TargetTab & {
+    crop?: { x: number; y: number; width: number; height: number };
+    quality?: number;
+    maxWidth?: number;
+    maxHeight?: number;
+    previousHash?: string;
+    timeoutMs?: number;
+  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}) }, timeoutMs));
 
   server.registerTool("find_elements", {
     title: "Find page elements",

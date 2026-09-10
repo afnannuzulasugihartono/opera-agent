@@ -25,7 +25,7 @@ test('historical v2 local-plan experiment is preserved in migration history', ()
 });
 
 test('stable extension does not advertise browser.plan and the experiment remains quarantined', () => {
-  assert.equal(ALLOWED_METHODS.length, 25);
+  assert.equal(ALLOWED_METHODS.length, 26);
   assert.equal(ALLOWED_METHODS.includes('browser.plan'), false);
   assert.match(quarantine, /set enabled = false/i);
   assert.match(quarantine, /where method = 'browser\.plan'/i);

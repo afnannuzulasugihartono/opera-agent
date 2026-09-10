@@ -26,7 +26,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
     'browser_status', 'run_browser_burst', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
+    'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
     'move_pointer', 'click_at', 'drag_pointer', 'wheel_at'
   ]);
   assert.equal(new Set(tools).size, tools.length);
@@ -50,20 +50,31 @@ test('MCP delegates only known Opera Agent methods', () => {
   const methods = [...source.matchAll(/execute\("([a-z.]+)"/g)].map((match) => match[1]);
   const allowed = new Set([
     'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
-    'page.read', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer'
+    'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer'
   ]);
   assert.ok(methods.length >= 16);
   for (const method of methods) assert.ok(allowed.has(method), `unexpected method ${method}`);
 });
 
 test('MCP instructions make browser usage discoverable without mentioning Supabase', () => {
-  assert.match(source, /Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll/);
+  assert.match(source, /Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect/);
   assert.match(source, /open_url defaults to an inactive tab, retain its returned tabId/);
   assert.match(source, /Never substitute the user's active tab during a multi-step task/);
   assert.match(source, /Never use activate_tab as an implicit recovery step/);
   assert.match(source, /Coordinate actions default to invisible background CDP input/);
+  assert.match(source, /Use capture_page adaptively only/);
+  assert.match(source, /pass previousHash to avoid retransmitting unchanged images/);
   assert.match(source, /If a tool returns FOREGROUND_REQUIRED/);
   assert.match(source, /Supabase is internal transport and should not be mentioned/);
+});
+
+test('MCP returns screenshots as image content without duplicating base64 in structured metadata', () => {
+  assert.match(source, /type: "image", data, mimeType/);
+  assert.match(source, /delete metadataScreenshot\.data/);
+  assert.match(source, /runCommand\("page\.capture"/);
+  assert.match(source, /method === "page\.capture" \? "opera_await_capture" : "opera_await"/);
+  assert.match(source, /user-private, password, OTP, payment/);
+  assert.doesNotMatch(source, /captureVisibleTab/);
 });
 
 test('MCP defaults to background tabs and requires explicit automation targets', () => {

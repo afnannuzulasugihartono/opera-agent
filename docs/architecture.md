@@ -64,7 +64,7 @@ Supabase owns:
 
 ## Current generic browser primitives
 
-Protocol 1 in Opera Agent 1.3.1 exposes 25 methods:
+Protocol 1 in the Opera Agent 1.4.0 development candidate exposes 26 methods:
 
 ```text
 browser.ping
@@ -85,6 +85,7 @@ page.find
 page.collect_links
 page.click
 page.pointer
+page.capture
 page.fill
 page.focus
 page.scroll
@@ -97,7 +98,7 @@ media.pause
 media.seek
 ```
 
-Trusted click/key behavior is selected through parameters on the generic page primitives; it is not a site-specific method. `browser.burst` is a linear, same-tab transport optimization over eight existing page actions, not a workflow language; site-specific orchestration remains in Supabase.
+Trusted click/key behavior is selected through parameters on the generic page primitives; it is not a site-specific method. `page.capture` returns a bounded transient JPEG plus metadata/hash and never activates its target tab. `browser.burst` is a linear, same-tab transport optimization over eight existing page actions, not a workflow language; site-specific orchestration remains in Supabase.
 
 ## Focus and automation targets
 

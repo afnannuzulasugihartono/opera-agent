@@ -18,7 +18,7 @@
     'Home', 'End', 'PageUp', 'PageDown', 'Space', ' '
   ]);
 
-  const SENSITIVE_RE = /(?:password|passwd|passcode|pin\b|one[-_ ]?time|otp\b|2fa|two[-_ ]?factor|verification\s*code|security\s*code|cvv|cvc|card\s*code)/i;
+  const SENSITIVE_RE = /(?:password|passwd|passcode|pin\b|one[-_ ]?time|otp\b|2fa|two[-_ ]?factor|verification\s*code|security\s*code|cvv|cvc|card\s*(?:code|number)|credit\s*card|expiry|expiration|payment)/i;
 
   function clamp(value, min, max, fallback = min) {
     const n = Number(value);
@@ -353,6 +353,21 @@
     return { ok: true, x, y, viewport: { width: innerWidth, height: innerHeight }, target: el ? { tag: el.tagName.toLowerCase(), label: getAssociatedLabel(el) } : null };
   }
 
+  function capturePolicy() {
+    const sensitiveFields = [...document.querySelectorAll('input, textarea, [contenteditable="true"]')]
+      .filter(isVisible)
+      .map((el) => sensitiveDescriptor(el))
+      .filter(Boolean);
+    return {
+      ok: true,
+      allowed: sensitiveFields.length === 0,
+      reason: sensitiveFields.length ? 'SENSITIVE_SURFACE' : null,
+      documentId,
+      viewport: { width: innerWidth, height: innerHeight },
+      sensitiveFieldCount: sensitiveFields.length
+    };
+  }
+
   function scroll(args) {
     const x = clamp(args.x, -1000000, 1000000, 0);
     const y = clamp(args.y, -1000000, 1000000, 0);
@@ -479,6 +494,7 @@
       case 'page.click': return clickSynthetic(args);
       case 'page.click_info': return clickInfo(args);
       case 'page.pointer_target': return pointerTarget(args);
+      case 'page.capture_policy': return capturePolicy();
       case 'page.fill': return fill(args);
       case 'page.fill_info': return fillInfo(args);
       case 'page.focus': return focus(args);

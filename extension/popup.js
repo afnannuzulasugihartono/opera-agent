@@ -1,4 +1,6 @@
 const $ = (id) => document.getElementById(id);
+let currentTabId = null;
+let currentTabPrivate = false;
 
 async function call(action, extra = {}) {
   return chrome.runtime.sendMessage({ scope: 'opera-agent-popup', action, ...extra });
@@ -22,6 +24,11 @@ async function refresh() {
   const status = String(state.status || (data.config.paired ? 'connecting' : 'unpaired'));
   $('connection').textContent = status;
   $('lastCommand').textContent = friendlyTime(state.lastCommandAt);
+  currentTabId = data.currentTabId;
+  currentTabPrivate = !!data.currentTabPrivate;
+  $('visionPrivacy').textContent = currentTabPrivate ? 'Blocked (private)' : 'Allowed';
+  $('privateTabButton').textContent = currentTabPrivate ? 'Allow vision on current tab' : 'Mark current tab private';
+  $('privateTabButton').disabled = currentTabId == null;
   $('statusBadge').textContent = status.replace(/\b\w/g, (m) => m.toUpperCase());
   $('statusBadge').className = `badge ${status}`;
   $('pairSection').hidden = !!data.config.paired;
@@ -66,6 +73,21 @@ $('selfTestButton').addEventListener('click', async () => {
     $('selfTestResult').hidden = false;
   } finally {
     setBusy($('selfTestButton'), false);
+  }
+});
+
+$('privateTabButton').addEventListener('click', async () => {
+  if (currentTabId == null) return;
+  setBusy($('privateTabButton'), true);
+  try {
+    const result = await call('toggle-private-tab', { tabId: currentTabId, private: !currentTabPrivate });
+    if (!result?.ok) throw new Error(result?.error || 'Unable to update tab privacy.');
+    await refresh();
+  } catch (error) {
+    $('error').hidden = false;
+    $('error').textContent = String(error?.message || error);
+  } finally {
+    setBusy($('privateTabButton'), false);
   }
 });
 

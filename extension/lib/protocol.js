@@ -1,4 +1,4 @@
-export const PRODUCT_VERSION = '1.3.1';
+export const PRODUCT_VERSION = '1.4.0';
 export const PROTOCOL_VERSION = 1;
 
 export const BURST_MAX_STEPS = 8;
@@ -42,6 +42,7 @@ export const METHOD_SPECS = Object.freeze({
   'page.collect_links': { timeoutMs: 10000 },
   'page.click': { timeoutMs: 8000 },
   'page.pointer': { timeoutMs: 8000 },
+  'page.capture': { timeoutMs: 10000 },
   'page.fill': { timeoutMs: 8000 },
   'page.focus': { timeoutMs: 5000 },
   'page.scroll': { timeoutMs: 5000 },
@@ -136,6 +137,36 @@ export function validateCommand(command) {
     for (const key of ['x', 'y']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
     if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
     if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
+  }
+  if (command.method === 'page.capture') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+    if (unexpectedKey) return { ok: false, error: `Capture params do not allow ${unexpectedKey}.` };
+    if (params.crop != null) {
+      if (!isPlainObject(params.crop)) return { ok: false, error: 'Capture crop must be an object.' };
+      const cropKeys = new Set(['x', 'y', 'width', 'height']);
+      const unexpectedCropKey = Object.keys(params.crop).find((key) => !cropKeys.has(key));
+      if (unexpectedCropKey) return { ok: false, error: `Capture crop does not allow ${unexpectedCropKey}.` };
+      for (const key of ['x', 'y']) {
+        if (!Number.isFinite(Number(params.crop[key])) || Number(params.crop[key]) < 0) return { ok: false, error: `Invalid capture crop ${key}.` };
+      }
+      for (const key of ['width', 'height']) {
+        if (!Number.isFinite(Number(params.crop[key])) || Number(params.crop[key]) <= 0) return { ok: false, error: `Invalid capture crop ${key}.` };
+      }
+    }
+    if (params.quality != null && (!Number.isInteger(Number(params.quality)) || Number(params.quality) < 40 || Number(params.quality) > 80)) {
+      return { ok: false, error: 'Capture quality must be an integer from 40 to 80.' };
+    }
+    if (params.maxWidth != null && (!Number.isInteger(Number(params.maxWidth)) || Number(params.maxWidth) < 320 || Number(params.maxWidth) > 1600)) {
+      return { ok: false, error: 'Capture maxWidth must be an integer from 320 to 1600.' };
+    }
+    if (params.maxHeight != null && (!Number.isInteger(Number(params.maxHeight)) || Number(params.maxHeight) < 240 || Number(params.maxHeight) > 1200)) {
+      return { ok: false, error: 'Capture maxHeight must be an integer from 240 to 1200.' };
+    }
+    if (params.previousHash != null && !/^[a-f0-9]{64}$/i.test(String(params.previousHash))) {
+      return { ok: false, error: 'Capture previousHash must be a SHA-256 hex digest.' };
+    }
   }
   if (command.params?.executionMode != null && !EXECUTION_MODES.includes(command.params.executionMode)) {
     return { ok: false, error: 'Invalid executionMode.' };

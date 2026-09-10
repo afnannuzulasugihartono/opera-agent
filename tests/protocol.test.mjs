@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
 
 test('version and protocol are stable', () => {
-  assert.equal(PRODUCT_VERSION, '1.3.1');
+  assert.equal(PRODUCT_VERSION, '1.4.0');
   assert.equal(PROTOCOL_VERSION, 1);
 });
 
@@ -12,6 +12,7 @@ test('method allowlist contains only named primitives', () => {
   assert.ok(ALLOWED_METHODS.includes('page.read'));
   assert.ok(ALLOWED_METHODS.includes('page.click'));
   assert.ok(ALLOWED_METHODS.includes('page.pointer'));
+  assert.ok(ALLOWED_METHODS.includes('page.capture'));
   assert.ok(ALLOWED_METHODS.includes('browser.burst'));
   assert.ok(ALLOWED_METHODS.includes('media.seek'));
   assert.equal(ALLOWED_METHODS.some((x) => x.includes('youtube')), false);
@@ -47,6 +48,12 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6, endX: 7, endY: 8 } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'click', x: 5, y: 6, executionMode: 'auto' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, quality: 60, maxWidth: 1280, maxHeight: 900 } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, crop: { x: 0, y: 0, width: 320, height: 240 }, previousHash: 'a'.repeat(64) } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { quality: 90 } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { crop: { x: 0, y: 0, width: -1, height: 2 } } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { previousHash: 'not-a-hash' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { fullPage: true } }).ok, false);
 });
 
 test('execution modes are explicit and structured foreground errors survive normalization', () => {

@@ -90,6 +90,24 @@ document.getElementById('canvas').addEventListener('click', () => {{
 </script>
 </body></html>'''
 
+VISUAL_PAGE = '''<!doctype html><html><head><title>Opera Agent Visual Test</title></head>
+<body style="margin:0;background:#eef2ff;color:#172554;font-family:sans-serif">
+<main style="padding:32px"><h1>Adaptive screenshot</h1><canvas id="visual" width="640" height="320"></canvas></main>
+<script>
+const canvas = document.getElementById('visual');
+const ctx = canvas.getContext('2d');
+const gradient = ctx.createLinearGradient(0, 0, 640, 320);
+gradient.addColorStop(0, '#2563eb'); gradient.addColorStop(1, '#7c3aed');
+ctx.fillStyle = gradient; ctx.fillRect(0, 0, 640, 320);
+ctx.fillStyle = 'white'; ctx.font = 'bold 38px sans-serif'; ctx.fillText('Opera Agent Vision', 110, 175);
+</script></body></html>'''
+
+BLANK_PAGE = '''<!doctype html><html><head><title>Opera Agent Blank Test</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#fff}</style></head><body></body></html>'''
+
+IFRAME_PAGE = '''<!doctype html><html><head><title>Opera Agent Iframe Privacy Test</title></head>
+<body><h1>Safe-looking parent</h1><iframe src="/page?embedded-sensitive=1" width="500" height="300"></iframe></body></html>'''
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
@@ -114,8 +132,16 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.startswith('/page'):
-            payload = PAGE.encode()
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe'):
+            if self.path.startswith('/visual'):
+                document = VISUAL_PAGE
+            elif self.path.startswith('/blank'):
+                document = BLANK_PAGE
+            elif self.path.startswith('/iframe'):
+                document = IFRAME_PAGE
+            else:
+                document = PAGE
+            payload = document.encode()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(payload)))
@@ -257,7 +283,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.3.1'
+        assert result['version'] == '1.4.0'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -280,6 +306,64 @@ async def run(port, profile):
         assert page['textChars'] > 2400, page['textChars']
         assert page['totalTextChars'] > 2400
         assert page['text'].startswith('Opera Agent Browser Test')
+
+        cid = STATE.push('page.capture', {'tabId': tab_id})
+        blocked_capture = await asyncio.to_thread(STATE.wait, cid)
+        assert blocked_capture['ok'] is False
+        assert blocked_capture['error']['code'] == 'CAPTURE_BLOCKED'
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/visual', 'active': False, 'wait': True})
+        visual_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        focus_before_capture = await browser_focus_state(worker)
+        cid = STATE.push('page.capture', {'tabId': visual_tab_id, 'quality': 60, 'maxWidth': 800, 'maxHeight': 600}, benchmark='page.capture.viewport')
+        capture = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        focus_after_capture = await browser_focus_state(worker)
+        assert focus_before_capture == focus_after_capture
+        screenshot = capture['screenshot']
+        assert screenshot['mimeType'] == 'image/jpeg'
+        assert screenshot['data'].startswith('/9j/')
+        assert len(screenshot['sha256']) == 64
+        assert screenshot['encodedBytes'] <= 220 * 1024
+        assert screenshot['width'] <= 800 and screenshot['height'] <= 600
+        assert screenshot['unchanged'] is False and screenshot['cached'] is False
+
+        cid = STATE.push('page.capture', {'tabId': visual_tab_id, 'quality': 60, 'maxWidth': 800, 'maxHeight': 600, 'previousHash': screenshot['sha256']})
+        unchanged = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['screenshot']
+        assert unchanged['unchanged'] is True and unchanged['cached'] is True
+        assert 'data' not in unchanged
+
+        await worker.evaluate('(tabId) => chrome.storage.local.set({privateTabIds:[tabId]})', visual_tab_id)
+        cid = STATE.push('page.capture', {'tabId': visual_tab_id})
+        private_capture = await asyncio.to_thread(STATE.wait, cid)
+        assert private_capture['ok'] is False
+        assert private_capture['error']['code'] == 'CAPTURE_BLOCKED'
+        assert private_capture['error']['details']['reason'] == 'USER_PRIVATE'
+        await worker.evaluate('chrome.storage.local.set({privateTabIds:[]})')
+
+        cid = STATE.push('page.capture', {'tabId': visual_tab_id, 'crop': {'x': 0, 'y': 0, 'width': 320, 'height': 240}})
+        cropped = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['screenshot']
+        assert cropped['sourceWidth'] == 320 and cropped['sourceHeight'] == 240
+        cid = STATE.push('tabs.close', {'tabId': visual_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/blank', 'active': False, 'wait': True})
+        blank_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.capture', {'tabId': blank_tab_id})
+        blank_capture = await asyncio.to_thread(STATE.wait, cid)
+        assert blank_capture['ok'] is False
+        assert blank_capture['error']['code'] == 'BLANK_SCREENSHOT', blank_capture
+        cid = STATE.push('tabs.close', {'tabId': blank_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/iframe', 'active': False, 'wait': True})
+        iframe_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.capture', {'tabId': iframe_tab_id})
+        iframe_capture = await asyncio.to_thread(STATE.wait, cid)
+        assert iframe_capture['ok'] is False
+        assert iframe_capture['error']['code'] == 'CAPTURE_BLOCKED', iframe_capture
+        assert iframe_capture['error']['details']['reason'] == 'SENSITIVE_FRAME', iframe_capture
+        cid = STATE.push('tabs.close', {'tabId': iframe_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         semantic_payload_bytes = len(json.dumps(page).encode())
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 12000, 'includeElements': False}, benchmark='page.read.text-only.chunk-1')
@@ -720,7 +804,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.3.1'
+        assert result['version'] == '1.4.0'
 
         await context.close()
         import os
@@ -768,6 +852,15 @@ async def run(port, profile):
             'backgroundFocusAuditCommands': len(focus_audit),
             'backgroundFocusPreserved': all(item['focusPreserved'] for item in focus_audit),
             'backgroundCoordinateInput': True,
+            'adaptiveScreenshot': True,
+            'backgroundScreenshotFocusPreserved': focus_before_capture == focus_after_capture,
+            'screenshotEncodedBytes': screenshot['encodedBytes'],
+            'screenshotHashReuse': unchanged['unchanged'] is True and 'data' not in unchanged,
+            'screenshotCrop': cropped['crop'],
+            'blankScreenshotBlocked': True,
+            'embeddedSensitiveScreenshotBlocked': True,
+            'sensitiveScreenshotBlocked': True,
+            'privateTabScreenshotBlocked': True,
             'foregroundPointerRejectedOnBackgroundTab': True,
             'liveGoogleMapsBackgroundInput': live_google_maps,
             'sensitiveFillBlocked': True,

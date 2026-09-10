@@ -4,6 +4,12 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Added — 1.4.0 development candidate
+- Added `page.capture` and MCP `capture_page` for bounded background JPEG viewport/crop capture through CDP without activating the target tab.
+- Added SHA-256 change detection, a 750 ms per-tab cache window, adaptive quality/scale reduction, a 220 KiB encoded-image ceiling, blank-frame rejection, and atomic read-and-scrub delivery through Supabase.
+- Added local capture blocking for internal pages, incognito tabs, visible credential/OTP/payment fields in the main document or embedded frames, and tabs the user marks private in the extension popup.
+- Added native MCP image content while excluding duplicate base64 from structured metadata, plus deterministic background-focus, crop, cache, canvas, blank-frame, embedded-frame, and privacy tests.
+
 ## [1.3.1] - 2026-09-10
 
 ### Fixed

@@ -12,10 +12,14 @@ import {
 
 const DEFAULT_BRIDGE_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-bridge';
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId'];
+const PRIVATE_TABS_KEY = 'privateTabIds';
 const WAKE_ALARM = 'opera-agent-wake';
 const HTTP_URL_RE = /^https?:\/\//i;
 const MAX_RESULT_BYTES = 512 * 1024;
 const MAX_BURST_RESULT_BYTES = 256 * 1024;
+const MAX_SCREENSHOT_BYTES = 220 * 1024;
+const SCREENSHOT_CACHE_MS = 750;
+const SCREENSHOT_CACHE_LIMIT = 8;
 
 let loopPromise = null;
 let loopGeneration = 0;
@@ -26,6 +30,7 @@ let connectionState = {
   lastCommandAt: null,
   retryMs: 250
 };
+const screenshotCache = new Map();
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -135,6 +140,70 @@ async function contentCall(tabId, method, params = {}) {
   return response;
 }
 
+async function privateTabIds() {
+  const stored = await chrome.storage.local.get(PRIVATE_TABS_KEY);
+  return new Set((Array.isArray(stored[PRIVATE_TABS_KEY]) ? stored[PRIVATE_TABS_KEY] : [])
+    .map(Number)
+    .filter((id) => Number.isInteger(id) && id >= 0));
+}
+
+async function isPrivateTab(tabId) {
+  return (await privateTabIds()).has(tabId);
+}
+
+async function setPrivateTab(tabId, value) {
+  const ids = await privateTabIds();
+  if (value) ids.add(tabId); else ids.delete(tabId);
+  await chrome.storage.local.set({ [PRIVATE_TABS_KEY]: [...ids].slice(-200) });
+  screenshotCache.delete(tabId);
+  return value;
+}
+
+function captureFramePrivacyProbe() {
+  const sensitivePattern = /(?:password|passwd|passcode|pin\b|one[-_ ]?time|otp\b|2fa|two[-_ ]?factor|verification\s*code|security\s*code|cvv|cvc|card\s*(?:code|number)|credit\s*card|expiry|expiration|payment)/i;
+  const fields = [...document.querySelectorAll('input, textarea, [contenteditable="true"]')];
+  const sensitive = fields.some((element) => {
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0 || rect.width <= 0 || rect.height <= 0) return false;
+    const type = String(element.getAttribute('type') || '').toLowerCase();
+    const autocomplete = String(element.getAttribute('autocomplete') || '').toLowerCase();
+    const labels = element.labels ? [...element.labels].map((label) => label.textContent || '').join(' ') : '';
+    const descriptor = [
+      type,
+      autocomplete,
+      element.getAttribute('name'),
+      element.getAttribute('id'),
+      element.getAttribute('placeholder'),
+      element.getAttribute('aria-label'),
+      labels
+    ].filter(Boolean).join(' ');
+    return type === 'password' || type === 'file' || /(?:current-password|new-password|one-time-code)/i.test(autocomplete) || sensitivePattern.test(descriptor);
+  });
+  return { sensitive };
+}
+
+async function assertCaptureFramesSafe(tabId) {
+  try {
+    const frames = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      func: captureFramePrivacyProbe
+    });
+    if (frames.some((frame) => frame.result?.sensitive)) {
+      throw codedError('CAPTURE_BLOCKED', 'Screenshot blocked because a visible sensitive field is present in the page or an embedded frame.', {
+        tabId,
+        reason: 'SENSITIVE_FRAME'
+      });
+    }
+  } catch (error) {
+    if (error?.code === 'CAPTURE_BLOCKED') throw error;
+    throw codedError('CAPTURE_BLOCKED', 'Screenshot blocked because embedded-frame privacy could not be verified.', {
+      tabId,
+      reason: 'PRIVACY_SCAN_FAILED'
+    });
+  }
+}
+
 async function withDebugger(tabId, context, work) {
   const shared = context?.debuggerSession;
   if (shared) {
@@ -157,6 +226,169 @@ async function withDebugger(tabId, context, work) {
       try { await chrome.debugger.detach(target); } catch {}
     }
   }
+}
+
+function codedError(code, message, details = {}) {
+  const error = new Error(message);
+  error.code = code;
+  error.details = details;
+  return error;
+}
+
+function screenshotBytes(data) {
+  try { return atob(data).length; } catch { return Number.POSITIVE_INFINITY; }
+}
+
+async function screenshotHash(data) {
+  const raw = atob(data);
+  const bytes = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  return [...digest].map((value) => value.toString(16).padStart(2, '0')).join('');
+}
+
+async function screenshotLooksBlank(data) {
+  if (typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return { checked: false, blank: false };
+  try {
+    const raw = atob(data);
+    const bytes = new Uint8Array(raw.length);
+    for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
+    const canvas = new OffscreenCanvas(16, 16);
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(bitmap, 0, 0, 16, 16);
+    bitmap.close?.();
+    const pixels = context.getImageData(0, 0, 16, 16).data;
+    let sum = 0;
+    let sumSquares = 0;
+    const count = pixels.length / 4;
+    for (let index = 0; index < pixels.length; index += 4) {
+      const luminance = 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2];
+      sum += luminance;
+      sumSquares += luminance * luminance;
+    }
+    const mean = sum / count;
+    const variance = Math.max(0, sumSquares / count - mean * mean);
+    return { checked: true, blank: variance < 2 && (mean < 3 || mean > 252), mean, variance };
+  } catch {
+    return { checked: false, blank: false };
+  }
+}
+
+function cachedScreenshot(tabId, cacheKey, previousHash) {
+  const cached = screenshotCache.get(tabId);
+  if (!cached || cached.cacheKey !== cacheKey || Date.now() - cached.savedAt > SCREENSHOT_CACHE_MS) return null;
+  const screenshot = { ...cached.screenshot, cached: true };
+  if (previousHash && previousHash.toLowerCase() === screenshot.sha256) {
+    delete screenshot.data;
+    screenshot.unchanged = true;
+  }
+  return screenshot;
+}
+
+function rememberScreenshot(tabId, cacheKey, screenshot) {
+  screenshotCache.delete(tabId);
+  screenshotCache.set(tabId, { cacheKey, savedAt: Date.now(), screenshot });
+  while (screenshotCache.size > SCREENSHOT_CACHE_LIMIT) screenshotCache.delete(screenshotCache.keys().next().value);
+}
+
+async function capturePage(tabId, params, context) {
+  const tab = await chrome.tabs.get(tabId);
+  if (!HTTP_URL_RE.test(tab.url || '')) throw codedError('CAPTURE_BLOCKED', 'Screenshots only support HTTP/HTTPS tabs.', { tabId });
+  if (tab.incognito) throw codedError('CAPTURE_BLOCKED', 'Screenshots are blocked in incognito tabs.', { tabId, reason: 'INCOGNITO' });
+  if (await isPrivateTab(tabId)) throw codedError('CAPTURE_BLOCKED', 'This tab was marked private in the Opera Agent popup.', { tabId, reason: 'USER_PRIVATE' });
+
+  const policy = await contentCall(tabId, 'page.capture_policy', {});
+  if (!policy.allowed) {
+    throw codedError('CAPTURE_BLOCKED', 'Screenshot blocked because a visible password, OTP, payment, or other sensitive field is present.', {
+      tabId,
+      reason: policy.reason || 'SENSITIVE_SURFACE'
+    });
+  }
+  await assertCaptureFramesSafe(tabId);
+
+  const viewportWidth = Number(policy.viewport?.width);
+  const viewportHeight = Number(policy.viewport?.height);
+  if (!(viewportWidth > 0 && viewportHeight > 0)) throw codedError('CAPTURE_FAILED', 'The page has no capturable viewport.', { tabId });
+  const crop = params.crop || { x: 0, y: 0, width: viewportWidth, height: viewportHeight };
+  const x = Number(crop.x);
+  const y = Number(crop.y);
+  const width = Number(crop.width);
+  const height = Number(crop.height);
+  if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > viewportWidth + 0.5 || y + height > viewportHeight + 0.5) {
+    throw codedError('INVALID_CAPTURE_REGION', 'Capture crop must stay inside the visible viewport.', {
+      tabId,
+      viewport: { width: viewportWidth, height: viewportHeight }
+    });
+  }
+
+  const quality = clamp(params.quality, 40, 80, 60);
+  const maxWidth = clamp(params.maxWidth, 320, 1600, 1280);
+  const maxHeight = clamp(params.maxHeight, 240, 1200, 900);
+  const previousHash = typeof params.previousHash === 'string' ? params.previousHash.toLowerCase() : '';
+  const cacheKey = JSON.stringify([policy.documentId, x, y, width, height, quality, maxWidth, maxHeight]);
+  const cached = cachedScreenshot(tabId, cacheKey, previousHash);
+  if (cached) return { ok: true, tabId, page: { title: tab.title || '', url: tab.url || '' }, screenshot: cached };
+
+  const screenshot = await withDebugger(tabId, context, async (target) => {
+    const metrics = await chrome.debugger.sendCommand(target, 'Page.getLayoutMetrics');
+    const viewport = metrics?.cssVisualViewport || metrics?.cssLayoutViewport || metrics?.layoutViewport || {};
+    const pageX = Number(viewport.pageX ?? 0);
+    const pageY = Number(viewport.pageY ?? 0);
+    const baseScale = Math.min(1, maxWidth / width, maxHeight / height);
+    const attempts = [
+      { quality, scale: baseScale },
+      { quality: 40, scale: baseScale },
+      { quality: 40, scale: baseScale * 0.75 },
+      { quality: 40, scale: baseScale * 0.55 }
+    ].filter((attempt, index, all) => index === all.findIndex((item) => item.quality === attempt.quality && item.scale === attempt.scale));
+    let chosen = null;
+    for (const attempt of attempts) {
+      if (context?.deadline && Date.now() >= context.deadline - 100) throw codedError('CAPTURE_TIMEOUT', 'Screenshot capture deadline reached.', { tabId });
+      const response = await chrome.debugger.sendCommand(target, 'Page.captureScreenshot', {
+        format: 'jpeg',
+        quality: attempt.quality,
+        fromSurface: true,
+        captureBeyondViewport: false,
+        optimizeForSpeed: true,
+        clip: { x: pageX + x, y: pageY + y, width, height, scale: attempt.scale }
+      });
+      const data = String(response?.data || '');
+      const bytes = screenshotBytes(data);
+      if (bytes >= 512 && bytes <= MAX_SCREENSHOT_BYTES) {
+        chosen = { data, bytes, quality: attempt.quality, scale: attempt.scale };
+        break;
+      }
+    }
+    if (!chosen) throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
+    const blank = await screenshotLooksBlank(chosen.data);
+    if (blank.blank) throw codedError('BLANK_SCREENSHOT', 'The captured frame appears blank; wait for the page to render and try again.', { tabId });
+    const sha256 = await screenshotHash(chosen.data);
+    return {
+      mimeType: 'image/jpeg',
+      data: chosen.data,
+      sha256,
+      encodedBytes: chosen.bytes,
+      width: Math.max(1, Math.round(width * chosen.scale)),
+      height: Math.max(1, Math.round(height * chosen.scale)),
+      sourceWidth: width,
+      sourceHeight: height,
+      crop: { x, y, width, height },
+      quality: chosen.quality,
+      blankChecked: blank.checked,
+      unchanged: false,
+      cached: false,
+      capturedAt: nowIso()
+    };
+  });
+
+  rememberScreenshot(tabId, cacheKey, screenshot);
+  const responseScreenshot = { ...screenshot };
+  if (previousHash && previousHash === screenshot.sha256) {
+    delete responseScreenshot.data;
+    responseScreenshot.unchanged = true;
+  }
+  return { ok: true, tabId, page: { title: tab.title || '', url: tab.url || '' }, screenshot: responseScreenshot };
 }
 
 function executionMode(params = {}) {
@@ -462,6 +694,10 @@ async function dispatch(method, params = {}, context = {}) {
       const result = await trustedPointer(tabId, params, context);
       return { ...result, tabId };
     }
+    case 'page.capture': {
+      const tabId = await resolveTabId(params);
+      return capturePage(tabId, params, context);
+    }
     case 'page.key': {
       const tabId = await resolveTabId(params);
       const result = params.trusted ? await trustedKey(tabId, params.key, context, executionMode(params)) : await contentCall(tabId, 'page.key', params);
@@ -687,11 +923,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   Promise.resolve().then(async () => {
     if (message.action === 'status') {
       const cfg = await getConfig();
-      return { ok: true, config: { paired: cfg.paired, deviceName: cfg.deviceName, deviceId: cfg.deviceId, bridgeUrl: cfg.bridgeUrl }, state: connectionState, version: PRODUCT_VERSION, protocolVersion: PROTOCOL_VERSION };
+      const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const currentTabPrivate = active?.id != null ? await isPrivateTab(active.id) : false;
+      return { ok: true, config: { paired: cfg.paired, deviceName: cfg.deviceName, deviceId: cfg.deviceId, bridgeUrl: cfg.bridgeUrl }, state: connectionState, version: PRODUCT_VERSION, protocolVersion: PROTOCOL_VERSION, currentTabId: active?.id ?? null, currentTabPrivate };
     }
     if (message.action === 'pair') return pair(message.code);
     if (message.action === 'unpair') return unpair();
     if (message.action === 'self-test') return localSelfTest();
+    if (message.action === 'toggle-private-tab') {
+      const tabId = requireTabId(message.tabId);
+      await chrome.tabs.get(tabId);
+      return { ok: true, tabId, private: await setPrivateTab(tabId, !!message.private) };
+    }
     if (message.action === 'set-bridge-url') {
       const url = safeUrl(message.url);
       if (!url) throw new Error('Invalid bridge URL.');
@@ -724,6 +967,14 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.paired || changes.deviceToken || changes.bridgeUrl || changes.deviceName) {
     restartPullLoop();
   }
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  screenshotCache.delete(tabId);
+  privateTabIds().then((ids) => {
+    if (!ids.delete(tabId)) return;
+    return chrome.storage.local.set({ [PRIVATE_TABS_KEY]: [...ids] });
+  }).catch(() => {});
 });
 
 chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
