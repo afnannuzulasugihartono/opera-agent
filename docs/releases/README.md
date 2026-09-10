@@ -8,10 +8,7 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.0.1](1.0.1.md) — durable completion/two-phase command fix and verified same-ID signed update.
 - [1.2.0](1.2.0.md) — bounded same-tab action bursts through one relay command.
 - [1.3.1](1.3.1.md) — stable background CDP input with bounded page-focus emulation and no real tab activation.
-
-## Current release candidate
-
-- [1.4.0](1.4.0.md) — bounded adaptive screenshots for vision-guided navigation, awaiting signed installed-Opera and production acceptance.
+- [1.4.0](1.4.0.md) — bounded adaptive screenshots with native ChatGPT image delivery and background-focus preservation.
 
 Future stable releases should use simple SemVer filenames:
 

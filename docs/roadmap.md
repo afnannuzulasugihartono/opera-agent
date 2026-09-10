@@ -98,7 +98,7 @@ Exit criterion met: production runs completed without focus theft, the evidence 
 
 Priority: **P1**, only after Milestone 2 passes.
 
-Status: **Checkpoint 3A implemented and verified in controlled Chromium, isolated real Opera, and the signed installed Opera profile; final ChatGPT native-image acceptance remains**. The active 1.4.0 production candidate exposes bounded viewport/crop JPEG capture, native MCP image content, hash reuse, blank-frame rejection, atomic relay scrubbing, background-focus preservation, and local privacy controls. Live Google Maps capture succeeded in background without changing the active tab.
+Status: **Complete and released in 1.4.0**. Controlled Chromium, isolated real Opera, the signed installed Opera profile, Supabase relay, and native ChatGPT image delivery all passed. Live Google Maps capture and unchanged-frame suppression succeeded in background without changing the active tab.
 
 - Add a bounded `capture_page` capability using target-tab CDP `Page.captureScreenshot`; do not depend on `captureVisibleTab` for hidden tabs.
 - Support viewport capture and validated crop rectangles first; defer full-page stitching until required.
@@ -108,11 +108,13 @@ Status: **Checkpoint 3A implemented and verified in controlled Chromium, isolate
 - Block internal Opera pages, incognito contexts, password/payment/OTP surfaces, and user-designated private tabs.
 - Test hidden-tab rendering, canvas pages, zoom/device scale, background throttling, blank-frame detection, and rollback.
 
-Exit criterion: an inactive HTTP/HTTPS tab can be captured without changing the user's active tab or focused window, with deterministic resource bounds. Browser and relay evidence pass; native image delivery in a connected ChatGPT conversation is the remaining release gate.
+Exit criterion met: an inactive HTTP/HTTPS tab was captured without changing the user's active tab or focused window, with deterministic resource bounds and native image delivery in a connected ChatGPT conversation.
 
 ## Milestone 4 — vision-guided navigation
 
 Priority: **P1**, built on background execution and adaptive capture.
+
+Status: **In progress**. The first checkpoint adds generic scroll/viewport observability and stable element identity through existing tool responses, preserving the MCP tool inventory so connected clients do not need to rediscover a new tool name.
 
 - Implement a bounded `observe -> decide -> browser.burst -> verify` loop.
 - Prefer DOM refs and accessibility data; use visual coordinates only when semantic targeting is unavailable.

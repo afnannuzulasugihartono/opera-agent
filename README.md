@@ -2,9 +2,9 @@
 
 Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-- **Stable extension:** `1.3.1`
-- **Current stable release:** `1.3.1`
-- **Current development candidate:** `1.4.0` (adaptive screenshots)
+- **Stable extension:** `1.4.0`
+- **Current stable release:** `1.4.0`
+- **Next milestone:** vision-guided navigation using the existing MCP tool inventory
 - **Protocol:** `1`
 - **Legacy extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 - **Current extension ID:** `ohbbpamcljckmjhcpkcmefdobkoeaick`
@@ -79,7 +79,7 @@ Current efficiency work includes:
 
 See [Efficiency and flexibility plan](docs/efficiency.md) for the latency model, completed server-side work, extension-level next steps, benchmarks, and rollback rules.
 
-The current roadmap prioritizes true background execution before adaptive screenshots and vision-guided navigation. See [Roadmap](docs/roadmap.md).
+The current roadmap builds vision-guided navigation on the completed background-execution and adaptive-screenshot foundations. See [Roadmap](docs/roadmap.md).
 
 ## Repository
 
@@ -115,6 +115,6 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 
 ## Status
 
-Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, updates, ping, tab operations, bounded bursts, trusted debugger input, chunked semantic reads, ARIA state, and media state. The backend uses a two-phase command/workflow API so queued work is committed before the browser consumes it.
+Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, updates, ping, tab operations, bounded bursts, trusted debugger input, chunked semantic reads, ARIA state, media state, and bounded background screenshots. The backend uses a two-phase command/workflow API so queued work is committed before the browser consumes it.
 
-The stable release is **1.3.1** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; **1.2.0** remains the inactive same-identity rollback. Both retain protocol 1 and 25 capabilities. Version 1.3.1 adds bounded page-focus emulation after production acceptance exposed a Google Maps background-event limitation in 1.3.0.
+The stable release is **1.4.0** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; **1.3.1** remains the immediate same-identity rollback. Both retain protocol 1; 1.4.0 advertises 26 capabilities and adds adaptive screenshot vision without foreground takeover.

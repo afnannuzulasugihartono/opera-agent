@@ -2,7 +2,7 @@
 
 ## Recommended one-time installation
 
-Opera Agent 1.3.1 is distributed as a signed CRX with a stable extension identity. The current stable extension ID is:
+Opera Agent 1.4.0 is distributed as a signed CRX with a stable extension identity. The current stable extension ID is:
 
 ```text
 ohbbpamcljckmjhcpkcmefdobkoeaick

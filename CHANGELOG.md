@@ -4,11 +4,19 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
-### Added — 1.4.0 development candidate
+## [1.4.0] - 2026-09-10
+
+### Added
 - Added `page.capture` and MCP `capture_page` for bounded background JPEG viewport/crop capture through CDP without activating the target tab.
 - Added SHA-256 change detection, a 750 ms per-tab cache window, adaptive quality/scale reduction, a 220 KiB encoded-image ceiling, blank-frame rejection, and atomic read-and-scrub delivery through Supabase.
 - Added local capture blocking for internal pages, incognito tabs, visible credential/OTP/payment fields in the main document or embedded frames, and tabs the user marks private in the extension popup.
 - Added native MCP image content while excluding duplicate base64 from structured metadata, plus deterministic background-focus, crop, cache, canvas, blank-frame, embedded-frame, and privacy tests.
+
+### Verified in production
+- ChatGPT discovered and invoked `capture_page` after reconnecting its cached plugin session, received a real background Google Maps JPEG, and correctly distinguished canvas-only labels from DOM output.
+- Reusing the first SHA-256 through `previousHash` returned `unchanged:true` without retransmitting duplicate image content.
+- Google Maps remained inactive while ChatGPT remained active before and after both captures.
+- Supabase retained only scrubbed hash/size metadata after one-time image delivery.
 
 ## [1.3.1] - 2026-09-10
 
