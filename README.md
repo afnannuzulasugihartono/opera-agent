@@ -2,10 +2,10 @@
 
 Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-- **Stable extension:** `1.0.1`
-- **Current new-identity extension:** `1.2.0`
+- **Stable extension:** `1.2.0`
+- **Current extension:** `1.2.0`
 - **Protocol:** `1`
-- **Stable extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm` (legacy)
+- **Legacy extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 - **Current extension ID:** `ohbbpamcljckmjhcpkcmefdobkoeaick`
 
 ## Architecture
@@ -78,6 +78,8 @@ Current efficiency work includes:
 
 See [Efficiency and flexibility plan](docs/efficiency.md) for the latency model, completed server-side work, extension-level next steps, benchmarks, and rollback rules.
 
+The current roadmap prioritizes true background execution before adaptive screenshots and vision-guided navigation. See [Roadmap](docs/roadmap.md).
+
 ## Repository
 
 ```text
@@ -97,6 +99,7 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Roadmap](docs/roadmap.md)
 - [Efficiency and flexibility](docs/efficiency.md)
 - [Protocol](docs/protocol.md)
 - [Installation](docs/install.md)
@@ -111,8 +114,6 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 
 ## Status
 
-Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, ping, tab operations, trusted debugger input transport, chunked semantic reads with continuation, ARIA state, and media state. Version 1.0.1 adds durable completion retry handling and the backend uses a two-phase command/workflow API so queued work is committed before the browser is asked to consume it. Real Opera acceptance includes the signed self-hosted CRX update from 1.0.0 to 1.0.1 with the same extension ID and preserved pairing.
+Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, updates, ping, tab operations, bounded bursts, trusted debugger input, chunked semantic reads, ARIA state, and media state. The backend uses a two-phase command/workflow API so queued work is committed before the browser consumes it.
 
-The installed/stable browser build remains **1.0.1**. Its historical identity and pairing remain untouched. Because its original private signing key was unavailable, a new key was explicitly authorized for the 1.1.0 candidate. That produces a separate extension installation and requires a fresh pairing; it cannot auto-update the legacy install. Passive background auto-update for the legacy identity remains tracked separately in [PASSIVE_UPDATE_TEST.md](docs/PASSIVE_UPDATE_TEST.md).
-
-The `1.1.0` candidate keeps protocol 1 and the same 23 public primitives while adding an internal content readiness ping, opt-in text-only reads, generic no-op tab fast paths, and metadata-only workflow timing. Its newly signed CRX must be installed as a separate extension and pass fresh pairing acceptance before publication. Its private update channel is isolated by extension ID, so future CRXs signed with the same new key can update it automatically without affecting the legacy extension.
+The installed/stable browser build is **1.2.0** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`. It reports protocol 1 and 25 capabilities, including the bounded `browser.burst`; the signed in-place update preserved pairing. Legacy releases and identities remain documented for rollback/history, while future work follows the background-first roadmap.

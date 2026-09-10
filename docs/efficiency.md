@@ -1,5 +1,7 @@
 # Efficiency and Flexibility Plan
 
+> Historical implementation record. For the current milestone order and acceptance gates, see [roadmap.md](roadmap.md). Background-first execution now precedes adaptive screenshots and vision-guided navigation.
+
 Opera Agent should feel fast without becoming site-specific or fragile. The performance rule is:
 
 > **Keep browser primitives generic; move product/site behavior into versioned workflows; minimize network round trips before micro-optimizing individual DOM operations.**
