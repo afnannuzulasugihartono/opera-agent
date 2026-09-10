@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           curl --fail --silent --show-error --location \
-            "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-${VERSION}.crx" \
+            "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-ohbbpamcljckmjhcpkcmefdobkoeaick-${VERSION}.crx" \
             --output "Opera-Agent-${VERSION}.crx"
           test -f "docs/releases/${VERSION}.crx.sha256"
           sha256sum -c "docs/releases/${VERSION}.crx.sha256"
