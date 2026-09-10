@@ -75,9 +75,18 @@ test('hosted OAuth consent artifact has no embedded privileged secret', () => {
   assert.match(consentSource, /approveAuthorization/);
   assert.match(consentSource, /denyAuthorization/);
   assert.doesNotMatch(consentSource, /service_role|OPERA_AGENT_MCP_TOKEN|eyJhbGci/);
+  assert.match(consentSource, /session\?\.user\?\.is_anonymous/);
+  assert.match(consentSource, /data\.user\?\.is_anonymous/);
+  assert.match(consentSource, /signOut\(\{ scope: 'local' \}\)/);
   assert.equal(vercelConfig.rewrites[0].source, '/oauth/consent');
   assert.equal(vercelConfig.rewrites[0].destination, '/');
   assert.ok(vercelConfig.headers[0].headers.some((header) => header.key === 'Content-Security-Policy'));
+});
+
+test('hosted OAuth consent module has valid JavaScript syntax', () => {
+  const moduleSource = consentSource.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1] || '';
+  const parseableSource = moduleSource.replace(/^\s*import\s+.*?;\s*$/m, '');
+  assert.doesNotThrow(() => new Function(`return (async () => {${parseableSource}\n})`));
 });
 
 test('Supabase OAuth config declares a hosted consent page and dynamic registration', () => {

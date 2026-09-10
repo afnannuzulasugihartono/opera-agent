@@ -27,13 +27,13 @@
   <section id="login">
     <label for="email">Email</label><input id="email" type="email" autocomplete="email">
     <label for="password">Password</label><input id="password" type="password" autocomplete="current-password">
-    <div class="buttons"><button id="signin">Masuk</button><button id="signup" class="secondary">Buat akun</button></div>
+    <div class="buttons"><button id="signin" type="button">Masuk</button><button id="signup" type="button" class="secondary">Buat akun</button></div>
   </section>
-  <section id="session"><p>Masuk sebagai <strong id="user"></strong>.</p><button id="signout" class="secondary">Keluar</button></section>
+  <section id="session"><p>Masuk sebagai <strong id="user"></strong>.</p><button id="signout" type="button" class="secondary">Keluar</button></section>
   <section id="consent">
     <div class="client"><strong id="client"></strong><br><small>Redirect: <code id="redirect"></code></small><br><small>Scope: <code id="scope"></code></small></div>
     <p>Izinkan aplikasi ini memakai tool Opera Agent untuk mengoperasikan browser sesuai permintaanmu?</p>
-    <div class="buttons"><button id="approve">Izinkan</button><button id="deny" class="danger">Tolak</button></div>
+    <div class="buttons"><button id="approve" type="button">Izinkan</button><button id="deny" type="button" class="danger">Tolak</button></div>
   </section>
 </main>
 <script type="module">
@@ -49,11 +49,24 @@
   const status = (message) => { byId('status').textContent = message || ''; };
   const show = (id, visible) => { byId(id).style.display = visible ? 'block' : 'none'; };
 
+  function credentials() {
+    const email = byId('email').value.trim().toLowerCase();
+    const password = byId('password').value;
+    if (!email || !email.includes('@')) throw new Error('Masukkan alamat email yang valid.');
+    if (!password) throw new Error('Masukkan password.');
+    return { email, password };
+  }
+
   async function refresh() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: sessionData } = await supabase.auth.getSession();
+    let session = sessionData.session;
+    if (session?.user?.is_anonymous || !session?.user?.email) {
+      await supabase.auth.signOut({ scope: 'local' });
+      session = null;
+    }
     show('login', !session); show('session', !!session); show('consent', false);
     if (!session) { status('Silakan masuk terlebih dahulu.'); return; }
-    byId('user').textContent = session.user.email || session.user.id;
+    byId('user').textContent = session.user.email;
     if (!authorizationId) { status('Tidak ada permintaan OAuth aktif. Mulai koneksi dari ChatGPT.'); return; }
     status('Memeriksa detail izin…');
     const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
@@ -67,13 +80,23 @@
 
   byId('signin').onclick = async () => {
     status('Masuk…');
-    const { error } = await supabase.auth.signInWithPassword({ email: byId('email').value, password: byId('password').value });
+    let input;
+    try { input = credentials(); } catch (error) { status(error.message); return; }
+    const { error } = await supabase.auth.signInWithPassword(input);
     if (error) status(error.message); else refresh();
   };
   byId('signup').onclick = async () => {
     status('Membuat akun…');
-    const { data, error } = await supabase.auth.signUp({ email: byId('email').value, password: byId('password').value });
-    if (error) status(error.message); else if (!data.session) status('Cek email untuk konfirmasi, lalu kembali dan masuk.'); else refresh();
+    let input;
+    try { input = credentials(); } catch (error) { status(error.message); return; }
+    await supabase.auth.signOut({ scope: 'local' });
+    const { data, error } = await supabase.auth.signUp(input);
+    if (error) status(error.message);
+    else if (data.user?.is_anonymous || !data.user?.email) {
+      await supabase.auth.signOut({ scope: 'local' });
+      status('Akun email tidak berhasil dibuat. Periksa email dan password, lalu coba lagi.');
+    } else if (!data.session) status('Cek email untuk konfirmasi, lalu kembali dan masuk.');
+    else refresh();
   };
   byId('signout').onclick = async () => { await supabase.auth.signOut(); refresh(); };
   byId('approve').onclick = async () => {
