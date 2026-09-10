@@ -1,5 +1,7 @@
 # Roadmap
 
+This root file preserves the original 1.0/1.1 implementation checklist. The current staged plan, including completed 1.4.0 adaptive screenshots and the 1.5.0 Milestone 4 candidate, is maintained in [docs/roadmap.md](docs/roadmap.md).
+
 ## 1.0.x foundation — complete
 
 - Define the Opera Agent command protocol.

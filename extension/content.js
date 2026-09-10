@@ -12,6 +12,12 @@
   const refs = new WeakMap();
   const reverseRefs = new Map();
   let disposed = false;
+  let mutationVersion = 0;
+
+  const mutationObserver = new MutationObserver(() => {
+    mutationVersion += 1;
+  });
+  mutationObserver.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
 
   const NAV_KEYS = new Set([
     'Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
@@ -98,6 +104,67 @@
     };
   }
 
+  function isInViewport(el) {
+    if (!isVisible(el)) return false;
+    let rect = el.getBoundingClientRect();
+    if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) return false;
+    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent);
+      const clipsX = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowX);
+      const clipsY = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowY);
+      if (!clipsX && !clipsY) continue;
+      const parentRect = parent.getBoundingClientRect();
+      const left = clipsX ? Math.max(rect.left, parentRect.left) : rect.left;
+      const right = clipsX ? Math.min(rect.right, parentRect.right) : rect.right;
+      const top = clipsY ? Math.max(rect.top, parentRect.top) : rect.top;
+      const bottom = clipsY ? Math.min(rect.bottom, parentRect.bottom) : rect.bottom;
+      if (right <= left || bottom <= top) return false;
+      rect = { left, right, top, bottom };
+    }
+    return true;
+  }
+
+  function stableHash(value) {
+    let first = 2166136261;
+    let second = 5381;
+    for (let index = 0; index < value.length; index += 1) {
+      const code = value.charCodeAt(index);
+      first ^= code;
+      first = Math.imul(first, 16777619);
+      second = Math.imul(second, 33) ^ code;
+    }
+    return `${(first >>> 0).toString(16).padStart(8, '0')}${(second >>> 0).toString(16).padStart(8, '0')}`;
+  }
+
+  function stableElementIdentity(el) {
+    const tag = String(el.tagName || '').toLowerCase();
+    const href = el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '';
+    const id = clean(el.id, 200);
+    const role = clean(el.getAttribute?.('role'), 80);
+    const name = clean(el.getAttribute?.('name'), 120);
+    const label = getAssociatedLabel(el);
+    const text = clean(el.innerText || el.textContent || '', 300);
+    const source = href ? `href:${href}` : id ? `id:${id}` : `semantic:${tag}|${role}|${name}|${label}|${text}`;
+    return { stableKey: `oa_${stableHash(source)}`, stableKeySource: href ? 'href' : id ? 'id' : 'semantic' };
+  }
+
+  function viewportState() {
+    const root = document.scrollingElement || document.documentElement;
+    const visual = globalThis.visualViewport;
+    return {
+      width: innerWidth,
+      height: innerHeight,
+      scrollX,
+      scrollY,
+      documentWidth: Math.max(root?.scrollWidth || 0, document.documentElement?.scrollWidth || 0),
+      documentHeight: Math.max(root?.scrollHeight || 0, document.documentElement?.scrollHeight || 0),
+      devicePixelRatio,
+      visualScale: Number.isFinite(visual?.scale) ? visual.scale : 1,
+      visualOffsetX: Number.isFinite(visual?.offsetLeft) ? visual.offsetLeft : 0,
+      visualOffsetY: Number.isFinite(visual?.offsetTop) ? visual.offsetTop : 0
+    };
+  }
+
   function sensitiveDescriptor(el) {
     const type = clean(el.getAttribute?.('type'), 50).toLowerCase();
     const autocomplete = clean(el.getAttribute?.('autocomplete'), 120).toLowerCase();
@@ -132,6 +199,7 @@
     const includeValue = !!options.includeValue;
     const blocked = sensitiveDescriptor(el);
     const data = {
+      ...stableElementIdentity(el),
       ref: getRef(el),
       tag: String(el.tagName || '').toLowerCase(),
       role: clean(el.getAttribute?.('role'), 80),
@@ -149,6 +217,7 @@
       ariaExpanded: el.getAttribute?.('aria-expanded') ?? null,
       ariaSelected: el.getAttribute?.('aria-selected') ?? null,
       visible: isVisible(el),
+      inViewport: isInViewport(el),
       sensitive: !!blocked,
       rect: rectOf(el)
     };
@@ -190,6 +259,8 @@
       nextOffset: nextOffset < fullText.length ? nextOffset : null,
       hasMore: nextOffset < fullText.length
     };
+    page.viewport = viewportState();
+    page.mutationVersion = mutationVersion;
     if (args.includeElements !== false) page.elements = interactiveElements(args.maxElements);
     return {
       ok: true,
@@ -350,7 +421,16 @@
       document.documentElement.append(cursor);
       setTimeout(() => cursor.remove(), 900);
     }
-    return { ok: true, x, y, viewport: { width: innerWidth, height: innerHeight }, target: el ? { tag: el.tagName.toLowerCase(), label: getAssociatedLabel(el) } : null };
+    return {
+      ok: true,
+      x,
+      y,
+      documentId,
+      viewport: viewportState(),
+      mutationVersion,
+      target: el ? { ref: getRef(el), tag: el.tagName.toLowerCase(), label: getAssociatedLabel(el), ...stableElementIdentity(el) } : null,
+      scrollTarget: scrollState(findScrollTarget(el))
+    };
   }
 
   function capturePolicy() {
@@ -363,25 +443,150 @@
       allowed: sensitiveFields.length === 0,
       reason: sensitiveFields.length ? 'SENSITIVE_SURFACE' : null,
       documentId,
-      viewport: { width: innerWidth, height: innerHeight },
+      viewport: viewportState(),
       sensitiveFieldCount: sensitiveFields.length
     };
   }
 
-  function scroll(args) {
+  function isScrollable(el) {
+    if (!el || el === document.body || el === document.documentElement) return false;
+    const style = getComputedStyle(el);
+    const canY = /^(?:auto|scroll|overlay)$/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1;
+    const canX = /^(?:auto|scroll|overlay)$/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1;
+    return canX || canY;
+  }
+
+  function findScrollTarget(el) {
+    for (let current = el; current && current !== document.documentElement; current = current.parentElement) {
+      if (isScrollable(current)) return current;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
+  function scrollState(target) {
+    const root = document.scrollingElement || document.documentElement;
+    const isDocument = !target || target === root || target === document.body || target === document.documentElement;
+    const node = isDocument ? root : target;
+    const top = isDocument ? scrollY : node.scrollTop;
+    const left = isDocument ? scrollX : node.scrollLeft;
+    const clientHeight = isDocument ? innerHeight : node.clientHeight;
+    const clientWidth = isDocument ? innerWidth : node.clientWidth;
+    const scrollHeight = node?.scrollHeight || clientHeight;
+    const scrollWidth = node?.scrollWidth || clientWidth;
+    const maxTop = Math.max(0, scrollHeight - clientHeight);
+    const maxLeft = Math.max(0, scrollWidth - clientWidth);
+    const epsilon = 2;
+    return {
+      kind: isDocument ? 'document' : 'element',
+      ref: isDocument ? null : getRef(node),
+      tag: isDocument ? 'document' : String(node.tagName || '').toLowerCase(),
+      role: isDocument ? '' : clean(node.getAttribute?.('role'), 80),
+      label: isDocument ? 'document' : getAssociatedLabel(node),
+      scrollTop: Math.round(top * 100) / 100,
+      scrollLeft: Math.round(left * 100) / 100,
+      scrollHeight,
+      scrollWidth,
+      clientHeight,
+      clientWidth,
+      maxScrollTop: maxTop,
+      maxScrollLeft: maxLeft,
+      canScrollY: maxTop > epsilon,
+      canScrollX: maxLeft > epsilon,
+      reachedTop: top <= epsilon,
+      reachedBottom: top >= maxTop - epsilon,
+      reachedLeft: left <= epsilon,
+      reachedRight: left >= maxLeft - epsilon
+    };
+  }
+
+  function sameScrollPosition(left, right) {
+    return !!left && !!right && left.kind === right.kind && left.ref === right.ref &&
+      Math.abs(left.scrollTop - right.scrollTop) <= 1 && Math.abs(left.scrollLeft - right.scrollLeft) <= 1 &&
+      left.scrollHeight === right.scrollHeight && left.scrollWidth === right.scrollWidth;
+  }
+
+  async function settleScroll(args) {
+    const startedAt = performance.now();
+    const maxWaitMs = clamp(args.maxWaitMs, 100, 1200, 800);
+    const requiredStableRounds = clamp(args.stableRounds, 1, 5, 3);
+    const intervalMs = 50;
+    const before = args.before && typeof args.before === 'object' ? args.before : null;
+    const beforeMutationVersion = Number(args.beforeMutationVersion ?? mutationVersion);
+    const point = Number.isFinite(Number(args.x)) && Number.isFinite(Number(args.y))
+      ? document.elementFromPoint(Number(args.x), Number(args.y))
+      : null;
+    let target = before?.kind === 'element' && before.ref ? resolveRef(before.ref) : findScrollTarget(point);
+    if (!target) target = document.scrollingElement || document.documentElement;
+    let previous = scrollState(target);
+    let previousMutationVersion = mutationVersion;
+    let stableRounds = 0;
+    while (performance.now() - startedAt < maxWaitMs && stableRounds < requiredStableRounds) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      const current = scrollState(target);
+      stableRounds = sameScrollPosition(previous, current) && mutationVersion === previousMutationVersion ? stableRounds + 1 : 0;
+      previous = current;
+      previousMutationVersion = mutationVersion;
+    }
+    const after = scrollState(target);
+    return {
+      ok: true,
+      before,
+      after,
+      scrollX,
+      scrollY,
+      moved: before ? Math.abs(after.scrollTop - Number(before.scrollTop || 0)) > 1 || Math.abs(after.scrollLeft - Number(before.scrollLeft || 0)) > 1 : null,
+      contentChanged: mutationVersion !== beforeMutationVersion,
+      beforeMutationVersion,
+      mutationVersion,
+      settled: stableRounds >= requiredStableRounds,
+      stabilizationMs: Math.round((performance.now() - startedAt) * 100) / 100
+    };
+  }
+
+  async function scrollTargetBy(args) {
+    const point = Number.isFinite(Number(args.x)) && Number.isFinite(Number(args.y))
+      ? document.elementFromPoint(Number(args.x), Number(args.y))
+      : null;
+    const requestedBefore = args.before && typeof args.before === 'object' ? args.before : null;
+    const root = document.scrollingElement || document.documentElement;
+    let target = requestedBefore?.kind === 'document' ? root : args.ref ? resolveRef(args.ref) : findScrollTarget(point);
+    if (!target) target = document.scrollingElement || document.documentElement;
+    const before = requestedBefore || scrollState(target);
+    const beforeMutationVersion = Number(args.beforeMutationVersion ?? mutationVersion);
+    const x = clamp(args.deltaX, -1200, 1200, 0);
+    const y = clamp(args.deltaY, -1200, 1200, 0);
+    if (target === root || target === document.body || target === document.documentElement) {
+      scrollBy({ left: x, top: y, behavior: 'instant' });
+      document.dispatchEvent(new Event('scroll'));
+    } else {
+      target.scrollBy({ left: x, top: y, behavior: 'instant' });
+      target.dispatchEvent(new Event('scroll'));
+    }
+    return settleScroll({ before, beforeMutationVersion, x: args.x, y: args.y, maxWaitMs: 600, stableRounds: 3 });
+  }
+
+  async function scroll(args) {
     const x = clamp(args.x, -1000000, 1000000, 0);
     const y = clamp(args.y, -1000000, 1000000, 0);
     const behavior = args.behavior === 'smooth' ? 'smooth' : 'instant';
+    let target = document.scrollingElement || document.documentElement;
+    const beforeMutationVersion = mutationVersion;
     if (args.ref) {
       const el = resolveRef(args.ref);
       if (!el) throw new Error('Element not found or reference is stale.');
+      target = findScrollTarget(el.parentElement);
+      const before = scrollState(target);
       el.scrollIntoView({ block: args.block || 'center', inline: args.inline || 'center', behavior });
+      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
     } else if (args.absolute) {
+      const before = scrollState(target);
       scrollTo({ left: x, top: y, behavior });
+      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
     } else {
+      const before = scrollState(target);
       scrollBy({ left: x, top: y, behavior });
+      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
     }
-    return { ok: true, scrollX, scrollY };
   }
 
   function key(args) {
@@ -494,6 +699,8 @@
       case 'page.click': return clickSynthetic(args);
       case 'page.click_info': return clickInfo(args);
       case 'page.pointer_target': return pointerTarget(args);
+      case 'page.scroll_settle': return settleScroll(args);
+      case 'page.scroll_target': return scrollTargetBy(args);
       case 'page.capture_policy': return capturePolicy();
       case 'page.fill': return fill(args);
       case 'page.fill_info': return fillInfo(args);
@@ -525,10 +732,12 @@
     chrome.runtime.onMessage.addListener(onMessage);
   } catch {
     disposed = true;
+    mutationObserver.disconnect();
   }
 
   window.addEventListener('pagehide', () => {
     disposed = true;
+    mutationObserver.disconnect();
     reverseRefs.clear();
   }, { once: true });
 })();

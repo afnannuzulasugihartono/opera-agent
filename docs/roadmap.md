@@ -114,7 +114,7 @@ Exit criterion met: an inactive HTTP/HTTPS tab was captured without changing the
 
 Priority: **P1**, built on background execution and adaptive capture.
 
-Status: **In progress**. The first checkpoint adds generic scroll/viewport observability and stable element identity through existing tool responses, preserving the MCP tool inventory so connected clients do not need to rediscover a new tool name.
+Status: **Checkpoint 4A implemented and passing controlled Chromium plus isolated real-Opera regression in the 1.5.0 source candidate**. Existing tool responses now expose generic scroll/viewport observability, mutation settling, and stable element identity. The MCP inventory remains unchanged. Signed installed-Opera and multi-site acceptance remain before stable release.
 
 - Implement a bounded `observe -> decide -> browser.burst -> verify` loop.
 - Prefer DOM refs and accessibility data; use visual coordinates only when semantic targeting is unavailable.
@@ -123,6 +123,8 @@ Status: **In progress**. The first checkpoint adds generic scroll/viewport obser
 - Bound iterations, screenshots, commands, elapsed time, and result bytes.
 - Evaluate Google Maps plus at least two unrelated complex applications so the design remains site-agnostic.
 - Keep purchases, publishing, sending, deletion, credentials, OTP, payment data, and uploads behind the existing safety rules and explicit user intent.
+
+Checkpoint 4A details and its bounded decision contract are recorded in [Vision-guided navigation](vision-navigation.md).
 
 Exit criterion: representative visual tasks complete without foreground takeover, unbounded screenshot loops, or site-specific extension code.
 

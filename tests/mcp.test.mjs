@@ -63,6 +63,8 @@ test('MCP instructions make browser usage discoverable without mentioning Supaba
   assert.match(source, /Never use activate_tab as an implicit recovery step/);
   assert.match(source, /Coordinate actions default to invisible background CDP input/);
   assert.match(source, /Use capture_page adaptively only/);
+  assert.match(source, /For lazy result lists, call wheel_at/);
+  assert.match(source, /stableKey\/href values/);
   assert.match(source, /pass previousHash to avoid retransmitting unchanged images/);
   assert.match(source, /If a tool returns FOREGROUND_REQUIRED/);
   assert.match(source, /Supabase is internal transport and should not be mentioned/);

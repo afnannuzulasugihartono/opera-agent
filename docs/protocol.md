@@ -93,3 +93,11 @@ The primitive is intentionally not a general workflow language: steps cannot ove
 ```
 
 When `includeElements` is `false`, the `elements` field is omitted. Text continuation still uses `hasMore` and `nextOffset`. The internal `content.ping` message is restricted to extension-to-content-script readiness checks and is not part of the remote protocol allowlist.
+
+## Vision-navigation signals
+
+Opera Agent 1.5.0 enriches existing protocol-1 results without adding a public method. Element records retain `visible` for rendered/layout presence and add `inViewport` for actual intersection with the viewport and clipping ancestors. They also include a deterministic `stableKey` and its source (`href`, `id`, or semantic fallback) so callers can deduplicate lazy-loaded collections while refs remain document-scoped action handles.
+
+`page.read` adds bounded viewport geometry, document dimensions, device/visual scale, browser `zoomFactor`, and a document mutation counter. Coordinate targets return the current `documentId` and viewport state so callers can invalidate stale coordinates after navigation, resize, zoom, or visual change.
+
+`page.scroll` and wheel-form `page.pointer` results add before/after metrics for the actual document or element scroll target: position, extent, client size, maximum position, axes, and reached-edge flags. Results also report movement, mutation, bounded settling, and timing. Wheel results add `reachedBoundary` for the requested direction and `inputMethod` (`debugger` or `dom-fallback`). The fallback is used only when debugger input did not move an available scroll target.

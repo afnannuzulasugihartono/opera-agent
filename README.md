@@ -4,7 +4,7 @@ Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabas
 
 - **Stable extension:** `1.4.0`
 - **Current stable release:** `1.4.0`
-- **Next milestone:** vision-guided navigation using the existing MCP tool inventory
+- **Current development candidate:** `1.5.0` (vision-navigation observability)
 - **Protocol:** `1`
 - **Legacy extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 - **Current extension ID:** `ohbbpamcljckmjhcpkcmefdobkoeaick`
@@ -69,6 +69,7 @@ Opera Agent optimizes **round trips first** while keeping the browser layer gene
 Current efficiency work includes:
 
 - adaptive 12k text reads with continuation instead of repeated default-size reads;
+- stable element keys, viewport presence, zoom, and scroll-container metrics for bounded visual navigation;
 - text-oriented workflows that request minimal element metadata by default;
 - one workflow per higher-level intent so ChatGPT does not orchestrate every browser primitive separately;
 - state-based waits instead of fixed sleeps where possible;

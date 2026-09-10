@@ -10,13 +10,15 @@ The MCP layer gives AI clients focused, discoverable browser tools. Supabase rem
 
 ## Tools
 
-The server exposes focused tools for browser health, tabs, page reading, semantic element discovery, trusted element clicks, safe field input, navigation keys, page scrolling, and CDP coordinate move/click/drag/wheel operations. `run_browser_burst` combines 1-8 known dependent actions on one explicit target tab into one relay command. It intentionally does not expose a raw command tool or general workflow interpreter.
+The server exposes focused tools for browser health, tabs, page reading, semantic element discovery, trusted element clicks, safe field input, navigation keys, page scrolling, and CDP coordinate move/click/drag/wheel operations. `run_browser_burst` combines 1-8 known dependent actions on one explicit target tab into one relay command. It intentionally does not expose a raw command tool or general workflow interpreter. Version 1.5.0 preserves these tool names and input schemas while enriching their results with stable keys, viewport/zoom context, and scroll-container state.
 
 Normal MCP automation is background-first. `open_url` defaults to `active: false` and returns the new automation target's `tabId`. Every later navigation or page tool requires that explicit ID, so a multi-step task cannot silently fall back to whichever tab the user is viewing.
 
 Input tools accept `executionMode: "background" | "foreground"` and default to background. Ref-based click, trusted text fill, key, scroll, invisible coordinate input, and safe burst steps can operate on an inactive target. Foreground mode adds the visible pointer overlay and therefore requires an already active/focused target. A foreground requirement is returned as a structured `FOREGROUND_REQUIRED` error; it never activates a tab automatically. `activate_tab` remains available only for an explicit user request or foreground permission.
 
 The extension remains the enforcement boundary. It validates the method allowlist and blocks password, PIN, OTP, payment/security-code, and file-upload targets.
+
+For a lazy-loaded collection, place `wheel_at` inside the intended panel and inspect its `scroll` result. Continue only while bounded work remains; stop after `reachedBoundary:true` and a subsequent read yields no new `stableKey` or canonical `href`. If `documentId`, viewport, zoom, visual scale, or screenshot hash changes, discard previously inferred coordinates and observe again.
 
 ## Authentication
 

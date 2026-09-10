@@ -253,9 +253,9 @@ function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number) 
 
 function createServer() {
   const server = new McpServer(
-    { name: "opera-agent", version: "1.4.0" },
+    { name: "opera-agent", version: "1.5.0" },
     {
-      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Coordinate actions default to invisible background CDP input; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
+      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Treat coordinates as stale when documentId, viewport, zoomFactor, visualScale, or screenshot hash changes. For lazy result lists, call wheel_at inside the intended list, inspect scroll.after, moved, contentChanged, and reachedBoundary, collect stableKey/href values, and repeat only with an explicit bound until the boundary is reached and no new stable keys appear. Coordinate actions default to invisible background CDP input; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
     }
   );
@@ -334,7 +334,7 @@ function createServer() {
 
   server.registerTool("read_page", {
     title: "Read Opera page",
-    description: "Read visible page text and interactive elements with reusable refs and screen rectangles. Use pagination for long pages.",
+    description: "Read page text and interactive elements with reusable refs, stable keys, screen rectangles, true viewport presence, document identity, viewport geometry, and zoom. Use pagination for long pages.",
     inputSchema: {
       tabId: tabIdSchema,
       offset: z.number().int().nonnegative().optional(),
@@ -413,7 +413,7 @@ function createServer() {
 
   server.registerTool("scroll_page", {
     title: "Scroll page",
-    description: "Scroll an explicit target page by a relative horizontal/vertical amount, or to an absolute document position, without activating its tab.",
+    description: "Scroll an explicit target page by a relative horizontal/vertical amount, or to an absolute document position, without activating its tab. Returns before/after document scroll metrics, movement, DOM-change, settling, and boundary status.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().min(-1000000).max(1000000).optional(),
@@ -453,7 +453,7 @@ function createServer() {
 
   server.registerTool("wheel_at", {
     title: "Wheel at coordinates",
-    description: "Send a CDP mouse-wheel event at viewport coordinates. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user.",
+    description: "Wheel at viewport coordinates and report the actual scroll container, before/after metrics, movement, lazy DOM changes, settling, and reachedBoundary. Background mode is invisible and does not activate the tab; it uses a deterministic DOM fallback only when the debugger event cannot move an available scroll container. Foreground mode requires an already active/focused target explicitly permitted by the user.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().nonnegative(), y: z.number().nonnegative(),

@@ -4,6 +4,16 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Added — 1.5.0 development candidate
+- Added stable element keys, separate `visible`/`inViewport` state, document mutation counters, and viewport/zoom metadata to existing page-reading results.
+- Added generic before/after scroll-container metrics, movement detection, DOM-change detection, bounded settling, and directional boundary detection to existing scroll and wheel results.
+- Added a deterministic DOM scroll fallback when a background CDP wheel event cannot move an available container, while preserving debugger input as the primary path and reporting the path used.
+- Added a lazy-loaded nested-scroll regression fixture that proves two-pass collection, stable-key deduplication, true viewport state, and active-tab/window preservation in controlled Chromium and isolated real Opera.
+
+### Compatibility — 1.5.0 development candidate
+- Protocol remains 1 with the same 26 allowlisted capabilities and the same 17 MCP tool names; no new tool discovery is required.
+- Google Maps-specific collection remains outside the extension. The new signals are generic inputs for bounded site workflows and model-side `observe → decide → act → verify` loops.
+
 ## [1.4.0] - 2026-09-10
 
 ### Added

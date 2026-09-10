@@ -470,6 +470,7 @@ async function trustedPointer(tabId, params, context) {
     ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: visiblePointer, action })
     : null;
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
+    let scroll = null;
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
     if (action === 'click') {
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1 });
@@ -479,9 +480,35 @@ async function trustedPointer(tabId, params, context) {
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: end.x, y: end.y, button: 'left', buttons: 1 });
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x: end.x, y: end.y, button: 'left', clickCount: 1 });
     } else if (action === 'wheel') {
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseWheel', x: start.x, y: start.y, deltaX: clamp(params.deltaX, -1200, 1200, 0), deltaY: clamp(params.deltaY, -1200, 1200, 0) });
+      const deltaX = clamp(params.deltaX, -1200, 1200, 0);
+      const deltaY = clamp(params.deltaY, -1200, 1200, 0);
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseWheel', x: start.x, y: start.y, deltaX, deltaY });
+      scroll = await contentCall(tabId, 'page.scroll_settle', {
+        x: start.x,
+        y: start.y,
+        before: start.scrollTarget,
+        beforeMutationVersion: start.mutationVersion,
+        maxWaitMs: 300,
+        stableRounds: 2
+      });
+      scroll.inputMethod = 'debugger';
+      const canMoveY = deltaY > 0 ? !scroll.after?.reachedBottom : deltaY < 0 ? !scroll.after?.reachedTop : false;
+      const canMoveX = deltaX > 0 ? !scroll.after?.reachedRight : deltaX < 0 ? !scroll.after?.reachedLeft : false;
+      if (!scroll.moved && (canMoveY || canMoveX)) {
+        scroll = await contentCall(tabId, 'page.scroll_target', {
+          x: start.x,
+          y: start.y,
+          ref: start.scrollTarget?.ref,
+          before: start.scrollTarget,
+          beforeMutationVersion: start.mutationVersion,
+          deltaX,
+          deltaY
+        });
+        scroll.inputMethod = 'dom-fallback';
+      }
+      scroll.reachedBoundary = deltaY > 0 ? scroll.after?.reachedBottom : deltaY < 0 ? scroll.after?.reachedTop : deltaX > 0 ? scroll.after?.reachedRight : deltaX < 0 ? scroll.after?.reachedLeft : false;
     }
-    return { ok: true, method: 'debugger', action, executionMode: mode, visiblePointer, start, end };
+    return { ok: true, method: 'debugger', action, executionMode: mode, visiblePointer, start, end, ...(scroll ? { scroll } : {}) };
   }));
 }
 
@@ -666,7 +693,14 @@ async function dispatch(method, params = {}, context = {}) {
       const ready = params.wait === false ? publicTab(await chrome.tabs.get(tabId)) : await waitTabReady(tabId, params.waitTimeoutMs);
       return { ok: true, tab: ready };
     }
-    case 'page.read':
+    case 'page.read': {
+      const tabId = await resolveTabId(params);
+      const result = await contentCall(tabId, method, params);
+      if (result?.page?.viewport) {
+        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch {}
+      }
+      return { ...result, tabId };
+    }
     case 'page.query':
     case 'page.find':
     case 'page.collect_links':

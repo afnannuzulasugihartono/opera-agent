@@ -19,10 +19,10 @@ This matrix records the Opera Agent 1.2.0 baseline established by the two-tab re
 | `page.find` | Background-safe | Verified. |
 | `page.collect_links` | Background-safe | Verified. |
 | `page.click` | Background-safe | Synthetic and trusted CDP ref clicks both verified. |
-| `page.pointer` | Conditional | Background mode dispatches invisible CDP coordinates directly to inactive tab B. Foreground mode displays the overlay and returns `FOREGROUND_REQUIRED` unless the target is already active/focused. Neither mode activates a tab automatically. |
+| `page.pointer` | Conditional | Background mode dispatches invisible CDP coordinates directly to inactive tab B. Wheel actions report their actual scroll container and use a deterministic DOM fallback only if debugger input cannot move it. Foreground mode displays the overlay and returns `FOREGROUND_REQUIRED` unless the target is already active/focused. Neither mode activates a tab automatically. |
 | `page.fill` | Background-safe | DOM fill and trusted CDP `Input.insertText` are verified. Input and `contenteditable` focus inside tab B did not activate tab B. |
 | `page.focus` | Background-safe | Verified. DOM focus inside tab B did not activate tab B. |
-| `page.scroll` | Background-safe | Verified. |
+| `page.scroll` | Background-safe | Verified with before/after document metrics, movement/mutation settling, and boundary state. |
 | `page.key` | Background-safe on fixture | Synthetic and trusted CDP keys verified. Broader site compatibility remains Checkpoint 2C. |
 | `page.wait_for` | Background-safe | Verified. |
 | `media.state` | Unresolved | Uses the background content channel, but needs a media fixture and site coverage. |
@@ -54,4 +54,4 @@ Google Maps cannot be scripted by an unpacked extension in Opera's isolated test
 
 Production acceptance of 1.3.0 showed that installed Opera could accept CDP input while Google Maps ignored the event because the inactive document reported itself unfocused. Version 1.3.1 therefore enables `Emulation.setFocusEmulationEnabled` only around each background debugger input call and disables it in a `finally` path. This changes the page-reported focus state briefly without activating the real tab, focusing its window, or taking the operating-system pointer/keyboard.
 
-The signed 1.3.1 production build passed the background Google Maps burst and coordinate-click acceptance while the target remained inactive. This completed Checkpoint 2D; adaptive screenshots are the next milestone.
+The signed 1.3.1 production build passed the background Google Maps burst and coordinate-click acceptance while the target remained inactive. Version 1.4.0 subsequently completed adaptive-screenshot production acceptance. The 1.5.0 source candidate adds generic nested-scroll observability while keeping the same focus-preservation invariant.

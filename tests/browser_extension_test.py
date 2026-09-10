@@ -76,7 +76,12 @@ PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head
 <div id="editor" contenteditable="true" aria-label="Document editor">draft</div>
 <canvas id="canvas" aria-label="Canvas interaction surface" width="240" height="120" style="background:#cbd5e1"></canvas>
 <div id="canvas-status">canvas-idle</div>
-<div id="surface" aria-label="Pointer test surface" style="width:240px;height:120px;background:#ddd" onmousemove="if(event.buttons)this.textContent='dragged'" onwheel="this.textContent='wheel'">surface</div>
+  <div id="surface" aria-label="Pointer test surface" style="width:240px;height:120px;background:#ddd" onmousemove="if(event.buttons)this.textContent='dragged'" onwheel="this.textContent='wheel'">surface</div>
+  <div id="scrollbox" role="feed" aria-label="Lazy result list" style="position:fixed;right:16px;top:16px;z-index:10;width:320px;height:140px;overflow-y:auto;border:1px solid #333;background:white">
+    <button id="first-result">First result</button>
+    <div style="height:640px">Scrollable results</div>
+    <button id="last-result">Last initial result</button>
+  </div>
 <a href="/page?next=1">Next internal</a>
 <a href="https://example.com/">External</a>
 {EXTRA_CONTROLS}
@@ -86,6 +91,17 @@ document.getElementById('canvas').addEventListener('click', () => {{
   const count = Number(status.dataset.count || 0) + 1;
   status.dataset.count = String(count);
   status.textContent = `canvas-clicked-${{count}}`;
+}});
+document.getElementById('scrollbox').addEventListener('scroll', (event) => {{
+  const list = event.currentTarget;
+  if (!list.dataset.loaded && list.scrollTop + list.clientHeight >= list.scrollHeight - 2) {{
+    list.dataset.loaded = 'true';
+    const more = document.createElement('div');
+    more.id = 'lazy-results';
+    more.style.height = '240px';
+    more.textContent = 'Lazy loaded results';
+    list.append(more);
+  }}
 }});
 </script>
 </body></html>'''
@@ -283,7 +299,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.4.0'
+        assert result['version'] == '1.5.0'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -299,6 +315,12 @@ async def run(port, profile):
         small_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert small_page['textChars'] == 300
         assert len(small_page['elements']) == 1
+        assert small_page['viewport']['width'] > 0
+        assert small_page['viewport']['height'] > 0
+        assert small_page['viewport']['zoomFactor'] > 0
+        assert isinstance(small_page['mutationVersion'], int)
+        assert small_page['elements'][0]['stableKey'].startswith('oa_')
+        assert isinstance(small_page['elements'][0]['inViewport'], bool)
 
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 10000, 'maxElements': 50}, benchmark='page.read.semantic')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -705,7 +727,70 @@ async def run(port, profile):
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#canvas-status'
         })
-        assert assert_completed_ok(body)['item']['text'] == 'canvas-clicked-2'
+        assert assert_completed_ok(body)['item']['text'] == 'canvas-clicked-2', body
+
+        # Generic scroll observability identifies the wheel container, waits for
+        # lazy DOM changes to settle, and reports whether another pass is needed.
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#scrollbox'
+        })
+        scrollbox = assert_completed_ok(body)['item']
+        body = await audited_background_command(worker, focus_audit, 'page.scroll', {
+            'tabId': tab_id, 'ref': scrollbox['ref']
+        })
+        scroll_into_view = assert_completed_ok(body)
+        assert scroll_into_view['after']['kind'] == 'document'
+        assert scroll_into_view['settled'] is True
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#last-result'
+        })
+        last_result_before = assert_completed_ok(body)['item']
+        assert last_result_before['visible'] is True
+        assert last_result_before['inViewport'] is False
+        assert last_result_before['stableKeySource'] == 'id'
+
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#scrollbox'
+        })
+        scrollbox = assert_completed_ok(body)['item']
+        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+            'tabId': tab_id,
+            'action': 'wheel',
+            'x': scrollbox['rect']['centerX'],
+            'y': scrollbox['rect']['centerY'],
+            'deltaY': 1200
+        })
+        lazy_wheel = assert_completed_ok(body)
+        assert lazy_wheel['scroll']['before']['kind'] == 'element'
+        assert lazy_wheel['scroll']['before']['ref'] == scrollbox['ref']
+        assert lazy_wheel['scroll']['moved'] is True, lazy_wheel
+        assert lazy_wheel['scroll']['contentChanged'] is True, lazy_wheel
+        assert lazy_wheel['scroll']['reachedBoundary'] is False, lazy_wheel
+        assert lazy_wheel['scroll']['settled'] is True
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#last-result'
+        })
+        last_result_loaded = assert_completed_ok(body)['item']
+        assert last_result_loaded['stableKey'] == last_result_before['stableKey']
+        assert last_result_loaded['inViewport'] is True
+
+        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+            'tabId': tab_id,
+            'action': 'wheel',
+            'x': scrollbox['rect']['centerX'],
+            'y': scrollbox['rect']['centerY'],
+            'deltaY': 1200
+        })
+        final_wheel = assert_completed_ok(body)
+        assert final_wheel['scroll']['moved'] is True
+        assert final_wheel['scroll']['after']['reachedBottom'] is True
+        assert final_wheel['scroll']['reachedBoundary'] is True
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#last-result'
+        })
+        last_result_after = assert_completed_ok(body)['item']
+        assert last_result_after['stableKey'] == last_result_before['stableKey']
+        assert last_result_after['inViewport'] is False
 
         # A visible pointer remains an explicit foreground diagnostic. It must
         # refuse an inactive tab rather than activating it as a fallback.
@@ -804,7 +889,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.4.0'
+        assert result['version'] == '1.5.0'
 
         await context.close()
         import os
