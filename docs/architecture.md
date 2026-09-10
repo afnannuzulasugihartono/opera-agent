@@ -64,7 +64,7 @@ Supabase owns:
 
 ## Current generic browser primitives
 
-Protocol 1 in Opera Agent 1.3.0 exposes 25 methods:
+Protocol 1 in Opera Agent 1.3.1 exposes 25 methods:
 
 ```text
 browser.ping

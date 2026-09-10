@@ -4,6 +4,10 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Fixed — 1.3.1 release candidate
+- Temporarily emulate page focus only around background CDP input dispatch, then always restore the normal focus state without activating the browser tab or window.
+- Address the production Google Maps case where CDP accepted mouse/key events on an inactive tab but the page ignored them while reporting itself unfocused.
+
 ### Changed — 1.3.0 release candidate
 - Added invisible coordinate mouse input for explicitly targeted background tabs through Chrome DevTools Protocol, while keeping the visible pointer limited to an active foreground tab.
 - Routed trusted text entry through `Input.insertText`, including normal inputs and contenteditable elements, with a final sensitive-target and active-element safety check immediately before dispatch.

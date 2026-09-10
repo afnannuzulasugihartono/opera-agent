@@ -170,23 +170,40 @@ function foregroundRequired(message, details = {}) {
   return error;
 }
 
-async function trustedClick(tabId, ref, context) {
+async function withInputFocusEmulation(target, mode, work) {
+  let focusEmulated = false;
+  if (mode === 'background') {
+    try {
+      await chrome.debugger.sendCommand(target, 'Emulation.setFocusEmulationEnabled', { enabled: true });
+      focusEmulated = true;
+    } catch {}
+  }
+  try {
+    return { ...(await work()), focusEmulated };
+  } finally {
+    if (focusEmulated) {
+      try { await chrome.debugger.sendCommand(target, 'Emulation.setFocusEmulationEnabled', { enabled: false }); } catch {}
+    }
+  }
+}
+
+async function trustedClick(tabId, ref, context, mode = 'background') {
   const info = await contentCall(tabId, 'page.click_info', { ref });
   const x = info.rect?.centerX;
   const y = info.rect?.centerY;
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
-  return withDebugger(tabId, context, async (target) => {
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
     return { ok: true, ref, method: 'debugger', x, y };
-  });
+  }));
 }
 
-async function trustedFill(tabId, ref, value, context) {
+async function trustedFill(tabId, ref, value, context, mode = 'background') {
   const text = String(value ?? '').slice(0, 20000);
   await contentCall(tabId, 'page.fill_info', { ref });
-  return withDebugger(tabId, context, async (target) => {
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
     const active = await contentCall(tabId, 'page.active_state', {});
     if (active.sensitive || active.active?.ref !== ref) {
       throw new Error('Trusted fill target lost safe document focus before text insertion.');
@@ -199,7 +216,7 @@ async function trustedFill(tabId, ref, value, context) {
       await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...key });
     }
     return { ok: true, ref, valueLength: text.length, method: 'debugger' };
-  });
+  }));
 }
 
 async function trustedPointer(tabId, params, context) {
@@ -220,7 +237,7 @@ async function trustedPointer(tabId, params, context) {
   const end = action === 'drag'
     ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: visiblePointer, action })
     : null;
-  return withDebugger(tabId, context, async (target) => {
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
     if (action === 'click') {
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1 });
@@ -233,7 +250,7 @@ async function trustedPointer(tabId, params, context) {
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseWheel', x: start.x, y: start.y, deltaX: clamp(params.deltaX, -1200, 1200, 0), deltaY: clamp(params.deltaY, -1200, 1200, 0) });
     }
     return { ok: true, method: 'debugger', action, executionMode: mode, visiblePointer, start, end };
-  });
+  }));
 }
 
 const KEY_MAP = {
@@ -251,16 +268,16 @@ const KEY_MAP = {
   Space: { key: ' ', code: 'Space', windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 }
 };
 
-async function trustedKey(tabId, keyName, context) {
+async function trustedKey(tabId, keyName, context, mode = 'background') {
   const spec = KEY_MAP[keyName];
   if (!spec) throw new Error('Key is not allowlisted.');
   const active = await contentCall(tabId, 'page.active_state', {});
   if (active.sensitive) throw new Error('Keyboard input blocked on sensitive field.');
-  return withDebugger(tabId, context, async (target) => {
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
     await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...spec });
     await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...spec });
     return { ok: true, key: keyName, method: 'debugger' };
-  });
+  }));
 }
 
 function burstStepParams(step, tabId, remainingMs, mode) {
@@ -431,13 +448,13 @@ async function dispatch(method, params = {}, context = {}) {
     case 'media.seek': {
       const tabId = await resolveTabId(params);
       const result = method === 'page.fill' && params.trusted
-        ? await trustedFill(tabId, params.ref, params.value, context)
+        ? await trustedFill(tabId, params.ref, params.value, context, executionMode(params))
         : await contentCall(tabId, method, params);
       return { ...result, tabId };
     }
     case 'page.click': {
       const tabId = await resolveTabId(params);
-      const result = params.trusted ? await trustedClick(tabId, params.ref, context) : await contentCall(tabId, 'page.click', params);
+      const result = params.trusted ? await trustedClick(tabId, params.ref, context, executionMode(params)) : await contentCall(tabId, 'page.click', params);
       return { ...result, tabId };
     }
     case 'page.pointer': {
@@ -447,7 +464,7 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.key': {
       const tabId = await resolveTabId(params);
-      const result = params.trusted ? await trustedKey(tabId, params.key, context) : await contentCall(tabId, 'page.key', params);
+      const result = params.trusted ? await trustedKey(tabId, params.key, context, executionMode(params)) : await contentCall(tabId, 'page.key', params);
       return { ...result, tabId };
     }
     default:

@@ -257,7 +257,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.3.0'
+        assert result['version'] == '1.3.1'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -475,7 +475,9 @@ async def run(port, profile):
         body = await audited_background_command(worker, focus_audit, 'page.fill', {
             'tabId': tab_id, 'ref': background_safe_ref, 'value': 'background CDP fill', 'trusted': True
         })
-        assert assert_completed_ok(body)['method'] == 'debugger'
+        background_fill = assert_completed_ok(body)
+        assert background_fill['method'] == 'debugger'
+        assert background_fill['focusEmulated'] is True
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#safe', 'includeValue': True
         })
@@ -488,7 +490,9 @@ async def run(port, profile):
         body = await audited_background_command(worker, focus_audit, 'page.fill', {
             'tabId': tab_id, 'ref': background_editor_ref, 'value': 'edited through Input.insertText', 'trusted': True
         })
-        assert assert_completed_ok(body)['method'] == 'debugger'
+        background_editor_fill = assert_completed_ok(body)
+        assert background_editor_fill['method'] == 'debugger'
+        assert background_editor_fill['focusEmulated'] is True
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#editor', 'includeValue': True
         })
@@ -531,7 +535,9 @@ async def run(port, profile):
         body = await audited_background_command(worker, focus_audit, 'page.key', {
             'tabId': tab_id, 'key': 'Tab', 'trusted': True
         })
-        assert assert_completed_ok(body)['method'] == 'debugger'
+        background_key = assert_completed_ok(body)
+        assert background_key['method'] == 'debugger'
+        assert background_key['focusEmulated'] is True
 
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#toggle'
@@ -544,7 +550,9 @@ async def run(port, profile):
         body = await audited_background_command(worker, focus_audit, 'page.click', {
             'tabId': tab_id, 'ref': background_toggle_ref, 'trusted': True
         })
-        assert assert_completed_ok(body)['method'] == 'debugger'
+        background_click = assert_completed_ok(body)
+        assert background_click['method'] == 'debugger'
+        assert background_click['focusEmulated'] is True
 
         body = await audited_background_command(worker, focus_audit, 'page.find', {
             'tabId': tab_id, 'text': 'Toggle', 'limit': 3
@@ -607,7 +615,9 @@ async def run(port, profile):
         assert background_input_burst['ok'] is True, background_input_burst
         assert background_input_burst['executionMode'] == 'background'
         assert background_input_burst['results'][0]['result']['method'] == 'debugger'
+        assert background_input_burst['results'][0]['result']['focusEmulated'] is True
         assert background_input_burst['results'][2]['result']['visiblePointer'] is False
+        assert background_input_burst['results'][2]['result']['focusEmulated'] is True
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#canvas-status'
         })
@@ -692,6 +702,7 @@ async def run(port, profile):
             maps_pointer = assert_completed_ok(body)
             assert maps_pointer['executionMode'] == 'background'
             assert maps_pointer['visiblePointer'] is False
+            assert maps_pointer['focusEmulated'] is True
             body = await audited_background_command(worker, focus_audit, 'page.wait_for', {
                 'tabId': tab_id, 'selector': 'div[role="feed"]', 'timeoutMs': 15000
             }, timeout=20, command_timeout=18000)
@@ -709,7 +720,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.3.0'
+        assert result['version'] == '1.3.1'
 
         await context.close()
         import os

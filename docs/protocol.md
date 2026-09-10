@@ -60,6 +60,8 @@ All low-level methods are registered in `opera_methods` and mirrored by the exte
 
 Trusted input is selected through safe parameters on supported page actions rather than through arbitrary debugger commands.
 
+Background trusted input may temporarily emulate a focused page through CDP for site compatibility. The emulation is scoped to the individual input dispatch and is always cleared afterward; it does not activate the browser tab or focus the Opera window.
+
 ## Bounded same-tab bursts
 
 Opera Agent 1.2.0 adds `browser.burst` without changing protocol version 1. A burst executes 1-8 already-allowlisted page actions sequentially on one explicit target tab and returns per-step results and timings. Supported actions are `read`, `find`, `click`, `fill`, `key`, `scroll`, `wait`, and `pointer`.

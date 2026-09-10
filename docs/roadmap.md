@@ -78,7 +78,7 @@ Exit criterion: the support matrix documents which input paths work in backgroun
 
 ### Checkpoint 2D — background-native burst and production acceptance
 
-Status: **release candidate in progress**. Version 1.3.0 is prepared only after the controlled focus audit and live Google Maps background-input test passed; 1.2.0 remains the production rollback until installed-Opera acceptance completes.
+Status: **release candidate in progress**. Production acceptance installed 1.3.0 with identity and pairing preserved, then exposed a Google Maps page-focus limitation. Patch 1.3.1 adds bounded CDP page-focus emulation during input only; 1.2.0 remains the rollback until the patch passes acceptance.
 
 - Make a burst pin one explicit automation target for its lifetime.
 - Reject steps that attempt to activate, focus, or switch tabs.

@@ -19,6 +19,7 @@ Each stable extension release should have a matching changelog entry, GitHub Rel
 
 ## Prepared release candidates
 
+- [1.3.1](1.3.1.md) — bounded page-focus emulation for reliable background input without activating the real tab or window.
 - [1.3.0](1.3.0.md) — background CDP input and no-focus execution, retaining protocol 1 and the established signing identity.
 - [1.2.0](1.2.0.md) — bounded same-tab action bursts through one relay command, retaining protocol 1 and the established signing identity.
 - [1.1.1](1.1.1.md) — generic pointer input for dynamic and canvas-based interfaces, retaining protocol 1 and the new signing identity.
