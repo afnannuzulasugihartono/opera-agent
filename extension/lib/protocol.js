@@ -1,8 +1,32 @@
-export const PRODUCT_VERSION = '1.1.1';
+export const PRODUCT_VERSION = '1.2.0';
 export const PROTOCOL_VERSION = 1;
+
+export const BURST_MAX_STEPS = 8;
+export const BURST_MAX_TIMEOUT_MS = 12000;
+export const BURST_ACTION_METHODS = Object.freeze({
+  read: 'page.read',
+  find: 'page.find',
+  click: 'page.click',
+  fill: 'page.fill',
+  key: 'page.key',
+  scroll: 'page.scroll',
+  wait: 'page.wait_for',
+  pointer: 'page.pointer'
+});
+const BURST_STEP_KEYS = Object.freeze({
+  read: ['action', 'offset', 'limit', 'includeElements', 'maxElements'],
+  find: ['action', 'text', 'role', 'tag', 'exact', 'limit'],
+  click: ['action', 'ref'],
+  fill: ['action', 'ref', 'value'],
+  key: ['action', 'key'],
+  scroll: ['action', 'x', 'y', 'absolute', 'smooth'],
+  wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs'],
+  pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY']
+});
 
 export const METHOD_SPECS = Object.freeze({
   'browser.ping': { timeoutMs: 3000 },
+  'browser.burst': { timeoutMs: BURST_MAX_TIMEOUT_MS },
   'tabs.list': { timeoutMs: 5000 },
   'tabs.get': { timeoutMs: 5000 },
   'tabs.find': { timeoutMs: 5000 },
@@ -40,6 +64,56 @@ export function isPlainObject(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function validRef(value) {
+  return typeof value === 'string' && value.length >= 1 && value.length <= 300;
+}
+
+function validateBurstStep(step) {
+  if (!isPlainObject(step)) return 'Each burst step must be an object.';
+  const action = String(step.action || '');
+  if (!BURST_ACTION_METHODS[action]) return 'Burst action is not allowlisted.';
+  const allowedKeys = new Set(BURST_STEP_KEYS[action]);
+  const unexpectedKey = Object.keys(step).find((key) => !allowedKeys.has(key));
+  if (unexpectedKey) return `Burst ${action} does not allow ${unexpectedKey}.`;
+
+  if (action === 'click' && !validRef(step.ref)) return 'Burst click requires a valid ref.';
+  if (action === 'fill' && (!validRef(step.ref) || typeof step.value !== 'string' || step.value.length > 20000)) {
+    return 'Burst fill requires a valid ref and a value of at most 20000 characters.';
+  }
+  if (action === 'key' && !['Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Space'].includes(step.key)) {
+    return 'Burst key is not allowlisted.';
+  }
+  if (action === 'scroll' && !Number.isFinite(Number(step.y))) return 'Burst scroll requires a finite y value.';
+  if (action === 'wait' && !validRef(step.ref) && !(typeof step.selector === 'string' && step.selector.length >= 1 && step.selector.length <= 500) && !(typeof step.text === 'string' && step.text.length >= 1 && step.text.length <= 300)) {
+    return 'Burst wait requires a ref, selector, or text target.';
+  }
+  if (action === 'pointer') {
+    const pointerAction = String(step.pointerAction || 'click');
+    if (!['move', 'click', 'drag', 'wheel'].includes(pointerAction)) return 'Invalid burst pointer action.';
+    for (const key of ['x', 'y']) if (!Number.isFinite(Number(step[key]))) return `Invalid burst pointer ${key}.`;
+    if (pointerAction === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(step[key]))) return `Invalid burst pointer ${key}.`;
+    if (pointerAction === 'wheel' && !Number.isFinite(Number(step.deltaY))) return 'Invalid burst pointer deltaY.';
+  }
+  return null;
+}
+
+export function validateBurst(params) {
+  if (!isPlainObject(params)) return { ok: false, error: 'Burst params must be an object.' };
+  const unexpectedParam = Object.keys(params).find((key) => !['tabId', 'steps'].includes(key));
+  if (unexpectedParam) return { ok: false, error: `Burst params do not allow ${unexpectedParam}.` };
+  if (params.tabId != null && (!Number.isInteger(Number(params.tabId)) || Number(params.tabId) < 0)) {
+    return { ok: false, error: 'Invalid burst tabId.' };
+  }
+  if (!Array.isArray(params.steps) || params.steps.length < 1 || params.steps.length > BURST_MAX_STEPS) {
+    return { ok: false, error: `Burst requires 1-${BURST_MAX_STEPS} steps.` };
+  }
+  for (let index = 0; index < params.steps.length; index += 1) {
+    const error = validateBurstStep(params.steps[index]);
+    if (error) return { ok: false, error: `Invalid burst step ${index}: ${error}` };
+  }
+  return { ok: true };
+}
+
 export function validateCommand(command) {
   if (!isPlainObject(command)) return { ok: false, error: 'Command must be an object.' };
   if (typeof command.id !== 'string' || command.id.length < 8 || command.id.length > 128) {
@@ -59,13 +133,18 @@ export function validateCommand(command) {
     if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
     if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
   }
+  if (command.method === 'browser.burst') {
+    const burst = validateBurst(command.params || {});
+    if (!burst.ok) return burst;
+  }
+  const timeoutMax = command.method === 'browser.burst' ? BURST_MAX_TIMEOUT_MS : 55000;
   return {
     ok: true,
     command: {
       id: command.id,
       method: command.method,
       params: command.params || {},
-      timeoutMs: clamp(command.timeoutMs, 500, 55000, METHOD_SPECS[command.method].timeoutMs)
+      timeoutMs: clamp(command.timeoutMs, 500, timeoutMax, METHOD_SPECS[command.method].timeoutMs)
     }
   };
 }

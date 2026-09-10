@@ -54,4 +54,16 @@ Runner v6 and migration `20260909021225_extension_1_1_text_only_workflows` are d
 - long transcript extraction;
 - production generic article extraction with workflow telemetry.
 
+## Opera Agent 1.2.0 bounded-burst acceptance — 2026-09-10
+
+An isolated real-Opera run using the established extension identity completed the full regression, restart/reconnect checks, sensitive-target rejection, and 20 consecutive bounded-burst stability iterations.
+
+| Case | Local commands | Observed latency | Result |
+|---|---:|---:|---|
+| fill + trusted key + trusted pointer + state wait + 300-character read | 1 burst / 5 steps | 52.78 ms | passed |
+| two-step find + text-only read stability | 20 bursts | 22.46 ms median | 20/20 passed |
+| sensitive pointer followed by fill | 1 burst / 2 proposed steps | 22.36 ms | first step rejected; second did not run |
+
+The five-step result demonstrates local batching and one lazy debugger session, not a production end-to-end speedup. Production MCP/Supabase latency must be measured after the matching extension, method migration, and MCP function are deployed.
+
 During the next live workflow run, record workflow queue time, execution time, command count, browser timing, returned bytes, retries, and fixed waits. Do not turn one machine's timings into test assertions.

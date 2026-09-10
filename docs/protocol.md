@@ -41,6 +41,12 @@ All low-level methods are registered in `opera_methods` and mirrored by the exte
 
 Trusted input is selected through safe parameters on supported page actions rather than through arbitrary debugger commands.
 
+## Bounded same-tab bursts
+
+Opera Agent 1.2.0 adds `browser.burst` without changing protocol version 1. A burst executes 1-8 already-allowlisted page actions sequentially on one resolved tab and returns per-step results and timings. Supported actions are `read`, `find`, `click`, `fill`, `key`, `scroll`, `wait`, and `pointer`.
+
+The primitive is intentionally not a general workflow language: steps cannot override `tabId`, open/navigate/close tabs, loop, branch, nest another burst, or execute JavaScript. The extension enforces a 12-second total timeout, a 256 KiB result limit, trusted-input safety checks, and stop-on-first-failure behavior. Trusted debugger input is attached lazily and reused only until that burst finishes.
+
 ## Backward-compatible read shaping
 
 `page.read` keeps its existing element-rich response by default. Text-oriented callers can request a smaller response without adding a public primitive:

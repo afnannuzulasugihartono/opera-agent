@@ -41,7 +41,7 @@ The browser extension is deliberately generic and should be updated rarely. Its 
 
 1. receive a command;
 2. validate the command against the browser-method allowlist;
-3. execute one generic browser primitive;
+3. execute one generic browser primitive or one strictly bounded same-tab burst;
 4. enforce local safety boundaries;
 5. collect a bounded structured result;
 6. report completion durably.
@@ -64,10 +64,11 @@ Supabase owns:
 
 ## Current generic browser primitives
 
-Protocol 1 exposes 23 methods in both stable 1.0.1 and the 1.1.0 source candidate:
+Protocol 1 in Opera Agent 1.2.0 exposes 25 methods:
 
 ```text
 browser.ping
+browser.burst
 
 tabs.list
 tabs.get
@@ -83,6 +84,7 @@ page.query
 page.find
 page.collect_links
 page.click
+page.pointer
 page.fill
 page.focus
 page.scroll
@@ -95,19 +97,20 @@ media.pause
 media.seek
 ```
 
-Trusted click/key behavior is selected through parameters on the generic page primitives; it is not a site-specific method.
+Trusted click/key behavior is selected through parameters on the generic page primitives; it is not a site-specific method. `browser.burst` is a linear, same-tab transport optimization over eight existing page actions, not a workflow language; site-specific orchestration remains in Supabase.
 
 ## Latency architecture
 
 The performance target is not "make every selector faster". The preferred order is:
 
 1. remove redundant browser operations;
-2. collapse chat-side sequences into one server workflow;
-3. replace fixed waits with observable state waits;
-4. avoid unnecessary page reload/navigation;
-5. minimize result payload size;
-6. optimize queue/claim polling without increasing permanent idle load;
-7. only then optimize individual primitive implementation details.
+2. collapse known same-tab action chains into one bounded local burst;
+3. collapse wider chat-side sequences into one server workflow;
+4. replace fixed waits with observable state waits;
+5. avoid unnecessary page reload/navigation;
+6. minimize result payload size;
+7. optimize queue/claim polling without increasing permanent idle load;
+8. only then optimize individual primitive implementation details.
 
 The bridge therefore uses a short fast-start polling window for active command chains, then returns to the conservative idle poll interval. The 1.1.0 source candidate replaces content readiness reads with an internal ping, lets text-heavy workflows omit element serialization, and skips redundant activation/navigation. Normal `page.read` behavior remains element-rich and caller-configurable.
 

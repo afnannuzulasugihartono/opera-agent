@@ -37,6 +37,62 @@ const tabIdSchema = z.number().int().nonnegative().optional()
   .describe("Opera tab ID. Omit to use the active tab in the focused window.");
 const timeoutSchema = z.number().int().min(500).max(30000).optional()
   .describe("Maximum wait in milliseconds.");
+const burstTimeoutSchema = z.number().int().min(500).max(12000).optional()
+  .describe("Maximum total burst duration in milliseconds; defaults to and cannot exceed 12000.");
+const navigationKeySchema = z.enum(["Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Space"]);
+const burstStepSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("read"),
+    offset: z.number().int().nonnegative().optional(),
+    limit: z.number().int().min(300).max(12000).optional(),
+    includeElements: z.boolean().optional(),
+    maxElements: z.number().int().min(1).max(300).optional()
+  }).strict(),
+  z.object({
+    action: z.literal("find"),
+    text: z.string().max(300).optional(),
+    role: z.string().max(80).optional(),
+    tag: z.string().max(80).optional(),
+    exact: z.boolean().optional(),
+    limit: z.number().int().min(1).max(100).optional()
+  }).strict(),
+  z.object({ action: z.literal("click"), ref: z.string().min(1).max(300) }).strict(),
+  z.object({ action: z.literal("fill"), ref: z.string().min(1).max(300), value: z.string().max(20000) }).strict(),
+  z.object({ action: z.literal("key"), key: navigationKeySchema }).strict(),
+  z.object({
+    action: z.literal("scroll"),
+    x: z.number().min(-1000000).max(1000000).optional(),
+    y: z.number().min(-1000000).max(1000000),
+    absolute: z.boolean().optional(),
+    smooth: z.boolean().optional()
+  }).strict(),
+  z.object({
+    action: z.literal("wait"),
+    ref: z.string().min(1).max(300).optional(),
+    selector: z.string().min(1).max(500).optional(),
+    text: z.string().min(1).max(300).optional(),
+    visibleOnly: z.boolean().optional(),
+    timeoutMs: z.number().int().min(50).max(8000).optional(),
+    intervalMs: z.number().int().min(25).max(1000).optional()
+  }).strict().refine((step) => !!(step.ref || step.selector || step.text), "Wait requires ref, selector, or text."),
+  z.object({
+    action: z.literal("pointer"),
+    pointerAction: z.enum(["move", "click", "drag", "wheel"]),
+    x: z.number().nonnegative(),
+    y: z.number().nonnegative(),
+    endX: z.number().nonnegative().optional(),
+    endY: z.number().nonnegative().optional(),
+    deltaX: z.number().min(-1200).max(1200).optional(),
+    deltaY: z.number().min(-1200).max(1200).optional()
+  }).strict().superRefine((step, ctx) => {
+    if (step.pointerAction === "drag" && (step.endX == null || step.endY == null)) {
+      ctx.addIssue({ code: "custom", message: "Drag requires endX and endY." });
+    }
+    if (step.pointerAction === "wheel" && step.deltaY == null) {
+      ctx.addIssue({ code: "custom", message: "Wheel requires deltaY." });
+    }
+  })
+]);
 
 type AuthContext = { type: "static" } | { type: "user"; userId: string };
 type OptionalTab = { tabId?: number };
@@ -149,9 +205,9 @@ function execute(method: string, params: Record<string, unknown>, timeoutMs?: nu
 
 function createServer() {
   const server = new McpServer(
-    { name: "opera-agent", version: "1.0.0" },
+    { name: "opera-agent", version: "1.2.0" },
     {
-      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, or otherwise operate their local Opera browser. Check browser_status first. Prefer element references from read_page/find_elements; use coordinate pointer tools only when needed. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
+      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, or otherwise operate their local Opera browser. Check browser_status first. Prefer run_browser_burst for two or more dependent actions on one tab, and prefer element references from read_page/find_elements; use coordinate pointer tools only when needed. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
     }
   );
@@ -162,6 +218,24 @@ function createServer() {
     inputSchema: { timeoutMs: timeoutSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ timeoutMs }: { timeoutMs?: number }) => execute("browser.ping", {}, timeoutMs));
+
+  server.registerTool("run_browser_burst", {
+    title: "Run fast Opera action burst",
+    description: "Run 1-8 dependent page actions sequentially on one Opera tab through one relay command. Use this instead of separate tool calls when the next actions are already known. It stops at the first failure, has a 12-second total limit, reuses trusted debugger input within the burst, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      steps: z.array(burstStepSchema).min(1).max(8),
+      timeoutMs: burstTimeoutSchema
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      commandId: z.string(),
+      status: z.string(),
+      result: z.record(z.string(), z.unknown()),
+      timing: z.record(z.string(), z.unknown())
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, steps, timeoutMs }: { tabId?: number; steps: Array<Record<string, unknown>>; timeoutMs?: number }) => execute("browser.burst", { tabId, steps }, timeoutMs));
 
   server.registerTool("list_tabs", {
     title: "List Opera tabs",
@@ -252,7 +326,7 @@ function createServer() {
     description: "Press an allowlisted navigation key on the active element using trusted browser input.",
     inputSchema: {
       tabId: tabIdSchema,
-      key: z.enum(["Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Space"])
+      key: navigationKeySchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, key }: OptionalTab & { key: string }) => execute("page.key", { tabId, key, trusted: true }));

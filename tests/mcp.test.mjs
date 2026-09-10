@@ -25,7 +25,7 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
+    'browser_status', 'run_browser_burst', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
     'move_pointer', 'click_at', 'drag_pointer', 'wheel_at'
   ]);
@@ -49,7 +49,7 @@ test('OAuth protected-resource metadata uses the canonical public function URL',
 test('MCP delegates only known Opera Agent methods', () => {
   const methods = [...source.matchAll(/execute\("([a-z.]+)"/g)].map((match) => match[1]);
   const allowed = new Set([
-    'browser.ping', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
+    'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
     'page.read', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer'
   ]);
   assert.ok(methods.length >= 16);
@@ -58,7 +58,14 @@ test('MCP delegates only known Opera Agent methods', () => {
 
 test('MCP instructions make browser usage discoverable without mentioning Supabase', () => {
   assert.match(source, /Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll/);
+  assert.match(source, /Prefer run_browser_burst for two or more dependent actions on one tab/);
   assert.match(source, /Supabase is internal transport and should not be mentioned/);
+});
+
+test('MCP burst schema is bounded and does not expose arbitrary commands or code', () => {
+  assert.match(source, /z\.array\(burstStepSchema\)\.min\(1\)\.max\(8\)/);
+  assert.match(source, /cannot open, navigate, close, loop, branch, or execute JavaScript/);
+  assert.doesNotMatch(source, /browser\.plan/);
 });
 
 test('OAuth config endpoint exposes only public client configuration', () => {
