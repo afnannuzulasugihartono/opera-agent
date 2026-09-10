@@ -18,10 +18,12 @@ Update manifest:
 https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml
 ```
 
+Opera/Chromium automatically appends the installed extension ID to that shared URL. For a manual diagnostic of the current identity, use `update.xml?id=ohbbpamcljckmjhcpkcmefdobkoeaick`; requesting the shared URL without an ID intentionally returns the legacy channel.
+
 Signed CRX:
 
 ```text
-https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-1.3.1.crx
+https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-ohbbpamcljckmjhcpkcmefdobkoeaick-1.3.1.crx
 ```
 
 The initial install is a browser trust boundary and may require a one-time Opera confirmation. Private self-hosted update delivery has been verified end-to-end in managed Chromium with the same CRX3 signing model. Actual Opera/Windows policy behavior is verified during the target-browser acceptance pass.
