@@ -234,7 +234,7 @@ function createServer() {
   const server = new McpServer(
     { name: "opera-agent", version: "1.2.0" },
     {
-      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Coordinate pointer tools are foreground-only: call activate_tab only when the user explicitly asks to see the target or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
+      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Coordinate actions default to invisible background CDP input; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
     }
   );
@@ -248,7 +248,7 @@ function createServer() {
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
-    description: "Run 1-8 dependent page actions sequentially on one explicit Opera target tab. Defaults to background execution. A pointer step requires explicit foreground mode and a tab the user already allowed to be activated. It stops at the first failure, has a 12-second total limit, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
+    description: "Run 1-8 dependent page actions sequentially on one explicit Opera target tab. Defaults to background execution, including invisible coordinate steps. Foreground mode displays pointer steps and requires a tab the user already allowed to be activated. It stops at the first failure, has a 12-second total limit, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
     inputSchema: {
       tabId: tabIdSchema,
       steps: z.array(burstStepSchema).min(1).max(8),
@@ -350,7 +350,7 @@ function createServer() {
     description: "Fill a non-sensitive editable element by ref. The extension blocks passwords, OTPs, payment fields, and file uploads.",
     inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), value: z.string().max(20000), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, ref, value, executionMode }: TargetTab & { ref: string; value: string; executionMode?: ExecutionMode }) => execute("page.fill", { tabId, ref, value, executionMode: executionMode ?? "background" }));
+  }, ({ tabId, ref, value, executionMode }: TargetTab & { ref: string; value: string; executionMode?: ExecutionMode }) => execute("page.fill", { tabId, ref, value, trusted: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("press_key", {
     title: "Press navigation key",
@@ -378,22 +378,22 @@ function createServer() {
   }, ({ tabId, x, y, absolute, smooth, executionMode }: TargetTab & { x?: number; y: number; absolute?: boolean; smooth?: boolean; executionMode?: ExecutionMode }) => execute("page.scroll", { tabId, x: x ?? 0, y, absolute: absolute ?? false, behavior: smooth ? "smooth" : "instant", executionMode: executionMode ?? "background" }));
 
   server.registerTool("move_pointer", {
-    title: "Move visible pointer",
-    description: "Foreground-only. Move Opera Agent's visible pointer without clicking. Requires executionMode foreground and an already active/focused target explicitly permitted by the user.",
+    title: "Move pointer",
+    description: "Move CDP pointer coordinates on an explicit target. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user.",
     inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "move", x, y, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("click_at", {
-    title: "Click visible pointer",
-    description: "Foreground-only. Click viewport coordinates and display the pointer. Requires executionMode foreground and an already active/focused target explicitly permitted by the user. Prefer click_element.",
+    title: "Click at coordinates",
+    description: "Click CDP viewport coordinates. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user. Prefer click_element and verify page state.",
     inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "click", x, y, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("drag_pointer", {
-    title: "Drag visible pointer",
-    description: "Foreground-only. Drag between viewport coordinates. Requires executionMode foreground and an already active/focused target explicitly permitted by the user.",
+    title: "Drag at coordinates",
+    description: "Drag between CDP viewport coordinates. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().nonnegative(), y: z.number().nonnegative(),
@@ -404,8 +404,8 @@ function createServer() {
   }, ({ tabId, x, y, endX, endY, executionMode }: TargetTab & { x: number; y: number; endX: number; endY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "drag", x, y, endX, endY, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("wheel_at", {
-    title: "Wheel at pointer",
-    description: "Foreground-only. Send a mouse-wheel event at viewport coordinates. Requires executionMode foreground and an already active/focused target explicitly permitted by the user.",
+    title: "Wheel at coordinates",
+    description: "Send a CDP mouse-wheel event at viewport coordinates. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().nonnegative(), y: z.number().nonnegative(),

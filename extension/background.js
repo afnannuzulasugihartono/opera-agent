@@ -183,19 +183,30 @@ async function trustedClick(tabId, ref, context) {
   });
 }
 
+async function trustedFill(tabId, ref, value, context) {
+  const text = String(value ?? '').slice(0, 20000);
+  await contentCall(tabId, 'page.fill_info', { ref });
+  return withDebugger(tabId, context, async (target) => {
+    const active = await contentCall(tabId, 'page.active_state', {});
+    if (active.sensitive || active.active?.ref !== ref) {
+      throw new Error('Trusted fill target lost safe document focus before text insertion.');
+    }
+    if (text) {
+      await chrome.debugger.sendCommand(target, 'Input.insertText', { text });
+    } else {
+      const key = { key: 'Backspace', code: 'Backspace', windowsVirtualKeyCode: 8, nativeVirtualKeyCode: 8 };
+      await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...key });
+      await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...key });
+    }
+    return { ok: true, ref, valueLength: text.length, method: 'debugger' };
+  });
+}
+
 async function trustedPointer(tabId, params, context) {
   const tab = await chrome.tabs.get(tabId);
   const window = await chrome.windows.get(tab.windowId);
   const mode = executionMode(params);
-  if (mode !== 'foreground') {
-    throw foregroundRequired('Visible pointer actions are unavailable in background mode.', {
-      targetTabId: tabId,
-      targetWindowId: tab.windowId,
-      targetTabActive: !!tab.active,
-      targetWindowFocused: !!window.focused
-    });
-  }
-  if (!tab.active || !window.focused) {
+  if (mode === 'foreground' && (!tab.active || !window.focused)) {
     throw foregroundRequired('Pointer actions require the target tab and its window to already be active and focused.', {
       targetTabId: tabId,
       targetWindowId: tab.windowId,
@@ -204,9 +215,10 @@ async function trustedPointer(tabId, params, context) {
     });
   }
   const action = String(params.action || 'click');
-  const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: params.showCursor !== false, action });
+  const visiblePointer = mode === 'foreground' && params.showCursor !== false;
+  const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: visiblePointer, action });
   const end = action === 'drag'
-    ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: params.showCursor !== false, action })
+    ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: visiblePointer, action })
     : null;
   return withDebugger(tabId, context, async (target) => {
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
@@ -220,7 +232,7 @@ async function trustedPointer(tabId, params, context) {
     } else if (action === 'wheel') {
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseWheel', x: start.x, y: start.y, deltaX: clamp(params.deltaX, -1200, 1200, 0), deltaY: clamp(params.deltaY, -1200, 1200, 0) });
     }
-    return { ok: true, method: 'debugger', action, start, end };
+    return { ok: true, method: 'debugger', action, executionMode: mode, visiblePointer, start, end };
   });
 }
 
@@ -255,6 +267,7 @@ function burstStepParams(step, tabId, remainingMs, mode) {
   const { action, pointerAction, ...values } = step;
   const params = { ...values, tabId, executionMode: mode };
   if (action === 'click') params.trusted = true;
+  if (action === 'fill') params.trusted = true;
   if (action === 'key') params.trusted = true;
   if (action === 'pointer') {
     params.action = pointerAction || 'click';
@@ -417,7 +430,9 @@ async function dispatch(method, params = {}, context = {}) {
     case 'media.pause':
     case 'media.seek': {
       const tabId = await resolveTabId(params);
-      const result = await contentCall(tabId, method, params);
+      const result = method === 'page.fill' && params.trusted
+        ? await trustedFill(tabId, params.ref, params.value, context)
+        : await contentCall(tabId, method, params);
       return { ...result, tabId };
     }
     case 'page.click': {

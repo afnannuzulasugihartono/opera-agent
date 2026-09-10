@@ -61,6 +61,7 @@ test('MCP instructions make browser usage discoverable without mentioning Supaba
   assert.match(source, /open_url defaults to an inactive tab, retain its returned tabId/);
   assert.match(source, /Never substitute the user's active tab during a multi-step task/);
   assert.match(source, /Never use activate_tab as an implicit recovery step/);
+  assert.match(source, /Coordinate actions default to invisible background CDP input/);
   assert.match(source, /If a tool returns FOREGROUND_REQUIRED/);
   assert.match(source, /Supabase is internal transport and should not be mentioned/);
 });
@@ -73,6 +74,8 @@ test('MCP defaults to background tabs and requires explicit automation targets',
   assert.match(source, /z\.enum\(\["background", "foreground"\]\)\.optional\(\)/);
   assert.doesNotMatch(source, /"auto"/);
   assert.match(source, /executionMode: executionMode \?\? "background"/);
+  assert.match(source, /value, trusted: true, executionMode/);
+  assert.match(source, /Background mode is invisible and does not activate the tab/);
 });
 
 test('MCP preserves structured command failures for foreground permission handling', () => {

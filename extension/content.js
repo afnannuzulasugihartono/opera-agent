@@ -295,6 +295,23 @@
     return { ok: true, ref: args.ref, valueLength: value.length };
   }
 
+  function fillInfo(args) {
+    const el = resolveRef(args.ref);
+    assertEditableSafe(el);
+    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    el.focus({ preventScroll: true });
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+      el.select();
+    } else if (el.isContentEditable) {
+      const selection = getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    return { ok: true, ref: args.ref, contentEditable: !!el.isContentEditable };
+  }
+
   function focus(args) {
     const el = resolveRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
@@ -463,6 +480,7 @@
       case 'page.click_info': return clickInfo(args);
       case 'page.pointer_target': return pointerTarget(args);
       case 'page.fill': return fill(args);
+      case 'page.fill_info': return fillInfo(args);
       case 'page.focus': return focus(args);
       case 'page.scroll': return scroll(args);
       case 'page.key': return key(args);

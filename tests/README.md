@@ -29,3 +29,5 @@ py -3 tests\browser_extension_test.py
 ```
 
 The JSON result must contain `backgroundFocusPreserved: true`. The tested command matrix and explicit foreground-only exceptions are documented in `docs/background-execution.md`.
+
+Set `OA_LIVE_SITE_TESTS=1` to include the opt-in Google Maps matrix. Live-site coverage is intentionally separate from deterministic local fixtures because network/UI changes can fail independently of the extension regression suite. Opera may block unpacked-extension scripting on Google domains through `ExtensionsSettings`; run that case with isolated Chromium and reserve the signed installed-Opera check for production acceptance.

@@ -73,10 +73,21 @@ PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head
 <input id="safe" aria-label="Normal field" value="" />
 <input id="secret" type="password" aria-label="Password" value="" />
 <input id="file" type="file" aria-label="Upload file" />
+<div id="editor" contenteditable="true" aria-label="Document editor">draft</div>
+<canvas id="canvas" aria-label="Canvas interaction surface" width="240" height="120" style="background:#cbd5e1"></canvas>
+<div id="canvas-status">canvas-idle</div>
 <div id="surface" aria-label="Pointer test surface" style="width:240px;height:120px;background:#ddd" onmousemove="if(event.buttons)this.textContent='dragged'" onwheel="this.textContent='wheel'">surface</div>
 <a href="/page?next=1">Next internal</a>
 <a href="https://example.com/">External</a>
 {EXTRA_CONTROLS}
+<script>
+document.getElementById('canvas').addEventListener('click', () => {{
+  const status = document.getElementById('canvas-status');
+  const count = Number(status.dataset.count || 0) + 1;
+  status.dataset.count = String(count);
+  status.textContent = `canvas-clicked-${{count}}`;
+}});
+</script>
 </body></html>'''
 
 class Handler(BaseHTTPRequestHandler):
@@ -162,10 +173,10 @@ async def browser_focus_state(worker):
         };
     }''')
 
-async def audited_background_command(worker, audit, method, params=None, timeout=20):
+async def audited_background_command(worker, audit, method, params=None, timeout=20, command_timeout=12000):
     command_params = params or {}
     before = await browser_focus_state(worker)
-    cid = STATE.push(method, command_params)
+    cid = STATE.push(method, command_params, timeout=command_timeout)
     body = await asyncio.to_thread(STATE.wait, cid, timeout)
     after = await browser_focus_state(worker)
     preserved = (
@@ -375,6 +386,10 @@ async def run(port, profile):
         failed = await asyncio.to_thread(STATE.wait, cid)
         assert failed['ok'] is False
         assert 'Sensitive field blocked' in failed['error']['message']
+        cid = STATE.push('page.fill', {'tabId': tab_id, 'ref': secret['ref'], 'value': 'should-not-enter', 'trusted': True})
+        failed = await asyncio.to_thread(STATE.wait, cid)
+        assert failed['ok'] is False
+        assert 'Sensitive field blocked' in failed['error']['message']
 
         cid = STATE.push('browser.burst', {
             'tabId': tab_id,
@@ -397,6 +412,10 @@ async def run(port, profile):
         failed = await asyncio.to_thread(STATE.wait, cid)
         assert failed['ok'] is False
         assert 'File upload' in failed['error']['message']
+        cid = STATE.push('page.fill', {'tabId': tab_id, 'ref': file_el['ref'], 'value': 'blocked', 'trusted': True})
+        failed = await asyncio.to_thread(STATE.wait, cid)
+        assert failed['ok'] is False
+        assert 'file' in failed['error']['message'].lower()
 
         cid = STATE.push('page.collect_links', {'tabId': tab_id, 'sameOrigin': True, 'limit': 20})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -453,6 +472,54 @@ async def run(port, profile):
             'tabId': tab_id, 'ref': background_safe_ref, 'value': 'background fill'
         })
         assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'page.fill', {
+            'tabId': tab_id, 'ref': background_safe_ref, 'value': 'background CDP fill', 'trusted': True
+        })
+        assert assert_completed_ok(body)['method'] == 'debugger'
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#safe', 'includeValue': True
+        })
+        assert assert_completed_ok(body)['item']['value'] == 'background CDP fill'
+
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#editor', 'includeValue': True
+        })
+        background_editor_ref = assert_completed_ok(body)['item']['ref']
+        body = await audited_background_command(worker, focus_audit, 'page.fill', {
+            'tabId': tab_id, 'ref': background_editor_ref, 'value': 'edited through Input.insertText', 'trusted': True
+        })
+        assert assert_completed_ok(body)['method'] == 'debugger'
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#editor', 'includeValue': True
+        })
+        assert assert_completed_ok(body)['item']['value'] == 'edited through Input.insertText'
+
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#secret'
+        })
+        background_secret = assert_completed_ok(body)['item']
+        body = await audited_background_command(worker, focus_audit, 'page.fill', {
+            'tabId': tab_id, 'ref': background_secret['ref'], 'value': 'blocked', 'trusted': True
+        })
+        assert body['ok'] is False, body
+        assert 'Sensitive field blocked' in body['error']['message']
+        body = await audited_background_command(worker, focus_audit, 'page.scroll', {
+            'tabId': tab_id, 'ref': background_secret['ref']
+        })
+        assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#secret'
+        })
+        background_secret = assert_completed_ok(body)['item']
+        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+            'tabId': tab_id,
+            'action': 'click',
+            'x': background_secret['rect']['centerX'],
+            'y': background_secret['rect']['centerY']
+        })
+        assert body['ok'] is False, body
+        assert 'Pointer blocked on sensitive target' in body['error']['message']
+
         body = await audited_background_command(worker, focus_audit, 'page.focus', {
             'tabId': tab_id, 'ref': background_safe_ref
         })
@@ -492,9 +559,72 @@ async def run(port, profile):
         })
         assert_completed_ok(body)
         body = await audited_background_command(worker, focus_audit, 'page.scroll', {
-            'tabId': tab_id, 'deltaY': 120
+            'tabId': tab_id, 'y': 120
         })
         assert_completed_ok(body)
+
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#canvas'
+        })
+        background_canvas = assert_completed_ok(body)['item']
+        body = await audited_background_command(worker, focus_audit, 'page.scroll', {
+            'tabId': tab_id, 'ref': background_canvas['ref']
+        })
+        assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#canvas'
+        })
+        background_canvas = assert_completed_ok(body)['item']
+        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+            'tabId': tab_id,
+            'action': 'click',
+            'x': background_canvas['rect']['centerX'],
+            'y': background_canvas['rect']['centerY']
+        })
+        background_pointer = assert_completed_ok(body)
+        assert background_pointer['executionMode'] == 'background'
+        assert background_pointer['visiblePointer'] is False
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#canvas-status'
+        })
+        assert assert_completed_ok(body)['item']['text'] == 'canvas-clicked-1'
+
+        background_input_burst_steps = [
+            {'action': 'fill', 'ref': background_editor_ref, 'value': 'background burst editor'},
+            {'action': 'key', 'key': 'End'},
+            {
+                'action': 'pointer',
+                'pointerAction': 'click',
+                'x': background_canvas['rect']['centerX'],
+                'y': background_canvas['rect']['centerY']
+            },
+            {'action': 'read', 'offset': 0, 'limit': 300, 'includeElements': False}
+        ]
+        body = await audited_background_command(worker, focus_audit, 'browser.burst', {
+            'tabId': tab_id, 'steps': background_input_burst_steps
+        })
+        background_input_burst = assert_completed_ok(body)
+        assert background_input_burst['ok'] is True, background_input_burst
+        assert background_input_burst['executionMode'] == 'background'
+        assert background_input_burst['results'][0]['result']['method'] == 'debugger'
+        assert background_input_burst['results'][2]['result']['visiblePointer'] is False
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#canvas-status'
+        })
+        assert assert_completed_ok(body)['item']['text'] == 'canvas-clicked-2'
+
+        # A visible pointer remains an explicit foreground diagnostic. It must
+        # refuse an inactive tab rather than activating it as a fallback.
+        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+            'tabId': tab_id,
+            'action': 'move',
+            'x': background_canvas['rect']['centerX'],
+            'y': background_canvas['rect']['centerY'],
+            'executionMode': 'foreground'
+        })
+        assert body['ok'] is False, body
+        assert body['error']['code'] == 'FOREGROUND_REQUIRED', body
+        assert body['error']['details']['targetTabId'] == tab_id, body
 
         body = await audited_background_command(worker, focus_audit, 'tabs.navigate', {
             'tabId': tab_id,
@@ -520,14 +650,59 @@ async def run(port, profile):
         assert background_burst['ok'] is True, background_burst
         assert background_burst['completedSteps'] == len(background_burst_steps)
 
-        # Generic pointer is deliberately foreground-only. Its rejection must
-        # also preserve the user's active tab and focused window.
-        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
-            'tabId': tab_id, 'action': 'click', 'x': 10, 'y': 10
-        })
-        assert body['ok'] is False, body
-        assert body['error']['code'] == 'FOREGROUND_REQUIRED', body
-        assert body['error']['details']['targetTabId'] == tab_id, body
+        live_google_maps = False
+        if os.environ.get('OA_LIVE_SITE_TESTS', '0') == '1':
+            body = await audited_background_command(worker, focus_audit, 'tabs.navigate', {
+                'tabId': tab_id,
+                'url': 'https://www.google.com/maps',
+                'wait': True,
+                'waitTimeoutMs': 30000
+            }, timeout=40, command_timeout=30000)
+            assert_completed_ok(body)
+            body = await audited_background_command(worker, focus_audit, 'page.read', {
+                'tabId': tab_id, 'offset': 0, 'limit': 3000, 'includeElements': True, 'maxElements': 80
+            })
+            maps_initial_page = assert_completed_ok(body)['page']
+            body = await audited_background_command(worker, focus_audit, 'page.wait_for', {
+                'tabId': tab_id, 'selector': 'input[role="combobox"][name="q"]', 'timeoutMs': 15000
+            }, timeout=20, command_timeout=18000)
+            assert body['ok'] is True, {'wait': body, 'page': maps_initial_page}
+            assert body['result']['ok'] is True, body
+            body = await audited_background_command(worker, focus_audit, 'page.query', {
+                'tabId': tab_id, 'selector': 'input[role="combobox"][name="q"]', 'includeValue': True
+            })
+            maps_search = assert_completed_ok(body)['item']
+            body = await audited_background_command(worker, focus_audit, 'page.fill', {
+                'tabId': tab_id,
+                'ref': maps_search['ref'],
+                'value': 'restoran terbaik di sekitar Monas Jakarta',
+                'trusted': True
+            })
+            assert assert_completed_ok(body)['method'] == 'debugger'
+            body = await audited_background_command(worker, focus_audit, 'page.query', {
+                'tabId': tab_id, 'selector': 'button[aria-label="Telusuri"], button[aria-label="Search"]'
+            })
+            maps_search_button = assert_completed_ok(body)['item']
+            body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+                'tabId': tab_id,
+                'action': 'click',
+                'x': maps_search_button['rect']['centerX'],
+                'y': maps_search_button['rect']['centerY']
+            })
+            maps_pointer = assert_completed_ok(body)
+            assert maps_pointer['executionMode'] == 'background'
+            assert maps_pointer['visiblePointer'] is False
+            body = await audited_background_command(worker, focus_audit, 'page.wait_for', {
+                'tabId': tab_id, 'selector': 'div[role="feed"]', 'timeoutMs': 15000
+            }, timeout=20, command_timeout=18000)
+            assert assert_completed_ok(body)['ok'] is True, body
+            body = await audited_background_command(worker, focus_audit, 'page.read', {
+                'tabId': tab_id, 'offset': 0, 'limit': 3000, 'includeElements': False
+            })
+            maps_page = assert_completed_ok(body)['page']
+            assert 'restoran' in maps_page['text'].lower(), maps_page['text']
+            live_google_maps = True
+
         assert all(item['focusPreserved'] for item in focus_audit), focus_audit
 
         STATE.fail_pull_until = time.time() + 1.2
@@ -581,7 +756,9 @@ async def run(port, profile):
             'backgroundFocusAudit': focus_audit,
             'backgroundFocusAuditCommands': len(focus_audit),
             'backgroundFocusPreserved': all(item['focusPreserved'] for item in focus_audit),
-            'backgroundPointerRejected': True,
+            'backgroundCoordinateInput': True,
+            'foregroundPointerRejectedOnBackgroundTab': True,
+            'liveGoogleMapsBackgroundInput': live_google_maps,
             'sensitiveFillBlocked': True,
             'fileUploadBlocked': True,
             'networkReconnect': True,

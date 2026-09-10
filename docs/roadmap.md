@@ -65,6 +65,8 @@ Exit criterion: ordinary MCP open/read/find/click/fill/key flows do not activate
 
 ### Checkpoint 2C — background CDP input matrix
 
+Status: **implemented and verified on controlled real-Opera fixtures plus live Google Maps in isolated Chromium**. Background mouse, key, and text CDP paths preserve the active tab/window; the support matrix records the isolated Opera policy limitation. Signed installed-Opera acceptance remains gated with Checkpoint 2D.
+
 - Verify `Input.dispatchMouseEvent`, `Input.dispatchKeyEvent`, and `Input.insertText` against a debugger session attached directly to an inactive target tab.
 - Test normal DOM pages, controlled canvas fixtures, Google Maps, and one editor-style application.
 - Keep ref-based trusted click as the preferred input path.

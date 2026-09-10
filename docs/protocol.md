@@ -32,12 +32,12 @@ Failures return a structured error object rather than raw stack traces.
 
 MCP page and navigation tools require an explicit `tabId`; the model must retain the ID returned by `open_url` or selected from `list_tabs`. The extension protocol remains backward-compatible for trusted local callers, but MCP never silently resolves a multi-step task against the user's active tab.
 
-Input commands may include `executionMode: "background" | "foreground"`. Omitted mode means background. There is deliberately no `auto` mode and no automatic tab activation. Visible `page.pointer` operations require explicit foreground mode plus a target tab and window that are already active/focused. Otherwise the extension returns:
+Input commands may include `executionMode: "background" | "foreground"`. Omitted mode means background. There is deliberately no `auto` mode and no automatic tab activation. In background mode, `page.pointer` dispatches CDP coordinates directly to the inactive target renderer without creating a visible overlay. Visible pointer presentation requires explicit foreground mode plus a target tab and window that are already active/focused. Otherwise the extension returns:
 
 ```json
 {
   "code": "FOREGROUND_REQUIRED",
-  "message": "Visible pointer actions are unavailable in background mode.",
+    "message": "Pointer actions require the target tab and its window to already be active and focused.",
   "details": {
     "requiredExecutionMode": "foreground",
     "targetTabId": 123
@@ -45,7 +45,7 @@ Input commands may include `executionMode: "background" | "foreground"`. Omitted
 }
 ```
 
-Ref-based trusted click/key, fill, scroll, and safe burst steps remain background-capable. A burst pins one explicit `tabId` and propagates its execution mode to every step.
+Ref-based trusted click/key, trusted `Input.insertText` fill, scroll, invisible coordinate input, and safe burst steps are background-capable. A burst pins one explicit `tabId` and propagates its execution mode to every step.
 
 ## Method policy
 
