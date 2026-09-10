@@ -159,6 +159,17 @@ async function withDebugger(tabId, context, work) {
   }
 }
 
+function executionMode(params = {}) {
+  return params.executionMode === 'foreground' ? 'foreground' : 'background';
+}
+
+function foregroundRequired(message, details = {}) {
+  const error = new Error(message);
+  error.code = 'FOREGROUND_REQUIRED';
+  error.details = { requiredExecutionMode: 'foreground', ...details };
+  return error;
+}
+
 async function trustedClick(tabId, ref, context) {
   const info = await contentCall(tabId, 'page.click_info', { ref });
   const x = info.rect?.centerX;
@@ -175,7 +186,23 @@ async function trustedClick(tabId, ref, context) {
 async function trustedPointer(tabId, params, context) {
   const tab = await chrome.tabs.get(tabId);
   const window = await chrome.windows.get(tab.windowId);
-  if (!tab.active || !window.focused) throw new Error('Pointer actions require the active, focused tab.');
+  const mode = executionMode(params);
+  if (mode !== 'foreground') {
+    throw foregroundRequired('Visible pointer actions are unavailable in background mode.', {
+      targetTabId: tabId,
+      targetWindowId: tab.windowId,
+      targetTabActive: !!tab.active,
+      targetWindowFocused: !!window.focused
+    });
+  }
+  if (!tab.active || !window.focused) {
+    throw foregroundRequired('Pointer actions require the target tab and its window to already be active and focused.', {
+      targetTabId: tabId,
+      targetWindowId: tab.windowId,
+      targetTabActive: !!tab.active,
+      targetWindowFocused: !!window.focused
+    });
+  }
   const action = String(params.action || 'click');
   const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: params.showCursor !== false, action });
   const end = action === 'drag'
@@ -224,9 +251,9 @@ async function trustedKey(tabId, keyName, context) {
   });
 }
 
-function burstStepParams(step, tabId, remainingMs) {
+function burstStepParams(step, tabId, remainingMs, mode) {
   const { action, pointerAction, ...values } = step;
-  const params = { ...values, tabId };
+  const params = { ...values, tabId, executionMode: mode };
   if (action === 'click') params.trusted = true;
   if (action === 'key') params.trusted = true;
   if (action === 'pointer') {
@@ -243,6 +270,7 @@ function burstResultSize(results) {
 
 async function runBurst(params, outerContext = {}) {
   const tabId = await resolveTabId(params);
+  const mode = executionMode(params);
   const startedAt = performance.now();
   const deadline = Math.min(outerContext.deadline || Date.now() + BURST_MAX_TIMEOUT_MS, Date.now() + BURST_MAX_TIMEOUT_MS);
   const context = { ...outerContext, deadline, debuggerSession: { tabId, attached: false } };
@@ -256,7 +284,7 @@ async function runBurst(params, outerContext = {}) {
       const method = BURST_ACTION_METHODS[step.action];
       const stepStartedAt = performance.now();
       try {
-        const result = await dispatch(method, burstStepParams(step, tabId, remainingMs), context);
+        const result = await dispatch(method, burstStepParams(step, tabId, remainingMs, mode), context);
         if (step.action === 'wait' && result?.ok === false) throw new Error(String(result.error || 'wait_for timeout'));
         const entry = { index, action: step.action, ok: true, timingMs: Math.round((performance.now() - stepStartedAt) * 100) / 100, result };
         if (burstResultSize([...results, entry]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);
@@ -268,6 +296,7 @@ async function runBurst(params, outerContext = {}) {
           completedSteps: index,
           failedAt: index,
           failedAction: step.action,
+          executionMode: mode,
           error: normalizeError(error),
           results,
           timingMs: Math.round((performance.now() - startedAt) * 100) / 100
@@ -277,6 +306,7 @@ async function runBurst(params, outerContext = {}) {
     return {
       ok: true,
       tabId,
+      executionMode: mode,
       completedSteps: results.length,
       results,
       timingMs: Math.round((performance.now() - startedAt) * 100) / 100

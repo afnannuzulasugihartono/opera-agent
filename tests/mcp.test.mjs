@@ -58,8 +58,28 @@ test('MCP delegates only known Opera Agent methods', () => {
 
 test('MCP instructions make browser usage discoverable without mentioning Supabase', () => {
   assert.match(source, /Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll/);
-  assert.match(source, /Prefer run_browser_burst for two or more dependent actions on one tab/);
+  assert.match(source, /open_url defaults to an inactive tab, retain its returned tabId/);
+  assert.match(source, /Never substitute the user's active tab during a multi-step task/);
+  assert.match(source, /Never use activate_tab as an implicit recovery step/);
+  assert.match(source, /If a tool returns FOREGROUND_REQUIRED/);
   assert.match(source, /Supabase is internal transport and should not be mentioned/);
+});
+
+test('MCP defaults to background tabs and requires explicit automation targets', () => {
+  assert.match(source, /active: active \?\? false/);
+  assert.doesNotMatch(source, /active: active \?\? true/);
+  assert.match(source, /const tabIdSchema = z\.number\(\)\.int\(\)\.nonnegative\(\)/);
+  assert.doesNotMatch(source, /const tabIdSchema[^\n]*\.optional\(\)/);
+  assert.match(source, /z\.enum\(\["background", "foreground"\]\)\.optional\(\)/);
+  assert.doesNotMatch(source, /"auto"/);
+  assert.match(source, /executionMode: executionMode \?\? "background"/);
+});
+
+test('MCP preserves structured command failures for foreground permission handling', () => {
+  assert.match(source, /class CommandFailure extends Error/);
+  assert.match(source, /code: error\.code, message: error\.message/);
+  assert.match(source, /throw new CommandFailure\(code, message/);
+  assert.match(source, /structuredContent = \{ ok: false, error: failure \}/);
 });
 
 test('MCP burst schema is bounded and does not expose arbitrary commands or code', () => {

@@ -52,6 +52,8 @@ Exit criterion: the test can reliably detect focus theft before behavior is chan
 
 ### Checkpoint 2B — safe MCP and tab defaults
 
+Status: **implemented, deployed as MCP Edge Function version 9, and locally verified**. Runtime schema inspection confirms explicit `tabId` requirements and background defaults; the real-Opera two-tab suite passes. Final acceptance from the connected ChatGPT session remains pending before this checkpoint is marked complete.
+
 - Make `open_url` default to `active: false`.
 - Require or propagate an explicit `tabId` after the automation target is selected. Do not fall back to the user's active tab during a multi-step task.
 - Update MCP instructions to prefer background tabs and forbid `activate_tab` unless the user asks to see the tab or explicitly permits foreground interaction.

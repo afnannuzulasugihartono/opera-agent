@@ -306,7 +306,7 @@ async def run(port, profile):
         assert result['item']['ariaPressed'] == 'true'
         toggle = result['item']
 
-        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': toggle['rect']['centerX'], 'y': toggle['rect']['centerY']})
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': toggle['rect']['centerX'], 'y': toggle['rect']['centerY'], 'executionMode': 'foreground'})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['action'] == 'click'
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#toggle'})
@@ -315,11 +315,11 @@ async def run(port, profile):
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#surface'})
         surface = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
         sx, sy = surface['rect']['centerX'], surface['rect']['centerY']
-        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'drag', 'x': sx - 30, 'y': sy, 'endX': sx + 30, 'endY': sy})
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'drag', 'x': sx - 30, 'y': sy, 'endX': sx + 30, 'endY': sy, 'executionMode': 'foreground'})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#surface'})
         assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['text'] == 'dragged'
-        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'wheel', 'x': sx, 'y': sy, 'deltaY': 120})
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'wheel', 'x': sx, 'y': sy, 'deltaY': 120, 'executionMode': 'foreground'})
         wheel = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert wheel['action'] == 'wheel'
 
@@ -341,7 +341,7 @@ async def run(port, profile):
             {'action': 'wait', 'selector': '#toggle', 'timeoutMs': 1000},
             {'action': 'read', 'offset': 0, 'limit': 300, 'includeElements': False}
         ]
-        cid = STATE.push('browser.burst', {'tabId': tab_id, 'steps': burst_steps}, benchmark='browser.burst.fill+key+pointer+wait+read')
+        cid = STATE.push('browser.burst', {'tabId': tab_id, 'steps': burst_steps, 'executionMode': 'foreground'}, benchmark='browser.burst.fill+key+pointer+wait+read')
         burst = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert burst['ok'] is True, burst
         assert burst['completedSteps'] == len(burst_steps)
@@ -367,7 +367,7 @@ async def run(port, profile):
 
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#secret'})
         secret = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
-        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': secret['rect']['centerX'], 'y': secret['rect']['centerY']})
+        cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': secret['rect']['centerX'], 'y': secret['rect']['centerY'], 'executionMode': 'foreground'})
         failed = await asyncio.to_thread(STATE.wait, cid)
         assert failed['ok'] is False
         assert 'Pointer blocked on sensitive target' in failed['error']['message']
@@ -378,6 +378,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.burst', {
             'tabId': tab_id,
+            'executionMode': 'foreground',
             'steps': [
                 {'action': 'pointer', 'pointerAction': 'click', 'x': secret['rect']['centerX'], 'y': secret['rect']['centerY']},
                 {'action': 'fill', 'ref': safe_ref, 'value': 'must-not-run'}
@@ -525,7 +526,8 @@ async def run(port, profile):
             'tabId': tab_id, 'action': 'click', 'x': 10, 'y': 10
         })
         assert body['ok'] is False, body
-        assert 'active, focused tab' in body['error']['message']
+        assert body['error']['code'] == 'FOREGROUND_REQUIRED', body
+        assert body['error']['details']['targetTabId'] == tab_id, body
         assert all(item['focusPreserved'] for item in focus_audit), focus_audit
 
         STATE.fail_pull_until = time.time() + 1.2

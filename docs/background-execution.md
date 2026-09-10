@@ -5,7 +5,7 @@ This matrix records the Opera Agent 1.2.0 baseline established by the two-tab re
 | Primitive | Classification | Evidence or constraint |
 | --- | --- | --- |
 | `browser.ping` | Background-safe | Extension-only metadata; no tab mutation. |
-| `browser.burst` | Background-safe with safe steps | Verified with `find`, `wait`, `scroll`, and `read`. A burst containing `pointer` remains foreground-only. |
+| `browser.burst` | Background-safe with safe steps | Verified with `find`, `wait`, `scroll`, and `read`. `executionMode` defaults to background. A burst containing `pointer` returns `FOREGROUND_REQUIRED` unless explicit foreground mode is used on an already active/focused target. |
 | `tabs.list` | Background-safe | Verified. |
 | `tabs.get` | Background-safe | Verified with an explicit inactive `tabId`. |
 | `tabs.find` | Background-safe | Verified. |
@@ -19,7 +19,7 @@ This matrix records the Opera Agent 1.2.0 baseline established by the two-tab re
 | `page.find` | Background-safe | Verified. |
 | `page.collect_links` | Background-safe | Verified. |
 | `page.click` | Background-safe | Synthetic and trusted CDP ref clicks both verified. |
-| `page.pointer` | Foreground-only | Correctly rejected on an inactive target without changing focus. |
+| `page.pointer` | Foreground-only | Background mode returns structured `FOREGROUND_REQUIRED`. Foreground mode still requires an already active/focused target and never activates it automatically. |
 | `page.fill` | Background-safe | Verified. DOM focus inside tab B did not activate tab B. |
 | `page.focus` | Background-safe | Verified. DOM focus inside tab B did not activate tab B. |
 | `page.scroll` | Background-safe | Verified. |

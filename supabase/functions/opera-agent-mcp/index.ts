@@ -33,8 +33,10 @@ const corsHeaders = {
   "Cache-Control": "no-store"
 };
 
-const tabIdSchema = z.number().int().nonnegative().optional()
-  .describe("Opera tab ID. Omit to use the active tab in the focused window.");
+const tabIdSchema = z.number().int().nonnegative()
+  .describe("Explicit Opera automation target tab ID returned by open_url or list_tabs.");
+const executionModeSchema = z.enum(["background", "foreground"]).optional()
+  .describe("Execution mode. Defaults to background. Foreground never activates a tab automatically.");
 const timeoutSchema = z.number().int().min(500).max(30000).optional()
   .describe("Maximum wait in milliseconds.");
 const burstTimeoutSchema = z.number().int().min(500).max(12000).optional()
@@ -95,7 +97,20 @@ const burstStepSchema = z.discriminatedUnion("action", [
 ]);
 
 type AuthContext = { type: "static" } | { type: "user"; userId: string };
-type OptionalTab = { tabId?: number };
+type TargetTab = { tabId: number };
+type ExecutionMode = "background" | "foreground";
+
+class CommandFailure extends Error {
+  code: string;
+  details?: Record<string, unknown>;
+
+  constructor(code: string, message: string, details?: Record<string, unknown>) {
+    super(message);
+    this.name = "CommandFailure";
+    this.code = code;
+    this.details = details;
+  }
+}
 
 function json(data: unknown, status = 200, extraHeaders: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -155,8 +170,13 @@ function textResult(value: unknown) {
 }
 
 function toolError(error: unknown) {
+  const failure = error instanceof CommandFailure
+    ? { code: error.code, message: error.message, ...(error.details ? { details: error.details } : {}) }
+    : { code: "MCP_EXECUTION_ERROR", message: errorMessage(error) };
+  const structuredContent = { ok: false, error: failure };
   return {
-    content: [{ type: "text" as const, text: errorMessage(error) }],
+    content: [{ type: "text" as const, text: JSON.stringify(structuredContent) }],
+    structuredContent,
     isError: true
   };
 }
@@ -185,10 +205,17 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   });
   if (!completed?.ok) {
     const detail = completed?.error;
+    const code = detail && typeof detail === "object" && "code" in detail
+      ? String((detail as { code?: unknown }).code || "COMMAND_FAILED")
+      : "COMMAND_FAILED";
     const message = detail && typeof detail === "object" && "message" in detail
       ? String((detail as { message?: unknown }).message)
       : String(detail || `${method} failed.`);
-    throw new Error(message);
+    const details = detail && typeof detail === "object" && "details" in detail
+      && (detail as { details?: unknown }).details && typeof (detail as { details?: unknown }).details === "object"
+      ? (detail as { details: Record<string, unknown> }).details
+      : undefined;
+    throw new CommandFailure(code, message, { method, ...(details || {}) });
   }
   return {
     ok: true,
@@ -207,7 +234,7 @@ function createServer() {
   const server = new McpServer(
     { name: "opera-agent", version: "1.2.0" },
     {
-      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, or otherwise operate their local Opera browser. Check browser_status first. Prefer run_browser_burst for two or more dependent actions on one tab, and prefer element references from read_page/find_elements; use coordinate pointer tools only when needed. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
+      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Coordinate pointer tools are foreground-only: call activate_tab only when the user explicitly asks to see the target or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
     }
   );
@@ -221,10 +248,11 @@ function createServer() {
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
-    description: "Run 1-8 dependent page actions sequentially on one Opera tab through one relay command. Use this instead of separate tool calls when the next actions are already known. It stops at the first failure, has a 12-second total limit, reuses trusted debugger input within the burst, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
+    description: "Run 1-8 dependent page actions sequentially on one explicit Opera target tab. Defaults to background execution. A pointer step requires explicit foreground mode and a tab the user already allowed to be activated. It stops at the first failure, has a 12-second total limit, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
     inputSchema: {
       tabId: tabIdSchema,
       steps: z.array(burstStepSchema).min(1).max(8),
+      executionMode: executionModeSchema,
       timeoutMs: burstTimeoutSchema
     },
     outputSchema: {
@@ -235,7 +263,10 @@ function createServer() {
       timing: z.record(z.string(), z.unknown())
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, steps, timeoutMs }: { tabId?: number; steps: Array<Record<string, unknown>>; timeoutMs?: number }) => execute("browser.burst", { tabId, steps }, timeoutMs));
+  }, ({ tabId, steps, executionMode, timeoutMs }: TargetTab & { steps: Array<Record<string, unknown>>; executionMode?: ExecutionMode; timeoutMs?: number }) => {
+    const params = executionMode === "foreground" ? { tabId, steps, executionMode } : { tabId, steps };
+    return execute("browser.burst", params, timeoutMs);
+  });
 
   server.registerTool("list_tabs", {
     title: "List Opera tabs",
@@ -246,32 +277,32 @@ function createServer() {
 
   server.registerTool("open_url", {
     title: "Open URL in Opera",
-    description: "Open an HTTP or HTTPS URL in a new Opera tab and wait for it to load.",
+    description: "Open an HTTP or HTTPS URL in a new background Opera tab and return its tab ID. Set active true only when the user explicitly asks to see the new tab or permits foreground interaction.",
     inputSchema: {
       url: z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed."),
-      active: z.boolean().optional().describe("Make the new tab active. Defaults to true."),
+      active: z.boolean().optional().describe("Make the new tab active. Defaults to false; use true only with explicit user permission."),
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ url, active, timeoutMs }: { url: string; active?: boolean; timeoutMs?: number }) => execute("tabs.open", { url, active: active ?? true, wait: true }, timeoutMs));
+  }, ({ url, active, timeoutMs }: { url: string; active?: boolean; timeoutMs?: number }) => execute("tabs.open", { url, active: active ?? false, wait: true }, timeoutMs));
 
   server.registerTool("activate_tab", {
     title: "Activate Opera tab",
-    description: "Activate an existing Opera tab and focus its window. Pointer tools require an active, focused tab.",
+    description: "Explicitly activate an Opera tab and focus its window. Use only when the user asks to see that tab or permits foreground interaction; never use as automatic recovery.",
     inputSchema: { tabId: z.number().int().nonnegative() },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ tabId }: { tabId: number }) => execute("tabs.activate", { tabId, focusWindow: true }));
 
   server.registerTool("navigate_tab", {
     title: "Navigate Opera tab",
-    description: "Navigate an existing or active Opera tab to an HTTP/HTTPS URL and wait for it to load.",
+    description: "Navigate an explicit Opera target tab to an HTTP/HTTPS URL without activating it, then wait for it to load.",
     inputSchema: {
       tabId: tabIdSchema,
       url: z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed."),
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, url, timeoutMs }: OptionalTab & { url: string; timeoutMs?: number }) => execute("tabs.navigate", { tabId, url, wait: true }, timeoutMs));
+  }, ({ tabId, url, timeoutMs }: TargetTab & { url: string; timeoutMs?: number }) => execute("tabs.navigate", { tabId, url, wait: true }, timeoutMs));
 
   server.registerTool("close_tab", {
     title: "Close Opera tab",
@@ -291,7 +322,7 @@ function createServer() {
       maxElements: z.number().int().min(1).max(300).optional()
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, (args: OptionalTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) => execute("page.read", args));
+  }, (args: TargetTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) => execute("page.read", args));
 
   server.registerTool("find_elements", {
     title: "Find page elements",
@@ -305,81 +336,85 @@ function createServer() {
       limit: z.number().int().min(1).max(100).optional()
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, (args: OptionalTab & { text?: string; role?: string; tag?: string; exact?: boolean; limit?: number }) => execute("page.find", args));
+  }, (args: TargetTab & { text?: string; role?: string; tag?: string; exact?: boolean; limit?: number }) => execute("page.find", args));
 
   server.registerTool("click_element", {
     title: "Click page element",
-    description: "Click an element ref returned by read_page/find_elements using trusted browser input.",
-    inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300) },
+    description: "Click an element ref on an explicit target tab using trusted browser input. Background execution is the default and does not activate the tab.",
+    inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, ref }: OptionalTab & { ref: string }) => execute("page.click", { tabId, ref, trusted: true }));
+  }, ({ tabId, ref, executionMode }: TargetTab & { ref: string; executionMode?: ExecutionMode }) => execute("page.click", { tabId, ref, trusted: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("fill_element", {
     title: "Fill page field",
     description: "Fill a non-sensitive editable element by ref. The extension blocks passwords, OTPs, payment fields, and file uploads.",
-    inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), value: z.string().max(20000) },
+    inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), value: z.string().max(20000), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, ref, value }: OptionalTab & { ref: string; value: string }) => execute("page.fill", { tabId, ref, value }));
+  }, ({ tabId, ref, value, executionMode }: TargetTab & { ref: string; value: string; executionMode?: ExecutionMode }) => execute("page.fill", { tabId, ref, value, executionMode: executionMode ?? "background" }));
 
   server.registerTool("press_key", {
     title: "Press navigation key",
     description: "Press an allowlisted navigation key on the active element using trusted browser input.",
     inputSchema: {
       tabId: tabIdSchema,
-      key: navigationKeySchema
+      key: navigationKeySchema,
+      executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, key }: OptionalTab & { key: string }) => execute("page.key", { tabId, key, trusted: true }));
+  }, ({ tabId, key, executionMode }: TargetTab & { key: string; executionMode?: ExecutionMode }) => execute("page.key", { tabId, key, trusted: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("scroll_page", {
     title: "Scroll page",
-    description: "Scroll the active page by a relative horizontal/vertical amount, or to an absolute document position.",
+    description: "Scroll an explicit target page by a relative horizontal/vertical amount, or to an absolute document position, without activating its tab.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().min(-1000000).max(1000000).optional(),
       y: z.number().min(-1000000).max(1000000),
       absolute: z.boolean().optional(),
-      smooth: z.boolean().optional()
+      smooth: z.boolean().optional(),
+      executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, absolute, smooth }: OptionalTab & { x?: number; y: number; absolute?: boolean; smooth?: boolean }) => execute("page.scroll", { tabId, x: x ?? 0, y, absolute: absolute ?? false, behavior: smooth ? "smooth" : "instant" }));
+  }, ({ tabId, x, y, absolute, smooth, executionMode }: TargetTab & { x?: number; y: number; absolute?: boolean; smooth?: boolean; executionMode?: ExecutionMode }) => execute("page.scroll", { tabId, x: x ?? 0, y, absolute: absolute ?? false, behavior: smooth ? "smooth" : "instant", executionMode: executionMode ?? "background" }));
 
   server.registerTool("move_pointer", {
     title: "Move visible pointer",
-    description: "Move Opera Agent's visible pointer to viewport coordinates without clicking. Coordinates are CSS pixels from the page's top-left visible corner.",
-    inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative() },
+    description: "Foreground-only. Move Opera Agent's visible pointer without clicking. Requires executionMode foreground and an already active/focused target explicitly permitted by the user.",
+    inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, x, y }: OptionalTab & { x: number; y: number }) => execute("page.pointer", { tabId, action: "move", x, y, showCursor: true }));
+  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "move", x, y, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("click_at", {
     title: "Click visible pointer",
-    description: "Click viewport coordinates with trusted input and display the Opera Agent pointer. Prefer click_element when an element ref exists.",
-    inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative() },
+    description: "Foreground-only. Click viewport coordinates and display the pointer. Requires executionMode foreground and an already active/focused target explicitly permitted by the user. Prefer click_element.",
+    inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y }: OptionalTab & { x: number; y: number }) => execute("page.pointer", { tabId, action: "click", x, y, showCursor: true }));
+  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "click", x, y, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("drag_pointer", {
     title: "Drag visible pointer",
-    description: "Drag from one viewport coordinate to another using trusted input and a visible pointer.",
+    description: "Foreground-only. Drag between viewport coordinates. Requires executionMode foreground and an already active/focused target explicitly permitted by the user.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().nonnegative(), y: z.number().nonnegative(),
-      endX: z.number().nonnegative(), endY: z.number().nonnegative()
+      endX: z.number().nonnegative(), endY: z.number().nonnegative(),
+      executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, endX, endY }: OptionalTab & { x: number; y: number; endX: number; endY: number }) => execute("page.pointer", { tabId, action: "drag", x, y, endX, endY, showCursor: true }));
+  }, ({ tabId, x, y, endX, endY, executionMode }: TargetTab & { x: number; y: number; endX: number; endY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "drag", x, y, endX, endY, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("wheel_at", {
     title: "Wheel at pointer",
-    description: "Send a trusted mouse-wheel event at viewport coordinates while displaying the Opera Agent pointer.",
+    description: "Foreground-only. Send a mouse-wheel event at viewport coordinates. Requires executionMode foreground and an already active/focused target explicitly permitted by the user.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().nonnegative(), y: z.number().nonnegative(),
       deltaX: z.number().min(-1200).max(1200).optional(),
-      deltaY: z.number().min(-1200).max(1200)
+      deltaY: z.number().min(-1200).max(1200),
+      executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, deltaX, deltaY }: OptionalTab & { x: number; y: number; deltaX?: number; deltaY: number }) => execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true }));
+  }, ({ tabId, x, y, deltaX, deltaY, executionMode }: TargetTab & { x: number; y: number; deltaX?: number; deltaY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true, executionMode: executionMode ?? "background" }));
 
   return server;
 }

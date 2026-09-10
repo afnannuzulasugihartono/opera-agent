@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ALLOWED_METHODS, METHOD_SPECS, validateCommand, validateBurst, safeUrl, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
+import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
 
 test('version and protocol are stable', () => {
   assert.equal(PRODUCT_VERSION, '1.2.0');
@@ -23,6 +23,9 @@ test('method allowlist contains only named primitives', () => {
 
 test('bounded browser burst accepts only linear same-tab page actions', () => {
   assert.equal(validateBurst({ steps: [{ action: 'fill', ref: 'oa-1', value: 'query' }, { action: 'key', key: 'Enter' }] }).ok, true);
+  assert.equal(validateBurst({ executionMode: 'background', steps: [{ action: 'read' }] }).ok, true);
+  assert.equal(validateBurst({ executionMode: 'foreground', steps: [{ action: 'pointer', pointerAction: 'click', x: 1, y: 2 }] }).ok, true);
+  assert.equal(validateBurst({ executionMode: 'auto', steps: [{ action: 'read' }] }).ok, false);
   assert.equal(validateBurst({ steps: [] }).ok, false);
   assert.equal(validateBurst({ steps: Array.from({ length: 9 }, () => ({ action: 'read' })) }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: 9 }] }).ok, false);
@@ -43,6 +46,19 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(ok.command.timeoutMs, 55000);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6, endX: 7, endY: 8 } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'click', x: 5, y: 6, executionMode: 'auto' } }).ok, false);
+});
+
+test('execution modes are explicit and structured foreground errors survive normalization', () => {
+  assert.deepEqual(EXECUTION_MODES, ['background', 'foreground']);
+  const error = new Error('Foreground permission is required.');
+  error.code = 'FOREGROUND_REQUIRED';
+  error.details = { targetTabId: 42, requiredExecutionMode: 'foreground' };
+  assert.deepEqual(normalizeError(error), {
+    code: 'FOREGROUND_REQUIRED',
+    message: 'Foreground permission is required.',
+    details: { targetTabId: 42, requiredExecutionMode: 'foreground' }
+  });
 });
 
 test('safeUrl accepts only http/https', () => {

@@ -3,6 +3,7 @@ export const PROTOCOL_VERSION = 1;
 
 export const BURST_MAX_STEPS = 8;
 export const BURST_MAX_TIMEOUT_MS = 12000;
+export const EXECUTION_MODES = Object.freeze(['background', 'foreground']);
 export const BURST_ACTION_METHODS = Object.freeze({
   read: 'page.read',
   find: 'page.find',
@@ -99,13 +100,16 @@ function validateBurstStep(step) {
 
 export function validateBurst(params) {
   if (!isPlainObject(params)) return { ok: false, error: 'Burst params must be an object.' };
-  const unexpectedParam = Object.keys(params).find((key) => !['tabId', 'steps'].includes(key));
+  const unexpectedParam = Object.keys(params).find((key) => !['tabId', 'steps', 'executionMode'].includes(key));
   if (unexpectedParam) return { ok: false, error: `Burst params do not allow ${unexpectedParam}.` };
   if (params.tabId != null && (!Number.isInteger(Number(params.tabId)) || Number(params.tabId) < 0)) {
     return { ok: false, error: 'Invalid burst tabId.' };
   }
   if (!Array.isArray(params.steps) || params.steps.length < 1 || params.steps.length > BURST_MAX_STEPS) {
     return { ok: false, error: `Burst requires 1-${BURST_MAX_STEPS} steps.` };
+  }
+  if (params.executionMode != null && !EXECUTION_MODES.includes(params.executionMode)) {
+    return { ok: false, error: 'Invalid executionMode.' };
   }
   for (let index = 0; index < params.steps.length; index += 1) {
     const error = validateBurstStep(params.steps[index]);
@@ -133,6 +137,9 @@ export function validateCommand(command) {
     if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
     if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
   }
+  if (command.params?.executionMode != null && !EXECUTION_MODES.includes(command.params.executionMode)) {
+    return { ok: false, error: 'Invalid executionMode.' };
+  }
   if (command.method === 'browser.burst') {
     const burst = validateBurst(command.params || {});
     if (!burst.ok) return burst;
@@ -151,7 +158,10 @@ export function validateCommand(command) {
 
 export function normalizeError(error, code = 'EXECUTION_ERROR') {
   const message = error instanceof Error ? error.message : String(error || 'Unknown error');
-  return { code, message: message.slice(0, 1000) };
+  const errorCode = typeof error?.code === 'string' && error.code ? error.code : code;
+  const normalized = { code: errorCode.slice(0, 100), message: message.slice(0, 1000) };
+  if (isPlainObject(error?.details)) normalized.details = error.details;
+  return normalized;
 }
 
 export function safeUrl(value) {
