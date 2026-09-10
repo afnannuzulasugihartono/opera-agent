@@ -4,10 +4,17 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
-### Changed — 1.5.1 development candidate
+## [1.5.1] - 2026-09-11
+
+### Changed
 - Redesigned the extension popup with a professional status hierarchy, clearer connection/privacy states, compact timestamps, and consistent controls.
 - Made the popup responsive down to Opera's narrow 148-pixel panel without horizontal clipping while retaining the normal 352-pixel toolbar layout and dark-mode support.
 - Verified the paired popup at 352-pixel and 148-pixel viewports with no horizontal overflow.
+
+### Verified in production
+- Updated the normal Opera profile in place under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; pairing, protocol 1, and all 26 capabilities were preserved.
+- Verified the private update XML, health response, database payload, served CRX length, and SHA-256 all resolve consistently to 1.5.1.
+- Completed a post-update `browser.ping` without opening, activating, or modifying a browser tab.
 
 ## [1.5.0] - 2026-09-11
 
