@@ -7,36 +7,54 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main>
-    <header>
-      <div>
+  <main class="shell">
+    <header class="app-header">
+      <div class="brand-mark" aria-hidden="true">OA</div>
+      <div class="brand-copy">
+        <p class="eyebrow">Local browser bridge</p>
         <h1>Opera Agent</h1>
-        <p id="version">1.5.0</p>
+        <p id="version">1.5.1</p>
       </div>
-      <span id="statusBadge" class="badge">Starting</span>
+      <span id="statusBadge" class="badge starting" aria-live="polite">Starting</span>
     </header>
 
-    <section class="card">
-      <div class="row"><span>Device</span><strong id="deviceName">opera</strong></div>
-      <div class="row"><span>Connection</span><strong id="connection">—</strong></div>
-      <div class="row"><span>Last command</span><strong id="lastCommand">—</strong></div>
-      <div class="row"><span>Vision on this tab</span><strong id="visionPrivacy">Allowed</strong></div>
-      <p id="error" class="error" hidden></p>
+    <section class="card status-card" aria-labelledby="statusTitle">
+      <div class="section-heading">
+        <h2 id="statusTitle">Status</h2>
+        <span class="secure-label">Local only</span>
+      </div>
+      <dl class="details">
+        <div class="row"><dt>Device</dt><dd id="deviceName">opera</dd></div>
+        <div class="row"><dt>Connection</dt><dd id="connection">&mdash;</dd></div>
+        <div class="row"><dt>Last command</dt><dd id="lastCommand">&mdash;</dd></div>
+        <div class="row"><dt>Vision</dt><dd id="visionPrivacy" class="privacy allowed">Allowed</dd></div>
+      </dl>
+      <p id="error" class="error" role="alert" hidden></p>
     </section>
 
-    <section id="pairSection" class="card">
-      <label for="pairCode">Pairing code</label>
-      <input id="pairCode" type="text" autocomplete="off" maxlength="64" placeholder="Paste pairing code" />
+    <section id="pairSection" class="card" aria-labelledby="pairTitle">
+      <div class="section-heading">
+        <h2 id="pairTitle">Connect device</h2>
+      </div>
+      <label for="pairCode">One-time pairing code</label>
+      <input id="pairCode" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Enter pairing code" />
       <button id="pairButton" class="primary">Pair device</button>
-      <p class="hint">Create a one-time pairing code from Supabase/ChatGPT, then enter it here once.</p>
+      <p class="hint">Generate the code from Opera Agent, then enter it here once.</p>
     </section>
 
-    <section id="pairedSection" class="card" hidden>
-      <button id="privateTabButton">Mark current tab private</button>
-      <button id="selfTestButton">Run self-test</button>
-      <pre id="selfTestResult" hidden></pre>
-      <button id="unpairButton" class="danger">Unpair device</button>
+    <section id="pairedSection" class="card controls-card" aria-labelledby="controlsTitle" hidden>
+      <div class="section-heading">
+        <h2 id="controlsTitle">Controls</h2>
+      </div>
+      <div class="button-stack">
+        <button id="privateTabButton" class="secondary">Mark current tab private</button>
+        <button id="selfTestButton" class="secondary">Run self-test</button>
+        <button id="unpairButton" class="danger">Unpair device</button>
+      </div>
+      <pre id="selfTestResult" aria-live="polite" hidden></pre>
     </section>
+
+    <footer>Private by design <span aria-hidden="true">&middot;</span> Background-first</footer>
   </main>
   <script type="module" src="popup.js"></script>
 </body>

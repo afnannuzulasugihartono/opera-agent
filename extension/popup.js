@@ -7,8 +7,26 @@ async function call(action, extra = {}) {
 }
 
 function friendlyTime(value) {
-  if (!value) return '—';
-  try { return new Date(value).toLocaleTimeString(); } catch { return '—'; }
+  if (!value) return '\u2014';
+  try {
+    return new Date(value).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return '\u2014';
+  }
+}
+
+function friendlyStatus(status) {
+  const labels = {
+    ready: 'Connected',
+    connecting: 'Connecting',
+    reconnecting: 'Reconnecting',
+    starting: 'Starting',
+    unpaired: 'Not paired'
+  };
+  return labels[status] || status.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function setBusy(button, busy) {
@@ -18,18 +36,19 @@ function setBusy(button, busy) {
 async function refresh() {
   const data = await call('status');
   if (!data?.ok) return;
-  $('version').textContent = `v${data.version} · protocol ${data.protocolVersion}`;
+  $('version').textContent = `v${data.version} \u00b7 Protocol ${data.protocolVersion}`;
   $('deviceName').textContent = data.config.deviceName || 'opera';
   const state = data.state || {};
   const status = String(state.status || (data.config.paired ? 'connecting' : 'unpaired'));
-  $('connection').textContent = status;
+  $('connection').textContent = friendlyStatus(status);
   $('lastCommand').textContent = friendlyTime(state.lastCommandAt);
   currentTabId = data.currentTabId;
   currentTabPrivate = !!data.currentTabPrivate;
   $('visionPrivacy').textContent = currentTabPrivate ? 'Blocked (private)' : 'Allowed';
+  $('visionPrivacy').className = `privacy ${currentTabPrivate ? 'blocked' : 'allowed'}`;
   $('privateTabButton').textContent = currentTabPrivate ? 'Allow vision on current tab' : 'Mark current tab private';
   $('privateTabButton').disabled = currentTabId == null;
-  $('statusBadge').textContent = status.replace(/\b\w/g, (m) => m.toUpperCase());
+  $('statusBadge').textContent = friendlyStatus(status);
   $('statusBadge').className = `badge ${status}`;
   $('pairSection').hidden = !!data.config.paired;
   $('pairedSection').hidden = !data.config.paired;
