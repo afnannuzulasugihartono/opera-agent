@@ -9,6 +9,7 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 - Added generic before/after scroll-container metrics, movement detection, DOM-change detection, bounded settling, and directional boundary detection to existing scroll and wheel results.
 - Added a deterministic DOM scroll fallback when a background CDP wheel event cannot move an available container, while preserving debugger input as the primary path and reporting the path used.
 - Added a lazy-loaded nested-scroll regression fixture that proves two-pass collection, stable-key deduplication, true viewport state, and active-tab/window preservation in controlled Chromium and isolated real Opera.
+- Published a verified same-identity signed candidate through the private update channel while retaining 1.4.0 as the immediate rollback.
 
 ### Compatibility — 1.5.0 development candidate
 - Protocol remains 1 with the same 26 allowlisted capabilities and the same 17 MCP tool names; no new tool discovery is required.

@@ -114,7 +114,7 @@ Exit criterion met: an inactive HTTP/HTTPS tab was captured without changing the
 
 Priority: **P1**, built on background execution and adaptive capture.
 
-Status: **Checkpoint 4A implemented and passing controlled Chromium plus isolated real-Opera regression in the 1.5.0 source candidate**. Existing tool responses now expose generic scroll/viewport observability, mutation settling, and stable element identity. MCP version 12 is deployed with the same tool inventory and passes public health/auth checks. Signed installed-Opera and multi-site acceptance remain before stable release.
+Status: **Checkpoint 4A implemented, signed, and passing controlled Chromium plus isolated real-Opera regression in the 1.5.0 candidate**. Existing tool responses now expose generic scroll/viewport observability, mutation settling, and stable element identity. MCP version 12 is deployed with the same tool inventory and passes public health/auth checks. The same-identity update channel serves the verified candidate; installed-Opera and multi-site acceptance remain before stable release.
 
 - Implement a bounded `observe -> decide -> browser.burst -> verify` loop.
 - Prefer DOM refs and accessibility data; use visual coordinates only when semantic targeting is unavailable.
