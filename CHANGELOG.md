@@ -4,6 +4,13 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Added — 1.2.0
+- Added `browser.burst`, a strict 1-8 step same-tab sequence over eight existing page-action types.
+- Added stop-on-first-failure results, per-step timings, a 12-second total timeout, a 256 KiB result cap, and lazy debugger-session reuse inside each burst.
+- Added the focused MCP tool `run_browser_burst` with a discriminated action schema; no raw command, JavaScript, loop, branch, nesting, or tab-navigation escape hatch is exposed.
+- Added a production method-registry migration while keeping the historical `browser.plan` experiment quarantined.
+- Verified the source build in real Opera, including a five-action burst and 20/20 two-step stability runs.
+
 ### Added — MCP
 - Added an authenticated stateless Streamable HTTP MCP server with 16 focused browser tools and model-facing instructions that make Opera Agent discoverable without mentioning Supabase.
 - Added static Bearer authentication for controlled testing plus allowlisted Supabase Auth JWT support for OAuth clients.

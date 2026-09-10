@@ -10,7 +10,7 @@ The MCP layer gives AI clients focused, discoverable browser tools. Supabase rem
 
 ## Tools
 
-The server exposes focused tools for browser health, tabs, page reading, semantic element discovery, trusted element clicks, safe field input, navigation keys, page scrolling, and visible pointer move/click/drag/wheel operations. It intentionally does not expose a raw command tool.
+The server exposes focused tools for browser health, tabs, page reading, semantic element discovery, trusted element clicks, safe field input, navigation keys, page scrolling, and visible pointer move/click/drag/wheel operations. `run_browser_burst` combines 1-8 known dependent actions on one tab into one relay command. It intentionally does not expose a raw command tool or general workflow interpreter.
 
 The extension remains the enforcement boundary. It validates the method allowlist and blocks password, PIN, OTP, payment/security-code, and file-upload targets.
 

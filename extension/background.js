@@ -2,6 +2,8 @@ import {
   PRODUCT_VERSION,
   PROTOCOL_VERSION,
   METHOD_SPECS,
+  BURST_ACTION_METHODS,
+  BURST_MAX_TIMEOUT_MS,
   validateCommand,
   normalizeError,
   safeUrl,
@@ -13,6 +15,7 @@ const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'devic
 const WAKE_ALARM = 'opera-agent-wake';
 const HTTP_URL_RE = /^https?:\/\//i;
 const MAX_RESULT_BYTES = 512 * 1024;
+const MAX_BURST_RESULT_BYTES = 256 * 1024;
 
 let loopPromise = null;
 let loopGeneration = 0;
@@ -132,20 +135,23 @@ async function contentCall(tabId, method, params = {}) {
   return response;
 }
 
-async function trustedClick(tabId, ref) {
-  const info = await contentCall(tabId, 'page.click_info', { ref });
-  const x = info.rect?.centerX;
-  const y = info.rect?.centerY;
-  if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
+async function withDebugger(tabId, context, work) {
+  const shared = context?.debuggerSession;
+  if (shared) {
+    if (shared.tabId !== tabId) throw new Error('Burst debugger cannot switch tabs.');
+    if (!shared.attached) {
+      await chrome.debugger.attach({ tabId }, '1.3');
+      shared.attached = true;
+    }
+    return work({ tabId });
+  }
+
   const target = { tabId };
   let attached = false;
   try {
     await chrome.debugger.attach(target, '1.3');
     attached = true;
-    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
-    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
-    return { ok: true, ref, method: 'debugger', x, y };
+    return await work(target);
   } finally {
     if (attached) {
       try { await chrome.debugger.detach(target); } catch {}
@@ -153,7 +159,20 @@ async function trustedClick(tabId, ref) {
   }
 }
 
-async function trustedPointer(tabId, params) {
+async function trustedClick(tabId, ref, context) {
+  const info = await contentCall(tabId, 'page.click_info', { ref });
+  const x = info.rect?.centerX;
+  const y = info.rect?.centerY;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
+  return withDebugger(tabId, context, async (target) => {
+    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+    return { ok: true, ref, method: 'debugger', x, y };
+  });
+}
+
+async function trustedPointer(tabId, params, context) {
   const tab = await chrome.tabs.get(tabId);
   const window = await chrome.windows.get(tab.windowId);
   if (!tab.active || !window.focused) throw new Error('Pointer actions require the active, focused tab.');
@@ -162,11 +181,7 @@ async function trustedPointer(tabId, params) {
   const end = action === 'drag'
     ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: params.showCursor !== false, action })
     : null;
-  const target = { tabId };
-  let attached = false;
-  try {
-    await chrome.debugger.attach(target, '1.3');
-    attached = true;
+  return withDebugger(tabId, context, async (target) => {
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
     if (action === 'click') {
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1 });
@@ -179,9 +194,7 @@ async function trustedPointer(tabId, params) {
       await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseWheel', x: start.x, y: start.y, deltaX: clamp(params.deltaX, -1200, 1200, 0), deltaY: clamp(params.deltaY, -1200, 1200, 0) });
     }
     return { ok: true, method: 'debugger', action, start, end };
-  } finally {
-    if (attached) try { await chrome.debugger.detach(target); } catch {}
-  }
+  });
 }
 
 const KEY_MAP = {
@@ -199,27 +212,83 @@ const KEY_MAP = {
   Space: { key: ' ', code: 'Space', windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 }
 };
 
-async function trustedKey(tabId, keyName) {
+async function trustedKey(tabId, keyName, context) {
   const spec = KEY_MAP[keyName];
   if (!spec) throw new Error('Key is not allowlisted.');
   const active = await contentCall(tabId, 'page.active_state', {});
   if (active.sensitive) throw new Error('Keyboard input blocked on sensitive field.');
-  const target = { tabId };
-  let attached = false;
-  try {
-    await chrome.debugger.attach(target, '1.3');
-    attached = true;
+  return withDebugger(tabId, context, async (target) => {
     await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...spec });
     await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...spec });
     return { ok: true, key: keyName, method: 'debugger' };
+  });
+}
+
+function burstStepParams(step, tabId, remainingMs) {
+  const { action, pointerAction, ...values } = step;
+  const params = { ...values, tabId };
+  if (action === 'click') params.trusted = true;
+  if (action === 'key') params.trusted = true;
+  if (action === 'pointer') {
+    params.action = pointerAction || 'click';
+    params.showCursor = true;
+  }
+  if (action === 'wait') params.timeoutMs = Math.min(clamp(params.timeoutMs, 50, 8000, 3000), remainingMs);
+  return params;
+}
+
+function burstResultSize(results) {
+  try { return new TextEncoder().encode(JSON.stringify(results)).byteLength; } catch { return Number.POSITIVE_INFINITY; }
+}
+
+async function runBurst(params, outerContext = {}) {
+  const tabId = await resolveTabId(params);
+  const startedAt = performance.now();
+  const deadline = Math.min(outerContext.deadline || Date.now() + BURST_MAX_TIMEOUT_MS, Date.now() + BURST_MAX_TIMEOUT_MS);
+  const context = { ...outerContext, deadline, debuggerSession: { tabId, attached: false } };
+  const results = [];
+
+  try {
+    for (let index = 0; index < params.steps.length; index += 1) {
+      const remainingMs = deadline - Date.now();
+      if (remainingMs < 50) throw new Error('Burst timeout.');
+      const step = params.steps[index];
+      const method = BURST_ACTION_METHODS[step.action];
+      const stepStartedAt = performance.now();
+      try {
+        const result = await dispatch(method, burstStepParams(step, tabId, remainingMs), context);
+        if (step.action === 'wait' && result?.ok === false) throw new Error(String(result.error || 'wait_for timeout'));
+        const entry = { index, action: step.action, ok: true, timingMs: Math.round((performance.now() - stepStartedAt) * 100) / 100, result };
+        if (burstResultSize([...results, entry]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);
+        results.push(entry);
+      } catch (error) {
+        return {
+          ok: false,
+          tabId,
+          completedSteps: index,
+          failedAt: index,
+          failedAction: step.action,
+          error: normalizeError(error),
+          results,
+          timingMs: Math.round((performance.now() - startedAt) * 100) / 100
+        };
+      }
+    }
+    return {
+      ok: true,
+      tabId,
+      completedSteps: results.length,
+      results,
+      timingMs: Math.round((performance.now() - startedAt) * 100) / 100
+    };
   } finally {
-    if (attached) {
-      try { await chrome.debugger.detach(target); } catch {}
+    if (context.debuggerSession.attached) {
+      try { await chrome.debugger.detach({ tabId }); } catch {}
     }
   }
 }
 
-async function dispatch(method, params = {}) {
+async function dispatch(method, params = {}, context = {}) {
   switch (method) {
     case 'browser.ping': {
       const cfg = await getConfig();
@@ -234,6 +303,8 @@ async function dispatch(method, params = {}) {
         time: nowIso()
       };
     }
+    case 'browser.burst':
+      return runBurst(params, context);
     case 'tabs.list': {
       const tabs = await chrome.tabs.query(params.currentWindow ? { currentWindow: true } : {});
       return { ok: true, tabs: tabs.map(publicTab) };
@@ -321,17 +392,17 @@ async function dispatch(method, params = {}) {
     }
     case 'page.click': {
       const tabId = await resolveTabId(params);
-      const result = params.trusted ? await trustedClick(tabId, params.ref) : await contentCall(tabId, 'page.click', params);
+      const result = params.trusted ? await trustedClick(tabId, params.ref, context) : await contentCall(tabId, 'page.click', params);
       return { ...result, tabId };
     }
     case 'page.pointer': {
       const tabId = await resolveTabId(params);
-      const result = await trustedPointer(tabId, params);
+      const result = await trustedPointer(tabId, params, context);
       return { ...result, tabId };
     }
     case 'page.key': {
       const tabId = await resolveTabId(params);
-      const result = params.trusted ? await trustedKey(tabId, params.key) : await contentCall(tabId, 'page.key', params);
+      const result = params.trusted ? await trustedKey(tabId, params.key, context) : await contentCall(tabId, 'page.key', params);
       return { ...result, tabId };
     }
     default:
@@ -355,7 +426,7 @@ async function executeCommand(raw) {
   const deadline = Date.now() + command.timeoutMs;
   try {
     const result = await Promise.race([
-      dispatch(command.method, command.params),
+      dispatch(command.method, command.params, { deadline }),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout.')), Math.max(1, deadline - Date.now())))
     ]);
     return { ok: true, result: boundedResult(result) };

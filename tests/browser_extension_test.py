@@ -211,7 +211,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.1.1'
+        assert result['version'] == '1.2.0'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -299,6 +299,37 @@ async def run(port, profile):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['item']['value'] == 'hello opera agent'
 
+        burst_steps = [
+            {'action': 'fill', 'ref': safe_ref, 'value': 'fast burst'},
+            {'action': 'key', 'key': 'Tab'},
+            {'action': 'pointer', 'pointerAction': 'click', 'x': toggle['rect']['centerX'], 'y': toggle['rect']['centerY']},
+            {'action': 'wait', 'selector': '#toggle', 'timeoutMs': 1000},
+            {'action': 'read', 'offset': 0, 'limit': 300, 'includeElements': False}
+        ]
+        cid = STATE.push('browser.burst', {'tabId': tab_id, 'steps': burst_steps}, benchmark='browser.burst.fill+key+pointer+wait+read')
+        burst = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert burst['ok'] is True, burst
+        assert burst['completedSteps'] == len(burst_steps)
+        assert [step['action'] for step in burst['results']] == ['fill', 'key', 'pointer', 'wait', 'read']
+        assert burst['results'][1]['result']['method'] == 'debugger'
+        assert burst['results'][2]['result']['method'] == 'debugger'
+        assert 'elements' not in burst['results'][4]['result']['page']
+
+        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#safe', 'includeValue': True})
+        assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['value'] == 'fast burst'
+
+        for index in range(20):
+            cid = STATE.push('browser.burst', {
+                'tabId': tab_id,
+                'steps': [
+                    {'action': 'find', 'text': 'Toggle', 'limit': 3},
+                    {'action': 'read', 'offset': 0, 'limit': 300, 'includeElements': False}
+                ]
+            }, benchmark=f'browser.burst.stability.{index + 1}')
+            stable_burst = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+            assert stable_burst['ok'] is True, stable_burst
+            assert stable_burst['completedSteps'] == 2
+
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#secret'})
         secret = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
         cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': secret['rect']['centerX'], 'y': secret['rect']['centerY']})
@@ -309,6 +340,20 @@ async def run(port, profile):
         failed = await asyncio.to_thread(STATE.wait, cid)
         assert failed['ok'] is False
         assert 'Sensitive field blocked' in failed['error']['message']
+
+        cid = STATE.push('browser.burst', {
+            'tabId': tab_id,
+            'steps': [
+                {'action': 'pointer', 'pointerAction': 'click', 'x': secret['rect']['centerX'], 'y': secret['rect']['centerY']},
+                {'action': 'fill', 'ref': safe_ref, 'value': 'must-not-run'}
+            ]
+        })
+        stopped = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert stopped['ok'] is False
+        assert stopped['completedSteps'] == 0
+        assert stopped['failedAt'] == 0
+        cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#safe', 'includeValue': True})
+        assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['value'] == 'fast burst'
 
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#file'})
         file_el = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
@@ -326,7 +371,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.1.1'
+        assert result['version'] == '1.2.0'
 
         await context.close()
         import os
@@ -368,6 +413,8 @@ async def run(port, profile):
             'navigationFastPath': True,
             'trustedClick': True,
             'genericPointer': True,
+            'boundedBurst': True,
+            'boundedBurstStabilityRuns': 20,
             'sensitiveFillBlocked': True,
             'fileUploadBlocked': True,
             'networkReconnect': True,
