@@ -40,6 +40,8 @@ Priority: **P0**. Target: the next backward-compatible feature release, expected
 
 ### Checkpoint 2A — focus audit and regression harness
 
+Status: **complete on the Opera 1.2.0 baseline**. The real-Opera harness preserved user tab A and the focused window across all 22 audited command executions. See `docs/background-execution.md` for the support matrix; media actions remain explicitly unresolved for Checkpoint 2C rather than being assumed safe.
+
 - Classify every primitive as background-safe, explicitly foreground-only, or unresolved.
 - Add a two-tab real-Opera fixture: tab A remains user-active while tab B is the automation target.
 - Record active tab ID, focused window ID, and target tab ID before and after every tested command.

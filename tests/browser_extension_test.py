@@ -148,6 +148,41 @@ def assert_completed_ok(body):
     assert body.get('result') is not None, body
     return body['result']
 
+async def browser_focus_state(worker):
+    return await worker.evaluate('''async () => {
+        const windows = await chrome.windows.getAll({populate: true, windowTypes: ['normal']});
+        const focusedWindow = windows.find((item) => item.focused) || null;
+        const activeTab = focusedWindow
+            ? (focusedWindow.tabs || []).find((item) => item.active) || null
+            : null;
+        return {
+            focusedWindowId: focusedWindow ? focusedWindow.id : null,
+            activeTabId: activeTab ? activeTab.id : null,
+            activeUrl: activeTab ? activeTab.url : null
+        };
+    }''')
+
+async def audited_background_command(worker, audit, method, params=None, timeout=20):
+    command_params = params or {}
+    before = await browser_focus_state(worker)
+    cid = STATE.push(method, command_params)
+    body = await asyncio.to_thread(STATE.wait, cid, timeout)
+    after = await browser_focus_state(worker)
+    preserved = (
+        before['focusedWindowId'] == after['focusedWindowId']
+        and before['activeTabId'] == after['activeTabId']
+    )
+    audit.append({
+        'method': method,
+        'targetTabId': command_params.get('tabId'),
+        'commandOk': body.get('ok') is True,
+        'before': before,
+        'after': after,
+        'focusPreserved': preserved
+    })
+    assert preserved, f'{method} stole browser focus: before={before}, after={after}'
+    return body
+
 async def wait_worker(context, timeout_ms=10000):
     deadline = time.time() + timeout_ms / 1000
     while time.time() < deadline:
@@ -367,6 +402,132 @@ async def run(port, profile):
         assert result['count'] == 1
         assert result['links'][0]['url'].startswith(f'http://{HOST}:{port}/page')
 
+        # Checkpoint 2A: keep a user tab active while every background-capable
+        # primitive targets the original, now-inactive automation tab.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/page?user-active=1',
+            'active': True,
+            'wait': True
+        })
+        user_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']
+        focus_audit = []
+        baseline = await browser_focus_state(worker)
+        assert baseline['activeTabId'] == user_tab['id'], baseline
+        assert baseline['activeTabId'] != tab_id, baseline
+        assert baseline['focusedWindowId'] is not None, baseline
+
+        body = await audited_background_command(worker, focus_audit, 'tabs.list', {
+            'currentWindow': True
+        })
+        assert len(assert_completed_ok(body)['tabs']) >= 2
+        body = await audited_background_command(worker, focus_audit, 'tabs.get', {
+            'tabId': tab_id
+        })
+        assert assert_completed_ok(body)['tab']['id'] == tab_id
+        body = await audited_background_command(worker, focus_audit, 'tabs.find', {
+            'urlContains': f'{HOST}:{port}/page', 'limit': 20
+        })
+        assert assert_completed_ok(body)['count'] >= 2
+        body = await audited_background_command(worker, focus_audit, 'tabs.open', {
+            'url': f'http://{HOST}:{port}/page?background-aux=1',
+            'active': False,
+            'wait': True
+        })
+        background_aux_tab_id = assert_completed_ok(body)['tab']['id']
+        body = await audited_background_command(worker, focus_audit, 'tabs.close', {
+            'tabId': background_aux_tab_id
+        })
+        assert assert_completed_ok(body)['tabId'] == background_aux_tab_id
+
+        body = await audited_background_command(worker, focus_audit, 'page.read', {
+            'tabId': tab_id, 'offset': 0, 'limit': 300, 'includeElements': False
+        })
+        assert assert_completed_ok(body)['page']['textChars'] == 300
+
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#safe', 'includeValue': True
+        })
+        background_safe_ref = assert_completed_ok(body)['item']['ref']
+        body = await audited_background_command(worker, focus_audit, 'page.fill', {
+            'tabId': tab_id, 'ref': background_safe_ref, 'value': 'background fill'
+        })
+        assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'page.focus', {
+            'tabId': tab_id, 'ref': background_safe_ref
+        })
+        assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'page.key', {
+            'tabId': tab_id, 'key': 'End', 'trusted': False
+        })
+        assert assert_completed_ok(body)['key'] == 'End'
+        body = await audited_background_command(worker, focus_audit, 'page.key', {
+            'tabId': tab_id, 'key': 'Tab', 'trusted': True
+        })
+        assert assert_completed_ok(body)['method'] == 'debugger'
+
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#toggle'
+        })
+        background_toggle_ref = assert_completed_ok(body)['item']['ref']
+        body = await audited_background_command(worker, focus_audit, 'page.click', {
+            'tabId': tab_id, 'ref': background_toggle_ref, 'trusted': False
+        })
+        assert assert_completed_ok(body)['method'] == 'synthetic'
+        body = await audited_background_command(worker, focus_audit, 'page.click', {
+            'tabId': tab_id, 'ref': background_toggle_ref, 'trusted': True
+        })
+        assert assert_completed_ok(body)['method'] == 'debugger'
+
+        body = await audited_background_command(worker, focus_audit, 'page.find', {
+            'tabId': tab_id, 'text': 'Toggle', 'limit': 3
+        })
+        assert assert_completed_ok(body)['count'] >= 1
+        body = await audited_background_command(worker, focus_audit, 'page.collect_links', {
+            'tabId': tab_id, 'sameOrigin': True, 'limit': 20
+        })
+        assert assert_completed_ok(body)['count'] == 1
+        body = await audited_background_command(worker, focus_audit, 'page.wait_for', {
+            'tabId': tab_id, 'selector': '#toggle', 'timeoutMs': 1000
+        })
+        assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'page.scroll', {
+            'tabId': tab_id, 'deltaY': 120
+        })
+        assert_completed_ok(body)
+
+        body = await audited_background_command(worker, focus_audit, 'tabs.navigate', {
+            'tabId': tab_id,
+            'url': f'http://{HOST}:{port}/page?background-target=1',
+            'wait': True
+        })
+        assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'tabs.reload', {
+            'tabId': tab_id, 'wait': True
+        })
+        assert_completed_ok(body)
+
+        background_burst_steps = [
+            {'action': 'find', 'text': 'Toggle', 'limit': 3},
+            {'action': 'wait', 'selector': '#toggle', 'timeoutMs': 1000},
+            {'action': 'scroll', 'y': 80},
+            {'action': 'read', 'offset': 0, 'limit': 300, 'includeElements': False}
+        ]
+        body = await audited_background_command(worker, focus_audit, 'browser.burst', {
+            'tabId': tab_id, 'steps': background_burst_steps
+        })
+        background_burst = assert_completed_ok(body)
+        assert background_burst['ok'] is True, background_burst
+        assert background_burst['completedSteps'] == len(background_burst_steps)
+
+        # Generic pointer is deliberately foreground-only. Its rejection must
+        # also preserve the user's active tab and focused window.
+        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+            'tabId': tab_id, 'action': 'click', 'x': 10, 'y': 10
+        })
+        assert body['ok'] is False, body
+        assert 'active, focused tab' in body['error']['message']
+        assert all(item['focusPreserved'] for item in focus_audit), focus_audit
+
         STATE.fail_pull_until = time.time() + 1.2
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
@@ -415,6 +576,10 @@ async def run(port, profile):
             'genericPointer': True,
             'boundedBurst': True,
             'boundedBurstStabilityRuns': 20,
+            'backgroundFocusAudit': focus_audit,
+            'backgroundFocusAuditCommands': len(focus_audit),
+            'backgroundFocusPreserved': all(item['focusPreserved'] for item in focus_audit),
+            'backgroundPointerRejected': True,
             'sensitiveFillBlocked': True,
             'fileUploadBlocked': True,
             'networkReconnect': True,
