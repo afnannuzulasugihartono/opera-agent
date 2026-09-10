@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
 
 test('version and protocol are stable', () => {
-  assert.equal(PRODUCT_VERSION, '1.2.0');
+  assert.equal(PRODUCT_VERSION, '1.3.0');
   assert.equal(PROTOCOL_VERSION, 1);
 });
 

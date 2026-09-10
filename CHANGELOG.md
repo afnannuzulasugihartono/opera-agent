@@ -4,12 +4,12 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
-### Changed — background CDP input candidate
+### Changed — 1.3.0 release candidate
 - Added invisible coordinate mouse input for explicitly targeted background tabs through Chrome DevTools Protocol, while keeping the visible pointer limited to an active foreground tab.
 - Routed trusted text entry through `Input.insertText`, including normal inputs and contenteditable elements, with a final sensitive-target and active-element safety check immediately before dispatch.
 - Added structured `FOREGROUND_REQUIRED` failures when a visible foreground pointer is requested for an inactive tab instead of silently activating or switching tabs.
 - Expanded the two-tab focus audit to cover background fill, key, coordinate click, canvas interaction, burst execution, sensitive-field blocking, and foreground-pointer rejection without changing the user's active tab.
-- Verified the deterministic suite in real Opera and the adaptive background-input path against live Google Maps in isolated Chromium. Release version remains `1.2.0` until the signed `1.3.0` rollout checkpoint.
+- Verified the deterministic suite in real Opera and the adaptive background-input path against live Google Maps in isolated Chromium. Prepared the same-identity signed `1.3.0` rollout while retaining `1.2.0` as the active rollback until production acceptance.
 
 ### Added — 1.2.0
 - Added `browser.burst`, a strict 1-8 step same-tab sequence over eight existing page-action types.
