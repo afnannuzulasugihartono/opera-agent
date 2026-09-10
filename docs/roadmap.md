@@ -98,7 +98,7 @@ Exit criterion met: production runs completed without focus theft, the evidence 
 
 Priority: **P1**, only after Milestone 2 passes.
 
-Status: **Checkpoint 3A implemented and verified in controlled Chromium and isolated real Opera; signed installed-Opera and production acceptance remain**. The 1.4.0 candidate now exposes bounded viewport/crop JPEG capture, native MCP image content, hash reuse, blank-frame rejection, atomic relay scrubbing, background-focus preservation, and local privacy controls.
+Status: **Checkpoint 3A implemented and verified in controlled Chromium, isolated real Opera, and the signed installed Opera profile; final ChatGPT native-image acceptance remains**. The active 1.4.0 production candidate exposes bounded viewport/crop JPEG capture, native MCP image content, hash reuse, blank-frame rejection, atomic relay scrubbing, background-focus preservation, and local privacy controls. Live Google Maps capture succeeded in background without changing the active tab.
 
 - Add a bounded `capture_page` capability using target-tab CDP `Page.captureScreenshot`; do not depend on `captureVisibleTab` for hidden tabs.
 - Support viewport capture and validated crop rectangles first; defer full-page stitching until required.
@@ -108,7 +108,7 @@ Status: **Checkpoint 3A implemented and verified in controlled Chromium and isol
 - Block internal Opera pages, incognito contexts, password/payment/OTP surfaces, and user-designated private tabs.
 - Test hidden-tab rendering, canvas pages, zoom/device scale, background throttling, blank-frame detection, and rollback.
 
-Exit criterion: an inactive HTTP/HTTPS tab can be captured without changing the user's active tab or focused window, with deterministic resource bounds. Controlled-browser evidence passes; signed installed-Opera acceptance is still required before publishing 1.4.0.
+Exit criterion: an inactive HTTP/HTTPS tab can be captured without changing the user's active tab or focused window, with deterministic resource bounds. Browser and relay evidence pass; native image delivery in a connected ChatGPT conversation is the remaining release gate.
 
 ## Milestone 4 — vision-guided navigation
 
