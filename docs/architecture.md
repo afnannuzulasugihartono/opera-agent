@@ -99,6 +99,14 @@ media.seek
 
 Trusted click/key behavior is selected through parameters on the generic page primitives; it is not a site-specific method. `browser.burst` is a linear, same-tab transport optimization over eight existing page actions, not a workflow language; site-specific orchestration remains in Supabase.
 
+## Focus and automation targets
+
+The user's visible tab and the automation target are separate concepts. Background-safe commands address an explicit `tabId` and must not activate that tab, focus its window, or redirect operating-system input. Element focus inside a background document is not permission to change browser/window focus.
+
+Foreground interaction is explicit. If a target cannot accept background input, the extension should return `FOREGROUND_REQUIRED` instead of silently calling `tabs.activate`. Visible pointer behavior is a foreground diagnostic surface; background coordinate input, when supported, is dispatched directly to the target renderer through a bounded debugger session.
+
+See [roadmap.md](roadmap.md) for the background execution, adaptive screenshot, and vision acceptance plan.
+
 ## Latency architecture
 
 The performance target is not "make every selector faster". The preferred order is:
