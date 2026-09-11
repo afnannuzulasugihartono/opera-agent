@@ -1,6 +1,6 @@
 # Milestone 6 implementation plan
 
-Status: **Checkpoints 6A through 6C complete; Checkpoint 6D is next**
+Status: **Checkpoints 6A through 6D complete; Checkpoint 6E is next**
 
 Milestone 6 adds a Goal and Constraint Ledger plus a scoped Proof Engine above the
 accepted Opera Agent 1.6.0 semantic runtime. It must turn an explicit user request
@@ -347,6 +347,20 @@ Exit gates:
 Rollback: disable evaluator exposure; 1.6.0 descriptive completion remains intact.
 
 ## Checkpoint 6D — live revisions and selective evidence reuse
+
+Status: **complete on 2026-09-11**. The pure `lib/revision-reuse.js` adds
+metadata-only dependency fingerprints, deterministic `EQUIVALENT`, `NARROW`,
+`EXPAND`, and `INCOMPATIBLE` revision classification, selective semantic-delta
+invalidation, and bounded tamper-evident carry-forward receipts. Unrelated and
+geometry-only changes preserve eligible evidence; relevant view/entity changes,
+removal, ambiguity, expiry, missing claims, and incompatible revisions invalidate
+only affected bindings. Expansion conservatively carries no evidence, so it
+cannot inherit completion. `lib/minimal-head-store.js` supplies a Node SQLite
+adapter used only with temporary local test databases to verify restart-safe
+heads, optimistic revision/digest checks, cancellation, expiry, and the frozen
+eight-column metadata-only schema. Nine focused tests bring the suite to 108
+passing tests. No production database, Supabase project, MCP tool, extension,
+protocol, capability, or browser behavior changed.
 
 Connect ledger revisions to semantic dependencies without adding a browser VM.
 

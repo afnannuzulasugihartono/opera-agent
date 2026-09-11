@@ -215,3 +215,13 @@ MCP, extension, or production path. The 12-case adversarial corpus recorded zero
 false `PROVED` outcomes. Proof receipts remain below 128 KiB or fail closed with
 `OVER_LIMIT`; the evaluator never truncates a receipt while retaining a positive
 completion status.
+
+### Checkpoint 6D reuse correctness gate
+
+Checkpoint 6D adds no new latency claim. Nine deterministic tests verify that
+unrelated and geometry-only deltas preserve eligible evidence, while relevant
+updates, removal, ambiguity, expiry, stale/forked lineage, and goal expansion fail
+closed. Temporary SQLite restart tests exercise only the eight frozen minimal-head
+columns and confirm that raw objective, predicate, constraint, and page content are
+absent. The full suite passes 108 tests; production storage and browser paths are
+not exercised or changed by this checkpoint.

@@ -39,7 +39,7 @@ observations.
 
 Do not redo Milestone 5 unless a regression is demonstrated. Milestone 6: Goal and
 Constraint Ledger + Proof Engine has an accepted Checkpoint 6A–6F plan in
-docs/milestone-6-plan.md. Checkpoints 6A through 6C are complete. The frozen fixtures
+docs/milestone-6-plan.md. Checkpoints 6A through 6D are complete. The frozen fixtures
 and five 6A tests define the contract. The portable `lib/goal-ledger.js` core and
 ten 6B tests implement strict validation, canonical digests, immutable creation,
 monotonic lineage, stale/fork/authority-broadening rejection, terminal transitions,
@@ -51,12 +51,21 @@ canonical proof receipts. Its 12-case adversarial corpus has zero false `PROVED`
 the full suite has 99 passing tests, and the controlled 500-evidence benchmark
 records 1.9055 ms median and 2.4166 ms p95.
 
-The next engineering task is Checkpoint 6D only. Add deterministic failing tests
-before implementing dependency fingerprints, narrowing/expansion compatibility,
-selective invalidation, explicit carry-forward receipts, deterministic entity
-reorder/removal/ambiguity/expiry handling, and restart-safe minimal-head token
-verification in a local test database or isolated branch. Do not change production
-or expose ledger/proof tools through MCP; those decisions remain gated by 6E.
+Checkpoint 6D adds pure metadata-only dependency fingerprints, deterministic
+revision compatibility, selective delta invalidation, and bounded canonical
+carry-forward receipts in `lib/revision-reuse.js`. Equivalent and claim-set-
+narrowed revisions reuse structurally identical claims; expansion never carries
+completion. A local-test-only Node SQLite adapter verifies the frozen eight-column
+minimal head across restart, stale/forked tokens, cancellation, and expiry. Nine
+new tests bring the full suite to 108 passing tests. Production Supabase and the
+public MCP/extension surfaces remain unchanged.
+
+The next engineering task is Checkpoint 6E only. Inspect the 6A decision record,
+the exact 18-tool MCP fixture, OAuth tenant binding, migrations, deployment state,
+and security advisors before choosing an internal-only surface or the smallest
+new exact tool contract. Any integration must be feature-flagged, bounded,
+idempotent, tenant-isolated, rollback-safe, and must preserve every existing tool
+schema. Do not modify the extension or require reinstalling or re-pairing.
 
 Non-negotiable rules:
 
@@ -90,9 +99,9 @@ containers, map-driven result changes, non-radius scale labels, canvas-only POI
 labels, and the need for Place-ID/URL/coordinate deduplication. Never claim
 geographic exhaustiveness from one scroll-to-end pass.
 
-Start by reporting repository/branch state and confirming the Checkpoint 6D
-boundary. Treat the 6A fixtures, 6B ledger behavior, and 6C proof safety rules as
-authoritative; do not weaken their limits or invariants to make reuse pass.
+Start by reporting repository/branch state and confirming the Checkpoint 6E
+boundary. Treat the 6A fixtures, 6B ledger behavior, 6C proof safety rules, and 6D
+conservative reuse policy as authoritative; do not weaken them for integration.
 
 Before ending any session that changes project state, update both
 docs/project-context.md and docs/next-session-handoff.md with verified facts and

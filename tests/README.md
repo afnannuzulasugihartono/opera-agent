@@ -55,3 +55,11 @@ scope isolation, dependencies, duplicate-boundary resistance, contradiction
 blocking, process-versus-outcome separation, closed-world exhaustiveness, bounded
 receipts, and zero false `PROVED` across the adversarial corpus. Run
 `npm run benchmark:proof` for the non-persisted 500-evidence performance gate.
+
+Checkpoint 6D is implemented by `lib/revision-reuse.js`, the local-test-only
+`lib/minimal-head-store.js`, and `revision-reuse.test.mjs`. It covers deterministic
+dependency fingerprints, equivalent/narrow/expand/incompatible revisions,
+selective view/entity invalidation, reorder safety, removal and ambiguity,
+expiry, bounded carry-forward receipts, stale/fork rejection, restart, cancellation,
+and an exact metadata-only head schema. SQLite files exist only under temporary
+test directories; no production or Supabase database is modified.

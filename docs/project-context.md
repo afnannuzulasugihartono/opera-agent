@@ -232,7 +232,7 @@ These are dependency order, not promised release numbers. Their checkpoint plans
 have not yet been frozen.
 
 - Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6F are
-  planned; 6A through 6C are complete and 6D is next.
+  planned; 6A through 6D are complete and 6E is next.
 - Milestone 7: Reactive Browser VM.
 - Milestone 8: Decision-Causal Transactions and provenance enforcement.
 - Milestone 9: Multi-sensor Physical Plan Optimizer.
@@ -263,10 +263,25 @@ prevalidated evidence items recorded 1.9055 ms median and 2.4166 ms p95, below t
 10 ms target. No browser, network, database, MCP, extension, or production state
 changed.
 
-The next task is Checkpoint 6D only: add failing tests for dependency fingerprints,
-narrowing/expansion compatibility, selective invalidation, explicit carry-forward
-receipts, entity reorder/removal/ambiguity/expiry, and restart-safe minimal-head
-verification. Do not expose the evaluator through MCP or begin 6E integration.
+Checkpoint 6D added `lib/revision-reuse.js` for metadata-only dependency
+fingerprints, deterministic revision relations, selective semantic-delta
+invalidation, and bounded tamper-evident carry-forward receipts. Equivalent and
+claim-set-narrowed revisions reuse only structurally identical retained claims;
+expansion carries nothing and cannot inherit completion. Reorder-only changes are
+safe, while relevant updates, removal, ambiguity, expiry, incompatible claims,
+and stale/forked lineage fail closed. `lib/minimal-head-store.js` is a Node SQLite
+adapter used only with temporary local test databases. It proves restart-safe
+verification, optimistic head updates, cancellation/expiry handling, and the exact
+eight-column metadata-only schema. Nine focused tests bring the suite to 108
+passing tests. No production database, Supabase project, MCP tool, extension,
+protocol, capability, or browser behavior changed.
+
+The next task is Checkpoint 6E only: first inspect the accepted decision record,
+current MCP contract, OAuth tenant binding, and production schema. Decide whether
+the smallest justified surface is internal-only or new exact MCP tools, then gate
+any isolated integration with idempotency, limits, feature rollback, tenant tests,
+security advisors, and preservation of all existing 18 tool schemas. Do not change
+the extension or require reinstalling/re-pairing.
 
 ## Explicitly deferred
 
