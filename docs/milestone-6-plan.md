@@ -436,6 +436,11 @@ retain or purge only non-sensitive head metadata according to the documented TTL
 
 ## Checkpoint 6F — compatibility, production acceptance, and release record
 
+Status: **in progress on 2026-09-12**. Automated, controlled-Chromium, isolated
+Opera, and production Supabase gates pass after the timestamp-order repair recorded
+in `docs/milestone-6-checkpoint-6f.md`. The feature remains disabled pending a real
+allowlisted OAuth success and normal-profile read-only Maps/YouTube/GitHub pass.
+
 Run the full release ladder before declaring Milestone 6 complete.
 
 Required verification:

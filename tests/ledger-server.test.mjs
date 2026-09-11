@@ -14,6 +14,7 @@ const replay = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-replay
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8'));
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260911164000_opera_agent_goal_head.sql', import.meta.url), 'utf8');
 const retryFixMigration = fs.readFileSync(new URL('../supabase/migrations/20260911165500_opera_agent_goal_head_first_apply.sql', import.meta.url), 'utf8');
+const timestampFixMigration = fs.readFileSync(new URL('../supabase/migrations/20260912143000_opera_agent_goal_head_timestamp_order.sql', import.meta.url), 'utf8');
 const endpoint = fs.readFileSync(new URL('../supabase/functions/opera-agent-ledger/index.ts', import.meta.url), 'utf8');
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url));
 const NOW = '2026-09-11T00:01:00Z';
@@ -55,6 +56,10 @@ test('6E keeps the persistent head at exactly eight metadata-only columns', () =
   assert.match(retryFixMigration, /get diagnostics v_inserted = row_count/i);
   assert.match(retryFixMigration, /if v_inserted = 1 then[\s\S]*'replayed', false/i);
   assert.match(retryFixMigration, /revoke all on function public\.opera_goal_head_apply[\s\S]*from public, anon, authenticated/i);
+  assert.match(timestampFixMigration, /greatest\(clock_timestamp\(\), p_created_at\)/i);
+  assert.match(timestampFixMigration, /updated_at = greatest\(clock_timestamp\(\), v_head\.created_at\)/i);
+  assert.doesNotMatch(timestampFixMigration, /updated_at = now\(\)/i);
+  assert.match(timestampFixMigration, /revoke all on function public\.opera_goal_head_apply[\s\S]*from public, anon, authenticated/i);
 });
 
 test('6E endpoint binds every operation to OAuth user identity and exposes no proof-forging surface', () => {

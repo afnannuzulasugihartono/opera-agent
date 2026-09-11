@@ -70,13 +70,19 @@ Four focused tests bring the full suite to 112 passing tests. The feature flag i
 deliberately `false`. Read
 `docs/milestone-6-checkpoint-6e.md` before changing this state.
 
-The next engineering task is Checkpoint 6F only. Run the full Node/static,
-controlled Chromium, isolated Opera, Supabase queue/restart/timeout/cleanup, real
-allowlisted OAuth success, and normal-profile read-only Maps/YouTube/GitHub
-acceptance ladder. Prove zero focus takeover, zero false `PROVED`, zero sensitive
-persistence, and continued compatibility of prior MCP clients. Keep the feature
-disabled until all gates pass. This is a server-only milestone: do not bump,
-reinstall, or re-pair the extension unless 6F discovers a browser-local defect.
+Checkpoint 6F is in progress. Node/static, controlled Chromium, isolated installed
+Opera, benchmarks, and production Supabase queue/idempotency/timeout/tenant/cleanup
+gates pass. The production probe found and repaired a transaction timestamp-order
+race through local migration `20260912143000_opera_agent_goal_head_timestamp_order.sql`
+(Supabase version `20260911231331`). The feature is back to `false`; all synthetic
+rows are gone. Read `docs/milestone-6-checkpoint-6f.md` for exact evidence.
+
+The next task is only the remaining user-session acceptance: obtain a real
+allowlisted OAuth success without exposing the token, then run read-only signed
+normal-profile Maps/YouTube/GitHub goal/proof scenarios and record zero focus
+takeover and zero sensitive persistence. Do not mark 6F complete or enable the
+feature before both pass. This remains server-only; do not bump, reinstall,
+reconnect, logout, or re-pair the extension.
 
 Non-negotiable rules:
 

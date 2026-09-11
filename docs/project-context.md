@@ -290,12 +290,26 @@ protocol, capability, pairing, or signing state changed. The detailed record is
 `docs/milestone-6-checkpoint-6e.md`. Four focused 6E tests bring the full local
 suite to 112 passing tests; static validation remains green.
 
-The next task is Checkpoint 6F only: run the complete compatibility and production
-acceptance ladder, including a real allowlisted OAuth success path, controlled
-Chromium, isolated Opera, Supabase queue/restart/timeout/cleanup, and read-only
-normal-profile Maps/YouTube/GitHub scenarios. Keep the ledger feature disabled
-until those gates pass; do not bump or reinstall the extension for this server-only
-milestone.
+Checkpoint 6F is in progress. The full 112-test suite, static gate, three-run
+controlled-Chromium semantic benchmark, and isolated installed-Opera regression
+pass. Opera preserved all 54 background focus audits, completed 20/20 burst runs,
+and reconnected after network and browser restart. Production queue, enqueue and
+completion idempotency, timeout, stale revision, tenant isolation, and cleanup
+probes pass with zero synthetic rows left. The proof benchmark p95 is 6.7532 ms at
+500 evidence items.
+
+The first production head insert exposed a millisecond timestamp-order race between
+transaction-stable `now()` and Edge-generated `createdAt`. Migration
+`20260912143000_opera_agent_goal_head_timestamp_order.sql`, recorded in Supabase as
+`20260911231331 opera_agent_goal_head_timestamp_order`, now uses bounded wall-clock
+timestamps and preserves `updated_at >= created_at`. Tests lock the repair. The
+ledger feature is again `false`; no extension, MCP schema, signing, pairing,
+protocol, or capability changed. See `docs/milestone-6-checkpoint-6f.md`.
+
+The next task is to complete only the two user-session gates: a real allowlisted
+OAuth success without exposing its token, followed by read-only normal-profile
+goal/proof scenarios on Maps, YouTube, and GitHub. Keep the feature disabled and do
+not mark 6F complete until both are recorded.
 
 ## Explicitly deferred
 
@@ -350,6 +364,8 @@ repository-root `AGENTS.md` so future Codex sessions discover it automatically.
   quantitative gates, rollout, and rollback for the next milestone.
 - `docs/milestone-6-checkpoint-6e.md` — internal server-surface decision,
   encrypted-token boundary, Supabase deployment evidence, and rollback.
+- `docs/milestone-6-checkpoint-6f.md` — current automated/cloud acceptance,
+  timestamp repair, remaining user-session gates, and rollback state.
 - `docs/roadmap.md` — historical Milestones 1–5.
 - `docs/releases/1.6.0.md` — signed release and production acceptance record.
 - `docs/benchmarks.md` — baseline and semantic performance evidence.
