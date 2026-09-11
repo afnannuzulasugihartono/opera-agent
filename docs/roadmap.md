@@ -52,7 +52,10 @@ Exit criterion: the test can reliably detect focus theft before behavior is chan
 
 ### Checkpoint 2B — safe MCP and tab defaults
 
-Status: **implemented, deployed as MCP Edge Function version 9, and locally verified**. Runtime schema inspection confirms explicit `tabId` requirements and background defaults; the real-Opera two-tab suite passes. Final acceptance from the connected ChatGPT session remains pending before this checkpoint is marked complete.
+Status: **complete**. Runtime schema inspection confirmed explicit `tabId`
+requirements and background defaults, and the real-Opera two-tab suite passed.
+Connected-ChatGPT and signed normal-profile acceptance were subsequently completed
+by Checkpoint 2D and preserved through releases 1.3.1–1.6.0.
 
 - Make `open_url` default to `active: false`.
 - Require or propagate an explicit `tabId` after the automation target is selected. Do not fall back to the user's active tab during a multi-step task.
@@ -142,6 +145,17 @@ separate gated milestones.
 
 The complete checkpoint plan, acceptance matrix, security boundary, rollout order,
 and rollback rules are recorded in [Semantic Runtime implementation plan](semantic-runtime-plan.md).
+
+## Milestone 6 — goal ledger and proof engine
+
+Status: **planned; Checkpoint 6A is next**. The milestone introduces a revisioned,
+state-minimized Goal and Constraint Ledger and a deterministic scoped Proof Engine
+above the accepted 1.6.0 semantic runtime. It does not yet add a browser VM,
+transactions, planning, learned skills, or parallel workers.
+
+The complete Checkpoints 6A–6F, threat boundary, quantitative gates, MCP decision
+gate, production acceptance, and rollback rules are recorded in
+[Milestone 6 implementation plan](milestone-6-plan.md).
 
 ## Explicitly deferred
 

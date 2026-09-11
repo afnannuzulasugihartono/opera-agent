@@ -12,11 +12,12 @@ first, in order:
 
 1. docs/project-context.md
 2. docs/semantic-runtime-plan.md
-3. docs/releases/1.6.0.md
-4. docs/roadmap.md
-5. SECURITY.md
-6. README.md
-7. AGENTS.md
+3. docs/milestone-6-plan.md
+4. docs/releases/1.6.0.md
+5. docs/roadmap.md
+6. SECURITY.md
+7. README.md
+8. AGENTS.md
 
 Current verified baseline:
 
@@ -36,11 +37,12 @@ Google Maps, YouTube, and GitHub. Pairing remained valid and the active ChatGPT 
 did not change. Shared refs had zero logical-identity mismatches across repeat
 observations.
 
-Do not redo Milestone 5 unless a regression is demonstrated. The next engineering
-work is to plan Milestone 6: Goal and Constraint Ledger + Proof Engine. Before
-coding, divide it into bounded checkpoints with contracts, explicit non-goals,
-threat model, deterministic failing tests, performance thresholds, controlled
-browser tests, Supabase/MCP compatibility, normal Opera acceptance, and rollback.
+Do not redo Milestone 5 unless a regression is demonstrated. Milestone 6: Goal and
+Constraint Ledger + Proof Engine now has an accepted Checkpoint 6A–6F plan in
+docs/milestone-6-plan.md. The next engineering task is Checkpoint 6A only: freeze
+versioned ledger/evidence/proof fixtures, the threat model, hostile replay corpus,
+canonical digest rules, and the paired 1.6.0 baseline. Do not change production
+schemas, MCP tools, or extension runtime during 6A.
 
 Non-negotiable rules:
 
@@ -74,9 +76,9 @@ containers, map-driven result changes, non-radius scale labels, canvas-only POI
 labels, and the need for Place-ID/URL/coordinate deduplication. Never claim
 geographic exhaustiveness from one scroll-to-end pass.
 
-Start by reporting the repository/branch state and summarizing the proposed
-Milestone 6 checkpoint structure. Do not implement it until that plan is internally
-consistent and its safety/acceptance gates are explicit.
+Start by reporting repository/branch state and confirming the Checkpoint 6A
+boundary. Add deterministic failing contract tests and fixtures before any future
+ledger runtime implementation. Stop at 6A exit gates; do not drift into 6B.
 
 Before ending any session that changes project state, update both
 docs/project-context.md and docs/next-session-handoff.md with verified facts and

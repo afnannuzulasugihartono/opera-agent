@@ -112,6 +112,7 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 - [Project history](docs/history.md)
 - [Durable project context](docs/project-context.md)
 - [Next-session handoff](docs/next-session-handoff.md)
+- [Milestone 6 implementation plan](docs/milestone-6-plan.md)
 - [Changelog](CHANGELOG.md)
 - [Security](SECURITY.md)
 

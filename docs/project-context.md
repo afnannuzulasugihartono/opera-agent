@@ -222,25 +222,27 @@ or private signing-key contents belong in this context file.
 - Milestone 5: semantic runtime foundation — Checkpoints 5A through 5F completed
   and released in 1.6.0.
 
-`docs/roadmap.md` still contains an old Checkpoint 2B sentence saying connected
-ChatGPT acceptance is pending. Later 2D and production acceptance supersede that
-sentence; correcting it is documentation debt, not unfinished engineering.
+The historical Checkpoint 2B status in `docs/roadmap.md` has been reconciled with
+the later connected-ChatGPT and signed normal-profile acceptance from Checkpoint
+2D and releases 1.3.1–1.6.0.
 
 ## Remaining gated milestones
 
 These are dependency order, not promised release numbers. Their checkpoint plans
 have not yet been frozen.
 
-- Milestone 6: Goal and Constraint Ledger + Proof Engine.
+- Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6F are
+  planned; implementation has not started.
 - Milestone 7: Reactive Browser VM.
 - Milestone 8: Decision-Causal Transactions and provenance enforcement.
 - Milestone 9: Multi-sensor Physical Plan Optimizer.
 - Milestone 10: proof-gated reusable skills.
 - Milestone 11: parallel background workers and live goal revisions.
 
-The next planning task is to decompose Milestone 6 into small checkpoints with
-contracts, non-goals, failing tests, benchmarks, browser/cloud acceptance, and a
-rollback gate before implementation begins.
+The next task is Checkpoint 6A: freeze the versioned ledger/evidence/proof
+contracts, threat model, hostile replay corpus, canonical digest rules, and paired
+1.6.0 baseline. It must not change production schemas, MCP tools, or extension
+runtime. The accepted plan is `docs/milestone-6-plan.md`.
 
 ## Explicitly deferred
 
@@ -291,6 +293,8 @@ repository-root `AGENTS.md` so future Codex sessions discover it automatically.
 - `README.md` — current public overview and stable version.
 - `docs/semantic-runtime-plan.md` — detailed Milestone 5 evidence and Milestones
   6–11 dependency order.
+- `docs/milestone-6-plan.md` — accepted Checkpoints 6A–6F, threat model,
+  quantitative gates, rollout, and rollback for the next milestone.
 - `docs/roadmap.md` — historical Milestones 1–5.
 - `docs/releases/1.6.0.md` — signed release and production acceptance record.
 - `docs/benchmarks.md` — baseline and semantic performance evidence.
