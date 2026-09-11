@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "project": "opera-agent",
+  "automation_mode": "chatgpt_scheduled_tasks",
+  "branch": "autodev/m5-chatgpt-legal-loop",
+  "target_version": "1.6.0",
+  "milestone": "5",
+  "checkpoint": "5A",
+  "checkpoint_status": "pending",
+  "phase": "baseline_measurement",
+  "paused": false,
+  "blocked": false,
+  "block_reason": null,
+  "approval_required": false,
+  "approval_action": null,
+  "attempt": 0,
+  "max_repair_attempts": 3,
+  "ci": {
+    "status": "unknown",
+    "run_id": null,
+    "last_checked_commit": null
+  },
+  "last_good_commit": null,
+  "candidate_commit": null,
+  "next_action": "Start Checkpoint 5A. Build the controlled deterministic replay baseline and benchmark evidence without changing semantic behavior.",
+  "safety": {
+    "write_main": false,
+    "auto_merge": false,
+    "auto_release": false,
+    "auto_production_deploy": false,
+    "use_codex": false,
+    "use_work": false,
+    "use_openai_api": false,
+    "automate_chatgpt_ui": false
+  }
+}
