@@ -152,3 +152,12 @@ only an observation; it permits `PROVED` solely for explicit exhaustive evidence
 over a closed-world scope. Browser acceptance additionally verifies that a stable
 feed boundary remains `BOUNDED_COMPLETE` after an unrelated page mutation without
 foreground focus takeover.
+
+### Checkpoint 5F candidate benchmark
+
+Three complete controlled-browser runs of the 1.6.0 candidate produced a 19.83 ms
+median and 20.65 ms p95 rich `page.read`. Compared with the paired 18.78 ms
+accepted 1.5.2 baseline, the median regression is about 5.6%, below the locked
+15% ceiling. The enriched snapshot median was 50,953 bytes; the single-update
+delta remained 6,087 bytes, or 12% of that snapshot. All semantic feature gates
+passed with zero focus changes and zero persisted sensitive values.

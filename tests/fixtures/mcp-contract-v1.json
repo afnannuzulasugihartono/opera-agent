@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "toolCount": 18,
+  "sourceSha256": "6235edffe31b47fb3771e805d9a46b08ab6d576420ac4867a69b75c7a86906d0",
+  "tools": [
+    "browser_status",
+    "run_browser_burst",
+    "list_tabs",
+    "open_url",
+    "activate_tab",
+    "navigate_tab",
+    "close_tab",
+    "read_page",
+    "capture_page",
+    "find_elements",
+    "click_element",
+    "fill_element",
+    "press_key",
+    "scroll_page",
+    "move_pointer",
+    "click_at",
+    "drag_pointer",
+    "wheel_at"
+  ]
+}

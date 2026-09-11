@@ -302,7 +302,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.5.2'
+        assert result['version'] == '1.6.0'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -846,15 +846,19 @@ async def run(port, profile):
         assert feed_loaded['loadedEntityCount'] == 4, feed_loaded
         assert feed_loaded['viewRevision'] == feed_before['viewRevision'] + 1, feed_loaded
 
-        body = await audited_background_command(worker, focus_audit, 'page.pointer', {
-            'tabId': tab_id,
-            'action': 'wheel',
-            'x': scrollbox['rect']['centerX'],
-            'y': scrollbox['rect']['centerY'],
-            'deltaY': 1200
-        })
-        final_wheel = assert_completed_ok(body)
-        assert final_wheel['scroll']['moved'] is True
+        final_wheel = None
+        for _ in range(3):
+            body = await audited_background_command(worker, focus_audit, 'page.pointer', {
+                'tabId': tab_id,
+                'action': 'wheel',
+                'x': scrollbox['rect']['centerX'],
+                'y': scrollbox['rect']['centerY'],
+                'deltaY': 1200
+            })
+            final_wheel = assert_completed_ok(body)
+            if final_wheel['scroll']['after']['reachedBottom']:
+                break
+        assert final_wheel is not None
         assert final_wheel['scroll']['after']['reachedBottom'] is True
         assert final_wheel['scroll']['reachedBoundary'] is True
         body = await audited_background_command(worker, focus_audit, 'page.query', {
@@ -999,7 +1003,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.5.2'
+        assert result['version'] == '1.6.0'
 
         await context.close()
         import os

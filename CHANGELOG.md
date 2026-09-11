@@ -4,6 +4,13 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Added
+- Added document-scoped semantic identities, bounded semantic deltas, generic materialized region views, causal invalidation metadata, observation provenance, and scoped completion evidence to existing rich `page.read` results.
+
+### Compatibility
+- Prepared the 1.6.0 candidate without changing protocol 1, the 26 browser capabilities, the 18 MCP tools, their input schemas, or action targeting.
+- Kept all semantic additions optional and observational; existing refs remain the only element action handles.
+
 ## [1.5.2] - 2026-09-11
 
 ### Fixed

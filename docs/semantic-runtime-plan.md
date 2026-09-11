@@ -471,6 +471,18 @@ Exit evidence:
 
 ### Checkpoint 5F — compatibility, security, and release acceptance
 
+Status: **candidate gate in progress on 2026-09-11**. Static validation and 74
+Node tests pass, including a byte-for-byte lock on the unchanged 18-tool MCP
+contract and a deterministic 250-step mutation fuzz suite. Controlled Chromium
+and isolated Opera 135 pass with zero focus takeover, reconnect/restart coverage,
+and all semantic runtime features enabled. The three-run candidate rich-read
+median is 19.83 ms, about 5.6% above the paired 18.78 ms baseline and below the
+15% ceiling. Production preflight retains active 1.5.2, protocol 1, and 26
+capabilities; HTTP health/OAuth checks, cloud `system.self_test`, transactional
+idempotency, and timeout behavior pass. Signing, inactive candidate upload,
+normal-profile update, live cross-site checks, and final artifact equality remain
+open, so 1.6.0 is not yet promoted.
+
 Compatibility matrix:
 
 | Extension | MCP/server | Required result |
