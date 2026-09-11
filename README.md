@@ -110,6 +110,8 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 - [Release process](docs/release-process.md)
 - [Release archive](docs/releases/README.md)
 - [Project history](docs/history.md)
+- [Durable project context](docs/project-context.md)
+- [Next-session handoff](docs/next-session-handoff.md)
 - [Changelog](CHANGELOG.md)
 - [Security](SECURITY.md)
 
