@@ -17,7 +17,10 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
 
   assert.match(popup, /<dl class="details">/);
   assert.match(popup, /role="alert"/);
-  assert.match(styles, /width:\s*min\(352px, 100vw\)/);
+  assert.match(styles, /width:\s*352px/);
+  assert.match(styles, /min-width:\s*148px/);
+  assert.match(styles, /max-width:\s*100vw/);
+  assert.doesNotMatch(styles, /width:\s*min\(/);
   assert.match(styles, /@media \(max-width: 239px\)/);
   assert.doesNotMatch(styles, /min-width:\s*340px/);
   assert.match(script, /ready:\s*'Connected'/);
