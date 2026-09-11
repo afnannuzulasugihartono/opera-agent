@@ -471,7 +471,7 @@ Exit evidence:
 
 ### Checkpoint 5F — compatibility, security, and release acceptance
 
-Status: **candidate gate in progress on 2026-09-11**. Static validation and 74
+Status: **complete on 2026-09-11**. Static validation and 74
 Node tests pass, including a byte-for-byte lock on the unchanged 18-tool MCP
 contract and a deterministic 250-step mutation fuzz suite. Controlled Chromium
 and isolated Opera 135 pass with zero focus takeover, reconnect/restart coverage,
@@ -482,11 +482,12 @@ capabilities; HTTP health/OAuth checks, cloud `system.self_test`, transactional
 idempotency, and timeout behavior pass. The 35,855-byte CRX3 is verified under the
 established extension identity with SHA-256
 `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
-The database-decoded candidate reproduces the same hash and size. Production
-update XML now advertises 1.6.0, and the served 35,855-byte artifact is hash-equal
-to the local CRX and database record. Signed 1.5.2 remains stored as rollback.
-Normal-profile update and live cross-site checks remain open, so final acceptance
-is not yet complete.
+The database-decoded candidate reproduces the same hash and size. Production XML
+and the downloaded 35,855-byte CRX reproduce that artifact exactly. The normal
+Opera profile updated in place with pairing preserved, and background acceptance
+on Maps, YouTube, and GitHub completed with zero shared-ref identity mismatches
+and no active-tab change. Version 1.6.0 is promoted; signed 1.5.2 remains stored as
+the immediate rollback.
 
 Compatibility matrix:
 

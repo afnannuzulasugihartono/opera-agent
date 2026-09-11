@@ -12,6 +12,7 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.5.0](1.5.0.md) — generic vision-navigation observability and deterministic nested scrolling with an unchanged MCP tool inventory.
 - [1.5.1](1.5.1.md) — professional responsive popup while preserving extension identity, pairing, protocol, and capability inventory.
 - [1.5.2](1.5.2.md) — popup intrinsic-width correction that prevents scrollbar-width collapse in Opera.
+- [1.6.0](1.6.0.md) — semantic identity, bounded deltas, generic materialized views, causal invalidation, and scoped completion evidence.
 
 Future stable releases should use simple SemVer filenames:
 

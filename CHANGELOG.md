@@ -4,12 +4,19 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-11
+
 ### Added
 - Added document-scoped semantic identities, bounded semantic deltas, generic materialized region views, causal invalidation metadata, observation provenance, and scoped completion evidence to existing rich `page.read` results.
 
 ### Compatibility
 - Prepared the 1.6.0 candidate without changing protocol 1, the 26 browser capabilities, the 18 MCP tools, their input schemas, or action targeting.
 - Kept all semantic additions optional and observational; existing refs remain the only element action handles.
+
+### Verified in production
+- Updated the normal Opera profile in place under the unchanged extension ID and preserved pairing, protocol 1, and all 26 capabilities.
+- Verified the private update XML and served 35,855-byte CRX against SHA-256 `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
+- Passed background rich-read acceptance on Google Maps, YouTube, and GitHub with no active-tab change and zero logical-identity mismatch for shared refs.
 
 ## [1.5.2] - 2026-09-11
 
