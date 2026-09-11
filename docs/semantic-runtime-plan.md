@@ -479,9 +479,12 @@ and all semantic runtime features enabled. The three-run candidate rich-read
 median is 19.83 ms, about 5.6% above the paired 18.78 ms baseline and below the
 15% ceiling. Production preflight retains active 1.5.2, protocol 1, and 26
 capabilities; HTTP health/OAuth checks, cloud `system.self_test`, transactional
-idempotency, and timeout behavior pass. Signing, inactive candidate upload,
-normal-profile update, live cross-site checks, and final artifact equality remain
-open, so 1.6.0 is not yet promoted.
+idempotency, and timeout behavior pass. The 35,855-byte CRX3 is verified under the
+established extension identity with SHA-256
+`cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
+The database-decoded candidate reproduces the same hash and size and is stored as
+inactive while 1.5.2 remains active. Normal-profile update, live cross-site checks,
+and final served-artifact equality remain open, so 1.6.0 is not yet promoted.
 
 Compatibility matrix:
 
