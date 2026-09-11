@@ -482,9 +482,11 @@ capabilities; HTTP health/OAuth checks, cloud `system.self_test`, transactional
 idempotency, and timeout behavior pass. The 35,855-byte CRX3 is verified under the
 established extension identity with SHA-256
 `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
-The database-decoded candidate reproduces the same hash and size and is stored as
-inactive while 1.5.2 remains active. Normal-profile update, live cross-site checks,
-and final served-artifact equality remain open, so 1.6.0 is not yet promoted.
+The database-decoded candidate reproduces the same hash and size. Production
+update XML now advertises 1.6.0, and the served 35,855-byte artifact is hash-equal
+to the local CRX and database record. Signed 1.5.2 remains stored as rollback.
+Normal-profile update and live cross-site checks remain open, so final acceptance
+is not yet complete.
 
 Compatibility matrix:
 
