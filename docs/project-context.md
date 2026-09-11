@@ -272,6 +272,20 @@ At each checkpoint:
 
 Do not mark a checkpoint complete merely because code exists.
 
+## Required session-close maintenance
+
+Every work session that changes project state must update this file and
+`docs/next-session-handoff.md` before its final commit. Project state includes
+code, infrastructure, release activation, architecture, accepted decisions,
+milestone/checkpoint status, known limitations, or the agreed next task.
+
+Keep this document comprehensive and factual. Keep the handoff document compact
+and immediately actionable. Do not add context-only churn after a read-only
+question, and never record transient quota percentages or secret material. If a
+session ends unexpectedly, the next resumed session must reconcile both documents
+before beginning new architectural work. This policy is also recorded in the
+repository-root `AGENTS.md` so future Codex sessions discover it automatically.
+
 ## Canonical references
 
 - `README.md` — current public overview and stable version.
@@ -283,4 +297,4 @@ Do not mark a checkpoint complete merely because code exists.
 - `docs/install.md` — installation, identity, pairing, and update instructions.
 - `SECURITY.md` — security contract.
 - `CHANGELOG.md` — release history.
-
+- `AGENTS.md` — repository-wide session-close requirements.

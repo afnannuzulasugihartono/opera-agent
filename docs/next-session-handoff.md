@@ -16,6 +16,7 @@ first, in order:
 4. docs/roadmap.md
 5. SECURITY.md
 6. README.md
+7. AGENTS.md
 
 Current verified baseline:
 
@@ -76,6 +77,12 @@ geographic exhaustiveness from one scroll-to-end pass.
 Start by reporting the repository/branch state and summarizing the proposed
 Milestone 6 checkpoint structure. Do not implement it until that plan is internally
 consistent and its safety/acceptance gates are explicit.
+
+Before ending any session that changes project state, update both
+docs/project-context.md and docs/next-session-handoff.md with verified facts and
+the next actionable step, then include those updates in the final commit. Do not
+edit them merely for a read-only question, and never store transient quota values
+or secret material.
 ```
 
 ## Usage
@@ -88,4 +95,5 @@ consistent and its safety/acceptance gates are explicit.
   them before editing.
 - After each accepted release or architectural decision, update
   `project-context.md`; keep this handoff short and point back to that file.
-
+- Follow the repository-root `AGENTS.md` session-close checklist on every future
+  implementation session.
