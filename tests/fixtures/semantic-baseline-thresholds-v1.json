@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "baselineVersion": "1.5.2",
+  "measurementStatus": "RECORDED",
+  "minimumRuns": 3,
+  "invariants": {
+    "maximumFocusChanges": 0,
+    "maximumSensitiveValuesPersisted": 0,
+    "maximumMedianRichReadRegressionPercent": 15,
+    "maximumSingleItemDeltaToFullSnapshotRatio": 0.5,
+    "minimumDeterministicReplayAgreement": 1
+  },
+  "measured": {
+    "recordedAt": "2026-09-11",
+    "environment": "isolated controlled Chromium on Windows",
+    "runs": 3,
+    "corpusSha256": "277d87d655859bd2a291cf286e9584e0bdc20ff9272d8059758641dd49f8e091",
+    "focusChanges": 0,
+    "sensitiveValuesPersisted": 0,
+    "deterministicCorpusReplayAgreement": 1,
+    "richRead": {
+      "latencyMedianMs": 15.23,
+      "latencyP95Ms": 17.97,
+      "responseBytesMedian": 38635,
+      "responseBytesP95": 38635
+    },
+    "textOnlyRead": {
+      "latencyMedianMs": 9.45,
+      "latencyP95Ms": 10.34,
+      "responseBytesMedian": 12830,
+      "responseBytesP95": 12830
+    },
+    "captureViewport": {
+      "latencyMedianMs": 45.87,
+      "latencyP95Ms": 58.54,
+      "responseBytesMedian": 15222,
+      "responseBytesP95": 15222
+    },
+    "fiveStepBurst": {
+      "latencyMedianMs": 20.37,
+      "latencyP95Ms": 20.75,
+      "responseBytesMedian": 3482,
+      "responseBytesP95": 3488
+    },
+    "semanticIdentityAgreement": null,
+    "singleItemDeltaToFullSnapshotRatio": null,
+    "unavailableReason": "Semantic identity and semantic delta do not exist in baseline 1.5.2; these thresholds become measurable gates in Checkpoints 5B and 5C."
+  }
+}

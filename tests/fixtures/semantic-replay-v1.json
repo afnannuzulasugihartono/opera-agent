@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "corpusId": "opera-agent-semantic-replay-v1",
+  "baselineVersion": "1.5.2",
+  "privacy": {
+    "syntheticOnly": true,
+    "persistedFields": [
+      "scenario id",
+      "event type",
+      "synthetic source key",
+      "entity count",
+      "mutation count",
+      "expected classification",
+      "focus audit"
+    ],
+    "forbiddenFields": [
+      "rawText",
+      "screenshot",
+      "formValue",
+      "privateUrl",
+      "credential",
+      "otp",
+      "paymentData"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "static-form-landmarks",
+      "fixtureType": "static",
+      "initial": {
+        "documentGeneration": 1,
+        "entityCount": 6,
+        "sourceKeys": ["main", "form-a", "field-a", "field-b", "button-a", "status-a"]
+      },
+      "events": [
+        { "sequence": 1, "type": "OBSERVE", "mutationCount": 0 },
+        { "sequence": 2, "type": "OBSERVE", "mutationCount": 0 }
+      ],
+      "expected": { "identity": "STABLE", "delta": "NO_RELEVANT_CHANGE", "focusChanges": 0 }
+    },
+    {
+      "id": "nested-lazy-list",
+      "fixtureType": "lazy-list",
+      "initial": { "documentGeneration": 1, "entityCount": 100, "sourceKeys": ["feed-a", "item-000", "item-099"] },
+      "events": [
+        { "sequence": 1, "type": "SCROLL", "mutationCount": 1, "insertedCount": 20 },
+        { "sequence": 2, "type": "VERIFY_BOUNDARY", "mutationCount": 0, "insertedCount": 0 }
+      ],
+      "expected": { "identity": "STABLE", "delta": "INSERT", "completion": "BOUNDED_COMPLETE", "focusChanges": 0 }
+    },
+    {
+      "id": "virtualized-detach-reinsert",
+      "fixtureType": "virtual-list",
+      "initial": { "documentGeneration": 1, "entityCount": 30, "sourceKeys": ["virtual-feed", "record-042"] },
+      "events": [
+        { "sequence": 1, "type": "DETACH", "mutationCount": 1, "sourceKey": "record-042" },
+        { "sequence": 2, "type": "REINSERT", "mutationCount": 1, "sourceKey": "record-042", "newRef": true }
+      ],
+      "expected": { "identity": "PRESERVE_LOGICAL_ID", "delta": "MOVE", "focusChanges": 0 }
+    },
+    {
+      "id": "spa-route-change",
+      "fixtureType": "spa",
+      "initial": { "documentGeneration": 1, "entityCount": 8, "sourceKeys": ["route-a", "nav-a"] },
+      "events": [
+        { "sequence": 1, "type": "HISTORY_ROUTE", "mutationCount": 4, "routeToken": "synthetic-route-b" }
+      ],
+      "expected": { "identity": "DOCUMENT_RESET", "delta": "RESET", "resetReason": "SPA_ROUTE", "focusChanges": 0 }
+    },
+    {
+      "id": "relevant-item-update",
+      "fixtureType": "mutation",
+      "initial": { "documentGeneration": 1, "entityCount": 100, "sourceKeys": ["result-feed", "record-050"] },
+      "events": [
+        { "sequence": 1, "type": "SEMANTIC_ATTRIBUTE_CHANGE", "mutationCount": 1, "sourceKey": "record-050" }
+      ],
+      "expected": { "identity": "STABLE", "delta": "UPDATE", "changedEntityCount": 1, "focusChanges": 0 }
+    },
+    {
+      "id": "irrelevant-mutation-storm",
+      "fixtureType": "mutation-noise",
+      "initial": { "documentGeneration": 1, "entityCount": 100, "sourceKeys": ["result-feed"] },
+      "events": [
+        { "sequence": 1, "type": "PRESENTATIONAL_MUTATIONS", "mutationCount": 500, "changedEntityCount": 0 }
+      ],
+      "expected": { "identity": "STABLE", "delta": "NO_RELEVANT_CHANGE", "focusChanges": 0 }
+    },
+    {
+      "id": "canvas-with-semantic-controls",
+      "fixtureType": "hybrid-canvas",
+      "initial": { "documentGeneration": 1, "entityCount": 4, "sourceKeys": ["canvas-a", "zoom-in", "zoom-out", "search-a"] },
+      "events": [
+        { "sequence": 1, "type": "CANVAS_PAINT", "mutationCount": 0 },
+        { "sequence": 2, "type": "CONTROL_ATTRIBUTE_CHANGE", "mutationCount": 1, "sourceKey": "zoom-in" }
+      ],
+      "expected": { "identity": "STABLE", "delta": "UPDATE", "sensorBoundary": "CANVAS_OPAQUE", "focusChanges": 0 }
+    },
+    {
+      "id": "stale-ref-and-ambiguity",
+      "fixtureType": "stale-reference",
+      "initial": { "documentGeneration": 1, "entityCount": 2, "sourceKeys": ["duplicate-a", "duplicate-b"] },
+      "events": [
+        { "sequence": 1, "type": "REPLACE_NODE", "mutationCount": 2, "newRef": true },
+        { "sequence": 2, "type": "USE_OLD_REF", "mutationCount": 0 }
+      ],
+      "expected": { "identity": "AMBIGUOUS", "delta": "RESET", "resetReason": "AMBIGUOUS_MATCH", "actionResult": "STALE_REF", "focusChanges": 0 }
+    },
+    {
+      "id": "reconnect-and-restart",
+      "fixtureType": "lifecycle",
+      "initial": { "documentGeneration": 1, "entityCount": 10, "sourceKeys": ["lifecycle-root"] },
+      "events": [
+        { "sequence": 1, "type": "BRIDGE_RECONNECT", "mutationCount": 0 },
+        { "sequence": 2, "type": "EXTENSION_RESTART", "mutationCount": 0 }
+      ],
+      "expected": { "identity": "CACHE_RESET", "delta": "RESET", "resetReason": "EXTENSION_RESTART", "focusChanges": 0 }
+    }
+  ]
+}

@@ -67,3 +67,37 @@ An isolated real-Opera run using the established extension identity completed th
 The five-step result demonstrates local batching and one lazy debugger session, not a production end-to-end speedup. Production MCP/Supabase latency must be measured after the matching extension, method migration, and MCP function are deployed.
 
 During the next live workflow run, record workflow queue time, execution time, command count, browser timing, returned bytes, retries, and fixed waits. Do not turn one machine's timings into test assertions.
+
+## Semantic Runtime 1.5.2 baseline — 2026-09-11
+
+Checkpoint 5A locks the accepted 1.5.2 behavior before semantic identity or delta
+logic is introduced. Reproduce the three-run metadata-only baseline with:
+
+```powershell
+npm run benchmark:semantic
+```
+
+The runner executes the complete controlled browser regression three times against
+an isolated synthetic page and fingerprints the nine-scenario scrubbed replay
+corpus. It writes no telemetry files and emits no page text, screenshots, form
+values, credentials, or private URLs.
+
+| Case | Samples | Median | p95 | Median response |
+|---|---:|---:|---:|---:|
+| `browser.ping` | 9 | 5.91 ms | 7.81 ms | 822 bytes |
+| `page.read.small` | 3 | 11.73 ms | 12.08 ms | 1,675 bytes |
+| `page.read.semantic` | 3 | 15.23 ms | 17.97 ms | 38,635 bytes |
+| `page.read.text-only.chunk-1` | 3 | 9.45 ms | 10.34 ms | 12,830 bytes |
+| `page.capture.viewport` | 3 | 45.87 ms | 58.54 ms | 15,222 bytes |
+| five-step browser burst | 3 | 20.37 ms | 20.75 ms | 3,482 bytes |
+
+All three runs passed, changed no foreground focus, agreed on the installed
+extension identity, and produced one deterministic replay fingerprint. The corpus
+SHA-256 is
+`277d87d655859bd2a291cf286e9584e0bdc20ff9272d8059758641dd49f8e091`.
+
+Semantic-ID agreement and the single-item delta/full-snapshot ratio are correctly
+recorded as unavailable: those features do not exist in 1.5.2. The locked gates
+remain 100% identity agreement once Checkpoint 5B introduces identity, at most 50%
+for a one-item delta once Checkpoint 5C introduces deltas, and at most 15% median
+regression for the ordinary element-rich read on the same controlled environment.

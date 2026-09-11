@@ -215,7 +215,21 @@ action yet.
 
 ### Checkpoint 5A — telemetry and deterministic replay baseline
 
-Before changing semantics, measure the accepted 1.5.0 path.
+Status: **complete on 2026-09-11**. The accepted 1.5.2 patch release was used as
+the behavioral baseline because its changes after 1.5.0 were UI-only and it is the
+current rollback anchor for 1.6.0 work. A versioned, synthetic-only nine-scenario
+corpus now covers the required static, lazy, virtualized, SPA, mutation-noise,
+canvas, stale-reference, reconnect, and restart shapes. The checked-in
+`npm run benchmark:semantic` command ran the complete controlled browser suite
+three times, with zero foreground-focus changes and a stable corpus fingerprint.
+Median/p95 latency and payload measurements are recorded in `docs/benchmarks.md`
+and locked in `tests/fixtures/semantic-baseline-thresholds-v1.json`. No telemetry
+file is written and no raw page content or sensitive value is retained. Semantic
+identity agreement and delta compression are explicitly unavailable in 1.5.2;
+their thresholds are locked now and become measurable exit gates in Checkpoints
+5B and 5C rather than being fabricated for the baseline.
+
+Before changing semantics, measure the accepted stable path.
 
 Build controlled fixtures for:
 
