@@ -390,6 +390,18 @@ Exit evidence:
 
 ### Checkpoint 5D — generic regions and materialized-view prototype
 
+Status: **implementation and controlled acceptance complete on 2026-09-11;
+live cross-site acceptance remains scheduled for Checkpoint 5F**. Rich reads now
+include bounded `semanticViews` derived from generic landmarks, forms, dialogs,
+repeated ARIA regions, document structure, and measured scroll containers. Each
+view reports its own revision, loaded/visible/actionable counts, canonical-link
+uniqueness, duplicate and ambiguity evidence, and conservative scroll exhaustion.
+The controlled browser fixture proved incremental lazy-list growth from two to
+four actionable entities, required two stable bottom observations before returning
+`BOUNDED_COMPLETE`, preserved the feed revision across an unrelated page mutation,
+and retained the active foreground tab throughout. No site-specific selector,
+new capability, MCP tool, action target, or protocol change was introduced.
+
 Construct generic regions from semantic landmarks, forms, dialogs, repeated-item
 groups, scroll containers, and document structure. Do not add Google Maps selectors.
 
@@ -418,7 +430,7 @@ Exit evidence:
   evidence;
 - changing an unrelated page region does not rebuild the repeated-item view;
 - Google Maps, YouTube, and GitHub observations map into the same generic region
-  model without site code in the extension.
+  model without site code in the extension (live acceptance pending Checkpoint 5F).
 
 ### Checkpoint 5E — causal dependency and proof vocabulary
 

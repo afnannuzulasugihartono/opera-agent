@@ -106,6 +106,10 @@ const report = {
     semanticIdentitySpaReset: runResults.every((run) => run.semanticIdentitySpaReset === true),
     semanticDelta: runResults.every((run) => run.semanticDelta === true),
     semanticDeltaSingleUpdate: runResults.every((run) => run.semanticDeltaSingleUpdate === true),
+    semanticViews: runResults.every((run) => run.semanticViews === true),
+    semanticViewLazyGrowth: runResults.every((run) => run.semanticViewLazyGrowth === true),
+    semanticViewBoundedComplete: runResults.every((run) => run.semanticViewBoundedComplete === true),
+    semanticViewUnrelatedStable: runResults.every((run) => run.semanticViewUnrelatedStable === true),
   },
   invariants: {
     focusChanges: runResults.reduce((count, run) => count + run.backgroundFocusAudit.filter((item) => !item.focusPreserved).length, 0),

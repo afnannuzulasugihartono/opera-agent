@@ -10,6 +10,8 @@
   const documentId = crypto.randomUUID();
   const semanticIdentity = globalThis.OperaAgentSemanticIdentity?.createIdentityEngine({ documentId });
   if (!semanticIdentity) throw new Error('Semantic identity runtime is unavailable.');
+  const semanticViews = globalThis.OperaAgentSemanticViews?.createViewEngine();
+  if (!semanticViews) throw new Error('Semantic view runtime is unavailable.');
   let refCounter = 0;
   let refs = new WeakMap();
   let reverseRefs = new Map();
@@ -237,12 +239,55 @@
     '[role="menuitem"]', '[role="menuitemradio"]', '[role="tab"]', '[contenteditable="true"]'
   ].join(',');
 
-  function interactiveElements(maxElements = 120) {
+  function semanticRegionObservation(maxElements = 120) {
     const max = clamp(maxElements, 1, MAX_ELEMENTS, 120);
-    return [...document.querySelectorAll(INTERACTIVE_SELECTOR)]
-      .filter((el) => el.isConnected)
-      .slice(0, max)
-      .map((el) => serialize(el));
+    const nodes = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].filter((el) => el.isConnected).slice(0, max);
+    const regionNodes = new Set([document.body || document.documentElement]);
+    const semanticSelector = 'main,nav,aside,header,footer,form,dialog,[role="dialog"],[role="feed"],[role="list"],[role="listbox"],[role="grid"],[role="table"]';
+    for (const node of document.querySelectorAll(semanticSelector)) {
+      regionNodes.add(node);
+      if (regionNodes.size >= 30) break;
+    }
+    const inspectedAncestors = new Set();
+    for (const node of nodes) {
+      for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+        if (inspectedAncestors.has(parent)) continue;
+        inspectedAncestors.add(parent);
+        const style = getComputedStyle(parent);
+        if (/^(?:auto|scroll)$/.test(style.overflowY) && parent.scrollHeight - parent.clientHeight > 2) regionNodes.add(parent);
+      }
+    }
+    const boundedRegions = [...regionNodes].filter(Boolean).slice(0, 50);
+    const regionIds = new Map();
+    const regionKeyCounts = new Map();
+    const regions = boundedRegions.map((node) => {
+      if (node === document.body || node === document.documentElement) {
+        regionIds.set(node, 'rg_document');
+        return { regionId: 'rg_document', kind: 'document', role: 'document', label: document.title, scroll: scrollState(node) };
+      }
+      const tag = String(node.tagName || '').toLowerCase();
+      const role = clean(node.getAttribute?.('role'), 80);
+      const label = getAssociatedLabel(node);
+      const kind = tag === 'form' ? 'form' : tag === 'dialog' || role === 'dialog' ? 'dialog'
+        : ['feed', 'list', 'listbox', 'grid', 'table'].includes(role) ? 'repeated'
+          : ['main', 'nav', 'aside', 'header', 'footer'].includes(tag) ? 'landmark' : 'scroll';
+      const intrinsic = clean(node.id, 120);
+      const regionKey = intrinsic ? `id:${intrinsic}` : `${tag}|${role}|${label}`;
+      const ordinal = regionKeyCounts.get(regionKey) || 0;
+      regionKeyCounts.set(regionKey, ordinal + 1);
+      const regionId = `rg_${stableHash(ordinal ? `${regionKey}|${ordinal}` : regionKey)}`;
+      regionIds.set(node, regionId);
+      const scrollable = node.scrollHeight - node.clientHeight > 2 || node.scrollWidth - node.clientWidth > 2;
+      return { regionId, kind, role: role || tag, label, scroll: scrollable ? scrollState(node) : null };
+    });
+    const items = nodes.map((node) => {
+      const item = serialize(node);
+      let region = node.parentElement;
+      while (region && !regionIds.has(region)) region = region.parentElement;
+      item.regionKey = regionIds.get(region) || 'rg_document';
+      return item;
+    });
+    return { regions, items };
   }
 
   function resetActionRefs() {
@@ -256,11 +301,13 @@
     if (routeKey !== semanticRouteKey) {
       semanticRouteKey = routeKey;
       semanticIdentity.reset('SPA_ROUTE');
+      semanticViews.reset();
       resetActionRefs();
     }
     const epoch = clean(args.__semanticRuntimeEpoch, 120);
     if (epoch && semanticRuntimeEpoch && epoch !== semanticRuntimeEpoch) {
       semanticIdentity.reset('EXTENSION_RESTART');
+      semanticViews.reset();
       resetActionRefs();
     }
     if (epoch) semanticRuntimeEpoch = epoch;
@@ -288,10 +335,12 @@
     page.viewport = viewportState();
     page.mutationVersion = mutationVersion;
     if (args.includeElements !== false) {
-      const observation = semanticIdentity.observe(interactiveElements(args.maxElements));
+      const regional = semanticRegionObservation(args.maxElements);
+      const observation = semanticIdentity.observe(regional.items);
       page.elements = observation.items;
       page.semanticState = observation.state;
       page.semanticDelta = observation.delta;
+      page.semanticViews = semanticViews.observe({ regions: regional.regions, items: observation.items });
     }
     return {
       ok: true,

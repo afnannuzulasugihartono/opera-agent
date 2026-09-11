@@ -27,6 +27,7 @@
       ],
       "js": [
         "semantic-identity.js",
+        "semantic-views.js",
         "content.js"
       ],
       "run_at": "document_start",

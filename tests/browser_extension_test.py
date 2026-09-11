@@ -80,7 +80,7 @@ PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head
 <canvas id="canvas" aria-label="Canvas interaction surface" width="240" height="120" style="background:#cbd5e1"></canvas>
 <div id="canvas-status">canvas-idle</div>
   <div id="surface" aria-label="Pointer test surface" style="width:240px;height:120px;background:#ddd" onmousemove="if(event.buttons)this.textContent='dragged'" onwheel="this.textContent='wheel'">surface</div>
-  <div id="scrollbox" role="feed" aria-label="Lazy result list" style="position:fixed;right:16px;top:16px;z-index:10;width:320px;height:140px;overflow-y:auto;border:1px solid #333;background:white">
+  <div id="scrollbox" role="feed" aria-label="Lazy result list" style="position:fixed;right:16px;top:16px;z-index:10;width:320px;height:140px;overflow-y:auto;overflow-anchor:none;border:1px solid #333;background:white">
     <button id="first-result">First result</button>
     <div style="height:600px">Scrollable results</div>
     <button id="last-result">Last initial result</button>
@@ -102,7 +102,7 @@ document.getElementById('scrollbox').addEventListener('scroll', (event) => {{
     const more = document.createElement('div');
     more.id = 'lazy-results';
     more.style.height = '240px';
-    more.textContent = 'Lazy loaded results';
+    more.innerHTML = '<button id="lazy-result-a">Lazy result A</button><button id="lazy-result-b">Lazy result B</button>';
     list.append(more);
   }}
 }});
@@ -804,6 +804,13 @@ async def run(port, profile):
         assert last_result_before['visible'] is True
         assert last_result_before['inViewport'] is False
         assert last_result_before['stableKeySource'] == 'id'
+        body = await audited_background_command(worker, focus_audit, 'page.read', {
+            'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 200
+        })
+        semantic_views_before = assert_completed_ok(body)['page']['semanticViews']
+        feed_before = next(view for view in semantic_views_before['regions'] if view['role'] == 'feed')
+        assert feed_before['loadedEntityCount'] == 2, feed_before
+        assert feed_before['exhaustion']['status'] == 'PARTIAL', feed_before
 
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#scrollbox'
@@ -816,7 +823,7 @@ async def run(port, profile):
             'y': scrollbox['rect']['centerY'],
             # Lazy loading starts 20 px before the initial ~502 px maximum,
             # avoiding any timing race with the newly expanded extent.
-            'deltaY': 500
+            'deltaY': 485
         })
         lazy_wheel = assert_completed_ok(body)
         assert lazy_wheel['scroll']['before']['kind'] == 'element'
@@ -831,6 +838,13 @@ async def run(port, profile):
         last_result_loaded = assert_completed_ok(body)['item']
         assert last_result_loaded['stableKey'] == last_result_before['stableKey']
         assert last_result_loaded['inViewport'] is True
+        body = await audited_background_command(worker, focus_audit, 'page.read', {
+            'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 200
+        })
+        semantic_views_loaded = assert_completed_ok(body)['page']['semanticViews']
+        feed_loaded = next(view for view in semantic_views_loaded['regions'] if view['regionId'] == feed_before['regionId'])
+        assert feed_loaded['loadedEntityCount'] == 4, feed_loaded
+        assert feed_loaded['viewRevision'] == feed_before['viewRevision'] + 1, feed_loaded
 
         body = await audited_background_command(worker, focus_audit, 'page.pointer', {
             'tabId': tab_id,
@@ -849,6 +863,34 @@ async def run(port, profile):
         last_result_after = assert_completed_ok(body)['item']
         assert last_result_after['stableKey'] == last_result_before['stableKey']
         assert last_result_after['inViewport'] is False
+        body = await audited_background_command(worker, focus_audit, 'page.read', {
+            'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 200
+        })
+        boundary_first = assert_completed_ok(body)['page']['semanticViews']
+        feed_boundary_first = next(view for view in boundary_first['regions'] if view['regionId'] == feed_before['regionId'])
+        assert feed_boundary_first['exhaustion']['status'] == 'PARTIAL', feed_boundary_first
+        body = await audited_background_command(worker, focus_audit, 'page.read', {
+            'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 200
+        })
+        boundary_stable = assert_completed_ok(body)['page']['semanticViews']
+        feed_boundary_stable = next(view for view in boundary_stable['regions'] if view['regionId'] == feed_before['regionId'])
+        assert feed_boundary_stable['exhaustion']['status'] == 'BOUNDED_COMPLETE', feed_boundary_stable
+
+        # A mutation outside the feed must not invalidate the feed view.
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': '#toggle'
+        })
+        unrelated_toggle = assert_completed_ok(body)['item']
+        body = await audited_background_command(worker, focus_audit, 'page.click', {
+            'tabId': tab_id, 'ref': unrelated_toggle['ref'], 'trusted': False
+        })
+        assert_completed_ok(body)
+        body = await audited_background_command(worker, focus_audit, 'page.read', {
+            'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 200
+        })
+        unrelated_read = assert_completed_ok(body)['page']['semanticViews']
+        feed_after_unrelated = next(view for view in unrelated_read['regions'] if view['regionId'] == feed_before['regionId'])
+        assert feed_after_unrelated['viewRevision'] == feed_boundary_stable['viewRevision'], feed_after_unrelated
 
         # A visible pointer remains an explicit foreground diagnostic. It must
         # refuse an inactive tab rather than activating it as a fallback.
@@ -992,6 +1034,10 @@ async def run(port, profile):
             'semanticDeltaSingleUpdate': len(semantic_updates) == 1,
             'semanticDeltaBytes': semantic_delta_bytes,
             'semanticDeltaToSnapshotRatio': round(semantic_delta_bytes / semantic_payload_bytes, 4),
+            'semanticViews': True,
+            'semanticViewLazyGrowth': feed_loaded['loadedEntityCount'] - feed_before['loadedEntityCount'] == 2,
+            'semanticViewBoundedComplete': feed_boundary_stable['exhaustion']['status'] == 'BOUNDED_COMPLETE',
+            'semanticViewUnrelatedStable': feed_after_unrelated['viewRevision'] == feed_boundary_stable['viewRevision'],
             'textOnlyPayloadBytes': text_only_payload_bytes,
             'payloadReductionBytes': semantic_payload_bytes - text_only_payload_bytes,
             'navigationFastPath': True,

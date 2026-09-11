@@ -128,3 +128,15 @@ bytes, or 12.88% of the corresponding snapshot payload. This passes the locked
 The delta suite covers `INSERT`, `UPDATE`, delayed `REMOVE`, `MOVE`, `RESET`,
 `NO_RELEVANT_CHANGE`, mixed changes, one-observation virtual-list grace, restart
 reset, and output-cap reset. Overflow never returns a truncated delta as complete.
+
+### Checkpoint 5D controlled materialized-view gate
+
+The isolated browser suite passed the generic-region prototype with no foreground
+focus takeover. Its fixed ARIA feed began with two actionable entities, grew to
+four after lazy loading, and changed only that view's revision. Reaching the
+measured bottom yielded `PARTIAL` on the first observation and
+`BOUNDED_COMPLETE` only after an unchanged second observation. A later mutation
+outside the feed left its view revision unchanged. Region discovery and retained
+state are capped, and the extension still exposes protocol 1 with the same 26
+capabilities. These are controlled-fixture results; Maps, YouTube, and GitHub
+acceptance remains part of Checkpoint 5F and is not claimed here.

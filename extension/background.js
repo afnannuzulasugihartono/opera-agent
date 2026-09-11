@@ -130,7 +130,7 @@ async function ensureContent(tabId) {
     const pong = await chrome.tabs.sendMessage(tabId, { scope: 'opera-agent-content', method: 'content.ping', params: {} });
     if (pong?.ok) return;
   } catch {}
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['semantic-identity.js', 'content.js'] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['semantic-identity.js', 'semantic-views.js', 'content.js'] });
 }
 
 async function contentCall(tabId, method, params = {}) {
