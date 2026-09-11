@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "6C",
+  "syntheticOnly": true,
+  "scenarios": [
+    { "id": "action-only", "category": "ACTION_RECEIPT", "expectedStatus": "UNKNOWN", "expectedRejection": "ACTION_IS_NOT_OUTCOME_EVIDENCE" },
+    { "id": "authorization-only", "category": "USER_AUTHORIZATION", "expectedStatus": "UNKNOWN", "expectedRejection": "AUTHORIZATION_IS_NOT_OUTCOME_EVIDENCE" },
+    { "id": "cross-tenant", "category": "DIRECT_OBSERVATION", "mutation": "tenant", "expectedStatus": "UNKNOWN", "expectedRejection": "CROSS_TENANT" },
+    { "id": "cross-lineage", "category": "DIRECT_OBSERVATION", "mutation": "goal", "expectedStatus": "UNKNOWN", "expectedRejection": "CROSS_GOAL_LINEAGE" },
+    { "id": "scope-mismatch", "category": "DIRECT_OBSERVATION", "mutation": "scope", "expectedStatus": "UNKNOWN", "expectedRejection": "SCOPE_MISMATCH" },
+    { "id": "stale-revision", "category": "DIRECT_OBSERVATION", "mutation": "revision", "expectedStatus": "UNKNOWN", "expectedRejection": "STALE_REVISION" },
+    { "id": "expired", "category": "DIRECT_OBSERVATION", "mutation": "expired", "expectedStatus": "UNKNOWN", "expectedRejection": "EXPIRED" },
+    { "id": "dependency-invalidated", "category": "DERIVED_OBSERVATION", "mutation": "dependency", "expectedStatus": "UNKNOWN", "expectedRejection": "DEPENDENCY_INVALIDATED" },
+    { "id": "bounded-enumeration", "category": "BOUNDARY_OBSERVATION", "expectedStatus": "BOUNDED_COMPLETE", "mustNotBe": "PROVED" },
+    { "id": "closed-world-non-exhaustive", "category": "DIRECT_OBSERVATION", "scopeKind": "CLOSED_WORLD", "expectedStatus": "PARTIAL", "mustNotBe": "PROVED" },
+    { "id": "closed-world-exhaustive", "category": "DIRECT_OBSERVATION", "scopeKind": "CLOSED_WORLD", "exhaustive": true, "expectedStatus": "PROVED" },
+    { "id": "contradiction", "category": "DIRECT_OBSERVATION", "mutation": "contradiction", "expectedStatus": "BLOCKED", "expectedRejection": "CONTRADICTION_UNRESOLVED" }
+  ]
+}

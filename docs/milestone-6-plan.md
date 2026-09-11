@@ -1,6 +1,6 @@
 # Milestone 6 implementation plan
 
-Status: **Checkpoints 6A and 6B complete; Checkpoint 6C is next**
+Status: **Checkpoints 6A through 6C complete; Checkpoint 6D is next**
 
 Milestone 6 adds a Goal and Constraint Ledger plus a scoped Proof Engine above the
 accepted Opera Agent 1.6.0 semantic runtime. It must turn an explicit user request
@@ -308,6 +308,19 @@ Exit gates:
 Rollback: feature flag disables ledger creation; pure library has no stored state.
 
 ## Checkpoint 6C — scoped proof engine
+
+Status: **complete on 2026-09-11**. The environment-neutral
+`lib/proof-engine.js` now creates immutable typed evidence, validates canonical
+digests, enforces category-specific trust, and evaluates freshness, tenant, goal
+lineage, revision, scope, dependency, requirement, and contradiction rules. It
+separates action/authorization process evidence from outcome evidence and returns
+bounded, immutable, tamper-evident proof receipts with an explicit reason for
+every rejection. A 12-scenario synthetic adversarial corpus produces zero false
+`PROVED`; repeated boundary evidence cannot satisfy the two-observation gate.
+The full suite passes 99 tests. A controlled 30-run, 500-evidence benchmark on
+Windows x64 and Node 22.22.2 recorded 1.9055 ms median and 2.4166 ms p95, below
+the frozen 10 ms p95 target. No browser, network, database, MCP, extension, or
+production integration changed.
 
 Implement deterministic claim evaluation over typed evidence.
 

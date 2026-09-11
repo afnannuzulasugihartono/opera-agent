@@ -232,7 +232,7 @@ These are dependency order, not promised release numbers. Their checkpoint plans
 have not yet been frozen.
 
 - Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6F are
-  planned; 6A and 6B are complete and 6C is next.
+  planned; 6A through 6C are complete and 6D is next.
 - Milestone 7: Reactive Browser VM.
 - Milestone 8: Decision-Causal Transactions and provenance enforcement.
 - Milestone 9: Multi-sensor Physical Plan Optimizer.
@@ -253,11 +253,20 @@ suite passes 89 tests. The first runtime baseline records 0.2949 ms median
 validation, 0.2919 ms creation, and 0.0009 ms inspection over three 1,000-operation
 runs. No browser, network, database, MCP, extension, or production state changed.
 
-The next task is Checkpoint 6C only: add failing proof-engine tests, then implement
-typed evidence admissibility, freshness/scope/trust/dependency checks,
-contradiction handling, process-versus-outcome separation, bounded proof receipts,
-and the false-`PROVED` corpus. Do not begin dependency-aware live revision reuse
-from 6D.
+Checkpoint 6C added `lib/proof-engine.js`, a portable pure evaluator for immutable
+typed evidence, category-specific trust, canonical evidence/proof digests,
+freshness, tenant/lineage/revision/scope/dependency checks, contradiction blocking,
+and process-versus-outcome separation. Proof receipts are bounded, immutable, and
+tamper evident. Ten focused tests and a 12-case adversarial corpus bring the full
+suite to 99 passing tests with zero false `PROVED`. A 30-run benchmark over 500
+prevalidated evidence items recorded 1.9055 ms median and 2.4166 ms p95, below the
+10 ms target. No browser, network, database, MCP, extension, or production state
+changed.
+
+The next task is Checkpoint 6D only: add failing tests for dependency fingerprints,
+narrowing/expansion compatibility, selective invalidation, explicit carry-forward
+receipts, entity reorder/removal/ambiguity/expiry, and restart-safe minimal-head
+verification. Do not expose the evaluator through MCP or begin 6E integration.
 
 ## Explicitly deferred
 

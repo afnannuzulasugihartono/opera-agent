@@ -197,3 +197,21 @@ the locked 15% median-regression ceiling unless a stop/review records why it
 cannot. The benchmark writes no output file and exercises no browser, network, or
 database path. A focused 10,000-step revision test completed within its 30-second
 gate while preserving identity, linear digest ancestry, and the 64 KiB cap.
+
+### Checkpoint 6C scoped-proof baseline
+
+The pure proof evaluator was measured after five warm-up evaluations for 30 runs
+over the same 500 prevalidated, immutable evidence objects on Windows x64 with
+Node 22.22.2. Evidence arriving without the core's in-memory validation marker is
+still canonicalized and digest-verified; the fast path cannot be supplied through
+serialized input.
+
+| Evidence items | Median | p95 | Frozen target |
+| ---: | ---: | ---: | ---: |
+| 500 | 1.9055 ms | 2.4166 ms | p95 < 10 ms |
+
+The benchmark writes no output file and exercises no browser, network, database,
+MCP, extension, or production path. The 12-case adversarial corpus recorded zero
+false `PROVED` outcomes. Proof receipts remain below 128 KiB or fail closed with
+`OVER_LIMIT`; the evaluator never truncates a receipt while retaining a positive
+completion status.

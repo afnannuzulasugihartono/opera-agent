@@ -47,3 +47,11 @@ digests, revisions, stale/fork rejection, explicit authority broadening,
 cancel/expire, metadata-only inspection, strict bounds, secret-like fields, and a
 10,000-step lineage sequence. Run `npm run benchmark:ledger` for its non-persisted
 three-run performance baseline.
+
+Checkpoint 6C is implemented by the environment-neutral `lib/proof-engine.js`,
+`proof-engine.test.mjs`, and `fixtures/proof-replay-v1.json`. Coverage includes
+typed evidence and trust, canonical digests, freshness, tenant/lineage/revision/
+scope isolation, dependencies, duplicate-boundary resistance, contradiction
+blocking, process-versus-outcome separation, closed-world exhaustiveness, bounded
+receipts, and zero false `PROVED` across the adversarial corpus. Run
+`npm run benchmark:proof` for the non-persisted 500-evidence performance gate.
