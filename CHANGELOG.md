@@ -4,9 +4,16 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
-### Fixed — 1.5.2 development candidate
+## [1.5.2] - 2026-09-11
+
+### Fixed
 - Prevented Opera's action popup from collapsing to a scrollbar-width sliver by replacing circular viewport-based intrinsic sizing with an explicit 352-pixel preferred width and a 148-pixel safety floor.
 - Retained the compact narrow-panel layout when Opera constrains the popup below 240 pixels.
+
+### Verified in production
+- Updated the normal Opera profile in place from 1.5.1 to 1.5.2 under the unchanged extension ID and preserved pairing.
+- Confirmed the installed popup renders at its full intended width with no horizontal clipping.
+- Verified a fresh online heartbeat, protocol 1, all 26 capabilities, and a successful post-update `browser.ping` without changing any tab.
 
 ## [1.5.1] - 2026-09-11
 

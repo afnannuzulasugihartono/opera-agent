@@ -11,6 +11,7 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.4.0](1.4.0.md) — bounded adaptive screenshots with native ChatGPT image delivery and background-focus preservation.
 - [1.5.0](1.5.0.md) — generic vision-navigation observability and deterministic nested scrolling with an unchanged MCP tool inventory.
 - [1.5.1](1.5.1.md) — professional responsive popup while preserving extension identity, pairing, protocol, and capability inventory.
+- [1.5.2](1.5.2.md) — popup intrinsic-width correction that prevents scrollbar-width collapse in Opera.
 
 Future stable releases should use simple SemVer filenames:
 
