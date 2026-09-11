@@ -96,8 +96,14 @@ const report = {
     runs,
     agreement: new Set(Array.from({ length: runs }, replayFingerprint)).size === 1 ? 1 : 0,
     fingerprint: replayFingerprint(),
-    semanticIdentityStatus: 'NOT_AVAILABLE_IN_1.5.2',
-    semanticDeltaStatus: 'NOT_AVAILABLE_IN_1.5.2',
+    baselineSemanticIdentityStatus: 'NOT_AVAILABLE_IN_1.5.2',
+    baselineSemanticDeltaStatus: 'NOT_AVAILABLE_IN_1.5.2',
+  },
+  runtimeFeatures: {
+    semanticIdentity: runResults.every((run) => run.semanticIdentity === true),
+    semanticIdentityRerenderStable: runResults.every((run) => run.semanticIdentityRerenderStable === true),
+    semanticIdentityStaleRefRejected: runResults.every((run) => run.semanticIdentityStaleRefRejected === true),
+    semanticIdentitySpaReset: runResults.every((run) => run.semanticIdentitySpaReset === true),
   },
   invariants: {
     focusChanges: runResults.reduce((count, run) => count + run.backgroundFocusAudit.filter((item) => !item.focusPreserved).length, 0),

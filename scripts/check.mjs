@@ -23,7 +23,7 @@ const extensionId = [...identityDigest].map((byte) => `${String.fromCharCode(97 
 assert.equal(extensionId, 'ohbbpamcljckmjhcpkcmefdobkoeaick');
 
 const files = [
-  'extension/background.js', 'extension/content.js', 'extension/popup.js',
+  'extension/background.js', 'extension/content.js', 'extension/semantic-identity.js', 'extension/popup.js',
   'supabase/functions/opera-agent-bridge/index.ts',
   'supabase/functions/opera-agent-update/index.ts',
   'supabase/functions/opera-agent-runner/index.ts',

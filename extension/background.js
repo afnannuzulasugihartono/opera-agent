@@ -20,6 +20,7 @@ const MAX_BURST_RESULT_BYTES = 256 * 1024;
 const MAX_SCREENSHOT_BYTES = 220 * 1024;
 const SCREENSHOT_CACHE_MS = 750;
 const SCREENSHOT_CACHE_LIMIT = 8;
+const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
 
 let loopPromise = null;
 let loopGeneration = 0;
@@ -129,7 +130,7 @@ async function ensureContent(tabId) {
     const pong = await chrome.tabs.sendMessage(tabId, { scope: 'opera-agent-content', method: 'content.ping', params: {} });
     if (pong?.ok) return;
   } catch {}
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['semantic-identity.js', 'content.js'] });
 }
 
 async function contentCall(tabId, method, params = {}) {
@@ -695,7 +696,7 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.read': {
       const tabId = await resolveTabId(params);
-      const result = await contentCall(tabId, method, params);
+      const result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
       if (result?.page?.viewport) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch {}
       }

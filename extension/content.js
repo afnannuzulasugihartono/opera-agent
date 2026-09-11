@@ -8,9 +8,13 @@
   const MAX_QUERY = 100;
   const MAX_LINKS = 500;
   const documentId = crypto.randomUUID();
+  const semanticIdentity = globalThis.OperaAgentSemanticIdentity?.createIdentityEngine({ documentId });
+  if (!semanticIdentity) throw new Error('Semantic identity runtime is unavailable.');
   let refCounter = 0;
-  const refs = new WeakMap();
-  const reverseRefs = new Map();
+  let refs = new WeakMap();
+  let reverseRefs = new Map();
+  let semanticRouteKey = globalThis.OperaAgentSemanticIdentity.stableHash(`${location.origin}${location.pathname}${location.search}`);
+  let semanticRuntimeEpoch = null;
   let disposed = false;
   let mutationVersion = 0;
 
@@ -241,7 +245,29 @@
       .map((el) => serialize(el));
   }
 
+  function resetActionRefs() {
+    refCounter = 0;
+    refs = new WeakMap();
+    reverseRefs = new Map();
+  }
+
+  function syncSemanticScope(args) {
+    const routeKey = globalThis.OperaAgentSemanticIdentity.stableHash(`${location.origin}${location.pathname}${location.search}`);
+    if (routeKey !== semanticRouteKey) {
+      semanticRouteKey = routeKey;
+      semanticIdentity.reset('SPA_ROUTE');
+      resetActionRefs();
+    }
+    const epoch = clean(args.__semanticRuntimeEpoch, 120);
+    if (epoch && semanticRuntimeEpoch && epoch !== semanticRuntimeEpoch) {
+      semanticIdentity.reset('EXTENSION_RESTART');
+      resetActionRefs();
+    }
+    if (epoch) semanticRuntimeEpoch = epoch;
+  }
+
   function pageRead(args) {
+    syncSemanticScope(args);
     const fullText = normalizeText(document.body?.innerText || document.documentElement?.innerText || '');
     const offset = clamp(args.offset, 0, Math.max(0, fullText.length), 0);
     const limit = clamp(args.limit ?? args.maxText, 300, MAX_TEXT_CHUNK, 6000);
@@ -261,7 +287,11 @@
     };
     page.viewport = viewportState();
     page.mutationVersion = mutationVersion;
-    if (args.includeElements !== false) page.elements = interactiveElements(args.maxElements);
+    if (args.includeElements !== false) {
+      const observation = semanticIdentity.observe(interactiveElements(args.maxElements));
+      page.elements = observation.items;
+      page.semanticState = observation.state;
+    }
     return {
       ok: true,
       page

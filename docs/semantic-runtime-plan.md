@@ -274,6 +274,23 @@ Provisional targets, subject to the measured baseline:
 
 ### Checkpoint 5B — Stable Semantic Identity Engine
 
+Status: **implementation and controlled acceptance complete on 2026-09-11**. A
+bounded per-document in-memory engine now enriches ordinary rich `page.read`
+results with observational logical identity and semantic revision. Intrinsic
+stable keys take precedence over hashed canonical hrefs and bounded semantic
+fingerprints; geometry has its own revision and never determines identity. The
+cache has entity, estimated-byte, and age limits, hashes URL bindings, excludes
+sensitive controls, and resets on SPA route change or extension runtime epoch
+change. Full navigations and tab closure destroy the content-script scope. Tests
+prove compatible rerender survival, deterministic replay, no collision across 500
+distinct synthetic entities, explicit duplicate ambiguity, independent semantic
+and geometry revisions, stale-ref preservation, and bounded eviction. The
+controlled-browser regression proves the same behavior through `page.read`, keeps
+20/20 burst stability, and records zero foreground takeover. A paired same-machine comparison
+against accepted 1.5.2 measured about 7.2% median rich-read regression, below the
+locked 15% gate. `logicalId` is absent from every action schema and cannot be used
+as an action target.
+
 Add a bounded in-memory identity layer per tab/document. A logical entity contains:
 
 ```text

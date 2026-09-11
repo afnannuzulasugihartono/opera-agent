@@ -50,7 +50,8 @@ test('content readiness uses an internal zero-payload ping instead of a semantic
 
 test('page.read supports a backward-compatible text-only response', () => {
   assert.match(content, /args\.includeElements !== false/);
-  assert.match(content, /page\.elements = interactiveElements/);
+  assert.match(content, /semanticIdentity\.observe\(interactiveElements/);
+  assert.match(content, /page\.elements = observation\.items/);
   assert.equal((content.match(/case 'page\.read'/g) || []).length, 1);
 });
 

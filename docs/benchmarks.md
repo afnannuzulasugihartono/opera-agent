@@ -101,3 +101,17 @@ recorded as unavailable: those features do not exist in 1.5.2. The locked gates
 remain 100% identity agreement once Checkpoint 5B introduces identity, at most 50%
 for a one-item delta once Checkpoint 5C introduces deltas, and at most 15% median
 regression for the ordinary element-rich read on the same controlled environment.
+
+### Checkpoint 5B paired performance gate
+
+To control for machine noise, commit `4cbfbd0` and the 5B working candidate were
+measured consecutively on the same Windows machine with three complete isolated
+browser runs each. The accepted 1.5.2 rich-read samples were 19.41, 17.01, and
+18.78 ms (median 18.78 ms). The final candidate median was 20.14 ms, a paired
+regression of about 7.2%, below the locked 15% ceiling. The candidate rich-read
+page payload was 41,647 bytes; text-only reads remained free of semantic element
+metadata.
+
+The browser suite additionally proved stable logical identity across a real DOM
+replacement, stale action-ref rejection, explicit SPA generation reset, sensitive
+element exclusion, 20/20 bounded-burst stability, and zero foreground takeover.

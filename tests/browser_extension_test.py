@@ -63,13 +63,16 @@ class BridgeState:
 
 STATE = BridgeState()
 
-LONG_TEXT = 'BEGIN ' + ('civil-engineering-semantic-reader ' * 700) + ' END'
+LONG_TEXT = 'BEGIN ' + ('civil-engineering-semantic-reader ' * 695) + ' END'
 EXTRA_CONTROLS = ''.join(f'<button aria-label="Synthetic action {index}"></button>' for index in range(100))
 PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head>
 <body>
 <h1>Opera Agent Browser Test</h1>
 <p id="long">{LONG_TEXT}</p>
 <button id="toggle" aria-pressed="false" onclick="this.setAttribute('aria-pressed', this.getAttribute('aria-pressed')==='true'?'false':'true')">Toggle</button>
+<button id="rerender" onclick="this.replaceWith(this.cloneNode(true))">Rerender target</button>
+<button id="spa-route" onclick="history.pushState({{}},'',location.pathname+'?semantic-route=2')">Change SPA route</button>
+<button>Ambiguous duplicate</button><button>Ambiguous duplicate</button>
 <input id="safe" aria-label="Normal field" value="" />
 <input id="secret" type="password" aria-label="Password" value="" />
 <input id="file" type="file" aria-label="Upload file" />
@@ -79,7 +82,7 @@ PAGE = f'''<!doctype html><html><head><title>Opera Agent Test Page</title></head
   <div id="surface" aria-label="Pointer test surface" style="width:240px;height:120px;background:#ddd" onmousemove="if(event.buttons)this.textContent='dragged'" onwheel="this.textContent='wheel'">surface</div>
   <div id="scrollbox" role="feed" aria-label="Lazy result list" style="position:fixed;right:16px;top:16px;z-index:10;width:320px;height:140px;overflow-y:auto;border:1px solid #333;background:white">
     <button id="first-result">First result</button>
-    <div style="height:640px">Scrollable results</div>
+    <div style="height:600px">Scrollable results</div>
     <button id="last-result">Last initial result</button>
   </div>
 <a href="/page?next=1">Next internal</a>
@@ -94,7 +97,7 @@ document.getElementById('canvas').addEventListener('click', () => {{
 }});
 document.getElementById('scrollbox').addEventListener('scroll', (event) => {{
   const list = event.currentTarget;
-  if (!list.dataset.loaded && list.scrollTop + list.clientHeight >= list.scrollHeight - 2) {{
+  if (!list.dataset.loaded && list.scrollTop + list.clientHeight >= list.scrollHeight - 20) {{
     list.dataset.loaded = 'true';
     const more = document.createElement('div');
     more.id = 'lazy-results';
@@ -328,6 +331,42 @@ async def run(port, profile):
         assert page['textChars'] > 2400, page['textChars']
         assert page['totalTextChars'] > 2400
         assert page['text'].startswith('Opera Agent Browser Test')
+        assert page['semanticState']['schemaVersion'] == 1
+        assert page['semanticState']['documentGeneration'] == 1
+        assert page['semanticState']['ambiguityCount'] >= 2
+        assert page['semanticState']['excludedSensitiveCount'] >= 2
+        identified = [item for item in page['elements'] if not item['sensitive']]
+        assert all(item['logicalId'].startswith('se_') for item in identified)
+        assert all('logicalId' not in item for item in page['elements'] if item['sensitive'])
+
+        initial_by_stable_key = {item['stableKey']: item for item in page['elements'] if not item['sensitive'] and not item.get('identityAmbiguous', False)}
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
+        repeated_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        repeated_by_stable_key = {item['stableKey']: item for item in repeated_page['elements'] if not item['sensitive'] and not item.get('identityAmbiguous', False)}
+        assert all(repeated_by_stable_key[key]['logicalId'] == item['logicalId'] for key, item in initial_by_stable_key.items())
+
+        rerender_before = next(item for item in repeated_page['elements'] if item['label'] == 'Rerender target')
+        cid = STATE.push('page.click', {'tabId': tab_id, 'ref': rerender_before['ref']})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
+        rerendered_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        rerender_after = next(item for item in rerendered_page['elements'] if item['label'] == 'Rerender target')
+        assert rerender_after['logicalId'] == rerender_before['logicalId']
+        assert rerender_after['ref'] != rerender_before['ref']
+        cid = STATE.push('page.click', {'tabId': tab_id, 'ref': rerender_before['ref']})
+        stale = await asyncio.to_thread(STATE.wait, cid)
+        assert stale['ok'] is False
+        assert 'stale' in stale['error']['message'].lower()
+
+        spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
+        cid = STATE.push('page.click', {'tabId': tab_id, 'ref': spa_route['ref']})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
+        spa_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert spa_page['semanticState']['documentGeneration'] == 2
+        assert spa_page['semanticState']['resetReason'] == 'SPA_ROUTE'
+        cid = STATE.push('tabs.navigate', {'tabId': tab_id, 'url': f'http://{HOST}:{port}/page', 'wait': True})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         cid = STATE.push('page.capture', {'tabId': tab_id})
         blocked_capture = await asyncio.to_thread(STATE.wait, cid)
@@ -758,7 +797,9 @@ async def run(port, profile):
             'action': 'wheel',
             'x': scrollbox['rect']['centerX'],
             'y': scrollbox['rect']['centerY'],
-            'deltaY': 1200
+            # Lazy loading starts 20 px before the initial ~502 px maximum,
+            # avoiding any timing race with the newly expanded extent.
+            'deltaY': 500
         })
         lazy_wheel = assert_completed_ok(body)
         assert lazy_wheel['scroll']['before']['kind'] == 'element'
@@ -926,6 +967,10 @@ async def run(port, profile):
             'textOnlyReadChars': text_only['textChars'] + final_chunk['textChars'],
             'textOnlyElementsOmitted': True,
             'semanticPayloadBytes': semantic_payload_bytes,
+            'semanticIdentity': True,
+            'semanticIdentityRerenderStable': rerender_after['logicalId'] == rerender_before['logicalId'],
+            'semanticIdentityStaleRefRejected': stale['ok'] is False,
+            'semanticIdentitySpaReset': spa_page['semanticState']['resetReason'] == 'SPA_ROUTE',
             'textOnlyPayloadBytes': text_only_payload_bytes,
             'payloadReductionBytes': semantic_payload_bytes - text_only_payload_bytes,
             'navigationFastPath': True,
