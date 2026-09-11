@@ -148,7 +148,7 @@ and rollback rules are recorded in [Semantic Runtime implementation plan](semant
 
 ## Milestone 6 — goal ledger and proof engine
 
-Status: **Checkpoint 6A complete; Checkpoint 6B is next**. The milestone introduces a revisioned,
+Status: **Checkpoints 6A and 6B complete; Checkpoint 6C is next**. The milestone introduces a revisioned,
 state-minimized Goal and Constraint Ledger and a deterministic scoped Proof Engine
 above the accepted 1.6.0 semantic runtime. It does not yet add a browser VM,
 transactions, planning, learned skills, or parallel workers.

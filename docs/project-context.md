@@ -232,7 +232,7 @@ These are dependency order, not promised release numbers. Their checkpoint plans
 have not yet been frozen.
 
 - Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6F are
-  planned; Checkpoint 6A is complete and 6B is next.
+  planned; 6A and 6B are complete and 6C is next.
 - Milestone 7: Reactive Browser VM.
 - Milestone 8: Decision-Causal Transactions and provenance enforcement.
 - Milestone 9: Multi-sensor Physical Plan Optimizer.
@@ -245,10 +245,19 @@ and quantitative gates. Five new contract tests pass within a 79-test full suite
 100 canonical replays agree. No runtime, production schema, MCP tool, extension,
 protocol, or capability changed.
 
-The next task is Checkpoint 6B only: implement the deterministic pure ledger core
-with validation, canonicalization, immutable identity, monotonic revisions,
-parent-digest lineage, explicit revise/cancel/expire operations, and bounded safe
-inspection. It must have no browser, network, database, or production side effect.
+Checkpoint 6B added `lib/goal-ledger.js`, a portable side-effect-free ESM core for
+strict validation, canonical digests, immutable creation, monotonic revisions,
+parent-digest lineage, stale/fork/authority-broadening rejection, cancel/expire,
+and metadata-only inspection. Ten focused tests include 10,000 revisions; the full
+suite passes 89 tests. The first runtime baseline records 0.2949 ms median
+validation, 0.2919 ms creation, and 0.0009 ms inspection over three 1,000-operation
+runs. No browser, network, database, MCP, extension, or production state changed.
+
+The next task is Checkpoint 6C only: add failing proof-engine tests, then implement
+typed evidence admissibility, freshness/scope/trust/dependency checks,
+contradiction handling, process-versus-outcome separation, bounded proof receipts,
+and the false-`PROVED` corpus. Do not begin dependency-aware live revision reuse
+from 6D.
 
 ## Explicitly deferred
 

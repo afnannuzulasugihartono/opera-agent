@@ -178,3 +178,22 @@ validation median regression. Contract digest:
 `sha256:d6a0bdfa18f559266f6fbc677face2f94f7ca5071305a3be752548f658bada79`.
 Replay digest:
 `sha256:71e8e9d71d0ed3ea5021d0078d1e333be9179b65f5efe1c80f99aced04c7d7d5`.
+
+### Checkpoint 6B pure-ledger baseline
+
+The portable ledger core was measured for three runs of 1,000 operations per
+operation type on Windows x64 with Node 22.22.2 after 100 warm-up validations.
+
+| Operation | Median | p95 |
+| --- | ---: | ---: |
+| Validate accepted ledger | 0.2949 ms | 0.4494 ms |
+| Create and digest ledger | 0.2919 ms | 0.4510 ms |
+| Metadata-only inspection | 0.0009 ms | 0.0011 ms |
+
+Checkpoint 6A deliberately contained contracts and replay fixtures but no ledger
+runtime, so it could not provide a comparable validation-latency baseline. This is
+the reviewed first runtime baseline; later ordinary validation must remain within
+the locked 15% median-regression ceiling unless a stop/review records why it
+cannot. The benchmark writes no output file and exercises no browser, network, or
+database path. A focused 10,000-step revision test completed within its 30-second
+gate while preserving identity, linear digest ancestry, and the 64 KiB cap.

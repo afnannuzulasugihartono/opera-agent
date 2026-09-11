@@ -40,3 +40,10 @@ canonical serialization, bounded schemas, state-minimized persistence, false-
 completion cases, authority and tenant isolation, stale/forked revisions, and the
 accepted 1.6.0 public-surface baseline. They intentionally do not implement or
 deploy the ledger runtime.
+
+Checkpoint 6B is implemented by the environment-neutral `lib/goal-ledger.js` and
+`goal-ledger.test.mjs`. It covers immutable creation, validation, canonical
+digests, revisions, stale/fork rejection, explicit authority broadening,
+cancel/expire, metadata-only inspection, strict bounds, secret-like fields, and a
+10,000-step lineage sequence. Run `npm run benchmark:ledger` for its non-persisted
+three-run performance baseline.

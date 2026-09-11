@@ -39,17 +39,19 @@ observations.
 
 Do not redo Milestone 5 unless a regression is demonstrated. Milestone 6: Goal and
 Constraint Ledger + Proof Engine has an accepted Checkpoint 6A–6F plan in
-docs/milestone-6-plan.md. Checkpoint 6A is complete: five contract tests and three
-versioned fixtures freeze canonical digests, 15 hostile/boundary scenarios,
-state-minimized persistence, quantitative gates, and the unchanged 1.6.0 public
-surface. The full suite now has 79 passing tests.
+docs/milestone-6-plan.md. Checkpoints 6A and 6B are complete. The frozen fixtures
+and five 6A tests define the contract. The portable `lib/goal-ledger.js` core and
+ten 6B tests implement strict validation, canonical digests, immutable creation,
+monotonic lineage, stale/fork/authority-broadening rejection, terminal transitions,
+safe inspection, and a 10,000-step sequence. The full suite now has 89 passing
+tests. The first ledger runtime baseline records 0.2949 ms median validation.
 
-The next engineering task is Checkpoint 6B only: implement a pure deterministic
-ledger core with no browser, network, database, MCP, extension, or production side
-effects. Add failing ledger behavior/property tests first, then validation,
-canonicalization, immutable goal identity, monotonic revisions, parent-digest
-lineage, revise/cancel/expire, stale/fork/authority-broadening rejection, caps, and
-safe inspection. Stop at the 6B exit gates; do not drift into proof evaluation.
+The next engineering task is Checkpoint 6C only. Add deterministic failing tests
+before implementing typed evidence admissibility, freshness, scope, trust and
+dependency checks, contradiction handling, process-versus-outcome separation,
+bounded canonical proof receipts, and the false-PROVED replay corpus. Keep it pure:
+no browser, network, database, MCP, extension, or production integration. Stop at
+6C exit gates and do not drift into 6D live-revision reuse.
 
 Non-negotiable rules:
 
@@ -83,9 +85,9 @@ containers, map-driven result changes, non-radius scale labels, canvas-only POI
 labels, and the need for Place-ID/URL/coordinate deduplication. Never claim
 geographic exhaustiveness from one scroll-to-end pass.
 
-Start by reporting repository/branch state and confirming the Checkpoint 6B
-boundary. Treat the 6A fixtures as authoritative and do not weaken their limits or
-invariants to make implementation pass.
+Start by reporting repository/branch state and confirming the Checkpoint 6C
+boundary. Treat the 6A fixtures and 6B ledger behavior as authoritative; do not
+weaken their limits or invariants to make proof evaluation pass.
 
 Before ending any session that changes project state, update both
 docs/project-context.md and docs/next-session-handoff.md with verified facts and

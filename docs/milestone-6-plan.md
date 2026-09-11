@@ -1,6 +1,6 @@
 # Milestone 6 implementation plan
 
-Status: **Checkpoint 6A complete; Checkpoint 6B is next**
+Status: **Checkpoints 6A and 6B complete; Checkpoint 6C is next**
 
 Milestone 6 adds a Goal and Constraint Ledger plus a scoped Proof Engine above the
 accepted Opera Agent 1.6.0 semantic runtime. It must turn an explicit user request
@@ -270,6 +270,18 @@ Exit gates:
 Rollback: delete only the new fixtures/tests/docs commit; runtime remains 1.6.0.
 
 ## Checkpoint 6B — deterministic ledger core
+
+Status: **complete on 2026-09-11**. A portable pure-ESM ledger core now validates
+and canonicalizes the frozen 6A contract, creates immutable digested ledgers,
+forms monotonic parent-digest revision chains, rejects stale/forked revisions and
+implicit authority broadening, and provides explicit cancel/expire transitions
+plus metadata-only inspection. Ten focused tests include a 10,000-step bounded
+revision sequence; the full suite passes 89 tests. Three runs of 1,000 operations
+record medians of 0.2949 ms validation, 0.2919 ms creation, and 0.0009 ms safe
+inspection. Because 6A intentionally had no ledger runtime, there is no honest
+prior validation latency for a percentage comparison; this reviewed 6B result is
+the first runtime baseline and the 15% regression ceiling applies from here.
+There are no browser, network, database, MCP, extension, or production changes.
 
 Implement a pure, dependency-light ledger library with no browser or network side
 effects.
