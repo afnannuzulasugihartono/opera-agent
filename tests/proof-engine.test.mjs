@@ -8,7 +8,7 @@ import { ProofError, createEvidence, evaluateProof, validateProof } from '../lib
 const ledgerReplay = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-replay-v1.json', import.meta.url), 'utf8'));
 const proofReplay = JSON.parse(fs.readFileSync(new URL('./fixtures/proof-replay-v1.json', import.meta.url), 'utf8'));
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-contract-v1.json', import.meta.url), 'utf8'));
-const source = fs.readFileSync(new URL('../lib/proof-engine.js', import.meta.url), 'utf8');
+const source = fs.readFileSync(new URL('../supabase/functions/_shared/proof-engine.js', import.meta.url), 'utf8');
 const NOW = '2026-09-11T00:04:00Z';
 
 function clone(value) {

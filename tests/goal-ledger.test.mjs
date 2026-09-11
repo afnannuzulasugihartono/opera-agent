@@ -15,7 +15,7 @@ import {
 
 const replay = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-replay-v1.json', import.meta.url), 'utf8'));
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-contract-v1.json', import.meta.url), 'utf8'));
-const source = fs.readFileSync(new URL('../lib/goal-ledger.js', import.meta.url), 'utf8');
+const source = fs.readFileSync(new URL('../supabase/functions/_shared/goal-ledger.js', import.meta.url), 'utf8');
 const CREATED_AT = '2026-09-11T00:00:00Z';
 
 function clone(value) {

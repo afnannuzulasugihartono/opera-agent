@@ -231,8 +231,8 @@ the later connected-ChatGPT and signed normal-profile acceptance from Checkpoint
 These are dependency order, not promised release numbers. Their checkpoint plans
 have not yet been frozen.
 
-- Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6F are
-  planned; 6A through 6D are complete and 6E is next.
+- Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6E are
+  complete; 6F production acceptance is next.
 - Milestone 7: Reactive Browser VM.
 - Milestone 8: Decision-Causal Transactions and provenance enforcement.
 - Milestone 9: Multi-sensor Physical Plan Optimizer.
@@ -276,12 +276,26 @@ eight-column metadata-only schema. Nine focused tests bring the suite to 108
 passing tests. No production database, Supabase project, MCP tool, extension,
 protocol, capability, or browser behavior changed.
 
-The next task is Checkpoint 6E only: first inspect the accepted decision record,
-current MCP contract, OAuth tenant binding, and production schema. Decide whether
-the smallest justified surface is internal-only or new exact MCP tools, then gate
-any isolated integration with idempotency, limits, feature rollback, tenant tests,
-security advisors, and preservation of all existing 18 tool schemas. Do not change
-the extension or require reinstalling/re-pairing.
+Checkpoint 6E chose a separate internal OAuth ledger endpoint rather than adding
+MCP tools. `opera-agent-ledger` version 3 is deployed with JWT verification and
+the same user allowlist as the MCP server, but remains dark behind
+`milestone6_ledger_enabled=false`. Ledger contents use AES-256-GCM opaque tokens
+with a Vault-managed key. Supabase stores only the frozen eight-column head in a
+private schema; all new RPCs deny `anon` and `authenticated` and grant only
+`service_role`. Compare-and-swap integration verified exact transition retries,
+stale conflicts, cross-tenant invisibility, and cleanup with zero probe rows left.
+Unauthenticated HTTP returned 401, security advisors added no relevant ERROR/WARN,
+and the existing 18-tool MCP source remains byte-for-byte unchanged. No extension,
+protocol, capability, pairing, or signing state changed. The detailed record is
+`docs/milestone-6-checkpoint-6e.md`. Four focused 6E tests bring the full local
+suite to 112 passing tests; static validation remains green.
+
+The next task is Checkpoint 6F only: run the complete compatibility and production
+acceptance ladder, including a real allowlisted OAuth success path, controlled
+Chromium, isolated Opera, Supabase queue/restart/timeout/cleanup, and read-only
+normal-profile Maps/YouTube/GitHub scenarios. Keep the ledger feature disabled
+until those gates pass; do not bump or reinstall the extension for this server-only
+milestone.
 
 ## Explicitly deferred
 
@@ -334,6 +348,8 @@ repository-root `AGENTS.md` so future Codex sessions discover it automatically.
   6–11 dependency order.
 - `docs/milestone-6-plan.md` — accepted Checkpoints 6A–6F, threat model,
   quantitative gates, rollout, and rollback for the next milestone.
+- `docs/milestone-6-checkpoint-6e.md` — internal server-surface decision,
+  encrypted-token boundary, Supabase deployment evidence, and rollback.
 - `docs/roadmap.md` — historical Milestones 1–5.
 - `docs/releases/1.6.0.md` — signed release and production acceptance record.
 - `docs/benchmarks.md` — baseline and semantic performance evidence.

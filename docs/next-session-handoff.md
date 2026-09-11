@@ -39,7 +39,7 @@ observations.
 
 Do not redo Milestone 5 unless a regression is demonstrated. Milestone 6: Goal and
 Constraint Ledger + Proof Engine has an accepted Checkpoint 6A–6F plan in
-docs/milestone-6-plan.md. Checkpoints 6A through 6D are complete. The frozen fixtures
+docs/milestone-6-plan.md. Checkpoints 6A through 6E are complete. The frozen fixtures
 and five 6A tests define the contract. The portable `lib/goal-ledger.js` core and
 ten 6B tests implement strict validation, canonical digests, immutable creation,
 monotonic lineage, stale/fork/authority-broadening rejection, terminal transitions,
@@ -57,15 +57,26 @@ carry-forward receipts in `lib/revision-reuse.js`. Equivalent and claim-set-
 narrowed revisions reuse structurally identical claims; expansion never carries
 completion. A local-test-only Node SQLite adapter verifies the frozen eight-column
 minimal head across restart, stale/forked tokens, cancellation, and expiry. Nine
-new tests bring the full suite to 108 passing tests. Production Supabase and the
-public MCP/extension surfaces remain unchanged.
+new tests brought the suite to 108 passing tests.
 
-The next engineering task is Checkpoint 6E only. Inspect the 6A decision record,
-the exact 18-tool MCP fixture, OAuth tenant binding, migrations, deployment state,
-and security advisors before choosing an internal-only surface or the smallest
-new exact tool contract. Any integration must be feature-flagged, bounded,
-idempotent, tenant-isolated, rollback-safe, and must preserve every existing tool
-schema. Do not modify the extension or require reinstalling or re-pairing.
+Checkpoint 6E selected a separate internal OAuth endpoint instead of new MCP
+tools. `opera-agent-ledger` version 3 is deployed with `verify_jwt:true`, verified
+user allowlisting, AES-256-GCM opaque tokens, a Vault-managed key, and a private
+eight-column metadata-only head. The existing MCP source and 18 schemas remain
+byte-for-byte unchanged. Supabase compare-and-swap probes passed first-write,
+exact retry, stale-conflict, cross-tenant, and cleanup checks; unauthenticated HTTP
+returned 401; no probe rows remain; no relevant new security ERROR/WARN exists.
+Four focused tests bring the full suite to 112 passing tests. The feature flag is
+deliberately `false`. Read
+`docs/milestone-6-checkpoint-6e.md` before changing this state.
+
+The next engineering task is Checkpoint 6F only. Run the full Node/static,
+controlled Chromium, isolated Opera, Supabase queue/restart/timeout/cleanup, real
+allowlisted OAuth success, and normal-profile read-only Maps/YouTube/GitHub
+acceptance ladder. Prove zero focus takeover, zero false `PROVED`, zero sensitive
+persistence, and continued compatibility of prior MCP clients. Keep the feature
+disabled until all gates pass. This is a server-only milestone: do not bump,
+reinstall, or re-pair the extension unless 6F discovers a browser-local defect.
 
 Non-negotiable rules:
 
@@ -99,9 +110,10 @@ containers, map-driven result changes, non-radius scale labels, canvas-only POI
 labels, and the need for Place-ID/URL/coordinate deduplication. Never claim
 geographic exhaustiveness from one scroll-to-end pass.
 
-Start by reporting repository/branch state and confirming the Checkpoint 6E
-boundary. Treat the 6A fixtures, 6B ledger behavior, 6C proof safety rules, and 6D
-conservative reuse policy as authoritative; do not weaken them for integration.
+Start by reporting repository/branch and deployed feature-flag state, then confirm
+the Checkpoint 6F acceptance boundary. Treat the 6A fixtures, 6B ledger behavior,
+6C proof safety rules, 6D conservative reuse policy, and 6E security record as
+authoritative; do not weaken them for promotion.
 
 Before ending any session that changes project state, update both
 docs/project-context.md and docs/next-session-handoff.md with verified facts and

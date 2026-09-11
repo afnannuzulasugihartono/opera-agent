@@ -1,6 +1,6 @@
 # Milestone 6 implementation plan
 
-Status: **Checkpoints 6A through 6D complete; Checkpoint 6E is next**
+Status: **Checkpoints 6A through 6E complete; Checkpoint 6F is next**
 
 Milestone 6 adds a Goal and Constraint Ledger plus a scoped Proof Engine above the
 accepted Opera Agent 1.6.0 semantic runtime. It must turn an explicit user request
@@ -387,6 +387,23 @@ Rollback: remove the state-minimized head migration and disable persistence befo
 production promotion; tokens remain unusable rather than silently accepted.
 
 ## Checkpoint 6E — MCP/Supabase integration and security gate
+
+Status: **complete on 2026-09-12, deployed dark pending 6F acceptance**. The
+accepted surface is a separate internal OAuth endpoint, not new MCP tools, so the
+18-tool MCP source and schemas remain byte-for-byte unchanged and no ChatGPT
+schema refresh is required. `opera-agent-ledger` version 3 supports only bounded
+open/revise/inspect/cancel/expire operations for allowlisted verified users.
+AES-256-GCM tokens keep ledger contents out of storage; Supabase Vault owns the
+key and a private eight-column table stores only tenant-bound head metadata.
+Service-role-only compare-and-swap RPCs provide exact retry replay, stale-head
+rejection, terminal/expiry handling, and cleanup. Unauthenticated HTTP returned
+401; integration probes verified first-write versus replay, conflicting stale
+retry, and cross-tenant invisibility, then removed all probe rows and restored the
+feature flag to `false`. Security advisors reported no new relevant ERROR/WARN.
+Four focused 6E tests bring the full local suite to 112 passing tests; static
+validation still reports version 1.6.0 and all 26 browser primitives.
+See `docs/milestone-6-checkpoint-6e.md` for limits, deployment identity, known
+rate-limit boundary, and rollback.
 
 Choose and implement the smallest invocable server surface justified by the 6A
 decision record. Do not change the extension merely to expose the ledger.
