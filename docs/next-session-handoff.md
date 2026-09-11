@@ -77,12 +77,14 @@ race through local migration `20260912143000_opera_agent_goal_head_timestamp_ord
 (Supabase version `20260911231331`). The feature is back to `false`; all synthetic
 rows are gone. Read `docs/milestone-6-checkpoint-6f.md` for exact evidence.
 
-The next task is only the remaining user-session acceptance: obtain a real
-allowlisted OAuth success without exposing the token, then run read-only signed
-normal-profile Maps/YouTube/GitHub goal/proof scenarios and record zero focus
-takeover and zero sensitive persistence. Do not mark 6F complete or enable the
-feature before both pass. This remains server-only; do not bump, reinstall,
-reconnect, logout, or re-pair the extension.
+The connected user-session pass verified real OAuth operation, Maps, GitHub,
+narrowing/expansion, contradiction safety, zero false `PROVED`, and zero active-tab
+change. It remains conditional only because opening the YouTube watch page caused
+site-controlled advertisement autoplay. The next task is a YouTube-only rerun on
+a watch tab the user has already opened, paused, and muted. Use only status, tab
+discovery, capture, read, and final status—no open, navigation, media command,
+click, typing, or scroll. Do not mark 6F complete or enable the feature before this
+clean pass. Do not bump, reinstall, reconnect, logout, or re-pair the extension.
 
 Non-negotiable rules:
 

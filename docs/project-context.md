@@ -306,10 +306,14 @@ timestamps and preserves `updated_at >= created_at`. Tests lock the repair. The
 ledger feature is again `false`; no extension, MCP schema, signing, pairing,
 protocol, or capability changed. See `docs/milestone-6-checkpoint-6f.md`.
 
-The next task is to complete only the two user-session gates: a real allowlisted
-OAuth success without exposing its token, followed by read-only normal-profile
-goal/proof scenarios on Maps, YouTube, and GitHub. Keep the feature disabled and do
-not mark 6F complete until both are recorded.
+The connected normal-profile acceptance returned `CONDITIONAL PASS`. Real OAuth
+operation, Maps, GitHub, focus preservation, narrowing/expansion, contradiction,
+and anti-false-`PROVED` behavior passed without token inspection or external
+writes. The YouTube page correctly kept transcript availability separate from
+observed transcript coverage, but opening a new watch page triggered an autoplay
+advertisement. Closing it prevented a clean no-playback result. The next task is a
+YouTube-only rerun on a user-prepared paused and muted watch tab using observation
+tools only. Keep the feature disabled and do not mark 6F complete before that pass.
 
 ## Explicitly deferred
 

@@ -438,8 +438,9 @@ retain or purge only non-sensitive head metadata according to the documented TTL
 
 Status: **in progress on 2026-09-12**. Automated, controlled-Chromium, isolated
 Opera, and production Supabase gates pass after the timestamp-order repair recorded
-in `docs/milestone-6-checkpoint-6f.md`. The feature remains disabled pending a real
-allowlisted OAuth success and normal-profile read-only Maps/YouTube/GitHub pass.
+in `docs/milestone-6-checkpoint-6f.md`. Normal-profile OAuth, Maps, GitHub, focus,
+and proof semantics pass. The feature remains disabled pending a clean read-only
+YouTube rerun because the first watch-page open triggered site-controlled autoplay.
 
 Run the full release ladder before declaring Milestone 6 complete.
 

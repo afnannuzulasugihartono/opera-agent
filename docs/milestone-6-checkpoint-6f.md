@@ -1,8 +1,7 @@
 # Milestone 6 Checkpoint 6F: production acceptance
 
 Status: **in progress on 2026-09-12**. Automated and isolated gates pass; the
-feature remains dark pending the user-session OAuth and normal-profile cross-site
-acceptance pass.
+feature remains dark pending one clean normal-profile YouTube observation rerun.
 
 ## Defect found and fixed
 
@@ -52,18 +51,41 @@ deployment as `20260911231331 opera_agent_goal_head_timestamp_order`.
 
 ## Remaining promotion gates
 
-Do not mark 6F or Milestone 6 complete until both gates below are captured through
-the user's already-connected ChatGPT/Opera session:
+The connected ChatGPT/Opera pass returned `CONDITIONAL PASS`. It verified a real
+allowlisted OAuth path through successful Opera Agent commands without inspecting
+the token. `browser_status` reported paired extension 1.6.0, protocol 1, and 26
+capabilities. The user's active tab remained `584941608` in window `584941606`
+before and after the test, with zero active-tab changes. The temporary Maps,
+YouTube, and GitHub tabs were closed.
 
-1. A real allowlisted OAuth request succeeds without copying, logging, or exposing
-   the bearer token.
-2. Read-only normal-profile scenarios on Google Maps, YouTube, and GitHub confirm
-   the goal/proof rules, including Maps narrowing/expansion, contradiction and
-   expired-evidence handling, zero focus takeover, and zero sensitive persistence.
+Google Maps passed background capture/read and correctly remained `PARTIAL` rather
+than claiming radius exhaustiveness. Narrowing to `rating >= 4.5` reused only the
+admissible bounded observations; expansion returned the new coverage to
+unresolved. GitHub passed bounded branch/root/README observation and retained
+`PARTIAL` while `hasMore:true`. The test produced no false `PROVED`, external
+write, login, upload, token inspection, or sensitive value in its report.
+
+YouTube correctly distinguished transcript availability from transcript coverage,
+and a successful pause receipt did not override contradictory `audible:true`
+state. However, opening the watch page caused site-controlled advertisement
+autoplay. The tab was closed, but this run cannot satisfy the explicit no-playback
+precondition.
+
+Do not mark 6F or Milestone 6 complete until YouTube is rerun against a watch tab
+that the user has already opened, paused, and muted. The acceptance agent must only
+call status, tab discovery, capture, read, and final status; it must not open,
+navigate, play, pause, seek, click, type, or scroll that tab. This isolates the
+Milestone 6 read-only observation contract without pretending to solve the
+separately deferred media-control milestone.
 
 The isolated live-Google-Maps option was intentionally not enabled for the local
 Opera suite. It is variable network/UI coverage and does not substitute for the
 signed normal-profile test.
+
+The normal-profile API does not expose an independent `window.focused` boolean.
+Its same-window-ID evidence is therefore combined with the isolated Opera suite's
+54 direct focused-window audits rather than overstated as independent OS-focus
+proof.
 
 ## Deployment identity and rollback
 
