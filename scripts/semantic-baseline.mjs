@@ -104,6 +104,8 @@ const report = {
     semanticIdentityRerenderStable: runResults.every((run) => run.semanticIdentityRerenderStable === true),
     semanticIdentityStaleRefRejected: runResults.every((run) => run.semanticIdentityStaleRefRejected === true),
     semanticIdentitySpaReset: runResults.every((run) => run.semanticIdentitySpaReset === true),
+    semanticDelta: runResults.every((run) => run.semanticDelta === true),
+    semanticDeltaSingleUpdate: runResults.every((run) => run.semanticDeltaSingleUpdate === true),
   },
   invariants: {
     focusChanges: runResults.reduce((count, run) => count + run.backgroundFocusAudit.filter((item) => !item.focusPreserved).length, 0),
@@ -114,6 +116,8 @@ const report = {
   payloads: {
     semanticReadBytes: summary(runResults.map((run) => run.semanticPayloadBytes)),
     textOnlyReadBytes: summary(runResults.map((run) => run.textOnlyPayloadBytes)),
+    semanticDeltaBytes: summary(runResults.map((run) => run.semanticDeltaBytes)),
+    semanticDeltaToSnapshotRatio: summary(runResults.map((run) => run.semanticDeltaToSnapshotRatio)),
   },
   measurements,
 };

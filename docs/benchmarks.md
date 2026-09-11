@@ -115,3 +115,16 @@ metadata.
 The browser suite additionally proved stable logical identity across a real DOM
 replacement, stale action-ref rejection, explicit SPA generation reset, sensitive
 element exclusion, 20/20 bounded-burst stability, and zero foreground takeover.
+
+### Checkpoint 5C delta gate
+
+Three final controlled-browser runs produced a 19.10 ms median rich read and a
+22.46 ms p95. Against the paired 18.78 ms accepted baseline, the median difference
+was about 1.7%. A real one-control semantic change produced one `UPDATE`; including
+the real geometry changes caused by trusted scrolling, its bounded delta was 6,087
+bytes, or 12.88% of the corresponding snapshot payload. This passes the locked
+50% ceiling. A 100-item pure-engine fixture also produces exactly one `UPDATE`.
+
+The delta suite covers `INSERT`, `UPDATE`, delayed `REMOVE`, `MOVE`, `RESET`,
+`NO_RELEVANT_CHANGE`, mixed changes, one-observation virtual-list grace, restart
+reset, and output-cap reset. Overflow never returns a truncated delta as complete.

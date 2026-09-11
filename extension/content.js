@@ -291,6 +291,7 @@
       const observation = semanticIdentity.observe(interactiveElements(args.maxElements));
       page.elements = observation.items;
       page.semanticState = observation.state;
+      page.semanticDelta = observation.delta;
     }
     return {
       ok: true,

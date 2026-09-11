@@ -55,6 +55,8 @@ test('semantic baseline corpus and runner persist metadata only', () => {
   assert.match(benchmark, /backgroundFocusPreserved/);
   assert.match(benchmark, /semanticPayloadBytes/);
   assert.match(benchmark, /semanticIdentityRerenderStable/);
+  assert.match(benchmark, /semanticDeltaSingleUpdate/);
+  assert.match(benchmark, /semanticDeltaToSnapshotRatio/);
   assert.match(benchmark, /baselineSemanticIdentityStatus/);
   assert.equal(pkg.scripts['benchmark:semantic'], 'node scripts/semantic-baseline.mjs --runs=3');
 });

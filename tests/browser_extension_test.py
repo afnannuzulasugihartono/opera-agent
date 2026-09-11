@@ -344,6 +344,7 @@ async def run(port, profile):
         repeated_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         repeated_by_stable_key = {item['stableKey']: item for item in repeated_page['elements'] if not item['sensitive'] and not item.get('identityAmbiguous', False)}
         assert all(repeated_by_stable_key[key]['logicalId'] == item['logicalId'] for key, item in initial_by_stable_key.items())
+        assert repeated_page['semanticDelta']['classification'] == 'NO_RELEVANT_CHANGE'
 
         rerender_before = next(item for item in repeated_page['elements'] if item['label'] == 'Rerender target')
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': rerender_before['ref']})
@@ -353,6 +354,8 @@ async def run(port, profile):
         rerender_after = next(item for item in rerendered_page['elements'] if item['label'] == 'Rerender target')
         assert rerender_after['logicalId'] == rerender_before['logicalId']
         assert rerender_after['ref'] != rerender_before['ref']
+        rerender_change_types = {change['type'] for change in rerendered_page['semanticDelta']['changes']}
+        assert 'INSERT' not in rerender_change_types and 'REMOVE' not in rerender_change_types, rerendered_page['semanticDelta']
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': rerender_before['ref']})
         stale = await asyncio.to_thread(STATE.wait, cid)
         assert stale['ok'] is False
@@ -365,8 +368,14 @@ async def run(port, profile):
         spa_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert spa_page['semanticState']['documentGeneration'] == 2
         assert spa_page['semanticState']['resetReason'] == 'SPA_ROUTE'
+        assert spa_page['semanticDelta']['classification'] == 'RESET'
+        assert spa_page['semanticDelta']['completeSnapshotRequired'] is True
         cid = STATE.push('tabs.navigate', {'tabId': tab_id, 'url': f'http://{HOST}:{port}/page', 'wait': True})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
+        navigation_snapshot = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert navigation_snapshot['semanticDelta']['classification'] == 'RESET'
+        toggle_logical_id = next(item['logicalId'] for item in navigation_snapshot['elements'] if item['label'] == 'Toggle')
 
         cid = STATE.push('page.capture', {'tabId': tab_id})
         blocked_capture = await asyncio.to_thread(STATE.wait, cid)
@@ -456,6 +465,14 @@ async def run(port, profile):
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': toggle_ref, 'trusted': True}, benchmark='query+click.click')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['method'] == 'debugger'
+
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
+        toggle_updated_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        semantic_updates = [change for change in toggle_updated_page['semanticDelta']['changes'] if change['type'] == 'UPDATE']
+        assert len(semantic_updates) == 1, toggle_updated_page['semanticDelta']
+        assert semantic_updates[0]['logicalId'] == toggle_logical_id
+        semantic_delta_bytes = len(json.dumps(toggle_updated_page['semanticDelta']).encode())
+        assert semantic_delta_bytes / semantic_payload_bytes <= 0.5
 
         cid = STATE.push('page.query', {'tabId': tab_id, 'selector': '#toggle', 'index': 0, 'limit': 5})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -971,6 +988,10 @@ async def run(port, profile):
             'semanticIdentityRerenderStable': rerender_after['logicalId'] == rerender_before['logicalId'],
             'semanticIdentityStaleRefRejected': stale['ok'] is False,
             'semanticIdentitySpaReset': spa_page['semanticState']['resetReason'] == 'SPA_ROUTE',
+            'semanticDelta': True,
+            'semanticDeltaSingleUpdate': len(semantic_updates) == 1,
+            'semanticDeltaBytes': semantic_delta_bytes,
+            'semanticDeltaToSnapshotRatio': round(semantic_delta_bytes / semantic_payload_bytes, 4),
             'textOnlyPayloadBytes': text_only_payload_bytes,
             'payloadReductionBytes': semantic_payload_bytes - text_only_payload_bytes,
             'navigationFastPath': True,

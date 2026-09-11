@@ -5,6 +5,8 @@
   const DEFAULT_MAX_ENTITIES = 500;
   const DEFAULT_MAX_CACHE_BYTES = 256 * 1024;
   const DEFAULT_MAX_AGE_MS = 5 * 60 * 1000;
+  const DEFAULT_MAX_DELTA_CHANGES = 100;
+  const DEFAULT_MAX_DELTA_BYTES = 64 * 1024;
 
   function bounded(value, max = 300) {
     return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -71,14 +73,21 @@
     const maxEntities = positiveInteger(options.maxEntities, DEFAULT_MAX_ENTITIES);
     const maxCacheBytes = positiveInteger(options.maxCacheBytes, DEFAULT_MAX_CACHE_BYTES);
     const maxAgeMs = positiveInteger(options.maxAgeMs, DEFAULT_MAX_AGE_MS);
+    const maxDeltaChanges = positiveInteger(options.maxDeltaChanges, DEFAULT_MAX_DELTA_CHANGES);
+    const maxDeltaBytes = positiveInteger(options.maxDeltaBytes, DEFAULT_MAX_DELTA_BYTES);
+    const removalGraceObservations = Number.isInteger(options.removalGraceObservations) && options.removalGraceObservations >= 0
+      ? Math.min(options.removalGraceObservations, 3) : 1;
     const now = typeof options.now === 'function' ? options.now : Date.now;
     const records = new Map();
     const bindingIndex = new Map();
     const refIndex = new Map();
+    const lastObserved = new Map();
+    const missingObservations = new Map();
     let documentGeneration = 1;
     let observationRevision = 0;
     let logicalCounter = 0;
     let lastResetReason = null;
+    let pendingResetReason = 'INITIAL_OBSERVATION';
     let retainedBytes = 0;
 
     function recordBytes(record) {
@@ -227,8 +236,108 @@
       }
 
       evict(timestamp);
+      const currentObserved = new Map();
+      for (let index = 0; index < output.length; index += 1) {
+        const item = output[index];
+        if (!item.logicalId) continue;
+        const record = records.get(item.logicalId);
+        if (!record) continue;
+        currentObserved.set(item.logicalId, {
+          logicalId: item.logicalId,
+          revision: record.revision,
+          geometryRevision: record.geometryRevision,
+          index,
+          regionMembership: record.regionMembership,
+          inViewport: !!item.inViewport,
+          confidence: record.confidence,
+        });
+      }
+
+      const sourceRevision = Math.max(0, observationRevision - 1);
+      let changes = [];
+      let resetReason = pendingResetReason;
+      if (!resetReason) {
+        for (const current of currentObserved.values()) {
+          const previous = lastObserved.get(current.logicalId);
+          missingObservations.delete(current.logicalId);
+          if (!previous) {
+            changes.push({
+              type: 'INSERT', logicalId: current.logicalId, revision: current.revision,
+              reason: 'NEW_ENTITY', confidence: current.confidence,
+            });
+          } else if (current.revision !== previous.revision) {
+            changes.push({
+              type: 'UPDATE', logicalId: current.logicalId, revision: current.revision,
+              reason: 'SEMANTIC_FIELDS_CHANGED', confidence: current.confidence,
+            });
+          } else if (current.geometryRevision !== previous.geometryRevision || current.index !== previous.index ||
+            current.regionMembership !== previous.regionMembership || current.inViewport !== previous.inViewport) {
+            changes.push({
+              type: 'MOVE', logicalId: current.logicalId, revision: current.revision,
+              reason: 'GEOMETRY_OR_ORDER_CHANGED', confidence: current.confidence,
+            });
+          }
+          lastObserved.set(current.logicalId, current);
+        }
+        for (const [logicalId, previous] of lastObserved) {
+          if (currentObserved.has(logicalId)) continue;
+          const missed = (missingObservations.get(logicalId) || 0) + 1;
+          missingObservations.set(logicalId, missed);
+          if (missed > removalGraceObservations) {
+            changes.push({
+              type: 'REMOVE', logicalId, revision: previous.revision,
+              reason: 'ABSENT_AFTER_GRACE', confidence: previous.confidence,
+            });
+            missingObservations.delete(logicalId);
+            lastObserved.delete(logicalId);
+          }
+        }
+      } else {
+        lastObserved.clear();
+        missingObservations.clear();
+        for (const current of currentObserved.values()) lastObserved.set(current.logicalId, current);
+      }
+
+      let classification;
+      let completeSnapshotRequired = false;
+      if (resetReason) {
+        classification = 'RESET';
+        completeSnapshotRequired = true;
+        changes = [];
+      } else if (!changes.length) {
+        classification = 'NO_RELEVANT_CHANGE';
+      } else {
+        const types = new Set(changes.map((change) => change.type));
+        classification = types.size === 1 ? changes[0].type : 'MIXED';
+      }
+      let delta = {
+        schemaVersion: 1,
+        sourceRevision,
+        resultingRevision: observationRevision,
+        classification,
+        changes,
+        completeSnapshotRequired,
+        ...(resetReason ? { resetReason } : {}),
+      };
+      if (changes.length > maxDeltaChanges || JSON.stringify(delta).length > maxDeltaBytes) {
+        resetReason = 'OUTPUT_CAP';
+        delta = {
+          schemaVersion: 1,
+          sourceRevision,
+          resultingRevision: observationRevision,
+          classification: 'RESET',
+          changes: [],
+          completeSnapshotRequired: true,
+          resetReason,
+        };
+        lastObserved.clear();
+        missingObservations.clear();
+        for (const current of currentObserved.values()) lastObserved.set(current.logicalId, current);
+      }
+      pendingResetReason = null;
       return {
         items: output,
+        delta,
         state: {
           schemaVersion: 1,
           documentGeneration,
@@ -248,10 +357,13 @@
       records.clear();
       bindingIndex.clear();
       refIndex.clear();
+      lastObserved.clear();
+      missingObservations.clear();
       retainedBytes = 0;
       documentGeneration += 1;
       observationRevision = 0;
       lastResetReason = bounded(reason, 80) || 'EXPLICIT_RESET';
+      pendingResetReason = lastResetReason;
       return { documentGeneration, resetReason: lastResetReason };
     }
 

@@ -337,6 +337,21 @@ Exit evidence:
 
 ### Checkpoint 5C — Semantic Delta Engine
 
+Status: **implementation and controlled acceptance complete on 2026-09-11**.
+Successive rich reads now return an optional bounded `semanticDelta` alongside the
+existing complete page result. The engine classifies `INSERT`, `UPDATE`, `REMOVE`,
+`MOVE`, `RESET`, `NO_RELEVANT_CHANGE`, and mixed changes with source/result
+revisions, reason, confidence, and snapshot requirements. A one-observation grace
+window prevents transient virtual-list detach/reinsert from becoming a false
+remove/insert pair; actual absence becomes `REMOVE` after that bounded window.
+Initial observation, SPA/restart reset, and output overflow request a complete
+snapshot rather than fabricating continuity. Unit tests prove irrelevant churn,
+single-item update, virtual replacement, removal grace, deterministic reset, and
+cap behavior. Controlled-browser acceptance produced one real semantic `UPDATE`,
+a delta/snapshot ratio of 12.88%, zero focus takeover, and a three-run 19.10 ms
+median rich read—about 1.7% over the paired accepted baseline. No input schema or
+action target changed.
+
 Derive entity changes from successive observations:
 
 ```text
