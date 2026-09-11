@@ -140,3 +140,15 @@ outside the feed left its view revision unchanged. Region discovery and retained
 state are capped, and the extension still exposes protocol 1 with the same 26
 capabilities. These are controlled-fixture results; Maps, YouTube, and GitHub
 acceptance remains part of Checkpoint 5F and is not claimed here.
+
+### Checkpoint 5E causal-proof gate
+
+Controlled unit coverage proves that an entity change invalidates only its
+dependent materialized view, while an unrelated mutation leaves the feed valid.
+Every observation carries bounded provenance, and completion outputs name their
+scope, evidence, limits, and unresolved work. The proof classifier returns
+`UNKNOWN` for action success alone and `PARTIAL` when action success accompanies
+only an observation; it permits `PROVED` solely for explicit exhaustive evidence
+over a closed-world scope. Browser acceptance additionally verifies that a stable
+feed boundary remains `BOUNDED_COMPLETE` after an unrelated page mutation without
+foreground focus takeover.

@@ -340,7 +340,12 @@
       page.elements = observation.items;
       page.semanticState = observation.state;
       page.semanticDelta = observation.delta;
-      page.semanticViews = semanticViews.observe({ regions: regional.regions, items: observation.items });
+      page.semanticViews = semanticViews.observe({
+        regions: regional.regions,
+        items: observation.items,
+        semanticState: observation.state,
+        delta: observation.delta,
+      });
     }
     return {
       ok: true,

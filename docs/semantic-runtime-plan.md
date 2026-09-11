@@ -434,6 +434,19 @@ Exit evidence:
 
 ### Checkpoint 5E — causal dependency and proof vocabulary
 
+Status: **implementation and controlled acceptance complete on 2026-09-11**.
+Every materialized region now declares bounded entity-set and scroll-state
+dependencies. `viewDelta` names only previously materialized views invalidated by
+those causal inputs, while observation provenance records category, timestamp,
+source revision, sensor, and confidence. Completion results use the fixed
+`PROVED`, `BOUNDED_COMPLETE`, `PARTIAL`, `BLOCKED`, and `UNKNOWN` vocabulary and
+always include scope, evidence, limits, and unresolved items. `PROVED` requires
+explicit exhaustive evidence over a closed-world scope; action success is ignored
+by the classifier and cannot manufacture proof. Controlled tests verify isolated
+feed invalidation, unrelated-region stability, provenance, bounded evidence, and
+the false-`PROVED` regression case. These fields remain read-only additions to
+rich `page.read`; protocol, capabilities, tools, and action schemas are unchanged.
+
 Introduce only the minimum read-only structures needed by later releases:
 
 - facts and derived views declare their dependencies;

@@ -110,6 +110,7 @@ const report = {
     semanticViewLazyGrowth: runResults.every((run) => run.semanticViewLazyGrowth === true),
     semanticViewBoundedComplete: runResults.every((run) => run.semanticViewBoundedComplete === true),
     semanticViewUnrelatedStable: runResults.every((run) => run.semanticViewUnrelatedStable === true),
+    semanticCausalProof: runResults.every((run) => run.semanticCausalProof === true),
   },
   invariants: {
     focusChanges: runResults.reduce((count, run) => count + run.backgroundFocusAudit.filter((item) => !item.focusPreserved).length, 0),

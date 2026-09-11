@@ -4,7 +4,7 @@ import test from 'node:test';
 await import('../extension/semantic-identity.js');
 await import('../extension/semantic-views.js');
 
-const { createViewEngine } = globalThis.OperaAgentSemanticViews;
+const { COMPLETION_STATUSES, classifyCompletion, createViewEngine } = globalThis.OperaAgentSemanticViews;
 const region = (overrides = {}) => ({ regionId: 'region-feed', kind: 'repeated', role: 'feed', label: 'Results', ...overrides });
 const item = (id, overrides = {}) => ({ logicalId: `logical-${id}`, semanticRevision: 1, regionKey: 'region-feed', stableKey: `key-${id}`, stableKeySource: 'id', inViewport: true, ...overrides });
 
@@ -65,4 +65,32 @@ test('region and entity bounds are enforced', () => {
   });
   assert.equal(result.regions.length, 2);
   assert.equal(result.regions[0].loadedEntityCount, 2);
+});
+
+test('dependency delta invalidates only causally changed views', () => {
+  const engine = createViewEngine({ now: () => 1234 });
+  engine.observe({ regions: [region(), region({ regionId: 'region-main', role: 'main' })], items: [item('a')] });
+  const result = engine.observe({
+    regions: [region(), region({ regionId: 'region-main', role: 'main' })],
+    items: [item('a'), item('b')],
+    semanticState: { revision: 7 },
+    delta: { classification: 'INSERT' },
+  });
+  assert.deepEqual(result.viewDelta.invalidatedViews.map((entry) => entry.regionId), ['region-feed']);
+  assert.equal(result.viewDelta.sourceClassification, 'INSERT');
+  assert.deepEqual(result.regions[0].dependencies.entitySet.count, 2);
+  assert.deepEqual(result.provenance, {
+    category: 'DIRECT_OBSERVATION', observedAt: 1234, sourceRevision: 7, sensor: 'DOM_ACCESSIBILITY', confidence: 0.9,
+  });
+});
+
+test('action success alone can never manufacture a PROVED completion', () => {
+  assert.deepEqual(COMPLETION_STATUSES, ['PROVED', 'BOUNDED_COMPLETE', 'PARTIAL', 'BLOCKED', 'UNKNOWN']);
+  assert.equal(classifyCompletion({ actionSuccess: true }).status, 'UNKNOWN');
+  assert.equal(classifyCompletion({ observed: true, actionSuccess: true }).status, 'PARTIAL');
+  assert.equal(classifyCompletion({ observed: true, boundaryStable: true }).status, 'PARTIAL');
+  assert.equal(classifyCompletion({ observed: true, boundaryStable: true, evidence: ['stable boundary'] }).status, 'BOUNDED_COMPLETE');
+  assert.equal(classifyCompletion({ blockedReason: 'permission denied' }).status, 'BLOCKED');
+  assert.equal(classifyCompletion({ scopeKind: 'closed-world', exhaustiveEvidence: true }).status, 'UNKNOWN');
+  assert.equal(classifyCompletion({ scopeKind: 'closed-world', exhaustiveEvidence: true, evidence: ['enumerated finite set'] }).status, 'PROVED');
 });

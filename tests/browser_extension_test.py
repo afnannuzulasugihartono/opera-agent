@@ -97,7 +97,7 @@ document.getElementById('canvas').addEventListener('click', () => {{
 }});
 document.getElementById('scrollbox').addEventListener('scroll', (event) => {{
   const list = event.currentTarget;
-  if (!list.dataset.loaded && list.scrollTop + list.clientHeight >= list.scrollHeight - 20) {{
+  if (!list.dataset.loaded && list.scrollTop + list.clientHeight >= list.scrollHeight - 300) {{
     list.dataset.loaded = 'true';
     const more = document.createElement('div');
     more.id = 'lazy-results';
@@ -821,9 +821,9 @@ async def run(port, profile):
             'action': 'wheel',
             'x': scrollbox['rect']['centerX'],
             'y': scrollbox['rect']['centerY'],
-            # Lazy loading starts 20 px before the initial ~502 px maximum,
-            # avoiding any timing race with the newly expanded extent.
-            'deltaY': 485
+            # Trigger loading well before the old boundary so scroll anchoring
+            # cannot nondeterministically jump to the newly expanded boundary.
+            'deltaY': 350
         })
         lazy_wheel = assert_completed_ok(body)
         assert lazy_wheel['scroll']['before']['kind'] == 'element'
@@ -837,7 +837,7 @@ async def run(port, profile):
         })
         last_result_loaded = assert_completed_ok(body)['item']
         assert last_result_loaded['stableKey'] == last_result_before['stableKey']
-        assert last_result_loaded['inViewport'] is True
+        assert last_result_loaded['inViewport'] is False
         body = await audited_background_command(worker, focus_audit, 'page.read', {
             'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 200
         })
@@ -891,6 +891,16 @@ async def run(port, profile):
         unrelated_read = assert_completed_ok(body)['page']['semanticViews']
         feed_after_unrelated = next(view for view in unrelated_read['regions'] if view['regionId'] == feed_before['regionId'])
         assert feed_after_unrelated['viewRevision'] == feed_boundary_stable['viewRevision'], feed_after_unrelated
+        assert feed_after_unrelated['completion']['status'] == 'BOUNDED_COMPLETE', feed_after_unrelated
+        assert feed_after_unrelated['completion']['scope'], feed_after_unrelated
+        assert feed_after_unrelated['completion']['evidence'], feed_after_unrelated
+        assert feed_after_unrelated['completion']['limits'], feed_after_unrelated
+        assert feed_before['regionId'] not in {
+            entry['regionId'] for entry in unrelated_read['viewDelta']['invalidatedViews']
+        }, unrelated_read['viewDelta']
+        assert unrelated_read['provenance']['category'] == 'DIRECT_OBSERVATION'
+        assert unrelated_read['provenance']['sensor'] == 'DOM_ACCESSIBILITY'
+        assert unrelated_read['provenance']['sourceRevision'] > 0
 
         # A visible pointer remains an explicit foreground diagnostic. It must
         # refuse an inactive tab rather than activating it as a fallback.
@@ -1038,6 +1048,7 @@ async def run(port, profile):
             'semanticViewLazyGrowth': feed_loaded['loadedEntityCount'] - feed_before['loadedEntityCount'] == 2,
             'semanticViewBoundedComplete': feed_boundary_stable['exhaustion']['status'] == 'BOUNDED_COMPLETE',
             'semanticViewUnrelatedStable': feed_after_unrelated['viewRevision'] == feed_boundary_stable['viewRevision'],
+            'semanticCausalProof': feed_after_unrelated['completion']['status'] == 'BOUNDED_COMPLETE',
             'textOnlyPayloadBytes': text_only_payload_bytes,
             'payloadReductionBytes': semantic_payload_bytes - text_only_payload_bytes,
             'navigationFastPath': True,
