@@ -38,11 +38,18 @@ did not change. Shared refs had zero logical-identity mismatches across repeat
 observations.
 
 Do not redo Milestone 5 unless a regression is demonstrated. Milestone 6: Goal and
-Constraint Ledger + Proof Engine now has an accepted Checkpoint 6A–6F plan in
-docs/milestone-6-plan.md. The next engineering task is Checkpoint 6A only: freeze
-versioned ledger/evidence/proof fixtures, the threat model, hostile replay corpus,
-canonical digest rules, and the paired 1.6.0 baseline. Do not change production
-schemas, MCP tools, or extension runtime during 6A.
+Constraint Ledger + Proof Engine has an accepted Checkpoint 6A–6F plan in
+docs/milestone-6-plan.md. Checkpoint 6A is complete: five contract tests and three
+versioned fixtures freeze canonical digests, 15 hostile/boundary scenarios,
+state-minimized persistence, quantitative gates, and the unchanged 1.6.0 public
+surface. The full suite now has 79 passing tests.
+
+The next engineering task is Checkpoint 6B only: implement a pure deterministic
+ledger core with no browser, network, database, MCP, extension, or production side
+effects. Add failing ledger behavior/property tests first, then validation,
+canonicalization, immutable goal identity, monotonic revisions, parent-digest
+lineage, revise/cancel/expire, stale/fork/authority-broadening rejection, caps, and
+safe inspection. Stop at the 6B exit gates; do not drift into proof evaluation.
 
 Non-negotiable rules:
 
@@ -76,9 +83,9 @@ containers, map-driven result changes, non-radius scale labels, canvas-only POI
 labels, and the need for Place-ID/URL/coordinate deduplication. Never claim
 geographic exhaustiveness from one scroll-to-end pass.
 
-Start by reporting repository/branch state and confirming the Checkpoint 6A
-boundary. Add deterministic failing contract tests and fixtures before any future
-ledger runtime implementation. Stop at 6A exit gates; do not drift into 6B.
+Start by reporting repository/branch state and confirming the Checkpoint 6B
+boundary. Treat the 6A fixtures as authoritative and do not weaken their limits or
+invariants to make implementation pass.
 
 Before ending any session that changes project state, update both
 docs/project-context.md and docs/next-session-handoff.md with verified facts and

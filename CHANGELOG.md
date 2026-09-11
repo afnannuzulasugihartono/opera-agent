@@ -4,6 +4,10 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Milestone 6 foundation
+- Planned Checkpoints 6A–6F for the Goal and Constraint Ledger and scoped Proof Engine.
+- Completed the contract-only 6A gate with versioned bounded schemas, canonical digest rules, a 15-scenario hostile replay corpus, quantitative thresholds, and five new tests without changing the extension, MCP surface, or production schema.
+
 ## [1.6.0] - 2026-09-11
 
 ### Added

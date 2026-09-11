@@ -232,17 +232,23 @@ These are dependency order, not promised release numbers. Their checkpoint plans
 have not yet been frozen.
 
 - Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6F are
-  planned; implementation has not started.
+  planned; Checkpoint 6A is complete and 6B is next.
 - Milestone 7: Reactive Browser VM.
 - Milestone 8: Decision-Causal Transactions and provenance enforcement.
 - Milestone 9: Multi-sensor Physical Plan Optimizer.
 - Milestone 10: proof-gated reusable skills.
 - Milestone 11: parallel background workers and live goal revisions.
 
-The next task is Checkpoint 6A: freeze the versioned ledger/evidence/proof
-contracts, threat model, hostile replay corpus, canonical digest rules, and paired
-1.6.0 baseline. It must not change production schemas, MCP tools, or extension
-runtime. The accepted plan is `docs/milestone-6-plan.md`.
+Checkpoint 6A froze versioned ledger/evidence/proof contracts, 15 hostile and
+boundary replay scenarios, `OA_CANONICAL_JSON_V1`, state-minimized persistence,
+and quantitative gates. Five new contract tests pass within a 79-test full suite;
+100 canonical replays agree. No runtime, production schema, MCP tool, extension,
+protocol, or capability changed.
+
+The next task is Checkpoint 6B only: implement the deterministic pure ledger core
+with validation, canonicalization, immutable identity, monotonic revisions,
+parent-digest lineage, explicit revise/cancel/expire operations, and bounded safe
+inspection. It must have no browser, network, database, or production side effect.
 
 ## Explicitly deferred
 

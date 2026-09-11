@@ -1,6 +1,6 @@
 # Milestone 6 implementation plan
 
-Status: **planned; implementation has not started**
+Status: **Checkpoint 6A complete; Checkpoint 6B is next**
 
 Milestone 6 adds a Goal and Constraint Ledger plus a scoped Proof Engine above the
 accepted Opera Agent 1.6.0 semantic runtime. It must turn an explicit user request
@@ -234,7 +234,15 @@ code. The extension protocol and 26 browser capabilities should remain unchanged
 
 ## Checkpoint 6A — contract, threat model, and replay baseline
 
-Status: **next; not started**
+Status: **complete on 2026-09-11**. Three synthetic-only versioned fixtures now
+lock the contract, hostile replay corpus, quantitative gates, state-minimized
+persistence shape, and public-surface baseline. Five contract tests pass inside a
+79-test full suite. `OA_CANONICAL_JSON_V1` reproduced one ledger digest across 100
+runs, rejects non-safe-integer numbers, normalizes strings to NFC, preserves array
+order, and sorts printable-ASCII object keys by byte. The corpus covers 15 hostile
+and boundary scenarios. Protocol 1, 26 capabilities, the existing 18 MCP tools,
+extension 1.6.0, and production schemas remain unchanged. The MCP public-API
+decision is intentionally deferred to Checkpoint 6E.
 
 Freeze the milestone contract before runtime changes.
 
@@ -467,4 +475,3 @@ an explicit review:
 
 Do not begin a later checkpoint while an earlier exit gate is unexplained or while
 its rollback is untested.
-

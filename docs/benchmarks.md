@@ -161,3 +161,20 @@ accepted 1.5.2 baseline, the median regression is about 5.6%, below the locked
 15% ceiling. The enriched snapshot median was 50,953 bytes; the single-update
 delta remained 6,087 bytes, or 12% of that snapshot. All semantic feature gates
 passed with zero focus changes and zero persisted sensitive values.
+
+### Checkpoint 6A goal-ledger contract baseline
+
+Checkpoint 6A reuses the accepted 1.6.0 three-run browser baseline: 19.83 ms
+median and 20.65 ms p95 rich read, 50,953 median response bytes, 6,087-byte
+single-update delta, 12% delta/snapshot ratio, zero focus changes, and zero
+persisted sensitive values.
+
+The new contract-only corpus adds no runtime measurement claim. It locks 100%
+canonical digest agreement over at least 100 repetitions, zero false `PROVED`,
+zero cross-tenant acceptance, zero stale-revision acceptance, zero implicit
+authority broadening, a 64 KiB ledger-token cap, a 128 KiB proof-response cap, a
+future target p95 below 10 ms at 500 evidence items, and at most 15% ordinary
+validation median regression. Contract digest:
+`sha256:d6a0bdfa18f559266f6fbc677face2f94f7ca5071305a3be752548f658bada79`.
+Replay digest:
+`sha256:71e8e9d71d0ed3ea5021d0078d1e333be9179b65f5efe1c80f99aced04c7d7d5`.

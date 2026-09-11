@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "milestone": "6A",
+  "syntheticOnly": true,
+  "ledger": {
+    "schemaVersion": 1,
+    "goalId": "goal_fixture_places_001",
+    "tenantId": "tenant_fixture_alpha",
+    "revision": 1,
+    "parentDigest": null,
+    "objective": "Collect candidates within the declared observed feed scope.",
+    "scope": {
+      "kind": "BOUNDED_FEED",
+      "resourceId": "resource_fixture_map_001"
+    },
+    "constraints": [
+      {
+        "constraintId": "constraint_min_score",
+        "kind": "VALUE_PREDICATE",
+        "claimField": "score",
+        "operator": "GTE",
+        "integerValue": 4
+      },
+      {
+        "constraintId": "constraint_background_only",
+        "kind": "INVARIANT",
+        "claimField": "focusChanges",
+        "operator": "EQ",
+        "integerValue": 0
+      }
+    ],
+    "authorizations": [
+      {
+        "authorizationId": "authorization_read_only",
+        "operationClass": "READ_ONLY_BROWSER_OBSERVATION",
+        "scopeId": "resource_fixture_map_001",
+        "expiresAt": "2026-09-12T00:00:00Z"
+      }
+    ],
+    "claims": [
+      {
+        "claimId": "claim_feed_scanned",
+        "scopeId": "resource_fixture_map_001",
+        "predicate": "DECLARED_FEED_REACHED_STABLE_BOUNDARY",
+        "evidenceRequirementIds": ["requirement_boundary_twice"]
+      },
+      {
+        "claimId": "claim_candidates_match",
+        "scopeId": "resource_fixture_map_001",
+        "predicate": "OBSERVED_CANDIDATES_SATISFY_CONSTRAINTS",
+        "evidenceRequirementIds": ["requirement_direct_observation"]
+      }
+    ],
+    "evidenceRequirements": [
+      {
+        "requirementId": "requirement_boundary_twice",
+        "categories": ["BOUNDARY_OBSERVATION"],
+        "minimumCount": 2,
+        "maximumAgeSeconds": 300
+      },
+      {
+        "requirementId": "requirement_direct_observation",
+        "categories": ["DIRECT_OBSERVATION"],
+        "minimumCount": 1,
+        "maximumAgeSeconds": 300
+      }
+    ],
+    "nonGoals": [
+      "Prove geographic exhaustiveness beyond the declared observed feed.",
+      "Perform a purchase, reservation, upload, send, publish, or deletion."
+    ],
+    "status": "OPEN",
+    "createdAt": "2026-09-11T00:00:00Z",
+    "expiresAt": "2026-09-12T00:00:00Z"
+  },
+  "expectedLedgerDigest": "sha256:f03e01e802a180f15ebd0db7a7ac03a140aef2f54b5bf1f6fbedab3e34955f94",
+  "scenarios": [
+    {
+      "id": "action-receipt-only",
+      "evidenceCategories": ["ACTION_RECEIPT"],
+      "expectedStatus": "UNKNOWN",
+      "expectedRejection": "ACTION_IS_NOT_OUTCOME_EVIDENCE"
+    },
+    {
+      "id": "authorization-only",
+      "evidenceCategories": ["USER_AUTHORIZATION"],
+      "expectedStatus": "UNKNOWN",
+      "expectedRejection": "AUTHORIZATION_IS_NOT_OUTCOME_EVIDENCE"
+    },
+    {
+      "id": "bounded-feed-stable-boundary",
+      "evidenceCategories": ["DIRECT_OBSERVATION", "BOUNDARY_OBSERVATION", "BOUNDARY_OBSERVATION"],
+      "expectedStatus": "BOUNDED_COMPLETE",
+      "expectedRejection": null
+    },
+    {
+      "id": "closed-world-exhaustive",
+      "evidenceCategories": ["DIRECT_OBSERVATION", "DERIVED_OBSERVATION"],
+      "scopeKind": "CLOSED_WORLD",
+      "exhaustive": true,
+      "expectedStatus": "PROVED",
+      "expectedRejection": null
+    },
+    {
+      "id": "contradictory-direct-observations",
+      "evidenceCategories": ["DIRECT_OBSERVATION", "DIRECT_OBSERVATION"],
+      "contradiction": true,
+      "expectedStatus": "BLOCKED",
+      "expectedRejection": "CONTRADICTION_UNRESOLVED"
+    },
+    {
+      "id": "expired-evidence",
+      "evidenceCategories": ["DIRECT_OBSERVATION"],
+      "expired": true,
+      "expectedStatus": "UNKNOWN",
+      "expectedRejection": "EXPIRED"
+    },
+    {
+      "id": "cross-tenant-evidence",
+      "evidenceCategories": ["DIRECT_OBSERVATION"],
+      "tenantMismatch": true,
+      "expectedStatus": "UNKNOWN",
+      "expectedRejection": "CROSS_TENANT"
+    },
+    {
+      "id": "stale-ledger-revision",
+      "submittedRevision": 1,
+      "headRevision": 2,
+      "expectedStatus": "REJECTED",
+      "expectedRejection": "STALE_REVISION"
+    },
+    {
+      "id": "forked-ledger-revision",
+      "submittedRevision": 3,
+      "headRevision": 2,
+      "parentDigestMatches": false,
+      "expectedStatus": "REJECTED",
+      "expectedRejection": "FORKED_REVISION"
+    },
+    {
+      "id": "prompt-injected-authorization",
+      "authoritySource": "PAGE_CONTENT",
+      "expectedStatus": "REJECTED",
+      "expectedRejection": "UNTRUSTED_INTENT_SOURCE"
+    },
+    {
+      "id": "implicit-authority-broadening",
+      "previousOperationClass": "READ_ONLY_BROWSER_OBSERVATION",
+      "revisedOperationClass": "CONSEQUENTIAL_EXTERNAL_ACTION",
+      "freshUserAuthorization": false,
+      "expectedStatus": "REJECTED",
+      "expectedRejection": "IMPLICIT_AUTHORITY_BROADENING"
+    },
+    {
+      "id": "narrowed-goal-evidence-reuse",
+      "revisionKind": "NARROW",
+      "expectedStatus": "PARTIAL",
+      "expectedReuse": "LOGICALLY_IMPLIED_SUBSET_ONLY"
+    },
+    {
+      "id": "expanded-goal-invalidates-completion",
+      "revisionKind": "EXPAND",
+      "expectedStatus": "PARTIAL",
+      "expectedReuse": "NO_COMPLETENESS_FOR_NEW_SCOPE"
+    },
+    {
+      "id": "invalid-proof-digest",
+      "digestValid": false,
+      "expectedStatus": "REJECTED",
+      "expectedRejection": "INVALID_DIGEST"
+    },
+    {
+      "id": "secret-like-ledger-value",
+      "syntheticValueClass": "FIXTURE_CREDENTIAL_MARKER",
+      "expectedStatus": "REJECTED",
+      "expectedRejection": "SECRET_LIKE_VALUE"
+    }
+  ]
+}

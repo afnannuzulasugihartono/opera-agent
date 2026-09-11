@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "6A",
+  "baselineVersion": "1.6.0",
+  "measurementStatus": "RECORDED",
+  "contractCorpusDigest": "sha256:d6a0bdfa18f559266f6fbc677face2f94f7ca5071305a3be752548f658bada79",
+  "replayCorpusDigest": "sha256:71e8e9d71d0ed3ea5021d0078d1e333be9179b65f5efe1c80f99aced04c7d7d5",
+  "invariants": {
+    "minimumCanonicalReplayRuns": 100,
+    "minimumCanonicalReplayAgreement": 1,
+    "maximumFalseProvedCases": 0,
+    "maximumCrossTenantAcceptances": 0,
+    "maximumStaleRevisionAcceptances": 0,
+    "maximumImplicitAuthorityBroadeningAcceptances": 0,
+    "maximumFocusChanges": 0,
+    "maximumSensitiveValuesPersisted": 0,
+    "maximumLedgerTokenBytes": 65536,
+    "maximumProofResponseBytes": 131072,
+    "targetProofEvaluationP95MsAt500Evidence": 10,
+    "maximumOrdinaryValidationMedianRegressionPercent": 15
+  },
+  "pairedSemanticBaseline": {
+    "environment": "isolated controlled Chromium on Windows",
+    "runs": 3,
+    "richReadLatencyMedianMs": 19.83,
+    "richReadLatencyP95Ms": 20.65,
+    "richReadResponseBytesMedian": 50953,
+    "singleUpdateDeltaBytes": 6087,
+    "singleUpdateDeltaToSnapshotRatio": 0.12,
+    "focusChanges": 0,
+    "sensitiveValuesPersisted": 0
+  },
+  "publicSurfaceBaseline": {
+    "protocolVersion": 1,
+    "capabilityCount": 26,
+    "mcpToolCount": 18,
+    "mcpSourceSha256": "6235edffe31b47fb3771e805d9a46b08ab6d576420ac4867a69b75c7a86906d0"
+  }
+}
