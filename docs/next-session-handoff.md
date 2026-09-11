@@ -66,25 +66,27 @@ eight-column metadata-only head. The existing MCP source and 18 schemas remain
 byte-for-byte unchanged. Supabase compare-and-swap probes passed first-write,
 exact retry, stale-conflict, cross-tenant, and cleanup checks; unauthenticated HTTP
 returned 401; no probe rows remain; no relevant new security ERROR/WARN exists.
-Four focused tests bring the full suite to 112 passing tests. The feature flag is
-deliberately `false`. Read
+Four focused tests bring the full suite to 112 passing tests. The feature was
+deployed dark and was enabled only after the completed 6F acceptance. Read
 `docs/milestone-6-checkpoint-6e.md` before changing this state.
 
-Checkpoint 6F is in progress. Node/static, controlled Chromium, isolated installed
-Opera, benchmarks, and production Supabase queue/idempotency/timeout/tenant/cleanup
-gates pass. The production probe found and repaired a transaction timestamp-order
-race through local migration `20260912143000_opera_agent_goal_head_timestamp_order.sql`
-(Supabase version `20260911231331`). The feature is back to `false`; all synthetic
-rows are gone. Read `docs/milestone-6-checkpoint-6f.md` for exact evidence.
+Checkpoint 6F and Milestone 6 are complete. The YouTube-only rerun observed an
+already-open inactive tab with only status, tab discovery, capture, and read;
+`audible:false` remained stable, the active tab/window did not change, and paused
+plus transcript claims correctly remained unresolved. The authenticated Maps and
+GitHub pass, automated suites, isolated Opera, and production Supabase gates also
+pass. A production probe found and repaired a transaction timestamp-order race via
+local migration `20260912143000_opera_agent_goal_head_timestamp_order.sql`
+(Supabase version `20260911231331`). `milestone6_ledger_enabled=true`, head rows
+were zero at promotion, and new RPCs remain service-role-only. No extension or MCP
+schema changed. Read `docs/milestone-6-checkpoint-6f.md` for exact evidence.
 
-The connected user-session pass verified real OAuth operation, Maps, GitHub,
-narrowing/expansion, contradiction safety, zero false `PROVED`, and zero active-tab
-change. It remains conditional only because opening the YouTube watch page caused
-site-controlled advertisement autoplay. The next task is a YouTube-only rerun on
-a watch tab the user has already opened, paused, and muted. Use only status, tab
-discovery, capture, read, and final status—no open, navigation, media command,
-click, typing, or scroll. Do not mark 6F complete or enable the feature before this
-clean pass. Do not bump, reinstall, reconnect, logout, or re-pair the extension.
+The next task is planning Milestone 7, Reactive Browser VM. Read the Milestone 7
+dependency outline in `docs/semantic-runtime-plan.md`, then freeze a separate,
+detailed checkpoint plan before implementation. Preserve burst as the atomic unit,
+background-first focus safety, bounded deterministic execution, proof gating, and
+the current extension/MCP compatibility contract. Do not bump, reinstall,
+reconnect, logout, or re-pair merely to begin planning.
 
 Non-negotiable rules:
 

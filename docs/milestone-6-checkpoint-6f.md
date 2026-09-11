@@ -1,7 +1,7 @@
 # Milestone 6 Checkpoint 6F: production acceptance
 
-Status: **in progress on 2026-09-12**. Automated and isolated gates pass; the
-feature remains dark pending one clean normal-profile YouTube observation rerun.
+Status: **complete on 2026-09-12**. All automated, isolated, cloud, OAuth, and
+normal-profile read-only gates pass. The server feature is enabled.
 
 ## Defect found and fixed
 
@@ -37,7 +37,7 @@ deployment as `20260911231331 opera_agent_goal_head_timestamp_order`.
   completion retries were idempotent; expired work was not claimed; exact initial
   head replay succeeded; stale revision acceptance was zero; cross-tenant accepted
   reads were zero; cleanup deleted expired metadata.
-- Cleanup verification: feature flag `false`, head rows 0, synthetic devices 0,
+- Pre-promotion cleanup verification: feature flag `false`, head rows 0, synthetic devices 0,
   synthetic commands 0. The goal-head RPC remains unavailable to `anon` and
   `authenticated`, and available only to `service_role`.
 - Missing and invalid bearer requests to `opera-agent-ledger` both returned HTTP
@@ -49,7 +49,7 @@ deployment as `20260911231331 opera_agent_goal_head_timestamp_order`.
   table, or RPC grant. Other WARN findings predate Milestone 6 and are outside this
   change.
 
-## Remaining promotion gates
+## Normal-profile acceptance
 
 The connected ChatGPT/Opera pass returned `CONDITIONAL PASS`. It verified a real
 allowlisted OAuth path through successful Opera Agent commands without inspecting
@@ -71,12 +71,19 @@ state. However, opening the watch page caused site-controlled advertisement
 autoplay. The tab was closed, but this run cannot satisfy the explicit no-playback
 precondition.
 
-Do not mark 6F or Milestone 6 complete until YouTube is rerun against a watch tab
-that the user has already opened, paused, and muted. The acceptance agent must only
-call status, tab discovery, capture, read, and final status; it must not open,
-navigate, play, pause, seek, click, type, or scroll that tab. This isolates the
-Milestone 6 read-only observation contract without pretending to solve the
-separately deferred media-control milestone.
+The YouTube-only rerun used the already-open tab `584941664` and passed the final
+isolation/read-only gate. The tab remained inactive, `audible:false` remained
+stable, and the user's active tab `584941608` plus window `584941606` were unchanged.
+The agent issued no open, navigation, activation, click, play, pause, seek, typing,
+scroll, or close operation. It used only status, tab discovery, capture, and read.
+
+The rerun correctly left independent `paused` state unresolved because
+`media.state` was outside the allowed calls. It also left transcript availability
+and transcript contents unresolved because neither was observed. These unresolved
+claims are a proof-safety success, not an acceptance failure: the Agent neither
+caused playback nor converted `audible:false` or successful observation into a
+false outcome proof. The deferred media-control milestone remains responsible for
+generic autoplay suppression and richer audio/video state handling.
 
 The isolated live-Google-Maps option was intentionally not enabled for the local
 Opera suite. It is variable network/UI coverage and does not substitute for the
@@ -96,7 +103,10 @@ proof.
 - MCP Edge Function: version 12; tool inventory remains 18.
 - Milestone 6 migrations now include production versions `20260911162525`,
   `20260911162819`, and `20260911231331`.
-- Immediate rollback remains `milestone6_ledger_enabled=false`. This is the current
-  state, so Opera Agent 1.6.0 and the existing MCP tools remain usable. The
+- Promotion set `milestone6_ledger_enabled=true` with zero existing head rows.
+  Post-promotion verification retained service-role-only RPC access and no new
+  relevant security-advisor finding.
+- Immediate rollback is `milestone6_ledger_enabled=false`. Opera Agent 1.6.0 and
+  the existing MCP tools remain usable in either state. The
   timestamp migration changes no table shape and requires no extension reinstall,
   reconnect, logout, or re-pairing.

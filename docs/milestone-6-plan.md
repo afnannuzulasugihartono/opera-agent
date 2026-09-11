@@ -1,6 +1,6 @@
 # Milestone 6 implementation plan
 
-Status: **Checkpoints 6A through 6E complete; Checkpoint 6F is next**
+Status: **complete — Checkpoints 6A through 6F passed on 2026-09-12**
 
 Milestone 6 adds a Goal and Constraint Ledger plus a scoped Proof Engine above the
 accepted Opera Agent 1.6.0 semantic runtime. It must turn an explicit user request
@@ -436,11 +436,11 @@ retain or purge only non-sensitive head metadata according to the documented TTL
 
 ## Checkpoint 6F — compatibility, production acceptance, and release record
 
-Status: **in progress on 2026-09-12**. Automated, controlled-Chromium, isolated
-Opera, and production Supabase gates pass after the timestamp-order repair recorded
-in `docs/milestone-6-checkpoint-6f.md`. Normal-profile OAuth, Maps, GitHub, focus,
-and proof semantics pass. The feature remains disabled pending a clean read-only
-YouTube rerun because the first watch-page open triggered site-controlled autoplay.
+Status: **complete on 2026-09-12**. Automated, controlled-Chromium, isolated Opera,
+production Supabase, authenticated normal-profile Maps/GitHub, and the final
+YouTube-only read-only rerun pass. The timestamp-order repair and exact acceptance
+record are in `docs/milestone-6-checkpoint-6f.md`. The server feature is enabled;
+the extension remains 1.6.0 with no MCP schema change.
 
 Run the full release ladder before declaring Milestone 6 complete.
 

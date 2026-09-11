@@ -221,6 +221,8 @@ or private signing-key contents belong in this context file.
   patches 1.5.1 and 1.5.2.
 - Milestone 5: semantic runtime foundation — Checkpoints 5A through 5F completed
   and released in 1.6.0.
+- Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A through
+  6F completed as a server-only release on 2026-09-12. The extension remains 1.6.0.
 
 The historical Checkpoint 2B status in `docs/roadmap.md` has been reconciled with
 the later connected-ChatGPT and signed normal-profile acceptance from Checkpoint
@@ -231,8 +233,6 @@ the later connected-ChatGPT and signed normal-profile acceptance from Checkpoint
 These are dependency order, not promised release numbers. Their checkpoint plans
 have not yet been frozen.
 
-- Milestone 6: Goal and Constraint Ledger + Proof Engine — Checkpoints 6A–6E are
-  complete; 6F production acceptance is next.
 - Milestone 7: Reactive Browser VM.
 - Milestone 8: Decision-Causal Transactions and provenance enforcement.
 - Milestone 9: Multi-sensor Physical Plan Optimizer.
@@ -278,8 +278,7 @@ protocol, capability, or browser behavior changed.
 
 Checkpoint 6E chose a separate internal OAuth ledger endpoint rather than adding
 MCP tools. `opera-agent-ledger` version 3 is deployed with JWT verification and
-the same user allowlist as the MCP server, but remains dark behind
-`milestone6_ledger_enabled=false`. Ledger contents use AES-256-GCM opaque tokens
+the same user allowlist as the MCP server. Ledger contents use AES-256-GCM opaque tokens
 with a Vault-managed key. Supabase stores only the frozen eight-column head in a
 private schema; all new RPCs deny `anon` and `authenticated` and grant only
 `service_role`. Compare-and-swap integration verified exact transition retries,
@@ -290,7 +289,7 @@ protocol, capability, pairing, or signing state changed. The detailed record is
 `docs/milestone-6-checkpoint-6e.md`. Four focused 6E tests bring the full local
 suite to 112 passing tests; static validation remains green.
 
-Checkpoint 6F is in progress. The full 112-test suite, static gate, three-run
+Checkpoint 6F automated gates passed. The full 112-test suite, static gate, three-run
 controlled-Chromium semantic benchmark, and isolated installed-Opera regression
 pass. Opera preserved all 54 background focus audits, completed 20/20 burst runs,
 and reconnected after network and browser restart. Production queue, enqueue and
@@ -303,17 +302,23 @@ transaction-stable `now()` and Edge-generated `createdAt`. Migration
 `20260912143000_opera_agent_goal_head_timestamp_order.sql`, recorded in Supabase as
 `20260911231331 opera_agent_goal_head_timestamp_order`, now uses bounded wall-clock
 timestamps and preserves `updated_at >= created_at`. Tests lock the repair. The
-ledger feature is again `false`; no extension, MCP schema, signing, pairing,
-protocol, or capability changed. See `docs/milestone-6-checkpoint-6f.md`.
+ledger feature was restored to `false` after its probes and enabled only after the
+final user-session pass; no extension, MCP schema, signing, pairing, protocol, or
+capability changed. See `docs/milestone-6-checkpoint-6f.md`.
 
-The connected normal-profile acceptance returned `CONDITIONAL PASS`. Real OAuth
-operation, Maps, GitHub, focus preservation, narrowing/expansion, contradiction,
-and anti-false-`PROVED` behavior passed without token inspection or external
-writes. The YouTube page correctly kept transcript availability separate from
-observed transcript coverage, but opening a new watch page triggered an autoplay
-advertisement. Closing it prevented a clean no-playback result. The next task is a
-YouTube-only rerun on a user-prepared paused and muted watch tab using observation
-tools only. Keep the feature disabled and do not mark 6F complete before that pass.
+Checkpoint 6F and Milestone 6 are complete. The final YouTube-only rerun observed
+an already-open inactive tab without navigation or media actions, preserved
+`audible:false`, and left unobserved paused/transcript claims unresolved. Combined
+with the authenticated Maps/GitHub pass, it recorded zero active-tab changes,
+external writes, sensitive-token inspection, and false `PROVED`. The production
+feature flag is now `true`, the head table was empty at promotion, and RPC access
+remains service-role-only. No extension, signing, pairing, protocol, capability,
+or MCP schema changed.
+
+The next task is to plan Milestone 7, Reactive Browser VM. Freeze its checkpoints,
+threat boundary, quantitative gates, rollout, and rollback before implementation.
+Keep the existing burst as the atomic unit and do not add a general browser VM or
+site-specific primitive without that accepted plan.
 
 ## Explicitly deferred
 

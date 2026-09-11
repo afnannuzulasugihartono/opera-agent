@@ -10,6 +10,9 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 - Completed the pure 6B ledger core with immutable canonical ledgers, monotonic digest lineage, stale/fork/authority-broadening rejection, explicit terminal transitions, metadata-only inspection, a 10,000-step property sequence, and a reproducible benchmark without browser or production integration.
 - Completed the pure 6C scoped Proof Engine with typed evidence trust and admissibility, freshness/scope/lineage/dependency enforcement, contradiction blocking, bounded canonical receipts, a zero-false-`PROVED` adversarial corpus, and a 500-evidence p95 below the frozen target without browser or production integration.
 - Completed 6D live-revision reuse with metadata-only semantic dependency fingerprints, conservative narrowing/expansion rules, selective invalidation, bounded carry-forward receipts, and restart-safe minimal-head verification in temporary local SQLite databases without changing production.
+- Completed 6E with an internal OAuth-authenticated ledger endpoint, AES-256-GCM opaque ledger tokens, a Vault-managed key, and service-role-only eight-column head persistence while retaining the existing 18 MCP tools.
+- Completed 6F across 112 tests, controlled Chromium, isolated Opera, production queue/idempotency/timeout/tenant/cleanup probes, authenticated normal-profile Maps/YouTube/GitHub observation, zero focus takeover, and zero false `PROVED`; enabled the server feature without changing extension 1.6.0.
+- Fixed a production transaction timestamp-order race in first head persistence through an additive migration using wall-clock-safe `updated_at` ordering.
 
 ## [1.6.0] - 2026-09-11
 
