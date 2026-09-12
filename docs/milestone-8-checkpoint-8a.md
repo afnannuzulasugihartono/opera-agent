@@ -63,10 +63,11 @@ The modern MCP vector is stateless and checks capability per request. Missing re
 - focused checkpoint suite: 10/10 pass;
 - full deterministic suite: 181/181 pass;
 - `npm run check`: pass, reporting 26 allowlisted browser primitives and version 1.6.0;
+- GitHub Actions CI run `34700088793` (`#169`) on pushed acceptance head `1c53520625e1e56867319bc57390616f0a210da4`: pass, including standard Chromium extension regression;
 - all eight new JSON fixtures parse successfully;
 - `git diff --check`: pass.
 
-No browser, live OAuth, production database, or cloud acceptance was required because 8A is contract/tests/docs only. The Supabase platform changelog was checked for current compatibility; no production project was queried or changed.
+Temporary draft PR `#24` was used only to trigger the standard workflow and was closed without merge after success. No live Opera, OAuth, or production database acceptance was required because 8A is contract/tests/docs only. The Supabase platform changelog was checked for current compatibility; no production project was queried or changed.
 
 ## Compatibility and rollback
 
