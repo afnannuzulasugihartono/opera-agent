@@ -93,7 +93,11 @@ test('7E opaque tokens authenticate kind and ciphertext while retaining bounded 
   assert.match(token, /^oavm1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   assert.deepEqual(await openVmHostToken(token, key, { kind: 'CHECKPOINT' }), payload);
   await assert.rejects(() => openVmHostToken(token, key, { kind: 'PROGRAM' }));
-  const changed = `${token.slice(0, -1)}${token.endsWith('A') ? 'B' : 'A'}`;
+  const parts = token.split('.');
+  const cipher = parts[2];
+  const index = Math.floor(cipher.length / 2);
+  const changedCipher = `${cipher.slice(0, index)}${cipher[index] === 'A' ? 'B' : 'A'}${cipher.slice(index + 1)}`;
+  const changed = `${parts[0]}.${parts[1]}.${changedCipher}`;
   await assert.rejects(() => openVmHostToken(changed, key, { kind: 'CHECKPOINT' }));
 });
 
