@@ -21,6 +21,28 @@
   ],
   "effectClasses": ["READ_ONLY", "LOCAL_REVERSIBLE", "STAGED_EXTERNAL", "COMPENSABLE_EXTERNAL", "IRREVERSIBLE_OR_UNKNOWN"],
   "transactionPrimitiveMethods": ["tabs.open", "tabs.activate", "tabs.close", "tabs.navigate", "tabs.reload", "page.click", "page.pointer", "page.fill", "page.focus", "page.scroll", "page.key", "media.play", "media.pause", "media.seek"],
+  "effectClassification": {
+    "authority": "TRUSTED_SERVER_DESCRIPTOR_ONLY",
+    "unknownDefault": "IRREVERSIBLE_OR_UNKNOWN",
+    "clientSuppliedClassTrusted": false,
+    "genericMethods": [
+      {"method":"tabs.open","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"tabs.activate","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"tabs.close","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"tabs.navigate","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"tabs.reload","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"page.click","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"page.pointer","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"page.fill","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"page.focus","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"page.scroll","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"page.key","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"media.play","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"media.pause","effectClass":"IRREVERSIBLE_OR_UNKNOWN"},
+      {"method":"media.seek","effectClass":"IRREVERSIBLE_OR_UNKNOWN"}
+    ],
+    "trustedDescriptors": []
+  },
   "decisionPredicateKinds": ["AUTHORITY", "USER_IDENTITY", "OAUTH_CLIENT_IDENTITY", "GOAL_REVISION", "TARGET", "DOCUMENT_GENERATION", "ACTION", "OPERAND", "EFFECT_CLASS", "ENFORCEMENT_MODE", "APPROVAL", "SENSITIVE_POLICY", "POSTCONDITION"],
   "transactionShape": {"actionField":"action","forbiddenFields":["actions"],"commitSlots":1},
   "enforcement": {

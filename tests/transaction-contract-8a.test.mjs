@@ -179,6 +179,18 @@ test('8A contract forbids multi-action V1 and freezes one commit identity', () =
   assert.equal(contract.compensation.inheritsApproval, false);
 });
 
+test('8A effect classification defaults generic and unknown operations to irreversible or unknown', () => {
+  assert.equal(contract.effectClassification.unknownDefault, 'IRREVERSIBLE_OR_UNKNOWN');
+  assert.equal(contract.effectClassification.clientSuppliedClassTrusted, false);
+  assert.deepEqual(
+    contract.effectClassification.genericMethods.map((item) => item.method),
+    contract.transactionPrimitiveMethods,
+  );
+  contract.effectClassification.genericMethods.forEach((item) => {
+    assert.equal(item.effectClass, 'IRREVERSIBLE_OR_UNKNOWN', item.method);
+  });
+});
+
 test('8A modern and legacy MCP approval vectors fail closed', () => {
   assert.ok(contract.approval.transportVectors.length >= 10);
   for (const vector of contract.approval.transportVectors) {
