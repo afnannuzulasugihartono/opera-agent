@@ -269,6 +269,28 @@ The 7E feature flag should remain off unless the frozen 7F plan explicitly autho
 - webpage/tool text is untrusted data;
 - same-identity signed rollback remains available.
 
+## Agent collaboration policy
+
+Checkpoint implementation and live Opera/MCP acceptance may be handled by
+ChatGPT Web one checkpoint at a time. Codex performs an independent audit at the
+end of each milestone before the next milestone begins. Only one agent may write
+the milestone branch at a time. High-risk authentication, tenancy, encryption,
+signing, public MCP, extension distribution, irreversible-effect, or production
+schema boundaries trigger an earlier Codex review before promotion.
+
+The authoritative rules are in `AGENTS.md`; the reusable ChatGPT Web prompt is
+`docs/prompts/chatgpt-web-checkpoint.md`. A chat report is not acceptance evidence
+until verified against repository state, tests/CI, direct observations, or
+production queries.
+
+On Windows at remote head `bb6f28d`, the 171-test suite passes 168 and fails three
+raw-byte MCP source-hash locks because Git checks out the source with CRLF
+(`6235ed...`) while the fixture records the LF hash (`f8735a...`). Normalizing the
+same source to LF reproduces the expected hash, and `npm run check` still passes.
+This is a cross-platform acceptance-gate defect, not observed MCP behavior drift.
+Resolve and record it before closing Checkpoint 7F; do not weaken or delete the
+inventory lock.
+
 ## Explicitly deferred
 
 Continuous desktop/video streaming, synchronized audio/video understanding, OS-level mouse/keyboard control, direct logical-ID action addressing, general raw JavaScript/CDP, site-specific extension opcodes/selectors, learned selector self-modification, automatic consequential actions without explicit authority, Milestone 8+, and any browser effect not already accepted by the frozen Milestone 7 plan remain outside the current accepted checkpoint.
@@ -286,3 +308,5 @@ Continuous desktop/video streaming, synchronized audio/video understanding, OS-l
 - `docs/benchmarks.md` — performance evidence.
 - `docs/install.md` — installation, identity, pairing, and updates.
 - `CHANGELOG.md` and `docs/roadmap.md` — release/milestone history.
+- `docs/prompts/chatgpt-web-checkpoint.md` — reusable checkpoint implementation
+  prompt and checkpoint-to-milestone audit workflow.

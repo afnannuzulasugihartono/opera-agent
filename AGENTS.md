@@ -25,3 +25,49 @@ start of the next resumed session before taking new architectural work.
 The durable context is a handoff aid, not a substitute for inspecting current code
 and git state.
 
+## Checkpoint implementation and milestone audit policy
+
+Use one active writer on the milestone branch at a time. ChatGPT Web may own the
+individual checkpoint implementation and live Opera/MCP acceptance. Codex performs
+an independent audit after the complete milestone, before work starts on the next
+milestone. Do not let two agents edit or push the same branch concurrently.
+
+For every checkpoint implementation:
+
+1. Read the repository instructions, current context, handoff, milestone plan,
+   and all earlier acceptance records before editing.
+2. State the exact checkpoint scope and explicit non-goals. Do not implement work
+   assigned to a later checkpoint merely because it is convenient.
+3. Inspect the current branch and remote head. Begin only from the latest accepted
+   checkpoint commit and keep unrelated user changes intact.
+4. Add deterministic failing tests before runtime behavior, then implement the
+   smallest generic mechanism that satisfies the frozen contract.
+5. Run focused tests, the full suite, static checks, and every browser/cloud/
+   security gate required by the checkpoint plan.
+6. Treat model-written reports and prior chat summaries as leads, not verified
+   evidence. Record only results supported by repository state, exact commands,
+   CI artifacts, browser observations, or production queries.
+7. Never call a checkpoint complete when tests are intentionally red, CI is still
+   running, temporary instrumentation remains, production cleanup is pending, or
+   its acceptance record/context/handoff has not been committed.
+8. Restore temporary CI changes, close temporary validation PRs according to the
+   checkpoint plan, confirm cleanup/rollback state, record final SHA and net diff,
+   update both context files, then commit and push.
+9. Stop after the assigned checkpoint. Do not begin the next checkpoint in the
+   same turn unless the user explicitly requests it after reviewing the result.
+
+Request a Codex audit before production mutation, or immediately after a bounded
+dark probe and before promotion, when a checkpoint changes authentication,
+authorization, tenant isolation, encryption, signing identity, public MCP schemas,
+extension/CRX distribution, irreversible actions, or production database shape.
+An unexplained repeated failure or a proposed deviation from a frozen contract is
+also an early-audit trigger.
+
+At a milestone boundary, do not start the next milestone until Codex independently
+reviews the complete diff and reruns proportionate tests. The audit must distinguish
+code present, automated tests passing, live acceptance passing, and production
+promotion. Its verdict is `PASS`, `CONDITIONAL PASS`, or `FAIL`; only `PASS` permits
+the next milestone unless the user explicitly accepts documented residual risk.
+
+The reusable ChatGPT Web checkpoint prompt is
+`docs/prompts/chatgpt-web-checkpoint.md`.

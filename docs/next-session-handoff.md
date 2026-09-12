@@ -209,3 +209,19 @@ Before ending any state-changing session:
 ## Session-close note
 
 Checkpoint 7E began from accepted 7D final head `23448be406bb7c1a47777306659e0a3bbab18bdc`. Its durable acceptance record is `docs/milestone-7-checkpoint-7e.md`. The next implementation session must start at Checkpoint 7F rather than repeating 7E or jumping to Milestone 8+.
+
+## Collaboration rule
+
+Follow the checkpoint/milestone ownership policy in `AGENTS.md`. ChatGPT Web may
+implement and accept one checkpoint at a time; Codex independently audits the
+complete milestone before the next milestone starts. Use
+`docs/prompts/chatgpt-web-checkpoint.md` to begin a new checkpoint session. Keep
+one active writer on the shared milestone branch and treat chat reports as
+unverified until reconciled with repository and acceptance evidence.
+
+Before closing 7F, resolve the Windows portability defect in the raw MCP source
+hash gates observed at `bb6f28d`: a CRLF checkout hashes to `6235ed...`, while LF
+normalization reproduces the frozen `f8735a...` fixture. The current Windows run is
+168/171 with exactly three hash-lock failures; `npm run check` passes. Preserve the
+inventory lock and make its byte-canonicalization cross-platform rather than
+changing the expected contract hash to a platform-specific value.
