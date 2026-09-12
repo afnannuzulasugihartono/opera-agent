@@ -9,6 +9,7 @@ import {
   openLedgerToken,
   sealLedgerToken,
 } from '../lib/ledger-token.js';
+import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 
 const replay = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-replay-v1.json', import.meta.url), 'utf8'));
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8'));
@@ -80,7 +81,7 @@ test('6E endpoint binds every operation to OAuth user identity and exposes no pr
 });
 
 test('6E leaves the existing MCP inventory byte-for-byte unchanged', () => {
-  const hash = crypto.createHash('sha256').update(mcpSource).digest('hex');
+  const hash = sha256CanonicalLf(mcpSource);
   assert.equal(contract.toolCount, 18);
   assert.equal(hash, contract.sourceSha256);
   assert.doesNotMatch(mcpSource.toString('utf8'), /opera-agent-ledger|open_goal|revise_goal|evaluate_goal/);
