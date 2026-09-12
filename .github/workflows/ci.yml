@@ -13,12 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Checkpoint 7F focused tests
+        run: node --test tests/reactive-vm-7f.test.mjs
       - name: Unit and static tests
         run: |
           npm test
@@ -30,3 +35,33 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Chromium extension regression
         run: python tests/browser_extension_test.py
+      - name: Paired same-runner 1.6.0 performance gate
+        env:
+          ACCEPTED_160_SHA: cfb903ba4d5b59c7faa5b601914117310602136a
+        run: |
+          git fetch --depth=1 origin "$ACCEPTED_160_SHA"
+          git worktree add --detach /tmp/opera-agent-accepted "$ACCEPTED_160_SHA"
+          (cd /tmp/opera-agent-accepted && node scripts/semantic-baseline.mjs --runs=3 > /tmp/accepted-160.json)
+          node scripts/semantic-baseline.mjs --runs=3 > /tmp/current-7f.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const accepted = JSON.parse(fs.readFileSync('/tmp/accepted-160.json', 'utf8'));
+          const current = JSON.parse(fs.readFileSync('/tmp/current-7f.json', 'utf8'));
+          const baselineMs = accepted.measurements['page.read.semantic'].latencyMs.median;
+          const currentMs = current.measurements['page.read.semantic'].latencyMs.median;
+          const regressionPct = ((currentMs / baselineMs) - 1) * 100;
+          const evidence = {
+            acceptedSha: process.env.ACCEPTED_160_SHA,
+            acceptedSemanticReadMedianMs: baselineMs,
+            currentSemanticReadMedianMs: currentMs,
+            regressionPct: Math.round(regressionPct * 1000) / 1000,
+            acceptedFocusChanges: accepted.invariants.focusChanges,
+            currentFocusChanges: current.invariants.focusChanges,
+            acceptedReplayAgreement: accepted.replay.agreement,
+            currentReplayAgreement: current.replay.agreement,
+          };
+          console.log(`CHECKPOINT_7F_PERF ${JSON.stringify(evidence)}`);
+          if (accepted.invariants.focusChanges !== 0 || current.invariants.focusChanges !== 0) process.exit(2);
+          if (accepted.replay.agreement !== 1 || current.replay.agreement !== 1) process.exit(3);
+          if (!(regressionPct < 15)) process.exit(4);
+          NODE
