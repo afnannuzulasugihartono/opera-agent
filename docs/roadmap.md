@@ -126,7 +126,9 @@ review findings, and independently reviewed **PASS** at revision
 
 ## Milestone 8+
 
-Status: **revised plan reviewed PASS / implementation not started / Checkpoint 8A pending explicit user approval**.
+Status: **Checkpoint 8A accepted / Checkpoint 8B not started**.
+
+Checkpoint 8A freezes `OA_TRANSACTION_V1`, `OA_ACTION_PROVENANCE_V1`, and `OA_APPROVAL_V1`, the complete 18-tool enforcement matrix, dual-era approval bindings, deterministic digest vectors, and a 74-case hostile corpus. It is contract/tests/docs only and changes no runtime, production state, MCP surface, extension, OAuth configuration, or signing. Acceptance record: `docs/milestone-8-checkpoint-8a.md`.
 
 Consequential effects, direct logical-ID action addressing, planning/transactions/learned skills/parallel autonomous workers, and any broader authority require their own frozen milestone/checkpoint plans, threat models, acceptance gates, and rollback procedures. Nothing in Milestone 7 grants permission to begin or silently enable them.
 

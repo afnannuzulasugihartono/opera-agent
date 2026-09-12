@@ -1,6 +1,6 @@
 # Milestone 8 implementation plan
 
-Status: **REVISED PLAN REVIEWED — independent Codex PASS on 2026-09-12; implementation not started. Checkpoint 8A MUST NOT start until the user explicitly approves implementation.**
+Status: **REVISED PLAN REVIEWED — independent Codex PASS on 2026-09-12. Checkpoint 8A accepted; Checkpoint 8B has not started and requires a separate user instruction.**
 
 Milestone 8 is **Decision-Causal Transactions and Provenance Enforcement**. It extends the accepted Milestone 7 read-only Reactive Browser VM with a separate transaction authority and durability layer for state-changing browser work. It does not silently broaden the Milestone 7 VM effect allowlist, reinterpret OAuth consent as transaction approval, or let page/model/tool text become authority.
 
@@ -576,7 +576,7 @@ Required security outcome: fail closed with diagnosable state, zero silent autho
 
 ## Checkpoint 8A — transaction contract, hostile corpus, enforcement policy, and baseline
 
-Status: **BLOCKED pending explicit user approval; second independent Codex review PASS on 2026-09-12.**
+Status: **ACCEPTED on 2026-09-12 after explicit user approval; contract/tests/docs only. Checkpoint 8B has not started.**
 
 Freeze only the transaction data model, enforcement/cutover policy contract, dual-era approval contract, and tests. Do not implement runtime behavior.
 
@@ -931,17 +931,17 @@ The system-wide fallback is the accepted Milestone 7 read-only VM plus the curre
 
 ## Planning-revision acceptance
 
-This revision session is complete only when:
+The planning-revision session was complete only when:
 
 - only `docs/milestone-8-plan.md`, `docs/project-context.md`, and `docs/next-session-handoff.md` change;
 - the three Codex blocking findings are explicitly resolved in the plan;
-- Checkpoint 8A remains blocked;
+- Checkpoint 8A remained blocked at the planning-revision boundary;
 - documentation structure/references/whitespace are checked;
 - no code, database, Edge Function, extension, MCP runtime/schema, OAuth runtime configuration, signing state, or feature flag changes;
 - the revision is committed and pushed on `feat/semantic-runtime-1.6.0`;
-- work stops for independent review and explicit user approval before 8A.
+- work stopped for independent review and explicit user approval before 8A.
 
-**The revised plan passed independent review. Checkpoint 8A remains blocked; do not implement it until the user explicitly authorizes implementation.**
+**The revised plan passed independent review. The user subsequently authorized Checkpoint 8A, which is now accepted; later checkpoints still require their own bounded execution turns.**
 
 ## References
 

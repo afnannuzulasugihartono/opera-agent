@@ -33,6 +33,7 @@ Non-negotiable invariants:
 - Working branch: `feat/semantic-runtime-1.6.0`.
 - Milestone 8 initial planning baseline head: `538dbb5cb8b7b8ff1d8be9c6ac36ba37d22669d4`.
 - First frozen Milestone 8 plan commit: `434faa1894479a5f7dd264049614c6d814022f77`.
+- Accepted Checkpoint 8A contract/test commit: `4c84dab`.
 - Final 1.6.0 release acceptance commit: `cfb903b`.
 - Immediate signed rollback: `1.5.2`.
 - Signed 1.6.0 CRX SHA-256: `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
@@ -92,7 +93,7 @@ Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain froz
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **revised plan independently reviewed PASS; implementation not started; Checkpoint 8A blocked pending explicit user approval**.
+- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoint 8A accepted; Checkpoint 8B not started**.
 - Milestone 9+ — not started.
 
 ## Milestone 7 accepted boundary
@@ -114,7 +115,7 @@ Accepted closeout state:
 - temporary Milestone 7 command rows zero;
 - device `opera` online on extension 1.6.0 / protocol 1 / 26 capabilities.
 
-Milestone 8 planning/revision changed none of these values and created no Milestone 8 production config/flag.
+Milestone 8 planning/revision and contract-only Checkpoint 8A changed none of these values and created no Milestone 8 production config/flag.
 
 ## Milestone 8 revised frozen plan
 
@@ -178,7 +179,7 @@ Actual ChatGPT confirmation remains mandatory in Checkpoint 8F. If ChatGPT canno
 
 ## Revised frozen checkpoints
 
-- 8A — contract, hostile corpus, enforcement policy, dual-era approval contract, and baseline; **blocked**.
+- 8A — contract, hostile corpus, enforcement policy, dual-era approval contract, and baseline; **accepted**. Record: `docs/milestone-8-checkpoint-8a.md`.
 - 8B — pure single-action decision-causal prepare engine and enforcement decision logic.
 - 8C — provenance + approval challenge verifier with user/OAuth-client/requestState binding.
 - 8D — durable transaction/approval journal and dark Supabase host; early Codex before production mutation.
@@ -217,7 +218,7 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 - repository/test/CI/production evidence outranks chat reports;
 - high-risk auth/authz, tenancy, encryption, public MCP, irreversible-effect, production-schema, or extension/signing boundaries trigger early independent review;
 - the revised plan received independent Codex **PASS** at revision `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`; durable review: `docs/milestone-8-plan-codex-review.md`;
-- Checkpoint 8A remains blocked until the user explicitly approves implementation;
+- Checkpoint 8A is accepted; Checkpoint 8B requires a separate user instruction and must remain pure/runtime-local;
 - complete Milestone 8 later requires independent Codex `PASS` before Milestone 9 planning.
 
 ## Security and privacy invariants
@@ -236,13 +237,14 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 
 ## Explicitly deferred
 
-Direct logical-ID actions, multi-consequential-action transactions, automatic consequential action without the frozen approval boundary, in-transaction compensation, multi-sensor physical planning, learned skills, parallel autonomous workers, continuous media/desktop streaming, OS-level input, arbitrary JavaScript/raw CDP, site-specific extension opcodes, file upload, secret/payment entry, and any implementation of Milestone 8 before the revised plan passes review remain outside the accepted state.
+Direct logical-ID actions, multi-consequential-action transactions, automatic consequential action without the frozen approval boundary, in-transaction compensation, multi-sensor physical planning, learned skills, parallel autonomous workers, continuous media/desktop streaming, OS-level input, arbitrary JavaScript/raw CDP, site-specific extension opcodes, file upload, secret/payment entry, and all Milestone 8 runtime/production work beyond accepted Checkpoint 8A remain outside the accepted state.
 
 ## Canonical references
 
 - `AGENTS.md` — session-close, checkpoint, and independent-audit policy.
 - `SECURITY.md` — security contract.
-- `docs/milestone-8-plan.md` — revised frozen Milestone 8 plan awaiting second Codex review.
+- `docs/milestone-8-plan.md` — reviewed frozen Milestone 8 plan.
+- `docs/milestone-8-checkpoint-8a.md` — accepted transaction contract freeze.
 - `docs/milestone-7-codex-audit.md` — independent PASS at the Milestone 7 boundary.
 - `docs/milestone-7-plan.md` and Checkpoints 7A–7F — accepted VM contract/runtime/host chain.
 - `docs/semantic-runtime-plan.md` — long-term dependency order and Milestone 8 intent.

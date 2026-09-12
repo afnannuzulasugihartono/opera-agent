@@ -4,8 +4,9 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
-### Milestone 8 planning
-- Froze and independently reviewed the Decision-Causal Transactions and Provenance Enforcement plan. The revised plan passed review after closing same-agent legacy-mutation bypass, limiting V1 to one state-changing action, and correcting MCP 2026 stateless approval binding. Implementation remains unstarted pending explicit user approval of Checkpoint 8A.
+### Milestone 8 — Decision-Causal Transactions and Provenance Enforcement
+- Froze and independently reviewed the milestone plan after closing same-agent legacy-mutation bypass, limiting V1 to one state-changing action, and correcting MCP 2026 stateless approval binding.
+- Accepted contract-only Checkpoint 8A with closed transaction/provenance/approval schemas, a complete 18-tool enforcement matrix, exact approval binding, four deterministic digest vectors, 74 hostile replay cases, and unchanged 1.6.0 runtime/production/public inventory.
 
 ### Milestone 7 — Reactive Browser VM
 - Passed the independent Codex milestone-boundary audit at final head `551e8283c0417b173e106ee0598cca848f2f4ff0`; local tests, exact-head CI, browser harness, Edge bundle, contract boundaries, GitHub cleanup, and production Supabase dark state were independently reconciled.

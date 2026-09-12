@@ -1,6 +1,6 @@
 # Opera Agent next-session handoff
 
-Use this as the starting point after the Milestone 8 plan revision. Verify repository head and accepted evidence before making claims.
+Use this as the starting point after accepted Milestone 8 Checkpoint 8A. Verify repository head and accepted evidence before making claims.
 
 ## Handoff prompt
 
@@ -16,12 +16,13 @@ Read first, in order:
 2. docs/project-context.md
 3. docs/next-session-handoff.md
 4. docs/milestone-8-plan.md
-5. docs/milestone-7-codex-audit.md
-6. docs/milestone-7-plan.md
-7. docs/milestone-7-checkpoint-7a.md through docs/milestone-7-checkpoint-7f.md
-8. docs/semantic-runtime-plan.md
-9. docs/roadmap.md
-10. SECURITY.md
+5. docs/milestone-8-checkpoint-8a.md
+6. docs/milestone-7-codex-audit.md
+7. docs/milestone-7-plan.md
+8. docs/milestone-7-checkpoint-7a.md through docs/milestone-7-checkpoint-7f.md
+9. docs/semantic-runtime-plan.md
+10. docs/roadmap.md
+11. SECURITY.md
 
 Verified compatibility baseline:
 - extension 1.6.0
@@ -42,7 +43,7 @@ Verified compatibility baseline:
   sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a
 
 Milestones 1-7 are complete. Independent Codex audit of Milestone 7 is PASS.
-Milestone 8 implementation has NOT started.
+Milestone 8 Checkpoint 8A is accepted. No Milestone 8 runtime or production implementation has started.
 
 MILESTONE 8 REVISED PLAN STATUS:
 - docs/milestone-8-plan.md was revised after the first independent Codex review.
@@ -50,10 +51,11 @@ MILESTONE 8 REVISED PLAN STATUS:
   independent Codex review returned PASS at revision
   11a285bfb464cc3a1c157befe6e0aa0aa557f2fc.
 - Durable review: docs/milestone-8-plan-codex-review.md.
-- No runtime work has started.
-- Checkpoint 8A remains BLOCKED.
-- Next action is explicit user approval or requested plan revision.
-- Do not start 8A unless the user explicitly authorizes implementation.
+- Checkpoint 8A was explicitly authorized and accepted as contract/tests/docs only.
+- Contract/test commit: 4c84dab.
+- Acceptance record: docs/milestone-8-checkpoint-8a.md.
+- Focused tests are 10/10; the full suite is 181/181; npm run check passes.
+- Next action is a separate explicit user instruction to implement Checkpoint 8B only.
 
 BLOCKER 1 — TRANSACTION ENFORCEMENT/CUTOVER:
 - logical modes are OFF, DARK, ENFORCED.
@@ -107,7 +109,7 @@ BLOCKER 3 — MCP 2026 APPROVAL BINDING:
 
 REVISED CHECKPOINTS:
 8A contract + hostile corpus + enforcement decision table + dual-era approval
-   vectors; review PASS, BLOCKED pending explicit user approval
+   vectors; ACCEPTED
 8B pure single-action prepare engine + enforcement policy decision logic
 8C provenance + approval challenge verifier
 8D durable transaction/approval journal + dark Supabase host; early Codex before
@@ -125,8 +127,10 @@ PLANNING-REVISION BOUNDARY:
 - production Milestone 7 VM remains in its accepted dark state.
 
 NEXT ACTION:
-Return to the user for explicit approval of the independently reviewed Milestone
-8 plan. Do NOT start Checkpoint 8A until the user explicitly authorizes it.
+Stop for user review. If explicitly instructed, implement Checkpoint 8B only: the
+pure deterministic single-action prepare engine and enforcement decision logic.
+Do not begin 8C or any database, Edge, production, MCP, OAuth, extension, signing,
+or browser-commit work.
 ```
 
 ## Revision baseline
@@ -146,6 +150,17 @@ The revised plan resolves those at documentation/contract level only.
 `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`. Durable record:
 `docs/milestone-8-plan-codex-review.md`.
 
-**STOP HERE.** Checkpoint 8A remains unstarted and blocked pending explicit user
-approval. No implementation, production mutation, MCP/runtime change, or
-feature-flag change is permitted in this handoff state.
+## Checkpoint 8A acceptance
+
+Checkpoint 8A is accepted at contract/test commit `4c84dab`. It freezes the three
+V1 schemas, single-action rule, `OFF`/`DARK`/`ENFORCED` policy, all 18 public-tool
+decisions, internal executor boundary, dual-era approval bindings, four canonical
+digest vectors replayed 100 times, quantitative limits, and 74 hostile cases.
+
+No extension, MCP runtime/schema, database, migration, Edge Function, OAuth
+configuration, signing identity, production flag/row, pairing, or browser state
+changed. The next checkpoint is 8B and has not started.
+
+**STOP HERE.** Do not start Checkpoint 8B without a separate explicit user
+instruction. No production mutation or public/runtime integration is permitted in
+the current handoff state.
