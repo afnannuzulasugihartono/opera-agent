@@ -185,13 +185,13 @@ test('7F bounded browser evidence produces zero false PROVED outcomes', async ()
     claimId: 'claim_candidates_match',
     scopeId: ledger.scope.resourceId,
     predicate: 'OBSERVED_CANDIDATES_SATISFY_CONSTRAINTS',
-    observedAt: '2026-09-12T07:00:00Z',
+    observedAt: '2025-01-01T00:00:03Z',
     supports: true,
     forceDirect: true,
   });
 
   assert.equal(evidence.exhaustive, false);
-  const proof = await evaluateProof(ledger, 'claim_candidates_match', [evidence], { now: '2026-09-12T07:01:00Z' });
+  const proof = await evaluateProof(ledger, 'claim_candidates_match', [evidence], { now: '2025-01-01T00:00:04Z' });
   assert.notEqual(proof.status, 'PROVED');
   assert.ok(proof.unresolved.includes('EXHAUSTIVE_EVIDENCE_REQUIRED'));
 });
