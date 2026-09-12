@@ -63,8 +63,11 @@ MILESTONE 8 REVISED PLAN STATUS:
 - Reproduced inherited boundaries: imported digest-valid overlong challenge TTL
   passes verification; syntactically valid ledger source digests are not resolved
   against trusted authority. No production writes or browser dispatch occurred.
-- Next action is fresh-session independent review of the baseline and preflight,
-  then separately authorized tests-first remediation/candidate construction.
+- Independent read-only review at 7270753… returned CONDITIONAL PASS solely for
+  local tests-first remediation/candidate construction; not 8D acceptance or
+  production approval. Read docs/milestone-8-checkpoint-8d-independent-review.md.
+- Next action is bounded local tests-first imported interval and narrower declared
+  lifetime-budget remediation, then isolated candidate construction.
 - Independently audit the actual SQL/host candidate before production mutation.
 
 BLOCKER 1 — TRANSACTION ENFORCEMENT/CUTOVER:
@@ -211,3 +214,17 @@ and trusted-source-resolution boundaries with zero browser dispatches and zero
 production writes. There is no 8D implementation, migration, deployment, or
 acceptance. The author of 8C performed this preflight, so independent review is
 still required. Do not label it PASS or proceed to 8E.
+
+## Independent prerequisite review
+
+A separate read-only reviewer inspected `7270753eeddceabae7980a747e6716f2d2278c9a`.
+Verdict is CONDITIONAL PASS solely for local tests-first remediation/candidate
+construction. Focused 8C 11/11 and static checks pass. Imported interval validation,
+narrower declared lifetime budgets, and trusted source/operand admission remain
+the listed remediation/candidate requirements. See
+`docs/milestone-8-checkpoint-8d-independent-review.md`.
+
+Next session may perform the bounded local interval/budget remediation when the
+user instructs continuation. No 8D production migration/deployment/probe is
+approved; independently review the actual SQL/host candidate with real Postgres
+evidence first. No 8E work is permitted.

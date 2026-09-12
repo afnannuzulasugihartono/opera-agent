@@ -195,6 +195,8 @@ The pure `lib/transaction-authority.js` module now validates exact-bound provena
 
 8D local preflight at `5933a6c1f2448fe82142bf83a68bc1d607ae4f79` reproduced two inherited boundaries: digest-valid imported challenges are not independently checked for the global approval TTL by the verifier, and provenance source labels/digests are not resolved against trusted ledger state. Neither diagnostic touched production or dispatched a browser action. This was a self-review, **not** the required independent audit. Durable authority admission remains prohibited pending independent review and tests-first remediation/candidate review. Record: `docs/milestone-8-checkpoint-8d-preflight.md`.
 
+Separate read-only reviewer `independent_8d_gate` inspected `7270753eeddceabae7980a747e6716f2d2278c9a` and returned **CONDITIONAL PASS only for bounded local tests-first remediation/candidate construction**, not deployment or 8D acceptance. It independently reran 8C 11/11 and static checks, confirmed imported interval and source-authentication boundaries, and additionally reproduced ignored narrower declared prepare/total/approval lifetime budgets. Next permitted unit is local interval/budget remediation; production still requires an actual SQL/host candidate, real PostgreSQL evidence, and independent exact-candidate review. Record: `docs/milestone-8-checkpoint-8d-independent-review.md`.
+
 ## Revised frozen checkpoints
 
 - 8A — contract, hostile corpus, enforcement policy, dual-era approval contract, and baseline; **accepted**. Record: `docs/milestone-8-checkpoint-8a.md`.
