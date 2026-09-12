@@ -1,6 +1,6 @@
 # Milestone 8 implementation plan
 
-Status: **REVISED PLAN REVIEWED — independent Codex PASS on 2026-09-12. Checkpoint 8A accepted; Checkpoint 8B has not started and requires a separate user instruction.**
+Status: **REVISED PLAN REVIEWED — independent Codex PASS on 2026-09-12. Checkpoints 8A and 8B accepted; Checkpoint 8C has not started and requires a separate user instruction.**
 
 Milestone 8 is **Decision-Causal Transactions and Provenance Enforcement**. It extends the accepted Milestone 7 read-only Reactive Browser VM with a separate transaction authority and durability layer for state-changing browser work. It does not silently broaden the Milestone 7 VM effect allowlist, reinterpret OAuth consent as transaction approval, or let page/model/tool text become authority.
 
@@ -576,7 +576,7 @@ Required security outcome: fail closed with diagnosable state, zero silent autho
 
 ## Checkpoint 8A — transaction contract, hostile corpus, enforcement policy, and baseline
 
-Status: **ACCEPTED on 2026-09-12 after explicit user approval; contract/tests/docs only. Checkpoint 8B has not started.**
+Status: **ACCEPTED on 2026-09-12 after explicit user approval; contract/tests/docs only. Checkpoint 8B was subsequently accepted.**
 
 Freeze only the transaction data model, enforcement/cutover policy contract, dual-era approval contract, and tests. Do not implement runtime behavior.
 
@@ -616,6 +616,8 @@ Rollback: revert only new docs/fixtures/tests. Milestone 7 remains the active ru
 Stop condition: any required contract field remains ambiguous, or user asks to change the frozen plan.
 
 ## Checkpoint 8B — pure decision-causal prepare engine
+
+Status: **ACCEPTED on 2026-09-12; pure environment-neutral implementation only. Checkpoint 8C has not started.**
 
 Implement a pure environment-neutral prepare/validate engine. It performs no browser, network, database, ambient-clock, OAuth, or Supabase work.
 

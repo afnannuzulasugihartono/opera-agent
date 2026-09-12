@@ -78,3 +78,7 @@ Rollback is repository-only: revert the 8A fixture/test/documentation commits. T
 ## Next checkpoint
 
 Checkpoint 8B is the next permitted unit after user review. It may implement only the pure deterministic single-action prepare engine and enforcement decision logic against these frozen fixtures. Approval verification, durable hosting, production changes, browser commit, public MCP changes, and extension/signing work remain outside 8B.
+
+## Post-acceptance erratum
+
+During 8B implementation review, the missing explicit effect-classification table required by the frozen 8A plan was identified. The fixture was corrected to map every generic primitive conservatively to `IRREVERSIBLE_OR_UNKNOWN`, declare client-supplied effect classes untrusted, and freeze no narrower trusted descriptors. The correction is locked by the 8A suite, adds no authority, and changes no runtime or production surface. See `docs/milestone-8-checkpoint-8b.md`.

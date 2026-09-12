@@ -126,9 +126,11 @@ review findings, and independently reviewed **PASS** at revision
 
 ## Milestone 8+
 
-Status: **Checkpoint 8A accepted / Checkpoint 8B not started**.
+Status: **Checkpoints 8A and 8B accepted / Checkpoint 8C not started**.
 
 Checkpoint 8A freezes `OA_TRANSACTION_V1`, `OA_ACTION_PROVENANCE_V1`, and `OA_APPROVAL_V1`, the complete 18-tool enforcement matrix, dual-era approval bindings, deterministic digest vectors, and a 74-case hostile corpus. It is contract/tests/docs only and changes no runtime, production state, MCP surface, extension, OAuth configuration, or signing. Acceptance record: `docs/milestone-8-checkpoint-8a.md`.
+
+Checkpoint 8B implements the pure environment-neutral preparation layer: immutable single-action envelopes, deterministic predicate dependency fingerprints, selective/fail-closed revalidation, conservative trusted effect classification, bounded previews, and enforcement decisions. It adds no browser dispatch, approval, persistence, public MCP/runtime surface, or production change. Acceptance record: `docs/milestone-8-checkpoint-8b.md`.
 
 Consequential effects, direct logical-ID action addressing, planning/transactions/learned skills/parallel autonomous workers, and any broader authority require their own frozen milestone/checkpoint plans, threat models, acceptance gates, and rollback procedures. Nothing in Milestone 7 grants permission to begin or silently enable them.
 
