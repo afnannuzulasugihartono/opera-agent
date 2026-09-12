@@ -35,6 +35,7 @@ Non-negotiable invariants:
 - First frozen Milestone 8 plan commit: `434faa1894479a5f7dd264049614c6d814022f77`.
 - Accepted Checkpoint 8A contract/test commit: `4c84dab`.
 - Accepted Checkpoint 8B pure engine/test commit: `0f333a1`.
+- Accepted Checkpoint 8C pure authority-verifier/test commit: `e2b228b`.
 - Final 1.6.0 release acceptance commit: `cfb903b`.
 - Immediate signed rollback: `1.5.2`.
 - Signed 1.6.0 CRX SHA-256: `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
@@ -94,7 +95,7 @@ Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain froz
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoints 8A and 8B accepted; Checkpoint 8C not started**.
+- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoints 8A–8C accepted; Checkpoint 8D not started**.
 - Milestone 9+ — not started.
 
 ## Milestone 7 accepted boundary
@@ -129,7 +130,7 @@ PREPARE -> VALIDATE -> APPROVE(if required) -> COMMIT
         -> OBSERVE -> VERIFY -> RECEIPT
 ```
 
-The first Codex review identified three blockers. The revised plan now freezes their resolution but no implementation has started.
+The first Codex review identified three blockers. The revised plan froze their resolution; contract/pure implementation has since reached accepted Checkpoint 8C, while external runtime and production implementation have not started.
 
 ### Enforcement/cutover boundary
 
@@ -186,11 +187,17 @@ Identical inputs reproduce the accepted 8A prepared fixture byte-for-byte. The m
 
 An 8A fixture erratum now supplies the originally required trusted effect-classification table. Every generic primitive defaults to `IRREVERSIBLE_OR_UNKNOWN`; client-provided effect classes are untrusted and no narrower trusted descriptors are currently frozen.
 
+## Checkpoint 8C accepted boundary
+
+The pure `lib/transaction-authority.js` module now validates exact-bound provenance, prevents browser/tool/model/server-derived values from carrying authority, creates immutable OAuth-user approval challenges, and verifies modern one-round `requestState`/`inputResponses` decisions against every frozen security binding. TTL, capability, decline, tamper, stale provenance, and already-consumed nonce checks fail closed.
+
+8C emits only a deterministic nonce-consumption claim. Durable atomic consumption, journal recovery, leases, and cross-worker replay protection remain 8D work and are not implied by the pure verifier. The full suite is 204/204. No public runtime or production path calls this module yet.
+
 ## Revised frozen checkpoints
 
 - 8A — contract, hostile corpus, enforcement policy, dual-era approval contract, and baseline; **accepted**. Record: `docs/milestone-8-checkpoint-8a.md`.
 - 8B — pure single-action decision-causal prepare engine and enforcement decision logic; **accepted**. Record: `docs/milestone-8-checkpoint-8b.md`.
-- 8C — provenance + approval challenge verifier with user/OAuth-client/requestState binding.
+- 8C — provenance + approval challenge verifier with user/OAuth-client/requestState binding; **accepted**. Record: `docs/milestone-8-checkpoint-8c.md`.
 - 8D — durable transaction/approval journal and dark Supabase host; early Codex before production mutation.
 - 8E — controlled single-action executor; compensation only as a separate transaction.
 - 8F — trusted dual-era approval transport + transaction enforcement cutover + MCP/OAuth compatibility; early Codex before deployment/promotion.
@@ -227,7 +234,7 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 - repository/test/CI/production evidence outranks chat reports;
 - high-risk auth/authz, tenancy, encryption, public MCP, irreversible-effect, production-schema, or extension/signing boundaries trigger early independent review;
 - the revised plan received independent Codex **PASS** at revision `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`; durable review: `docs/milestone-8-plan-codex-review.md`;
-- Checkpoints 8A and 8B are accepted; Checkpoint 8C requires a separate user instruction and must remain pure/runtime-local;
+- Checkpoints 8A–8C are accepted; Checkpoint 8D requires its planned early independent audit and a separate user instruction before implementation or production mutation;
 - complete Milestone 8 later requires independent Codex `PASS` before Milestone 9 planning.
 
 ## Security and privacy invariants
@@ -246,7 +253,7 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 
 ## Explicitly deferred
 
-Direct logical-ID actions, multi-consequential-action transactions, automatic consequential action without the frozen approval boundary, in-transaction compensation, multi-sensor physical planning, learned skills, parallel autonomous workers, continuous media/desktop streaming, OS-level input, arbitrary JavaScript/raw CDP, site-specific extension opcodes, file upload, secret/payment entry, approval verification before 8C, and all external/production work beyond accepted Checkpoint 8B remain outside the accepted state.
+Direct logical-ID actions, multi-consequential-action transactions, automatic consequential action without the frozen approval boundary, in-transaction compensation, multi-sensor physical planning, learned skills, parallel autonomous workers, continuous media/desktop streaming, OS-level input, arbitrary JavaScript/raw CDP, site-specific extension opcodes, file upload, secret/payment entry, durable approval consumption, and all external/production work beyond accepted Checkpoint 8C remain outside the accepted state.
 
 ## Canonical references
 

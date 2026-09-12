@@ -8,6 +8,7 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 - Froze and independently reviewed the milestone plan after closing same-agent legacy-mutation bypass, limiting V1 to one state-changing action, and correcting MCP 2026 stateless approval binding.
 - Accepted contract-only Checkpoint 8A with closed transaction/provenance/approval schemas, a complete 18-tool enforcement matrix, exact approval binding, four deterministic digest vectors, 74 hostile replay cases, and unchanged 1.6.0 runtime/production/public inventory.
 - Accepted pure Checkpoint 8B with immutable single-action preparation, canonical digest validation, conservative effect classification, typed dependency fingerprints, selective/fail-closed predicate revalidation, bounded previews, and enforcement decisions without browser, network, database, or public-surface integration.
+- Accepted pure Checkpoint 8C with exact-target provenance validation, anti-authority-laundering rules, exact-bound OAuth-user approval challenges, modern one-round requestState/inputResponses verification, TTL and consumed-nonce rejection, and deterministic consumption claims without transport, persistence, browser, or production integration.
 
 ### Milestone 7 — Reactive Browser VM
 - Passed the independent Codex milestone-boundary audit at final head `551e8283c0417b173e106ee0598cca848f2f4ff0`; local tests, exact-head CI, browser harness, Edge bundle, contract boundaries, GitHub cleanup, and production Supabase dark state were independently reconciled.
