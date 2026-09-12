@@ -65,3 +65,18 @@ jobs:
           if (accepted.replay.agreement !== 1 || current.replay.agreement !== 1) process.exit(3);
           if (!(regressionPct < 15)) process.exit(4);
           NODE
+
+  windows-portability:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Full Windows Node and static gates
+        run: |
+          npm test
+          npm run check
