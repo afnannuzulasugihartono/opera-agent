@@ -66,8 +66,10 @@ MILESTONE 8 REVISED PLAN STATUS:
 - Independent read-only review at 7270753… returned CONDITIONAL PASS solely for
   local tests-first remediation/candidate construction; not 8D acceptance or
   production approval. Read docs/milestone-8-checkpoint-8d-independent-review.md.
-- Next action is bounded local tests-first imported interval and narrower declared
-  lifetime-budget remediation, then isolated candidate construction.
+- Local interval/lifetime-budget remediation is complete at 07a217d; focused 6/6,
+  full regression 210/210. Read the 8d-lifetime-remediation record.
+- Next action after user continuation is isolated local host/admission candidate
+  construction tests-first. Source authentication/argument coverage remain open.
 - Independently audit the actual SQL/host candidate before production mutation.
 
 BLOCKER 1 — TRANSACTION ENFORCEMENT/CUTOVER:
@@ -140,10 +142,11 @@ PLANNING-REVISION BOUNDARY:
 - production Milestone 7 VM remains in its accepted dark state.
 
 NEXT ACTION:
-Stop for user review. Do not begin Checkpoint 8D implementation or any database,
-Edge, or production mutation until its required early independent Codex audit is
-completed and the user separately authorizes 8D. MCP transport, OAuth runtime,
-extension, signing, and browser-commit work remain later checkpoint scope.
+Stop for user review. The prerequisite review permits bounded local candidate
+construction only. Do not mutate production database/Edge/configuration before
+independent exact-candidate review, real Postgres evidence and separate user
+authorization. MCP public transport, OAuth runtime, extension, signing and browser
+commit remain later checkpoint scope.
 ```
 
 ## Revision baseline
@@ -202,9 +205,9 @@ still reports 1.6.0 with 26 capabilities.
 Durable one-shot consumption is deliberately not claimed: atomic CAS, journal,
 leases, recovery, and production authorization state belong to 8D.
 
-**STOP HERE.** Do not start Checkpoint 8D without its required early independent
-audit and a separate explicit user instruction. No production mutation or public
-runtime integration is permitted in the current handoff state.
+**STOP HERE.** Only independently reviewed local prerequisite/candidate work is
+permitted after user continuation. No production mutation or public runtime
+integration is permitted in the current handoff state.
 
 ## Checkpoint 8D local preflight
 
@@ -224,7 +227,20 @@ narrower declared lifetime budgets, and trusted source/operand admission remain
 the listed remediation/candidate requirements. See
 `docs/milestone-8-checkpoint-8d-independent-review.md`.
 
-Next session may perform the bounded local interval/budget remediation when the
-user instructs continuation. No 8D production migration/deployment/probe is
-approved; independently review the actual SQL/host candidate with real Postgres
-evidence first. No 8E work is permitted.
+The local interval/budget remediation has subsequently completed. No 8D production
+migration/deployment/probe is approved; independently review the actual SQL/host
+candidate with real Postgres evidence first. No 8E work is permitted.
+
+## Completed local lifetime prerequisite
+
+Read `docs/milestone-8-checkpoint-8d-lifetime-remediation.md`. Implementation/test
+commit is `07a217d`; focused remediation 6/6 and full regression 210/210 pass.
+Shared approval creation/import interval validation and narrower declared
+prepare/total/approval lifetime limits now fail closed. No host, database or
+production integration exists. Source authority resolution, actual argument
+coverage, durable nonce CAS and other candidate gates remain open.
+
+After explicit user continuation, construct only the isolated default-OFF/dark
+local host/admission candidate tests-first. Resolve real PostgreSQL test tooling;
+do not replace its role/concurrency/rollback gates with string scans or SQLite.
+Independent exact SQL/host review remains mandatory before production mutation.

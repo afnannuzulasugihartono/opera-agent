@@ -95,7 +95,7 @@ Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain froz
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoints 8A–8C accepted as pure/contract work; 8D local preflight recorded, implementation and production gate remain closed**.
+- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoints 8A–8C accepted as pure/contract work; 8D independent prerequisites reviewed and local lifetime remediation completed, no host/SQL candidate or production approval**.
 - Milestone 9+ — not started.
 
 ## Milestone 7 accepted boundary
@@ -195,7 +195,9 @@ The pure `lib/transaction-authority.js` module now validates exact-bound provena
 
 8D local preflight at `5933a6c1f2448fe82142bf83a68bc1d607ae4f79` reproduced two inherited boundaries: digest-valid imported challenges are not independently checked for the global approval TTL by the verifier, and provenance source labels/digests are not resolved against trusted ledger state. Neither diagnostic touched production or dispatched a browser action. This was a self-review, **not** the required independent audit. Durable authority admission remains prohibited pending independent review and tests-first remediation/candidate review. Record: `docs/milestone-8-checkpoint-8d-preflight.md`.
 
-Separate read-only reviewer `independent_8d_gate` inspected `7270753eeddceabae7980a747e6716f2d2278c9a` and returned **CONDITIONAL PASS only for bounded local tests-first remediation/candidate construction**, not deployment or 8D acceptance. It independently reran 8C 11/11 and static checks, confirmed imported interval and source-authentication boundaries, and additionally reproduced ignored narrower declared prepare/total/approval lifetime budgets. Next permitted unit is local interval/budget remediation; production still requires an actual SQL/host candidate, real PostgreSQL evidence, and independent exact-candidate review. Record: `docs/milestone-8-checkpoint-8d-independent-review.md`.
+Separate read-only reviewer `independent_8d_gate` inspected `7270753eeddceabae7980a747e6716f2d2278c9a` and returned **CONDITIONAL PASS only for bounded local tests-first remediation/candidate construction**, not deployment or 8D acceptance. It independently reran 8C 11/11 and static checks, confirmed imported interval and source-authentication boundaries, and additionally reproduced ignored narrower declared prepare/total/approval lifetime budgets. Production still requires an actual SQL/host candidate, real PostgreSQL evidence, and independent exact-candidate review. Record: `docs/milestone-8-checkpoint-8d-independent-review.md`.
+
+Local lifetime remediation is completed at implementation/test commit `07a217d`: preparation honors narrower prepare/total lifetime budgets, and shared creation/import approval interval validation honors global/declared TTL, prepared-window containment and exclusive expiry. Focused tests are 6/6; full Node regression is 210/210. Source authentication, actual argument/provenance coverage and atomic durable consumption remain unimplemented host prerequisites. No runtime/production integration was added. Next permitted unit is isolated local host/admission candidate construction after user continuation; 8D is not accepted. Record: `docs/milestone-8-checkpoint-8d-lifetime-remediation.md`.
 
 ## Revised frozen checkpoints
 
@@ -238,7 +240,7 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 - repository/test/CI/production evidence outranks chat reports;
 - high-risk auth/authz, tenancy, encryption, public MCP, irreversible-effect, production-schema, or extension/signing boundaries trigger early independent review;
 - the revised plan received independent Codex **PASS** at revision `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`; durable review: `docs/milestone-8-plan-codex-review.md`;
-- Checkpoints 8A–8C are accepted; Checkpoint 8D requires its planned early independent audit and a separate user instruction before implementation or production mutation;
+- Checkpoints 8A–8C are accepted; 8D prerequisite review permits only local remediation/candidate construction, while production requires independent exact-candidate review and separate authorization;
 - complete Milestone 8 later requires independent Codex `PASS` before Milestone 9 planning.
 
 ## Security and privacy invariants
