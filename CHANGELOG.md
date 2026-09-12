@@ -4,8 +4,22 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
-### Milestone 7 planning
-- Froze Checkpoints 7A–7F for a bounded Reactive Browser VM with a strict JSON AST, deterministic sliced execution, tenant-bound durability, idempotency, typed suspension, proof separation, zero-focus acceptance, and no initial extension or public MCP change.
+### Milestone 7 — Reactive Browser VM
+- Completed Checkpoints 7A–7F for a bounded Reactive Browser VM with a closed JSON AST, deterministic sliced execution, tenant-bound durability, exact-redelivery idempotency, typed suspension, bounded collection/deduplication, proof separation, cancellation/expiry/reclaim, and default-off production hosting.
+- Preserved extension `1.6.0`, protocol `1`, all `26` browser capabilities, the existing `18` MCP tools/input schemas, signing identity, pairing, and background-first focus behavior; no new CRX was produced.
+- Completed 7F production acceptance with focused 6/6, full 171/171 Node tests on Ubuntu and actual Windows, static validation, controlled Chromium, a 55-command zero-focus audit, burst 20/20, deterministic replay agreement 100%, zero false `PROVED`, signed normal-profile Maps/YouTube/GitHub checks, and dark Supabase replay/idempotency/worker-death/cancel/expiry/cross-tenant probes.
+- Measured the final paired same-runner semantic-read regression at 13.851%, below the frozen 15% limit.
+- Kept `milestone7_vm_enabled=false` after acceptance and verified zero `vm_runs`, `vm_effects`, `vm_rate_windows`, and temporary `m7-7f-*` command rows.
+
+### Cross-platform contract hashing
+- Fixed three Windows-only MCP source-hash gate failures caused by CRLF checkout bytes by canonicalizing CRLF/lone-CR bytes explicitly to LF before SHA-256.
+- Kept the frozen canonical LF MCP source hash `f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11`, the 7A inventory digest, MCP source, and public contract unchanged.
+- Added an actual `windows-latest` acceptance job that passed 171/171 plus `npm run check` after the repair.
+
+### Collaboration policy
+- Added checkpoint ownership/closeout rules to `AGENTS.md` and the reusable `docs/prompts/chatgpt-web-checkpoint.md` prompt.
+- ChatGPT Web may implement/accept one checkpoint at a time with one active milestone-branch writer; Codex independently audits the complete milestone before the next milestone starts.
+- Milestone 8 is blocked pending an independent Codex audit of the complete Milestone 7 chain.
 
 ### Milestone 6 foundation
 - Planned Checkpoints 6A–6F for the Goal and Constraint Ledger and scoped Proof Engine.
@@ -78,7 +92,7 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 ### Added
 - Added `page.capture` and MCP `capture_page` for bounded background JPEG viewport/crop capture through CDP without activating the target tab.
 - Added SHA-256 change detection, a 750 ms per-tab cache window, adaptive quality/scale reduction, a 220 KiB encoded-image ceiling, blank-frame rejection, and atomic read-and-scrub delivery through Supabase.
-- Added local capture blocking for internal pages, incognito tabs, visible credential/OTP/payment fields in the main document or embedded frames, and tabs the user marks private in the extension popup.
+- Added local capture blocking for internal pages, incognito contexts, visible credential/OTP/payment fields in the main document or embedded frames, and tabs the user marks private in the extension popup.
 - Added native MCP image content while excluding duplicate base64 from structured metadata, plus deterministic background-focus, crop, cache, canvas, blank-frame, embedded-frame, and privacy tests.
 
 ### Verified in production
