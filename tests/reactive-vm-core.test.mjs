@@ -268,14 +268,14 @@ test('7B runtime counters stop at declared node, command, binding, and result bu
       { type: 'RETURN', valueSpec: { op: 'CONST', value: 1 } },
     ],
   }, 'runtime-node-budget');
-  const nodeState = structuredClone(await createReactiveVm(nodeProgram, options('node-budget-run'));
+  const nodeState = structuredClone(await createReactiveVm(nodeProgram, options('node-budget-run')));
   nodeState.counters.executedNodes = nodeProgram.budgets.executedNodesPerRun;
   const nodeLimited = await advanceReactiveVm(nodeProgram, nodeState, { logicalNowMs: 1001 });
   assert.equal(nodeLimited.state.status, 'LIMIT_REACHED');
   assert.equal(nodeLimited.state.suspension.reason, 'LIMIT_REACHED');
 
   const commandProgram = await makeProgram({ type: 'COMMAND', method: 'page.read', arguments: { tabId: 7 }, resultBinding: 'r' }, 'runtime-command-budget');
-  const commandState = structuredClone(await createReactiveVm(commandProgram, options('command-budget-run'));
+  const commandState = structuredClone(await createReactiveVm(commandProgram, options('command-budget-run')));
   commandState.counters.commandLeaves = commandProgram.budgets.browserCommandLeavesPerRun;
   const commandLimited = await advanceReactiveVm(commandProgram, commandState, { logicalNowMs: 1001 });
   assert.equal(commandLimited.state.status, 'LIMIT_REACHED');
