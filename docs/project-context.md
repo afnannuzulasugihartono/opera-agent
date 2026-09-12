@@ -2,7 +2,7 @@
 
 Last synchronized: 2026-09-12
 
-This is the durable project-state summary for humans and future LLM sessions. Verify executable code and signed release records before changing accepted facts. Never store secret material here.
+This is the durable project-state summary for humans and future LLM sessions. Verify executable code, current production configuration, CI, and signed release records before changing accepted facts. Never store secret material here.
 
 ## Product intent and invariants
 
@@ -33,10 +33,12 @@ Non-negotiable invariants:
 - Final 1.6.0 release acceptance commit: `cfb903b`.
 - Immediate signed rollback: `1.5.2`.
 - Signed 1.6.0 CRX SHA-256: `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
+- MCP source SHA-256 baseline: `f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11`.
+- Locked Checkpoint 7A inventory digest: `sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a`.
 
-The normal Opera profile updated in place to 1.6.0 without losing pairing. Signing identity, installed extension ID, protocol, and background-first behavior remain the compatibility baseline.
+The normal Opera profile updated in place to 1.6.0 without losing pairing. Signing identity, installed extension ID, protocol, MCP contract, and background-first behavior remain the compatibility baseline.
 
-Never commit, paste, log, or transmit private signing-key material, pairing secrets, access tokens, service keys, OAuth secrets, passwords, OTPs, or payment data.
+Never commit, paste, log, or transmit private signing-key material, pairing secrets, service keys, OAuth secrets, passwords, OTPs, payment data, or decrypted VM-host key material.
 
 ## Architecture
 
@@ -49,7 +51,20 @@ ChatGPT / another MCP client
   -> structured observation or verified action outcome
 ```
 
-The extension owns browser-local sensing and named primitives. Server infrastructure owns pairing, heartbeat, command/workflow transport, updates, and MCP backend state. Browser content never grants authority.
+Milestone 7 adds an internal, default-off durable VM host beside the existing MCP/runner path. It does not replace the existing public contract:
+
+```text
+internal OAuth-authorized VM request
+  -> opera-agent-vm Edge host
+  -> tenant-bound private VM run + bounded lease
+  -> accepted pure 7D VM runtime
+  -> existing allowlisted read-only browser command queue
+  -> paired Opera extension
+  -> verified observation
+  -> encrypted bounded checkpoint/result
+```
+
+The extension owns browser-local sensing and named primitives. Server infrastructure owns pairing, heartbeat, command/workflow transport, updates, MCP backend state, and the dark VM host. Browser content never grants authority.
 
 ## Locked MCP contract
 
@@ -76,10 +91,7 @@ The 18 public MCP tools remain:
 
 Contract fixture: `tests/fixtures/mcp-contract-v1.json`.
 
-Current MCP source SHA-256 on this branch:
-`f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11`.
-
-Checkpoint 7A exposed stale fixture-only hash metadata (`6235ed...`) and aligned it to the source that already existed. MCP source, tool names, and schemas were not changed.
+Checkpoint 7E does not add a VM tool to this list. The VM host is an internal Edge surface gated separately from the MCP contract.
 
 ## 1.6.0 semantic foundation
 
@@ -95,14 +107,14 @@ Accepted rich-read baseline: 19.83 ms median / 20.65 ms p95, with a 12% one-item
 - Milestone 4 — vision-guided navigation: complete/released.
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
-- Milestone 7 — Reactive Browser VM: Checkpoints **7A, 7B, 7C, and 7D complete**; Checkpoint **7E is next**.
+- Milestone 7 — Reactive Browser VM: Checkpoints **7A, 7B, 7C, 7D, and 7E complete**; Checkpoint **7F is next**.
 - Milestones 8–11 remain gated and deferred.
 
 Milestone 6 proof evaluation at 500 evidence items recorded 1.9055 ms median / 2.4166 ms p95 in the accepted pure-compute baseline. Production/security details remain in `docs/milestone-6-checkpoint-6e.md` and `docs/milestone-6-checkpoint-6f.md`.
 
 ## Checkpoint 7A — accepted contract freeze
 
-Checkpoint 7A froze the Reactive Browser VM contract, schemas, hostile corpus, effect classification, persistence boundary, digest vectors, and quantitative gates without implementing runtime behavior.
+Checkpoint 7A froze the Reactive Browser VM contract without runtime behavior.
 
 Frozen versions:
 
@@ -113,7 +125,7 @@ Frozen versions:
 Frozen instruction grammar:
 `SEQUENCE`, `IF`, `LOOP`, `UNTIL`, `WAIT_EVENT`, `ASSERT`, `COLLECT`, `DEDUP`, `RETRY`, `RETURN`, internal `COMMAND`, and `SUSPEND`.
 
-Important frozen limits:
+Important frozen limits remain:
 
 - program/checkpoint/result: 128 KiB each;
 - static AST nodes: 256;
@@ -129,101 +141,122 @@ Important frozen limits:
 - execution slice: 20 s;
 - run deadline: 5 min.
 
-The effect boundary is read-only first. `browser.burst` remains one atomic existing leaf restricted to its read/find/wait subset. Foreground fallback, navigation/tab/media mutation, consequential effects, and raw sensitive persistence are excluded.
-
-The hostile/boundary corpus contains 36 synthetic cases with zero focus changes, zero cross-tenant acceptance, zero sensitive persistence, and zero false completion. Locked public inventory remains protocol 1 / 26 capabilities / 18 MCP tools with digest:
-
-`sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a`.
+The effect boundary is read-only first. `browser.burst` remains one atomic existing leaf restricted to its read/find/wait subset. Foreground fallback, navigation/tab/media mutation, consequential effects, and raw sensitive persistence are excluded from the accepted VM effect policy.
 
 Detailed record: `docs/milestone-7-checkpoint-7a.md`.
 
 ## Checkpoint 7B — accepted pure deterministic VM core
 
-Checkpoint 7B added `lib/reactive-vm.js`, a pure deterministic in-memory VM core. It is not deployed or reachable from production and performs no browser, network, ambient-clock, random, database, or Supabase work.
+Checkpoint 7B added `lib/reactive-vm.js`, a pure deterministic in-memory VM core. It performs no browser, network, ambient-clock, random, database, or Supabase work.
 
-7B executes `SEQUENCE`, `IF`, `ASSERT`, `RETURN`, internal `COMMAND`, and `SUSPEND`. `COMMAND` yields a typed `EFFECT_REQUEST`; browser work is never performed inside the core. Effect results must match canonical request digest/method plus tenant/device/tab/applicable-document provenance before binding.
-
-The core validates state before every transition, uses host-supplied `logicalNowMs`, checks cancellation/deadline at every instruction boundary, enforces runtime node/command/binding/output budgets, rejects secret-like state and prototype-sensitive paths, and keeps command receipts separate from proof authority.
-
-Accepted evidence:
-
-- focused: 10/10;
-- 10,000 generated bounded programs: pass;
-- focused non-I/O p95: 1.1067 ms;
-- full suite: 131/131;
-- static check: pass;
-- Chromium regression: pass;
-- 55 background-focus audit commands preserved;
-- burst stability: 20/20.
+7B executes `SEQUENCE`, `IF`, `ASSERT`, `RETURN`, internal `COMMAND`, and `SUSPEND`. `COMMAND` yields typed effect requests rather than executing browser work. Effect results must match request digest/method and tenant/device/tab/applicable-document provenance before binding.
 
 Detailed record: `docs/milestone-7-checkpoint-7b.md`.
 
 ## Checkpoint 7C — accepted bounded loops, waits, and safe retries
 
-Checkpoint 7C leaves the accepted 7B module untouched and adds `lib/reactive-vm-7c.js` as an isolated pure runtime layer for `LOOP`, `UNTIL`, `WAIT_EVENT`, and `RETRY`.
+Checkpoint 7C leaves the 7B module untouched and adds `lib/reactive-vm-7c.js` for `LOOP`, `UNTIL`, `WAIT_EVENT`, and observation-only `RETRY`.
 
-The host supplies a monotonic logical clock. Waits use bounded read-only polling, worst-case polling is charged to the command budget, retry is restricted to structured transient read-only observation failures, and ambiguous/authority/stale/invalid/contradictory outcomes never retry. Effect digests bind active control-vector state. Page/tool data cannot define program structure, grant authority, or create proof.
-
-Accepted evidence:
-
-- focused 7C: 11/11;
-- 1,000 bounded LOOP/UNTIL fuzz programs: pass;
-- 100 forced-clock WAIT timeout cases: pass;
-- full suite: 142/142;
-- `npm run check`: pass, 26 primitives / version 1.6.0;
-- same-runner p95 regression ~1.7%, below the 15% gate;
-- Chromium regression: pass;
-- focus audit: 55 commands preserved;
-- burst stability: 20/20.
+Wait polling and retry are bounded and charged to budgets. Retry is restricted to structured transient read-only observation failures; ambiguity, authority, stale state, invalid input, and contradictions do not retry.
 
 Detailed record: `docs/milestone-7-checkpoint-7c.md`.
 
 ## Checkpoint 7D — accepted collection, deduplication, and proof bindings
 
-Checkpoint 7D leaves 7B and 7C untouched and adds `lib/reactive-vm-7d.js` as a pure isolated layer for exactly the frozen `COLLECT` and `DEDUP` nodes plus bounded observation-to-evidence binding.
+Checkpoint 7D leaves 7B/7C untouched and adds `lib/reactive-vm-7d.js` for the frozen `COLLECT` and `DEDUP` nodes plus bounded observation-to-evidence binding.
 
-Collections use a bounded internal `OA_VM_COLLECTION_V1` envelope with projected records, count/cap metadata, explicit ambiguities, observation provenance, scope kind, causal dependency metadata, completion state, and invalidation state. A capped/truncated or ambiguous collection is always `PARTIAL`; only a stable, non-truncated, unambiguous declared observed scope can be `BOUNDED_COMPLETE`, and it is explicitly never universal proof.
+Collections use `OA_VM_COLLECTION_V1`. Cap/truncation or unresolved ambiguity remains `PARTIAL`; only stable, non-truncated, unambiguous declared observed scopes may become `BOUNDED_COMPLETE`, never universal proof. Deduplication prefers strong canonical/stable identity before accepted fingerprints, retains ambiguous records rather than silently merging them, and preserves causal invalidation.
 
-Deduplication prefers verified canonical identity (`logicalId`, `canonicalId`, accepted stable ID/href keys) before accepted semantic fingerprints. Geometry, name, label, text, viewport position, index, and similar weak fields never grant merge authority. Missing strong identity retains the record with `MISSING_STRONG_IDENTITY`; conflicting identity retains records with `IDENTITY_COLLISION`. Compatible virtual detach/reinsert with the same logical identity deduplicates while preferring the higher semantic revision.
-
-Causal invalidation is scoped: document-generation changes invalidate dependent state; viewport/zoom changes invalidate only viewport-dependent collections rather than unrelated loaded-DOM state.
-
-`bindCollectionEvidence7D` requires verified provenance and tenant agreement. It can emit bounded `BOUNDARY_OBSERVATION` or `DIRECT_OBSERVATION` evidence with browser-sensor trust, but always with `exhaustive: false`. The VM does not run proof evaluation and gains no proof authority. Bounded stable-feed evidence may support `BOUNDED_COMPLETE`; universal closed-world `PROVED` still requires the Milestone 6 proof engine's independent exhaustive evidence rules. Action receipts remain non-outcome evidence.
-
-Accepted pre-closeout CI evidence on head `138cfbbb59350b9160c72016f59139b2ee79dc38` (run `34669862521`, job `103489062331`):
-
-- focused 7D: **12/12 pass, 0 fail**;
-- deterministic bounded 1,000-item collection/dedup: **pass**;
-- full `npm test`: **154/154 pass, 0 fail**;
-- `npm run check`: **pass**, `check ok: 26 allowlisted browser primitives, version 1.6.0`;
-- controlled Chromium extension regression: **pass**;
-- background-focus audit: **55 commands, focus preserved**;
-- bounded burst stability: **20/20**;
-- background screenshot focus preservation and network/browser-restart reconnect: **pass**.
-
-The first 7D CI pass had one test-fixture tenancy mismatch; the runtime correctly rejected it as `CROSS_TENANT`. Only the test fixture was aligned. The security rule was not relaxed.
+`bindCollectionEvidence7D` requires verified provenance and tenant agreement, emits non-exhaustive browser-sensor evidence, and does not grant proof authority to the VM.
 
 Detailed record: `docs/milestone-7-checkpoint-7d.md`.
 
-Checkpoint 7D changes no production Supabase migration/function/flag/row/configuration, extension source/version, protocol, public capability, MCP source/tool/schema, signing identity, pairing state, production browser behavior, or signed artifact.
+## Checkpoint 7E — accepted durable host and dark integration
 
-## Next task: Checkpoint 7E only
+Checkpoint 7E adds durable hosting around the accepted pure 7D runtime while preserving the 7B/7C/7D modules as the deterministic execution layers.
 
-Implement only the frozen durable Supabase host and dark-integration scope from `docs/milestone-7-plan.md`:
+New durable components are additive:
 
-- bounded Edge execution slices;
-- tenant-bound leases and compare-and-swap advancement;
-- idempotency, cancellation, expiry, checkpoint/restart, and queue backpressure;
-- additive private-schema migration with least-privilege grants;
-- enqueue, claim, checkpoint, resume, cancel, expire, and cleanup behavior;
-- opaque/encrypted bounded payload boundary where raw values cannot be avoided;
-- forced worker-termination retry/idempotency tests;
-- rate, queue, retention, payload, and tenant-concurrency limits;
-- default-off server feature flag, cleanup procedure, and server rollback.
+- `lib/reactive-vm-host-7e.js` for host limits, persistence validation, deterministic logical-effect idempotency, and bounded retry scheduling;
+- `supabase/functions/_shared/vm-token.js` for bounded AES-256-GCM `oavm1` tokens;
+- `supabase/functions/opera-agent-vm/` as the internal OAuth-authorized Edge host;
+- private `opera_agent_private.vm_runs`, `vm_effects`, and `vm_rate_windows` storage;
+- service-role-only `opera_vm_*` RPCs for enqueue, get, claim, lease status, checkpoint, effect reserve/attach/finish, cancel, expire, and cleanup;
+- default-off `milestone7_vm_enabled` feature flag.
 
-7E exit gates require exactly one lease per logical transition, zero duplicate logical effects after crash/redelivery, zero unauthenticated/cross-tenant success, rejection of stale goal/program/lease/target/document generations, zero prohibited raw persisted content, no unresolved relevant security-advisor ERROR/WARN, and flag-off compatibility with extension 1.6.0 plus all 18 MCP tools.
+### 7E persistence and authority boundary
 
-Prefer the internal workflow surface. Do **not** add a public MCP tool unless a separate reviewed contract decision justifies it. Do not start Checkpoint 7F production acceptance or Milestones 8+ while doing 7E.
+The private schema/tables and VM RPCs revoke access from `public`, `anon`, and `authenticated`. The Edge host requires JWT verification plus `auth.getUser`, an explicit configured user-ID/email allowlist, and binds every run operation to `user.id` as tenant.
+
+Durable run state stores metadata plus encrypted bounded program/checkpoint/result tokens. Raw page/browser content is not a durable column. The Vault-backed VM host key is unavailable through `opera_vm_crypto_key()` while the feature flag is off.
+
+### 7E leases and idempotency
+
+Every transition is fenced by tenant, program digest, goal revision, target digest, expected logical transition, lease owner, lease epoch, lease expiry, and run deadline. An exact checkpoint replay returns the already-advanced transition rather than incrementing twice.
+
+Each read-only VM browser leaf derives a deterministic `vm1:<sha256>` idempotency key and passes that same key to existing `opera_enqueue` as `request_id`. Existing `(device_id, request_id)` uniqueness therefore prevents a second browser command when a worker dies after dispatch but before checkpoint and a replacement worker redelivers the same logical effect.
+
+Cancellation survives worker death. Expired non-cancelled leases can be reclaimed with a higher lease epoch; an expired cancelled lease terminalizes as `CANCELLED` rather than requeueing.
+
+### 7E freshness and effect policy
+
+The host checks the current Goal Ledger revision/state, production device identity, locked tab/target, encrypted program/checkpoint digests, and applicable document generation. Document-scoped observation generation mismatch returns `STALE_DOCUMENT`.
+
+The VM effect surface remains the Checkpoint 7A read-only list only: `browser.ping`, restricted atomic `browser.burst`, read-only tab/page observations, waits/capture, and `media.state`. No navigation, click/fill/key/pointer/scroll/media mutation or consequential effect is added.
+
+### 7E bounded server limits
+
+- plaintext program/checkpoint/result: 128 KiB each;
+- slice: 20 s;
+- run deadline: 5 min;
+- default lease: 25 s, max 30 s;
+- running concurrency: 4 per tenant;
+- outstanding queue: 32 per tenant;
+- enqueue rate: 20/minute per tenant;
+- cleanup retention input: 1 hour–7 days.
+
+### 7E production dark state
+
+The additive migrations were applied and `opera-agent-vm` is deployed `ACTIVE` version 2 with `verify_jwt=true`. Deployment bundle SHA-256 is `e18f6b81d6e31031ef885cbf83c2be2f2ca11c0a73ceab9a5f508ee59d6f3fbb`; its embedded transformed CI bundle is integrity-checked against `437a68ef43a4ffcaab7ab2ccef288fe9a34994605cbe25d159c2ac37c853fa19` before load.
+
+The feature remains dark:
+
+- `milestone7_vm_enabled = false`;
+- zero `vm_runs` rows;
+- zero `vm_effects` rows;
+- zero `vm_rate_windows` rows;
+- `opera_vm_crypto_key()` returns only `{"enabled":false}`.
+
+The deployed public `opera-agent-mcp` remains version 12 and was not changed by 7E.
+
+Production synthetic probes, with all setup removed before commit, proved:
+
+- cross-tenant get/cancel success count zero;
+- stale lease/program/goal/target fences reject advancement;
+- one valid transition advances exactly once and exact redelivery replays;
+- forced worker death/reclaim increments lease epoch;
+- effect redelivery after dispatch resolves to one command ID and exactly one command row;
+- conflicting idempotency material is rejected;
+- cancellation survives dead-worker recovery;
+- anon/authenticated have zero 7E RPC/private-schema authority;
+- enqueue #21 is rate-limited;
+- queue >32 is rejected;
+- a fifth active tenant claim is concurrency-limited;
+- expiry/cleanup work;
+- >128 KiB declared payload is rejected;
+- post-probe production returns to flag-off/zero-row state.
+
+Security advisors after schema and Edge deployment added no 7E-relevant ERROR/WARN. The VM tables only appear in informational RLS-without-policy findings, which is intentional for service-role-only storage. Performance advisor findings for new indexes are informational/unused while the feature remains dark.
+
+Detailed record: `docs/milestone-7-checkpoint-7e.md`.
+
+## Next task: Checkpoint 7F only
+
+Checkpoint 7F is the next separate checkpoint. 7E dark deployment is **not** 7F production acceptance.
+
+Before implementing 7F, read `docs/milestone-7-plan.md` and the full 7A–7E acceptance chain. Preserve all 7A effect restrictions and public compatibility invariants. Do not begin Milestone 8 or introduce consequential effects/direct logical-ID actions while closing 7F.
+
+The 7E feature flag should remain off unless the frozen 7F plan explicitly authorizes a bounded production acceptance step. Do not treat the existence of the deployed Edge function as authority to broaden or activate VM behavior.
 
 ## Security and privacy invariants
 
@@ -238,17 +271,14 @@ Prefer the internal workflow surface. Do **not** add a public MCP tool unless a 
 
 ## Explicitly deferred
 
-Continuous desktop/video streaming, synchronized audio/video understanding, OS-level mouse/keyboard control, direct logical-ID action addressing, general raw JavaScript/CDP, site-specific extension opcodes/selectors, learned selector self-modification, parallel multi-tab workers, automatic consequential actions without explicit authority, Checkpoint 7F, and Milestones 8–11 remain outside the current accepted checkpoint.
+Continuous desktop/video streaming, synchronized audio/video understanding, OS-level mouse/keyboard control, direct logical-ID action addressing, general raw JavaScript/CDP, site-specific extension opcodes/selectors, learned selector self-modification, automatic consequential actions without explicit authority, Milestone 8+, and any browser effect not already accepted by the frozen Milestone 7 plan remain outside the current accepted checkpoint.
 
 ## Canonical references
 
 - `AGENTS.md` — repository session-close rules.
 - `SECURITY.md` — security contract.
 - `docs/milestone-7-plan.md` — frozen Checkpoints 7A–7F and budgets.
-- `docs/milestone-7-checkpoint-7a.md` — accepted 7A record.
-- `docs/milestone-7-checkpoint-7b.md` — accepted 7B record.
-- `docs/milestone-7-checkpoint-7c.md` — accepted 7C record.
-- `docs/milestone-7-checkpoint-7d.md` — accepted 7D record.
+- `docs/milestone-7-checkpoint-7a.md` through `docs/milestone-7-checkpoint-7e.md` — accepted Milestone 7 checkpoint records.
 - `docs/semantic-runtime-plan.md` — semantic architecture/dependency order.
 - `docs/milestone-6-plan.md` — accepted Milestone 6 plan.
 - `docs/milestone-6-checkpoint-6e.md` and `docs/milestone-6-checkpoint-6f.md` — Milestone 6 production/security evidence.
