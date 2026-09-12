@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import test from 'node:test';
 
@@ -15,6 +14,7 @@ import {
   deriveVmEffectIdempotencyKey7E,
   validateVmPersistedMetadata7E,
 } from '../lib/reactive-vm-host-7e.js';
+import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/reactive-vm-contract-v1.json', import.meta.url), 'utf8'));
 const replay = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-replay-v1.json', import.meta.url), 'utf8'));
@@ -108,7 +108,9 @@ test('7F keeps the 1.6.0 public surface and frozen read-only VM effect policy un
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 18);
   assert.equal(contract.inventory.digest, 'sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a');
-  assert.equal(crypto.createHash('sha256').update(mcpSource).digest('hex'), EXPECTED_MCP_SHA256);
+  assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
+  const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
+  assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);
 
   const allowed = contract.effectClassification
     .filter((entry) => entry.initialV1Allowed)
