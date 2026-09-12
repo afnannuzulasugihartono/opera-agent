@@ -27,6 +27,23 @@ jobs:
         run: |
           npm test
           npm run check
+      - name: Bundle Checkpoint 7E Edge host
+        run: |
+          mkdir -p /tmp/opera-agent-vm-bundle
+          npx --yes esbuild@0.25.9 supabase/functions/opera-agent-vm/index.ts \
+            --bundle \
+            --format=esm \
+            --platform=neutral \
+            --target=es2022 \
+            --external:jsr:* \
+            --external:@supabase/supabase-js \
+            --outfile=/tmp/opera-agent-vm-bundle/index.ts
+          cp supabase/functions/opera-agent-vm/deno.json /tmp/opera-agent-vm-bundle/deno.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opera-agent-vm-edge-bundle
+          path: /tmp/opera-agent-vm-bundle
+          if-no-files-found: error
       - name: Install Playwright
         run: |
           python -m pip install --upgrade pip
