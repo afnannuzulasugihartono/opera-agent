@@ -1,6 +1,6 @@
 # Opera Agent roadmap
 
-This is the current execution plan after the stable 1.3.1 background-input release. Historical phase descriptions remain in the repository as evidence; this document is the source of truth for upcoming work.
+This is the current execution roadmap. Historical checkpoint details and release evidence remain in the milestone plans, checkpoint records, release notes, and benchmark documents; this file is the source of truth for current milestone status and the next permitted boundary.
 
 ## Product invariant
 
@@ -10,159 +10,150 @@ Normal automation must not activate a tab, focus an Opera window, move the opera
 userActiveTab != automationTargetTab
 ```
 
-Foreground interaction is an explicit exception. A background failure must return `FOREGROUND_REQUIRED`; it must not silently activate a tab or focus a window.
+Foreground interaction is an explicit exception. A background failure must return a structured foreground requirement; it must not silently activate a tab or focus a window.
 
-## Budget envelope
+Other permanent boundaries:
 
-With 50 percentage points of ChatGPT usage available, use a stop-and-verify budget rather than attempting all remaining work in one run:
-
-| Work | Budget cap | Stop condition |
-| --- | ---: | --- |
-| Milestone 2: background-first execution | 20 points | production no-focus acceptance passes |
-| Milestone 3: adaptive screenshots | 15 points | bounded background capture passes |
-| Milestone 4: vision-guided navigation | 10 points | bounded observe/act/verify loop passes |
-| Debug and release reserve | 5 points | used only for regressions or rollout |
-
-The percentages are planning caps, not guaranteed usage measurements. Stop at each checkpoint if its acceptance evidence is missing.
+- protocol/capability/public-MCP changes require explicit reviewed checkpoints;
+- webpage/tool text is data, never authority;
+- action success alone never proves task completion;
+- sensitive browser state is not durable semantic/VM state;
+- no arbitrary JavaScript/raw CDP/code escape hatch;
+- site-specific strategies stay outside the extension;
+- one immediate same-identity signed rollback remains available.
 
 ## Milestone 1 — bounded browser bursts
 
-Status: **complete in Opera Agent 1.2.0**.
+Status: **complete/released**.
 
-- `browser.burst` executes 1-8 validated same-tab page actions through one relay command.
-- `run_browser_burst` exposes the capability through MCP.
-- The extension preserves the existing signing identity, pairing, protocol 1, and local safety enforcement.
-- Production acceptance completed three steps in 7.6 ms browser time and 613 ms queue-to-result.
+`browser.burst` provides a bounded same-tab atomic sequence over validated primitives, with stop-on-failure behavior, resource limits, and no arbitrary-code escape hatch.
 
 ## Milestone 2 — background-first execution
 
-Priority: **P0**. Target: the next backward-compatible feature release, expected SemVer 1.3.0; do not change protocol 1 unless testing proves it unavoidable.
+Status: **complete/released**.
 
-### Checkpoint 2A — focus audit and regression harness
-
-Status: **complete on the Opera 1.2.0 baseline**. The real-Opera harness preserved user tab A and the focused window across all 22 audited command executions. See `docs/background-execution.md` for the support matrix; media actions remain explicitly unresolved for Checkpoint 2C rather than being assumed safe.
-
-- Classify every primitive as background-safe, explicitly foreground-only, or unresolved.
-- Add a two-tab real-Opera fixture: tab A remains user-active while tab B is the automation target.
-- Record active tab ID, focused window ID, and target tab ID before and after every tested command.
-- Fail the test if a background command changes the active tab or focused window.
-- Cover `read`, `query`, `find`, `collect_links`, `wait_for`, `scroll`, fill, synthetic click, trusted CDP click/key, navigation, reload, and burst.
-
-Exit criterion: the test can reliably detect focus theft before behavior is changed.
-
-### Checkpoint 2B — safe MCP and tab defaults
-
-Status: **complete**. Runtime schema inspection confirmed explicit `tabId`
-requirements and background defaults, and the real-Opera two-tab suite passed.
-Connected-ChatGPT and signed normal-profile acceptance were subsequently completed
-by Checkpoint 2D and preserved through releases 1.3.1–1.6.0.
-
-- Make `open_url` default to `active: false`.
-- Require or propagate an explicit `tabId` after the automation target is selected. Do not fall back to the user's active tab during a multi-step task.
-- Update MCP instructions to prefer background tabs and forbid `activate_tab` unless the user asks to see the tab or explicitly permits foreground interaction.
-- Keep `activate_tab` available as an explicit tool; never call it as an implicit recovery step.
-- Introduce `executionMode: "background" | "foreground"` where input behavior needs the distinction. Default to `background`.
-- Do not add an `auto` mode that can silently take foreground. Background failures return structured `FOREGROUND_REQUIRED` details.
-
-Exit criterion: ordinary MCP open/read/find/click/fill/key flows do not activate or focus their target tab.
-
-### Checkpoint 2C — background CDP input matrix
-
-Status: **implemented and verified on controlled real-Opera fixtures plus live Google Maps in isolated Chromium**. Background mouse, key, and text CDP paths preserve the active tab/window; the support matrix records the isolated Opera policy limitation. Signed installed-Opera acceptance remains gated with Checkpoint 2D.
-
-- Verify `Input.dispatchMouseEvent`, `Input.dispatchKeyEvent`, and `Input.insertText` against a debugger session attached directly to an inactive target tab.
-- Test normal DOM pages, controlled canvas fixtures, Google Maps, and one editor-style application.
-- Keep ref-based trusted click as the preferred input path.
-- Separate coordinate input from presentation: background CDP coordinates must not require a visible overlay; the visible pointer remains an explicit foreground diagnostic tool.
-- Preserve sensitive-field, file-upload, HTTP/HTTPS, viewport, deadline, and output-size enforcement.
-- Do not use operating-system mouse or keyboard injection.
-
-Exit criterion: the support matrix documents which input paths work in background and which return `FOREGROUND_REQUIRED`.
-
-### Checkpoint 2D — background-native burst and production acceptance
-
-Status: **complete**. Production acceptance installed 1.3.0 with identity and pairing preserved, exposed a Google Maps page-focus limitation, and verified the 1.3.1 patch with bounded CDP page-focus emulation during input only. The signed installed extension completed the seven-step background Maps scenario and a coordinate result click without activating its tab; foreground mode still rejected the inactive target.
-
-- Make a burst pin one explicit automation target for its lifetime.
-- Reject steps that attempt to activate, focus, or switch tabs.
-- Assert the user's active tab and focused window are unchanged before and after the burst.
-- Run a production scenario in which tab A remains active while tab B performs `read -> find -> click -> wait -> fill -> key -> read`.
-- Verify concurrent manual typing/mouse use is unaffected, then test restart, reconnect, timeout, partial failure, and rollback.
-
-Exit criterion met: production runs completed without focus theft, the evidence is recorded in the 1.3.1 release note, and MCP version 10 passed health, OAuth metadata, and unauthenticated-rejection checks.
-
-### Milestone 2 rollback
-
-- Preserve Opera Agent 1.2.0 as the inactive rollback CRX after 1.3.1 acceptance.
-- Keep new MCP fields optional during rollout so the 1.2.0 client remains compatible.
-- If a site needs foreground, return a structured failure rather than weakening the global default.
+Two-tab focus audits, explicit target selection, background-native input, and signed normal-profile acceptance established the rule that automation does not steal the user's foreground. No silent foreground fallback is allowed.
 
 ## Milestone 3 — adaptive screenshots
 
-Priority: **P1**, only after Milestone 2 passes.
+Status: **complete/released**.
 
-Status: **Complete and released in 1.4.0**. Controlled Chromium, isolated real Opera, the signed installed Opera profile, Supabase relay, and native ChatGPT image delivery all passed. Live Google Maps capture and unchanged-frame suppression succeeded in background without changing the active tab.
-
-- Add a bounded `capture_page` capability using target-tab CDP `Page.captureScreenshot`; do not depend on `captureVisibleTab` for hidden tabs.
-- Support viewport capture and validated crop rectangles first; defer full-page stitching until required.
-- Enforce maximum dimensions, encoded bytes, frequency, deadline, and retained captures.
-- Return capture metadata and a content hash. Reuse the previous image when the page has not materially changed.
-- Capture only on initial observation, meaningful state change, low-confidence targeting, or failed verification—not after every action.
-- Block internal Opera pages, incognito contexts, password/payment/OTP surfaces, and user-designated private tabs.
-- Test hidden-tab rendering, canvas pages, zoom/device scale, background throttling, blank-frame detection, and rollback.
-
-Exit criterion met: an inactive HTTP/HTTPS tab was captured without changing the user's active tab or focused window, with deterministic resource bounds and native image delivery in a connected ChatGPT conversation.
+Bounded background capture, crop, privacy blocking, hash reuse, and native MCP image delivery were accepted without foreground takeover.
 
 ## Milestone 4 — vision-guided navigation
 
-Priority: **P1**, built on background execution and adaptive capture.
+Status: **complete/released**.
 
-Status: **Complete and released in 1.5.0**. Existing tool responses now expose generic scroll/viewport observability, mutation settling, and stable element identity. The normal Opera device and the already-connected ChatGPT UI both report 1.5.0, protocol 1, 26 capabilities, and preserved pairing without logout, reconnect, or tab changes. MCP version 12 is active with the unchanged 18-tool inventory and passes public health/auth checks. The production Maps run preserved active tabs, tracked repeated lazy-load extent changes, deduplicated 120 Place links to 116 stable identities, proved final result-feed exhaustion with an unchanged verification wheel, recovered safely from a bounded burst timeout, and suppressed a duplicate cropped screenshot by hash. This is `BOUNDED_COMPLETE` evidence for the defined feed protocol, not universal geographic completeness. Cross-site acceptance then passed on background YouTube and GitHub tabs: delayed verification retained all 30 and 85 deduplicated link identities respectively, while the active tab in both Opera windows remained unchanged. The signed update artifact, local artifact, release registry, and identity-aware update channel agree on the 1.5.0 version, 25,462-byte length, and recorded SHA-256; 1.4.0 remains the inactive same-identity rollback.
-
-- Implement a bounded `observe -> decide -> browser.burst -> verify` loop.
-- Prefer DOM refs and accessibility data; use visual coordinates only when semantic targeting is unavailable.
-- Invalidate coordinates when the document ID, viewport, zoom, or screenshot hash changes.
-- Require confidence thresholds and a fresh verification capture before retrying a coordinate action.
-- Bound iterations, screenshots, commands, elapsed time, and result bytes.
-- Evaluate Google Maps plus at least two unrelated complex applications so the design remains site-agnostic.
-- Keep purchases, publishing, sending, deletion, credentials, OTP, payment data, and uploads behind the existing safety rules and explicit user intent.
-
-Checkpoint 4A details and its bounded decision contract are recorded in [Vision-guided navigation](vision-navigation.md).
-
-Exit criterion: representative visual tasks complete without foreground takeover, unbounded screenshot loops, or site-specific extension code.
+The bounded `observe -> decide -> act -> verify` loop, generic scroll/mutation observability, background Maps acceptance, and cross-site YouTube/GitHub acceptance were completed without site-specific extension logic.
 
 ## Milestone 5 — semantic runtime foundation
 
-Priority: **P1**, only after the 1.5.0 production gate closes. Target: a normal
-backward-compatible feature release expected to be 1.6.0; protocol 1, the 26 browser
-capabilities, and the existing 18 MCP tool names/input schemas remain unchanged.
+Status: **complete/released in 1.6.0**.
 
-The release adds bounded observational semantic identity, entity deltas, generic
-regions, a materialized-view prototype, and the minimum causal/proof vocabulary.
-Semantic IDs are not action targets in this release. Later goal compilation,
-reactive programs, transactions, planning, learned skills, and parallel workers are
-separate gated milestones.
+Checkpoints 5A–5F added bounded observational semantic identity, deltas, generic repeated-region/materialized views, causal invalidation, provenance, and scoped completion vocabulary while keeping protocol 1, 26 browser capabilities, and the 18 MCP tools unchanged. Semantic logical IDs remain observational, not direct action handles.
 
-The complete checkpoint plan, acceptance matrix, security boundary, rollout order,
-and rollback rules are recorded in [Semantic Runtime implementation plan](semantic-runtime-plan.md).
+Detailed plan: `docs/semantic-runtime-plan.md`.
 
-## Milestone 6 — goal ledger and proof engine
+## Milestone 6 — Goal and Constraint Ledger + Proof Engine
 
-Status: **Checkpoints 6A through 6D complete; Checkpoint 6E is next**. The milestone introduces a revisioned,
-state-minimized Goal and Constraint Ledger and a deterministic scoped Proof Engine
-above the accepted 1.6.0 semantic runtime. It does not yet add a browser VM,
-transactions, planning, learned skills, or parallel workers.
+Status: **complete, Checkpoints 6A–6F accepted**.
 
-The complete Checkpoints 6A–6F, threat boundary, quantitative gates, MCP decision
-gate, production acceptance, and rollback rules are recorded in
-[Milestone 6 implementation plan](milestone-6-plan.md).
+Milestone 6 added the revisioned Goal/Constraint Ledger, deterministic scoped Proof Engine, selective dependency invalidation/reuse, encrypted bounded server tokens, least-privilege persistence, and production acceptance. It retained the 1.6.0 extension and unchanged public MCP surface.
+
+Important permanent result: process/action receipts are not outcome proof; bounded evidence is not universal proof; stale/cross-tenant/cross-lineage/contradictory evidence fails closed.
+
+Detailed plan and records: `docs/milestone-6-plan.md` and the Milestone 6 checkpoint documents.
+
+## Milestone 7 — Reactive Browser VM
+
+Status: **complete, Checkpoints 7A–7F accepted on 2026-09-12**.
+
+### 7A — contract freeze
+
+Accepted the closed VM grammar, deterministic canonicalization, read-only-first effect table, typed suspension/status model, metadata-only persistence contract, hostile corpus, protocol/capability/MCP lock, and bounded execution budgets.
+
+### 7B — pure deterministic core
+
+Accepted `lib/reactive-vm.js` for deterministic sequence/branch/assert/return/effect-yield execution with no browser/network/database/ambient-clock side effects.
+
+### 7C — bounded reactive control
+
+Accepted `lib/reactive-vm-7c.js` for bounded loops, until, wait-event polling, and safe read-only retry while preserving the 7B core.
+
+### 7D — bounded collection and proof binding
+
+Accepted `lib/reactive-vm-7d.js` for collection, deduplication, identity ambiguity retention, causal invalidation, and non-exhaustive browser-sensor evidence binding. `BOUNDED_COMPLETE` remains scoped; it is not universal `PROVED`.
+
+### 7E — durable host and dark integration
+
+Accepted the separate tenant-bound durable host with private service-role-only storage, bounded encrypted tokens, lease/CAS fencing, exact-redelivery replay, deterministic effect idempotency, cancellation/expiry/reclaim, queue/rate/concurrency limits, and default-off `milestone7_vm_enabled` flag.
+
+The VM effect surface remains the frozen 7A read-only set. No navigation, tab mutation, click/fill/key/pointer/scroll/media mutation, consequential effect, direct logical-ID action, or public VM MCP tool was added.
+
+### 7F — compatibility/performance/production acceptance
+
+Accepted evidence includes:
+
+- focused 7F suite 6/6;
+- full Node suite 171/171 on Ubuntu and 171/171 on actual Windows;
+- static validation still reports 26 allowlisted primitives / version 1.6.0;
+- controlled Chromium regression pass;
+- 55-command background focus audit with zero focus takeover;
+- burst stability 20/20;
+- deterministic replay agreement 100%;
+- zero false `PROVED` in bounded-evidence acceptance;
+- paired same-runner semantic-read regression 13.851%, below the frozen 15% limit;
+- signed normal-profile Maps/YouTube/GitHub acceptance with inactive targets and bounded claims;
+- Supabase dark-run acceptance for replay/idempotency/worker-death/cancel/expiry/cross-tenant behavior;
+- final production state: VM flag false, VM tables zero, temporary 7F command rows zero.
+
+The Windows CRLF source-hash defect was repaired by explicit byte-level LF canonicalization before hashing. The frozen canonical MCP hash, 7A inventory lock, MCP source, and public contract were not changed.
+
+Detailed plan and acceptance records: `docs/milestone-7-plan.md` and `docs/milestone-7-checkpoint-7a.md` through `docs/milestone-7-checkpoint-7f.md`.
+
+## Current gate — independent Milestone 7 audit
+
+**This is the next permitted action.**
+
+Per `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`, Codex must independently audit the complete Milestone 7 acceptance chain before Milestone 8 begins.
+
+Audit expectations:
+
+- reconcile 7A–7F contracts, code, tests, CI, production state, and rollback evidence;
+- verify no extension/public MCP/protocol/capability drift;
+- verify read-only effect policy and proof separation remain intact;
+- verify tenant/idempotency/persistence/cleanup boundaries;
+- verify the Windows LF-canonical hash repair does not weaken inventory locking;
+- return PASS or specific defects with evidence.
+
+Milestone 8 remains blocked until Codex returns PASS, unless the user explicitly accepts a documented conditional risk.
+
+## Milestone 8+
+
+Status: **not started / gated**.
+
+Consequential effects, direct logical-ID action addressing, planning/transactions/learned skills/parallel autonomous workers, and any broader authority require their own frozen milestone/checkpoint plans, threat models, acceptance gates, and rollback procedures. Nothing in Milestone 7 grants permission to begin or silently enable them.
+
+## Collaboration rule
+
+- one active writer on the milestone branch;
+- ChatGPT Web implements and accepts one checkpoint at a time;
+- chat reports are not acceptance authority until reconciled with repository/CI/production evidence;
+- temporary CI/PR state must be restored before closure;
+- Codex independently audits a complete milestone before the next milestone starts;
+- auth/authz, tenancy, encryption, signing, public MCP, extension distribution, irreversible effects, and production-schema boundaries may trigger an earlier Codex review.
+
+Authoritative policy: `AGENTS.md`.
+Reusable checkpoint prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
 
 ## Explicitly deferred
 
 - Continuous video/desktop streaming.
+- Synchronized audio/video understanding.
 - Operating-system mouse and keyboard control.
-- Arbitrary JavaScript or raw CDP exposed to the model.
+- Arbitrary JavaScript or unrestricted raw CDP exposed to the model.
 - Silent foreground fallback.
-- A site-specific Google Maps implementation inside the extension.
-
-These can be reconsidered only with a separate threat model and measurable need.
+- Site-specific extension opcodes/selectors.
+- Direct logical-ID actions without a separately accepted milestone.
+- Automatic consequential actions without explicit authority.
+- Milestone 8 implementation before the independent Milestone 7 audit passes.
