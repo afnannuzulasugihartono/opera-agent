@@ -1,6 +1,6 @@
 # Opera Agent next-session handoff
 
-Use this as the starting prompt for the next implementation session. Verify the repository before making claims.
+Use this as the starting prompt for the next implementation session. Verify repository, production flag state, Edge function state, and CI before making claims.
 
 ## Handoff prompt
 
@@ -20,9 +20,10 @@ Read first, in order:
 6. docs/milestone-7-checkpoint-7b.md
 7. docs/milestone-7-checkpoint-7c.md
 8. docs/milestone-7-checkpoint-7d.md
-9. docs/semantic-runtime-plan.md
-10. docs/milestone-6-plan.md
-11. SECURITY.md
+9. docs/milestone-7-checkpoint-7e.md
+10. docs/semantic-runtime-plan.md
+11. docs/milestone-6-plan.md
+12. SECURITY.md
 
 Verified compatibility baseline:
 - extension 1.6.0
@@ -30,17 +31,23 @@ Verified compatibility baseline:
 - extension ID ohbbpamcljckmjhcpkcmefdobkoeaick
 - 26 browser capabilities
 - 18 MCP tools with unchanged names/input schemas
+- production device name opera
 - established signing identity and pairing preserved
 - background-first focus isolation preserved
 - no silent foreground fallback
 - immediate signed rollback remains 1.5.2
+- signed 1.6.0 CRX SHA-256:
+  cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0
+- MCP source SHA-256 baseline:
+  f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11
+- locked 7A inventory digest:
+  sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a
 
-Milestones 1–6 are complete. Milestone 7 Checkpoints 7A, 7B, 7C, and 7D are complete.
+Milestones 1–6 are complete. Milestone 7 Checkpoints 7A through 7E are complete.
 
 Checkpoint 7A froze OA_REACTIVE_VM_V1, OA_REACTIVE_VM_CHECKPOINT_V1,
-OA_CANONICAL_JSON_V1, the 12-node instruction grammar, closed expressions,
-read-only-first effects, metadata-only persistence, hostile replay/digest vectors,
-and protocol 1 / 26 capability / 18 MCP inventory.
+OA_CANONICAL_JSON_V1, the closed instruction/expression grammar, read-only-first
+effects, persistence boundary, hostile corpus, and protocol/capability/MCP inventory.
 
 Frozen quantitative limits remain:
 - program/checkpoint/result 128 KiB each
@@ -58,101 +65,147 @@ Frozen quantitative limits remain:
 - 5 minute run deadline
 
 Checkpoint 7B added lib/reactive-vm.js as the accepted pure deterministic core.
-Checkpoint 7C leaves that file untouched and adds lib/reactive-vm-7c.js for
-LOOP, UNTIL, WAIT_EVENT, and safe observation-only RETRY.
+Checkpoint 7C leaves 7B untouched and adds lib/reactive-vm-7c.js for LOOP,
+UNTIL, WAIT_EVENT, and safe read-only RETRY.
+Checkpoint 7D leaves 7B/7C untouched and adds lib/reactive-vm-7d.js for COLLECT,
+DEDUP, bounded observation envelopes, causal invalidation, and non-exhaustive proof
+binding.
 
-Checkpoint 7D leaves both accepted modules untouched and adds
-lib/reactive-vm-7d.js for the frozen COLLECT and DEDUP instructions plus bounded
-observation-to-evidence binding.
+Checkpoint 7E leaves those pure VM layers as the execution core and adds the
+separate durable host/storage boundary.
 
-Accepted 7D behavior:
-- collections use bounded OA_VM_COLLECTION_V1 structured envelopes;
-- cap/truncation or unresolved ambiguity always remains PARTIAL;
-- only stable, non-truncated, unambiguous declared observed scopes can become
-  BOUNDED_COMPLETE, never universal proof;
-- loaded DOM, visible viewport, declared bounded feed, screenshot, and general
-  observed state remain distinct scopes;
-- dedup prefers logicalId/canonicalId and accepted stable ID/href identity before
-  accepted semantic fingerprints;
-- geometry, name, label, text, viewport position, and index never grant merge
-  authority alone;
-- missing strong identity retains records with MISSING_STRONG_IDENTITY;
-- conflicting identity retains records with IDENTITY_COLLISION;
-- virtual detach/reinsert with the same stable logical identity does not duplicate
-  the entity; higher semanticRevision is preferred as the representative;
-- document-generation changes invalidate dependent collections;
-- viewport/zoom changes invalidate viewport-dependent collection state without
-  invalidating unrelated loaded-DOM entity-set collections;
-- verified effect provenance can flow into collection metadata;
-- proof binding requires provenance and tenant agreement;
-- bound collection evidence is never exhaustive and the VM does not evaluate proof;
-- action receipts and stable screenshots still cannot manufacture PROVED.
+Accepted 7E architecture:
+- lib/reactive-vm-host-7e.js contains bounded host limits, metadata validation,
+  deterministic effect idempotency, and host retry scheduling;
+- supabase/functions/_shared/vm-token.js implements bounded AES-256-GCM oavm1
+  program/checkpoint/result tokens;
+- private schema opera_agent_private contains vm_runs, vm_effects,
+  vm_rate_windows;
+- only service_role has private schema/table and opera_vm_* execution authority;
+- public, anon, authenticated are revoked;
+- VM feature flag is milestone7_vm_enabled and defaults/remains false;
+- Vault key opera_agent_vm_host_v1 is not returned while the flag is off;
+- opera-agent-vm Edge function is deployed separately from public MCP;
+- deployed Edge function is ACTIVE version 2 with verify_jwt=true;
+- function also calls auth.getUser and requires explicit configured user-id/email
+  allowlisting, then binds p_tenant_id to user.id;
+- public opera-agent-mcp remains existing version 12 and was not changed.
 
-Accepted pre-closeout 7D evidence on head
-138cfbbb59350b9160c72016f59139b2ee79dc38 (run 34669862521):
-- focused 7D tests: 12/12 pass, 0 fail
-- bounded deterministic 1,000-item collection/dedup: pass
-- full npm test: 154/154 pass, 0 fail
-- npm run check: pass; 26 allowlisted browser primitives, version 1.6.0
-- controlled Chromium regression: pass
-- background focus audit: 55 commands, focus preserved
-- bounded burst stability: 20/20
-- background screenshot focus and reconnect checks: pass
+Accepted 7E durable fencing:
+- tenant/run identity;
+- program digest;
+- Goal Ledger revision/state;
+- target digest / paired opera device;
+- locked tab;
+- document generation for document-scoped observations;
+- lease owner + lease epoch + lease expiry;
+- expected logical transition;
+- 5 minute run deadline.
 
-The first focused CI pass was 11/12 only because a test fixture combined a
-collection and ledger from different tenants. The runtime correctly failed closed
-with CROSS_TENANT. Only the fixture was aligned; tenancy enforcement was not
-relaxed.
+A valid checkpoint advances logical_transition once and clears the lease. Exact
+checkpoint redelivery is a replay and does not advance again. Expired non-cancelled
+worker leases can be reclaimed with a higher lease epoch. A cancellation request
+survives worker death and terminalizes CANCELLED rather than being requeued.
 
-Checkpoint 7D did not change production Supabase migration/function/flag/row,
-extension source/version, protocol, capability inventory, MCP source/tool/schema,
-signing identity, pairing state, production browser behavior, or signed artifacts.
+Accepted 7E idempotency behavior:
+- each logical read-only browser effect derives deterministic vm1:<sha256> identity;
+- the same identity is passed to existing opera_enqueue as request_id;
+- existing (device_id, request_id) uniqueness closes crash-after-dispatch /
+  before-checkpoint duplicate-command risk;
+- effect journal rejects the same idempotency key if request digest/method differs;
+- command success remains process evidence, not proof authority.
 
-The branch MCP source hash remains:
-f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11
+The accepted VM effect surface is still only the frozen 7A read-only set:
+- browser.ping
+- restricted read/find/wait subset of atomic browser.burst
+- tabs.list / tabs.get / tabs.find
+- page.read / page.query / page.find / page.collect_links / page.capture /
+  page.wait_for
+- media.state
 
-The locked 7A inventory digest remains:
-sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a
+No navigation, tab mutation, click/fill/key, pointer, scroll, media mutation,
+consequential effect, direct logical-ID action, or arbitrary code surface was added.
 
-NEXT TASK: Checkpoint 7E only — durable Supabase host and dark integration.
+Accepted 7E server limits:
+- 20 s bounded Edge slice
+- 5 min run deadline
+- 25 s default lease / 30 s max
+- 4 active running runs per tenant
+- 32 outstanding runs per tenant
+- 20 enqueue/minute per tenant
+- 128 KiB plaintext program/checkpoint/result
+- retention cleanup input 1 hour through 7 days
 
-Frozen 7E scope from docs/milestone-7-plan.md:
-- host VM execution in bounded Edge slices;
-- tenant-bound leases and compare-and-swap run advancement;
-- idempotency, cancellation, expiry, checkpoint/restart, queue backpressure;
-- additive private-schema migration with least-privilege grants;
-- enqueue, claim, checkpoint, resume, cancel, expire, cleanup behavior;
-- opaque/encrypted bounded payload boundary where raw values cannot be avoided;
-- exact retry/idempotency tests across forced worker termination;
-- rate, queue, retention, payload, and tenant concurrency limits;
-- default-off server feature flag, cleanup procedure, and server rollback.
+Production dark-integration evidence:
+- both additive 7E migrations applied successfully;
+- opera-agent-vm ACTIVE v2, verify_jwt=true;
+- deployment bundle SHA-256:
+  e18f6b81d6e31031ef885cbf83c2be2f2ca11c0a73ceab9a5f508ee59d6f3fbb
+- embedded transformed CI bundle integrity hash:
+  437a68ef43a4ffcaab7ab2ccef288fe9a34994605cbe25d159c2ac37c853fa19
+- milestone7_vm_enabled remains false;
+- vm_runs = 0;
+- vm_effects = 0;
+- vm_rate_windows = 0;
+- opera_vm_crypto_key() returns only {enabled:false} while flag off.
 
-7E exit gates:
-- exactly one lease advances each logical transition;
-- zero duplicate logical effects after crash/redelivery probes;
-- unauthenticated/cross-tenant operations succeed zero times;
-- stale goal/program/lease/target/document generations are rejected;
-- persisted state contains zero prohibited raw content;
-- security advisors add no unresolved relevant ERROR/WARN;
-- flag-off leaves extension 1.6.0 and all 18 MCP tools usable.
+Production transaction probes passed and cleaned themselves before commit:
+- cross-tenant get/cancel succeeded zero times;
+- stale lease/program/goal/target rejected;
+- one valid transition advanced once; exact checkpoint redelivery replayed only;
+- worker-death simulation reclaimed at a higher lease epoch;
+- crash/redelivery reused one command ID and exactly one command row;
+- conflicting idempotency material rejected;
+- cancellation survived dead-worker recovery;
+- anon/authenticated had zero 7E RPC/private-schema authority;
+- enqueue #21 rate-limited;
+- queue overflow above 32 rejected;
+- fifth active tenant claim concurrency-limited;
+- expiry and cleanup passed;
+- declared payload >128 KiB rejected;
+- post-probe flag false / VM rows zero / synthetic commands zero.
 
-Prefer an internal workflow surface. Keep all 18 public MCP tools unless measured
-value justifies a separately reviewed contract. Deploy behind a default-off server
-flag. Do not begin Checkpoint 7F production acceptance, Milestones 8+, public MCP
-changes, extension changes, direct logical-ID actions, or broader effects while
-implementing 7E.
+The first production probe attempt failed only because the SQL harness used a
+PL/pgSQL variable name ambiguous with a column name. PostgreSQL rolled the entire
+transaction back; immediate verification showed flag false and zero synthetic
+state. Only the test variable was renamed before the successful rerun.
 
-Before changing production Supabase in 7E, follow the checkpoint plan exactly:
-freeze storage/host contracts and limits, add deterministic failing tests first,
-implement additive least-privilege mechanisms, test crash/redelivery/tenancy/stale
-state, run security advisors, dark-run with the flag off/default-off boundary, and
-retain an explicit cleanup/rollback route.
+Security advisors after migration/deploy added no 7E-relevant ERROR/WARN. New VM
+tables appear only as informational RLS-without-policy because they are intentionally
+service-role-only. Performance advisor reports informational unused indexes while
+the feature remains dark.
 
-Before ending a state-changing session, run focused tests, npm test, npm run check,
-relevant host/security/Chromium compatibility gates, update docs/project-context.md
-and this handoff, commit/push the same branch, and follow AGENTS.md exactly.
+A temporary CI run earlier hit the already-accepted 7C same-runner benchmark at
+20.52% versus the 15% limit. 7E focused tests still passed. The threshold was not
+weakened; later exact-head CI passed full Node/static and Chromium gates.
+
+NEXT TASK: Checkpoint 7F only.
+
+7E dark deployment is not 7F production acceptance. Before doing anything, read
+the frozen 7F section in docs/milestone-7-plan.md. Preserve the 7A effect policy,
+background-first behavior, extension 1.6.0, protocol 1, 26 capabilities, 18 MCP
+tools, signing/pairing identity, and proof separation.
+
+Do not begin Milestone 8+, consequential effects, direct logical-ID actions, public
+MCP additions/changes, extension changes, or broader browser authority while
+working on 7F unless the frozen plan explicitly authorizes it.
+
+The milestone7_vm_enabled flag must remain false unless the frozen 7F acceptance
+procedure explicitly requires a bounded activation step and all 7F preconditions
+are satisfied. Do not infer authorization merely because opera-agent-vm exists.
+
+Before ending any state-changing session:
+- run the checkpoint-focused tests;
+- run full npm test and npm run check;
+- run relevant Chromium/background compatibility gates;
+- run production/security gates required by the checkpoint;
+- update docs/project-context.md and this handoff;
+- restore any temporary CI instrumentation to the standard workflow;
+- close temporary validation PRs without merge when used only for branch CI;
+- compare final net diff against the previous accepted checkpoint;
+- follow AGENTS.md exactly.
 ```
 
 ## Session-close note
 
-Checkpoint 7A began from `e559387c1672c84453f1a98ad819bf6423f95173`. Checkpoint 7B is recorded in `docs/milestone-7-checkpoint-7b.md`; Checkpoint 7C in `docs/milestone-7-checkpoint-7c.md`; Checkpoint 7D in `docs/milestone-7-checkpoint-7d.md`. The next implementation session must start at Checkpoint 7E rather than repeating earlier checkpoints or jumping to 7F/Milestone 8+.
+Checkpoint 7E began from accepted 7D final head `23448be406bb7c1a47777306659e0a3bbab18bdc`. Its durable acceptance record is `docs/milestone-7-checkpoint-7e.md`. The next implementation session must start at Checkpoint 7F rather than repeating 7E or jumping to Milestone 8+.
