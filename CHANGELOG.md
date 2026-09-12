@@ -5,6 +5,7 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 ## [Unreleased]
 
 ### Milestone 8 — Decision-Causal Transactions and Provenance Enforcement
+- Added an isolated local 8D admission candidate with trusted-adapter-only identity/ledger/target/provenance resolution contracts, exact argument coverage, immutable digest-only results, and no browser/production integration; 8D remains in progress.
 - Froze and independently reviewed the milestone plan after closing same-agent legacy-mutation bypass, limiting V1 to one state-changing action, and correcting MCP 2026 stateless approval binding.
 - Accepted contract-only Checkpoint 8A with closed transaction/provenance/approval schemas, a complete 18-tool enforcement matrix, exact approval binding, four deterministic digest vectors, 74 hostile replay cases, and unchanged 1.6.0 runtime/production/public inventory.
 - Accepted pure Checkpoint 8B with immutable single-action preparation, canonical digest validation, conservative effect classification, typed dependency fingerprints, selective/fail-closed predicate revalidation, bounded previews, and enforcement decisions without browser, network, database, or public-surface integration.

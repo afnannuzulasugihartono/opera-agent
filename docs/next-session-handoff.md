@@ -2,6 +2,19 @@
 
 Use this as the starting point after accepted Milestone 8 Checkpoint 8C. Verify repository head and accepted evidence before making claims.
 
+## Latest local work — 2026-09-13
+
+8D is IN PROGRESS, not ACCEPTED. Read
+`docs/milestone-8-checkpoint-8d-admission-candidate.md` first, alongside the frozen
+plan and earlier records below. Local admission candidate/tests now exist; trusted
+adapters are synthetic fixtures only, not real OAuth/ledger/source integrations.
+No SQL, durable journal/nonce CAS, production deployment, or browser executor was
+added. Continue ONLY 8D: real isolated PostgreSQL tooling, private durable candidate,
+actual trusted adapters and complete frozen gates. Independent exact SQL/host
+review and separate production authorization remain mandatory. Do not begin 8E.
+Focused tests 12/12 and final local full suite 222/222 PASS; static checks PASS.
+Historical sections below describe earlier baselines, not the newest local work.
+
 ## Handoff prompt
 
 ```text

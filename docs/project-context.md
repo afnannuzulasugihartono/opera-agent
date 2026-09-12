@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-12
+Last synchronized: 2026-09-13
 
 This is the durable project-state summary for humans and future LLM sessions. Verify executable code, current production configuration, CI, signed release records, and acceptance evidence before changing accepted facts. Never store secret material here.
 
@@ -21,6 +21,20 @@ Non-negotiable invariants:
 - sensitive browser/credential state is never persisted as semantic/VM/transaction learning state;
 - consequential agent mutations must not have a legacy bypass once transaction enforcement is promoted;
 - keep one immediate same-identity signed rollback.
+
+## Current 8D work (not acceptance)
+
+Local admission candidate now exists in `lib/transaction-admission-8d.js`:
+request identity/policy/executor claims are rejected; actual action arguments,
+current ledger authorization, target, and per-argument attested provenance are
+checked via trusted server-installed adapters. Synthetic tests pass 12/12.
+Full local regression: 222/222 PASS; static check remains 1.6.0 / 26 capabilities.
+Adapters are mocks in tests, not production authentication/source integrations.
+No SQL/durable journal/nonce CAS or deployed host exists. 8D remains IN PROGRESS;
+8E has not started. Record: `docs/milestone-8-checkpoint-8d-admission-candidate.md`.
+Next work remains inside 8D: real PostgreSQL tooling, durable private host candidate,
+actual trusted adapters, acceptance gates and independent exact-candidate review
+before separately authorized production mutation. Public release remains unchanged.
 
 ## Current accepted release state
 
