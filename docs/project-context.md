@@ -19,6 +19,7 @@ Non-negotiable invariants:
 - no arbitrary JavaScript, unrestricted raw CDP, SQL, shell, or generated-code escape hatch;
 - webpage/tool/model text is untrusted data, never authority or program structure;
 - sensitive browser/credential state is never persisted as semantic/VM/transaction learning state;
+- consequential agent mutations must not have a legacy bypass once transaction enforcement is promoted;
 - keep one immediate same-identity signed rollback.
 
 ## Current accepted release state
@@ -30,7 +31,8 @@ Non-negotiable invariants:
 - MCP tools: `18`, unchanged current names and input schemas.
 - Production device name: `opera`.
 - Working branch: `feat/semantic-runtime-1.6.0`.
-- Milestone 8 planning baseline head: `538dbb5cb8b7b8ff1d8be9c6ac36ba37d22669d4`.
+- Milestone 8 initial planning baseline head: `538dbb5cb8b7b8ff1d8be9c6ac36ba37d22669d4`.
+- First frozen Milestone 8 plan commit: `434faa1894479a5f7dd264049614c6d814022f77`.
 - Final 1.6.0 release acceptance commit: `cfb903b`.
 - Immediate signed rollback: `1.5.2`.
 - Signed 1.6.0 CRX SHA-256: `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
@@ -50,18 +52,7 @@ ChatGPT / another MCP client
   -> structured observation or verified action outcome
 ```
 
-Milestone 7 added an internal default-off durable VM host beside the existing public path:
-
-```text
-internal OAuth-authorized VM request
-  -> opera-agent-vm Edge host
-  -> tenant-bound private VM run + bounded lease
-  -> accepted pure 7D VM runtime
-  -> existing allowlisted read-only browser command queue
-  -> paired Opera extension
-  -> verified bounded observation
-  -> encrypted bounded checkpoint/result
-```
+Milestone 7 added an internal default-off durable VM host beside the existing public path. Its accepted browser effect surface remains read-only and its production flag remains off after Milestone 7 acceptance.
 
 The extension owns browser-local sensing and named primitives. Server infrastructure owns pairing, heartbeat, command/workflow transport, updates, MCP backend state, and dark VM/transaction hosting. Browser content never grants authority.
 
@@ -90,7 +81,7 @@ The accepted public inventory remains 18 tools:
 
 Contract fixture: `tests/fixtures/mcp-contract-v1.json`.
 
-Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E are also frozen to no public MCP change. Checkpoint 8F is the only planned point that may propose an additive transaction surface, and it requires early independent audit plus real-client approval/compatibility evidence before deployment.
+Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain frozen to no public MCP runtime/schema change. Checkpoint 8F is the only planned point that may propose an additive transaction surface and enforcement behavior, and it requires early independent audit plus real-client approval/compatibility evidence before deployment.
 
 ## Milestone status
 
@@ -101,26 +92,16 @@ Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E are also fr
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **plan frozen for user review; implementation not started; Checkpoint 8A blocked pending explicit user approval**.
+- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **revised plan frozen for second independent Codex review; implementation not started; Checkpoint 8A blocked**.
 - Milestone 9+ — not started.
 
 ## Milestone 7 accepted boundary
 
 Milestone 7 froze and accepted `OA_REACTIVE_VM_V1`, `OA_REACTIVE_VM_CHECKPOINT_V1`, `OA_CANONICAL_JSON_V1`, a closed data-only grammar, deterministic pure runtime layers, bounded collection/proof binding, and a separate durable Supabase host.
 
-The durable host provides tenant/program/goal/target/tab/document/lease/logical-transition fences, AES-256-GCM bounded `oavm1` tokens, deterministic `vm1:<sha256>` effect idempotency reused as the existing command request ID, cancellation/expiry/reclaim, and bounded queue/rate/concurrency behavior.
+The accepted VM effect surface remains read-only: `browser.ping`, restricted read/find/wait `browser.burst`, `tabs.list/get/find`, `page.read/query/find/collect_links/capture/wait_for`, and `media.state`. No navigation, tab mutation, click/fill/key/pointer/scroll/media mutation, consequential effect, direct logical-ID action, arbitrary JavaScript/raw CDP, or public VM MCP tool was accepted by Milestone 7.
 
-The accepted VM effect surface remains read-only:
-
-- `browser.ping`;
-- restricted read/find/wait `browser.burst`;
-- `tabs.list`, `tabs.get`, `tabs.find`;
-- `page.read`, `page.query`, `page.find`, `page.collect_links`, `page.capture`, `page.wait_for`;
-- `media.state`.
-
-No navigation, tab mutation, click/fill/key/pointer/scroll/media mutation, consequential effect, direct logical-ID action, arbitrary JavaScript/raw CDP, or public VM MCP tool was accepted by Milestone 7.
-
-The independent Codex audit at Milestone 7 final head `551e8283c0417b173e106ee0598cca848f2f4ff0` returned **PASS** on 2026-09-12. It reproduced the 171-test suite, static checks, focused 7F gates, controlled Chromium harness, Edge bundle, exact-head CI/temporary-PR cleanup, and production dark state. The audit grants no new browser authority and does not promote the VM flag.
+The independent Codex audit at Milestone 7 final head `551e8283c0417b173e106ee0598cca848f2f4ff0` returned **PASS** on 2026-09-12. It grants no new browser authority and does not promote the VM flag.
 
 ## Production dark state after Milestone 7
 
@@ -133,79 +114,110 @@ Accepted closeout state:
 - temporary Milestone 7 command rows zero;
 - device `opera` online on extension 1.6.0 / protocol 1 / 26 capabilities.
 
-Milestone 8 planning changed none of these values and did not create a Milestone 8 feature flag.
+Milestone 8 planning/revision changed none of these values and created no Milestone 8 production config/flag.
 
-## Milestone 8 frozen plan
+## Milestone 8 revised frozen plan
 
 Authoritative plan: `docs/milestone-8-plan.md`.
 
-The transaction lifecycle is:
+The transaction lifecycle remains:
 
 ```text
 PREPARE -> VALIDATE -> APPROVE(if required) -> COMMIT
         -> OBSERVE -> VERIFY -> RECEIPT
 ```
 
-The authority split is frozen:
+The first Codex review identified three blockers. The revised plan now freezes their resolution but no implementation has started.
 
-- Goal/Constraint Ledger = user intent and constraint authority;
-- observations/page/tool/model output = facts/operands/evidence only, never new authority;
-- prepared transaction = exact narrow candidate authority only;
-- user approval = fresh one-shot authority bound to the exact prepared digest;
-- OAuth consent = client connection authorization, not transaction approval;
-- Proof Engine = completion authority;
-- transaction/command receipt = process evidence only.
+### Enforcement/cutover boundary
 
-Trusted effect classes are `READ_ONLY`, `LOCAL_REVERSIBLE`, `STAGED_EXTERNAL`, `COMPENSABLE_EXTERNAL`, and `IRREVERSIBLE_OR_UNKNOWN`. Unknown defaults to the strongest review path; generic click/fill/key/pointer/navigation is not inherently reversible just because the primitive is allowlisted.
+Milestone 8 has logical policy modes `OFF`, `DARK`, and `ENFORCED`.
 
-Every consequential action input must carry bounded provenance. Only explicit user/ledger/trusted-policy sources may carry `AUTHORITY`. Browser/tool/model values can be operands or evidence but cannot grant permission. Any changed authority-bearing predicate, target, argument, provenance chain, effect class, or expected postcondition invalidates the prepared digest and its approval.
+- `OFF`: no Milestone 8 transaction execution; accepted legacy behavior unchanged.
+- `DARK`: only synthetic/internal transaction acceptance identities; no ordinary agent transaction commit authority.
+- `ENFORCED`: if an agent receives transaction commit capability, every generic state-changing legacy tool for that same agent identity is gated. Direct mutation without trusted transaction-executor authority returns `TRANSACTION_REQUIRED` before browser dispatch.
 
-Crash recovery must reuse the same deterministic `tx1:` action identity and underlying command request ID. Unknown post-dispatch completion becomes `AMBIGUOUS` and is reconciled read-only; an irreversible/unknown action is never blindly re-dispatched. Compensation is a separately governed external effect, not database rollback.
+There must never be a production state where the same agent can use the transaction path and bypass it through `open_url`, tab mutation, click/fill/key/scroll/pointer tools, or a mutating `run_browser_burst`. Observational tools remain compatible. Internal executor authority is server-derived, transaction-bound, and never exposed as an MCP argument/header/capability to the model. Any separate operator identity must be unavailable to the agent credential realm.
 
-Frozen checkpoints:
+### V1 single-action rule
 
-- 8A — contract, hostile corpus, and baseline; **blocked pending user approval**;
-- 8B — pure decision-causal prepare engine;
-- 8C — provenance and approval verifier;
-- 8D — durable transaction journal/dark Supabase host, with early Codex gate before production mutation;
-- 8E — controlled transaction executor and compensation semantics;
-- 8F — trusted user approval transport + MCP/OAuth compatibility, with early Codex gate before deployment/promotion;
-- 8G — bounded dark/live acceptance on synthetic/reversible fixtures;
-- 8H — compatibility/performance closeout and independent milestone audit.
+V1 contains at most **one state-changing commit action** and therefore at most one consequential external action per transaction. Read-only pre/post observations do not count as actions. Attempts to encode a second action reject before preparation.
 
-Milestone 8 does not absorb Milestone 9 physical planning, Milestone 10 learned skills, or Milestone 11 parallel workers.
+Compensation is always a new transaction with its own transaction ID, prepare digest, authority/provenance checks, approval when required, idempotency/commit slot, observation, verification, and receipt. The original transaction cannot execute an inverse as an additional action or inherit approval for it.
 
-## Milestone 8 compatibility decisions
+### MCP 2026 approval binding
+
+MCP `2026-07-28` is treated as stateless and explicit opt-in:
+
+- no approval security depends on `Mcp-Session-Id`;
+- modern client capabilities are checked on the current request;
+- missing required form-elicitation capability returns `-32021 MissingRequiredClientCapability` and advances no transaction state;
+- confirmation uses `resultType: input_required`, bounded `inputRequests`, opaque verified `requestState`, and the retry's per-round `inputResponses`;
+- the JSON-RPC request ID may change on retry and is not authority;
+- approval challenge state binds authenticated user, trusted OAuth client identity, tenant, transaction ID, prepare/preview digests, nonce, and expiry;
+- self-reported MCP `clientInfo` is not OAuth client identity;
+- V1 permits one approval MRTR round.
+
+Legacy initialize-era clients may use a compatible elicitation shim only when the transport can render actual user confirmation. `Mcp-Session-Id` may route legacy transport but is not approval authority. Incapable legacy/stateless clients fail cleanly; there is no fallback to model prose.
+
+Actual ChatGPT confirmation remains mandatory in Checkpoint 8F. If ChatGPT cannot visibly elicit a real user decision, consequential production commit remains unavailable.
+
+### Authority/provenance/recovery summary
+
+- Goal/Constraint Ledger = intent/constraint authority.
+- Observations/page/tool/model output = facts/operands/evidence only, never new authority.
+- Prepared transaction = exact narrow candidate authority for one action.
+- User approval = fresh one-shot authority bound to exact challenge/prepare state.
+- OAuth consent = client connection authorization, not transaction approval.
+- Proof Engine = completion authority.
+- Transaction/command receipt = process evidence only.
+- Every consequential action input carries bounded provenance; only explicit user/ledger/trusted-policy sources may carry `AUTHORITY`.
+- Crash recovery reuses one deterministic `tx1:` identity and underlying command request ID.
+- Unknown post-dispatch completion becomes `AMBIGUOUS` and is reconciled read-only; irreversible/unknown work is not blindly redispatched.
+- Cancellation before dispatch guarantees zero transaction mutation; after dispatch it does not claim undo.
+
+## Revised frozen checkpoints
+
+- 8A — contract, hostile corpus, enforcement policy, dual-era approval contract, and baseline; **blocked**.
+- 8B — pure single-action decision-causal prepare engine and enforcement decision logic.
+- 8C — provenance + approval challenge verifier with user/OAuth-client/requestState binding.
+- 8D — durable transaction/approval journal and dark Supabase host; early Codex before production mutation.
+- 8E — controlled single-action executor; compensation only as a separate transaction.
+- 8F — trusted dual-era approval transport + transaction enforcement cutover + MCP/OAuth compatibility; early Codex before deployment/promotion.
+- 8G — bounded dark/live acceptance including bypass, modern/legacy confirmation, recovery, and cleanup.
+- 8H — compatibility/performance closeout + independent milestone audit.
+
+## Quantitative V1 summary
+
+The full table is in `docs/milestone-8-plan.md`. Key limits now include: 64 KiB proposal, 128 KiB prepared state, 64 KiB receipt, exactly one state-changing/consequential action maximum, one approval MRTR round, 64 predicates, 128 provenance records, transform depth 8, 10-minute prepare/transaction lifetime, 2-minute approval lifetime, 30-second one-command timeout, 3 post-commit observation attempts, one concurrent commit per target tab, two concurrent committing transactions per tenant, and bounded rate/retention limits.
+
+## Compatibility impact
 
 ### MCP
 
-8A–8E retain the 18-tool public contract. 8F may propose additive `prepare_browser_transaction` / `commit_browser_transaction` tools only if real-client trustworthy confirmation can be proven. Existing 18 names/input schemas stay byte-for-byte compatible. No model-supplied `approved:true` substitute is permitted.
+8A–8E do not change public MCP runtime/schema. 8F alone may propose additive transaction tools and enforcement behavior after early audit. Existing 18 names/input schemas remain locked. Observational tools stay compatible; after `ENFORCED`, direct mutation tools for the same agent require transaction authority and otherwise return `TRANSACTION_REQUIRED`.
 
 ### Supabase
 
-8A–8C make no production change. 8D may introduce additive private service-role-only transaction state only after early audit; it must be default-off and cleaned after probes. Durable queues/leases/CAS are the recovery mechanism, not in-memory Edge background tasks.
+8A–8C make no production change. 8D may introduce additive private service-role-only state only after early audit. Durable queues/leases/CAS remain recovery; future policy defaults `OFF` and must not permit commit-enabled plus direct-mutation-enabled for the same agent.
 
 ### Extension/signing
 
-The expected path keeps extension 1.6.0 and the signing identity unchanged. If safe transaction execution requires extension source changes, stop and approve a separate version/release/signing subplan first. No private signing key material belongs in transaction state.
+Expected Milestone 8 path keeps extension 1.6.0/signing unchanged. If safe transaction enforcement requires extension source changes, stop and approve a separate release/signing subplan first.
 
-### OAuth/approval
+### OAuth
 
-Existing OAuth authenticates the connection/user. It is not transaction approval. Preferred approval is real client-mediated MCP input-required confirmation; a first-party OAuth-authenticated exact-digest approval page may be separately accepted as fallback. Static bearer authentication cannot satisfy human approval for consequential commit.
+Existing OAuth authenticates connection/user. Transaction approval separately binds trusted OAuth client identity. Static bearer auth and MCP `clientInfo` cannot provide human transaction approval.
 
-## Quantitative Milestone 8 V1 summary
-
-The full table is in `docs/milestone-8-plan.md`. Key limits are: 64 KiB proposal, 128 KiB prepared state, 64 KiB receipt, 8 actions, 4 external consequential actions, at most 1 irreversible/unknown action, 64 predicates, 128 provenance records, 8 transform depth, 10-minute prepare/transaction lifetime, 2-minute approval lifetime, 30-second one-command timeout, 3 post-commit observation attempts, one concurrent commit per target tab, two concurrent committing transactions per tenant, and bounded rate/retention limits.
-
-## Collaboration and audit policy
+## Collaboration and review gate
 
 Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 
 - one active writer;
-- one checkpoint per reviewed session;
 - repository/test/CI/production evidence outranks chat reports;
-- auth/authz, tenancy, encryption, signing, public MCP, extension distribution, irreversible effects, and production-schema boundaries trigger early independent audit;
-- complete milestone requires independent Codex `PASS` before Milestone 9 planning.
+- high-risk auth/authz, tenancy, encryption, public MCP, irreversible-effect, production-schema, or extension/signing boundaries trigger early independent review;
+- this revised plan must receive the requested **second independent Codex review** before Checkpoint 8A can be considered for user approval/implementation;
+- complete Milestone 8 later requires independent Codex `PASS` before Milestone 9 planning.
 
 ## Security and privacy invariants
 
@@ -214,7 +226,8 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 - no silent foreground fallback;
 - passwords/PIN/OTP/CVV/security-code fields remain blocked;
 - uploads remain blocked unless a separately reviewed future plan changes that boundary;
-- consequential commit requires exact authority/prepare/approval rules from the Milestone 8 plan;
+- consequential commit requires exact authority/prepare/approval/enforcement rules from the Milestone 8 plan;
+- same-agent legacy mutation bypass is forbidden after enforcement promotion;
 - no sensitive raw browser state in durable semantic/VM/transaction state;
 - caches/checkpoints/transactions remain bounded and tenant/target scoped;
 - webpage/tool/model text is untrusted data;
@@ -222,17 +235,15 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 
 ## Explicitly deferred
 
-Direct logical-ID actions, automatic consequential action without the frozen approval boundary, multi-sensor physical planning, learned skills, parallel autonomous workers, continuous media/desktop streaming, OS-level input, arbitrary JavaScript/raw CDP, site-specific extension opcodes, file upload, secret/payment entry, and any implementation of Milestone 8 before user approval remain outside the current accepted state.
+Direct logical-ID actions, multi-consequential-action transactions, automatic consequential action without the frozen approval boundary, in-transaction compensation, multi-sensor physical planning, learned skills, parallel autonomous workers, continuous media/desktop streaming, OS-level input, arbitrary JavaScript/raw CDP, site-specific extension opcodes, file upload, secret/payment entry, and any implementation of Milestone 8 before the revised plan passes review remain outside the accepted state.
 
 ## Canonical references
 
 - `AGENTS.md` — session-close, checkpoint, and independent-audit policy.
 - `SECURITY.md` — security contract.
-- `docs/milestone-8-plan.md` — frozen Milestone 8 plan awaiting user approval.
+- `docs/milestone-8-plan.md` — revised frozen Milestone 8 plan awaiting second Codex review.
 - `docs/milestone-7-codex-audit.md` — independent PASS at the Milestone 7 boundary.
 - `docs/milestone-7-plan.md` and Checkpoints 7A–7F — accepted VM contract/runtime/host chain.
 - `docs/semantic-runtime-plan.md` — long-term dependency order and Milestone 8 intent.
-- `docs/roadmap.md` — current milestone status.
+- `docs/roadmap.md` — current milestone history.
 - `docs/releases/1.6.0.md` — signed release record.
-- `docs/benchmarks.md` — performance evidence.
-- `docs/install.md` — installation, identity, pairing, and updates.

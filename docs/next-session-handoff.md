@@ -1,6 +1,6 @@
 # Opera Agent next-session handoff
 
-Use this as the starting point after the Milestone 8 planning session. Verify repository head, production flags, CI/PR state, and accepted evidence before making claims.
+Use this as the starting point after the Milestone 8 plan revision. Verify repository head and accepted evidence before making claims.
 
 ## Handoff prompt
 
@@ -23,7 +23,7 @@ Read first, in order:
 9. docs/roadmap.md
 10. SECURITY.md
 
-Verified compatibility baseline before Milestone 8 implementation:
+Verified compatibility baseline:
 - extension 1.6.0
 - protocol 1
 - extension ID ohbbpamcljckmjhcpkcmefdobkoeaick
@@ -41,103 +41,107 @@ Verified compatibility baseline before Milestone 8 implementation:
 - locked 7A inventory digest:
   sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a
 
-Milestones 1-7 are complete. The independent Codex audit of Milestone 7 is PASS.
+Milestones 1-7 are complete. Independent Codex audit of Milestone 7 is PASS.
 Milestone 8 implementation has NOT started.
 
-MILESTONE 8 PLAN STATUS:
-- docs/milestone-8-plan.md is frozen for user review.
-- Checkpoint 8A is BLOCKED until the user explicitly approves that plan.
-- The planning session changed documentation only: no code, database, Edge
-  Function, extension, MCP schema, OAuth runtime configuration, signing state, or
-  feature flag was intentionally changed.
+MILESTONE 8 REVISED PLAN STATUS:
+- docs/milestone-8-plan.md was revised after the first independent Codex review.
+- Three blocking findings are resolved in the plan contract only; no runtime work
+  has started.
+- Checkpoint 8A remains BLOCKED.
+- Next action is SECOND INDEPENDENT CODEX REVIEW of the revised plan.
+- Do not start 8A unless that review gate is satisfied and the user explicitly
+  authorizes implementation afterward.
 
-Frozen Milestone 8 architecture:
-PREPARE -> VALIDATE -> APPROVE(if required) -> COMMIT -> OBSERVE -> VERIFY -> RECEIPT
+BLOCKER 1 — TRANSACTION ENFORCEMENT/CUTOVER:
+- logical modes are OFF, DARK, ENFORCED.
+- OFF preserves accepted legacy behavior and exposes no Milestone 8 transaction
+  commit.
+- DARK permits only synthetic/internal transaction acceptance identities; no
+  ordinary agent has production transaction commit authority.
+- ENFORCED makes transaction capability and legacy mutation gating one cutover.
+- The same agent must never have both transaction commit and ungated direct
+  mutation.
+- Direct agent open_url/tab mutation/click/fill/key/scroll/pointer operations and
+  mutating browser.burst return TRANSACTION_REQUIRED before dispatch unless called
+  through trusted server-derived transaction-executor authority.
+- Observational browser_status/list_tabs/read_page/capture_page/find_elements and
+  read/find/wait-only burst remain compatible.
+- Internal executor authority is not an MCP argument/header/token available to the
+  model. Any separate operator identity must be outside the agent credential realm.
+- Inconsistent cutover state fails closed.
 
-Authority rules:
-- Goal/Constraint Ledger is user intent/constraint authority.
-- Transaction engine can narrow but never widen that authority.
-- Browser/page/tool/model data may supply operands/evidence but never new authority.
-- OAuth app consent authenticates/authorizes connection, not a transaction.
-- Consequential approval is fresh, one-shot, short-lived, and bound to the exact
-  prepared digest/user/tenant/goal/target/preview.
-- Proof Engine remains completion authority; command/transaction receipts are
-  process evidence only.
+BLOCKER 2 — SINGLE CONSEQUENTIAL ACTION V1:
+- a V1 transaction has at most ONE state-changing commit action and therefore at
+  most one consequential external action.
+- read-only PREPARE/VALIDATE/OBSERVE/VERIFY may perform bounded observations and do
+  not count as commit actions.
+- a second mutation requires a second transaction.
+- there is no V1 multi-action ordering/partial-commit/remaining-action state.
+- compensation is ALWAYS a new transaction with its own Goal Ledger check,
+  provenance, prepare digest, approval when required, tx1 idempotency, commit,
+  observe/verify, and receipt.
+- original approval never implicitly authorizes compensation.
 
-Effect classes:
-- READ_ONLY
-- LOCAL_REVERSIBLE
-- STAGED_EXTERNAL
-- COMPENSABLE_EXTERNAL
-- IRREVERSIBLE_OR_UNKNOWN
+BLOCKER 3 — MCP 2026 APPROVAL BINDING:
+- 2026-07-28 is stateless and must not depend on Mcp-Session-Id.
+- modern capabilities are declared/checked per request.
+- missing required form elicitation returns -32021 MissingRequiredClientCapability
+  and advances no approval/transaction state.
+- server returns input_required with inputRequests + opaque requestState; client
+  obtains actual user input and retries the original call with a fresh JSON-RPC ID,
+  exact requestState echo, and per-round inputResponses.
+- V1 permits one approval MRTR round.
+- requestState is untrusted until verified and binds authenticated user, trusted
+  OAuth client identity, tenant, transactionId, prepareDigest, previewDigest,
+  nonce, issued/expiry, and protocol era.
+- JSON-RPC request ID, Mcp-Session-Id, page/model prose, and MCP clientInfo are not
+  approval authority.
+- legacy initialize-era clients may use compatible elicitation only when their
+  transport can show a real user confirmation; session ID is routing only.
+- incapable legacy/stateless transports fail cleanly, never infer approval.
+- actual ChatGPT confirmation is mandatory in 8F. If ChatGPT cannot visibly obtain
+  a real user decision, consequential production commit remains unavailable.
 
-Unknown defaults to the strongest review path. Generic click/fill/key/navigation/
-pointer actions are not assumed reversible merely because the low-level primitive
-is allowlisted.
-
-Provenance:
-- only USER_EXPLICIT, LEDGER_AUTHORITY, and accepted TRUSTED_POLICY can carry
-  AUTHORITY;
-- BROWSER_OBSERVED, TOOL_OBSERVED, and MODEL_DERIVED may be bounded operands or
-  evidence only;
-- changed action arguments, target, authority predicate, provenance chain, effect
-  class, or expected postcondition invalidates prepare + approval.
-
-Recovery rules:
-- use deterministic tx1 action IDs and reuse the same opera command request_id;
-- post-dispatch unknown completion becomes AMBIGUOUS and is reconciled read-only;
-- never blindly redispatch an irreversible/unknown action;
-- cancellation before dispatch guarantees no transaction mutation; after dispatch
-  it only stops remaining work and does not claim undo;
-- compensation is a separately governed effect and is never automatic while the
-  original commit is ambiguous.
-
-Frozen checkpoints:
-8A contract/hostile corpus/baseline (blocked pending user approval)
-8B pure decision-causal prepare engine
-8C provenance + approval verifier
-8D durable transaction journal/dark Supabase host; early Codex before production mutation
-8E controlled transaction executor + compensation
-8F trusted approval transport + MCP/OAuth compatibility; early Codex before deployment/promotion
-8G bounded dark/live acceptance on synthetic/reversible fixtures
+REVISED CHECKPOINTS:
+8A contract + hostile corpus + enforcement decision table + dual-era approval
+   vectors; BLOCKED pending second review + user approval
+8B pure single-action prepare engine + enforcement policy decision logic
+8C provenance + approval challenge verifier
+8D durable transaction/approval journal + dark Supabase host; early Codex before
+   production mutation
+8E controlled single-action executor; compensation only as new transaction
+8F trusted modern/legacy approval transport + enforcement cutover + MCP/OAuth
+   compatibility; early Codex before deployment/promotion
+8G bounded dark/live acceptance including direct legacy bypass tests
 8H compatibility/performance closeout + independent milestone audit
 
-MCP compatibility:
-- 8A-8E preserve the current 18 public tools and input schemas.
-- 8F may propose additive prepare_browser_transaction / commit_browser_transaction
-  only if an actual trustworthy human-confirmation channel is proven.
-- preferred confirmation is MCP 2026-07-28 input_required; an authenticated
-  first-party exact-digest approval page may be separately accepted as fallback.
-- never accept model-supplied approved:true as user confirmation.
-- if trustworthy confirmation cannot be proven, consequential production commit
-  remains unavailable.
-
-Extension/signing:
-- expected Milestone 8 path keeps extension 1.6.0 unchanged.
-- semantic logical IDs remain observational.
-- if an extension change becomes necessary, STOP and approve a separate
-  version/release/signing subplan before editing extension code.
+PLANNING-REVISION BOUNDARY:
+- this revision changes documentation only.
+- no code, database, migration, Edge Function, extension, MCP runtime/schema, OAuth
+  runtime config, signing state, or feature flag is changed.
+- production Milestone 7 VM remains in its accepted dark state.
 
 NEXT ACTION:
-Ask the user to review docs/milestone-8-plan.md. Do NOT start Checkpoint 8A until
-there is explicit user approval in a subsequent instruction. If approved, begin
-only 8A contract/fixtures/tests; do not implement 8B or production changes in the
-same checkpoint session.
+Run a second independent Codex review of docs/milestone-8-plan.md. Do NOT start
+Checkpoint 8A in the review session. If Codex returns PASS, return to the user for
+explicit approval before implementation.
 ```
 
-## Planning baseline
+## Revision baseline
 
-The Milestone 8 planning session started from exact branch head
-`538dbb5cb8b7b8ff1d8be9c6ac36ba37d22669d4`, whose parent was the independently
-audited Milestone 7 final head `551e8283c0417b173e106ee0598cca848f2f4ff0`.
+The first Milestone 8 plan was committed at
+`434faa1894479a5f7dd264049614c6d814022f77` from planning baseline
+`538dbb5cb8b7b8ff1d8be9c6ac36ba37d22669d4`.
 
-Milestone 7 audit evidence is durable in `docs/milestone-7-codex-audit.md` and its
-verdict is PASS. That PASS opened planning only; it granted no consequential
-authority and left the production VM dark.
+The first independent Codex review did not authorize implementation; it identified
+three blocking plan defects: legacy mutation bypass at cutover, multi-action V1
+partial-commit complexity, and incorrect MCP 2026 approval/session assumptions.
+The revised plan resolves those at documentation/contract level only.
 
 ## Review gate
 
-**STOP HERE.** The next session may inspect/discuss/revise the Milestone 8 plan,
-but Checkpoint 8A must not start until the user explicitly approves the frozen
-plan. Any requested plan revision stays documentation-only and must resynchronize
-this handoff and project context before implementation.
+**STOP HERE.** Checkpoint 8A remains unstarted and blocked. The next required step
+is the second independent Codex review of the revised plan. No implementation,
+production mutation, MCP/runtime change, or feature-flag change is permitted in
+this handoff state.
