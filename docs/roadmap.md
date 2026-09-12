@@ -111,26 +111,20 @@ The Windows CRLF source-hash defect was repaired by explicit byte-level LF canon
 
 Detailed plan and acceptance records: `docs/milestone-7-plan.md` and `docs/milestone-7-checkpoint-7a.md` through `docs/milestone-7-checkpoint-7f.md`.
 
-## Current gate — independent Milestone 7 audit
+## Milestone 7 independent audit
 
-**This is the next permitted action.**
+**PASS on 2026-09-12.** Codex reconciled the complete 7A–7F chain at final head
+`551e8283c0417b173e106ee0598cca848f2f4ff0`, independently reran proportionate
+local gates, verified exact-head CI and temporary PR cleanup, and rechecked the
+production Supabase dark state. See `docs/milestone-7-codex-audit.md`.
 
-Per `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`, Codex must independently audit the complete Milestone 7 acceptance chain before Milestone 8 begins.
-
-Audit expectations:
-
-- reconcile 7A–7F contracts, code, tests, CI, production state, and rollback evidence;
-- verify no extension/public MCP/protocol/capability drift;
-- verify read-only effect policy and proof separation remain intact;
-- verify tenant/idempotency/persistence/cleanup boundaries;
-- verify the Windows LF-canonical hash repair does not weaken inventory locking;
-- return PASS or specific defects with evidence.
-
-Milestone 8 remains blocked until Codex returns PASS, unless the user explicitly accepts a documented conditional risk.
+The audit grants no new browser authority and does not promote the default-off VM.
+Milestone 8 remains not started; the next permitted action is to freeze its plan,
+threat model, checkpoints, quantitative gates, and rollback boundaries.
 
 ## Milestone 8+
 
-Status: **not started / gated**.
+Status: **not started / planning permitted after Milestone 7 audit PASS**.
 
 Consequential effects, direct logical-ID action addressing, planning/transactions/learned skills/parallel autonomous workers, and any broader authority require their own frozen milestone/checkpoint plans, threat models, acceptance gates, and rollback procedures. Nothing in Milestone 7 grants permission to begin or silently enable them.
 

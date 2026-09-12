@@ -102,7 +102,7 @@ The Milestone 7 VM remains an internal Edge surface and does not add an MCP tool
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints **7A–7F: complete and accepted**.
-- Milestone 8+ — **not started and blocked pending an independent Codex audit of Milestone 7**.
+- Milestone 8+ — **not started; Milestone 7 independent Codex audit passed, so Milestone 8 planning is now permitted**.
 
 ## Milestone 7 accepted chain
 
@@ -186,7 +186,18 @@ Checkpoint implementation and live Opera/MCP acceptance may be handled by ChatGP
 
 The authoritative rules are in `AGENTS.md`; the reusable ChatGPT Web prompt is `docs/prompts/chatgpt-web-checkpoint.md`. A chat report is not acceptance evidence until verified against repository state, tests/CI, direct observations, or production queries.
 
-**Milestone 7 is now the audit boundary. Do not begin Milestone 8 until Codex independently audits Milestone 7 and returns PASS, unless the user explicitly accepts a documented conditional risk.**
+## Independent Milestone 7 audit
+
+Codex independently audited final milestone head
+`551e8283c0417b173e106ee0598cca848f2f4ff0` and returned **PASS** on
+2026-09-12. The audit reran the local 171-test suite, static contract check,
+focused 7F suite, controlled browser harness, and Edge bundle; reconciled the
+exact-head successful GitHub CI run and closed-unmerged temporary PR; and
+rechecked production Supabase dark/clean state. Durable evidence is in
+`docs/milestone-7-codex-audit.md`.
+
+Milestone 8 may now enter planning. It remains not started, and this audit does
+not grant additional browser authority or enable the production VM flag.
 
 ## Security and privacy invariants
 
@@ -210,6 +221,7 @@ Continuous desktop/video streaming, synchronized audio/video understanding, OS-l
 - `docs/prompts/chatgpt-web-checkpoint.md` — reusable checkpoint implementation prompt.
 - `docs/milestone-7-plan.md` — frozen Checkpoints 7A–7F and budgets.
 - `docs/milestone-7-checkpoint-7a.md` through `docs/milestone-7-checkpoint-7f.md` — accepted Milestone 7 chain.
+- `docs/milestone-7-codex-audit.md` — independent PASS verdict at the Milestone 7 boundary.
 - `docs/semantic-runtime-plan.md` — semantic architecture/dependency order.
 - `docs/milestone-6-plan.md` and Checkpoint 6 records — accepted Milestone 6 chain.
 - `docs/releases/1.6.0.md` — signed release record.

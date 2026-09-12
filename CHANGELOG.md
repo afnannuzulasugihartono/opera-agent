@@ -5,6 +5,7 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 ## [Unreleased]
 
 ### Milestone 7 — Reactive Browser VM
+- Passed the independent Codex milestone-boundary audit at final head `551e8283c0417b173e106ee0598cca848f2f4ff0`; local tests, exact-head CI, browser harness, Edge bundle, contract boundaries, GitHub cleanup, and production Supabase dark state were independently reconciled.
 - Completed Checkpoints 7A–7F for a bounded Reactive Browser VM with a closed JSON AST, deterministic sliced execution, tenant-bound durability, exact-redelivery idempotency, typed suspension, bounded collection/deduplication, proof separation, cancellation/expiry/reclaim, and default-off production hosting.
 - Preserved extension `1.6.0`, protocol `1`, all `26` browser capabilities, the existing `18` MCP tools/input schemas, signing identity, pairing, and background-first focus behavior; no new CRX was produced.
 - Completed 7F production acceptance with focused 6/6, full 171/171 Node tests on Ubuntu and actual Windows, static validation, controlled Chromium, a 55-command zero-focus audit, burst 20/20, deterministic replay agreement 100%, zero false `PROVED`, signed normal-profile Maps/YouTube/GitHub checks, and dark Supabase replay/idempotency/worker-death/cancel/expiry/cross-tenant probes.
@@ -19,7 +20,7 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 ### Collaboration policy
 - Added checkpoint ownership/closeout rules to `AGENTS.md` and the reusable `docs/prompts/chatgpt-web-checkpoint.md` prompt.
 - ChatGPT Web may implement/accept one checkpoint at a time with one active milestone-branch writer; Codex independently audits the complete milestone before the next milestone starts.
-- Milestone 8 is blocked pending an independent Codex audit of the complete Milestone 7 chain.
+- The independent Milestone 7 audit passed; Milestone 8 remains not started, with planning now permitted.
 
 ### Milestone 6 foundation
 - Planned Checkpoints 6A–6F for the Goal and Constraint Ledger and scoped Proof Engine.

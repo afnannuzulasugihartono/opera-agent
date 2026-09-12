@@ -123,15 +123,12 @@ Collaboration policy:
 - high-risk auth/tenant/encryption/signing/public-MCP/extension-distribution/
   irreversible-effect/production-schema work triggers earlier Codex review
 
-NEXT ACTION: independent Codex audit of Milestone 7.
+INDEPENDENT CODEX AUDIT: PASS on final Milestone 7 head
+551e8283c0417b173e106ee0598cca848f2f4ff0. Read
+docs/milestone-7-codex-audit.md for reproduced evidence and scope distinctions.
 
-DO NOT begin Milestone 8 merely because Milestone 7 is complete. Milestone 8 is
-blocked until Codex audits the complete 7A–7F chain and returns PASS, unless the
-user explicitly accepts a documented conditional risk.
-
-If the Codex audit finds defects, repair only the audited Milestone 7 boundary,
-rerun the affected acceptance gates, and update the durable records before any
-Milestone 8 work.
+NEXT ACTION: plan Milestone 8 before implementation. Do not enable the production
+VM flag or broaden browser authority from the Milestone 7 audit result.
 ```
 
 ## Session-close note
@@ -152,5 +149,7 @@ commit inside this file.
 
 ## Audit gate
 
-**Next: call Codex for an independent Milestone 7 audit. Do not start Milestone 8
-before that audit passes.**
+**Passed on 2026-09-12.** Codex independently audited final head
+`551e8283c0417b173e106ee0598cca848f2f4ff0`; see
+`docs/milestone-7-codex-audit.md`. Milestone 8 remains not started, but its
+planning gate is now open.
