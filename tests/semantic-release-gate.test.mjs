@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import test from 'node:test';
+
+import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 
 await import('../extension/semantic-identity.js');
 await import('../extension/semantic-views.js');
@@ -25,7 +26,7 @@ function random(seed = 0x5f1600) {
 }
 
 test('MCP v1 tool names and input schemas remain byte-for-byte locked', () => {
-  const digest = crypto.createHash('sha256').update(mcpSource).digest('hex');
+  const digest = sha256CanonicalLf(mcpSource);
   const tools = [...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.equal(contract.protocolVersion, 1);
   assert.equal(digest, contract.sourceSha256);
