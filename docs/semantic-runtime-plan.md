@@ -548,6 +548,9 @@ These milestones describe dependency order, not promised release numbers.
 
 ### Milestone 7 — Reactive Browser VM
 
+Detailed plan: `docs/milestone-7-plan.md`. Status: **planned; Checkpoint 7A is
+next and implementation has not started**.
+
 - Add bounded `SEQUENCE`, `IF`, `LOOP`, `UNTIL`, `WAIT_EVENT`, `ASSERT`, `COLLECT`,
   `DEDUP`, `RETRY`, and `RETURN` internally.
 - Execute deterministic loops locally and call the model only for ambiguity,

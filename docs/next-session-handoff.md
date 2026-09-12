@@ -13,11 +13,12 @@ first, in order:
 1. docs/project-context.md
 2. docs/semantic-runtime-plan.md
 3. docs/milestone-6-plan.md
-4. docs/releases/1.6.0.md
-5. docs/roadmap.md
-6. SECURITY.md
-7. README.md
-8. AGENTS.md
+4. docs/milestone-7-plan.md
+5. docs/releases/1.6.0.md
+6. docs/roadmap.md
+7. SECURITY.md
+8. README.md
+9. AGENTS.md
 
 Current verified baseline:
 
@@ -81,12 +82,19 @@ local migration `20260912143000_opera_agent_goal_head_timestamp_order.sql`
 were zero at promotion, and new RPCs remain service-role-only. No extension or MCP
 schema changed. Read `docs/milestone-6-checkpoint-6f.md` for exact evidence.
 
-The next task is planning Milestone 7, Reactive Browser VM. Read the Milestone 7
-dependency outline in `docs/semantic-runtime-plan.md`, then freeze a separate,
-detailed checkpoint plan before implementation. Preserve burst as the atomic unit,
-background-first focus safety, bounded deterministic execution, proof gating, and
-the current extension/MCP compatibility contract. Do not bump, reinstall,
-reconnect, logout, or re-pair merely to begin planning.
+The Milestone 7 Reactive Browser VM plan is frozen in
+`docs/milestone-7-plan.md`. It defines Checkpoints 7A–7F, strict JSON-data-only
+execution, quantitative budgets, typed suspension, durable sliced execution,
+proof separation, threat tests, rollout, and rollback. No implementation or
+production change occurred while planning.
+
+The next task is Checkpoint 7A only. Create versioned AST/checkpoint fixtures,
+JSON Schema and independent semantic-validation cases, transition/effect tables,
+at least 24 hostile and boundary cases, deterministic digest vectors, locked
+protocol/capability/MCP inventories, and paired baselines. Do not implement the VM
+stepper until 7A passes and is recorded. Preserve burst as the atomic leaf,
+background-first focus safety, and the current extension/MCP compatibility
+contract. Do not bump, reinstall, reconnect, logout, or re-pair.
 
 Non-negotiable rules:
 

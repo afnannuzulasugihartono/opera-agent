@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-11
+Last synchronized: 2026-09-12
 
 This document is the durable context for humans and future LLM sessions. It
 records accepted decisions and verified state, not transient chat claims. When it
@@ -315,10 +315,18 @@ feature flag is now `true`, the head table was empty at promotion, and RPC acces
 remains service-role-only. No extension, signing, pairing, protocol, capability,
 or MCP schema changed.
 
-The next task is to plan Milestone 7, Reactive Browser VM. Freeze its checkpoints,
-threat boundary, quantitative gates, rollout, and rollback before implementation.
-Keep the existing burst as the atomic unit and do not add a general browser VM or
-site-specific primitive without that accepted plan.
+The Milestone 7 Reactive Browser VM plan is frozen in
+`docs/milestone-7-plan.md`. It defines Checkpoints 7A–7F, a strict versioned JSON
+AST, bounded deterministic execution slices, typed suspension, a read-only-first
+effect policy, tenant-bound durable checkpoints, proof separation, quantitative
+budgets, hostile scenarios, rollout, and rollback. Planning made no extension,
+MCP, database, or production change.
+
+The next task is **Checkpoint 7A only**: add contract fixtures, JSON Schema and
+semantic-validation cases, the command/effect transition table, at least 24
+hostile/boundary cases, digest vectors, inventory locks, and paired baselines.
+Do not implement VM runtime behavior during 7A. Keep `browser.burst` as the atomic
+leaf, the existing 18 MCP schemas unchanged, and the extension at 1.6.0.
 
 ## Explicitly deferred
 
@@ -375,6 +383,8 @@ repository-root `AGENTS.md` so future Codex sessions discover it automatically.
   encrypted-token boundary, Supabase deployment evidence, and rollback.
 - `docs/milestone-6-checkpoint-6f.md` — current automated/cloud acceptance,
   timestamp repair, remaining user-session gates, and rollback state.
+- `docs/milestone-7-plan.md` — frozen Reactive Browser VM contract, Checkpoints
+  7A–7F, threat model, quantitative budgets, rollout, and rollback.
 - `docs/roadmap.md` — historical Milestones 1–5.
 - `docs/releases/1.6.0.md` — signed release and production acceptance record.
 - `docs/benchmarks.md` — baseline and semantic performance evidence.

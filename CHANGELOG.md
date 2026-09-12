@@ -4,6 +4,9 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### Milestone 7 planning
+- Froze Checkpoints 7A–7F for a bounded Reactive Browser VM with a strict JSON AST, deterministic sliced execution, tenant-bound durability, idempotency, typed suspension, proof separation, zero-focus acceptance, and no initial extension or public MCP change.
+
 ### Milestone 6 foundation
 - Planned Checkpoints 6A–6F for the Goal and Constraint Ledger and scoped Proof Engine.
 - Completed the contract-only 6A gate with versioned bounded schemas, canonical digest rules, a 15-scenario hostile replay corpus, quantitative thresholds, and five new tests without changing the extension, MCP surface, or production schema.
