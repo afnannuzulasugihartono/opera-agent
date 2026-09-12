@@ -46,12 +46,14 @@ Milestone 8 implementation has NOT started.
 
 MILESTONE 8 REVISED PLAN STATUS:
 - docs/milestone-8-plan.md was revised after the first independent Codex review.
-- Three blocking findings are resolved in the plan contract only; no runtime work
-  has started.
+- Three blocking findings are resolved in the plan contract, and the second
+  independent Codex review returned PASS at revision
+  11a285bfb464cc3a1c157befe6e0aa0aa557f2fc.
+- Durable review: docs/milestone-8-plan-codex-review.md.
+- No runtime work has started.
 - Checkpoint 8A remains BLOCKED.
-- Next action is SECOND INDEPENDENT CODEX REVIEW of the revised plan.
-- Do not start 8A unless that review gate is satisfied and the user explicitly
-  authorizes implementation afterward.
+- Next action is explicit user approval or requested plan revision.
+- Do not start 8A unless the user explicitly authorizes implementation.
 
 BLOCKER 1 — TRANSACTION ENFORCEMENT/CUTOVER:
 - logical modes are OFF, DARK, ENFORCED.
@@ -105,7 +107,7 @@ BLOCKER 3 — MCP 2026 APPROVAL BINDING:
 
 REVISED CHECKPOINTS:
 8A contract + hostile corpus + enforcement decision table + dual-era approval
-   vectors; BLOCKED pending second review + user approval
+   vectors; review PASS, BLOCKED pending explicit user approval
 8B pure single-action prepare engine + enforcement policy decision logic
 8C provenance + approval challenge verifier
 8D durable transaction/approval journal + dark Supabase host; early Codex before
@@ -123,9 +125,8 @@ PLANNING-REVISION BOUNDARY:
 - production Milestone 7 VM remains in its accepted dark state.
 
 NEXT ACTION:
-Run a second independent Codex review of docs/milestone-8-plan.md. Do NOT start
-Checkpoint 8A in the review session. If Codex returns PASS, return to the user for
-explicit approval before implementation.
+Return to the user for explicit approval of the independently reviewed Milestone
+8 plan. Do NOT start Checkpoint 8A until the user explicitly authorizes it.
 ```
 
 ## Revision baseline
@@ -141,7 +142,10 @@ The revised plan resolves those at documentation/contract level only.
 
 ## Review gate
 
-**STOP HERE.** Checkpoint 8A remains unstarted and blocked. The next required step
-is the second independent Codex review of the revised plan. No implementation,
-production mutation, MCP/runtime change, or feature-flag change is permitted in
-this handoff state.
+**Independent Codex PASS on 2026-09-12** for revision
+`11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`. Durable record:
+`docs/milestone-8-plan-codex-review.md`.
+
+**STOP HERE.** Checkpoint 8A remains unstarted and blocked pending explicit user
+approval. No implementation, production mutation, MCP/runtime change, or
+feature-flag change is permitted in this handoff state.

@@ -92,7 +92,7 @@ Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain froz
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **revised plan frozen for second independent Codex review; implementation not started; Checkpoint 8A blocked**.
+- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **revised plan independently reviewed PASS; implementation not started; Checkpoint 8A blocked pending explicit user approval**.
 - Milestone 9+ — not started.
 
 ## Milestone 7 accepted boundary
@@ -216,7 +216,8 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 - one active writer;
 - repository/test/CI/production evidence outranks chat reports;
 - high-risk auth/authz, tenancy, encryption, public MCP, irreversible-effect, production-schema, or extension/signing boundaries trigger early independent review;
-- this revised plan must receive the requested **second independent Codex review** before Checkpoint 8A can be considered for user approval/implementation;
+- the revised plan received independent Codex **PASS** at revision `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`; durable review: `docs/milestone-8-plan-codex-review.md`;
+- Checkpoint 8A remains blocked until the user explicitly approves implementation;
 - complete Milestone 8 later requires independent Codex `PASS` before Milestone 9 planning.
 
 ## Security and privacy invariants

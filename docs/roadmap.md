@@ -119,12 +119,14 @@ local gates, verified exact-head CI and temporary PR cleanup, and rechecked the
 production Supabase dark state. See `docs/milestone-7-codex-audit.md`.
 
 The audit grants no new browser authority and does not promote the default-off VM.
-Milestone 8 remains not started; the next permitted action is to freeze its plan,
-threat model, checkpoints, quantitative gates, and rollback boundaries.
+The Milestone 8 plan was subsequently frozen, revised to resolve three blocking
+review findings, and independently reviewed **PASS** at revision
+`11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`. See
+`docs/milestone-8-plan-codex-review.md`.
 
 ## Milestone 8+
 
-Status: **not started / planning permitted after Milestone 7 audit PASS**.
+Status: **revised plan reviewed PASS / implementation not started / Checkpoint 8A pending explicit user approval**.
 
 Consequential effects, direct logical-ID action addressing, planning/transactions/learned skills/parallel autonomous workers, and any broader authority require their own frozen milestone/checkpoint plans, threat models, acceptance gates, and rollback procedures. Nothing in Milestone 7 grants permission to begin or silently enable them.
 
