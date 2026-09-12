@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Checkpoint 7E focused tests
-        run: node --test tests/reactive-vm-host-7e.test.mjs
+        run: node --test tests/reactive-vm-host-7e.test.mjs tests/reactive-vm-host-7e-boundaries.test.mjs
       - name: Bundle Checkpoint 7E Edge host
         run: |
           mkdir -p /tmp/opera-agent-vm-bundle
