@@ -1,6 +1,6 @@
 # Opera Agent next-session handoff
 
-Use this as the starting prompt for the next implementation session. Verify repository, production flag state, Edge function state, and CI before making claims.
+Use this as the starting point after Milestone 7 closeout. Verify repository, production flag state, CI, and PR state before making claims.
 
 ## Handoff prompt
 
@@ -21,9 +21,10 @@ Read first, in order:
 7. docs/milestone-7-checkpoint-7c.md
 8. docs/milestone-7-checkpoint-7d.md
 9. docs/milestone-7-checkpoint-7e.md
-10. docs/semantic-runtime-plan.md
-11. docs/milestone-6-plan.md
-12. SECURITY.md
+10. docs/milestone-7-checkpoint-7f.md
+11. docs/semantic-runtime-plan.md
+12. docs/milestone-6-plan.md
+13. SECURITY.md
 
 Verified compatibility baseline:
 - extension 1.6.0
@@ -38,84 +39,33 @@ Verified compatibility baseline:
 - immediate signed rollback remains 1.5.2
 - signed 1.6.0 CRX SHA-256:
   cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0
-- MCP source SHA-256 baseline:
+- canonical-LF MCP source SHA-256:
   f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11
 - locked 7A inventory digest:
   sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a
 
-Milestones 1–6 are complete. Milestone 7 Checkpoints 7A through 7E are complete.
+Milestones 1–7 are complete. Milestone 8 has NOT started.
 
-Checkpoint 7A froze OA_REACTIVE_VM_V1, OA_REACTIVE_VM_CHECKPOINT_V1,
-OA_CANONICAL_JSON_V1, the closed instruction/expression grammar, read-only-first
-effects, persistence boundary, hostile corpus, and protocol/capability/MCP inventory.
+Milestone 7 accepted chain:
+- 7A froze OA_REACTIVE_VM_V1, OA_REACTIVE_VM_CHECKPOINT_V1,
+  OA_CANONICAL_JSON_V1, the closed grammar, read-only-first effects,
+  persistence boundary, hostile corpus, and quantitative budgets.
+- 7B added lib/reactive-vm.js as the pure deterministic core.
+- 7C left 7B untouched and added lib/reactive-vm-7c.js for bounded LOOP,
+  UNTIL, WAIT_EVENT, and safe read-only RETRY.
+- 7D left 7B/7C untouched and added lib/reactive-vm-7d.js for COLLECT,
+  DEDUP, bounded observation envelopes, causal invalidation, and
+  non-exhaustive proof binding.
+- 7E left the pure VM layers intact and added the separate durable host:
+  service-role-only private VM storage, bounded AES-256-GCM tokens,
+  tenant/program/goal/target/tab/document/lease fencing, deterministic
+  vm1:<sha256> effect idempotency, cancellation/expiry/reclaim, and the
+  default-off milestone7_vm_enabled feature flag.
+- 7F completed compatibility, performance, Windows portability, normal-profile,
+  dark-production, proof-safety, and cleanup acceptance without changing the
+  extension or public MCP surface.
 
-Frozen quantitative limits remain:
-- program/checkpoint/result 128 KiB each
-- 256 static AST nodes
-- AST depth 12
-- control-flow depth 4
-- 1,000 executed nodes/run
-- 200 browser command leaves/run
-- 50 iterations/loop, 250 total/run
-- 15 s one wait, 60 s cumulative wait
-- retry attempts/node 3
-- 1,000 collection items/binding
-- 64 bindings
-- 20 s execution slice
-- 5 minute run deadline
-
-Checkpoint 7B added lib/reactive-vm.js as the accepted pure deterministic core.
-Checkpoint 7C leaves 7B untouched and adds lib/reactive-vm-7c.js for LOOP,
-UNTIL, WAIT_EVENT, and safe read-only RETRY.
-Checkpoint 7D leaves 7B/7C untouched and adds lib/reactive-vm-7d.js for COLLECT,
-DEDUP, bounded observation envelopes, causal invalidation, and non-exhaustive proof
-binding.
-
-Checkpoint 7E leaves those pure VM layers as the execution core and adds the
-separate durable host/storage boundary.
-
-Accepted 7E architecture:
-- lib/reactive-vm-host-7e.js contains bounded host limits, metadata validation,
-  deterministic effect idempotency, and host retry scheduling;
-- supabase/functions/_shared/vm-token.js implements bounded AES-256-GCM oavm1
-  program/checkpoint/result tokens;
-- private schema opera_agent_private contains vm_runs, vm_effects,
-  vm_rate_windows;
-- only service_role has private schema/table and opera_vm_* execution authority;
-- public, anon, authenticated are revoked;
-- VM feature flag is milestone7_vm_enabled and defaults/remains false;
-- Vault key opera_agent_vm_host_v1 is not returned while the flag is off;
-- opera-agent-vm Edge function is deployed separately from public MCP;
-- deployed Edge function is ACTIVE version 2 with verify_jwt=true;
-- function also calls auth.getUser and requires explicit configured user-id/email
-  allowlisting, then binds p_tenant_id to user.id;
-- public opera-agent-mcp remains existing version 12 and was not changed.
-
-Accepted 7E durable fencing:
-- tenant/run identity;
-- program digest;
-- Goal Ledger revision/state;
-- target digest / paired opera device;
-- locked tab;
-- document generation for document-scoped observations;
-- lease owner + lease epoch + lease expiry;
-- expected logical transition;
-- 5 minute run deadline.
-
-A valid checkpoint advances logical_transition once and clears the lease. Exact
-checkpoint redelivery is a replay and does not advance again. Expired non-cancelled
-worker leases can be reclaimed with a higher lease epoch. A cancellation request
-survives worker death and terminalizes CANCELLED rather than being requeued.
-
-Accepted 7E idempotency behavior:
-- each logical read-only browser effect derives deterministic vm1:<sha256> identity;
-- the same identity is passed to existing opera_enqueue as request_id;
-- existing (device_id, request_id) uniqueness closes crash-after-dispatch /
-  before-checkpoint duplicate-command risk;
-- effect journal rejects the same idempotency key if request digest/method differs;
-- command success remains process evidence, not proof authority.
-
-The accepted VM effect surface is still only the frozen 7A read-only set:
+Accepted VM effects remain only the frozen 7A read-only set:
 - browser.ping
 - restricted read/find/wait subset of atomic browser.burst
 - tabs.list / tabs.get / tabs.find
@@ -124,104 +74,83 @@ The accepted VM effect surface is still only the frozen 7A read-only set:
 - media.state
 
 No navigation, tab mutation, click/fill/key, pointer, scroll, media mutation,
-consequential effect, direct logical-ID action, or arbitrary code surface was added.
+consequential effect, direct logical-ID action, arbitrary JavaScript/raw CDP,
+or public VM MCP tool was accepted.
 
-Accepted 7E server limits:
-- 20 s bounded Edge slice
-- 5 min run deadline
-- 25 s default lease / 30 s max
-- 4 active running runs per tenant
-- 32 outstanding runs per tenant
-- 20 enqueue/minute per tenant
-- 128 KiB plaintext program/checkpoint/result
-- retention cleanup input 1 hour through 7 days
+7F acceptance evidence:
+- tests/reactive-vm-7f.test.mjs: 6/6 focused gates
+- full Node suite: 171/171 on Ubuntu
+- full Node suite: 171/171 on actual windows-latest
+- npm run check: 26 allowlisted primitives / version 1.6.0 on both platforms
+- controlled Chromium regression passed
+- background focus audit: 55 commands, zero focus takeover
+- bounded burst stability: 20/20
+- 100 deterministic collection replays agree byte-for-byte
+- zero false PROVED in bounded-evidence acceptance
+- paired same-runner semantic-read regression 13.851% (<15%)
+- Maps target remained inactive; unobserved feed boundary stayed PARTIAL
+- YouTube target remained inactive; no unobserved transcript inference
+- GitHub target remained inactive; link collection stopped at limit 10
+- Supabase dark-run passed checkpoint replay/idempotency collision/worker death/
+  cancellation/expiry/cross-tenant behavior and cleaned all synthetic state
+- final production checks: milestone7_vm_enabled=false; vm_runs=0;
+  vm_effects=0; vm_rate_windows=0; m7-7f command rows=0
+- device opera online on 1.6.0 / protocol 1 / 26 capabilities
+- no 7F-introduced security-advisor finding
 
-Production dark-integration evidence:
-- both additive 7E migrations applied successfully;
-- opera-agent-vm ACTIVE v2, verify_jwt=true;
-- deployment bundle SHA-256:
-  e18f6b81d6e31031ef885cbf83c2be2f2ca11c0a73ceab9a5f508ee59d6f3fbb
-- embedded transformed CI bundle integrity hash:
-  437a68ef43a4ffcaab7ab2ccef288fe9a34994605cbe25d159c2ac37c853fa19
-- milestone7_vm_enabled remains false;
-- vm_runs = 0;
-- vm_effects = 0;
-- vm_rate_windows = 0;
-- opera_vm_crypto_key() returns only {enabled:false} while flag off.
+Windows portability fix:
+- the old CRLF checkout produced a raw hash beginning 6235ed..., while the
+  frozen canonical LF MCP hash is f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11
+- tests/helpers/canonical-source-hash.mjs explicitly canonicalizes CRLF/lone CR
+  bytes to LF before SHA-256
+- exactly three source-hash call sites were updated
+- the expected hash and 7A inventory digest were NOT changed
+- supabase/functions/opera-agent-mcp/index.ts was NOT changed
+- actual Windows CI now passes 171/171 plus npm run check
 
-Production transaction probes passed and cleaned themselves before commit:
-- cross-tenant get/cancel succeeded zero times;
-- stale lease/program/goal/target rejected;
-- one valid transition advanced once; exact checkpoint redelivery replayed only;
-- worker-death simulation reclaimed at a higher lease epoch;
-- crash/redelivery reused one command ID and exactly one command row;
-- conflicting idempotency material rejected;
-- cancellation survived dead-worker recovery;
-- anon/authenticated had zero 7E RPC/private-schema authority;
-- enqueue #21 rate-limited;
-- queue overflow above 32 rejected;
-- fifth active tenant claim concurrency-limited;
-- expiry and cleanup passed;
-- declared payload >128 KiB rejected;
-- post-probe flag false / VM rows zero / synthetic commands zero.
+7F browser compatibility note:
+A fresh separate isolated-Opera launcher was not available during 7F closeout.
+Do not invent a fresh isolated-Opera run. That rung is inherited from accepted
+unchanged 1.6.0 extension behavior; fresh 7F browser evidence is controlled
+Chromium plus the signed normal Opera profile.
 
-The first production probe attempt failed only because the SQL harness used a
-PL/pgSQL variable name ambiguous with a column name. PostgreSQL rolled the entire
-transaction back; immediate verification showed flag false and zero synthetic
-state. Only the test variable was renamed before the successful rerun.
+Collaboration policy:
+- follow AGENTS.md and docs/prompts/chatgpt-web-checkpoint.md
+- one active writer on the milestone branch
+- ChatGPT Web implements/accepts one checkpoint at a time
+- chat text is not acceptance authority until reconciled with repo/CI/production
+- Codex independently audits a complete milestone before the next milestone starts
+- high-risk auth/tenant/encryption/signing/public-MCP/extension-distribution/
+  irreversible-effect/production-schema work triggers earlier Codex review
 
-Security advisors after migration/deploy added no 7E-relevant ERROR/WARN. New VM
-tables appear only as informational RLS-without-policy because they are intentionally
-service-role-only. Performance advisor reports informational unused indexes while
-the feature remains dark.
+NEXT ACTION: independent Codex audit of Milestone 7.
 
-A temporary CI run earlier hit the already-accepted 7C same-runner benchmark at
-20.52% versus the 15% limit. 7E focused tests still passed. The threshold was not
-weakened; later exact-head CI passed full Node/static and Chromium gates.
+DO NOT begin Milestone 8 merely because Milestone 7 is complete. Milestone 8 is
+blocked until Codex audits the complete 7A–7F chain and returns PASS, unless the
+user explicitly accepts a documented conditional risk.
 
-NEXT TASK: Checkpoint 7F only.
-
-7E dark deployment is not 7F production acceptance. Before doing anything, read
-the frozen 7F section in docs/milestone-7-plan.md. Preserve the 7A effect policy,
-background-first behavior, extension 1.6.0, protocol 1, 26 capabilities, 18 MCP
-tools, signing/pairing identity, and proof separation.
-
-Do not begin Milestone 8+, consequential effects, direct logical-ID actions, public
-MCP additions/changes, extension changes, or broader browser authority while
-working on 7F unless the frozen plan explicitly authorizes it.
-
-The milestone7_vm_enabled flag must remain false unless the frozen 7F acceptance
-procedure explicitly requires a bounded activation step and all 7F preconditions
-are satisfied. Do not infer authorization merely because opera-agent-vm exists.
-
-Before ending any state-changing session:
-- run the checkpoint-focused tests;
-- run full npm test and npm run check;
-- run relevant Chromium/background compatibility gates;
-- run production/security gates required by the checkpoint;
-- update docs/project-context.md and this handoff;
-- restore any temporary CI instrumentation to the standard workflow;
-- close temporary validation PRs without merge when used only for branch CI;
-- compare final net diff against the previous accepted checkpoint;
-- follow AGENTS.md exactly.
+If the Codex audit finds defects, repair only the audited Milestone 7 boundary,
+rerun the affected acceptance gates, and update the durable records before any
+Milestone 8 work.
 ```
 
 ## Session-close note
 
-Checkpoint 7E began from accepted 7D final head `23448be406bb7c1a47777306659e0a3bbab18bdc`. Its durable acceptance record is `docs/milestone-7-checkpoint-7e.md`. The next implementation session must start at Checkpoint 7F rather than repeating 7E or jumping to Milestone 8+.
+Checkpoint 7F began from accepted 7E head
+`4240ff69458d9e80fbb2225f97973529d8198fa9`. Its durable acceptance record is
+`docs/milestone-7-checkpoint-7f.md`.
 
-## Collaboration rule
+The collaboration/checkpoint policy from
+`387dbd44f3d2f00c479fc0377520772e0269606e` is part of the accepted branch state.
+The policy was a direct child of the then-current 7F validation head, so it was
+integrated without discarding 7F evidence.
 
-Follow the checkpoint/milestone ownership policy in `AGENTS.md`. ChatGPT Web may
-implement and accept one checkpoint at a time; Codex independently audits the
-complete milestone before the next milestone starts. Use
-`docs/prompts/chatgpt-web-checkpoint.md` to begin a new checkpoint session. Keep
-one active writer on the shared milestone branch and treat chat reports as
-unverified until reconciled with repository and acceptance evidence.
+The final Milestone 7 branch SHA is established only after temporary CI
+instrumentation is restored and the final exact-head standard CI passes; record
+that SHA in the closing session report rather than attempting a self-referential
+commit inside this file.
 
-Before closing 7F, resolve the Windows portability defect in the raw MCP source
-hash gates observed at `bb6f28d`: a CRLF checkout hashes to `6235ed...`, while LF
-normalization reproduces the frozen `f8735a...` fixture. The current Windows run is
-168/171 with exactly three hash-lock failures; `npm run check` passes. Preserve the
-inventory lock and make its byte-canonicalization cross-platform rather than
-changing the expected contract hash to a platform-specific value.
+## Audit gate
+
+**Next: call Codex for an independent Milestone 7 audit. Do not start Milestone 8
+before that audit passes.**
