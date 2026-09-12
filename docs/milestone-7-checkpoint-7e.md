@@ -196,24 +196,24 @@ The original focused 7E suite contains 9 gates for:
 - OAuth + 7D + deterministic `opera_enqueue` host wiring;
 - public MCP/extension exclusion.
 
-A dedicated boundary test adds explicit source gates for:
+A dedicated boundary test adds 2 explicit source gates for:
 
 - tenant, goal, target, tab, and document-generation fail-closed behavior;
-- OAuth allowlist fail-closed behavior;
-- authenticated-user tenant binding;
-- service-role-only 7E RPC/private-schema authority.
+- OAuth allowlist fail-closed behavior, authenticated-user tenant binding, and service-role-only 7E RPC/private-schema authority.
 
-Pre-closeout validation on commit `1931a48535935813df4cbc59dbca303caa86a7ad`, GitHub Actions run `34679156068`, was fully green:
+Pre-closeout deployment validation on commit `1931a48535935813df4cbc59dbca303caa86a7ad`, GitHub Actions run `34679156068`, was fully green before the final boundary-test/docs closeout work.
 
-- focused 7E: pass;
+The exact documentation/code head `2aacc90f04b6c9771777c6be2f5e0b8a41995667` was then validated by GitHub Actions run `34680087079`, job `103517034531`, with every gate successful:
+
+- focused 7E: 11/11 pass;
 - CI Edge bundle: pass;
-- full Node/static suite: pass;
-- `npm run check`: pass;
+- full Node test suite: 165/165 pass;
+- `npm run check`: pass, preserving 26 allowlisted browser primitives at extension version 1.6.0;
 - controlled Chromium extension regression: pass.
 
-An earlier instrumentation run transiently failed only the already-accepted 7C same-runner performance comparison at 20.52% versus the 15% gate. The 7E focused suite remained green. The threshold was not loosened; a subsequent exact-head run passed the full suite and Chromium regression.
+An earlier instrumentation run transiently failed only the already-accepted 7C same-runner performance comparison at 20.52% versus the 15% gate. The 7E focused suite remained green. The threshold was not loosened; later exact-head runs passed the full suite and Chromium regression.
 
-The final documentation/boundary-test head must be revalidated before closeout, after which temporary CI instrumentation is restored byte-for-byte to the standard workflow and the temporary draft validation PR is closed unmerged.
+This acceptance-record update is documentation-only. It must receive one final exact-head validation before the temporary CI instrumentation is restored byte-for-byte to the standard workflow and the temporary draft validation PR is closed unmerged. No runtime/source contract is changed by this evidence update.
 
 ## Security advisors
 
