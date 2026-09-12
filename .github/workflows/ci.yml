@@ -28,6 +28,7 @@ jobs:
           mkdir -p /tmp/opera-agent-vm-bundle
           npx --yes esbuild@0.25.9 supabase/functions/opera-agent-vm/index.ts \
             --bundle \
+            --minify \
             --format=esm \
             --platform=neutral \
             --target=es2022 \
