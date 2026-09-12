@@ -58,3 +58,14 @@ authorized production mutation. No MCP/OAuth cutover, browser executor, new CRX,
 or 8E is authorized by this local admission result.
 
 Rollback is repository-only; no production rollback or extension update is needed.
+
+## Repository closeout evidence
+
+Implementation/test/context commit: `c117b2d155356e0399bfbb6285687d6e4f568cdb`.
+Standard GitHub CI run `34707313560` (#174) at that exact head completed SUCCESS,
+including unit/static and Chromium extension regression. Temporary validation
+PR #30 is CI-only and must be closed without merge after the final documentation
+head passes. No workflow instrumentation was introduced. Net diff from baseline:
+six files (library, tests, this record, context, handoff, changelog).
+Verify the final docs-head CI and PR closure remotely; this record does not turn
+the local admission candidate into 8D acceptance or authorize production.

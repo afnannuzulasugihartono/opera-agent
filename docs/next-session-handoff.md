@@ -13,6 +13,9 @@ added. Continue ONLY 8D: real isolated PostgreSQL tooling, private durable candi
 actual trusted adapters and complete frozen gates. Independent exact SQL/host
 review and separate production authorization remain mandatory. Do not begin 8E.
 Focused tests 12/12 and final local full suite 222/222 PASS; static checks PASS.
+Implementation/context commit c117b2d passed standard exact-head CI #174
+(34707313560), including Chromium. Verify final documentation-head CI and
+CI-only PR #30 closed without merge before resuming.
 Historical sections below describe earlier baselines, not the newest local work.
 
 ## Handoff prompt

@@ -29,6 +29,9 @@ request identity/policy/executor claims are rejected; actual action arguments,
 current ledger authorization, target, and per-argument attested provenance are
 checked via trusted server-installed adapters. Synthetic tests pass 12/12.
 Full local regression: 222/222 PASS; static check remains 1.6.0 / 26 capabilities.
+Code/context commit `c117b2d` passed exact-head CI #174 (34707313560), including
+Chromium regression. Verify final documentation-head CI and temporary PR #30
+closure; no checkpoint acceptance or production promotion is implied.
 Adapters are mocks in tests, not production authentication/source integrations.
 No SQL/durable journal/nonce CAS or deployed host exists. 8D remains IN PROGRESS;
 8E has not started. Record: `docs/milestone-8-checkpoint-8d-admission-candidate.md`.
