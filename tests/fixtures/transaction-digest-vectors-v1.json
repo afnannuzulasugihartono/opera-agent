@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "canonicalization": "UTF-8 NFC strings; ASCII object keys sorted by byte; integers only; no insignificant whitespace",
+  "vectors": [
+    {
+      "kind": "PREPARE",
+      "input": { "schemaVersion": "OA_TRANSACTION_V1", "transactionId": "tx_vector", "goalRevision": 1, "targetDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "actionDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+      "canonical": "{\"actionDigest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"goalRevision\":1,\"schemaVersion\":\"OA_TRANSACTION_V1\",\"targetDigest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"transactionId\":\"tx_vector\"}",
+      "digest": "sha256:41f8eef8d5e5cbc85454220d120822079a524a96197ecba35778a4465493e8ed"
+    },
+    {
+      "kind": "APPROVAL",
+      "input": { "schemaVersion": "OA_APPROVAL_V1", "approvalChallengeId": "approval_vector", "prepareDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "nonceDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "protocolEra": "MCP_2026_07_28" },
+      "canonical": "{\"approvalChallengeId\":\"approval_vector\",\"nonceDigest\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"prepareDigest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"protocolEra\":\"MCP_2026_07_28\",\"schemaVersion\":\"OA_APPROVAL_V1\"}",
+      "digest": "sha256:f541744647fdcaa7fcd5151bf327c68ed5134cb6103f4ee44739fae96ed96b87"
+    },
+    {
+      "kind": "COMMIT",
+      "input": { "tenantId": "tenant_alpha", "transactionId": "tx_vector", "prepareDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "targetDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+      "canonical": "{\"prepareDigest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"targetDigest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"tenantId\":\"tenant_alpha\",\"transactionId\":\"tx_vector\"}",
+      "digest": "sha256:e043632eac43516e964b5c6d3cf80f39914142663a84966e026e31214c893f7d"
+    },
+    {
+      "kind": "IDEMPOTENCY",
+      "input": { "namespace": "tx1", "tenantId": "tenant_alpha", "transactionId": "tx_vector", "prepareDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "actionDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+      "canonical": "{\"actionDigest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"namespace\":\"tx1\",\"prepareDigest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"tenantId\":\"tenant_alpha\",\"transactionId\":\"tx_vector\"}",
+      "digest": "sha256:9316288d0e40f645f5542f9896058e20d81841a6d7edf37aadb8ec684767adb0"
+    }
+  ]
+}
