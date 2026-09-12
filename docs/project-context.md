@@ -95,7 +95,7 @@ Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain froz
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoints 8A–8C accepted; Checkpoint 8D not started**.
+- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoints 8A–8C accepted as pure/contract work; 8D local preflight recorded, implementation and production gate remain closed**.
 - Milestone 9+ — not started.
 
 ## Milestone 7 accepted boundary
@@ -192,6 +192,8 @@ An 8A fixture erratum now supplies the originally required trusted effect-classi
 The pure `lib/transaction-authority.js` module now validates exact-bound provenance, prevents browser/tool/model/server-derived values from carrying authority, creates immutable OAuth-user approval challenges, and verifies modern one-round `requestState`/`inputResponses` decisions against every frozen security binding. TTL, capability, decline, tamper, stale provenance, and already-consumed nonce checks fail closed.
 
 8C emits only a deterministic nonce-consumption claim. Durable atomic consumption, journal recovery, leases, and cross-worker replay protection remain 8D work and are not implied by the pure verifier. The full suite is 204/204. No public runtime or production path calls this module yet.
+
+8D local preflight at `5933a6c1f2448fe82142bf83a68bc1d607ae4f79` reproduced two inherited boundaries: digest-valid imported challenges are not independently checked for the global approval TTL by the verifier, and provenance source labels/digests are not resolved against trusted ledger state. Neither diagnostic touched production or dispatched a browser action. This was a self-review, **not** the required independent audit. Durable authority admission remains prohibited pending independent review and tests-first remediation/candidate review. Record: `docs/milestone-8-checkpoint-8d-preflight.md`.
 
 ## Revised frozen checkpoints
 

@@ -18,6 +18,8 @@ Read first, in order:
 4. docs/milestone-8-plan.md
 5. docs/milestone-8-checkpoint-8a.md
 6. docs/milestone-8-checkpoint-8b.md
+   Also read docs/milestone-8-checkpoint-8c.md and
+   docs/milestone-8-checkpoint-8d-preflight.md before any 8D work.
 7. docs/milestone-7-codex-audit.md
 8. docs/milestone-7-plan.md
 9. docs/milestone-7-checkpoint-7a.md through docs/milestone-7-checkpoint-7f.md
@@ -57,7 +59,13 @@ MILESTONE 8 REVISED PLAN STATUS:
 - Checkpoint 8C is accepted as a pure environment-neutral authority verifier; implementation/test commit e2b228b.
 - Acceptance records: docs/milestone-8-checkpoint-8a.md through docs/milestone-8-checkpoint-8c.md.
 - The full suite is 204/204; npm run check passes.
-- Next action is an early independent Codex design/security audit for Checkpoint 8D before any production mutation, followed only by separately authorized 8D work.
+- Local 8D preflight is recorded, but it is self-review, not independent PASS.
+- Reproduced inherited boundaries: imported digest-valid overlong challenge TTL
+  passes verification; syntactically valid ledger source digests are not resolved
+  against trusted authority. No production writes or browser dispatch occurred.
+- Next action is fresh-session independent review of the baseline and preflight,
+  then separately authorized tests-first remediation/candidate construction.
+- Independently audit the actual SQL/host candidate before production mutation.
 
 BLOCKER 1 — TRANSACTION ENFORCEMENT/CUTOVER:
 - logical modes are OFF, DARK, ENFORCED.
@@ -194,3 +202,12 @@ leases, recovery, and production authorization state belong to 8D.
 **STOP HERE.** Do not start Checkpoint 8D without its required early independent
 audit and a separate explicit user instruction. No production mutation or public
 runtime integration is permitted in the current handoff state.
+
+## Checkpoint 8D local preflight
+
+Read `docs/milestone-8-checkpoint-8d-preflight.md`. Inspected baseline is
+`5933a6c1f2448fe82142bf83a68bc1d607ae4f79`; diagnostics reproduced the validity-window
+and trusted-source-resolution boundaries with zero browser dispatches and zero
+production writes. There is no 8D implementation, migration, deployment, or
+acceptance. The author of 8C performed this preflight, so independent review is
+still required. Do not label it PASS or proceed to 8E.
