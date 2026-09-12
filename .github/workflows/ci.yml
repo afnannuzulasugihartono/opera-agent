@@ -13,16 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Checkpoint 7D focused tests
-        run: node --test tests/reactive-vm-7d.test.mjs
       - name: Unit and static tests
         run: |
           npm test
