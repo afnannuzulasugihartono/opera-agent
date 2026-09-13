@@ -59,8 +59,9 @@ export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyA
     if(callback.searchParams.has('error')) {close(); throw new Error('OAUTH_DENIED');}
     let accessToken;
     try {
-      const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(Math.max(1,Math.min(10000,deadline-now())))]);
-      const response=await fetchImpl(ISSUER+'/auth/v1/oauth/token',{method:'POST',redirect:'error',signal,
+      const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(Math.max(1,deadline-now()))]);
+      const requestSignal=()=>AbortSignal.any([signal,AbortSignal.timeout(10000)]);
+      const response=await fetchImpl(ISSUER+'/auth/v1/oauth/token',{method:'POST',redirect:'error',signal:requestSignal(),
         headers:{'Content-Type':'application/x-www-form-urlencoded',apikey:publicKey},
         body:new URLSearchParams({grant_type:'authorization_code',client_id:CLIENT_ID,
           redirect_uri:REDIRECT_URI,code:callback.searchParams.get('code'),code_verifier:verifier}).toString()});
@@ -73,7 +74,7 @@ export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyA
       // Do not retain refresh/id tokens or inspect/decode claims as authority.
       tokens.access_token=null; tokens.refresh_token=null; tokens.id_token=null;
       if(abort.signal.aborted || now()>=deadline) throw new Error();
-      const user=await boundedJson(await fetchImpl(ISSUER+'/auth/v1/user',{method:'GET',redirect:'error',signal,
+      const user=await boundedJson(await fetchImpl(ISSUER+'/auth/v1/user',{method:'GET',redirect:'error',signal:requestSignal(),
         headers:{apikey:publicKey,Authorization:'Bearer '+accessToken}}));
       if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(user.id??'') || abort.signal.aborted || now()>=deadline) throw new Error();
       // Only Auth user-endpoint success. No host client/session admission or approval claim.

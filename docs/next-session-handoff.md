@@ -60,6 +60,19 @@ self-referential SHA is stored here. Standard workflow must remain unchanged.
 
 ## Next meaningful 8D work
 
+Latest LOCAL controller: `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
+Preflight->SDKsnapshot->ownership->install/sessionbinding->seal->enable/DARK->
+prepare/replay/status/cancel/replay/status/payloadcheck->independentOFF/cleanup/
+verify implemented against trusted doubles only. Focused36/Deno1/typecheck/
+independent refrozen localPASS. No realoperator adapter/supervisor/manifest/global
+control ownership/liveCLI/login/production query/mutation yet. Implement and test
+these fixed-project internal pieces BEFORE freshOAuth; exact-runner audit required.
+Deadline signals cooperative; finally does NOT cover harddeath/lateoperation.
+OAuthworkflow5min now separate from each10sHTTP; keep this correction.
+Overall8D open; no8E. Final full/static/exactheadCI evidence in record/artifacts.
+Writer full275/275 zero skips/staticPASS. Verify final standardCI/Chromium and
+temporaryPRclosedwithoutmerge; do not infer overall8D acceptance from them.
+
 Latest prerequisite: `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
 DATA-only cloud fixture now uses isolated UUID tenant/complete goal-head row,
 synthetic namespaced target/tab0 and exact cleanup IDs. Native regression tests

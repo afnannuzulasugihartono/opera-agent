@@ -107,3 +107,14 @@ test('8D trusted in-process verifier sees only transient credential and result w
   const g=fixture({verifyAccessToken:async()=>({access_token:'private-token'})});
   await assert.rejects(g.probe.consume(g.callback()),/^Error: OAUTH_EXCHANGE_FAILED$/);
 });
+
+test('8D trusted workflow lifetime is separate from each ten-second OAuth HTTP request',async()=>{
+  let hookSignal;
+  const f=fixture({verifyAccessToken:async(_token,signal)=>{
+    hookSignal=signal;assert.notEqual(signal,f.calls[0].init.signal);assert.notEqual(signal,f.calls[1].init.signal);
+    return {signedClaimsVerified:true,hostStatusHttpStatus:200,hostIdentityAccepted:true,hostDisabled:false,browserDispatchAllowed:false};
+  }});
+  await f.probe.consume(f.callback());
+  assert.notEqual(f.calls[0].init.signal,f.calls[1].init.signal);
+  assert.equal(hookSignal.aborted,true,'closing the owner still aborts its workflow');
+});

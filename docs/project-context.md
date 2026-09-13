@@ -24,6 +24,22 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
+Latest LOCAL controller continuation:
+`docs/milestone-8-checkpoint-8d-cloud-controller.md`. In-process sequence now
+preflights beforeOAuth, snapshots SDK claims, records ownership before potential
+partial installation, checks session binding, prepare/replay/status/cancel/replay/
+status exact metadata/commitkey and cancelled payload0, then independently attempts
+OFF/exact-owned cleanup/clean verification. Focused36/36, DenoSDKmalformed1/1/
+typecheck and independent refrozen LOCAL-onlyPASS. Positive SDK/operator checks
+are doubles. Real operator transport/session queries/globalcontrol ownership/
+durable supervisor/manifest recovery are ABSENT; no login/enrollment/cloudprobe/
+production query/mutation this session. OAuthhelper now separates five-minute
+workflow from each ten-second HTTP request. Overall8D open,8E not started.
+Next: tests-first fixed-project operator+supervisor integration and exact audit
+BEFORE another login. Cooperative adapter signals do not prove crash recovery.
+Final full275/275 zero skips/staticPASS; exact-head standardCI/Chromium and PR
+closure evidence in validationPR. Extension/runtime/workflow unchanged.
+
 Latest bounded continuation: `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
 Test-only cloud fixture DATA builder now isolates UUID tenant and namespaced
 synthetic actor/goal/transaction/device/document/tab0, complete production-shaped
