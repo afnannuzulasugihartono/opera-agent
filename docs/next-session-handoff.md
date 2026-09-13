@@ -1,15 +1,15 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-13. Continue ONLY Checkpoint 8D; 8E has not started.
+Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D; 8E has not started.
 
 ## Read before work
 
 Future research reference: `docs/research/claude-gap-analysis-2026-09-13.md`.
 Claude report archived verbatim, not independently verified; reconcile its older
 baseline and six proposed gaps before use. Do not replace the frozen plan with it.
-Prior turn stopped after successful exact-head CI34764182875 at8305992ec42ac275bf98a788721ab8aa8e7cb0d6;
-temporary PR35 was still open without merge at that stop. Verify and close without
-merge when implementation work resumes; this archival session does not resume8D.
+Prior exact-head CI34764182875 at8305992ec42ac275bf98a788721ab8aa8e7cb0d6
+PASS; temporaryPR35 now confirmed closed without merge. Read latest local
+OAuth prerequisite `docs/milestone-8-checkpoint-8d-oauth-probe.md` before login.
 
 1. AGENTS.md and SECURITY.md.
 2. docs/project-context.md and this handoff.
@@ -69,7 +69,9 @@ concurrent races, real minute rollover, hosted recovery or authenticated prepare
 Existing public acceptance clients already register loopback callback
 http://127.0.0.1:6276/oauth/callback (authmethodnone). Example nonsecretclientID
 8bf1ff0e-7088-4881-ba76-e36c672453c6. No new registration/scope/redirect was made.
-Next useful OAuth unit: reviewed bounded PKCE listener/harness, legitimate manual
+Test-only PKCE helper/listener now implemented; focused12/12 synthetic/loopback
+PASS. Actual OAuth login not executed. Verify final independent review and CI
+from the latest record/artifacts before use. Next useful unit: legitimate manual
 login/connection consent, memory-only tokens, then authenticated synthetic host
 admission. Do not extract user's stored token or treat OAuth consent as8F approval.
 

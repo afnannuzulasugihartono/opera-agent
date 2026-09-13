@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-13
+Last synchronized: 2026-09-14
 
 This is the durable project-state summary for humans and future LLM sessions. Verify executable code, current production configuration, CI, signed release records, and acceptance evidence before changing accepted facts. Never store secret material here.
 
@@ -23,6 +23,14 @@ Non-negotiable invariants:
 - keep one immediate same-identity signed rollback.
 
 ## Current 8D work (not acceptance)
+
+Latest local OAuth prerequisite: `docs/milestone-8-checkpoint-8d-oauth-probe.md`.
+Test-only manual PKCE helper/listener added; focused12/12 synthetic/loopback,
+full251/251 zero skips, static and independent refrozen local review PASS.
+No actual OAuth login, token storage/export, production/config/browser change.
+User-endpoint success alone is not host client/session admission or8F approval.
+TemporaryPR35 confirmed closed without merge after successful CI34764182875
+at8305992. Overall8D remains open; follow the OAuth record for the next bounded unit.
 
 User-supplied Claude gap analysis archived in
 `docs/research/claude-gap-analysis-2026-09-13.md` for future review. Preserved source
