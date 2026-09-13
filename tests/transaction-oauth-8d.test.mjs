@@ -97,3 +97,13 @@ test('8D OAuth expiry during exchange does not reach user endpoint',async()=>{
   finish(new Response(JSON.stringify({access_token:'synthetic.test.token',token_type:'Bearer',expires_in:60})));
   await assert.rejects(first,/OAUTH_EXCHANGE_FAILED/); assert.equal(calls,1);
 });
+
+test('8D trusted in-process verifier sees only transient credential and result whitelist rejects token export',async()=>{
+  let seen=false;
+  const f=fixture({verifyAccessToken:async(token,signal)=>{seen=token==='synthetic.test.token'&&!signal.aborted;
+    return {signedClaimsVerified:true,hostStatusHttpStatus:503,hostIdentityAccepted:false,hostDisabled:true,browserDispatchAllowed:false};}});
+  const result=await f.probe.consume(f.callback());assert.equal(seen,true);assert.equal(result.hostDisabled,true);
+  assert.equal(JSON.stringify(result).includes('synthetic.test.token'),false);
+  const g=fixture({verifyAccessToken:async()=>({access_token:'private-token'})});
+  await assert.rejects(g.probe.consume(g.callback()),/^Error: OAUTH_EXCHANGE_FAILED$/);
+});

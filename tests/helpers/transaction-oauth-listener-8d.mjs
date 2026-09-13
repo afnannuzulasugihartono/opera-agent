@@ -13,7 +13,12 @@ export function startOAuthListener({probe,write=console.log,listenPort=6276,time
     try {
       const result=await probe.consume(parseLocalCallbackRequest(req));
       res.end('OAuth connection test complete. No browser action or transaction approval.',close);
-      write(JSON.stringify({userEndpointVerified:result.userEndpointVerified===true,browserDispatchAllowed:false}));
+      const report={userEndpointVerified:result.userEndpointVerified===true,browserDispatchAllowed:false};
+      if(result.signedClaimsVerified===true&&[200,401,503].includes(result.hostStatusHttpStatus)) {
+        Object.assign(report,{signedClaimsVerified:true,hostStatusHttpStatus:result.hostStatusHttpStatus,
+          hostIdentityAccepted:result.hostIdentityAccepted===true,hostDisabled:result.hostDisabled===true});
+      }
+      write(JSON.stringify(report));
     } catch(error) {
       const code=error.message;
       res.writeHead(code==='OAUTH_CALLBACK_INVALID'?400:409);

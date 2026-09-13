@@ -24,6 +24,16 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
+Latest local continuation: `docs/milestone-8-checkpoint-8d-oauth-host-adapter.md`.
+Test-only in-process actual-pinned-SDK CLI/status adapter built; focused20/20,
+actualSDKmalformed Deno1/1, CLItypecheck, full259/259 zero skips, static and
+independent refrozen local review PASS. Real OAuth not run this turn.
+Absent status marker raises storage error, so200null classifier is theoretical,
+not a live positive gate. Before another login, prepare reviewed fixture-specific
+principal/bound-transaction integration; no host changes just to pass a test.
+Mutable claim references replaced with primitive snapshots across async checks.
+No runtime/config/enrollment/DB/browser mutation or8E. Overall8D remains open.
+
 Latest local OAuth prerequisite: `docs/milestone-8-checkpoint-8d-oauth-probe.md`.
 Test-only manual PKCE helper/listener added; focused12/12 synthetic/loopback,
 full251/251 zero skips, static and independent refrozen local review PASS.

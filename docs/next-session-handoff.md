@@ -60,6 +60,14 @@ self-referential SHA is stored here. Standard workflow must remain unchanged.
 
 ## Next meaningful 8D work
 
+Latest diagnostic prerequisite: `docs/milestone-8-checkpoint-8d-oauth-host-adapter.md`.
+Test-only SDK/status adapter implemented, focused20/20 and Deno1/1/typecheckPASS.
+It is NOT a live positive acceptance gate: absent marker yields STORAGE_ERROR,
+not200null. Finish audited fixture-specific principal/bound-prepared transaction
+integration BEFORE asking for another login; preserve tokens inside one process.
+Do not change host semantics/enroll from unverified claims to make tests pass.
+Verify final independent review/full/static/CI from latest record/artifacts.
+
 New quantitative cloud probe8 grouped assertions PASS; short transaction rolled
 back DARK/data and confirmedOFF/runs/principals/rates0. Covers pending8/9/release,
 prepare20/21, commit10/11/replay/atomicrollback, tenant2/3, physicaltabdigestbypass,

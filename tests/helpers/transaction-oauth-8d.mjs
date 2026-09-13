@@ -1,6 +1,7 @@
 // Acceptance helper only. Not imported by extension/MCP/Edge runtime.
 // No storage, logging, token export, refresh, browser dispatch or approval authority.
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
+import { Buffer } from 'node:buffer';
 
 export const ISSUER='https://nenmkmtvjremqphfqnfw.supabase.co';
 export const CLIENT_ID='8bf1ff0e-7088-4881-ba76-e36c672453c6';
@@ -26,7 +27,9 @@ async function boundedJson(response) {
   } finally { await reader.cancel().catch(()=>{}); }
 }
 
-export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch}={}) {
+/** @param {{publicKey?:string, now?:()=>number, fetchImpl?:typeof fetch, verifyAccessToken?:(credential:string,signal:AbortSignal)=>Promise<{signedClaimsVerified:boolean,hostStatusHttpStatus:number,hostIdentityAccepted:boolean,hostDisabled:boolean,browserDispatchAllowed:boolean}>}} options */
+export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyAccessToken}={}) {
+  if(verifyAccessToken!==undefined&&typeof verifyAccessToken!=='function')throw new Error('INVALID_TRUSTED_VERIFIER');
   if(typeof publicKey!=='string' || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicKey)) throw new Error('PUBLIC_PUBLISHABLE_KEY_REQUIRED');
   let verifier=randomBytes(32).toString('base64url');
   const state=randomBytes(32).toString('base64url');
@@ -74,7 +77,15 @@ export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch}={}) {
         headers:{apikey:publicKey,Authorization:'Bearer '+accessToken}}));
       if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(user.id??'') || abort.signal.aborted || now()>=deadline) throw new Error();
       // Only Auth user-endpoint success. No host client/session admission or approval claim.
-      return Object.freeze({userEndpointVerified:true,browserDispatchAllowed:false});
+      let extra={};
+      if(verifyAccessToken){
+        extra=await verifyAccessToken(accessToken,signal);
+        if(!extra||Object.keys(extra).sort().join(',')!=='browserDispatchAllowed,hostDisabled,hostIdentityAccepted,hostStatusHttpStatus,signedClaimsVerified'||
+          extra.signedClaimsVerified!==true||extra.browserDispatchAllowed!==false||![200,401,503].includes(extra.hostStatusHttpStatus)||
+          extra.hostIdentityAccepted!==(extra.hostStatusHttpStatus===200)||extra.hostDisabled!==(extra.hostStatusHttpStatus===503))throw new Error();
+      }
+      if(abort.signal.aborted||now()>=deadline)throw new Error();
+      return Object.freeze({userEndpointVerified:true,...extra,browserDispatchAllowed:false});
     } catch {throw new Error('OAUTH_EXCHANGE_FAILED');}
     finally {accessToken=null; close();}
   }});
