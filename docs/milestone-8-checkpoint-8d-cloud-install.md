@@ -1,5 +1,7 @@
 # Checkpoint 8D — authorized backend installation
 
+Latest continuation: `docs/milestone-8-checkpoint-8d-cloud-bounds.md`.
+
 2026-09-13. **Installation/listed probes PASS; overall 8D IN PROGRESS.** Stop
 before 8E. Supersedes the host-candidate record's undeployed/no-permission state,
 not its acceptance limitations or the frozen contract.
@@ -71,9 +73,9 @@ SQL equivalence, inspected probe scope but did not rerun mutating/network probes
 The flagged stale active context bullet was corrected before final commit.
 
 Fresh native PG+host/HTTP/identity/token 44/44 PASS/no skips, 38.166s; full Node 239/239
-PASS/no skips, 56.397s; static PASS/still 1.6.0/26 capabilities. Verify standard
+PASS/no skips, 56.397s; static PASS/still 1.6.0/26 capabilities.
 Fresh actual pinned SDK/Deno tests 2/2 PASS and Edge typecheck PASS.
-exact-final-head CI/Chromium from GitHub artifacts and temporary PR closed without
+Verify exact-final-head CI/Chromium from GitHub artifacts and temporary PR closed without
 merge. Never alter standard CI for a pass.
 
 ## Open official 8D gates

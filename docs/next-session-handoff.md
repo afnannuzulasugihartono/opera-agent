@@ -8,7 +8,8 @@ Last synchronized: 2026-09-13. Continue ONLY Checkpoint 8D; 8E has not started.
 2. docs/project-context.md and this handoff.
 3. docs/milestone-8-plan.md and docs/milestone-8-plan-codex-review.md.
 4. Acceptance records 8A–8C.
-5. docs/milestone-8-checkpoint-8d-cloud-install.md (latest production state).
+5. docs/milestone-8-checkpoint-8d-cloud-bounds.md (latest continuation) and
+   docs/milestone-8-checkpoint-8d-cloud-install.md (installed production state).
 6. docs/milestone-8-checkpoint-8d-host-candidate.md (reviewed local boundary).
 7. Earlier 8D preflight, independent review, lifetime remediation and admission/
    journal candidate records as historical prerequisite evidence.
@@ -51,6 +52,19 @@ Final commit is the current branch tip containing the installation record; no
 self-referential SHA is stored here. Standard workflow must remain unchanged.
 
 ## Next meaningful 8D work
+
+New quantitative cloud probe8 grouped assertions PASS; short transaction rolled
+back DARK/data and confirmedOFF/runs/principals/rates0. Covers pending8/9/release,
+prepare20/21, commit10/11/replay/atomicrollback, tenant2/3, physicaltabdigestbypass,
+payload/cleanup. Sequential active-state limits and seeded rates are NOT cloud
+concurrent races, real minute rollover, hosted recovery or authenticated prepare.
+
+Existing public acceptance clients already register loopback callback
+http://127.0.0.1:6276/oauth/callback (authmethodnone). Example nonsecretclientID
+8bf1ff0e-7088-4881-ba76-e36c672453c6. No new registration/scope/redirect was made.
+Next useful OAuth unit: reviewed bounded PKCE listener/harness, legitimate manual
+login/connection consent, memory-only tokens, then authenticated synthetic host
+admission. Do not extract user's stored token or treat OAuth consent as8F approval.
 
 Do not repeat primitive-only results as if they close hosted gates. Remaining:
 

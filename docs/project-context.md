@@ -24,7 +24,8 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
-Latest record: `docs/milestone-8-checkpoint-8d-cloud-install.md`. Checkpoint 8D
+Latest record: `docs/milestone-8-checkpoint-8d-cloud-bounds.md`; installation
+details in `docs/milestone-8-checkpoint-8d-cloud-install.md`. Checkpoint 8D
 remains IN PROGRESS; 8E has not started. Local private journal + isolated dark
 host candidates now integrate verified SDK identity metadata, authenticated
 ledger tokens, immutable synthetic source/target bindings, locked current heads,
@@ -56,6 +57,16 @@ cloud gates still open; installation/anon denial not overall8D acceptance.
 Verify standard exact-head CI/Chromium and temporaryPR closure from artifacts.
 No extension/public MCP/OAuth runtime, signing, pairing or workflow changes occurred.
 Earlier admission/journal evidence is historical in its linked records.
+
+Cloud quantitative continuation:8 grouped assertions PASS in a short rolled-back
+synthetic transaction: pending8/9/release, prepare20/21, commit10/11/replay/atomic
+rollback, tenant2/3, physical-tab digest bypass, payload and cleanup cap. This
+does not prove concurrent cloud contenders or actual minute rollover. OFF/runs/
+principals/rates0 confirmed. Read-only metadata found existing public acceptance
+OAuth clients with loopback callback127.0.0.1:6276/oauth/callback, so a legitimate
+PKCE probe can reuse existing registration without new scope/redirect/client.
+Listener/manual login/signed identity and full hosted admission remain unproven;
+no credentials in chat/storage extraction or 8F approval transport shortcut.
 
 ## Current accepted release state
 
