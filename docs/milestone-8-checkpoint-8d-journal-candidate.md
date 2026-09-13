@@ -24,6 +24,11 @@ Failing tests preceded implementation and cleanup/replay/context-type remediatio
 Writer rerun passed native 13/13 and token 4/4. Independent frozen-candidate rerun
 also passed 17/17, zero skips, plus static and diff checks.
 Full local suite passed 226/226; npm run check preserved 1.6.0 / 26 capabilities.
+Implementation/context commit `49f247f14ae079c86105e6c689f74bb26d2dfb6b`
+passed standard CI #176 (34740274141), including Chromium regression.
+No workflow changes. Session net diff from `f2fdb88` is seven files: candidate
+SQL/token and their tests, this record, project context and handoff. Final docs-head
+CI and PR #31 closure must be verified independently; close without merge.
 Native tests use PostgreSQL 17.11, a fresh loopback cluster and synthetic data.
 Two independent psql sessions exercise nonce consumption. Lease expiry is simulated,
 not actual executor process death. Test after-hooks stop the native server.

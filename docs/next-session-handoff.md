@@ -6,6 +6,9 @@ exists, independent tests 17/17 PASS. Review CONDITIONAL PASS applies only to lo
 primitives. Complete missing limit/race tests, journal.status validation and actual
 trusted host integration. SQL remains outside migrations, not deployed. Stop at
 8D; no 8E or production authority. Earlier admission-only text is historical.
+Local full suite 226/226 PASS; 49f247f exact-head standard CI #176 (34740274141)
+PASS including Chromium. Verify final docs-head CI and temporary PR #31 closed
+without merge; no workflow changes. Resume ONLY the remaining frozen 8D gates.
 
 Use this as the starting point after accepted Milestone 8 Checkpoint 8C. Verify repository head and accepted evidence before making claims.
 

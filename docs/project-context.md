@@ -31,6 +31,9 @@ SQL is staged outside migrations and not deployed. Complete local limit/race
 coverage and actual trusted host/approval/ledger integration remain open, including
 terminal payload minimization. No production changes; do not begin 8E.
 Admission-only evidence below describes the previous session.
+Full local suite 226/226 and static check PASS. Implementation/context commit
+49f247f passed standard CI #176 (34740274141), including Chromium. Verify final
+docs-head CI and temporary PR #31 closure without merge. Workflow unchanged.
 
 Local admission candidate now exists in `lib/transaction-admission-8d.js`:
 request identity/policy/executor claims are rejected; actual action arguments,
