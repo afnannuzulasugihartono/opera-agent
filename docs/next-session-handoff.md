@@ -4,6 +4,13 @@ Last synchronized: 2026-09-13. Continue ONLY Checkpoint 8D; 8E has not started.
 
 ## Read before work
 
+Future research reference: `docs/research/claude-gap-analysis-2026-09-13.md`.
+Claude report archived verbatim, not independently verified; reconcile its older
+baseline and six proposed gaps before use. Do not replace the frozen plan with it.
+Prior turn stopped after successful exact-head CI34764182875 at8305992ec42ac275bf98a788721ab8aa8e7cb0d6;
+temporary PR35 was still open without merge at that stop. Verify and close without
+merge when implementation work resumes; this archival session does not resume8D.
+
 1. AGENTS.md and SECURITY.md.
 2. docs/project-context.md and this handoff.
 3. docs/milestone-8-plan.md and docs/milestone-8-plan-codex-review.md.

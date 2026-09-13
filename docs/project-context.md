@@ -24,6 +24,12 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
+User-supplied Claude gap analysis archived in
+`docs/research/claude-gap-analysis-2026-09-13.md` for future review. Preserved source
+claims are unverified leads, not accepted facts or changes to the frozen plan.
+Its v1.5.2/current and v1.6.0/proposed labels must be reconciled with this baseline.
+No checkpoint implementation or reprioritization authorized by this archival step.
+
 Latest record: `docs/milestone-8-checkpoint-8d-cloud-bounds.md`; installation
 details in `docs/milestone-8-checkpoint-8d-cloud-install.md`. Checkpoint 8D
 remains IN PROGRESS; 8E has not started. Local private journal + isolated dark
