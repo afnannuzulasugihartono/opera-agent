@@ -70,9 +70,12 @@ Existing public acceptance clients already register loopback callback
 http://127.0.0.1:6276/oauth/callback (authmethodnone). Example nonsecretclientID
 8bf1ff0e-7088-4881-ba76-e36c672453c6. No new registration/scope/redirect was made.
 Test-only PKCE helper/listener now implemented; focused12/12 synthetic/loopback
-PASS. Actual OAuth login not executed. Verify final independent review and CI
-from the latest record/artifacts before use. Next useful unit: legitimate manual
-login/connection consent, memory-only tokens, then authenticated synthetic host
+PASS. Actual user-driven PKCE connection login now PASS: userEndpointVerifiedtrue,
+browserDispatchAllowedfalse, process exit0 and no listener6276 after completion.
+Token discarded; do not extract stored credentials. CI34784559085 at55751a2 PASS,
+PR36 closed without merge. Read the follow-up in the OAuth record. Next useful unit:
+reviewed in-process host adapter then fresh manual OAuth login, memory-only tokens,
+then authenticated synthetic host
 admission. Do not extract user's stored token or treat OAuth consent as8F approval.
 
 Do not repeat primitive-only results as if they close hosted gates. Remaining:

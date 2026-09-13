@@ -27,8 +27,14 @@ Non-negotiable invariants:
 Latest local OAuth prerequisite: `docs/milestone-8-checkpoint-8d-oauth-probe.md`.
 Test-only manual PKCE helper/listener added; focused12/12 synthetic/loopback,
 full251/251 zero skips, static and independent refrozen local review PASS.
-No actual OAuth login, token storage/export, production/config/browser change.
+Actual user-driven OAuth connection login now PASS: process returned
+userEndpointVerifiedtrue/browserDispatchAllowedfalse, exited0, listener6276 absent.
+Token discarded/unexported; no runtime/config/browser dispatch change. This is
+Auth user-endpoint verification, not deployed-host client/session binding/revocation.
+Next unit: reviewed in-process host adapter plus fresh manual OAuth, never recovery
+of the discarded bearer from storage. Record has exact scope/evidence limitations.
 User-endpoint success alone is not host client/session admission or8F approval.
+Standard CI34784559085 at55751a2 PASS including Chromium; PR36 closed without merge.
 TemporaryPR35 confirmed closed without merge after successful CI34764182875
 at8305992. Overall8D remains open; follow the OAuth record for the next bounded unit.
 

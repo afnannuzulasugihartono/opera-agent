@@ -60,6 +60,28 @@ Success only proves live Auth user-endpoint authentication, not full8D acceptanc
 
 ## Remaining8D
 
+### Actual manual login follow-up —2026-09-14
+
+Reviewed helper at55751a2987cdae0ca550a457d3e06e7f08790f8b used with this
+project's existing enabled public publishable key and unchanged registered client/
+callback. User completed normal OAuth connection login/consent. Process returned
+`{"userEndpointVerified":true,"browserDispatchAllowed":false}`, exited0,
+and a subsequent Windows listener lookup found no listener on6276. User screenshot
+also shows the static connection-test success response. No bearer/code/verifier,
+password, user ID or private key persisted/exported. Ordinary OAuth may retain
+its connection session server-side; no claim that all Auth sessions were purged.
+
+This proves actual authorization-code/PKCE exchange and Auth user-endpoint
+success, not client/session binding or revocation through the deployed8D host,
+transaction approval, bound hosted preparation or hosted recovery. Probe discards
+the token on completion; do not recover it from browser/storage for the next step.
+Next unit requires a reviewed in-process host adapter followed by another legitimate
+manual OAuth flow, so the host can validate fresh credentials without exporting them.
+No runtime/config/database policy/browser dispatch change. Prior policyOFF check
+was before login; this helper never changes policy. No post-login DB cleanup claim.
+Standard exact-headCI34784559085 on55751a2 PASS (unit/static+Chromium),
+temporaryPR36 closed without merge. This follow-up is documentation-only.
+
 Real signed OAuth/trusted client/session binding and revocation at deployed host;
 bound hosted prepare/status/cancel using authenticated server-installed synthetic
 bindings; hosted worker loss/reclaim and nonce durability; concurrent cloud races,
