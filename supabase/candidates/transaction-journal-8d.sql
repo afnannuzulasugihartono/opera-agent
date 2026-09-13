@@ -67,7 +67,9 @@ create table opera_agent_tx_candidate.journal (
   transaction_id text not null,
   transition integer not null check (transition between 0 and 100),
   material_digest text not null check (material_digest ~ '^sha256:[0-9a-f]{64}$'),
-  status text not null,
+  status text not null check (status in (
+    'PREPARING','PREPARED','VALIDATING','AWAITING_APPROVAL','APPROVED','COMMITTING',
+    'COMMITTED_UNVERIFIED','OBSERVING','VERIFIED','REJECTED','CANCELLED','EXPIRED','FAILED','AMBIGUOUS')),
   recorded_at timestamptz not null default clock_timestamp(),
   primary key(tenant_id,transaction_id,transition),
   foreign key(tenant_id,transaction_id) references opera_agent_tx_candidate.runs on delete cascade

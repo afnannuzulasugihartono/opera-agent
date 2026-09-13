@@ -1,5 +1,12 @@
 # Opera Agent next-session handoff
 
+Latest continuation: native17+token4 = 21/21 writer PASS. Missing local
+target/tenant/commit-rate gates and journal.status constraint are now implemented.
+Review fresh exact candidate and CI rather than reusing historical hashes below.
+Fresh independent native/token21/21 PASS; local primitive review PASS, not 8D closure.
+Continue ONLY 8D: authenticated host integration, terminal payload minimization,
+real crash/recovery and remaining frozen gates. No production/migration or 8E.
+
 Latest continuation: read `docs/milestone-8-checkpoint-8d-journal-candidate.md`
 first. Native PostgreSQL tooling is resolved, private local journal/token candidate
 exists, independent tests 17/17 PASS. Review CONDITIONAL PASS applies only to local

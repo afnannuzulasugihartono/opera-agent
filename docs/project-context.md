@@ -24,6 +24,13 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
+Latest continuation adds four native gates for journal.status, changed-digest
+physical-target contention, tenant2-vs3 contention, commit10-vs11 rate/replay and
+rollback assertions. Writer native17+token4 = 21/21 PASS after status CHECK fix.
+Earlier 17/17 independent evidence is historical; new review/CI must be verified.
+Fresh independent rerun21/21 PASS; local bounded primitive review PASS only.
+No production or 8E work. Real host/terminal minimization/crash recovery remain open.
+
 Latest work: `docs/milestone-8-checkpoint-8d-journal-candidate.md` records private
 local PostgreSQL journal primitives and AES-GCM metadata tokens. Independent
 native/token rerun 17/17 PASS; verdict CONDITIONAL PASS for primitives only.

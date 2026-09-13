@@ -2,6 +2,30 @@
 
 2026-09-13. IN PROGRESS, NOT ACCEPTED. Stop before 8E.
 
+## Latest local limit coverage continuation
+
+Native suite expanded to 17 tests: privileged invalid journal.status rejection,
+same physical tab with different target digests and competing slot calls, two
+distinct tenant targets versus competing third contenders, tenth/eleventh commit
+rate boundaries, exact replay without spending rate, and failed-call slot/counter/
+journal/transition preservation. The rate fixture pins its synthetic minute window;
+it does not claim a real wall-clock rollover test. Calls use independent psql
+processes launched together; this is not deterministic scheduling of every crash.
+Initial run was 16/17, reproducing the missing status rejection; SQL now constrains
+journal.status to the frozen vocabulary. Writer rerun: native17+token4 = 21/21.
+The older 13/17-test and hash records below are historical evidence, not hashes
+of the new candidate. Independent rerun and exact-head CI require fresh evidence.
+Fresh independent review passed 21/21 (19.177s, zero skips), static/diff checks
+PASS. Local bounded primitive verdict PASS, NOT overall 8D acceptance. Frozen
+SHA-256: SQL `75cfad5a0a8680b71123202fd19aaa09d2fc4793457a82de992b6d3a515ff4e4`;
+native tests `54ad5639aafd16e3c6e81f783ff5f9add0836134380de7f995aeac657e35c774`.
+Fresh full local suite226/226 and npm run check PASS (1.6.0/26). Session diff
+from6ca8af0 is five files: SQL candidate, native tests, this record, context and
+handoff. CI must be checked at pushed head; temporary validation PR closes without
+merge. No workflow edits or production probes.
+Actual trusted host, terminal payload minimization and worker-death gates remain
+open. No production/migration/extension/MCP/OAuth/workflow changes; 8D remains open.
+
 ## Local implementation
 
 `supabase/candidates/transaction-journal-8d.sql` is a private review candidate,
@@ -57,9 +81,8 @@ Verdict: CONDITIONAL PASS for local primitives only, not acceptance or deploymen
 
 ## Remaining conditions and production blockers
 
-Add native target/concurrent slot/tenant commit/commit-rate boundary tests with
-rollback assertions. Constrain journal.status to the frozen vocabulary. Complete
-actual worker-death recovery. Source inspection is not coverage of those gates.
+Local target/tenant/commit-rate and journal.status conditions now have tests as
+recorded above. Complete actual worker-death recovery and remaining frozen gates.
 
 The service role bypasses RLS and is trusted; supplied actor/tenant claims are not
 authenticated by SQL. Real OAuth/client identity, current owned ledger/head,

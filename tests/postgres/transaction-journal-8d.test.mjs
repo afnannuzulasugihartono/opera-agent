@@ -47,6 +47,10 @@ const validate = (id) => `${P}.mark_validated('${tenant}','${actor}','${id}',1,'
 const reserve = (id) => `${P}.reserve_slot('${tenant}','${actor}','${id}',1,'${hash('b')}')`;
 const prepared = async (id) => { await query(`select ${create(id)}; select ${claim(id)};`); };
 const approved = async (id) => { await prepared(id); await query(`select ${stage(id)}; select ${issue(id)}; select ${consume(id)}; select ${validate(id)};`); };
+const scoped = (sql, name) => sql.replaceAll('tenant_a', name);
+const setupScope = async (name) => query(`insert into ${P}.principals values ('${name}','${actor}','user_a','client_a');`,'postgres');
+const approveScope = async (name,id,tab,target='c') => query(scoped(`select ${create(id).replace(',42,',`,${tab},`).replace(hash('c'),hash(target))}; select ${claim(id)}; select ${stage(id)}; select ${issue(id)}; select ${consume(id)}; select ${validate(id)};`,name));
+const cancelScope = (name,id) => query(`select ${P}.cancel('${name}','${actor}','${id}');`);
 
 before(async () => {
   await run(executable('initdb'), ['-D', data, '-U', 'postgres', '-A', 'trust', '-E', 'UTF8', '--locale=C'], { windowsHide: true });
@@ -171,6 +175,52 @@ test('8D pending/rate/payload quotas reject atomically without extra rows', asyn
   await query(`update ${P}.rates set prepares=20,window_start=date_trunc('minute',clock_timestamp()) where tenant_id='tenant_a';`, 'postgres');
   await fails(`select ${create('rate')};`, 'PREPARE_RATE_LIMIT');
   assert.equal(await query(`select count(*) from ${P}.runs where transaction_id in ('quota_8','payload','rate');`), '0');
+});
+
+test('8D journal status is a closed frozen vocabulary even for privileged writes', async () => {
+  await fails(`update ${P}.journal set status='PROVED_BY_PAGE';`,'check constraint','postgres');
+});
+
+test('8D competing native slots cannot bypass physical target by changing digest', async () => {
+  const name='race_target'; await setupScope(name);
+  await approveScope(name,'race_one',101,'c'); await approveScope(name,'race_two',101,'9');
+  const results=await Promise.allSettled(['race_one','race_two'].map(id=>query(scoped(`select ${reserve(id)};`,name))));
+  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+  assert.match(results.find(r=>r.status==='rejected').reason.stderr,/TARGET_COMMIT_LIMIT/);
+  assert.equal(await query(`select count(*) from ${P}.commit_slots where tenant_id='${name}';`),'1');
+  assert.equal(await query(`select commits from ${P}.rates where tenant_id='${name}';`),'1');
+  assert.equal(await query(`select count(*) from ${P}.runs where tenant_id='${name}' and status='APPROVED' and transition=2;`),'1');
+  assert.equal(await query(`select count(*) from ${P}.journal where tenant_id='${name}' and transition=3;`),'1');
+});
+
+test('8D tenant allows two distinct targets but concurrent third contenders rollback', async () => {
+  const name='race_tenant'; await setupScope(name);
+  for(const [id,tab] of [['tenant_one',201],['tenant_two',202],['tenant_three',203]]) await approveScope(name,id,tab);
+  await query(scoped(`select ${reserve('tenant_one')};`,name));
+  const results=await Promise.allSettled(['tenant_two','tenant_three'].map(id=>query(scoped(`select ${reserve(id)};`,name))));
+  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+  assert.match(results.find(r=>r.status==='rejected').reason.stderr,/COMMIT_CONCURRENCY_LIMIT/);
+  assert.equal(await query(`select count(*) from ${P}.commit_slots where tenant_id='${name}';`),'2');
+  assert.equal(await query(`select commits from ${P}.rates where tenant_id='${name}';`),'2');
+  assert.equal(await query(`select count(*) from ${P}.runs where tenant_id='${name}' and status='APPROVED' and transition=2;`),'1');
+  assert.equal(await query(`select count(*) from ${P}.journal where tenant_id='${name}' and transition=3;`),'2');
+});
+
+test('8D tenth commit succeeds, eleventh rolls back, exact replay does not spend rate', async () => {
+  const name='rate_commit'; await setupScope(name);
+  for(let i=0;i<11;i++) {
+    const id=`commit_${i}`; await approveScope(name,id,300+i);
+    // Pin the isolated synthetic window: this is a boundary test, not wall-clock minute timing.
+    await query(`update ${P}.rates set window_start=date_trunc('minute',clock_timestamp()) where tenant_id='${name}';`,'postgres');
+    if(i===10) { await fails(scoped(`select ${reserve(id)};`,name),'COMMIT_RATE_LIMIT'); break; }
+    await query(scoped(`select ${reserve(id)};`,name));
+    assert.equal(await query(scoped(`select ${reserve(id)}->>'replay';`,name)),'true');
+    await cancelScope(name,id); // Candidate has no dispatch; release concurrent status without clearing rate/slot history.
+  }
+  assert.equal(await query(`select commits from ${P}.rates where tenant_id='${name}';`),'10');
+  assert.equal(await query(`select count(*) from ${P}.commit_slots where tenant_id='${name}';`),'10');
+  assert.equal(await query(`select status||':'||transition from ${P}.runs where tenant_id='${name}' and transaction_id='commit_10';`),'APPROVED:2');
+  assert.equal(await query(`select count(*) from ${P}.journal where tenant_id='${name}' and transaction_id='commit_10' and transition=3;`),'0');
 });
 
 test('8D bounded cleanup removes eligible synthetic rows and leaves policy OFF', async () => {
