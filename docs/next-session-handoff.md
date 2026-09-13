@@ -1,272 +1,85 @@
 # Opera Agent next-session handoff
 
-Latest continuation: read `docs/milestone-8-checkpoint-8d-host-candidate.md`
-first. Continue ONLY 8D. Local host/journal/8C challenge/budget/terminal-minimization
-and real Node crash recovery candidates now exist. Writer native44/44, unit239/239,
-actual SDK/Deno malformed-token2/2, Edge typecheck/static PASS. Independent bounded
-local review PASS with fresh44/44 and Deno2/2; not checkpoint/cloud acceptance.
-Verify standard exact-pushed-head CI/Chromium artifacts and temporary validation
-PR closure without merge; earlier hashes/results below are historical.
-SQL remains outside migrations, Edge candidate is undeployed, and no production
-authorization has been received. Do not start 8E or claim 8D accepted.
-Next boundary is actual cloud/OAuth acceptance after explicit production authority,
-not another repetition of earlier local primitive gates.
+Last synchronized: 2026-09-13. Continue ONLY Checkpoint 8D; 8E has not started.
 
-## Historical local admission-only work — 2026-09-13
+## Read before work
 
-8D is IN PROGRESS, not ACCEPTED. Read
-`docs/milestone-8-checkpoint-8d-admission-candidate.md` first, alongside the frozen
-plan and earlier records below. Local admission candidate/tests now exist; trusted
-adapters are synthetic fixtures only, not real OAuth/ledger/source integrations.
-No SQL, durable journal/nonce CAS, production deployment, or browser executor was
-added. Continue ONLY 8D: real isolated PostgreSQL tooling, private durable candidate,
-actual trusted adapters and complete frozen gates. Independent exact SQL/host
-review and separate production authorization remain mandatory. Do not begin 8E.
-Focused tests 12/12 and final local full suite 222/222 PASS; static checks PASS.
-Implementation/context commit c117b2d passed standard exact-head CI #174
-(34707313560), including Chromium. Verify final documentation-head CI and
-CI-only PR #30 closed without merge before resuming.
-Historical sections below describe earlier baselines, not the newest local work.
+1. AGENTS.md and SECURITY.md.
+2. docs/project-context.md and this handoff.
+3. docs/milestone-8-plan.md and docs/milestone-8-plan-codex-review.md.
+4. Acceptance records 8A–8C.
+5. docs/milestone-8-checkpoint-8d-cloud-install.md (latest production state).
+6. docs/milestone-8-checkpoint-8d-host-candidate.md (reviewed local boundary).
+7. Earlier 8D preflight, independent review, lifetime remediation and admission/
+   journal candidate records as historical prerequisite evidence.
+8. Milestone 7 plan, accepted 7A–7F, independent milestone audit, roadmap and
+   semantic-runtime-plan.
 
-## Handoff prompt
+Worktree/remote must be inspected, not inferred from chat reports. Branch:
+feat/semantic-runtime-1.6.0, repository afnannuzulasugihartono/opera-agent.
 
-```text
-Continue the private Opera Agent project from repository:
-https://github.com/afnannuzulasugihartono/opera-agent
+## Current boundary
 
-Working branch:
-feat/semantic-runtime-1.6.0
+8A–8C accepted. 8D local candidate independently audited PASS. After explicit
+user permission and the exact-candidate audit, backend installed on Supabase
+opera-agent (nenmkmtvjremqphfqnfw). Overall 8D remains IN PROGRESS.
 
-Read first, in order:
-1. AGENTS.md
-2. docs/project-context.md
-3. docs/next-session-handoff.md
-4. docs/milestone-8-plan.md
-5. docs/milestone-8-checkpoint-8a.md
-6. docs/milestone-8-checkpoint-8b.md
-   Also read docs/milestone-8-checkpoint-8c.md and
-   docs/milestone-8-checkpoint-8d-preflight.md before any 8D work.
-7. docs/milestone-7-codex-audit.md
-8. docs/milestone-7-plan.md
-9. docs/milestone-7-checkpoint-7a.md through docs/milestone-7-checkpoint-7f.md
-10. docs/semantic-runtime-plan.md
-11. docs/roadmap.md
-12. SECURITY.md
+- Migration transaction_journal_8d_dark applied. CLI initially generated
+  20260913143147; MCP history assigned 20260913143306. Generated file renamed
+  to actual history version; SQL body/history unchanged. No bulk history repair.
+- Edge opera-agent-transactions-8d v1 ACTIVE, verify_jwt=true, full 13-file module
+  graph matches reviewed local bytes ignoring line endings.
+- Independent encryption key securely installed. Host environment flag false,
+  DB policy OFF, legacy_gated false, agent_commit_enabled false.
+- All 11 synthetic data tables zero; policy singleton deliberately remains.
+  M7 flag false and VM runs/effects/rates zero.
+- Real cloud primitive probe 15 assertions PASS, rolled back its temporary DARK
+  and synthetic data atomically. No auth/session/browser mutation.
+- Enabled-host public anon denial 401 and malformed-JWT gateway denial 401 PASS;
+  final OFF HTTP anon check 503 TRANSACTION_DISABLED/dispatch=false PASS.
+- Actual ordinary-role RPC calls denied 42501. All 12 tables RLS and no client
+  access; 26 reviewed functions deny anon/authenticated.
+- Advisors: security ERROR0/WARN31 inherited/INFO31; performance ERROR/WARN0,
+  INFO8. New INFO: private RLS no policies, unindexed principal FK, unused indexes.
+  Covering-index review required before broader use, not an authorization waiver.
+- Fresh native five-file suite 44/44; full default Node 239/239; static PASS.
+  Earlier actual pinned SDK/Deno malformed-token 2/2 and Edge typecheck PASS.
 
-Verified compatibility baseline:
-- extension 1.6.0
-- protocol 1
-- extension ID ohbbpamcljckmjhcpkcmefdobkoeaick
-- 26 browser capabilities
-- 18 MCP tools with unchanged current names/input schemas
-- production device opera
-- established signing identity and pairing preserved
-- background-first focus isolation preserved
-- no silent foreground fallback
-- immediate signed rollback 1.5.2
-- signed 1.6.0 CRX SHA-256:
-  cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0
-- canonical-LF MCP source SHA-256:
-  f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11
-- locked 7A inventory digest:
-  sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a
+Verify standard exact-final-head CI/Chromium and validation PR closure from
+GitHub artifacts. Installation-session baseline cd3d2c034fb86073c0ea33142512bee7bf839664.
+Final commit is the current branch tip containing the installation record; no
+self-referential SHA is stored here. Standard workflow must remain unchanged.
 
-Milestones 1-7 are complete. Independent Codex audit of Milestone 7 is PASS.
-Milestone 8 Checkpoints 8A–8C are accepted. No Milestone 8 external runtime or production implementation has started.
+## Next meaningful 8D work
 
-MILESTONE 8 REVISED PLAN STATUS:
-- docs/milestone-8-plan.md was revised after the first independent Codex review.
-- Three blocking findings are resolved in the plan contract, and the second
-  independent Codex review returned PASS at revision
-  11a285bfb464cc3a1c157befe6e0aa0aa557f2fc.
-- Durable review: docs/milestone-8-plan-codex-review.md.
-- Checkpoint 8A is accepted as contract/tests/docs only; contract/test commit 4c84dab.
-- Checkpoint 8B is accepted as a pure environment-neutral engine; implementation/test commit 0f333a1.
-- Checkpoint 8C is accepted as a pure environment-neutral authority verifier; implementation/test commit e2b228b.
-- Acceptance records: docs/milestone-8-checkpoint-8a.md through docs/milestone-8-checkpoint-8c.md.
-- The full suite is 204/204; npm run check passes.
-- Local 8D preflight is recorded, but it is self-review, not independent PASS.
-- Reproduced inherited boundaries: imported digest-valid overlong challenge TTL
-  passes verification; syntactically valid ledger source digests are not resolved
-  against trusted authority. No production writes or browser dispatch occurred.
-- Independent read-only review at 7270753… returned CONDITIONAL PASS solely for
-  local tests-first remediation/candidate construction; not 8D acceptance or
-  production approval. Read docs/milestone-8-checkpoint-8d-independent-review.md.
-- Local interval/lifetime-budget remediation is complete at 07a217d; focused 6/6,
-  full regression 210/210. Read the 8d-lifetime-remediation record.
-- Next action after user continuation is isolated local host/admission candidate
-  construction tests-first. Source authentication/argument coverage remain open.
-- Independently audit the actual SQL/host candidate before production mutation.
+Do not repeat primitive-only results as if they close hosted gates. Remaining:
 
-BLOCKER 1 — TRANSACTION ENFORCEMENT/CUTOVER:
-- logical modes are OFF, DARK, ENFORCED.
-- OFF preserves accepted legacy behavior and exposes no Milestone 8 transaction
-  commit.
-- DARK permits only synthetic/internal transaction acceptance identities; no
-  ordinary agent has production transaction commit authority.
-- ENFORCED makes transaction capability and legacy mutation gating one cutover.
-- The same agent must never have both transaction commit and ungated direct
-  mutation.
-- Direct agent open_url/tab mutation/click/fill/key/scroll/pointer operations and
-  mutating browser.burst return TRANSACTION_REQUIRED before dispatch unless called
-  through trusted server-derived transaction-executor authority.
-- Observational browser_status/list_tabs/read_page/capture_page/find_elements and
-  read/find/wait-only burst remain compatible.
-- Internal executor authority is not an MCP argument/header/token available to the
-  model. Any separate operator identity must be outside the agent credential realm.
-- Inconsistent cutover state fails closed.
+1. Legitimate signed OAuth positive/negative, trusted client/session binding and
+   session revocation through actual deployed host.
+2. Bound hosted prepare/status/cancel using authenticated synthetic source/target
+   installation, existing ledger crypto authority and no browser dispatch.
+3. Actual hosted worker loss/reclaim/nonce durability plus remaining full cloud
+   quota/concurrency/payload/retention/crypto gates. Native killed Node workers
+   and rolled-back SQL are distinct evidence, not hosted recovery.
+4. Independent final 8D review, advisor reconciliation, OFF/clean confirmation,
+   committed acceptance/context/handoff and standard exact-head CI.
 
-BLOCKER 2 — SINGLE CONSEQUENTIAL ACTION V1:
-- a V1 transaction has at most ONE state-changing commit action and therefore at
-  most one consequential external action.
-- read-only PREPARE/VALIDATE/OBSERVE/VERIFY may perform bounded observations and do
-  not count as commit actions.
-- a second mutation requires a second transaction.
-- there is no V1 multi-action ordering/partial-commit/remaining-action state.
-- compensation is ALWAYS a new transaction with its own Goal Ledger check,
-  provenance, prepare digest, approval when required, tx1 idempotency, commit,
-  observe/verify, and receipt.
-- original approval never implicitly authorizes compensation.
+No storage-extracted user bearer, forged JWT/client/session, credentials in chat,
+new public MCP approval tools or OAuth scope/client/redirect/config changes to
+circumvent this boundary. If legitimate existing OAuth cannot deliver the probe,
+stop for a reviewed acceptance approach. Actual human approval transport belongs
+to 8F. User installation permission is not a waiver of these gates.
 
-BLOCKER 3 — MCP 2026 APPROVAL BINDING:
-- 2026-07-28 is stateless and must not depend on Mcp-Session-Id.
-- modern capabilities are declared/checked per request.
-- missing required form elicitation returns -32021 MissingRequiredClientCapability
-  and advances no approval/transaction state.
-- server returns input_required with inputRequests + opaque requestState; client
-  obtains actual user input and retries the original call with a fresh JSON-RPC ID,
-  exact requestState echo, and per-round inputResponses.
-- V1 permits one approval MRTR round.
-- requestState is untrusted until verified and binds authenticated user, trusted
-  OAuth client identity, tenant, transactionId, prepareDigest, previewDigest,
-  nonce, issued/expiry, and protocol era.
-- JSON-RPC request ID, Mcp-Session-Id, page/model prose, and MCP clientInfo are not
-  approval authority.
-- legacy initialize-era clients may use compatible elicitation only when their
-  transport can show a real user confirmation; session ID is routing only.
-- incapable legacy/stateless transports fail cleanly, never infer approval.
-- actual ChatGPT confirmation is mandatory in 8F. If ChatGPT cannot visibly obtain
-  a real user decision, consequential production commit remains unavailable.
+## Locked compatibility and rollback
 
-REVISED CHECKPOINTS:
-8A contract + hostile corpus + enforcement decision table + dual-era approval
-   vectors; ACCEPTED
-8B pure single-action prepare engine + enforcement policy decision logic; ACCEPTED
-8C provenance + approval challenge verifier; ACCEPTED
-8D durable transaction/approval journal + dark Supabase host; early Codex before
-   production mutation
-8E controlled single-action executor; compensation only as new transaction
-8F trusted modern/legacy approval transport + enforcement cutover + MCP/OAuth
-   compatibility; early Codex before deployment/promotion
-8G bounded dark/live acceptance including direct legacy bypass tests
-8H compatibility/performance closeout + independent milestone audit
+Extension 1.6.0; protocol 1; capabilities 26; public MCP 18 unchanged schemas.
+Extension ID ohbbpamcljckmjhcpkcmefdobkoeaick; same signing/pairing; immediate signed
+rollback 1.5.2. No new CRX, extension reinstall or MCP reconnect for this install.
+Canonical-LF MCP source SHA-256:
+f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11.
+Standard workflow blob:
+074da3349f71f80bb8174d28ab5aa6ec3797fda9.
 
-PLANNING-REVISION BOUNDARY:
-- this revision changes documentation only.
-- no code, database, migration, Edge Function, extension, MCP runtime/schema, OAuth
-  runtime config, signing state, or feature flag is changed.
-- production Milestone 7 VM remains in its accepted dark state.
-
-NEXT ACTION:
-Stop for user review. The prerequisite review permits bounded local candidate
-construction only. Do not mutate production database/Edge/configuration before
-independent exact-candidate review, real Postgres evidence and separate user
-authorization. MCP public transport, OAuth runtime, extension, signing and browser
-commit remain later checkpoint scope.
-```
-
-## Revision baseline
-
-The first Milestone 8 plan was committed at
-`434faa1894479a5f7dd264049614c6d814022f77` from planning baseline
-`538dbb5cb8b7b8ff1d8be9c6ac36ba37d22669d4`.
-
-The first independent Codex review did not authorize implementation; it identified
-three blocking plan defects: legacy mutation bypass at cutover, multi-action V1
-partial-commit complexity, and incorrect MCP 2026 approval/session assumptions.
-The revised plan resolves those at documentation/contract level only.
-
-## Review gate
-
-**Independent Codex PASS on 2026-09-12** for revision
-`11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`. Durable record:
-`docs/milestone-8-plan-codex-review.md`.
-
-## Checkpoint 8A acceptance
-
-Checkpoint 8A is accepted at contract/test commit `4c84dab`. It freezes the three
-V1 schemas, single-action rule, `OFF`/`DARK`/`ENFORCED` policy, all 18 public-tool
-decisions, internal executor boundary, dual-era approval bindings, four canonical
-digest vectors replayed 100 times, quantitative limits, and 74 hostile cases.
-
-No extension, MCP runtime/schema, database, migration, Edge Function, OAuth
-configuration, signing identity, production flag/row, pairing, or browser state
-changed.
-
-## Checkpoint 8B acceptance
-
-Checkpoint 8B is accepted at pure implementation/test commit `0f333a1`. It adds
-immutable preparation/validation, predicate dependency compilation, selective or
-fail-closed revalidation, bounded previews, conservative effect classification,
-and policy decisions. It performs no approval verification, commit, browser,
-network, database, or ambient-clock work. The recorded full suite is 193/193 and
-64-predicate revalidation p95 is 0.0324 ms.
-
-The 8A fixture also received a conservative erratum for its previously omitted
-effect-classification table: all generic methods default to
-IRREVERSIBLE_OR_UNKNOWN, client classification is untrusted, and no narrower
-trusted descriptor is frozen.
-
-## Checkpoint 8C acceptance
-
-Checkpoint 8C is accepted at pure implementation/test commit `e2b228b`. It adds
-exact-bound provenance/freshness/authority validation, immutable OAuth-user
-approval challenges, modern one-round requestState/inputResponses verification,
-TTL and consumed-nonce rejection, and deterministic consumption claims. It has no
-network, persistence, browser, MCP public-runtime, OAuth configuration, extension,
-signing, or production integration. Focused 8C tests are 11/11, 10,000 fuzzed
-provenance/challenge chains pass, the full suite is 204/204, and npm run check
-still reports 1.6.0 with 26 capabilities.
-
-Durable one-shot consumption is deliberately not claimed: atomic CAS, journal,
-leases, recovery, and production authorization state belong to 8D.
-
-**STOP HERE.** Only independently reviewed local prerequisite/candidate work is
-permitted after user continuation. No production mutation or public runtime
-integration is permitted in the current handoff state.
-
-## Checkpoint 8D local preflight
-
-Read `docs/milestone-8-checkpoint-8d-preflight.md`. Inspected baseline is
-`5933a6c1f2448fe82142bf83a68bc1d607ae4f79`; diagnostics reproduced the validity-window
-and trusted-source-resolution boundaries with zero browser dispatches and zero
-production writes. There is no 8D implementation, migration, deployment, or
-acceptance. The author of 8C performed this preflight, so independent review is
-still required. Do not label it PASS or proceed to 8E.
-
-## Independent prerequisite review
-
-A separate read-only reviewer inspected `7270753eeddceabae7980a747e6716f2d2278c9a`.
-Verdict is CONDITIONAL PASS solely for local tests-first remediation/candidate
-construction. Focused 8C 11/11 and static checks pass. Imported interval validation,
-narrower declared lifetime budgets, and trusted source/operand admission remain
-the listed remediation/candidate requirements. See
-`docs/milestone-8-checkpoint-8d-independent-review.md`.
-
-The local interval/budget remediation has subsequently completed. No 8D production
-migration/deployment/probe is approved; independently review the actual SQL/host
-candidate with real Postgres evidence first. No 8E work is permitted.
-
-## Completed local lifetime prerequisite
-
-Read `docs/milestone-8-checkpoint-8d-lifetime-remediation.md`. Implementation/test
-commit is `07a217d`; focused remediation 6/6 and full regression 210/210 pass.
-Shared approval creation/import interval validation and narrower declared
-prepare/total/approval lifetime limits now fail closed. No host, database or
-production integration exists. Source authority resolution, actual argument
-coverage, durable nonce CAS and other candidate gates remain open.
-
-After explicit user continuation, construct only the isolated default-OFF/dark
-local host/admission candidate tests-first. Resolve real PostgreSQL test tooling;
-do not replace its role/concurrency/rollback gates with string scans or SQLite.
-Independent exact SQL/host review remains mandatory before production mutation.
+Rollback leaves DB policy OFF and host flag false; additive private schema/key
+may remain. No agent-facing transaction commit or browser executor is available.
+Stop after 8D; do not start 8E or Milestone 9.

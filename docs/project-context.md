@@ -24,14 +24,17 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
-Latest record: `docs/milestone-8-checkpoint-8d-host-candidate.md`. Checkpoint 8D
+Latest record: `docs/milestone-8-checkpoint-8d-cloud-install.md`. Checkpoint 8D
 remains IN PROGRESS; 8E has not started. Local private journal + isolated dark
 host candidates now integrate verified SDK identity metadata, authenticated
 ledger tokens, immutable synthetic source/target bindings, locked current heads,
 actual 8C challenge/preview/consumption digests, applicable declared durable
 budgets, terminal payload removal and real Node worker death/recovery. HTTP
-defaults OFF and exposes no approval/finalize/browser route. SQL stays in
-`supabase/candidates`, not migrations; the new Edge candidate is undeployed.
+defaults OFF and exposes no approval/finalize/browser route. After explicit user
+authorization/audit, SQL applied as transaction_journal_8d_dark and isolated Edge
+host deployed v1 verify_jwt=true. Generated filename aligned to actual cloud
+history20260913143306 (CLI initially20260913143147), SQL/history unchanged.
+Independent encryption key installed securely; hostflagfalse/policyOFF at closeout.
 
 Writer gates: native/host/HTTP/identity/token44/44, full unit239/239, actual pinned
 SDK/Deno malformed-token2/2, Edge typecheck and static check PASS. Independent
@@ -42,14 +45,16 @@ Initial dark source/target authority is an immutable server-owned synthetic
 registry, not a browser source collector. Nonempty ledger constraints/nonGoals
 fail closed; generic clicks do not establish real-world predicates.
 
-Production read-only checks on 2026-09-13 verified candidate schema/Edge absent,
-M7 flag false, VM runs/effects/rate windows0 and required session/head locking
-privileges present. Security baseline: ERROR0, WARN31 inherited, INFO19;
-performance INFO5. This is not a post-migration advisor or cleanup acceptance.
-Separate production authorization has not been received. Actual cloud/OAuth/
-fixture-installation/probe/cleanup gates remain open. Verify standard exact-head
-CI/Chromium artifacts and temporary PR closure without merge at pushed head.
-No extension/MCP/OAuth runtime, signing, pairing or workflow changes occurred.
+Fresh cloud checks: all12 tablesRLS, ordinary-role private tables/26 functions
+denied; actual anon/auth RPC denial42501. Rolled-back cloud primitive15 assertions
+PASS, enabled-host anon/malformedJWT rejectionPASS/OFF503 verified. All11 synthetic
+data tables0, policyOFF singleton remains; M7 flagfalse/VM runs/effects/rates0.
+Security after ERROR0/WARN31 inherited/INFO31 (+12 private RLS-no-policyINFO);
+performanceINFO8 (+principal FK/2unused indexes), ERROR/WARN0. Fresh native44/44/
+full239/239PASS. SignedOAuth positive/revocation/bound hosted prepare/recovery/full
+cloud gates still open; installation/anon denial not overall8D acceptance.
+Verify standard exact-head CI/Chromium and temporaryPR closure from artifacts.
+No extension/public MCP/OAuth runtime, signing, pairing or workflow changes occurred.
 Earlier admission/journal evidence is historical in its linked records.
 
 ## Current accepted release state
@@ -125,7 +130,7 @@ Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain froz
 - Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
 - Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
 - Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **Checkpoints 8A–8C accepted as pure/contract work; 8D independent prerequisites reviewed and local lifetime remediation completed, no host/SQL candidate or production approval**.
+- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **8A–8C accepted; 8D authorized backend installed, probes PASS, OFF/clean; hosted OAuth/recovery/full cloud acceptance open; 8E not started**.
 - Milestone 9+ — not started.
 
 ## Milestone 7 accepted boundary
@@ -160,7 +165,9 @@ PREPARE -> VALIDATE -> APPROVE(if required) -> COMMIT
         -> OBSERVE -> VERIFY -> RECEIPT
 ```
 
-The first Codex review identified three blockers. The revised plan froze their resolution; contract/pure implementation has since reached accepted Checkpoint 8C, while external runtime and production implementation have not started.
+The first Codex review identified three blockers. Their reviewed resolution and
+accepted8A–8C remain frozen. 8D has an authorized isolated backend, OFF/clean,
+not overall acceptance; see the latest installation record.
 
 ### Enforcement/cutover boundary
 
@@ -270,7 +277,9 @@ Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
 - repository/test/CI/production evidence outranks chat reports;
 - high-risk auth/authz, tenancy, encryption, public MCP, irreversible-effect, production-schema, or extension/signing boundaries trigger early independent review;
 - the revised plan received independent Codex **PASS** at revision `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`; durable review: `docs/milestone-8-plan-codex-review.md`;
-- Checkpoints 8A–8C are accepted; 8D prerequisite review permits only local remediation/candidate construction, while production requires independent exact-candidate review and separate authorization;
+- Checkpoints 8A–8C accepted; the earlier 8D prerequisite-only review is historical.
+  Exact-candidate audit and explicit user permission subsequently allowed the
+  installed OFF backend. Full hosted OAuth/recovery/cloud acceptance remains open;
 - complete Milestone 8 later requires independent Codex `PASS` before Milestone 9 planning.
 
 ## Security and privacy invariants

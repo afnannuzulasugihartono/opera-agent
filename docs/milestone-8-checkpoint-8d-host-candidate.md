@@ -1,5 +1,9 @@
 # Checkpoint 8D: isolated dark host candidate
 
+Historical local review record. Latest authorized production installation and
+remaining gates: `docs/milestone-8-checkpoint-8d-cloud-install.md`. The undeployed/
+no-permission statements below describe this record's original boundary only.
+
 2026-09-13. **Local synthetic candidate audited PASS; Checkpoint 8D remains IN
 PROGRESS. No production promotion, migration or browser dispatch. Stop before 8E.**
 
