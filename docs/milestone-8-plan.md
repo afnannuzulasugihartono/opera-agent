@@ -1,6 +1,6 @@
 # Milestone 8 implementation plan
 
-Status: **REVISED PLAN REVIEWED — independent Codex PASS on 2026-09-12. Checkpoints 8A–8C accepted; Checkpoint 8D has not started and requires a separate user instruction plus its required early audit before production mutation.**
+Status: **REVISED PLAN REVIEWED — independent Codex PASS on 2026-09-12. Checkpoints 8A–8C accepted; Checkpoint 8D is IN PROGRESS with its local synthetic candidate audited PASS. Actual cloud acceptance and explicit production authority remain open; 8E has not started.**
 
 Milestone 8 is **Decision-Causal Transactions and Provenance Enforcement**. It extends the accepted Milestone 7 read-only Reactive Browser VM with a separate transaction authority and durability layer for state-changing browser work. It does not silently broaden the Milestone 7 VM effect allowlist, reinterpret OAuth consent as transaction approval, or let page/model/tool text become authority.
 

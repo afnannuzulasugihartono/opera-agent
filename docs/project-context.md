@@ -24,38 +24,33 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
-Latest continuation adds four native gates for journal.status, changed-digest
-physical-target contention, tenant2-vs3 contention, commit10-vs11 rate/replay and
-rollback assertions. Writer native17+token4 = 21/21 PASS after status CHECK fix.
-Earlier 17/17 independent evidence is historical; new review/CI must be verified.
-Fresh independent rerun21/21 PASS; local bounded primitive review PASS only.
-No production or 8E work. Real host/terminal minimization/crash recovery remain open.
+Latest record: `docs/milestone-8-checkpoint-8d-host-candidate.md`. Checkpoint 8D
+remains IN PROGRESS; 8E has not started. Local private journal + isolated dark
+host candidates now integrate verified SDK identity metadata, authenticated
+ledger tokens, immutable synthetic source/target bindings, locked current heads,
+actual 8C challenge/preview/consumption digests, applicable declared durable
+budgets, terminal payload removal and real Node worker death/recovery. HTTP
+defaults OFF and exposes no approval/finalize/browser route. SQL stays in
+`supabase/candidates`, not migrations; the new Edge candidate is undeployed.
 
-Latest work: `docs/milestone-8-checkpoint-8d-journal-candidate.md` records private
-local PostgreSQL journal primitives and AES-GCM metadata tokens. Independent
-native/token rerun 17/17 PASS; verdict CONDITIONAL PASS for primitives only.
-SQL is staged outside migrations and not deployed. Complete local limit/race
-coverage and actual trusted host/approval/ledger integration remain open, including
-terminal payload minimization. No production changes; do not begin 8E.
-Admission-only evidence below describes the previous session.
-Full local suite 226/226 and static check PASS. Implementation/context commit
-49f247f passed standard CI #176 (34740274141), including Chromium. Verify final
-docs-head CI and temporary PR #31 closure without merge. Workflow unchanged.
+Writer gates: native/host/HTTP/identity/token44/44, full unit239/239, actual pinned
+SDK/Deno malformed-token2/2, Edge typecheck and static check PASS. Independent
+exact-candidate rerun44/44 and Deno2/2 PASS; bounded local review PASS, not overall
+8D acceptance. Native auth positive paths use explicitly synthetic SDK doubles;
+neither these tests nor malformed-token rejection prove live signed OAuth.
+Initial dark source/target authority is an immutable server-owned synthetic
+registry, not a browser source collector. Nonempty ledger constraints/nonGoals
+fail closed; generic clicks do not establish real-world predicates.
 
-Local admission candidate now exists in `lib/transaction-admission-8d.js`:
-request identity/policy/executor claims are rejected; actual action arguments,
-current ledger authorization, target, and per-argument attested provenance are
-checked via trusted server-installed adapters. Synthetic tests pass 12/12.
-Full local regression: 222/222 PASS; static check remains 1.6.0 / 26 capabilities.
-Code/context commit `c117b2d` passed exact-head CI #174 (34707313560), including
-Chromium regression. Verify final documentation-head CI and temporary PR #30
-closure; no checkpoint acceptance or production promotion is implied.
-Adapters are mocks in tests, not production authentication/source integrations.
-No SQL/durable journal/nonce CAS or deployed host exists. 8D remains IN PROGRESS;
-8E has not started. Record: `docs/milestone-8-checkpoint-8d-admission-candidate.md`.
-Next work remains inside 8D: real PostgreSQL tooling, durable private host candidate,
-actual trusted adapters, acceptance gates and independent exact-candidate review
-before separately authorized production mutation. Public release remains unchanged.
+Production read-only checks on 2026-09-13 verified candidate schema/Edge absent,
+M7 flag false, VM runs/effects/rate windows0 and required session/head locking
+privileges present. Security baseline: ERROR0, WARN31 inherited, INFO19;
+performance INFO5. This is not a post-migration advisor or cleanup acceptance.
+Separate production authorization has not been received. Actual cloud/OAuth/
+fixture-installation/probe/cleanup gates remain open. Verify standard exact-head
+CI/Chromium artifacts and temporary PR closure without merge at pushed head.
+No extension/MCP/OAuth runtime, signing, pairing or workflow changes occurred.
+Earlier admission/journal evidence is historical in its linked records.
 
 ## Current accepted release state
 

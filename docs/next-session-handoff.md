@@ -1,25 +1,18 @@
 # Opera Agent next-session handoff
 
-Latest continuation: native17+token4 = 21/21 writer PASS. Missing local
-target/tenant/commit-rate gates and journal.status constraint are now implemented.
-Review fresh exact candidate and CI rather than reusing historical hashes below.
-Fresh independent native/token21/21 PASS; local primitive review PASS, not 8D closure.
-Continue ONLY 8D: authenticated host integration, terminal payload minimization,
-real crash/recovery and remaining frozen gates. No production/migration or 8E.
+Latest continuation: read `docs/milestone-8-checkpoint-8d-host-candidate.md`
+first. Continue ONLY 8D. Local host/journal/8C challenge/budget/terminal-minimization
+and real Node crash recovery candidates now exist. Writer native44/44, unit239/239,
+actual SDK/Deno malformed-token2/2, Edge typecheck/static PASS. Independent bounded
+local review PASS with fresh44/44 and Deno2/2; not checkpoint/cloud acceptance.
+Verify standard exact-pushed-head CI/Chromium artifacts and temporary validation
+PR closure without merge; earlier hashes/results below are historical.
+SQL remains outside migrations, Edge candidate is undeployed, and no production
+authorization has been received. Do not start 8E or claim 8D accepted.
+Next boundary is actual cloud/OAuth acceptance after explicit production authority,
+not another repetition of earlier local primitive gates.
 
-Latest continuation: read `docs/milestone-8-checkpoint-8d-journal-candidate.md`
-first. Native PostgreSQL tooling is resolved, private local journal/token candidate
-exists, independent tests 17/17 PASS. Review CONDITIONAL PASS applies only to local
-primitives. Complete missing limit/race tests, journal.status validation and actual
-trusted host integration. SQL remains outside migrations, not deployed. Stop at
-8D; no 8E or production authority. Earlier admission-only text is historical.
-Local full suite 226/226 PASS; 49f247f exact-head standard CI #176 (34740274141)
-PASS including Chromium. Verify final docs-head CI and temporary PR #31 closed
-without merge; no workflow changes. Resume ONLY the remaining frozen 8D gates.
-
-Use this as the starting point after accepted Milestone 8 Checkpoint 8C. Verify repository head and accepted evidence before making claims.
-
-## Latest local work — 2026-09-13
+## Historical local admission-only work — 2026-09-13
 
 8D is IN PROGRESS, not ACCEPTED. Read
 `docs/milestone-8-checkpoint-8d-admission-candidate.md` first, alongside the frozen
