@@ -13,19 +13,23 @@ export async function transactionFixture(startAt=example.preparedAt,options={}) 
   const start=Date.parse(startAt),NOW=new Date(start+60000).toISOString();
   const current=structuredClone(example);
   current.preparedAt=new Date(start).toISOString();current.expiresAt=new Date(start+600000).toISOString();
-  for(const record of current.provenance)if(record.observedAt)record.observedAt=new Date(start+30000).toISOString();
+  for(const record of current.provenance)if(record.observedAt)record.observedAt=options.observedAt??new Date(start+30000).toISOString();
   const raw = structuredClone(ledgerExample);
-  Object.assign(raw, { tenantId: options.tenantId??'tenant_alpha', goalId: 'goal_alpha', createdAt: current.preparedAt, expiresAt: current.expiresAt });
-  raw.scope = { kind: 'TAB', resourceId: '42' };
+  Object.assign(raw, { tenantId: options.tenantId??'tenant_alpha', goalId: options.goalId??'goal_alpha', createdAt: current.preparedAt, expiresAt: current.expiresAt });
+  const target = options.target??current.target;
+  const scopeId = String(target.tabId);
+  raw.scope = { kind: 'TAB', resourceId: scopeId };
   // Dark journal-only fixture: no real-world predicates are attested by a click.
   // Host rejects nonempty constraints/nonGoals until a trusted evaluator exists.
   raw.constraints = options.constraints??[];
   raw.nonGoals = options.nonGoals??[];
-  raw.authorizations = [{ authorizationId: 'auth_8d', operationClass: 'SINGLE_BROWSER_MUTATION', scopeId: '42', expiresAt: current.expiresAt }];
+  raw.authorizations = [{ authorizationId: 'auth_8d', operationClass: 'SINGLE_BROWSER_MUTATION', scopeId, expiresAt: current.expiresAt }];
   const ledger = await createLedger(raw, { authoritySource: 'USER', now: NOW });
   const candidate = structuredClone(current);
   delete candidate.prepareDigest;
   candidate.tenantId=raw.tenantId;
+  candidate.goalId=raw.goalId;
+  candidate.target=structuredClone(target);
   candidate.transactionId=options.transactionId??candidate.transactionId;
   candidate.budgets={...candidate.budgets,...options.budgets};
   candidate.goalRevision = ledger.revision;
@@ -37,9 +41,10 @@ export async function transactionFixture(startAt=example.preparedAt,options={}) 
   for (const record of candidate.provenance) { record.goalRevision = ledger.revision; record.tenantId=raw.tenantId; }
   candidate.provenance[1].transformChain = ['IDENTITY'];
   candidate.provenance[1].valueDigest = await digestCanonical('oa_test');
+  Object.assign(candidate.provenance[1], { deviceId: target.deviceId, tabId: target.tabId, documentGeneration: target.documentGeneration });
   const prepared = await prepareTransaction(candidate);
   const identity = { userId: options.userId??'user_alpha', tenantId: raw.tenantId, acceptanceIdentity: options.actorId??'synthetic_8d' };
-  const grant = { authorizationId: 'auth_8d', operationClass: 'SINGLE_BROWSER_MUTATION', scopeId: '42', actionDigest: prepared.action.actionDigest, targetDigest: prepared.target.targetDigest };
+  const grant = { authorizationId: 'auth_8d', operationClass: 'SINGLE_BROWSER_MUTATION', scopeId, actionDigest: prepared.action.actionDigest, targetDigest: prepared.target.targetDigest };
   const state = { ledger, identity, grant, target: prepared.target, mode: 'DARK', resolved: structuredClone(prepared.provenance[1]) };
   const calls = [];
   const admission = createTransactionAdmission({

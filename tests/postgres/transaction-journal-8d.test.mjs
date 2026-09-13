@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import test, { before, after } from 'node:test';
 import { transactionFixture } from '../helpers/transaction-dark-fixture.mjs';
+import { createCloudFixtureData8D } from '../helpers/transaction-cloud-fixture-8d.mjs';
 import { createTransactionDarkHost } from '../../lib/transaction-host-8d.js';
 import { sealLedgerToken } from '../../lib/ledger-token.js';
 import { openTransactionToken } from '../../lib/transaction-token-8d.js';
@@ -88,6 +89,18 @@ after(async () => {
   if (started) await control(['-D', data, '-m', 'fast', '-w', 'stop']);
   // Keep synthetic diagnostic artifacts; never recursively delete a computed path.
   console.log(`Native PostgreSQL stopped; synthetic diagnostic directory: ${data}`);
+});
+
+test('8D cloud fixture goal head fits actual production DDL rather than the reduced journal double', async () => {
+  const f = await createCloudFixtureData8D({ namespace: '12345678-1234-4234-8234-123456789abc', userId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', preparedAt: '2026-09-14T00:00:00.000Z' });
+  const source = await fs.readFile(new URL('../../supabase/migrations/20260911164000_opera_agent_goal_head.sql', import.meta.url), 'utf8');
+  const ddl = source.match(/create table opera_agent_private\.goal_heads \([\s\S]*?\n\);/)?.[0];
+  assert.ok(ddl, 'Production goal-head DDL must be available unchanged');
+  const table = 'fixture_shape_8d.goal_heads';
+  const record = JSON.stringify(f.goalHead).replaceAll("'", "''");
+  const result = await query(`begin; create schema fixture_shape_8d; ${ddl.replace('opera_agent_private.goal_heads', table)} insert into ${table} select * from jsonb_populate_record(null::${table},'${record}'::jsonb); select count(*) from ${table} where tenant_id='${f.principal.tenant_id}'::uuid and goal_id='${f.goalHead.goal_id}'; rollback;`, 'postgres');
+  assert.equal(result, '1');
+  assert.equal(await query("select count(*) from pg_namespace where nspname='fixture_shape_8d';", 'postgres'), '0');
 });
 
 test('8D private schema/RLS/function grants deny anon and authenticated', async () => {

@@ -60,6 +60,20 @@ self-referential SHA is stored here. Standard workflow must remain unchanged.
 
 ## Next meaningful 8D work
 
+Latest prerequisite: `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
+DATA-only cloud fixture now uses isolated UUID tenant/complete goal-head row,
+synthetic namespaced target/tab0 and exact cleanup IDs. Native regression tests
+actual production DDL in a rolled-back temporary schema. Read its next operational
+integration boundary before building operator runner. No runner/login/enrollment/
+live prepare this continuation. Never copy reduced native text-tenant/fictional
+Auth session fixtures into cloud. M6 ledgertrue/M7false/transactionOFF freshly
+read-only verified; host flag/all-table counts not freshly checked. Independent
+exact-runner review and cleanup/recovery tests BEFORE fresh manual login remain
+mandatory. No8E or account-wide logout/key rotation/new public enrollment endpoint.
+Final writer focused22/full264/native45 zero skips/staticPASS; independent local
+DATA-onlyPASS focused22/fixtureOAuth22/nativeDDL1. Verify exact-head standardCI
+includingChromium/temporaryPRclosedwithoutmerge from artifacts, not assumed here.
+
 Latest diagnostic prerequisite: `docs/milestone-8-checkpoint-8d-oauth-host-adapter.md`.
 Test-only SDK/status adapter implemented, focused20/20 and Deno1/1/typecheckPASS.
 It is NOT a live positive acceptance gate: absent marker yields STORAGE_ERROR,

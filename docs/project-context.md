@@ -24,6 +24,23 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
+Latest bounded continuation: `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
+Test-only cloud fixture DATA builder now isolates UUID tenant and namespaced
+synthetic actor/goal/transaction/device/document/tab0, complete production-shaped
+goal-head timestamps and exact cleanup identifiers. Target/grant/provenance
+digests match; synthetic observation is not browser evidence. Actual production
+goal-head DDL tested in rolled-back native schema, unlike older reduced text-
+tenant journal double. Reviewer observation-clock finding fixed: immediate
+provenance validates at preparedAt. No login/enrollment/production mutation,
+deployment/key access/runner/browser dispatch. Read-only production confirms
+M6 ledgertrue, M7 VMfalse, transaction policyOFF/legacyfalse/agentcommitfalse;
+host environment flag/all-table counts not freshly checked. Next unit is a
+tests-first opt-in operator runner with exact provisioning/cleanup/recovery,
+independent audit BEFORE another login. Overall8D open,8E not started.
+Final focused22/22, full264/264, native45/45 zero skips/staticPASS. Independent
+refrozen DATA-onlyPASS reran focused22/22, fixture/OAuth22/22 and native production-
+DDL1/1; not overall8D acceptance. Exact-head standardCI/closure in validationPR.
+
 Latest local continuation: `docs/milestone-8-checkpoint-8d-oauth-host-adapter.md`.
 Test-only in-process actual-pinned-SDK CLI/status adapter built; focused20/20,
 actualSDKmalformed Deno1/1, CLItypecheck, full259/259 zero skips, static and
