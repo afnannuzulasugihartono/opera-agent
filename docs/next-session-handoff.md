@@ -1,5 +1,12 @@
 # Opera Agent next-session handoff
 
+Latest continuation: read `docs/milestone-8-checkpoint-8d-journal-candidate.md`
+first. Native PostgreSQL tooling is resolved, private local journal/token candidate
+exists, independent tests 17/17 PASS. Review CONDITIONAL PASS applies only to local
+primitives. Complete missing limit/race tests, journal.status validation and actual
+trusted host integration. SQL remains outside migrations, not deployed. Stop at
+8D; no 8E or production authority. Earlier admission-only text is historical.
+
 Use this as the starting point after accepted Milestone 8 Checkpoint 8C. Verify repository head and accepted evidence before making claims.
 
 ## Latest local work — 2026-09-13

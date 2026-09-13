@@ -24,6 +24,14 @@ Non-negotiable invariants:
 
 ## Current 8D work (not acceptance)
 
+Latest work: `docs/milestone-8-checkpoint-8d-journal-candidate.md` records private
+local PostgreSQL journal primitives and AES-GCM metadata tokens. Independent
+native/token rerun 17/17 PASS; verdict CONDITIONAL PASS for primitives only.
+SQL is staged outside migrations and not deployed. Complete local limit/race
+coverage and actual trusted host/approval/ledger integration remain open, including
+terminal payload minimization. No production changes; do not begin 8E.
+Admission-only evidence below describes the previous session.
+
 Local admission candidate now exists in `lib/transaction-admission-8d.js`:
 request identity/policy/executor claims are rejected; actual action arguments,
 current ledger authorization, target, and per-argument attested provenance are
