@@ -11,19 +11,21 @@ const userId='aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const sessionId='bbbbbbbb-cccc-4ddd-8eee-ffffffffffff';
 const preparedAt='2026-09-14T00:00:00.000Z';
 const accessToken='sbp_'+('a'.repeat(40));
-const transactionSecret='operator-secret-never-echoed';
+const transactionSecret=Buffer.alloc(32,9).toString('base64url');
+const unrelatedSecret='unrelated-secret-never-retain';
 const ledgerKey=Buffer.alloc(32,7).toString('base64url');
 
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});}
 function harness(options={}){
   const state={host:options.host??'false',mode:options.mode??'OFF',rows:options.rows??0,goalRows:options.goalRows??0,calls:[],db:[],secretWrites:[]};
+  const transactionKey=options.transactionSecret??transactionSecret;
   const fetchImpl=async(url,init={})=>{
     const parsed=new URL(url);state.calls.push({url,method:init.method??'GET'});
     assert.equal(parsed.origin,'https://api.supabase.com');assert.ok(parsed.pathname.startsWith(`/v1/projects/${PROJECT_REF_8D}/`));
     assert.equal(init.headers?.Authorization,`Bearer ${accessToken}`);assert.equal(String(init.headers?.Authorization).includes(transactionSecret),false);
-    if(options.failFetch) throw new Error(`network ${transactionSecret} ${accessToken}`);
+    if(options.failFetch) throw new Error(`network ${transactionKey} ${unrelatedSecret} ${accessToken}`);
     if(parsed.pathname.endsWith('/functions')) return json([{slug:TRANSACTION_FUNCTION_8D,status:'ACTIVE',verify_jwt:true,ezbr_sha256:options.bundle??EXPECTED_TRANSACTION_BUNDLE_SHA_8D,version:6}]);
-    if(parsed.pathname.endsWith('/secrets')&&(init.method??'GET')==='GET') return json([{name:'OPERA_AGENT_TRANSACTION_DARK_8D',value:state.host},{name:'OPERA_AGENT_TRANSACTION_KEY_8D',value:transactionSecret}]);
+    if(parsed.pathname.endsWith('/secrets')&&(init.method??'GET')==='GET') return json([{name:'UNRELATED_SECRET',value:unrelatedSecret},{name:'OPERA_AGENT_TRANSACTION_DARK_8D',value:state.host},{name:'OPERA_AGENT_TRANSACTION_KEY_8D',value:transactionKey}]);
     if(parsed.pathname.endsWith('/secrets')&&init.method==='POST'){
       const body=JSON.parse(init.body);state.secretWrites.push(body);assert.deepEqual(Object.keys(body[0]).sort(),['name','value']);assert.equal(body[0].name,'OPERA_AGENT_TRANSACTION_DARK_8D');state.host=body[0].value;return json({});
     }
@@ -54,12 +56,13 @@ test('8D management backend exposes only fixed operator methods and a pinned tar
   assert.deepEqual(await backend.describe(),{projectRef:PROJECT_REF_8D,clientId:CLIENT_ID,callback:CALLBACK_8D});
 });
 
-test('8D management preflight pins exact bundle hash, host OFF, policy OFF, crypto and zero synthetic rows',async()=>{
+test('8D management preflight pins exact bundle hash, host OFF, policy OFF, valid transaction crypto and zero synthetic rows',async()=>{
   const {backend,state}=harness();
   assert.deepEqual(await backend.preflight(namespace),{hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:true,locksVerified:true});
   const query=state.db.find(item=>item.query.includes('as synthetic_rows'));assert.equal(query.read_only,true);assert.deepEqual(query.parameters,[namespace]);
   const badBundle=harness({bundle:'wrong'}).backend;await assert.rejects(badBundle.preflight(namespace),/8D_HOST_BUNDLE_MISMATCH/);
   const hostOn=harness({host:'true'}).backend;await assert.rejects(hostOn.preflight(namespace),/8D_HOST_NOT_OFF/);
+  const invalidKey=harness({transactionSecret:'present-but-not-a-32-byte-key'}).backend;await assert.rejects(invalidKey.preflight(namespace),/8D_TRANSACTION_KEY_INVALID/);
   const dirty=harness({rows:1}).backend;assert.equal((await dirty.preflight(namespace)).namespaceEmpty,false);
 });
 
@@ -102,5 +105,5 @@ test('8D management cleanup is exact, idempotent-shaped and final clean verifica
 
 test('8D management failures redact operator credentials and remote secret text',async()=>{
   const {backend}=harness({failFetch:true});let error;try{await backend.preflight(namespace);}catch(e){error=e;}
-  assert.equal(error?.message,'8D_MANAGEMENT_REQUEST_FAILED');assert.equal(error.message.includes(accessToken),false);assert.equal(error.message.includes(transactionSecret),false);
+  assert.equal(error?.message,'8D_MANAGEMENT_REQUEST_FAILED');assert.equal(error.message.includes(accessToken),false);assert.equal(error.message.includes(transactionSecret),false);assert.equal(error.message.includes(unrelatedSecret),false);
 });

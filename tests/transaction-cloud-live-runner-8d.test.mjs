@@ -3,12 +3,12 @@ import test from 'node:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseAcceptanceArgs8D, runAcceptanceCli8D, SDK_SPECIFIER_8D, STATE_DIRECTORY_8D } from './cloud/transaction-cloud-acceptance-8d.mjs';
+import { LEASE_TTL_MS_8D, parseAcceptanceArgs8D, runAcceptanceCli8D, SDK_SPECIFIER_8D, STATE_DIRECTORY_8D } from './cloud/transaction-cloud-acceptance-8d.mjs';
 
 const namespace='12345678-1234-4234-8234-123456789abc';
 const credential='sbp_'+('a'.repeat(40));
 
-test('8D live runner freezes exact CLI modes and pinned SDK',()=>{
+test('8D live runner freezes exact CLI modes, pinned SDK and ownership window',()=>{
   assert.deepEqual(parseAcceptanceArgs8D([]),{mode:'accept'});
   assert.deepEqual(parseAcceptanceArgs8D(['--recover',namespace]),{mode:'recover',namespace});
   assert.throws(()=>parseAcceptanceArgs8D(['--recover']),/INVALID_8D_RUNNER_ARGUMENTS/);
@@ -16,6 +16,7 @@ test('8D live runner freezes exact CLI modes and pinned SDK',()=>{
   assert.throws(()=>parseAcceptanceArgs8D(['--sql','select 1']),/INVALID_8D_RUNNER_ARGUMENTS/);
   assert.equal(SDK_SPECIFIER_8D,'npm:@supabase/supabase-js@2.57.4');
   assert.equal(STATE_DIRECTORY_8D,'.opera-agent-8d-state');
+  assert.equal(LEASE_TTL_MS_8D,60000);
 });
 
 test('8D recovery mode needs no OAuth key, SDK call, browser or network when no dirty manifest exists',async()=>{
