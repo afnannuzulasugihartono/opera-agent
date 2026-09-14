@@ -14,7 +14,7 @@ const MGMT=/^[A-Za-z0-9._~-]{16,8192}$/;
 const PUBLIC=/^sb_publishable_[A-Za-z0-9_-]+$/;
 export const SDK_SPECIFIER_8D='npm:@supabase/supabase-js@2.57.4';
 export const STATE_DIRECTORY_8D='.opera-agent-8d-state';
-export const LEASE_TTL_MS_8D=60000;
+export const LEASE_TTL_MS_8D=180000;
 
 export function parseAcceptanceArgs8D(args){
   if(!Array.isArray(args))throw new Error('INVALID_8D_RUNNER_ARGUMENTS');
