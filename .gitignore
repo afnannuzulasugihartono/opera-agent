@@ -19,6 +19,9 @@ coverage/
 .supabase/
 supabase/.temp/
 
+# Checkpoint 8D local crash-recovery state (nonsecret, never commit)
+.opera-agent-8d-state/
+
 # Editor / OS
 .vscode/
 .idea/
