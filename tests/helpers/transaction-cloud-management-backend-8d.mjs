@@ -1,13 +1,13 @@
 // Test-only fixed production operator backend for Checkpoint 8D acceptance.
 // This module intentionally exposes no arbitrary SQL, URL, secret name or project
-// selector. The fenced Edge bundle is intentionally UNPINNED until reviewed deploy;
-// the all-zero digest makes current production fail closed before OAuth/live work.
+// selector. The fenced Edge bundle is pinned to the independently reviewed deploy;
+// any other deployed bundle fails closed before OAuth/live work.
 import { CLIENT_ID } from './transaction-oauth-8d.mjs';
 import { CALLBACK_8D, PROJECT_REF_8D } from './transaction-cloud-operator-8d.mjs';
 import { decodeLedgerKey, sealLedgerToken } from '../../lib/ledger-token.js';
 
 export const TRANSACTION_FUNCTION_8D='opera-agent-transactions-8d';
-export const EXPECTED_TRANSACTION_BUNDLE_SHA_8D='0000000000000000000000000000000000000000000000000000000000000000';
+export const EXPECTED_TRANSACTION_BUNDLE_SHA_8D='96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1';
 const MANAGEMENT_ORIGIN='https://api.supabase.com';
 const MASTER_FLAG='OPERA_AGENT_TRANSACTION_DARK_8D';
 const TRANSACTION_KEY='OPERA_AGENT_TRANSACTION_KEY_8D';

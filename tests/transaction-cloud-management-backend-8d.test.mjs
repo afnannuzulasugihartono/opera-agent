@@ -70,7 +70,7 @@ test('8D recovery descriptor checks actual bundle integrity before control mutat
 });
 
 test('8D management preflight requires fenced Edge pin/master, OFF policy, idle server fence and valid crypto',async()=>{
-  const {backend,state}=harness();assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA_8D,'0'.repeat(64));
+  const {backend,state}=harness();assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA_8D,'96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1');
   assert.deepEqual(await backend.preflight(namespace),{hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:true,locksVerified:true});
   const query=state.db.find(item=>item.query.includes('as synthetic_rows'));assert.equal(query.read_only,true);assert.deepEqual(query.parameters,[namespace]);
   await assert.rejects(harness({bundle:'wrong'}).backend.preflight(namespace),/8D_HOST_BUNDLE_MISMATCH/);

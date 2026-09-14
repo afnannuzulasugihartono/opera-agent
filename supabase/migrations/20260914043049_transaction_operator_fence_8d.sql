@@ -1,4 +1,4 @@
--- Checkpoint 8D review candidate only. NOT DEPLOYED by this commit.
+-- Checkpoint 8D independently reviewed operator fence, installed master-OFF.
 -- Adds a service-only singleton lease epoch used to fence every trusted operator
 -- mutation across process death/recovery. No browser dispatch or agent authority.
 begin;

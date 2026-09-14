@@ -4,18 +4,30 @@ Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 
 ## Latest request: repair remaining 8D audit findings
 
-The other writer is closed. This session repaired candidate fcbec894's local
+Superseding continuation: independent read-only reviewer review_8d_candidate PASS
+at f1e6f944; reviewed migration installed as 20260914043049 and isolated fenced
+Edge ACTIVE/v8/JWT-required with all13 bodies verified and observed hash pinned:
+96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1.
+Master is still OFF; operator unowned/hostfalse and policy OFF/legacyfalse/agentfalse.
+Read fenced-install and fence-review records before historical sections below.
+Next: independent exact pin/filename delta review plus exact-head CI; then finish
+the missing reviewed cloud/OAuth/worker acceptance matrix. The current live CLI
+alone does not close8D. User authorizes finishing8D then8E, not gate waivers.
+Do not start8E before final independent8D acceptance; no browser effect in8D.
+
+Historical repair record (before the superseding installation above):
+The other writer is closed. That session repaired candidate fcbec894's local
 ownership race, release clean-state gap, and recovery integrity gap. Read
 `docs/milestone-8-checkpoint-8d-audit-repair.md` before the historical records below.
 Local Node suite 314/314, focused gates 46/46, static 1.6.0/26, Windows stress
 zero dual owners/150 and native release regression PASS. This is implementation
 verification, not independent review or new CI/live acceptance.
-Next: independent review of the exact committed repair diff, including the new
+Its then-next step was independent review of the committed repair diff, including
 native PostgreSQL gate (`OPERA_PG_BIN`), permanent retirement witness semantics,
 exclusive release owned-row check, and actual recovery bundle verification.
-No production mutation/deployment/OAuth has occurred; zero bundle pin remains.
-Do not deploy or start cloud acceptance until independent review passes; do not
-start 8E. Prior reliability diagnostics are preserved as a separate side task.
+At that earlier boundary production was untouched and the bundle pin zero.
+Both statements are superseded by the reviewed installation above. Prior
+reliability diagnostics remain a separate side task; no8E until8D acceptance.
 
 ## Latest user-requested side investigation
 
@@ -42,7 +54,7 @@ must stay unchanged. Do not deploy, run transaction OAuth/DARK, or start 8E.
 4. `docs/milestone-8-checkpoint-8d-cloud-install.md` and `docs/milestone-8-checkpoint-8d-cloud-bounds.md`.
 5. `docs/milestone-8-checkpoint-8d-cloud-fixture.md` and `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
 6. `docs/milestone-8-checkpoint-8d-operator-supervisor.md` and `docs/milestone-8-checkpoint-8d-chat-readiness.md`.
-7. **New review target:** `supabase/migrations/20260914031000_transaction_operator_fence_8d.sql` plus the ownership/fence tests listed below.
+7. Installed fence: `supabase/migrations/20260914043049_transaction_operator_fence_8d.sql` plus the ownership/fence tests listed below.
 
 Repository: `afnannuzulasugihartono/opera-agent`.
 Branch: `feat/semantic-runtime-1.6.0`.
@@ -52,13 +64,11 @@ Use one active writer only.
 
 8A-8C are accepted. 8D remains **IN PROGRESS**. 8E has not started.
 
-The earlier ownership + server-side fencing candidate had green exact-head CI;
-the follow-up above supersedes its review target and has local tests only so far.
-This task intentionally did **not** mutate production,
-run OAuth, deploy an Edge function, apply a migration, change a secret, dispatch a
-browser action, or modify extension/MCP compatibility.
+The reviewed repair has exact-head CI34805110044 PASS and independent PASS.
+Only the additive fence and isolated fenced Edge were installed master-OFF.
+No OAuth, fixture, browser, extension or public MCP operation has occurred.
 
-Stop now for independent review. Do not start 8E.
+Next is pin-delta review/CI, then remaining reviewed acceptance. Do not start8E.
 
 ## Why this repair exists
 
@@ -110,9 +120,9 @@ server epoch is memory-only and is not persisted there.
 
 New migration candidate:
 
-`supabase/migrations/20260914031000_transaction_operator_fence_8d.sql`
+`supabase/migrations/20260914043049_transaction_operator_fence_8d.sql`
 
-**NOT DEPLOYED.**
+Installed master-OFF after independent PASS; superseding installation record above.
 
 It adds one service-only singleton control row with:
 

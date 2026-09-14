@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-const migrationUrl=new URL('../supabase/migrations/20260914031000_transaction_operator_fence_8d.sql',import.meta.url);
+const migrationUrl=new URL('../supabase/migrations/20260914043049_transaction_operator_fence_8d.sql',import.meta.url);
 const edgeUrl=new URL('../supabase/functions/opera-agent-transactions-8d/index.ts',import.meta.url);
 
 test('8D release checks all owned tables inside the exclusive barrier before clearing ownership',async()=>{

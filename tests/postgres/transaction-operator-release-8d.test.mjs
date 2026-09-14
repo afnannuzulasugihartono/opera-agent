@@ -31,7 +31,7 @@ test('8D exclusive release refuses late committed rows and retains ownership',as
       insert into opera_agent_tx_candidate.policy values(true,'OFF',false,false);
       create table opera_agent_private.goal_heads(tenant_id uuid);
       ${tables.map(name=>`create table opera_agent_tx_candidate.${name}(tenant_id text);`).join('\n')}`);
-    query(await readFile(new URL('../../supabase/migrations/20260914031000_transaction_operator_fence_8d.sql',import.meta.url),'utf8'));
+    query(await readFile(new URL('../../supabase/migrations/20260914043049_transaction_operator_fence_8d.sql',import.meta.url),'utf8'));
     const ns='11111111-1111-4111-8111-111111111111';
     const binding=`'native_owner_01','${ns}',1`;
     assert.equal(query(`select public.opera_tx_operator_acquire_8d('native_owner_01','${ns}',180000)`),'1');

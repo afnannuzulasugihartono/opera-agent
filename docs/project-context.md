@@ -4,6 +4,19 @@ Last synchronized: 2026-09-14
 
 ## Latest 8D follow-up audit repair
 
+Superseding continuation: separate reviewer `review_8d_candidate` returned PASS
+for exact f1e6f944 and bounded master-OFF installation. See
+`docs/milestone-8-checkpoint-8d-fence-review.md` and
+`docs/milestone-8-checkpoint-8d-fenced-install.md`. Actual fence history version
+is 20260914043049; migration filename reconciled without history rewrite.
+The isolated fenced Edge v8 is ACTIVE/JWT required; all13 deployed bodies match.
+Observed bundle/pin: 96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1.
+Master remains OFF; fresh control state epoch0/unowned/hostfalse and policy OFF,
+legacyfalse/agentfalse, principals/runs/goals zero. Public MCP/extension/signing
+remain unchanged. Pin-delta review/CI, full cloud acceptance and final independent
+8D review remain required before 8E. Earlier undeployed statements below are
+historical and superseded by this installation, not overall checkpoint acceptance.
+
 The user closed the other writer and requested repair here. See
 `docs/milestone-8-checkpoint-8d-audit-repair.md`. The follow-up repairs atomic local
 lease publication/retirement, exclusive server release zero-owned-row checks,
@@ -204,9 +217,9 @@ shape.
 
 New review-only migration candidate:
 
-`supabase/migrations/20260914031000_transaction_operator_fence_8d.sql`
+`supabase/migrations/20260914043049_transaction_operator_fence_8d.sql`
 
-**This migration is not deployed.**
+Installed master-OFF after independent PASS; see the fenced-install record above.
 
 It adds a service-only singleton `opera_agent_tx_candidate.operator_control` with:
 
@@ -341,7 +354,7 @@ Follow `AGENTS.md`, `SECURITY.md`, and `docs/prompts/chatgpt-web-checkpoint.md`:
 - `docs/milestone-8-checkpoint-8d-cloud-controller.md`
 - `docs/milestone-8-checkpoint-8d-operator-supervisor.md`
 - `docs/milestone-8-checkpoint-8d-chat-readiness.md`
-- `supabase/migrations/20260914031000_transaction_operator_fence_8d.sql` — review-only, not deployed
+- `supabase/migrations/20260914043049_transaction_operator_fence_8d.sql` — installed master-OFF after independent review
 - `tests/transaction-cloud-ownership-fence-8d.test.mjs`
 - `tests/transaction-cloud-server-fence-static-8d.test.mjs`
 - `docs/milestone-7-codex-audit.md`
