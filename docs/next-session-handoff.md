@@ -6,194 +6,237 @@ Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 
 1. `AGENTS.md` and `SECURITY.md`.
 2. `docs/project-context.md` and this handoff.
-3. `docs/milestone-8-plan.md` and `docs/milestone-8-plan-codex-review.md`.
-4. Accepted records 8A-8C.
-5. `docs/milestone-8-checkpoint-8d-cloud-install.md` and `docs/milestone-8-checkpoint-8d-cloud-bounds.md`.
-6. `docs/milestone-8-checkpoint-8d-cloud-fixture.md` and `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
-7. `docs/milestone-8-checkpoint-8d-operator-supervisor.md`.
-8. **Latest:** `docs/milestone-8-checkpoint-8d-chat-readiness.md`.
+3. `docs/milestone-8-plan.md` and accepted 8A-8C records.
+4. `docs/milestone-8-checkpoint-8d-cloud-install.md` and `docs/milestone-8-checkpoint-8d-cloud-bounds.md`.
+5. `docs/milestone-8-checkpoint-8d-cloud-fixture.md` and `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
+6. `docs/milestone-8-checkpoint-8d-operator-supervisor.md` and `docs/milestone-8-checkpoint-8d-chat-readiness.md`.
+7. **New review target:** `supabase/migrations/20260914031000_transaction_operator_fence_8d.sql` plus the ownership/fence tests listed below.
 
-Inspect the current worktree/remote before editing. Repository:
-`afnannuzulasugihartono/opera-agent`; branch `feat/semantic-runtime-1.6.0`.
+Repository: `afnannuzulasugihartono/opera-agent`.
+Branch: `feat/semantic-runtime-1.6.0`.
 Use one active writer only.
 
 ## Current boundary
 
 8A-8C are accepted. 8D remains **IN PROGRESS**. 8E has not started.
 
-The local implementation remainder that was previously missing is now present:
+The requested ownership + server-side fencing repair is implemented locally and
+has green exact-head CI. This task intentionally did **not** mutate production,
+run OAuth, deploy an Edge function, apply a migration, change a secret, dispatch a
+browser action, or modify extension/MCP compatibility.
 
-- durable fixed-project operator/supervisor;
-- fixed Supabase Management acceptance backend;
-- exact opt-in live/recovery runner;
-- cleanup-order fail-closed hardening;
-- 180000 ms ownership window for the bounded live runner;
-- transaction encryption-key preflight validation and key-byte zeroing.
+Stop now for independent review. Do not start 8E.
 
-Do **not** repeat implementation of a production operator adapter. That work is no
-longer the next task.
+## Why this repair exists
 
-## Latest code candidate and CI
+Independent review identified two ownership failures in the previous pre-live
+candidate:
 
-Latest code candidate before documentation closeout:
+1. a fresh namespace could bypass a dirty manifest belonging to another namespace
+   after the local global lease expired;
+2. a remote trusted mutation could outlive the dead local process and commit after
+   recovery had already restored/verified clean state.
 
-`0bc958eb782de17b22b2c19081c5f85e908ccc7a`
+A prior cleanup-order issue was already fixed before this repair: fixture deletion
+is forbidden until host disablement and policy OFF restoration both succeed.
 
-Exact-head GitHub Actions run `34796100802` completed SUCCESS:
+## Test-first evidence
+
+Initial failing test commit:
+
+`3595f8026ad72a14e39dc48df989cad235806670`
+
+CI run `34801030099` failed in unit/static as expected. The tests exposed global
+pending-manifest admission and delayed pre-recovery mutation behavior. The delayed
+mutation test's start synchronization was then made deterministic in:
+
+`6d535cabaa257cd5f94018f67640fd95cc971900`
+
+Regression files:
+
+- `tests/transaction-cloud-ownership-fence-8d.test.mjs`
+- `tests/transaction-cloud-server-fence-static-8d.test.mjs`
+
+## Local ownership fix
+
+File: `tests/helpers/transaction-cloud-operator-8d.mjs`.
+
+The local state directory now has globally singular dirty ownership semantics:
+
+- fresh preflight searches for any pending manifest, not only the new namespace;
+- any dirty manifest blocks every fresh namespace with `8D_RECOVERY_REQUIRED`;
+- more than one dirty manifest fails closed;
+- ownership rechecks global pending state after local lease acquisition;
+- `--recover <namespace>` must match the globally pending manifest;
+- live-PID fencing remains in place.
+
+The durable manifest remains nonsecret and keeps its existing version/shape. The
+server epoch is memory-only and is not persisted there.
+
+## Server-side fence candidate
+
+New migration candidate:
+
+`supabase/migrations/20260914031000_transaction_operator_fence_8d.sql`
+
+**NOT DEPLOYED.**
+
+It adds one service-only singleton control row with:
+
+- monotonically increasing fence epoch;
+- exact owner + namespace;
+- bounded server lease;
+- fenced `host_enabled` state.
+
+Fixed service-only functions provide acquire, heartbeat, assert, host toggle,
+exact cleanup, release, state read, and hosted gate read. `public`, `anon`, and
+`authenticated` have no execute authority on these functions.
+
+Fencing rule:
+
+- trusted mutation carries owner + namespace + epoch;
+- mutation asserts the epoch while holding the control row with a share lock;
+- recovery takes an exclusive row lock and increments epoch before cleanup;
+- therefore an old mutation either commits before takeover or observes a stale
+  epoch and cannot commit after the new owner completes recovery;
+- cleanup itself additionally requires current epoch, host disabled, policy OFF,
+  `legacy_gated=false`, and `agent_commit_enabled=false`;
+- final server-fence release is a clean-state exclusive-lock barrier before the
+  local manifest/lease may be deleted.
+
+## Operator integration
+
+The internal backend contract now additionally requires:
+
+- `acquireFence`
+- `heartbeatFence`
+- `releaseFence`
+
+These are internal trusted-adapter methods only. The public controller/operator
+surface used by the acceptance controller remains the same eleven operations, and
+public MCP remains unchanged.
+
+Normal ownership writes dirty local evidence before remote fence acquisition so a
+lost acquire reply remains recoverable. Normal clean completion releases the
+server fence before deleting local ownership. Recovery acquires a fresh server
+epoch before restoring host/OFF/cleanup.
+
+## Fixed Management backend integration
+
+File: `tests/helpers/transaction-cloud-management-backend-8d.mjs`.
+
+The backend remains fixed-project/fixed-SQL test infrastructure and has no generic
+SQL, URL, secret-name, shell, code, RPC, model, or page escape hatch.
+
+All trusted mutations now carry the exact fence:
+
+- insert-only fixture provisioning;
+- host enable/disable;
+- DARK/OFF policy changes;
+- cleanup;
+- clean verification.
+
+Per-run host toggling no longer writes the project secret. The existing
+`OPERA_AGENT_TRANSACTION_DARK_8D` secret becomes only a static deployment/master
+kill switch.
+
+## Fenced Edge candidate
+
+File: `supabase/functions/opera-agent-transactions-8d/index.ts`.
+
+**NOT DEPLOYED.**
+
+When the static master switch is enabled, each request must first receive `true`
+from service-role-only `opera_tx_operator_host_gate_8d` before the transaction host
+runs. The underlying candidate transaction mutations remain policy-fenced by
+`assert_dark()` as well.
+
+No finalize, transaction commit, approval, browser dispatch, or new public MCP
+surface was introduced. `browserDispatchAllowed` remains false.
+
+## Deliberate fail-closed deployment pin
+
+Because the fenced Edge source has not been deployed, its real Supabase
+`ezbr_sha256` does not exist yet. The Management backend therefore uses the exact
+all-zero 64-character digest as an intentional impossible/pending pin.
+
+This means the current production Edge can **not** accidentally pass the new live
+preflight. Do not replace the sentinel by guessing a hash.
+
+After independent PASS only:
+
+1. deploy the reviewed fence migration and fenced Edge with the static master switch still disabled;
+2. read the real deployed Edge bundle hash;
+3. replace the zero sentinel with that exact hash in a pin-only change;
+4. run exact-head CI and review that delta as required;
+5. only then may fresh PKCE/OAuth acceptance be considered.
+
+## Exact CI evidence
+
+Latest implementation/static-test head before documentation commits:
+
+`3c0ac9d677cf289c384ad3704548ba0c4e935ee7`
+
+Exact GitHub Actions run:
+
+`34801634178`
+
+Result: **SUCCESS**
 
 - unit/static PASS;
 - Playwright install PASS;
 - Chromium extension regression PASS.
 
-Documentation synchronization commits follow that code candidate. Verify the new
-branch HEAD and its exact-head CI before doing any further work; do not infer the
-final docs-head CI from this file.
+Core implementation head `1ebd23f691b31209f837423b6a78b9c115f69283`
+also completed full CI successfully.
 
-## Production read-only state reverified
+## Production is untouched by this repair
 
-Fresh read-only Supabase checks on 2026-09-14 showed:
+Do not confuse the review candidate with production.
 
-- policy `OFF`;
-- `legacy_gated=false`;
-- `agent_commit_enabled=false`;
-- all 11 8D synthetic transaction tables zero;
-- `opera_agent_private.goal_heads` zero;
-- all 12 candidate tables RLS enabled with no client policies;
-- reviewed candidate routines deny `anon` and `authenticated` execute authority;
-- migration `20260913143306_transaction_journal_8d_dark` applied.
+Production still has the earlier installed 8D backend only:
 
-Edge `opera-agent-transactions-8d` is ACTIVE, currently deployment version 6,
-`verify_jwt=true`, and has exact deployed bundle SHA-256
-`bad0ae493209891e45bc90a11d91ef85dac72022f70f7aaf8ba9e8152c822769`, matching the
-fixed backend integrity pin. Treat exact bundle hash, not deployment version number,
-as the integrity fence.
+- applied migration `20260913143306_transaction_journal_8d_dark.sql`;
+- previously observed Edge deployment version 6 / `verify_jwt=true`;
+- previously observed old bundle SHA `bad0ae493209891e45bc90a11d91ef85dac72022f70f7aaf8ba9e8152c822769`;
+- prior read-only closeout state host master false, policy OFF, legacy gate false,
+  agent commit false, synthetic transaction rows zero.
 
-No production mutation was performed during this read-only revalidation.
+This repair did not reconfigure or deploy any of those resources.
 
-## Fixed Management acceptance backend
+## Locked compatibility
 
-File: `tests/helpers/transaction-cloud-management-backend-8d.mjs`.
+Unchanged:
 
-The backend pins project `nenmkmtvjremqphfqnfw`, existing OAuth client/callback,
-Management origin, Edge slug/hash, host flag, transaction-key secret name, and
-fixed parameterized SQL only. It exposes no arbitrary SQL, URL, secret-name,
-shell, raw-CDP, JavaScript, generic-RPC, model, or page surface.
+- extension `1.6.0`;
+- protocol `1`;
+- extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`;
+- 26 browser capabilities;
+- 18 public MCP tools with unchanged schemas;
+- signing identity and pairing;
+- immediate signed rollback `1.5.2`.
 
-It verifies exact server Auth session + user + OAuth client before insert-only
-fixture provisioning, uses existing ledger crypto only in memory, validates the
-transaction host key through the 32-byte decoder during preflight, and zeroes
-decoded key bytes. Secrets/bearers are not printed or persisted by the backend.
+Chromium regression passed on the exact ownership/fence implementation head.
 
-## Durable operator/supervisor
+## Exact next step
 
-File: `tests/helpers/transaction-cloud-operator-8d.mjs`.
+**REVIEW ONLY.**
 
-It provides:
+Independently audit the exact branch after the documentation synchronization,
+with focus on:
 
-- exclusive global-control lease;
-- durable nonsecret dirty manifest with exact cleanup IDs + phase;
-- live-PID split-brain fencing;
-- post-acquire manifest recheck;
-- phase machine `OWNED -> INSTALLED -> SEALED -> HOST_ENABLED -> DARK -> CLEANING`;
-- exact session-before-insert and ledger-scope checks;
-- quiescent abort behavior;
-- lost-reply evidence;
-- dead-owner recovery;
-- control-plane restoration before cleanup;
-- clean completion only after host false, policy OFF, exact-owned/payload rows zero, agent commit false, legacy gate false.
+- global dirty-manifest singularity;
+- local lease/PID fencing interaction with server lease;
+- epoch takeover and row-lock ordering;
+- delayed pre-recovery insert/host/DARK/OFF/cleanup mutations;
+- lost acquire/release replies;
+- server lease expiry during an in-flight transaction;
+- cleanup/release clean-state gates;
+- service-role-only grants/RLS;
+- Edge host-gate race against policy `assert_dark()` quiescence;
+- absence of public/model/page authority paths;
+- deliberate zero bundle-pin fail-closed behavior.
 
-PID reuse can conservatively keep a stale expired lease BUSY when an unrelated live
-process has reused the PID. This is a fail-closed availability limitation, not a
-split-brain or authority bypass.
-
-## Hosted controller and cleanup hardening
-
-File: `tests/helpers/transaction-cloud-controller-8d.mjs`.
-
-Sequence:
-
-`preflight -> signed SDK identity -> ownership -> session binding -> insert-only fixture -> ledger seal -> host enable -> DARK -> prepare/replay/status/cancel/replay/status -> cancelled payload check -> host disable -> OFF -> exact cleanup -> verify clean`.
-
-Critical latest fix: normal cleanup now refuses row deletion whenever host disable
-or OFF restoration fails or is ambiguous. It leaves dirty durable ownership for
-recovery and returns `CLOUD_CLEANUP_FAILED`. Deterministic tests cover both control
-failure cases.
-
-Database `assert_dark()` acquires a share lock on the singleton policy row for
-mutating candidate RPCs; restoring OFF updates that same row. Therefore successful
-OFF restoration waits behind already-admitted database mutation transactions and
-acts as the database quiescence fence before exact-owned cleanup.
-
-## Live/recovery runner
-
-File: `tests/cloud/transaction-cloud-acceptance-8d.mjs`.
-
-- explicit opt-in only;
-- SDK pinned to `npm:@supabase/supabase-js@2.57.4`;
-- no OAuth URL until production-shape preflight passes;
-- fresh namespace;
-- bearer/verifier remain in process memory;
-- Management credential, bearer, verifier, ledger key, and payload token are not printed;
-- only accept mode and exact `--recover <namespace>` mode;
-- recovery mode does not require OAuth SDK/key when no dirty manifest exists;
-- live-runner ownership TTL is 180000 ms.
-
-HTTP/Edge 8D accepts only `prepare`, `status`, and `cancel`; it has no finalize,
-commit, approval, or browser route. `browserDispatchAllowed` stays false.
-
-## Writer readiness review
-
-Record: `docs/milestone-8-checkpoint-8d-chat-readiness.md`.
-
-The active ChatGPT writer completed a bounded code/security self-review, fresh
-read-only production checks, Edge bundle reconciliation, migration verification,
-RLS/function privilege verification, and advisor reconciliation.
-
-This is **NOT** an independent audit. Do not relabel it as PASS for the governance
-gate.
-
-Fresh advisors:
-
-- security: no ERROR; remaining WARNs are inherited legacy/public findings; private 8D no-policy tables appear as expected INFO;
-- performance: no ERROR/WARN; 8D-relevant findings are INFO only, including one unindexed `runs` foreign key and unused-index notices.
-
-## Independent audit blocker
-
-PR #43 remains the audit vehicle and must **not be merged**.
-
-The Codex connector explicitly reported that the account had reached its code
-review usage limit. Therefore no independent verdict exists for the latest
-candidate. Copilot quota failure is also not a verdict.
-
-The active writer must not substitute its own self-review for the required
-independent PASS. If no independent reviewer is available, stop at this boundary.
-
-## Exact next meaningful 8D work
-
-Do not implement 8E. Do not redo the fixed backend. Do not ask for a fresh OAuth
-login until the audit gate is satisfied.
-
-When an independent reviewer becomes available:
-
-1. independently review the exact final branch SHA, including operator/supervisor, Management backend, live runner, controller, migration, Edge host, and the latest cleanup/lease/key hardening;
-2. require explicit PASS before any fresh OAuth or production DARK mutation;
-3. after PASS, run one fresh user-driven PKCE login with memory-only bearer and verify signed claims/user plus exact server Auth-session/OAuth-client binding;
-4. run the bounded synthetic hosted DARK lifecycle with `browserDispatchAllowed=false`;
-5. prove required hosted 8D cases: redelivery/collision, worker-loss/reclaim, one-shot nonce, cancel/expiry durability, rate/queue/concurrency/minute rollover, payload/retention, crypto tamper/wrong-kind/wrong-tenant, and cross-tenant/user/client rejection;
-6. restore and verify host false, policy OFF, legacy gate false, agent commit false, all synthetic rows zero;
-7. reconcile advisors, write final 8D acceptance/context/handoff, and only then mark 8D accepted.
-
-If the legitimate OAuth path cannot provide the required acceptance context, stop
-for a reviewed approach. Never extract a stored bearer, forge JWT/session/client
-identity, change OAuth client/scope/redirect to make a test pass, add a public
-enrollment bypass, or treat OAuth consent as transaction approval.
-
-## Locked compatibility and rollback
-
-Extension 1.6.0; protocol 1; capabilities 26; public MCP 18 unchanged schemas.
-Extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; same signing/pairing; immediate
-signed rollback 1.5.2. No CRX, extension reinstall, or MCP reconnect is required by
-this 8D work.
-
-Stop after 8D. Do not begin 8E or Milestone 9 in the same continuation unless the
-user explicitly requests it after 8D is accepted.
+Do not deploy, run OAuth, enable DARK, mutate production, merge an audit-only PR,
+or start 8E until the required independent review explicitly permits the next
+production boundary.
