@@ -105,9 +105,19 @@ test('8D controller cancellation and failed server session binding preserve inde
     assert.equal(f.calls.includes('enableHost'),false);assert.deepEqual(f.calls.slice(-4),['disableHost','setOff','cleanupFixture','verifyClean']);
   }
 });
-test('8D controller attempts all cleanup steps and refuses PASS if any cleanup fails',async()=>{
-  for(const fail of ['disableHost','setOff','cleanupFixture','verifyClean']) {
-    const f=fixture({fail});await f.controller.ready;await assert.rejects(f.controller.run('synthetic.test.token'),/^Error: CLOUD_CLEANUP_FAILED$/);
+test('8D controller never deletes owned fixture rows when host disable or OFF restoration is unconfirmed',async()=>{
+  for(const fail of ['disableHost','setOff']) {
+    const f=fixture({fail});await f.controller.ready;
+    await assert.rejects(f.controller.run('synthetic.test.token'),/^Error: CLOUD_CLEANUP_FAILED$/);
+    assert.equal(f.calls.includes('cleanupFixture'),false);
+    assert.equal(f.calls.includes('verifyClean'),false);
+    assert.deepEqual(f.calls.slice(-2),['disableHost','setOff']);
+  }
+});
+test('8D controller verifies cleanup after row cleanup attempt and refuses PASS on cleanup uncertainty',async()=>{
+  for(const fail of ['cleanupFixture','verifyClean']) {
+    const f=fixture({fail});await f.controller.ready;
+    await assert.rejects(f.controller.run('synthetic.test.token'),/^Error: CLOUD_CLEANUP_FAILED$/);
     assert.deepEqual(f.calls.slice(-4),['disableHost','setOff','cleanupFixture','verifyClean']);
   }
 });
