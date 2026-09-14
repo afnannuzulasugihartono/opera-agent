@@ -97,17 +97,30 @@ export function createCloudAcceptanceController8D(configuration) {
     finally {
       credential=null;
       if(dirty){
-        // Independent deadlines: cancellation/expired bearer must not abort OFF
-        // restoration. Adapters must abort/quiesce before settling; no Promise.race
-        // that permits a late install to run AFTER cleanup. Hard process death is
-        // the future durable supervisor's responsibility, not this finally block.
-        for(const name of ['disableHost','setOff','cleanupFixture','verifyClean']) {
+        // Restore both control-plane safety gates first. Never delete fixture rows
+        // while host disablement or OFF restoration is failed/ambiguous. The
+        // durable dirty manifest is intentionally left for the recovery runner.
+        let controlFailed=false;
+        for(const name of ['disableHost','setOff']) {
           try {
             const cleanupSignal=AbortSignal.timeout(10000);
-            const result=await operator[name](name==='disableHost'||name==='setOff'?undefined:fixture.cleanup,cleanupSignal);
+            await operator[name](undefined,cleanupSignal);
             if(cleanupSignal.aborted)throw new Error();
-            if(name==='verifyClean'&&(!exact(result,'agentCommitEnabled,hostFlag,legacyGated,mode,ownedRows,payloadRows')||
-              result.hostFlag!==false||result.mode!=='OFF'||result.ownedRows!==0||result.payloadRows!==0||result.agentCommitEnabled!==false||result.legacyGated!==false))throw new Error();
+          }catch{controlFailed=true;cleanupFailed=true;}
+        }
+        if(!controlFailed){
+          try {
+            const cleanupSignal=AbortSignal.timeout(10000);
+            await operator.cleanupFixture(fixture.cleanup,cleanupSignal);
+            if(cleanupSignal.aborted)throw new Error();
+          }catch{cleanupFailed=true;}
+          try {
+            const cleanupSignal=AbortSignal.timeout(10000);
+            const result=await operator.verifyClean(fixture.cleanup,cleanupSignal);
+            if(cleanupSignal.aborted)throw new Error();
+            if(!exact(result,'agentCommitEnabled,hostFlag,legacyGated,mode,ownedRows,payloadRows')||
+              result.hostFlag!==false||result.mode!=='OFF'||result.ownedRows!==0||result.payloadRows!==0||
+              result.agentCommitEnabled!==false||result.legacyGated!==false)throw new Error();
           }catch{cleanupFailed=true;}
         }
       }
