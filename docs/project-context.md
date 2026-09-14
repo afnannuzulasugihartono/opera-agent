@@ -4,6 +4,19 @@ Last synchronized: 2026-09-14
 
 ## Latest 8D follow-up audit repair
 
+Newest: digest repair1d81e8e independently exact-commit PASS and CI34819389218
+SUCCESS, native29/29 PASS. Its actual retry still failed before OAuth/fixtures:
+Management read_only=true uses supabase_read_only_user and denied private checks
+with42501. Master restored OFF. Actual master-OFF role differential proved normal
+query authority postgres/hostfalse/epoch0; standalone readonly role observation
+confirmed supabase_read_only_user. Read
+`docs/milestone-8-checkpoint-8d-query-authority-repair.md`. Fixed test-only helper
+pins read_only=false for all closed private operator SQL, no grants/fallback,
+unchanged statements/parameters/fences. Focused43/43, Deno/static/diff and
+independent implementation-delta review PASS; full316/316 zero skips PASS.
+Commit/CI binding then bounded
+manual PKCE are next; no8E until final8D acceptance. No fixture/browser mutation.
+
 Latest continuation: installation/pin f8c42c2 independently PASS and standard
 CI34806580639 SUCCESS. A bounded live CLI attempt failed preflight before OAuth
 or fixtures because Management secret values are DIGESTS, not plaintext.

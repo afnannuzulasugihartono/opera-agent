@@ -4,6 +4,17 @@ Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 
 ## Latest request: repair remaining 8D audit findings
 
+Newest: 1d81e8e independent exact review PASS, CI34819389218 SUCCESS, native29/29
+PASS. Retry failed before OAuth/fixtures with42501 at Management database/query:
+read_only=true selected supabase_read_only_user, not operator authority. Master
+restored OFF. Master-OFF actual role differential confirmed normal postgres with
+hostfalse/epoch0; standalone readonly role SELECT confirmed the restricted role.
+Read `docs/milestone-8-checkpoint-8d-query-authority-repair.md` first. Helper now
+pins read_only=false; all fixed SQL/parameters/fences unchanged, no grants or
+privilege fallback. Focused43/43 and independent implementation-delta review
+PASS; full316/316 zero skips PASS. Freeze/CI binding before retrying manual PKCE.
+No8E yet.
+
 Latest: f8c42c2 installation/pin independently PASS, CI34806580639 SUCCESS.
 The enabled live CLI attempt failed before OAuth/fixtures: Management /secrets
 lists DIGESTS. Master was restored false and its actual digest verified;

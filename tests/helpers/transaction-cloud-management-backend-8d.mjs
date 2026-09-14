@@ -115,7 +115,11 @@ export function createManagementOperatorBackend8D(configuration){
     if(signal?.aborted)fail('8D_OPERATOR_ABORTED');if(!response||!response.ok)fail('8D_MANAGEMENT_REQUEST_FAILED');
     try{return await response.json();}catch{fail('8D_MANAGEMENT_RESPONSE_INVALID');}
   }
-  const db=(query,parameters=[],{readOnly=false,signal}={})=>request(`/v1/projects/${PROJECT_REF_8D}/database/query`,{method:'POST',signal,body:{query,parameters,read_only:readOnly}});
+  // All fixed private operations use the existing internal operator realm.
+  // Management read_only=true selects a restricted role without these grants;
+  // it is not a read-only transaction retaining operator authority. Never grant
+  // client/read-only roles access or fall back dynamically after a denial.
+  const db=(query,parameters=[],{signal}={})=>request(`/v1/projects/${PROJECT_REF_8D}/database/query`,{method:'POST',signal,body:{query,parameters,read_only:false}});
   async function secretDigest(name,signal){
     const values=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/secrets`,{signal}));let selected=null,matches=0;
     for(const item of values){if(!item||typeof item!=='object')continue;const value=item.value;if(item.name===name&&typeof value==='string'){selected=value;matches++;}if(Object.prototype.hasOwnProperty.call(item,'value'))item.value=null;}
@@ -160,7 +164,7 @@ export function createManagementOperatorBackend8D(configuration){
       await verifyBundle(signal);
       if(await secretDigest(MASTER_FLAG,signal)!==ENABLED_MASTER_DIGEST)fail('8D_HOST_MASTER_NOT_ENABLED');
       await secretDigest(TRANSACTION_KEY,signal);
-      const rows=asRows(await db(PREFLIGHT_SQL,[namespace],{readOnly:true,signal}));const row=rows[0];
+      const rows=asRows(await db(PREFLIGHT_SQL,[namespace],{signal}));const row=rows[0];
       if(rows.length!==1||!row||row.mode!=='OFF'||row.legacy_gated!==false||row.agent_commit_enabled!==false||row.ledger_enabled!==true||row.server_owner_id!==null||row.server_host_enabled!==false)fail('8D_PREFLIGHT_STATE_INVALID');
       await verifyInitializedHost(signal);
       return Object.freeze({hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:Number(row.synthetic_rows)===0&&Number(row.goal_rows)===0,locksVerified:true});
@@ -176,7 +180,7 @@ export function createManagementOperatorBackend8D(configuration){
     async releaseFence(input,signal){const f=fenceInput(input);const rows=asRows(await db(RELEASE_FENCE_SQL,[f.ownerId,f.namespace,f.epoch],{signal}));if(rows.length!==1||rows[0]?.released!==true)fail('8D_SERVER_FENCE_RELEASE_FAILED');return Object.freeze({released:true});},
     async verifySession(input,signal){
       if(!plain(input)||!exact(input,'clientId,sessionId,userId')||![input.userId,input.sessionId].every(v=>UUID.test(v??''))||input.clientId!==CLIENT_ID)fail('INVALID_8D_SESSION_QUERY');
-      const rows=asRows(await db(SESSION_SQL,[input.userId,input.clientId,input.sessionId],{readOnly:true,signal}));const matches=rows.length===1?Number(rows[0]?.matches):NaN;return Object.freeze({exists:matches===1,userId:input.userId,clientId:input.clientId,sessionId:input.sessionId});
+      const rows=asRows(await db(SESSION_SQL,[input.userId,input.clientId,input.sessionId],{signal}));const matches=rows.length===1?Number(rows[0]?.matches):NaN;return Object.freeze({exists:matches===1,userId:input.userId,clientId:input.clientId,sessionId:input.sessionId});
     },
     async insertFixture(fixture,fence,signal){
       if(!plain(fixture)||!safeCleanup(fixture.cleanup)||!plain(fixture.principal)||!plain(fixture.goalHead)||!plain(fixture.binding)||!plain(fixture.binding.metadata))fail('INVALID_8D_FIXTURE');
@@ -189,12 +193,12 @@ export function createManagementOperatorBackend8D(configuration){
     },
     async sealLedger(ledger,signal){
       if(!plain(ledger)||!UUID.test(ledger.tenantId??'')||typeof ledger.goalId!=='string'||!SAFE.test(ledger.goalId))fail('INVALID_8D_LEDGER_SCOPE');
-      const rows=asRows(await db(CRYPTO_SQL,[],{readOnly:true,signal}));const cryptoState=rows.length===1&&plain(rows[0]?.crypto)?rows[0].crypto:null;if(!cryptoState||cryptoState.enabled!==true||typeof cryptoState.key!=='string')fail('8D_LEDGER_CRYPTO_UNAVAILABLE');
+      const rows=asRows(await db(CRYPTO_SQL,[],{signal}));const cryptoState=rows.length===1&&plain(rows[0]?.crypto)?rows[0].crypto:null;if(!cryptoState||cryptoState.enabled!==true||typeof cryptoState.key!=='string')fail('8D_LEDGER_CRYPTO_UNAVAILABLE');
       let keyBytes;try{keyBytes=decodeLedgerKey(cryptoState.key);cryptoState.key=null;const issuedAt=new Date(now()).toISOString();return await sealLedgerToken(ledger,keyBytes,{requestId:`m8d8d:${ledger.goalId}`.slice(0,128),issuedAt});}finally{keyBytes?.fill(0);if(cryptoState)cryptoState.key=null;}
     },
     async enableHost(fence,signal){const f=fenceInput(fence);const rows=asRows(await db(HOST_FENCE_SQL,[f.ownerId,f.namespace,f.epoch,true],{signal}));if(rows.length!==1||rows[0]?.host_enabled!==true)fail('8D_HOST_FLAG_NOT_SETTLED');return Object.freeze({hostFlag:true});},
     async setDark(fence,signal){const f=fenceInput(fence);const rows=asRows(await db(DARK_SQL,[f.ownerId,f.namespace,f.epoch],{signal}));if(rows.length!==1||rows[0]?.mode!=='DARK'||rows[0]?.legacy_gated!==false||rows[0]?.agent_commit_enabled!==false)fail('8D_DARK_ENABLE_FAILED');return Object.freeze({mode:'DARK'});},
-    async verifyCancelled(input,signal){const c=cleanupInput(input);const rows=asRows(await db(CANCELLED_SQL,[c.tenantId,c.actorId,c.transactionId],{readOnly:true,signal}));const row=rows[0];return Object.freeze({status:String(row?.status??''),payloadRows:Number(row?.payload_rows??-1)});},
+    async verifyCancelled(input,signal){const c=cleanupInput(input);const rows=asRows(await db(CANCELLED_SQL,[c.tenantId,c.actorId,c.transactionId],{signal}));const row=rows[0];return Object.freeze({status:String(row?.status??''),payloadRows:Number(row?.payload_rows??-1)});},
     async disableHost(fence,signal){const f=fenceInput(fence);const rows=asRows(await db(HOST_FENCE_SQL,[f.ownerId,f.namespace,f.epoch,false],{signal}));if(rows.length!==1||rows[0]?.host_enabled!==false)fail('8D_HOST_FLAG_NOT_SETTLED');return Object.freeze({hostFlag:false});},
     async setOff(fence,signal){const f=fenceInput(fence);const rows=asRows(await db(OFF_SQL,[f.ownerId,f.namespace,f.epoch],{signal}));if(rows.length!==1||rows[0]?.mode!=='OFF'||rows[0]?.legacy_gated!==false||rows[0]?.agent_commit_enabled!==false)fail('8D_OFF_RESTORE_FAILED');return Object.freeze({mode:'OFF'});},
     async cleanupFixture(input,fence,signal){const c=cleanupInput(input);const f=fenceForCleanup(fence,c);const rows=asRows(await db(CLEANUP_SQL,[f.ownerId,f.namespace,f.epoch,c.actorId,c.goalId,c.transactionId],{signal}));if(rows.length!==1||rows[0]?.cleaned!==true)fail('8D_CLEANUP_FAILED');return Object.freeze({cleaned:true});},

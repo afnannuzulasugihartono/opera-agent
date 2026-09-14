@@ -42,6 +42,9 @@ function harness(options={}){
     if(parsed.pathname.endsWith('/secrets')&&init.method==='POST'){state.secretWrites.push(JSON.parse(init.body));throw new Error('per-run secret writes forbidden');}
     if(parsed.pathname.endsWith('/database/query')&&init.method==='POST'){
       const body=JSON.parse(init.body);state.db.push(body);const q=body.query,p=body.parameters??[];
+      // Actual Management read_only selects a restricted database role, not
+      // merely a read-only transaction under the internal operator identity.
+      if(body.read_only===true||options.denyOperator)return json({message:'permission denied'},400);
       if(q.includes('as synthetic_rows')) return json([{mode:state.mode,legacy_gated:false,agent_commit_enabled:false,ledger_enabled:true,server_owner_id:state.serverOwner,server_host_enabled:state.serverHost,synthetic_rows:state.rows,goal_rows:state.goalRows}]);
       if(q.includes('opera_tx_operator_acquire_8d')){state.epoch+=1;state.serverOwner=p[0];state.serverNamespace=p[1];state.serverHost=false;return json([{epoch:state.epoch}]);}
       if(q.includes('opera_tx_operator_heartbeat_8d')){assertFence(p);return json([{epoch:state.epoch}]);}
@@ -83,7 +86,7 @@ test('8D recovery descriptor checks actual bundle integrity before control mutat
 test('8D management preflight requires fenced pin, real secret digests, idle OFF and initialized Edge',async()=>{
   const {backend,state}=harness();assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA_8D,'96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1');
   assert.deepEqual(await backend.preflight(namespace),{hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:true,locksVerified:true});
-  const query=state.db.find(item=>item.query.includes('as synthetic_rows'));assert.equal(query.read_only,true);assert.deepEqual(query.parameters,[namespace]);
+  const query=state.db.find(item=>item.query.includes('as synthetic_rows'));assert.equal(query.read_only,false);assert.deepEqual(query.parameters,[namespace]);
   await assert.rejects(harness({bundle:'wrong'}).backend.preflight(namespace),/8D_HOST_BUNDLE_MISMATCH/);
   await assert.rejects(harness({master:'false'}).backend.preflight(namespace),/8D_HOST_MASTER_NOT_ENABLED/);
   await assert.rejects(harness({keyDigest:'not-a-digest'}).backend.preflight(namespace),/8D_SECRET_DIGEST_INVALID/);
@@ -102,7 +105,17 @@ test('8D preflight never decodes secret digests and refuses invalid startup or s
   const {backend,state}=harness();await backend.preflight(namespace);
   assert.equal(state.calls.filter(call=>new URL(call.url).hostname===`${PROJECT_REF_8D}.supabase.co`).length,1);
   assert.equal(state.calls.some(call=>call.method==='POST'&&!call.url.endsWith('/database/query')),false);
-  assert.equal(state.db.every(call=>call.read_only===true),true);
+  assert.equal(state.db.every(call=>call.read_only===false),true);
+  assert.equal(state.db.every(call=>/^with control as/.test(call.query)),true);
+});
+
+test('8D private observational checks retain operator authority without granting client roles',async()=>{
+  const {backend,state}=harness();await backend.preflight(namespace);
+  await backend.verifySession({userId,clientId:CLIENT_ID,sessionId});
+  await backend.sealLedger((await fixture()).ledger);
+  assert.equal(state.db.every(call=>call.read_only===false),true);
+  assert.equal(state.db.some(call=>/\bgrant\b|\balter\b|\bcreate\b/i.test(call.query)),false);
+  await assert.rejects(harness({denyOperator:true}).backend.preflight(namespace),/8D_MANAGEMENT_REQUEST_FAILED/);
 });
 
 test('8D management fence acquire/heartbeat/release is fixed, parameterized and epoch-bound',async()=>{
@@ -115,7 +128,7 @@ test('8D management fence acquire/heartbeat/release is fixed, parameterized and 
 
 test('8D management session check is exact and parameterized before provisioning',async()=>{
   const {backend,state}=harness();const input={userId,clientId:CLIENT_ID,sessionId};assert.deepEqual(await backend.verifySession(input),{exists:true,...input});
-  const query=state.db.find(item=>item.query.includes('from auth.sessions'));assert.equal(query.query.includes(userId),false);assert.deepEqual(query.parameters,[userId,CLIENT_ID,sessionId]);assert.equal(query.read_only,true);
+  const query=state.db.find(item=>item.query.includes('from auth.sessions'));assert.equal(query.query.includes(userId),false);assert.deepEqual(query.parameters,[userId,CLIENT_ID,sessionId]);assert.equal(query.read_only,false);
   assert.equal((await harness({sessionMatches:0}).backend.verifySession(input)).exists,false);
 });
 
@@ -129,7 +142,7 @@ test('8D management provisioning is insert-only and carries exact server fence i
 test('8D management ledger sealing uses existing crypto only in memory and returns bounded ciphertext',async()=>{
   const f=await fixture();const {backend,state}=harness();const token=await backend.sealLedger(f.ledger);
   assert.match(token,/^oal1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);assert.equal(token.includes(ledgerKey),false);assert.equal(JSON.stringify(state.calls).includes(ledgerKey),false);assert.equal(JSON.stringify(state.db).includes(ledgerKey),false);
-  const query=state.db.find(item=>item.query==='select public.opera_goal_crypto_key() as crypto');assert.equal(query.read_only,true);
+  const query=state.db.find(item=>item.query==='select public.opera_goal_crypto_key() as crypto');assert.equal(query.read_only,false);
 });
 
 test('8D management host control is DB-fenced and never performs per-run project secret writes',async()=>{
