@@ -1,4 +1,5 @@
-import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readFile, readdir, rename, rm, rmdir, writeFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { CLIENT_ID } from './transaction-oauth-8d.mjs';
 
@@ -25,7 +26,9 @@ const validateManifest=value=>{
   cleanCleanup(value.cleanup);if(value.cleanup.tenantId!==value.namespace)fail('INVALID_8D_MANIFEST');return value;
 };
 const validateLease=value=>{
-  if(!exact(value,'expiresAt,namespace,ownerId,pid,version')||value.version!==1||!UUID.test(value.namespace??'')||!validOwner(value.ownerId)||!Number.isSafeInteger(value.pid)||value.pid<1||!Number.isSafeInteger(value.expiresAt)||value.expiresAt<0)fail('INVALID_8D_LEASE');return value;
+  const shape=value?.version===1?exact(value,'expiresAt,namespace,ownerId,pid,version'):
+    value?.version===2&&exact(value,'claimId,expiresAt,namespace,ownerId,pid,version')&&UUID.test(value.claimId??'');
+  if(!shape||!UUID.test(value.namespace??'')||!validOwner(value.ownerId)||!Number.isSafeInteger(value.pid)||value.pid<1||!Number.isSafeInteger(value.expiresAt)||value.expiresAt<0)fail('INVALID_8D_LEASE');return value;
 };
 const validateFenceResult=value=>{
   if(!exact(value,'epoch')||!Number.isSafeInteger(value.epoch)||value.epoch<1)fail('8D_SERVER_FENCE_INVALID');
@@ -36,7 +39,24 @@ const defaultProcessAlive=pid=>{try{process.kill(pid,0);return true;}catch(error
 export function createFileOwnershipStore8D({directory,isProcessAlive=defaultProcessAlive}) {
   if(typeof directory!=='string'||directory.length<1||typeof isProcessAlive!=='function')fail('INVALID_8D_STORE');
   const ensure=()=>mkdir(directory,{recursive:true});
-  const writeJsonAtomic=async(path,value)=>{const tmp=`${path}.${process.pid}.${Date.now()}.tmp`;await writeFile(tmp,JSON.stringify(value)+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});await rename(tmp,path);};
+  const writeJsonAtomic=async(path,value)=>{const tmp=`${path}.${randomUUID()}.tmp`;await writeFile(tmp,JSON.stringify(value)+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});await rename(tmp,path);};
+  // Permanent NONEMPTY retirement directories are per-claim CAS witnesses.
+  // A second stale reader cannot rename a successor onto the same destination.
+  // Do not garbage-collect these while any old process/I/O may still resume.
+  const retirementPath=current=>join(directory,'global-control.retired-'+(current.claimId??
+    createHash('sha256').update(JSON.stringify([current.namespace,current.ownerId,current.pid])).digest('hex')));
+  const retire=async current=>{
+    try { await rename(leaseDir(directory),retirementPath(current)); }
+    catch(error){if(['EEXIST','ENOTEMPTY','EPERM','ENOENT'].includes(error?.code))fail('8D_GLOBAL_CONTROL_BUSY');throw error;}
+  };
+  const currentLease=async()=>{
+    try{return validateLease(JSON.parse(await readFile(leaseFile(directory),'utf8')));}
+    catch(error){
+      if(error?.code!=='ENOENT')throw error;
+      try { await lstat(leaseDir(directory)); } catch(statError){if(statError?.code==='ENOENT')return null;throw statError;}
+      fail('8D_GLOBAL_CONTROL_BUSY'); // Legacy/unknown unfinished lock: never steal.
+    }
+  };
   const readManifest=async namespace=>{try{return validateManifest(JSON.parse(await readFile(manifestPath(directory,namespace),'utf8')));}catch(error){if(error?.code==='ENOENT')return null;throw error;}};
   const readPendingManifest=async()=>{
     await ensure();
@@ -51,13 +71,22 @@ export function createFileOwnershipStore8D({directory,isProcessAlive=defaultProc
       if(!UUID.test(namespace??'')||!validOwner(ownerId)||!Number.isSafeInteger(nowMs)||!Number.isSafeInteger(ttlMs)||ttlMs<1000||ttlMs>300000||!Number.isSafeInteger(pid)||pid<1)fail('INVALID_8D_LEASE_REQUEST');
       await ensure();
       for(let attempt=0;attempt<3;attempt++){
-        try{await mkdir(leaseDir(directory));await writeJsonAtomic(leaseFile(directory),{version:1,ownerId,namespace,pid,expiresAt:nowMs+ttlMs});return Object.freeze({leaseEpoch:attempt});}
-        catch(error){
-          if(error?.code!=='EEXIST'&&error?.code!=='ENOENT')throw error;
-          let current;try{current=validateLease(JSON.parse(await readFile(leaseFile(directory),'utf8')));}catch(readError){if(readError?.code==='ENOENT'){await rm(leaseDir(directory),{recursive:true,force:true});continue;}throw readError;}
+        const current=await currentLease();
+        if(current){
           if(current.expiresAt>nowMs||isProcessAlive(current.pid))fail('8D_GLOBAL_CONTROL_BUSY');
-          const tombstone=join(directory,`global-control.reclaim-${ownerId}-${nowMs}-${process.pid}-${attempt}`);
-          try{await rename(leaseDir(directory),tombstone);await rm(tombstone,{recursive:true,force:true});}catch(renameError){if(renameError?.code==='ENOENT')continue;throw renameError;}
+          await retire(current);continue;
+        }
+        const claimId=randomUUID(),stage=join(directory,'global-control.pending-'+claimId);
+        await mkdir(stage);
+        try {
+          await writeFile(join(stage,'lease.json'),JSON.stringify({version:2,claimId,ownerId,namespace,pid,expiresAt:nowMs+ttlMs})+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});
+          // Publish the complete nonempty directory in one filesystem operation.
+          await rename(stage,leaseDir(directory));return Object.freeze({leaseEpoch:attempt});
+        }catch(error){
+          if(!['EEXIST','ENOTEMPTY','EPERM'].includes(error?.code))throw error;
+        }finally{
+          await rm(join(stage,'lease.json'),{force:true});
+          try{await rmdir(stage);}catch(error){if(error?.code!=='ENOENT')throw error;}
         }
       }
       fail('8D_GLOBAL_CONTROL_BUSY');
@@ -70,7 +99,7 @@ export function createFileOwnershipStore8D({directory,isProcessAlive=defaultProc
     async release(namespace,ownerId){
       let current;try{current=validateLease(JSON.parse(await readFile(leaseFile(directory),'utf8')));}catch(error){if(error?.code==='ENOENT')return false;throw error;}
       if(current.namespace!==namespace||current.ownerId!==ownerId)fail('8D_CONTROL_OWNERSHIP_LOST');
-      await rm(leaseDir(directory),{recursive:true,force:true});return true;
+      await retire(current);return true;
     },
     async writeManifest(manifest){validateManifest(manifest);await ensure();await writeJsonAtomic(manifestPath(directory,manifest.namespace),manifest);},
     readManifest,

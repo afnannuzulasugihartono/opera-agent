@@ -106,6 +106,22 @@ begin
   select mode,legacy_gated,agent_commit_enabled into v_mode,v_legacy,v_agent
     from opera_agent_tx_candidate.policy where singleton=true for share;
   if v_host or v_mode<>'OFF' or v_legacy or v_agent then raise exception 'SERVER_FENCE_NOT_CLEAN'; end if;
+  -- This check is inside the exclusive control-row barrier, AFTER waiting for
+  -- previously admitted share-lock mutations. Earlier verifyClean is advisory:
+  -- a lost-reply insert may commit between that snapshot and this release.
+  if exists(select 1 from opera_agent_tx_candidate.principals where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.rates where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.acceptance_bindings where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.runs where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.run_identities where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.run_limits where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.run_previews where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.run_challenges where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.journal where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.approvals where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_tx_candidate.commit_slots where tenant_id=p_namespace::text)
+    or exists(select 1 from opera_agent_private.goal_heads where tenant_id=p_namespace)
+  then raise exception 'SERVER_FENCE_OWNED_ROWS_REMAIN'; end if;
   update opera_agent_tx_candidate.operator_control
     set owner_id=null,namespace=null,lease_until=null,host_enabled=false
     where singleton=true and owner_id=p_owner and namespace=p_namespace and epoch=p_epoch;

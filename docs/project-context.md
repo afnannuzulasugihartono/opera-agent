@@ -2,6 +2,22 @@
 
 Last synchronized: 2026-09-14
 
+## Latest 8D follow-up audit repair
+
+The user closed the other writer and requested repair here. See
+`docs/milestone-8-checkpoint-8d-audit-repair.md`. The follow-up repairs atomic local
+lease publication/retirement, exclusive server release zero-owned-row checks,
+and actual remote bundle verification on recovery. Full local Node tests pass
+314/314 with zero skips; focused gates pass 46/46; Windows stress has zero dual
+owners in 150 trials; the native PostgreSQL release regression passes.
+Static inventory remains 1.6.0/26. No fresh CI/browser/cloud acceptance is claimed.
+The migration remains undeployed and the fenced Edge pin deliberately stays zero.
+Production, OAuth, extension, MCP runtime, signing and pairing were not changed.
+Independent exact-candidate review is next; 8D remains IN PROGRESS, 8E not started.
+Permanent nonsecret retirement witnesses must not be removed while stale I/O can
+resume; unfinished legacy active locks fail closed. Earlier records below are
+historical, not acceptance of this new repair.
+
 ## Latest user-requested reliability investigation
 
 The user separately requested persistent MCP self-healing. See

@@ -2,9 +2,24 @@
 
 Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 
+## Latest request: repair remaining 8D audit findings
+
+The other writer is closed. This session repaired candidate fcbec894's local
+ownership race, release clean-state gap, and recovery integrity gap. Read
+`docs/milestone-8-checkpoint-8d-audit-repair.md` before the historical records below.
+Local Node suite 314/314, focused gates 46/46, static 1.6.0/26, Windows stress
+zero dual owners/150 and native release regression PASS. This is implementation
+verification, not independent review or new CI/live acceptance.
+Next: independent review of the exact committed repair diff, including the new
+native PostgreSQL gate (`OPERA_PG_BIN`), permanent retirement witness semantics,
+exclusive release owned-row check, and actual recovery bundle verification.
+No production mutation/deployment/OAuth has occurred; zero bundle pin remains.
+Do not deploy or start cloud acceptance until independent review passes; do not
+start 8E. Prior reliability diagnostics are preserved as a separate side task.
+
 ## Latest user-requested side investigation
 
-The newest user request is persistent MCP availability, separate from transaction
+An earlier user request is persistent MCP availability, separate from transaction
 ownership repair. Read `docs/mcp-reliability-investigation.md` before continuing
 that request. Phase 1/2 evidence and read-only diagnostics are present; recovery
 implementation/manual acceptance are NOT complete. Do not claim a proven host
@@ -37,8 +52,9 @@ Use one active writer only.
 
 8A-8C are accepted. 8D remains **IN PROGRESS**. 8E has not started.
 
-The requested ownership + server-side fencing repair is implemented locally and
-has green exact-head CI. This task intentionally did **not** mutate production,
+The earlier ownership + server-side fencing candidate had green exact-head CI;
+the follow-up above supersedes its review target and has local tests only so far.
+This task intentionally did **not** mutate production,
 run OAuth, deploy an Edge function, apply a migration, change a secret, dispatch a
 browser action, or modify extension/MCP compatibility.
 

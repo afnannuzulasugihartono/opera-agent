@@ -61,6 +61,14 @@ test('8D management backend exposes only fixed fenced methods and a pinned targe
   assert.deepEqual(await backend.describe(),{projectRef:PROJECT_REF_8D,clientId:CLIENT_ID,callback:CALLBACK_8D});
 });
 
+test('8D recovery descriptor checks actual bundle integrity before control mutations',async()=>{
+  const {backend,state}=harness({bundle:'wrong'});
+  await assert.rejects(backend.describe(),/8D_HOST_BUNDLE_MISMATCH/);
+  assert.equal(state.calls.length,1);
+  assert.equal(state.calls[0].url.endsWith('/functions'),true);
+  assert.equal(state.db.length,0);
+});
+
 test('8D management preflight requires fenced Edge pin/master, OFF policy, idle server fence and valid crypto',async()=>{
   const {backend,state}=harness();assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA_8D,'0'.repeat(64));
   assert.deepEqual(await backend.preflight(namespace),{hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:true,locksVerified:true});

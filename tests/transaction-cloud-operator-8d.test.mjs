@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -35,6 +35,27 @@ function backend(options={}){
   };return {backend:b,state};
 }
 async function tempStore(){const dir=await mkdtemp(join(tmpdir(),'oa-8d-'));return {dir,store:createFileOwnershipStore8D({directory:dir,isProcessAlive:pid=>pid===process.pid})};}
+
+test('8D unfinished lock initialization is BUSY, never permission to delete a peer lock',async()=>{
+  const {dir,store}=await tempStore();
+  try {
+    await mkdir(join(dir,'global-control.lock'));
+    await assert.rejects(store.acquire(namespace,'contender_owner_01',1000,10000),/8D_GLOBAL_CONTROL_BUSY/);
+  } finally { await rm(dir,{recursive:true,force:true}); }
+});
+
+test('8D parallel acquisition and expired reclaim have exactly one winner',async()=>{
+  const root=await mkdtemp(join(tmpdir(),'oa-8d-parallel-'));
+  try {
+    for(let i=0;i<40;i++){
+      const store=createFileOwnershipStore8D({directory:join(root,String(i)),isProcessAlive:pid=>pid===process.pid});
+      if(i%2)await store.acquire(namespace,'dead_original_01',0,1000,987654);
+      const results=await Promise.allSettled(Array.from({length:8},(_,j)=>store.acquire(namespace,'contender_owner_'+j,2000,10000)));
+      assert.equal(results.filter(r=>r.status==='fulfilled').length,1,'exactly one owner for trial '+i);
+      for(const result of results)if(result.status==='rejected')assert.equal(result.reason.message,'8D_GLOBAL_CONTROL_BUSY');
+    }
+  } finally { await rm(root,{recursive:true,force:true}); }
+});
 
 async function ownAndInstall(transport){
   await transport.operator.preflight(namespace,new AbortController().signal);

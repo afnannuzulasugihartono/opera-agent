@@ -120,12 +120,16 @@ export function createManagementOperatorBackend8D(configuration){
   function cleanupInput(input){if(!safeCleanup(input))fail('INVALID_8D_CLEANUP_SCOPE');return input;}
   function fenceInput(input){if(!safeFence(input))fail('INVALID_8D_SERVER_FENCE');return input;}
   function fenceForCleanup(fence,cleanup){const f=fenceInput(fence);if(f.namespace!==cleanup.tenantId)fail('8D_SERVER_FENCE_SCOPE_MISMATCH');return f;}
+  async function verifyBundle(signal){
+    const functions=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/functions`,{signal}));
+    const fn=functions.filter(item=>item?.slug===TRANSACTION_FUNCTION_8D);
+    if(fn.length!==1||fn[0].status!=='ACTIVE'||fn[0].verify_jwt!==true||fn[0].ezbr_sha256!==EXPECTED_TRANSACTION_BUNDLE_SHA_8D)fail('8D_HOST_BUNDLE_MISMATCH');
+  }
   return Object.freeze({
-    async describe(){return Object.freeze({projectRef:PROJECT_REF_8D,clientId:CLIENT_ID,callback:CALLBACK_8D});},
+    async describe(signal){await verifyBundle(signal);return Object.freeze({projectRef:PROJECT_REF_8D,clientId:CLIENT_ID,callback:CALLBACK_8D});},
     async preflight(namespace,signal){
       if(!UUID.test(namespace??''))fail('INVALID_8D_NAMESPACE');
-      const functions=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/functions`,{signal}));const fn=functions.filter(item=>item?.slug===TRANSACTION_FUNCTION_8D);
-      if(fn.length!==1||fn[0].status!=='ACTIVE'||fn[0].verify_jwt!==true||fn[0].ezbr_sha256!==EXPECTED_TRANSACTION_BUNDLE_SHA_8D)fail('8D_HOST_BUNDLE_MISMATCH');
+      await verifyBundle(signal);
       if(await secretValue(MASTER_FLAG,signal)!=='true')fail('8D_HOST_MASTER_NOT_ENABLED');
       let transactionKey=await secretValue(TRANSACTION_KEY,signal),transactionKeyBytes;try{transactionKeyBytes=decodeLedgerKey(transactionKey);}catch{fail('8D_TRANSACTION_KEY_INVALID');}finally{transactionKey=null;transactionKeyBytes?.fill(0);}
       const rows=asRows(await db(PREFLIGHT_SQL,[namespace],{readOnly:true,signal}));const row=rows[0];
