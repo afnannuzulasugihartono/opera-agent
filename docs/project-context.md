@@ -2,6 +2,21 @@
 
 Last synchronized: 2026-09-14
 
+## Latest user-requested reliability investigation
+
+The user separately requested persistent MCP self-healing. See
+`docs/mcp-reliability-investigation.md` for evidence and bounded next steps.
+Status is `PERSISTENT_MCP_BLOCKED`, not implemented recovery: public MCP health
+responded 200 and unauthenticated discovery was denied 401, but authenticated
+same-outage host/server discovery has not been observed. An actual extension
+pull-loop simulation reproduced a stale-generation READY status write; it does
+not prove the cause of missing host namespace. Safe read-only diagnostics and
+three unit tests were added without changing extension/MCP runtime or production.
+Local full suite 310/310 zero skips and static 1.6.0/26 checks PASS; no new CI,
+Chromium, authenticated host, or restart acceptance is claimed.
+Runtime changes require a separate reviewed reliability/release subplan under
+the existing frozen Milestone 8 boundary. 8D remains open; 8E not started.
+
 This is the durable project-state summary for humans and future LLM sessions.
 Executable repository state, exact-head CI artifacts, signed release records, and
 production queries outrank chat summaries. Never store secrets here.

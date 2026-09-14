@@ -2,6 +2,23 @@
 
 Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 
+## Latest user-requested side investigation
+
+The newest user request is persistent MCP availability, separate from transaction
+ownership repair. Read `docs/mcp-reliability-investigation.md` before continuing
+that request. Phase 1/2 evidence and read-only diagnostics are present; recovery
+implementation/manual acceptance are NOT complete. Do not claim a proven host
+root cause from a missing tool namespace or a successful public health response.
+Local verification: focused diagnostic/MCP 17/17, full 310/310 zero skips,
+static 1.6.0/26 and whitespace PASS. This is not new CI or real-host acceptance.
+Use `node scripts/mcp-connection-diagnostics.mjs`; without an explicitly supplied
+legitimate bearer it intentionally leaves authenticated discovery UNTESTED.
+Never obtain credentials by extracting stored sessions or pasting them into chat.
+Next: authenticated direct discovery plus same-outage host diagnostics, and a
+separate reviewed reliability/release subplan before changing extension bytes or
+locked MCP runtime. The ownership-fence review below remains pending and production
+must stay unchanged. Do not deploy, run transaction OAuth/DARK, or start 8E.
+
 ## Read before work
 
 1. `AGENTS.md` and `SECURITY.md`.
