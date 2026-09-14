@@ -100,8 +100,15 @@ export function createManagementOperatorBackend8D(configuration){
   const db=(query,parameters=[],{readOnly=false,signal}={})=>request(`/v1/projects/${PROJECT_REF_8D}/database/query`,{method:'POST',signal,body:{query,parameters,read_only:readOnly}});
   async function secretValue(name,signal){
     const values=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/secrets`,{signal}));
-    const matches=values.filter(item=>item&&item.name===name&&typeof item.value==='string');
-    if(matches.length!==1)fail('8D_SECRET_STATE_INVALID');return matches[0].value;
+    let selected=null,matches=0;
+    for(const item of values){
+      if(!item||typeof item!=='object')continue;
+      const value=item.value;
+      if(item.name===name&&typeof value==='string'){selected=value;matches++;}
+      if(Object.prototype.hasOwnProperty.call(item,'value'))item.value=null;
+    }
+    if(matches!==1||typeof selected!=='string')fail('8D_SECRET_STATE_INVALID');
+    return selected;
   }
   async function setHostFlag(value,signal){
     if(value!=='true'&&value!=='false')fail('8D_HOST_FLAG_INVALID');
@@ -118,7 +125,10 @@ export function createManagementOperatorBackend8D(configuration){
       const fn=functions.filter(item=>item?.slug===TRANSACTION_FUNCTION_8D);
       if(fn.length!==1||fn[0].status!=='ACTIVE'||fn[0].verify_jwt!==true||fn[0].ezbr_sha256!==EXPECTED_TRANSACTION_BUNDLE_SHA_8D)fail('8D_HOST_BUNDLE_MISMATCH');
       if(await secretValue(HOST_FLAG,signal)!=='false')fail('8D_HOST_NOT_OFF');
-      const transactionKey=await secretValue(TRANSACTION_KEY,signal);if(!transactionKey)fail('8D_TRANSACTION_KEY_MISSING');
+      let transactionKey=await secretValue(TRANSACTION_KEY,signal),transactionKeyBytes;
+      try{transactionKeyBytes=decodeLedgerKey(transactionKey);}
+      catch{fail('8D_TRANSACTION_KEY_INVALID');}
+      finally{transactionKey=null;transactionKeyBytes?.fill(0);}
       const rows=asRows(await db(PREFLIGHT_SQL,[namespace],{readOnly:true,signal}));const row=rows[0];
       if(rows.length!==1||!row||row.mode!=='OFF'||row.legacy_gated!==false||row.agent_commit_enabled!==false||row.ledger_enabled!==true)fail('8D_PREFLIGHT_STATE_INVALID');
       return Object.freeze({hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:Number(row.synthetic_rows)===0&&Number(row.goal_rows)===0,locksVerified:true});
