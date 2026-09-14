@@ -5,6 +5,7 @@
 import { CLIENT_ID } from './transaction-oauth-8d.mjs';
 import { CALLBACK_8D, PROJECT_REF_8D } from './transaction-cloud-operator-8d.mjs';
 import { decodeLedgerKey, sealLedgerToken } from '../../lib/ledger-token.js';
+import { createHash } from 'node:crypto';
 
 export const TRANSACTION_FUNCTION_8D='opera-agent-transactions-8d';
 export const EXPECTED_TRANSACTION_BUNDLE_SHA_8D='96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1';
@@ -15,6 +16,9 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
 const SAFE=/^[A-Za-z0-9_-]{1,128}$/;
 const OWNER=/^[A-Za-z0-9_-]{8,128}$/;
 const TOKEN=/^[A-Za-z0-9._~-]{16,8192}$/;
+const SECRET_DIGEST=/^[0-9a-f]{64}$/;
+const PUBLIC_JWT=/^[A-Za-z0-9_-]{1,4096}\.[A-Za-z0-9_-]{1,4096}\.[A-Za-z0-9_-]{1,1024}$/;
+const ENABLED_MASTER_DIGEST=createHash('sha256').update('true').digest('hex');
 const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
 const fail=code=>{throw new Error(code);};
 const plain=value=>value&&typeof value==='object'&&!Array.isArray(value)&&[Object.prototype,null].includes(Object.getPrototypeOf(value));
@@ -112,10 +116,34 @@ export function createManagementOperatorBackend8D(configuration){
     try{return await response.json();}catch{fail('8D_MANAGEMENT_RESPONSE_INVALID');}
   }
   const db=(query,parameters=[],{readOnly=false,signal}={})=>request(`/v1/projects/${PROJECT_REF_8D}/database/query`,{method:'POST',signal,body:{query,parameters,read_only:readOnly}});
-  async function secretValue(name,signal){
+  async function secretDigest(name,signal){
     const values=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/secrets`,{signal}));let selected=null,matches=0;
     for(const item of values){if(!item||typeof item!=='object')continue;const value=item.value;if(item.name===name&&typeof value==='string'){selected=value;matches++;}if(Object.prototype.hasOwnProperty.call(item,'value'))item.value=null;}
-    if(matches!==1||typeof selected!=='string')fail('8D_SECRET_STATE_INVALID');return selected;
+    if(matches!==1||typeof selected!=='string'||!SECRET_DIGEST.test(selected))fail('8D_SECRET_DIGEST_INVALID');return selected;
+  }
+  // Management lists DIGESTS, not plaintext. Key validity is observed in the
+  // exact pinned Edge's initialized handler, without retrieving its private key.
+  async function verifyInitializedHost(signal){
+    const keys=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/api-keys`,{signal}));
+    let publicAnon=null,matches=0;
+    for(const item of keys){
+      if(!item||typeof item!=='object')continue;
+      if(item.name==='anon'){matches++;publicAnon=item.api_key;}
+      if(Object.prototype.hasOwnProperty.call(item,'api_key'))item.api_key=null;
+    }
+    if(matches!==1||typeof publicAnon!=='string'||publicAnon.length>8192||!PUBLIC_JWT.test(publicAnon))fail('8D_PUBLIC_ANON_KEY_UNAVAILABLE');
+    const combined=signal?AbortSignal.any([signal,AbortSignal.timeout(10000)]):AbortSignal.timeout(10000);
+    try{
+      const result=await fetchImpl(`https://${PROJECT_REF_8D}.supabase.co/functions/v1/${TRANSACTION_FUNCTION_8D}`,{
+        method:'GET',redirect:'error',signal:combined,headers:{Authorization:'Bearer '+publicAnon,apikey:publicAnon}});
+      if(combined.aborted||result?.status!==405)throw new Error();
+      const reader=result.body?.getReader();if(!reader)throw new Error();
+      let length=0;const chunks=[];
+      while(true){const {done,value}=await reader.read();if(done)break;length+=value.byteLength;if(length>2048){await reader.cancel();throw new Error();}chunks.push(value);}
+      const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+      const body=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+      if(combined.aborted||!exact(body,'browserDispatchAllowed,error')||body.error!=='METHOD_NOT_ALLOWED'||body.browserDispatchAllowed!==false)throw new Error();
+    }catch{fail('8D_HOST_CONFIGURATION_UNVERIFIED');}finally{publicAnon=null;}
   }
   function cleanupInput(input){if(!safeCleanup(input))fail('INVALID_8D_CLEANUP_SCOPE');return input;}
   function fenceInput(input){if(!safeFence(input))fail('INVALID_8D_SERVER_FENCE');return input;}
@@ -130,10 +158,11 @@ export function createManagementOperatorBackend8D(configuration){
     async preflight(namespace,signal){
       if(!UUID.test(namespace??''))fail('INVALID_8D_NAMESPACE');
       await verifyBundle(signal);
-      if(await secretValue(MASTER_FLAG,signal)!=='true')fail('8D_HOST_MASTER_NOT_ENABLED');
-      let transactionKey=await secretValue(TRANSACTION_KEY,signal),transactionKeyBytes;try{transactionKeyBytes=decodeLedgerKey(transactionKey);}catch{fail('8D_TRANSACTION_KEY_INVALID');}finally{transactionKey=null;transactionKeyBytes?.fill(0);}
+      if(await secretDigest(MASTER_FLAG,signal)!==ENABLED_MASTER_DIGEST)fail('8D_HOST_MASTER_NOT_ENABLED');
+      await secretDigest(TRANSACTION_KEY,signal);
       const rows=asRows(await db(PREFLIGHT_SQL,[namespace],{readOnly:true,signal}));const row=rows[0];
       if(rows.length!==1||!row||row.mode!=='OFF'||row.legacy_gated!==false||row.agent_commit_enabled!==false||row.ledger_enabled!==true||row.server_owner_id!==null||row.server_host_enabled!==false)fail('8D_PREFLIGHT_STATE_INVALID');
+      await verifyInitializedHost(signal);
       return Object.freeze({hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:Number(row.synthetic_rows)===0&&Number(row.goal_rows)===0,locksVerified:true});
     },
     async acquireFence(input,signal){

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
 import { createCloudFixtureData8D } from './helpers/transaction-cloud-fixture-8d.mjs';
 import { createManagementOperatorBackend8D, EXPECTED_TRANSACTION_BUNDLE_SHA_8D, TRANSACTION_FUNCTION_8D } from './helpers/transaction-cloud-management-backend-8d.mjs';
 import { CALLBACK_8D, PROJECT_REF_8D } from './helpers/transaction-cloud-operator-8d.mjs';
@@ -15,6 +16,8 @@ const transactionSecret=Buffer.alloc(32,9).toString('base64url');
 const unrelatedSecret='unrelated-secret-never-retain';
 const ledgerKey=Buffer.alloc(32,7).toString('base64url');
 const ownerId='writer_owner_01';
+const digest=value=>createHash('sha256').update(value).digest('hex');
+const publicAnon='eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.public_fixture_signature';
 
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});}
 function harness(options={}){
@@ -23,11 +26,19 @@ function harness(options={}){
   const assertFence=parameters=>{if(parameters[0]!==state.serverOwner||parameters[1]!==state.serverNamespace||Number(parameters[2])!==state.epoch)throw new Error('stale fence');};
   const fetchImpl=async(url,init={})=>{
     const parsed=new URL(url);state.calls.push({url,method:init.method??'GET'});
+    if(parsed.origin===`https://${PROJECT_REF_8D}.supabase.co`){
+      assert.equal(parsed.pathname,`/functions/v1/${TRANSACTION_FUNCTION_8D}`);
+      assert.equal(init.method,'GET');assert.equal(init.redirect,'error');
+      assert.equal(init.headers.Authorization,`Bearer ${publicAnon}`);assert.equal(init.headers.apikey,publicAnon);
+      assert.equal(init.body,undefined);assert.ok(init.signal);
+      return json(options.healthBody??{error:'METHOD_NOT_ALLOWED',browserDispatchAllowed:false},options.healthStatus??405);
+    }
     assert.equal(parsed.origin,'https://api.supabase.com');assert.ok(parsed.pathname.startsWith(`/v1/projects/${PROJECT_REF_8D}/`));
     assert.equal(init.headers?.Authorization,`Bearer ${accessToken}`);assert.equal(String(init.headers?.Authorization).includes(transactionSecret),false);
     if(options.failFetch) throw new Error(`network ${transactionKey} ${unrelatedSecret} ${accessToken}`);
     if(parsed.pathname.endsWith('/functions')) return json([{slug:TRANSACTION_FUNCTION_8D,status:'ACTIVE',verify_jwt:true,ezbr_sha256:options.bundle??EXPECTED_TRANSACTION_BUNDLE_SHA_8D,version:7}]);
-    if(parsed.pathname.endsWith('/secrets')&&(init.method??'GET')==='GET') return json([{name:'UNRELATED_SECRET',value:unrelatedSecret},{name:'OPERA_AGENT_TRANSACTION_DARK_8D',value:state.master},{name:'OPERA_AGENT_TRANSACTION_KEY_8D',value:transactionKey}]);
+    if(parsed.pathname.endsWith('/secrets')&&(init.method??'GET')==='GET') return json([{name:'UNRELATED_SECRET',value:digest(unrelatedSecret)},{name:'OPERA_AGENT_TRANSACTION_DARK_8D',value:options.masterDigest??digest(state.master)},{name:'OPERA_AGENT_TRANSACTION_KEY_8D',value:options.keyDigest??digest(transactionKey)}]);
+    if(parsed.pathname.endsWith('/api-keys'))return json(options.apiKeys??[{name:'anon',api_key:publicAnon},{name:'service_role',api_key:'private_fixture_never_select'}]);
     if(parsed.pathname.endsWith('/secrets')&&init.method==='POST'){state.secretWrites.push(JSON.parse(init.body));throw new Error('per-run secret writes forbidden');}
     if(parsed.pathname.endsWith('/database/query')&&init.method==='POST'){
       const body=JSON.parse(init.body);state.db.push(body);const q=body.query,p=body.parameters??[];
@@ -69,15 +80,29 @@ test('8D recovery descriptor checks actual bundle integrity before control mutat
   assert.equal(state.db.length,0);
 });
 
-test('8D management preflight requires fenced Edge pin/master, OFF policy, idle server fence and valid crypto',async()=>{
+test('8D management preflight requires fenced pin, real secret digests, idle OFF and initialized Edge',async()=>{
   const {backend,state}=harness();assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA_8D,'96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1');
   assert.deepEqual(await backend.preflight(namespace),{hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:true,locksVerified:true});
   const query=state.db.find(item=>item.query.includes('as synthetic_rows'));assert.equal(query.read_only,true);assert.deepEqual(query.parameters,[namespace]);
   await assert.rejects(harness({bundle:'wrong'}).backend.preflight(namespace),/8D_HOST_BUNDLE_MISMATCH/);
   await assert.rejects(harness({master:'false'}).backend.preflight(namespace),/8D_HOST_MASTER_NOT_ENABLED/);
-  await assert.rejects(harness({transactionSecret:'present-but-not-a-32-byte-key'}).backend.preflight(namespace),/8D_TRANSACTION_KEY_INVALID/);
+  await assert.rejects(harness({keyDigest:'not-a-digest'}).backend.preflight(namespace),/8D_SECRET_DIGEST_INVALID/);
   const occupied=harness();occupied.state.serverOwner='other_owner_01';await assert.rejects(occupied.backend.preflight(namespace),/8D_PREFLIGHT_STATE_INVALID/);
   assert.equal((await harness({rows:1}).backend.preflight(namespace)).namespaceEmpty,false);
+});
+
+test('8D preflight never decodes secret digests and refuses invalid startup or spoofed health',async()=>{
+  for(const healthStatus of [200,401,500,503])await assert.rejects(harness({healthStatus}).backend.preflight(namespace),/8D_HOST_CONFIGURATION_UNVERIFIED/);
+  for(const healthBody of [{error:'METHOD_NOT_ALLOWED',browserDispatchAllowed:true},{error:'METHOD_NOT_ALLOWED',browserDispatchAllowed:false,extra:true},{result:true}])
+    await assert.rejects(harness({healthBody}).backend.preflight(namespace),/8D_HOST_CONFIGURATION_UNVERIFIED/);
+  await assert.rejects(harness({masterDigest:'true'}).backend.preflight(namespace),/8D_SECRET_DIGEST_INVALID/);
+  await assert.rejects(harness({apiKeys:[]}).backend.preflight(namespace),/8D_PUBLIC_ANON_KEY_UNAVAILABLE/);
+  await assert.rejects(harness({apiKeys:[{name:'anon',api_key:publicAnon},{name:'anon',api_key:publicAnon}]}).backend.preflight(namespace),/8D_PUBLIC_ANON_KEY_UNAVAILABLE/);
+  await assert.rejects(harness({apiKeys:[{name:'anon',api_key:'not-a-jwt'}]}).backend.preflight(namespace),/8D_PUBLIC_ANON_KEY_UNAVAILABLE/);
+  const {backend,state}=harness();await backend.preflight(namespace);
+  assert.equal(state.calls.filter(call=>new URL(call.url).hostname===`${PROJECT_REF_8D}.supabase.co`).length,1);
+  assert.equal(state.calls.some(call=>call.method==='POST'&&!call.url.endsWith('/database/query')),false);
+  assert.equal(state.db.every(call=>call.read_only===true),true);
 });
 
 test('8D management fence acquire/heartbeat/release is fixed, parameterized and epoch-bound',async()=>{

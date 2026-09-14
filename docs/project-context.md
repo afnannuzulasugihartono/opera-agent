@@ -4,6 +4,21 @@ Last synchronized: 2026-09-14
 
 ## Latest 8D follow-up audit repair
 
+Latest continuation: installation/pin f8c42c2 independently PASS and standard
+CI34806580639 SUCCESS. A bounded live CLI attempt failed preflight before OAuth
+or fixtures because Management secret values are DIGESTS, not plaintext.
+Master restored false (actual SHA-256(false) match), DB epoch0/unowned/hostfalse,
+policy OFF, principals/runs0. See
+`docs/milestone-8-checkpoint-8d-secret-digest-repair.md` for test-first test-only
+repair: strict secret digests plus exact initialized-Edge GET405, no private key
+retrieval. Focused26/26, full315/315 and Deno/static check PASS; independent
+implementation worktree-delta review PASS with affected29/29 and hostile checks.
+Reviewer usage cut off its final commit-binding report; exact-head CI and
+remaining live acceptance are next. No new Edge/schema/pin/public-MCP/extension
+change. 8D IN PROGRESS; 8E not started. Frozen worker-loss gate may be evidenced
+by actual child-worker death against hosted DB, not mislabeled Edge-isolate death;
+the final independent evidence review must reconcile that scope explicitly.
+
 Superseding continuation: separate reviewer `review_8d_candidate` returned PASS
 for exact f1e6f944 and bounded master-OFF installation. See
 `docs/milestone-8-checkpoint-8d-fence-review.md` and

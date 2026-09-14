@@ -4,6 +4,21 @@ Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 
 ## Latest request: repair remaining 8D audit findings
 
+Latest: f8c42c2 installation/pin independently PASS, CI34806580639 SUCCESS.
+The enabled live CLI attempt failed before OAuth/fixtures: Management /secrets
+lists DIGESTS. Master was restored false and its actual digest verified;
+DB epoch0/unowned/hostfalse/OFF, principals/runs0. Read
+`docs/milestone-8-checkpoint-8d-secret-digest-repair.md` first. The test-only backend
+repair uses strict digests and bounded fixed-Edge public-anon GET405 to verify
+initialized key/master without secret plaintext. Focused26/26 and Deno check
+PASS; full315/315 and independent worktree-delta review PASS (affected29/29,
+hostile oversized/redirect/abort checks). Reviewer usage cut off final SHA-binding
+report. Freeze reviewed delta, verify exact-head CI and review binding before
+retrying fresh manual PKCE; do not call this an overall8D acceptance.
+Remaining cloud matrix still required; no8E until overall8D accepted. Use real
+bounded child-worker death with hosted DB durability if independently accepted;
+do not fabricate Edge termination or silently waive historical review conditions.
+
 Superseding continuation: independent read-only reviewer review_8d_candidate PASS
 at f1e6f944; reviewed migration installed as 20260914043049 and isolated fenced
 Edge ACTIVE/v8/JWT-required with all13 bodies verified and observed hash pinned:
