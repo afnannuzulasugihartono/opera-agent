@@ -9,9 +9,9 @@ Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 3. `docs/milestone-8-plan.md` and `docs/milestone-8-plan-codex-review.md`.
 4. Accepted records 8A-8C.
 5. `docs/milestone-8-checkpoint-8d-cloud-install.md` and `docs/milestone-8-checkpoint-8d-cloud-bounds.md`.
-6. `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
-7. `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
-8. **Latest:** `docs/milestone-8-checkpoint-8d-operator-supervisor.md`.
+6. `docs/milestone-8-checkpoint-8d-cloud-fixture.md` and `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
+7. `docs/milestone-8-checkpoint-8d-operator-supervisor.md`.
+8. **Latest:** `docs/milestone-8-checkpoint-8d-chat-readiness.md`.
 
 Inspect the current worktree/remote before editing. Repository:
 `afnannuzulasugihartono/opera-agent`; branch `feat/semantic-runtime-1.6.0`.
@@ -21,110 +21,179 @@ Use one active writer only.
 
 8A-8C are accepted. 8D remains **IN PROGRESS**. 8E has not started.
 
-The isolated 8D backend was previously installed with explicit permission and
-reviewed candidate evidence. Historical closeout state was host flag false,
-transaction policy OFF, `legacy_gated=false`, `agent_commit_enabled=false`,
-synthetic data rows zero, and M7 VM disabled/empty. Migration
-`20260913143306_transaction_journal_8d_dark.sql` and Edge
-`opera-agent-transactions-8d` v1 (`verify_jwt=true`) remain the installed shape.
-Those production values were NOT freshly queried by the latest local
-operator/supervisor work; verify them before any future live probe.
+The local implementation remainder that was previously missing is now present:
 
-Prior local hosted-acceptance controller:
-`tests/helpers/transaction-cloud-controller-8d.mjs`.
-It sequences preflight -> SDK snapshot -> ownership -> install/session binding ->
-ledger seal -> host/DARK -> prepare/replay/status/cancel/replay/status -> cancelled
-payload check -> independent OFF/exact cleanup/verify against trusted injected
-adapters. Prior focused 36/36 and full 275/275 passed; exact-head CI run
-`34789183097` at `85ec1befef26c295f301aa253f938b47ed62ffa3` succeeded including
-static and Chromium. It did not contain durable hard-death ownership/recovery.
+- durable fixed-project operator/supervisor;
+- fixed Supabase Management acceptance backend;
+- exact opt-in live/recovery runner;
+- cleanup-order fail-closed hardening;
+- 180000 ms ownership window for the bounded live runner;
+- transaction encryption-key preflight validation and key-byte zeroing.
 
-## Latest local 8D operator/supervisor candidate
+Do **not** repeat implementation of a production operator adapter. That work is no
+longer the next task.
 
-Files:
+## Latest code candidate and CI
 
-- `tests/helpers/transaction-cloud-operator-8d.mjs`
-- `tests/transaction-cloud-operator-8d.test.mjs`
-- `docs/milestone-8-checkpoint-8d-operator-supervisor.md`
+Latest code candidate before documentation closeout:
 
-This test-only boundary is fixed to project `nenmkmtvjremqphfqnfw`, the existing
-OAuth client, and `http://127.0.0.1:6276/oauth/callback`. Public/operator surface is
-only the controller's eleven named methods; there is no generic SQL/shell/command/
-URL/model/page operation and no new public endpoint.
+`0bc958eb782de17b22b2c19081c5f85e908ccc7a`
 
-It adds:
+Exact-head GitHub Actions run `34796100802` completed SUCCESS:
 
-- one exclusive global-control lease;
-- one durable nonsecret dirty ownership manifest containing only exact tenant/actor/goal/transaction cleanup IDs + phase;
-- live-PID fencing so TTL expiry alone cannot create split-brain;
-- post-acquire manifest recheck so an earlier preflight cannot overwrite a crashed peer;
+- unit/static PASS;
+- Playwright install PASS;
+- Chromium extension regression PASS.
+
+Documentation synchronization commits follow that code candidate. Verify the new
+branch HEAD and its exact-head CI before doing any further work; do not infer the
+final docs-head CI from this file.
+
+## Production read-only state reverified
+
+Fresh read-only Supabase checks on 2026-09-14 showed:
+
+- policy `OFF`;
+- `legacy_gated=false`;
+- `agent_commit_enabled=false`;
+- all 11 8D synthetic transaction tables zero;
+- `opera_agent_private.goal_heads` zero;
+- all 12 candidate tables RLS enabled with no client policies;
+- reviewed candidate routines deny `anon` and `authenticated` execute authority;
+- migration `20260913143306_transaction_journal_8d_dark` applied.
+
+Edge `opera-agent-transactions-8d` is ACTIVE, currently deployment version 6,
+`verify_jwt=true`, and has exact deployed bundle SHA-256
+`bad0ae493209891e45bc90a11d91ef85dac72022f70f7aaf8ba9e8152c822769`, matching the
+fixed backend integrity pin. Treat exact bundle hash, not deployment version number,
+as the integrity fence.
+
+No production mutation was performed during this read-only revalidation.
+
+## Fixed Management acceptance backend
+
+File: `tests/helpers/transaction-cloud-management-backend-8d.mjs`.
+
+The backend pins project `nenmkmtvjremqphfqnfw`, existing OAuth client/callback,
+Management origin, Edge slug/hash, host flag, transaction-key secret name, and
+fixed parameterized SQL only. It exposes no arbitrary SQL, URL, secret-name,
+shell, raw-CDP, JavaScript, generic-RPC, model, or page surface.
+
+It verifies exact server Auth session + user + OAuth client before insert-only
+fixture provisioning, uses existing ledger crypto only in memory, validates the
+transaction host key through the 32-byte decoder during preflight, and zeroes
+decoded key bytes. Secrets/bearers are not printed or persisted by the backend.
+
+## Durable operator/supervisor
+
+File: `tests/helpers/transaction-cloud-operator-8d.mjs`.
+
+It provides:
+
+- exclusive global-control lease;
+- durable nonsecret dirty manifest with exact cleanup IDs + phase;
+- live-PID split-brain fencing;
+- post-acquire manifest recheck;
 - phase machine `OWNED -> INSTALLED -> SEALED -> HOST_ENABLED -> DARK -> CLEANING`;
-- exact-scope session-before-insert contract and insert-only acknowledgement;
-- exact tenant/goal ledger-seal scope, with sealed token kept out of manifest;
-- cooperative abort/quiescence with no Promise.race late-mutation window;
-- durable lost-reply evidence;
-- stale/dead-parent recovery that re-pins target, disables host, sets OFF, and only then performs exact cleanup;
-- failed control-plane recovery refuses row deletion and keeps dirty recovery evidence;
-- clean completion only when host false, mode OFF, exact-owned rows/payload zero, agent commit false, legacy gate false.
+- exact session-before-insert and ledger-scope checks;
+- quiescent abort behavior;
+- lost-reply evidence;
+- dead-owner recovery;
+- control-plane restoration before cleanup;
+- clean completion only after host false, policy OFF, exact-owned/payload rows zero, agent commit false, legacy gate false.
 
-Writer-local focused run before commit: **14/14 PASS, zero skips**. It includes a
-real spawned child process that exits without cleanup, lost insert reply,
-abort/quiescence, failed host-disable recovery, live-PID lease fencing, and the
-post-lease manifest race.
+PID reuse can conservatively keep a stale expired lease BUSY when an unrelated live
+process has reused the PID. This is a fail-closed availability limitation, not a
+split-brain or authority bypass.
 
-Hashes:
+## Hosted controller and cleanup hardening
 
-- helper: `f34dc7b1a4d5408087980b95968bd74432621dc64be93fdbb46c1a3270ce08b9`
-- focused test: `38ff23f3c22a61369ef5c121e8080354f9028eebac8a3c29688da7bc7fe0d872`
+File: `tests/helpers/transaction-cloud-controller-8d.mjs`.
 
-The helper is still a LOCAL operator/supervisor with an injected backend. It does
-**not** itself resolve production credentials or prove actual cloud Auth-session,
-ledger crypto, SQL provisioning, host control, or crash recovery. No fresh OAuth,
-production query/mutation, host enablement, policy change, deployment, key access,
-browser action, extension/MCP/signing/pairing/CRX/release change occurred in this
-unit.
+Sequence:
 
-Standard exact-head CI for the commit containing this handoff must be verified from
-GitHub artifacts. The temporary validation PR must be closed without merge after
-CI. Do not infer CI PASS merely from this file.
+`preflight -> signed SDK identity -> ownership -> session binding -> insert-only fixture -> ledger seal -> host enable -> DARK -> prepare/replay/status/cancel/replay/status -> cancelled payload check -> host disable -> OFF -> exact cleanup -> verify clean`.
+
+Critical latest fix: normal cleanup now refuses row deletion whenever host disable
+or OFF restoration fails or is ambiguous. It leaves dirty durable ownership for
+recovery and returns `CLOUD_CLEANUP_FAILED`. Deterministic tests cover both control
+failure cases.
+
+Database `assert_dark()` acquires a share lock on the singleton policy row for
+mutating candidate RPCs; restoring OFF updates that same row. Therefore successful
+OFF restoration waits behind already-admitted database mutation transactions and
+acts as the database quiescence fence before exact-owned cleanup.
+
+## Live/recovery runner
+
+File: `tests/cloud/transaction-cloud-acceptance-8d.mjs`.
+
+- explicit opt-in only;
+- SDK pinned to `npm:@supabase/supabase-js@2.57.4`;
+- no OAuth URL until production-shape preflight passes;
+- fresh namespace;
+- bearer/verifier remain in process memory;
+- Management credential, bearer, verifier, ledger key, and payload token are not printed;
+- only accept mode and exact `--recover <namespace>` mode;
+- recovery mode does not require OAuth SDK/key when no dirty manifest exists;
+- live-runner ownership TTL is 180000 ms.
+
+HTTP/Edge 8D accepts only `prepare`, `status`, and `cancel`; it has no finalize,
+commit, approval, or browser route. `browserDispatchAllowed` stays false.
+
+## Writer readiness review
+
+Record: `docs/milestone-8-checkpoint-8d-chat-readiness.md`.
+
+The active ChatGPT writer completed a bounded code/security self-review, fresh
+read-only production checks, Edge bundle reconciliation, migration verification,
+RLS/function privilege verification, and advisor reconciliation.
+
+This is **NOT** an independent audit. Do not relabel it as PASS for the governance
+gate.
+
+Fresh advisors:
+
+- security: no ERROR; remaining WARNs are inherited legacy/public findings; private 8D no-policy tables appear as expected INFO;
+- performance: no ERROR/WARN; 8D-relevant findings are INFO only, including one unindexed `runs` foreign key and unused-index notices.
+
+## Independent audit blocker
+
+PR #43 remains the audit vehicle and must **not be merged**.
+
+The Codex connector explicitly reported that the account had reached its code
+review usage limit. Therefore no independent verdict exists for the latest
+candidate. Copilot quota failure is also not a verdict.
+
+The active writer must not substitute its own self-review for the required
+independent PASS. If no independent reviewer is available, stop at this boundary.
 
 ## Exact next meaningful 8D work
 
-**Do not immediately ask for another OAuth login.** The local remainder is now at a
-clean independent-audit boundary rather than a repeated micro-audit loop.
+Do not implement 8E. Do not redo the fixed backend. Do not ask for a fresh OAuth
+login until the audit gate is satisfied.
 
-Next:
+When an independent reviewer becomes available:
 
-1. Independently audit the exact operator/supervisor candidate and the proposed fixed production backend wiring. Required verdict for live continuation: PASS.
-2. After PASS only, bind the injected backend to the existing separate operator credential realm and exact existing production primitives: read-only preflight, real server Auth-session/user/client membership check, insert-only fixture provisioning, existing ledger crypto sealing, host flag/DARK control, exact-owned cleanup, strict clean verification. Do not add generic SQL/CLI/RPC escape hatches.
-3. Then perform one fresh manual PKCE connection login, keeping bearer/verifier only in that bounded process. Verify signed `getClaims` + `getUser` snapshot and server-side live session binding. Never extract a stored bearer.
-4. Run authenticated synthetic hosted prepare/replay/status/cancel/replay/status with `dispatch=false`, then exact cleanup and OFF verification.
-5. Continue remaining hosted worker-loss/reclaim/nonce durability and real cloud concurrency/quota/minute-rollover/payload/retention/crypto gates.
-6. Reconcile advisors, confirm production OFF/clean, commit final 8D acceptance/context/handoff, and obtain the independent final 8D review.
+1. independently review the exact final branch SHA, including operator/supervisor, Management backend, live runner, controller, migration, Edge host, and the latest cleanup/lease/key hardening;
+2. require explicit PASS before any fresh OAuth or production DARK mutation;
+3. after PASS, run one fresh user-driven PKCE login with memory-only bearer and verify signed claims/user plus exact server Auth-session/OAuth-client binding;
+4. run the bounded synthetic hosted DARK lifecycle with `browserDispatchAllowed=false`;
+5. prove required hosted 8D cases: redelivery/collision, worker-loss/reclaim, one-shot nonce, cancel/expiry durability, rate/queue/concurrency/minute rollover, payload/retention, crypto tamper/wrong-kind/wrong-tenant, and cross-tenant/user/client rejection;
+6. restore and verify host false, policy OFF, legacy gate false, agent commit false, all synthetic rows zero;
+7. reconcile advisors, write final 8D acceptance/context/handoff, and only then mark 8D accepted.
 
-If the legitimate existing OAuth route cannot provide the required acceptance
-context, stop for a reviewed approach. Do not forge JWT/session/client identity,
-change OAuth client/scope/redirect to make a test pass, create a new public
-enrollment endpoint, or treat connection consent as transaction approval.
-
-## Codex / independent-audit workflow
-
-Do **not** return to the earlier pattern `small edit -> Codex -> small edit -> Codex`.
-`AGENTS.md` permits ChatGPT Web to own bounded checkpoint implementation. Continue
-local implementation/tests/CI with one writer; use the independent auditor at the
-actual high-risk production gate and final milestone boundary.
-
-The current operator/supervisor work must not be self-labelled independent PASS by
-its writer. If Codex is unavailable, local development and exact-head CI may still
-finish, but stop before fresh OAuth/live production mutation at the documented
-audit boundary.
+If the legitimate OAuth path cannot provide the required acceptance context, stop
+for a reviewed approach. Never extract a stored bearer, forge JWT/session/client
+identity, change OAuth client/scope/redirect to make a test pass, add a public
+enrollment bypass, or treat OAuth consent as transaction approval.
 
 ## Locked compatibility and rollback
 
 Extension 1.6.0; protocol 1; capabilities 26; public MCP 18 unchanged schemas.
 Extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; same signing/pairing; immediate
 signed rollback 1.5.2. No CRX, extension reinstall, or MCP reconnect is required by
-this local 8D unit.
+this 8D work.
 
 Stop after 8D. Do not begin 8E or Milestone 9 in the same continuation unless the
 user explicitly requests it after 8D is accepted.
