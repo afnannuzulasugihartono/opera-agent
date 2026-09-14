@@ -1,146 +1,130 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D; 8E has not started.
+Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
 
 ## Read before work
 
-Future research reference: `docs/research/claude-gap-analysis-2026-09-13.md`.
-Claude report archived verbatim, not independently verified; reconcile its older
-baseline and six proposed gaps before use. Do not replace the frozen plan with it.
-Prior exact-head CI34764182875 at8305992ec42ac275bf98a788721ab8aa8e7cb0d6
-PASS; temporaryPR35 now confirmed closed without merge. Read latest local
-OAuth prerequisite `docs/milestone-8-checkpoint-8d-oauth-probe.md` before login.
+1. `AGENTS.md` and `SECURITY.md`.
+2. `docs/project-context.md` and this handoff.
+3. `docs/milestone-8-plan.md` and `docs/milestone-8-plan-codex-review.md`.
+4. Accepted records 8A-8C.
+5. `docs/milestone-8-checkpoint-8d-cloud-install.md` and `docs/milestone-8-checkpoint-8d-cloud-bounds.md`.
+6. `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
+7. `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
+8. **Latest:** `docs/milestone-8-checkpoint-8d-operator-supervisor.md`.
 
-1. AGENTS.md and SECURITY.md.
-2. docs/project-context.md and this handoff.
-3. docs/milestone-8-plan.md and docs/milestone-8-plan-codex-review.md.
-4. Acceptance records 8A–8C.
-5. docs/milestone-8-checkpoint-8d-cloud-bounds.md (latest continuation) and
-   docs/milestone-8-checkpoint-8d-cloud-install.md (installed production state).
-6. docs/milestone-8-checkpoint-8d-host-candidate.md (reviewed local boundary).
-7. Earlier 8D preflight, independent review, lifetime remediation and admission/
-   journal candidate records as historical prerequisite evidence.
-8. Milestone 7 plan, accepted 7A–7F, independent milestone audit, roadmap and
-   semantic-runtime-plan.
-
-Worktree/remote must be inspected, not inferred from chat reports. Branch:
-feat/semantic-runtime-1.6.0, repository afnannuzulasugihartono/opera-agent.
+Inspect the current worktree/remote before editing. Repository:
+`afnannuzulasugihartono/opera-agent`; branch `feat/semantic-runtime-1.6.0`.
+Use one active writer only.
 
 ## Current boundary
 
-8A–8C accepted. 8D local candidate independently audited PASS. After explicit
-user permission and the exact-candidate audit, backend installed on Supabase
-opera-agent (nenmkmtvjremqphfqnfw). Overall 8D remains IN PROGRESS.
+8A-8C are accepted. 8D remains **IN PROGRESS**. 8E has not started.
 
-- Migration transaction_journal_8d_dark applied. CLI initially generated
-  20260913143147; MCP history assigned 20260913143306. Generated file renamed
-  to actual history version; SQL body/history unchanged. No bulk history repair.
-- Edge opera-agent-transactions-8d v1 ACTIVE, verify_jwt=true, full 13-file module
-  graph matches reviewed local bytes ignoring line endings.
-- Independent encryption key securely installed. Host environment flag false,
-  DB policy OFF, legacy_gated false, agent_commit_enabled false.
-- All 11 synthetic data tables zero; policy singleton deliberately remains.
-  M7 flag false and VM runs/effects/rates zero.
-- Real cloud primitive probe 15 assertions PASS, rolled back its temporary DARK
-  and synthetic data atomically. No auth/session/browser mutation.
-- Enabled-host public anon denial 401 and malformed-JWT gateway denial 401 PASS;
-  final OFF HTTP anon check 503 TRANSACTION_DISABLED/dispatch=false PASS.
-- Actual ordinary-role RPC calls denied 42501. All 12 tables RLS and no client
-  access; 26 reviewed functions deny anon/authenticated.
-- Advisors: security ERROR0/WARN31 inherited/INFO31; performance ERROR/WARN0,
-  INFO8. New INFO: private RLS no policies, unindexed principal FK, unused indexes.
-  Covering-index review required before broader use, not an authorization waiver.
-- Fresh native five-file suite 44/44; full default Node 239/239; static PASS.
-  Earlier actual pinned SDK/Deno malformed-token 2/2 and Edge typecheck PASS.
+The isolated 8D backend was previously installed with explicit permission and
+reviewed candidate evidence. Historical closeout state was host flag false,
+transaction policy OFF, `legacy_gated=false`, `agent_commit_enabled=false`,
+synthetic data rows zero, and M7 VM disabled/empty. Migration
+`20260913143306_transaction_journal_8d_dark.sql` and Edge
+`opera-agent-transactions-8d` v1 (`verify_jwt=true`) remain the installed shape.
+Those production values were NOT freshly queried by the latest local
+operator/supervisor work; verify them before any future live probe.
 
-Verify standard exact-final-head CI/Chromium and validation PR closure from
-GitHub artifacts. Installation-session baseline cd3d2c034fb86073c0ea33142512bee7bf839664.
-Final commit is the current branch tip containing the installation record; no
-self-referential SHA is stored here. Standard workflow must remain unchanged.
+Prior local hosted-acceptance controller:
+`tests/helpers/transaction-cloud-controller-8d.mjs`.
+It sequences preflight -> SDK snapshot -> ownership -> install/session binding ->
+ledger seal -> host/DARK -> prepare/replay/status/cancel/replay/status -> cancelled
+payload check -> independent OFF/exact cleanup/verify against trusted injected
+adapters. Prior focused 36/36 and full 275/275 passed; exact-head CI run
+`34789183097` at `85ec1befef26c295f301aa253f938b47ed62ffa3` succeeded including
+static and Chromium. It did not contain durable hard-death ownership/recovery.
 
-## Next meaningful 8D work
+## Latest local 8D operator/supervisor candidate
 
-Latest LOCAL controller: `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
-Preflight->SDKsnapshot->ownership->install/sessionbinding->seal->enable/DARK->
-prepare/replay/status/cancel/replay/status/payloadcheck->independentOFF/cleanup/
-verify implemented against trusted doubles only. Focused36/Deno1/typecheck/
-independent refrozen localPASS. No realoperator adapter/supervisor/manifest/global
-control ownership/liveCLI/login/production query/mutation yet. Implement and test
-these fixed-project internal pieces BEFORE freshOAuth; exact-runner audit required.
-Deadline signals cooperative; finally does NOT cover harddeath/lateoperation.
-OAuthworkflow5min now separate from each10sHTTP; keep this correction.
-Overall8D open; no8E. Final full/static/exactheadCI evidence in record/artifacts.
-Writer full275/275 zero skips/staticPASS. Verify final standardCI/Chromium and
-temporaryPRclosedwithoutmerge; do not infer overall8D acceptance from them.
+Files:
 
-Latest prerequisite: `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
-DATA-only cloud fixture now uses isolated UUID tenant/complete goal-head row,
-synthetic namespaced target/tab0 and exact cleanup IDs. Native regression tests
-actual production DDL in a rolled-back temporary schema. Read its next operational
-integration boundary before building operator runner. No runner/login/enrollment/
-live prepare this continuation. Never copy reduced native text-tenant/fictional
-Auth session fixtures into cloud. M6 ledgertrue/M7false/transactionOFF freshly
-read-only verified; host flag/all-table counts not freshly checked. Independent
-exact-runner review and cleanup/recovery tests BEFORE fresh manual login remain
-mandatory. No8E or account-wide logout/key rotation/new public enrollment endpoint.
-Final writer focused22/full264/native45 zero skips/staticPASS; independent local
-DATA-onlyPASS focused22/fixtureOAuth22/nativeDDL1. Verify exact-head standardCI
-includingChromium/temporaryPRclosedwithoutmerge from artifacts, not assumed here.
+- `tests/helpers/transaction-cloud-operator-8d.mjs`
+- `tests/transaction-cloud-operator-8d.test.mjs`
+- `docs/milestone-8-checkpoint-8d-operator-supervisor.md`
 
-Latest diagnostic prerequisite: `docs/milestone-8-checkpoint-8d-oauth-host-adapter.md`.
-Test-only SDK/status adapter implemented, focused20/20 and Deno1/1/typecheckPASS.
-It is NOT a live positive acceptance gate: absent marker yields STORAGE_ERROR,
-not200null. Finish audited fixture-specific principal/bound-prepared transaction
-integration BEFORE asking for another login; preserve tokens inside one process.
-Do not change host semantics/enroll from unverified claims to make tests pass.
-Verify final independent review/full/static/CI from latest record/artifacts.
+This test-only boundary is fixed to project `nenmkmtvjremqphfqnfw`, the existing
+OAuth client, and `http://127.0.0.1:6276/oauth/callback`. Public/operator surface is
+only the controller's eleven named methods; there is no generic SQL/shell/command/
+URL/model/page operation and no new public endpoint.
 
-New quantitative cloud probe8 grouped assertions PASS; short transaction rolled
-back DARK/data and confirmedOFF/runs/principals/rates0. Covers pending8/9/release,
-prepare20/21, commit10/11/replay/atomicrollback, tenant2/3, physicaltabdigestbypass,
-payload/cleanup. Sequential active-state limits and seeded rates are NOT cloud
-concurrent races, real minute rollover, hosted recovery or authenticated prepare.
+It adds:
 
-Existing public acceptance clients already register loopback callback
-http://127.0.0.1:6276/oauth/callback (authmethodnone). Example nonsecretclientID
-8bf1ff0e-7088-4881-ba76-e36c672453c6. No new registration/scope/redirect was made.
-Test-only PKCE helper/listener now implemented; focused12/12 synthetic/loopback
-PASS. Actual user-driven PKCE connection login now PASS: userEndpointVerifiedtrue,
-browserDispatchAllowedfalse, process exit0 and no listener6276 after completion.
-Token discarded; do not extract stored credentials. CI34784559085 at55751a2 PASS,
-PR36 closed without merge. Read the follow-up in the OAuth record. Next useful unit:
-reviewed in-process host adapter then fresh manual OAuth login, memory-only tokens,
-then authenticated synthetic host
-admission. Do not extract user's stored token or treat OAuth consent as8F approval.
+- one exclusive global-control lease;
+- one durable nonsecret dirty ownership manifest containing only exact tenant/actor/goal/transaction cleanup IDs + phase;
+- live-PID fencing so TTL expiry alone cannot create split-brain;
+- post-acquire manifest recheck so an earlier preflight cannot overwrite a crashed peer;
+- phase machine `OWNED -> INSTALLED -> SEALED -> HOST_ENABLED -> DARK -> CLEANING`;
+- exact-scope session-before-insert contract and insert-only acknowledgement;
+- exact tenant/goal ledger-seal scope, with sealed token kept out of manifest;
+- cooperative abort/quiescence with no Promise.race late-mutation window;
+- durable lost-reply evidence;
+- stale/dead-parent recovery that re-pins target, disables host, sets OFF, and only then performs exact cleanup;
+- failed control-plane recovery refuses row deletion and keeps dirty recovery evidence;
+- clean completion only when host false, mode OFF, exact-owned rows/payload zero, agent commit false, legacy gate false.
 
-Do not repeat primitive-only results as if they close hosted gates. Remaining:
+Writer-local focused run before commit: **14/14 PASS, zero skips**. It includes a
+real spawned child process that exits without cleanup, lost insert reply,
+abort/quiescence, failed host-disable recovery, live-PID lease fencing, and the
+post-lease manifest race.
 
-1. Legitimate signed OAuth positive/negative, trusted client/session binding and
-   session revocation through actual deployed host.
-2. Bound hosted prepare/status/cancel using authenticated synthetic source/target
-   installation, existing ledger crypto authority and no browser dispatch.
-3. Actual hosted worker loss/reclaim/nonce durability plus remaining full cloud
-   quota/concurrency/payload/retention/crypto gates. Native killed Node workers
-   and rolled-back SQL are distinct evidence, not hosted recovery.
-4. Independent final 8D review, advisor reconciliation, OFF/clean confirmation,
-   committed acceptance/context/handoff and standard exact-head CI.
+Hashes:
 
-No storage-extracted user bearer, forged JWT/client/session, credentials in chat,
-new public MCP approval tools or OAuth scope/client/redirect/config changes to
-circumvent this boundary. If legitimate existing OAuth cannot deliver the probe,
-stop for a reviewed acceptance approach. Actual human approval transport belongs
-to 8F. User installation permission is not a waiver of these gates.
+- helper: `f34dc7b1a4d5408087980b95968bd74432621dc64be93fdbb46c1a3270ce08b9`
+- focused test: `38ff23f3c22a61369ef5c121e8080354f9028eebac8a3c29688da7bc7fe0d872`
+
+The helper is still a LOCAL operator/supervisor with an injected backend. It does
+**not** itself resolve production credentials or prove actual cloud Auth-session,
+ledger crypto, SQL provisioning, host control, or crash recovery. No fresh OAuth,
+production query/mutation, host enablement, policy change, deployment, key access,
+browser action, extension/MCP/signing/pairing/CRX/release change occurred in this
+unit.
+
+Standard exact-head CI for the commit containing this handoff must be verified from
+GitHub artifacts. The temporary validation PR must be closed without merge after
+CI. Do not infer CI PASS merely from this file.
+
+## Exact next meaningful 8D work
+
+**Do not immediately ask for another OAuth login.** The local remainder is now at a
+clean independent-audit boundary rather than a repeated micro-audit loop.
+
+Next:
+
+1. Independently audit the exact operator/supervisor candidate and the proposed fixed production backend wiring. Required verdict for live continuation: PASS.
+2. After PASS only, bind the injected backend to the existing separate operator credential realm and exact existing production primitives: read-only preflight, real server Auth-session/user/client membership check, insert-only fixture provisioning, existing ledger crypto sealing, host flag/DARK control, exact-owned cleanup, strict clean verification. Do not add generic SQL/CLI/RPC escape hatches.
+3. Then perform one fresh manual PKCE connection login, keeping bearer/verifier only in that bounded process. Verify signed `getClaims` + `getUser` snapshot and server-side live session binding. Never extract a stored bearer.
+4. Run authenticated synthetic hosted prepare/replay/status/cancel/replay/status with `dispatch=false`, then exact cleanup and OFF verification.
+5. Continue remaining hosted worker-loss/reclaim/nonce durability and real cloud concurrency/quota/minute-rollover/payload/retention/crypto gates.
+6. Reconcile advisors, confirm production OFF/clean, commit final 8D acceptance/context/handoff, and obtain the independent final 8D review.
+
+If the legitimate existing OAuth route cannot provide the required acceptance
+context, stop for a reviewed approach. Do not forge JWT/session/client identity,
+change OAuth client/scope/redirect to make a test pass, create a new public
+enrollment endpoint, or treat connection consent as transaction approval.
+
+## Codex / independent-audit workflow
+
+Do **not** return to the earlier pattern `small edit -> Codex -> small edit -> Codex`.
+`AGENTS.md` permits ChatGPT Web to own bounded checkpoint implementation. Continue
+local implementation/tests/CI with one writer; use the independent auditor at the
+actual high-risk production gate and final milestone boundary.
+
+The current operator/supervisor work must not be self-labelled independent PASS by
+its writer. If Codex is unavailable, local development and exact-head CI may still
+finish, but stop before fresh OAuth/live production mutation at the documented
+audit boundary.
 
 ## Locked compatibility and rollback
 
 Extension 1.6.0; protocol 1; capabilities 26; public MCP 18 unchanged schemas.
-Extension ID ohbbpamcljckmjhcpkcmefdobkoeaick; same signing/pairing; immediate signed
-rollback 1.5.2. No new CRX, extension reinstall or MCP reconnect for this install.
-Canonical-LF MCP source SHA-256:
-f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11.
-Standard workflow blob:
-074da3349f71f80bb8174d28ab5aa6ec3797fda9.
+Extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; same signing/pairing; immediate
+signed rollback 1.5.2. No CRX, extension reinstall, or MCP reconnect is required by
+this local 8D unit.
 
-Rollback leaves DB policy OFF and host flag false; additive private schema/key
-may remain. No agent-facing transaction commit or browser executor is available.
-Stop after 8D; do not start 8E or Milestone 9.
+Stop after 8D. Do not begin 8E or Milestone 9 in the same continuation unless the
+user explicitly requests it after 8D is accepted.

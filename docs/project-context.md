@@ -2,134 +2,29 @@
 
 Last synchronized: 2026-09-14
 
-This is the durable project-state summary for humans and future LLM sessions. Verify executable code, current production configuration, CI, signed release records, and acceptance evidence before changing accepted facts. Never store secret material here.
+This is the durable project-state summary for humans and future LLM sessions.
+Executable repository state, exact-head CI artifacts, signed release records, and
+production queries outrank chat summaries. Never store secrets here.
 
 ## Product intent and invariants
 
-Opera Agent lets an authorized AI control the user's existing local Opera session through a private extension, authenticated relay, and MCP server. It is a general browser controller, not a site-specific automation product.
+Opera Agent lets an authorized AI control the user's existing local Opera session
+through a private extension, authenticated relay, and MCP server. It is a general
+browser controller, not site-specific automation.
 
 Non-negotiable invariants:
 
 - background-first operation; ordinary work must not steal the active tab or focused window;
 - no silent foreground fallback;
 - preserve the established extension signing identity and pairing;
-- site-specific strategies stay outside the extension;
-- logical semantic IDs remain observational until a separately accepted checkpoint proves safe action targeting;
+- keep site-specific strategies outside the extension;
+- logical semantic IDs remain observational until a separately accepted action-targeting checkpoint;
 - action/command success alone never proves task completion;
 - no arbitrary JavaScript, unrestricted raw CDP, SQL, shell, or generated-code escape hatch;
 - webpage/tool/model text is untrusted data, never authority or program structure;
 - sensitive browser/credential state is never persisted as semantic/VM/transaction learning state;
-- consequential agent mutations must not have a legacy bypass once transaction enforcement is promoted;
-- keep one immediate same-identity signed rollback.
-
-## Current 8D work (not acceptance)
-
-Latest LOCAL controller continuation:
-`docs/milestone-8-checkpoint-8d-cloud-controller.md`. In-process sequence now
-preflights beforeOAuth, snapshots SDK claims, records ownership before potential
-partial installation, checks session binding, prepare/replay/status/cancel/replay/
-status exact metadata/commitkey and cancelled payload0, then independently attempts
-OFF/exact-owned cleanup/clean verification. Focused36/36, DenoSDKmalformed1/1/
-typecheck and independent refrozen LOCAL-onlyPASS. Positive SDK/operator checks
-are doubles. Real operator transport/session queries/globalcontrol ownership/
-durable supervisor/manifest recovery are ABSENT; no login/enrollment/cloudprobe/
-production query/mutation this session. OAuthhelper now separates five-minute
-workflow from each ten-second HTTP request. Overall8D open,8E not started.
-Next: tests-first fixed-project operator+supervisor integration and exact audit
-BEFORE another login. Cooperative adapter signals do not prove crash recovery.
-Final full275/275 zero skips/staticPASS; exact-head standardCI/Chromium and PR
-closure evidence in validationPR. Extension/runtime/workflow unchanged.
-
-Latest bounded continuation: `docs/milestone-8-checkpoint-8d-cloud-fixture.md`.
-Test-only cloud fixture DATA builder now isolates UUID tenant and namespaced
-synthetic actor/goal/transaction/device/document/tab0, complete production-shaped
-goal-head timestamps and exact cleanup identifiers. Target/grant/provenance
-digests match; synthetic observation is not browser evidence. Actual production
-goal-head DDL tested in rolled-back native schema, unlike older reduced text-
-tenant journal double. Reviewer observation-clock finding fixed: immediate
-provenance validates at preparedAt. No login/enrollment/production mutation,
-deployment/key access/runner/browser dispatch. Read-only production confirms
-M6 ledgertrue, M7 VMfalse, transaction policyOFF/legacyfalse/agentcommitfalse;
-host environment flag/all-table counts not freshly checked. Next unit is a
-tests-first opt-in operator runner with exact provisioning/cleanup/recovery,
-independent audit BEFORE another login. Overall8D open,8E not started.
-Final focused22/22, full264/264, native45/45 zero skips/staticPASS. Independent
-refrozen DATA-onlyPASS reran focused22/22, fixture/OAuth22/22 and native production-
-DDL1/1; not overall8D acceptance. Exact-head standardCI/closure in validationPR.
-
-Latest local continuation: `docs/milestone-8-checkpoint-8d-oauth-host-adapter.md`.
-Test-only in-process actual-pinned-SDK CLI/status adapter built; focused20/20,
-actualSDKmalformed Deno1/1, CLItypecheck, full259/259 zero skips, static and
-independent refrozen local review PASS. Real OAuth not run this turn.
-Absent status marker raises storage error, so200null classifier is theoretical,
-not a live positive gate. Before another login, prepare reviewed fixture-specific
-principal/bound-transaction integration; no host changes just to pass a test.
-Mutable claim references replaced with primitive snapshots across async checks.
-No runtime/config/enrollment/DB/browser mutation or8E. Overall8D remains open.
-
-Latest local OAuth prerequisite: `docs/milestone-8-checkpoint-8d-oauth-probe.md`.
-Test-only manual PKCE helper/listener added; focused12/12 synthetic/loopback,
-full251/251 zero skips, static and independent refrozen local review PASS.
-Actual user-driven OAuth connection login now PASS: process returned
-userEndpointVerifiedtrue/browserDispatchAllowedfalse, exited0, listener6276 absent.
-Token discarded/unexported; no runtime/config/browser dispatch change. This is
-Auth user-endpoint verification, not deployed-host client/session binding/revocation.
-Next unit: reviewed in-process host adapter plus fresh manual OAuth, never recovery
-of the discarded bearer from storage. Record has exact scope/evidence limitations.
-User-endpoint success alone is not host client/session admission or8F approval.
-Standard CI34784559085 at55751a2 PASS including Chromium; PR36 closed without merge.
-TemporaryPR35 confirmed closed without merge after successful CI34764182875
-at8305992. Overall8D remains open; follow the OAuth record for the next bounded unit.
-
-User-supplied Claude gap analysis archived in
-`docs/research/claude-gap-analysis-2026-09-13.md` for future review. Preserved source
-claims are unverified leads, not accepted facts or changes to the frozen plan.
-Its v1.5.2/current and v1.6.0/proposed labels must be reconciled with this baseline.
-No checkpoint implementation or reprioritization authorized by this archival step.
-
-Latest record: `docs/milestone-8-checkpoint-8d-cloud-bounds.md`; installation
-details in `docs/milestone-8-checkpoint-8d-cloud-install.md`. Checkpoint 8D
-remains IN PROGRESS; 8E has not started. Local private journal + isolated dark
-host candidates now integrate verified SDK identity metadata, authenticated
-ledger tokens, immutable synthetic source/target bindings, locked current heads,
-actual 8C challenge/preview/consumption digests, applicable declared durable
-budgets, terminal payload removal and real Node worker death/recovery. HTTP
-defaults OFF and exposes no approval/finalize/browser route. After explicit user
-authorization/audit, SQL applied as transaction_journal_8d_dark and isolated Edge
-host deployed v1 verify_jwt=true. Generated filename aligned to actual cloud
-history20260913143306 (CLI initially20260913143147), SQL/history unchanged.
-Independent encryption key installed securely; hostflagfalse/policyOFF at closeout.
-
-Writer gates: native/host/HTTP/identity/token44/44, full unit239/239, actual pinned
-SDK/Deno malformed-token2/2, Edge typecheck and static check PASS. Independent
-exact-candidate rerun44/44 and Deno2/2 PASS; bounded local review PASS, not overall
-8D acceptance. Native auth positive paths use explicitly synthetic SDK doubles;
-neither these tests nor malformed-token rejection prove live signed OAuth.
-Initial dark source/target authority is an immutable server-owned synthetic
-registry, not a browser source collector. Nonempty ledger constraints/nonGoals
-fail closed; generic clicks do not establish real-world predicates.
-
-Fresh cloud checks: all12 tablesRLS, ordinary-role private tables/26 functions
-denied; actual anon/auth RPC denial42501. Rolled-back cloud primitive15 assertions
-PASS, enabled-host anon/malformedJWT rejectionPASS/OFF503 verified. All11 synthetic
-data tables0, policyOFF singleton remains; M7 flagfalse/VM runs/effects/rates0.
-Security after ERROR0/WARN31 inherited/INFO31 (+12 private RLS-no-policyINFO);
-performanceINFO8 (+principal FK/2unused indexes), ERROR/WARN0. Fresh native44/44/
-full239/239PASS. SignedOAuth positive/revocation/bound hosted prepare/recovery/full
-cloud gates still open; installation/anon denial not overall8D acceptance.
-Verify standard exact-head CI/Chromium and temporaryPR closure from artifacts.
-No extension/public MCP/OAuth runtime, signing, pairing or workflow changes occurred.
-Earlier admission/journal evidence is historical in its linked records.
-
-Cloud quantitative continuation:8 grouped assertions PASS in a short rolled-back
-synthetic transaction: pending8/9/release, prepare20/21, commit10/11/replay/atomic
-rollback, tenant2/3, physical-tab digest bypass, payload and cleanup cap. This
-does not prove concurrent cloud contenders or actual minute rollover. OFF/runs/
-principals/rates0 confirmed. Read-only metadata found existing public acceptance
-OAuth clients with loopback callback127.0.0.1:6276/oauth/callback, so a legitimate
-PKCE probe can reuse existing registration without new scope/redirect/client.
-Listener/manual login/signed identity and full hosted admission remain unproven;
-no credentials in chat/storage extraction or 8F approval transport shortcut.
+- once transaction enforcement is promoted, the same agent identity must have no legacy mutation bypass;
+- keep an immediate same-identity signed rollback.
 
 ## Current accepted release state
 
@@ -137,21 +32,20 @@ no credentials in chat/storage extraction or 8F approval transport shortcut.
 - Protocol: `1`.
 - Extension ID: `ohbbpamcljckmjhcpkcmefdobkoeaick`.
 - Public browser capabilities: `26`.
-- MCP tools: `18`, unchanged current names and input schemas.
+- Public MCP tools: `18`, unchanged names and input schemas.
 - Production device name: `opera`.
 - Working branch: `feat/semantic-runtime-1.6.0`.
-- Milestone 8 initial planning baseline head: `538dbb5cb8b7b8ff1d8be9c6ac36ba37d22669d4`.
-- First frozen Milestone 8 plan commit: `434faa1894479a5f7dd264049614c6d814022f77`.
-- Accepted Checkpoint 8A contract/test commit: `4c84dab`.
-- Accepted Checkpoint 8B pure engine/test commit: `0f333a1`.
-- Accepted Checkpoint 8C pure authority-verifier/test commit: `e2b228b`.
 - Final 1.6.0 release acceptance commit: `cfb903b`.
+- Accepted 8A contract/test commit: `4c84dab`.
+- Accepted 8B pure engine/test commit: `0f333a1`.
+- Accepted 8C pure authority-verifier/test commit: `e2b228b`.
 - Immediate signed rollback: `1.5.2`.
 - Signed 1.6.0 CRX SHA-256: `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
 - Canonical-LF MCP source SHA-256: `f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11`.
-- Locked Checkpoint 7A inventory digest: `sha256:8d75fff529a85a9ac2b3d4544996f27ae0e2366a935211a8f6a1778bb1e8367a`.
 
-Never commit, paste, log, or transmit private signing-key material, pairing secrets, service keys, OAuth secrets, passwords, OTPs, payment data, or decrypted VM-host key material.
+Never commit, paste, log, or transmit private signing-key material, pairing
+secrets, service keys, OAuth secrets, passwords, OTPs, payment data, private
+crypto-key contents, or user bearers.
 
 ## Architecture
 
@@ -164,13 +58,14 @@ ChatGPT / another MCP client
   -> structured observation or verified action outcome
 ```
 
-Milestone 7 added an internal default-off durable VM host beside the existing public path. Its accepted browser effect surface remains read-only and its production flag remains off after Milestone 7 acceptance.
-
-The extension owns browser-local sensing and named primitives. Server infrastructure owns pairing, heartbeat, command/workflow transport, updates, MCP backend state, and dark VM/transaction hosting. Browser content never grants authority.
+The extension owns browser-local sensing and named primitives. Server
+infrastructure owns pairing, heartbeat, command/workflow transport, updates, MCP
+backend state, and dark VM/transaction hosting. Browser content never grants
+authority.
 
 ## Locked public MCP contract
 
-The accepted public inventory remains 18 tools:
+The accepted public inventory remains:
 
 1. `browser_status`
 2. `run_browser_burst`
@@ -193,196 +88,192 @@ The accepted public inventory remains 18 tools:
 
 Contract fixture: `tests/fixtures/mcp-contract-v1.json`.
 
-Milestone 7 added no public VM tool. Milestone 8 Checkpoints 8A–8E remain frozen to no public MCP runtime/schema change. Checkpoint 8F is the only planned point that may propose an additive transaction surface and enforcement behavior, and it requires early independent audit plus real-client approval/compatibility evidence before deployment.
+Milestone 8 Checkpoints 8A-8E are frozen to no public MCP runtime/schema change.
+8F is the only planned point that may propose an additive transaction surface and
+enforcement behavior, and it requires early independent audit plus real-client
+approval/compatibility evidence before deployment.
 
 ## Milestone status
 
-- Milestone 1 — bounded browser bursts: complete/released.
-- Milestone 2 — background-first execution: complete/released.
-- Milestone 3 — adaptive screenshots: complete/released.
-- Milestone 4 — vision-guided navigation: complete/released.
-- Milestone 5 — semantic runtime foundation, Checkpoints 5A–5F: complete/released in 1.6.0.
-- Milestone 6 — Goal and Constraint Ledger + Proof Engine, Checkpoints 6A–6F: complete as server-side work; extension remains 1.6.0.
-- Milestone 7 — Reactive Browser VM, Checkpoints 7A–7F: complete and independently audited PASS.
-- Milestone 8 — Decision-Causal Transactions and Provenance Enforcement: **8A–8C accepted; 8D authorized backend installed, probes PASS, OFF/clean; hosted OAuth/recovery/full cloud acceptance open; 8E not started**.
-- Milestone 9+ — not started.
+- Milestones 1-5: complete/released; semantic runtime foundation ships in 1.6.0.
+- Milestone 6: Goal/Constraint Ledger + Proof Engine complete as server-side work.
+- Milestone 7: Reactive Browser VM complete and independently audited PASS; accepted production VM flag remains false.
+- Milestone 8: 8A-8C accepted; **8D IN PROGRESS**; 8E and later checkpoints not started.
+- Milestone 9+: not started.
 
-## Milestone 7 accepted boundary
-
-Milestone 7 froze and accepted `OA_REACTIVE_VM_V1`, `OA_REACTIVE_VM_CHECKPOINT_V1`, `OA_CANONICAL_JSON_V1`, a closed data-only grammar, deterministic pure runtime layers, bounded collection/proof binding, and a separate durable Supabase host.
-
-The accepted VM effect surface remains read-only: `browser.ping`, restricted read/find/wait `browser.burst`, `tabs.list/get/find`, `page.read/query/find/collect_links/capture/wait_for`, and `media.state`. No navigation, tab mutation, click/fill/key/pointer/scroll/media mutation, consequential effect, direct logical-ID action, arbitrary JavaScript/raw CDP, or public VM MCP tool was accepted by Milestone 7.
-
-The independent Codex audit at Milestone 7 final head `551e8283c0417b173e106ee0598cca848f2f4ff0` returned **PASS** on 2026-09-12. It grants no new browser authority and does not promote the VM flag.
-
-## Production dark state after Milestone 7
-
-Accepted closeout state:
-
-- `milestone7_vm_enabled=false`;
-- `vm_runs=0`;
-- `vm_effects=0`;
-- `vm_rate_windows=0`;
-- temporary Milestone 7 command rows zero;
-- device `opera` online on extension 1.6.0 / protocol 1 / 26 capabilities.
-
-Milestone 8 planning/revision plus Checkpoints 8A–8B changed none of these production values and created no Milestone 8 production config/flag.
-
-## Milestone 8 revised frozen plan
+## Milestone 8 frozen boundary
 
 Authoritative plan: `docs/milestone-8-plan.md`.
 
-The transaction lifecycle remains:
+Lifecycle:
 
 ```text
 PREPARE -> VALIDATE -> APPROVE(if required) -> COMMIT
         -> OBSERVE -> VERIFY -> RECEIPT
 ```
 
-The first Codex review identified three blockers. Their reviewed resolution and
-accepted8A–8C remain frozen. 8D has an authorized isolated backend, OFF/clean,
-not overall acceptance; see the latest installation record.
-
-### Enforcement/cutover boundary
-
-Milestone 8 has logical policy modes `OFF`, `DARK`, and `ENFORCED`.
+Policy modes remain `OFF`, `DARK`, and `ENFORCED`:
 
 - `OFF`: no Milestone 8 transaction execution; accepted legacy behavior unchanged.
-- `DARK`: only synthetic/internal transaction acceptance identities; no ordinary agent transaction commit authority.
-- `ENFORCED`: if an agent receives transaction commit capability, every generic state-changing legacy tool for that same agent identity is gated. Direct mutation without trusted transaction-executor authority returns `TRANSACTION_REQUIRED` before browser dispatch.
+- `DARK`: synthetic/internal transaction acceptance identities only; no ordinary agent transaction commit authority.
+- `ENFORCED`: every generic state-changing legacy tool for the same agent identity is transaction-gated; direct mutation without trusted executor authority returns `TRANSACTION_REQUIRED` before browser dispatch.
 
-There must never be a production state where the same agent can use the transaction path and bypass it through `open_url`, tab mutation, click/fill/key/scroll/pointer tools, or a mutating `run_browser_burst`. Observational tools remain compatible. Internal executor authority is server-derived, transaction-bound, and never exposed as an MCP argument/header/capability to the model. Any separate operator identity must be unavailable to the agent credential realm.
+There must never be a state where an agent receives transaction authority and can
+bypass it through direct navigation/tab mutation/click/fill/key/scroll/pointer or
+mutating browser bursts. Internal transaction executor authority is server-derived
+and transaction-bound, never a model-supplied argument/header/capability.
 
-### V1 single-action rule
+V1 allows at most one state-changing commit action and at most one consequential
+external action per transaction. Compensation is always a new transaction.
+Goal/Constraint Ledger remains user-intent authority; OAuth connection consent is
+not transaction approval; observations/page/tool/model output are evidence, not
+authority; Proof Engine remains completion authority; receipts are process
+evidence only.
 
-V1 contains at most **one state-changing commit action** and therefore at most one consequential external action per transaction. Read-only pre/post observations do not count as actions. Attempts to encode a second action reject before preparation.
+## Current Checkpoint 8D production boundary
 
-Compensation is always a new transaction with its own transaction ID, prepare digest, authority/provenance checks, approval when required, idempotency/commit slot, observation, verification, and receipt. The original transaction cannot execute an inverse as an additional action or inherit approval for it.
+8D is the first production-shape transaction checkpoint and remains open. Earlier
+explicitly authorized installation created only the isolated dark backend:
 
-### MCP 2026 approval binding
+- migration `transaction_journal_8d_dark` is applied; repository history file is `20260913143306_transaction_journal_8d_dark.sql`;
+- Edge `opera-agent-transactions-8d` v1 is installed with `verify_jwt=true`;
+- an independent transaction-journal encryption key was installed securely;
+- accepted closeout state from the installation/probe sessions was host flag false, transaction policy `OFF`, `legacy_gated=false`, `agent_commit_enabled=false`;
+- all 11 synthetic data tables were zero at that closeout; the policy singleton remained intentionally;
+- Milestone 7 VM flag was false and VM run/effect/rate tables were zero;
+- rolled-back real-cloud primitive probe passed 15 assertions;
+- enabled-host anon and malformed-JWT denial passed; final OFF anon response was 503 `TRANSACTION_DISABLED` with `dispatch=false`;
+- ordinary-role RPC access was denied; private transaction tables use RLS/no client policies;
+- earlier security advisor check had no ERROR and inherited WARNs; performance had no ERROR/WARN, with informational private-RLS/index findings retained for later reconciliation.
 
-MCP `2026-07-28` is treated as stateless and explicit opt-in:
+Those production values are **inherited evidence, not freshly reverified by the
+latest local operator/supervisor work**. Do not infer current cloud state from chat;
+read it before any future live probe.
 
-- no approval security depends on `Mcp-Session-Id`;
-- modern client capabilities are checked on the current request;
-- missing required form-elicitation capability returns `-32021 MissingRequiredClientCapability` and advances no transaction state;
-- confirmation uses `resultType: input_required`, bounded `inputRequests`, opaque verified `requestState`, and the retry's per-round `inputResponses`;
-- the JSON-RPC request ID may change on retry and is not authority;
-- approval challenge state binds authenticated user, trusted OAuth client identity, tenant, transaction ID, prepare/preview digests, nonce, and expiry;
-- self-reported MCP `clientInfo` is not OAuth client identity;
-- V1 permits one approval MRTR round.
+## Current 8D local hosted-acceptance chain
 
-Legacy initialize-era clients may use a compatible elicitation shim only when the transport can render actual user confirmation. `Mcp-Session-Id` may route legacy transport but is not approval authority. Incapable legacy/stateless clients fail cleanly; there is no fallback to model prose.
+The test-only hosted-acceptance controller in
+`tests/helpers/transaction-cloud-controller-8d.mjs` already implements the bounded
+sequence against injected trusted adapters:
 
-Actual ChatGPT confirmation remains mandatory in Checkpoint 8F. If ChatGPT cannot visibly elicit a real user decision, consequential production commit remains unavailable.
+`preflight -> SDK identity snapshot -> ownership -> fixture/session binding -> ledger seal -> enable/DARK -> prepare/replay/status/cancel/replay/status -> cancelled payload check -> OFF/exact cleanup/verify`.
 
-### Authority/provenance/recovery summary
+Its controller tests previously passed focused 36/36 and full 275/275 at the prior
+exact head; standard CI run `34789183097` was successful including static and
+Chromium. This proves only that earlier local controller candidate, not overall 8D.
 
-- Goal/Constraint Ledger = intent/constraint authority.
-- Observations/page/tool/model output = facts/operands/evidence only, never new authority.
-- Prepared transaction = exact narrow candidate authority for one action.
-- User approval = fresh one-shot authority bound to exact challenge/prepare state.
-- OAuth consent = client connection authorization, not transaction approval.
-- Proof Engine = completion authority.
-- Transaction/command receipt = process evidence only.
-- Every consequential action input carries bounded provenance; only explicit user/ledger/trusted-policy sources may carry `AUTHORITY`.
-- Crash recovery reuses one deterministic `tx1:` identity and underlying command request ID.
-- Unknown post-dispatch completion becomes `AMBIGUOUS` and is reconciled read-only; irreversible/unknown work is not blindly redispatched.
-- Cancellation before dispatch guarantees zero transaction mutation; after dispatch it does not claim undo.
+### Latest local operator ownership/recovery candidate
 
-## Checkpoint 8B accepted boundary
+Record: `docs/milestone-8-checkpoint-8d-operator-supervisor.md`.
 
-The pure `lib/transaction-prepare.js` module now prepares and validates immutable singular-action envelopes, compiles deterministic predicate dependency fingerprints, plans selective or fail-closed revalidation, generates bounded digest-only previews, conservatively classifies generic primitives as `IRREVERSIBLE_OR_UNKNOWN`, and decides direct-tool/transaction availability under `OFF`/`DARK`/`ENFORCED`.
+`tests/helpers/transaction-cloud-operator-8d.mjs` now supplies the missing LOCAL
+fixed-project operator/supervisor boundary used by future acceptance wiring. It is
+test-only and accepts only the existing eleven controller operator methods. It
+adds no generic SQL/shell/command/URL/model/page supplied operation and no public
+API.
 
-Identical inputs reproduce the accepted 8A prepared fixture byte-for-byte. The module receives timestamps explicitly and performs no browser, network, database, ambient-clock, approval, commit, receipt, proof, or production work. The full suite is 193/193 and the measured 64-predicate revalidation p95 is `0.0324 ms` on the recorded local Node 22 run.
+The target is pinned to project `nenmkmtvjremqphfqnfw`, the existing OAuth client,
+and loopback callback before owned mutation. Durable local ownership stores only
+nonsecret exact cleanup identifiers and phase. One global lease and one dirty
+manifest provide fail-closed crash evidence. A pending manifest blocks a fresh
+run. Lease expiry alone cannot steal ownership from a still-live local PID; an
+expired dead owner may be reclaimed. Ownership rechecks the durable manifest after
+lease acquisition so a process that passed an earlier preflight cannot overwrite
+a crashed peer's manifest.
 
-An 8A fixture erratum now supplies the originally required trusted effect-classification table. Every generic primitive defaults to `IRREVERSIBLE_OR_UNKNOWN`; client-provided effect classes are untrusted and no narrower trusted descriptors are currently frozen.
+The local phase machine is:
 
-## Checkpoint 8C accepted boundary
+`OWNED -> INSTALLED -> SEALED -> HOST_ENABLED -> DARK -> CLEANING`.
 
-The pure `lib/transaction-authority.js` module now validates exact-bound provenance, prevents browser/tool/model/server-derived values from carrying authority, creates immutable OAuth-user approval challenges, and verifies modern one-round `requestState`/`inputResponses` decisions against every frozen security binding. TTL, capability, decline, tamper, stale provenance, and already-consumed nonce checks fail closed.
+Host/policy/cleanup calls require durable ownership. Fixture scope must match the
+manifest. The injected backend's exact server-session check must return a live
+user/client/session binding before insert-only provisioning is allowed. Ledger
+scope must match the owned tenant/goal before the injected existing crypto sealer
+may run. Tokens/keys/session identity are never placed in the manifest.
 
-8C emits only a deterministic nonce-consumption claim. Durable atomic consumption, journal recovery, leases, and cross-worker replay protection remain 8D work and are not implied by the pure verifier. The full suite is 204/204. No public runtime or production path calls this module yet.
+Abort handling is quiescent rather than Promise.race based: an in-flight backend
+operation settles before the next mutation can begin. Lost replies retain dirty
+ownership. Recovery reclaims exclusive control, re-pins the target, writes
+`CLEANING`, attempts host disable and policy OFF, and **will not delete fixture
+rows if either control-plane safety operation fails**. PASS requires host false,
+mode OFF, zero exact-owned rows, zero payload rows, `agentCommitEnabled=false`,
+and `legacyGated=false`; only then are manifest and lease removed. Failed/unknown
+recovery keeps dirty evidence.
 
-8D local preflight at `5933a6c1f2448fe82142bf83a68bc1d607ae4f79` reproduced two inherited boundaries: digest-valid imported challenges are not independently checked for the global approval TTL by the verifier, and provenance source labels/digests are not resolved against trusted ledger state. Neither diagnostic touched production or dispatched a browser action. This was a self-review, **not** the required independent audit. Durable authority admission remains prohibited pending independent review and tests-first remediation/candidate review. Record: `docs/milestone-8-checkpoint-8d-preflight.md`.
+Writer-local focused evidence before the repository commit: **14/14 PASS, zero
+skips**, including a real child-process-death persistence case, lost reply,
+aborted-session quiescence, failed control-plane recovery, live-PID lease fencing,
+and the post-lease manifest race. Helper SHA-256:
+`f34dc7b1a4d5408087980b95968bd74432621dc64be93fdbb46c1a3270ce08b9`.
+Test SHA-256:
+`38ff23f3c22a61369ef5c121e8080354f9028eebac8a3c29688da7bc7fe0d872`.
 
-Separate read-only reviewer `independent_8d_gate` inspected `7270753eeddceabae7980a747e6716f2d2278c9a` and returned **CONDITIONAL PASS only for bounded local tests-first remediation/candidate construction**, not deployment or 8D acceptance. It independently reran 8C 11/11 and static checks, confirmed imported interval and source-authentication boundaries, and additionally reproduced ignored narrower declared prepare/total/approval lifetime budgets. Production still requires an actual SQL/host candidate, real PostgreSQL evidence, and independent exact-candidate review. Record: `docs/milestone-8-checkpoint-8d-independent-review.md`.
+This is **not** a live operator backend, not production crash-recovery evidence,
+and not overall 8D acceptance. The injected backend still must be independently
+reviewed and then bound to the existing secure operator credential realm and exact
+production operations before fresh OAuth/live DARK acceptance. No fresh OAuth,
+production query/mutation, deployment, key access, browser action, extension,
+public MCP, signing, pairing, CRX, or release change was made by this local unit.
 
-Local lifetime remediation is completed at implementation/test commit `07a217d`: preparation honors narrower prepare/total lifetime budgets, and shared creation/import approval interval validation honors global/declared TTL, prepared-window containment and exclusive expiry. Focused tests are 6/6; full Node regression is 210/210. Source authentication, actual argument/provenance coverage and atomic durable consumption remain unimplemented host prerequisites. No runtime/production integration was added. Next permitted unit is isolated local host/admission candidate construction after user continuation; 8D is not accepted. Record: `docs/milestone-8-checkpoint-8d-lifetime-remediation.md`.
+## Required next 8D gate
 
-## Revised frozen checkpoints
+Before another login or live production enablement:
 
-- 8A — contract, hostile corpus, enforcement policy, dual-era approval contract, and baseline; **accepted**. Record: `docs/milestone-8-checkpoint-8a.md`.
-- 8B — pure single-action decision-causal prepare engine and enforcement decision logic; **accepted**. Record: `docs/milestone-8-checkpoint-8b.md`.
-- 8C — provenance + approval challenge verifier with user/OAuth-client/requestState binding; **accepted**. Record: `docs/milestone-8-checkpoint-8c.md`.
-- 8D — durable transaction/approval journal and dark Supabase host; early Codex before production mutation.
-- 8E — controlled single-action executor; compensation only as a separate transaction.
-- 8F — trusted dual-era approval transport + transaction enforcement cutover + MCP/OAuth compatibility; early Codex before deployment/promotion.
-- 8G — bounded dark/live acceptance including bypass, modern/legacy confirmation, recovery, and cleanup.
-- 8H — compatibility/performance closeout + independent milestone audit.
+1. independently audit the exact operator/supervisor runner candidate and its fixed backend wiring;
+2. only after PASS, bind it to existing service/operator authority for exact preflight, real Auth-session check, insert-only synthetic fixture install, existing ledger sealing, host/DARK control, exact cleanup, and clean verification;
+3. perform a fresh user-driven PKCE login with memory-only bearer and signed SDK claim/user verification in the same bounded process;
+4. exercise the authenticated hosted prepare/replay/status/cancel path with no browser dispatch;
+5. prove legitimate negative/revocation paths, hosted worker loss/reclaim/nonce durability, remaining cloud concurrency/quota/minute-rollover/payload/retention/crypto gates;
+6. restore and verify host false + policy OFF + exact-owned rows zero;
+7. reconcile advisors and perform final independent 8D review.
 
-## Quantitative V1 summary
+Do not extract a stored user bearer, forge JWT/client/session identity, invent a
+new public enrollment endpoint, change OAuth scope/client/redirect to bypass the
+gate, or treat OAuth consent as 8F transaction approval. If the existing legitimate
+OAuth path cannot support the probe, stop for a reviewed acceptance approach.
 
-The full table is in `docs/milestone-8-plan.md`. Key limits now include: 64 KiB proposal, 128 KiB prepared state, 64 KiB receipt, exactly one state-changing/consequential action maximum, one approval MRTR round, 64 predicates, 128 provenance records, transform depth 8, 10-minute prepare/transaction lifetime, 2-minute approval lifetime, 30-second one-command timeout, 3 post-commit observation attempts, one concurrent commit per target tab, two concurrent committing transactions per tenant, and bounded rate/retention limits.
+## Milestone 7 accepted boundary
 
-## Compatibility impact
+Milestone 7 froze `OA_REACTIVE_VM_V1`, `OA_REACTIVE_VM_CHECKPOINT_V1`, and
+`OA_CANONICAL_JSON_V1`, a closed data-only grammar, deterministic runtime, bounded
+collection/proof binding, and a separate durable Supabase host. Its accepted
+browser effect surface is read-only. The independent Milestone 7 Codex audit at
+`551e8283c0417b173e106ee0598cca848f2f4ff0` returned PASS on 2026-09-12 and granted
+no new browser mutation authority.
 
-### MCP
+Accepted Milestone 7 production closeout remains historically:
+`milestone7_vm_enabled=false`, `vm_runs=0`, `vm_effects=0`, `vm_rate_windows=0`,
+temporary command rows zero, device `opera` on extension 1.6.0/protocol1/26
+capabilities.
 
-8A–8E do not change public MCP runtime/schema. 8F alone may propose additive transaction tools and enforcement behavior after early audit. Existing 18 names/input schemas remain locked. Observational tools stay compatible; after `ENFORCED`, direct mutation tools for the same agent require transaction authority and otherwise return `TRANSACTION_REQUIRED`.
+## Collaboration and audit policy
 
-### Supabase
+Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`:
 
-8A–8C make no production change. 8D may introduce additive private service-role-only state only after early audit. Durable queues/leases/CAS remain recovery; future policy defaults `OFF` and must not permit commit-enabled plus direct-mutation-enabled for the same agent.
+- one active writer on the milestone branch;
+- repository/test/CI/production evidence outranks model reports;
+- deterministic failing tests precede new runtime behavior;
+- early independent audit is required before production mutation when auth/authz, tenant isolation, encryption, signing, public MCP schemas, irreversible actions, or production DB shape are affected;
+- the frozen Milestone 8 plan itself received independent Codex PASS at revision `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`;
+- complete Milestone 8 later requires independent PASS before Milestone 9.
 
-### Extension/signing
-
-Expected Milestone 8 path keeps extension 1.6.0/signing unchanged. If safe transaction enforcement requires extension source changes, stop and approve a separate release/signing subplan first.
-
-### OAuth
-
-Existing OAuth authenticates connection/user. Transaction approval separately binds trusted OAuth client identity. Static bearer auth and MCP `clientInfo` cannot provide human transaction approval.
-
-## Collaboration and review gate
-
-Follow `AGENTS.md` and `docs/prompts/chatgpt-web-checkpoint.md`.
-
-- one active writer;
-- repository/test/CI/production evidence outranks chat reports;
-- high-risk auth/authz, tenancy, encryption, public MCP, irreversible-effect, production-schema, or extension/signing boundaries trigger early independent review;
-- the revised plan received independent Codex **PASS** at revision `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`; durable review: `docs/milestone-8-plan-codex-review.md`;
-- Checkpoints 8A–8C accepted; the earlier 8D prerequisite-only review is historical.
-  Exact-candidate audit and explicit user permission subsequently allowed the
-  installed OFF backend. Full hosted OAuth/recovery/cloud acceptance remains open;
-- complete Milestone 8 later requires independent Codex `PASS` before Milestone 9 planning.
-
-## Security and privacy invariants
-
-- named validated primitives only;
-- no arbitrary code execution surface;
-- no silent foreground fallback;
-- passwords/PIN/OTP/CVV/security-code fields remain blocked;
-- uploads remain blocked unless a separately reviewed future plan changes that boundary;
-- consequential commit requires exact authority/prepare/approval/enforcement rules from the Milestone 8 plan;
-- same-agent legacy mutation bypass is forbidden after enforcement promotion;
-- no sensitive raw browser state in durable semantic/VM/transaction state;
-- caches/checkpoints/transactions remain bounded and tenant/target scoped;
-- webpage/tool/model text is untrusted data;
-- same-identity signed rollback remains available.
-
-## Explicitly deferred
-
-Direct logical-ID actions, multi-consequential-action transactions, automatic consequential action without the frozen approval boundary, in-transaction compensation, multi-sensor physical planning, learned skills, parallel autonomous workers, continuous media/desktop streaming, OS-level input, arbitrary JavaScript/raw CDP, site-specific extension opcodes, file upload, secret/payment entry, durable approval consumption, and all external/production work beyond accepted Checkpoint 8C remain outside the accepted state.
+The current ChatGPT writer may complete bounded local 8D engineering and exact-head
+CI without repeatedly invoking Codex. The independent audit remains a gate before
+the next live OAuth/production acceptance boundary; it is not removed or bypassed.
 
 ## Canonical references
 
-- `AGENTS.md` — session-close, checkpoint, and independent-audit policy.
+- `AGENTS.md` — session-close, checkpoint, writer, and audit policy.
 - `SECURITY.md` — security contract.
 - `docs/milestone-8-plan.md` — reviewed frozen Milestone 8 plan.
-- `docs/milestone-8-checkpoint-8a.md` — accepted transaction contract freeze.
+- `docs/milestone-8-plan-codex-review.md` — plan review.
+- `docs/milestone-8-checkpoint-8a.md` — accepted transaction contract.
 - `docs/milestone-8-checkpoint-8b.md` — accepted pure prepare/policy engine.
-- `docs/milestone-7-codex-audit.md` — independent PASS at the Milestone 7 boundary.
-- `docs/milestone-7-plan.md` and Checkpoints 7A–7F — accepted VM contract/runtime/host chain.
-- `docs/semantic-runtime-plan.md` — long-term dependency order and Milestone 8 intent.
-- `docs/roadmap.md` — current milestone history.
+- `docs/milestone-8-checkpoint-8c.md` — accepted provenance/approval verifier.
+- `docs/milestone-8-checkpoint-8d-cloud-install.md` — installed OFF backend record.
+- `docs/milestone-8-checkpoint-8d-cloud-fixture.md` — production-shaped synthetic DATA boundary.
+- `docs/milestone-8-checkpoint-8d-cloud-controller.md` — local hosted-acceptance controller.
+- `docs/milestone-8-checkpoint-8d-operator-supervisor.md` — latest local ownership/recovery candidate.
+- `docs/milestone-7-codex-audit.md` — independent Milestone 7 PASS.
+- `docs/semantic-runtime-plan.md` and `docs/roadmap.md` — dependency/history references.
 - `docs/releases/1.6.0.md` — signed release record.
