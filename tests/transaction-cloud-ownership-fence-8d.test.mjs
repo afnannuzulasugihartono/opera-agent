@@ -21,8 +21,9 @@ const fixtureA={cleanup:cleanupA};
 
 function createFencedBackend({delayEnable=false}={}) {
   const state={installed:false,host:false,mode:'OFF',calls:[],epoch:0,fence:null};
-  let releaseEnable;
+  let releaseEnable,markEnableStarted;
   const enableGate=delayEnable?new Promise(resolve=>{releaseEnable=resolve;}):Promise.resolve();
+  const enableStarted=delayEnable?new Promise(resolve=>{markEnableStarted=resolve;}):Promise.resolve();
   const isFence=value=>value&&typeof value==='object'&&Number.isSafeInteger(value.epoch)&&typeof value.ownerId==='string'&&typeof value.namespace==='string';
   const assertFence=value=>{
     if(!isFence(value)||!state.fence||value.epoch!==state.fence.epoch||value.ownerId!==state.fence.ownerId||value.namespace!==state.fence.namespace)throw new Error('8D_SERVER_FENCE_LOST');
@@ -37,7 +38,7 @@ function createFencedBackend({delayEnable=false}={}) {
     async verifySession(input){state.calls.push('verifySession');return {exists:true,userId:input.userId,clientId:input.clientId,sessionId:input.sessionId};},
     async insertFixture(_fixture,maybeFence){state.calls.push('insertFixture');optionalFence(maybeFence);state.installed=true;return {inserted:true};},
     async sealLedger(){state.calls.push('sealLedger');return 'oal1.synthetic.cipher';},
-    async enableHost(maybeFence){state.calls.push('enableHost:start');await enableGate;optionalFence(maybeFence);state.host=true;state.calls.push('enableHost:commit');return {hostFlag:true};},
+    async enableHost(maybeFence){state.calls.push('enableHost:start');markEnableStarted?.();await enableGate;optionalFence(maybeFence);state.host=true;state.calls.push('enableHost:commit');return {hostFlag:true};},
     async setDark(maybeFence){state.calls.push('setDark');optionalFence(maybeFence);state.mode='DARK';return {mode:'DARK'};},
     async verifyCancelled(){state.calls.push('verifyCancelled');return {status:'CANCELLED',payloadRows:0};},
     async disableHost(maybeFence){state.calls.push('disableHost');optionalFence(maybeFence);state.host=false;return {hostFlag:false};},
@@ -45,7 +46,7 @@ function createFencedBackend({delayEnable=false}={}) {
     async cleanupFixture(_input,maybeFence){state.calls.push('cleanupFixture');optionalFence(maybeFence);state.installed=false;return {cleaned:true};},
     async verifyClean(_input,maybeFence){state.calls.push('verifyClean');optionalFence(maybeFence);return {hostFlag:state.host,mode:state.mode,ownedRows:state.installed?1:0,payloadRows:0,agentCommitEnabled:false,legacyGated:false};},
   };
-  return {backend,state,releaseEnable:()=>releaseEnable?.()};
+  return {backend,state,enableStarted,releaseEnable:()=>releaseEnable?.()};
 }
 
 async function tempStore(){
@@ -82,7 +83,7 @@ test('8D recovery server fence rejects a delayed pre-recovery host mutation afte
     const parent=createInternalOperatorTransport8D({backend:b.backend,store,ownerId:'dead_parent_01',now:()=>now,leaseTtlMs:10000,processId:987654});
     await ownInstallSeal(parent);
     const delayed=parent.operator.enableHost();
-    await new Promise(resolve=>setImmediate(resolve));
+    await b.enableStarted;
     assert.equal(b.state.calls.includes('enableHost:start'),true);
 
     now=12000;
