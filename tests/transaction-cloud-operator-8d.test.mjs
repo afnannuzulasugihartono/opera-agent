@@ -14,10 +14,14 @@ const cleanup={tenantId:namespace,actorId:'m8d_fixture_actor_x',goalId:'m8d_fixt
 const identity={iss:'https://example.invalid/auth/v1',aud:'authenticated',role:'authenticated',sub:userId,client_id:CLIENT_ID,session_id:sessionId,iat:1,exp:2};
 const fixture={cleanup};
 function backend(options={}){
-  const state={installed:false,host:false,mode:'OFF',calls:[]};
+  const state={installed:false,host:false,mode:'OFF',calls:[],fenceEpoch:0,fence:null};
+  const assertFence=input=>{if(!input||!state.fence||input.epoch!==state.fence.epoch||input.ownerId!==state.fence.ownerId||input.namespace!==state.fence.namespace)throw new Error('8D_SERVER_FENCE_LOST');};
   const b={
     async describe(){state.calls.push('describe');return {projectRef:options.projectRef??PROJECT_REF_8D,clientId:CLIENT_ID,callback:CALLBACK_8D};},
     async preflight(){state.calls.push('preflight');return {hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:true,locksVerified:true};},
+    async acquireFence(input){state.fenceEpoch+=1;state.fence={ownerId:input.ownerId,namespace:input.namespace,epoch:state.fenceEpoch};return {epoch:state.fenceEpoch};},
+    async heartbeatFence(input){assertFence(input);return {epoch:input.epoch};},
+    async releaseFence(input){assertFence(input);if(state.host||state.mode!=='OFF')throw new Error('8D_SERVER_FENCE_NOT_CLEAN');state.fence=null;return {released:true};},
     async verifySession(input){state.calls.push('verifySession');if(options.verifySession) return options.verifySession(input);return {exists:true,userId:input.userId,clientId:input.clientId,sessionId:input.sessionId};},
     async insertFixture(){state.calls.push('insertFixture');if(state.installed) throw new Error('duplicate');state.installed=true;if(options.lostReply)throw new Error('lost reply');return {inserted:true};},
     async sealLedger(){state.calls.push('sealLedger');return 'oal1.synthetic.cipher';},
