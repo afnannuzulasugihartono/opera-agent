@@ -16,7 +16,7 @@ test('8D live runner freezes exact CLI modes, pinned SDK and ownership window',(
   assert.throws(()=>parseAcceptanceArgs8D(['--sql','select 1']),/INVALID_8D_RUNNER_ARGUMENTS/);
   assert.equal(SDK_SPECIFIER_8D,'npm:@supabase/supabase-js@2.57.4');
   assert.equal(STATE_DIRECTORY_8D,'.opera-agent-8d-state');
-  assert.equal(LEASE_TTL_MS_8D,60000);
+  assert.equal(LEASE_TTL_MS_8D,180000);
 });
 
 test('8D recovery mode needs no OAuth key, SDK call, browser or network when no dirty manifest exists',async()=>{
