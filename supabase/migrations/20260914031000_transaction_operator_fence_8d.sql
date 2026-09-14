@@ -73,6 +73,27 @@ begin
   return v_enabled;
 end $$;
 
+create function public.opera_tx_operator_cleanup_fixture_8d(
+  p_owner text,p_namespace uuid,p_epoch bigint,p_actor text,p_goal text,p_transaction text)
+returns boolean language plpgsql security definer set search_path=pg_catalog as $$
+declare v_host boolean; v_mode text; v_legacy boolean; v_agent boolean;
+begin
+  perform public.opera_tx_operator_assert_8d(p_owner,p_namespace,p_epoch);
+  select host_enabled into v_host from opera_agent_tx_candidate.operator_control where singleton=true;
+  select mode,legacy_gated,agent_commit_enabled into v_mode,v_legacy,v_agent
+    from opera_agent_tx_candidate.policy where singleton=true for share;
+  if v_host or v_mode<>'OFF' or v_legacy or v_agent then raise exception 'SERVER_FENCE_NOT_CLEAN'; end if;
+  delete from opera_agent_tx_candidate.runs
+    where tenant_id=p_namespace::text and actor_id=p_actor and transaction_id=p_transaction;
+  delete from opera_agent_tx_candidate.rates where tenant_id=p_namespace::text;
+  delete from opera_agent_tx_candidate.acceptance_bindings
+    where tenant_id=p_namespace::text and actor_id=p_actor and transaction_id=p_transaction;
+  delete from opera_agent_private.goal_heads where tenant_id=p_namespace and goal_id=p_goal;
+  delete from opera_agent_tx_candidate.principals
+    where tenant_id=p_namespace::text and actor_id=p_actor;
+  return true;
+end $$;
+
 create function public.opera_tx_operator_release_8d(p_owner text,p_namespace uuid,p_epoch bigint)
 returns boolean language plpgsql security definer set search_path=pg_catalog as $$
 declare v_host boolean; v_mode text; v_legacy boolean; v_agent boolean;
@@ -116,6 +137,7 @@ revoke execute on function public.opera_tx_operator_acquire_8d(text,uuid,integer
 revoke execute on function public.opera_tx_operator_heartbeat_8d(text,uuid,bigint,integer) from public,anon,authenticated;
 revoke execute on function public.opera_tx_operator_assert_8d(text,uuid,bigint) from public,anon,authenticated;
 revoke execute on function public.opera_tx_operator_set_host_8d(text,uuid,bigint,boolean) from public,anon,authenticated;
+revoke execute on function public.opera_tx_operator_cleanup_fixture_8d(text,uuid,bigint,text,text,text) from public,anon,authenticated;
 revoke execute on function public.opera_tx_operator_release_8d(text,uuid,bigint) from public,anon,authenticated;
 revoke execute on function public.opera_tx_operator_state_8d() from public,anon,authenticated;
 revoke execute on function public.opera_tx_operator_host_gate_8d() from public,anon,authenticated;
@@ -123,6 +145,7 @@ grant execute on function public.opera_tx_operator_acquire_8d(text,uuid,integer)
 grant execute on function public.opera_tx_operator_heartbeat_8d(text,uuid,bigint,integer) to service_role;
 grant execute on function public.opera_tx_operator_assert_8d(text,uuid,bigint) to service_role;
 grant execute on function public.opera_tx_operator_set_host_8d(text,uuid,bigint,boolean) to service_role;
+grant execute on function public.opera_tx_operator_cleanup_fixture_8d(text,uuid,bigint,text,text,text) to service_role;
 grant execute on function public.opera_tx_operator_release_8d(text,uuid,bigint) to service_role;
 grant execute on function public.opera_tx_operator_state_8d() to service_role;
 grant execute on function public.opera_tx_operator_host_gate_8d() to service_role;
