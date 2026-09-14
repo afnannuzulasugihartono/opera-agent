@@ -1,0 +1,161 @@
+// Test-only fixed production operator backend for Checkpoint 8D acceptance.
+// This module intentionally exposes no arbitrary SQL, URL, secret name or project
+// selector. A separate Management API credential realm is supplied only through
+// an in-memory provider and is never returned, logged or written by this module.
+import { CLIENT_ID } from './transaction-oauth-8d.mjs';
+import { CALLBACK_8D, PROJECT_REF_8D } from './transaction-cloud-operator-8d.mjs';
+import { decodeLedgerKey, sealLedgerToken } from '../../lib/ledger-token.js';
+
+export const TRANSACTION_FUNCTION_8D='opera-agent-transactions-8d';
+export const EXPECTED_TRANSACTION_BUNDLE_SHA_8D='bad0ae493209891e45bc90a11d91ef85dac72022f70f7aaf8ba9e8152c822769';
+const MANAGEMENT_ORIGIN='https://api.supabase.com';
+const HOST_FLAG='OPERA_AGENT_TRANSACTION_DARK_8D';
+const TRANSACTION_KEY='OPERA_AGENT_TRANSACTION_KEY_8D';
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const SAFE=/^[A-Za-z0-9_-]{1,128}$/;
+const TOKEN=/^[A-Za-z0-9._~-]{16,8192}$/;
+const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
+const fail=code=>{throw new Error(code);};
+const plain=value=>value&&typeof value==='object'&&!Array.isArray(value)&&[Object.prototype,null].includes(Object.getPrototypeOf(value));
+const safeCleanup=value=>plain(value)&&exact(value,'actorId,goalId,tenantId,transactionId')&&UUID.test(value.tenantId??'')&&[value.actorId,value.goalId,value.transactionId].every(v=>typeof v==='string'&&SAFE.test(v));
+const asRows=value=>Array.isArray(value)?value:fail('8D_MANAGEMENT_RESPONSE_INVALID');
+
+const PREFLIGHT_SQL=`select
+  (select mode from opera_agent_tx_candidate.policy where singleton=true) as mode,
+  (select legacy_gated from opera_agent_tx_candidate.policy where singleton=true) as legacy_gated,
+  (select agent_commit_enabled from opera_agent_tx_candidate.policy where singleton=true) as agent_commit_enabled,
+  coalesce((public.opera_goal_crypto_key()->>'enabled')::boolean,false) as ledger_enabled,
+  ((select count(*) from opera_agent_tx_candidate.principals)+(select count(*) from opera_agent_tx_candidate.rates)+
+   (select count(*) from opera_agent_tx_candidate.acceptance_bindings)+(select count(*) from opera_agent_tx_candidate.runs)+
+   (select count(*) from opera_agent_tx_candidate.run_identities)+(select count(*) from opera_agent_tx_candidate.run_limits)+
+   (select count(*) from opera_agent_tx_candidate.run_previews)+(select count(*) from opera_agent_tx_candidate.run_challenges)+
+   (select count(*) from opera_agent_tx_candidate.journal)+(select count(*) from opera_agent_tx_candidate.approvals)+
+   (select count(*) from opera_agent_tx_candidate.commit_slots))::int as synthetic_rows,
+  (select count(*)::int from opera_agent_private.goal_heads where tenant_id=$1::uuid) as goal_rows`;
+const SESSION_SQL=`select count(*)::int as matches from auth.sessions
+  where id=$3::uuid and user_id=$1::uuid and oauth_client_id=$2::uuid
+    and (not_after is null or not_after>clock_timestamp())`;
+const INSERT_SQL=`with p as (
+  insert into opera_agent_tx_candidate.principals(tenant_id,actor_id,user_id,oauth_client_id)
+  values($1,$2,$3,$4) returning tenant_id,actor_id
+), g as (
+  insert into opera_agent_private.goal_heads(tenant_id,goal_id,head_revision,head_digest,status,created_at,updated_at,expires_at)
+  select $1::uuid,$5,$6,$7,$8,$9::timestamptz,$10::timestamptz,$11::timestamptz from p
+  returning tenant_id,goal_id
+), b as (
+  insert into opera_agent_tx_candidate.acceptance_bindings(tenant_id,actor_id,transaction_id,goal_id,goal_revision,ledger_digest,metadata)
+  select $1,$2,$12,$5,$6,$7,$13::jsonb from g
+  returning tenant_id,actor_id,transaction_id
+)
+select (select count(*)::int from p) as principals,(select count(*)::int from g) as goals,(select count(*)::int from b) as bindings`;
+const CRYPTO_SQL='select public.opera_goal_crypto_key() as crypto';
+const DARK_SQL=`update opera_agent_tx_candidate.policy set mode='DARK'
+  where singleton=true and mode='OFF' and legacy_gated=false and agent_commit_enabled=false
+  returning mode,legacy_gated,agent_commit_enabled`;
+const OFF_SQL=`update opera_agent_tx_candidate.policy set mode='OFF',legacy_gated=false,agent_commit_enabled=false
+  where singleton=true returning mode,legacy_gated,agent_commit_enabled`;
+const CANCELLED_SQL=`select coalesce(max(status),'') as status,
+  count(*) filter(where payload_token is not null)::int as payload_rows
+  from opera_agent_tx_candidate.runs where tenant_id=$1 and actor_id=$2 and transaction_id=$3`;
+const DELETE_RUN_SQL='delete from opera_agent_tx_candidate.runs where tenant_id=$1 and actor_id=$2 and transaction_id=$3 returning transaction_id';
+const DELETE_RATE_SQL='delete from opera_agent_tx_candidate.rates where tenant_id=$1 returning tenant_id';
+const DELETE_BINDING_SQL='delete from opera_agent_tx_candidate.acceptance_bindings where tenant_id=$1 and actor_id=$2 and transaction_id=$3 returning transaction_id';
+const DELETE_GOAL_SQL='delete from opera_agent_private.goal_heads where tenant_id=$1::uuid and goal_id=$2 returning goal_id';
+const DELETE_PRINCIPAL_SQL='delete from opera_agent_tx_candidate.principals where tenant_id=$1 and actor_id=$2 returning actor_id';
+const CLEAN_SQL=`select
+  (select mode from opera_agent_tx_candidate.policy where singleton=true) as mode,
+  (select legacy_gated from opera_agent_tx_candidate.policy where singleton=true) as legacy_gated,
+  (select agent_commit_enabled from opera_agent_tx_candidate.policy where singleton=true) as agent_commit_enabled,
+  ((select count(*) from opera_agent_tx_candidate.principals where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.rates where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.acceptance_bindings where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.runs where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.run_identities where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.run_limits where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.run_previews where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.run_challenges where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.journal where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.approvals where tenant_id=$1)+
+   (select count(*) from opera_agent_tx_candidate.commit_slots where tenant_id=$1)+
+   (select count(*) from opera_agent_private.goal_heads where tenant_id=$1::uuid))::int as owned_rows,
+  (select count(*)::int from opera_agent_tx_candidate.runs where tenant_id=$1 and payload_token is not null) as payload_rows`;
+
+export function createManagementOperatorBackend8D(configuration){
+  if(!plain(configuration)||Object.keys(configuration).sort().join(',')!=='credentialProvider,fetchImpl,now'||
+    typeof configuration.credentialProvider!=='function'||typeof configuration.fetchImpl!=='function'||typeof configuration.now!=='function') fail('INVALID_8D_MANAGEMENT_BACKEND');
+  const {credentialProvider,fetchImpl,now}=configuration;
+  async function credential(){const value=await credentialProvider();if(typeof value!=='string'||!TOKEN.test(value)||/\s/.test(value))fail('8D_OPERATOR_CREDENTIAL_UNAVAILABLE');return value;}
+  async function request(path,{method='GET',body,signal}={}){
+    if(typeof path!=='string'||!path.startsWith('/v1/projects/'+PROJECT_REF_8D+'/'))fail('8D_OPERATOR_TARGET_MISMATCH');
+    if(signal?.aborted)fail('8D_OPERATOR_ABORTED');
+    const bearer=await credential();
+    const controller=AbortSignal.timeout(10000);const combined=signal?AbortSignal.any([signal,controller]):controller;
+    let response;
+    try{response=await fetchImpl(MANAGEMENT_ORIGIN+path,{method,redirect:'error',signal:combined,headers:{Authorization:'Bearer '+bearer,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});}
+    catch{fail(signal?.aborted?'8D_OPERATOR_ABORTED':'8D_MANAGEMENT_REQUEST_FAILED');}
+    if(signal?.aborted)fail('8D_OPERATOR_ABORTED');
+    if(!response||!response.ok)fail('8D_MANAGEMENT_REQUEST_FAILED');
+    try{return await response.json();}catch{fail('8D_MANAGEMENT_RESPONSE_INVALID');}
+  }
+  const db=(query,parameters=[],{readOnly=false,signal}={})=>request(`/v1/projects/${PROJECT_REF_8D}/database/query`,{method:'POST',signal,body:{query,parameters,read_only:readOnly}});
+  async function secretValue(name,signal){
+    const values=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/secrets`,{signal}));
+    const matches=values.filter(item=>item&&item.name===name&&typeof item.value==='string');
+    if(matches.length!==1)fail('8D_SECRET_STATE_INVALID');return matches[0].value;
+  }
+  async function setHostFlag(value,signal){
+    if(value!=='true'&&value!=='false')fail('8D_HOST_FLAG_INVALID');
+    await request(`/v1/projects/${PROJECT_REF_8D}/secrets`,{method:'POST',signal,body:[{name:HOST_FLAG,value}]});
+    if(await secretValue(HOST_FLAG,signal)!==value)fail('8D_HOST_FLAG_NOT_SETTLED');
+    return Object.freeze({hostFlag:value==='true'});
+  }
+  function cleanupInput(input){if(!safeCleanup(input))fail('INVALID_8D_CLEANUP_SCOPE');return input;}
+  return Object.freeze({
+    async describe(){return Object.freeze({projectRef:PROJECT_REF_8D,clientId:CLIENT_ID,callback:CALLBACK_8D});},
+    async preflight(namespace,signal){
+      if(!UUID.test(namespace??''))fail('INVALID_8D_NAMESPACE');
+      const functions=asRows(await request(`/v1/projects/${PROJECT_REF_8D}/functions`,{signal}));
+      const fn=functions.filter(item=>item?.slug===TRANSACTION_FUNCTION_8D);
+      if(fn.length!==1||fn[0].status!=='ACTIVE'||fn[0].verify_jwt!==true||fn[0].ezbr_sha256!==EXPECTED_TRANSACTION_BUNDLE_SHA_8D)fail('8D_HOST_BUNDLE_MISMATCH');
+      if(await secretValue(HOST_FLAG,signal)!=='false')fail('8D_HOST_NOT_OFF');
+      const transactionKey=await secretValue(TRANSACTION_KEY,signal);if(!transactionKey)fail('8D_TRANSACTION_KEY_MISSING');
+      const rows=asRows(await db(PREFLIGHT_SQL,[namespace],{readOnly:true,signal}));const row=rows[0];
+      if(rows.length!==1||!row||row.mode!=='OFF'||row.legacy_gated!==false||row.agent_commit_enabled!==false||row.ledger_enabled!==true)fail('8D_PREFLIGHT_STATE_INVALID');
+      return Object.freeze({hostFlag:false,mode:'OFF',ledgerEnabled:true,agentCommitEnabled:false,legacyGated:false,namespaceEmpty:Number(row.synthetic_rows)===0&&Number(row.goal_rows)===0,locksVerified:true});
+    },
+    async verifySession(input,signal){
+      if(!plain(input)||!exact(input,'clientId,sessionId,userId')||![input.userId,input.sessionId].every(v=>UUID.test(v??''))||input.clientId!==CLIENT_ID)fail('INVALID_8D_SESSION_QUERY');
+      const rows=asRows(await db(SESSION_SQL,[input.userId,input.clientId,input.sessionId],{readOnly:true,signal}));const matches=rows.length===1?Number(rows[0]?.matches):NaN;
+      return Object.freeze({exists:matches===1,userId:input.userId,clientId:input.clientId,sessionId:input.sessionId});
+    },
+    async insertFixture(fixture,signal){
+      if(!plain(fixture)||!safeCleanup(fixture.cleanup)||!plain(fixture.principal)||!plain(fixture.goalHead)||!plain(fixture.binding)||!plain(fixture.binding.metadata))fail('INVALID_8D_FIXTURE');
+      const {principal,goalHead,binding,cleanup}=fixture;
+      if(!exact(principal,'actor_id,oauth_client_id,tenant_id,user_id')||!exact(goalHead,'created_at,expires_at,goal_id,head_digest,head_revision,status,tenant_id,updated_at')||!exact(binding,'actor_id,goal_id,goal_revision,ledger_digest,metadata,tenant_id,transaction_id'))fail('INVALID_8D_FIXTURE');
+      if(principal.tenant_id!==cleanup.tenantId||principal.actor_id!==cleanup.actorId||principal.oauth_client_id!==CLIENT_ID||!UUID.test(principal.user_id??'')||goalHead.tenant_id!==cleanup.tenantId||goalHead.goal_id!==cleanup.goalId||binding.tenant_id!==cleanup.tenantId||binding.actor_id!==cleanup.actorId||binding.goal_id!==cleanup.goalId||binding.transaction_id!==cleanup.transactionId||binding.metadata.mode!=='DARK'||binding.goal_revision!==goalHead.head_revision||binding.ledger_digest!==goalHead.head_digest)fail('INVALID_8D_FIXTURE');
+      const metadata=JSON.stringify(binding.metadata);if(new TextEncoder().encode(metadata).byteLength>131072)fail('INVALID_8D_FIXTURE');
+      const rows=asRows(await db(INSERT_SQL,[cleanup.tenantId,cleanup.actorId,principal.user_id,CLIENT_ID,cleanup.goalId,goalHead.head_revision,goalHead.head_digest,goalHead.status,goalHead.created_at,goalHead.updated_at,goalHead.expires_at,cleanup.transactionId,metadata],{signal}));
+      const row=rows[0];if(rows.length!==1||Number(row?.principals)!==1||Number(row?.goals)!==1||Number(row?.bindings)!==1)fail('8D_INSERT_ONLY_PROVISIONING_FAILED');return Object.freeze({inserted:true});
+    },
+    async sealLedger(ledger,signal){
+      if(!plain(ledger)||!UUID.test(ledger.tenantId??'')||typeof ledger.goalId!=='string'||!SAFE.test(ledger.goalId))fail('INVALID_8D_LEDGER_SCOPE');
+      const rows=asRows(await db(CRYPTO_SQL,[],{readOnly:true,signal}));const cryptoState=rows.length===1&&plain(rows[0]?.crypto)?rows[0].crypto:null;
+      if(!cryptoState||cryptoState.enabled!==true||typeof cryptoState.key!=='string')fail('8D_LEDGER_CRYPTO_UNAVAILABLE');
+      let keyBytes;try{keyBytes=decodeLedgerKey(cryptoState.key);cryptoState.key=null;const issuedAt=new Date(now()).toISOString();return await sealLedgerToken(ledger,keyBytes,{requestId:`m8d8d:${ledger.goalId}`.slice(0,128),issuedAt});}finally{keyBytes?.fill(0);if(cryptoState)cryptoState.key=null;}
+    },
+    async enableHost(signal){return setHostFlag('true',signal);},
+    async setDark(signal){const rows=asRows(await db(DARK_SQL,[],{signal}));if(rows.length!==1||rows[0]?.mode!=='DARK'||rows[0]?.legacy_gated!==false||rows[0]?.agent_commit_enabled!==false)fail('8D_DARK_ENABLE_FAILED');return Object.freeze({mode:'DARK'});},
+    async verifyCancelled(input,signal){const c=cleanupInput(input);const rows=asRows(await db(CANCELLED_SQL,[c.tenantId,c.actorId,c.transactionId],{readOnly:true,signal}));const row=rows[0];return Object.freeze({status:String(row?.status??''),payloadRows:Number(row?.payload_rows??-1)});},
+    async disableHost(signal){return setHostFlag('false',signal);},
+    async setOff(signal){const rows=asRows(await db(OFF_SQL,[],{signal}));if(rows.length!==1||rows[0]?.mode!=='OFF'||rows[0]?.legacy_gated!==false||rows[0]?.agent_commit_enabled!==false)fail('8D_OFF_RESTORE_FAILED');return Object.freeze({mode:'OFF'});},
+    async cleanupFixture(input,signal){
+      const c=cleanupInput(input);const tx=[c.tenantId,c.actorId,c.transactionId];
+      await db(DELETE_RUN_SQL,tx,{signal});await db(DELETE_RATE_SQL,[c.tenantId],{signal});await db(DELETE_BINDING_SQL,tx,{signal});await db(DELETE_GOAL_SQL,[c.tenantId,c.goalId],{signal});await db(DELETE_PRINCIPAL_SQL,[c.tenantId,c.actorId],{signal});
+      return Object.freeze({cleaned:true});
+    },
+    async verifyClean(input,signal){
+      const c=cleanupInput(input);const hostFlag=await secretValue(HOST_FLAG,signal);const rows=asRows(await db(CLEAN_SQL,[c.tenantId],{readOnly:true,signal}));const row=rows[0];
+      if(rows.length!==1)fail('8D_CLEAN_VERIFY_FAILED');return Object.freeze({hostFlag:hostFlag==='true',mode:String(row.mode??''),ownedRows:Number(row.owned_rows??-1),payloadRows:Number(row.payload_rows??-1),agentCommitEnabled:row.agent_commit_enabled===true,legacyGated:row.legacy_gated===true});
+    },
+  });
+}
