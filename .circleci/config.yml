@@ -1,0 +1,43 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@7.2.1
+  python: circleci/python@2.0.3
+
+jobs:
+  test:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - node/install:
+          node-version: "22.20.0"
+          install-yarn: false
+      - run:
+          name: Verify runtime versions
+          command: |
+            node --version
+            python --version
+            node -e "if (Number(process.versions.node.split('.')[0]) !== 22) process.exit(1)"
+            python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 1)"
+      - run:
+          name: Unit and static tests
+          command: |
+            npm test
+            npm run check
+      - run:
+          name: Install Playwright
+          command: |
+            python -m pip install --upgrade pip
+            pip install playwright
+            python -m playwright install --with-deps chromium
+      - run:
+          name: Chromium extension regression
+          command: python tests/browser_extension_test.py
+
+workflows:
+  ci:
+    jobs:
+      - test
