@@ -25,6 +25,29 @@ start of the next resumed session before taking new architectural work.
 The durable context is a handoff aid, not a substitute for inspecting current code
 and git state.
 
+## Normal-Chat browser-control fallback
+
+A ChatGPT conversation-level custom-MCP error is not evidence that the Opera
+extension or durable browser command path is down. If the custom Opera Agent MCP
+returns a host-side error such as `FORBIDDEN: This conversation does not support
+developer MCPs`, do not redeploy/restart the MCP or extension merely to chase that
+error.
+
+When a connected Supabase connector is available, follow
+`docs/chat-control-fallback.md`: use only the fixed `public.opera_enqueue` then
+`public.opera_await` / `public.opera_await_capture` path and the frozen mapping in
+`tests/fixtures/chat-control-fallback-v1.json`. Keep enqueue and await in separate
+connector calls so the queued row commits before the extension must observe it.
+Do not use arbitrary DML/DDL, generic SQL/RPC escape hatches, secret inspection,
+pairing functions, or direct command/result-table writes as browser-control
+fallback.
+
+The fallback preserves the same browser safety rules as the MCP path: background
+first, explicit target tab IDs, no silent foreground activation, and no password,
+OTP, payment, upload, publish, purchase, send, or destructive action without the
+user's explicit instruction. A successful fallback call proves the browser path,
+not custom-MCP host eligibility; keep those acceptance claims distinct.
+
 ## Checkpoint implementation and milestone audit policy
 
 Use one active writer on the milestone branch at a time. ChatGPT Web may own the
