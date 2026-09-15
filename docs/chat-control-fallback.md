@@ -1,8 +1,8 @@
 # Chat control fallback (MCP-independent)
 
-Status: **PROVEN LIVE** on 2026-09-15. This is a reliability fallback for normal
-Chat when ChatGPT refuses a custom Developer MCP with errors such as
-`FORBIDDEN: This conversation does not support developer MCPs`.
+Status: **PROVEN LIVE** on 2026-09-15. This is the reliable normal-Chat control
+path when ChatGPT custom Developer-MCP eligibility is unavailable or when the
+conversation also needs native/connected apps such as GitHub or Supabase.
 
 It does **not** change extension bytes, the public MCP contract, pairing, signing,
 protocol version, or the browser runtime. It reuses the same durable Supabase
@@ -19,7 +19,11 @@ Two upstream ChatGPT issues reproduce the relevant host-side failure pattern:
 
 The repository cannot patch ChatGPT's invocation router. Therefore the reliable
 solution is to remove custom-MCP availability from the critical browser-control
-path while keeping MCP as the preferred ergonomic adapter whenever it is callable.
+path. In mixed-app ordinary Chat, use this Supabase-backed path **before** invoking
+the custom Developer MCP so a custom-MCP-first lockout cannot remove the native
+connector needed for recovery. The typed custom MCP remains useful in a dedicated
+Opera-only chat, when explicitly requested, or in another host mode whose MCP
+eligibility has already been proven.
 
 ## Architecture
 
@@ -148,7 +152,11 @@ When custom MCP fails:
 
 ## Operational decision
 
-Normal Chat does not require Work mode for Opera Agent browser control. Prefer the
-custom MCP when it is callable because it provides typed tools. If ChatGPT returns
-conversation-level `FORBIDDEN`, use this Supabase-backed fallback immediately
-instead of migrating the user's workflow to Work mode or forcing a new chat.
+For **ordinary Chat that also uses GitHub/Supabase/other native connectors, this
+fallback is the default Opera control path**. Do not invoke the custom Developer MCP
+first merely because it is available: upstream evidence shows doing so can lock the
+conversation to one app family and prevent recovery with the native connector.
+
+Use the typed custom MCP in a dedicated Opera-only chat, when the user explicitly
+requests it despite the host risk, or in another mode where its eligibility is
+known to persist. Work mode is not required for normal Opera Agent browser control.
