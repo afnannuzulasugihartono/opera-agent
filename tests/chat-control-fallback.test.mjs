@@ -20,13 +20,16 @@ test('Chat fallback covers the locked MCP browser surface exactly', () => {
 test('Chat fallback is constrained to the existing durable command queue', () => {
   assert.equal(fallback.enqueueFunction, 'public.opera_enqueue');
   assert.equal(fallback.awaitFunction, 'public.opera_await');
+  assert.equal(fallback.captureAwaitFunction, 'public.opera_await_capture');
   assert.equal(fallback.deviceName, 'opera');
+  assert.equal(fallback.tools.capture_page.awaitFunction, fallback.captureAwaitFunction);
 
   for (const [tool, entry] of Object.entries(fallback.tools)) {
     assert.ok(expectedMethods.has(entry.method), `${tool} maps to unexpected method ${entry.method}`);
     assert.ok(Number.isInteger(entry.timeoutMs), `${tool} timeout must be an integer`);
     assert.ok(entry.timeoutMs >= 500 && entry.timeoutMs <= 15000, `${tool} timeout is outside fallback bounds`);
     assert.doesNotMatch(entry.method, /(sql|shell|javascript|eval|exec|secret|pair)/i);
+    if (tool !== 'capture_page') assert.equal(entry.awaitFunction, undefined);
   }
 });
 
