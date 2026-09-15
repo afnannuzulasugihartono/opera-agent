@@ -33,6 +33,16 @@ returns a host-side error such as `FORBIDDEN: This conversation does not support
 developer MCPs`, do not redeploy/restart the MCP or extension merely to chase that
 error.
 
+**In ordinary Chat that also needs native/connected apps such as GitHub or
+Supabase, do not make the custom Developer MCP the primary Opera control path.**
+Upstream ChatGPT reports show native apps and a custom Developer MCP can become
+mutually exclusive in the same standard conversation. Use the connected Supabase
+fallback as the default Opera transport in that mixed-app case so invoking the
+custom MCP cannot lock the conversation away from the connector needed for
+recovery. Reserve the typed custom MCP for a dedicated Opera-only chat, an
+explicit user choice, or another host mode where its eligibility is already
+proven for that conversation.
+
 When a connected Supabase connector is available, follow
 `docs/chat-control-fallback.md`: use only the fixed `public.opera_enqueue` then
 `public.opera_await` / `public.opera_await_capture` path and the frozen mapping in
