@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "transport": "supabase-rpc-fallback",
+  "deviceName": "opera",
+  "enqueueFunction": "public.opera_enqueue",
+  "awaitFunction": "public.opera_await",
+  "tools": {
+    "browser_status": { "method": "browser.ping", "timeoutMs": 3000 },
+    "run_browser_burst": { "method": "browser.burst", "timeoutMs": 12000 },
+    "list_tabs": { "method": "tabs.list", "timeoutMs": 5000 },
+    "open_url": { "method": "tabs.open", "timeoutMs": 10000 },
+    "activate_tab": { "method": "tabs.activate", "timeoutMs": 5000 },
+    "navigate_tab": { "method": "tabs.navigate", "timeoutMs": 15000 },
+    "close_tab": { "method": "tabs.close", "timeoutMs": 5000 },
+    "read_page": { "method": "page.read", "timeoutMs": 10000 },
+    "capture_page": { "method": "page.capture", "timeoutMs": 10000 },
+    "find_elements": { "method": "page.find", "timeoutMs": 8000 },
+    "click_element": { "method": "page.click", "timeoutMs": 8000 },
+    "fill_element": { "method": "page.fill", "timeoutMs": 8000 },
+    "press_key": { "method": "page.key", "timeoutMs": 5000 },
+    "scroll_page": { "method": "page.scroll", "timeoutMs": 5000 },
+    "move_pointer": { "method": "page.pointer", "timeoutMs": 5000 },
+    "click_at": { "method": "page.pointer", "timeoutMs": 5000 },
+    "drag_pointer": { "method": "page.pointer", "timeoutMs": 5000 },
+    "wheel_at": { "method": "page.pointer", "timeoutMs": 5000 }
+  }
+}
