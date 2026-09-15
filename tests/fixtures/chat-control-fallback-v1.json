@@ -4,6 +4,7 @@
   "deviceName": "opera",
   "enqueueFunction": "public.opera_enqueue",
   "awaitFunction": "public.opera_await",
+  "captureAwaitFunction": "public.opera_await_capture",
   "tools": {
     "browser_status": { "method": "browser.ping", "timeoutMs": 3000 },
     "run_browser_burst": { "method": "browser.burst", "timeoutMs": 12000 },
@@ -13,7 +14,7 @@
     "navigate_tab": { "method": "tabs.navigate", "timeoutMs": 15000 },
     "close_tab": { "method": "tabs.close", "timeoutMs": 5000 },
     "read_page": { "method": "page.read", "timeoutMs": 10000 },
-    "capture_page": { "method": "page.capture", "timeoutMs": 10000 },
+    "capture_page": { "method": "page.capture", "timeoutMs": 10000, "awaitFunction": "public.opera_await_capture" },
     "find_elements": { "method": "page.find", "timeoutMs": 8000 },
     "click_element": { "method": "page.click", "timeoutMs": 8000 },
     "fill_element": { "method": "page.fill", "timeoutMs": 8000 },
