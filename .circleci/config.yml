@@ -35,7 +35,7 @@ jobs:
             python -m playwright install --with-deps chromium
       - run:
           name: Chromium extension regression
-          command: python tests/browser_extension_test.py
+          command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
 workflows:
   ci:
