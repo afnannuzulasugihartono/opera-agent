@@ -123,11 +123,16 @@ Supabase project while the local extension was online:
 3. A bounded mutation/read/cleanup probe opened `https://example.com` in a new
    **background** tab, read the page through `page.read`, and closed only that
    temporary tab. Observed command totals were 2635 ms, 718 ms, and 620 ms.
-4. No custom Opera Agent MCP invocation was used for those probes.
+4. A second bounded background probe verified the special capture result path:
+   `tabs.open` PASS (978 ms), `page.capture` + `public.opera_await_capture` PASS
+   (2254 ms, bounded 320x161 JPEG / 1193 encoded bytes), then exact temporary-tab
+   cleanup PASS (1428 ms). Screenshot bytes are not persisted in repository docs.
+5. No custom Opera Agent MCP invocation was used for any of these probes.
 
-This proves that browser control itself, Supabase durable transport, pairing, and
-the extension can remain operational even when ChatGPT's custom-MCP invocation
-binding is unavailable.
+This proves that browser control itself, Supabase durable transport, pairing, the
+extension, ordinary result delivery, and the bounded screenshot result path can
+remain operational even when ChatGPT's custom-MCP invocation binding is
+unavailable.
 
 ## Failure classification
 
