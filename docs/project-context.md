@@ -1,6 +1,43 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-14
+Last synchronized: 2026-09-15
+
+## Latest normal-Chat reliability result
+
+A separate reliability branch, `fix/chat-control-fallback`, now proves that normal
+Chat can keep controlling the paired Opera browser without relying on ChatGPT's
+custom Developer-MCP invocation binding. Upstream OpenAI issues #230 and #235
+reproduce conversation-level custom-MCP `FORBIDDEN` / native-app mutual exclusion
+while the downstream MCP server can remain healthy. OpenAI's current Developer
+Mode documentation also treats full write-capable MCP as beta focused on
+Business/Enterprise/Edu, so personal-plan custom-MCP availability must not be the
+only production control path.
+
+`docs/chat-control-fallback.md` defines the fallback:
+
+```text
+Normal Chat -> connected Supabase connector -> opera_enqueue -> durable command
+queue -> paired extension -> Opera -> opera_await/opera_await_capture -> Chat
+```
+
+No new browser runtime, production schema, Edge function, extension bytes, public
+MCP schema, signing identity, pairing, or Milestone 8 transaction state was
+changed. The fallback reuses the exact durable queue already used by MCP. The
+frozen 18-tool mapping is `tests/fixtures/chat-control-fallback-v1.json` and is
+checked by `tests/chat-control-fallback.test.mjs`.
+
+Live normal-Chat acceptance on 2026-09-15, without invoking the custom Opera Agent
+MCP: `browser.ping` PASS (447 ms, extension 1.6.0/protocol 1), `tabs.list` PASS
+(710 ms), then a bounded background probe opened `https://example.com` (2635 ms),
+read that exact tab (718 ms), and closed only the temporary tab (620 ms). Raw user
+tab content is intentionally not persisted. This proves the browser/queue/extension
+path can remain healthy when the custom-MCP host binding is unavailable.
+
+Operational rule: prefer typed custom MCP when callable; on conversation-level
+`FORBIDDEN`, use the documented fixed Supabase enqueue/await fallback rather than
+forcing Work mode or a new chat. Keep enqueue and await in separate connector calls
+so the queue insert commits before the extension must observe it. This solves
+normal-Chat operational continuity, not the upstream ChatGPT router defect itself.
 
 ## Latest 8D follow-up audit repair
 
@@ -54,18 +91,19 @@ historical, not acceptance of this new repair.
 
 ## Latest user-requested reliability investigation
 
-The user separately requested persistent MCP self-healing. See
-`docs/mcp-reliability-investigation.md` for evidence and bounded next steps.
-Status is `PERSISTENT_MCP_BLOCKED`, not implemented recovery: public MCP health
-responded 200 and unauthenticated discovery was denied 401, but authenticated
-same-outage host/server discovery has not been observed. An actual extension
-pull-loop simulation reproduced a stale-generation READY status write; it does
-not prove the cause of missing host namespace. Safe read-only diagnostics and
-three unit tests were added without changing extension/MCP runtime or production.
-Local full suite 310/310 zero skips and static 1.6.0/26 checks PASS; no new CI,
-Chromium, authenticated host, or restart acceptance is claimed.
-Runtime changes require a separate reviewed reliability/release subplan under
-the existing frozen Milestone 8 boundary. 8D remains open; 8E not started.
+See `docs/mcp-reliability-investigation.md`. Status is now
+`HOST_MCP_UNRESOLVED / NORMAL_CHAT_FALLBACK_PROVEN`: the upstream ChatGPT
+conversation-router defect is not patchable from this repository, but its effect
+on the user's normal-Chat browser workflow is bypassed through the existing durable
+Supabase command plane. Earlier public MCP health and extension stale-generation
+diagnostics remain valid as narrower evidence; they are no longer the only route
+to keep the browser workflow running.
+
+The fallback branch changes no browser runtime or production infrastructure. Its
+new test/fixture freeze the adapter mapping and preserve the current locked 18-tool
+surface. Continue MCP-specific diagnostics only to distinguish host/server failure,
+not as a prerequisite for ordinary browser control when the fallback passes.
+8D remains open; 8E not started.
 
 This is the durable project-state summary for humans and future LLM sessions.
 Executable repository state, exact-head CI artifacts, signed release records, and
@@ -97,6 +135,7 @@ Non-negotiable invariants:
 - Public MCP tools: `18`, unchanged names and input schemas.
 - Production device name: `opera`.
 - Working branch: `feat/semantic-runtime-1.6.0`.
+- Reliability side branch: `fix/chat-control-fallback`.
 - Final 1.6.0 release acceptance commit: `cfb903b`.
 - Accepted 8A contract/test commit: `4c84dab`.
 - Accepted 8B pure engine/test commit: `0f333a1`.
@@ -120,9 +159,17 @@ ChatGPT / another MCP client
   -> structured observation or verified action outcome
 ```
 
+Normal-Chat fallback converges on the same relay before browser execution:
+
+```text
+Normal Chat -> Supabase connector -> opera_enqueue/opera_await -> paired extension
+```
+
 Browser content never grants authority. Server infrastructure owns pairing,
 transport and dark transaction hosting; the extension owns browser-local sensing
-and named primitives.
+and named primitives. The fallback is an operational adapter, not an authority
+expansion: it is restricted by repository policy to the fixed enqueue/await calls
+and the same browser safety semantics.
 
 ## Locked public MCP contract
 
@@ -148,6 +195,7 @@ The accepted public inventory remains:
 18. `wheel_at`
 
 Contract fixture: `tests/fixtures/mcp-contract-v1.json`.
+Fallback mapping fixture: `tests/fixtures/chat-control-fallback-v1.json`.
 
 Milestone 8 Checkpoints 8A-8E remain frozen to no public MCP runtime/schema
 change. The ownership/fencing work below changes no extension/MCP contract,
@@ -365,6 +413,10 @@ Follow `AGENTS.md`, `SECURITY.md`, and `docs/prompts/chatgpt-web-checkpoint.md`:
 
 - `AGENTS.md`
 - `SECURITY.md`
+- `docs/chat-control-fallback.md`
+- `docs/mcp-reliability-investigation.md`
+- `tests/fixtures/chat-control-fallback-v1.json`
+- `tests/chat-control-fallback.test.mjs`
 - `docs/milestone-8-plan.md`
 - `docs/milestone-8-checkpoint-8a.md`
 - `docs/milestone-8-checkpoint-8b.md`
