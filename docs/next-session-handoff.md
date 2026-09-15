@@ -1,306 +1,169 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-14. Continue ONLY Checkpoint 8D. 8E has not started.
-
-## Latest request: repair remaining 8D audit findings
-
-Newest: commit 6512908 exact review PASS, exact-head CI 34820127563 SUCCESS, native
-29/29 and full 316/316 zero skips PASS, static 1.6.0/26 PASS. Private operator queries pin
-read_only=false; all fixed SQL/parameters/fences unchanged, no grants or privilege fallback.
-Master restored OFF. The committed candidate is bound and green. Ready for bounded manual PKCE
-attempt; no 8E yet.
-
-Latest: f8c42c2 installation/pin independently PASS, CI34806580639 SUCCESS.
-The enabled live CLI attempt failed before OAuth/fixtures: Management /secrets
-lists DIGESTS. Master was restored false and its actual digest verified;
-DB epoch0/unowned/hostfalse/OFF, principals/runs0. Read
-`docs/milestone-8-checkpoint-8d-secret-digest-repair.md` first. The test-only backend
-repair uses strict digests and bounded fixed-Edge public-anon GET405 to verify
-initialized key/master without secret plaintext. Focused26/26 and Deno check
-PASS; full315/315 and independent worktree-delta review PASS (affected29/29,
-hostile oversized/redirect/abort checks). Reviewer usage cut off final SHA-binding
-report. Freeze reviewed delta, verify exact-head CI and review binding before
-retrying fresh manual PKCE; do not call this an overall8D acceptance.
-Remaining cloud matrix still required; no8E until overall8D accepted. Use real
-bounded child-worker death with hosted DB durability if independently accepted;
-do not fabricate Edge termination or silently waive historical review conditions.
-
-Superseding continuation: independent read-only reviewer review_8d_candidate PASS
-at f1e6f944; reviewed migration installed as 20260914043049 and isolated fenced
-Edge ACTIVE/v8/JWT-required with all13 bodies verified and observed hash pinned:
-96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1.
-Master is still OFF; operator unowned/hostfalse and policy OFF/legacyfalse/agentfalse.
-Read fenced-install and fence-review records before historical sections below.
-Next: independent exact pin/filename delta review plus exact-head CI; then finish
-the missing reviewed cloud/OAuth/worker acceptance matrix. The current live CLI
-alone does not close8D. User authorizes finishing8D then8E, not gate waivers.
-Do not start8E before final independent8D acceptance; no browser effect in8D.
-
-Historical repair record (before the superseding installation above):
-The other writer is closed. That session repaired candidate fcbec894's local
-ownership race, release clean-state gap, and recovery integrity gap. Read
-`docs/milestone-8-checkpoint-8d-audit-repair.md` before the historical records below.
-Local Node suite 314/314, focused gates 46/46, static 1.6.0/26, Windows stress
-zero dual owners/150 and native release regression PASS. This is implementation
-verification, not independent review or new CI/live acceptance.
-Its then-next step was independent review of the committed repair diff, including
-native PostgreSQL gate (`OPERA_PG_BIN`), permanent retirement witness semantics,
-exclusive release owned-row check, and actual recovery bundle verification.
-At that earlier boundary production was untouched and the bundle pin zero.
-Both statements are superseded by the reviewed installation above. Prior
-reliability diagnostics remain a separate side task; no8E until8D acceptance.
-
-## Latest user-requested side investigation
-
-An earlier user request is persistent MCP availability, separate from transaction
-ownership repair. Read `docs/mcp-reliability-investigation.md` before continuing
-that request. Phase 1/2 evidence and read-only diagnostics are present; recovery
-implementation/manual acceptance are NOT complete. Do not claim a proven host
-root cause from a missing tool namespace or a successful public health response.
-Local verification: focused diagnostic/MCP 17/17, full 310/310 zero skips,
-static 1.6.0/26 and whitespace PASS. This is not new CI or real-host acceptance.
-Use `node scripts/mcp-connection-diagnostics.mjs`; without an explicitly supplied
-legitimate bearer it intentionally leaves authenticated discovery UNTESTED.
-Never obtain credentials by extracting stored sessions or pasting them into chat.
-Next: authenticated direct discovery plus same-outage host diagnostics, and a
-separate reviewed reliability/release subplan before changing extension bytes or
-locked MCP runtime. The ownership-fence review below remains pending and production
-must stay unchanged. Do not deploy, run transaction OAuth/DARK, or start 8E.
-
-## Read before work
-
-1. `AGENTS.md` and `SECURITY.md`.
-2. `docs/project-context.md` and this handoff.
-3. `docs/milestone-8-plan.md` and accepted 8A-8C records.
-4. `docs/milestone-8-checkpoint-8d-cloud-install.md` and `docs/milestone-8-checkpoint-8d-cloud-bounds.md`.
-5. `docs/milestone-8-checkpoint-8d-cloud-fixture.md` and `docs/milestone-8-checkpoint-8d-cloud-controller.md`.
-6. `docs/milestone-8-checkpoint-8d-operator-supervisor.md` and `docs/milestone-8-checkpoint-8d-chat-readiness.md`.
-7. Installed fence: `supabase/migrations/20260914043049_transaction_operator_fence_8d.sql` plus the ownership/fence tests listed below.
-
-Repository: `afnannuzulasugihartono/opera-agent`.
-Branch: `feat/semantic-runtime-1.6.0`.
-Use one active writer only.
-
-## Current boundary
-
-8A-8C are accepted. 8D remains **IN PROGRESS**. 8E has not started.
-
-The reviewed repair has exact-head CI34805110044 PASS and independent PASS.
-Only the additive fence and isolated fenced Edge were installed master-OFF.
-No OAuth, fixture, browser, extension or public MCP operation has occurred.
-
-Next is pin-delta review/CI, then remaining reviewed acceptance. Do not start8E.
-
-## Why this repair exists
-
-Independent review identified two ownership failures in the previous pre-live
-candidate:
-
-1. a fresh namespace could bypass a dirty manifest belonging to another namespace
-   after the local global lease expired;
-2. a remote trusted mutation could outlive the dead local process and commit after
-   recovery had already restored/verified clean state.
-
-A prior cleanup-order issue was already fixed before this repair: fixture deletion
-is forbidden until host disablement and policy OFF restoration both succeed.
-
-## Test-first evidence
-
-Initial failing test commit:
-
-`3595f8026ad72a14e39dc48df989cad235806670`
-
-CI run `34801030099` failed in unit/static as expected. The tests exposed global
-pending-manifest admission and delayed pre-recovery mutation behavior. The delayed
-mutation test's start synchronization was then made deterministic in:
-
-`6d535cabaa257cd5f94018f67640fd95cc971900`
-
-Regression files:
-
-- `tests/transaction-cloud-ownership-fence-8d.test.mjs`
-- `tests/transaction-cloud-server-fence-static-8d.test.mjs`
-
-## Local ownership fix
-
-File: `tests/helpers/transaction-cloud-operator-8d.mjs`.
-
-The local state directory now has globally singular dirty ownership semantics:
-
-- fresh preflight searches for any pending manifest, not only the new namespace;
-- any dirty manifest blocks every fresh namespace with `8D_RECOVERY_REQUIRED`;
-- more than one dirty manifest fails closed;
-- ownership rechecks global pending state after local lease acquisition;
-- `--recover <namespace>` must match the globally pending manifest;
-- live-PID fencing remains in place.
-
-The durable manifest remains nonsecret and keeps its existing version/shape. The
-server epoch is memory-only and is not persisted there.
-
-## Server-side fence candidate
-
-New migration candidate:
-
-`supabase/migrations/20260914043049_transaction_operator_fence_8d.sql`
-
-Installed master-OFF after independent PASS; superseding installation record above.
-
-It adds one service-only singleton control row with:
-
-- monotonically increasing fence epoch;
-- exact owner + namespace;
-- bounded server lease;
-- fenced `host_enabled` state.
-
-Fixed service-only functions provide acquire, heartbeat, assert, host toggle,
-exact cleanup, release, state read, and hosted gate read. `public`, `anon`, and
-`authenticated` have no execute authority on these functions.
-
-Fencing rule:
-
-- trusted mutation carries owner + namespace + epoch;
-- mutation asserts the epoch while holding the control row with a share lock;
-- recovery takes an exclusive row lock and increments epoch before cleanup;
-- therefore an old mutation either commits before takeover or observes a stale
-  epoch and cannot commit after the new owner completes recovery;
-- cleanup itself additionally requires current epoch, host disabled, policy OFF,
-  `legacy_gated=false`, and `agent_commit_enabled=false`;
-- final server-fence release is a clean-state exclusive-lock barrier before the
-  local manifest/lease may be deleted.
-
-## Operator integration
-
-The internal backend contract now additionally requires:
-
-- `acquireFence`
-- `heartbeatFence`
-- `releaseFence`
-
-These are internal trusted-adapter methods only. The public controller/operator
-surface used by the acceptance controller remains the same eleven operations, and
-public MCP remains unchanged.
-
-Normal ownership writes dirty local evidence before remote fence acquisition so a
-lost acquire reply remains recoverable. Normal clean completion releases the
-server fence before deleting local ownership. Recovery acquires a fresh server
-epoch before restoring host/OFF/cleanup.
-
-## Fixed Management backend integration
-
-File: `tests/helpers/transaction-cloud-management-backend-8d.mjs`.
-
-The backend remains fixed-project/fixed-SQL test infrastructure and has no generic
-SQL, URL, secret-name, shell, code, RPC, model, or page escape hatch.
-
-All trusted mutations now carry the exact fence:
-
-- insert-only fixture provisioning;
-- host enable/disable;
-- DARK/OFF policy changes;
-- cleanup;
-- clean verification.
-
-Per-run host toggling no longer writes the project secret. The existing
-`OPERA_AGENT_TRANSACTION_DARK_8D` secret becomes only a static deployment/master
-kill switch.
-
-## Fenced Edge candidate
-
-File: `supabase/functions/opera-agent-transactions-8d/index.ts`.
-
-**NOT DEPLOYED.**
-
-When the static master switch is enabled, each request must first receive `true`
-from service-role-only `opera_tx_operator_host_gate_8d` before the transaction host
-runs. The underlying candidate transaction mutations remain policy-fenced by
-`assert_dark()` as well.
-
-No finalize, transaction commit, approval, browser dispatch, or new public MCP
-surface was introduced. `browserDispatchAllowed` remains false.
-
-## Deliberate fail-closed deployment pin
-
-Because the fenced Edge source has not been deployed, its real Supabase
-`ezbr_sha256` does not exist yet. The Management backend therefore uses the exact
-all-zero 64-character digest as an intentional impossible/pending pin.
-
-This means the current production Edge can **not** accidentally pass the new live
-preflight. Do not replace the sentinel by guessing a hash.
-
-After independent PASS only:
-
-1. deploy the reviewed fence migration and fenced Edge with the static master switch still disabled;
-2. read the real deployed Edge bundle hash;
-3. replace the zero sentinel with that exact hash in a pin-only change;
-4. run exact-head CI and review that delta as required;
-5. only then may fresh PKCE/OAuth acceptance be considered.
-
-## Exact CI evidence
-
-Latest implementation/static-test head before documentation commits:
-
-`3c0ac9d677cf289c384ad3704548ba0c4e935ee7`
-
-Exact GitHub Actions run:
-
-`34801634178`
-
-Result: **SUCCESS**
-
-- unit/static PASS;
-- Playwright install PASS;
-- Chromium extension regression PASS.
-
-Core implementation head `1ebd23f691b31209f837423b6a78b9c115f69283`
-also completed full CI successfully.
-
-## Production is untouched by this repair
-
-Do not confuse the review candidate with production.
-
-Production still has the earlier installed 8D backend only:
-
-- applied migration `20260913143306_transaction_journal_8d_dark.sql`;
-- previously observed Edge deployment version 6 / `verify_jwt=true`;
-- previously observed old bundle SHA `bad0ae493209891e45bc90a11d91ef85dac72022f70f7aaf8ba9e8152c822769`;
-- prior read-only closeout state host master false, policy OFF, legacy gate false,
-  agent commit false, synthetic transaction rows zero.
-
-This repair did not reconfigure or deploy any of those resources.
-
-## Locked compatibility
-
-Unchanged:
-
-- extension `1.6.0`;
-- protocol `1`;
-- extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`;
-- 26 browser capabilities;
-- 18 public MCP tools with unchanged schemas;
-- signing identity and pairing;
-- immediate signed rollback `1.5.2`.
-
-Chromium regression passed on the exact ownership/fence implementation head.
-
-## Exact next step
-
-**REVIEW ONLY.**
-
-Independently audit the exact branch after the documentation synchronization,
-with focus on:
-
-- global dirty-manifest singularity;
-- local lease/PID fencing interaction with server lease;
-- epoch takeover and row-lock ordering;
-- delayed pre-recovery insert/host/DARK/OFF/cleanup mutations;
-- lost acquire/release replies;
-- server lease expiry during an in-flight transaction;
-- cleanup/release clean-state gates;
-- service-role-only grants/RLS;
-- Edge host-gate race against policy `assert_dark()` quiescence;
-- absence of public/model/page authority paths;
-- deliberate zero bundle-pin fail-closed behavior.
-
-Do not deploy, run OAuth, enable DARK, mutate production, merge an audit-only PR,
-or start 8E until the required independent review explicitly permits the next
-production boundary.
+Last synchronized: 2026-09-15.
+
+## Current task boundary
+
+The user asked to solve the recurring ChatGPT custom-MCP failure in ordinary Chat,
+especially `FORBIDDEN: This conversation does not support developer MCPs`, without
+requiring Work mode quota or forcing a fresh conversation.
+
+This work is isolated on branch `fix/chat-control-fallback`, cut from exact
+Milestone-8 branch head `80e44483f2cdba400681dc6279522d0d55d24c98`.
+Do **not** merge it into `feat/semantic-runtime-1.6.0` merely for convenience while
+8D is still open. Milestone 8 remains: 8A-8C accepted, **8D IN PROGRESS**, 8E not
+started.
+
+Read first:
+
+- `AGENTS.md`
+- `docs/project-context.md`
+- `docs/chat-control-fallback.md`
+- `docs/mcp-reliability-investigation.md`
+- `tests/fixtures/chat-control-fallback-v1.json`
+- `tests/chat-control-fallback.test.mjs`
+
+## Root-cause classification
+
+The custom-MCP conversation failure is not currently proven to originate in Opera
+Agent. Strong upstream evidence points to a ChatGPT host/router problem:
+
+- OpenAI public issue `openai/openai-apps-sdk-examples#230` reproduces a custom MCP
+  working repeatedly and then becoming `FORBIDDEN` in the same conversation while
+  the MCP backend remains healthy.
+- OpenAI public issue `#235` reproduces native apps such as GitHub and a custom
+  Developer MCP becoming mutually exclusive in one standard Chat conversation;
+  issue comments reproduce the same symptom with Gmail.
+- A separate minimal custom MCP reproduction in that discussion used the official
+  TypeScript SDK, stateless HTTPS, and no OAuth, so OAuth cannot explain the whole
+  failure class.
+- Official MCP TypeScript SDK documentation explicitly supports stateless
+  Streamable HTTP; converting Opera Agent to stateful MCP is therefore not a
+  justified repair for this host-level symptom.
+- OpenAI's current Developer Mode documentation says full write-capable MCP is beta
+  for Business/Enterprise/Edu and that MCP tool definitions can be frozen snapshots
+  until refreshed. Snapshot drift can explain individual stale-tool errors but not
+  an already-working conversation becoming globally Developer-MCP-ineligible.
+
+Do not redeploy/restart Opera Agent merely because a conversation returns this
+host-level `FORBIDDEN` error.
+
+## Operational solution: normal-Chat fallback
+
+The key architecture fact is that `opera-agent-mcp` is only an adapter in front of
+an existing durable Supabase command queue. The MCP server already translates its
+18 public browser tools into `public.opera_enqueue(...)` followed by
+`public.opera_await(...)`; `page.capture` uses `public.opera_await_capture(...)`.
+
+A connected Supabase connector can therefore drive the **same** browser execution
+path directly from normal Chat when the custom MCP binding is unavailable:
+
+```text
+Normal Chat
+  -> Supabase connector
+  -> public.opera_enqueue
+  -> durable opera_commands queue
+  -> paired Opera Agent extension
+  -> named browser primitive
+  -> public.opera_await / public.opera_await_capture
+  -> Normal Chat
+```
+
+This is not a second browser runtime and does not change extension bytes, pairing,
+signing, protocol, public MCP schema, or production database shape.
+
+### Critical connector rule
+
+Enqueue and await are two separate connector calls. Do not combine them into one
+SQL statement/transaction: the extension must be able to see the committed queued
+row before the await begins.
+
+For browser fallback, connector use is operationally restricted to:
+
+- `select public.opera_enqueue(...)`;
+- `select public.opera_await(...)`;
+- `select public.opera_await_capture(...)` for capture results;
+- narrowly scoped read-only health/status queries when diagnosing transport.
+
+Do not use this fallback for arbitrary DML/DDL, generic SQL/RPC execution, direct
+command/result table writes, pairing/device-token operations, secret inspection,
+`opera_complete_command`, or credential retrieval.
+
+Keep the same browser policy as MCP: background-first, explicit tab IDs, no silent
+foreground activation, and no password/OTP/payment entry, upload, publish,
+purchase, send, or destructive action without explicit user instruction.
+
+## Live evidence already completed
+
+On 2026-09-15, from a normal Chat session and without invoking the custom Opera
+Agent MCP namespace, the connected Supabase project completed these end-to-end
+browser probes:
+
+- `browser.ping`: PASS, Opera Agent 1.6.0 / protocol 1, 447 ms total;
+- `tabs.list`: PASS, 710 ms total;
+- bounded background `tabs.open` for `https://example.com`: PASS, 2635 ms;
+- `page.read` on that exact temporary tab: PASS, 718 ms;
+- `tabs.close` cleanup of only that temporary tab: PASS, 620 ms.
+
+Raw user tab contents were intentionally not persisted in repository documentation.
+The temporary test tab was closed.
+
+This proves the browser path can remain healthy and usable from normal Chat even
+when ChatGPT's custom-MCP invocation binding is unavailable.
+
+## Frozen fallback contract
+
+`tests/fixtures/chat-control-fallback-v1.json` maps the locked 18 public MCP tools to
+the existing named Opera methods and bounded timeouts. It also pins
+`public.opera_await_capture` for `capture_page`.
+
+`tests/chat-control-fallback.test.mjs` verifies:
+
+- exact coverage/order against `tests/fixtures/mcp-contract-v1.json`;
+- only existing allowlisted browser methods;
+- bounded timeouts;
+- no generic SQL/shell/JavaScript/secret/pair escape path;
+- no invented WebSocket/EventSource/stdio/localhost transport;
+- no direct completion or pairing operations.
+
+No MCP runtime or extension source was changed by this reliability branch.
+
+## Exact next work on this side branch
+
+1. Verify the latest exact branch HEAD after this handoff commit.
+2. Wait for/check exact-head CircleCI. Required test gate must be green; unrelated
+   Vercel build-rate-limit failures do not substitute for CircleCI.
+3. If CircleCI is red, inspect the exact failing job/log and repair only the
+   deterministic fallback test/docs issue. Do not change Opera runtime to chase a
+   host-router symptom.
+4. If CircleCI is green, keep this branch as a reviewed reliability side branch;
+   do not merge into the active 8D milestone branch until doing so is compatible
+   with the one-writer/exact-head milestone boundary.
+5. For ordinary user browser work, prefer typed custom MCP while it works. On
+   conversation-level Developer-MCP `FORBIDDEN`, immediately use the documented
+   Supabase fallback. Work mode and a fresh chat are no longer operational
+   requirements for browser control.
+
+## Remaining MCP-specific investigation (optional, not a blocker for user work)
+
+To prove the upstream boundary even more strongly during a future same-outage
+incident:
+
+1. observe custom MCP `FORBIDDEN`;
+2. run fallback `browser.ping` and confirm browser path healthy;
+3. check public MCP health;
+4. only with an existing explicitly authorized bearer source, perform authenticated
+   direct MCP initialize/tools-list/browser-status diagnostics;
+5. if direct MCP succeeds while ChatGPT invocation remains `FORBIDDEN` and no MCP
+   request reaches the service, classify it as host invocation-router failure.
+
+Never extract stored credentials or ask the user to paste a bearer/token into chat.
+
+## Milestone 8 continuation
+
+The canonical milestone branch remains `feat/semantic-runtime-1.6.0`; the latest
+8D candidate before this side branch was `80e44483f2cdba400681dc6279522d0d55d24c98`
+with exact-head CircleCI success. Production 8D state was clean/off and no browser
+mutation is authorized by 8D. Return to the authoritative 8D records in
+`docs/project-context.md` and the milestone acceptance documents before continuing
+8D. Do not start 8E until final independent 8D acceptance.
