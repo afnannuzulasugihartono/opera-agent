@@ -21,6 +21,38 @@ capabilities). The following are already installed in production:
 - Policy `OFF`, `legacy_gated=false`, `agent_commit_enabled=false`.
 - All 11 synthetic 8D data tables zero rows.
 
+## Canonical concurrency interpretation
+
+`docs/milestone-8-plan.md` is the canonical frozen Checkpoint 8D contract. Its
+acceptance criteria require worker-death reclaim, exact redelivery/idempotency,
+and exact enforcement of rate/queue/concurrency/payload/retention bounds. It does
+**not** require externally proving a provider-internal Deno worker PID or V8
+isolate identity.
+
+The earlier shorthand in this procedure, "Concurrent cloud races (multiple real
+Edge workers)", was therefore too strong and is corrected here. Supabase/Deno and
+Cloudflare expose request/execution routing traces, not a stable public
+worker/isolate identifier. Acceptance must not claim evidence the provider does
+not expose.
+
+For Checkpoint 8D, the hosted concurrency gate means:
+
+- eight independently issued simultaneous authenticated POST requests reach the
+  fixed real `opera-agent-transactions-8d` hosted endpoint for `prepare`, and
+  eight do the same for `cancel`;
+- bounded allowlisted request/execution traces (`x-deno-execution-id` or
+  `cf-ray`) demonstrate distinct real hosted request executions without logging
+  raw trace values;
+- all eight responses converge on the same transaction/commit metadata;
+- exactly one response is the non-replay winner and seven are exact replays for
+  each raced operation;
+- response size remains bounded and `browserDispatchAllowed=false` throughout;
+- fenced operator ownership and cleanup/recovery remain fail-closed.
+
+This is operational evidence for the canonical **hosted concurrency/CAS bound**.
+It is deliberately **not** evidence that N distinct V8 isolates or process workers
+handled the requests. No acceptance record may make that stronger claim.
+
 ## Remaining steps (require user action and production access)
 
 ### Step 1 — verify exact-head CI
@@ -77,7 +109,7 @@ After Step 2 passes, exercise real worker death against the hosted DB:
 The native test `tests/postgres/transaction-journal-8d.test.mjs` already
 verifies worker death, reclaim, and nonce durability against a local
 PostgreSQL instance. The remaining gate is to verify this against the
-**actual hosted Supabase DB** with a real Edge worker.
+**actual hosted Supabase DB** with a real bound worker.
 
 This requires a separately reviewed live probe script that:
 1. Prepares a synthetic transaction with a real bound worker.
@@ -91,7 +123,12 @@ This requires a separately reviewed live probe script that:
 The SQL probe `tests/postgres/transaction-cloud-bounds-8d.sql` already
 verified 8 grouped assertions on the real project. Remaining gates:
 
-- Concurrent cloud races (multiple real Edge workers)
+- Hosted concurrent cloud races using the canonical concurrency interpretation
+  above: eight simultaneous authenticated requests per raced operation, distinct
+  hosted request/execution traces, exactly one winner/seven replays, convergent
+  metadata, bounded responses, and zero browser dispatch. This tests the real
+  hosted concurrency/CAS boundary and does not claim provider-internal isolate
+  identity.
 - Minute-rollover rate reset
 - Payload size at exact 196608/196609 byte boundary (already verified)
 - Crypto tamper with real installed key
