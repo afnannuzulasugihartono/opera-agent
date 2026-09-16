@@ -102,8 +102,7 @@ replays. It preserves bounded response sizes, fixed target, recovery semantics,
 `browserDispatchAllowed=false`, and no secret printing.
 
 It does **not** change Edge runtime, migrations/schema, MCP, extension, public
-contract, signing, pairing, protocol, or browser authority. No live concurrency
-probe has been run.
+contract, signing, pairing, protocol, or browser authority.
 
 Important unresolved review question: eight simultaneous calls to the real Edge
 endpoint demonstrate a hosted concurrency race, but the current runtime exposes no
@@ -113,17 +112,55 @@ independent reviewer must explicitly decide whether this is sufficient for the
 frozen plan phrase "multiple real Edge workers". Do not overclaim the evidence and
 do not add runtime instrumentation merely to force a PASS without review.
 
-At the writer implementation head `ed46f9500394ea9a3893f02be6a2140215b32061`,
-CircleCI pipeline `/32` was still `pending`; Vercel was `success`. The final docs
-commit itself must also receive exact-head CI SUCCESS before any live probe.
+## First concurrency launch attempt and repair
+
+CircleCI pipeline `/33` reached SUCCESS for documentation head
+`cb75febf873542795e5d15bee96ad17dd97b32d1`. Before the required independent
+review was completed, the user ran `RUN_8D_EDGE_CONCURRENCY.cmd` once from the
+canonical Windows checkout.
+
+The launcher synchronized to `cb75feb...`, loaded the locally DPAPI-encrypted
+Management token, and then Deno stopped during module resolution with:
+
+`Could not find a matching package for 'npm:@supabase/supabase-js@2.57.4' in the node_modules directory.`
+
+No OAuth URL was emitted, no recovery namespace was emitted, and the acceptance
+runner's `main()` did not execute. The repository has a root `package.json` and no
+root `deno.json`; current Deno therefore defaults npm resolution to manual
+`node_modules` mode. The pinned Supabase SDK is intentionally not an application
+`package.json` dependency, so the launcher needed an explicit Deno npm-resolution
+mode.
+
+Fresh read-only Supabase checks after this failure showed the production boundary
+still clean: policy `OFF`, `legacy_gated=false`, `agent_commit_enabled=false`,
+operator/namespace unowned, `host_enabled=false`, `lease_until=null`, epoch `2`,
+all synthetic 8D tables zero, and `opera_agent_private.goal_heads` zero. No
+recovery command is needed.
+
+The repair was tests-first:
+
+- `f98964f11dc9c6e9651cce203d8f02154f3d8be1` — regression test requiring
+  explicit automatic Deno npm resolution and forbidding package-manager install
+  commands in the launcher;
+- `f493aed0afa17c3833c79f8f82dcddd51c656152` — launcher-only fix adding
+  `--node-modules-dir=auto` to the existing `deno run` command.
+
+The pinned SDK import remains `npm:@supabase/supabase-js@2.57.4`. The repair does
+not run `deno install`, does not modify `package.json`, and changes no Edge code,
+schema/migration, OAuth semantics, MCP/extension contract, signing/pairing, or
+browser authority.
+
+At the implementation head `f493aed...`, CircleCI pipeline `/35` is `pending` and
+Vercel is green. Documentation commits after that implementation also require
+exact-head CI SUCCESS. The failed attempt is not acceptance evidence.
 
 ## Exact next step
 
-**DO NOT RUN `RUN_8D_EDGE_CONCURRENCY.cmd` YET.**
+**DO NOT RERUN `RUN_8D_EDGE_CONCURRENCY.cmd` YET.**
 
-1. Verify exact-head CircleCI for the latest branch head. Require SUCCESS.
-2. Obtain an independent review PASS of the concurrency runner, test contract, and
-   launcher. Review must explicitly check:
+1. Verify CircleCI SUCCESS for the latest exact branch head after this handoff.
+2. Obtain an independent review PASS of the concurrency runner, launcher, and the
+   Deno dependency-resolution repair. The review must explicitly check:
    - fixed project and exact Edge endpoint;
    - authenticated user/session path rather than forged identity;
    - bounded eight-way `prepare` and `cancel` races;
@@ -131,20 +168,23 @@ commit itself must also receive exact-head CI SUCCESS before any live probe.
    - fenced operator ownership and fail-closed recovery/cleanup;
    - no browser authority or public runtime/schema change;
    - no credential leakage;
-   - PowerShell/CLI correctness;
+   - PowerShell/Deno CLI correctness, including the scoped
+     `--node-modules-dir=auto` repair;
    - whether the evidence actually satisfies "multiple real Edge workers" or
      needs additional bounded evidence.
-3. Only after both CI and independent review are green may a live concurrency
-   probe be considered. Do not silently enable the static Edge master switch; any
-   required master-state change must be explicit and reviewed.
-4. After any reviewed live PASS, re-query policy/operator/host and every synthetic
+3. Only after both exact-head CI and independent review are green may the user run
+   one fresh normal concurrency probe. Do not silently enable the static Edge
+   master switch; any required master-state change must be explicit and reviewed.
+4. If a later run prints a recovery namespace, do not rerun normal mode; recover
+   only that namespace using the reviewed launcher path.
+5. After any reviewed live PASS, re-query policy/operator/host and every synthetic
    table to prove final OFF/unowned/zero cleanup.
-5. Continue only the still-open 8D matrix: real installed-key crypto tamper
+6. Continue only the still-open 8D matrix: real installed-key crypto tamper
    negatives, authenticated cross-tenant/session negatives, and any unresolved
    quantitative evidence; then reconcile advisors.
-6. Write the final `docs/milestone-8-checkpoint-8d-acceptance.md` with exact head,
+7. Write the final `docs/milestone-8-checkpoint-8d-acceptance.md` with exact head,
    CI, probe receipts, advisor reconciliation, and final clean-state evidence.
-7. Obtain the independent final 8D audit. Only verdict **PASS** permits 8E.
+8. Obtain the independent final 8D audit. Only verdict **PASS** permits 8E.
 
 ## User-local note
 
@@ -153,10 +193,10 @@ Windows checkout were preserved in a Git stash named approximately
 `preserve accidental 8E files before completing checkpoint 8D`. Do not pop, apply,
 delete, or build on that stash while 8D remains open.
 
-The user's canonical checkout was clean and aligned at `8e3c6cd...` before the
-new remote concurrency commits. It will be behind the branch after this writer
-session. Do not ask the user to pull/run the concurrency launcher until the CI and
-independent-review gates above are satisfied.
+The user's canonical checkout was at `cb75feb...` when the failed concurrency
+launch occurred. It is now behind the repaired remote branch. Do not ask the user
+to pull or rerun the launcher until the CI and independent-review gates above are
+satisfied.
 
 ## Final 8D acceptance still requires
 
