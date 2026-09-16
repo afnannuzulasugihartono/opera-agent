@@ -53,22 +53,21 @@ fixture mutation occurred. Tests-first repair:
 - `f493aed0afa17c3833c79f8f82dcddd51c656152` — launcher adds
   `--node-modules-dir=auto` without package.json or install-command changes.
 
-CircleCI pipeline #37 later passed at exact head
+CircleCI pipeline #37 passed at exact head
 `a5dde1e923029b6ff057a33144983998970a03b4`.
 
-## Independent review result
+## First independent review
 
-Fresh Jules session `16177705161344454955` audited exact head
+Jules session `16177705161344454955` audited exact head
 `a5dde1e923029b6ff057a33144983998970a03b4` and returned **CONDITIONAL PASS**.
 Every reviewed safety/contract item passed except proof for the frozen phrase
 "multiple real Edge workers".
 
-Jules explicitly said the live probe remained blocked until bounded Edge response
-header/routing evidence was recorded/asserted, or governance formally waived the
-wording. The project chose technical evidence. Do not reinterpret the requirement
-by writer self-approval.
+The reviewer asked for bounded Edge routing/execution trace evidence or an
+explicit governance reinterpretation. The writer implemented technical evidence,
+not a waiver.
 
-## Current writer change: bounded routing-trace evidence
+## Bounded routing-trace evidence repair
 
 Tests-first commits:
 
@@ -82,38 +81,68 @@ Tests-first commits:
 Implementation properties:
 
 - exactly 8 response samples are required;
-- only strong allowlisted trace headers `x-deno-execution-id` and `cf-ray` are
-  inspected for distinct routing traces;
+- only allowlisted trace headers `x-deno-execution-id` and `cf-ray` are inspected;
 - optional `x-sb-edge-region` is summarized separately;
-- at least 2 distinct routing traces are required for both prepare and cancel;
+- at least 2 distinct trace values are required for both prepare and cancel;
 - missing evidence fails closed with `8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING`;
 - raw response-header values remain in memory only and are never returned/logged;
 - receipts contain only header name + counts;
 - no Edge runtime/function, DB schema/migration, MCP/public runtime, extension,
   OAuth semantics, signing, pairing, protocol, or browser authority changes.
 
-Do **not** overclaim this as distinct-isolate proof. It is the exact bounded
-technical evidence requested by the prior independent reviewer and must now be
-re-reviewed independently.
+Exact documentation head `e8b68b31e50220bd4591dae6c4713e7db4b11af3`
+received CircleCI pipeline #42 SUCCESS and Vercel SUCCESS.
 
-At code head `d6e9f18ba9f3c80c0326af4241635e573662975a`, CircleCI pipeline #40 was
-observed pending while Vercel was green. Durable documentation commits follow that
-code head, so the latest exact branch head must receive its own CI SUCCESS.
+## Independent routing-evidence re-review result
+
+The same independent Jules reviewer re-reviewed exact head
+`e8b68b31e50220bd4591dae6c4713e7db4b11af3`, bound CircleCI #42 SUCCESS and
+Vercel SUCCESS, inspected the routing-evidence diff, adjudicated trace-header
+semantics, and reported 321 local tests passing.
+
+Final verdict: **CONDITIONAL PASS**.
+
+The live concurrency probe remains **NOT AUTHORIZED**.
+
+Decisive finding:
+
+- `x-deno-execution-id` is evidence of distinct hosted Edge function executions,
+  not a stable worker/V8-isolate identity;
+- `cf-ray` is evidence of distinct Cloudflare request/routing traces, not backend
+  Deno worker/isolate identity;
+- therefore distinct trace values prove separate real requests/executions reached
+  the hosted Edge path, but do not prove distinct workers/isolates.
+
+The helper itself was accepted as bounded, fail-closed, nonsecret, and
+non-invasive. The blocker is evidentiary semantics, not a newly found code-safety
+bug.
+
+Jules suggested that the smallest path to PASS is a **formal governance
+clarification** accepting 8 simultaneous authenticated requests with distinct
+execution traces plus exact 1-winner/7-replay convergence as the operational
+meaning of "multiple real Edge workers/requests".
+
+That clarification has **not** been applied. The wording is frozen and no
+project-lead/user decision has authorized weakening or reinterpreting it. Do not
+self-approve or silently edit the acceptance contract.
 
 ## Exact next step
 
-**DO NOT RUN `RUN_8D_EDGE_CONCURRENCY.cmd` YET.**
+**DO NOT RUN `RUN_8D_EDGE_CONCURRENCY.cmd`.**
 
-1. Check CircleCI for the latest exact branch head after this handoff. If pending,
-   stop. If failed, diagnose only that failure.
-2. Once exact-head CI is SUCCESS, obtain a fresh independent Jules review bound to
-   that exact head. Reviewer must explicitly adjudicate whether the new bounded
-   `cf-ray` / `x-deno-execution-id` evidence satisfies the previous condition.
-3. Only verdict **PASS** authorizes exactly one fresh live concurrency probe.
-   CONDITIONAL PASS or FAIL remains blocked.
-4. Any temporary static Edge master arrangement must be explicit/reviewed; never
-   silently alter production secret state.
-5. If a later live run prints a recovery namespace, do not blindly rerun normal
+1. First require CircleCI SUCCESS for the latest documentation head that records
+   this re-review result. If pending, stop; if failed, diagnose only that failure.
+2. The next substantive decision is governance/evidence, not a live probe:
+   - either obtain explicit project-lead/user approval to adopt the reviewer's
+     operational interpretation of "multiple real Edge workers/requests"; or
+   - find a bounded, non-invasive source of actual worker/isolate identity or
+     equivalent evidence, implement tests first if code changes are needed, then
+     obtain another independent PASS.
+3. Do not silently enable the static Edge master or mutate production while the
+   independent verdict is CONDITIONAL PASS.
+4. Only a future independent **PASS** authorizes exactly one fresh live concurrency
+   probe.
+5. If a future live run emits a recovery namespace, do not blindly rerun normal
    mode; use only the reviewed recovery path for that namespace.
 6. After reviewed live PASS, verify production OFF/unowned/zero again.
 7. Continue only remaining 8D real-key crypto tamper negatives, authenticated
@@ -128,5 +157,5 @@ Two accidental untracked 8E files remain preserved in a stash named approximatel
 `preserve accidental 8E files before completing checkpoint 8D`. Do not pop, apply,
 delete, or use that stash while 8D remains open.
 
-The user should not pull or rerun the concurrency launcher until the exact-head CI
-and independent re-review gates above are both green.
+The user should not pull or rerun the concurrency launcher while the independent
+review remains CONDITIONAL PASS.
