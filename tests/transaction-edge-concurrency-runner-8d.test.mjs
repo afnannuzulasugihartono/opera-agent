@@ -79,6 +79,8 @@ test('8D launcher brackets exactly one live probe with a fixed static-master sec
   assert.match(launcher,/for\s*\(\$attempt\s*=\s*1;\s*\$attempt\s*-le\s*3;/);
   assert.match(launcher,/StatusCode[^\n]*201/);
   assert.match(launcher,/ConvertTo-Json/);
+  assert.match(launcher,/ConvertTo-Json\s+-InputObject\s+@\(/);
+  assert.doesNotMatch(launcher,/@\([^\n]*\)\s*\|\s*ConvertTo-Json/);
   assert.doesNotMatch(launcher,/-Method\s+(?:Get|Delete)/i);
   assert.doesNotMatch(launcher,/reveal\s*=|\breveal\b/i);
   assert.doesNotMatch(launcher,/Write-(?:Host|Output)[^\n]*(?:\$Credential|\$token)/i);
