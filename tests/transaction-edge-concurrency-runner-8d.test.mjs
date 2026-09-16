@@ -23,13 +23,15 @@ test('8D real Edge concurrency runner is fixed, authenticated, bounded, and brow
   assert.doesNotMatch(source,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
 });
 
-test('8D real Edge concurrency launcher reuses local DPAPI credential and fails closed on dirty worktree',async()=>{
+test('8D real Edge concurrency launcher reuses local DPAPI credential, resolves pinned npm imports, and fails closed on dirty worktree',async()=>{
   const launcher=await readFile(launcherUrl,'utf8');
   const cmd=await readFile(cmdUrl,'utf8');
   assert.match(launcher,/management-token\.dpapi/);
   assert.match(launcher,/git status --porcelain/);
   assert.match(launcher,/git merge --ff-only/);
   assert.match(launcher,/transaction-edge-concurrency-8d\.mjs/);
+  assert.match(launcher,/--node-modules-dir=auto/);
+  assert.doesNotMatch(launcher,/\b(?:deno|npm|pnpm|yarn)\s+install\b/i);
   assert.match(launcher,/OPERA_8D_MANAGEMENT_TOKEN = \$null/);
   assert.match(launcher,/OPERA_8D_PUBLISHABLE_KEY = \$null/);
   assert.match(cmd,/pwsh\.exe/i);
