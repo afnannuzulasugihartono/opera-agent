@@ -40,96 +40,85 @@ for first `prepare` and first `cancel`, requiring one non-replay winner + seven
 exact replays, convergent metadata, bounded responses, distinct hosted
 request/execution trace evidence, browser dispatch false, and no secret output.
 
-Prior repair/evidence commits:
+## Prior independent static-master review
 
-- `f98964f11dc9c6e9651cce203d8f02154f3d8be1` — Deno resolution regression;
-- `f493aed0afa17c3833c79f8f82dcddd51c656152` — `--node-modules-dir=auto`;
-- `2b60f0e6e558a676063c2bf0421a9dff8d63bba8` — routing evidence contract;
-- `9d46c636cd092537563d6f2fe8dbef6b9286dccc` — bounded routing helper;
-- `d6e9f18ba9f3c80c0326af4241635e573662975a` — runner integration.
+Fresh Jules session `6098947889864439430` reviewed exact head
+`f1b2cadde60510d46b38a8f3bf5f991bfd9ba4f8`, bound to CircleCI #54 SUCCESS and
+Vercel SUCCESS, and returned **PASS**. It accepted the fixed project/secret scope,
+write-only Management API use, DPAPI handling, false -> true -> one probe ->
+finally false bracket, recovery behavior, bounded restore attempts, mandatory DB
+host gate, no public/browser authority widening, and browser dispatch false.
 
-The canonical milestone does not require distinct provider-internal V8-isolate IDs.
-Commit `6f470bb9626aec5a0d60c1176af471f89558cbed` corrected the later procedure's
-over-specification. Jules session `16177705161344454955` re-reviewed exact head
-`f63bd8f52e086259ccbbf9120b240da1f9720049` and returned **PASS** for the
-canonical hosted concurrency interpretation.
+That PASS authorized one future normal probe for the then-reviewed launcher only.
 
-## Static-master bracket — independently PASSED
+## Live launcher attempts after that review
 
-Tests-first/implementation/procedure commits:
+Documentation head before the attempts:
+`71995dbc5733d872b50656d04e7bcda9bc58f9f1`.
 
-- `714ef9dad2d9049284f3bf951528d9095b7b0535` — static-master launcher contract;
-- `97a1c58ba3714455ff8d0463bf076229efdd71ae` — launcher bracket;
-- `95572c3e1fe62fae212b4899da307110b7ce95c8` — procedure document;
-- durable state through exact reviewed head
-  `f1b2cadde60510d46b38a8f3bf5f991bfd9ba4f8`.
+Attempt 1:
+- launcher synchronized to the exact head;
+- loaded local DPAPI Management token;
+- baseline static-master `false` POST returned HTTP 403;
+- stopped before any successful secret write, OAuth, fixture, or Edge probe.
 
-Normal launcher behavior is fixed to project `nenmkmtvjremqphfqnfw` and secret
-`OPERA_AGENT_TRANSACTION_DARK_8D` only:
+A new scoped PAT was then created through the Supabase Dashboard with:
+- project scope: `opera-agent` only;
+- expiry: 7 days;
+- capability: only `Edge Function Secrets: Read-write`;
+- token value kept local and stored with Windows DPAPI.
 
-1. baseline POST `false`;
-2. temporary POST `true` immediately around one probe;
-3. exactly one existing bounded concurrency probe;
-4. `finally` restore `false`, max three restore attempts;
-5. restore failure forces launcher failure;
-6. clear Management/publishable-key environment variables.
+Attempt 2:
+- same exact launcher head;
+- baseline `false` POST returned HTTP 400;
+- stopped before `restoreRequired=true`, before master `true`, OAuth, fixture, or
+  Edge probe.
 
-`-RecoverNamespace` never enables master. `-RestoreMasterOnly` writes only the
-fixed master to `false` and runs no OAuth, fixture, probe, or browser action. No
-GET/list/reveal/delete secret path exists.
+Root cause is confirmed against the current Supabase Management API OpenAPI spec:
+`POST /v1/projects/{ref}/secrets` requires a JSON **array** of `{name,value}`
+objects. PowerShell pipeline enumeration in the launcher turned the intended
+one-element array into a scalar JSON object.
 
-Hard OS termination/power loss can bypass local `finally`; recovery is explicitly
-`RUN_8D_EDGE_CONCURRENCY.cmd -RestoreMasterOnly`. Static master true by itself is
-still fail-closed because the independent DB host gate remains mandatory.
+## Tests-first repair now on branch
 
-Fresh independent Jules review:
+- `9f372e6ce6f16927233090826180f26a14fb9bd5` — adds regression assertions that
+  require array-preserving `ConvertTo-Json -InputObject @(...)` and reject the old
+  pipeline serialization form.
+- `07acfa962e3b9acde8a087d0d05657d3b0709f98` — minimal implementation fix:
+  `ConvertTo-Json -InputObject @(@{ name = ...; value = ... }) -Compress`.
+- `2192584f498f2c44a54440dbd5f08094bd56dbde` — durable project-context update.
 
-- session: `6098947889864439430`
-- exact reviewed head: `f1b2cadde60510d46b38a8f3bf5f991bfd9ba4f8`
-- bound CI: CircleCI #54 SUCCESS, Vercel SUCCESS
-- local read-only suite reported: **324/324 PASS**, clean repo
-- final verdict: **PASS**
+The repair does not change project ref, secret name, allowed values, Management
+endpoint, restore behavior, browser authority, public MCP/runtime/schema,
+extension/signing/pairing/protocol, or the bounded Edge probe itself.
 
-The reviewer explicitly accepted all ten requested invariants, including fixed
-project/secret authority, write-only secret management, DPAPI/token handling,
-true/false bracket, recovery paths never enabling master, bounded restore retries,
-hard-termination fail-closed semantics, mandatory DB host gate, no public/browser
-authority widening, and test coverage.
+## Exact next gate
 
-Authorization from this review is narrow: **exactly ONE future normal
-`RUN_8D_EDGE_CONCURRENCY.cmd` live probe**. It does not authorize 8E or a second
-normal probe.
+**DO NOT RUN `RUN_8D_EDGE_CONCURRENCY.cmd` AGAIN YET.**
 
-## Exact next step
-
-**DO NOT RUN THE CMD UNTIL THE LATEST DOCUMENTATION HEAD CI IS SUCCESS.**
-
-1. Check CircleCI and Vercel for the latest exact branch head containing this
-   handoff and `docs/project-context.md` update. Pending => STOP. Failed => diagnose
-   only that failure.
-2. Once exact-head CI is SUCCESS, the next user action is exactly one normal run:
-
-   ```powershell
-   cd D:\GitHub\opera-agent
-   .\RUN_8D_EDGE_CONCURRENCY.cmd
-   ```
-
-   Do not run a second normal probe without new authorization.
-3. If the run prints a recovery namespace, recover that namespace before any
-   normal rerun. If static-master restoration is uncertain, run only:
-
-   ```powershell
-   .\RUN_8D_EDGE_CONCURRENCY.cmd -RestoreMasterOnly
-   ```
-
-4. After the single live probe, immediately verify static master false, policy OFF,
-   operator/namespace unowned, host false, all synthetic 8D tables zero, and
+1. Treat the latest branch head containing this handoff as the required exact CI
+   head.
+2. Require CircleCI and Vercel SUCCESS. Pending => STOP. Failed => diagnose only
+   that failure.
+3. Obtain a fresh independent read-only review of the repaired launcher and exact
+   CI head because this launcher controls a production-boundary static master.
+   The review must verify:
+   - Supabase secrets body is a JSON array matching `CreateSecretBody`;
+   - fixed project/secret/value scope remains unchanged;
+   - no GET/list/reveal/delete secret path was introduced;
+   - baseline false -> true -> exactly one probe -> finally false remains intact;
+   - `-RecoverNamespace` and `-RestoreMasterOnly` cannot enable master;
+   - max-three restore and fail-loud behavior remain intact;
+   - independent DB host gate remains mandatory;
+   - no public/browser authority widening and `browserDispatchAllowed=false`.
+4. Only a fresh independent **PASS** may authorize one normal live launcher run.
+5. After that run, immediately verify static master false, policy OFF,
+   operator/namespace unowned, host false, synthetic 8D tables zero, and
    `opera_agent_private.goal_heads` zero.
-5. Continue only remaining 8D real-key crypto tamper negatives, authenticated
-   cross-tenant/session negatives, unresolved quantitative/rate evidence, and
-   advisor reconciliation.
-6. Write final `docs/milestone-8-checkpoint-8d-acceptance.md`, obtain final
-   independent 8D audit PASS, and only then permit 8E.
+6. Continue only remaining 8D crypto tamper negatives, authenticated
+   cross-tenant/session negatives, quantitative/rate evidence, advisor
+   reconciliation, acceptance doc, and final independent 8D audit.
+7. Only final 8D audit PASS permits 8E.
 
 ## User-local state
 
