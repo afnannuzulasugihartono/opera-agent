@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const runnerUrl=new URL('./cloud/transaction-worker-loss-8d.mjs',import.meta.url);
+const launcherUrl=new URL('../scripts/run-8d-worker-loss.ps1',import.meta.url);
+const cmdUrl=new URL('../RUN_8D_WORKER_LOSS.cmd',import.meta.url);
 
 test('8D hosted child-worker-loss runner is bounded, recoverable, and has no browser/OAuth surface',async()=>{
   const source=await readFile(runnerUrl,'utf8');
@@ -30,4 +32,17 @@ test('8D hosted child-worker-loss runner accepts only bounded CLI modes',async()
   assert.deepEqual(parseWorkerLossArgs8D(['--recover',namespace]),{mode:'recover',namespace});
   assert.throws(()=>parseWorkerLossArgs8D(['--recover','bad']),/INVALID_8D_WORKER_LOSS_ARGUMENTS/);
   assert.throws(()=>parseWorkerLossArgs8D(['--child-crash','extra']),/INVALID_8D_WORKER_LOSS_ARGUMENTS/);
+});
+
+test('8D worker-loss launcher reuses DPAPI credential, fast-forwards safely, and uses PowerShell 7 entrypoint',async()=>{
+  const launcher=await readFile(launcherUrl,'utf8');
+  const cmd=await readFile(cmdUrl,'utf8');
+  assert.match(launcher,/management-token\.dpapi/);
+  assert.match(launcher,/git merge --ff-only/);
+  assert.match(launcher,/transaction-worker-loss-8d\.mjs/);
+  assert.match(launcher,/--allow-run/);
+  assert.match(launcher,/OPERA_8D_MANAGEMENT_TOKEN = \$null/);
+  assert.doesNotMatch(launcher,/OPERA_8D_PUBLISHABLE_KEY/);
+  assert.match(cmd,/pwsh\.exe/i);
+  assert.doesNotMatch(cmd,/powershell\.exe/i);
 });
