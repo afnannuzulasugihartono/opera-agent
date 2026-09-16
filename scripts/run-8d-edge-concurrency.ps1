@@ -87,6 +87,7 @@ try {
 
   $opened = $false
   & deno run `
+    --node-modules-dir=auto `
     --allow-env=OPERA_8D_MANAGEMENT_TOKEN,OPERA_8D_PUBLISHABLE_KEY `
     "--allow-net=api.supabase.com,$ProjectRef.supabase.co,127.0.0.1:6276" `
     --allow-read `
