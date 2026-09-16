@@ -74,108 +74,87 @@ OFF/unowned/zero. Tests-first repair commits were:
 CircleCI pipeline #37 later passed at exact documentation head
 `a5dde1e923029b6ff057a33144983998970a03b4`.
 
-## 2026-09-16 independent concurrency review
+## Independent concurrency review and routing evidence repair
 
-Fresh Jules session `16177705161344454955` audited exact head
-`a5dde1e923029b6ff057a33144983998970a03b4`, bound CircleCI #37 SUCCESS, ran a
-read-only code audit/local verification, and returned **CONDITIONAL PASS**.
+Jules session `16177705161344454955` audited exact head
+`a5dde1e923029b6ff057a33144983998970a03b4` and returned **CONDITIONAL PASS**
+because the acceptance procedure used the phrase "multiple real Edge workers" but
+the runner did not expose worker/isolate identity.
 
-All reviewed safety/contract areas passed except the frozen phrase
-"multiple real Edge workers". Eight parallel real Edge requests prove hosted
-concurrency but did not independently prove distinct worker/isolate handling.
-Jules explicitly stated that live concurrency remained blocked until one of these
-conditions was satisfied:
+The project implemented the requested bounded routing evidence tests-first:
 
-1. record/assert bounded response-header routing evidence such as `cf-ray` or
-   `x-deno-execution-id` (with optional region/timing metadata); or
-2. formally waive/reinterpret the frozen wording.
-
-The project chose technical evidence, not a governance waiver.
-
-## Tests-first routing-trace evidence repair
-
-The smallest bounded repair is acceptance infrastructure only:
-
-- `2b60f0e6e558a676063c2bf0421a9dff8d63bba8` — tests first require routing-trace
-  evidence, fail-closed behavior, and non-disclosure of raw header values;
-- `9d46c636cd092537563d6f2fe8dbef6b9286dccc` — new pure helper
+- `2b60f0e6e558a676063c2bf0421a9dff8d63bba8` — test contract requires routing
+  evidence, fail-closed missing-evidence behavior, and no raw header disclosure;
+- `9d46c636cd092537563d6f2fe8dbef6b9286dccc` — pure helper
   `tests/helpers/transaction-edge-routing-evidence-8d.mjs`;
 - `d6e9f18ba9f3c80c0326af4241635e573662975a` — runner integration.
 
-The helper only inspects allowlisted request-routing headers in memory:
+The helper inspects only allowlisted request/execution routing headers in memory:
 `x-deno-execution-id` and `cf-ray`, with optional `x-sb-edge-region` summary. It
 requires exactly eight response samples and at least two distinct values from one
-strong routing-trace header. If no such evidence exists it fails closed with
-`8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING`.
-
-Raw header values are never returned or logged. Receipts record only nonsecret
-summary fields such as selected header name, sample count, number of distinct
-routing traces, and region-count summary. Both prepare and cancel phases must have
-`distinctRoutingTraces >= 2` before acceptance can continue.
-
-This repair does **not** claim that distinct routing traces alone prove distinct
-Deno isolates. It implements exactly the smallest bounded evidence requested by
-the first independent reviewer so the reviewer can adjudicate it again. It changes
-no Edge function, migration/schema, public MCP/runtime, extension, signing,
-pairing, protocol, OAuth semantics, or browser authority.
+allowlisted trace header. Missing evidence fails closed. Raw values are never
+returned or logged; receipts expose only header name and counts. Both prepare and
+cancel phases must satisfy the bound.
 
 Exact documentation head `e8b68b31e50220bd4591dae6c4713e7db4b11af3`
-received CircleCI pipeline #42 SUCCESS and Vercel SUCCESS.
+received CircleCI #42 SUCCESS and Vercel SUCCESS. Jules re-reviewed that exact head,
+reported 321 local tests passing, and again returned **CONDITIONAL PASS** because
+`x-deno-execution-id` and `cf-ray` prove distinct request/execution traces but not
+provider-internal V8-isolate/process identity.
 
-## 2026-09-16 independent routing-evidence re-review
+## 2026-09-16 canonical concurrency clarification
 
-The same independent Jules reviewer re-reviewed exact head
-`e8b68b31e50220bd4591dae6c4713e7db4b11af3`, explicitly bound CircleCI #42
-SUCCESS/Vercel SUCCESS, inspected the routing-evidence diff, adjudicated header
-semantics, and reported 321 local tests passing. The final verdict remained
-**CONDITIONAL PASS**.
+A direct comparison against the canonical `docs/milestone-8-plan.md` found that the
+frozen Checkpoint 8D acceptance contract does **not** require externally proving
+"multiple real Edge workers". The canonical acceptance criteria require:
 
-The reviewer found the repair safe and bounded, but concluded it does **not**
-close the frozen "multiple real Edge workers" condition:
+- worker death before browser dispatch to be safely reclaimable;
+- exact redelivery/idempotency and nonce durability;
+- exact rate/queue/concurrency/payload/retention bounds;
+- crypto/tenant/policy/advisor/cleanup guarantees.
 
-- `x-deno-execution-id` demonstrates distinct hosted Edge function executions,
-  not a stable worker-process/V8-isolate identity;
-- `cf-ray` demonstrates distinct Cloudflare request/routing traces, not backend
-  Deno worker/isolate identity;
-- therefore `distinctCount >= 2` is valid evidence that separate real requests /
-  executions reached the hosted Edge path, but is not proof that distinct workers
-  or isolates handled them.
+The phrase "Concurrent cloud races (multiple real Edge workers)" existed only in
+`docs/milestone-8-checkpoint-8d-acceptance-procedure.md`, a later procedural aid.
+It accidentally strengthened the provider-observability requirement beyond the
+reviewed milestone plan.
 
-The reviewer explicitly did **not** authorize the live concurrency probe. Its
-suggested smallest remaining resolution was a formal governance clarification that
-8 simultaneous authenticated requests with distinct execution traces plus exact
-1-winner/7-replay convergence are accepted as the operational interpretation of
-"multiple real Edge workers/requests".
+Commit `6f470bb9626aec5a0d60c1176af471f89558cbed` corrects the procedure to the
+canonical plan instead of waiving the plan. The hosted concurrency gate is now
+explicitly defined as eight simultaneous authenticated real-Edge requests per
+raced operation, distinct hosted request/execution traces, convergent metadata,
+exact one-winner/seven-replay behavior, bounded responses, fail-closed fencing,
+and zero browser dispatch.
 
-That suggestion is **not applied automatically**. The current acceptance wording
-is frozen and no project-lead/user decision has authorized weakening or
-reinterpreting it. Writer self-approval is not sufficient. Until governance is
-explicitly changed or stronger bounded evidence of actual worker/isolate diversity
-is found and independently accepted, `RUN_8D_EDGE_CONCURRENCY.cmd` remains
-blocked.
+The correction explicitly forbids claiming that trace diversity proves N distinct
+Deno workers or V8 isolates. It changes no milestone plan, runtime code, Edge
+function, database schema, public MCP surface, extension, OAuth behavior, signing,
+pairing, protocol, or browser authority.
+
+This is a plan-alignment correction, not writer self-approval of a weaker security
+contract. It must receive exact-head CI and a fresh independent review before any
+live concurrency probe.
 
 ## Exact next sequence
 
-1. Require exact-head CI SUCCESS for the documentation head that records this
-   re-review result.
-2. Do **not** run `RUN_8D_EDGE_CONCURRENCY.cmd`; the independent verdict is still
-   CONDITIONAL PASS.
-3. Do not silently amend the frozen requirement. The next substantive decision is
-   either:
-   - obtain explicit project-lead/user governance approval to redefine the
-     acceptance phrase operationally as reviewer suggested; or
-   - find a bounded, non-invasive source of actual worker/isolate identity or
-     equivalent evidence and have it independently reviewed.
-4. Any temporary static Edge master enablement remains prohibited until a future
-   independent PASS authorizes the live probe and the master-state procedure is
-   explicitly reviewed.
-5. After any future reviewed live PASS, re-query policy/operator/host and every
-   synthetic table for OFF/unowned/zero cleanup.
-6. Continue only remaining 8D crypto/authenticated cross-tenant/session negatives
-   and unresolved quantitative evidence, then advisor reconciliation.
-7. Write final `docs/milestone-8-checkpoint-8d-acceptance.md` and obtain final
-   independent 8D audit PASS.
-8. Only final 8D PASS permits 8E.
+1. Require CircleCI/Vercel SUCCESS for the latest exact documentation head after
+   this context/handoff update.
+2. Obtain a fresh Jules independent re-review bound to that exact head. Reviewer
+   must explicitly verify that the procedure correction is faithful to canonical
+   `docs/milestone-8-plan.md`, does not weaken the actual 8D acceptance criteria,
+   and does not overclaim worker/isolate evidence.
+3. Only reviewer verdict **PASS** authorizes exactly one fresh
+   `RUN_8D_EDGE_CONCURRENCY.cmd` live probe.
+4. Before that live probe, any temporary static Edge master enable/restore
+   procedure must be explicit and independently reviewed; never silently mutate
+   production configuration.
+5. After any reviewed live PASS, immediately re-query policy/operator/host and all
+   synthetic tables for OFF/unowned/zero cleanup.
+6. Continue only remaining 8D real-key crypto tamper negatives, authenticated
+   cross-tenant/session negatives, unresolved quantitative/rate evidence, and
+   advisor reconciliation.
+7. Write final `docs/milestone-8-checkpoint-8d-acceptance.md` with exact SHA, CI,
+   probe receipts, advisor reconciliation, and clean-state evidence.
+8. Obtain the final independent 8D audit PASS. Only final PASS permits 8E.
 
 ## Invariants and user-local state
 
