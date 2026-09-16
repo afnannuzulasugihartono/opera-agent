@@ -1,6 +1,53 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-14
+Last synchronized: 2026-09-16
+
+## 2026-09-16 — hosted child-worker-loss acceptance candidate
+
+Checkpoint 8D remains **IN PROGRESS** and 8E has not started. The manual PKCE
+acceptance completed successfully earlier in the user-driven Windows run at
+`80e44483f2cdba400681dc6279522d0d55d24c98`; OAuth consent remains connection
+authorization only and granted no browser/transaction approval. Subsequent
+read-only/fixed synthetic production checks observed policy `OFF`, host false,
+operator unowned, legacy/agent flags false, and zero 8D synthetic rows after
+cleanup. The user also restored the static Edge master secret to `false` after the
+PKCE run; its plaintext value is not readable through the available connector.
+
+The branch later advanced to `d1fcce9cf2e44c7f15a154e3cee32a5e56d06377`
+with a native minute-rollover regression and the live acceptance procedure. This
+session then began the still-open hosted process-death gate with tests before the
+acceptance helper:
+
+- `d6ac1ec8395293536a7e8d7fb461e62df06afde6` — test contract for the missing
+  hosted child-worker-loss runner;
+- `c04f086f029d4745f29bfcfb7f8a003b7d122188` — bounded fixed-project Deno
+  worker-loss probe candidate;
+- `0deb03db0df86929a846ec96ac1b99772d6156f3` — launcher contract;
+- `fefe2cbe8c5c51d55e20833ea8249364df0d59b1` — PowerShell 7 DPAPI launcher;
+- `8b621451e5c41b6a49c081f0b98079430f263208` — one-click
+  `RUN_8D_WORKER_LOSS.cmd` entrypoint.
+
+The new probe is acceptance/test infrastructure only. It uses the existing scoped
+Management bearer from DPAPI, fixed project/fixed SQL, a synthetic tenant, the
+reviewed operator epoch fence, a real child Deno process that arms a 30-second DB
+lease and exits with a sentinel code, natural lease expiry, second-worker reclaim,
+stale transaction-epoch rejection, one-shot nonce consumption, exact finalize
+redelivery, one commit slot/rate debit, cancellation, fenced cleanup, and final
+OFF/zero verification. It contains no OAuth path, browser primitive, extension/MCP
+change, public schema/grant change, arbitrary user SQL, or secret printing. The
+launcher fast-forwards the milestone branch only when the worktree is clean and
+requires PowerShell 7; it never enables the static Edge master secret.
+
+Focused source/parser tests for the new runner passed 2/2 in the assistant's
+isolated syntax/test check. That is not a substitute for repository CI. At this
+documentation synchronization, exact-head CircleCI for the implementation chain
+was still pending; therefore the worker-loss live probe has **not** been run and
+has **not** been independently accepted. Per the frozen 8D procedure, the next
+boundary is exact-head CI green plus an independent review of this acceptance
+candidate. Only after that PASS may the user run `RUN_8D_WORKER_LOSS.cmd` once.
+Do not start 8E or call 8D accepted before the remaining cloud matrix, advisor
+reconciliation, final cleanup evidence, acceptance record, and independent final
+8D audit are complete.
 
 ## Latest 8D follow-up audit repair
 
@@ -227,7 +274,7 @@ Properties:
 
 - any pending dirty manifest blocks every fresh namespace with `8D_RECOVERY_REQUIRED`;
 - more than one dirty manifest fails closed with `8D_MULTIPLE_DIRTY_MANIFESTS`;
-- ownership rechecks the global pending state after acquiring the local control lease;
+- ownership rechecks global pending state after acquiring the local control lease;
 - recovery requires the requested namespace to match the globally pending manifest;
 - existing live-PID fencing and exact nonsecret cleanup manifest remain intact.
 
