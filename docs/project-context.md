@@ -115,26 +115,62 @@ routing traces, and region-count summary. Both prepare and cancel phases must ha
 
 This repair does **not** claim that distinct routing traces alone prove distinct
 Deno isolates. It implements exactly the smallest bounded evidence requested by
-the independent reviewer so the reviewer can adjudicate it again. It changes no
-Edge function, migration/schema, public MCP/runtime, extension, signing, pairing,
-protocol, OAuth semantics, or browser authority.
+the first independent reviewer so the reviewer can adjudicate it again. It changes
+no Edge function, migration/schema, public MCP/runtime, extension, signing,
+pairing, protocol, OAuth semantics, or browser authority.
 
-At code head `d6e9f18ba9f3c80c0326af4241635e573662975a`, CircleCI pipeline #40 is
-currently pending and Vercel is green. Do not run the live concurrency launcher
-while CI or re-review is open.
+Exact documentation head `e8b68b31e50220bd4591dae6c4713e7db4b11af3`
+received CircleCI pipeline #42 SUCCESS and Vercel SUCCESS.
+
+## 2026-09-16 independent routing-evidence re-review
+
+The same independent Jules reviewer re-reviewed exact head
+`e8b68b31e50220bd4591dae6c4713e7db4b11af3`, explicitly bound CircleCI #42
+SUCCESS/Vercel SUCCESS, inspected the routing-evidence diff, adjudicated header
+semantics, and reported 321 local tests passing. The final verdict remained
+**CONDITIONAL PASS**.
+
+The reviewer found the repair safe and bounded, but concluded it does **not**
+close the frozen "multiple real Edge workers" condition:
+
+- `x-deno-execution-id` demonstrates distinct hosted Edge function executions,
+  not a stable worker-process/V8-isolate identity;
+- `cf-ray` demonstrates distinct Cloudflare request/routing traces, not backend
+  Deno worker/isolate identity;
+- therefore `distinctCount >= 2` is valid evidence that separate real requests /
+  executions reached the hosted Edge path, but is not proof that distinct workers
+  or isolates handled them.
+
+The reviewer explicitly did **not** authorize the live concurrency probe. Its
+suggested smallest remaining resolution was a formal governance clarification that
+8 simultaneous authenticated requests with distinct execution traces plus exact
+1-winner/7-replay convergence are accepted as the operational interpretation of
+"multiple real Edge workers/requests".
+
+That suggestion is **not applied automatically**. The current acceptance wording
+is frozen and no project-lead/user decision has authorized weakening or
+reinterpreting it. Writer self-approval is not sufficient. Until governance is
+explicitly changed or stronger bounded evidence of actual worker/isolate diversity
+is found and independently accepted, `RUN_8D_EDGE_CONCURRENCY.cmd` remains
+blocked.
 
 ## Exact next sequence
 
-1. Require CircleCI SUCCESS for the latest exact branch head after durable docs.
-2. Obtain a fresh independent Jules review of the routing-evidence repair. The
-   reviewer must bind the exact head and explicitly decide whether the bounded
-   `cf-ray` / `x-deno-execution-id` evidence resolves its prior condition.
-3. Only a final reviewer verdict **PASS** authorizes one new live
-   `RUN_8D_EDGE_CONCURRENCY.cmd` probe. CONDITIONAL PASS or FAIL remains blocked.
-4. Any temporary static Edge master enablement must be explicit and reviewed; do
-   not silently change production secrets/settings.
-5. After any reviewed live PASS, re-query policy/operator/host and every synthetic
-   table for OFF/unowned/zero cleanup.
+1. Require exact-head CI SUCCESS for the documentation head that records this
+   re-review result.
+2. Do **not** run `RUN_8D_EDGE_CONCURRENCY.cmd`; the independent verdict is still
+   CONDITIONAL PASS.
+3. Do not silently amend the frozen requirement. The next substantive decision is
+   either:
+   - obtain explicit project-lead/user governance approval to redefine the
+     acceptance phrase operationally as reviewer suggested; or
+   - find a bounded, non-invasive source of actual worker/isolate identity or
+     equivalent evidence and have it independently reviewed.
+4. Any temporary static Edge master enablement remains prohibited until a future
+   independent PASS authorizes the live probe and the master-state procedure is
+   explicitly reviewed.
+5. After any future reviewed live PASS, re-query policy/operator/host and every
+   synthetic table for OFF/unowned/zero cleanup.
 6. Continue only remaining 8D crypto/authenticated cross-tenant/session negatives
    and unresolved quantitative evidence, then advisor reconciliation.
 7. Write final `docs/milestone-8-checkpoint-8d-acceptance.md` and obtain final
