@@ -43,7 +43,7 @@ function Set-StaticMasterValue {
     [Parameter(Mandatory)][ValidateSet('true','false')][string]$Value,
     [Parameter(Mandatory)][string]$Credential
   )
-  $payload = @(@{ name = $MasterSecretName; value = $Value }) | ConvertTo-Json -Compress
+  $payload = ConvertTo-Json -InputObject @(@{ name = $MasterSecretName; value = $Value }) -Compress
   $headers = @{
     Authorization = "Bearer $Credential"
     Accept = 'application/json'
