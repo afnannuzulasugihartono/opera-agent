@@ -1,15 +1,16 @@
-# Checkpoint 8D — acceptance record candidate
+# Checkpoint 8D — acceptance record
 
-Date: 2026-09-16
+Date: 2026-09-17
 
-Status: **LIVE ACCEPTANCE EVIDENCE COMPLETE; FINAL CI + INDEPENDENT OVERALL AUDIT PENDING.**
-Checkpoint 8D is not yet marked accepted and Checkpoint 8E remains prohibited until the final independent 8D audit returns PASS on the exact documentation head.
+Status: **ACCEPTED — FINAL INDEPENDENT OVERALL AUDIT PASS.**
+Checkpoint 8E has not started. Before any 8E implementation change, the documentation-only acceptance closeout commit containing this status must complete its exact-head CI/status checks successfully.
 
 ## Frozen boundary
 
 - Repository: `afnannuzulasugihartono/opera-agent`
 - Branch: `feat/semantic-runtime-1.6.0`
 - Live-probe exact runtime head: `cf645799968458d55d5c2b391a5d354c369337b6`
+- Final independently audited documentation head: `d0ce3c42c076e3c60d61a2a72150e57371cf8a09`
 - Stable extension: `1.6.0`
 - Protocol: `1`
 - Public browser capabilities: `26`
@@ -154,7 +155,7 @@ Supabase remediation references for the observed advisory classes:
 
 ## Canonical 8D acceptance mapping
 
-The evidence chain now covers the frozen `docs/milestone-8-plan.md` 8D acceptance classes:
+The evidence chain covers the frozen `docs/milestone-8-plan.md` 8D acceptance classes:
 
 - direct private-role denial and tenant isolation: accepted 8D SQL/host candidate and negative suites;
 - cross-tenant claims/reads/cancel/approval/commit-slot rejection: accepted negative suites;
@@ -168,13 +169,29 @@ The evidence chain now covers the frozen `docs/milestone-8-plan.md` 8D acceptanc
 - advisor gate: no 8D-introduced relevant ERROR/WARN;
 - post-probe OFF/dark + zero synthetic rows: independently verified above.
 
-This record does not broaden any authority and does not promote `DARK`/`ENFORCED` agent-facing transaction execution.
+This acceptance does not broaden any authority and does not promote `DARK`/`ENFORCED` agent-facing transaction execution.
 
-## Remaining closeout gate
+## Final independent overall audit — PASS
 
-1. Treat the final documentation commit containing this record plus synchronized context/handoff as the new exact audit head.
-2. Require CI/status checks on that exact head to be green. Pending/in-progress => STOP. A real test failure => diagnose only that failure.
-3. Obtain a fresh independent **overall Checkpoint 8D** read-only audit on the exact documentation head. It must reconcile the canonical plan against the full evidence chain, verify no source/runtime authority drift, verify post-probe cleanup/advisors, and return exactly PASS / CONDITIONAL PASS / FAIL.
-4. Only a final **PASS** may mark Checkpoint 8D accepted and permit starting 8E.
+Jules session `17943137394205042765` performed the final independent read-only overall Checkpoint 8D audit on exact documentation head `d0ce3c42c076e3c60d61a2a72150e57371cf8a09`.
 
-Until then: **8D IN PROGRESS; 8E NOT STARTED.**
+The reviewer independently verified:
+
+- exact documentation head matched;
+- repository working tree was clean;
+- `324/324` tests passed;
+- the canonical Checkpoint 8D acceptance criteria reconciled against the recorded evidence and codebase state;
+- the audit remained read-only with zero repository diffs/artifacts;
+- CircleCI #65 and Vercel were SUCCESS for the audited head.
+
+Final gate verdict: **PASS**.
+
+That PASS authorizes marking Checkpoint 8D accepted. Checkpoint 8E is the next checkpoint, but no 8E implementation starts until the acceptance-only documentation closeout head below has green CI/status checks.
+
+## Durable closeout gate before 8E implementation
+
+1. Commit this final PASS plus synchronized project context and handoff as documentation-only acceptance closeout.
+2. Require CI/status checks green on the resulting exact head. Pending/queued/in-progress => STOP. A real test failure => diagnose only that failure.
+3. When those checks are green, Checkpoint 8D is durably closed and the next user-directed checkpoint may begin 8E.
+
+Do not rerun `RUN_8D_EDGE_CONCURRENCY.cmd`; its reviewed one-run authorization was consumed by the successful PASS.
