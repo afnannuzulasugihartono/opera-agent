@@ -124,9 +124,9 @@ review findings, and independently reviewed **PASS** at revision
 `11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`. See
 `docs/milestone-8-plan-codex-review.md`.
 
-## Milestone 8+
+## Milestone 8
 
-Status: **8A–8D accepted. Checkpoint 8D completed its final independent overall audit PASS, live hosted acceptance, production cleanup, advisor reconciliation, and exact-head closeout CI successfully. 8E has not started.** Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
+Status: **8A–8D accepted. Checkpoint 8D completed its final independent overall audit PASS, live hosted acceptance, production cleanup, advisor reconciliation, and exact-head closeout CI successfully. 8E has not started and is intentionally paused while the user-selected Performance Track P runs.** Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
 
 Checkpoint 8A freezes `OA_TRANSACTION_V1`, `OA_ACTION_PROVENANCE_V1`, and `OA_APPROVAL_V1`, the complete 18-tool enforcement matrix, dual-era approval bindings, deterministic digest vectors, and a 74-case hostile corpus. It is contract/tests/docs only and changes no runtime, production state, MCP surface, extension, OAuth configuration, or signing. Acceptance record: `docs/milestone-8-checkpoint-8a.md`.
 
@@ -134,15 +134,59 @@ Checkpoint 8B implements the pure environment-neutral preparation layer: immutab
 
 Checkpoint 8C implements the pure provenance and approval verifier: exact authority/target/freshness fences, OAuth-user and trusted-client challenge binding, modern one-round requestState/inputResponses verification, TTL and consumed-nonce rejection, and deterministic consumption claims. Durable one-shot CAS remains 8D work. Acceptance record: `docs/milestone-8-checkpoint-8c.md`.
 
-Consequential effects, direct logical-ID action addressing, planning/transactions/learned skills/parallel autonomous workers, and any broader authority require their own frozen milestone/checkpoint plans, threat models, acceptance gates, and rollback procedures. Nothing in Milestone 7 grants permission to begin or silently enable them.
+## Performance Track P — Delta-First Runtime
+
+Status: **P0 FINAL CANDIDATE — exact-head CI/status checks required; P1 not started.**
+
+The user selected this bounded performance track after 8D and before 8E so Opera
+Agent can make its existing observation/reasoning path substantially more efficient
+before adding further autonomous transaction capability.
+
+The frozen architecture is:
+
+```text
+full snapshot bootstrap
+  -> bounded semantic working state
+  -> browser signals/change epochs
+  -> semantic delta
+  -> causal invalidation
+  -> relevance gate
+  -> local continuation or compact reasoning patch
+```
+
+A full snapshot remains the fail-closed recovery primitive after navigation,
+revision gaps, restart, ambiguity, overflow, privacy transitions, or any other loss
+of safe continuity.
+
+Checkpoint sequence:
+
+- **P0** — plan freeze and machine-readable baseline/target contract;
+- **P1** — persistent bounded semantic working state;
+- **P2** — delta-first reasoning observation path;
+- **P3** — multi-signal coalescer and relevance gate;
+- **P4** — event-driven local Reactive VM execution;
+- **P5** — paired controlled + real-Opera performance/correctness acceptance.
+
+P0 changes no runtime, extension, MCP surface, database, Edge function, OAuth,
+production state, signing/pairing, or transaction authority. Its accepted pre-P0
+baseline head is `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`. P0 is accepted only when the
+exact final candidate head has successful CircleCI and Vercel/status checks.
+
+Detailed plan: `docs/delta-first-performance-plan.md`.
+P0 acceptance candidate: `docs/delta-first-performance-p0.md`.
+
+Consequential effects, direct logical-ID action addressing, broader transaction
+execution, learned skills, parallel autonomous workers, and any broader authority
+still require their own frozen milestone/checkpoint plans, threat models,
+acceptance gates, and rollback procedures. Performance work does not grant them.
 
 ## Collaboration rule
 
-- one active writer on the milestone branch;
+- one active writer on the milestone/track branch;
 - ChatGPT Web implements and accepts one checkpoint at a time;
 - chat reports are not acceptance authority until reconciled with repository/CI/production evidence;
 - temporary CI/PR state must be restored before closure;
-- Codex independently audits a complete milestone before the next milestone starts;
+- Codex independently audits a complete milestone/track when required by its frozen plan;
 - auth/authz, tenancy, encryption, signing, public MCP, extension distribution, irreversible effects, and production-schema boundaries may trigger an earlier Codex review.
 
 Authoritative policy: `AGENTS.md`.
@@ -158,4 +202,4 @@ Reusable checkpoint prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
 - Site-specific extension opcodes/selectors.
 - Direct logical-ID actions without a separately accepted milestone.
 - Automatic consequential actions without explicit authority.
-- Milestone 8 implementation before the independent Milestone 7 audit passes.
+- Checkpoint 8E while Performance Track P remains the selected active track.
