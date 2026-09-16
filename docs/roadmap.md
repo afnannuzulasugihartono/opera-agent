@@ -126,7 +126,7 @@ review findings, and independently reviewed **PASS** at revision
 
 ## Milestone 8+
 
-Status: **8A–8C accepted / 8D audited, authorized backend installed OFF, bounded probes PASS and clean; full hosted OAuth/recovery/cloud acceptance open**. Latest record: `docs/milestone-8-checkpoint-8d-cloud-install.md`. 8E not started.
+Status: **8A–8D accepted. Checkpoint 8D completed its final independent overall audit PASS, live hosted acceptance, production cleanup, advisor reconciliation, and exact-head closeout CI successfully. 8E has not started.** Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
 
 Checkpoint 8A freezes `OA_TRANSACTION_V1`, `OA_ACTION_PROVENANCE_V1`, and `OA_APPROVAL_V1`, the complete 18-tool enforcement matrix, dual-era approval bindings, deterministic digest vectors, and a 74-case hostile corpus. It is contract/tests/docs only and changes no runtime, production state, MCP surface, extension, OAuth configuration, or signing. Acceptance record: `docs/milestone-8-checkpoint-8a.md`.
 
