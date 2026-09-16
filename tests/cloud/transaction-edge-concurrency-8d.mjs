@@ -6,6 +6,7 @@ import { Buffer } from 'node:buffer';
 import { createCloudAcceptanceController8D } from '../helpers/transaction-cloud-controller-8d.mjs';
 import { createManagementOperatorBackend8D } from '../helpers/transaction-cloud-management-backend-8d.mjs';
 import { createFileOwnershipStore8D, createInternalOperatorTransport8D } from '../helpers/transaction-cloud-operator-8d.mjs';
+import { collectEdgeRoutingEvidence8D } from '../helpers/transaction-edge-routing-evidence-8d.mjs';
 import { createOAuthProbe, ISSUER } from '../helpers/transaction-oauth-8d.mjs';
 import { startOAuthListener } from '../helpers/transaction-oauth-listener-8d.mjs';
 import { parseAcceptanceArgs8D, SDK_SPECIFIER_8D, STATE_DIRECTORY_8D, LEASE_TTL_MS_8D } from './transaction-cloud-acceptance-8d.mjs';
@@ -48,6 +49,7 @@ export function createEdgeConcurrencyFetch8D(configuration) {
   const race=async(input,init,operation)=>{
     const copies=await Promise.all(Array.from({length:CONCURRENCY_8D},()=>baseFetch(input,{...init})));
     const results=await Promise.all(copies.map(consumeEdgeResponse));
+    const routing=collectEdgeRoutingEvidence8D(results);
     const expectedStatus=operation==='prepare'?'PREPARED':'CANCELLED';
     if(results.some(item=>item.result.status!==expectedStatus))throw new Error('8D_EDGE_RACE_STATUS_MISMATCH');
     const first=results[0].result;
@@ -57,7 +59,17 @@ export function createEdgeConcurrencyFetch8D(configuration) {
     const winners=results.filter(item=>item.result.replay===false);
     const replays=results.filter(item=>item.result.replay===true);
     if(winners.length!==1||replays.length!==CONCURRENCY_8D-1)throw new Error('8D_EDGE_RACE_NOT_EXACTLY_ONCE');
-    const phase=Object.freeze({concurrency:CONCURRENCY_8D,winners:winners.length,replays:replays.length,status:expectedStatus});
+    const phase=Object.freeze({
+      concurrency:CONCURRENCY_8D,
+      winners:winners.length,
+      replays:replays.length,
+      status:expectedStatus,
+      traceHeader:routing.traceHeader,
+      traceSamples:routing.samples,
+      distinctRoutingTraces:routing.distinctRoutingTraces,
+      regionHeader:routing.regionHeader,
+      distinctRegions:routing.distinctRegions
+    });
     evidence[operation]=phase;
     write(JSON.stringify({checkpoint:'8D',probe:'real-edge-concurrency',phase:operation,...phase,browserDispatchAllowed:false,secretsPrinted:false}));
     const winner=winners[0];
@@ -108,7 +120,8 @@ export async function runEdgeConcurrencyCli8D(configuration){
   const probe=createOAuthProbe({publicKey:configuration.publicKey,now,fetchImpl:racing.fetchImpl,verifyAccessToken:async(credential,signal)=>{
     const result=await controller.run(credential,signal);
     const evidence=racing.evidence();
-    if(evidence.prepare?.winners!==1||evidence.prepare?.replays!==CONCURRENCY_8D-1||evidence.cancel?.winners!==1||evidence.cancel?.replays!==CONCURRENCY_8D-1)
+    if(evidence.prepare?.winners!==1||evidence.prepare?.replays!==CONCURRENCY_8D-1||evidence.prepare?.distinctRoutingTraces<2||
+      evidence.cancel?.winners!==1||evidence.cancel?.replays!==CONCURRENCY_8D-1||evidence.cancel?.distinctRoutingTraces<2)
       throw new Error('8D_EDGE_CONCURRENCY_INCOMPLETE');
     return result;
   }});
@@ -121,7 +134,21 @@ export async function runEdgeConcurrencyCli8D(configuration){
   finally{listener.close();}
   if(!accepted)throw new Error('8D_EDGE_CONCURRENCY_ACCEPTANCE_INCOMPLETE');
   const evidence=racing.evidence();
-  const receipt=Object.freeze({checkpoint:'8D',probe:'real-edge-concurrency',namespace,concurrency:CONCURRENCY_8D,prepareWinners:evidence.prepare.winners,cancelWinners:evidence.cancel.winners,browserDispatchAllowed:false,clean:true,secretsPrinted:false});
+  const receipt=Object.freeze({
+    checkpoint:'8D',
+    probe:'real-edge-concurrency',
+    namespace,
+    concurrency:CONCURRENCY_8D,
+    prepareWinners:evidence.prepare.winners,
+    cancelWinners:evidence.cancel.winners,
+    prepareTraceHeader:evidence.prepare.traceHeader,
+    prepareDistinctRoutingTraces:evidence.prepare.distinctRoutingTraces,
+    cancelTraceHeader:evidence.cancel.traceHeader,
+    cancelDistinctRoutingTraces:evidence.cancel.distinctRoutingTraces,
+    browserDispatchAllowed:false,
+    clean:true,
+    secretsPrinted:false
+  });
   write(JSON.stringify(receipt));
   return receipt;
 }
