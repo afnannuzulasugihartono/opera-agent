@@ -116,7 +116,6 @@ sizes, fixed project/endpoint, fail-closed cleanup/recovery, and no secret outpu
 This candidate changes **test/acceptance infrastructure only**. It does not change
 the deployed Edge runtime, public/private database schema, migration state,
 extension, MCP runtime/schema, signing, pairing, protocol, or browser authority.
-No live concurrency probe has been run from these commits.
 
 Important evidence boundary: eight simultaneous authenticated requests to the real
 Edge endpoint prove a real hosted concurrency race only if the acceptance plan's
@@ -126,19 +125,56 @@ so the candidate does **not** independently prove eight different isolates. An
 independent reviewer must explicitly adjudicate this before any production run.
 Do not overclaim this evidence.
 
-At this synchronization, exact-head CircleCI for the concurrency candidate is
-still `pending` (CircleCI pipeline `/32`); Vercel is green. Therefore no production
-concurrency mutation is authorized yet.
+### First live launch attempt failed before runner execution
+
+After CircleCI pipeline `/33` reported SUCCESS at documentation head
+`cb75febf873542795e5d15bee96ad17dd97b32d1`, the user invoked
+`RUN_8D_EDGE_CONCURRENCY.cmd` before the still-required independent review.
+The launcher synchronized to that exact head and then Deno failed while resolving
+`npm:@supabase/supabase-js@2.57.4`:
+
+`Could not find a matching package ... in the node_modules directory`.
+
+Root cause: this repository has a root `package.json` and no root `deno.json`, so
+current Deno defaults npm resolution to manual `node_modules` mode. The Supabase
+SDK is intentionally pinned in the acceptance runner but is not a package.json
+application dependency. Therefore the failure occurred during module resolution,
+before the runner's `main()` executed, before production preflight/OAuth/fixture
+mutation, and before any concurrency request.
+
+Fresh read-only Supabase verification after the failure observed policy `OFF`,
+`legacy_gated=false`, `agent_commit_enabled=false`, operator and namespace
+unowned, `host_enabled=false`, `lease_until=null`, epoch `2`, all synthetic 8D
+transaction tables zero, and `opera_agent_private.goal_heads` zero. No recovery
+namespace exists and no recovery command is required.
+
+The dependency-resolution repair was again tests-first:
+
+- `f98964f11dc9c6e9651cce203d8f02154f3d8be1` — regression contract requiring
+  the launcher to explicitly select Deno automatic npm resolution and forbidding
+  package-manager install commands;
+- `f493aed0afa17c3833c79f8f82dcddd51c656152` — launcher-only fix adding
+  `--node-modules-dir=auto` to `deno run`.
+
+The fix follows current Deno guidance for missing packages in projects that use a
+`package.json`, while keeping the pinned SDK specifier unchanged. It does not run
+`deno install`, does not modify `package.json`, and does not change Edge runtime,
+OAuth semantics, database schema, MCP, extension, or browser authority.
+
+At the repair implementation head, CircleCI pipeline `/35` is still `pending`;
+Vercel is green. This documentation head also requires exact-head CI SUCCESS.
+The failed launch is **not** concurrency acceptance evidence and does not waive the
+independent-review gate.
 
 ## Exact next 8D sequence
 
-1. Wait for exact-head CircleCI on the final documentation head and require
-   SUCCESS.
-2. Obtain an independent review PASS of the Edge-concurrency candidate/launcher.
-   The reviewer must explicitly decide whether concurrent calls to the real Edge
-   endpoint sufficiently satisfy the frozen "multiple real Edge workers" gate or
-   whether bounded worker/isolate identity evidence must be added first.
-3. Do not run `RUN_8D_EDGE_CONCURRENCY.cmd` until both CI and independent review
+1. Require exact-head CircleCI SUCCESS for the final documentation/repair head.
+2. Obtain an independent review PASS of the Edge-concurrency candidate and the
+   Deno dependency-resolution repair. The reviewer must explicitly decide whether
+   concurrent calls to the real Edge endpoint sufficiently satisfy the frozen
+   "multiple real Edge workers" gate or whether bounded worker/isolate identity
+   evidence must be added first.
+3. Do not rerun `RUN_8D_EDGE_CONCURRENCY.cmd` until both CI and independent review
    are green and any required static-master arrangement is explicitly reviewed.
 4. After a reviewed live concurrency PASS, re-query production OFF/unowned/zero.
 5. Continue only the remaining 8D matrix: real-key crypto tamper negatives,
