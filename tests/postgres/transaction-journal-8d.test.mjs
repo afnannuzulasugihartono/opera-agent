@@ -353,6 +353,14 @@ test('8D pending/rate/payload quotas reject atomically without extra rows', asyn
   assert.equal(await query(`select count(*) from ${P}.runs where transaction_id in ('quota_8','payload','rate');`), '0');
 });
 
+test('8D rate window resets on minute rollover allowing prepare after expiry', async () => {
+  const name = 'rollover'; await setupScope(name);
+  await query(`update ${P}.rates set prepares=20,window_start=date_trunc('minute',clock_timestamp()) - interval '2 minutes' where tenant_id='${name}';`, 'postgres');
+  await query(scoped(`select ${create('rollover_0')};`, name));
+  assert.equal(await query(`select prepares from ${P}.rates where tenant_id='${name}';`), '1');
+  assert.equal(await query(`select count(*) from ${P}.runs where tenant_id='${name}';`), '1');
+});
+
 test('8D journal status is a closed frozen vocabulary even for privileged writes', async () => {
   await fails(`update ${P}.journal set status='PROVED_BY_PAGE';`,'check constraint','postgres');
 });
