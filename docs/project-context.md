@@ -49,118 +49,118 @@ Installed migrations include:
 The isolated `opera-agent-transactions-8d` function was most recently observed
 ACTIVE, JWT-required, production version 20, reviewed bundle hash
 `96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1`.
-Opera Agent browser connectivity was re-detected through Supabase, not Opera
-Browser Connector: paired product `Opera Agent`, version 1.6.0, protocol 1,
-26 capabilities.
+Its source keeps a static `OPERA_AGENT_TRANSACTION_DARK_8D === "true"` kill switch
+and, even when true, still requires the independent service-only DB operator host
+gate before the transaction host is reachable.
 
 ## Real Edge concurrency candidate
 
-The existing acceptance candidate sends eight simultaneous authenticated POSTs to
-the fixed real 8D Edge endpoint on the first `prepare` and first `cancel`, requiring
-one non-replay winner, seven exact replays, metadata convergence, bounded 32 KiB
+The acceptance candidate sends eight simultaneous authenticated POSTs to the fixed
+real 8D Edge endpoint on first `prepare` and first `cancel`, requiring one
+non-replay winner, seven exact replays, metadata convergence, bounded 32 KiB
 responses, fenced ownership/recovery, browser dispatch false, and no secret output.
-It changes acceptance/test infrastructure only.
 
 The first user launch at documentation head `cb75feb...` failed before runner
 execution because Deno could not resolve pinned
-`npm:@supabase/supabase-js@2.57.4` under manual node_modules mode. No OAuth or
-fixture/production mutation occurred and fresh production verification remained
-OFF/unowned/zero. Tests-first repair commits were:
+`npm:@supabase/supabase-js@2.57.4`. No OAuth or fixture/production mutation
+occurred. Tests-first repair commits were:
 
 - `f98964f11dc9c6e9651cce203d8f02154f3d8be1` — regression contract;
 - `f493aed0afa17c3833c79f8f82dcddd51c656152` — launcher adds
-  `--node-modules-dir=auto` without `deno install` or package.json changes.
+  `--node-modules-dir=auto` without package/install changes.
 
-## Routing evidence and prior conditional reviews
-
-Tests-first routing evidence commits:
+Tests-first routing evidence commits were:
 
 - `2b60f0e6e558a676063c2bf0421a9dff8d63bba8` — routing evidence contract;
 - `9d46c636cd092537563d6f2fe8dbef6b9286dccc` — bounded helper;
 - `d6e9f18ba9f3c80c0326af4241635e573662975a` — runner integration.
 
-The helper inspects only allowlisted `x-deno-execution-id` / `cf-ray` values in
-memory, requires exactly eight response samples and at least two distinct trace
-values for prepare and cancel, fails closed when evidence is missing, and never
-returns/logs raw header values.
+The helper inspects only allowlisted request/execution trace headers in memory,
+requires exactly eight samples and at least two distinct traces, fails closed when
+missing, and never returns/logs raw trace values.
 
-Jules session `16177705161344454955` returned CONDITIONAL PASS at
-`a5dde1e923029b6ff057a33144983998970a03b4`, and again at
-`e8b68b31e50220bd4591dae6c4713e7db4b11af3` after the routing-evidence repair.
-The second review correctly concluded that trace uniqueness proves distinct hosted
-requests/executions, not distinct Deno worker/V8-isolate identities.
+## Canonical concurrency procedure correction and PASS
 
-## Canonical concurrency procedure correction
+The canonical `docs/milestone-8-plan.md` requires safe worker-death reclaim,
+redelivery/nonce durability, and exact rate/queue/concurrency/payload/retention
+bounds. It does not require external proof of provider-internal V8-isolate IDs.
 
-A direct comparison against canonical `docs/milestone-8-plan.md` established that
-the frozen Checkpoint 8D acceptance contract does **not** require externally
-proving distinct Edge worker/V8-isolate identity. Canonical 8D requires safe
-worker-death reclaim, exact redelivery/idempotency and nonce durability, and exact
-rate/queue/concurrency/payload/retention bounds, together with the crypto, tenant,
-policy, advisor, and cleanup guarantees.
-
-The disputed phrase `Concurrent cloud races (multiple real Edge workers)` existed
-only in the later procedural aid
-`docs/milestone-8-checkpoint-8d-acceptance-procedure.md`. Commit
-`6f470bb9626aec5a0d60c1176af471f89558cbed` corrected that over-specification to
-observable hosted concurrency evidence without changing the canonical milestone
-plan or claiming provider-internal isolate identity.
-
-The corrected gate requires eight simultaneous authenticated real-Edge requests
-per raced operation, bounded distinct request/execution trace evidence, convergent
-metadata, exact one-winner/seven-replay behavior, bounded responses, fail-closed
-fencing/recovery, zero browser dispatch, and no secret output.
-
-## 2026-09-16 independent procedure-alignment re-review PASSED
+The later acceptance procedure accidentally added `multiple real Edge workers`.
+Commit `6f470bb9626aec5a0d60c1176af471f89558cbed` corrected that over-specification
+to observable hosted concurrency without changing the canonical plan or claiming
+worker/isolate identity.
 
 Jules session `16177705161344454955` independently re-reviewed exact head
-`f63bd8f52e086259ccbbf9120b240da1f9720049` after CircleCI pipeline #47 and
-Vercel both reported SUCCESS. The reviewer inspected canonical milestone authority,
-the corrected procedure, the concurrency candidate, and reported the 321-test
-local suite clean.
+`f63bd8f52e086259ccbbf9120b240da1f9720049` after CircleCI #47 and Vercel
+SUCCESS and returned **PASS**. It confirmed the corrected procedure faithfully
+restores canonical 8D concurrency requirements and that the eight-way candidate is
+a valid bounded measurement mechanism. This PASS allows moving to the separately
+required static-master arrangement review; it does not itself authorize production
+configuration mutation or 8E.
 
-Final gate verdict: **PASS**.
+## Static-master bracket candidate
 
-Decisive findings:
+The next gate is now implemented tests-first but remains **UNREVIEWED** and must not
+be used live yet.
 
-- `docs/milestone-8-plan.md` is the authoritative frozen Milestone 8 contract;
-- canonical Checkpoint 8D does not require literal distinct Deno worker/V8-isolate
-  identity proof;
-- the old `multiple real Edge workers` wording was a later acceptance-procedure
-  over-specification rather than a canonical requirement;
-- commit `6f470bb...` faithfully realigns the procedure with canonical 8D without
-  weakening a canonical safety requirement;
-- `x-deno-execution-id` / `cf-ray` remain characterized only as distinct hosted
-  request/execution traces, never worker IDs;
-- the existing 8-way concurrency candidate is a valid bounded measurement
-  mechanism for the canonical concurrency requirement;
-- no remaining code/procedure finding blocks one live concurrency probe **after**
-  the separately required static-master enable/restore arrangement is reviewed.
+Commits:
 
-This PASS authorizes moving to the static-master review gate. It does not itself
-authorize silently changing production configuration or starting 8E.
+- `714ef9dad2d9049284f3bf951528d9095b7b0535` — test contract for a fixed,
+  fail-closed static-master bracket;
+- `97a1c58ba3714455ff8d0463bf076229efdd71ae` — launcher implementation;
+- `95572c3e1fe62fae212b4899da307110b7ce95c8` — bounded procedure document.
+
+`RUN_8D_EDGE_CONCURRENCY.cmd` / `scripts/run-8d-edge-concurrency.ps1` now defines
+this normal sequence:
+
+1. synchronize a clean reviewed branch and load the Management token only from the
+   current shell or Windows-DPAPI storage;
+2. POST only the fixed secret `OPERA_AGENT_TRANSACTION_DARK_8D=false` to the fixed
+   project Management API endpoint as a fail-closed baseline;
+3. mark restoration required, then POST only the same fixed secret with value
+   `true`;
+4. run exactly one existing bounded Edge concurrency probe;
+5. in PowerShell `finally`, restore the same secret to `false`, retrying at most
+   three times;
+6. clear Management/publishable-key environment variables and fail the launcher if
+   restore did not succeed.
+
+The launcher also adds `-RestoreMasterOnly`, which only writes the fixed value
+`false` and runs no OAuth, fixture, Edge probe, or browser work. `-RecoverNamespace`
+does not enable the static master. No GET/reveal/delete secret path is introduced.
+
+Supabase's current documentation states that production Edge Function secrets are
+available immediately without function redeployment, so this bracket does not
+patch or redeploy the Edge function.
+
+Abrupt OS termination or power loss cannot guarantee execution of a local
+`finally`; in that case `-RestoreMasterOnly` is the reviewed recovery action. The
+separate DB operator host gate remains fail-closed even if the static master were
+left true temporarily.
+
+Full procedure: `docs/milestone-8-checkpoint-8d-static-master-procedure.md`.
 
 ## Exact next sequence
 
-1. Require CircleCI/Vercel SUCCESS for the latest exact documentation head after
-   this context/handoff update.
-2. Review an explicit bounded procedure for temporarily setting
-   `OPERA_AGENT_TRANSACTION_DARK_8D=true` only for one authorized concurrency
-   probe, with guaranteed restoration to `false` and fail-closed recovery. Do not
-   silently mutate the static master.
-3. Only after that static-master arrangement receives the required independent
-   review may exactly one fresh `RUN_8D_EDGE_CONCURRENCY.cmd` live probe run.
-4. If the live run emits a recovery namespace or fails after fixture creation, do
-   not blindly rerun normal mode; use only the reviewed recovery path.
-5. After the reviewed live probe, immediately restore/verify static master false,
-   policy OFF, operator/namespace unowned, host false, and all synthetic tables
-   plus `opera_agent_private.goal_heads` zero.
+1. Require CircleCI/Vercel SUCCESS for the latest exact branch head containing the
+   tests-first static-master bracket and durable docs.
+2. Obtain an independent Jules review of the exact head. Reviewer must inspect the
+   Management API authority, fixed project/name/value bounds, true/false bracket,
+   `finally` restoration, bounded retries, hard-termination recovery, DB host gate,
+   secret non-disclosure, and no browser/public-runtime widening.
+3. Only reviewer verdict **PASS** authorizes exactly one normal
+   `RUN_8D_EDGE_CONCURRENCY.cmd` live probe.
+4. If live execution reports a recovery namespace, do not blindly rerun normal
+   mode. Recover the namespace first. If static-master restoration is uncertain,
+   run only `RUN_8D_EDGE_CONCURRENCY.cmd -RestoreMasterOnly` first.
+5. Immediately after the one reviewed live probe verify static master false,
+   policy OFF, operator/namespace unowned, host false, all synthetic 8D tables
+   zero, and `opera_agent_private.goal_heads` zero.
 6. Continue only remaining 8D real-key crypto tamper negatives, authenticated
    cross-tenant/session negatives, unresolved quantitative/rate evidence, and
    advisor reconciliation.
-7. Write final `docs/milestone-8-checkpoint-8d-acceptance.md` with exact SHA, CI,
-   probe receipts, advisor reconciliation, and clean-state evidence.
-8. Obtain the final independent 8D audit PASS. Only final PASS permits 8E.
+7. Write final `docs/milestone-8-checkpoint-8d-acceptance.md` and obtain final
+   independent 8D audit PASS. Only final PASS permits 8E.
 
 ## Invariants and user-local state
 
