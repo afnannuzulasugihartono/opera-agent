@@ -65,3 +65,21 @@ test('8D real Edge concurrency launcher reuses local DPAPI credential, resolves 
   assert.match(cmd,/pwsh\.exe/i);
   assert.doesNotMatch(cmd,/powershell\.exe/i);
 });
+
+test('8D launcher brackets exactly one live probe with a fixed static-master secret and fail-closed restore',async()=>{
+  const launcher=await readFile(launcherUrl,'utf8');
+  assert.match(launcher,/\[switch\]\$RestoreMasterOnly/);
+  assert.match(launcher,/\$MasterSecretName\s*=\s*'OPERA_AGENT_TRANSACTION_DARK_8D'/);
+  assert.match(launcher,/https:\/\/api\.supabase\.com\/v1\/projects\/\$ProjectRef\/secrets/);
+  assert.match(launcher,/function Set-StaticMasterValue/);
+  assert.match(launcher,/function Restore-StaticMasterFalse/);
+  assert.match(launcher,/Set-StaticMasterValue[^\n]*-Value 'true'/);
+  assert.match(launcher,/Set-StaticMasterValue[^\n]*-Value 'false'/);
+  assert.match(launcher,/finally\s*\{[\s\S]*Restore-StaticMasterFalse/);
+  assert.match(launcher,/for\s*\(\$attempt\s*=\s*1;\s*\$attempt\s*-le\s*3;/);
+  assert.match(launcher,/StatusCode[^\n]*201/);
+  assert.match(launcher,/ConvertTo-Json/);
+  assert.doesNotMatch(launcher,/-Method\s+(?:Get|Delete)/i);
+  assert.doesNotMatch(launcher,/reveal\s*=|\breveal\b/i);
+  assert.doesNotMatch(launcher,/Write-(?:Host|Output)[^\n]*(?:\$Credential|\$token)/i);
+});
