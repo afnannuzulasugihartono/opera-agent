@@ -121,53 +121,67 @@ recovery is `RUN_8D_EDGE_CONCURRENCY.cmd -RestoreMasterOnly`. Even if the static
 master were temporarily left true, the independent DB host gate remains
 fail-closed.
 
-## Independent static-master review — PASS
+## Independent static-master review — PASS, then serialization regression found live
 
 Fresh Jules session `6098947889864439430` independently audited exact head
 `f1b2cadde60510d46b38a8f3bf5f991bfd9ba4f8`, bound to CircleCI pipeline #54
 SUCCESS and Vercel SUCCESS. The review was read-only and reported **324/324 local
-tests passing** with a clean repository.
+tests passing** with a clean repository. Final gate verdict was **PASS**.
 
-Final gate verdict: **PASS**.
+The first post-review launcher attempt at documentation head
+`71995dbc5733d872b50656d04e7bcda9bc58f9f1` stopped on the baseline `false` write
+with HTTP 403 while using the pre-existing Management PAT. No OAuth, fixture, Edge
+probe, or successful master write occurred. A replacement scoped PAT was then
+created with project scope `opera-agent`, seven-day expiry, and only
+`Edge Function Secrets: Read-write`; its value remained local and was stored under
+Windows DPAPI.
 
-The reviewer explicitly verified all ten requested invariants:
+A second launcher attempt at the same head authenticated farther but stopped on the
+same baseline `false` write with HTTP 400. Supabase's current Management API
+OpenAPI contract requires `POST /v1/projects/{ref}/secrets` to receive a JSON array
+of `{name,value}` objects. The launcher used a PowerShell pipeline
+`@(...) | ConvertTo-Json`, which enumerates a one-element array and serializes the
+single object rather than the required JSON array. Therefore the 400 occurred
+before `restoreRequired` became true and before the `true` write, OAuth, fixture,
+or concurrency probe.
 
-- fixed project/secret/value authority only;
-- write-only Management API use for the flag, with no GET/list/reveal/delete;
-- DPAPI/environment token handling, validation, clearing, and no disclosure;
-- baseline `false -> true -> one probe -> finally false` normal path;
-- `-RecoverNamespace` and `-RestoreMasterOnly` never enable the master;
-- restore attempts bounded to three and restore failure cannot report PASS;
-- hard termination may bypass local `finally`, but the documented restore-only
-  recovery plus independent DB host gate preserves canonical fail-closed authority;
-- `master=true` alone cannot execute transaction work because
-  `opera_tx_operator_host_gate_8d()` remains mandatory per request;
-- no public MCP/runtime/schema/extension/signing/pairing/protocol/browser-authority
-  widening and browser dispatch remains false;
-- tests meaningfully enforce the bracket and prohibited secret operations.
+Tests-first repair commits:
 
-This independent PASS authorizes **exactly one** future normal
-`RUN_8D_EDGE_CONCURRENCY.cmd` live probe. It does not authorize 8E.
+- `9f372e6ce6f16927233090826180f26a14fb9bd5` — regression contract requiring
+  array-preserving `ConvertTo-Json -InputObject @(...)` and rejecting the prior
+  pipeline form;
+- `07acfa962e3b9acde8a087d0d05657d3b0709f98` — minimal launcher fix preserving
+  the JSON array while leaving project, secret, authority, restore semantics,
+  browser-dispatch prohibition, and public contracts unchanged.
+
+Because this launcher controls a production-boundary static master, the repaired
+head requires exact-head CI SUCCESS and a fresh independent read-only review PASS
+before any further normal live probe. The previous one-probe authorization must
+not be treated as sufficient for the modified launcher.
 
 ## Exact next sequence
 
-1. Require CircleCI and Vercel SUCCESS for the latest exact documentation head
-   that records this PASS. If pending, stop; if failed, diagnose only that failure.
-2. After exact-head CI is SUCCESS, run exactly one normal
-   `RUN_8D_EDGE_CONCURRENCY.cmd` from the canonical Windows checkout. Do not run a
-   second normal probe without new authorization.
-3. If the live run emits a recovery namespace, recover that namespace before any
-   normal rerun. If static-master restoration is uncertain, run only
+1. Finish durable context/handoff updates for the array-serialization repair.
+2. Require CircleCI and Vercel SUCCESS on the exact resulting documentation head.
+   Pending => STOP; failed => diagnose only that failure.
+3. Obtain a fresh independent read-only review of the repaired launcher and bound
+   exact-head CI. Review must confirm the body is an array matching the Supabase
+   Management API contract and that all previously accepted static-master safety
+   invariants remain unchanged.
+4. Only a fresh review PASS may authorize one normal
+   `RUN_8D_EDGE_CONCURRENCY.cmd` live probe. Do not rerun before that PASS.
+5. If a future live run emits a recovery namespace, recover that namespace before
+   any normal rerun. If static-master restoration is uncertain, run only
    `RUN_8D_EDGE_CONCURRENCY.cmd -RestoreMasterOnly` first.
-4. Immediately after the single probe verify static master false, policy OFF,
+6. Immediately after the authorized probe verify static master false, policy OFF,
    operator/namespace unowned, host false, all synthetic 8D tables zero, and
    `opera_agent_private.goal_heads` zero.
-5. Continue only remaining 8D real-key crypto tamper negatives, authenticated
+7. Continue only remaining 8D real-key crypto tamper negatives, authenticated
    cross-tenant/session negatives, unresolved quantitative/rate evidence, and
    advisor reconciliation.
-6. Write final `docs/milestone-8-checkpoint-8d-acceptance.md` with exact SHA, CI,
+8. Write final `docs/milestone-8-checkpoint-8d-acceptance.md` with exact SHA, CI,
    probe receipts, advisor reconciliation, and clean-state evidence.
-7. Obtain the final independent 8D audit PASS. Only final PASS permits 8E.
+9. Obtain the final independent 8D audit PASS. Only final PASS permits 8E.
 
 ## Invariants and user-local state
 
