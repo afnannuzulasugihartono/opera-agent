@@ -19,145 +19,148 @@ Read first:
 2. `docs/project-context.md` and this handoff;
 3. `docs/milestone-8-plan.md`;
 4. `docs/milestone-8-checkpoint-8d-acceptance-procedure.md`;
-5. installed 8D migration/fence and the existing 8D acceptance helpers.
+5. installed 8D migration/fence and current 8D acceptance helpers.
 
 Use one active writer. Repository/CI/production evidence outranks chat summaries.
 Never paste or commit Management/OAuth/signing/pairing/crypto credentials.
 
-## Completed live evidence in the current continuation
+## Completed live evidence
 
-The user completed the reviewed manual PKCE runner on Windows/Opera and received:
+### Manual PKCE acceptance
 
-`8D PKCE ACCEPTANCE: PASS`
+The user previously completed the reviewed Windows/Opera PKCE acceptance at
+`80e44483f2cdba400681dc6279522d0d55d24c98` and received
+`8D PKCE ACCEPTANCE: PASS`. The path verified authenticated session binding while
+keeping `browserDispatchAllowed=false`. OAuth consent is connection authorization,
+not transaction approval. The static Edge master switch was restored to `false`
+afterward and must not be silently enabled by later probes.
 
-That run was at reviewed head
-`80e44483f2cdba400681dc6279522d0d55d24c98`. It proved the bounded OAuth/host
-acceptance path and zero browser dispatch; OAuth connection consent is not
-transaction approval.
+### Hosted child-worker-loss acceptance
 
-During troubleshooting, the static Edge master secret was temporarily enabled as
-required by that reviewed PKCE preflight. After the run the user explicitly
-restored `OPERA_AGENT_TRANSACTION_DARK_8D=false`. The available connector cannot
-read its plaintext value, so retain that user action as the static-master
-restoration evidence; do not silently enable it for later probes.
+The user synchronized the canonical checkout `D:\GitHub\opera-agent` to reviewed
+head `8e3c6cd6aef41d8d1fb5a46189b193e34212c377` and ran exactly one
+`RUN_8D_WORKER_LOSS.cmd` probe.
 
-Subsequent fixed/read-only and rollback-bounded production checks observed:
+Terminal verdict: `8D WORKER-LOSS ACCEPTANCE: PASS`.
+
+The nonsecret receipt proved child death, reclaim, stale-epoch rejection,
+one-shot nonce consumption, exact redelivery, one commit slot,
+`browserDispatchAllowed=false`, clean cleanup, and no secret output.
+
+A fresh read-only production verification immediately after the probe showed:
 
 - policy `OFF`;
 - `legacy_gated=false`;
 - `agent_commit_enabled=false`;
-- operator owner/namespace null;
+- operator owner and namespace null;
 - DB `host_enabled=false`;
-- all 8D synthetic transaction rows zero;
-- synthetic `goal_heads` zero;
-- ordinary-role mutation/execute grants for the 8D private boundary zero;
-- direct private mutation denial for `anon` and `authenticated`;
-- database-level cross-tenant denial/replay/idempotency/bounds/minute-rollover
-  probes passing and rolling back cleanly;
-- security advisor findings for 8D private RLS tables remain INFO; no new
-  checkpoint-specific security ERROR/WARN was identified in that readout.
+- `lease_until=null`;
+- epoch `2`;
+- every synthetic 8D transaction table zero rows;
+- `opera_agent_private.goal_heads` zero rows.
 
-These observations help the final evidence reconciliation but do **not** by
-themselves close the remaining real process-death/authenticated-cloud gates or the
-independent final audit.
+This closes the hosted child-worker-loss/reclaim gate. It is a real local child
+process death against durable hosted Supabase state; do not call it an Edge-isolate
+termination test.
 
-## New hosted child-worker-loss acceptance candidate
+## Current production facts
 
-The branch advanced from the prior reviewed PKCE head to
-`d1fcce9cf2e44c7f15a154e3cee32a5e56d06377`, which added a native minute-rollover
-regression and the current acceptance procedure.
+Supabase project `opera-agent` / `nenmkmtvjremqphfqnfw` is healthy. Installed 8D
+migrations include `20260913143306_transaction_journal_8d_dark` and
+`20260914043049_transaction_operator_fence_8d`.
 
-This continuation then implemented the previously missing **real child-process
-death against hosted Supabase DB** acceptance candidate, tests first:
+The isolated `opera-agent-transactions-8d` function was most recently observed
+ACTIVE, JWT-required, production version `20`, with reviewed bundle hash
+`96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1`.
+Historical docs may mention earlier version numbers; current production inspection
+and the bundle hash outrank those labels.
 
-- `d6ac1ec8395293536a7e8d7fb461e62df06afde6` — test contract requiring a
-  bounded/recoverable child-worker-loss runner;
-- `c04f086f029d4745f29bfcfb7f8a003b7d122188` —
-  `tests/cloud/transaction-worker-loss-8d.mjs`;
-- `0deb03db0df86929a846ec96ac1b99772d6156f3` — test contract for a one-click
-  Windows launcher;
-- `fefe2cbe8c5c51d55e20833ea8249364df0d59b1` —
-  `scripts/run-8d-worker-loss.ps1`;
-- `8b621451e5c41b6a49c081f0b98079430f263208` —
-  `RUN_8D_WORKER_LOSS.cmd`;
-- subsequent documentation commits synchronize project context/handoff only.
+Opera Agent browser connectivity was re-detected through Supabase, not Opera
+Browser Connector: paired `Opera Agent` 1.6.0, protocol 1, 26 capabilities.
 
-### What the candidate does
+## Current writer work: real Edge concurrency candidate
 
-It is test/acceptance infrastructure only, not extension/MCP/Edge runtime. It:
+After worker-loss PASS and final OFF/zero verification, the next frozen acceptance
+procedure sub-gate is concurrent cloud races against the real Edge endpoint.
 
-- uses only the existing scoped Management bearer from environment/DPAPI;
-- targets the fixed production project and fixed SQL only;
-- requires clean `OFF`, unowned, zero-synthetic state before mutation;
-- acquires the reviewed server operator epoch fence;
-- creates only a deterministic synthetic principal/transaction;
-- temporarily sets the fenced **database** host flag + policy DARK while the
-  static Edge master remains false;
-- launches a real child Deno process;
-- the child prepares, claims lease epoch 1, reaches `AWAITING_APPROVAL`, installs
-  an unconsumed synthetic nonce/approval, emits a nonsecret armed receipt, and
-  exits intentionally with sentinel code 23 without cleanup;
-- the parent verifies the lease was still live at child death, waits for natural
-  ~30-second lease expiry, reclaims as a second worker at lease epoch 2, proves a
-  stale epoch-1 transition is rejected, finalizes once, exact-redelivers once,
-  verifies nonce one-shot + one commit slot + one rate debit, then cancels;
-- `finally` restores host false + policy OFF, uses fenced exact cleanup, releases
-  the server fence, and verifies clean state;
-- if cleanup cannot complete it prints only a nonsecret recovery namespace/
-  recovery command;
-- exposes no OAuth flow, browser primitive, extension/MCP mutation, public grant,
-  generic user SQL, or secret output. `browserDispatchAllowed` stays false.
+The current writer added test/acceptance infrastructure only, tests first:
 
-The Windows launcher requires PowerShell 7, refuses a dirty worktree, safely
-fast-forwards `feat/semantic-runtime-1.6.0`, decrypts the already-stored Management
-token using Windows DPAPI, runs the probe, and clears the process environment.
-It does **not** enable `OPERA_AGENT_TRANSACTION_DARK_8D` and does not need a
-publishable key.
+- `610b5f0c818a45855cb9add118ae32b265ee1554` —
+  `tests/transaction-edge-concurrency-runner-8d.test.mjs` contract;
+- `59d13b3d790aa707c29211b2696231b0230ebd0b` —
+  `tests/cloud/transaction-edge-concurrency-8d.mjs`;
+- `12d7e5bfdb22fbe8c0dee82f7a23fb72bd03e27a` —
+  `scripts/run-8d-edge-concurrency.ps1`;
+- `ed46f9500394ea9a3893f02be6a2140215b32061` —
+  `RUN_8D_EDGE_CONCURRENCY.cmd`.
 
-Focused source/parser tests for the candidate passed 2/2 in the writer's isolated
-syntax/test check. This is not full repository acceptance.
+The candidate reuses the existing PKCE acceptance controller and existing fenced
+operator/cleanup machinery. On the first authenticated `prepare` and first
+`cancel`, it sends eight simultaneous POST requests to the fixed deployed 8D Edge
+endpoint, requiring exactly one non-replay winner and seven exact metadata
+replays. It preserves bounded response sizes, fixed target, recovery semantics,
+`browserDispatchAllowed=false`, and no secret printing.
+
+It does **not** change Edge runtime, migrations/schema, MCP, extension, public
+contract, signing, pairing, protocol, or browser authority. No live concurrency
+probe has been run.
+
+Important unresolved review question: eight simultaneous calls to the real Edge
+endpoint demonstrate a hosted concurrency race, but the current runtime exposes no
+stable per-isolate identifier. Therefore this candidate does not independently
+prove that eight distinct Edge isolates/workers handled the requests. The
+independent reviewer must explicitly decide whether this is sufficient for the
+frozen plan phrase "multiple real Edge workers". Do not overclaim the evidence and
+do not add runtime instrumentation merely to force a PASS without review.
+
+At the writer implementation head `ed46f9500394ea9a3893f02be6a2140215b32061`,
+CircleCI pipeline `/32` was still `pending`; Vercel was `success`. The final docs
+commit itself must also receive exact-head CI SUCCESS before any live probe.
 
 ## Exact next step
 
-**DO NOT RUN THE LIVE WORKER-LOSS PROBE YET.**
+**DO NOT RUN `RUN_8D_EDGE_CONCURRENCY.cmd` YET.**
 
-1. Verify exact-head CircleCI at the latest branch commit. It must be SUCCESS.
-2. Obtain an **independent review PASS** of the new worker-loss candidate and
-   launcher. Review must explicitly check fixed target/SQL, server-fence coverage,
-   real child death, natural lease expiry, stale lease-epoch rejection, nonce
-   durability, exact-redelivery single slot/debit, fail-closed cleanup/recovery,
-   no browser/OAuth authority, no secret leakage, and no public runtime changes.
-3. Only after both gates are green, have the user run exactly one normal probe by
-   double-clicking `RUN_8D_WORKER_LOSS.cmd` (or invoking the same file from a
-   terminal). Expected duration is roughly 30-45 seconds.
-4. Expected terminal result is `8D WORKER-LOSS ACCEPTANCE: PASS` plus a JSON
-   receipt showing child death, reclaim, stale epoch rejection, nonce one-shot,
-   exact redelivery, one commit slot, browser dispatch false, and clean state.
-5. If a recovery namespace is printed, do not rerun normal mode. Use:
-   `RUN_8D_WORKER_LOSS.cmd -RecoverNamespace <uuid>` after the stale server fence
-   can expire.
-6. After live PASS, re-query final production OFF/zero state and continue the
-   remaining authenticated cross-session/real Edge concurrency/crypto negative
-   matrix, advisor reconciliation, final acceptance record, and independent final
-   8D audit.
-7. Only an independent final **PASS** permits 8E.
+1. Verify exact-head CircleCI for the latest branch head. Require SUCCESS.
+2. Obtain an independent review PASS of the concurrency runner, test contract, and
+   launcher. Review must explicitly check:
+   - fixed project and exact Edge endpoint;
+   - authenticated user/session path rather than forged identity;
+   - bounded eight-way `prepare` and `cancel` races;
+   - exactly-one winner / replay semantics;
+   - fenced operator ownership and fail-closed recovery/cleanup;
+   - no browser authority or public runtime/schema change;
+   - no credential leakage;
+   - PowerShell/CLI correctness;
+   - whether the evidence actually satisfies "multiple real Edge workers" or
+     needs additional bounded evidence.
+3. Only after both CI and independent review are green may a live concurrency
+   probe be considered. Do not silently enable the static Edge master switch; any
+   required master-state change must be explicit and reviewed.
+4. After any reviewed live PASS, re-query policy/operator/host and every synthetic
+   table to prove final OFF/unowned/zero cleanup.
+5. Continue only the still-open 8D matrix: real installed-key crypto tamper
+   negatives, authenticated cross-tenant/session negatives, and any unresolved
+   quantitative evidence; then reconcile advisors.
+6. Write the final `docs/milestone-8-checkpoint-8d-acceptance.md` with exact head,
+   CI, probe receipts, advisor reconciliation, and final clean-state evidence.
+7. Obtain the independent final 8D audit. Only verdict **PASS** permits 8E.
 
-## Important scope distinctions
+## User-local note
 
-- The earlier database-level reclaim simulation is useful evidence but is not the
-  new real child-process death gate.
-- The new candidate kills a real local child worker while durable state lives in
-  the hosted Supabase DB. Do not relabel it as an Edge-isolate termination.
-- Static master `false` means the public Edge transaction host stays killed even
-  while the bounded probe temporarily exercises the private fenced DB primitives.
-- No browser dispatch exists in 8D; consequential browser execution remains later
-  checkpoint work.
-- The separate persistent MCP reliability investigation remains
-  `PERSISTENT_MCP_BLOCKED` and must not be folded into this 8D worker-loss gate.
+Before the worker-loss probe, two accidental untracked 8E files in the canonical
+Windows checkout were preserved in a Git stash named approximately
+`preserve accidental 8E files before completing checkpoint 8D`. Do not pop, apply,
+delete, or build on that stash while 8D remains open.
+
+The user's canonical checkout was clean and aligned at `8e3c6cd...` before the
+new remote concurrency commits. It will be behind the branch after this writer
+session. Do not ask the user to pull/run the concurrency launcher until the CI and
+independent-review gates above are satisfied.
 
 ## Final 8D acceptance still requires
 
-Before 8D can close, reconcile and record all required evidence from
+Before 8D can close, reconcile all evidence required by
 `docs/milestone-8-plan.md`, including direct/private denial, cross-tenant
 isolation, exact redelivery/collision, real worker death/reclaim, nonce durability,
 cancel/expiry after worker loss, quantitative/rate/concurrency/payload/retention
@@ -166,4 +169,4 @@ combinations, authenticated cloud negatives, final advisors, exact-head CI,
 production OFF/zero cleanup, acceptance documentation, and independent final
 review.
 
-Do not start 8E while any one of those required gates is open.
+Do not start 8E while any required 8D gate is open.

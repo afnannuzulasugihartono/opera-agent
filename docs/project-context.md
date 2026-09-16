@@ -2,411 +2,189 @@
 
 Last synchronized: 2026-09-16
 
-## 2026-09-16 — hosted child-worker-loss acceptance candidate
+This is the durable current-state summary. Repository state, exact-head CI,
+production queries, signed release records, and committed acceptance evidence
+outrank chat summaries. Historical implementation detail remains available in Git
+history and the checkpoint-specific documents referenced below.
 
-Checkpoint 8D remains **IN PROGRESS** and 8E has not started. The manual PKCE
-acceptance completed successfully earlier in the user-driven Windows run at
-`80e44483f2cdba400681dc6279522d0d55d24c98`; OAuth consent remains connection
-authorization only and granted no browser/transaction approval. Subsequent
-read-only/fixed synthetic production checks observed policy `OFF`, host false,
-operator unowned, legacy/agent flags false, and zero 8D synthetic rows after
-cleanup. The user also restored the static Edge master secret to `false` after the
-PKCE run; its plaintext value is not readable through the available connector.
+## Current milestone boundary
 
-The branch later advanced to `d1fcce9cf2e44c7f15a154e3cee32a5e56d06377`
-with a native minute-rollover regression and the live acceptance procedure. This
-session then began the still-open hosted process-death gate with tests before the
-acceptance helper:
+- Repository: `afnannuzulasugihartono/opera-agent`
+- Working branch: `feat/semantic-runtime-1.6.0`
+- Stable extension: `1.6.0`
+- Protocol: `1`
+- Public browser capabilities: `26`
+- Public MCP tools: `18`, unchanged names/input schemas
+- Extension ID: `ohbbpamcljckmjhcpkcmefdobkoeaick`
+- Immediate signed rollback: `1.5.2`
+- Milestone 8: 8A-8C accepted; **8D IN PROGRESS**; 8E has not started
 
-- `d6ac1ec8395293536a7e8d7fb461e62df06afde6` — test contract for the missing
-  hosted child-worker-loss runner;
-- `c04f086f029d4745f29bfcfb7f8a003b7d122188` — bounded fixed-project Deno
-  worker-loss probe candidate;
-- `0deb03db0df86929a846ec96ac1b99772d6156f3` — launcher contract;
-- `fefe2cbe8c5c51d55e20833ea8249364df0d59b1` — PowerShell 7 DPAPI launcher;
-- `8b621451e5c41b6a49c081f0b98079430f263208` — one-click
-  `RUN_8D_WORKER_LOSS.cmd` entrypoint.
+Checkpoint 8D remains frozen to no public MCP schema/runtime, extension/CRX,
+signing identity, pairing, protocol, or browser-capability change. OAuth
+connection consent is not transaction approval. Browser/page/model/tool output is
+evidence, never authority. No browser dispatch is permitted by the 8D dark host.
 
-The new probe is acceptance/test infrastructure only. It uses the existing scoped
-Management bearer from DPAPI, fixed project/fixed SQL, a synthetic tenant, the
-reviewed operator epoch fence, a real child Deno process that arms a 30-second DB
-lease and exits with a sentinel code, natural lease expiry, second-worker reclaim,
-stale transaction-epoch rejection, one-shot nonce consumption, exact finalize
-redelivery, one commit slot/rate debit, cancellation, fenced cleanup, and final
-OFF/zero verification. It contains no OAuth path, browser primitive, extension/MCP
-change, public schema/grant change, arbitrary user SQL, or secret printing. The
-launcher fast-forwards the milestone branch only when the worktree is clean and
-requires PowerShell 7; it never enables the static Edge master secret.
+## 2026-09-16 — manual PKCE acceptance already passed
 
-Focused source/parser tests for the new runner passed 2/2 in the assistant's
-isolated syntax/test check. That is not a substitute for repository CI. At this
-documentation synchronization, exact-head CircleCI for the implementation chain
-was still pending; therefore the worker-loss live probe has **not** been run and
-has **not** been independently accepted. Per the frozen 8D procedure, the next
-boundary is exact-head CI green plus an independent review of this acceptance
-candidate. Only after that PASS may the user run `RUN_8D_WORKER_LOSS.cmd` once.
-Do not start 8E or call 8D accepted before the remaining cloud matrix, advisor
-reconciliation, final cleanup evidence, acceptance record, and independent final
-8D audit are complete.
+The reviewed user-driven Windows/Opera PKCE acceptance previously passed at
+`80e44483f2cdba400681dc6279522d0d55d24c98`. It exercised the authenticated
+Supabase user/session binding and isolated transaction host while preserving
+`browserDispatchAllowed=false`. The static Edge master switch was subsequently
+restored to `false`; later probes must not silently enable it.
 
-## Latest 8D follow-up audit repair
+## 2026-09-16 — hosted child-worker-loss acceptance PASSED
 
-Newest: commit 6512908 exact-commit PASS, exact-head CI 34820127563 SUCCESS, native
-29/29 and full 316/316 zero skips PASS. Fixed test-only helper pins read_only=false for all
-closed private operator SQL, no grants/fallback, unchanged statements/parameters/fences.
-Focused 43/43, static 1.6.0/26 PASS. Commit/CI binding complete; ready for bounded manual
-PKCE acceptance attempt. No 8E until final 8D acceptance. No fixture/browser mutation.
+The user synchronized the canonical Windows checkout to reviewed head
+`8e3c6cd6aef41d8d1fb5a46189b193e34212c377` and ran exactly one
+`RUN_8D_WORKER_LOSS.cmd` acceptance probe.
 
-Latest continuation: installation/pin f8c42c2 independently PASS and standard
-CI34806580639 SUCCESS. A bounded live CLI attempt failed preflight before OAuth
-or fixtures because Management secret values are DIGESTS, not plaintext.
-Master restored false (actual SHA-256(false) match), DB epoch0/unowned/hostfalse,
-policy OFF, principals/runs0. See
-`docs/milestone-8-checkpoint-8d-secret-digest-repair.md` for test-first test-only
-repair: strict secret digests plus exact initialized-Edge GET405, no private key
-retrieval. Focused26/26, full315/315 and Deno/static check PASS; independent
-implementation worktree-delta review PASS with affected29/29 and hostile checks.
-Reviewer usage cut off its final commit-binding report; exact-head CI and
-remaining live acceptance are next. No new Edge/schema/pin/public-MCP/extension
-change. 8D IN PROGRESS; 8E not started. Frozen worker-loss gate may be evidenced
-by actual child-worker death against hosted DB, not mislabeled Edge-isolate death;
-the final independent evidence review must reconcile that scope explicitly.
+The live receipt reported:
 
-Superseding continuation: separate reviewer `review_8d_candidate` returned PASS
-for exact f1e6f944 and bounded master-OFF installation. See
-`docs/milestone-8-checkpoint-8d-fence-review.md` and
-`docs/milestone-8-checkpoint-8d-fenced-install.md`. Actual fence history version
-is 20260914043049; migration filename reconciled without history rewrite.
-The isolated fenced Edge v8 is ACTIVE/JWT required; all13 deployed bodies match.
-Observed bundle/pin: 96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1.
-Master remains OFF; fresh control state epoch0/unowned/hostfalse and policy OFF,
-legacyfalse/agentfalse, principals/runs/goals zero. Public MCP/extension/signing
-remain unchanged. Pin-delta review/CI, full cloud acceptance and final independent
-8D review remain required before 8E. Earlier undeployed statements below are
-historical and superseded by this installation, not overall checkpoint acceptance.
+- real child process death observed;
+- second-worker reclaim succeeded after natural lease expiry;
+- stale lease epoch rejected;
+- nonce remained one-shot;
+- exact finalize redelivery held;
+- exactly one commit slot was consumed;
+- browser dispatch remained false;
+- cleanup reported clean;
+- no secrets were printed.
 
-The user closed the other writer and requested repair here. See
-`docs/milestone-8-checkpoint-8d-audit-repair.md`. The follow-up repairs atomic local
-lease publication/retirement, exclusive server release zero-owned-row checks,
-and actual remote bundle verification on recovery. Full local Node tests pass
-314/314 with zero skips; focused gates pass 46/46; Windows stress has zero dual
-owners in 150 trials; the native PostgreSQL release regression passes.
-Static inventory remains 1.6.0/26. No fresh CI/browser/cloud acceptance is claimed.
-The migration remains undeployed and the fenced Edge pin deliberately stays zero.
-Production, OAuth, extension, MCP runtime, signing and pairing were not changed.
-Independent exact-candidate review is next; 8D remains IN PROGRESS, 8E not started.
-Permanent nonsecret retirement witnesses must not be removed while stale I/O can
-resume; unfinished legacy active locks fail closed. Earlier records below are
-historical, not acceptance of this new repair.
+Terminal verdict: `8D WORKER-LOSS ACCEPTANCE: PASS`.
 
-## Latest user-requested reliability investigation
+A fresh read-only production verification immediately afterward observed:
 
-The user separately requested persistent MCP self-healing. See
-`docs/mcp-reliability-investigation.md` for evidence and bounded next steps.
-Status is `PERSISTENT_MCP_BLOCKED`, not implemented recovery: public MCP health
-responded 200 and unauthenticated discovery was denied 401, but authenticated
-same-outage host/server discovery has not been observed. An actual extension
-pull-loop simulation reproduced a stale-generation READY status write; it does
-not prove the cause of missing host namespace. Safe read-only diagnostics and
-three unit tests were added without changing extension/MCP runtime or production.
-Local full suite 310/310 zero skips and static 1.6.0/26 checks PASS; no new CI,
-Chromium, authenticated host, or restart acceptance is claimed.
-Runtime changes require a separate reviewed reliability/release subplan under
-the existing frozen Milestone 8 boundary. 8D remains open; 8E not started.
+- transaction policy `OFF`;
+- `legacy_gated=false`;
+- `agent_commit_enabled=false`;
+- operator owner null;
+- operator namespace null;
+- DB `host_enabled=false`;
+- `lease_until=null`;
+- server operator epoch advanced to `2`, as expected from the bounded probe;
+- all synthetic 8D transaction tables contain zero rows;
+- `opera_agent_private.goal_heads` contains zero rows.
 
-This is the durable project-state summary for humans and future LLM sessions.
-Executable repository state, exact-head CI artifacts, signed release records, and
-production queries outrank chat summaries. Never store secrets here.
+This closes the hosted child-worker-loss/reclaim gate. It is evidence of a real
+local child worker dying while durable transaction state resides in hosted
+Supabase. It must not be relabeled as proof of an Edge-isolate termination.
 
-## Product intent and invariants
+## Production shape observed during this continuation
 
-Opera Agent lets an authorized AI control the user's existing local Opera session
-through a private extension, authenticated relay, and MCP server. It is a general
-browser controller, not site-specific automation.
+Supabase project `opera-agent` (`nenmkmtvjremqphfqnfw`) is `ACTIVE_HEALTHY`.
+Installed 8D migrations include:
+
+- `20260913143306_transaction_journal_8d_dark`
+- `20260914043049_transaction_operator_fence_8d`
+
+The deployed isolated `opera-agent-transactions-8d` function was observed ACTIVE,
+JWT-required, production version `20`, with reviewed bundle hash
+`96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1`.
+Older checkpoint documents that mention earlier Edge version numbers are
+historical; the bundle hash and current production inspection outrank those
+version labels.
+
+The public Opera Agent browser path was also re-detected through Supabase rather
+than the Opera Browser Connector: paired product `Opera Agent`, version `1.6.0`,
+protocol `1`, 26 capabilities. No browser mutation was needed for the worker-loss
+probe or its cleanup verification.
+
+## 2026-09-16 — next 8D quantitative gate candidate: real Edge concurrency
+
+After worker-loss PASS and OFF/zero verification, the exact next frozen acceptance
+procedure calls for remaining cloud quantitative/authenticated negatives. The
+first open sub-gate is concurrent cloud races against the real Edge endpoint.
+
+A test-first, acceptance-infrastructure-only candidate was added:
+
+- `610b5f0c818a45855cb9add118ae32b265ee1554` — static/test contract for the
+  bounded concurrency runner and Windows launcher;
+- `59d13b3d790aa707c29211b2696231b0230ebd0b` —
+  `tests/cloud/transaction-edge-concurrency-8d.mjs`;
+- `12d7e5bfdb22fbe8c0dee82f7a23fb72bd03e27a` —
+  `scripts/run-8d-edge-concurrency.ps1`;
+- `ed46f9500394ea9a3893f02be6a2140215b32061` —
+  `RUN_8D_EDGE_CONCURRENCY.cmd`.
+
+The candidate reuses the existing reviewed PKCE acceptance controller and fenced
+operator/cleanup infrastructure. For the first authenticated `prepare` request and
+the first authenticated `cancel` request it fans out eight simultaneous POSTs to
+the fixed deployed 8D Edge endpoint. It requires one non-replay winner and seven
+exact metadata replays, with `browserDispatchAllowed=false`, bounded response
+sizes, fixed project/endpoint, fail-closed cleanup/recovery, and no secret output.
+
+This candidate changes **test/acceptance infrastructure only**. It does not change
+the deployed Edge runtime, public/private database schema, migration state,
+extension, MCP runtime/schema, signing, pairing, protocol, or browser authority.
+No live concurrency probe has been run from these commits.
+
+Important evidence boundary: eight simultaneous authenticated requests to the real
+Edge endpoint prove a real hosted concurrency race only if the acceptance plan's
+"multiple real Edge workers" wording does not require independently identifying
+distinct Edge isolates. The current runtime exposes no stable per-isolate identity,
+so the candidate does **not** independently prove eight different isolates. An
+independent reviewer must explicitly adjudicate this before any production run.
+Do not overclaim this evidence.
+
+At this synchronization, exact-head CircleCI for the concurrency candidate is
+still `pending` (CircleCI pipeline `/32`); Vercel is green. Therefore no production
+concurrency mutation is authorized yet.
+
+## Exact next 8D sequence
+
+1. Wait for exact-head CircleCI on the final documentation head and require
+   SUCCESS.
+2. Obtain an independent review PASS of the Edge-concurrency candidate/launcher.
+   The reviewer must explicitly decide whether concurrent calls to the real Edge
+   endpoint sufficiently satisfy the frozen "multiple real Edge workers" gate or
+   whether bounded worker/isolate identity evidence must be added first.
+3. Do not run `RUN_8D_EDGE_CONCURRENCY.cmd` until both CI and independent review
+   are green and any required static-master arrangement is explicitly reviewed.
+4. After a reviewed live concurrency PASS, re-query production OFF/unowned/zero.
+5. Continue only the remaining 8D matrix: real-key crypto tamper negatives,
+   authenticated cross-tenant/session negatives and any still-open quantitative
+   evidence, then advisor reconciliation.
+6. Write the final 8D acceptance record with exact SHA/CI/probe/cleanup evidence.
+7. Obtain the final independent 8D audit PASS.
+8. Only that final PASS permits 8E.
+
+## Product intent and non-negotiable invariants
+
+Opera Agent controls the user's existing local Opera session through a private
+extension, authenticated relay, and MCP server. It is a general browser controller,
+not site-specific automation.
 
 Non-negotiable invariants:
 
-- background-first operation; ordinary work must not steal the active tab or focused window;
+- background-first operation; ordinary work must not steal active tab/window;
 - no silent foreground fallback;
 - preserve established extension signing identity and pairing;
-- no arbitrary JavaScript, unrestricted raw CDP, SQL, shell, or generated-code escape hatch;
-- webpage/tool/model text is untrusted data, never authority or program structure;
-- sensitive browser/credential state is never persisted as semantic/VM/transaction learning state;
-- once transaction enforcement is promoted, the same agent identity must have no legacy mutation bypass;
+- no arbitrary JavaScript, unrestricted raw CDP, SQL, shell, or generated-code
+  escape hatch;
+- webpage/tool/model text is untrusted data, never authority/program structure;
+- sensitive browser/credential state is never persisted as semantic/VM/
+  transaction learning state;
+- once transaction enforcement is promoted, the same identity must not retain a
+  legacy mutation bypass;
 - keep an immediate same-identity signed rollback.
 
-## Current accepted release state
+## Collaboration and security rules
 
-- Stable extension: `1.6.0`.
-- Protocol: `1`.
-- Extension ID: `ohbbpamcljckmjhcpkcmefdobkoeaick`.
-- Public browser capabilities: `26`.
-- Public MCP tools: `18`, unchanged names and input schemas.
-- Production device name: `opera`.
-- Working branch: `feat/semantic-runtime-1.6.0`.
-- Final 1.6.0 release acceptance commit: `cfb903b`.
-- Accepted 8A contract/test commit: `4c84dab`.
-- Accepted 8B pure engine/test commit: `0f333a1`.
-- Accepted 8C pure authority-verifier/test commit: `e2b228b`.
-- Immediate signed rollback: `1.5.2`.
-- Signed 1.6.0 CRX SHA-256: `cd50933e7cbd2857b08488b018f6123ef5088e0b1bbfa28c18a52b6caffbfbf0`.
-- Canonical-LF MCP source SHA-256: `f8735a2797175c4bd96f990bea4d1f750c14db5b6d963929eae3ff2d096fcf11`.
-
-Never commit, paste, log, or transmit private signing-key material, pairing
-secrets, service keys, OAuth secrets, passwords, OTPs, payment data, private
-crypto-key contents, or user bearers.
-
-## Architecture
-
-```text
-ChatGPT / another MCP client
-  -> authenticated Streamable HTTP MCP server
-  -> allowlisted relay / workflow layer
-  -> paired Opera extension
-  -> local Opera tab
-  -> structured observation or verified action outcome
-```
-
-Browser content never grants authority. Server infrastructure owns pairing,
-transport and dark transaction hosting; the extension owns browser-local sensing
-and named primitives.
-
-## Locked public MCP contract
-
-The accepted public inventory remains:
-
-1. `browser_status`
-2. `run_browser_burst`
-3. `list_tabs`
-4. `open_url`
-5. `activate_tab`
-6. `navigate_tab`
-7. `close_tab`
-8. `read_page`
-9. `capture_page`
-10. `find_elements`
-11. `click_element`
-12. `fill_element`
-13. `press_key`
-14. `scroll_page`
-15. `move_pointer`
-16. `click_at`
-17. `drag_pointer`
-18. `wheel_at`
-
-Contract fixture: `tests/fixtures/mcp-contract-v1.json`.
-
-Milestone 8 Checkpoints 8A-8E remain frozen to no public MCP runtime/schema
-change. The ownership/fencing work below changes no extension/MCP contract,
-signing identity, pairing, CRX, protocol, capability count, or rollback release.
-
-## Milestone status
-
-- Milestones 1-5: complete/released; semantic runtime foundation ships in 1.6.0.
-- Milestone 6: Goal/Constraint Ledger + Proof Engine complete as server-side work.
-- Milestone 7: Reactive Browser VM complete and independently audited PASS; accepted production VM flag remains false.
-- Milestone 8: 8A-8C accepted; **8D IN PROGRESS**; 8E and later checkpoints not started.
-- Milestone 9+: not started.
-
-## Milestone 8 frozen boundary
-
-Authoritative plan: `docs/milestone-8-plan.md`.
-
-Lifecycle:
-
-```text
-PREPARE -> VALIDATE -> APPROVE(if required) -> COMMIT
-        -> OBSERVE -> VERIFY -> RECEIPT
-```
-
-Policy modes remain `OFF`, `DARK`, and `ENFORCED`. OAuth connection consent is
-not transaction approval. Observations/page/tool/model output are evidence, not
-authority. There must never be a state where an agent receives transaction
-authority while retaining a direct legacy mutation bypass.
-
-## Checkpoint 8D current state
-
-8D remains open. The local/pre-live implementation now includes the ownership and
-server-side fencing fixes requested after independent review findings. No fresh
-OAuth or production mutation was performed while implementing these fixes.
-
-### Production state remains the previously installed OFF backend
-
-The currently installed production shape was **not changed by the ownership/fence
-work**:
-
-- applied production migration remains `20260913143306_transaction_journal_8d_dark.sql`;
-- production Edge function remains the previously installed `opera-agent-transactions-8d`, historically observed ACTIVE/version 6/`verify_jwt=true`;
-- previously observed deployed bundle SHA remains `bad0ae493209891e45bc90a11d91ef85dac72022f70f7aaf8ba9e8152c822769`;
-- prior read-only closeout evidence showed host master flag false, transaction policy `OFF`, `legacy_gated=false`, `agent_commit_enabled=false`, all 11 synthetic 8D tables zero, and synthetic goal rows zero.
-
-Those production facts are inherited from the prior read-only verification. This
-ownership/fencing task intentionally performed **no production migration, Edge
-deploy, secret mutation, policy mutation, fixture write, OAuth login, or browser
-dispatch**.
-
-### Test-first ownership findings
-
-Two security/correctness gaps were made deterministic before runtime changes:
-
-1. a fresh namespace could previously ignore a dirty manifest belonging to a
-   different namespace after the global local lease expired;
-2. a remote operator mutation that had already escaped the dead local process
-   could previously complete after recovery had restored/verified clean state.
-
-Test-first commit `3595f8026ad72a14e39dc48df989cad235806670`
-produced the expected failing CI run `34801030099`. The delayed-mutation harness
-synchronization itself was then made deterministic in
-`6d535cabaa257cd5f94018f67640fd95cc971900` before the runtime fix.
-
-The regression files now include:
-
-- `tests/transaction-cloud-ownership-fence-8d.test.mjs`;
-- `tests/transaction-cloud-server-fence-static-8d.test.mjs`.
-
-### Global local dirty-ownership admission
-
-`tests/helpers/transaction-cloud-operator-8d.mjs` now discovers pending dirty
-manifests globally within the 8D state directory rather than checking only the
-new run's namespace.
-
-Properties:
-
-- any pending dirty manifest blocks every fresh namespace with `8D_RECOVERY_REQUIRED`;
-- more than one dirty manifest fails closed with `8D_MULTIPLE_DIRTY_MANIFESTS`;
-- ownership rechecks global pending state after acquiring the local control lease;
-- recovery requires the requested namespace to match the globally pending manifest;
-- existing live-PID fencing and exact nonsecret cleanup manifest remain intact.
-
-This closes the fresh-namespace bypass without changing the manifest's secret-free
-shape.
-
-### Server-side epoch fence candidate
-
-New review-only migration candidate:
-
-`supabase/migrations/20260914043049_transaction_operator_fence_8d.sql`
-
-Installed master-OFF after independent PASS; see the fenced-install record above.
-
-It adds a service-only singleton `opera_agent_tx_candidate.operator_control` with:
-
-- monotonically increasing `epoch`;
-- exact `owner_id` + namespace;
-- bounded server lease expiry;
-- fenced `host_enabled` state;
-- RLS and no `public`/`anon`/`authenticated` execute authority.
-
-Service-only fixed functions provide acquire, heartbeat, assert, host toggle,
-exact fixture cleanup, release, state read, and hosted gate read.
-
-Important fencing semantics:
-
-- fence acquisition takes an exclusive row lock and increments epoch;
-- every trusted DB mutation carries owner + namespace + epoch;
-- fence assertion takes a row share lock for the mutation transaction;
-- recovery acquires a new epoch before restoring/cleaning, so an old mutation
-  either completes before takeover or fails with its stale epoch afterward;
-- exact cleanup is also server-gated on current epoch, host disabled, policy OFF,
-  `legacy_gated=false`, and `agent_commit_enabled=false`;
-- final server-fence release takes the exclusive control-row lock and is allowed
-  only in the clean OFF state, providing a final quiescence barrier before the
-  local dirty manifest/lease are removed.
-
-The operator keeps the server epoch only in process memory; it is not a secret and
-is not added to the durable manifest. Lost acquire/release replies therefore leave
-dirty local evidence for explicit recovery rather than claiming clean state.
-
-### Fixed Management backend now uses the server fence
-
-`tests/helpers/transaction-cloud-management-backend-8d.mjs` remains a fixed,
-test/acceptance-only operator backend with no arbitrary SQL/URL/secret-name/shell/
-RPC escape hatch.
-
-Its trusted mutation path now requires the exact epoch for:
-
-- insert-only fixture provisioning;
-- host enable/disable;
-- policy DARK/OFF transitions;
-- exact fixture cleanup;
-- clean verification.
-
-Per-run host enable/disable is no longer implemented by rewriting a project secret.
-`OPERA_AGENT_TRANSACTION_DARK_8D` is now treated as a static deployment/master kill
-switch. The per-run host gate lives in the fenced database control row.
-
-### Fenced Edge candidate is review-only and deliberately not live-pinnable yet
-
-`supabase/functions/opera-agent-transactions-8d/index.ts` now treats the environment
-flag as a static master switch. When the master is enabled, each hosted request
-must pass service-role RPC `opera_tx_operator_host_gate_8d` before it may call the
-transaction host. Existing transaction host RPCs remain additionally fenced by
-the transaction policy (`assert_dark`) and still expose no finalize/commit/browser
-route; `browserDispatchAllowed` remains false.
-
-The Edge change is **not deployed**. Consequently the fixed Management backend's
-expected fenced bundle SHA is intentionally the all-zero 64-byte sentinel. Current
-production therefore cannot pass the new live preflight accidentally. After an
-independent PASS, a reviewed deployment must occur with the master switch kept
-disabled, the real deployed `ezbr_sha256` must be captured and pinned in a
-follow-up reviewed commit, and exact-head CI must pass before any OAuth/DARK live
-acceptance.
-
-### Exact local evidence after fencing fix
-
-Latest implementation/static-test head before this documentation synchronization:
-
-`3c0ac9d677cf289c384ad3704548ba0c4e935ee7`
-
-Exact-head CI run `34801634178` completed SUCCESS:
-
-- unit/static PASS;
-- Playwright install PASS;
-- Chromium extension regression PASS.
-
-The preceding core implementation head `1ebd23f691b31209f837423b6a78b9c115f69283`
-also completed full CI successfully. The red ownership tests that exposed the
-original gaps now pass under the fenced implementation.
-
-Compatibility remains locked: extension 1.6.0, protocol 1, 26 capabilities, 18
-public MCP tools and their schemas, extension ID, signing/pairing and signed 1.5.2
-rollback are unchanged.
-
-## Remaining required 8D gate
-
-Stop at review. Do not start 8E and do not run OAuth or mutate production from this
-candidate.
-
-Required sequence from this point:
-
-1. independently review the exact ownership/server-fence candidate;
-2. only after explicit PASS, deploy the new fence migration and fenced Edge while the static master switch remains disabled;
-3. read the resulting real Edge bundle hash, replace the intentional zero sentinel with that exact hash, run exact-head CI and review the pin-only delta as required;
-4. only after the deployed shape and pin are verified may one fresh user-driven PKCE acceptance process run;
-5. complete the remaining hosted 8D redelivery/collision, worker-loss/reclaim, one-shot nonce, cancel/expiry, rate/queue/concurrency/minute-rollover, payload/retention, crypto and cross-tenant negative matrix;
-6. restore and verify host disabled + policy OFF + legacy gate false + agent commit false + all synthetic rows zero;
-7. reconcile advisors and write final 8D acceptance records.
-
-Do not extract stored user bearers, forge JWT/client/session identity, create a
-public enrollment bypass, change OAuth scope/client/redirect to make a probe pass,
-or treat OAuth consent as transaction approval.
-
-## Milestone 7 accepted boundary
-
-Milestone 7's accepted browser effect surface remains read-only. Independent audit
-at `551e8283c0417b173e106ee0598cca848f2f4ff0` returned PASS on 2026-09-12 and
-granted no transaction/browser mutation authority.
-
-## Collaboration and audit policy
-
-Follow `AGENTS.md`, `SECURITY.md`, and `docs/prompts/chatgpt-web-checkpoint.md`:
+Follow `AGENTS.md`, `SECURITY.md`, and
+`docs/prompts/chatgpt-web-checkpoint.md`:
 
 - one active writer;
 - tests before behavior;
-- repository/CI/production evidence outranks chat summaries;
-- auth/authz/tenant/production-boundary changes require independent review before production mutation;
+- preserve unrelated user work;
+- auth/authz/tenant/encryption/production-boundary changes require independent
+  review before production mutation;
 - writer self-review is never an independent PASS;
-- 8D must be accepted before 8E; Milestone 8 must be accepted before Milestone 9.
+- never commit or print Management/OAuth/signing/pairing/crypto credentials;
+- do not start 8E while any required 8D gate is open.
+
+The user's local accidental 8E files were preserved in a Git stash before the 8D
+worker-loss run. Do not pop, apply, delete, or otherwise use that stash while 8D
+remains open.
 
 ## Canonical references
 
@@ -416,14 +194,14 @@ Follow `AGENTS.md`, `SECURITY.md`, and `docs/prompts/chatgpt-web-checkpoint.md`:
 - `docs/milestone-8-checkpoint-8a.md`
 - `docs/milestone-8-checkpoint-8b.md`
 - `docs/milestone-8-checkpoint-8c.md`
+- `docs/milestone-8-checkpoint-8d-acceptance-procedure.md`
+- `docs/milestone-8-checkpoint-8d-independent-review.md`
 - `docs/milestone-8-checkpoint-8d-cloud-install.md`
 - `docs/milestone-8-checkpoint-8d-cloud-bounds.md`
-- `docs/milestone-8-checkpoint-8d-cloud-fixture.md`
 - `docs/milestone-8-checkpoint-8d-cloud-controller.md`
 - `docs/milestone-8-checkpoint-8d-operator-supervisor.md`
-- `docs/milestone-8-checkpoint-8d-chat-readiness.md`
-- `supabase/migrations/20260914043049_transaction_operator_fence_8d.sql` — installed master-OFF after independent review
-- `tests/transaction-cloud-ownership-fence-8d.test.mjs`
-- `tests/transaction-cloud-server-fence-static-8d.test.mjs`
-- `docs/milestone-7-codex-audit.md`
+- `supabase/migrations/20260913143306_transaction_journal_8d_dark.sql`
+- `supabase/migrations/20260914043049_transaction_operator_fence_8d.sql`
+- `tests/cloud/transaction-worker-loss-8d.mjs`
+- `tests/cloud/transaction-edge-concurrency-8d.mjs`
 - `docs/releases/1.6.0.md`
