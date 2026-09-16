@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-16
+Last synchronized: 2026-09-17
 
 Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 `SECURITY.md`, `docs/milestone-8-plan.md`, and checkpoint acceptance records.
@@ -15,23 +15,24 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 - Public MCP tools: `18`
 - Extension ID: `ohbbpamcljckmjhcpkcmefdobkoeaick`
 - Signed rollback: `1.5.2`
-- Milestone 8: 8A-8C accepted; **8D IN PROGRESS — live evidence complete, final CI/audit pending**; 8E not started
+- Milestone 8: 8A-8D **ACCEPTED**; 8E not started
 
-Checkpoint 8D remains frozen to no public MCP schema/runtime, extension/CRX,
-signing, pairing, protocol, or browser-capability changes. OAuth consent is
-connection authorization only. `browserDispatchAllowed` remains false.
+Checkpoint 8D preserved the frozen boundary: no public MCP schema/runtime,
+extension/CRX, signing, pairing, protocol, or browser-capability changes. OAuth
+consent remained connection authorization only. `browserDispatchAllowed` remained
+false throughout 8D acceptance.
 
-## Live-probe runtime head
+The final independent overall 8D audit PASS permits marking 8D accepted. Before any
+8E implementation change, the final acceptance-only documentation head must finish
+its exact-head CI/status checks successfully.
 
-The real hosted Edge concurrency acceptance was executed exactly once on runtime
-head `cf645799968458d55d5c2b391a5d354c369337b6` after a fresh independent rerun
+## Final 8D acceptance chain
+
+### Live-probe runtime head
+
+The real hosted Edge concurrency acceptance ran exactly once on runtime head
+`cf645799968458d55d5c2b391a5d354c369337b6` after fresh independent rerun
 authorization PASS.
-
-That runtime head is now historical evidence. Documentation-only commits made
-after the probe must receive fresh exact-head CI and the final overall 8D audit
-before 8D can be marked accepted.
-
-## Accepted 8D live evidence
 
 ### PKCE
 
@@ -59,7 +60,7 @@ retention, crypto/token, tenant and policy-negative coverage.
 
 ### Real hosted Edge concurrency — PASS
 
-Authorized run namespace:
+Authorized namespace:
 `c6b88ac8-6b46-4b0f-932a-229422fa1272`.
 
 Prepare race:
@@ -155,12 +156,12 @@ Its value remained local under Windows DPAPI and was never printed or committed.
 Fresh Jules rerun authorization session `3236533720131047548` reviewed exact
 runtime head `cf645799968458d55d5c2b391a5d354c369337b6`, reported `324/324` tests PASS
 with zero failures/skips, and returned **PASS** for exactly one normal live run.
-That authorization has now been consumed by the successful live PASS.
+That authorization was consumed by the successful live PASS.
 
 ## Advisor reconciliation
 
-Fresh post-probe Supabase advisors show no 8D-owned `ERROR` or `WARN` findings.
-8D-related findings are INFO only:
+Fresh post-probe Supabase advisors showed no 8D-owned `ERROR` or `WARN` findings.
+8D-related findings were INFO only:
 
 - private/service-only RLS tables with no client policies;
 - an unindexed FK on `opera_agent_tx_candidate.runs`;
@@ -168,28 +169,35 @@ Fresh post-probe Supabase advisors show no 8D-owned `ERROR` or `WARN` findings.
 
 Current WARN findings belong to pre-existing/public legacy surfaces (`loa_v3_*`,
 relay functions, `pg_net`, anonymous-access/Auth configuration), not the private
-8D transaction candidate. The 8D advisor acceptance criterion is therefore
-satisfied for the current checkpoint objects.
+8D transaction candidate. The 8D advisor acceptance criterion is satisfied.
 
-## Acceptance record
+## Final independent overall audit — PASS
 
-`docs/milestone-8-checkpoint-8d-acceptance.md` now records the full live evidence,
-post-probe cleanup, advisor reconciliation and canonical acceptance mapping.
-Its status remains a **candidate pending final exact-head CI and independent overall
-8D audit**. Do not treat creation of the record itself as 8D acceptance.
+Final read-only Jules session `17943137394205042765` reviewed exact documentation
+head `d0ce3c42c076e3c60d61a2a72150e57371cf8a09` after CircleCI #65 and Vercel both
+reported SUCCESS.
 
-## Exact next sequence
+The reviewer verified the exact head, clean git state, `324/324` passing tests,
+the canonical 8D acceptance mapping, and zero repository diffs/artifacts. Final
+verdict: **PASS**.
 
-1. Finish synchronization of `docs/milestone-8-checkpoint-8d-acceptance-procedure.md`
-   and `docs/next-session-handoff.md` to the post-probe state.
-2. Treat the resulting documentation commit as the exact final-audit candidate.
-3. Require CI/status checks green on that exact head. Pending/in-progress => STOP;
-   failed => diagnose only the failing check.
-4. Obtain a fresh independent **overall Checkpoint 8D** read-only audit of the
-   exact documentation head and complete evidence chain.
-5. Only final audit **PASS** may mark 8D accepted and permit starting 8E.
-6. If final audit is not PASS, perform only the smallest bounded correction it
-   identifies, then repeat exact-head CI/audit as required.
+No branch or PR named for that Jules session was created; the only open PR remained
+existing PR #43. The read-only audit therefore left the canonical repository tree
+unmodified.
+
+`docs/milestone-8-checkpoint-8d-acceptance.md` is the authoritative consolidated
+8D acceptance record.
+
+## Exact next gate
+
+1. Finish this acceptance-only documentation closeout (`acceptance`, context,
+   handoff) without changing runtime behavior.
+2. Treat the resulting branch head as the exact durable closeout head.
+3. Require CircleCI and Vercel/status checks green on that exact head.
+   Pending/queued/in-progress => STOP; a real failure => diagnose only that check.
+4. After green CI, Checkpoint 8D is durably closed. The next user-directed
+   implementation checkpoint is **8E — controlled single-action transaction executor**.
+5. Do not expand into 8F or later checkpoints while executing 8E.
 
 ## Invariants and user-local state
 
@@ -199,10 +207,10 @@ Its status remains a **candidate pending final exact-head CI and independent ove
 - no arbitrary JavaScript/raw CDP/SQL/shell/generated-code escape hatch;
 - preserve signing identity/pairing and immediate signed rollback;
 - never commit or print Management/OAuth/signing/pairing/crypto credentials;
-- do not rerun the live Edge concurrency probe: the reviewed one-run authorization
-  was consumed by the PASS above;
-- do not begin 8E before final 8D audit PASS.
+- do not rerun the live Edge concurrency probe: its reviewed one-run authorization
+  was consumed by the PASS above.
 
 Two accidental untracked 8E files remain preserved in a Git stash named roughly
 `preserve accidental 8E files before completing checkpoint 8D`. Do not pop, apply,
-delete, or build on that stash while 8D remains open.
+delete, or build on that stash automatically. If 8E later needs those files, inspect
+them first against the canonical 8E scope before deciding whether to reuse anything.
