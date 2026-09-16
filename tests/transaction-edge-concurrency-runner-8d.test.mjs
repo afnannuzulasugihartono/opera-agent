@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { collectEdgeRoutingEvidence8D } from './helpers/transaction-edge-routing-evidence-8d.mjs';
 
 const runnerUrl=new URL('./cloud/transaction-edge-concurrency-8d.mjs',import.meta.url);
 const launcherUrl=new URL('../scripts/run-8d-edge-concurrency.ps1',import.meta.url);
@@ -14,6 +15,9 @@ test('8D real Edge concurrency runner is fixed, authenticated, bounded, and brow
   assert.match(source,/Promise\.all/);
   assert.match(source,/operation\s*===\s*['"]prepare['"]/);
   assert.match(source,/operation\s*===\s*['"]cancel['"]/);
+  assert.match(source,/collectEdgeRoutingEvidence8D/);
+  assert.match(source,/distinctRoutingTraces/);
+  assert.match(source,/traceHeader/);
   assert.match(source,/prepareWinners/);
   assert.match(source,/cancelWinners/);
   assert.match(source,/browserDispatchAllowed:false/);
@@ -21,6 +25,30 @@ test('8D real Edge concurrency runner is fixed, authenticated, bounded, and brow
   assert.match(source,/nenmkmtvjremqphfqnfw/);
   assert.doesNotMatch(source,/click_element|fill_element|open_url|navigate_tab|run_browser_burst/);
   assert.doesNotMatch(source,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
+});
+
+test('8D Edge routing evidence accepts distinct allowlisted traces without exposing raw values',()=>{
+  const responses=Array.from({length:8},(_,index)=>({
+    headers:new Headers({
+      'cf-ray':`trace-${index}`,
+      'x-sb-edge-region':'ap-southeast-1',
+      'server-timing':`edge;dur=${index+1}`
+    })
+  }));
+  const evidence=collectEdgeRoutingEvidence8D(responses);
+  assert.equal(evidence.traceHeader,'cf-ray');
+  assert.equal(evidence.distinctRoutingTraces,8);
+  assert.equal(evidence.samples,8);
+  assert.equal(evidence.regionHeader,'x-sb-edge-region');
+  assert.equal(evidence.distinctRegions,1);
+  const serialized=JSON.stringify(evidence);
+  assert.doesNotMatch(serialized,/trace-0|trace-7|ap-southeast-1/);
+});
+
+test('8D Edge routing evidence fails closed when distinct request traces are not evidenced',()=>{
+  const responses=Array.from({length:8},()=>({headers:new Headers({'cf-ray':'same-trace','x-sb-edge-region':'ap-southeast-1'})}));
+  assert.throws(()=>collectEdgeRoutingEvidence8D(responses),/8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
+  assert.throws(()=>collectEdgeRoutingEvidence8D(Array.from({length:8},()=>({headers:new Headers()}))),/8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
 });
 
 test('8D real Edge concurrency launcher reuses local DPAPI credential, resolves pinned npm imports, and fails closed on dirty worktree',async()=>{
