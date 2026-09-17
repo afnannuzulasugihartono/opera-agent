@@ -16,17 +16,14 @@ plan.
 - Public MCP tools: `18`
 - Extension ID: `ohbbpamcljckmjhcpkcmefdobkoeaick`
 - Signed rollback: `1.5.2`
-- Milestone 8: 8A-8D **ACCEPTED**; 8E paused/not started
+- Milestone 8: 8A–8D **ACCEPTED**; 8E paused/not started
 - Durable 8D closeout head: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
 - Active user-selected work: **Performance Track P — Delta-First Runtime**
-- P0: **ACCEPTED** at `699578904e2f19ea713a0933632331cad7299c11`
-  with CircleCI #76 and Vercel SUCCESS
-- P1: **ACCEPTED** at `cbf3259a337d92410a5ba805dd0fd987a51c1bc5`
-  with CircleCI #85 and Vercel SUCCESS
-- P2: **FINAL CANDIDATE**; implementation head
-  `5f0477441ab0b05335a87c6a7e69a5415dc8b5ce` passed CircleCI #87 and Vercel;
-  exact documentation-closeout head still requires green CircleCI + Vercel/status
-- P3 has not started
+- P0: **ACCEPTED** at `699578904e2f19ea713a0933632331cad7299c11` with CircleCI #76 + Vercel SUCCESS
+- P1: **ACCEPTED** at `cbf3259a337d92410a5ba805dd0fd987a51c1bc5` with CircleCI #85 + Vercel SUCCESS
+- P2: **ACCEPTED** at `8621e2dc454f8e8f1e977c350522e6fb2b5dc51d` with CircleCI #91 + Vercel SUCCESS
+- P3: **FINAL CANDIDATE**; implementation head `9309debd0db66993e99519f7015bf81a3c0804dd` passed CircleCI #93 + Vercel; documentation-closeout exact head still requires green CircleCI + Vercel/status
+- P4 has not started
 
 ## Performance Track P
 
@@ -36,6 +33,7 @@ Acceptance records:
 - `docs/delta-first-performance-p0.md`
 - `docs/delta-first-performance-p1.md`
 - `docs/delta-first-performance-p2.md`
+- `docs/delta-first-performance-p3.md`
 
 Frozen target architecture:
 
@@ -55,148 +53,170 @@ change the frozen Milestone 8 contracts.
 
 ## P1 accepted foundation
 
-P1 introduced the pure bounded process-memory working-state layer:
+P1 introduced `lib/semantic-working-state-p1.js`, a pure bounded process-memory
+working-state layer keyed to tenant + device + tab + document generation + runtime
+epoch. It retains sanitized semantic metadata, materialized views, dependency
+fingerprints, current semantic revision, last source/result revision, and replay
+digest.
 
-- `lib/semantic-working-state-p1.js`
-- `tests/semantic-working-state-p1.test.mjs`
-- `tests/semantic-working-state-p1-adversarial.test.mjs`
-
-Trusted state identity is tenant + device + tab + document generation + runtime
-epoch. The state retains bounded semantic metadata, materialized views, dependency
-fingerprints, current semantic revision, last source/result revision, and a digest
-used to distinguish exact replay from incompatible replay.
-
-P1 requires trusted RESET/full bootstrap and exact contiguous revision continuity.
+Trusted RESET/full bootstrap and exact contiguous revision continuity are mandatory.
 Exact replay is idempotent. Incompatible duplicate, old input, revision gap,
 cross-scope identity, restart, ambiguity, overflow, expiry, eviction, semantic
 mismatch, and materialized-view mismatch fail closed.
 
-P1 stores semantic metadata only. Raw page text, raw labels, href/private query
-material, form values, and sensitive entities are excluded from the public working
-state. No file/database/network persistence was added.
+Raw page text, labels, href/private-query material, form values, and sensitive
+entities are excluded from public working state. No durable persistence was added.
 
-P1 did not suppress the rich reasoning observation; P2 owns that boundary.
+## P2 accepted delta-first layer
 
-## P2 implementation state
-
-P2 adds only a bounded consumer-side reasoning observation adapter:
+P2 introduced:
 
 - `lib/delta-first-observation-p2.js`
 - `tests/delta-first-observation-p2.test.mjs`
 
-Behavior:
+Trusted RESET/bootstrap emits `FULL_SNAPSHOT`. Proven contiguous changes emit a
+bounded `COMPACT_PATCH` carrying revisions, changed entities/views, invalidation and
+removal metadata, continuity/replay state, bounded provenance, verification metadata,
+and byte accounting while retaining the reconstructed canonical state internally.
 
-- trusted RESET/bootstrap => `FULL_SNAPSHOT` plus reconstructed P1 canonical state;
-- valid contiguous semantic observation => bounded `COMPACT_PATCH` with source/result
-  revision, classification, inserted/updated/moved/removed semantic entities,
-  changed/invalidated/removed views, continuity/replay metadata, bounded provenance,
-  verification metadata, and byte accounting;
-- exact replay is compact/idempotent and does not resend changed facts;
-- compact patches exclude raw text, raw labels, href/private-query material, raw
-  values, sensitive entities, raw provenance notes, raw invalidation notes, and raw
-  completion scope;
-- `logicalId` remains observational and is not a direct browser-action handle;
-- missing continuity, incompatible duplicate, gap/out-of-order, cross scope,
-  ambiguity, overflow, expiry/eviction, semantic/view mismatch, and patch overflow
-  fail closed to `FULL_SNAPSHOT` + reset-required and discard stale state;
-- compact delivery can resume only after trusted RESET/rebootstrap;
-- explicit verification may request a fresh full observation without discarding an
-  otherwise valid canonical chain.
+Continuity loss, mismatch, ambiguity, overflow, expiry/eviction, or patch overflow
+fails closed to reset-required full snapshot and discards stale continuity.
 
-P2 does **not** add P3 signal coalescing/relevance gating, P4 local VM continuation,
-new browser primitives, extension changes, public MCP changes, production changes,
-or transaction authority.
+Controlled P2 evidence:
 
-## P2 tests-first / automated evidence
-
-Tests-first chain:
-
-- `0f1b856b27776a813cbe818a0677344e991c9c3c` — frozen P2 contract tests before implementation; CircleCI #86 expected red boundary
-- `5f0477441ab0b05335a87c6a7e69a5415dc8b5ce` — implementation; CircleCI #87 SUCCESS + Vercel SUCCESS
-
-The P2 suite covers bootstrap; UPDATE/INSERT/MOVE/REMOVE/MIXED;
-NO_RELEVANT_CHANGE; exact replay; incompatible duplicate; revision gap and
-out-of-order; cross-tab/document/runtime epoch; ambiguity; overflow; expiry/eviction;
-RESET; semantic/view mismatch; sensitive-data exclusion; patch overflow; canonical
-state reconstruction; fail-closed recovery; explicit verification; no synthesized
-completion/foreground authority; byte locks on extension/public-MCP sources; and a
-paired deterministic small-change benchmark.
-
-CircleCI includes the full Node suite, `npm run check`, and controlled Chromium
-extension regression. P2 does not modify extension/browser code; Chromium is
-compatibility evidence.
-
-Controlled P2 benchmark:
-
-- median paired rich reasoning payload: **22,244 bytes**;
+- median rich reasoning payload: **22,244 bytes**;
 - median compact patch: **1,380 bytes**;
-- median reduction: **93.80%** versus the frozen P2 minimum of >=75%;
-- fallback count: 0;
-- reset count on valid-continuity pairs: 0;
+- median reduction: **93.80%**;
+- fallback/reset during valid pairs: 0;
 - stale-state continuation: 0;
 - false completion: 0;
 - foreground takeover: 0;
 - relevant semantic information loss: 0.
 
-These are controlled P2 claims. Real Opera, steady-state full-snapshot reduction,
-reasoning/tool round-trip reduction, long-task speedup, and simple-operation
-regression remain P5 gates.
+## P3 implementation state
+
+P3 adds only a pure bounded consumer/runtime coalescer and relevance gate:
+
+- `lib/multi-signal-relevance-p3.js`
+- `tests/multi-signal-relevance-p3.test.mjs`
+
+It wraps the accepted P2 pipeline rather than replacing P2 continuity or canonical
+state reconstruction.
+
+Accepted signal types:
+
+- `ACTION_RESULT`
+- `DOM_MUTATION`
+- `GEOMETRY_RESIZE`
+- `NAVIGATION_HISTORY`
+- `RECONNECT_RESET`
+- `SCROLL_VIEWPORT`
+- `SEMANTIC_MUTATION`
+- `WAIT_CONDITION`
+
+Signals contribute bounded metadata only: type, logical IDs, region IDs, and
+wait-condition IDs. Arbitrary page/model/signal text is ignored.
+
+Relevance decisions are exactly:
+
+```text
+IGNORE_FOR_TASK
+APPLY_AND_CONTINUE
+REASON_REQUIRED
+```
+
+Relevance authority is accepted only from
+`ACCEPTED_GOAL_CONSTRAINT_DEPENDENCIES` context containing a goal ID, positive
+ledger revision, canonical `sha256:` ledger digest, and bounded reason/continuation
+dependency sets. Missing, malformed, untrusted, or oversized context cannot suppress
+reasoning.
+
+`IGNORE_FOR_TASK` suppresses only reasoning; canonical P2/P1 state still advances.
+`APPLY_AND_CONTINUE` is available only for accepted continuation dependencies.
+`REASON_REQUIRED` has precedence.
+
+Epoch bounds include signal count, affected dependency-key count, and age.
+`NAVIGATION_HISTORY`, `RECONNECT_RESET`, signal overflow, affected-key overflow,
+epoch expiry, and any P2 reset-required/continuity failure force conservative
+`REASON_REQUIRED`.
+
+Exact replay with no new relevant signal does not create a duplicate reasoning wake.
+
+## P3 tests-first / automated evidence
+
+- `388df28d5795da2cb1fe72ece2ff25f46b7411d5` — P3 contract test head; CircleCI #92 expected red because P3 implementation module did not yet exist; Vercel SUCCESS
+- `9309debd0db66993e99519f7015bf81a3c0804dd` — P3 implementation; CircleCI #93 SUCCESS + Vercel SUCCESS
+
+From accepted P2 head to P3 implementation head, the net diff contains only the new
+P3 library and P3 test. Tests freeze P2, extension, public MCP, and Reactive VM
+source hashes byte-for-byte.
+
+Controlled irrelevant-mutation-storm evidence:
+
+- 10 irrelevant epochs × 128 signals = **1,280 irrelevant signals**;
+- later relevant signal = **1**;
+- total raw signals = **1,281**;
+- irrelevant reasoning wakeups = **0**;
+- total reasoning wakeups after relevant change = **1**;
+- relevant change detected exactly = **1/1**;
+- relevant-signal loss = **0**;
+- false completion = **0**;
+- foreground takeover = **0**.
+
+P3 does **not** implement P4 VM execution, extension observer wiring, new browser
+primitives, public MCP changes, Supabase production changes, signing/pairing changes,
+transaction authority, or 8E.
 
 ## Frozen P5 targets
 
-P0 froze these future acceptance targets; P2 does not claim them all achieved:
+P0 froze these future acceptance targets; P3 does not claim them all achieved:
 
 - false completion = 0;
 - foreground takeover = 0;
 - stale-state action = 0;
 - relevant-signal loss = 0;
-- small-change reasoning payload reduction >= 75% median;
-- repetitive reasoning/tool round-trip reduction >= 60% median;
-- steady-state full-snapshot reduction >= 80%;
-- long repetitive task median speedup >= 2.0x;
-- simple-operation median regression <= 15%.
+- small-change reasoning payload reduction >=75% median;
+- repetitive reasoning/tool round-trip reduction >=60% median;
+- steady-state full-snapshot reduction >=80%;
+- long repetitive task median speedup >=2.0x;
+- simple-operation median regression <=15%.
 
-Inherited accepted 1.6.0 reference evidence remains rich-read median 19.83 ms,
-p95 20.65 ms, 50,953-byte enriched snapshot median, and 6,087-byte single-update
-delta (12% delta/snapshot ratio). Those historical measurements remain reference
-context, not fresh P2 real-browser measurements.
+Inherited accepted 1.6.0 reference evidence remains rich-read median 19.83 ms, p95
+20.65 ms, 50,953-byte enriched snapshot median, and 6,087-byte single-update delta.
+Those are historical reference measurements, not fresh P3 real-browser claims.
 
 ## Closed 8D state
 
-Checkpoint 8D is fully closed. The successful hosted Edge concurrency probe ran
+Checkpoint 8D remains fully closed. The successful hosted Edge concurrency probe ran
 exactly once on runtime head `cf645799968458d55d5c2b391a5d354c369337b6`.
 Final independent overall audit Jules session `17943137394205042765` returned PASS.
 Durable 8D roadmap closeout finished at
-`696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab` with CircleCI #69 and Vercel SUCCESS;
-audit PR #43 was closed without merge.
-
-Post-probe production remained policy OFF, legacy_gated false,
-agent_commit_enabled false, DB host gate false, operator owner/namespace/lease null,
-host false, and synthetic 8D tables/goal-head rows zero. Do not rerun
-`RUN_8D_EDGE_CONCURRENCY.cmd`; its reviewed one-run authorization was consumed.
+`696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab` with CircleCI #69 + Vercel SUCCESS.
+Do not rerun `RUN_8D_EDGE_CONCURRENCY.cmd`; its one-run authorization was consumed.
 
 ## Exact next gate
 
-1. Treat the branch head containing P2 tests, implementation, acceptance record,
+1. Treat the branch head containing P3 tests, implementation, acceptance record,
    synchronized performance plan, roadmap, project context, and handoff as the exact
-   P2 final candidate.
+   P3 final candidate.
 2. Require CircleCI and Vercel/status on that exact head to be SUCCESS.
 3. Pending/queued/in-progress => **STOP**.
-4. Failure => diagnose only that P2 failure.
-5. If both checks are green, P2 is accepted without another status-only commit.
-6. Stop after P2. Start **P3 — multi-signal coalescer and relevance gate** only after
+4. Failure => diagnose only that P3 failure.
+5. If both checks are green, P3 is accepted without another status-only commit.
+6. Stop after P3. Start **P4 — event-driven local Reactive VM execution** only after
    explicit user continuation.
-7. Do not start 8E while Performance Track P remains the selected active track.
+7. Do not start 8E while Performance Track P remains active.
 
 ## Invariants and user-local state
 
 - one active writer;
 - tests before behavior;
+- repository/CI/production evidence outranks chat summaries;
 - background-first browser operation;
 - no arbitrary JavaScript/raw CDP/SQL/shell/generated-code escape hatch;
 - preserve signing identity/pairing and immediate signed rollback;
-- never commit or print Management/OAuth/signing/pairing/crypto credentials;
-- action success is not completion proof;
+- never commit or print credentials or sensitive page values;
+- action success is not task-completion proof;
 - performance gains never justify stale-state action, false completion, missed
   relevant changes, or foreground takeover.
 

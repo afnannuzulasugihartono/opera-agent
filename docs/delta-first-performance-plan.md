@@ -1,6 +1,6 @@
 # Performance Track P — Delta-First Runtime
 
-Status: **P0 ACCEPTED / P1 ACCEPTED / P2 FINAL CANDIDATE — exact-head CI required; P3 not started.**
+Status: **P0 ACCEPTED / P1 ACCEPTED / P2 ACCEPTED / P3 FINAL CANDIDATE — exact-head CI required; P4 not started.**
 
 Date frozen: 2026-09-17
 Baseline repository head before P0: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
@@ -15,21 +15,6 @@ The performance direction is:
 > incrementally, and wake the reasoning layer only when a change requires a new
 > decision. Full snapshot is a recovery primitive, not the desired steady-state
 > observation path.
-
-## Why this track exists
-
-Accepted Opera Agent 1.6.0 evidence already includes stable semantic identity,
-semantic deltas, materialized semantic views, causal invalidation, provenance, the
-Goal/Constraint Ledger, the Proof Engine, and the Reactive Browser VM. The accepted
-browser benchmark records a 19.83 ms median rich read with a 50,953-byte enriched
-snapshot and a 6,087-byte single-update delta, approximately 12% of that snapshot.
-Those measurements are inherited evidence from `docs/benchmarks.md`; P0 does not
-pretend that they are fresh live measurements from the post-8D head.
-
-The historical efficiency work also records that eliminating whole workflow/network
-round trips is normally more valuable than shaving a few milliseconds from one DOM
-operation. Performance Track P therefore optimizes the observation/reasoning
-boundary before proposing new browser primitives.
 
 ## Frozen invariants
 
@@ -57,18 +42,6 @@ change:
 
 ## Target architecture
 
-The current conceptual loop is still often equivalent to:
-
-```text
-ACTION
-  -> rich observation
-  -> semantic snapshot + delta
-  -> reasoning
-  -> ACTION
-```
-
-The target is:
-
 ```text
 BOOTSTRAP
   -> full snapshot
@@ -95,8 +68,8 @@ CONTINUITY FAILURE
   -> rebuild canonical working state
 ```
 
-Full snapshot is a recovery primitive. It remains mandatory when the runtime cannot
-prove safe incremental continuity.
+Full snapshot remains the fail-closed recovery primitive whenever continuity is not
+provable.
 
 ## Reset/full-snapshot conditions
 
@@ -119,8 +92,7 @@ snapshot when any applicable condition occurs:
 ## Measurement contract
 
 `tests/fixtures/delta-performance-baseline-p0-v1.json` is the machine-readable P0
-measurement contract. Every paired performance run must distinguish measurement
-from acceptance assertion and record, when available:
+measurement contract. Paired performance work records, when applicable:
 
 - wall-clock time;
 - reasoning/tool round trips;
@@ -166,37 +138,11 @@ workloads are acceptance shapes, not site-specific runtime architecture.
 Status: **ACCEPTED** on exact head
 `699578904e2f19ea713a0933632331cad7299c11` with CircleCI #76 and Vercel SUCCESS.
 
-Scope:
+P0 froze the plan, baseline/target contract, workload matrix, metrics, safety gates,
+reset rules, checkpoint boundaries, and future P5 performance targets without
+changing runtime behavior.
 
-- freeze this plan and the machine-readable baseline/target contract;
-- pin the pre-P0 accepted head;
-- record inherited accepted 1.6.0 measurements without relabeling them as fresh P0
-  exact-head live evidence;
-- freeze the workload matrix, metrics, safety gates, reset rules, and checkpoint
-  boundaries;
-- add deterministic tests that prevent accidental widening or optimistic benchmark
-  claims;
-- update roadmap/context/handoff so P0 is the exact current gate.
-
-Explicit non-goals:
-
-- no runtime behavior change;
-- no extension/CRX/signing/pairing change;
-- no public MCP/runtime/schema change;
-- no browser dispatch or real-site acceptance run;
-- no Supabase database/Edge/OAuth/production change;
-- no transaction authority or 8E implementation;
-- no claim that P5 speed targets are already achieved.
-
-Acceptance:
-
-- P0 contract tests and full Node suite pass;
-- `npm run check` passes;
-- branch exact-head CircleCI and Vercel/status checks are SUCCESS;
-- only tests/fixtures/docs/context/roadmap/handoff change;
-- P1 has not started.
-
-The accepted record is `docs/delta-first-performance-p0.md`.
+Acceptance record: `docs/delta-first-performance-p0.md`.
 
 ---
 
@@ -205,34 +151,13 @@ The accepted record is `docs/delta-first-performance-p0.md`.
 Status: **ACCEPTED** on exact head
 `cbf3259a337d92410a5ba805dd0fd987a51c1bc5` with CircleCI #85 and Vercel SUCCESS.
 
-Objective: introduce a bounded ephemeral working-state layer keyed by trusted
-runtime identity such as tenant/device/tab/document generation, without changing
-browser-side behavior or the public MCP surface.
+P1 introduced a bounded process-memory working-state layer keyed by trusted runtime
+identity and required exact contiguous semantic revisions. Exact replay is
+idempotent; incompatible duplicate, out-of-order, gap, cross-scope identity,
+restart, ambiguity, overflow, expiry, eviction, semantic mismatch, and view mismatch
+fail closed.
 
-Required state includes at least:
-
-```text
-documentGeneration
-semanticRevision
-bounded entities/materialized views
-causal dependencies
-continuity metadata
-last accepted source/result revision
-```
-
-Required correctness properties:
-
-- exact contiguous deltas reproduce the same semantic state as recomputation from a
-  trusted full snapshot;
-- duplicate exact replay is idempotent;
-- incompatible duplicate, out-of-order input, revision gap, cross-tab,
-  cross-document, restart, ambiguity, overflow, and expiry fail closed;
-- raw private page text or sensitive values are not made durable merely to support
-  performance;
-- bounded eviction cannot silently become continuity.
-
-P1 does **not** suppress the full snapshot delivered to the existing reasoning path.
-It proves the working-state foundation first.
+P1 does not suppress the rich observation delivered to reasoning.
 
 Acceptance record: `docs/delta-first-performance-p1.md`.
 
@@ -240,51 +165,31 @@ Acceptance record: `docs/delta-first-performance-p1.md`.
 
 ## P2 — delta-first observation pipeline
 
-Status: **FINAL CANDIDATE**. Tests-first contract head
-`0f1b856b27776a813cbe818a0677344e991c9c3c` established the expected red boundary;
-implementation head `5f0477441ab0b05335a87c6a7e69a5415dc8b5ce` passed CircleCI #87 and Vercel.
-The exact documentation-closeout head still requires green CircleCI + Vercel/status
-before P2 is accepted. P3 has not started.
+Status: **ACCEPTED** on exact head
+`8621e2dc454f8e8f1e977c350522e6fb2b5dc51d` with CircleCI #91 and Vercel SUCCESS.
 
-Objective: when continuity is proven, make a compact delta/affected-view patch the
-default reasoning-layer observation while retaining the canonical reconstructed
-working state internally.
+Tests-first contract head:
+`0f1b856b27776a813cbe818a0677344e991c9c3c`.
 
-Implemented behavior:
+Implementation head:
+`5f0477441ab0b05335a87c6a7e69a5415dc8b5ce` with CircleCI #87 and Vercel SUCCESS.
 
-- first/trusted RESET observation uses a full snapshot;
-- valid contiguous observations update the P1 canonical state and emit a bounded
-  `COMPACT_PATCH` containing changed entities/views, revisions, continuity,
-  provenance, invalidation/removal metadata, and payload accounting;
-- exact replay is idempotent and does not resend changed facts;
-- raw page text, labels, href/private-query material, values, sensitive entities,
-  raw provenance notes, raw invalidation notes, and raw completion scope are not
-  present in compact patches;
-- semantic `logicalId` remains observational and is not promoted to a direct action
-  handle;
-- incompatible duplicate, gap/out-of-order, cross-scope identity, ambiguity,
-  overflow, expiry/eviction, semantic/view mismatch, patch overflow, and lost
-  continuity fail closed to a full snapshot/reset-required path;
-- after continuity loss, stale state is discarded and compact delivery does not
-  resume until a trusted RESET rebuilds the chain;
-- explicit verification can request a fresh full observation without discarding an
-  otherwise valid canonical chain.
+P2 makes a bounded changed-facts/affected-view `COMPACT_PATCH` the reasoning-layer
+observation for proven contiguous changes while retaining the canonical reconstructed
+state internally. Bootstrap/reset and explicit verification paths retain full
+snapshot behavior. Continuity failure discards stale state and fails closed.
 
-Controlled nine-update small-change evidence:
+Controlled nine-update evidence:
 
 - median rich reasoning payload: **22,244 bytes**;
 - median compact reasoning patch: **1,380 bytes**;
 - median reduction: **93.80%**;
-- target gate: **>= 75%**;
+- frozen minimum: **>=75%**;
 - fallback/reset during valid pairs: **0**;
 - stale-state continuation: **0**;
 - false completion: **0**;
 - foreground takeover: **0**;
 - relevant semantic information loss: **0**.
-
-The controlled benchmark is P2 evidence only. P2 does not claim the real-Opera,
-round-trip, steady-state snapshot, repetitive-task speedup, or simple-regression
-P5 gates.
 
 Acceptance record: `docs/delta-first-performance-p2.md`.
 
@@ -292,9 +197,16 @@ Acceptance record: `docs/delta-first-performance-p2.md`.
 
 ## P3 — multi-signal coalescer and relevance gate
 
+Status: **FINAL CANDIDATE**. Tests-first contract head
+`388df28d5795da2cb1fe72ece2ff25f46b7411d5` established the expected red boundary
+(CircleCI #92) before the P3 library existed. Implementation head
+`9309debd0db66993e99519f7015bf81a3c0804dd` passed CircleCI #93 and Vercel.
+The exact documentation-closeout head still requires green CircleCI + Vercel/status
+before P3 is accepted. P4 has not started.
+
 Objective: avoid converting many low-level browser events into many reasoning turns.
 
-Signals may include bounded versions of:
+Accepted bounded signal classes:
 
 - semantic/DOM mutation;
 - scroll and viewport change;
@@ -304,10 +216,10 @@ Signals may include bounded versions of:
 - wait-condition transition;
 - reconnect/restart/reset events.
 
-Signals must be coalesced into bounded change epochs before semantic reconciliation.
+Signals are coalesced into a bounded change epoch before semantic reconciliation.
 Mutation count is not reasoning-turn count.
 
-The relevance gate has three outcomes:
+The relevance gate has exactly three outcomes:
 
 ```text
 IGNORE_FOR_TASK
@@ -315,16 +227,41 @@ APPLY_AND_CONTINUE
 REASON_REQUIRED
 ```
 
-Task relevance is derived from accepted goal/constraint and dependency information;
-page/model text cannot grant relevance authority. `IGNORE_FOR_TASK` means the task
-reasoner need not wake, not that canonical browser state may be corrupted or lost.
+Task relevance derives only from accepted goal/constraint dependency context.
+Page/model/signal text cannot grant relevance authority. Missing, invalid, untrusted,
+or oversized dependency context fails conservative to `REASON_REQUIRED`.
 
-Acceptance includes an irrelevant-mutation-storm case with zero unnecessary
-reasoning wakeups while a later relevant change is still detected exactly.
+`IGNORE_FOR_TASK` suppresses only the reasoning wake. Canonical state still advances
+through P2/P1. `APPLY_AND_CONTINUE` is allowed only through accepted continuation
+dependencies. `REASON_REQUIRED` takes precedence over continuation dependencies.
+
+Navigation/history, reconnect/reset, epoch overflow, affected-key overflow, epoch
+expiry, and P2 reset-required/continuity failure are never silently ignored and
+force `REASON_REQUIRED`.
+
+Controlled irrelevant-mutation-storm evidence:
+
+- raw irrelevant signals: **1,280** across 10 epochs;
+- later relevant signal: **1**;
+- total raw signals: **1,281**;
+- unnecessary reasoning wakeups during irrelevant epochs: **0**;
+- total reasoning wakeups after later relevant change: **1**;
+- relevant update detected exactly: **1/1**;
+- relevant-signal loss: **0**;
+- false completion: **0**;
+- foreground takeover: **0**.
+
+P3 is a pure consumer/runtime layer over P2. It does not add extension signal
+observers, browser primitives, public MCP fields/tools, VM execution, Supabase
+production changes, signing/pairing changes, transaction authority, or 8E work.
+
+Acceptance record: `docs/delta-first-performance-p3.md`.
 
 ---
 
 ## P4 — event-driven local reactive execution
+
+Status: **NOT STARTED**.
 
 Objective: use the accepted bounded Reactive Browser VM and existing safe primitives
 to execute repetitive observation/filter/collect/wait work locally until a typed
@@ -340,9 +277,7 @@ reason once
   -> reason again only when necessary
 ```
 
-P4 must not add consequential transaction authority. It does not replace 8E.
-State-changing work remains within the authority boundaries already accepted before
-this track.
+P4 must not add consequential transaction authority and does not replace 8E.
 
 Initial repetitive-workload target:
 
@@ -366,18 +301,17 @@ Required application shapes:
 - GitHub: repeated structured entities plus SPA/navigation state;
 - YouTube: dynamic/media page with substantial irrelevant churn.
 
-The final paired comparison must use equivalent goals and safety/correctness gates.
-P5 target gates frozen by P0 are:
+Frozen P5 target gates:
 
 - false completion: 0;
 - foreground takeover: 0;
 - stale-state action: 0;
 - relevant-signal loss: 0;
-- small-change reasoning-payload reduction: >= 75% median;
-- repetitive reasoning-round-trip reduction: >= 60% median;
-- steady-state full-snapshot reduction: >= 80%;
-- long repetitive task speedup: >= 2.0x median;
-- simple-operation median regression: <= 15%.
+- small-change reasoning-payload reduction: >=75% median;
+- repetitive reasoning-round-trip reduction: >=60% median;
+- steady-state full-snapshot reduction: >=80%;
+- long repetitive task speedup: >=2.0x median;
+- simple-operation median regression: <=15%.
 
 If correctness is not equivalent, a latency win does not count.
 
@@ -391,7 +325,7 @@ Stop and review instead of optimizing through the failure when:
 - reset cannot re-establish continuity;
 - reasoning suppression materially reduces task correctness;
 - foreground takeover occurs;
-- ordinary/simple median latency regresses by more than the frozen bound without an
+- ordinary/simple median latency regresses beyond the frozen bound without an
   explicitly reviewed reason;
 - safe implementation requires arbitrary JS, unrestricted raw CDP, site-specific
   extension logic, or wider authority;
@@ -401,31 +335,14 @@ Stop and review instead of optimizing through the failure when:
 
 ## Rollback and feature gating
 
-P1-P4 should remain additive and default-off until accepted. A failure must be able
-to return to the accepted 1.6.0 observation path without changing transaction
-policy. P1 is a pure in-memory library and is not wired into browser behavior; its
-rollback is simply to stop consuming the library. P2 adds only the bounded
-consumer-side reasoning adapter over P1 and does not change extension/public-MCP
-behavior; rollback is to stop consuming that adapter and continue the existing rich
-observation path. Later checkpoints may introduce further integration only within
-their own accepted scope.
+P1-P4 remain additive/default-off until their checkpoints are accepted. A failure
+must be able to return to the accepted 1.6.0 observation path without changing
+transaction policy.
 
-## Research basis
-
-The track is informed by, but not dependent on trusting, the following external
-ideas:
-
-- browser mutation/visibility/resize/navigation event APIs for asynchronous change
-  detection rather than unconditional polling;
-- incremental view maintenance and self-adjusting/dataflow computation for updating
-  only dependent materialized results;
-- signal-driven web-agent observation that decouples action count from full
-  observation count;
-- task-relevant observation/context compression, while retaining recoverable
-  canonical state instead of irreversible lossy pruning.
-
-External research motivates hypotheses. Repository benchmarks, exact replay,
-controlled browser tests, real Opera evidence, and CI remain acceptance authority.
+- P1 rollback: stop consuming the in-memory state library.
+- P2 rollback: stop consuming the delta-first reasoning adapter.
+- P3 rollback: stop consuming the signal coalescer/relevance gate and continue the
+  P2 observation path.
 
 ## Track completion and return to Milestone 8
 

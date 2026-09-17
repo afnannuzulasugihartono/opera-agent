@@ -1,16 +1,23 @@
 # Opera Agent roadmap
 
-This is the current execution roadmap. Historical checkpoint details and release evidence remain in the milestone plans, checkpoint records, release notes, and benchmark documents; this file is the source of truth for current milestone status and the next permitted boundary.
+This is the current execution roadmap. Historical checkpoint details and release
+evidence remain in the milestone plans, checkpoint records, release notes, and
+benchmark documents; this file is the source of truth for current milestone status
+and the next permitted boundary.
 
 ## Product invariant
 
-Normal automation must not activate a tab, focus an Opera window, move the operating-system cursor, or redirect the user's keyboard input. The tab the user is viewing and the tab the agent is operating are independent.
+Normal automation must not activate a tab, focus an Opera window, move the
+operating-system cursor, or redirect the user's keyboard input. The tab the user is
+viewing and the tab the agent is operating are independent.
 
 ```text
 userActiveTab != automationTargetTab
 ```
 
-Foreground interaction is an explicit exception. A background failure must return a structured foreground requirement; it must not silently activate a tab or focus a window.
+Foreground interaction is an explicit exception. A background failure must return a
+structured foreground requirement; it must not silently activate a tab or focus a
+window.
 
 Other permanent boundaries:
 
@@ -26,31 +33,42 @@ Other permanent boundaries:
 
 Status: **complete/released**.
 
-`browser.burst` provides a bounded same-tab atomic sequence over validated primitives, with stop-on-failure behavior, resource limits, and no arbitrary-code escape hatch.
+`browser.burst` provides a bounded same-tab atomic sequence over validated
+primitives, with stop-on-failure behavior, resource limits, and no arbitrary-code
+escape hatch.
 
 ## Milestone 2 — background-first execution
 
 Status: **complete/released**.
 
-Two-tab focus audits, explicit target selection, background-native input, and signed normal-profile acceptance established the rule that automation does not steal the user's foreground. No silent foreground fallback is allowed.
+Two-tab focus audits, explicit target selection, background-native input, and signed
+normal-profile acceptance established the rule that automation does not steal the
+user's foreground. No silent foreground fallback is allowed.
 
 ## Milestone 3 — adaptive screenshots
 
 Status: **complete/released**.
 
-Bounded background capture, crop, privacy blocking, hash reuse, and native MCP image delivery were accepted without foreground takeover.
+Bounded background capture, crop, privacy blocking, hash reuse, and native MCP image
+delivery were accepted without foreground takeover.
 
 ## Milestone 4 — vision-guided navigation
 
 Status: **complete/released**.
 
-The bounded `observe -> decide -> act -> verify` loop, generic scroll/mutation observability, background Maps acceptance, and cross-site YouTube/GitHub acceptance were completed without site-specific extension logic.
+The bounded `observe -> decide -> act -> verify` loop, generic scroll/mutation
+observability, background Maps acceptance, and cross-site YouTube/GitHub acceptance
+were completed without site-specific extension logic.
 
 ## Milestone 5 — semantic runtime foundation
 
 Status: **complete/released in 1.6.0**.
 
-Checkpoints 5A–5F added bounded observational semantic identity, deltas, generic repeated-region/materialized views, causal invalidation, provenance, and scoped completion vocabulary while keeping protocol 1, 26 browser capabilities, and the 18 MCP tools unchanged. Semantic logical IDs remain observational, not direct action handles.
+Checkpoints 5A–5F added bounded observational semantic identity, deltas, generic
+repeated-region/materialized views, causal invalidation, provenance, and scoped
+completion vocabulary while keeping protocol 1, 26 browser capabilities, and 18 MCP
+tools unchanged. Semantic logical IDs remain observational, not direct action
+handles.
 
 Detailed plan: `docs/semantic-runtime-plan.md`.
 
@@ -58,91 +76,49 @@ Detailed plan: `docs/semantic-runtime-plan.md`.
 
 Status: **complete, Checkpoints 6A–6F accepted**.
 
-Milestone 6 added the revisioned Goal/Constraint Ledger, deterministic scoped Proof Engine, selective dependency invalidation/reuse, encrypted bounded server tokens, least-privilege persistence, and production acceptance. It retained the 1.6.0 extension and unchanged public MCP surface.
+Milestone 6 added the revisioned Goal/Constraint Ledger, deterministic scoped Proof
+Engine, selective dependency invalidation/reuse, encrypted bounded server tokens,
+least-privilege persistence, and production acceptance. Process/action receipts are
+not outcome proof; bounded evidence is not universal proof; stale/cross-tenant/
+cross-lineage/contradictory evidence fails closed.
 
-Important permanent result: process/action receipts are not outcome proof; bounded evidence is not universal proof; stale/cross-tenant/cross-lineage/contradictory evidence fails closed.
-
-Detailed plan and records: `docs/milestone-6-plan.md` and the Milestone 6 checkpoint documents.
+Detailed plan and records: `docs/milestone-6-plan.md` and the Milestone 6 checkpoint
+documents.
 
 ## Milestone 7 — Reactive Browser VM
 
 Status: **complete, Checkpoints 7A–7F accepted on 2026-09-12**.
 
-### 7A — contract freeze
+Milestone 7 accepted the deterministic VM grammar/core, bounded loops/waits,
+collection/proof binding, durable dark host, replay/idempotency/fencing, cancellation
+and expiry, controlled Chromium/focus acceptance, signed normal-profile acceptance,
+and production cleanup while keeping the public MCP surface frozen.
 
-Accepted the closed VM grammar, deterministic canonicalization, read-only-first effect table, typed suspension/status model, metadata-only persistence contract, hostile corpus, protocol/capability/MCP lock, and bounded execution budgets.
+Final independent audit: **PASS** at
+`551e8283c0417b173e106ee0598cca848f2f4ff0`.
 
-### 7B — pure deterministic core
-
-Accepted `lib/reactive-vm.js` for deterministic sequence/branch/assert/return/effect-yield execution with no browser/network/database/ambient-clock side effects.
-
-### 7C — bounded reactive control
-
-Accepted `lib/reactive-vm-7c.js` for bounded loops, until, wait-event polling, and safe read-only retry while preserving the 7B core.
-
-### 7D — bounded collection and proof binding
-
-Accepted `lib/reactive-vm-7d.js` for collection, deduplication, identity ambiguity retention, causal invalidation, and non-exhaustive browser-sensor evidence binding. `BOUNDED_COMPLETE` remains scoped; it is not universal `PROVED`.
-
-### 7E — durable host and dark integration
-
-Accepted the separate tenant-bound durable host with private service-role-only storage, bounded encrypted tokens, lease/CAS fencing, exact-redelivery replay, deterministic effect idempotency, cancellation/expiry/reclaim, queue/rate/concurrency limits, and default-off `milestone7_vm_enabled` flag.
-
-The VM effect surface remains the frozen 7A read-only set. No navigation, tab mutation, click/fill/key/pointer/scroll/media mutation, consequential effect, direct logical-ID action, or public VM MCP tool was added.
-
-### 7F — compatibility/performance/production acceptance
-
-Accepted evidence includes:
-
-- focused 7F suite 6/6;
-- full Node suite 171/171 on Ubuntu and 171/171 on actual Windows;
-- static validation still reports 26 allowlisted primitives / version 1.6.0;
-- controlled Chromium regression pass;
-- 55-command background focus audit with zero focus takeover;
-- burst stability 20/20;
-- deterministic replay agreement 100%;
-- zero false `PROVED` in bounded-evidence acceptance;
-- paired same-runner semantic-read regression 13.851%, below the frozen 15% limit;
-- signed normal-profile Maps/YouTube/GitHub acceptance with inactive targets and bounded claims;
-- Supabase dark-run acceptance for replay/idempotency/worker-death/cancel/expiry/cross-tenant behavior;
-- final production state: VM flag false, VM tables zero, temporary 7F command rows zero.
-
-The Windows CRLF source-hash defect was repaired by explicit byte-level LF canonicalization before hashing. The frozen canonical MCP hash, 7A inventory lock, MCP source, and public contract were not changed.
-
-Detailed plan and acceptance records: `docs/milestone-7-plan.md` and `docs/milestone-7-checkpoint-7a.md` through `docs/milestone-7-checkpoint-7f.md`.
-
-## Milestone 7 independent audit
-
-**PASS on 2026-09-12.** Codex reconciled the complete 7A–7F chain at final head
-`551e8283c0417b173e106ee0598cca848f2f4ff0`, independently reran proportionate
-local gates, verified exact-head CI and temporary PR cleanup, and rechecked the
-production Supabase dark state. See `docs/milestone-7-codex-audit.md`.
-
-The audit grants no new browser authority and does not promote the default-off VM.
-The Milestone 8 plan was subsequently frozen, revised to resolve three blocking
-review findings, and independently reviewed **PASS** at revision
-`11a285bfb464cc3a1c157befe6e0aa0aa557f2fc`. See
-`docs/milestone-8-plan-codex-review.md`.
+Detailed plan and acceptance records: `docs/milestone-7-plan.md` and
+`docs/milestone-7-checkpoint-7a.md` through `docs/milestone-7-checkpoint-7f.md`.
 
 ## Milestone 8
 
-Status: **8A–8D accepted. Checkpoint 8D completed its final independent overall audit PASS, live hosted acceptance, production cleanup, advisor reconciliation, and exact-head closeout CI successfully. 8E has not started and is intentionally paused while the user-selected Performance Track P runs.** Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
+Status: **8A–8D accepted. 8E paused/not started while Performance Track P runs.**
 
-Checkpoint 8A freezes `OA_TRANSACTION_V1`, `OA_ACTION_PROVENANCE_V1`, and `OA_APPROVAL_V1`, the complete 18-tool enforcement matrix, dual-era approval bindings, deterministic digest vectors, and a 74-case hostile corpus. It is contract/tests/docs only and changes no runtime, production state, MCP surface, extension, OAuth configuration, or signing. Acceptance record: `docs/milestone-8-checkpoint-8a.md`.
+8D completed final independent audit PASS, live hosted acceptance, production
+cleanup, advisor reconciliation, and exact-head closeout CI. Durable 8D closeout
+head: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`.
 
-Checkpoint 8B implements the pure environment-neutral preparation layer: immutable single-action envelopes, deterministic predicate dependency fingerprints, selective/fail-closed revalidation, conservative trusted effect classification, bounded previews, and enforcement decisions. It adds no browser dispatch, approval, persistence, public MCP/runtime surface, or production change. Acceptance record: `docs/milestone-8-checkpoint-8b.md`.
-
-Checkpoint 8C implements the pure provenance and approval verifier: exact authority/target/freshness fences, OAuth-user and trusted-client challenge binding, modern one-round requestState/inputResponses verification, TTL and consumed-nonce rejection, and deterministic consumption claims. Durable one-shot CAS remains 8D work. Acceptance record: `docs/milestone-8-checkpoint-8c.md`.
+Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
 
 ## Performance Track P — Delta-First Runtime
 
-Status: **P0 accepted. P1 accepted. P2 FINAL CANDIDATE — exact-head closeout CI/status required. P3 has not started.**
+Status: **P0 accepted. P1 accepted. P2 accepted. P3 FINAL CANDIDATE — exact-head closeout CI/status required. P4 has not started.**
 
 The user selected this bounded performance track after 8D and before 8E so Opera
 Agent can make its existing observation/reasoning path substantially more efficient
 before adding further autonomous transaction capability.
 
-The frozen architecture is:
+Frozen architecture:
 
 ```text
 full snapshot bootstrap
@@ -162,32 +138,49 @@ Checkpoint sequence:
 
 - **P0** — accepted at `699578904e2f19ea713a0933632331cad7299c11` with CircleCI #76 + Vercel SUCCESS;
 - **P1** — accepted at `cbf3259a337d92410a5ba805dd0fd987a51c1bc5` with CircleCI #85 + Vercel SUCCESS;
-- **P2** — implementation head `5f0477441ab0b05335a87c6a7e69a5415dc8b5ce` passed CircleCI #87 + Vercel; final documentation-closeout head still requires exact-head green checks;
-- **P3** — multi-signal coalescer and relevance gate;
-- **P4** — event-driven local Reactive VM execution;
+- **P2** — accepted at `8621e2dc454f8e8f1e977c350522e6fb2b5dc51d` with CircleCI #91 + Vercel SUCCESS;
+- **P3** — tests-first head `388df28d5795da2cb1fe72ece2ff25f46b7411d5` produced expected red CircleCI #92 before implementation; implementation head `9309debd0db66993e99519f7015bf81a3c0804dd` passed CircleCI #93 + Vercel; documentation-closeout head still requires exact-head green checks;
+- **P4** — event-driven local Reactive VM execution, not started;
 - **P5** — paired controlled + real-Opera performance/correctness acceptance.
 
-P1 established the pure bounded ephemeral working-state layer. P2 adds the
+P1 established the pure bounded ephemeral working-state layer. P2 added the
 consumer-side delta-first observation adapter: bootstrap/reset uses a rich full
 snapshot, while proven contiguous observations can deliver bounded changed
 entities/views, provenance, continuity, invalidation/removal metadata, and byte
 accounting as `COMPACT_PATCH` while retaining canonical reconstructed state
 internally.
 
-The controlled nine-update P2 workload records a median 22,244-byte rich reasoning
-payload versus a 1,380-byte compact patch, a 93.80% median reduction. Its accepted
-contract also requires exact canonical-state agreement and zero stale-state
-continuation, false completion, foreground takeover, and relevant semantic loss.
-These are P2 controlled-workload claims only; P5 real-Opera and end-to-end targets
-remain future gates.
+P2 controlled evidence records a median 22,244-byte rich reasoning payload versus a
+1,380-byte compact patch, a **93.80% median reduction**, with exact state agreement
+and zero stale-state continuation, false completion, foreground takeover, and
+relevant semantic loss.
 
-P2 does not change extension bytes, `page.read`, public MCP schemas, browser
-dispatch, Supabase production, signing/pairing, transaction authority, or the frozen
-Milestone 8 contracts. P3/P4 behavior has not started.
+P3 adds a pure bounded multi-signal change-epoch/relevance layer over P2. Its three
+outcomes are `IGNORE_FOR_TASK`, `APPLY_AND_CONTINUE`, and `REASON_REQUIRED`.
+Accepted goal/constraint dependency context is the only relevance authority; page or
+model text cannot grant wake/suppress authority. Missing/invalid context, safety
+signals, overflow, expiry, and P2 reset-required conditions fail conservative to
+`REASON_REQUIRED`.
+
+Controlled P3 irrelevant-mutation-storm evidence:
+
+- **1,280** irrelevant signals across 10 epochs;
+- **0** unnecessary reasoning wakeups;
+- one later relevant signal/update;
+- **1** total reasoning wake for that relevant update;
+- relevant update detected **1/1**;
+- relevant-signal loss **0**;
+- false completion **0**;
+- foreground takeover **0**.
+
+P3 does not change extension bytes, `page.read`, public MCP schemas, browser
+dispatch, Reactive VM execution, Supabase production, signing/pairing, transaction
+authority, or frozen Milestone 8 contracts.
 
 Detailed plan: `docs/delta-first-performance-plan.md`.
 Acceptance records: `docs/delta-first-performance-p0.md`,
-`docs/delta-first-performance-p1.md`, and `docs/delta-first-performance-p2.md`.
+`docs/delta-first-performance-p1.md`, `docs/delta-first-performance-p2.md`, and
+`docs/delta-first-performance-p3.md`.
 
 Consequential effects, direct logical-ID action addressing, broader transaction
 execution, learned skills, parallel autonomous workers, and any broader authority
@@ -198,10 +191,14 @@ acceptance gates, and rollback procedures. Performance work does not grant them.
 
 - one active writer on the milestone/track branch;
 - ChatGPT Web implements and accepts one checkpoint at a time;
-- chat reports are not acceptance authority until reconciled with repository/CI/production evidence;
+- chat reports are not acceptance authority until reconciled with repository/CI/
+  production evidence;
 - temporary CI/PR state must be restored before closure;
-- Codex independently audits a complete milestone/track when required by its frozen plan;
-- auth/authz, tenancy, encryption, signing, public MCP, extension distribution, irreversible effects, and production-schema boundaries may trigger an earlier Codex review.
+- Codex independently audits a complete milestone/track when required by its frozen
+  plan;
+- auth/authz, tenancy, encryption, signing, public MCP, extension distribution,
+  irreversible effects, and production-schema boundaries may trigger an earlier
+  Codex review.
 
 Authoritative policy: `AGENTS.md`.
 Reusable checkpoint prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
