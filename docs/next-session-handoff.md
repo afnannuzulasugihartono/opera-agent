@@ -2,7 +2,7 @@
 
 Last synchronized: 2026-09-17.
 
-Checkpoint 8D remains closed. Performance Track P (P0–P6) is completed. P6 implements the authoritative live runtime cutover for Performance Track P (P1–P4) on the live DB-backed 7E VM host. 8E remains paused/not started.
+Checkpoint 8D remains closed. Performance Track P (P0–P6) is completed. P6实现了Performance Track P (P1-P4)在 live DB-backed 7E VM host 上的权威 live runtime cutover。8E remains paused/not started.
 
 ## Authoritative boundary
 
