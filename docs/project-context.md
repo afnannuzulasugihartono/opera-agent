@@ -16,26 +16,24 @@ plan.
 - Public MCP tools: `18`
 - Extension ID: `ohbbpamcljckmjhcpkcmefdobkoeaick`
 - Signed rollback: `1.5.2`
-- Milestone 8: 8A-8D **ACCEPTED**; 8E not started
-- Checkpoint 8D durable closeout head before Performance Track P:
-  `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
+- Milestone 8: 8A-8D **ACCEPTED**; 8E paused/not started
+- Durable 8D closeout head: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
 - Active user-selected work: **Performance Track P — Delta-First Runtime**
-- Current checkpoint: **P0 FINAL CANDIDATE; exact-head CI/status required**
-- P1 not started; 8E remains paused
-
-Checkpoint 8D preserved the frozen boundary: no public MCP schema/runtime,
-extension/CRX, signing, pairing, protocol, or browser-capability changes. OAuth
-consent remained connection authorization only. `browserDispatchAllowed` remained
-false throughout 8D acceptance.
+- P0: **ACCEPTED** at `699578904e2f19ea713a0933632331cad7299c11`
+  with CircleCI #76 and Vercel SUCCESS
+- P1: **FINAL CANDIDATE**; exact documentation-closeout head still requires green
+  CircleCI + Vercel/status
+- P2 has not started
 
 ## Performance Track P
 
-The user selected a bounded performance track after closing 8D and before starting
-8E. The detailed frozen plan is `docs/delta-first-performance-plan.md`; the P0
-candidate record is `docs/delta-first-performance-p0.md` and the machine-readable
-contract is `tests/fixtures/delta-performance-baseline-p0-v1.json`.
+Canonical plan: `docs/delta-first-performance-plan.md`.
+Acceptance records:
 
-The target direction is:
+- `docs/delta-first-performance-p0.md`
+- `docs/delta-first-performance-p1.md`
+
+Frozen target architecture:
 
 ```text
 full snapshot bootstrap
@@ -47,166 +45,104 @@ full snapshot bootstrap
   -> local continuation or compact reasoning patch
 ```
 
-A full snapshot remains the fail-closed recovery primitive whenever continuity is
-not provable. Performance Track P does not grant new transaction authority or
+Full snapshot remains the fail-closed recovery primitive whenever continuity is not
+provable. Performance Track P does not grant new transaction authority and does not
 change the frozen Milestone 8 contracts.
 
-P0 scope is contract/baseline/docs/tests only. It authorizes no runtime,
-extension, MCP, browser, database, Edge, OAuth, production, signing/pairing, or
-transaction-authority mutation.
+## P1 implementation state
 
-P0 freezes these future target gates without claiming they are already achieved:
+P1 introduces only a pure bounded process-memory working-state layer:
 
-- false completion 0;
-- foreground takeover 0;
-- stale-state action 0;
-- relevant-signal loss 0;
+- `lib/semantic-working-state-p1.js`
+- `tests/semantic-working-state-p1.test.mjs`
+- `tests/semantic-working-state-p1-adversarial.test.mjs`
+
+Trusted state identity is tenant + device + tab + document generation + runtime
+epoch. The state retains bounded semantic metadata, materialized views, dependency
+fingerprints, current semantic revision, last source/result revision, and a digest
+used to distinguish exact replay from incompatible replay.
+
+P1 continuity rules:
+
+- trusted `RESET`/full observation required for bootstrap;
+- exact contiguous revision advancement required;
+- exact duplicate replay is idempotent;
+- incompatible duplicate, old input, revision gap, cross-tenant/device/tab/document,
+  runtime-epoch mismatch, ambiguity, overflow, expiry, and capacity eviction fail
+  closed;
+- reset/full-snapshot-required observations require fresh bootstrap;
+- current rich observation is still present and acts as a correctness oracle;
+- semantic/view material that differs from the asserted delta is rejected before
+  accepted state mutation.
+
+P1 stores semantic metadata only. Raw page text, raw labels, href/private query
+material, form values, and sensitive entities are excluded from the public working
+state. No file/database/network persistence was added.
+
+P1 explicitly does **not** suppress the rich observation delivered to reasoning.
+That is P2 scope.
+
+## P1 tests-first / automated evidence
+
+- `644b4b9e48c12dc5f65b08e3176c4cca77c8be62` — initial contract tests
+- `f6c95ab7f0b37e28d038a832d411ee4f4da19cc5` — implementation
+- `8f450d6c911628e234b19bcd641c37c5b60cc7eb` — duplicate/out-of-order test correction
+- `27e683af29de562d91ca2303d5eb8e74606e2700` — adversarial reconstruction tests
+
+Automated gates already green before documentation closeout:
+
+- `8f450d...`: CircleCI #79 SUCCESS + Vercel SUCCESS
+- `27e683...`: CircleCI #80 SUCCESS + Vercel SUCCESS
+
+CircleCI includes the full Node suite, `npm run check`, and controlled Chromium
+extension regression. The Chromium pass is compatibility evidence only; P1 did not
+change or wire the extension.
+
+## Frozen P5 targets
+
+P0 froze these future acceptance targets; P1 does not claim them achieved:
+
+- false completion = 0;
+- foreground takeover = 0;
+- stale-state action = 0;
+- relevant-signal loss = 0;
 - small-change reasoning payload reduction >= 75% median;
 - repetitive reasoning/tool round-trip reduction >= 60% median;
 - steady-state full-snapshot reduction >= 80%;
-- long repetitive task speedup >= 2.0x median;
+- long repetitive task median speedup >= 2.0x;
 - simple-operation median regression <= 15%.
 
-Inherited accepted 1.6.0 browser evidence from `docs/benchmarks.md` remains the
-reference baseline: rich-read median 19.83 ms, p95 20.65 ms, 50,953-byte enriched
-snapshot median, and 6,087-byte single-update delta (12% delta/snapshot ratio).
-P0 does not relabel those historical accepted measurements as fresh exact-head live
-measurements.
+Inherited accepted 1.6.0 reference evidence remains rich-read median 19.83 ms,
+p95 20.65 ms, 50,953-byte enriched snapshot median, and 6,087-byte single-update
+delta (12% delta/snapshot ratio). These historical measurements are not fresh P1
+performance claims.
 
-## Final 8D acceptance chain
+## Closed 8D state
 
-### Live-probe runtime head
-
-The real hosted Edge concurrency acceptance ran exactly once on runtime head
-`cf645799968458d55d5c2b391a5d354c369337b6` after fresh independent rerun
-authorization PASS.
-
-### PKCE
-
-Manual PKCE acceptance passed at
-`80e44483f2cdba400681dc6279522d0d55d24c98`. OAuth application consent remained
-connection authorization only, browser dispatch remained false, and the static
-Edge master was restored to false afterward.
-
-### Worker-loss / reclaim
-
-Hosted durable worker-loss acceptance passed at
-`8e3c6cd6aef41d8d1fb5a46189b193e34212c377` with real local child process death
-against the hosted Supabase database, lease-expiry reclaim, stale-epoch rejection,
-one-shot nonce durability, exact redelivery, one logical commit slot,
-cancellation/recovery safety, browser dispatch false, clean cleanup, and no secret
-output. This is not provider-internal Edge/V8-isolate death evidence.
-
-### Quantitative bounds
-
-`docs/milestone-8-checkpoint-8d-cloud-bounds.md` records the accepted bounded
-cloud quantitative continuation for pending queue, prepare/commit rates,
-concurrent targets, target digest, exact payload boundary, and cleanup batch.
-Native/PostgreSQL and hosted tests provide the complementary durability,
-retention, crypto/token, tenant and policy-negative coverage.
-
-### Real hosted Edge concurrency — PASS
-
-Authorized namespace:
-`c6b88ac8-6b46-4b0f-932a-229422fa1272`.
-
-Prepare race:
-- concurrency 8;
-- one non-replay winner + seven exact replays;
-- status `PREPARED`;
-- eight distinct `x-deno-execution-id` routing traces;
-- three observed `x-sb-edge-region` regions;
-- `browserDispatchAllowed=false`;
-- `secretsPrinted=false`.
-
-Cancel race:
-- concurrency 8;
-- one non-replay winner + seven exact replays;
-- status `CANCELLED`;
-- eight distinct `x-deno-execution-id` routing traces;
-- three observed `x-sb-edge-region` regions;
-- `browserDispatchAllowed=false`;
-- `secretsPrinted=false`.
-
-Final receipt reported `prepareWinners=1`, `cancelWinners=1`, eight distinct
-routing traces for both phases, `clean=true`, browser dispatch false and no secret
-output. Terminal result: **`8D EDGE CONCURRENCY ACCEPTANCE: PASS`**. The launcher
-then reported **static Edge master restored to false**.
-
-Routing traces prove distinct hosted request executions only; do not claim distinct
-V8 isolates or provider-internal worker processes.
-
-## Production state after the 8D PASS
-
-Fresh independent read-only database verification after the live probe returned:
-
-- policy `OFF`;
-- `legacy_gated=false`;
-- `agent_commit_enabled=false`;
-- `opera_tx_operator_host_gate_8d()=false`;
-- operator epoch `3`;
-- owner null;
-- namespace null;
-- lease null;
-- `hostEnabled=false`;
-- `principals=0`;
-- `rates=0`;
-- `acceptance_bindings=0`;
-- `runs=0`;
-- `run_identities=0`;
-- `run_limits=0`;
-- `run_previews=0`;
-- `run_challenges=0`;
-- `journal=0`;
-- `approvals=0`;
-- `commit_slots=0`;
-- `opera_agent_private.goal_heads=0`.
-
-The database check cannot reveal the static Edge secret value; master-false evidence
-comes from the reviewed launcher's successful bounded Management API restore.
-
-## Production facts
-
-Supabase project `opera-agent` / `nenmkmtvjremqphfqnfw` is the only 8D project.
-Installed migrations include:
-
-- `20260913143306_transaction_journal_8d_dark`
-- `20260914043049_transaction_operator_fence_8d`
-
-The isolated `opera-agent-transactions-8d` function was reviewed as ACTIVE,
-JWT-required, production version 20, bundle SHA-256
-`96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1`.
-Its static `OPERA_AGENT_TRANSACTION_DARK_8D` master is only a deployment kill
-switch. Even when true, every transaction request still requires the independent
-service-only DB `opera_tx_operator_host_gate_8d()` to return true.
-
-## Final independent overall 8D audit — PASS
-
-Final read-only Jules session `17943137394205042765` reviewed exact documentation
-head `d0ce3c42c076e3c60d61a2a72150e57371cf8a09` after CircleCI #65 and Vercel both
-reported SUCCESS. The reviewer verified the exact head, clean git state, `324/324`
-passing tests, canonical 8D acceptance mapping, and zero repository
-diffs/artifacts. Final verdict: **PASS**.
-
-The later durable 8D closeout ended at
+Checkpoint 8D is fully closed. The successful hosted Edge concurrency probe ran
+exactly once on runtime head `cf645799968458d55d5c2b391a5d354c369337b6`.
+Final independent overall audit Jules session `17943137394205042765` returned PASS.
+Durable 8D roadmap closeout finished at
 `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab` with CircleCI #69 and Vercel SUCCESS;
-temporary audit PR #43 was closed without merge. 8D is therefore fully closed.
+audit PR #43 was closed without merge.
 
-`docs/milestone-8-checkpoint-8d-acceptance.md` is the authoritative consolidated
-8D acceptance record.
+Post-probe production remained policy OFF, legacy_gated false,
+agent_commit_enabled false, DB host gate false, operator owner/namespace/lease null,
+host false, and synthetic 8D tables/goal-head rows zero. Do not rerun
+`RUN_8D_EDGE_CONCURRENCY.cmd`; its reviewed one-run authorization was consumed.
 
 ## Exact next gate
 
-1. Treat the branch head containing the complete P0 artifacts, roadmap, context,
-   and handoff as the exact P0 final candidate.
-2. Require CircleCI and Vercel/status checks on that exact head to be SUCCESS.
-   Pending/queued/in-progress => STOP; a real failure => diagnose only P0.
-3. No second status-only commit is required after exact-head green checks.
-4. Once green, P0 is accepted. Do **not** begin P1 in the same turn without an
-   explicit user continuation.
-5. If the user continues the selected performance track, exact next checkpoint is
-   **P1 — persistent semantic working state**.
-6. Do not start 8E while Performance Track P remains the selected active track.
+1. Treat the branch head containing the complete P1 implementation, tests,
+   acceptance record, plan, roadmap, project context, and handoff as the exact P1
+   final candidate.
+2. Require CircleCI and Vercel/status on that exact head to be SUCCESS.
+3. Pending/queued/in-progress => **STOP**.
+4. Failure => diagnose only that P1 failure.
+5. If both checks are green, P1 is accepted without another status-only commit.
+6. Stop after P1. Start **P2 — delta-first observation pipeline** only after explicit
+   user continuation.
+7. Do not start 8E while Performance Track P remains the selected active track.
 
 ## Invariants and user-local state
 
@@ -216,11 +152,11 @@ temporary audit PR #43 was closed without merge. 8D is therefore fully closed.
 - no arbitrary JavaScript/raw CDP/SQL/shell/generated-code escape hatch;
 - preserve signing identity/pairing and immediate signed rollback;
 - never commit or print Management/OAuth/signing/pairing/crypto credentials;
-- do not rerun the live 8D Edge concurrency probe: its reviewed one-run
-  authorization was consumed by the PASS.
+- action success is not completion proof;
+- performance gains never justify stale-state action, false completion, missed
+  relevant changes, or foreground takeover.
 
 Two accidental untracked 8E files remain preserved in a Git stash named roughly
 `preserve accidental 8E files before completing checkpoint 8D`. Do not pop, apply,
 delete, or build on that stash automatically. Performance Track P does not use it.
-If 8E later resumes and might reuse those files, inspect them first against the
-canonical 8E scope.
+If 8E later resumes, inspect it against the canonical 8E scope first.
