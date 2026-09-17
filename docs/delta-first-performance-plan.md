@@ -1,6 +1,6 @@
 # Performance Track P — Delta-First Runtime
 
-Status: **P0 ACCEPTED / P1 FINAL CANDIDATE — exact-head CI required; P2 not started.**
+Status: **P0 ACCEPTED / P1 ACCEPTED / P2 FINAL CANDIDATE — exact-head CI required; P3 not started.**
 
 Date frozen: 2026-09-17
 Baseline repository head before P0: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
@@ -202,10 +202,8 @@ The accepted record is `docs/delta-first-performance-p0.md`.
 
 ## P1 — persistent semantic working state
 
-Status: **FINAL CANDIDATE**. Implementation/test head
-`27e683af29de562d91ca2303d5eb8e74606e2700` passed CircleCI #80 and Vercel; the
-exact documentation-closeout head still requires green CI/status before P1 is
-accepted. P2 has not started.
+Status: **ACCEPTED** on exact head
+`cbf3259a337d92410a5ba805dd0fd987a51c1bc5` with CircleCI #85 and Vercel SUCCESS.
 
 Objective: introduce a bounded ephemeral working-state layer keyed by trusted
 runtime identity such as tenant/device/tab/document generation, without changing
@@ -233,8 +231,8 @@ Required correctness properties:
   performance;
 - bounded eviction cannot silently become continuity.
 
-P1 does **not** yet suppress the full snapshot delivered to the existing reasoning
-path. It proves the working-state foundation first.
+P1 does **not** suppress the full snapshot delivered to the existing reasoning path.
+It proves the working-state foundation first.
 
 Acceptance record: `docs/delta-first-performance-p1.md`.
 
@@ -242,29 +240,53 @@ Acceptance record: `docs/delta-first-performance-p1.md`.
 
 ## P2 — delta-first observation pipeline
 
+Status: **FINAL CANDIDATE**. Tests-first contract head
+`0f1b856b27776a813cbe818a0677344e991c9c3c` established the expected red boundary;
+implementation head `5f0477441ab0b05335a87c6a7e69a5415dc8b5ce` passed CircleCI #87 and Vercel.
+The exact documentation-closeout head still requires green CircleCI + Vercel/status
+before P2 is accepted. P3 has not started.
+
 Objective: when continuity is proven, make a compact delta/affected-view patch the
 default reasoning-layer observation while retaining the canonical reconstructed
 working state internally.
 
-Required behavior:
+Implemented behavior:
 
-- first observation uses a full snapshot;
-- valid contiguous observations apply only incremental state changes;
-- reasoning receives bounded changed facts/views plus required provenance and
-  decision context, not an unnecessary complete rich snapshot;
-- every reset condition returns to a fresh full snapshot before continuing;
-- verification paths may request a fresh observation when correctness requires it.
+- first/trusted RESET observation uses a full snapshot;
+- valid contiguous observations update the P1 canonical state and emit a bounded
+  `COMPACT_PATCH` containing changed entities/views, revisions, continuity,
+  provenance, invalidation/removal metadata, and payload accounting;
+- exact replay is idempotent and does not resend changed facts;
+- raw page text, labels, href/private-query material, values, sensitive entities,
+  raw provenance notes, raw invalidation notes, and raw completion scope are not
+  present in compact patches;
+- semantic `logicalId` remains observational and is not promoted to a direct action
+  handle;
+- incompatible duplicate, gap/out-of-order, cross-scope identity, ambiguity,
+  overflow, expiry/eviction, semantic/view mismatch, patch overflow, and lost
+  continuity fail closed to a full snapshot/reset-required path;
+- after continuity loss, stale state is discarded and compact delivery does not
+  resume until a trusted RESET rebuilds the chain;
+- explicit verification can request a fresh full observation without discarding an
+  otherwise valid canonical chain.
 
-Initial target gate for controlled small-change cases:
+Controlled nine-update small-change evidence:
 
-- at least 75% median reduction in reasoning payload versus the paired full-rich
-  snapshot path;
-- exact state reconstruction agreement;
-- zero stale-state continuation;
-- zero false completion;
-- zero foreground takeover.
+- median rich reasoning payload: **22,244 bytes**;
+- median compact reasoning patch: **1,380 bytes**;
+- median reduction: **93.80%**;
+- target gate: **>= 75%**;
+- fallback/reset during valid pairs: **0**;
+- stale-state continuation: **0**;
+- false completion: **0**;
+- foreground takeover: **0**;
+- relevant semantic information loss: **0**.
 
-Target numbers are acceptance goals, not claims of achieved performance.
+The controlled benchmark is P2 evidence only. P2 does not claim the real-Opera,
+round-trip, steady-state snapshot, repetitive-task speedup, or simple-regression
+P5 gates.
+
+Acceptance record: `docs/delta-first-performance-p2.md`.
 
 ---
 
@@ -382,8 +404,11 @@ Stop and review instead of optimizing through the failure when:
 P1-P4 should remain additive and default-off until accepted. A failure must be able
 to return to the accepted 1.6.0 observation path without changing transaction
 policy. P1 is a pure in-memory library and is not wired into browser behavior; its
-rollback is simply to stop consuming the library. P2 or later may introduce the
-first runtime integration only within its own accepted scope.
+rollback is simply to stop consuming the library. P2 adds only the bounded
+consumer-side reasoning adapter over P1 and does not change extension/public-MCP
+behavior; rollback is to stop consuming that adapter and continue the existing rich
+observation path. Later checkpoints may introduce further integration only within
+their own accepted scope.
 
 ## Research basis
 
