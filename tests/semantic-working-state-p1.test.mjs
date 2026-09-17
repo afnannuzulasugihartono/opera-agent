@@ -203,7 +203,7 @@ test('P1 rejects revision gaps and out-of-order observations without mutating ac
 
   const old = observation({
     sourceRevision: 0,
-    resultingRevision: 1,
+    resultingRevision: 0,
     classification: 'NO_RELEVANT_CHANGE',
     completeSnapshotRequired: false,
     resetReason: undefined,
