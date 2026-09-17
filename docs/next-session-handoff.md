@@ -2,7 +2,7 @@
 
 Last synchronized: 2026-09-17.
 
-Checkpoint 8D remains closed. Performance Track P (P0–P6) is completed. P6实现了Performance Track P (P1-P4)在 live DB-backed 7E VM host 上的权威 live runtime cutover。8E remains paused/not started.
+Checkpoint 8D remains closed. Performance Track P (P0–P6) is completed. P6 implements the authoritative live runtime cutover for Performance Track P (P1–P4) on the live DB-backed 7E VM host (maximal safe subset). 8E remains paused/not started.
 
 ## Authoritative boundary
 
@@ -20,8 +20,8 @@ Checkpoint 8D remains closed. Performance Track P (P0–P6) is completed. P6实�
    - `supabase/functions/opera-agent-vm/index.ts` and `lib/reactive-vm-host-7e.js` import and execute `reconcileVmEffectObservation7E` in the live `executeEffect` loop.
 2. **Cold-Start Safety**:
    - Edge cold-start / missing session continuity fails closed to `RESET_REQUIRED` and `FULL_SNAPSHOT`.
-3. **Task Context Rules**:
-   - P3 relevance uses accepted `ACCEPTED_GOAL_CONSTRAINT_DEPENDENCIES` task context. Missing/invalid context forces `REASON_REQUIRED`. Dependencies are never fabricated.
+3. **Server-Authoritative Context**:
+   - Caller-asserted `taskDependencies` are rejected as unauthoritative (`contextStatus: 'MISSING'`), defaulting observation updates conservatively to `REASON_REQUIRED` (maximal safe P6 subset without inventing a new public/stateful protocol).
 4. **Preserved Primitives & Protocol**:
    - All 18 public MCP tools, Protocol 1, 26 browser capabilities, and `opera_enqueue`/`opera_await` low-level transport remain intact. Full `read_page` text and snapshot recovery are preserved.
 5. **Metadata Update**:

@@ -24,7 +24,7 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 - P3 accepted: `d5310508aeb5c156657bd4d4abd06a4d172daaba`, CircleCI #94 + Vercel
 - P4 accepted: `e550bc90f49df2541dfd91789d99b2b33e4bf2aa`, CircleCI #98 + Vercel
 - P5 accepted: historical real-Opera performance acceptance record preserved
-- P6 completed: **Authoritative Live Runtime Cutover**
+- P6 completed: **Authoritative Live Runtime Cutover (Maximal Safe Subset)**
 - 8E remains paused/not started
 
 Canonical plan: `docs/delta-first-performance-plan.md`.
@@ -37,16 +37,16 @@ Acceptance records:
 - `docs/delta-first-performance-p4.md`
 - `docs/delta-first-performance-p5.md`
 
-## P6 Authoritative Runtime Cutover
+## P6 Authoritative Runtime Cutover (Maximal Safe Subset)
 
-P6 connects Performance Track P mechanisms (P1–P4) into the active live VM runtime loop:
+P6 connects Performance Track P mechanisms (P1–P4) directly into the active live VM runtime loop:
 
 1. **Live Consuming Path**:
    - `supabase/functions/opera-agent-vm/index.ts` (the durable DB-backed 7E VM host) and `lib/reactive-vm-host-7e.js` import and execute `reconcileVmEffectObservation7E` directly during `executeEffect` after receiving observation results from `opera_await`.
 2. **Cold-Start & Session Continuity**:
    - On Edge function cold start or worker restart, missing in-memory session continuity in P1/P2/P3 fails closed to `RESET_REQUIRED` and demands a `FULL_SNAPSHOT`. Stale continuation is never permitted.
-3. **Accepted Dependencies & Task Context**:
-   - P3 relevance evaluation requires signed Goal/Constraint dependencies (`ACCEPTED_GOAL_CONSTRAINT_DEPENDENCIES`). Missing or unaccepted task context defaults conservatively to `REASON_REQUIRED`. Relevance is never fabricated.
+3. **Server-Authoritative Dependency Context**:
+   - Caller-asserted `taskDependencies` are rejected as unauthoritative in live VM host reconciliation (`contextStatus: 'MISSING'`). Observation updates default conservatively to `REASON_REQUIRED`. Dependencies are never fabricated. This represents the maximal safe P6 subset without introducing an unsafe public/stateful protocol.
 4. **Preservation of Low-Level Primitives & Text**:
    - Low-level browser primitives (`read_page`, `page.read`, `find_elements`, `click_element`, `fill_element`, `scroll_page`, `browser.burst`, `browser.ping`), Protocol 1, 26 browser capabilities, and `opera_enqueue`/`opera_await` low-level transport remain fully preserved. Full document page text (`page.text`) and elements are retained for VM AST expression evaluation and snapshot recovery.
 5. **MCP Version Metadata**:

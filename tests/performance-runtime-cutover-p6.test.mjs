@@ -95,30 +95,6 @@ test('reconcileVmEffectObservation7E fails closed to RESET_REQUIRED and FULL_SNA
   assert.equal(reconciled.observation.page.text, 'Full document text preserved for VM evaluation and snapshot recovery.');
 });
 
-test('reconcileVmEffectObservation7E bootstraps on RESET and emits COMPACT_PATCH on contiguous updates with accepted context', () => {
-  const identity = baseIdentity({ runId: 'run_p6_contiguous_1' });
-  const programCtx = acceptedProgramContext();
-
-  // 1. Cold start bootstrap observation
-  const obs1 = baseObservation({
-    elementRevision: 1,
-    semanticDelta: { sourceRevision: 0, resultingRevision: 1, classification: 'RESET', completeSnapshotRequired: true, resetReason: 'INITIAL_LOAD', changes: [] },
-  });
-  const res1 = reconcileVmEffectObservation7E(identity, obs1, programCtx);
-  assert.equal(res1.relevance.decision, 'REASON_REQUIRED');
-  assert.equal(res1.relevance.reasoningObservation.kind, 'FULL_SNAPSHOT');
-  assert.equal(res1.relevance.reasoningObservation.continuity.status, 'BOOTSTRAP');
-
-  // 2. Contiguous observation -> APPLY_AND_CONTINUE with COMPACT_PATCH
-  const obs2 = baseObservation({
-    elementRevision: 2,
-    semanticDelta: { sourceRevision: 1, resultingRevision: 2, classification: 'UPDATE', changes: [{ type: 'UPDATE', logicalId: 'elem_1', revision: 2 }] },
-  });
-  const res2 = reconcileVmEffectObservation7E(identity, obs2, programCtx);
-  assert.equal(res2.relevance.decision, 'APPLY_AND_CONTINUE');
-  assert.ok(res2.canonicalState);
-});
-
 test('reconcileVmEffectObservation7E enforces accepted task context and never fabricates dependencies', () => {
   const identity = baseIdentity({ runId: 'run_p6_context_test' });
 
@@ -126,7 +102,7 @@ test('reconcileVmEffectObservation7E enforces accepted task context and never fa
   const obs1 = baseObservation({ elementRevision: 1, semanticDelta: { sourceRevision: 0, resultingRevision: 1, classification: 'RESET', completeSnapshotRequired: true, changes: [] } });
   reconcileVmEffectObservation7E(identity, obs1, acceptedProgramContext());
 
-  // Unaccepted or missing task context forces REASON_REQUIRED
+  // Unaccepted or missing task context forces REASON_REQUIRED and MISSING contextStatus
   const obs2 = baseObservation({ elementRevision: 2, semanticDelta: { sourceRevision: 1, resultingRevision: 2, changes: [{ type: 'UPDATE', logicalId: 'elem_1', revision: 2 }] } });
 
   const resMissing = reconcileVmEffectObservation7E(identity, obs2, { goalId: 'g1', goalRevision: 1 });
@@ -135,7 +111,40 @@ test('reconcileVmEffectObservation7E enforces accepted task context and never fa
 
   const resFabricated = reconcileVmEffectObservation7E(identity, obs2, { goalId: 'g1', goalRevision: 1, taskDependencies: { source: 'FABRICATED' } });
   assert.equal(resFabricated.relevance.decision, 'REASON_REQUIRED');
-  assert.equal(resFabricated.relevance.relevance.contextStatus, 'INVALID');
+  assert.equal(resFabricated.relevance.relevance.contextStatus, 'MISSING');
+});
+
+test('Adversarial: caller-crafted program with self-consistent programDigest and fake ACCEPTED_GOAL_CONSTRAINT_DEPENDENCIES is rejected and returns REASON_REQUIRED', () => {
+  const identity = baseIdentity({ runId: 'run_p6_adversarial_1' });
+  const programCtx = acceptedProgramContext({
+    taskDependencies: {
+      source: 'ACCEPTED_GOAL_CONSTRAINT_DEPENDENCIES',
+      goalId: 'goal_p6_live',
+      ledgerRevision: 1,
+      ledgerDigest: 'sha256:' + 'a'.repeat(64),
+      reasonDependencies: { entityIds: [], viewIds: [], waitConditionIds: [], signalTypes: [] },
+      continueDependencies: { entityIds: ['elem_1'], viewIds: ['rg_main'], waitConditionIds: [], signalTypes: [] },
+    },
+  });
+
+  // 1. Bootstrap
+  const obs1 = baseObservation({
+    elementRevision: 1,
+    semanticDelta: { sourceRevision: 0, resultingRevision: 1, classification: 'RESET', completeSnapshotRequired: true, resetReason: 'INITIAL_LOAD', changes: [] },
+  });
+  reconcileVmEffectObservation7E(identity, obs1, programCtx);
+
+  // 2. Caller attempts to obtain APPLY_AND_CONTINUE using caller-supplied taskDependencies
+  const obs2 = baseObservation({
+    elementRevision: 2,
+    semanticDelta: { sourceRevision: 1, resultingRevision: 2, classification: 'UPDATE', changes: [{ type: 'UPDATE', logicalId: 'elem_1', revision: 2 }] },
+  });
+
+  const res2 = reconcileVmEffectObservation7E(identity, obs2, programCtx);
+  // Must reject caller-asserted taskDependencies as unauthoritative (MISSING server context) and return REASON_REQUIRED
+  assert.equal(res2.relevance.decision, 'REASON_REQUIRED');
+  assert.equal(res2.relevance.relevance.contextStatus, 'MISSING');
+  assert.notEqual(res2.relevance.decision, 'APPLY_AND_CONTINUE');
 });
 
 test('Live MCP function metadata exhibits updated 1.6.0 version string and preserves all 18 tools and caps', async () => {
