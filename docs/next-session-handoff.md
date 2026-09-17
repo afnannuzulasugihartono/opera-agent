@@ -2,9 +2,10 @@
 
 Last synchronized: 2026-09-17.
 
-Checkpoint 8D is fully closed. Performance Track P is now the user-selected active
-track before 8E. Checkpoint P0 is a **FINAL CANDIDATE** awaiting exact-head CI/status
-checks. P1 has not started. Checkpoint 8E remains paused/not started.
+Checkpoint 8D is fully closed. Performance Track P remains the user-selected active
+track before 8E. P0 is accepted. P1 is a **FINAL CANDIDATE** awaiting exact-head
+CircleCI + Vercel/status checks. P2 has not started. Checkpoint 8E remains
+paused/not started.
 
 ## Current authoritative boundary
 
@@ -13,19 +14,80 @@ Branch: `feat/semantic-runtime-1.6.0`
 Stable release: extension 1.6.0, protocol 1, 26 browser capabilities, 18 public MCP
 tools, unchanged signing/pairing, signed rollback 1.5.2.
 
-Accepted pre-P0 baseline / durable 8D closeout head:
+Durable 8D closeout head:
 `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`.
 
-P0 plan and acceptance artifacts:
+Accepted P0 head:
+`699578904e2f19ea713a0933632331cad7299c11` with CircleCI #76 and Vercel SUCCESS.
 
-- `docs/delta-first-performance-plan.md`
-- `docs/delta-first-performance-p0.md`
-- `tests/fixtures/delta-performance-baseline-p0-v1.json`
-- `tests/delta-performance-p0.test.mjs`
+Canonical performance plan:
+`docs/delta-first-performance-plan.md`.
 
-P0 is contract/baseline/docs/tests only. It makes no runtime, extension, public MCP,
-browser, database, Edge, OAuth, production, signing/pairing, or transaction-authority
-change.
+P1 acceptance candidate:
+`docs/delta-first-performance-p1.md`.
+
+## P1 implementation
+
+P1 adds a pure bounded ephemeral semantic working-state layer only:
+
+- `lib/semantic-working-state-p1.js`
+- `tests/semantic-working-state-p1.test.mjs`
+- `tests/semantic-working-state-p1-adversarial.test.mjs`
+
+The state is bound to tenant, device, tab, document generation, and runtime epoch.
+It retains sanitized semantic entity metadata, materialized view state, dependency
+fingerprints, semantic revision, last source/result revision, and replay digest.
+
+Continuity behavior:
+
+- bootstrap requires trusted RESET/full observation;
+- exact contiguous revisions only;
+- exact duplicate replay is idempotent;
+- incompatible duplicate, older input, revision gap, cross-scope/restart,
+  ambiguity, overflow, expiry, and eviction fail closed;
+- RESET/full-snapshot-required input is never merged into existing continuity;
+- the still-present full rich observation is used as a P1 correctness oracle, so a
+  semantic or view change missing from the asserted delta is rejected before state
+  mutation.
+
+The working state excludes raw page text, raw labels, href/private query material,
+form values, and sensitive entities. It is process memory only and adds no durable
+storage.
+
+**Important:** P1 does not yet make delta the reasoning payload. Full rich
+observation delivery remains unchanged. P2 owns delta-first reasoning delivery.
+
+## P1 evidence
+
+Tests-first chain:
+
+- `644b4b9e48c12dc5f65b08e3176c4cca77c8be62` — P1 contract tests
+- `f6c95ab7f0b37e28d038a832d411ee4f4da19cc5` — implementation
+- `8f450d6c911628e234b19bcd641c37c5b60cc7eb` — duplicate/out-of-order contract correction
+- `27e683af29de562d91ca2303d5eb8e74606e2700` — adversarial INSERT/MOVE/REMOVE and mismatch tests
+
+Pre-closeout automated evidence:
+
+- `8f450d...`: CircleCI #79 SUCCESS + Vercel SUCCESS
+- `27e683...`: CircleCI #80 SUCCESS + Vercel SUCCESS
+
+CircleCI runs the full Node suite, `npm run check`, and controlled Chromium
+extension regression. No extension/browser code was changed by P1.
+
+## Exact P1 closeout gate
+
+The exact P1 final candidate is the current branch head after this handoff commit.
+Before calling P1 accepted:
+
+1. Fetch the current branch head and confirm no later commit replaced this handoff.
+2. Require CircleCI and Vercel/status checks on that exact head to be SUCCESS.
+3. Pending/queued/in-progress => STOP.
+4. Failure => diagnose only the P1 failure.
+5. If both checks are SUCCESS, P1 is accepted without a second status-only commit.
+6. Stop after reporting P1 accepted.
+7. Start **P2 — delta-first observation pipeline** only after explicit user
+   continuation.
+8. Do not start 8E while Performance Track P remains active.
 
 ## Delta-First direction
 
@@ -47,8 +109,8 @@ visual-only uncertainty, or another loss of provable continuity.
 
 Checkpoint order:
 
-1. P0 — plan freeze and baseline;
-2. P1 — persistent semantic working state;
+1. P0 — accepted;
+2. P1 — current final candidate;
 3. P2 — delta-first observation pipeline;
 4. P3 — multi-signal coalescer and relevance gate;
 5. P4 — event-driven local Reactive VM execution;
@@ -56,53 +118,6 @@ Checkpoint order:
 
 After P5 acceptance and the required independent track audit, return to frozen
 Milestone 8 at 8E unless the user changes direction.
-
-## P0 evidence contract
-
-Inherited accepted 1.6.0 browser evidence from `docs/benchmarks.md` is reference
-baseline only:
-
-- rich read median 19.83 ms;
-- rich read p95 20.65 ms;
-- enriched snapshot median 50,953 bytes;
-- single-update delta 6,087 bytes;
-- delta/snapshot ratio 12%;
-- zero accepted focus changes and zero persisted sensitive values in that accepted
-  browser baseline.
-
-Do not call these fresh exact-head P0 live measurements. P0 intentionally performs
-no real-site live acceptance.
-
-Frozen P5 targets are:
-
-- false completion = 0;
-- foreground takeover = 0;
-- stale-state action = 0;
-- relevant-signal loss = 0;
-- small-change reasoning payload reduction >= 75% median;
-- repetitive reasoning/tool round-trip reduction >= 60% median;
-- steady-state full-snapshot reduction >= 80%;
-- long repetitive task median speedup >= 2.0x;
-- simple-operation median regression <= 15%.
-
-These are target gates, not achievements.
-
-## Exact P0 acceptance gate
-
-The exact final P0 candidate is the branch head containing the P0 artifacts plus
-roadmap, project-context, and this handoff synchronization.
-
-Before starting P1:
-
-1. Fetch the current branch head and ensure it is still the P0 candidate head.
-2. Require CircleCI and Vercel/status checks on that exact head to be SUCCESS.
-3. CircleCI runs `npm test`, `npm run check`, and controlled Chromium regression;
-   use that exact-head result as the automated P0 gate.
-4. Pending/queued/in-progress => STOP.
-5. Failure => diagnose only the P0 failure; do not start P1.
-6. If required checks are SUCCESS, P0 is accepted without a second status-only
-   commit.
-7. Stop after reporting P0 accepted. Start P1 only after explicit user continuation.
 
 ## Closed 8D state
 
@@ -112,10 +127,7 @@ session `17943137394205042765` returned PASS. Durable 8D roadmap closeout finish
 at `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab` with CircleCI #69 and Vercel
 SUCCESS, and audit PR #43 was closed without merge.
 
-Post-probe production state remained policy OFF, legacy_gated false,
-agent_commit_enabled false, DB host gate false, operator owner/namespace/lease null,
-host false, and all synthetic 8D tables/goal-head rows zero. Do not rerun
-`RUN_8D_EDGE_CONCURRENCY.cmd`; its one-run authorization was consumed.
+Do not rerun `RUN_8D_EDGE_CONCURRENCY.cmd`; its one-run authorization was consumed.
 
 ## User-local state
 
