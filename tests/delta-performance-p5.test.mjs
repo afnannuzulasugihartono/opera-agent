@@ -119,7 +119,7 @@ test('P5 acceptance-only closeout leaves accepted runtime bytes unchanged', asyn
     ['../lib/event-driven-local-execution-p4.js', '1c1ce3ada60dbddf5caedf591490edf4ff70697b'],
     ['../lib/multi-signal-relevance-p3.js', '1c42d1d034767979ce87ff4ffb8eb85efcc3dc10'],
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
-    ['../lib/reactive-vm.js', 'ac8b3ee4322fd24b9702bd0c94c285661c4f3b5f'],
+    ['../lib/reactive-vm.js', '05f6448987c9a2139fb3636b751872866647f27d'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
     ['../extension/content.js', 'e4363c6f016eba499eca6e6b1c2e8a1f8eac5669'],
