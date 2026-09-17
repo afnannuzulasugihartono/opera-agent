@@ -1,6 +1,6 @@
 # Performance Track P — Delta-First Runtime
 
-Status: **P0 FINAL CANDIDATE — exact-head CI required; P1 not started.**
+Status: **P0 ACCEPTED / P1 FINAL CANDIDATE — exact-head CI required; P2 not started.**
 
 Date frozen: 2026-09-17
 Baseline repository head before P0: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
@@ -163,6 +163,9 @@ workloads are acceptance shapes, not site-specific runtime architecture.
 
 ## P0 — plan freeze and baseline
 
+Status: **ACCEPTED** on exact head
+`699578904e2f19ea713a0933632331cad7299c11` with CircleCI #76 and Vercel SUCCESS.
+
 Scope:
 
 - freeze this plan and the machine-readable baseline/target contract;
@@ -193,14 +196,16 @@ Acceptance:
 - only tests/fixtures/docs/context/roadmap/handoff change;
 - P1 has not started.
 
-This P0 candidate is intentionally written so that the exact head containing all P0
-artifacts is the acceptance candidate. If its required CI/status checks are green,
-P0 is accepted without a second status-only commit. A fresh session must verify the
-exact head and checks before starting P1.
+The accepted record is `docs/delta-first-performance-p0.md`.
 
 ---
 
 ## P1 — persistent semantic working state
+
+Status: **FINAL CANDIDATE**. Implementation/test head
+`27e683af29de562d91ca2303d5eb8e74606e2700` passed CircleCI #80 and Vercel; the
+exact documentation-closeout head still requires green CI/status before P1 is
+accepted. P2 has not started.
 
 Objective: introduce a bounded ephemeral working-state layer keyed by trusted
 runtime identity such as tenant/device/tab/document generation, without changing
@@ -230,6 +235,8 @@ Required correctness properties:
 
 P1 does **not** yet suppress the full snapshot delivered to the existing reasoning
 path. It proves the working-state foundation first.
+
+Acceptance record: `docs/delta-first-performance-p1.md`.
 
 ---
 
@@ -374,9 +381,9 @@ Stop and review instead of optimizing through the failure when:
 
 P1-P4 should remain additive and default-off until accepted. A failure must be able
 to return to the accepted 1.6.0 observation path without changing transaction
-policy. The eventual implementation may choose a feature flag only in the
-checkpoint authorized to introduce runtime behavior; P0 introduces no flag or
-runtime code.
+policy. P1 is a pure in-memory library and is not wired into browser behavior; its
+rollback is simply to stop consuming the library. P2 or later may introduce the
+first runtime integration only within its own accepted scope.
 
 ## Research basis
 
