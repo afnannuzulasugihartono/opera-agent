@@ -136,7 +136,7 @@ Checkpoint 8C implements the pure provenance and approval verifier: exact author
 
 ## Performance Track P — Delta-First Runtime
 
-Status: **P0 FINAL CANDIDATE — exact-head CI/status checks required; P1 not started.**
+Status: **P0 accepted. P1 FINAL CANDIDATE — exact-head closeout CI/status required. P2 has not started.**
 
 The user selected this bounded performance track after 8D and before 8E so Opera
 Agent can make its existing observation/reasoning path substantially more efficient
@@ -160,20 +160,22 @@ of safe continuity.
 
 Checkpoint sequence:
 
-- **P0** — plan freeze and machine-readable baseline/target contract;
-- **P1** — persistent bounded semantic working state;
+- **P0** — accepted at `699578904e2f19ea713a0933632331cad7299c11` with CircleCI #76 + Vercel SUCCESS;
+- **P1** — bounded in-memory semantic working state; implementation/test head `27e683af29de562d91ca2303d5eb8e74606e2700` passed CircleCI #80 + Vercel; exact documentation-closeout head still requires green checks;
 - **P2** — delta-first reasoning observation path;
 - **P3** — multi-signal coalescer and relevance gate;
 - **P4** — event-driven local Reactive VM execution;
 - **P5** — paired controlled + real-Opera performance/correctness acceptance.
 
-P0 changes no runtime, extension, MCP surface, database, Edge function, OAuth,
-production state, signing/pairing, or transaction authority. Its accepted pre-P0
-baseline head is `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`. P0 is accepted only when the
-exact final candidate head has successful CircleCI and Vercel/status checks.
+P1 adds a pure ephemeral state library and tests only. It does not modify extension
+bytes, `page.read`, public MCP schemas, browser dispatch, Supabase production,
+transaction authority, or reasoning payload delivery. Full rich observations still
+exist in P1 and serve as a reconstruction correctness oracle. Snapshot suppression
+belongs to P2.
 
 Detailed plan: `docs/delta-first-performance-plan.md`.
-P0 acceptance candidate: `docs/delta-first-performance-p0.md`.
+Acceptance records: `docs/delta-first-performance-p0.md` and
+`docs/delta-first-performance-p1.md`.
 
 Consequential effects, direct logical-ID action addressing, broader transaction
 execution, learned skills, parallel autonomous workers, and any broader authority
