@@ -1,0 +1,134 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+
+function sha1Blob(bytes) {
+  return createHash('sha1').update(Buffer.from(`blob ${bytes.length}\0`)).update(bytes).digest('hex');
+}
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+async function readJson(relativePath) {
+  return JSON.parse(await readFile(new URL(relativePath, import.meta.url), 'utf8'));
+}
+
+test('P5 evidence retains the frozen P0 gates and meets every acceptance threshold', async () => {
+  const baseline = await readJson('./fixtures/delta-performance-baseline-p0-v1.json');
+  const evidence = await readJson('./fixtures/delta-performance-p5-v1.json');
+  const targets = baseline.targetGates;
+  const observed = evidence.observedGates;
+  assert.equal(evidence.acceptedP4Head, 'e550bc90f49df2541dfd91789d99b2b33e4bf2aa');
+  assert.deepEqual(evidence.frozenTargets, {
+    maximumFalseCompletionCount: targets.maximumFalseCompletionCount,
+    maximumForegroundTakeoverCount: targets.maximumForegroundTakeoverCount,
+    maximumStaleStateActionCount: targets.maximumStaleStateActionCount,
+    maximumRelevantSignalLossCount: targets.maximumRelevantSignalLossCount,
+    minimumSmallChangeReasoningPayloadReduction: targets.minimumSmallChangeReasoningPayloadReduction,
+    minimumRepetitiveReasoningRoundTripReduction: targets.minimumRepetitiveReasoningRoundTripReduction,
+    minimumSteadyStateFullSnapshotReduction: targets.minimumSteadyStateFullSnapshotReduction,
+    minimumLongTaskMedianSpeedup: targets.minimumLongTaskMedianSpeedup,
+    maximumSimpleOperationMedianRegression: targets.maximumSimpleOperationMedianRegression,
+  });
+  assert.equal(observed.falseCompletionCount, 0);
+  assert.equal(observed.foregroundTakeoverCount, 0);
+  assert.equal(observed.staleStateActionCount, 0);
+  assert.equal(observed.relevantSignalLossCount, 0);
+  assert.ok(observed.smallChangeReasoningPayloadReductionMedian >= targets.minimumSmallChangeReasoningPayloadReduction);
+  assert.ok(observed.repetitiveReasoningRoundTripReductionMedian >= targets.minimumRepetitiveReasoningRoundTripReduction);
+  assert.ok(observed.steadyStateFullSnapshotReduction >= targets.minimumSteadyStateFullSnapshotReduction);
+  assert.ok(observed.longRepetitiveTaskMedianSpeedup >= targets.minimumLongTaskMedianSpeedup);
+  assert.ok(observed.simpleOperationMedianRegression <= targets.maximumSimpleOperationMedianRegression);
+});
+
+test('P5 real Opera Maps evidence proves lazy growth, dedup, and stable-boundary completion', async () => {
+  const maps = (await readJson('./fixtures/delta-performance-p5-v1.json')).realOpera.googleMaps;
+  assert.equal(maps.initialLoadedEntities, 16);
+  assert.equal(maps.finalLoadedEntities, 25);
+  assert.equal(maps.duplicateKeyCount, 0);
+  assert.equal(maps.firstBottomCompletion, 'PARTIAL');
+  assert.equal(maps.stableBoundaryObservations, 2);
+  assert.equal(maps.finalClassification, 'NO_RELEVANT_CHANGE');
+  assert.equal(maps.finalCompletion, 'BOUNDED_COMPLETE');
+  assert.deepEqual(maps.readClassifications, ['RESET', 'MOVE', 'MIXED', 'MOVE', 'NO_RELEVANT_CHANGE']);
+  assert.equal(maps.reads, 5);
+  assert.equal(maps.fullSnapshotBootstraps, 1);
+  assert.equal(maps.steadyStateDeltaReads, 4);
+  assert.equal(maps.fullSnapshotReduction, 0.8);
+});
+
+test('P5 real Opera GitHub evidence fails closed across SPA route generation changes', async () => {
+  const github = (await readJson('./fixtures/delta-performance-p5-v1.json')).realOpera.github;
+  assert.ok(github.structuredRegionCount >= 1);
+  assert.ok(github.repeatedListLoadedEntities >= 1);
+  assert.equal(github.repeatedListDuplicateKeyCount, 0);
+  assert.equal(github.documentGenerationBeforeNavigation, 1);
+  assert.equal(github.documentGenerationAfterNavigation, 2);
+  assert.equal(github.navigationResetReason, 'SPA_ROUTE');
+  assert.equal(github.navigationClassification, 'RESET');
+  assert.equal(github.targetTabActiveAfterNavigation, false);
+});
+
+test('P5 real Opera YouTube evidence distinguishes DOM churn from semantic task changes', async () => {
+  const youtube = (await readJson('./fixtures/delta-performance-p5-v1.json')).realOpera.youtube;
+  assert.ok(youtube.liveMutationVersionAfter > youtube.liveMutationVersionBefore);
+  assert.equal(youtube.classificationAfterChurn, 'NO_RELEVANT_CHANGE');
+  assert.equal(youtube.semanticChangeCountAfterChurn, 0);
+  assert.equal(youtube.changedRegionCountAfterChurn, 0);
+});
+
+test('P5 paired live mediation-elision workload exceeds 2x median without hiding effects', async () => {
+  const evidence = await readJson('./fixtures/delta-performance-p5-v1.json');
+  const runs = evidence.longTaskRuns;
+  assert.equal(runs.length, 3);
+  for (const run of runs) {
+    assert.equal(run.browserEffectsPerArm, 8);
+    assert.ok(run.baselineMs > run.mediationElidedMs);
+    assert.ok(run.speedup > 1);
+  }
+  const measuredMedian = median(runs.map((run) => run.speedup));
+  assert.equal(measuredMedian, evidence.observedGates.longRepetitiveTaskMedianSpeedup);
+  assert.ok(measuredMedian >= evidence.frozenTargets.minimumLongTaskMedianSpeedup);
+  assert.equal(evidence.methodology.liveSpeedPath, 'MEDIATION_ELISION_TRANSPORT_PROXY');
+  assert.match(evidence.methodology.liveSpeedNotes, /not a claim/i);
+});
+
+test('P5 paired live simple-operation sample stays within 15% regression ceiling', async () => {
+  const evidence = await readJson('./fixtures/delta-performance-p5-v1.json');
+  const sample = evidence.simpleOperation;
+  assert.equal(sample.baselineSamples, 24);
+  assert.equal(sample.mediationElidedSamples, 24);
+  assert.ok(sample.medianRegression <= evidence.frozenTargets.maximumSimpleOperationMedianRegression);
+  assert.equal(sample.medianRegression, evidence.observedGates.simpleOperationMedianRegression);
+});
+
+test('P5 safety and cleanup records zero foreground authority and no leftover test tabs', async () => {
+  const evidence = await readJson('./fixtures/delta-performance-p5-v1.json');
+  const safety = evidence.safetyAndCleanup;
+  assert.equal(safety.tabsActivateCommands, 0);
+  assert.equal(safety.pointerCommands, 0);
+  assert.equal(safety.fillOrKeyCommands, 0);
+  assert.equal(safety.remainingTestTabs, 0);
+  assert.equal(safety.excludedStaleTabPreflightFailures, 1);
+  assert.equal(evidence.observedGates.foregroundTakeoverCount, 0);
+});
+
+test('P5 acceptance-only closeout leaves accepted runtime bytes unchanged', async () => {
+  const files = new Map([
+    ['../lib/event-driven-local-execution-p4.js', '1c1ce3ada60dbddf5caedf591490edf4ff70697b'],
+    ['../lib/multi-signal-relevance-p3.js', '1c42d1d034767979ce87ff4ffb8eb85efcc3dc10'],
+    ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
+    ['../lib/reactive-vm.js', 'ac8b3ee4322fd24b9702bd0c94c285661c4f3b5f'],
+    ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
+    ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
+    ['../extension/content.js', 'e4363c6f016eba499eca6e6b1c2e8a1f8eac5669'],
+    ['../extension/background.js', 'c9702946f205274dc54096246d12f7596b2eb544'],
+    ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '0e578017bc2bb223259f55aa81c6a2aa88e05cf2'],
+  ]);
+  for (const [relativePath, expected] of files) {
+    const bytes = await readFile(new URL(relativePath, import.meta.url));
+    assert.equal(sha1Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged in P5`);
+  }
+});

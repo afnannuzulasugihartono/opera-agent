@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "track": "DELTA_FIRST_PERFORMANCE",
+  "checkpoint": "P5",
+  "date": "2026-09-17",
+  "acceptedP4Head": "e550bc90f49df2541dfd91789d99b2b33e4bf2aa",
+  "environment": {
+    "deviceName": "opera",
+    "deviceStatus": "online",
+    "extensionVersion": "1.6.0",
+    "protocolVersion": 1,
+    "capabilityCount": 26,
+    "runtimePath": "accepted Opera Agent relay/extension"
+  },
+  "frozenTargets": {
+    "maximumFalseCompletionCount": 0,
+    "maximumForegroundTakeoverCount": 0,
+    "maximumStaleStateActionCount": 0,
+    "maximumRelevantSignalLossCount": 0,
+    "minimumSmallChangeReasoningPayloadReduction": 0.75,
+    "minimumRepetitiveReasoningRoundTripReduction": 0.6,
+    "minimumSteadyStateFullSnapshotReduction": 0.8,
+    "minimumLongTaskMedianSpeedup": 2.0,
+    "maximumSimpleOperationMedianRegression": 0.15
+  },
+  "observedGates": {
+    "falseCompletionCount": 0,
+    "foregroundTakeoverCount": 0,
+    "staleStateActionCount": 0,
+    "relevantSignalLossCount": 0,
+    "smallChangeReasoningPayloadReductionMedian": 0.938,
+    "repetitiveReasoningRoundTripReductionMedian": 0.8889,
+    "steadyStateFullSnapshotReduction": 0.8,
+    "longRepetitiveTaskMedianSpeedup": 8.724,
+    "simpleOperationMedianRegression": -0.0568
+  },
+  "controlledEvidence": {
+    "p2": {
+      "richReasoningPayloadMedianBytes": 22244,
+      "compactPatchMedianBytes": 1380,
+      "payloadReductionMedian": 0.938,
+      "fallbackCount": 0,
+      "staleStateContinuationCount": 0,
+      "falseCompletionCount": 0,
+      "foregroundTakeoverCount": 0,
+      "relevantSemanticInformationLossCount": 0
+    },
+    "p3": {
+      "irrelevantSignals": 1280,
+      "laterRelevantSignals": 1,
+      "irrelevantReasoningWakeups": 0,
+      "laterRelevantDetected": 1,
+      "relevantSignalLossCount": 0,
+      "falseCompletionCount": 0,
+      "foregroundTakeoverCount": 0
+    },
+    "p4": {
+      "browserEffects": 8,
+      "hiddenBrowserEffects": 0,
+      "localReasoningWakeups": 0,
+      "baselineModelMediatedRoundTrips": 9,
+      "p4ModelMediatedRoundTrips": 1,
+      "roundTripReduction": 0.8889,
+      "correctResult": true,
+      "foregroundTakeoverIndicators": 0
+    }
+  },
+  "realOpera": {
+    "googleMaps": {
+      "initialLoadedEntities": 16,
+      "finalLoadedEntities": 25,
+      "duplicateKeyCount": 0,
+      "firstBottomCompletion": "PARTIAL",
+      "stableBoundaryObservations": 2,
+      "finalClassification": "NO_RELEVANT_CHANGE",
+      "finalCompletion": "BOUNDED_COMPLETE",
+      "readClassifications": ["RESET", "MOVE", "MIXED", "MOVE", "NO_RELEVANT_CHANGE"],
+      "reads": 5,
+      "fullSnapshotBootstraps": 1,
+      "steadyStateDeltaReads": 4,
+      "fullSnapshotReduction": 0.8
+    },
+    "github": {
+      "structuredRegionCount": 11,
+      "repeatedListLoadedEntities": 10,
+      "repeatedListDuplicateKeyCount": 0,
+      "documentGenerationBeforeNavigation": 1,
+      "documentGenerationAfterNavigation": 2,
+      "navigationResetReason": "SPA_ROUTE",
+      "navigationClassification": "RESET",
+      "targetTabActiveAfterNavigation": false
+    },
+    "youtube": {
+      "liveMutationVersionBefore": 112707,
+      "liveMutationVersionAfter": 112708,
+      "classificationAfterChurn": "NO_RELEVANT_CHANGE",
+      "semanticChangeCountAfterChurn": 0,
+      "changedRegionCountAfterChurn": 0
+    }
+  },
+  "longTaskRuns": [
+    {"run": 1, "baselineMs": 40010.506, "mediationElidedMs": 4894.013, "speedup": 8.175, "browserEffectsPerArm": 8},
+    {"run": 2, "baselineMs": 43704.939, "mediationElidedMs": 5009.552, "speedup": 8.724, "browserEffectsPerArm": 8},
+    {"run": 3, "baselineMs": 53733.039, "mediationElidedMs": 4976.989, "speedup": 10.796, "browserEffectsPerArm": 8}
+  ],
+  "simpleOperation": {
+    "baselineSamples": 24,
+    "mediationElidedSamples": 24,
+    "baselineMedianExecutionMs": 309.192,
+    "mediationElidedMedianExecutionMs": 291.628,
+    "medianRegression": -0.0568
+  },
+  "safetyAndCleanup": {
+    "tabsActivateCommands": 0,
+    "pointerCommands": 0,
+    "fillOrKeyCommands": 0,
+    "remainingTestTabs": 0,
+    "transientCloseRetries": 1,
+    "excludedStaleTabPreflightFailures": 1
+  },
+  "methodology": {
+    "liveSpeedPath": "MEDIATION_ELISION_TRANSPORT_PROXY",
+    "liveSpeedNotes": "Both arms execute the same eight page.read effects. The baseline issues each effect only after the preceding effect has completed and the reasoning/tool boundary has returned. The comparison arm bulk-enqueues the same independent effects to measure removal of model/tool mediation. This is a live Opera transport-shape proxy, not a claim that the P4 JavaScript host itself directly drove the external browser.",
+    "p4HostNotes": "Actual P4 local-host correctness, effect accounting, typed yields, and zero local reasoning wakeups are separately locked by deterministic exact-head P4 tests.",
+    "simpleOperationNotes": "The simple-operation comparison is paired in the same live Opera environment. It is not compared directly with the historical isolated-browser 19.83 ms reference because the environments differ.",
+    "excludedPreflightNotes": "One early page.read against a stale tab id failed with No tab with id and was excluded from acceptance measurements. It was not treated as a success."
+  }
+}
