@@ -1,6 +1,6 @@
 # Performance Track P — Delta-First Runtime
 
-Status: **P0 ACCEPTED / P1 ACCEPTED / P2 ACCEPTED / P3 FINAL CANDIDATE — exact-head CI required; P4 not started.**
+Status: **P0 ACCEPTED / P1 ACCEPTED / P2 ACCEPTED / P3 ACCEPTED / P4 FINAL CANDIDATE — exact-head CI required; P5 not started.**
 
 Date frozen: 2026-09-17
 Baseline repository head before P0: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
@@ -57,6 +57,14 @@ ACTION / PAGE CHANGE
        -> IGNORE_FOR_TASK
        -> APPLY_AND_CONTINUE
        -> REASON_REQUIRED
+
+APPLY_AND_CONTINUE
+  -> bounded Reactive VM local execution
+  -> read-only browser effects
+  -> typed local yield
+       -> success / stable boundary
+       -> ambiguity / failure / budget / reset
+       -> reasoning only when required
 
 REASON_REQUIRED
   -> compact task-relevant patch
@@ -197,29 +205,18 @@ Acceptance record: `docs/delta-first-performance-p2.md`.
 
 ## P3 — multi-signal coalescer and relevance gate
 
-Status: **FINAL CANDIDATE**. Tests-first contract head
-`388df28d5795da2cb1fe72ece2ff25f46b7411d5` established the expected red boundary
-(CircleCI #92) before the P3 library existed. Implementation head
-`9309debd0db66993e99519f7015bf81a3c0804dd` passed CircleCI #93 and Vercel.
-The exact documentation-closeout head still requires green CircleCI + Vercel/status
-before P3 is accepted. P4 has not started.
+Status: **ACCEPTED** on exact head
+`d5310508aeb5c156657bd4d4abd06a4d172daaba` with CircleCI #94 and Vercel SUCCESS.
 
-Objective: avoid converting many low-level browser events into many reasoning turns.
+Tests-first contract head:
+`388df28d5795da2cb1fe72ece2ff25f46b7411d5` produced expected red CircleCI #92.
 
-Accepted bounded signal classes:
+Implementation head:
+`9309debd0db66993e99519f7015bf81a3c0804dd` with CircleCI #93 and Vercel SUCCESS.
 
-- semantic/DOM mutation;
-- scroll and viewport change;
-- geometry/resize change;
-- navigation/history transition;
-- browser/action result;
-- wait-condition transition;
-- reconnect/restart/reset events.
-
-Signals are coalesced into a bounded change epoch before semantic reconciliation.
-Mutation count is not reasoning-turn count.
-
-The relevance gate has exactly three outcomes:
+P3 prevents low-level browser-event volume from becoming reasoning-turn volume. It
+coalesces accepted bounded signals into a change epoch, advances canonical state via
+P2/P1, and emits exactly one of:
 
 ```text
 IGNORE_FOR_TASK
@@ -228,16 +225,9 @@ REASON_REQUIRED
 ```
 
 Task relevance derives only from accepted goal/constraint dependency context.
-Page/model/signal text cannot grant relevance authority. Missing, invalid, untrusted,
-or oversized dependency context fails conservative to `REASON_REQUIRED`.
-
-`IGNORE_FOR_TASK` suppresses only the reasoning wake. Canonical state still advances
-through P2/P1. `APPLY_AND_CONTINUE` is allowed only through accepted continuation
-dependencies. `REASON_REQUIRED` takes precedence over continuation dependencies.
-
-Navigation/history, reconnect/reset, epoch overflow, affected-key overflow, epoch
-expiry, and P2 reset-required/continuity failure are never silently ignored and
-force `REASON_REQUIRED`.
+Missing, malformed, untrusted, or oversized context cannot suppress reasoning.
+Navigation/history, reconnect/reset, signal/affected-key overflow, epoch expiry, and
+P2 reset-required/continuity failure force `REASON_REQUIRED`.
 
 Controlled irrelevant-mutation-storm evidence:
 
@@ -251,9 +241,8 @@ Controlled irrelevant-mutation-storm evidence:
 - false completion: **0**;
 - foreground takeover: **0**.
 
-P3 is a pure consumer/runtime layer over P2. It does not add extension signal
-observers, browser primitives, public MCP fields/tools, VM execution, Supabase
-production changes, signing/pairing changes, transaction authority, or 8E work.
+P3 changes no extension bytes, public MCP surface, Reactive VM source, production
+state, signing/pairing, transaction authority, or 8E boundary.
 
 Acceptance record: `docs/delta-first-performance-p3.md`.
 
@@ -261,35 +250,81 @@ Acceptance record: `docs/delta-first-performance-p3.md`.
 
 ## P4 — event-driven local reactive execution
 
-Status: **NOT STARTED**.
+Status: **FINAL CANDIDATE**. Tests-first contract head
+`3786d827d85c247367690825f62bad34ded63689` established the expected red boundary
+(CircleCI #95) before the P4 library existed. Implementation head
+`460c3e7a1977792387c347762550aea554a07ebd` passed CircleCI #96 and Vercel.
+The exact documentation-closeout head still requires green CircleCI + Vercel/status
+before P4 is accepted. P5 has not started.
 
-Objective: use the accepted bounded Reactive Browser VM and existing safe primitives
-to execute repetitive observation/filter/collect/wait work locally until a typed
-yield condition requires reasoning.
+Objective: use the accepted bounded Reactive Browser VM and existing read-only safe
+primitives to execute repetitive observation/filter/collect/wait work locally until
+a typed yield condition requires reasoning.
 
-Typical pattern:
+P4 adds a pure local execution host over Reactive VM 7D. Local execution starts only
+from a structurally valid P3 `APPLY_AND_CONTINUE` result with accepted continuation
+dependencies, no reason dependency, no safety reason, canonical state present, and
+no reasoning wake requested.
+
+Closed P4 outcomes:
 
 ```text
-reason once
-  -> bounded observe/filter/collect/scroll/wait loop
-  -> yield on success, stable boundary, ambiguity, failure, reset, budget, or a
-     decision that cannot be resolved locally
-  -> reason again only when necessary
+IDLE
+LOCAL_EFFECT_REQUIRED
+LOCAL_TERMINAL
+REASON_REQUIRED
 ```
 
-P4 must not add consequential transaction authority and does not replace 8E.
+Closed P4 yield reasons:
 
-Initial repetitive-workload target:
+```text
+AMBIGUITY
+BUDGET_EXHAUSTED
+CANCELLED
+DECISION_REQUIRED
+EXPIRED
+FAILURE
+RESET_REQUIRED
+STABLE_BOUNDARY
+SUCCESS
+```
 
-- at least 60% median reduction in reasoning/tool round trips;
-- same task correctness as the paired baseline;
-- zero new false completion;
-- zero foreground takeover;
-- bounded cancellation, loops, waits, outputs, and deadlines.
+Runs are isolated by tenant + device + tab + document generation + runtime epoch.
+Effect results must also match trusted tenant/device/tab/document provenance before
+continuation. Reset-required P3/P2 state drops the stale local run.
+
+P4 keeps the accepted VM effect surface unchanged. Browser effects are still
+explicitly surfaced to the host as read-only effect requests; the optimization is
+that they do not each require a model/reasoning turn.
+
+Controlled repetitive-read evidence uses 8 `page.read` effects and one final return:
+
+- browser effects executed: **8/8**;
+- hidden browser effects: **0**;
+- local reasoning wakeups during the run: **0**;
+- baseline model-mediated round trips: **9**;
+- P4 model-mediated round trips: **1**;
+- model-mediated round-trip reduction: **88.89%**;
+- initial P4 target: **>=60%**;
+- returned result: correct;
+- synthesized `PROVED`: **0**;
+- foreground takeover indicators: **0**.
+
+P4 tests also cover malformed continuation authority, reset recovery, ambiguity,
+failure, slice budget, cancellation, expiry, untrusted effect provenance, identity
+isolation, source byte locks, and clear/recovery behavior.
+
+P4 does not change Reactive VM 7B/7C/7D source, extension bytes, public MCP source or
+schema, browser primitives, production state, signing/pairing, transaction authority,
+or Milestone 8 contracts.
+
+Acceptance record: `docs/delta-first-performance-p4.md`.
 
 ---
 
 ## P5 — real-Opera performance acceptance
+
+Status: **NOT STARTED**.
 
 Objective: decide whether the track actually improves user-visible performance.
 Synthetic success alone is insufficient.
@@ -343,6 +378,8 @@ transaction policy.
 - P2 rollback: stop consuming the delta-first reasoning adapter.
 - P3 rollback: stop consuming the signal coalescer/relevance gate and continue the
   P2 observation path.
+- P4 rollback: stop consuming the local-execution host and route accepted continuation
+  work back through the P3/P2 reasoning path.
 
 ## Track completion and return to Milestone 8
 

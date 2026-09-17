@@ -3,9 +3,9 @@
 Last synchronized: 2026-09-17.
 
 Checkpoint 8D is fully closed. Performance Track P remains the user-selected active
-track before 8E. P0, P1, and P2 are accepted. P3 is a **FINAL CANDIDATE** awaiting
-exact-head CircleCI + Vercel/status checks on the documentation-closeout head. P4
-has not started. Checkpoint 8E remains paused/not started.
+track before 8E. P0, P1, P2, and P3 are accepted. P4 is a **FINAL CANDIDATE** awaiting
+exact-head CircleCI + Vercel/status checks on the documentation-closeout head. P5 has
+not started. Checkpoint 8E remains paused/not started.
 
 ## Current authoritative boundary
 
@@ -26,117 +26,137 @@ Accepted P1 head:
 Accepted P2 head:
 `8621e2dc454f8e8f1e977c350522e6fb2b5dc51d` with CircleCI #91 + Vercel SUCCESS.
 
-P3 implementation head:
-`9309debd0db66993e99519f7015bf81a3c0804dd` with CircleCI #93 + Vercel SUCCESS.
+Accepted P3 head:
+`d5310508aeb5c156657bd4d4abd06a4d172daaba` with CircleCI #94 + Vercel SUCCESS.
+
+P4 implementation head:
+`460c3e7a1977792387c347762550aea554a07ebd` with CircleCI #96 + Vercel SUCCESS.
 
 Canonical performance plan:
 `docs/delta-first-performance-plan.md`.
 
-P3 acceptance candidate:
-`docs/delta-first-performance-p3.md`.
+P4 acceptance candidate:
+`docs/delta-first-performance-p4.md`.
 
-## P3 implementation
+## P4 implementation
 
-P3 adds a bounded multi-signal coalescer and relevance gate only:
+P4 adds a pure bounded local execution host only:
 
-- `lib/multi-signal-relevance-p3.js`
-- `tests/multi-signal-relevance-p3.test.mjs`
+- `lib/event-driven-local-execution-p4.js`
+- `tests/event-driven-local-execution-p4.test.mjs`
 
-It wraps the accepted P2 delta-first observation pipeline. P2 remains the continuity
-and canonical-state oracle.
+It composes the accepted P3 relevance gate with accepted Reactive VM 7D. P4 does not
+replace or modify the Reactive VM grammar/core and does not widen its accepted
+read-only effect surface.
 
-Accepted decisions:
+Accepted local outcomes:
 
 ```text
-IGNORE_FOR_TASK
-APPLY_AND_CONTINUE
+IDLE
+LOCAL_EFFECT_REQUIRED
+LOCAL_TERMINAL
 REASON_REQUIRED
 ```
 
-Accepted signals:
+Accepted typed yield reasons:
 
 ```text
-ACTION_RESULT
-DOM_MUTATION
-GEOMETRY_RESIZE
-NAVIGATION_HISTORY
-RECONNECT_RESET
-SCROLL_VIEWPORT
-SEMANTIC_MUTATION
-WAIT_CONDITION
+AMBIGUITY
+BUDGET_EXHAUSTED
+CANCELLED
+DECISION_REQUIRED
+EXPIRED
+FAILURE
+RESET_REQUIRED
+STABLE_BOUNDARY
+SUCCESS
 ```
 
-Each open epoch is isolated by tenant + device + tab + document generation + runtime
-epoch and bounded by signal count, affected dependency-key count, and age.
+Local execution begins only when a P3 result is structurally valid and exactly
+`APPLY_AND_CONTINUE` with:
 
-Signals retain only bounded type/entity/view/wait metadata. Arbitrary raw signal
-text, href, value, nested payloads, model/page relevance hints, and instructions are
-ignored and cannot grant wake/suppress authority.
+- no reasoning wake requested;
+- canonical state present;
+- accepted relevance context;
+- at least one matched continuation dependency;
+- no matched reason dependency;
+- no safety reason.
 
-Task relevance authority is accepted only from
-`ACCEPTED_GOAL_CONSTRAINT_DEPENDENCIES` context carrying a bounded goal ID, positive
-ledger revision, canonical `sha256:` ledger digest, and explicit bounded reason/
-continuation dependency groups.
+Malformed/self-asserted continuation authority fails conservative to reasoning.
+`IGNORE_FOR_TASK` leaves a registered run idle. A P3 `REASON_REQUIRED` result never
+starts or advances local execution.
 
-Behavior:
+Each local run is isolated by tenant + device + tab + document generation + runtime
+epoch. The returned browser effect must also carry matching trusted tenant/device/
+tab/document provenance before local continuation.
 
-- trusted RESET/bootstrap -> `REASON_REQUIRED` with P2 full snapshot;
-- relevant accepted reason dependency -> `REASON_REQUIRED` with P2 compact patch;
-- accepted continuation-only dependency -> `APPLY_AND_CONTINUE`, no reasoning wake;
-- unrelated accepted-context change -> `IGNORE_FOR_TASK`, no reasoning wake;
-- in both suppressed cases canonical P2/P1 state still advances;
-- `REASON_REQUIRED` has precedence over continuation;
-- missing/invalid/untrusted/oversized dependency context -> conservative reasoning;
-- `NAVIGATION_HISTORY` / `RECONNECT_RESET` -> conservative reasoning;
-- signal overflow / affected-key overflow / epoch expiry -> conservative reasoning;
-- any P2 reset-required or lost continuity -> conservative full-snapshot reasoning;
-- exact replay with no new relevant signal -> no duplicate wake.
+P4 advances the accepted Reactive VM only up to a bounded local-step slice and stops
+at the first host/reasoning boundary:
 
-## P3 evidence
+- accepted read-only VM effect request;
+- successful VM return;
+- ambiguity/model-required suspension;
+- VM failure;
+- VM limit or P4 slice budget;
+- cancellation;
+- expiry;
+- reset-required P3/P2 state.
+
+A reset-required gate drops the stale local run. Browser effects remain explicit and
+counted; P4 removes model mediation from each safe effect rather than hiding effects.
+A local `SUCCESS` does not synthesize proof authority or `PROVED`.
+
+## P4 evidence
 
 Tests-first chain:
 
-- `388df28d5795da2cb1fe72ece2ff25f46b7411d5` — frozen P3 contract tests; CircleCI #92 expected red because `lib/multi-signal-relevance-p3.js` was absent; Vercel SUCCESS
-- `9309debd0db66993e99519f7015bf81a3c0804dd` — implementation; CircleCI #93 SUCCESS + Vercel SUCCESS
+- `3786d827d85c247367690825f62bad34ded63689` — frozen P4 contract tests; CircleCI #95 expected red because `lib/event-driven-local-execution-p4.js` was absent; Vercel SUCCESS
+- `460c3e7a1977792387c347762550aea554a07ebd` — implementation; CircleCI #96 SUCCESS + Vercel SUCCESS
 
-From accepted P2 head to P3 implementation head, only the P3 library and P3 test were
-added. P3 tests freeze byte hashes for the P2 adapter, extension content/background/
-manifest, public MCP `read_page` source, and Reactive VM 7B/7C/7D sources.
+From accepted P3 head to P4 implementation head, only the P4 test and P4 library were
+added. P4 tests freeze byte hashes for P3, P2, Reactive VM 7B/7C/7D, extension
+content/background/manifest, and public MCP source.
 
-Controlled irrelevant-mutation-storm acceptance:
+Controlled repetitive-read acceptance:
 
-- 10 irrelevant epochs × 128 signals = 1,280 irrelevant signals;
-- later relevant signal = 1;
-- total raw signals = **1,281**;
-- unnecessary reasoning wakeups during irrelevant epochs = **0**;
-- total reasoning wakeups after later relevant update = **1**;
-- later relevant update detected exactly = **1/1**;
-- relevant-signal loss = **0**;
-- false completion = **0**;
-- foreground takeover = **0**.
+- 8 accepted `page.read` VM effects;
+- browser effects executed = **8/8**;
+- hidden browser effects = **0**;
+- local reasoning wakeups during run = **0**;
+- baseline model-mediated round trips = **9**;
+- P4 model-mediated round trips = **1**;
+- reduction = **88.89%**;
+- initial P4 target = **>=60%**;
+- returned result = correct (`8`);
+- synthesized `PROVED` = **0**;
+- foreground takeover indicators = **0**.
 
-This is controlled P3 evidence only. P4's >=60% repetitive reasoning/tool-round-trip
-target and P5 real-Opera/end-to-end performance gates remain future work.
+Other coverage includes malformed continuation authority, real P3 integration,
+reset-required cleanup, ambiguity, failure, local step-budget exhaustion,
+cancellation, expiry, effect-result provenance failure, cross-identity isolation,
+source byte locks, and clear/recovery behavior.
 
-P3 does not add extension observer wiring, browser primitives, public MCP changes,
-VM execution, Supabase production changes, signing/pairing changes, transaction
-authority, or Checkpoint 8E.
+This is controlled P4 evidence only. P5 real-Opera/end-to-end gates have not started.
 
-## Exact P3 closeout gate
+P4 does not add extension observers, browser primitives, public MCP changes, VM
+write/action authority, Supabase production changes, signing/pairing changes,
+transaction/approval authority, or Checkpoint 8E.
 
-The exact P3 final candidate is the branch head containing the P3 tests,
+## Exact P4 closeout gate
+
+The exact P4 final candidate is the branch head containing the P4 tests,
 implementation, acceptance record, synchronized performance plan, roadmap, project
 context, and this handoff.
 
-Before calling P3 accepted:
+Before calling P4 accepted:
 
-1. Fetch the current branch head and confirm it is still the final-candidate commit.
+1. Fetch current branch head and confirm it is still the final-candidate commit.
 2. Require CircleCI and Vercel/status checks on that exact head to be SUCCESS.
-3. Pending/queued/in-progress => **STOP**.
-4. Failure => diagnose only the P3 failure.
-5. If both checks are SUCCESS, P3 is accepted without a second status-only commit.
-6. Stop after reporting P3 accepted.
-7. Start **P4 — event-driven local Reactive VM execution** only after explicit user
+3. Pending/queued/in-progress => STOP.
+4. Failure => diagnose only the P4 failure.
+5. If both checks are SUCCESS, P4 is accepted without a second status-only commit.
+6. Stop after reporting P4 accepted.
+7. Start **P5 — real-Opera performance acceptance** only after explicit user
    continuation.
 8. Do not start 8E while Performance Track P remains active.
 
@@ -151,7 +171,7 @@ full snapshot bootstrap
   -> semantic delta
   -> causal invalidation
   -> relevance gate
-  -> local continuation or compact reasoning patch
+  -> bounded local Reactive VM continuation or compact reasoning patch
 ```
 
 Checkpoint order:
@@ -159,8 +179,8 @@ Checkpoint order:
 1. P0 — accepted;
 2. P1 — accepted;
 3. P2 — accepted;
-4. P3 — current final candidate;
-5. P4 — event-driven local Reactive VM execution;
+4. P3 — accepted;
+5. P4 — current final candidate;
 6. P5 — paired controlled + real-Opera performance/correctness acceptance.
 
 After P5 acceptance and the required independent track audit, return to frozen
@@ -179,8 +199,8 @@ Do not rerun `RUN_8D_EDGE_CONCURRENCY.cmd`; its one-run authorization was consum
 
 Two accidental untracked 8E files remain preserved in a Git stash named
 approximately `preserve accidental 8E files before completing checkpoint 8D`. Do
-not pop, apply, delete, or use that stash automatically. Performance Track P does
-not use it. If 8E later resumes, inspect it against the canonical 8E scope first.
+not pop, apply, delete, or use that stash automatically. Performance Track P does not
+use it. If 8E later resumes, inspect it against canonical 8E scope first.
 
 ## Permanent invariants
 
