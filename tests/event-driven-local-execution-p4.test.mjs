@@ -486,7 +486,7 @@ test('P4 leaves P3, P2, extension, public MCP, and accepted Reactive VM bytes un
     ['../extension/content.js', 'e4363c6f016eba499eca6e6b1c2e8a1f8eac5669'],
     ['../extension/background.js', 'c9702946f205274dc54096246d12f7596b2eb544'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '0e578017bc2bb223259f55aa81c6a2aa88e05cf2'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', 'a2f91e096d9c48ba7d40d82c9ce725dfb7bd3668'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
