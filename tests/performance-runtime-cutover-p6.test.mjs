@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { reconcileVmEffectObservation7E } from '../lib/reactive-vm-host-7e.js';
+import { advanceReactiveVm, createReactiveVm } from '../lib/reactive-vm.js';
 
 function baseIdentity(overrides = {}) {
   return {
@@ -145,6 +146,113 @@ test('Adversarial: caller-crafted program with self-consistent programDigest and
   assert.equal(res2.relevance.decision, 'REASON_REQUIRED');
   assert.equal(res2.relevance.relevance.contextStatus, 'MISSING');
   assert.notEqual(res2.relevance.decision, 'APPLY_AND_CONTINUE');
+});
+
+
+async function cutoverVmFixture(runId = 'p6-cutover-gate') {
+  const fixture = JSON.parse(await readFile(new URL('./fixtures/reactive-vm-programs-v1.json', import.meta.url), 'utf8'));
+  const program = structuredClone(fixture.valid[0]);
+  let state = await createReactiveVm(program, {
+    runId,
+    tenantId: 'tenant-test',
+    goalRevision: 1,
+    logicalNowMs: 1000,
+    deadlineAtMs: 301000,
+    initialBindings: {},
+  });
+  let step = await advanceReactiveVm(program, state, { logicalNowMs: 1001 });
+  state = step.state;
+  if (step.transition.kind !== 'EFFECT_REQUEST') {
+    step = await advanceReactiveVm(program, state, { logicalNowMs: 1002 });
+    state = step.state;
+  }
+  assert.equal(step.transition.kind, 'EFFECT_REQUEST');
+  return { program, state, request: step.transition.request };
+}
+
+function cutoverEffect(request, performanceCutover) {
+  return {
+    requestDigest: request.requestDigest,
+    method: request.method,
+    ok: true,
+    provenance: {
+      tenantId: 'tenant-test',
+      deviceId: 'device-test',
+      tabId: 7,
+      documentGeneration: 'doc-gen-1',
+    },
+    value: {
+      tabId: 7,
+      semanticRevision: 2,
+      performanceCutover,
+    },
+  };
+}
+
+test('P6 cutover permits local VM continuation only for a valid APPLY_AND_CONTINUE decision', async () => {
+  const { program, state, request } = await cutoverVmFixture('p6-apply-only');
+  const advanced = await advanceReactiveVm(program, state, {
+    logicalNowMs: 1003,
+    effectResult: cutoverEffect(request, {
+      decision: 'APPLY_AND_CONTINUE',
+      reasoningWakeRequired: false,
+      reasoningObservation: null,
+      contextStatus: 'ACCEPTED',
+      canonicalRevision: 2,
+    }),
+  });
+  assert.equal(advanced.transition.kind, 'EFFECT_ACCEPTED');
+  assert.notEqual(advanced.state.status, 'SUSPENDED');
+});
+
+test('P6 cutover fails closed for IGNORE, unknown, malformed, and inconsistent decisions', async () => {
+  const cases = [
+    ['IGNORE_FOR_TASK', { decision: 'IGNORE_FOR_TASK', reasoningWakeRequired: false, reasoningObservation: null }],
+    ['UNKNOWN_DECISION', { decision: 'UNKNOWN_DECISION', reasoningWakeRequired: false, reasoningObservation: null }],
+    ['MISSING_DECISION', { reasoningWakeRequired: false, reasoningObservation: null }],
+    ['INCONSISTENT_APPLY_WAKE', { decision: 'APPLY_AND_CONTINUE', reasoningWakeRequired: true, reasoningObservation: null }],
+    ['INCONSISTENT_APPLY_OBSERVATION', { decision: 'APPLY_AND_CONTINUE', reasoningWakeRequired: false, reasoningObservation: { kind: 'COMPACT_PATCH' } }],
+    ['INCONSISTENT_REASON_FLAG', { decision: 'REASON_REQUIRED', reasoningWakeRequired: false, reasoningObservation: null }],
+  ];
+
+  for (const [label, performanceCutover] of cases) {
+    const { program, state, request } = await cutoverVmFixture(`p6-deny-${label}`);
+    const advanced = await advanceReactiveVm(program, state, {
+      logicalNowMs: 1003,
+      effectResult: cutoverEffect(request, performanceCutover),
+    });
+    assert.equal(advanced.state.status, 'SUSPENDED', label);
+    assert.notEqual(advanced.transition.kind, 'EFFECT_ACCEPTED', label);
+  }
+});
+
+test('P6 cutover preserves explicit RESET_REQUIRED and REASON_REQUIRED fail-closed behavior', async () => {
+  {
+    const { program, state, request } = await cutoverVmFixture('p6-reset');
+    const advanced = await advanceReactiveVm(program, state, {
+      logicalNowMs: 1003,
+      effectResult: cutoverEffect(request, {
+        decision: 'REASON_REQUIRED',
+        reasoningWakeRequired: true,
+        reasoningObservation: { kind: 'FULL_SNAPSHOT', resetRequired: true, resetReason: 'MISSING_CONTINUITY' },
+      }),
+    });
+    assert.equal(advanced.state.status, 'SUSPENDED');
+    assert.equal(advanced.state.suspension.reason, 'STALE_TARGET');
+  }
+  {
+    const { program, state, request } = await cutoverVmFixture('p6-reason');
+    const advanced = await advanceReactiveVm(program, state, {
+      logicalNowMs: 1003,
+      effectResult: cutoverEffect(request, {
+        decision: 'REASON_REQUIRED',
+        reasoningWakeRequired: true,
+        reasoningObservation: { kind: 'COMPACT_PATCH', resetRequired: false },
+      }),
+    });
+    assert.equal(advanced.state.status, 'SUSPENDED');
+    assert.equal(advanced.state.suspension.reason, 'NEEDS_MODEL');
+  }
 });
 
 test('Live MCP function metadata exhibits updated 1.6.0 version string and preserves all 18 tools and caps', async () => {
