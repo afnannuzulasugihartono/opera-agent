@@ -71,5 +71,4 @@ Neither layer may invent acceptance state.
 Spec Kit adoption itself did not satisfy the P6 independent audit. That separate
 gate is now **PASS / CLOSED WITH USER-ACCEPTED REVIEWER DEVIATION**, recorded in
 `docs/p6-independent-audit-closeout.md`. P6 is **ACCEPTED / CLOSED** after PR #46
-merge and verified production promotion to `opera-agent-vm` version 27. 8E remains
-paused/not started until separately instructed.
+merge and verified production promotion to `opera-agent-vm` version 27. 8E remains paused/not started until separately instructed.
