@@ -77,16 +77,7 @@ jobs:
             GIT_SSH_COMMAND="ssh -o BatchMode=yes" git push origin HEAD:refs/heads/repowise-r3-evidence --force || true
       - run:
           name: Assert R3 verification
-          command: |
-            python - <<'PY'
-            import json
-            from pathlib import Path
-
-            report = json.loads(Path("/tmp/repowise-r3/report.json").read_text(encoding="utf-8"))
-            if not report.get("verification_passed"):
-                raise SystemExit("R3 verification failed; inspect repowise-r3-report.json")
-            print("R3 verification passed")
-            PY
+          command: python tools/repowise/r3_assert.py /tmp/repowise-r3/report.json
 
 workflows:
   ci:
