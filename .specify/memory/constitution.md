@@ -91,11 +91,15 @@ still require exact source and evidence verification.
 
 ## Current Locked Boundary
 
-As of adoption on 2026-09-18:
-- Performance Track P6 remains a FINAL CANDIDATE, not accepted;
-- its independent Codex audit remains pending;
-- P6 MUST NOT be merged/promoted by Spec Kit adoption;
-- Milestone 8E remains paused/not started;
+Current state on 2026-09-18:
+- Performance Track P6 remains a FINAL CANDIDATE because PR #46 is still
+  open/unmerged and production is not promoted;
+- the P6 independent audit gate is PASS/CLOSED using Jules with an explicitly
+  user-accepted reviewer deviation because Codex quota was exhausted;
+- exact candidate evidence is CircleCI #118 SUCCESS + Vercel SUCCESS;
+- P6 MUST NOT be merged/promoted merely because the audit passed; promotion
+  requires a separate explicit instruction and verification;
+- Milestone 8E remains paused/not started until promotion state is resolved;
 - the preserved accidental 8E stash MUST NOT be popped, applied, deleted, or
   used automatically.
 
@@ -105,6 +109,6 @@ This constitution is a projection of existing Opera Agent governance for Spec
 Kit workflows. Amendments MUST be reconciled with `AGENTS.md` and
 `SECURITY.md`; this file cannot weaken those authorities.
 
-**Version**: 1.0.0  
+**Version**: 1.0.1  
 **Ratified**: 2026-09-18  
 **Last Amended**: 2026-09-18

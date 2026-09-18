@@ -221,15 +221,27 @@ merge/promote P6 or start 8E without satisfying that governance gate.
 
 ## Exact next gate
 
-1. Require CircleCI + Vercel SUCCESS on the documentation closeout head.
-2. If either is pending: STOP. If failure: diagnose P6 only.
-3. When both are green, freeze that SHA as the P6 final candidate.
-4. Run a fresh independent audit over accepted P5
-   `a215dd0ddb4d7be9b0c0276862ced3ea26439c77` -> exact P6 candidate.
-5. `AGENTS.md` currently specifically names **Codex** as the independent milestone
-   auditor. Do not treat another reviewer as satisfying that literal gate unless the
-   user explicitly accepts the documented reviewer deviation/residual risk.
-6. Do not merge/promote P6 or start 8E until the gate above is resolved.
+The P6 independent audit gate is now **PASS / CLOSED WITH USER-ACCEPTED REVIEWER
+DEVIATION**.
+
+- audited P5:
+  `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
+- audited exact P6 candidate:
+  `96ef1cfdbecc7c5c0e40486b6378501db606b84d`
+- reviewer: Jules, used because Codex quota was exhausted;
+- reviewer deviation/residual risk: explicitly accepted by the user after
+  disclosure;
+- Jules verdict: **PASS**;
+- canonical exact-head CI: CircleCI **#118 SUCCESS** + Vercel **SUCCESS**;
+- durable record: `docs/p6-independent-audit-closeout.md`.
+
+PR #46 remains open/unmerged. Production remains unpromoted/unmutated. P6 remains
+a FINAL CANDIDATE until a separate explicit merge/promotion instruction is
+executed and verified.
+
+**Exact next product action:** explicit P6 merge/promotion decision. Do not infer
+that decision from the audit PASS. Do not start 8E before the promotion state is
+resolved and synchronized.
 
 ## Preserved rollback / stash warning
 
@@ -255,6 +267,7 @@ Acceptance evidence head:
 - Vercel: **SUCCESS**.
 - Spec Kit governance adoption: **PASS / CLOSED**.
 
-Do not use this tooling change to merge/promote P6 or start 8E. There is no
-implicit next Spec Kit checkpoint. The next product boundary remains the
-pre-existing independent P6 audit.
+Do not use the Spec Kit tooling change itself to merge/promote P6 or start 8E.
+The separate P6 audit gate is now closed by
+`docs/p6-independent-audit-closeout.md`. There is no implicit next Spec Kit
+checkpoint.

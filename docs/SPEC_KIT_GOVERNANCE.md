@@ -68,6 +68,8 @@ Neither layer may invent acceptance state.
 
 ## Current product boundary
 
-Spec Kit adoption itself does not satisfy the P6 independent audit. P6 remains
-a final candidate and 8E remains paused until the pre-existing audit gate is
-resolved.
+Spec Kit adoption itself did not satisfy the P6 independent audit. That separate
+gate is now **PASS / CLOSED WITH USER-ACCEPTED REVIEWER DEVIATION**, recorded in
+`docs/p6-independent-audit-closeout.md`. P6 still remains a FINAL CANDIDATE
+because PR #46 is open/unmerged and production is not promoted. 8E remains
+paused until the P6 promotion state is resolved separately.

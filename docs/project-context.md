@@ -354,13 +354,21 @@ new explicitly scoped review.
 - one active writer;
 - tests before runtime behavior;
 - pending required CI = STOP;
-- 8E remains paused;
-- after exact-head docs CI is green, perform a fresh independent audit over
-  accepted P5 -> exact P6 candidate.
-- current `AGENTS.md` explicitly names **Codex** as the required independent
-  milestone auditor. A different reviewer is supplemental unless the user explicitly
-  accepts a documented governance deviation/residual risk.
-- do not merge/promote P6 or start 8E before this boundary is resolved.
+- the P6 independent audit gate is **PASS / CLOSED WITH USER-ACCEPTED REVIEWER
+  DEVIATION**;
+- exact audited range:
+  `a215dd0ddb4d7be9b0c0276862ced3ea26439c77..96ef1cfdbecc7c5c0e40486b6378501db606b84d`;
+- Jules returned **PASS** as the independent read-only reviewer because Codex
+  quota was exhausted; the user explicitly authorized continuation after the
+  reviewer-deviation/residual-risk condition was disclosed;
+- exact P6 candidate repository evidence is CircleCI **#118 SUCCESS** + Vercel
+  **SUCCESS**. The Jules report's #116 reference is historical and not the
+  final-candidate CI identifier;
+- durable audit record: `docs/p6-independent-audit-closeout.md`;
+- PR #46 remains open/unmerged and production remains unpromoted/unmutated;
+- P6 therefore remains a FINAL CANDIDATE until a separate explicit
+  merge/promotion instruction is executed and verified;
+- 8E remains paused/not started.
 
 ## Rollback / preserved state
 
@@ -400,6 +408,8 @@ A bounded Spec Kit governance adoption is active on
 - Vercel: **SUCCESS**;
 - status: **PASS / CLOSED**.
 
-This adoption does not change P6 acceptance, does not satisfy the required P6
-independent audit, and does not start 8E. No later Spec Kit scope is authorized
-implicitly.
+This adoption itself did not satisfy the P6 independent audit. That later audit
+gate is now closed separately by `docs/p6-independent-audit-closeout.md` with a
+user-accepted reviewer deviation. P6 remains a FINAL CANDIDATE because PR #46 is
+still open/unmerged and production is not promoted. 8E remains paused/not
+started. No later Spec Kit scope is authorized implicitly.
