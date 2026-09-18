@@ -71,3 +71,17 @@ the next milestone unless the user explicitly accepts documented residual risk.
 
 The reusable ChatGPT Web checkpoint prompt is
 `docs/prompts/chatgpt-web-checkpoint.md`.
+
+
+## Spec Kit workflow guardrail
+
+Spec Kit is a workflow guardrail for bounded feature/checkpoint work; it is not
+a new authority above this file or `SECURITY.md`. Active Spec Kit artifacts
+must agree with the applicable roadmap/checkpoint records and current Git/CI/
+runtime evidence.
+
+For non-trivial implementation using Spec Kit, run its consistency analysis
+before implementation and convergence after implementation. Treat unrequested
+implementation as scope creep: remove or defer it rather than widening the
+active checkpoint. Spec Kit never authorizes automatic advancement to the next
+checkpoint or milestone.
