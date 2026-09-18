@@ -101,7 +101,7 @@ Current state on 2026-09-18:
 - exact candidate evidence is CircleCI #118 SUCCESS + Vercel SUCCESS;
 - the explicit merge and production-promotion decisions have been executed and
   verified; this does NOT authorize broader runtime authority or 8E implicitly;
-- the bounded Spec Kit feature `specs/001-pre-8e-performance-usability-repair/` is active before 8E; R0 and R1 are **ACCEPTED / CLOSED**; R2 and later checkpoints remain unauthorized;
+- the bounded Spec Kit feature `specs/001-pre-8e-performance-usability-repair/` is active before 8E; R0 and R1 are **ACCEPTED / CLOSED**; the user explicitly authorized **R2 only**; R3 and later checkpoints remain unauthorized;
 - the repair preserves Protocol 1, 26 browser primitives, 18 public MCP tool names
   and input schemas, background-first behavior, existing semantic state/delta
   authority, and `milestone7_vm_enabled=false`;
@@ -115,6 +115,6 @@ This constitution is a projection of existing Opera Agent governance for Spec
 Kit workflows. Amendments MUST be reconciled with `AGENTS.md` and
 `SECURITY.md`; this file cannot weaken those authorities.
 
-**Version**: 1.0.4  
+**Version**: 1.0.5  
 **Ratified**: 2026-09-18  
 **Last Amended**: 2026-09-18

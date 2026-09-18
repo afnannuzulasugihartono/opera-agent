@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R1 ACCEPTED / CLOSED. R2 is NOT authorized.
+**Status**: R0–R1 ACCEPTED / CLOSED. R2 is AUTHORIZED / IN PROGRESS. R3 is NOT authorized.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
