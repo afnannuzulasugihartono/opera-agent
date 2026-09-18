@@ -15,6 +15,7 @@
   let refCounter = 0;
   let refs = new WeakMap();
   let reverseRefs = new Map();
+  let actionRefDescriptors = new Map();
   let semanticRouteKey = globalThis.OperaAgentSemanticIdentity.stableHash(`${location.origin}${location.pathname}${location.search}`);
   let semanticRuntimeEpoch = null;
   let disposed = false;
@@ -51,6 +52,74 @@
       .trim();
   }
 
+  function currentRouteKey() {
+    return globalThis.OperaAgentSemanticIdentity.stableHash(
+      `${location.origin}${location.pathname}${location.search}`
+    );
+  }
+
+  function actionRefDescriptor(el) {
+    const identity = stableElementIdentity(el);
+    return {
+      documentId,
+      routeKey: currentRouteKey(),
+      stableKey: identity.stableKey,
+      stableKeySource: identity.stableKeySource,
+      id: clean(el.id, 200),
+      tag: String(el.tagName || '').toLowerCase(),
+      role: clean(el.getAttribute?.('role'), 80),
+      name: clean(el.getAttribute?.('name'), 120),
+      type: clean(el.getAttribute?.('type'), 80),
+      label: getAssociatedLabel(el),
+      href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
+      sensitive: !!sensitiveDescriptor(el)
+    };
+  }
+
+  function descriptorMatchesElement(descriptor, el) {
+    if (!descriptor || !el?.isConnected) return false;
+    if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return false;
+    const current = actionRefDescriptor(el);
+    return (
+      current.documentId === descriptor.documentId
+      && current.routeKey === descriptor.routeKey
+      && current.stableKey === descriptor.stableKey
+      && current.stableKeySource === descriptor.stableKeySource
+      && current.id === descriptor.id
+      && current.tag === descriptor.tag
+      && current.role === descriptor.role
+      && current.name === descriptor.name
+      && current.type === descriptor.type
+      && current.label === descriptor.label
+      && current.href === descriptor.href
+      && current.sensitive === descriptor.sensitive
+    );
+  }
+
+  function revalidationCandidates(descriptor) {
+    if (!descriptor || descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return [];
+    let pool = [];
+    if (descriptor.stableKeySource === 'id' && descriptor.id) {
+      try {
+        pool = [...document.querySelectorAll(`#${CSS.escape(descriptor.id)}`)];
+      } catch {
+        return [];
+      }
+    } else if (descriptor.stableKeySource === 'href' && descriptor.href) {
+      pool = [...document.querySelectorAll('a[href]')].filter(
+        (el) => clean(el.href, 1200) === descriptor.href
+      );
+    } else {
+      const maxScan = 500;
+      pool = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].slice(0, maxScan);
+    }
+    return pool.filter((el) => {
+      if (!descriptorMatchesElement(descriptor, el)) return false;
+      const state = actionabilityState(el);
+      return state.actionable && !state.sensitive;
+    });
+  }
+
   function getRef(el) {
     if (!el || el.nodeType !== Node.ELEMENT_NODE) return null;
     let ref = refs.get(el);
@@ -59,13 +128,34 @@
       ref = `oa_${documentId.slice(0, 8)}_${refCounter.toString(36)}`;
       refs.set(el, ref);
       reverseRefs.set(ref, el);
+      actionRefDescriptors.set(ref, actionRefDescriptor(el));
     }
     return ref;
   }
 
   function resolveRef(ref) {
-    const el = reverseRefs.get(String(ref || ''));
+    const key = String(ref || '');
+    const el = reverseRefs.get(key);
     return el && el.isConnected ? el : null;
+  }
+
+  function resolveActionRef(ref) {
+    const key = String(ref || '');
+    const connected = resolveRef(key);
+    if (connected) return connected;
+
+    const descriptor = actionRefDescriptors.get(key);
+    if (!descriptor || descriptor.sensitive) return null;
+    const candidates = revalidationCandidates(descriptor);
+    if (candidates.length !== 1) return null;
+
+    const replacement = candidates[0];
+    const existingRef = refs.get(replacement);
+    if (existingRef && existingRef !== key) reverseRefs.delete(existingRef);
+    refs.set(replacement, key);
+    reverseRefs.set(key, replacement);
+    actionRefDescriptors.set(key, actionRefDescriptor(replacement));
+    return replacement;
   }
 
   function getAssociatedLabel(el) {
@@ -333,6 +423,7 @@
     refCounter = 0;
     refs = new WeakMap();
     reverseRefs = new Map();
+    actionRefDescriptors = new Map();
   }
 
   function syncSemanticScope(args) {
@@ -472,7 +563,7 @@
   }
 
   function clickSynthetic(args) {
-    const el = resolveRef(args.ref);
+    const el = resolveActionRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
@@ -519,7 +610,7 @@
   }
 
   function clickInfo(args) {
-    const el = resolveRef(args.ref);
+    const el = resolveActionRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
