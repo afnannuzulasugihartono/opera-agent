@@ -382,3 +382,20 @@ new explicitly scoped review.
 - action success is not completion proof;
 - performance gains never justify stale-state action, false completion, missed
   relevant changes, or foreground takeover.
+
+
+## Spec Kit governance adoption
+
+A bounded Spec Kit governance adoption is active on
+`chore/spec-kit-governance`, based on Repowise closeout
+`3620716e27cae595167216fd7ac011ce9a4871d3`.
+
+- pinned Spec Kit: `specify-cli==1.0.8`;
+- official v1.0.8 Codex skills + PowerShell shared scaffold are repository-persistent;
+- constitution projects existing `AGENTS.md`/`SECURITY.md` rules rather than replacing them;
+- optional/community extensions and runtime events are disabled/not adopted;
+- regression coverage: `tests/spec-kit-governance.test.mjs`;
+- status: **PENDING exact-head CircleCI + Vercel**.
+
+This adoption does not change P6 acceptance, does not satisfy the required P6
+independent audit, and does not start 8E.
