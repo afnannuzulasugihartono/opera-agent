@@ -403,13 +403,13 @@ async def run(port, profile):
         rerender_change_types = {change['type'] for change in rerendered_page['semanticDelta']['changes']}
         assert 'INSERT' not in rerender_change_types and 'REMOVE' not in rerender_change_types, rerendered_page['semanticDelta']
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': rerender_before['ref']})
-        stale = await asyncio.to_thread(STATE.wait, cid)
-        assert stale['ok'] is False
-        assert 'stale' in stale['error']['message'].lower()
+        revalidated = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert revalidated['ref'] == rerender_before['ref'], revalidated
 
         # Reuse the R0 fixture as a cross-check that the R1 actionability repair
-        # now ranks the on-screen Skip ahead of the CSS-visible offscreen
-        # Skip navigation target, while preserving the rest of the R0 baselines.
+        # ranks the on-screen Skip ahead of the CSS-visible offscreen navigation
+        # target and the R2 same-document revalidation repair recovers its stale
+        # pre-rerender ref without changing the frozen historical R0 evidence file.
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r0',
             'active': False,
@@ -457,10 +457,15 @@ async def run(port, profile):
             'tabId': r0_tab_id,
             'ref': r0_old_skip_ref,
             'trusted': False
-        }, benchmark='r0.page.click.stale')
-        r0_stale_click = await asyncio.to_thread(STATE.wait, cid)
-        assert r0_stale_click['ok'] is False, r0_stale_click
-        assert 'stale' in r0_stale_click['error']['message'].lower(), r0_stale_click
+        }, benchmark='r0.page.click.revalidate')
+        r0_revalidated_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r0_revalidated_click['ref'] == r0_old_skip_ref, r0_revalidated_click
+        cid = STATE.push('page.query', {
+            'tabId': r0_tab_id,
+            'selector': '#ad-skip'
+        })
+        r0_rebound_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        assert r0_rebound_skip['ref'] == r0_old_skip_ref, r0_rebound_skip
 
         cid = STATE.push('page.read', {
             'tabId': r0_tab_id,
@@ -1365,7 +1370,7 @@ async def run(port, profile):
             'r1ActionabilityFirstSkip': r0_real_skip['label'] == 'Skip' and r0_real_skip['actionable'] is True,
             'r1AdversarialSkipOrdering': r1_items[0]['label'] == 'Skip',
             'r0OnscreenSkipObserved': r0_real_skip['inViewport'] is True,
-            'r0StaleRefRejected': r0_stale_click['ok'] is False,
+            'r0StaleRefRecovered': r0_revalidated_click['ref'] == r0_old_skip_ref,
             'r0IrrelevantMutationObserved': r0_page_after_noise['mutationVersion'] > r0_page_before['mutationVersion'],
             'r0LegacyReadPayloadBytes': r0_payload_bytes,
             'r0LegacyReadTextChars': r0_page_before['textChars'],
@@ -1376,7 +1381,8 @@ async def run(port, profile):
             'semanticPayloadBytes': semantic_payload_bytes,
             'semanticIdentity': True,
             'semanticIdentityRerenderStable': rerender_after['logicalId'] == rerender_before['logicalId'],
-            'semanticIdentityStaleRefRejected': stale['ok'] is False,
+            'semanticIdentityStaleRefRecovered': revalidated['ref'] == rerender_before['ref'],
+            'r2FreshTargetRevalidation': all(r2_acceptance.values()),
             'semanticIdentitySpaReset': spa_page['semanticState']['resetReason'] == 'SPA_ROUTE',
             'semanticDelta': True,
             'semanticDeltaSingleUpdate': len(semantic_updates) == 1,
