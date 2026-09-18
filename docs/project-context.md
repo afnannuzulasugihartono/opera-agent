@@ -113,6 +113,9 @@ Supabase, OAuth/signing/pairing, protocol, browser capabilities, or public MCP t
 - R4 local MCP integration is **PASS**. Offline evidence head:
   `abaf20e28fb93fe2488be4ce9f9cbe0721225992`; CircleCI #141, normal
   regression #140, and Vercel are SUCCESS.
+- R5 AI codebase-context documentation is **PASS**. Documentation head:
+  `e9d6dc8659ac1d7c02bf753a6a2d46bfdae70887`; CircleCI #143 and
+  Vercel are SUCCESS.
 
 
 ## Repowise R3 initial-index status
@@ -247,8 +250,43 @@ No Repowise database/index/cache was committed or uploaded.
 Temporary R4-specific CircleCI jobs are removed at closeout; normal CI remains the
 canonical pipeline.
 
-Exact next Repowise checkpoint, only when explicitly resumed: **R5 documentation
-entry (`docs/AI_CODEBASE_CONTEXT.md`)**. Do not start R5 implicitly.
+## Repowise R5 AI codebase-context documentation
+
+R5 is **PASS**.
+
+Exact documentation head:
+`e9d6dc8659ac1d7c02bf753a6a2d46bfdae70887`.
+
+Evidence:
+
+- `docs/AI_CODEBASE_CONTEXT.md` added as the durable operational entry point for
+  AI-assisted codebase context.
+- CircleCI #143: **SUCCESS**.
+- Vercel: **SUCCESS**.
+- no Opera Agent runtime, production Supabase, OAuth/signing/pairing, Protocol 1,
+  browser capability, or public MCP surface changed.
+
+The document records:
+
+- Repowise 0.51.0 bootstrap and isolated local install;
+- privacy-hardened initial/rebuild indexing;
+- `repowise status` freshness checks;
+- provider-free incremental refresh with
+  `repowise update . --index-only --no-workspace`;
+- CLI query examples for context/search/symbol/why/risk;
+- the R4 local stdio MCP launcher and exact ten-tool allowlist;
+- the repository/source-of-truth hierarchy;
+- stale-index, static-analysis, partial-clone, mock-embedder, and
+  provider-free/index-only limitations;
+- an explicit rule that Repowise is a derived context layer, not runtime,
+  governance, CI, release, or architectural authority.
+
+No npm script was added in R5 because the committed cross-platform Python tooling
+already provides the required entry points without adding shell portability
+assumptions to `package.json`.
+
+Exact next Repowise checkpoint, only when explicitly resumed: **R6 validation and
+Repowise-vs-normal-search comparison**. Do not start R6 implicitly.
 
 ## Governance / next boundary
 

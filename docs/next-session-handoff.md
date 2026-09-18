@@ -80,6 +80,9 @@ integration track; P6 audit work is intentionally deferred in this session.
   `3a83bbed0177a67ce882237965bc6d3706335b4c`.
 - R4 local MCP: **PASS** at offline evidence head
   `abaf20e28fb93fe2488be4ce9f9cbe0721225992`.
+- R5 AI codebase-context documentation: **PASS** at
+  `e9d6dc8659ac1d7c02bf753a6a2d46bfdae70887`; CircleCI #143 + Vercel
+  SUCCESS.
 
 
 ## Repowise R3 initial-index gate
@@ -155,8 +158,31 @@ was configured. No Opera Agent runtime/prod/public-MCP surface changed.
 
 Temporary R4 CircleCI instrumentation is removed at closeout.
 
-Exact next Repowise checkpoint: **R5 `docs/AI_CODEBASE_CONTEXT.md`**, only after
-an explicit user request to continue.
+## Repowise R5 documentation gate
+
+R5 is **PASS**.
+
+Exact documentation head:
+`e9d6dc8659ac1d7c02bf753a6a2d46bfdae70887`.
+
+Evidence:
+
+- `docs/AI_CODEBASE_CONTEXT.md` is the durable Repowise operating guide.
+- CircleCI #143: SUCCESS.
+- Vercel: SUCCESS.
+- scope stayed documentation-only; no Opera Agent runtime/prod/public-MCP
+  behavior changed.
+
+The guide covers bootstrap, index/rebuild, status, provider-free incremental
+updates, CLI queries, local MCP usage, source-of-truth precedence, privacy,
+freshness, partial-clone/history caveats, mock-embedder limitations, and the rule
+that Repowise is derived context rather than governance/runtime authority.
+
+No npm helper scripts were added because the existing Python entry points are
+already cross-platform and avoid shell-specific assumptions.
+
+Exact next Repowise checkpoint: **R6 validation questions + comparison against
+normal grep/read exploration**, only after an explicit user request to continue.
 
 ## Exact next gate
 
