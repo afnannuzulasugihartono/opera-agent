@@ -248,8 +248,13 @@ The adoption vendors the official Spec Kit 1.0.8 Codex/PowerShell core, adds a
 repository constitution derived from existing governance, and adds a regression
 test preventing loss of the P6/8E scope lock.
 
-Current status: **PENDING exact-head CircleCI + Vercel**.
+Acceptance evidence head:
+`f8e860df9803805704ac70c894800b47b6bf3dc4`.
 
-Do not use this tooling change to merge/promote P6 or start 8E. After exact-head
-CI succeeds, close only the Spec Kit adoption state; the next product boundary
-remains the pre-existing independent P6 audit.
+- CircleCI #163: **SUCCESS**.
+- Vercel: **SUCCESS**.
+- Spec Kit governance adoption: **PASS / CLOSED**.
+
+Do not use this tooling change to merge/promote P6 or start 8E. There is no
+implicit next Spec Kit checkpoint. The next product boundary remains the
+pre-existing independent P6 audit.
