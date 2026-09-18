@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R1 ACCEPTED / CLOSED. R2 is AUTHORIZED / IN PROGRESS. R3 is NOT authorized.
+**Status**: R0–R2 ACCEPTED / CLOSED. R3 is NOT authorized.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -25,11 +25,11 @@
 
 ## Phase R2 — Fresh target revalidation
 
-- [ ] T012 [US2] Add failing tests for same-document unique replacement, ambiguous replacement, route reset, sensitive change and disappearing target.
-- [ ] T013 [US2] Implement bounded fresh-target descriptor/revalidation using current trusted browser evidence close to action time.
-- [ ] T014 [US2] Ensure `logicalId` alone cannot authorize action and coordinate guessing is never used as stale-ref recovery.
-- [ ] T015 [US2] Prove stale-state action count is zero in focused + controlled-browser tests.
-- [ ] T016 Record R2 evidence and STOP for acceptance.
+- [x] T012 [US2] Add failing tests for same-document unique replacement, ambiguous replacement, route reset, sensitive change and disappearing target.
+- [x] T013 [US2] Implement bounded fresh-target descriptor/revalidation using current trusted browser evidence close to action time.
+- [x] T014 [US2] Ensure `logicalId` alone cannot authorize action and coordinate guessing is never used as stale-ref recovery.
+- [x] T015 [US2] Prove stale-state action count is zero in focused + controlled-browser tests.
+- [x] T016 Record R2 evidence and STOP for acceptance.
 
 ## Phase R3 — Local action verification
 

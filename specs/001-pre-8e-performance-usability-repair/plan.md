@@ -1,6 +1,6 @@
 # Implementation Plan: Pre-8E Performance Usability Repair
 
-**Branch**: `feat/pre-8e-usability-repair-r2` (R2 only) | **Date**: 2026-09-18 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md`
+**Branch**: `feat/pre-8e-usability-repair-r2` (R2 closeout) | **Date**: 2026-09-18 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md`
 
 **Input**: Live YouTube responsiveness findings plus canonical Opera Agent governance.
 
@@ -48,7 +48,7 @@ second browser-state system or expand transaction authority.
 
 ## Constitution Check
 
-**PASS for R2 start. R2 only is authorized; R3 is not authorized.**
+**PASS for R2 closeout. R2 is accepted/closed; R3 is not authorized.**
 
 - Repository authority remains above Spec Kit.
 - 8E remains paused/not started.
@@ -59,8 +59,10 @@ second browser-state system or expand transaction authority.
 - The required read-only `$speckit-analyze` consistency gate was completed before R0 implementation.
 - R1 tests-first implementation and exact-head closeout are complete.
 - The required read-only consistency analysis was re-run before R2 and found no conflict with the frozen R2 contract.
-- The user explicitly authorized R2 only; R3 and later checkpoints still require separate explicit instruction.
-- R2 must remain bounded to same-document fresh-target revalidation and fail closed on ambiguity/reset/sensitivity/weak evidence.
+- The user explicitly authorized R2 only; its tests-first implementation and exact-head verification are complete.
+- R2 remained bounded to same-document fresh-target revalidation and fails closed on ambiguity/reset/sensitivity/weak evidence.
+- Protocol 1, 26 browser primitives, and 18 public MCP tool names/input schemas remain unchanged.
+- R3 and later checkpoints still require separate explicit instruction.
 
 Re-check the constitution gate and run the required analysis again before any R3 implementation.
 

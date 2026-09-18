@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair Plan
 
-Status: **R0–R1 ACCEPTED / CLOSED; R2 AUTHORIZED / IN PROGRESS**
+Status: **R0–R2 ACCEPTED / CLOSED; R3 NOT AUTHORIZED**
 
 Created: 2026-09-18
 
@@ -129,7 +129,9 @@ Stop immediately if any repair would require:
 
 R0 is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usability-r0.md`.
 
-R1 is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usability-r1.md` and closeout head `f468230986101f09880ce1e38cf69b705570c507` (CircleCI #220 + Vercel SUCCESS). The user explicitly authorized **R2 only**. Execute T012–T016, then STOP for R2 acceptance; R3 remains unauthorized.
+R1 is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usability-r1.md`.
+
+R2 fresh-target revalidation is ACCEPTED/CLOSED with implementation evidence head `70c79db6d76ab624d19bd5d6067a1469ef522045` (CircleCI #226 + Vercel SUCCESS) and durable evidence in `docs/pre-8e-performance-usability-r2.md`. STOP here for user review; **R3 remains NOT AUTHORIZED** without a new explicit instruction.
 
 Milestone 8E remains paused/not started until R8 is accepted and the user separately
 authorizes 8E.

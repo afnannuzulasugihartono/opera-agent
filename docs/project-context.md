@@ -365,7 +365,7 @@ or scope expansion is authorized implicitly. Any remote/public MCP, external
 provider, cloud upload, editor auto-configuration, or runtime coupling requires a
 new explicitly scoped review.
 
-## Pre-8E Performance Usability Repair — R0–R1 accepted
+## Pre-8E Performance Usability Repair — R0–R2 accepted
 
 On 2026-09-18 the user approved inserting a findings-driven repair track before
 Milestone 8E after a live production-path YouTube test.
@@ -376,7 +376,7 @@ Canonical plan:
 Spec Kit feature:
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0–R1 ACCEPTED / CLOSED; R2 AUTHORIZED / IN PROGRESS; R3 NOT AUTHORIZED**.
+Status: **R0–R2 ACCEPTED / CLOSED; R3 NOT AUTHORIZED**.
 
 Frozen findings include:
 - on-screen ad `Skip` competing with offscreen `Skip navigation`;
@@ -392,7 +392,9 @@ revalidation -> R3 local act+verify -> R4 compact observation -> R5 internal med
 fast path -> R6 navigation/residual transport -> R7 workflow cleanup -> R8 full
 real-Opera acceptance.
 
-R1 changed only generic observation/actionability behavior in `extension/content.js` plus tests/docs: viewport truth and actionability are exposed, actionable controls are ranked before bounded truncation, and equal-rank ordering remains stable. No stale-ref revalidation (R2), production deployment/schema mutation, VM enablement, public MCP expansion, transaction authority, or 8E work was performed.
+R1 changed only generic observation/actionability behavior in `extension/content.js` plus tests/docs: viewport truth and actionability are exposed, actionable controls are ranked before bounded truncation, and equal-rank ordering remains stable.
+
+R2 adds bounded action-time fresh-target revalidation in `extension/content.js`: a stale ref may rebind only to one same-document/same-route equivalent current target that matches frozen descriptor identity/metadata and is actionable/non-sensitive. Ambiguity, route reset, sensitivity change, weak evidence, or disappearance fail closed. Caller-provided observational `logicalId`/coordinates are not action authority. No production deployment/schema mutation, VM enablement, public MCP expansion, transaction authority, or 8E work was performed.
 
 ## Governance / next boundary
 
@@ -417,7 +419,9 @@ R1 changed only generic observation/actionability behavior in `extension/content
 - Pre-8E repair R0 is **ACCEPTED / CLOSED** with durable evidence in `docs/pre-8e-performance-usability-r0.md`;
 - R1 implementation evidence head `b0ff03cd0f3ecbf4498b8392760d9492fb44ff77` has CircleCI #219 + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r1.md`;
 - R1 is **ACCEPTED / CLOSED** after actionability-first observation, bounded-ranking acceptance, historical hash-lock rebaseline, and controlled Chromium regression;
-- the user explicitly authorized **R2 only**; exact active work is T012–T016 on `feat/pre-8e-usability-repair-r2`; R3 remains unauthorized;
+- R2 implementation evidence head `70c79db6d76ab624d19bd5d6067a1469ef522045` has CircleCI #226 + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r2.md`;
+- R2 is **ACCEPTED / CLOSED** after unique same-document recovery, unsafe-case fail-closed coverage, authorized content hash-lock rebaseline, and controlled Chromium regression;
+- exact next action is **STOP for user review**; R3 is not authorized without a new explicit instruction;
 - 8E remains paused/not started and cannot begin until the repair track reaches R8
   acceptance and the user separately authorizes 8E.
 
