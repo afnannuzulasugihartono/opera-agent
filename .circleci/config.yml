@@ -37,7 +37,41 @@ jobs:
           name: Chromium extension regression
           command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
+  repowise_r3:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    environment:
+      DO_NOT_TRACK: "1"
+      REPOWISE_TELEMETRY_DISABLED: "1"
+      REPOWISE_SKIP_EDITOR_SETUP: "1"
+      REPOWISE_NO_SAVE_KEY: "1"
+      REPOWISE_GIT_WINDOW_ANCHOR: "head"
+      PYTHONIOENCODING: "utf-8"
+    steps:
+      - checkout
+      - run:
+          name: Fetch full git history
+          command: git fetch --unshallow || git fetch --all --tags --prune
+      - run:
+          name: Install pinned Repowise locally
+          command: python tools/repowise/bootstrap.py
+      - run:
+          name: Run privacy-hardened R3 index probe
+          command: |
+            mkdir -p /tmp/repowise-r3
+            python tools/repowise/r3_probe.py --report /tmp/repowise-r3/report.json
+            cat /tmp/repowise-r3/report.json
+      - store_artifacts:
+          path: /tmp/repowise-r3/report.json
+          destination: repowise-r3-report.json
+
 workflows:
   ci:
     jobs:
       - test
+      - repowise_r3:
+          filters:
+            branches:
+              only: chore/repowise-integration
