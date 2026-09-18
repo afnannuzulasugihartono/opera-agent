@@ -1,6 +1,6 @@
 # Implementation Plan: Pre-8E Performance Usability Repair
 
-**Branch**: `chore/spec-kit-governance` (planning only) | **Date**: 2026-09-18 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md`
+**Branch**: `test/pre-8e-usability-repair-r0` (R0 only) | **Date**: 2026-09-18 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md`
 
 **Input**: Live YouTube responsiveness findings plus canonical Opera Agent governance.
 
@@ -48,18 +48,18 @@ second browser-state system or expand transaction authority.
 
 ## Constitution Check
 
-**PASS for planning only.**
+**PASS for R0 closeout. R1 is not authorized.**
 
 - Repository authority remains above Spec Kit.
 - 8E remains paused/not started.
-- No behavior-changing runtime implementation is performed by this planning commit.
+- R0 changed tests/fixtures/documentation only; no behavior-changing runtime implementation occurred.
 - Tests-first is mandatory before R1/R2/R3/R4/R5/R6/R7 behavior changes.
 - Public MCP/auth/signing/schema/transaction boundaries are not expanded.
 - One active writer rule remains in force.
-- `$speckit-analyze` is still required before the first implementation task.
-- Explicit implementation instruction is still required before any runtime change.
+- The required read-only `$speckit-analyze` consistency gate was completed before R0 implementation.
+- R1 remains behavior-changing work and still requires a new explicit user instruction plus its tests-first gate.
 
-Re-check this gate after R0 fixture design and before R1 implementation.
+Re-check this gate before R1 implementation.
 
 ## Project Structure
 
