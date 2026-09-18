@@ -1239,7 +1239,7 @@ async def run(port, profile):
             'extensionId': ext_id,
             'r0UsabilityFixture': True,
             'r1ActionabilityFirstSkip': r0_real_skip['label'] == 'Skip' and r0_real_skip['actionable'] is True,
-            'r1AdversarialSkipOrdering': r1_skip_all['items'][0]['label'] == 'Skip',
+            'r1AdversarialSkipOrdering': r1_items[0]['label'] == 'Skip',
             'r0OnscreenSkipObserved': r0_real_skip['inViewport'] is True,
             'r0StaleRefRejected': r0_stale_click['ok'] is False,
             'r0IrrelevantMutationObserved': r0_page_after_noise['mutationVersion'] > r0_page_before['mutationVersion'],
