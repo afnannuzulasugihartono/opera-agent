@@ -72,3 +72,15 @@ Spec Kit adoption itself did not satisfy the P6 independent audit. That separate
 gate is now **PASS / CLOSED WITH USER-ACCEPTED REVIEWER DEVIATION**, recorded in
 `docs/p6-independent-audit-closeout.md`. P6 is **ACCEPTED / CLOSED** after PR #46
 merge and verified production promotion to `opera-agent-vm` version 27. 8E remains paused/not started until separately instructed.
+
+The first active bounded Spec Kit feature is now:
+`specs/001-pre-8e-performance-usability-repair/`.
+
+Its canonical product plan is:
+`docs/pre-8e-performance-usability-repair-plan.md`.
+
+Status: **PLANNED / NOT IMPLEMENTED**. This planning update does not authorize
+runtime changes. When implementation is explicitly authorized, R0 is the only next
+checkpoint; each later R checkpoint requires acceptance before advancing. 8E remains
+paused/not started through this repair track and still requires its own explicit
+start decision after R8.

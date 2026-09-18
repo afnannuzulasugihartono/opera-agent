@@ -226,5 +226,18 @@ All 14 deployed source/import files match merge commit
 remains false, VM tables remain empty, and the security-advisor baseline has no new
 P6-specific finding. P6 and Performance Track P are **ACCEPTED / CLOSED**.
 
-The next product boundary is an explicit Milestone 8E start decision. Do not start
-8E implicitly.
+Performance Track P remains **ACCEPTED / CLOSED** and is not reopened.
+
+### Post-P6 empirical usability repair addendum — 2026-09-18
+
+A later live YouTube test exposed model-facing actionability, dynamic-ref freshness,
+observation-size, internal-media-access and workflow-orchestration friction that is
+outside the accepted P0-P6 closure evidence. The user inserted a separate bounded
+Pre-8E Performance Usability Repair before 8E.
+
+Canonical plan:
+`docs/pre-8e-performance-usability-repair-plan.md`.
+
+This addendum does not modify P0-P6 acceptance or authorize runtime work. Exact next
+implementation action, only when explicitly instructed, is repair checkpoint R0.
+Milestone 8E remains paused/not started.
