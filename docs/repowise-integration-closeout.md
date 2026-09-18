@@ -191,21 +191,27 @@ Final integration retains all frozen privacy boundaries:
 
 ## R7 final gate
 
-R7 is documentation/verification-only. It introduces no runtime behavior.
+R7 is **PASS / CLOSED**.
 
-The final R7 closeout commit must pass the repository's canonical CircleCI job,
-which runs:
+R7 is documentation/verification-only and introduced no runtime behavior.
 
-- `npm test`;
-- `npm run check`;
-- Chromium extension regression.
+Final-candidate closeout head:
 
-Vercel must also be SUCCESS.
+`0338f83c198ff38d0bbc4e864692c01c9a34d327`
 
-Pending required CI means R7 remains pending. Only exact-head SUCCESS closes the
-Repowise integration track.
+Evidence:
 
-After R7 closes, the Repowise track has no automatic next checkpoint. Any future
+- CircleCI #150: **SUCCESS**;
+- canonical `npm test`: PASS;
+- canonical `npm run check`: PASS;
+- Chromium extension regression: PASS;
+- Vercel: **SUCCESS**;
+- `.circleci/config.yml` is byte-identical to the P6 integration base;
+- `package.json` is byte-identical to the P6 integration base;
+- final integration diff is limited to Repowise tooling, local-ignore entries,
+  and documentation.
+
+This closes the Repowise integration track. It has no automatic next checkpoint. Any future
 Repowise expansion—remote/public MCP, external provider, cloud upload,
 machine-wide/editor auto-configuration, or runtime coupling—requires a new
 explicitly scoped review rather than silently extending this track.

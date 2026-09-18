@@ -122,8 +122,9 @@ Supabase, OAuth/signing/pairing, protocol, browser capabilities, or public MCP t
 - R6 exact closeout head
   `6c1f06a2e7d11c62dc8ebfb0a0a13cb31e28140d`: CircleCI #149 + Vercel
   SUCCESS.
-- R7 final Repowise closeout is **PENDING exact-head CI**. It is
-  documentation/verification-only and introduces no runtime behavior.
+- R7 final Repowise closeout is **PASS / CLOSED**. Final-candidate head
+  `0338f83c198ff38d0bbc4e864692c01c9a34d327`: CircleCI #150 + Vercel
+  SUCCESS; canonical test/check/Chromium regression passed.
 
 
 ## Repowise R3 initial-index status
@@ -343,9 +344,10 @@ R6 establishes a hybrid policy: use Repowise for orientation/structure/impact/
 history, then verify consequential claims against exact source and CI. Prefer
 normal repository grep for exhaustive literal inventory.
 
-R7 final closeout is now the active Repowise gate. Exact-head canonical
-CircleCI + Vercel SUCCESS is required before the integration track may be
-declared closed. No later Repowise checkpoint is authorized implicitly.
+The Repowise integration track is closed after R7. No later Repowise checkpoint
+or scope expansion is authorized implicitly. Any remote/public MCP, external
+provider, cloud upload, editor auto-configuration, or runtime coupling requires a
+new explicitly scoped review.
 
 ## Governance / next boundary
 

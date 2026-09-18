@@ -89,7 +89,9 @@ integration track; P6 audit work is intentionally deferred in this session.
 - R6 closeout head
   `6c1f06a2e7d11c62dc8ebfb0a0a13cb31e28140d`: CircleCI #149 + Vercel
   SUCCESS.
-- R7 final closeout: **PENDING exact-head CircleCI/Vercel**.
+- R7 final closeout: **PASS / CLOSED** at final-candidate
+  `0338f83c198ff38d0bbc4e864692c01c9a34d327`; CircleCI #150 + Vercel
+  SUCCESS.
 
 
 ## Repowise R3 initial-index gate
@@ -212,10 +214,10 @@ Detailed evidence is in `docs/repowise-r6-validation.md`. The reusable validatio
 harness remains at `tools/repowise/r6_validate.py`. Temporary R6 CI wiring is
 removed.
 
-R7 final closeout is active. The final record is
-`docs/repowise-integration-closeout.md`. Do not declare the track closed until
-the R7 exact head has canonical CircleCI + Vercel SUCCESS. There is no implicit
-R8 or automatic Repowise scope expansion after closure.
+R7 is closed. The final record is `docs/repowise-integration-closeout.md`.
+There is no implicit R8 or automatic Repowise scope expansion after closure.
+The next product boundary remains the pre-existing P6 independent audit; do not
+merge/promote P6 or start 8E without satisfying that governance gate.
 
 ## Exact next gate
 
