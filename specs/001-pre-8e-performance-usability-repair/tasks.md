@@ -2,18 +2,18 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: Planning complete; implementation NOT authorized.
+**Status**: R0 evidence recorded; final R0 closeout CI pending. R1 is NOT authorized.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
 ## Phase R0 — Baseline and deterministic fixtures
 
-- [ ] T001 Create `tests/fixtures/pre-8e-usability-baseline-r0-v1.json` with the frozen empirical timing/payload facts and clearly mark single-run measurements as non-distributional.
-- [ ] T002 Add a controlled-browser fixture with offscreen `Skip navigation` and on-screen `Skip`, dynamic re-render, irrelevant mutation churn, and media element.
-- [ ] T003 Add failing tests proving current target ordering/viewport evidence does not satisfy R1 acceptance.
-- [ ] T004 Add failing tests proving a benign dynamic re-render currently yields stale-target failure before R2.
-- [ ] T005 Add payload measurement for legacy model-facing `page.read` equivalent facts.
-- [ ] T006 Record R0 evidence and STOP for checkpoint review.
+- [x] T001 Create `tests/fixtures/pre-8e-usability-baseline-r0-v1.json` with the frozen empirical timing/payload facts and clearly mark single-run measurements as non-distributional.
+- [x] T002 Add a controlled-browser fixture with offscreen `Skip navigation` and on-screen `Skip`, dynamic re-render, irrelevant mutation churn, and media element.
+- [x] T003 Add failing tests proving current target ordering/viewport evidence does not satisfy R1 acceptance.
+- [x] T004 Add failing tests proving a benign dynamic re-render currently yields stale-target failure before R2.
+- [x] T005 Add payload measurement for legacy model-facing `page.read` equivalent facts.
+- [x] T006 Record R0 evidence and STOP for checkpoint review.
 
 ## Phase R1 — Actionability-first observation
 
