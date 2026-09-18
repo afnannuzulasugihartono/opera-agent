@@ -110,6 +110,9 @@ Supabase, OAuth/signing/pairing, protocol, browser capabilities, or public MCP t
 - R3 initial indexing is **PASS**. Full-history evidence head:
   `3a83bbed0177a67ce882237965bc6d3706335b4c`; CircleCI #134, normal
   regression #133, and Vercel are SUCCESS.
+- R4 local MCP integration is **PASS**. Offline evidence head:
+  `abaf20e28fb93fe2488be4ce9f9cbe0721225992`; CircleCI #141, normal
+  regression #140, and Vercel are SUCCESS.
 
 
 ## Repowise R3 initial-index status
@@ -171,8 +174,81 @@ Temporary R3-specific CircleCI jobs are removed at closeout; normal CI remains t
 canonical pipeline. `tools/repowise/r3_probe.py` and
 `tools/repowise/r3_assert.py` remain bounded local/CI diagnostic utilities.
 
-Exact next Repowise checkpoint, only when explicitly resumed: **R4 local MCP
-integration**. Do not start R4 implicitly.
+## Repowise R4 local MCP status
+
+R4 is **PASS**.
+
+Exact offline evidence head:
+`abaf20e28fb93fe2488be4ce9f9cbe0721225992`.
+
+Implementation/evidence chain:
+
+- tests-first `9f7ee9dcfee2ec79e85999940559ff30e244aeb5`:
+  - CircleCI #136 `repowise_r4_mcp`: expected **FAILURE** because the launcher
+    did not yet exist;
+  - CircleCI #137 normal regression: **SUCCESS**;
+  - Vercel: **SUCCESS**.
+- initial implementation `555044f68513096a6705b77e32ce1deba0018954`:
+  - CircleCI #139 MCP acceptance: **SUCCESS**;
+  - CircleCI #138 normal regression: **SUCCESS**;
+  - Vercel: **SUCCESS**;
+  - the acceptance log exposed one outbound PyPI release-version GET at MCP
+    startup. It did not upload source or use a provider, but it violated the R4
+    offline boundary and was not accepted as final.
+- offline hardening `abaf20e28fb93fe2488be4ce9f9cbe0721225992`:
+  - CircleCI #141 MCP acceptance: **SUCCESS**;
+  - CircleCI #140 normal regression including Chromium extension regression:
+    **SUCCESS**;
+  - Vercel: **SUCCESS**;
+  - the final MCP smoke output contains no PyPI/HTTP request and reports:
+    `transport=stdio`, `tool_count=10`, and `overview_call=ok`.
+
+Committed R4 integration:
+
+- `tools/repowise/mcp_stdio.py` — cross-platform repo-local launcher.
+- `tools/repowise/mcp_smoke.py` — MCP initialize/list-tools/call acceptance test.
+- `tools/repowise/MCP_CONFIG_TEMPLATES.md` — manual client templates; no user or
+  editor config is overwritten.
+
+The launcher uses only MCP **stdio** and does not bind an HTTP/SSE/public port.
+It forces single-repository mode and exposes exactly these ten local tools:
+
+1. `get_overview`
+2. `get_context`
+3. `get_symbol`
+4. `search_codebase`
+5. `get_risk`
+6. `get_change_risk`
+7. `get_why`
+8. `get_dead_code`
+9. `get_health`
+10. `get_dependency_path`
+
+The R4 runtime is deliberately provider-free/offline:
+
+- provider and embedder are forced to `mock`;
+- common provider-key environment variables are blanked for the child runtime;
+- the launcher calls Repowise MCP directly rather than the CLI path that loads
+  project-local `.repowise/.env`;
+- Repowise's advisory PyPI release poll is replaced by an offline local result;
+- DNS plus TCP/UDP socket egress is denied for the MCP process, while local
+  `AF_UNIX` IPC is preserved;
+- telemetry, editor setup, and key persistence remain disabled.
+
+Manual templates cover Claude/generic `mcpServers` clients, Codex TOML, and the
+Repowise-compatible generic shape for Gemini CLI. R4 does not write those configs.
+ChatGPT is not given a public endpoint or local-stdio bridge; any secure tunnel or
+remote-MCP bridge would change the connectivity boundary and remains outside R4.
+
+No Opera Agent runtime behavior, production Supabase state, OAuth/signing/pairing,
+Protocol 1, 26 browser capabilities, or 18 public Opera Agent MCP tools changed.
+No Repowise database/index/cache was committed or uploaded.
+
+Temporary R4-specific CircleCI jobs are removed at closeout; normal CI remains the
+canonical pipeline.
+
+Exact next Repowise checkpoint, only when explicitly resumed: **R5 documentation
+entry (`docs/AI_CODEBASE_CONTEXT.md`)**. Do not start R5 implicitly.
 
 ## Governance / next boundary
 

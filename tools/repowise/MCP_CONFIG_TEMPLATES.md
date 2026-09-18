@@ -3,7 +3,9 @@
 These are **manual paste templates**. R4 does not write user-level or editor MCP
 configuration. Replace `<ABS_REPO>` with the absolute path to the Opera Agent
 checkout. The committed launcher always uses local **stdio**, exposes no HTTP/SSE
-port, and starts the isolated `.repowise-venv` install.
+port, and starts the isolated `.repowise-venv` install. The MCP process also
+disables Repowise's PyPI release poll, forces provider/embedder `mock`, does not
+load project-local provider secrets, and denies DNS/TCP/UDP egress.
 
 The launcher deliberately exposes this local deterministic surface only:
 `get_overview`, `get_context`, `get_symbol`, `search_codebase`,
@@ -58,7 +60,7 @@ public URL to make ChatGPT reach it.
 
 ```text
 python tools/repowise/bootstrap.py
-# build/update the local .repowise index using the R2/R3 privacy rules
+.repowise-venv/bin/repowise init . --yes --no-prose --no-editor-setup --no-save-key --embedder mock
 python tools/repowise/mcp_stdio.py
 ```
 

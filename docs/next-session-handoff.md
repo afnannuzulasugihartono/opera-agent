@@ -78,6 +78,8 @@ integration track; P6 audit work is intentionally deferred in this session.
   floor (Python 3.13.5, Git 2.47.3).
 - R3: **PASS** at full-history evidence head
   `3a83bbed0177a67ce882237965bc6d3706335b4c`.
+- R4 local MCP: **PASS** at offline evidence head
+  `abaf20e28fb93fe2488be4ce9f9cbe0721225992`.
 
 
 ## Repowise R3 initial-index gate
@@ -115,8 +117,46 @@ requiring Git-history coverage.
 Temporary R3-specific CircleCI jobs are removed at closeout. The bounded
 `tools/repowise/r3_probe.py` and `tools/repowise/r3_assert.py` utilities remain.
 
-Exact next Repowise checkpoint: **R4 local MCP integration**, only after an explicit
-user request to continue.
+## Repowise R4 local MCP gate
+
+R4 is **PASS**.
+
+Exact offline evidence head:
+`abaf20e28fb93fe2488be4ce9f9cbe0721225992`.
+
+Evidence:
+
+- tests-first `9f7ee9d...`: CircleCI #136 expected red; normal #137 + Vercel
+  SUCCESS.
+- initial MCP implementation `555044f...`: #139 MCP acceptance SUCCESS,
+  normal #138 + Vercel SUCCESS, but its log revealed Repowise's advisory PyPI
+  release check and therefore did not satisfy the offline boundary.
+- offline hardening `abaf20e...`: CircleCI #141 MCP acceptance SUCCESS,
+  normal #140 SUCCESS, Vercel SUCCESS.
+- final smoke: stdio transport, exactly 10 tools, `get_overview` call OK, and no
+  PyPI/HTTP request in the MCP step output.
+
+R4 files retained:
+
+- `tools/repowise/mcp_stdio.py`
+- `tools/repowise/mcp_smoke.py`
+- `tools/repowise/MCP_CONFIG_TEMPLATES.md`
+
+The launcher is single-repo, stdio-only, provider/embedder `mock`, does not load
+project-local provider secrets, disables the release poll, and denies DNS/TCP/UDP
+egress. It exposes only:
+`get_overview`, `get_context`, `get_symbol`, `search_codebase`,
+`get_risk`, `get_change_risk`, `get_why`, `get_dead_code`, `get_health`,
+and `get_dependency_path`.
+
+Client configuration remains manual. No Claude/Codex/Gemini/user/editor config was
+overwritten, no public MCP endpoint was created, and no ChatGPT tunnel/remote bridge
+was configured. No Opera Agent runtime/prod/public-MCP surface changed.
+
+Temporary R4 CircleCI instrumentation is removed at closeout.
+
+Exact next Repowise checkpoint: **R5 `docs/AI_CODEBASE_CONTEXT.md`**, only after
+an explicit user request to continue.
 
 ## Exact next gate
 
