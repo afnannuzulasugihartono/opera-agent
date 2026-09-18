@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "R0",
+  "capturedAt": "2026-09-18",
+  "source": "single live production-path YouTube responsiveness run",
+  "distributional": false,
+  "distributionNote": "These timings are one empirical run only. They are not percentiles, averages, SLOs, or a performance distribution.",
+  "timingsMs": {
+    "browser.ping": { "total": 562, "queue": 226 },
+    "tabs.list": { "total": 407, "queue": 101 },
+    "tabs.navigate.youtubeHome": { "total": 5224, "queue": 131 },
+    "page.read.youtubeHome": { "total": 652, "queue": 168 },
+    "page.find.recommendation": { "total": 947, "queue": 311 },
+    "page.click.recommendation": { "total": 497, "queue": 96 },
+    "page.read.watch": { "total": 992, "queue": 99 },
+    "page.find.skip": { "total": 663, "queue": 212 },
+    "media.state": { "total": 514, "queue": 20 },
+    "youtube.get_transcript.v4": { "total": 20514, "workflowStartQueue": 4123 }
+  },
+  "modelFacingReads": {
+    "home": { "textChars": 686, "observedEntities": 119, "legacyResultWasLargeOrTruncated": true },
+    "watch": { "textChars": 3331, "observedEntities": 139, "legacyResultWasLargeOrTruncated": true }
+  },
+  "targetAmbiguity": {
+    "query": "Skip",
+    "legacyOrder": ["skip-navigation", "ad-skip"],
+    "targets": [
+      {
+        "id": "skip-navigation",
+        "label": "Skip navigation",
+        "visible": true,
+        "inViewport": false,
+        "enabled": true,
+        "sensitive": false,
+        "approxRect": { "top": -1000 }
+      },
+      {
+        "id": "ad-skip",
+        "label": "Skip",
+        "visible": true,
+        "inViewport": true,
+        "enabled": true,
+        "sensitive": false,
+        "approxRect": { "left": 833, "right": 918, "top": 482, "bottom": 518 }
+      }
+    ],
+    "r1AcceptanceSatisfiedByLegacyOrder": false
+  },
+  "dynamicRef": {
+    "scenario": "same-document benign rerender",
+    "logicalTarget": "ad-skip",
+    "oldRef": "r0_ref_before",
+    "freshRef": "r0_ref_after",
+    "legacyOldRefClick": { "ok": false, "errorContains": "stale" },
+    "r2AcceptanceSatisfiedByLegacyBehavior": false
+  },
+  "irrelevantMutation": {
+    "fixtureElement": "noise-counter",
+    "expectedEffect": "mutation/revision churn without changing the intended Skip target"
+  },
+  "media": {
+    "fixtureElement": "video",
+    "baselinePrimitive": "media.state",
+    "publicMcpExpansionAuthorized": false
+  },
+  "workflow": {
+    "name": "youtube.get_transcript",
+    "version": 4,
+    "baselineTotalMs": 20514,
+    "baselineWorkflowStartQueueMs": 4123,
+    "legacyOutputIncludesUnrelatedMaterial": true
+  },
+  "controlledPayload": {
+    "entityTemplate": {
+      "tag": "button",
+      "role": "button",
+      "visible": true,
+      "inViewport": false,
+      "sensitive": false,
+      "disabled": false,
+      "stableKeySource": "semantic"
+    },
+    "expectedLegacyBytes": {
+      "home": 39424,
+      "watch": 48908
+    }
+  }
+}
