@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/pre-8e-usability-repair-r1
+  pull_request:
+    branches:
+      - test/pre-8e-usability-repair-r0
 
 jobs:
   node:
