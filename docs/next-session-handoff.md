@@ -238,3 +238,18 @@ merge/promote P6 or start 8E without satisfying that governance gate.
 - Two accidental untracked 8E files remain preserved in the git stash named
   **"preserve accidental 8E files before completing checkpoint 8D"**.
   Never pop/apply/delete/build from that stash automatically.
+
+
+## Spec Kit governance adoption gate
+
+Branch: `chore/spec-kit-governance`.
+
+The adoption vendors the official Spec Kit 1.0.8 Codex/PowerShell core, adds a
+repository constitution derived from existing governance, and adds a regression
+test preventing loss of the P6/8E scope lock.
+
+Current status: **PENDING exact-head CircleCI + Vercel**.
+
+Do not use this tooling change to merge/promote P6 or start 8E. After exact-head
+CI succeeds, close only the Spec Kit adoption state; the next product boundary
+remains the pre-existing independent P6 audit.
