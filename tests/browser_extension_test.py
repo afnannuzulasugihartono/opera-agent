@@ -396,6 +396,23 @@ async def run(port, profile):
         assert r0_real_skip['inViewport'] is True, r0_real_skip
         assert r0_real_skip['actionable'] is True, r0_real_skip
 
+        cid = STATE.push('page.find', {
+            'tabId': r0_tab_id,
+            'text': 'Skip',
+            'limit': 10,
+            'visibleOnly': False
+        }, benchmark='r1.page.find.skip.adversarial-order')
+        r1_skip_all = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r1_skip_all['count'] >= 5, r1_skip_all
+        assert r1_skip_all['items'][0]['label'] == 'Skip', r1_skip_all['items']
+        r1_skip_by_label = {item['label']: item for item in r1_skip_all['items']}
+        assert r1_skip_by_label['Skip navigation']['inViewport'] is False
+        assert r1_skip_by_label['Skip hidden']['visible'] is False
+        assert r1_skip_by_label['Skip disabled']['disabled'] is True
+        assert r1_skip_by_label['Skip disabled']['actionable'] is False
+        assert r1_skip_by_label['Skip sensitive']['sensitive'] is True
+        assert r1_skip_by_label['Skip sensitive']['actionable'] is False
+
         r0_old_skip_ref = r0_real_skip['ref']
         cid = STATE.push('page.query', {
             'tabId': r0_tab_id,
@@ -1202,6 +1219,7 @@ async def run(port, profile):
             'extensionId': ext_id,
             'r0UsabilityFixture': True,
             'r1ActionabilityFirstSkip': r0_real_skip['label'] == 'Skip' and r0_real_skip['actionable'] is True,
+            'r1AdversarialSkipOrdering': r1_skip_all['items'][0]['label'] == 'Skip',
             'r0OnscreenSkipObserved': r0_real_skip['inViewport'] is True,
             'r0StaleRefRejected': r0_stale_click['ok'] is False,
             'r0IrrelevantMutationObserved': r0_page_after_noise['mutationVersion'] > r0_page_before['mutationVersion'],
