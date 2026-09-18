@@ -42,11 +42,24 @@ jobs:
       name: python/default
       tag: "3.12"
     resource_class: medium
+    environment:
+      DO_NOT_TRACK: "1"
+      REPOWISE_TELEMETRY_DISABLED: "1"
+      REPOWISE_SKIP_EDITOR_SETUP: "1"
+      REPOWISE_NO_SAVE_KEY: "1"
+      PYTHONIOENCODING: "utf-8"
     steps:
       - checkout
       - run:
-          name: R4 tests-first MCP smoke
-          command: python tools/repowise/mcp_smoke.py
+          name: Install pinned Repowise locally
+          command: python tools/repowise/bootstrap.py
+      - run:
+          name: Build privacy-hardened local index
+          command: |
+            .repowise-venv/bin/repowise init . --yes --no-prose --no-editor-setup --no-save-key --embedder mock
+      - run:
+          name: R4 MCP stdio acceptance smoke
+          command: .repowise-venv/bin/python tools/repowise/mcp_smoke.py
 
 workflows:
   ci:
