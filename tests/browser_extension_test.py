@@ -129,6 +129,7 @@ IFRAME_PAGE = '''<!doctype html><html><head><title>Opera Agent Iframe Privacy Te
 
 R0_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r0.html').read_text(encoding='utf-8')
 R1_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r1.html').read_text(encoding='utf-8')
+R2_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r2.html').read_text(encoding='utf-8')
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
@@ -154,8 +155,10 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1'):
-            if self.path.startswith('/pre8e-r1'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2'):
+            if self.path.startswith('/pre8e-r2'):
+                document = R2_PAGE
+            elif self.path.startswith('/pre8e-r1'):
                 document = R1_PAGE
             elif self.path.startswith('/pre8e-r0'):
                 document = R0_PAGE
@@ -561,6 +564,127 @@ async def run(port, profile):
 
         cid = STATE.push('tabs.close', {'tabId': r1_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # R2 tests-first acceptance. Current R1 runtime is expected to fail the
+        # unique same-document recovery assertion until bounded revalidation is
+        # implemented. The negative cases must already remain fail-closed.
+
+        # Unique same-document replacement: old ref should recover exactly one
+        # equivalent current target and click that replacement.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r2?case=unique',
+            'active': False,
+            'wait': True
+        }, benchmark='r2.tabs.open.unique')
+        r2_unique_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.query', {'tabId': r2_unique_tab, 'selector': '#r2-unique'})
+        r2_unique_before = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.query', {'tabId': r2_unique_tab, 'selector': '#rerender-unique'})
+        r2_unique_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': r2_unique_tab, 'ref': r2_unique_trigger['ref'], 'trusted': False})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.click', {'tabId': r2_unique_tab, 'ref': r2_unique_before['ref'], 'trusted': False}, benchmark='r2.unique.revalidate')
+        r2_unique_click = await asyncio.to_thread(STATE.wait, cid)
+        cid = STATE.push('page.read', {'tabId': r2_unique_tab, 'offset': 0, 'limit': 1200, 'includeElements': False})
+        r2_unique_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        cid = STATE.push('tabs.close', {'tabId': r2_unique_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # Ambiguous replacement: two equally plausible current targets must never
+        # be selected, even when callers supply observational logicalId/coordinates.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r2?case=ambiguous',
+            'active': False,
+            'wait': True
+        }, benchmark='r2.tabs.open.ambiguous')
+        r2_ambiguous_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.read', {'tabId': r2_ambiguous_tab, 'offset': 0, 'limit': 1200, 'maxElements': 40})
+        r2_ambiguous_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        r2_ambiguous_before = next(item for item in r2_ambiguous_page['elements'] if item['label'] == 'R2 ambiguous target')
+        cid = STATE.push('page.query', {'tabId': r2_ambiguous_tab, 'selector': '#make-ambiguous'})
+        r2_ambiguous_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': r2_ambiguous_tab, 'ref': r2_ambiguous_trigger['ref'], 'trusted': False})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.click', {
+            'tabId': r2_ambiguous_tab,
+            'ref': r2_ambiguous_before['ref'],
+            'trusted': False,
+            'logicalId': r2_ambiguous_before['logicalId'],
+            'x': r2_ambiguous_before['rect']['centerX'],
+            'y': r2_ambiguous_before['rect']['centerY']
+        }, benchmark='r2.ambiguous.fail-closed')
+        r2_ambiguous_click = await asyncio.to_thread(STATE.wait, cid)
+        cid = STATE.push('page.read', {'tabId': r2_ambiguous_tab, 'offset': 0, 'limit': 1200, 'includeElements': False})
+        r2_ambiguous_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        cid = STATE.push('tabs.close', {'tabId': r2_ambiguous_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # Route discontinuity: a same-tab SPA route change invalidates the old
+        # action authority even if an element with the same id is recreated.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r2?case=route',
+            'active': False,
+            'wait': True
+        }, benchmark='r2.tabs.open.route')
+        r2_route_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.query', {'tabId': r2_route_tab, 'selector': '#r2-route'})
+        r2_route_before = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.query', {'tabId': r2_route_tab, 'selector': '#route-reset'})
+        r2_route_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': r2_route_tab, 'ref': r2_route_trigger['ref'], 'trusted': False})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.click', {'tabId': r2_route_tab, 'ref': r2_route_before['ref'], 'trusted': False}, benchmark='r2.route.fail-closed')
+        r2_route_click = await asyncio.to_thread(STATE.wait, cid)
+        cid = STATE.push('tabs.close', {'tabId': r2_route_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # Sensitivity change: stable id alone cannot recover a target that has
+        # become credential/security-code shaped.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r2?case=sensitive',
+            'active': False,
+            'wait': True
+        }, benchmark='r2.tabs.open.sensitive')
+        r2_sensitive_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.query', {'tabId': r2_sensitive_tab, 'selector': '#r2-sensitive'})
+        r2_sensitive_before = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.query', {'tabId': r2_sensitive_tab, 'selector': '#make-sensitive'})
+        r2_sensitive_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': r2_sensitive_tab, 'ref': r2_sensitive_trigger['ref'], 'trusted': False})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.click', {'tabId': r2_sensitive_tab, 'ref': r2_sensitive_before['ref'], 'trusted': False}, benchmark='r2.sensitive.fail-closed')
+        r2_sensitive_click = await asyncio.to_thread(STATE.wait, cid)
+        cid = STATE.push('page.read', {'tabId': r2_sensitive_tab, 'offset': 0, 'limit': 1200, 'includeElements': False})
+        r2_sensitive_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        cid = STATE.push('tabs.close', {'tabId': r2_sensitive_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # Disappearing target: zero current equivalents must remain stale.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r2?case=disappear',
+            'active': False,
+            'wait': True
+        }, benchmark='r2.tabs.open.disappear')
+        r2_disappear_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.query', {'tabId': r2_disappear_tab, 'selector': '#r2-disappear'})
+        r2_disappear_before = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.query', {'tabId': r2_disappear_tab, 'selector': '#remove-target'})
+        r2_disappear_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': r2_disappear_tab, 'ref': r2_disappear_trigger['ref'], 'trusted': False})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.click', {'tabId': r2_disappear_tab, 'ref': r2_disappear_before['ref'], 'trusted': False}, benchmark='r2.disappear.fail-closed')
+        r2_disappear_click = await asyncio.to_thread(STATE.wait, cid)
+        cid = STATE.push('tabs.close', {'tabId': r2_disappear_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        r2_acceptance = {
+            'uniqueRecovered': r2_unique_click['ok'] is True and 'unique-clicked:1' in r2_unique_after['text'],
+            'ambiguousRejected': r2_ambiguous_click['ok'] is False and 'ambiguous-clicked:0' in r2_ambiguous_after['text'],
+            'routeRejected': r2_route_click['ok'] is False,
+            'sensitiveRejected': r2_sensitive_click['ok'] is False and 'sensitive-clicked:0' in r2_sensitive_after['text'],
+            'disappearingRejected': r2_disappear_click['ok'] is False
+        }
+        assert all(r2_acceptance.values()), r2_acceptance
 
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': spa_route['ref']})

@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pre-8E R2 fresh target revalidation fixture</title>
+  <style>
+    body { font-family: sans-serif; padding: 24px; }
+    section { margin: 16px 0; padding: 12px; border: 1px solid #bbb; }
+  </style>
+</head>
+<body>
+  <h1>R2 fresh target revalidation</h1>
+
+  <section>
+    <button id="r2-unique" aria-label="R2 unique target" onclick="bump('unique')">R2 unique target</button>
+    <button id="rerender-unique" onclick="rerenderUnique()">Rerender unique target</button>
+    <p id="unique-count">unique-clicked:0</p>
+  </section>
+
+  <section>
+    <button aria-label="R2 ambiguous target" onclick="bump('ambiguous')">R2 ambiguous target</button>
+    <button id="make-ambiguous" onclick="makeAmbiguous()">Make ambiguous</button>
+    <p id="ambiguous-count">ambiguous-clicked:0</p>
+  </section>
+
+  <section>
+    <button id="r2-route" aria-label="R2 route target" onclick="bump('route')">R2 route target</button>
+    <button id="route-reset" onclick="routeReset()">Change route and rerender</button>
+    <p id="route-count">route-clicked:0</p>
+  </section>
+
+  <section>
+    <button id="r2-sensitive" aria-label="R2 safe target" onclick="bump('sensitive')">R2 safe target</button>
+    <button id="make-sensitive" onclick="makeSensitive()">Make target sensitive</button>
+    <p id="sensitive-count">sensitive-clicked:0</p>
+  </section>
+
+  <section>
+    <button id="r2-disappear" aria-label="R2 disappearing target" onclick="bump('disappear')">R2 disappearing target</button>
+    <button id="remove-target" onclick="document.getElementById('r2-disappear')?.remove()">Remove target</button>
+  </section>
+
+  <script>
+    function bump(name) {
+      const node = document.getElementById(name + '-count');
+      const current = Number(node.dataset.count || 0) + 1;
+      node.dataset.count = String(current);
+      node.textContent = name + '-clicked:' + current;
+    }
+
+    function rerenderUnique() {
+      const current = document.getElementById('r2-unique');
+      const replacement = current.cloneNode(true);
+      current.replaceWith(replacement);
+    }
+
+    function makeAmbiguous() {
+      const current = [...document.querySelectorAll('button')]
+        .find((node) => node.getAttribute('aria-label') === 'R2 ambiguous target');
+      const a = current.cloneNode(true);
+      const b = current.cloneNode(true);
+      current.replaceWith(a, b);
+    }
+
+    function routeReset() {
+      history.pushState({}, '', location.pathname + '?r2-route=changed');
+      const current = document.getElementById('r2-route');
+      current.replaceWith(current.cloneNode(true));
+    }
+
+    function makeSensitive() {
+      const current = document.getElementById('r2-sensitive');
+      const replacement = current.cloneNode(true);
+      replacement.setAttribute('aria-label', 'Security code target');
+      current.replaceWith(replacement);
+    }
+  </script>
+</body>
+</html>
