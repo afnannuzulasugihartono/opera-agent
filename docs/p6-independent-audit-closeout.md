@@ -65,13 +65,16 @@ and is not the final-candidate CI identifier.
   the Performance Track records; no new live production acceptance was created
   by this audit.
 - **Production promotion:** NOT PROMOTED / UNMUTATED.
-- **PR #46:** still open and unmerged.
+- **PR #46:** merged by explicit user instruction at
+  `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`; CircleCI #169 + Vercel SUCCESS.
 - **8E:** paused / not started.
 
 ## Gate result
 
 **P6 INDEPENDENT AUDIT GATE: PASS / CLOSED WITH USER-ACCEPTED REVIEWER DEVIATION**
 
-This closeout authorizes no automatic merge, deploy, production mutation, or 8E
-start. P6 remains a final candidate until a separate explicit promotion/merge
-instruction is executed and verified.
+This audit closeout did not itself authorize automatic merge, deploy, production
+mutation, or 8E start. A later explicit user instruction authorized PR #46 merge,
+which completed at `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac` with CircleCI
+#169 + Vercel SUCCESS. P6 remains a final candidate until a separate explicit
+production-promotion instruction is executed and verified.

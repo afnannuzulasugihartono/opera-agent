@@ -1,14 +1,15 @@
 # Performance Track P — Delta-First Runtime
 
-Status: **P0–P5 ACCEPTED / P6 FINAL CANDIDATE — implementation/regression CI green; independent audit pending.**
+Status: **P0–P5 ACCEPTED / P6 FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending.**
 
 Date frozen: 2026-09-17
 Baseline repository head before P0: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
 Accepted P5 head before P6: `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
 
 This track is inserted after accepted Checkpoint 8D and before Checkpoint 8E.
-**8E remains paused** until P6 passes the required independent audit or the user
-explicitly accepts a documented governance deviation/residual risk.
+**8E remains paused**. P6 passed the independent audit gate through the documented
+user-accepted Jules reviewer deviation and PR #46 is merged, but production
+promotion remains a separate unresolved boundary.
 
 > Keep canonical browser/semantic state inside the bounded runtime, process changes
 > incrementally, and wake reasoning only when a change requires a new decision.
@@ -147,7 +148,7 @@ Acceptance record: `docs/delta-first-performance-p5.md`.
 
 ## P6 — durable runtime cutover, maximal safe subset
 
-Status: **FINAL CANDIDATE — independent audit pending.**
+Status: **FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending.**
 
 P6 wires Performance Track state/relevance reconciliation into the durable DB-backed
 7E VM effect loop after `opera_await`, while preserving the existing database lease,
@@ -206,12 +207,16 @@ Git/release history preserves it.
 
 ## Track completion and return to Milestone 8
 
-The P6 documentation closeout commit must first receive exact-head CircleCI and
-Vercel SUCCESS. Then an independent audit of the full accepted-P5 -> P6 candidate
-diff is required.
+The independent P5 -> P6 audit is PASS/CLOSED with the documented user-accepted
+Jules reviewer deviation. Exact candidate
+`96ef1cfdbecc7c5c0e40486b6378501db606b84d` has CircleCI #118 + Vercel
+SUCCESS.
 
-Per current `AGENTS.md`, the repository specifically names **Codex** as the
-independent milestone auditor. Only `PASS` authorizes return to **8E — controlled
-single-action transaction executor**, unless the user explicitly accepts documented
-residual risk/governance deviation. Do not merge/promote P6 or start 8E before that
-boundary is resolved.
+PR #46 was explicitly merged at
+`6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`; CircleCI #169 + Vercel are
+SUCCESS on the merge commit.
+
+Production has not been promoted or mutated. P6 therefore remains a FINAL
+CANDIDATE. The next product boundary is an explicit production-promotion decision.
+Do not deploy/promote P6 or start 8E until that separate instruction is given and
+the required evidence is recorded.

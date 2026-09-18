@@ -92,13 +92,15 @@ still require exact source and evidence verification.
 ## Current Locked Boundary
 
 Current state on 2026-09-18:
-- Performance Track P6 remains a FINAL CANDIDATE because PR #46 is still
-  open/unmerged and production is not promoted;
+- Performance Track P6 remains a FINAL CANDIDATE because PR #46 is merged at
+  `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac` with CircleCI #169 + Vercel
+  SUCCESS, while production is not promoted;
 - the P6 independent audit gate is PASS/CLOSED using Jules with an explicitly
   user-accepted reviewer deviation because Codex quota was exhausted;
 - exact candidate evidence is CircleCI #118 SUCCESS + Vercel SUCCESS;
-- P6 MUST NOT be merged/promoted merely because the audit passed; promotion
-  requires a separate explicit instruction and verification;
+- the explicit merge decision has been executed; P6 MUST NOT be production-
+  promoted merely because audit and merge passed; promotion requires a separate
+  explicit instruction and verification;
 - Milestone 8E remains paused/not started until promotion state is resolved;
 - the preserved accidental 8E stash MUST NOT be popped, applied, deleted, or
   used automatically.

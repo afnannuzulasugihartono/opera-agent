@@ -1,6 +1,6 @@
 # Performance Track P6 — Durable Runtime Cutover (Maximal Safe Subset)
 
-Status: **FINAL CANDIDATE — independent audit pending**
+Status: **FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending**
 
 Accepted predecessor: P5 at
 `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`.
@@ -79,15 +79,18 @@ integrated production P6 speed.
 - no production schema, OAuth, signing, pairing, extension-distribution,
   consequential transaction authority, or 8E change.
 
-## Production / merge status
+## Audit / merge / production status
 
-No P6 production promotion/deploy is authorized or recorded here. This document is
-a final-candidate record, not an acceptance record.
+- independent audit: **PASS / CLOSED WITH USER-ACCEPTED REVIEWER DEVIATION**;
+- exact audited candidate:
+  `96ef1cfdbecc7c5c0e40486b6378501db606b84d`;
+- exact candidate CI: CircleCI #118 + Vercel SUCCESS;
+- PR #46: **MERGED** at
+  `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`;
+- merge-commit CI: CircleCI #169 + Vercel SUCCESS;
+- production promotion/deploy: **NOT DONE / UNMUTATED**;
+- 8E: paused / not started.
 
-The documentation closeout commit must receive exact-head CircleCI + Vercel
-SUCCESS. After that, a fresh independent audit over accepted P5 -> exact P6
-candidate is required.
-
-Current `AGENTS.md` specifically names **Codex** as the independent milestone
-auditor. Only audit PASS permits moving beyond this boundary unless the user
-explicitly accepts a documented reviewer deviation/residual risk.
+P6 remains a final candidate until a separate explicit production-promotion
+instruction is executed and verified. Audit and merge success do not authorize
+deployment or 8E automatically.

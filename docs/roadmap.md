@@ -71,12 +71,13 @@ Durable 8D closeout:
 
 Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
 
-8E remains paused until Performance Track P6 passes the required independent audit
-or the user explicitly accepts a documented governance deviation/residual risk.
+8E remains paused. The P6 independent audit gate passed with the documented
+user-accepted reviewer deviation and PR #46 is merged, but production promotion is
+still unresolved and requires a separate explicit instruction.
 
 ## Performance Track P — Delta-First Runtime
 
-Status: **P0–P5 accepted. P6 FINAL CANDIDATE — implementation/regression CI green; independent audit pending.**
+Status: **P0–P5 accepted. P6 FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending.**
 
 Checkpoint sequence:
 
@@ -94,8 +95,12 @@ Checkpoint sequence:
   CircleCI #105 + Vercel SUCCESS. Real-Opera timing remains explicitly proxy
   evidence for mediation-elision, not integrated P4 host speed.
 - **P6** — final candidate. Safe runtime cutover is wired into the durable 7E host,
-  but caller-supplied dependency context is rejected and live P3 continuation stays
+  caller-supplied dependency context is rejected, and live P3 continuation stays
   conservative until a trustworthy server-authoritative dependency source exists.
+  The independent audit is PASS/CLOSED with the documented user-accepted Jules
+  deviation. PR #46 is merged at
+  `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`; CircleCI #169 + Vercel SUCCESS.
+  Production promotion remains not done.
 
 Frozen architecture:
 
@@ -180,15 +185,15 @@ Acceptance/final-candidate records:
 
 ## Exact next boundary
 
-The documentation closeout commit for P6 must itself receive CircleCI and Vercel
-SUCCESS. Pending required CI means STOP; failure means diagnose P6 only.
+The P6 audit and repository-merge gates are closed. Exact audited candidate
+`96ef1cfdbecc7c5c0e40486b6378501db606b84d` has CircleCI #118 + Vercel
+SUCCESS. PR #46 is merged at
+`6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`, with CircleCI #169 + Vercel
+SUCCESS.
 
-After exact-head P6 CI is green, the next boundary is an **independent proportionate
-audit of the complete P6 diff from accepted P5**. Per `AGENTS.md`, the repository
-currently names **Codex** as the required independent milestone auditor. Only
-`PASS` permits returning to Milestone 8 at 8E unless the user explicitly accepts
-a documented residual risk/governance deviation. **Do not merge/promote P6 or start
-8E while this gate is unresolved.**
+Production has **not** been promoted or mutated. The next product boundary is a
+separate explicit P6 production-promotion decision. **Do not deploy/promote P6 or
+start 8E without that instruction and the required post-promotion evidence.**
 
 ## Collaboration rule
 

@@ -12,8 +12,10 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 - P6 candidate branch: `feat/performance-runtime-cutover-p6-4571636311958769504`
 - P6 exact final-candidate head:
   `96ef1cfdbecc7c5c0e40486b6378501db606b84d`
-- P6 exact-head CI: CircleCI #117 + Vercel **SUCCESS**
-- P6 independent audit: **PENDING**
+- P6 exact candidate CI: CircleCI #118 + Vercel **SUCCESS**
+- P6 independent audit: **PASS / CLOSED WITH USER-ACCEPTED REVIEWER DEVIATION**
+- PR #46: **MERGED** at `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`
+- P6 merge CI: CircleCI #169 + Vercel **SUCCESS**
 - Repowise integration branch: `chore/repowise-integration`
 - Repowise R1 compatibility: **PASS**
 - Repowise R2 repo setup head:
@@ -82,9 +84,12 @@ P6 record: `docs/delta-first-performance-p6.md`.
 - #116 `npm run check`: PASS; 26 allowlisted primitives, version 1.6.0.
 - #116 Chromium extension regression: PASS.
 
-The exact P6 final-candidate head is
-`96ef1cfdbecc7c5c0e40486b6378501db606b84d`; CircleCI #117 and Vercel are
-SUCCESS. The required independent audit remains pending.
+The exact audited P6 candidate head is
+`96ef1cfdbecc7c5c0e40486b6378501db606b84d`; CircleCI #118 and Vercel are
+SUCCESS. The independent audit is PASS/CLOSED with the documented user-accepted
+Jules reviewer deviation. PR #46 was explicitly merged as
+`6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`; CircleCI #169 and Vercel are
+SUCCESS on that merge commit. Production remains unpromoted.
 
 
 ## Repowise integration track
@@ -365,10 +370,12 @@ new explicitly scoped review.
   **SUCCESS**. The Jules report's #116 reference is historical and not the
   final-candidate CI identifier;
 - durable audit record: `docs/p6-independent-audit-closeout.md`;
-- PR #46 remains open/unmerged and production remains unpromoted/unmutated;
-- P6 therefore remains a FINAL CANDIDATE until a separate explicit
-  merge/promotion instruction is executed and verified;
-- 8E remains paused/not started.
+- PR #46 is merged at `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`;
+  CircleCI #169 + Vercel are SUCCESS on the merge commit;
+- production remains unpromoted/unmutated;
+- P6 remains a FINAL CANDIDATE until a separate explicit production-promotion
+  instruction is executed and verified;
+- 8E remains paused/not started until that promotion state is resolved.
 
 ## Rollback / preserved state
 
@@ -411,5 +418,5 @@ A bounded Spec Kit governance adoption is active on
 This adoption itself did not satisfy the P6 independent audit. That later audit
 gate is now closed separately by `docs/p6-independent-audit-closeout.md` with a
 user-accepted reviewer deviation. P6 remains a FINAL CANDIDATE because PR #46 is
-still open/unmerged and production is not promoted. 8E remains paused/not
-started. No later Spec Kit scope is authorized implicitly.
+merged but production is not promoted. 8E remains paused/not started until that
+promotion state is resolved. No later Spec Kit scope is authorized implicitly.

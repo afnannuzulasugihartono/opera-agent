@@ -2,23 +2,28 @@
 
 Last synchronized: 2026-09-18.
 
-Checkpoint 8D remains closed. Performance Track P0–P5 is accepted. P6 is a
-**FINAL CANDIDATE**, not yet accepted: exact head
-`96ef1cfdbecc7c5c0e40486b6378501db606b84d` has CircleCI #117 + Vercel
-SUCCESS, while the required independent audit remains pending. Milestone 8E is
-paused/not started. The current active workstream is the separate, bounded Repowise
-integration track; P6 audit work is intentionally deferred in this session.
+Checkpoint 8D remains closed. Performance Track P0–P5 is accepted. P6 remains a
+**FINAL CANDIDATE** after its independent audit PASS and explicit PR #46 merge.
+The audited candidate `96ef1cfdbecc7c5c0e40486b6378501db606b84d` has
+CircleCI #118 + Vercel SUCCESS. PR #46 merged as
+`6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`, with CircleCI #169 + Vercel
+SUCCESS. Production is still unpromoted/unmutated, so Milestone 8E remains
+paused/not started.
 
 ## Authoritative boundary
 
 - Repository: `afnannuzulasugihartono/opera-agent`
 - Accepted P5 / canonical P6 base:
   `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
-- Candidate branch:
+- Candidate source branch:
   `feat/performance-runtime-cutover-p6-4571636311958769504`
-- Exact P6 final-candidate head:
+- Exact P6 audited-candidate head:
   `96ef1cfdbecc7c5c0e40486b6378501db606b84d`
-- Exact-head CI: CircleCI #117 + Vercel SUCCESS
+- Exact audited-candidate CI: CircleCI #118 + Vercel SUCCESS
+- Merge target branch: `feat/performance-runtime-cutover-p6`
+- PR #46 merge commit:
+  `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`
+- Merge-commit CI: CircleCI #169 + Vercel SUCCESS
 - Stable extension: 1.6.0
 - Protocol: 1
 - Browser capabilities: 26
@@ -216,8 +221,9 @@ removed.
 
 R7 is closed. The final record is `docs/repowise-integration-closeout.md`.
 There is no implicit R8 or automatic Repowise scope expansion after closure.
-The next product boundary remains the pre-existing P6 independent audit; do not
-merge/promote P6 or start 8E without satisfying that governance gate.
+The P6 independent audit and repository merge gates are closed. Production
+promotion remains a separate explicit decision; do not deploy/promote P6 or start
+8E without that instruction and its required evidence.
 
 ## Exact next gate
 
@@ -235,13 +241,14 @@ DEVIATION**.
 - canonical exact-head CI: CircleCI **#118 SUCCESS** + Vercel **SUCCESS**;
 - durable record: `docs/p6-independent-audit-closeout.md`.
 
-PR #46 remains open/unmerged. Production remains unpromoted/unmutated. P6 remains
-a FINAL CANDIDATE until a separate explicit merge/promotion instruction is
-executed and verified.
+PR #46 is merged at `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`, and
+CircleCI #169 + Vercel are SUCCESS on that merge commit. Production remains
+unpromoted/unmutated. P6 remains a FINAL CANDIDATE until a separate explicit
+production-promotion instruction is executed and verified.
 
-**Exact next product action:** explicit P6 merge/promotion decision. Do not infer
-that decision from the audit PASS. Do not start 8E before the promotion state is
-resolved and synchronized.
+**Exact next product action:** explicit P6 production-promotion decision. Do not
+infer deployment from the audit or merge PASS. Do not start 8E before the
+promotion state is resolved and synchronized.
 
 ## Preserved rollback / stash warning
 
