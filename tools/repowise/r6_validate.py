@@ -64,11 +64,11 @@ def paths_in(text):
 
 def rg_files(pattern):
     proc = subprocess.run(
-        ["rg", "-l", "--glob", "!node_modules/**", "--glob", "!.repowise/**", pattern, "."],
+        ["git", "grep", "-IlE", pattern, "--", "."],
         cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
     )
     if proc.returncode not in (0, 1):
-        raise RuntimeError(proc.stderr)
+        raise RuntimeError(f"git grep failed: {proc.stderr}")
     return sorted(line[2:] if line.startswith("./") else line for line in proc.stdout.splitlines() if line.strip())
 
 
