@@ -365,7 +365,7 @@ or scope expansion is authorized implicitly. Any remote/public MCP, external
 provider, cloud upload, editor auto-configuration, or runtime coupling requires a
 new explicitly scoped review.
 
-## Pre-8E Performance Usability Repair — planned
+## Pre-8E Performance Usability Repair — R0 closeout candidate
 
 On 2026-09-18 the user approved inserting a findings-driven repair track before
 Milestone 8E after a live production-path YouTube test.
@@ -376,7 +376,7 @@ Canonical plan:
 Spec Kit feature:
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **PLANNED / NOT IMPLEMENTED**.
+Status: **R0 EVIDENCE GREEN / CLOSEOUT CI PENDING; R1 NOT STARTED**.
 
 Frozen findings include:
 - on-screen ad `Skip` competing with offscreen `Skip navigation`;
@@ -415,8 +415,8 @@ transaction authority, or 8E work is authorized by the planning update itself.
   CircleCI #169 + Vercel are SUCCESS on the merge commit;
 - production promotion is complete and verified at `opera-agent-vm` version 27;
 - P6 is **ACCEPTED / CLOSED**;
-- the Pre-8E Performance Usability Repair is now the planned boundary before 8E;
-- exact next implementation action, when explicitly authorized, is **R0 only**;
+- Pre-8E repair R0 implementation evidence is green on `test/pre-8e-usability-repair-r0` at `f39c6e3d6a3aef149c30f729c01335358a308088` (CircleCI #182 + Vercel SUCCESS); durable evidence: `docs/pre-8e-performance-usability-r0.md`;
+- exact next action is **R0 documentation closeout CI only**; R1 is not authorized;
 - 8E remains paused/not started and cannot begin until the repair track reaches R8
   acceptance and the user separately authorizes 8E.
 
