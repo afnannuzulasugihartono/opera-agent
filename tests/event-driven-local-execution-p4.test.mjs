@@ -476,11 +476,11 @@ test('P4 repetitive read workload cuts model-mediated reasoning/tool round trips
   assert.equal(/activate_tab|foreground|executionMode/i.test(JSON.stringify(result)), false);
 });
 
-test('P4 leaves P3, P2, extension, public MCP, and accepted Reactive VM bytes unchanged', async () => {
+test('P4 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
   const files = new Map([
     ['../lib/multi-signal-relevance-p3.js', '1c42d1d034767979ce87ff4ffb8eb85efcc3dc10'],
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
-    ['../lib/reactive-vm.js', '05f6448987c9a2139fb3636b751872866647f27d'],
+    ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
     ['../extension/content.js', 'e4363c6f016eba499eca6e6b1c2e8a1f8eac5669'],
@@ -490,7 +490,7 @@ test('P4 leaves P3, P2, extension, public MCP, and accepted Reactive VM bytes un
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
-    assert.equal(sha1Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged in P4`);
+    assert.equal(sha1Blob(bytes), expected, `${relativePath} must match the current authorized boundary lock after P6 supersession`);
   }
   const source = await readFile(new URL('../lib/event-driven-local-execution-p4.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /extension\/|opera-agent-mcp|supabase\/functions/);
