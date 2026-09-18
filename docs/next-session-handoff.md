@@ -240,11 +240,9 @@ User-approved planning on 2026-09-18 adds
 `docs/pre-8e-performance-usability-repair-plan.md` and Spec Kit feature
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **PLANNED / NOT IMPLEMENTED**.
+Status: **R0 EVIDENCE GREEN / CLOSEOUT CI PENDING; R1 NOT STARTED**.
 
-Do not jump to 8E. When explicitly instructed to continue the repair, start **R0
-only** (deterministic benchmark/fixture lock), run the Spec Kit analysis gate before
-behavior-changing implementation, and STOP after R0 evidence.
+Do not jump to 8E. R0 benchmark/fixture implementation is complete on `test/pre-8e-usability-repair-r0` at `f39c6e3d6a3aef149c30f729c01335358a308088`; CircleCI #182 + Vercel are SUCCESS. The durable record is `docs/pre-8e-performance-usability-r0.md`. The only active gate is exact-head R0 documentation closeout CI; R1 remains unauthorized.
 
 ## Exact next gate
 
@@ -270,9 +268,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action:** explicit start of Pre-8E repair **R0 only**. The
-planning update itself does not authorize runtime changes. Do not infer R1 or 8E
-authorization from R0 planning or P6 closure. Milestone 8E remains paused/not started.
+**Exact next product action:** finish **R0 closeout only** by requiring CircleCI + Vercel SUCCESS on the documentation closeout head. Then STOP for user review. Do not infer R1 or 8E authorization from R0 completion. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 
