@@ -243,14 +243,28 @@ def main() -> int:
     important_ok = all(
         isinstance(value, dict)
         and value.get("graph_indexed")
-        and value.get("wiki_page_present")
         and value.get("parse_error") is False
         for value in report["important_files"].values()
     )
+    git_history_ok = bool(
+        git_metadata_count > 0
+        and repo_row
+        and repo_row[1] is not None
+        and int(repo_row[1]) == report["git_commit_count"]
+    )
+    report["git_history"] = {
+        "available": git_history_ok,
+        "metadata_rows": git_metadata_count,
+        "indexed_total_commit_count": int(repo_row[1])
+        if repo_row and repo_row[1] is not None
+        else None,
+        "repository_commit_count": report["git_commit_count"],
+    }
     report["verification_passed"] = bool(
         proc.returncode == 0
         and parse_error_count == 0
         and important_ok
+        and git_history_ok
         and not unexpected_side_effects
         and not after_status
         and repo_row

@@ -37,7 +37,57 @@ jobs:
           name: Chromium extension regression
           command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
+  repowise_r3_full:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    environment:
+      DO_NOT_TRACK: "1"
+      REPOWISE_TELEMETRY_DISABLED: "1"
+      REPOWISE_SKIP_EDITOR_SETUP: "1"
+      REPOWISE_NO_SAVE_KEY: "1"
+      REPOWISE_GIT_WINDOW_ANCHOR: "head"
+      PYTHONIOENCODING: "utf-8"
+    steps:
+      - checkout
+      - run:
+          name: Hydrate full git history
+          command: |
+            if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+              git fetch --unshallow origin
+            fi
+            git config --unset-all remote.origin.partialclonefilter || true
+            git fetch --refetch origin '+refs/heads/*:refs/remotes/origin/*' --tags
+            git config --unset-all remote.origin.promisor || true
+            if git config --get-regexp '^remote\..*\.(promisor|partialclonefilter); then
+              echo "Partial-clone config remains after hydration."
+              exit 1
+            fi
+            if git rev-list --objects --all --missing=print | grep -q '^?'; then
+              echo "Missing Git objects remain after hydration."
+              exit 1
+            fi
+            git fsck --full --no-dangling
+      - run:
+          name: Install pinned Repowise locally
+          command: python tools/repowise/bootstrap.py
+      - run:
+          name: Run full-history R3 probe
+          command: |
+            mkdir -p /tmp/repowise-r3
+            python tools/repowise/r3_probe.py --report /tmp/repowise-r3/report.json
+            cat /tmp/repowise-r3/report.json
+            python tools/repowise/r3_assert.py /tmp/repowise-r3/report.json
+      - store_artifacts:
+          path: /tmp/repowise-r3/report.json
+          destination: repowise-r3-report.json
+
 workflows:
   ci:
     jobs:
       - test
+      - repowise_r3_full:
+          filters:
+            branches:
+              only: chore/repowise-integration
