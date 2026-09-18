@@ -109,6 +109,46 @@ Supabase, OAuth/signing/pairing, protocol, browser capabilities, or public MCP t
 - No Repowise index/database/cache has been committed or uploaded.
 - R3 initial indexing has **NOT STARTED**.
 
+
+## Repowise R3 initial-index status
+
+R3 is **BLOCKED ON EVIDENCE RETRIEVAL**, not on Repowise installation or initial
+index execution.
+
+Exact diagnostic head:
+`48f5943bca165088a329d40a55c8cdf54571a221`.
+
+Verified CI evidence on that head:
+
+- Vercel: **SUCCESS**.
+- normal CircleCI regression job #127: **SUCCESS**.
+- Repowise install job #129: **SUCCESS** using the pinned 0.51.0 local venv.
+- raw privacy-hardened initial-index job #126: **SUCCESS**.
+- metrics-collection job #128: **SUCCESS** and stored
+  `repowise-r3-report.json` as a private CircleCI artifact.
+- an earlier strict verification job #125 failed after the report/assert path; its
+  private report/log could not be read from the current ChatGPT connection.
+- a GitHub Actions probe attempt was discarded because the account supplied no
+  runner for that workflow (`steps=[]`, `runner_id=0`); this was not a Repowise
+  failure.
+- a separate CircleCI config attempt failed before execution because a shell heredoc
+  collided with CircleCI `<< >>` config interpolation; that config defect was
+  corrected before the successful split diagnostics above.
+
+The current ChatGPT environment cannot read private CircleCI job artifacts/logs:
+the CircleCI page/API requires authentication, TinyFish reached login/CAPTCHA, and
+the Opera Browser Connector is not connected. Therefore the required R3 numeric
+evidence (elapsed indexing time, index size, indexed-file count, parse-error count,
+and per-important-file verification fields) must not be guessed.
+
+No `.repowise/` database/cache was committed or uploaded. No external LLM/provider
+was used; telemetry, editor setup, key persistence, and prose generation stayed off.
+
+Exact next action for R3: retrieve the private
+`repowise-r3-report.json` artifact from CircleCI job #128 (or connect an
+authenticated browser session that can read it), then evaluate the report before
+any further index retry. Do not run a third blind verification attempt.
+
 ## Governance / next boundary
 
 - one active writer;

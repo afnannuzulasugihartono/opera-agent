@@ -80,6 +80,38 @@ integration track; P6 audit work is intentionally deferred in this session.
   environment with package access, then initialize Repowise locally with no prose,
   no editor setup, no saved key, and telemetry disabled before measuring the index.
 
+
+## Repowise R3 initial-index gate
+
+R3 is **BLOCKED ON EVIDENCE RETRIEVAL**.
+
+Exact diagnostic head:
+`48f5943bca165088a329d40a55c8cdf54571a221`.
+
+Known facts:
+
+- CircleCI #129 Repowise install: SUCCESS.
+- CircleCI #126 raw privacy-hardened `repowise init`: SUCCESS.
+- CircleCI #128 metrics collection: SUCCESS; private artifact
+  `repowise-r3-report.json` exists.
+- CircleCI #127 normal regression suite: SUCCESS.
+- Vercel: SUCCESS.
+- CircleCI #125 earlier strict verification: FAILURE; do not infer why without the
+  report.
+- GitHub Actions was not a usable runner on this account for the probe; its failed
+  run never executed steps.
+- Current ChatGPT tools cannot authenticate to the private CircleCI log/artifact
+  surface. Do not guess elapsed time, size, counts, parse errors, or important-file
+  verification.
+
+The temporary multi-job CircleCI diagnostics are removed at session close; normal
+CI is restored. `tools/repowise/r3_probe.py` and
+`tools/repowise/r3_assert.py` remain as bounded R3 utilities.
+
+Next R3 action only: read the job #128 metrics artifact through an authenticated
+CircleCI session, evaluate every required field and the seven important files, then
+either close R3 or make one evidence-driven correction. Do not start R4.
+
 ## Exact next gate
 
 1. Require CircleCI + Vercel SUCCESS on the documentation closeout head.
