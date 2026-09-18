@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair — R0 Evidence
 
-Status: **R0 CLOSEOUT CANDIDATE — implementation evidence green; exact closeout CI pending**
+Status: **R0 ACCEPTED / CLOSED — R1 NOT STARTED**
 
 Date: 2026-09-18
 
@@ -145,6 +145,8 @@ No runtime source or production artifact is in the diff.
 
 T001–T005 have evidence. T006 records this checkpoint state.
 
-This documentation closeout must itself receive exact-head CircleCI + Vercel
-SUCCESS before R0 may be called ACCEPTED/CLOSED. While that CI is pending,
-STOP at R0. Do not start R1 or Milestone 8E.
+The R0 documentation closeout head `a8281edba35b0d74bc2395a46504d8c519da8a18` received CircleCI **#188 SUCCESS** + Vercel **SUCCESS**. R0 is therefore ACCEPTED/CLOSED.
+
+A final read-only production recheck after #188 still showed `opera-agent-vm` version 27 ACTIVE with `verify_jwt=true`, deployment SHA `0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`, `milestone7_vm_enabled=false`, and VM table counts 0 / 0 / 0.
+
+STOP after R0. Do not start R1 or Milestone 8E without a new explicit user instruction.
