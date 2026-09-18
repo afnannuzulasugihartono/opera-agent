@@ -188,7 +188,7 @@ Acceptance/final-candidate records:
 
 ## Pre-8E Performance Usability Repair
 
-Status: **R0 CLOSEOUT CANDIDATE; R1 NOT STARTED.**
+Status: **R0 ACCEPTED / CLOSED; R1 NOT STARTED.**
 
 A live Opera Agent YouTube responsiveness test on 2026-09-18 exposed practical
 friction after P0-P6 closure: actionability/viewport ranking, stale dynamic refs,
@@ -227,7 +227,7 @@ SUCCESS. PR #46 is merged at
 SUCCESS.
 
 Production promotion is complete and verified at `opera-agent-vm` version 27.
-Performance Track P is closed. Pre-8E repair R0 implementation evidence is green at `f39c6e3d6a3aef149c30f729c01335358a308088` with CircleCI #182 + Vercel SUCCESS. The current boundary is **R0 closeout only**. After exact-head closeout CI succeeds, STOP for user review; R1 still requires a new explicit instruction. **Milestone 8E remains paused/not started and must not start implicitly.**
+Performance Track P is closed. Pre-8E repair R0 implementation evidence is green at `f39c6e3d6a3aef149c30f729c01335358a308088` with CircleCI #182 + Vercel SUCCESS, and R0 documentation closeout head `a8281edba35b0d74bc2395a46504d8c519da8a18` has CircleCI #188 + Vercel SUCCESS. **R0 is ACCEPTED/CLOSED. STOP.** R1 requires a new explicit user instruction. **Milestone 8E remains paused/not started and must not start implicitly.**
 
 ## Collaboration rule
 
