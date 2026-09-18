@@ -430,6 +430,7 @@
       const hay = `${s.label} ${s.text} ${s.placeholder}`.toLowerCase();
       return exact ? hay.trim() === text : hay.includes(text);
     });
+    nodes = prioritizeActionableNodes(nodes);
     const items = nodes.slice(0, limit).map((el) => serialize(el, { includeValue: !!args.includeValue }));
     const index = Number.isInteger(args.index) ? args.index : 0;
     return { ok: true, count: nodes.length, item: items[index] ?? null, items };
