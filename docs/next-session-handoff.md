@@ -86,6 +86,10 @@ integration track; P6 audit work is intentionally deferred in this session.
 - R6 validation evidence: **PASS with documented limitations** at
   `7fae3a095e7096cec6945b7c4ea274764881b609`; CircleCI #147 + #148 +
   Vercel SUCCESS.
+- R6 closeout head
+  `6c1f06a2e7d11c62dc8ebfb0a0a13cb31e28140d`: CircleCI #149 + Vercel
+  SUCCESS.
+- R7 final closeout: **PENDING exact-head CircleCI/Vercel**.
 
 
 ## Repowise R3 initial-index gate
@@ -208,8 +212,10 @@ Detailed evidence is in `docs/repowise-r6-validation.md`. The reusable validatio
 harness remains at `tools/repowise/r6_validate.py`. Temporary R6 CI wiring is
 removed.
 
-Exact next Repowise checkpoint: **R7 final closeout**, only after an explicit user
-request and after the R6 closeout head is green.
+R7 final closeout is active. The final record is
+`docs/repowise-integration-closeout.md`. Do not declare the track closed until
+the R7 exact head has canonical CircleCI + Vercel SUCCESS. There is no implicit
+R8 or automatic Repowise scope expansion after closure.
 
 ## Exact next gate
 

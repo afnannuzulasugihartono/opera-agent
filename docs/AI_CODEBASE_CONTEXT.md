@@ -214,20 +214,26 @@ by the index.
 
 ## Accepted integration evidence
 
-Current accepted Repowise checkpoints before R5:
+Accepted Repowise checkpoints:
 
 - R1 compatibility/privacy research: PASS.
 - R2 isolated pinned setup: PASS.
 - R3 full-history initial index: PASS.
 - R4 local offline MCP integration: PASS.
+- R5 AI codebase-context documentation: PASS.
+- R6 validation: PASS with documented limitations.
 
-R3 measured an initial index with zero parse errors and verified all seven
-checkpoint-critical files were graph-indexed. R4 verified a real MCP
-`initialize`, exact `tools/list` surface, and a successful `get_overview`
-call with the offline privacy boundary enforced.
+R3 measured a zero-parse-error structural/full-history index. R4 verified a real
+offline stdio MCP initialize/list-tools/get-overview path. R6 validated five
+concrete Opera Agent questions and established the hybrid operating model:
+Repowise for structural/impact/history orientation, exact repository source and
+grep for authoritative verification and exhaustive literal work.
 
-See `docs/project-context.md` and `docs/next-session-handoff.md` for the exact
-accepted SHAs and CI evidence.
+Final integration closeout is recorded in
+`docs/repowise-integration-closeout.md`.
+
+See `docs/project-context.md` and `docs/next-session-handoff.md` for exact
+checkpoint SHAs and CI evidence.
 
 ## What this document does not authorize
 
