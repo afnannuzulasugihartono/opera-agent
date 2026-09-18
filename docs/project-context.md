@@ -376,7 +376,7 @@ Canonical plan:
 Spec Kit feature:
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0–R2 ACCEPTED / CLOSED; R3 NOT AUTHORIZED**.
+Status: **R0–R2 ACCEPTED / CLOSED; R3 AUTHORIZED / IN PROGRESS; R4 NOT AUTHORIZED**.
 
 Frozen findings include:
 - on-screen ad `Skip` competing with offscreen `Skip navigation`;
@@ -421,7 +421,7 @@ R2 adds bounded action-time fresh-target revalidation in `extension/content.js`:
 - R1 is **ACCEPTED / CLOSED** after actionability-first observation, bounded-ranking acceptance, historical hash-lock rebaseline, and controlled Chromium regression;
 - R2 implementation evidence head `70c79db6d76ab624d19bd5d6067a1469ef522045` has CircleCI #226 + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r2.md`;
 - R2 is **ACCEPTED / CLOSED** after unique same-document recovery, unsafe-case fail-closed coverage, authorized content hash-lock rebaseline, and controlled Chromium regression;
-- exact next action is **STOP for user review**; R3 is not authorized without a new explicit instruction;
+- the user explicitly authorized **R3 only**; exact active work is T017–T020 on `feat/pre-8e-usability-repair-r3`; R4 remains unauthorized;
 - 8E remains paused/not started and cannot begin until the repair track reaches R8
   acceptance and the user separately authorizes 8E.
 

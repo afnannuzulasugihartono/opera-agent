@@ -188,7 +188,7 @@ Acceptance/final-candidate records:
 
 ## Pre-8E Performance Usability Repair
 
-Status: **R0–R2 ACCEPTED / CLOSED; R3 NOT AUTHORIZED.**
+Status: **R0–R2 ACCEPTED / CLOSED; R3 AUTHORIZED / IN PROGRESS.**
 
 A live Opera Agent YouTube responsiveness test on 2026-09-18 exposed practical
 friction after P0-P6 closure: actionability/viewport ranking, stale dynamic refs,
@@ -227,7 +227,7 @@ SUCCESS. PR #46 is merged at
 SUCCESS.
 
 Production promotion is complete and verified at `opera-agent-vm` version 27.
-Performance Track P is closed. Pre-8E repair R0–R2 are ACCEPTED/CLOSED. R2 implementation evidence head `70c79db6d76ab624d19bd5d6067a1469ef522045` has CircleCI #226 + Vercel SUCCESS, with durable evidence in `docs/pre-8e-performance-usability-r2.md`. **STOP after R2.** R3 requires a new explicit user instruction. **Milestone 8E remains paused/not started and must not start implicitly.**
+Performance Track P is closed. Pre-8E repair R0–R2 are ACCEPTED/CLOSED. R2 closeout `57a73ce4fadca929e3a7aab345e1719c7d3459aa` has CircleCI #227 + Vercel SUCCESS. The user explicitly authorized **R3 only**. R3 bounded local act+verify is now IN PROGRESS on `feat/pre-8e-usability-repair-r3`; R4 remains unauthorized. **Milestone 8E remains paused/not started and must not start implicitly.**
 
 ## Collaboration rule
 
