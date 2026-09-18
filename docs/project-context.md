@@ -365,7 +365,7 @@ or scope expansion is authorized implicitly. Any remote/public MCP, external
 provider, cloud upload, editor auto-configuration, or runtime coupling requires a
 new explicitly scoped review.
 
-## Pre-8E Performance Usability Repair — R0 accepted
+## Pre-8E Performance Usability Repair — R0–R1 accepted
 
 On 2026-09-18 the user approved inserting a findings-driven repair track before
 Milestone 8E after a live production-path YouTube test.
@@ -376,7 +376,7 @@ Canonical plan:
 Spec Kit feature:
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0 ACCEPTED / CLOSED; R1 NOT STARTED**.
+Status: **R0–R1 ACCEPTED / CLOSED; R2 NOT AUTHORIZED**.
 
 Frozen findings include:
 - on-screen ad `Skip` competing with offscreen `Skip navigation`;
@@ -392,8 +392,7 @@ revalidation -> R3 local act+verify -> R4 compact observation -> R5 internal med
 fast path -> R6 navigation/residual transport -> R7 workflow cleanup -> R8 full
 real-Opera acceptance.
 
-No runtime behavior change, production mutation, VM enablement, public MCP expansion,
-transaction authority, or 8E work is authorized by the planning update itself.
+R1 changed only generic observation/actionability behavior in `extension/content.js` plus tests/docs: viewport truth and actionability are exposed, actionable controls are ranked before bounded truncation, and equal-rank ordering remains stable. No stale-ref revalidation (R2), production deployment/schema mutation, VM enablement, public MCP expansion, transaction authority, or 8E work was performed.
 
 ## Governance / next boundary
 
@@ -415,9 +414,10 @@ transaction authority, or 8E work is authorized by the planning update itself.
   CircleCI #169 + Vercel are SUCCESS on the merge commit;
 - production promotion is complete and verified at `opera-agent-vm` version 27;
 - P6 is **ACCEPTED / CLOSED**;
-- Pre-8E repair R0 implementation evidence is green on `test/pre-8e-usability-repair-r0` at `f39c6e3d6a3aef149c30f729c01335358a308088` (CircleCI #182 + Vercel SUCCESS); durable evidence: `docs/pre-8e-performance-usability-r0.md`;
-- R0 documentation closeout head `a8281edba35b0d74bc2395a46504d8c519da8a18` has CircleCI #188 + Vercel SUCCESS; R0 is **ACCEPTED / CLOSED**;
-- exact next action is **STOP for user review**; R1 is not authorized without a new explicit instruction;
+- Pre-8E repair R0 is **ACCEPTED / CLOSED** with durable evidence in `docs/pre-8e-performance-usability-r0.md`;
+- R1 implementation evidence head `b0ff03cd0f3ecbf4498b8392760d9492fb44ff77` has CircleCI #219 + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r1.md`;
+- R1 is **ACCEPTED / CLOSED** after actionability-first observation, bounded-ranking acceptance, historical hash-lock rebaseline, and controlled Chromium regression;
+- exact next action is **STOP for user review**; R2 is not authorized without a new explicit instruction;
 - 8E remains paused/not started and cannot begin until the repair track reaches R8
   acceptance and the user separately authorizes 8E.
 

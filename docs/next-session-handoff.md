@@ -240,9 +240,9 @@ User-approved planning on 2026-09-18 adds
 `docs/pre-8e-performance-usability-repair-plan.md` and Spec Kit feature
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0 ACCEPTED / CLOSED; R1 NOT STARTED**.
+Status: **R0–R1 ACCEPTED / CLOSED; R2 NOT AUTHORIZED**.
 
-Do not jump to 8E. R0 benchmark/fixture implementation is complete on `test/pre-8e-usability-repair-r0` at `f39c6e3d6a3aef149c30f729c01335358a308088`; CircleCI #182 + Vercel are SUCCESS. R0 documentation closeout head `a8281edba35b0d74bc2395a46504d8c519da8a18` has CircleCI #188 + Vercel SUCCESS. The durable record is `docs/pre-8e-performance-usability-r0.md`. **R0 is ACCEPTED/CLOSED. STOP.** R1 remains unauthorized.
+Do not jump to 8E. R0 is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usability-r0.md`. R1 actionability-first implementation is green at `b0ff03cd0f3ecbf4498b8392760d9492fb44ff77`; CircleCI #219 + Vercel are SUCCESS. The durable R1 record is `docs/pre-8e-performance-usability-r1.md`. **R1 is ACCEPTED/CLOSED. STOP.** R2 remains unauthorized.
 
 ## Exact next gate
 
@@ -268,7 +268,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action:** **STOP after accepted R0**. Do not start R1 until the user explicitly authorizes it. Do not infer 8E authorization from R0 completion. Milestone 8E remains paused/not started.
+**Exact next product action:** **STOP after accepted R1**. Do not start R2 until the user explicitly authorizes it. Do not infer 8E authorization from R1 completion. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 

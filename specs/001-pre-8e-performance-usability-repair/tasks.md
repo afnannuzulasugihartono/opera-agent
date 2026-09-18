@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0 ACCEPTED / CLOSED. R1 is AUTHORIZED / IN PROGRESS. R2 is NOT authorized.
+**Status**: R0–R1 ACCEPTED / CLOSED. R2 is NOT authorized.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -17,11 +17,11 @@
 
 ## Phase R1 — Actionability-first observation
 
-- [ ] T007 [US1] Implement geometry-correct viewport truth in `extension/content.js`.
-- [ ] T008 [US1] Implement generic actionability ranking before bounded model-facing truncation in `extension/content.js`.
-- [ ] T009 [US1] Prove hidden/offscreen/disabled/sensitive controls cannot outrank the unique on-screen actionable target.
-- [ ] T010 [US1] Run focused tests + full `npm test` + `npm run check`; verify Protocol 1 / 26 primitives / 18 public MCP tools remain unchanged.
-- [ ] T011 Record R1 evidence and STOP for acceptance.
+- [x] T007 [US1] Implement geometry-correct viewport truth in `extension/content.js`.
+- [x] T008 [US1] Implement generic actionability ranking before bounded model-facing truncation in `extension/content.js`.
+- [x] T009 [US1] Prove hidden/offscreen/disabled/sensitive controls cannot outrank the unique on-screen actionable target.
+- [x] T010 [US1] Run focused tests + full `npm test` + `npm run check`; verify Protocol 1 / 26 primitives / 18 public MCP tools remain unchanged.
+- [x] T011 Record R1 evidence and STOP for acceptance.
 
 ## Phase R2 — Fresh target revalidation
 
