@@ -371,28 +371,30 @@ async def run(port, profile):
         assert stale['ok'] is False
         assert 'stale' in stale['error']['message'].lower()
 
-        # R0 pre-8E usability fixture: preserve the legacy failures as deterministic
-        # evidence without changing extension runtime behavior.
+        # R1 tests-first acceptance: after text filtering and before bounded
+        # truncation, the uniquely on-screen actionable Skip must outrank the
+        # CSS-visible but offscreen Skip navigation target.
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r0',
             'active': False,
             'wait': True
-        }, benchmark='r0.tabs.open')
+        }, benchmark='r1.tabs.open')
         r0_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
 
         cid = STATE.push('page.find', {
             'tabId': r0_tab_id,
             'text': 'Skip',
-            'limit': 5
-        }, benchmark='r0.page.find.skip')
+            'limit': 1
+        }, benchmark='r1.page.find.skip.actionability-first')
         r0_skip_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert r0_skip_find['count'] >= 2, r0_skip_find
         r0_skip_items = r0_skip_find['items']
-        r0_skip_navigation = next(item for item in r0_skip_items if item['label'] == 'Skip navigation')
-        assert r0_skip_navigation['visible'] is True, r0_skip_navigation
-        assert r0_skip_navigation['inViewport'] is False, r0_skip_navigation
-        r0_real_skip = next(item for item in r0_skip_items if item['label'] == 'Skip')
+        assert len(r0_skip_items) == 1, r0_skip_items
+        r0_real_skip = r0_skip_items[0]
+        assert r0_real_skip['label'] == 'Skip', r0_real_skip
+        assert r0_real_skip['visible'] is True, r0_real_skip
         assert r0_real_skip['inViewport'] is True, r0_real_skip
+        assert r0_real_skip['actionable'] is True, r0_real_skip
 
         r0_old_skip_ref = r0_real_skip['ref']
         cid = STATE.push('page.query', {
@@ -1199,7 +1201,7 @@ async def run(port, profile):
             'ok': True,
             'extensionId': ext_id,
             'r0UsabilityFixture': True,
-            'r0OffscreenSkipObserved': r0_skip_navigation['inViewport'] is False,
+            'r1ActionabilityFirstSkip': r0_real_skip['label'] == 'Skip' and r0_real_skip['actionable'] is True,
             'r0OnscreenSkipObserved': r0_real_skip['inViewport'] is True,
             'r0StaleRefRejected': r0_stale_click['ok'] is False,
             'r0IrrelevantMutationObserved': r0_page_after_noise['mutationVersion'] > r0_page_before['mutationVersion'],
