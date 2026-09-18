@@ -186,6 +186,38 @@ Acceptance/final-candidate records:
 `docs/delta-first-performance-p5.md`,
 `docs/delta-first-performance-p6.md`.
 
+## Pre-8E Performance Usability Repair
+
+Status: **PLANNED / NOT IMPLEMENTED.**
+
+A live Opera Agent YouTube responsiveness test on 2026-09-18 exposed practical
+friction after P0-P6 closure: actionability/viewport ranking, stale dynamic refs,
+oversized model-facing observations, internal-only media primitives, and expensive
+video workflow orchestration. The user explicitly inserted a bounded repair track
+before 8E.
+
+Sequence:
+
+- **R0** — benchmark + deterministic fixture lock;
+- **R1** — actionability-first observation;
+- **R2** — fresh target revalidation;
+- **R3** — bounded local act + verify;
+- **R4** — compact model-facing observation;
+- **R5** — internal media fast path using existing `media.*` primitives only;
+- **R6** — navigation optimization + residual transport measurement;
+- **R7** — YouTube workflow cleanup;
+- **R8** — full real-Opera acceptance of recommendation -> click -> skip -> summarize.
+
+This track reuses the accepted semantic state/delta architecture. It does not reopen
+Performance Track P, change Protocol 1, expand the 26 browser primitives or 18 public
+MCP input schemas, enable the VM, grant transaction authority, or start 8E.
+
+Detailed canonical plan:
+`docs/pre-8e-performance-usability-repair-plan.md`.
+
+Spec Kit feature:
+`specs/001-pre-8e-performance-usability-repair/`.
+
 ## Exact next boundary
 
 The P6 audit and repository-merge gates are closed. Exact audited candidate
@@ -195,8 +227,11 @@ SUCCESS. PR #46 is merged at
 SUCCESS.
 
 Production promotion is complete and verified at `opera-agent-vm` version 27.
-Performance Track P is closed. The next product boundary is a separate explicit
-Milestone 8E start decision. **Do not start 8E implicitly.**
+Performance Track P is closed. The user has inserted the planned Pre-8E Performance
+Usability Repair before 8E. The next product boundary is an explicit start of **R0
+only**; this documentation commit does not authorize runtime implementation. After R0,
+STOP for acceptance before R1. **Milestone 8E remains paused/not started and must not
+start implicitly.**
 
 ## Collaboration rule
 

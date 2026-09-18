@@ -365,6 +365,36 @@ or scope expansion is authorized implicitly. Any remote/public MCP, external
 provider, cloud upload, editor auto-configuration, or runtime coupling requires a
 new explicitly scoped review.
 
+## Pre-8E Performance Usability Repair — planned
+
+On 2026-09-18 the user approved inserting a findings-driven repair track before
+Milestone 8E after a live production-path YouTube test.
+
+Canonical plan:
+`docs/pre-8e-performance-usability-repair-plan.md`.
+
+Spec Kit feature:
+`specs/001-pre-8e-performance-usability-repair/`.
+
+Status: **PLANNED / NOT IMPLEMENTED**.
+
+Frozen findings include:
+- on-screen ad `Skip` competing with offscreen `Skip navigation`;
+- the correct dynamic Skip ref becoming stale before click;
+- Home/watch `page.read` model-facing results becoming very large despite only
+  ~686/~3,331 text characters and ~119/~139 observed entities;
+- `media.state` working in ~514ms while media primitives remain internal;
+- YouTube Home navigation ~5.224s with only ~131ms queue;
+- `youtube.get_transcript v4` ~20.514s total.
+
+The repair sequence is R0 benchmark lock -> R1 actionability -> R2 fresh target
+revalidation -> R3 local act+verify -> R4 compact observation -> R5 internal media
+fast path -> R6 navigation/residual transport -> R7 workflow cleanup -> R8 full
+real-Opera acceptance.
+
+No runtime behavior change, production mutation, VM enablement, public MCP expansion,
+transaction authority, or 8E work is authorized by the planning update itself.
+
 ## Governance / next boundary
 
 - one active writer;
@@ -385,8 +415,10 @@ new explicitly scoped review.
   CircleCI #169 + Vercel are SUCCESS on the merge commit;
 - production promotion is complete and verified at `opera-agent-vm` version 27;
 - P6 is **ACCEPTED / CLOSED**;
-- 8E remains paused/not started until a separate explicit instruction starts that
-  checkpoint.
+- the Pre-8E Performance Usability Repair is now the planned boundary before 8E;
+- exact next implementation action, when explicitly authorized, is **R0 only**;
+- 8E remains paused/not started and cannot begin until the repair track reaches R8
+  acceptance and the user separately authorizes 8E.
 
 ## Rollback / preserved state
 

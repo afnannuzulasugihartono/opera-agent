@@ -231,7 +231,20 @@ removed.
 R7 is closed. The final record is `docs/repowise-integration-closeout.md`.
 There is no implicit R8 or automatic Repowise scope expansion after closure.
 The P6 independent audit, repository merge, and production-promotion gates are
-closed. Do not start 8E without a separate explicit instruction.
+closed. A planned Pre-8E Performance Usability Repair now precedes 8E. Do not start
+8E without R8 acceptance plus a separate explicit instruction.
+
+## Pre-8E repair track inserted
+
+User-approved planning on 2026-09-18 adds
+`docs/pre-8e-performance-usability-repair-plan.md` and Spec Kit feature
+`specs/001-pre-8e-performance-usability-repair/`.
+
+Status: **PLANNED / NOT IMPLEMENTED**.
+
+Do not jump to 8E. When explicitly instructed to continue the repair, start **R0
+only** (deterministic benchmark/fixture lock), run the Spec Kit analysis gate before
+behavior-changing implementation, and STOP after R0 evidence.
 
 ## Exact next gate
 
@@ -257,8 +270,9 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action:** explicit Milestone 8E start decision. Do not infer
-8E authorization from P6 closure.
+**Exact next product action:** explicit start of Pre-8E repair **R0 only**. The
+planning update itself does not authorize runtime changes. Do not infer R1 or 8E
+authorization from R0 planning or P6 closure. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 
