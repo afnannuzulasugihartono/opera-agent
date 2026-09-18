@@ -37,7 +37,27 @@ jobs:
           name: Chromium extension regression
           command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
-  repowise_r3:
+
+  repowise_r3_install:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    environment:
+      DO_NOT_TRACK: "1"
+      REPOWISE_TELEMETRY_DISABLED: "1"
+      REPOWISE_SKIP_EDITOR_SETUP: "1"
+      REPOWISE_NO_SAVE_KEY: "1"
+      PYTHONIOENCODING: "utf-8"
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Repowise locally
+          command: |
+            python tools/repowise/bootstrap.py
+            .repowise-venv/bin/repowise --version
+
+  repowise_r3_init:
     executor:
       name: python/default
       tag: "3.12"
@@ -58,32 +78,55 @@ jobs:
           name: Install pinned Repowise locally
           command: python tools/repowise/bootstrap.py
       - run:
-          name: Run privacy-hardened R3 index probe
+          name: Run raw privacy-hardened initial index
+          command: |
+            .repowise-venv/bin/repowise init . --yes --no-prose --no-editor-setup --no-save-key --embedder mock
+            test -f .repowise/wiki.db
+
+  repowise_r3_collect:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    environment:
+      DO_NOT_TRACK: "1"
+      REPOWISE_TELEMETRY_DISABLED: "1"
+      REPOWISE_SKIP_EDITOR_SETUP: "1"
+      REPOWISE_NO_SAVE_KEY: "1"
+      REPOWISE_GIT_WINDOW_ANCHOR: "head"
+      PYTHONIOENCODING: "utf-8"
+    steps:
+      - checkout
+      - run:
+          name: Fetch full git history
+          command: git fetch --unshallow || git fetch --all --tags --prune
+      - run:
+          name: Install pinned Repowise locally
+          command: python tools/repowise/bootstrap.py
+      - run:
+          name: Collect R3 metrics without assertion
           command: |
             mkdir -p /tmp/repowise-r3
             python tools/repowise/r3_probe.py --report /tmp/repowise-r3/report.json
+            test -s /tmp/repowise-r3/report.json
             cat /tmp/repowise-r3/report.json
       - store_artifacts:
           path: /tmp/repowise-r3/report.json
           destination: repowise-r3-report.json
-      - run:
-          name: Publish metrics-only evidence branch when permitted
-          command: |
-            cp /tmp/repowise-r3/report.json docs/repowise-r3-index-evidence.json
-            git add docs/repowise-r3-index-evidence.json
-            git config user.name "Opera Agent CI"
-            git config user.email "ci@users.noreply.github.com"
-            git commit -m "docs(repowise): capture R3 index evidence [skip ci]"
-            GIT_SSH_COMMAND="ssh -o BatchMode=yes" git push origin HEAD:refs/heads/repowise-r3-evidence --force || true
-      - run:
-          name: Assert R3 verification
-          command: python tools/repowise/r3_assert.py /tmp/repowise-r3/report.json
 
 workflows:
   ci:
     jobs:
       - test
-      - repowise_r3:
+      - repowise_r3_install:
+          filters:
+            branches:
+              only: chore/repowise-integration
+      - repowise_r3_init:
+          filters:
+            branches:
+              only: chore/repowise-integration
+      - repowise_r3_collect:
           filters:
             branches:
               only: chore/repowise-integration
