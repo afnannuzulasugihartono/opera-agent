@@ -66,6 +66,27 @@ jobs:
       - store_artifacts:
           path: /tmp/repowise-r3/report.json
           destination: repowise-r3-report.json
+      - run:
+          name: Publish metrics-only evidence branch when permitted
+          command: |
+            cp /tmp/repowise-r3/report.json docs/repowise-r3-index-evidence.json
+            git add docs/repowise-r3-index-evidence.json
+            git config user.name "Opera Agent CI"
+            git config user.email "ci@users.noreply.github.com"
+            git commit -m "docs(repowise): capture R3 index evidence [skip ci]"
+            GIT_SSH_COMMAND="ssh -o BatchMode=yes" git push origin HEAD:refs/heads/repowise-r3-evidence --force || true
+      - run:
+          name: Assert R3 verification
+          command: |
+            python - <<'PY'
+            import json
+            from pathlib import Path
+
+            report = json.loads(Path("/tmp/repowise-r3/report.json").read_text(encoding="utf-8"))
+            if not report.get("verification_passed"):
+                raise SystemExit("R3 verification failed; inspect repowise-r3-report.json")
+            print("R3 verification passed")
+            PY
 
 workflows:
   ci:

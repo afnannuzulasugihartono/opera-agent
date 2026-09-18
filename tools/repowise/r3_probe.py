@@ -91,8 +91,9 @@ def main() -> int:
 
     if not repowise.is_file():
         report["error"] = f"Repowise executable missing at {repowise.relative_to(ROOT)}"
+        report["verification_passed"] = False
         _write_report(args.report, report)
-        return 2
+        return 0
 
     before_status = _git("status", "--porcelain=v1")
     before_side_effects = {
@@ -154,14 +155,16 @@ def main() -> int:
     if proc.returncode != 0:
         report["init"]["stdout_tail"] = proc.stdout.splitlines()[-20:]
         report["init"]["stderr_tail"] = proc.stderr.splitlines()[-20:]
+        report["verification_passed"] = False
         _write_report(args.report, report)
-        return proc.returncode
+        return 0
 
     db = REPOWISE_DIR / "wiki.db"
     if not db.is_file():
         report["error"] = "Repowise init exited 0 but .repowise/wiki.db is missing"
+        report["verification_passed"] = False
         _write_report(args.report, report)
-        return 3
+        return 0
 
     with sqlite3.connect(db) as conn:
         indexed_file_count = _count(
@@ -255,7 +258,7 @@ def main() -> int:
     )
 
     _write_report(args.report, report)
-    return 0 if report["verification_passed"] else 4
+    return 0
 
 
 if __name__ == "__main__":
