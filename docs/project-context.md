@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-17
+Last synchronized: 2026-09-18
 
 Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 `SECURITY.md`, accepted checkpoint records, and the selected execution plan.
@@ -8,7 +8,10 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 ## Current boundary
 
 - Repository: `afnannuzulasugihartono/opera-agent`
-- Branch: `feat/performance-runtime-cutover-p6`
+- Accepted P5 / canonical P6 base: `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
+- P6 candidate branch: `feat/performance-runtime-cutover-p6-4571636311958769504`
+- P6 implementation evidence head before docs closeout:
+  `49731c49e75df058dcd48218e680a8ad9aaf7195`
 - Stable extension: `1.6.0`
 - Protocol: `1`
 - Public browser capabilities: `26`
@@ -17,51 +20,95 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 - Signed rollback: `1.5.2`
 - Milestone 8: 8A–8D **ACCEPTED**; 8E paused/not started
 - Durable 8D closeout: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
-- Active work: **Performance Track P — Runtime Cutover P6**
-- P0 accepted: `699578904e2f19ea713a0933632331cad7299c11`, CircleCI #76 + Vercel
-- P1 accepted: `cbf3259a337d92410a5ba805dd0fd987a51c1bc5`, CircleCI #85 + Vercel
-- P2 accepted: `8621e2dc454f8e8f1e977c350522e6fb2b5dc51d`, CircleCI #91 + Vercel
-- P3 accepted: `d5310508aeb5c156657bd4d4abd06a4d172daaba`, CircleCI #94 + Vercel
-- P4 accepted: `e550bc90f49df2541dfd91789d99b2b33e4bf2aa`, CircleCI #98 + Vercel
-- P5 accepted: historical real-Opera performance acceptance record preserved
-- P6 completed: **Authoritative Live Runtime Cutover (Maximal Safe Subset)**
-- 8E remains paused/not started
+- Performance Track: P0–P5 **ACCEPTED**; P6 **FINAL CANDIDATE**
+- P6 independent audit: **PENDING**
+- P6 production promotion/deploy: **NOT DONE**
 
 Canonical plan: `docs/delta-first-performance-plan.md`.
+P6 record: `docs/delta-first-performance-p6.md`.
 
-Acceptance records:
-- `docs/delta-first-performance-p0.md`
-- `docs/delta-first-performance-p1.md`
-- `docs/delta-first-performance-p2.md`
-- `docs/delta-first-performance-p3.md`
-- `docs/delta-first-performance-p4.md`
-- `docs/delta-first-performance-p5.md`
+## P6 candidate — durable runtime cutover, maximal safe subset
 
-## P6 Authoritative Runtime Cutover (Maximal Safe Subset)
+1. **Durable consuming path**
+   - `supabase/functions/opera-agent-vm/index.ts` invokes
+     `reconcileVmEffectObservation7E` after successful `opera_await`.
+   - DB-backed 7E lease/checkpoint/effect-reservation/idempotency remains
+     authoritative; the in-memory P4 host does not replace durable state.
 
-P6 connects Performance Track P mechanisms (P1–P4) directly into the active live VM runtime loop:
+2. **Cold-start / continuity safety**
+   - missing P1/P2/P3 continuity fails closed to `RESET_REQUIRED` and
+     `FULL_SNAPSHOT`; stale continuation is not permitted.
 
-1. **Live Consuming Path**:
-   - `supabase/functions/opera-agent-vm/index.ts` (the durable DB-backed 7E VM host) and `lib/reactive-vm-host-7e.js` import and execute `reconcileVmEffectObservation7E` directly during `executeEffect` after receiving observation results from `opera_await`.
-2. **Cold-Start & Session Continuity**:
-   - On Edge function cold start or worker restart, missing in-memory session continuity in P1/P2/P3 fails closed to `RESET_REQUIRED` and demands a `FULL_SNAPSHOT`. Stale continuation is never permitted.
-3. **Server-Authoritative Dependency Context**:
-   - Caller-asserted `taskDependencies` are rejected as unauthoritative in live VM host reconciliation (`contextStatus: 'MISSING'`). Observation updates default conservatively to `REASON_REQUIRED`. Dependencies are never fabricated. This represents the maximal safe P6 subset without introducing an unsafe public/stateful protocol.
-4. **Preservation of Low-Level Primitives & Text**:
-   - Low-level browser primitives (`read_page`, `page.read`, `find_elements`, `click_element`, `fill_element`, `scroll_page`, `browser.burst`, `browser.ping`), Protocol 1, 26 browser capabilities, and `opera_enqueue`/`opera_await` low-level transport remain fully preserved. Full document page text (`page.text`) and elements are retained for VM AST expression evaluation and snapshot recovery.
-5. **MCP Version Metadata**:
-   - MCP server metadata in `supabase/functions/opera-agent-mcp/index.ts` updated to `1.6.0`.
-6. **Durable 7E Host & Security**:
-   - Durable DB-backed 7E host tokens (`sealVmHostToken`, `openVmHostToken`), RPCs (`opera_vm_claim`, `opera_vm_checkpoint`), and table schemas are preserved intact. No production deployments, database migrations, OAuth changes, or 8E work were initiated.
+3. **Dependency authority boundary**
+   - caller-asserted `taskDependencies` are rejected.
+   - live task context therefore remains `MISSING` until a trustworthy
+     server-authoritative dependency source exists.
+   - ordinary live relevance updates conservatively yield `REASON_REQUIRED`;
+     **full integrated P3/P4 speedup is not yet enabled by this safe subset**.
 
-## Permanent invariants
+4. **Continuation allowlist**
+   - if `performanceCutover` metadata is present, only a valid accepted
+     `APPLY_AND_CONTINUE` with `reasoningWakeRequired=false`,
+     `reasoningObservation=null`, and `contextStatus=ACCEPTED` may continue.
+   - reset-required -> `SUSPENDED / STALE_TARGET`.
+   - REASON_REQUIRED, IGNORE_FOR_TASK, unknown/missing decision, malformed or
+     inconsistent flags/context -> `SUSPENDED / NEEDS_MODEL`.
+   - effect results without P6 metadata retain pre-P6 compatibility.
+
+5. **Preserved surface**
+   - full page text/snapshot recovery retained;
+   - `opera_enqueue` / `opera_await` and required browser primitives retained;
+   - Protocol 1, 26 browser capabilities, 18 public MCP tools retained;
+   - no production deploy, DB migration, OAuth/signing/pairing change, public schema
+     expansion, transaction authority, or 8E implementation.
+
+## Exact implementation/regression evidence
+
+- tests-first `b8cd79f27f135923a63657beced8563ed7e7a0c7`:
+  CircleCI #114 FAILURE as expected.
+- implementation `5652435e26f534126bfcee7c48df9ffd597fc52e`:
+  new P6 allowlist/fail-closed tests PASS; CircleCI #115 exposed only stale historical
+  P3/P4/P5 byte locks for intentionally changed `lib/reactive-vm.js`.
+- authorized lock rebaseline
+  `49731c49e75df058dcd48218e680a8ad9aaf7195`:
+  CircleCI #116 + Vercel SUCCESS.
+- #116 `npm test`: **416/416 PASS**, 0 fail, 0 skipped.
+- #116 `npm run check`: PASS; 26 allowlisted primitives, version 1.6.0.
+- #116 Chromium extension regression: PASS.
+
+The next docs closeout commit becomes the exact P6 final-candidate head only after
+its own CircleCI + Vercel SUCCESS.
+
+## Governance / next boundary
 
 - one active writer;
 - tests before runtime behavior;
+- pending required CI = STOP;
+- 8E remains paused;
+- after exact-head docs CI is green, perform a fresh independent audit over
+  accepted P5 -> exact P6 candidate.
+- current `AGENTS.md` explicitly names **Codex** as the required independent
+  milestone auditor. A different reviewer is supplemental unless the user explicitly
+  accepts a documented governance deviation/residual risk.
+- do not merge/promote P6 or start 8E before this boundary is resolved.
+
+## Rollback / preserved state
+
+- accepted P5 `a215dd0ddb4d7be9b0c0276862ced3ea26439c77` remains the clean candidate
+  rollback baseline until P6 is accepted.
+- signed rollback 1.5.2 remains available.
+- two accidental untracked 8E files were previously preserved in the git stash
+  named **"preserve accidental 8E files before completing checkpoint 8D"**.
+  Do not pop/apply/delete/build from that stash automatically; inspect only against
+  canonical 8E scope if 8E later resumes.
+
+## Permanent invariants
+
 - repository/CI/production evidence outranks chat;
-- background-first browser operation;
+- background-first browser operation; no silent foreground takeover;
 - no arbitrary JavaScript/raw CDP/SQL/shell/generated-code escape hatch;
 - preserve signing identity/pairing and immediate signed rollback;
-- never commit or print credentials or sensitive page values;
+- never commit/print credentials or sensitive page values;
 - action success is not completion proof;
-- performance gains never justify stale-state action, false completion, missed relevant changes, or foreground takeover.
+- performance gains never justify stale-state action, false completion, missed
+  relevant changes, or foreground takeover.
