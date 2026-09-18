@@ -13,12 +13,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Bundle P6 production Edge host
+        run: |
+          mkdir -p /tmp/opera-agent-vm-bundle
+          npx --yes esbuild@0.25.9 supabase/functions/opera-agent-vm/index.ts \
+            --bundle \
+            --minify \
+            --format=esm \
+            --platform=neutral \
+            --target=es2022 \
+            --external:jsr:* \
+            --external:@supabase/supabase-js \
+            --outfile=/tmp/opera-agent-vm-bundle/index.ts
+          cp supabase/functions/opera-agent-vm/deno.json /tmp/opera-agent-vm-bundle/deno.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opera-agent-vm-p6-production-bundle
+          path: /tmp/opera-agent-vm-bundle
+          if-no-files-found: error
       - name: Unit and static tests
         run: |
           npm test
