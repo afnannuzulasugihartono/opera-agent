@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0 evidence recorded; final R0 closeout CI pending. R1 is NOT authorized.
+**Status**: R0 ACCEPTED / CLOSED. R1 is NOT authorized.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
