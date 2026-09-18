@@ -76,41 +76,47 @@ integration track; P6 audit work is intentionally deferred in this session.
 - Runtime installation could not be executed in the ChatGPT sandbox because DNS
   egress to GitHub/PyPI is unavailable. The sandbox otherwise satisfies the runtime
   floor (Python 3.13.5, Git 2.47.3).
-- **R3 has not started.** When explicitly resumed, run the pinned bootstrap in an
-  environment with package access, then initialize Repowise locally with no prose,
-  no editor setup, no saved key, and telemetry disabled before measuring the index.
+- R3: **PASS** at full-history evidence head
+  `3a83bbed0177a67ce882237965bc6d3706335b4c`.
 
 
 ## Repowise R3 initial-index gate
 
-R3 is **BLOCKED ON EVIDENCE RETRIEVAL**.
+R3 is **PASS**.
 
-Exact diagnostic head:
-`48f5943bca165088a329d40a55c8cdf54571a221`.
+Exact full-history evidence head:
+`3a83bbed0177a67ce882237965bc6d3706335b4c`.
 
-Known facts:
+Evidence:
 
-- CircleCI #129 Repowise install: SUCCESS.
-- CircleCI #126 raw privacy-hardened `repowise init`: SUCCESS.
-- CircleCI #128 metrics collection: SUCCESS; private artifact
-  `repowise-r3-report.json` exists.
-- CircleCI #127 normal regression suite: SUCCESS.
+- CircleCI #134 `repowise_r3_full`: SUCCESS.
+- CircleCI #133 normal regression: SUCCESS.
 - Vercel: SUCCESS.
-- CircleCI #125 earlier strict verification: FAILURE; do not infer why without the
-  report.
-- GitHub Actions was not a usable runner on this account for the probe; its failed
-  run never executed steps.
-- Current ChatGPT tools cannot authenticate to the private CircleCI log/artifact
-  surface. Do not guess elapsed time, size, counts, parse errors, or important-file
-  verification.
+- Repowise 0.51.0.
+- Initial indexing: 34.984s.
+- Index size: 18,730,491 bytes (~17.86 MiB).
+- 301 graph-indexed files from 312 Git-tracked files.
+- 1,429 symbols; 74 deterministic/index-only wiki pages.
+- 0 parse errors.
+- Git history available: 348/348 commits; 121 `git_metadata` rows.
+- 7/7 required files graph-indexed with no parse errors.
+- working tree clean before/after; no unexpected project side effects.
+- telemetry/editor setup/key persistence/prose generation disabled; mock embedder;
+  no provider keys passed to Repowise.
+- no Repowise DB/index/cache committed or uploaded.
 
-The temporary multi-job CircleCI diagnostics are removed at session close; normal
-CI is restored. `tools/repowise/r3_probe.py` and
-`tools/repowise/r3_assert.py` remain as bounded R3 utilities.
+Important diagnostic lesson: CircleCI checkout is blobless partial-clone by default,
+so a plain checkout caused Repowise to skip Git history. The final R3 evidence job
+hydrated the full Git object set and removed promisor/partial-clone config before
+indexing. The validator was also corrected not to require a generated wiki page for
+Markdown/test files; R3 verifies graph indexing + parse health, while separately
+requiring Git-history coverage.
 
-Next R3 action only: read the job #128 metrics artifact through an authenticated
-CircleCI session, evaluate every required field and the seven important files, then
-either close R3 or make one evidence-driven correction. Do not start R4.
+Temporary R3-specific CircleCI jobs are removed at closeout. The bounded
+`tools/repowise/r3_probe.py` and `tools/repowise/r3_assert.py` utilities remain.
+
+Exact next Repowise checkpoint: **R4 local MCP integration**, only after an explicit
+user request to continue.
 
 ## Exact next gate
 
