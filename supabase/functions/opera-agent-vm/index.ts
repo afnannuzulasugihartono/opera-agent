@@ -11,6 +11,7 @@ import {
   REACTIVE_VM_HOST_7E_LIMITS,
   classifyVmPersistence7E,
   deriveVmEffectIdempotencyKey7E,
+  reconcileVmEffectObservation7E,
 } from "../../../lib/reactive-vm-host-7e.js";
 import {
   decodeVmHostKey,
@@ -299,6 +300,7 @@ async function executeEffect(program: any, state: any, claim: any, workerId: str
   const awaitMs = Math.max(100, Math.min(8000, remaining - 1500));
   const awaited = await rpc("opera_await", { p_command_id: commandId, p_timeout_ms: awaitMs });
   const ok = awaited?.ok === true;
+
   await rpc("opera_vm_effect_finish", {
     p_tenant_id: tenantId,
     p_run_id: claim.runId,
@@ -315,6 +317,34 @@ async function executeEffect(program: any, state: any, claim: any, workerId: str
     tabId: program.target.tabId,
   };
   if (program.target.documentGeneration !== undefined) provenance.documentGeneration = program.target.documentGeneration;
+
+  let effectValue = ok ? awaited.result : null;
+
+  if (ok && awaited?.result && typeof awaited.result === "object") {
+    const observationIdentity = {
+      tenantId,
+      deviceId: String(device.id),
+      tabId: program.target.tabId,
+      documentGeneration: program.target.documentGeneration ?? 1,
+      runtimeEpoch: claim.runId,
+    };
+    const programContext = {
+      goalId: program.goalId,
+      goalRevision: program.goalRevision,
+      taskDependencies: (program as any).taskDependencies ?? null,
+    };
+    const reconciled = reconcileVmEffectObservation7E(observationIdentity, awaited.result, programContext);
+    effectValue = {
+      ...awaited.result,
+      performanceCutover: {
+        decision: reconciled.relevance.decision,
+        reasoningWakeRequired: reconciled.relevance.reasoningWakeRequired,
+        reasoningObservation: reconciled.relevance.reasoningObservation,
+        contextStatus: reconciled.relevance.relevance?.contextStatus,
+        canonicalRevision: reconciled.canonicalState?.semanticRevision ?? null,
+      },
+    };
+  }
 
   if (ok && DOCUMENT_SCOPED.has(String(pending.method)) && program.target.documentGeneration !== undefined) {
     const observedGeneration = extractDocumentGeneration(awaited.result);
@@ -335,7 +365,7 @@ async function executeEffect(program: any, state: any, claim: any, workerId: str
     method: pending.method,
     ok,
     provenance,
-    value: ok ? awaited.result : null,
+    value: effectValue,
     ...(ok ? {} : { errorCode: mapEffectError(awaited) }),
   };
 }

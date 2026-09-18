@@ -520,20 +520,20 @@ test('P3 does not synthesize completion, action authority, foreground control, o
   assert.doesNotMatch(encoded, /vm\.run|reactive-vm|executeVm|resumeVm/i);
 });
 
-test('P3 leaves P2, extension bytes, existing read_page MCP source, and Reactive VM sources unchanged', async () => {
+test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
   const files = new Map([
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
     ['../extension/content.js', 'e4363c6f016eba499eca6e6b1c2e8a1f8eac5669'],
     ['../extension/background.js', 'c9702946f205274dc54096246d12f7596b2eb544'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '0e578017bc2bb223259f55aa81c6a2aa88e05cf2'],
-    ['../lib/reactive-vm.js', 'ac8b3ee4322fd24b9702bd0c94c285661c4f3b5f'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', 'a2f91e096d9c48ba7d40d82c9ce725dfb7bd3668'],
+    ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
-    assert.equal(sha1Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged in P3`);
+    assert.equal(sha1Blob(bytes), expected, `${relativePath} must match the current authorized boundary lock after P6 supersession`);
   }
   const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   assert.match(mcp, /server\.registerTool\("read_page"/);

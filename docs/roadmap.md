@@ -71,11 +71,12 @@ Durable 8D closeout:
 
 Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
 
-8E remains paused while Performance Track P is not yet independently audited.
+8E remains paused until Performance Track P6 passes the required independent audit
+or the user explicitly accepts a documented governance deviation/residual risk.
 
 ## Performance Track P — Delta-First Runtime
 
-Status: **P0 accepted. P1 accepted. P2 accepted. P3 accepted. P4 accepted. P5 FINAL CANDIDATE — exact-head CI required. Independent track audit not started.**
+Status: **P0–P5 accepted. P6 FINAL CANDIDATE — implementation/regression CI green; independent audit pending.**
 
 Checkpoint sequence:
 
@@ -89,8 +90,12 @@ Checkpoint sequence:
   CircleCI #94 + Vercel SUCCESS.
 - **P4** — accepted at `e550bc90f49df2541dfd91789d99b2b33e4bf2aa`,
   CircleCI #98 + Vercel SUCCESS.
-- **P5** — current final candidate, paired controlled + fresh real-Opera
-  performance/correctness acceptance.
+- **P5** — accepted at `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`,
+  CircleCI #105 + Vercel SUCCESS. Real-Opera timing remains explicitly proxy
+  evidence for mediation-elision, not integrated P4 host speed.
+- **P6** — final candidate. Safe runtime cutover is wired into the durable 7E host,
+  but caller-supplied dependency context is rejected and live P3 continuation stays
+  conservative until a trustworthy server-authoritative dependency source exists.
 
 Frozen architecture:
 
@@ -114,16 +119,15 @@ irrelevant signals and exact detection of the later relevant signal.
 P4 controlled evidence executes **8/8** read effects with **0** local reasoning
 wakes and reduces model-mediated round trips from 9 to 1 (**88.89%**).
 
-P5 fresh real-Opera evidence covers all three required application shapes:
+P5 fresh real-Opera evidence:
 
-- Google Maps lazy feed grew **16 -> 25** with duplicate keys `0`, did not complete
-  at the first bottom, and reached `BOUNDED_COMPLETE` only after a stable second
-  boundary observation. One RESET plus four steady-state delta reads gives
-  **80.00%** full-snapshot reduction.
+- Google Maps lazy feed grew **16 -> 25**, duplicate keys **0**, and reached
+  `BOUNDED_COMPLETE` only after the stable second boundary observation. One RESET
+  plus four steady-state delta reads gives **80.00%** full-snapshot reduction.
 - GitHub route transition changed document generation **1 -> 2** and emitted
   `SPA_ROUTE` / `RESET`, preventing stale continuation.
-- YouTube live DOM mutation **112707 -> 112708** remained
-  `NO_RELEVANT_CHANGE` with zero semantic changes/changed regions.
+- YouTube mutation **112707 -> 112708** remained `NO_RELEVANT_CHANGE` with zero
+  semantic changes/changed regions.
 
 P5 frozen gate evidence:
 
@@ -131,36 +135,60 @@ P5 frozen gate evidence:
 - foreground takeover **0**;
 - stale-state action **0**;
 - relevant-signal loss **0**;
-- small-change payload reduction **93.80%** (target >=75%);
-- reasoning round-trip reduction **88.89%** (target >=60%);
-- steady-state full-snapshot reduction **80.00%** (target >=80%);
-- three-run live mediation-elision median speedup **8.724x** (target >=2x);
-- paired simple-operation median regression **-5.68%** (ceiling <=15%).
+- small-change payload reduction **93.80%**;
+- reasoning round-trip reduction **88.89%**;
+- steady-state full-snapshot reduction **80.00%**;
+- live mediation-elision transport-proxy median speedup **8.724x**;
+- paired simple-operation median regression **-5.68%**.
 
-The live speed comparison is a mediation-elision transport proxy over the same eight
-read effects per arm; actual P4 host semantics remain proven by deterministic P4
-tests. P5 makes no runtime, extension, MCP, schema/function, signing, pairing, OAuth,
-or transaction-authority mutation.
+P6 final-candidate evidence before documentation closeout:
+
+- tests-first gate `b8cd79f27f135923a63657beced8563ed7e7a0c7`:
+  CircleCI #114 **FAILURE** as expected before implementation;
+- runtime fix `5652435e26f534126bfcee7c48df9ffd597fc52e`:
+  new P6 control-flow tests passed, while CircleCI #115 exposed three stale
+  historical byte locks for `lib/reactive-vm.js`;
+- authorized lock rebaseline
+  `49731c49e75df058dcd48218e680a8ad9aaf7195`:
+  CircleCI #116 + Vercel **SUCCESS**;
+- exact #116 full suite: **416/416 PASS**, zero failures/skips;
+- `npm run check`: **PASS**, 26 allowlisted browser primitives, version 1.6.0;
+- Chromium extension regression: **PASS**.
+
+P6 continuation authority is now explicit: when `performanceCutover` metadata is
+present, only an internally consistent `APPLY_AND_CONTINUE` with accepted context
+may bind the effect and continue. RESET suspends stale state; REASON_REQUIRED,
+IGNORE_FOR_TASK, unknown/missing decisions, malformed/inconsistent flags, or
+unaccepted context suspend/fail closed. Effect results without P6 metadata remain
+compatible with the pre-P6 low-level VM path.
+
+P6 is intentionally a **maximal safe subset**: the live 7E host rejects
+caller-asserted `taskDependencies`; therefore normal live relevance decisions
+without a trustworthy server-authoritative dependency source resolve conservatively
+to `REASON_REQUIRED`. Do not claim full integrated P3/P4 speedup from this candidate.
 
 Detailed plan: `docs/delta-first-performance-plan.md`.
 
-Acceptance records:
+Acceptance/final-candidate records:
 `docs/delta-first-performance-p0.md`,
 `docs/delta-first-performance-p1.md`,
 `docs/delta-first-performance-p2.md`,
 `docs/delta-first-performance-p3.md`,
 `docs/delta-first-performance-p4.md`,
-`docs/delta-first-performance-p5.md`.
+`docs/delta-first-performance-p5.md`,
+`docs/delta-first-performance-p6.md`.
 
 ## Exact next boundary
 
-P5 becomes accepted only after CircleCI and Vercel are SUCCESS on its exact
-final-candidate head. Pending required CI means STOP; failure means diagnose P5 only.
+The documentation closeout commit for P6 must itself receive CircleCI and Vercel
+SUCCESS. Pending required CI means STOP; failure means diagnose P6 only.
 
-After P5 acceptance, the next boundary is an **independent proportionate
-performance/correctness audit of the complete Performance Track P**. Per `AGENTS.md`,
-only audit `PASS` permits returning to Milestone 8 at 8E unless the user explicitly
-accepts documented residual risk. **Do not start 8E during P5 closeout.**
+After exact-head P6 CI is green, the next boundary is an **independent proportionate
+audit of the complete P6 diff from accepted P5**. Per `AGENTS.md`, the repository
+currently names **Codex** as the required independent milestone auditor. Only
+`PASS` permits returning to Milestone 8 at 8E unless the user explicitly accepts
+a documented residual risk/governance deviation. **Do not merge/promote P6 or start
+8E while this gate is unresolved.**
 
 ## Collaboration rule
 
@@ -177,7 +205,8 @@ Authoritative policy: `AGENTS.md`.
 
 ## Explicitly deferred
 
-Continuous desktop/video streaming, synchronized A/V understanding, OS mouse/
+Server-authoritative P3 dependency-context plumbing beyond the safe subset,
+continuous desktop/video streaming, synchronized A/V understanding, OS mouse/
 keyboard control, arbitrary JavaScript/raw CDP, silent foreground fallback,
 site-specific extension logic, direct logical-ID actions, automatic consequential
-actions, and Checkpoint 8E until Performance Track P audit PASS.
+actions, and Checkpoint 8E until the Performance Track gate above is satisfied.

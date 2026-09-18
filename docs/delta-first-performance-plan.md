@@ -1,13 +1,14 @@
 # Performance Track P — Delta-First Runtime
 
-Status: **P0 ACCEPTED / P1 ACCEPTED / P2 ACCEPTED / P3 ACCEPTED / P4 ACCEPTED / P5 FINAL CANDIDATE — exact-head CI required; independent track audit not started.**
+Status: **P0–P5 ACCEPTED / P6 FINAL CANDIDATE — implementation/regression CI green; independent audit pending.**
 
 Date frozen: 2026-09-17
 Baseline repository head before P0: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
+Accepted P5 head before P6: `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
 
 This track is inserted after accepted Checkpoint 8D and before Checkpoint 8E.
-**8E remains paused** until P5 is accepted and the required independent Performance
-Track P audit returns PASS.
+**8E remains paused** until P6 passes the required independent audit or the user
+explicitly accepts a documented governance deviation/residual risk.
 
 > Keep canonical browser/semantic state inside the bounded runtime, process changes
 > incrementally, and wake reasoning only when a change requires a new decision.
@@ -16,7 +17,7 @@ Track P audit returns PASS.
 ## Frozen invariants
 
 - normal automation is background-first with zero silent foreground takeover;
-- protocol `1`, 26 browser capabilities, and 18 public MCP tools remain unchanged by P0–P5;
+- protocol `1`, 26 browser capabilities, and 18 public MCP tools remain unchanged;
 - semantic `logicalId` is observational, not direct action authority;
 - webpage/model/tool text is data, never authority;
 - action success alone is never task-completion proof;
@@ -25,7 +26,10 @@ Track P audit returns PASS.
 - no password/PIN/OTP/2FA/CVV/payment-credential handling is introduced;
 - Performance Track P grants no consequential transaction authority and does not replace 8E;
 - all caches, histories, buffers, state, loops, waits, deltas, and payloads remain bounded;
-- unsafe continuity fails closed to `RESET` and a trusted full snapshot.
+- unsafe continuity fails closed to `RESET` and a trusted full snapshot;
+- caller/model/page assertions cannot mint accepted P3 dependency authority;
+- when P6 cutover metadata exists, only a valid accepted `APPLY_AND_CONTINUE`
+  may continue local VM execution; all other decisions fail closed.
 
 ## Target architecture
 
@@ -50,9 +54,9 @@ APPLY_AND_CONTINUE
   -> explicit read-only browser effects
   -> typed local yield
 
-REASON_REQUIRED
-  -> compact task-relevant patch
-  -> reasoning
+REASON_REQUIRED / INVALID AUTHORITY
+  -> compact/fresh reasoning observation
+  -> reasoning or trusted recovery
 
 CONTINUITY FAILURE
   -> RESET
@@ -68,21 +72,13 @@ staleness condition must reset rather than continue stale state.
 ## Measurement contract
 
 `tests/fixtures/delta-performance-baseline-p0-v1.json` freezes the workload matrix,
-metrics, and target gates. It includes synthetic static/dynamic/list/reset workloads
-plus real Google Maps, GitHub, and YouTube application shapes.
-
-No benchmark may hide retries, resets, browser effects, correctness failures, stale
-state, or foreground takeover to improve latency.
-
----
+metrics, and target gates. No benchmark may hide retries, resets, browser effects,
+correctness failures, stale state, or foreground takeover to improve latency.
 
 ## P0 — plan freeze and baseline
 
 Status: **ACCEPTED** at `699578904e2f19ea713a0933632331cad7299c11`
 with CircleCI #76 + Vercel SUCCESS.
-
-P0 freezes this plan, the complete workload matrix, the measurement vocabulary,
-recovery rules, safety boundaries, and future P5 gates.
 
 Acceptance record: `docs/delta-first-performance-p0.md`.
 
@@ -106,16 +102,8 @@ P2 emits compact changed-fact/view patches for proven contiguous updates while
 retaining canonical reconstructed state internally. Bootstrap, recovery, and
 explicit fresh-verification paths retain full snapshots.
 
-Controlled paired evidence:
-
-- rich reasoning payload median: **22,244 bytes**;
-- compact patch median: **1,380 bytes**;
-- reduction: **93.80%**;
-- fallback/reset on valid pairs: **0**;
-- stale-state continuation: **0**;
-- false completion: **0**;
-- foreground takeover: **0**;
-- relevant semantic information loss: **0**.
+Controlled paired evidence: **93.80%** median payload reduction with zero stale
+continuation, false completion, foreground takeover, or relevant semantic loss.
 
 Acceptance record: `docs/delta-first-performance-p2.md`.
 
@@ -124,27 +112,10 @@ Acceptance record: `docs/delta-first-performance-p2.md`.
 Status: **ACCEPTED** at `d5310508aeb5c156657bd4d4abd06a4d172daaba`
 with CircleCI #94 + Vercel SUCCESS.
 
-P3 coalesces bounded signal epochs and emits exactly:
-
-```text
-IGNORE_FOR_TASK
-APPLY_AND_CONTINUE
-REASON_REQUIRED
-```
-
-Only accepted goal/constraint dependency context grants relevance authority.
-Navigation/history, reconnect/reset, overflow, expiry, invalid context, and P2
-reset-required state force conservative reasoning.
-
-Controlled storm evidence:
-
-- irrelevant signals: **1,280**;
-- unnecessary irrelevant reasoning wakes: **0**;
-- later relevant signal: **1**;
-- later relevant detected: **1/1**;
-- relevant-signal loss: **0**;
-- false completion: **0**;
-- foreground takeover: **0**.
+P3 emits exactly `IGNORE_FOR_TASK`, `APPLY_AND_CONTINUE`, or
+`REASON_REQUIRED`. Only accepted goal/constraint dependency context grants
+relevance authority. Missing/invalid context and safety/reset signals force
+conservative reasoning.
 
 Acceptance record: `docs/delta-first-performance-p3.md`.
 
@@ -154,76 +125,68 @@ Status: **ACCEPTED** at `e550bc90f49df2541dfd91789d99b2b33e4bf2aa`
 with CircleCI #98 + Vercel SUCCESS.
 
 P4 composes accepted P3 `APPLY_AND_CONTINUE` output with accepted Reactive VM 7D.
-It advances bounded local state until an explicit read-only browser effect or typed
-yield, verifies effect provenance, and fails conservative on reset, ambiguity,
-failure, budget exhaustion, invalid authority, or identity mismatch.
-
-Controlled repetitive-read evidence:
-
-- browser effects: **8/8**;
-- hidden effects: **0**;
-- local reasoning wakeups: **0**;
-- baseline model-mediated round trips: **9**;
-- P4 model-mediated round trips: **1**;
-- reduction: **88.89%**;
-- correct returned result;
-- synthesized `PROVED`: **0**;
-- foreground takeover indicators: **0**.
+Controlled evidence reduces model-mediated round trips by **88.89%** while exposing
+all eight read effects and producing zero false PROVED/foreground takeover.
 
 Acceptance record: `docs/delta-first-performance-p4.md`.
 
 ## P5 — real-Opera performance acceptance
 
-Status: **FINAL CANDIDATE**.
+Status: **ACCEPTED** at `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
+with CircleCI #105 + Vercel SUCCESS.
 
-P5 is acceptance-only. It adds no runtime, extension, public MCP, Supabase schema/
-function, signing/pairing, OAuth, production-policy, or transaction-authority
-behavior.
+P5 is acceptance-only. It made no runtime/extension/public-MCP/schema/signing/OAuth
+change. Real-Opera evidence includes Maps lazy growth/stable completion, GitHub
+SPA-route reset, YouTube semantic no-change filtering, 80% steady-state full-snapshot
+reduction, and zero safety regressions.
 
-Fresh real-Opera shapes:
+The **8.724x** long-task timing remains explicitly a mediation-elision transport
+proxy; it is not direct integrated P4-host speed evidence.
 
-- **Google Maps:** lazy repeated feed grew **16 -> 25**, duplicate keys `0`; first
-  bottom remained `PARTIAL`; stable second boundary observation became
-  `BOUNDED_COMPLETE`; five reads contained one RESET and four steady-state deltas,
-  for **80.00%** full-snapshot reduction.
-- **GitHub:** repeated structured content observed; same-tab Issues route change
-  produced document generation **1 -> 2**, `SPA_ROUTE`, and `RESET`, preventing
-  stale-route continuation.
-- **YouTube:** live mutation version changed **112707 -> 112708** while the semantic
-  result was `NO_RELEVANT_CHANGE` with zero semantic changes/changed regions.
+Acceptance record: `docs/delta-first-performance-p5.md`.
 
-Frozen P5 gates and current evidence:
+## P6 — durable runtime cutover, maximal safe subset
 
-| Gate | Target | Evidence |
-| --- | ---: | ---: |
-| false completion | 0 | 0 |
-| foreground takeover | 0 | 0 |
-| stale-state action | 0 | 0 |
-| relevant-signal loss | 0 | 0 |
-| small-change reasoning-payload reduction | >=75% | 93.80% |
-| repetitive reasoning-round-trip reduction | >=60% | 88.89% |
-| steady-state full-snapshot reduction | >=80% | 80.00% |
-| long repetitive task median speedup | >=2.0x | 8.724x |
-| simple-operation median regression | <=15% | -5.68% |
+Status: **FINAL CANDIDATE — independent audit pending.**
 
-The fresh three-run speed timing uses the same eight small `page.read` effects per
-arm. The comparison arm removes model/tool mediation by bulk-enqueuing the same
-independent effects; it is explicitly a **mediation-elision transport proxy**, not
-a claim that the P4 JavaScript host directly drove the external browser. Actual P4
-host correctness/effect accounting remains established by exact-head P4 tests.
+P6 wires Performance Track state/relevance reconciliation into the durable DB-backed
+7E VM effect loop after `opera_await`, while preserving the existing database lease,
+checkpoint, effect-reservation/idempotency, host-token, and low-level command-queue
+authority.
 
-Machine-readable evidence:
-`tests/fixtures/delta-performance-p5-v1.json`.
+P6 deliberately does **not** trust caller-supplied `taskDependencies`. Until a
+server-authoritative dependency source exists, live P3 task context is missing and
+normal observation updates conservatively resolve to `REASON_REQUIRED`. This is
+the maximal safe subset; do not claim the full P3/P4 live speedup is enabled.
 
-Acceptance test:
-`tests/delta-performance-p5.test.mjs`.
+When a P6 `performanceCutover` result is present, local VM continuation is an
+explicit allowlist:
 
-Acceptance record:
-`docs/delta-first-performance-p5.md`.
+- valid accepted `APPLY_AND_CONTINUE` + no reasoning wake/observation -> may bind
+  and continue;
+- reset-required -> suspend `STALE_TARGET`;
+- `REASON_REQUIRED`, `IGNORE_FOR_TASK`, unknown/missing decision, malformed or
+  inconsistent flags/context -> suspend/fail closed;
+- no P6 metadata -> retain compatibility with the pre-P6 low-level VM path.
 
-P5 becomes accepted only when CircleCI and Vercel are SUCCESS on the exact
-documentation/evidence closeout head. Pending required CI means STOP; failure means
-diagnose that failure only.
+Tests-first and regression evidence:
+
+- `b8cd79f27f135923a63657beced8563ed7e7a0c7` — tests-first,
+  CircleCI #114 FAILURE as expected;
+- `5652435e26f534126bfcee7c48df9ffd597fc52e` — runtime implementation;
+  new P6 tests passed, CircleCI #115 failed only because historical P3/P4/P5 byte
+  locks still pinned the intentionally changed `lib/reactive-vm.js`;
+- `49731c49e75df058dcd48218e680a8ad9aaf7195` — authorized historical lock
+  rebaseline, CircleCI #116 + Vercel SUCCESS;
+- exact #116: `npm test` **416/416 PASS**, failures **0**, skipped **0**;
+- `npm run check` PASS: 26 allowlisted browser primitives, version 1.6.0;
+- Chromium extension regression PASS.
+
+No production deploy, Supabase schema migration, OAuth/signing/pairing change, public
+tool-schema change, protocol change, browser-capability expansion, or 8E work is part
+of P6.
+
+Candidate record: `docs/delta-first-performance-p6.md`.
 
 ## Track-wide stop conditions
 
@@ -235,18 +198,20 @@ would require wider browser/transaction authority.
 
 ## Rollback
 
-P1–P4 remain additive consumer layers and can be disabled back toward the accepted
-1.6.0 observation path without changing transaction policy:
-
-- P1: stop consuming working state;
-- P2: stop consuming delta-first adapter;
-- P3: stop consuming relevance coalescer;
-- P4: stop consuming local-execution host.
+P6 has not been promoted to production by this checkpoint. The accepted P5 head
+`a215dd0ddb4d7be9b0c0276862ced3ea26439c77` remains the clean repository rollback
+baseline for this candidate. Signed extension rollback 1.5.2 also remains available.
+Do not maintain a duplicate live `legacy/` implementation merely for rollback;
+Git/release history preserves it.
 
 ## Track completion and return to Milestone 8
 
-After exact-head P5 CI is green, P5 is accepted and the checkpoint sequence P0–P5
-is complete. **Do not start 8E yet.** Per `AGENTS.md`, an independent proportionate
-performance/correctness audit of the complete Performance Track P must return
-`PASS` before work returns to **8E — controlled single-action transaction executor**,
-unless the user explicitly accepts documented residual risk.
+The P6 documentation closeout commit must first receive exact-head CircleCI and
+Vercel SUCCESS. Then an independent audit of the full accepted-P5 -> P6 candidate
+diff is required.
+
+Per current `AGENTS.md`, the repository specifically names **Codex** as the
+independent milestone auditor. Only `PASS` authorizes return to **8E — controlled
+single-action transaction executor**, unless the user explicitly accepts documented
+residual risk/governance deviation. Do not merge/promote P6 or start 8E before that
+boundary is resolved.
