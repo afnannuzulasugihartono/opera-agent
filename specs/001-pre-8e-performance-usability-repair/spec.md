@@ -1,10 +1,10 @@
 # Feature Specification: Pre-8E Performance Usability Repair
 
-**Feature Branch**: `test/pre-8e-usability-repair-r0` (R0 only; later checkpoints require separate explicit authorization)
+**Feature Branch**: `feat/pre-8e-usability-repair-r1` (R1 only; later checkpoints require separate explicit authorization)
 
 **Created**: 2026-09-18
 
-**Status**: R0 Accepted / Closed; R1 Not Started
+**Status**: R0 Accepted / Closed; R1 Authorized / In Progress; R2 Not Started
 
 **Input**: User-approved repair plan derived from a live Opera Agent YouTube responsiveness test. This feature is inserted after closed Performance Track P0-P6 and before Milestone 8E. It does not reopen P0-P6 and does not authorize 8E.
 
