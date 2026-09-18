@@ -37,7 +37,22 @@ jobs:
           name: Chromium extension regression
           command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
+  repowise_r4_mcp:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: R4 tests-first MCP smoke
+          command: python tools/repowise/mcp_smoke.py
+
 workflows:
   ci:
     jobs:
       - test
+      - repowise_r4_mcp:
+          filters:
+            branches:
+              only: chore/repowise-integration
