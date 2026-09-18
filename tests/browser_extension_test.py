@@ -128,6 +128,7 @@ IFRAME_PAGE = '''<!doctype html><html><head><title>Opera Agent Iframe Privacy Te
 <body><h1>Safe-looking parent</h1><iframe src="/page?embedded-sensitive=1" width="500" height="300"></iframe></body></html>'''
 
 R0_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r0.html').read_text(encoding='utf-8')
+R1_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r1.html').read_text(encoding='utf-8')
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
@@ -153,8 +154,10 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0'):
-            if self.path.startswith('/pre8e-r0'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1'):
+            if self.path.startswith('/pre8e-r1'):
+                document = R1_PAGE
+            elif self.path.startswith('/pre8e-r0'):
                 document = R0_PAGE
             elif self.path.startswith('/visual'):
                 document = VISUAL_PAGE
@@ -454,6 +457,68 @@ async def run(port, profile):
         assert r0_media['tag'] == 'video', r0_media
 
         cid = STATE.push('tabs.close', {'tabId': r0_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # R1 tests-first acceptance: current runtime must fail these assertions
+        # until generic actionability ranking is implemented before truncation.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r1',
+            'active': False,
+            'wait': True
+        }, benchmark='r1.tabs.open')
+        r1_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Skip',
+            'limit': 6
+        }, benchmark='r1.page.find.skip')
+        r1_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        r1_items = r1_find['items']
+        assert r1_items[0]['label'] == 'Skip', r1_items
+        assert r1_items[0]['visible'] is True, r1_items[0]
+        assert r1_items[0]['inViewport'] is True, r1_items[0]
+        assert r1_items[0]['sensitive'] is False, r1_items[0]
+        assert r1_items[0]['disabled'] is False, r1_items[0]
+        assert r1_items[0]['actionable'] is True, r1_items[0]
+
+        r1_offscreen = next(item for item in r1_items if item['label'] == 'Skip navigation')
+        assert r1_offscreen['visible'] is True, r1_offscreen
+        assert r1_offscreen['inViewport'] is False, r1_offscreen
+        assert r1_offscreen['actionable'] is False, r1_offscreen
+
+        r1_disabled = next(item for item in r1_items if item['label'] == 'Skip disabled')
+        assert r1_disabled['disabled'] is True, r1_disabled
+        assert r1_disabled['inViewport'] is True, r1_disabled
+        assert r1_disabled['actionable'] is False, r1_disabled
+
+        r1_sensitive = next(item for item in r1_items if item['label'] == 'Skip credential')
+        assert r1_sensitive['sensitive'] is True, r1_sensitive
+        assert r1_sensitive['inViewport'] is True, r1_sensitive
+        assert r1_sensitive['actionable'] is False, r1_sensitive
+        assert all(item['label'] != 'Skip hidden' for item in r1_items), r1_items
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Skip',
+            'limit': 1
+        }, benchmark='r1.page.find.skip.limit1')
+        r1_capped_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert len(r1_capped_find['items']) == 1, r1_capped_find
+        assert r1_capped_find['items'][0]['label'] == 'Skip', r1_capped_find
+
+        cid = STATE.push('page.read', {
+            'tabId': r1_tab_id,
+            'offset': 0,
+            'limit': 1200,
+            'maxElements': 1
+        }, benchmark='r1.page.read.max1')
+        r1_read = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert len(r1_read['elements']) == 1, r1_read['elements']
+        assert r1_read['elements'][0]['label'] == 'Skip', r1_read['elements']
+        assert r1_read['elements'][0]['actionable'] is True, r1_read['elements'][0]
+
+        cid = STATE.push('tabs.close', {'tabId': r1_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
