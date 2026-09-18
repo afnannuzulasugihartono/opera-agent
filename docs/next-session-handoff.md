@@ -3,9 +3,11 @@
 Last synchronized: 2026-09-18.
 
 Checkpoint 8D remains closed. Performance Track P0–P5 is accepted. P6 is a
-**FINAL CANDIDATE**, not yet accepted: implementation/regression evidence is green,
-the documentation closeout still needs exact-head CI, and the required independent
-audit remains pending. Milestone 8E is paused/not started.
+**FINAL CANDIDATE**, not yet accepted: exact head
+`96ef1cfdbecc7c5c0e40486b6378501db606b84d` has CircleCI #117 + Vercel
+SUCCESS, while the required independent audit remains pending. Milestone 8E is
+paused/not started. The current active workstream is the separate, bounded Repowise
+integration track; P6 audit work is intentionally deferred in this session.
 
 ## Authoritative boundary
 
@@ -14,8 +16,9 @@ audit remains pending. Milestone 8E is paused/not started.
   `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
 - Candidate branch:
   `feat/performance-runtime-cutover-p6-4571636311958769504`
-- Pre-docs P6 evidence head:
-  `49731c49e75df058dcd48218e680a8ad9aaf7195`
+- Exact P6 final-candidate head:
+  `96ef1cfdbecc7c5c0e40486b6378501db606b84d`
+- Exact-head CI: CircleCI #117 + Vercel SUCCESS
 - Stable extension: 1.6.0
 - Protocol: 1
 - Browser capabilities: 26
@@ -53,6 +56,29 @@ audit remains pending. Milestone 8E is paused/not started.
 - #116 full suite: **416/416 PASS**, 0 fail, 0 skipped.
 - `npm run check`: PASS, 26 primitives, version 1.6.0.
 - Chromium extension regression: PASS.
+
+
+## Repowise integration state
+
+- Branch: `chore/repowise-integration`
+- R1: **PASS** — Repowise 0.51.0 compatibility/privacy/local-MCP research complete.
+- R2 repo setup head:
+  `706001747aefb9b629d4e301a30d814f5e9754e3`
+- R2 CI: CircleCI #119 + Vercel **SUCCESS**.
+- Repo changes are limited to:
+  - `.gitignore`: local `.repowise/` and `.repowise-venv/`;
+  - `tools/repowise/requirements.txt`: `repowise==0.51.0`;
+  - `tools/repowise/bootstrap.py`: isolated repo-local installer/version check with
+    telemetry disabled.
+- No Node dependency was added; no unrelated dependency was upgraded.
+- No editor/user MCP config, AGENTS.md managed section, provider key, Repowise
+  database/index, or generated cache was committed.
+- Runtime installation could not be executed in the ChatGPT sandbox because DNS
+  egress to GitHub/PyPI is unavailable. The sandbox otherwise satisfies the runtime
+  floor (Python 3.13.5, Git 2.47.3).
+- **R3 has not started.** When explicitly resumed, run the pinned bootstrap in an
+  environment with package access, then initialize Repowise locally with no prose,
+  no editor setup, no saved key, and telemetry disabled before measuring the index.
 
 ## Exact next gate
 

@@ -10,8 +10,15 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 - Repository: `afnannuzulasugihartono/opera-agent`
 - Accepted P5 / canonical P6 base: `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
 - P6 candidate branch: `feat/performance-runtime-cutover-p6-4571636311958769504`
-- P6 implementation evidence head before docs closeout:
-  `49731c49e75df058dcd48218e680a8ad9aaf7195`
+- P6 exact final-candidate head:
+  `96ef1cfdbecc7c5c0e40486b6378501db606b84d`
+- P6 exact-head CI: CircleCI #117 + Vercel **SUCCESS**
+- P6 independent audit: **PENDING**
+- Repowise integration branch: `chore/repowise-integration`
+- Repowise R1 compatibility: **PASS**
+- Repowise R2 repo setup head:
+  `706001747aefb9b629d4e301a30d814f5e9754e3`
+- Repowise R2 CI: CircleCI #119 + Vercel **SUCCESS**
 - Stable extension: `1.6.0`
 - Protocol: `1`
 - Public browser capabilities: `26`
@@ -21,7 +28,6 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 - Milestone 8: 8A–8D **ACCEPTED**; 8E paused/not started
 - Durable 8D closeout: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
 - Performance Track: P0–P5 **ACCEPTED**; P6 **FINAL CANDIDATE**
-- P6 independent audit: **PENDING**
 - P6 production promotion/deploy: **NOT DONE**
 
 Canonical plan: `docs/delta-first-performance-plan.md`.
@@ -76,8 +82,32 @@ P6 record: `docs/delta-first-performance-p6.md`.
 - #116 `npm run check`: PASS; 26 allowlisted primitives, version 1.6.0.
 - #116 Chromium extension regression: PASS.
 
-The next docs closeout commit becomes the exact P6 final-candidate head only after
-its own CircleCI + Vercel SUCCESS.
+The exact P6 final-candidate head is
+`96ef1cfdbecc7c5c0e40486b6378501db606b84d`; CircleCI #117 and Vercel are
+SUCCESS. The required independent audit remains pending.
+
+
+## Repowise integration track
+
+Scope is limited to local/private codebase intelligence and supporting
+documentation/utility. It does not change Opera Agent runtime behavior, production
+Supabase, OAuth/signing/pairing, protocol, browser capabilities, or public MCP tools.
+
+- R1 compatibility research passed for Repowise 0.51.0.
+- R2 created an isolated local Python setup on
+  `chore/repowise-integration` at
+  `706001747aefb9b629d4e301a30d814f5e9754e3`.
+- Added `tools/repowise/requirements.txt` pinned to `repowise==0.51.0` and
+  `tools/repowise/bootstrap.py`, which creates `.repowise-venv/`, disables
+  Repowise telemetry during bootstrap, installs the pinned version, and verifies
+  the installed version.
+- `.repowise/` and `.repowise-venv/` are gitignored and must remain local.
+- CircleCI #119 + Vercel are SUCCESS for the R2 setup head.
+- This ChatGPT sandbox has Python 3.13.5, Git 2.47.3, pip 25.1.1, and uv 0.10.0,
+  but DNS/network egress to GitHub/PyPI is unavailable. The Repowise wheel could
+  therefore not be installed or indexed in this sandbox.
+- No Repowise index/database/cache has been committed or uploaded.
+- R3 initial indexing has **NOT STARTED**.
 
 ## Governance / next boundary
 
