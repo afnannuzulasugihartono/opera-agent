@@ -395,7 +395,11 @@ A bounded Spec Kit governance adoption is active on
 - constitution projects existing `AGENTS.md`/`SECURITY.md` rules rather than replacing them;
 - optional/community extensions and runtime events are disabled/not adopted;
 - regression coverage: `tests/spec-kit-governance.test.mjs`;
-- status: **PENDING exact-head CircleCI + Vercel**.
+- acceptance evidence head: `f8e860df9803805704ac70c894800b47b6bf3dc4`;
+- CircleCI #163: **SUCCESS**;
+- Vercel: **SUCCESS**;
+- status: **PASS / CLOSED**.
 
 This adoption does not change P6 acceptance, does not satisfy the required P6
-independent audit, and does not start 8E.
+independent audit, and does not start 8E. No later Spec Kit scope is authorized
+implicitly.
