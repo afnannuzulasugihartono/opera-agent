@@ -1,6 +1,6 @@
 # Performance Track P6 — Durable Runtime Cutover (Maximal Safe Subset)
 
-Status: **FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending**
+Status: **ACCEPTED / CLOSED — audit PASS, PR #46 merged, production promotion verified**
 
 Accepted predecessor: P5 at
 `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`.
@@ -88,9 +88,25 @@ integrated production P6 speed.
 - PR #46: **MERGED** at
   `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`;
 - merge-commit CI: CircleCI #169 + Vercel SUCCESS;
-- production promotion/deploy: **NOT DONE / UNMUTATED**;
+- production promotion/deploy: **DONE / VERIFIED**;
+- production Edge Function: `opera-agent-vm` version 27, `ACTIVE`,
+  `verify_jwt=true`;
+- production deployment SHA-256:
+  `0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`;
+- source verification: all 14 deployed source/import files match merge commit
+  `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac` byte-for-byte;
+- safety state: `milestone7_vm_enabled=false`; `vm_runs=0`,
+  `vm_effects=0`, `vm_rate_windows=0`;
+- security advisor: baseline retained with no new P6-specific finding;
+- temporary PR #47: **CLOSED / NOT MERGED** after GitHub Actions #280 failed
+  before runner allocation; CircleCI #172 and Vercel were SUCCESS;
 - 8E: paused / not started.
 
-P6 remains a final candidate until a separate explicit production-promotion
-instruction is executed and verified. Audit and merge success do not authorize
-deployment or 8E automatically.
+The production promotion used the official Supabase Edge Function deployment path
+with the exact merged source tree rather than the historical CI-minified transport
+wrapper. The resulting deployed files were re-read and verified byte-for-byte
+against the merge commit. No schema, OAuth, signing, pairing, public MCP, protocol,
+browser-capability, or extension change was made.
+
+P6 and Performance Track P are **ACCEPTED / CLOSED**. This does not authorize 8E
+automatically.

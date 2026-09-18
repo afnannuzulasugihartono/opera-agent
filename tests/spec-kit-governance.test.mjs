@@ -21,7 +21,7 @@ test('Spec Kit governance scaffold stays complete and bounded', async () => {
 
   const constitution = await readFile('.specify/memory/constitution.md', 'utf8');
   assert.match(constitution, /AGENTS\.md.*SECURITY\.md/s);
-  assert.match(constitution, /P6 remains a FINAL CANDIDATE/);
+  assert.match(constitution, /P6 is \*\*ACCEPTED \/ CLOSED\*\*/);
   assert.match(constitution, /Milestone 8E remains paused\/not started/);
   assert.match(constitution, /Unrequested implementation.*scope creep/s);
 
@@ -35,6 +35,6 @@ test('Spec Kit governance scaffold stays complete and bounded', async () => {
 
   const guide = await readFile('docs/SPEC_KIT_GOVERNANCE.md', 'utf8');
   assert.match(guide, /Spec Kit does not replace existing governance/);
-  assert.match(guide, /P6 remains/);
+  assert.match(guide, /P6 is \*\*ACCEPTED \/ CLOSED\*\*/);
   assert.match(guide, /8E remains paused/);
 });

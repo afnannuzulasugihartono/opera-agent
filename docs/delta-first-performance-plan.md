@@ -1,15 +1,14 @@
 # Performance Track P — Delta-First Runtime
 
-Status: **P0–P5 ACCEPTED / P6 FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending.**
+Status: **P0–P6 ACCEPTED / CLOSED.**
 
 Date frozen: 2026-09-17
 Baseline repository head before P0: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
 Accepted P5 head before P6: `a215dd0ddb4d7be9b0c0276862ced3ea26439c77`
 
 This track is inserted after accepted Checkpoint 8D and before Checkpoint 8E.
-**8E remains paused**. P6 passed the independent audit gate through the documented
-user-accepted Jules reviewer deviation and PR #46 is merged, but production
-promotion remains a separate unresolved boundary.
+**8E remains paused/not started**. P6 audit, merge, and production promotion are
+closed; 8E requires a separate explicit start instruction.
 
 > Keep canonical browser/semantic state inside the bounded runtime, process changes
 > incrementally, and wake reasoning only when a change requires a new decision.
@@ -148,7 +147,7 @@ Acceptance record: `docs/delta-first-performance-p5.md`.
 
 ## P6 — durable runtime cutover, maximal safe subset
 
-Status: **FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending.**
+Status: **ACCEPTED / CLOSED — audit PASS, PR #46 merged, production promotion verified.**
 
 P6 wires Performance Track state/relevance reconciliation into the durable DB-backed
 7E VM effect loop after `opera_await`, while preserving the existing database lease,
@@ -183,9 +182,11 @@ Tests-first and regression evidence:
 - `npm run check` PASS: 26 allowlisted browser primitives, version 1.6.0;
 - Chromium extension regression PASS.
 
-No production deploy, Supabase schema migration, OAuth/signing/pairing change, public
-tool-schema change, protocol change, browser-capability expansion, or 8E work is part
-of P6.
+The P6 implementation commits themselves introduced no production deploy, Supabase
+schema migration, OAuth/signing/pairing change, public tool-schema change, protocol
+change, browser-capability expansion, or 8E work. Production promotion was executed
+later as a separately authorized step and changed only the `opera-agent-vm` Edge
+Function deployment.
 
 Candidate record: `docs/delta-first-performance-p6.md`.
 
@@ -199,9 +200,10 @@ would require wider browser/transaction authority.
 
 ## Rollback
 
-P6 has not been promoted to production by this checkpoint. The accepted P5 head
+P6 is promoted to production as `opera-agent-vm` version 27. The immediately
+previous Edge deployment, version 26, remains the server rollback point; accepted P5
 `a215dd0ddb4d7be9b0c0276862ced3ea26439c77` remains the clean repository rollback
-baseline for this candidate. Signed extension rollback 1.5.2 also remains available.
+baseline. Signed extension rollback 1.5.2 also remains available.
 Do not maintain a duplicate live `legacy/` implementation merely for rollback;
 Git/release history preserves it.
 
@@ -216,7 +218,13 @@ PR #46 was explicitly merged at
 `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`; CircleCI #169 + Vercel are
 SUCCESS on the merge commit.
 
-Production has not been promoted or mutated. P6 therefore remains a FINAL
-CANDIDATE. The next product boundary is an explicit production-promotion decision.
-Do not deploy/promote P6 or start 8E until that separate instruction is given and
-the required evidence is recorded.
+Production promotion is verified at `opera-agent-vm` version 27, ACTIVE with
+`verify_jwt=true`, deployment SHA
+`0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`.
+All 14 deployed source/import files match merge commit
+`6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac` byte-for-byte. The VM feature flag
+remains false, VM tables remain empty, and the security-advisor baseline has no new
+P6-specific finding. P6 and Performance Track P are **ACCEPTED / CLOSED**.
+
+The next product boundary is an explicit Milestone 8E start decision. Do not start
+8E implicitly.

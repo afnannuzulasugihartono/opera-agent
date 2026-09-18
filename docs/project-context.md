@@ -29,13 +29,20 @@ Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 - Signed rollback: `1.5.2`
 - Milestone 8: 8A–8D **ACCEPTED**; 8E paused/not started
 - Durable 8D closeout: `696f8eb9730f4a8bf0c1bc309d0d56077ebec8ab`
-- Performance Track: P0–P5 **ACCEPTED**; P6 **FINAL CANDIDATE**
-- P6 production promotion/deploy: **NOT DONE**
+- Performance Track: P0–P6 **ACCEPTED / CLOSED**
+- P6 production promotion/deploy: **DONE / VERIFIED**
+- Production `opera-agent-vm`: version **27**, `ACTIVE`, `verify_jwt=true`
+- Production deployment bundle SHA-256:
+  `0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`
+- Production source verification: all 14 deployed source/import files match merge
+  commit `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac` byte-for-byte
+- Safety state after promotion: `milestone7_vm_enabled=false`; VM run/effect/rate
+  tables remain 0/0/0
 
 Canonical plan: `docs/delta-first-performance-plan.md`.
 P6 record: `docs/delta-first-performance-p6.md`.
 
-## P6 candidate — durable runtime cutover, maximal safe subset
+## P6 accepted — durable runtime cutover, maximal safe subset
 
 1. **Durable consuming path**
    - `supabase/functions/opera-agent-vm/index.ts` invokes
@@ -89,7 +96,11 @@ The exact audited P6 candidate head is
 SUCCESS. The independent audit is PASS/CLOSED with the documented user-accepted
 Jules reviewer deviation. PR #46 was explicitly merged as
 `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`; CircleCI #169 and Vercel are
-SUCCESS on that merge commit. Production remains unpromoted.
+SUCCESS on that merge commit. Production promotion is complete: `opera-agent-vm`
+version 27 is ACTIVE with `verify_jwt=true`, deployment SHA
+`0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`,
+and all 14 deployed files match the merge commit byte-for-byte. The VM feature flag
+remains false and VM tables remain empty.
 
 
 ## Repowise integration track
@@ -372,10 +383,10 @@ new explicitly scoped review.
 - durable audit record: `docs/p6-independent-audit-closeout.md`;
 - PR #46 is merged at `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`;
   CircleCI #169 + Vercel are SUCCESS on the merge commit;
-- production remains unpromoted/unmutated;
-- P6 remains a FINAL CANDIDATE until a separate explicit production-promotion
-  instruction is executed and verified;
-- 8E remains paused/not started until that promotion state is resolved.
+- production promotion is complete and verified at `opera-agent-vm` version 27;
+- P6 is **ACCEPTED / CLOSED**;
+- 8E remains paused/not started until a separate explicit instruction starts that
+  checkpoint.
 
 ## Rollback / preserved state
 
@@ -417,6 +428,7 @@ A bounded Spec Kit governance adoption is active on
 
 This adoption itself did not satisfy the P6 independent audit. That later audit
 gate is now closed separately by `docs/p6-independent-audit-closeout.md` with a
-user-accepted reviewer deviation. P6 remains a FINAL CANDIDATE because PR #46 is
-merged but production is not promoted. 8E remains paused/not started until that
-promotion state is resolved. No later Spec Kit scope is authorized implicitly.
+user-accepted reviewer deviation. P6 is **ACCEPTED / CLOSED** after PR #46 merge
+and verified production promotion to `opera-agent-vm` version 27. 8E remains
+paused/not started until separately instructed. No later Spec Kit scope is
+authorized implicitly.

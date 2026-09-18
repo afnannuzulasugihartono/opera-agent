@@ -71,13 +71,12 @@ Durable 8D closeout:
 
 Final 8D record: `docs/milestone-8-checkpoint-8d-acceptance.md`.
 
-8E remains paused. The P6 independent audit gate passed with the documented
-user-accepted reviewer deviation and PR #46 is merged, but production promotion is
-still unresolved and requires a separate explicit instruction.
+8E remains paused/not started. P6 audit, merge, and production promotion are
+closed; starting 8E now requires a separate explicit instruction.
 
 ## Performance Track P — Delta-First Runtime
 
-Status: **P0–P5 accepted. P6 FINAL CANDIDATE — audit PASS, PR #46 merged, production promotion pending.**
+Status: **P0–P6 ACCEPTED / CLOSED.**
 
 Checkpoint sequence:
 
@@ -100,7 +99,11 @@ Checkpoint sequence:
   The independent audit is PASS/CLOSED with the documented user-accepted Jules
   deviation. PR #46 is merged at
   `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`; CircleCI #169 + Vercel SUCCESS.
-  Production promotion remains not done.
+  Production promotion is verified at `opera-agent-vm` version 27
+  (`ACTIVE`, `verify_jwt=true`) with deployment SHA
+  `0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`.
+  All 14 deployed files match the merge commit; the feature flag remains false and
+  VM tables remain empty.
 
 Frozen architecture:
 
@@ -191,9 +194,9 @@ SUCCESS. PR #46 is merged at
 `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`, with CircleCI #169 + Vercel
 SUCCESS.
 
-Production has **not** been promoted or mutated. The next product boundary is a
-separate explicit P6 production-promotion decision. **Do not deploy/promote P6 or
-start 8E without that instruction and the required post-promotion evidence.**
+Production promotion is complete and verified at `opera-agent-vm` version 27.
+Performance Track P is closed. The next product boundary is a separate explicit
+Milestone 8E start decision. **Do not start 8E implicitly.**
 
 ## Collaboration rule
 

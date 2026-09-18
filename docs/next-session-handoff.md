@@ -2,13 +2,16 @@
 
 Last synchronized: 2026-09-18.
 
-Checkpoint 8D remains closed. Performance Track P0–P5 is accepted. P6 remains a
-**FINAL CANDIDATE** after its independent audit PASS and explicit PR #46 merge.
-The audited candidate `96ef1cfdbecc7c5c0e40486b6378501db606b84d` has
+Checkpoint 8D remains closed. Performance Track P0–P6 is **ACCEPTED / CLOSED**.
+The audited P6 candidate `96ef1cfdbecc7c5c0e40486b6378501db606b84d` has
 CircleCI #118 + Vercel SUCCESS. PR #46 merged as
 `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`, with CircleCI #169 + Vercel
-SUCCESS. Production is still unpromoted/unmutated, so Milestone 8E remains
-paused/not started.
+SUCCESS. Production promotion is verified at `opera-agent-vm` version 27
+(`ACTIVE`, `verify_jwt=true`, deployment SHA
+`0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`).
+All 14 deployed source/import files match the merge commit byte-for-byte.
+`milestone7_vm_enabled` remains `false`, VM tables remain empty, and Milestone
+8E remains paused/not started until separately instructed.
 
 ## Authoritative boundary
 
@@ -30,7 +33,11 @@ paused/not started.
 - Public MCP tools: 18
 - Signed rollback: 1.5.2
 - 8E: paused/not started
-- P6 production deploy/promotion: not done
+- P6 production deploy/promotion: **DONE / VERIFIED**
+- Production VM host: `opera-agent-vm` version 27, ACTIVE, `verify_jwt=true`
+- Production deployment SHA:
+  `0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`
+- Post-promotion safety state: feature flag false; VM tables 0/0/0
 
 ## P6 candidate facts
 
@@ -47,8 +54,10 @@ paused/not started.
 - Effect results without P6 metadata retain pre-P6 compatibility.
 - Low-level `opera_enqueue` / `opera_await`, full page text/snapshot recovery,
   18 MCP tools, Protocol 1, and 26 capabilities remain intact.
-- No production deploy, schema migration, OAuth/signing/pairing/public-schema
-  expansion, transaction authority, or 8E work occurred.
+- The candidate implementation itself introduced no schema migration,
+  OAuth/signing/pairing/public-schema expansion, transaction authority, or 8E work.
+  A later explicit production-promotion step deployed only the exact P6 VM-host
+  source to `opera-agent-vm` version 27; it did not enable the VM feature flag.
 
 ## Evidence
 
@@ -221,9 +230,8 @@ removed.
 
 R7 is closed. The final record is `docs/repowise-integration-closeout.md`.
 There is no implicit R8 or automatic Repowise scope expansion after closure.
-The P6 independent audit and repository merge gates are closed. Production
-promotion remains a separate explicit decision; do not deploy/promote P6 or start
-8E without that instruction and its required evidence.
+The P6 independent audit, repository merge, and production-promotion gates are
+closed. Do not start 8E without a separate explicit instruction.
 
 ## Exact next gate
 
@@ -242,13 +250,15 @@ DEVIATION**.
 - durable record: `docs/p6-independent-audit-closeout.md`.
 
 PR #46 is merged at `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac`, and
-CircleCI #169 + Vercel are SUCCESS on that merge commit. Production remains
-unpromoted/unmutated. P6 remains a FINAL CANDIDATE until a separate explicit
-production-promotion instruction is executed and verified.
+CircleCI #169 + Vercel are SUCCESS on that merge commit. Production promotion is
+verified at `opera-agent-vm` version 27 with
+`verify_jwt=true` and deployment SHA
+`0f2c3ada9562d7d3ccea492bd46e83f4994dc321319e37a539939de6dbd12455`.
+All deployed files match the merge commit, the VM feature flag remains false, and
+the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action:** explicit P6 production-promotion decision. Do not
-infer deployment from the audit or merge PASS. Do not start 8E before the
-promotion state is resolved and synchronized.
+**Exact next product action:** explicit Milestone 8E start decision. Do not infer
+8E authorization from P6 closure.
 
 ## Preserved rollback / stash warning
 

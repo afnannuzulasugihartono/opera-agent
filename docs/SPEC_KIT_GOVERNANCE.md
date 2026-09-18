@@ -70,7 +70,6 @@ Neither layer may invent acceptance state.
 
 Spec Kit adoption itself did not satisfy the P6 independent audit. That separate
 gate is now **PASS / CLOSED WITH USER-ACCEPTED REVIEWER DEVIATION**, recorded in
-`docs/p6-independent-audit-closeout.md`. P6 remains a FINAL CANDIDATE because
-PR #46 is merged at `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac` with CircleCI
-#169 + Vercel SUCCESS, while production is not promoted. 8E remains paused until
-the P6 promotion state is resolved separately.
+`docs/p6-independent-audit-closeout.md`. P6 is **ACCEPTED / CLOSED** after PR #46
+merge and verified production promotion to `opera-agent-vm` version 27. 8E remains
+paused/not started until separately instructed.

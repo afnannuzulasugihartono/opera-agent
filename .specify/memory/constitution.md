@@ -92,16 +92,16 @@ still require exact source and evidence verification.
 ## Current Locked Boundary
 
 Current state on 2026-09-18:
-- Performance Track P6 remains a FINAL CANDIDATE because PR #46 is merged at
+- Performance Track P6 is **ACCEPTED / CLOSED**: PR #46 is merged at
   `6cfd7e61ebb0117a90872f17ba8cc82185cfe3ac` with CircleCI #169 + Vercel
-  SUCCESS, while production is not promoted;
+  SUCCESS, and production `opera-agent-vm` version 27 is ACTIVE with
+  `verify_jwt=true` and exact source verification against that merge commit;
 - the P6 independent audit gate is PASS/CLOSED using Jules with an explicitly
   user-accepted reviewer deviation because Codex quota was exhausted;
 - exact candidate evidence is CircleCI #118 SUCCESS + Vercel SUCCESS;
-- the explicit merge decision has been executed; P6 MUST NOT be production-
-  promoted merely because audit and merge passed; promotion requires a separate
-  explicit instruction and verification;
-- Milestone 8E remains paused/not started until promotion state is resolved;
+- the explicit merge and production-promotion decisions have been executed and
+  verified; this does NOT authorize broader runtime authority or 8E implicitly;
+- Milestone 8E remains paused/not started until a separate explicit instruction;
 - the preserved accidental 8E stash MUST NOT be popped, applied, deleted, or
   used automatically.
 
