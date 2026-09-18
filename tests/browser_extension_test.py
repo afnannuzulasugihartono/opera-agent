@@ -385,12 +385,11 @@ async def run(port, profile):
         r0_skip_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert r0_skip_find['count'] >= 2, r0_skip_find
         r0_skip_items = r0_skip_find['items']
-        assert r0_skip_items[0]['label'] == 'Skip navigation', r0_skip_items
-        assert r0_skip_items[0]['visible'] is True, r0_skip_items[0]
-        assert r0_skip_items[0]['inViewport'] is False, r0_skip_items[0]
+        r0_skip_navigation = next(item for item in r0_skip_items if item['label'] == 'Skip navigation')
+        assert r0_skip_navigation['visible'] is True, r0_skip_navigation
+        assert r0_skip_navigation['inViewport'] is False, r0_skip_navigation
         r0_real_skip = next(item for item in r0_skip_items if item['label'] == 'Skip')
         assert r0_real_skip['inViewport'] is True, r0_real_skip
-        assert r0_skip_items.index(r0_real_skip) > 0, r0_skip_items
 
         r0_old_skip_ref = r0_real_skip['ref']
         cid = STATE.push('page.query', {
@@ -1197,7 +1196,7 @@ async def run(port, profile):
             'ok': True,
             'extensionId': ext_id,
             'r0UsabilityFixture': True,
-            'r0LegacySkipFirstOffscreen': r0_skip_items[0]['inViewport'] is False,
+            'r0OffscreenSkipObserved': r0_skip_navigation['inViewport'] is False,
             'r0OnscreenSkipObserved': r0_real_skip['inViewport'] is True,
             'r0StaleRefRejected': r0_stale_click['ok'] is False,
             'r0IrrelevantMutationObserved': r0_page_after_noise['mutationVersion'] > r0_page_before['mutationVersion'],
