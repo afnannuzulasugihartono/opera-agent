@@ -349,11 +349,36 @@ async def run(port, profile):
         identified = page['elements']
         assert all(item['logicalId'].startswith('se_') for item in identified)
 
-        initial_by_stable_key = {item['stableKey']: item for item in page['elements'] if not item['sensitive'] and not item.get('identityAmbiguous', False)}
+        # R1 actionability ranking is viewport-sensitive. Settle the viewport on
+        # the rerender target before taking the identity baseline so this legacy
+        # rerender test measures DOM replacement continuity, not bounded-window
+        # membership changes caused by clickSynthetic scrolling the target.
+        rerender_pre_scroll = next(item for item in page['elements'] if item['label'] == 'Rerender target')
+        cid = STATE.push('page.scroll', {
+            'tabId': tab_id,
+            'ref': rerender_pre_scroll['ref'],
+            'block': 'center',
+            'behavior': 'instant'
+        }, benchmark='r1.semantic.rerender.settle-viewport')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
+        settled_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        settled_by_stable_key = {
+            item['stableKey']: item for item in settled_page['elements']
+            if not item['sensitive'] and not item.get('identityAmbiguous', False)
+        }
+
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
         repeated_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
-        repeated_by_stable_key = {item['stableKey']: item for item in repeated_page['elements'] if not item['sensitive'] and not item.get('identityAmbiguous', False)}
-        assert all(repeated_by_stable_key[key]['logicalId'] == item['logicalId'] for key, item in initial_by_stable_key.items())
+        repeated_by_stable_key = {
+            item['stableKey']: item for item in repeated_page['elements']
+            if not item['sensitive'] and not item.get('identityAmbiguous', False)
+        }
+        assert all(
+            repeated_by_stable_key[key]['logicalId'] == item['logicalId']
+            for key, item in settled_by_stable_key.items()
+        )
         assert repeated_page['semanticDelta']['classification'] == 'NO_RELEVANT_CHANGE'
 
         rerender_before = next(item for item in repeated_page['elements'] if item['label'] == 'Rerender target')
