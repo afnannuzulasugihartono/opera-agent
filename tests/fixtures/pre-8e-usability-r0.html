@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Opera Agent Pre-8E R0 Fixture</title>
+  <style>
+    body { margin: 0; min-height: 1400px; font-family: sans-serif; }
+    #skip-navigation { position: absolute; left: 16px; top: -1000px; width: 160px; height: 32px; }
+    #ad-skip { position: absolute; left: 120px; top: 180px; width: 96px; height: 40px; }
+    #fixture-controls { margin: 260px 24px 0; }
+    #media-zone { margin: 24px; }
+  </style>
+</head>
+<body>
+  <a id="skip-navigation" href="#main" aria-label="Skip navigation">Skip navigation</a>
+  <main id="main">
+    <div id="noise-controls" aria-label="Irrelevant controls">
+      <button>Noise action 01</button><button>Noise action 02</button><button>Noise action 03</button><button>Noise action 04</button>
+      <button>Noise action 05</button><button>Noise action 06</button><button>Noise action 07</button><button>Noise action 08</button>
+      <button>Noise action 09</button><button>Noise action 10</button><button>Noise action 11</button><button>Noise action 12</button>
+    </div>
+    <button id="ad-skip" aria-label="Skip">Skip</button>
+    <section id="fixture-controls">
+      <button id="rerender-skip">Re-render Skip target</button>
+      <button id="noise-tick">Advance irrelevant counter</button>
+      <output id="noise-counter" aria-live="off">0</output>
+    </section>
+    <section id="media-zone">
+      <video id="fixture-video" muted preload="metadata" width="320" height="180" controls></video>
+    </section>
+    <section id="transcript-shape" aria-label="Transcript fixture">
+      <h2>Transcript</h2>
+      <p data-kind="transcript">00:00 Deterministic transcript row.</p>
+      <aside data-kind="sponsored">Sponsored content noise.</aside>
+      <aside data-kind="recommendation">Recommendation noise.</aside>
+      <aside data-kind="comment">Comment noise.</aside>
+    </section>
+  </main>
+  <script>
+    document.getElementById('rerender-skip').addEventListener('click', () => {
+      const current = document.getElementById('ad-skip');
+      current.replaceWith(current.cloneNode(true));
+    });
+    document.getElementById('noise-tick').addEventListener('click', () => {
+      const counter = document.getElementById('noise-counter');
+      counter.textContent = String(Number(counter.textContent || 0) + 1);
+    });
+  </script>
+</body>
+</html>
