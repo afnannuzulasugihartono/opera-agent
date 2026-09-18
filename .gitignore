@@ -26,6 +26,9 @@ supabase/.temp/
 .repowise/
 .repowise-venv/
 
+# Spec Kit local isolated Python environment
+.spec-kit-venv/
+
 # Editor / OS
 .vscode/
 .idea/
