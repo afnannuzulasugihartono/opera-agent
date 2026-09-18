@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+import errno
 import os
 from pathlib import Path
+import socket
 import sys
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parents[2]
 VENV = ROOT / ".repowise-venv"
@@ -36,29 +39,13 @@ PROVIDER_KEYS = (
 )
 
 
-def _repowise_executable() -> Path:
+def _venv_python() -> Path:
     if os.name == "nt":
-        return VENV / "Scripts" / "repowise.exe"
-    return VENV / "bin" / "repowise"
+        return VENV / "Scripts" / "python.exe"
+    return VENV / "bin" / "python"
 
 
-def main() -> int:
-    repowise = _repowise_executable()
-    if not repowise.is_file():
-        print(
-            "Repowise is not installed in .repowise-venv; "
-            "run: python tools/repowise/bootstrap.py",
-            file=sys.stderr,
-        )
-        return 2
-    if not INDEX_DB.is_file():
-        print(
-            "Repowise index is missing (.repowise/wiki.db); "
-            "run the privacy-hardened local index before starting MCP.",
-            file=sys.stderr,
-        )
-        return 3
-
+def _privacy_environment() -> dict[str, str]:
     env = os.environ.copy()
     env.update(
         {
@@ -67,30 +54,117 @@ def main() -> int:
             "REPOWISE_SKIP_EDITOR_SETUP": "1",
             "REPOWISE_NO_SAVE_KEY": "1",
             "REPOWISE_HOST": "127.0.0.1",
+            "REPOWISE_PROVIDER": "mock",
+            "REPOWISE_EMBEDDER": "mock",
+            "REPOWISE_R4_LOCAL_ONLY": "1",
         }
     )
-
-    # Repowise's MCP command loads .repowise/.env. Pre-seeding provider keys as
-    # empty keeps python-dotenv from filling them later, so this R4 launcher
-    # cannot silently turn local codebase context into provider-backed synthesis.
     for name in PROVIDER_KEYS:
         env[name] = ""
+    return env
 
-    argv = [
-        str(repowise),
-        "mcp",
-        str(ROOT),
-        "--transport",
-        "stdio",
-        "--tools",
-        ",".join(LOCAL_TOOLS),
-        "--no-workspace",
-    ]
 
-    # Replace this process so the MCP client is the server's direct ancestor and
-    # Repowise's stdio parent-death watchdog keeps its intended lifecycle.
-    os.execve(str(repowise), argv, env)
-    return 127
+def _reexec_in_venv() -> NoReturn:
+    python = _venv_python()
+    if not python.is_file():
+        print(
+            "Repowise is not installed in .repowise-venv; "
+            "run: python tools/repowise/bootstrap.py",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+    os.execve(
+        str(python),
+        [str(python), str(Path(__file__).resolve())],
+        _privacy_environment(),
+    )
+    raise AssertionError("os.execve returned unexpectedly")
+
+
+def _disable_outbound_network() -> None:
+    """Deny DNS/TCP/UDP egress while preserving local AF_UNIX IPC."""
+
+    original_connect = socket.socket.connect
+    original_connect_ex = socket.socket.connect_ex
+
+    def blocked_getaddrinfo(*_args, **_kwargs):
+        raise OSError(errno.EPERM, "Outbound network disabled by local Repowise MCP launcher")
+
+    def blocked_create_connection(*_args, **_kwargs):
+        raise OSError(errno.EPERM, "Outbound network disabled by local Repowise MCP launcher")
+
+    def guarded_connect(sock: socket.socket, address):
+        if sock.family == getattr(socket, "AF_UNIX", object()):
+            return original_connect(sock, address)
+        raise OSError(errno.EPERM, "Outbound network disabled by local Repowise MCP launcher")
+
+    def guarded_connect_ex(sock: socket.socket, address):
+        if sock.family == getattr(socket, "AF_UNIX", object()):
+            return original_connect_ex(sock, address)
+        return errno.EPERM
+
+    socket.getaddrinfo = blocked_getaddrinfo
+    socket.create_connection = blocked_create_connection
+    socket.socket.connect = guarded_connect
+    socket.socket.connect_ex = guarded_connect_ex
+
+
+def _disable_release_poll() -> None:
+    """Replace Repowise's advisory PyPI poll with an offline local result."""
+
+    from repowise.core.upgrade import release
+
+    def offline_release_check(current_version: str, **_kwargs):
+        return release.ReleaseCheck(
+            current_version=current_version,
+            latest_version=None,
+            update_available=None,
+            error="release check disabled by Opera Agent local MCP launcher",
+        )
+
+    release.check_latest_version_cached = offline_release_check
+
+
+def _run_server() -> int:
+    if not INDEX_DB.is_file():
+        print(
+            "Repowise index is missing (.repowise/wiki.db); "
+            "build the privacy-hardened local index before starting MCP.",
+            file=sys.stderr,
+        )
+        return 3
+
+    # Direct run avoids repowise.cli.ui.load_dotenv(), so project-local provider
+    # secrets are never imported into this R4 process.
+    _disable_outbound_network()
+    _disable_release_poll()
+
+    from repowise.server.mcp_server import run_mcp
+
+    run_mcp(
+        transport="stdio",
+        repo_path=str(ROOT),
+        host="127.0.0.1",
+        tools=",".join(LOCAL_TOOLS),
+        workspace_mode=False,
+    )
+    return 0
+
+
+def main() -> int:
+    python = _venv_python()
+    try:
+        inside_venv = python.is_file() and Path(sys.executable).resolve() == python.resolve()
+    except OSError:
+        inside_venv = False
+
+    if not inside_venv:
+        _reexec_in_venv()
+
+    # Reassert the privacy boundary even when a host launched the venv Python
+    # directly instead of entering through the re-exec path.
+    os.environ.update(_privacy_environment())
+    return _run_server()
 
 
 if __name__ == "__main__":
