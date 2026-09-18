@@ -22,6 +22,10 @@ supabase/.temp/
 # Checkpoint 8D local crash-recovery state (nonsecret, never commit)
 .opera-agent-8d-state/
 
+# Repowise local codebase intelligence (cache + isolated Python environment)
+.repowise/
+.repowise-venv/
+
 # Editor / OS
 .vscode/
 .idea/
