@@ -60,7 +60,7 @@ jobs:
             git config --unset-all remote.origin.partialclonefilter || true
             git fetch --refetch origin '+refs/heads/*:refs/remotes/origin/*' --tags
             git config --unset-all remote.origin.promisor || true
-            if git config --get-regexp '^remote\..*\.(promisor|partialclonefilter); then
+            if git config --get-regexp "^remote\\..*\\.(promisor|partialclonefilter)" >/dev/null; then
               echo "Partial-clone config remains after hydration."
               exit 1
             fi
