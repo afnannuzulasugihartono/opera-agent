@@ -364,8 +364,16 @@ async def run(port, profile):
 
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
         settled_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
-        settled_by_stable_key = {
-            item['stableKey']: item for item in settled_page['elements']
+
+        # Semantic identity intentionally uses removalGraceObservations=1. After
+        # the viewport-sensitive R1 ranking changes bounded top-50 membership,
+        # one additional observation may emit ABSENT_AFTER_GRACE removals for
+        # entities that left the observation window. Drain that grace transition
+        # before asserting a stable no-change baseline.
+        cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
+        grace_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        grace_by_stable_key = {
+            item['stableKey']: item for item in grace_page['elements']
             if not item['sensitive'] and not item.get('identityAmbiguous', False)
         }
 
@@ -377,9 +385,9 @@ async def run(port, profile):
         }
         assert all(
             repeated_by_stable_key[key]['logicalId'] == item['logicalId']
-            for key, item in settled_by_stable_key.items()
+            for key, item in grace_by_stable_key.items()
         )
-        assert repeated_page['semanticDelta']['classification'] == 'NO_RELEVANT_CHANGE'
+        assert repeated_page['semanticDelta']['classification'] == 'NO_RELEVANT_CHANGE', repeated_page['semanticDelta']
 
         rerender_before = next(item for item in repeated_page['elements'] if item['label'] == 'Rerender target')
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': rerender_before['ref']})
