@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair Plan
 
-Status: **R0 CLOSEOUT CANDIDATE; R1 NOT STARTED**
+Status: **R0 ACCEPTED / CLOSED; R1 NOT STARTED**
 
 Created: 2026-09-18
 
@@ -129,7 +129,7 @@ Stop immediately if any repair would require:
 
 R0 benchmark/fixture implementation evidence is green at `f39c6e3d6a3aef149c30f729c01335358a308088` with CircleCI #182 + Vercel SUCCESS. The durable record is `docs/pre-8e-performance-usability-r0.md`.
 
-The only active gate is the R0 documentation closeout CI. Until that exact head is green, STOP. After R0 acceptance, STOP again for user review; **R1 remains NOT AUTHORIZED** without a new explicit instruction.
+R0 documentation closeout head `a8281edba35b0d74bc2395a46504d8c519da8a18` has CircleCI #188 + Vercel SUCCESS, so R0 is ACCEPTED/CLOSED. STOP here for user review; **R1 remains NOT AUTHORIZED** without a new explicit instruction.
 
 Milestone 8E remains paused/not started until R8 is accepted and the user separately
 authorizes 8E.
