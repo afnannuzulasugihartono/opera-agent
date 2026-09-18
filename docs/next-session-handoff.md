@@ -83,6 +83,9 @@ integration track; P6 audit work is intentionally deferred in this session.
 - R5 AI codebase-context documentation: **PASS** at
   `e9d6dc8659ac1d7c02bf753a6a2d46bfdae70887`; CircleCI #143 + Vercel
   SUCCESS.
+- R6 validation evidence: **PASS with documented limitations** at
+  `7fae3a095e7096cec6945b7c4ea274764881b609`; CircleCI #147 + #148 +
+  Vercel SUCCESS.
 
 
 ## Repowise R3 initial-index gate
@@ -181,8 +184,32 @@ that Repowise is derived context rather than governance/runtime authority.
 No npm helper scripts were added because the existing Python entry points are
 already cross-platform and avoid shell-specific assumptions.
 
-Exact next Repowise checkpoint: **R6 validation questions + comparison against
-normal grep/read exploration**, only after an explicit user request to continue.
+## Repowise R6 validation gate
+
+R6 validation evidence is **PASS with documented limitations**.
+
+Exact evidence head:
+`7fae3a095e7096cec6945b7c4ea274764881b609`.
+
+- #147 Repowise validation: SUCCESS.
+- #148 normal regression including Chromium: SUCCESS.
+- Vercel: SUCCESS.
+- zero nonexistent paths from ten MCP calls.
+- A/B/C are strong structural/impact/state cases.
+- D is useful for archaeology but decision/history output must be verified against
+  the authoritative plan.
+- E proves exact literal inventory remains a grep-first task.
+- baseline: 5 `git grep` calls, 84 per-question candidate hits, 51 unique files.
+- Repowise: 10 MCP calls, 47 per-question surfaced paths.
+- first #146 failure was only missing `rg` in the CI image; fixed by using
+  `git grep`.
+
+Detailed evidence is in `docs/repowise-r6-validation.md`. The reusable validation
+harness remains at `tools/repowise/r6_validate.py`. Temporary R6 CI wiring is
+removed.
+
+Exact next Repowise checkpoint: **R7 final closeout**, only after an explicit user
+request and after the R6 closeout head is green.
 
 ## Exact next gate
 

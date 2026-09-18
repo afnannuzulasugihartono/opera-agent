@@ -116,6 +116,9 @@ Supabase, OAuth/signing/pairing, protocol, browser capabilities, or public MCP t
 - R5 AI codebase-context documentation is **PASS**. Documentation head:
   `e9d6dc8659ac1d7c02bf753a6a2d46bfdae70887`; CircleCI #143 and
   Vercel are SUCCESS.
+- R6 validation evidence is **PASS with documented limitations** at
+  `7fae3a095e7096cec6945b7c4ea274764881b609`; CircleCI #147 validation,
+  #148 normal regression, and Vercel are SUCCESS.
 
 
 ## Repowise R3 initial-index status
@@ -285,8 +288,58 @@ No npm script was added in R5 because the committed cross-platform Python toolin
 already provides the required entry points without adding shell portability
 assumptions to `package.json`.
 
-Exact next Repowise checkpoint, only when explicitly resumed: **R6 validation and
-Repowise-vs-normal-search comparison**. Do not start R6 implicitly.
+## Repowise R6 validation
+
+R6 validation evidence is **PASS with documented limitations**.
+
+Exact evidence head:
+`7fae3a095e7096cec6945b7c4ea274764881b609`.
+
+Evidence:
+
+- CircleCI #147 `repowise_r6_validation`: SUCCESS.
+- CircleCI #148 normal test/check/Chromium regression: SUCCESS.
+- Vercel: SUCCESS.
+- ten Repowise MCP calls across the five frozen A-E questions;
+- zero nonexistent path mentions;
+- five baseline `git grep` calls produced 84 candidate-file hits in aggregate
+  and 51 unique candidate files;
+- Repowise surfaced 47 paths in aggregate.
+
+Question findings:
+
+- A: exact two-branch runtime structure recovered:
+  `index.ts -> reactive-vm-7d.js -> reactive-vm.js` and
+  `index.ts -> reactive-vm-host-7e.js -> multi-signal-relevance-p3.js`.
+- B: `advanceReactiveVm` callers/dependents and relevant P6/reactive tests were
+  surfaced correctly; risk data reported five direct dependents and ten
+  transitive affected paths.
+- C: durable-state discovery correctly led to the DB-backed reactive-host
+  migration/RPCs and the Edge VM host; in-memory P4 is not authoritative.
+- D: Repowise correctly surfaced the unauthoritative-`taskDependencies` history
+  and P3/P4 gate context, but `get_why` had no decision record and reported no
+  file-specific history for the performance plan. The plan/source remains
+  authoritative.
+- E: target file `supabase/functions/opera-agent-mcp/index.ts` and
+  `createServer()` were identified, but exact literal `server.registerTool`
+  inventory is better served by grep; Repowise explicitly warned its result was
+  fuzzy.
+
+The first R6 job #146 failed only because the CircleCI image lacked `rg`; all
+ten MCP calls had already completed. The baseline was switched to repository-native
+`git grep` and #147 passed. This is a harness portability fix, not a Repowise
+behavior fix.
+
+Detailed record: `docs/repowise-r6-validation.md`.
+Reproducible harness: `tools/repowise/r6_validate.py`.
+Temporary R6 CircleCI instrumentation is removed at closeout.
+
+R6 establishes a hybrid policy: use Repowise for orientation/structure/impact/
+history, then verify consequential claims against exact source and CI. Prefer
+normal repository grep for exhaustive literal inventory.
+
+Exact next Repowise checkpoint, only when explicitly resumed: **R7 final
+closeout**. Do not start R7 implicitly.
 
 ## Governance / next boundary
 

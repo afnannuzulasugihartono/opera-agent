@@ -37,62 +37,7 @@ jobs:
           name: Chromium extension regression
           command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
-  repowise_r6_validation:
-    executor:
-      name: python/default
-      tag: "3.12"
-    resource_class: medium
-    environment:
-      DO_NOT_TRACK: "1"
-      REPOWISE_TELEMETRY_DISABLED: "1"
-      REPOWISE_SKIP_EDITOR_SETUP: "1"
-      REPOWISE_NO_SAVE_KEY: "1"
-      PYTHONIOENCODING: "utf-8"
-    steps:
-      - checkout
-      - run:
-          name: Hydrate full git history
-          command: |
-            if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-              git fetch --unshallow origin
-            fi
-            git config --unset-all remote.origin.partialclonefilter || true
-            git fetch --refetch origin '+refs/heads/*:refs/remotes/origin/*' --tags
-            git config --unset-all remote.origin.promisor || true
-            if git config --get-regexp "^remote\\..*\\.(promisor|partialclonefilter)" >/dev/null; then
-              echo "Partial-clone config remains after hydration."
-              exit 1
-            fi
-            if git rev-list --objects --all --missing=print | grep -q '^?'; then
-              echo "Missing Git objects remain after hydration."
-              exit 1
-            fi
-      - run:
-          name: Install pinned Repowise locally
-          command: python tools/repowise/bootstrap.py
-      - run:
-          name: Build privacy-hardened R6 index
-          command: |
-            env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u GEMINI_API_KEY -u GOOGLE_API_KEY -u OPENROUTER_API_KEY -u DEEPSEEK_API_KEY \
-              DO_NOT_TRACK=1 \
-              REPOWISE_TELEMETRY_DISABLED=1 \
-              REPOWISE_SKIP_EDITOR_SETUP=1 \
-              REPOWISE_NO_SAVE_KEY=1 \
-              .repowise-venv/bin/repowise init . --yes --no-prose --no-editor-setup --no-save-key --embedder mock
-      - run:
-          name: Run R6 validation benchmark
-          command: |
-            mkdir -p /tmp/repowise-r6
-            .repowise-venv/bin/python tools/repowise/r6_validate.py /tmp/repowise-r6/report.json
-      - store_artifacts:
-          path: /tmp/repowise-r6/report.json
-          destination: repowise-r6-report.json
-
 workflows:
   ci:
     jobs:
       - test
-      - repowise_r6_validation:
-          filters:
-            branches:
-              only: chore/repowise-integration
