@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair Plan
 
-Status: **PLANNED / NOT IMPLEMENTED**
+Status: **R0 CLOSEOUT CANDIDATE; R1 NOT STARTED**
 
 Created: 2026-09-18
 
@@ -127,12 +127,9 @@ Stop immediately if any repair would require:
 
 ## Exact next action
 
-Planning is now recorded. Runtime implementation remains **NOT AUTHORIZED** by this
-documentation change alone.
+R0 benchmark/fixture implementation evidence is green at `f39c6e3d6a3aef149c30f729c01335358a308088` with CircleCI #182 + Vercel SUCCESS. The durable record is `docs/pre-8e-performance-usability-r0.md`.
 
-When the user explicitly says to continue this repair track, execute **R0 only**:
-create/freeze deterministic benchmark fixtures/tests, run the required read-only
-Spec Kit analysis gate, and STOP after R0 evidence. Do not start R1 implicitly.
+The only active gate is the R0 documentation closeout CI. Until that exact head is green, STOP. After R0 acceptance, STOP again for user review; **R1 remains NOT AUTHORIZED** without a new explicit instruction.
 
 Milestone 8E remains paused/not started until R8 is accepted and the user separately
 authorizes 8E.
