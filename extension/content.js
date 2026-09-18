@@ -130,6 +130,41 @@
     return true;
   }
 
+  function actionabilityState(el, sensitiveReason = undefined) {
+    const visible = isVisible(el);
+    const inViewport = visible && isInViewport(el);
+    const sensitive = sensitiveReason === undefined ? !!sensitiveDescriptor(el) : !!sensitiveReason;
+    const ariaDisabled = clean(el?.getAttribute?.('aria-disabled'), 20).toLowerCase() === 'true';
+    const nativeDisabled = !!(el && 'disabled' in el && el.disabled);
+    const readOnly = !!(el && 'readOnly' in el && el.readOnly);
+    const enabled = !nativeDisabled && !readOnly && !ariaDisabled;
+    const pointerEnabled = visible && getComputedStyle(el).pointerEvents !== 'none';
+    return {
+      visible,
+      inViewport,
+      enabled,
+      sensitive,
+      actionable: visible && inViewport && enabled && !sensitive && pointerEnabled
+    };
+  }
+
+  function actionabilityRank(el) {
+    const state = actionabilityState(el);
+    if (state.actionable) return 0;
+    if (state.sensitive) return 5;
+    if (!state.visible) return 4;
+    if (state.inViewport) return 1;
+    if (state.enabled) return 2;
+    return 3;
+  }
+
+  function prioritizeActionableNodes(nodes) {
+    return nodes
+      .map((el, index) => ({ el, index, rank: actionabilityRank(el) }))
+      .sort((left, right) => left.rank - right.rank || left.index - right.index)
+      .map((entry) => entry.el);
+  }
+
   function stableHash(value) {
     let first = 2166136261;
     let second = 5381;
@@ -204,6 +239,7 @@
   function serialize(el, options = {}) {
     const includeValue = !!options.includeValue;
     const blocked = sensitiveDescriptor(el);
+    const actionability = actionabilityState(el, blocked);
     const data = {
       ...stableElementIdentity(el),
       ref: getRef(el),
@@ -222,9 +258,10 @@
       ariaChecked: el.getAttribute?.('aria-checked') ?? null,
       ariaExpanded: el.getAttribute?.('aria-expanded') ?? null,
       ariaSelected: el.getAttribute?.('aria-selected') ?? null,
-      visible: isVisible(el),
-      inViewport: isInViewport(el),
-      sensitive: !!blocked,
+      visible: actionability.visible,
+      inViewport: actionability.inViewport,
+      sensitive: actionability.sensitive,
+      actionable: actionability.actionable,
       rect: rectOf(el)
     };
     if (includeValue && !blocked && ('value' in el || el.isContentEditable)) {
@@ -241,7 +278,9 @@
 
   function semanticRegionObservation(maxElements = 120) {
     const max = clamp(maxElements, 1, MAX_ELEMENTS, 120);
-    const nodes = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].filter((el) => el.isConnected).slice(0, max);
+    const nodes = prioritizeActionableNodes(
+      [...document.querySelectorAll(INTERACTIVE_SELECTOR)].filter((el) => el.isConnected)
+    ).slice(0, max);
     const regionNodes = new Set([document.body || document.documentElement]);
     const semanticSelector = 'main,nav,aside,header,footer,form,dialog,[role="dialog"],[role="feed"],[role="list"],[role="listbox"],[role="grid"],[role="table"]';
     for (const node of document.querySelectorAll(semanticSelector)) {
@@ -364,6 +403,7 @@
       throw new Error('Invalid CSS selector.');
     }
     if (args.visibleOnly !== false) nodes = nodes.filter(isVisible);
+    nodes = prioritizeActionableNodes(nodes);
     const items = nodes.slice(0, limit).map((el) => serialize(el, { includeValue: !!args.includeValue }));
     const index = Number.isInteger(args.index) ? args.index : null;
     return {
