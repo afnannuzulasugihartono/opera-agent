@@ -1,0 +1,40 @@
+name: Repowise R3 Probe
+
+on:
+  push:
+    branches:
+      - chore/repowise-integration
+
+permissions:
+  contents: read
+
+jobs:
+  repowise-r3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DO_NOT_TRACK: "1"
+      REPOWISE_TELEMETRY_DISABLED: "1"
+      REPOWISE_SKIP_EDITOR_SETUP: "1"
+      REPOWISE_NO_SAVE_KEY: "1"
+      REPOWISE_GIT_WINDOW_ANCHOR: "head"
+      PYTHONIOENCODING: "utf-8"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Repowise locally
+        run: python tools/repowise/bootstrap.py
+      - name: Run privacy-hardened R3 index probe
+        run: python tools/repowise/r3_probe.py --report "$RUNNER_TEMP/repowise-r3-report.json"
+      - name: Upload metrics-only R3 report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repowise-r3-report-${{ github.sha }}
+          path: ${{ runner.temp }}/repowise-r3-report.json
+          if-no-files-found: error
+          retention-days: 7
