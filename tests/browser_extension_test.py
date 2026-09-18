@@ -404,8 +404,9 @@ async def run(port, profile):
         assert stale['ok'] is False
         assert 'stale' in stale['error']['message'].lower()
 
-        # R0 pre-8E usability fixture: preserve the legacy failures as deterministic
-        # evidence without changing extension runtime behavior.
+        # Reuse the R0 fixture as a cross-check that the R1 actionability repair
+        # now ranks the on-screen Skip ahead of the CSS-visible offscreen
+        # Skip navigation target, while preserving the rest of the R0 baselines.
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r0',
             'active': False,
@@ -421,12 +422,15 @@ async def run(port, profile):
         r0_skip_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert r0_skip_find['count'] >= 2, r0_skip_find
         r0_skip_items = r0_skip_find['items']
-        assert r0_skip_items[0]['label'] == 'Skip navigation', r0_skip_items
-        assert r0_skip_items[0]['visible'] is True, r0_skip_items[0]
-        assert r0_skip_items[0]['inViewport'] is False, r0_skip_items[0]
         r0_real_skip = next(item for item in r0_skip_items if item['label'] == 'Skip')
+        r0_skip_navigation = next(item for item in r0_skip_items if item['label'] == 'Skip navigation')
+        assert r0_real_skip['visible'] is True, r0_real_skip
         assert r0_real_skip['inViewport'] is True, r0_real_skip
-        assert r0_skip_items.index(r0_real_skip) > 0, r0_skip_items
+        assert r0_real_skip['actionable'] is True, r0_real_skip
+        assert r0_skip_navigation['visible'] is True, r0_skip_navigation
+        assert r0_skip_navigation['inViewport'] is False, r0_skip_navigation
+        assert r0_skip_navigation['actionable'] is False, r0_skip_navigation
+        assert r0_skip_items.index(r0_real_skip) < r0_skip_items.index(r0_skip_navigation), r0_skip_items
 
         r0_old_skip_ref = r0_real_skip['ref']
         cid = STATE.push('page.query', {
@@ -496,8 +500,8 @@ async def run(port, profile):
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
 
-        # R1 tests-first acceptance: current runtime must fail these assertions
-        # until generic actionability ranking is implemented before truncation.
+        # R1 acceptance: generic actionability ranking must hold before
+        # bounded model-facing truncation.
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r1',
             'active': False,
