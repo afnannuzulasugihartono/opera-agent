@@ -341,10 +341,13 @@ async def run(port, profile):
         assert page['semanticState']['schemaVersion'] == 1
         assert page['semanticState']['documentGeneration'] == 1
         assert page['semanticState']['ambiguityCount'] >= 2
-        assert page['semanticState']['excludedSensitiveCount'] >= 2
-        identified = [item for item in page['elements'] if not item['sensitive']]
+        # R1 ranks non-sensitive usable controls before the bounded element cap.
+        # This page has >50 non-sensitive controls, so sensitive fields should no
+        # longer consume the first 50 model-facing observation slots.
+        assert page['semanticState']['excludedSensitiveCount'] == 0
+        assert all(item['sensitive'] is False for item in page['elements'])
+        identified = page['elements']
         assert all(item['logicalId'].startswith('se_') for item in identified)
-        assert all('logicalId' not in item for item in page['elements'] if item['sensitive'])
 
         initial_by_stable_key = {item['stableKey']: item for item in page['elements'] if not item['sensitive'] and not item.get('identityAmbiguous', False)}
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
