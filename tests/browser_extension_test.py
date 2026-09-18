@@ -127,6 +127,8 @@ BLANK_PAGE = '''<!doctype html><html><head><title>Opera Agent Blank Test</title>
 IFRAME_PAGE = '''<!doctype html><html><head><title>Opera Agent Iframe Privacy Test</title></head>
 <body><h1>Safe-looking parent</h1><iframe src="/page?embedded-sensitive=1" width="500" height="300"></iframe></body></html>'''
 
+R0_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r0.html').read_text(encoding='utf-8')
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
@@ -151,8 +153,10 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe'):
-            if self.path.startswith('/visual'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0'):
+            if self.path.startswith('/pre8e-r0'):
+                document = R0_PAGE
+            elif self.path.startswith('/visual'):
                 document = VISUAL_PAGE
             elif self.path.startswith('/blank'):
                 document = BLANK_PAGE
@@ -360,6 +364,97 @@ async def run(port, profile):
         stale = await asyncio.to_thread(STATE.wait, cid)
         assert stale['ok'] is False
         assert 'stale' in stale['error']['message'].lower()
+
+        # R0 pre-8E usability fixture: preserve the legacy failures as deterministic
+        # evidence without changing extension runtime behavior.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r0',
+            'active': False,
+            'wait': True
+        }, benchmark='r0.tabs.open')
+        r0_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.find', {
+            'tabId': r0_tab_id,
+            'text': 'Skip',
+            'limit': 5
+        }, benchmark='r0.page.find.skip')
+        r0_skip_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r0_skip_find['count'] >= 2, r0_skip_find
+        r0_skip_items = r0_skip_find['items']
+        assert r0_skip_items[0]['label'] == 'Skip navigation', r0_skip_items
+        assert r0_skip_items[0]['visible'] is True, r0_skip_items[0]
+        assert r0_skip_items[0]['inViewport'] is False, r0_skip_items[0]
+        r0_real_skip = next(item for item in r0_skip_items if item['label'] == 'Skip')
+        assert r0_real_skip['inViewport'] is True, r0_real_skip
+        assert r0_skip_items.index(r0_real_skip) > 0, r0_skip_items
+
+        r0_old_skip_ref = r0_real_skip['ref']
+        cid = STATE.push('page.query', {
+            'tabId': r0_tab_id,
+            'selector': '#rerender-skip'
+        })
+        r0_rerender = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {
+            'tabId': r0_tab_id,
+            'ref': r0_rerender['ref'],
+            'trusted': False
+        })
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.query', {
+            'tabId': r0_tab_id,
+            'selector': '#ad-skip'
+        })
+        r0_fresh_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        assert r0_fresh_skip['ref'] != r0_old_skip_ref
+        cid = STATE.push('page.click', {
+            'tabId': r0_tab_id,
+            'ref': r0_old_skip_ref,
+            'trusted': False
+        }, benchmark='r0.page.click.stale')
+        r0_stale_click = await asyncio.to_thread(STATE.wait, cid)
+        assert r0_stale_click['ok'] is False, r0_stale_click
+        assert 'stale' in r0_stale_click['error']['message'].lower(), r0_stale_click
+
+        cid = STATE.push('page.read', {
+            'tabId': r0_tab_id,
+            'offset': 0,
+            'limit': 12000,
+            'maxElements': 200
+        }, benchmark='r0.page.read.legacy')
+        r0_page_before = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        r0_payload_bytes = len(json.dumps(r0_page_before).encode())
+        cid = STATE.push('page.query', {
+            'tabId': r0_tab_id,
+            'selector': '#noise-tick'
+        })
+        r0_noise_tick = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {
+            'tabId': r0_tab_id,
+            'ref': r0_noise_tick['ref'],
+            'trusted': False
+        })
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {
+            'tabId': r0_tab_id,
+            'offset': 0,
+            'limit': 12000,
+            'maxElements': 200
+        })
+        r0_page_after_noise = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert r0_page_after_noise['mutationVersion'] > r0_page_before['mutationVersion']
+
+        cid = STATE.push('media.state', {
+            'tabId': r0_tab_id,
+            'index': 0
+        }, benchmark='r0.media.state')
+        r0_media = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['media']
+        assert r0_media['present'] is True, r0_media
+        assert r0_media['count'] == 1, r0_media
+        assert r0_media['tag'] == 'video', r0_media
+
+        cid = STATE.push('tabs.close', {'tabId': r0_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': spa_route['ref']})
@@ -1036,6 +1131,14 @@ async def run(port, profile):
         print(json.dumps({
             'ok': True,
             'extensionId': ext_id,
+            'r0UsabilityFixture': True,
+            'r0LegacySkipFirstOffscreen': r0_skip_items[0]['inViewport'] is False,
+            'r0OnscreenSkipObserved': r0_real_skip['inViewport'] is True,
+            'r0StaleRefRejected': r0_stale_click['ok'] is False,
+            'r0IrrelevantMutationObserved': r0_page_after_noise['mutationVersion'] > r0_page_before['mutationVersion'],
+            'r0LegacyReadPayloadBytes': r0_payload_bytes,
+            'r0LegacyReadTextChars': r0_page_before['textChars'],
+            'r0MediaStatePresent': r0_media['present'] is True,
             'semanticReadChars': page['textChars'],
             'textOnlyReadChars': text_only['textChars'] + final_chunk['textChars'],
             'textOnlyElementsOmitted': True,
