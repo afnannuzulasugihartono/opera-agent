@@ -6,6 +6,8 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const statePath = resolve(root, 'PROJECT_STATE.json');
 const agentsPath = resolve(root, 'AGENTS.md');
+const checkerPath = resolve(root, 'scripts', 'check-project-state.mjs');
+const packagePath = resolve(root, 'package.json');
 
 function parseTasks(markdown) {
   const rows = [];
@@ -65,4 +67,20 @@ test('AGENTS declares PROJECT_STATE as current-state authority and forbids dupli
   assert.match(agents, /exact next task[^\n]*PROJECT_STATE\.json/i);
   assert.match(agents, /roadmap|spec|handoff/i);
   assert.match(agents, /must not override|must not redefine|not.*authority/i);
+});
+
+
+test('project-state checker is part of the normal static gate', () => {
+  assert.equal(
+    existsSync(checkerPath),
+    true,
+    'scripts/check-project-state.mjs must exist so CI can reject drift automatically',
+  );
+
+  const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
+  assert.match(
+    pkg.scripts?.check ?? '',
+    /check-project-state\.mjs/,
+    'npm run check must execute the project-state drift checker',
+  );
 });
