@@ -425,12 +425,17 @@ async function trustedClick(tabId, ref, context, mode = 'background') {
   const x = info.rect?.centerX;
   const y = info.rect?.centerY;
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
-  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
+  const action = await withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
     return { ok: true, ref, method: 'debugger', x, y };
   }));
+  const postAction = await contentCall(tabId, 'page.post_action', {
+    ref,
+    before: info.postActionBefore
+  });
+  return { ...action, postAction };
 }
 
 async function trustedFill(tabId, ref, value, context, mode = 'background') {

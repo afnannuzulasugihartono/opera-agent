@@ -443,6 +443,18 @@
     if (epoch) semanticRuntimeEpoch = epoch;
   }
 
+  function observeSemanticBounded(maxElements = 120) {
+    const regional = semanticRegionObservation(maxElements);
+    const observation = semanticIdentity.observe(regional.items);
+    const views = semanticViews.observe({
+      regions: regional.regions,
+      items: observation.items,
+      semanticState: observation.state,
+      delta: observation.delta,
+    });
+    return { regional, observation, views };
+  }
+
   function pageRead(args) {
     syncSemanticScope(args);
     const fullText = normalizeText(document.body?.innerText || document.documentElement?.innerText || '');
@@ -465,17 +477,11 @@
     page.viewport = viewportState();
     page.mutationVersion = mutationVersion;
     if (args.includeElements !== false) {
-      const regional = semanticRegionObservation(args.maxElements);
-      const observation = semanticIdentity.observe(regional.items);
+      const { observation, views } = observeSemanticBounded(args.maxElements);
       page.elements = observation.items;
       page.semanticState = observation.state;
       page.semanticDelta = observation.delta;
-      page.semanticViews = semanticViews.observe({
-        regions: regional.regions,
-        items: observation.items,
-        semanticState: observation.state,
-        delta: observation.delta,
-      });
+      page.semanticViews = views;
     }
     return {
       ok: true,
@@ -562,15 +568,86 @@
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  function clickSynthetic(args) {
+  function preparePostAction(ref) {
+    syncSemanticScope({});
+    const baseline = observeSemanticBounded(120).observation;
+    return {
+      schemaVersion: 1,
+      documentId,
+      routeKey: currentRouteKey(),
+      ref: String(ref || ''),
+      beforeMutationVersion: mutationVersion,
+      semanticRevision: baseline.state.observationRevision
+    };
+  }
+
+  async function waitForPostActionSettle(maxWaitMs = 400, stableRoundsRequired = 2) {
+    const startedAt = performance.now();
+    let stableRounds = 0;
+    let previousMutationVersion = mutationVersion;
+    while (performance.now() - startedAt < maxWaitMs && stableRounds < stableRoundsRequired) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      if (mutationVersion === previousMutationVersion) stableRounds += 1;
+      else stableRounds = 0;
+      previousMutationVersion = mutationVersion;
+    }
+    return {
+      settled: stableRounds >= stableRoundsRequired,
+      stabilizationMs: Math.round((performance.now() - startedAt) * 100) / 100
+    };
+  }
+
+  function summarizeSemanticDelta(delta) {
+    const changes = Array.isArray(delta?.changes) ? delta.changes : [];
+    return {
+      schemaVersion: 1,
+      sourceRevision: Number(delta?.sourceRevision || 0),
+      resultingRevision: Number(delta?.resultingRevision || 0),
+      classification: String(delta?.classification || 'NO_RELEVANT_CHANGE'),
+      changeTypes: [...new Set(changes.map((change) => String(change?.type || '')).filter(Boolean))].slice(0, 8),
+      changedEntityIds: changes.map((change) => String(change?.logicalId || '')).filter(Boolean).slice(0, 20),
+      completeSnapshotRequired: !!delta?.completeSnapshotRequired,
+      ...(delta?.resetReason ? { resetReason: clean(delta.resetReason, 80) } : {})
+    };
+  }
+
+  async function postActionEvidence(args) {
+    const before = args.before && typeof args.before === 'object' ? args.before : {};
+    const settled = await waitForPostActionSettle();
+    syncSemanticScope({});
+    const observed = observeSemanticBounded(120).observation;
+    const target = resolveRef(args.ref);
+    const sameContinuity = before.documentId === documentId && before.routeKey === currentRouteKey();
+    return {
+      schemaVersion: 1,
+      documentId,
+      continuity: sameContinuity ? 'SAME_DOCUMENT_ROUTE' : 'RESET_OR_ROUTE_CHANGE',
+      beforeMutationVersion: Number.isFinite(Number(before.beforeMutationVersion))
+        ? Number(before.beforeMutationVersion)
+        : mutationVersion,
+      mutationVersion,
+      settled: settled.settled,
+      stabilizationMs: settled.stabilizationMs,
+      semantic: summarizeSemanticDelta(observed.delta),
+      target: {
+        ref: String(args.ref || ''),
+        present: !!target
+      },
+      completionClaim: false
+    };
+  }
+
+  async function clickSynthetic(args) {
     const el = resolveActionRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
+    const before = preparePostAction(args.ref);
     el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
     el.focus?.({ preventScroll: true });
     el.click();
-    return { ok: true, ref: args.ref, method: 'synthetic' };
+    const postAction = await postActionEvidence({ ref: args.ref, before });
+    return { ok: true, ref: args.ref, method: 'synthetic', postAction };
   }
 
   function fill(args) {
@@ -614,9 +691,10 @@
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
+    const postActionBefore = preparePostAction(args.ref);
     el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
     const rect = rectOf(el);
-    return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el) };
+    return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el), postActionBefore };
   }
 
   function pointerTarget(args) {
@@ -915,6 +993,7 @@
       case 'page.collect_links': return collectLinks(args);
       case 'page.click': return clickSynthetic(args);
       case 'page.click_info': return clickInfo(args);
+      case 'page.post_action': return postActionEvidence(args);
       case 'page.pointer_target': return pointerTarget(args);
       case 'page.scroll_settle': return settleScroll(args);
       case 'page.scroll_target': return scrollTargetBy(args);
