@@ -80,6 +80,14 @@ scope. This closes T037 via its evidence-backed residual-bottleneck clause.
 - CI: CircleCI + Vercel SUCCESS on the R7 evidence head (see handoff for the
   exact SHA). The browser gate runs in CI as established in R0–R6.
 
+## Field confirmation (2026-09-20)
+
+The owner's production E2E tests hit exactly the two failed v4 runs recorded
+above (14.0 s / 16.5 s `wait_for` timeouts) and found `Show transcript`
+manually after expanding the description — confirming the recorded residual
+bottleneck and queueing the description-expand path as the first post-R7 fix
+candidate. Full report: `docs/production-usage-observations-2026-09-20.md`.
+
 ## Boundary
 
 No public MCP tool/schema, protocol, primitive count, extension runtime,

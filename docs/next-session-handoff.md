@@ -22,6 +22,25 @@ access is available read-only via `SUPABASE_ACCESS_TOKEN` (user env var; token
 + pair the candidate extension, then run the original YouTube prompt for
 T039–T041). Milestone 8E remains paused.
 
+## Production usage observations — 2026-09-20 (backlog seed)
+
+The owner ran production E2E tests (ChatGPT + 1.6.0 extension + Supabase):
+YouTube (3Blue1Brown, played to 18:39/18:39 via internal media.seek) and Google
+Maps (search/reviews/directions near UII). Full report + repair-track mapping:
+`docs/production-usage-observations-2026-09-20.md`. Confirmed the R7 residual
+bottleneck with field data (the two v4 failures 14.0 s/16.5 s = the recorded
+failed runs). New backlog, top first: (1) transport timeout ≠ action failure —
+`browser.burst` timeout with the action already applied (critical correctness);
+(2) click ok ≠ state transition — verify expected state + automatic `href`
+fallback; (3) description-expand → Show-transcript path fix; (4) caption
+detector unreliability; (5) queue tail latency (14.3 s spike) to be measured in
+R8/T040; (6) semantic/UI mismatch + stale panel residue; (7) geometry truth for
+transformed panels (`x = -344` with `inViewport = true`); (8) exact-match
+brittleness with glyph labels; (9) media primitives MCP exposure — 8E decision
+(F5). SonarCloud quality gate fails on New-Code reliability; the known
+check.mjs sort issue is already fixed at f3051a8 — re-check the next analysis
+or inspect with a SONAR_TOKEN.
+
 ## Consolidation authorization — 2026-09-19 (supersedes the main-merge caution below)
 
 The user reviewed the repository survey (32 remote branches, four divergent
