@@ -36,7 +36,7 @@ const files = [
   ...collectRuntimeFiles('lib', new Set(['.js'])),
   ...collectRuntimeFiles('supabase/functions', new Set(['.js', '.ts'])),
   ...collectRuntimeFiles('supabase/migrations', new Set(['.sql'])),
-].sort();
+].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
