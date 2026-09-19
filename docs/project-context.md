@@ -460,6 +460,15 @@ therefore locks the smallest safe design: a new internal workflow
 `tabs.navigate`/`tabs.reload` and timestamp-URL seeking inside that workflow,
 and remain absent from the 18-tool public MCP surface.
 
+R5 T026 tests-first head `e4baf6274623a301bacc37745cba2eca7a6d60ef`
+produced the expected CircleCI #246 red gate: 427/429 tests PASS and the only
+two failures state that the R5 media fast-path migration does not yet exist.
+No unrelated regression was observed. T027 adds only the versioned server
+workflow migration `media.sample_at`; it uses `media.state`, conditionally
+`media.pause`, `media.seek`, conditionally `media.play`, then final
+`media.state`. It never uses `tabs.navigate`/`tabs.reload` or timestamp
+URLs, and it does not add a public MCP tool.
+
 ## Governance / next boundary
 
 - one active writer;
