@@ -2,14 +2,17 @@
 
 Date: 2026-09-19
 
-Status: implementation gates PASS; documentation closeout CI pending.
+Status: ACCEPTED / CLOSED. Documentation closeout `50b19ee1f4ea91fd0be866565a1c1733bc8ff87b`
+has CircleCI #251 + Vercel SUCCESS, independently verified.
 
 Evidence head: `15270d5875bd9fa9ae350d1a866332895519abbb`.
 Exact-head statuses independently checked: CircleCI #250 SUCCESS and Vercel
 SUCCESS. The unchanged CircleCI workflow runs the full Node suite, static check,
 and Chromium extension regression, including nine ready-media seeks, p50 <=1000ms,
 50ms position tolerance, zero navigate/reload, and background-focus preservation.
-No numeric p50 is inferred from the green status alone.
+No numeric p50 is inferred from the green status alone. A separate local Chromium
+run of `py -3.12 tests/browser_extension_test.py` passed with nine seeks and p50
+16.79ms, verified positions and focus preservation; this is not cloud latency.
 
 T026/T027 add the versioned internal `media.sample_at` workflow using existing
 state/pause/seek/play primitives, preserving initial playback state. This is a

@@ -6,9 +6,11 @@ Last synchronized: 2026-09-19.
 
 Continue the user's explicit R5–R8 request sequentially, not Milestone 8E.
 R5 implementation head `15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI
-#250 + Vercel SUCCESS, independently checked. Local full Node suite/static check
-PASS. Check R5 documentation closeout CI before R6; evidence record:
-`docs/pre-8e-performance-usability-r5.md`. R6–R8 remain pending.
+#250 + Vercel SUCCESS, independently checked. R5 closeout `50b19ee` has #251 +
+Vercel SUCCESS: CLOSED. R6 candidate removes recommendation activation and uses
+the observed ref for a local click, preserving necessary Home navigation. Its
+full/CI gates are pending; see `docs/pre-8e-performance-usability-r6.md`.
+Complete R6 gates before R7; R8 requires live candidate evidence, not old production.
 No production deployment, signed release, or Realtime cutover permission was added.
 Worktree location is `C:/Users/ASUS/.zcode/workspace/default/opera-agent`.
 Use `SPECIFY_FEATURE_DIRECTORY` (not `SPECIFY_FEATURE`) for Spec Kit prerequisites.

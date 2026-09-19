@@ -1,0 +1,330 @@
+-- R6 candidate only: reuse the tab; follow an observed recommendation locally.
+-- No activation, URL fallback after a failed click, public tool or transport change.
+select public.opera_register_workflow(
+  'youtube.play_recommendation',
+  $wf$
+{
+  "steps": [
+    {
+      "type": "command",
+      "id": "find",
+      "method": "tabs.find",
+      "params": {
+        "urlContains": "youtube.com",
+        "limit": 10
+      }
+    },
+    {
+      "type": "if",
+      "condition": {
+        "left": {
+          "$ref": "steps.find.result.tab"
+        },
+        "op": "exists"
+      },
+      "then": [
+        {
+          "type": "set",
+          "name": "tabId",
+          "value": {
+            "$ref": "steps.find.result.tab.id"
+          }
+        },
+        {
+          "type": "if",
+          "condition": {
+            "left": {
+              "$ref": "steps.find.result.tab.url"
+            },
+            "op": "eq",
+            "right": "https://www.youtube.com/"
+          },
+          "then": [],
+          "else": [
+            {
+              "type": "command",
+              "id": "home",
+              "method": "tabs.navigate",
+              "params": {
+                "tabId": {
+                  "$ref": "vars.tabId"
+                },
+                "url": "https://www.youtube.com/",
+                "wait": false
+              }
+            }
+          ]
+        }
+      ],
+      "else": [
+        {
+          "type": "command",
+          "id": "openyt",
+          "method": "tabs.open",
+          "params": {
+            "url": "https://www.youtube.com/",
+            "active": false,
+            "wait": false
+          }
+        },
+        {
+          "type": "set",
+          "name": "tabId",
+          "value": {
+            "$ref": "steps.openyt.result.tab.id"
+          }
+        }
+      ]
+    },
+    {
+      "type": "command",
+      "id": "waithome",
+      "method": "page.wait_for",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "selector": "ytd-browse[page-subtype=\"home\"], ytd-rich-grid-renderer",
+        "timeoutMs": 10000
+      }
+    },
+    {
+      "type": "command",
+      "id": "rec",
+      "method": "page.query",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "selector": "a#thumbnail[href*=\"watch\"], a.yt-lockup-view-model__content-image[href*=\"watch\"]",
+        "index": {
+          "$ref": "input.index"
+        },
+        "limit": 30
+      }
+    },
+    {
+      "type": "if",
+      "condition": {
+        "left": {
+          "$ref": "steps.rec.result.item.href"
+        },
+        "op": "exists"
+      },
+      "then": [],
+      "else": [
+        {
+          "type": "fail",
+          "code": "RECOMMENDATION_NOT_FOUND",
+          "message": "No recommendation URL was found."
+        }
+      ]
+    },
+    {
+      "type": "command",
+      "id": "openrec",
+      "method": "page.click",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "ref": {
+          "$ref": "steps.rec.result.item.ref"
+        },
+        "trusted": false
+      }
+    },
+    {
+      "type": "command",
+      "id": "waitwatch",
+      "method": "page.wait_for",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "selector": "ytd-watch-flexy",
+        "timeoutMs": 10000
+      }
+    },
+    {
+      "type": "command",
+      "id": "waitvideo",
+      "method": "page.wait_for",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "selector": "video",
+        "timeoutMs": 10000
+      }
+    },
+    {
+      "type": "command",
+      "id": "adinitial",
+      "method": "page.query",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "selector": ".ad-showing, .ytp-ad-player-overlay",
+        "index": 0,
+        "limit": 5
+      },
+      "continueOnError": true
+    },
+    {
+      "type": "if",
+      "condition": {
+        "left": {
+          "$ref": "steps.adinitial.result.item"
+        },
+        "op": "exists"
+      },
+      "then": [
+        {
+          "type": "repeat",
+          "steps": [
+            {
+              "type": "command",
+              "id": "skip",
+              "method": "page.query",
+              "params": {
+                "tabId": {
+                  "$ref": "vars.tabId"
+                },
+                "selector": ".ytp-ad-skip-button-modern, .ytp-ad-skip-button, button.ytp-skip-ad-button",
+                "index": 0,
+                "limit": 5
+              },
+              "continueOnError": true
+            },
+            {
+              "type": "if",
+              "condition": {
+                "left": {
+                  "$ref": "steps.skip.result.item"
+                },
+                "op": "exists"
+              },
+              "then": [
+                {
+                  "type": "command",
+                  "id": "skipclick",
+                  "method": "page.click",
+                  "params": {
+                    "tabId": {
+                      "$ref": "vars.tabId"
+                    },
+                    "ref": {
+                      "$ref": "steps.skip.result.item.ref"
+                    },
+                    "trusted": true
+                  },
+                  "continueOnError": true
+                }
+              ],
+              "else": []
+            },
+            {
+              "type": "command",
+              "id": "adstate",
+              "method": "page.query",
+              "params": {
+                "tabId": {
+                  "$ref": "vars.tabId"
+                },
+                "selector": ".ad-showing, .ytp-ad-player-overlay",
+                "index": 0,
+                "limit": 5
+              },
+              "continueOnError": true
+            },
+            {
+              "type": "if",
+              "condition": {
+                "left": {
+                  "$ref": "steps.adstate.result.item"
+                },
+                "op": "exists"
+              },
+              "then": [
+                {
+                  "type": "wait",
+                  "ms": 250
+                }
+              ],
+              "else": []
+            }
+          ],
+          "until": {
+            "left": {
+              "$ref": "steps.adstate.result.item"
+            },
+            "op": "not_exists"
+          },
+          "maxIterations": 40,
+          "failOnLimit": false,
+          "id": "ads"
+        }
+      ],
+      "else": [
+        {
+          "type": "set",
+          "name": "noAd",
+          "value": true
+        }
+      ]
+    },
+    {
+      "type": "command",
+      "id": "play",
+      "method": "media.play",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "index": 0
+      },
+      "continueOnError": true
+    },
+    {
+      "type": "command",
+      "id": "media",
+      "method": "media.state",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        },
+        "index": 0
+      }
+    },
+    {
+      "type": "command",
+      "id": "tab",
+      "method": "tabs.get",
+      "params": {
+        "tabId": {
+          "$ref": "vars.tabId"
+        }
+      }
+    }
+  ],
+  "output": {
+    "tab": {
+      "$ref": "steps.tab.result.tab"
+    },
+    "recommendation": {
+      "$ref": "steps.rec.result.item"
+    },
+    "media": {
+      "$ref": "steps.media.result.media"
+    },
+    "ad": {
+      "$ref": "steps.adstate.result.item"
+    }
+  }
+}
+  $wf$::jsonb,
+  'Reuse YouTube Home in background and click the observed recommendation ref; bounded ad handling is unchanged.',
+  true
+);

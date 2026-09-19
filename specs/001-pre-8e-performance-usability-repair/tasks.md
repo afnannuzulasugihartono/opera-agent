@@ -52,8 +52,8 @@
 
 - [x] T026 [US4] Add workflow tests that require an internal `media.sample_at` path using existing `media.state/play/pause/seek`, forbid navigation/reload timestamp seeking, and preserve the 18-tool public MCP surface. Tests-first commit is expected red until T027 implementation.
 - [x] T027 [US4] Implement the approved internal media seek path as versioned workflow `media.sample_at`: preserve prior playback state with `media.state/pause/seek/play`, and use no URL-time navigation/reload. Repository + active workflow history proved there was no legacy URL-time seek path to rewrite, so legitimate page/video navigation remains unchanged.
-- [ ] T028 [US4] Measure controlled ready-media seek p50 and verify no navigation/reload.
-- [ ] T029 Verify public MCP tool count/input schemas remain unchanged and STOP for R5 acceptance.
+- [x] T028 [US4] Measure controlled ready-media seek p50 and verify no navigation/reload. CI #250; local Chromium nine seeks, p50 16.79ms.
+- [x] T029 Verify public MCP tool count/input schemas remain unchanged and STOP for R5 acceptance. Closeout #251 + Vercel SUCCESS.
 
 ## Phase R6 — Navigation and residual transport
 

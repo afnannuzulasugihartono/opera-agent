@@ -33,3 +33,20 @@ test('R6 missing tab opens background; a failed recommendation click cannot trig
   assert.equal(calls.find(c => c.method === 'tabs.open').params.active, false);
   assert.equal(calls.some(c => ['tabs.navigate','tabs.activate','tabs.reload'].includes(c.method)), false);
 });
+
+test('R6 a non-Home existing tab navigates only to Home, then clicks locally', async () => {
+  const calls = [];
+  await runWorkflow(candidateWorkflow('_pre_8e_r6_navigation_reuse.sql'), {}, async (method, params) => {
+    calls.push({method, params});
+    if (method === 'tabs.find') return {tab:{id:9,url:'https://www.youtube.com/watch?v=old'}};
+    if (method === 'page.query' && params.selector.includes('thumbnail')) return {item:{ref:'new-ref',href:'https://www.youtube.com/watch?v=new'}};
+    if (method === 'page.query') return {item:null};
+    return {};
+  });
+  const navigations = calls.filter(c => c.method === 'tabs.navigate');
+  assert.equal(navigations.length, 1);
+  assert.equal(navigations[0].params.url, 'https://www.youtube.com/');
+  assert.equal(navigations[0].params.tabId, 9);
+  assert.equal(calls.filter(c => c.method === 'page.click').length, 1);
+  assert.equal(calls.some(c => ['tabs.open','tabs.activate','tabs.reload'].includes(c.method)), false);
+});
