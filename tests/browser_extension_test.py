@@ -921,6 +921,70 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
+        # --- U-V1 quick-win: self-verifying actions, absent wait, burst timeout partials ---
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r3', 'active': False, 'wait': True})
+        uv1_r3_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.query', {'tabId': uv1_r3_tab, 'selector': '#r3-change'})
+        uv1_change = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': uv1_r3_tab, 'ref': uv1_change['ref'], 'expect': {'textGone': 'change-state:before'}}, benchmark='uv1.expect.pass')
+        uv1_pass = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert uv1_pass['postAction'].get('verified') is True
+        assert any(item['key'] == 'textGone' and item['pass'] for item in uv1_pass['postAction']['expectations'])
+        cid = STATE.push('page.click', {'tabId': uv1_r3_tab, 'ref': uv1_change['ref'], 'expect': {'urlContains': 'never-matches-xyz'}}, benchmark='uv1.expect.fail')
+        uv1_fail = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert uv1_fail['postAction'].get('verified') is False
+        assert any(item['key'] == 'urlContains' and not item['pass'] for item in uv1_fail['postAction']['expectations'])
+        cid = STATE.push('page.query', {'tabId': uv1_r3_tab, 'selector': '#r3-remove'})
+        uv1_remove = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': uv1_r3_tab, 'ref': uv1_remove['ref']})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.wait_for', {'tabId': uv1_r3_tab, 'selector': '#r3-remove', 'absent': True, 'timeoutMs': 2000}, benchmark='uv1.absent')
+        uv1_absent = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert uv1_absent.get('absent') is True
+
+        # Burst partial results: a failing wait step preserves the successful
+        # prefix instead of discarding completed steps (read prefix keeps the
+        # scenario independent of window focus).
+        uv1_burst_steps = [
+            {'action': 'read', 'limit': 200},
+            {'action': 'wait', 'selector': '#r3-never-appears', 'timeoutMs': 3000},
+            {'action': 'read', 'limit': 200}
+        ]
+        cid = STATE.push('browser.burst', {'tabId': uv1_r3_tab, 'steps': uv1_burst_steps}, benchmark='uv1.burst.partial')
+        uv1_burst = await asyncio.to_thread(STATE.wait, cid)
+        uv1_partial = (uv1_burst.get('result') or {})
+        assert uv1_partial.get('ok') is False, f"uv1_burst={json.dumps(uv1_burst)[:600]}"
+        assert uv1_partial.get('completedSteps') == 1, f"uv1_burst={json.dumps(uv1_burst)[:600]}"
+        assert uv1_partial.get('failedAt') == 1, f"uv1_burst={json.dumps(uv1_burst)[:600]}"
+        assert uv1_partial.get('failedAction') == 'wait', f"uv1_burst={json.dumps(uv1_burst)[:600]}"
+        assert uv1_partial['results'][0]['action'] == 'read', f"uv1_burst={json.dumps(uv1_burst)[:600]}"
+        assert uv1_partial['results'][0]['result']['page']['documentId'], f"uv1_burst={json.dumps(uv1_burst)[:600]}"
+
+        cid = STATE.push('tabs.close', {'tabId': uv1_r3_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r4', 'active': False, 'wait': True})
+        uv1_r4_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.query', {'tabId': uv1_r4_tab, 'selector': '#r4-anchor'})
+        uv1_anchor = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': uv1_r4_tab, 'ref': uv1_anchor['ref'], 'expect': {'urlContains': 'r4-anchor-target'}}, benchmark='uv1.anchor.pass')
+        uv1_anchor_pass = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert uv1_anchor_pass['postAction'].get('verified') is True
+        cid = STATE.push('page.click', {'tabId': uv1_r4_tab, 'ref': uv1_anchor['ref'], 'expect': {'urlContains': 'nowhere-xyz'}}, benchmark='uv1.anchor.fallback')
+        uv1_anchor_fail = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert uv1_anchor_fail['postAction'].get('verified') is False
+        assert uv1_anchor_fail['postAction'].get('fallbackHref', '').endswith('#r4-anchor-target')
+        cid = STATE.push('tabs.close', {'tabId': uv1_r4_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        uv1_acceptance = {
+            'expectPass': uv1_pass['postAction']['verified'] is True,
+            'expectFailKnown': uv1_fail['postAction']['verified'] is False,
+            'absentWait': uv1_absent.get('absent') is True,
+            'anchorFallbackHref': bool(uv1_anchor_fail['postAction'].get('fallbackHref')),
+            'burstPartialPrefix': (uv1_burst.get('result') or {}).get('results', [{}])[0].get('action') == 'read'
+        }
+        print(json.dumps({'uv1Acceptance': uv1_acceptance}, indent=2))
+
         # --- Pre-8E R5: ready-media local seek benchmark ---
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r5',

@@ -2,6 +2,23 @@
 
 Last synchronized: 2026-09-20.
 
+## U-V1 closed — 2026-09-20 (read first)
+
+**U-V1 (self-verifying actions) is ACCEPTED / CLOSED on CI evidence.** Actions
+now verify themselves in-page: `page.click` accepts internal `expect`
+(`urlChanged/urlContains/selectorAppears/selectorGone/textGone/minMutationDelta`)
+evaluated inside postAction evidence (`verified`, per-check `expectations`) at
+zero extra round trips, `retry:{attempts}` bounded 1–3 drives re-execution on
+verification failure, anchors expose `fallbackHref` when unverified, and
+`page.wait_for` gains `absent:true`. Burst timeouts preserve the successful
+prefix (`timedOut:true`, `BURST_TIMEOUT`, "completed steps may have taken
+effect") matching the V2 unknown-outcome contract. MCP inventory stays frozen
+(18 tools, unchanged schemas — internal params follow the R4 precedent).
+Evidence: `docs/checkpoint-u-v1-self-verifying-actions.md` (controlled-browser
+acceptance all green). Remaining proposed checkpoints: **U-I** (identity
+hardening), **U-P1** (CDP AX-tree observation), **U-P3**, **U-P2**; R8 needs
+an Opera environment.
+
 ## Research + quick wins — 2026-09-20 (perception / identity / verification)
 
 Owner field tests across nine hard websites (Figma, Maps, Miro, YouTube, Docs,

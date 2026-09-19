@@ -709,9 +709,46 @@
       documentId,
       routeKey: currentRouteKey(),
       ref: String(ref || ''),
+      url: String(location.href),
       beforeMutationVersion: mutationVersion,
       semanticRevision: baseline.state.observationRevision
     };
+  }
+
+  // U-V1: expected-state checks evaluated in-page right after the settle, so
+  // verifying an action costs no extra round trip and no full re-read.
+  function normalizeExpectSpec(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const spec = {};
+    if (raw.urlChanged === true) spec.urlChanged = true;
+    if (typeof raw.urlContains === 'string' && raw.urlContains.trim()) spec.urlContains = raw.urlContains.trim().toLowerCase().slice(0, 300);
+    if (typeof raw.selectorAppears === 'string' && raw.selectorAppears.trim() && raw.selectorAppears.length <= 500) spec.selectorAppears = raw.selectorAppears.trim();
+    if (typeof raw.selectorGone === 'string' && raw.selectorGone.trim() && raw.selectorGone.length <= 500) spec.selectorGone = raw.selectorGone.trim();
+    if (typeof raw.textGone === 'string' && raw.textGone.trim()) spec.textGone = raw.textGone.trim().toLowerCase().slice(0, 300);
+    const minDelta = Number(raw.minMutationDelta);
+    if (Number.isFinite(minDelta) && minDelta >= 0) spec.minMutationDelta = Math.floor(minDelta);
+    return Object.keys(spec).length ? spec : null;
+  }
+
+  function evaluateExpectations(spec, before) {
+    const expectations = [];
+    let verified = true;
+    const check = (key, pass) => {
+      expectations.push({ key, pass: pass === true });
+      verified = verified && pass === true;
+    };
+    const url = String(location.href);
+    if ('urlContains' in spec) check('urlContains', url.toLowerCase().includes(spec.urlContains));
+    if ('urlChanged' in spec) check('urlChanged', url !== String(before.url || ''));
+    if ('selectorAppears' in spec) {
+      try { check('selectorAppears', document.querySelector(spec.selectorAppears) != null); } catch { check('selectorAppears', false); }
+    }
+    if ('selectorGone' in spec) {
+      try { check('selectorGone', document.querySelector(spec.selectorGone) == null); } catch { check('selectorGone', false); }
+    }
+    if ('textGone' in spec) check('textGone', !(document.body?.innerText || '').toLowerCase().includes(spec.textGone));
+    if ('minMutationDelta' in spec) check('minMutationDelta', (mutationVersion - Number(before.beforeMutationVersion ?? mutationVersion)) >= spec.minMutationDelta);
+    return { verified, expectations };
   }
 
   async function waitForPostActionSettle(maxWaitMs = 400, stableRoundsRequired = 2) {
@@ -768,6 +805,11 @@
     const beforeMutationVersion = Number.isFinite(Number(before.beforeMutationVersion))
       ? Number(before.beforeMutationVersion)
       : mutationVersion;
+    const expectSpec = normalizeExpectSpec(args.expect);
+    const verification = expectSpec ? evaluateExpectations(expectSpec, before) : null;
+    const fallbackHref = verification && !verification.verified && target instanceof HTMLAnchorElement && target.href
+      ? String(target.href)
+      : null;
     return {
       schemaVersion: 1,
       documentId,
@@ -782,21 +824,33 @@
         ref: String(args.ref || ''),
         present: !!target
       },
-      completionClaim: false
+      completionClaim: false,
+      ...(verification ? { verified: verification.verified, expectations: verification.expectations } : {}),
+      ...(fallbackHref ? { fallbackHref } : {})
     };
   }
 
   async function clickSynthetic(args) {
-    const el = resolveActionRef(args.ref);
+    const attempts = Math.max(1, Math.min(3, Number(args.retry?.attempts) || 1));
+    let el = resolveActionRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
-    const before = preparePostAction(args.ref);
-    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
-    el.focus?.({ preventScroll: true });
-    el.click();
-    const postAction = await postActionEvidence({ ref: args.ref, before });
-    return { ok: true, ref: args.ref, method: 'synthetic', postAction };
+    let result = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      el = resolveActionRef(args.ref);
+      if (!el) break;
+      const before = preparePostAction(args.ref);
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      el.focus?.({ preventScroll: true });
+      el.click();
+      const postAction = await postActionEvidence({ ref: args.ref, before, expect: args.expect });
+      result = { ok: true, ref: args.ref, method: 'synthetic', attempts: attempt, postAction };
+      if (postAction.verified !== false) break;
+      if (el instanceof HTMLAnchorElement && el.href) result.fallbackHref = String(el.href);
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return result;
   }
 
   function fill(args) {
@@ -1066,6 +1120,10 @@
   async function waitFor(args) {
     const timeoutMs = clamp(args.timeoutMs, 50, 30000, 8000);
     const intervalMs = clamp(args.intervalMs, 25, 1000, 75);
+    const absent = args.absent === true;
+    if (absent && !args.ref && !args.selector && !args.text) {
+      throw new Error('absent wait requires ref, selector, or text.');
+    }
     const deadline = Date.now() + timeoutMs;
     const text = clean(args.text, 300).toLowerCase();
     while (Date.now() <= deadline) {
@@ -1087,10 +1145,16 @@
         }
         return stateMatches(el, args.state);
       });
-      if (found) return { ok: true, item: serialize(found, { includeValue: !!args.includeValue }) };
+      if (absent) {
+        if (!found) return { ok: true, absent: true };
+      } else if (found) {
+        return { ok: true, item: serialize(found, { includeValue: !!args.includeValue }) };
+      }
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
-    return { ok: false, error: 'wait_for timeout' };
+    return absent
+      ? { ok: false, error: 'wait_for timeout', stillPresent: true }
+      : { ok: false, error: 'wait_for timeout' };
   }
 
   function mediaElement(index = 0) {

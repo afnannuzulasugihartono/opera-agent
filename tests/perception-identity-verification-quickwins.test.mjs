@@ -11,6 +11,7 @@ const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), '
 const runner = read('../supabase/functions/opera-agent-runner/index.ts');
 const mcp = read('../supabase/functions/opera-agent-mcp/index.ts');
 const content = read('../extension/content.js');
+const background = read('../extension/background.js');
 
 test('V2: workflow runner reports statement timeouts as unknown outcome, not failure', () => {
   assert.match(runner, /AWAIT_OUTCOME_UNKNOWN/);
@@ -47,4 +48,13 @@ test('G1: MCP guidance covers visual surfaces, Docs-like fallbacks, Maps viewpor
   assert.match(mcp, /target an ancestor clickable element or capture the page/);
   assert.match(mcp, /Maps search results are viewport-scoped/);
   assert.match(mcp, /verify the page state before repeating the action/);
+});
+
+test('V3: a loop-top burst timeout preserves completed steps as an unknown outcome', () => {
+  assert.match(background, /timedOut: true/);
+  assert.match(background, /BURST_TIMEOUT/);
+  assert.match(background, /completed steps may have taken effect/);
+  // The partial return must sit at the loop-top deadline check (before the
+  // step executes), keeping the successful prefix in `results`.
+  assert.match(background, /if \(remainingMs < 50\) \{\s*\n\s*return \{[^}]*?timedOut: true/s);
 });
