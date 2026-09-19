@@ -16,6 +16,21 @@ preserved at `archive/local-session-r6-wip` before alignment. Branch cleanup
 proceeds by immutable archive tags (`archive/<branch>`) so every deleted ref
 remains recoverable.
 
+Consolidation executed on 2026-09-19: `main` fast-forwarded to the accepted
+head `caa5c7b` (R0–R6 closed + binding AGENTS.md rules). Thirty remote branches
+were archive-tagged at `archive/<name>` and deleted. Divergent-line decisions:
+`chore/drift-proof-governance` (separate state-checker authority approach
+already rejected in PR #51; its anti-drift intent is superseded by the binding
+AGENTS.md session/branch rules), `perf/efficient-flexible-agent` (superseded by
+the accepted performance track P0–P6), `fix/chat-control-fallback` (superseded
+by 8D + hardening closeouts), `next/opera-agent-v2` (quarantined experiment,
+kept out of 1.x by design), `autodev/m5-chatgpt-legal-loop` (stale AutoDev
+state), `ops/p6-production-bundle` (P6 bundle long promoted), and
+`chore/sync-production-migration-ids` / `release/new-signing-identity` /
+small `feat/*`+`fix/*`+`docs/*` branches (content fully contained in or
+superseded by the accepted line). Remaining remote branches: `main`,
+`feat/pre-8e-usability-repair-r3` (active), `release/1.3.0`, `release/1.3.1`.
+
 ## Latest repair continuation — read before historical instructions below
 
 Continue the user's explicit R6–R8 request sequentially, not Milestone 8E.
