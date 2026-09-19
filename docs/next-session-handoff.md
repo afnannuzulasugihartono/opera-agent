@@ -1,6 +1,6 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-19.
+Last synchronized: 2026-09-20.
 
 ## Consolidation authorization — 2026-09-19 (supersedes the main-merge caution below)
 
@@ -16,8 +16,9 @@ preserved at `archive/local-session-r6-wip` before alignment. Branch cleanup
 proceeds by immutable archive tags (`archive/<branch>`) so every deleted ref
 remains recoverable.
 
-Consolidation executed on 2026-09-19: `main` fast-forwarded to the accepted
-head `caa5c7b` (R0–R6 closed + binding AGENTS.md rules). Thirty remote branches
+Consolidation executed on 2026-09-19/20: `main` fast-forwarded to the accepted
+head `608f76c` (R0–R6 closed + binding AGENTS.md rules + consolidation records).
+Thirty remote branches
 were archive-tagged at `archive/<name>` and deleted. Divergent-line decisions:
 `chore/drift-proof-governance` (separate state-checker authority approach
 already rejected in PR #51; its anti-drift intent is superseded by the binding
@@ -367,7 +368,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action for any coding agent (including Z Code):** R6 T031 is accepted at `3d21ecc58cfece6e55f40433525a7a6c1db27800` with CircleCI #258 + Vercel SUCCESS. Execute T032 only: quantify residual workflow/command queue and transport share. If that evidence still justifies Realtime wake, T033 requires a separate reviewed transport scope. Milestone 8E remains paused/not started.
+**Exact next product action for any coding agent (including Z Code):** R0–R6 are ACCEPTED/CLOSED and the consolidated `main` head is `608f76c` (CI SUCCESS). Execute **R7 / T034–T038** (YouTube workflow cleanup) on `feat/pre-8e-usability-repair-r3`: add output-shape/timing tests for `youtube.get_transcript` (T034), reduce redundant query/wait/activation while preserving background-first fallback (T035), exclude unrelated comments/recommendations/sponsored content from primary transcript output where safely possible (T036), demonstrate >=50% improvement from the ~20.514 s frozen baseline or record an evidence-backed residual bottleneck (T037), then STOP for R7 acceptance on the standing CI-evidence basis (T038). Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 

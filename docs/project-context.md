@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-19
+Last synchronized: 2026-09-20
 
 ## Latest repair continuation (takes precedence over historical entries below)
 
@@ -60,11 +60,14 @@ without adding another governance framework.
   remains open because its signing/passive-update follow-up is not fully obsolete.
 - `main` remains intentionally behind the active repair branch and must not be
   used as the current implementation baseline. Do not merge the in-progress R6
-  track into `main` merely to reduce branch count.
+  track into `main` merely to reduce branch count. (Superseded 2026-09-20 by the
+  consolidation note above: R6 is closed, `main` is fast-forwarded to the
+  accepted head, and merging closed checkpoints into `main` is required.)
 
 This hardening changes no extension/runtime/public MCP contract, production
 deployment, signing identity, or Milestone 8E authorization. The exact next product
-work remains **R6 T032 residual queue/transport measurement only**.
+work is **R7 T034–T038 YouTube workflow cleanup**, authorized under the standing
+CI-evidence authorization.
 
 ## Current boundary
 
