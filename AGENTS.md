@@ -46,6 +46,47 @@ rules over overlapping process.
   `supabase/migrations/`. Do not maintain a hand-picked safety-file list.
 - Temporary diagnostic PRs and branches must be closed/removed after their evidence
   is captured. Do not create a branch per task unless isolation is actually needed.
+
+### Session and branch lifecycle (binding)
+
+These rules exist because past sessions violated them; each maps to a real
+failure that cost reconciliation work. They are not advisory.
+
+1. **One writer per checkout.** Never run or continue a session that writes the
+   same working tree while another session may be active. Before the first
+   write, verify `git status` is clean and `HEAD` equals the SHA recorded in
+   `docs/next-session-handoff.md`. If the tree is dirty or the head is unknown,
+   STOP: preserve the state to an `archive/<topic>` branch, record it in the
+   handoff, and align to the canonical branch before doing anything else.
+2. **No session ends dirty or diverged.** A session may not stop with
+   uncommitted changes or unpushed commits. Commit with a descriptive message,
+   push, and record the exact head SHA in the handoff. Incomplete work is
+   recorded as exact state, not left in the working tree.
+3. **`main` is the consolidated truth.** At every checkpoint close (CI green on
+   the evidence head), `main` is fast-forwarded to that head with
+   `--ff-only`. `main` must never lag the accepted state by more than one
+   closed checkpoint, and its README/version documentation must match the
+   artifacts the update service actually serves. Do not merge an *in-progress*
+   checkpoint into `main`.
+4. **Branches are born to die.** A work branch exists for one bounded track and
+   is merged or archive-tagged when it closes. Before deleting any ref, create
+   an immutable archive tag (`archive/<branch-name>`) pointing at its tip so
+   nothing is unrecoverable. A healthy remote holds only: `main`, the one
+   active work branch, explicit `release/*` branches, and `archive/*` tags.
+5. **Divergent lines need a decision, not neglect.** Any remote branch not
+   contained in the active line is either (a) merged, (b) cherry-picked for
+   unique value, or (c) archive-tagged and deleted with a one-line recorded
+   reason in the handoff. Unreviewed divergent branches older than the current
+   checkpoint are not allowed to accumulate.
+6. **Preserve before overwrite.** Never discard or reset away work you did not
+   create without archiving it first. Parallel-session work is assumed valuable
+   until inspected.
+7. **Acceptance basis is CI evidence.** Checkpoint acceptance = CircleCI +
+   Vercel SUCCESS on the exact evidence head plus a durable evidence record,
+   per the standing authorization of 2026-09-19. Production deployment, signed
+   release promotion, transport cutover, and Milestone 8E start remain separate
+   explicit user decisions and are never granted by CI green alone.
+
 - When the required CI on an exact head turns green, synchronize the task list,
   roadmap, project context, and handoff before starting the next task. Never leave
   the documented exact-next action pointing at work that is already green.
