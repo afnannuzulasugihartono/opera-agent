@@ -107,7 +107,7 @@ test('7F keeps the 1.6.0 public surface and frozen read-only VM effect policy un
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 18);
-  assert.equal(contract.inventory.digest, 'sha256:c237a95687b3c93f822363f86d8cb3e419e66abd7207084114cbcfbc607e7dc8');
+  assert.equal(contract.inventory.digest, 'sha256:3f879c35ef89d30075d0ed9be08965f75f25f34f19a697f2b00fbe4b21a25137');
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

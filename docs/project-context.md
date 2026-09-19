@@ -424,6 +424,15 @@ Git blob `74a82bdc182698f11e2ccbe955f39ebb2e2ed86a` and canonical SHA-256
 `4cf462a3cd4683b20e17fe2679e8dc762706129088b33a1c339826c6b43e31fb`; P2/P3 additionally assert that compact selection is internal and
 that no public Zod `view` input exists.
 
+CircleCI #243 on the first lock-rebaseline head improved the unit/static gate from
+419/426 to 423/426 PASS. The three remaining failures were fully derived contract
+values, not runtime regressions: the 6A and 8A baseline fixtures still embedded the
+pre-R4 MCP SHA-256, and the Milestone 7 inventory digest still embedded that old
+MCP source digest. The exact recomputed inventory digest reported by the canonical
+7A test is `sha256:3f879c35ef89d30075d0ed9be08965f75f25f34f19a697f2b00fbe4b21a25137`. The follow-up rebaseline updates only those derived
+fixture/test constants; Protocol 1, 26 primitives, 18 tools, `read_page` schema,
+runtime code, production state, and safety assertions remain unchanged.
+
 ## Governance / next boundary
 
 - one active writer;
