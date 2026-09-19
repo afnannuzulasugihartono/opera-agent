@@ -220,7 +220,10 @@ function bootstrap(pipeline, id = identity(), context = taskContext()) {
 }
 
 function sha1Blob(bytes) {
-  return createHash('sha1').update(Buffer.from(`blob ${bytes.length}\0`)).update(bytes).digest('hex');
+  // Lock constants are git blob hashes of the committed LF bytes; strip
+  // checkout-added CR so autocrlf checkouts hash identically to CI.
+  const content = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+  return createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
 
 test('P3 exports the frozen three-outcome relevance vocabulary and bounded signal types', () => {
