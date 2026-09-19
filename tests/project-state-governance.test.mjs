@@ -8,12 +8,16 @@ const statePath = resolve(root, 'PROJECT_STATE.json');
 const agentsPath = resolve(root, 'AGENTS.md');
 const checkerPath = resolve(root, 'scripts', 'check-project-state.mjs');
 const packagePath = resolve(root, 'package.json');
+const handoffPath = resolve(root, 'docs', 'next-session-handoff.md');
 
 function parseTasks(markdown) {
   const rows = [];
+  let checkpoint = null;
   for (const line of markdown.split(/\r?\n/)) {
+    const phase = line.match(/^## Phase (R\d+)\b/);
+    if (phase) checkpoint = phase[1];
     const match = line.match(/^- \[([ xX])\] (T\d{3})\b/);
-    if (match) rows.push({ id: match[2], complete: match[1].toLowerCase() === 'x' });
+    if (match) rows.push({ id: match[2], complete: match[1].toLowerCase() === 'x', checkpoint });
   }
   return rows;
 }
@@ -42,6 +46,11 @@ test('PROJECT_STATE next task agrees with canonical Spec Kit tasks', () => {
   const nextIndex = tasks.findIndex((task) => task.id === state.next.task);
   assert.notEqual(nextIndex, -1, `next task ${state.next.task} must exist in canonical tasks.md`);
   assert.equal(tasks[nextIndex].complete, false, `next task ${state.next.task} must still be unchecked`);
+  assert.equal(
+    tasks[nextIndex].checkpoint,
+    state.activeCheckpoint,
+    `next task ${state.next.task} must belong to active checkpoint ${state.activeCheckpoint}`,
+  );
 
   const earlierIncomplete = tasks.slice(0, nextIndex).filter((task) => !task.complete);
   assert.deepEqual(
@@ -83,4 +92,14 @@ test('project-state checker is part of the normal static gate', () => {
     /check-project-state\.mjs/,
     'npm run check must execute the project-state drift checker',
   );
+});
+
+
+test('handoff delegates exact-next authority to PROJECT_STATE instead of historical prose', () => {
+  const handoff = readFileSync(handoffPath, 'utf8');
+  const top = handoff.split(/\r?\n/).slice(0, 30).join('\n');
+
+  assert.match(top, /PROJECT_STATE\.json/);
+  assert.match(top, /exact next/i);
+  assert.match(top, /authoritative|authority/i);
 });
