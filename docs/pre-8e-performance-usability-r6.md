@@ -62,6 +62,26 @@ no completed production `media.seek` commands in the measured window and R5 was
 not production-promoted. Controlled R5 acceptance separately proves the <=1000 ms
 ready-media gate without navigation/reload.
 
+## T031 tests-first and implementation candidate
+
+Tests-first head `0f3f883254e2b30f4406842f01b8013832a04d5a` produced the
+expected CircleCI #254 red gate. The only new failing test is
+`R6 YouTube recommendation prefers local SPA click with bounded navigation fallback`;
+the current latest `youtube.play_recommendation` workflow still opens the freshly
+queried recommendation with direct `tabs.navigate`.
+
+Repository source fully explains the defect, so no upstream/platform research is
+needed. The minimal versioned repair leaves historical migrations untouched and:
+1. uses the fresh `steps.rec.result.item.ref` with trusted local `page.click`;
+2. waits at most 2500 ms for `ytd-watch-flexy` to establish the SPA transition;
+3. falls back to `tabs.navigate` to the already-observed href only when that local
+   transition does not materialize or a fresh ref is unavailable;
+4. preserves the existing final watch/video waits and ad/media handling.
+
+No public surface, protocol, browser primitive, production schema, VM, auth/signing,
+or transport change is included. Implementation CI must be green before T031 is
+marked complete.
+
 ## Continuation boundary
 
 Exact next: **T031 only** — identify behavior-equivalent navigation/reload paths
