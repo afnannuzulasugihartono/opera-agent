@@ -128,7 +128,7 @@ test('P5 frozen boundary remains locked except the P6-authorized Reactive VM cut
     ['../extension/content.js', 'd8d48b17d4bc74c0fae24e9c6fa07bd2c6988cbc'],
     ['../extension/background.js', 'cba4e583e331362f2c9d9c7f73394be327bdb31d'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', 'a2f91e096d9c48ba7d40d82c9ce725dfb7bd3668'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '74a82bdc182698f11e2ccbe955f39ebb2e2ed86a'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));

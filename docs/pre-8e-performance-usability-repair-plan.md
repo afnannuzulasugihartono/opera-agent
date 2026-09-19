@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair Plan
 
-Status: **R0–R2 ACCEPTED / CLOSED; R3 AUTHORIZED / IN PROGRESS**
+Status: **R0–R3 ACCEPTED / CLOSED; R4 AUTHORIZED / IN PROGRESS**
 
 Created: 2026-09-18
 

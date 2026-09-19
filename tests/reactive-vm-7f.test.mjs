@@ -22,7 +22,7 @@ const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import
 const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url));
 
-const EXPECTED_MCP_SHA256 = 'b1918892c74f0bd7ac8456321cf74b48c2d9db87bcbd9891ae5acbaceccc8161';
+const EXPECTED_MCP_SHA256 = '4cf462a3cd4683b20e17fe2679e8dc762706129088b33a1c339826c6b43e31fb';
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',

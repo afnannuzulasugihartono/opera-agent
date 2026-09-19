@@ -529,7 +529,7 @@ test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cut
     ['../extension/content.js', 'd8d48b17d4bc74c0fae24e9c6fa07bd2c6988cbc'],
     ['../extension/background.js', 'cba4e583e331362f2c9d9c7f73394be327bdb31d'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', 'a2f91e096d9c48ba7d40d82c9ce725dfb7bd3668'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '74a82bdc182698f11e2ccbe955f39ebb2e2ed86a'],
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
@@ -540,7 +540,8 @@ test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cut
   }
   const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   assert.match(mcp, /server\.registerTool\("read_page"/);
-  assert.match(mcp, /=> execute\("page\.read", args\)\);/);
+  assert.match(mcp, /execute\("page\.read", \{ \.\.\.args, view: "compact" \}\)\);/);
+  assert.doesNotMatch(mcp, /view:\s*z\./);
   assert.doesNotMatch(mcp, /multi-signal-relevance-p3/);
   const p3Source = await readFile(new URL('../lib/multi-signal-relevance-p3.js', import.meta.url), 'utf8');
   assert.doesNotMatch(p3Source, /reactive-vm|vm\.run|executeVm|resumeVm/);

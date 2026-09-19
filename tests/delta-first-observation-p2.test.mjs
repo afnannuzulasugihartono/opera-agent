@@ -547,12 +547,12 @@ test('P2 does not synthesize completion or foreground/browser authority', () => 
   assert.doesNotMatch(encoded, /activate_tab|executionMode|foreground|page\.click|page\.fill|pointer/i);
 });
 
-test('P2 leaves extension bytes and existing read_page/public MCP source unchanged', async () => {
+test('P2 keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
   const files = new Map([
     ['../extension/content.js', 'd8d48b17d4bc74c0fae24e9c6fa07bd2c6988cbc'],
     ['../extension/background.js', 'cba4e583e331362f2c9d9c7f73394be327bdb31d'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', 'a2f91e096d9c48ba7d40d82c9ce725dfb7bd3668'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '74a82bdc182698f11e2ccbe955f39ebb2e2ed86a'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
@@ -560,7 +560,8 @@ test('P2 leaves extension bytes and existing read_page/public MCP source unchang
   }
   const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   assert.match(mcp, /server\.registerTool\("read_page"/);
-  assert.match(mcp, /=> execute\("page\.read", args\)\);/);
+  assert.match(mcp, /execute\("page\.read", \{ \.\.\.args, view: "compact" \}\)\);/);
+  assert.doesNotMatch(mcp, /view:\s*z\./);
   assert.doesNotMatch(mcp, /delta-first-observation-p2/);
 });
 

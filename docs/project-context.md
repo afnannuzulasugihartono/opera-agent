@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-18
+Last synchronized: 2026-09-19
 
 Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 `SECURITY.md`, accepted checkpoint records, and the selected execution plan.
@@ -412,6 +412,17 @@ bounded delta evidence and a small set of changed/actionable/in-viewport non-
 sensitive elements. Legacy/default primitive `page.read` and explicit
 `view=full` remain full; public MCP `read_page` selects compact mode internally
 without adding a public input field.
+
+R4 implementation head `6887663421882df099fc70d2a4ba12ae7e442f29`
+reached CircleCI #242, where 419/426 unit tests passed and all seven failures were
+historical MCP source/byte locks: four Git-blob SHA-1 locks still expected the
+pre-R4 MCP file, while 6E/7F/semantic-release still expected the pre-R4 canonical
+SHA-256. The new R4 compatibility tests themselves passed: Protocol 1, 26 browser
+primitives, 18 public MCP tools, and the frozen `read_page` input schema remained
+unchanged. The repair rebaselines only those authorized internal-source locks to
+Git blob `74a82bdc182698f11e2ccbe955f39ebb2e2ed86a` and canonical SHA-256
+`4cf462a3cd4683b20e17fe2679e8dc762706129088b33a1c339826c6b43e31fb`; P2/P3 additionally assert that compact selection is internal and
+that no public Zod `view` input exists.
 
 ## Governance / next boundary
 
