@@ -2,6 +2,26 @@
 
 Last synchronized: 2026-09-20.
 
+## R7 closeout — 2026-09-20 (read first)
+
+R7 (T034–T038) is **IMPLEMENTED / CLOSED on CI evidence** under the standing
+authorization. `youtube.get_transcript` v5 (migration
+`20260920090000_pre_8e_r7_transcript_cleanup.sql`) collects transcript segments
+directly (`ytd-transcript-segment-renderer`, limit 100, visibleOnly false) as
+the primary path with the v4 chunked full-text reader preserved verbatim as the
+bounded fallback; the unconditional `previousActive` read moved into the
+activation branch; primary output carries segments only (no full-page text
+noise). T037 closed via its evidence-backed residual-bottleneck clause: the
+frozen 20.514s baseline is a single non-distributional run (v3 measured 4.6s
+p50 with a one-parameter diff), and the recorded residual is the panel-open/
+render wait path — needing R8 real-Opera distribution data or a redesign beyond
+R7 scope. Evidence: `docs/pre-8e-performance-usability-r7.md`. Production DB
+access is available read-only via `SUPABASE_ACCESS_TOKEN` (user env var; token
+`opera-agent-zcode`, Read-only preset, project-scoped, expires 2026-12-19).
+**Exact next: R8 / T039–T045 — blocked on an Opera environment** (install Opera
++ pair the candidate extension, then run the original YouTube prompt for
+T039–T041). Milestone 8E remains paused.
+
 ## Consolidation authorization — 2026-09-19 (supersedes the main-merge caution below)
 
 The user reviewed the repository survey (32 remote branches, four divergent

@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R6 ACCEPTED / CLOSED (R6 closed without transport migration; acceptance on CI evidence per the 2026-09-19 standing authorization). R7 is AUTHORIZED / NOT STARTED. T031 exact head `3d21ecc58cfece6e55f40433525a7a6c1db27800` has CircleCI #258 + Vercel SUCCESS. Canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS.
+**Status**: R0–R7 ACCEPTED / CLOSED (R7 accepted on CI evidence per the 2026-09-19 standing authorization; T037 closed via its evidence-backed residual-bottleneck clause). R8 is AUTHORIZED / NOT STARTED — T039–T041 require a real-Opera environment this workstation lacks. T031 exact head `3d21ecc58cfece6e55f40433525a7a6c1db27800` has CircleCI #258 + Vercel SUCCESS. Canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -64,11 +64,11 @@
 
 ## Phase R7 — YouTube workflow cleanup
 
-- [ ] T034 [US4] Add output-shape/timing tests for `youtube.get_transcript`.
-- [ ] T035 [US4] Reduce redundant query/wait/activation operations while preserving background-first fallback behavior.
-- [ ] T036 [US4] Make primary transcript/content output exclude unrelated comments/recommendations/sponsored content where safely possible.
-- [ ] T037 [US4] Demonstrate >=50% improvement from ~20.514s frozen baseline or record evidence-backed residual bottleneck.
-- [ ] T038 STOP for R7 acceptance before full end-to-end test.
+- [x] T034 [US4] Add output-shape/timing tests for `youtube.get_transcript`.
+- [x] T035 [US4] Reduce redundant query/wait/activation operations while preserving background-first fallback behavior.
+- [x] T036 [US4] Make primary transcript/content output exclude unrelated comments/recommendations/sponsored content where safely possible.
+- [x] T037 [US4] Demonstrate >=50% improvement from ~20.514s frozen baseline or record evidence-backed residual bottleneck.
+- [x] T038 STOP for R7 acceptance before full end-to-end test.
 
 ## Phase R8 — Full acceptance and closeout
 
