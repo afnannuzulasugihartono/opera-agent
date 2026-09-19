@@ -270,10 +270,31 @@ async function runCommandOnce(
 
   const commandId = String(enqueued.commandId);
   const remainingMs = Math.max(100, Math.min(55000, workflowDeadline - Date.now()));
-  const awaited = await rpc("opera_await", {
-    p_command_id: commandId,
-    p_timeout_ms: remainingMs
-  });
+  let awaited: any;
+  try {
+    awaited = await rpc("opera_await", {
+      p_command_id: commandId,
+      p_timeout_ms: remainingMs
+    });
+  } catch (error) {
+    // A server-side statement timeout cancels the WAIT, not the command: the
+    // browser may still complete it. Report the outcome as unknown instead of
+    // failed so callers verify state instead of blindly retrying.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/statement timeout/i.test(message)) {
+      return {
+        ok: false,
+        commandId,
+        status: "timeout",
+        outcome: "unknown",
+        error: {
+          code: "AWAIT_OUTCOME_UNKNOWN",
+          message: "The server stopped waiting before the browser reported back; the action may still have succeeded. Verify the page state before repeating the action."
+        }
+      };
+    }
+    throw error;
+  }
 
   if (awaited?.ok) {
     return {

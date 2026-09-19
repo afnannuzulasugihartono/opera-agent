@@ -2,6 +2,28 @@
 
 Last synchronized: 2026-09-20.
 
+## Research + quick wins — 2026-09-20 (perception / identity / verification)
+
+Owner field tests across nine hard websites (Figma, Maps, Miro, YouTube, Docs,
+X, Instagram, 2048, Browserling) were turned into a method matrix in
+`docs/research/perception-identity-verification-2026-09-20.md` (classes P/I/V,
+code-verified attachment points, measured production tail data). Implemented in
+this session (gates green, hash locks rebaselined with recorded reasons):
+(1) statement timeouts now report `outcome:"unknown"` / `AWAIT_OUTCOME_UNKNOWN`
+in the workflow runner and MCP `toolError` instead of a raw failure — verify
+state before retrying; (2) `page.read`/`query` items gain `fullyInViewport` and
+`viewportClipped` (overlap vs containment truth; explains Maps `x=-344`);
+(3) model-facing label/text/name/placeholder strips private-use glyphs and
+`Visited link` suffixes (fixes exact-match brittleness); (4) MCP instructions
+add guidance: canvas/visual surfaces → `capture_page`; find-0-with-visible-text
+→ ancestor clickable or capture; Maps results are viewport-scoped; verify state
+before repeating after timeouts. Proposed checkpoints awaiting authorization:
+U-V1 (expect param + burst partial results), U-P1 (CDP accessibility-tree
+observation — flagship for canvas/shadow/virtualized), U-I (geometry-aware ref
+validation + ambiguity-ranked find), U-P3 (stale semantic pruning), U-P2
+(vision sampling). MCP/runner changes are code-only — **deploying the Edge
+Functions to production remains a separate explicit decision**.
+
 ## R7 closeout — 2026-09-20 (read first)
 
 R7 (T034–T038) is **IMPLEMENTED / CLOSED on CI evidence** under the standing

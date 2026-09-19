@@ -43,6 +43,17 @@
     return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
+  // Model-facing labels pick up private-use glyphs (icon fonts) and status
+  // suffixes like "Visited link" that break exact matching; strip them before
+  // the text reaches results or find matching.
+  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\u200D\uFEFF]/g;
+  const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
+  function normalizeObservableText(value, max = 500) {
+    const text = clean(value, max + 40).replace(PUA_GLYPH_RE, ' ').replace(/\s+/g, ' ').trim();
+    const untagged = VISITED_SUFFIX_RE.test(text) ? text.replace(VISITED_SUFFIX_RE, '').trim() : text;
+    return untagged.slice(0, max);
+  }
+
   function normalizeText(value) {
     return String(value ?? '')
       .replace(/\r\n?/g, '\n')
@@ -212,29 +223,51 @@
     };
   }
 
-  function isInViewport(el) {
-    if (!isVisible(el)) return false;
-    let rect = el.getBoundingClientRect();
-    if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) return false;
+  // inViewport keeps its original overlap semantics; fullyInViewport adds
+  // strict viewport containment and viewportClipped reports whether an
+  // ancestor's overflow box actually cut the element (transformed Maps-style
+  // panels report large negative x without any ancestor clipping).
+  function viewportFlags(el) {
+    if (!isVisible(el)) return { inViewport: false, fullyInViewport: false, viewportClipped: false };
+    const rect = el.getBoundingClientRect();
+    if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) {
+      return { inViewport: false, fullyInViewport: false, viewportClipped: false };
+    }
+    let left = rect.left;
+    let right = rect.right;
+    let top = rect.top;
+    let bottom = rect.bottom;
+    let clippedByAncestor = false;
     for (let parent = el.parentElement; parent; parent = parent.parentElement) {
       const style = getComputedStyle(parent);
       const clipsX = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowX);
       const clipsY = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowY);
       if (!clipsX && !clipsY) continue;
       const parentRect = parent.getBoundingClientRect();
-      const left = clipsX ? Math.max(rect.left, parentRect.left) : rect.left;
-      const right = clipsX ? Math.min(rect.right, parentRect.right) : rect.right;
-      const top = clipsY ? Math.max(rect.top, parentRect.top) : rect.top;
-      const bottom = clipsY ? Math.min(rect.bottom, parentRect.bottom) : rect.bottom;
-      if (right <= left || bottom <= top) return false;
-      rect = { left, right, top, bottom };
+      const newLeft = clipsX ? Math.max(left, parentRect.left) : left;
+      const newRight = clipsX ? Math.min(right, parentRect.right) : right;
+      const newTop = clipsY ? Math.max(top, parentRect.top) : top;
+      const newBottom = clipsY ? Math.min(bottom, parentRect.bottom) : bottom;
+      if (newRight <= newLeft || newBottom <= newTop) {
+        return { inViewport: false, fullyInViewport: false, viewportClipped: true };
+      }
+      if (newLeft !== left || newRight !== right || newTop !== top || newBottom !== bottom) clippedByAncestor = true;
+      left = newLeft;
+      right = newRight;
+      top = newTop;
+      bottom = newBottom;
     }
-    return true;
+    const fully = left >= 0 && top >= 0 && right <= innerWidth && bottom <= innerHeight;
+    return { inViewport: true, fullyInViewport: fully, viewportClipped: clippedByAncestor };
+  }
+
+  function isInViewport(el) {
+    return viewportFlags(el).inViewport;
   }
 
   function actionabilityState(el, sensitiveReason = undefined) {
     const visible = isVisible(el);
-    const inViewport = visible && isInViewport(el);
+    const viewport = visible ? viewportFlags(el) : { inViewport: false, fullyInViewport: false, viewportClipped: false };
     const sensitive = sensitiveReason === undefined ? !!sensitiveDescriptor(el) : !!sensitiveReason;
     const ariaDisabled = clean(el?.getAttribute?.('aria-disabled'), 20).toLowerCase() === 'true';
     const nativeDisabled = !!(el && 'disabled' in el && el.disabled);
@@ -243,10 +276,12 @@
     const pointerEnabled = visible && getComputedStyle(el).pointerEvents !== 'none';
     return {
       visible,
-      inViewport,
+      inViewport: viewport.inViewport,
+      fullyInViewport: viewport.fullyInViewport,
+      viewportClipped: viewport.viewportClipped,
       enabled,
       sensitive,
-      actionable: visible && inViewport && enabled && !sensitive && pointerEnabled
+      actionable: visible && viewport.inViewport && enabled && !sensitive && pointerEnabled
     };
   }
 
@@ -347,12 +382,12 @@
       ref: getRef(el),
       tag: String(el.tagName || '').toLowerCase(),
       role: clean(el.getAttribute?.('role'), 80),
-      text: clean(el.innerText || el.textContent || '', 300),
-      label: getAssociatedLabel(el),
+      text: normalizeObservableText(el.innerText || el.textContent || '', 300),
+      label: normalizeObservableText(getAssociatedLabel(el), 300),
       href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
       type: clean(el.getAttribute?.('type'), 80),
-      name: clean(el.getAttribute?.('name'), 120),
-      placeholder: clean(el.getAttribute?.('placeholder'), 200),
+      name: normalizeObservableText(el.getAttribute?.('name'), 120),
+      placeholder: normalizeObservableText(el.getAttribute?.('placeholder'), 200),
       checked: 'checked' in el ? !!el.checked : undefined,
       selected: 'selected' in el ? !!el.selected : undefined,
       disabled: 'disabled' in el ? !!el.disabled : undefined,
@@ -362,6 +397,8 @@
       ariaSelected: el.getAttribute?.('aria-selected') ?? null,
       visible: actionability.visible,
       inViewport: actionability.inViewport,
+      fullyInViewport: actionability.fullyInViewport,
+      viewportClipped: actionability.viewportClipped,
       sensitive: actionability.sensitive,
       actionable: actionability.actionable,
       rect: rectOf(el)

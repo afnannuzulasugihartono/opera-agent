@@ -496,8 +496,8 @@
     "protocolVersion": 1,
     "browserCapabilities": 26,
     "publicMcpTools": 18,
-    "mcpSourceSha256": "4cf462a3cd4683b20e17fe2679e8dc762706129088b33a1c339826c6b43e31fb",
-    "milestone7InventoryDigest": "sha256:3f879c35ef89d30075d0ed9be08965f75f25f34f19a697f2b00fbe4b21a25137"
+    "mcpSourceSha256": "e30bae10a02ec88c32285d6690f37ed645a46bd54e36f0c00bcb254b331ba35c",
+    "milestone7InventoryDigest": "sha256:f80435fb160a2e38d13f72b85e74a59ba3790d46d3ba111c591c1efd3d78177c"
   },
   "checkpointBoundary": {
     "runtimeChanges": [],

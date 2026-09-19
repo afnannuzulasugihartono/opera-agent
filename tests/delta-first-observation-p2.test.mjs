@@ -549,10 +549,10 @@ test('P2 does not synthesize completion or foreground/browser authority', () => 
 
 test('P2 keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
   const files = new Map([
-    ['../extension/content.js', 'd8d48b17d4bc74c0fae24e9c6fa07bd2c6988cbc'],
+    ['../extension/content.js', 'fa219a561a7e750a68ffccee42bafec324942eeb'],
     ['../extension/background.js', 'cba4e583e331362f2c9d9c7f73394be327bdb31d'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '74a82bdc182698f11e2ccbe955f39ebb2e2ed86a'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', 'bd1e0eadf69096e0e134c5b128801dc1495322a6'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
