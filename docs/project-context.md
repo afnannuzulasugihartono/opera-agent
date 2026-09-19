@@ -446,6 +446,20 @@ R4 is now a closeout candidate only; final ACCEPTED/CLOSED status requires
 CircleCI + Vercel SUCCESS on the exact documentation closeout head. R5 is not
 started in this session.
 
+R4 is now ACCEPTED/CLOSED. Closeout head
+`c2f2875686014439404b47518f9cc1789e202a7f` has CircleCI #245 + Vercel
+SUCCESS.
+
+R5 is authorized/in progress. Before T026, repository search plus read-only
+production registry/history inspection proved there is no existing URL timestamp
+or reload-based media seek workflow to rewrite. Existing YouTube
+`tabs.navigate` calls change pages/videos and must remain navigation. T026
+therefore locks the smallest safe design: a new internal workflow
+`media.sample_at` must use existing `media.state`, `media.pause`,
+`media.seek`, and `media.play`, preserve prior playback state, forbid
+`tabs.navigate`/`tabs.reload` and timestamp-URL seeking inside that workflow,
+and remain absent from the 18-tool public MCP surface.
+
 ## Governance / next boundary
 
 - one active writer;

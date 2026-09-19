@@ -54,7 +54,7 @@ required full gates before normal checkpoint work resumes.
 
 ## Constitution Check
 
-**PASS for R4 closeout candidate. R0–R3 are accepted/closed; R4 implementation/evidence gates pass at CircleCI #244 + Vercel SUCCESS; final acceptance awaits exact-head closeout CI.**
+**PASS for R5 implementation. R0–R4 are accepted/closed; R4 closeout head `c2f2875686014439404b47518f9cc1789e202a7f` has CircleCI #245 + Vercel SUCCESS; R5 is authorized/in progress.**
 
 - Repository authority remains above Spec Kit.
 - 8E remains paused/not started.
@@ -68,14 +68,15 @@ required full gates before normal checkpoint work resumes.
 - R2 tests-first implementation and exact-head closeout are complete.
 - The required read-only consistency analysis was re-run before R3 and found no conflict with the frozen R3 contract.
 - R0–R3 are accepted/closed on exact CI evidence.
-- Under the 2026-09-19 standing CI-evidence authorization, R4/T021–T025 is complete on implementation/evidence head `4c1e4cbbe0644b06bf51ce952be78edac8aa9182`; R5 and later checkpoints remain gated by final R4 closeout acceptance and the canonical checkpoint sequence.
+- R4 is ACCEPTED/CLOSED: implementation/evidence head `4c1e4cbbe0644b06bf51ce952be78edac8aa9182` has CircleCI #244 + Vercel SUCCESS and closeout head `c2f2875686014439404b47518f9cc1789e202a7f` has CircleCI #245 + Vercel SUCCESS.
 - R4 compact projection retains canonical semantic identity/state/delta internally, trusted full/reset recovery, and the frozen Protocol 1 / 26 primitives / 18 public MCP tools/input-schema boundary.
 - Controlled Chromium evidence reports 96.54% model-facing payload reduction with the on-screen actionable target, changed target evidence, and SPA RESET recovery all retained.
+- Under the 2026-09-19 standing CI-evidence authorization, R5/T026–T029 is authorized. Repository + active Supabase + workflow-history audit found no existing URL timestamp/reload seek path to rewrite; R5 therefore introduces the smallest approved internal media sampling path and locks it against navigation/reload-based seeking.
 - The evidence-first bug repair loop in `AGENTS.md` is binding for this feature: failures must be evidenced, localized/reproduced, researched, regression-protected, minimally repaired, and verified before checkpoint execution continues.
 - Platform/browser/library/protocol uncertainty requires primary upstream evidence; a fully proven repository-local defect may use local evidence alone when the reasoning is recorded.
 - Blind reruns, guess-patching, safety-assertion deletion, and threshold weakening are not valid repair strategies. A third same failure without materially new evidence becomes BLOCKED + diagnostics/early audit.
 
-Re-check the constitution gate and run the required analysis again before any R5 implementation.
+Re-check the constitution gate and run the required analysis again before any R6 implementation.
 
 ## Project Structure
 

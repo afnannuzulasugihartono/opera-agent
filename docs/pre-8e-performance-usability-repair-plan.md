@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair Plan
 
-Status: **R0–R3 ACCEPTED / CLOSED; R4 CLOSEOUT CANDIDATE — implementation/evidence gates PASS; final acceptance awaits closeout CI**
+Status: **R0–R4 ACCEPTED / CLOSED; R5 AUTHORIZED / IN PROGRESS**
 
 Created: 2026-09-18
 
@@ -131,7 +131,9 @@ R0 is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usabilit
 
 R1 is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usability-r1.md`.
 
-R2 fresh-target revalidation is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usability-r2.md` and closeout `57a73ce4fadca929e3a7aab345e1719c7d3459aa` (CircleCI #227 + Vercel SUCCESS). The user explicitly authorized **R3 only**. Execute T017–T020, then STOP for R3 acceptance; R4 remains unauthorized.
+R2 and R3 are ACCEPTED/CLOSED with their durable evidence records. R4 is ACCEPTED/CLOSED with implementation/evidence head `4c1e4cbbe0644b06bf51ce952be78edac8aa9182` (CircleCI #244 + Vercel SUCCESS) and closeout head `c2f2875686014439404b47518f9cc1789e202a7f` (CircleCI #245 + Vercel SUCCESS).
+
+Under the 2026-09-19 standing CI-evidence authorization, execute **R5 / T026–T029**. Repository, active workflow registry, and workflow-version history contain no URL timestamp/reload seek implementation, so do not rewrite legitimate page/video navigation. Add the smallest approved internal media sampling workflow using existing `media.state/play/pause/seek`, prove ready-media seek p50 <=1s, preserve the 18-tool public MCP surface, then STOP for R5 acceptance.
 
 Milestone 8E remains paused/not started until R8 is accepted and the user separately
 authorizes 8E.

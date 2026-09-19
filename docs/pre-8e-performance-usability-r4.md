@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair — R4 Evidence
 
-Status: **R4 CLOSEOUT CANDIDATE — T021–T025 COMPLETE; implementation/evidence gates PASS; final acceptance awaits exact-head closeout CI**
+Status: **R4 ACCEPTED / CLOSED — T021–T025 COMPLETE; implementation/evidence head CircleCI #244 + Vercel SUCCESS; closeout head CircleCI #245 + Vercel SUCCESS**
 
 Date: 2026-09-19
 
@@ -190,9 +190,11 @@ At the R4 implementation/evidence head:
 - `milestone7_vm_enabled=false` remains outside R4 and unchanged;
 - Milestone 8E remains paused/not started.
 
-## Closeout rule
+## Closeout
 
-T021–T025 are complete and the implementation/evidence head is green. This
-documentation commit is the R4 closeout candidate. Per repository governance, R4
-must not be called ACCEPTED/CLOSED until CircleCI and Vercel are both SUCCESS on
-the exact closeout head. Do not start R5 before that gate is verified.
+T021–T025 are complete. Implementation/evidence head
+`4c1e4cbbe0644b06bf51ce952be78edac8aa9182` has CircleCI #244 + Vercel
+SUCCESS. Documentation closeout head
+`c2f2875686014439404b47518f9cc1789e202a7f` has CircleCI #245 + Vercel
+SUCCESS. Under the standing CI-evidence authorization, R4 is ACCEPTED/CLOSED.
+R5 may proceed sequentially; Milestone 8E remains paused/not started.

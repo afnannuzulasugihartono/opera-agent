@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R3 ACCEPTED / CLOSED. R4 T021–T025 COMPLETE with implementation/evidence gates PASS at CircleCI #244 + Vercel SUCCESS; R4 closeout acceptance awaits exact-head closeout CI. R5 is NOT STARTED.
+**Status**: R0–R4 ACCEPTED / CLOSED. R4 closeout head `c2f2875686014439404b47518f9cc1789e202a7f` has CircleCI #245 + Vercel SUCCESS. R5 is AUTHORIZED / IN PROGRESS.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -50,7 +50,7 @@
 
 ## Phase R5 — Internal media fast path
 
-- [ ] T026 [US4] Add workflow tests that use existing `media.state/play/pause/seek` without public MCP expansion.
+- [x] T026 [US4] Add workflow tests that require an internal `media.sample_at` path using existing `media.state/play/pause/seek`, forbid navigation/reload timestamp seeking, and preserve the 18-tool public MCP surface. Tests-first commit is expected red until T027 implementation.
 - [ ] T027 [US4] Replace safe URL-time navigation/reload with internal `media.seek` in approved video workflow paths.
 - [ ] T028 [US4] Measure controlled ready-media seek p50 and verify no navigation/reload.
 - [ ] T029 Verify public MCP tool count/input schemas remain unchanged and STOP for R5 acceptance.

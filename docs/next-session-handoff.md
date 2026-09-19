@@ -240,7 +240,7 @@ User-approved planning on 2026-09-18 adds
 `docs/pre-8e-performance-usability-repair-plan.md` and Spec Kit feature
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0–R3 ACCEPTED / CLOSED; R4 CLOSEOUT CANDIDATE with T021–T025 complete and implementation/evidence gates PASS at CircleCI #244 + Vercel SUCCESS; exact closeout-head CI still required. R5 NOT STARTED.**
+Status: **R0–R4 ACCEPTED / CLOSED; R4 closeout head CircleCI #245 + Vercel SUCCESS; R5 AUTHORIZED / IN PROGRESS.**
 
 Do not jump to 8E. R0–R3 are ACCEPTED/CLOSED. R3 (T017–T020) closed with durable evidence in `docs/pre-8e-performance-usability-r3.md`: runtime evidence head `285374f20ef1592d16246fe1e53ab4c9d8b8da81`, governance head `5b5ed172770e5b1ce6bc428c84902d48762ce8bf`, and closeout head `3f765cf` have CircleCI SUCCESS + Vercel SUCCESS, local full gates 423/423 PASS + `npm run check` PASS, and every R3 failure chain recorded. On 2026-09-19 the user accepted R3 on the CI basis and granted a standing authorization to proceed sequentially through the repair checkpoints without per-checkpoint manual sign-off, with CircleCI + Vercel SUCCESS on each checkpoint's evidence head as the acceptance criterion and computer-use assistance allowed. Safety rails remain: no production deployment or signed-release promotion without a separate explicit instruction; R6 T033's conditional transport stop stays binding; 8E start stays a separate explicit decision.
 
@@ -279,7 +279,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action for any coding agent (including Z Code):** verify CircleCI + Vercel on the exact R4 documentation closeout head. R4 T021–T025 is complete; implementation/evidence head `4c1e4cbbe0644b06bf51ce952be78edac8aa9182` has CircleCI #244 + Vercel SUCCESS, 426/426 tests PASS, static check PASS, Chromium PASS, and 96.54% controlled compact payload reduction with relevant target/change/reset evidence retained. Durable evidence is `docs/pre-8e-performance-usability-r4.md`. Pending closeout CI means STOP. If exact closeout-head CircleCI + Vercel are SUCCESS, R4 is ACCEPTED/CLOSED on the standing CI-evidence basis; then stop for checkpoint review and do not start R5 in the same turn. Milestone 8E remains paused/not started.
+**Exact next product action for any coding agent (including Z Code):** verify the R5 T026 tests-first head with exact-head CI. R4 is ACCEPTED/CLOSED: implementation/evidence head `4c1e4cbbe0644b06bf51ce952be78edac8aa9182` has CircleCI #244 + Vercel SUCCESS and closeout head `c2f2875686014439404b47518f9cc1789e202a7f` has CircleCI #245 + Vercel SUCCESS. R5 T026 adds expected-red workflow tests requiring a new internal `media.sample_at` workflow that uses existing `media.state/pause/seek/play`, preserves playback state, contains no navigation/reload timestamp seeking, and does not expand the 18-tool public MCP surface. Repo + active Supabase + workflow history prove no legacy URL-time seek path exists, so do not rewrite legitimate YouTube page/video navigation. If T026 CI fails only because the migration is absent, proceed to T027 implementation; any different failure enters the Evidence -> Research -> Regression Proof -> Minimal Repair -> Verification loop. R6 and Milestone 8E remain not started.
 
 ## Preserved rollback / stash warning
 
