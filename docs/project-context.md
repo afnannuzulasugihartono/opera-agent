@@ -2,6 +2,9 @@
 
 Last synchronized: 2026-09-19
 
+> Current execution pointer: `PROJECT_STATE.json` is authoritative for the exact
+> next task. This document records durable facts/evidence and must not redefine it.
+
 ## Latest repair continuation (takes precedence over historical entries below)
 
 User explicitly requested R5 through R8 sequentially. R5 is **ACCEPTED / CLOSED**;
@@ -13,8 +16,8 @@ across four videos had p50 3045.3 ms total / 154.2 ms queue / 2882.0 ms executio
 actual YouTube Home navigation had p50 3896.5 ms total / 82.8 ms queue. The live
 paired extension is still 1.6.0 and R1–R5 are not production-promoted, so this is
 historical navigation-cost evidence, not an integrated post-R5 production speed
-claim. T031 tests-first head `0f3f883254e2b30f4406842f01b8013832a04d5a` produced the expected CircleCI #254 FAILURE in Unit/static tests: only the new R6 local-SPA regression fails because the latest `youtube.play_recommendation` workflow still directly navigates the recommendation href. A versioned T031 implementation candidate now prefers the fresh recommendation ref via trusted `page.click`, waits up to 2500 ms for the SPA watch transition, and falls back to the same observed href only when the local path does not materialize. Historical migrations are untouched. CircleCI #255 then failed only because the new T031 regression regexes were over-escaped: the failure log shows the implementation string `"id":"openrecLocal","method":"page.click"` is present, while the test incorrectly expected a literal backslash. This is a test-harness defect, not a workflow defect. The repair only corrects regex escaping and does not weaken the required local-click / bounded-fallback assertions. Exact next is repaired exact-head CI; T032 has not started. See
-`docs/pre-8e-performance-usability-r6.md`. Production deployments, signed
+claim. T031 tests-first head `0f3f883254e2b30f4406842f01b8013832a04d5a` produced the expected CircleCI #254 FAILURE in Unit/static tests: only the new R6 local-SPA regression fails because the latest `youtube.play_recommendation` workflow still directly navigates the recommendation href. A versioned T031 implementation candidate now prefers the fresh recommendation ref via trusted `page.click`, waits up to 2500 ms for the SPA watch transition, and falls back to the same observed href only when the local path does not materialize. Historical migrations are untouched. CircleCI #255 then failed only because the new T031 regression regexes were over-escaped: the failure log shows the implementation string `"id":"openrecLocal","method":"page.click"` is present, while the test incorrectly expected a literal backslash. This is a test-harness defect, not a workflow defect. The repair only corrects regex escaping and does not weaken the required local-click / bounded-fallback assertions. The repaired head `3d21ecc58cfece6e55f40433525a7a6c1db27800` is verified by CircleCI #256 + Vercel SUCCESS. See `PROJECT_STATE.json` for the exact next task and
+`docs/pre-8e-performance-usability-r6.md` for R6 evidence. Production deployments, signed
 promotion, Realtime transport cutover and 8E remain outside scope; T033's
 conditional STOP is binding. The live paired extension reports 1.6.0 / Protocol 1 / 26 capabilities;
 that does not prove the unpromoted repair candidate is installed.

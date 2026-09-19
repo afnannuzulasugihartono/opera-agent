@@ -188,7 +188,7 @@ Acceptance/final-candidate records:
 
 ## Pre-8E Performance Usability Repair
 
-Status: **R0–R5 ACCEPTED / CLOSED; R6 AUTHORIZED / IN PROGRESS (T030 complete).**
+Status: **R0–R5 ACCEPTED / CLOSED; R6 IN PROGRESS (T030–T031 complete).**
 
 A live Opera Agent YouTube responsiveness test on 2026-09-18 exposed practical
 friction after P0-P6 closure: actionability/viewport ranking, stale dynamic refs,
@@ -227,7 +227,7 @@ SUCCESS. PR #46 is merged at
 SUCCESS.
 
 Production promotion is complete and verified at `opera-agent-vm` version 27.
-Performance Track P is closed. Pre-8E repair R0–R5 are ACCEPTED/CLOSED. Canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. R6 is AUTHORIZED / IN PROGRESS: required Spec Kit analysis is PASS and T030 navigation measurement is complete; exact next is T031. T033's conditional transport STOP remains binding. **Milestone 8E remains paused/not started and must not start implicitly.**
+Performance Track P is closed. Pre-8E repair R0–R5 are ACCEPTED/CLOSED. Canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. R6 is IN PROGRESS: required Spec Kit analysis is PASS, T030 is complete, and T031 is verified at `3d21ecc58cfece6e55f40433525a7a6c1db27800` with CircleCI #256 + Vercel SUCCESS. The exact next task is defined only in `PROJECT_STATE.json`. T033's conditional transport STOP remains binding. **Milestone 8E remains paused/not started and must not start implicitly.**
 
 ## Collaboration rule
 

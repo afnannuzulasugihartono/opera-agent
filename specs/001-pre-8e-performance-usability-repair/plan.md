@@ -1,6 +1,6 @@
 # Implementation Plan: Pre-8E Performance Usability Repair
 
-**Branch**: `feat/pre-8e-usability-repair-r3` (R3 only) | **Date**: 2026-09-18 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md`
+**Spec Kit Origin Branch**: `feat/pre-8e-usability-repair-r3` | **Date**: 2026-09-18 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md` | **Current Execution State**: `PROJECT_STATE.json`
 
 **Input**: Live YouTube responsiveness findings plus canonical Opera Agent governance.
 
@@ -54,7 +54,7 @@ required full gates before normal checkpoint work resumes.
 
 ## Constitution Check
 
-**PASS for R6 entry. R0–R5 are accepted/closed; canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. The required R6 consistency/constitution analysis has been re-run and found no conflict. R6 is authorized/in progress: T030 measurement is complete; T031–T033 remain pending.**
+**PASS for the active R6 repair. R0–R5 are accepted/closed; canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. T031 is verified at `3d21ecc58cfece6e55f40433525a7a6c1db27800` with CircleCI #256 + Vercel SUCCESS. `PROJECT_STATE.json` is authoritative for the exact next task.**
 
 - Repository authority remains above Spec Kit.
 - 8E remains paused/not started.
@@ -72,7 +72,7 @@ required full gates before normal checkpoint work resumes.
 - R4 compact projection retains canonical semantic identity/state/delta internally, trusted full/reset recovery, and the frozen Protocol 1 / 26 primitives / 18 public MCP tools/input-schema boundary.
 - Controlled Chromium evidence reports 96.54% model-facing payload reduction with the on-screen actionable target, changed target evidence, and SPA RESET recovery all retained.
 - R5/T026–T029 is accepted/closed under the 2026-09-19 standing CI-evidence authorization. Repository + active Supabase + workflow-history audit found no existing URL timestamp/reload seek path to rewrite; R5 introduced the smallest approved internal media sampling path and locked it against navigation/reload-based seeking. Exact-head evidence is CircleCI #250 + Vercel SUCCESS, followed by documentation closeout CircleCI #251 + Vercel SUCCESS.
-- The R6 entry consistency/constitution analysis is PASS. T030 used read-only command history and found 78 non-reused YouTube timestamp seeks across four videos at p50 3045.3 ms total with only 154.2 ms p50 queue; actual YouTube Home navigation p50 was 3896.5 ms total with 82.8 ms p50 queue. No runtime/public/production mutation occurred. Exact next is T031.
+- The R6 entry consistency/constitution analysis is PASS. T030 used read-only command history and found 78 non-reused YouTube timestamp seeks across four videos at p50 3045.3 ms total with only 154.2 ms p50 queue; actual YouTube Home navigation p50 was 3896.5 ms total with 82.8 ms p50 queue. T031 is verified at `3d21ecc58cfece6e55f40433525a7a6c1db27800` with CircleCI #256 + Vercel SUCCESS. No production promotion occurred. The exact next task lives only in `PROJECT_STATE.json`.
 - The evidence-first bug repair loop in `AGENTS.md` is binding for this feature: failures must be evidenced, localized/reproduced, researched, regression-protected, minimally repaired, and verified before checkpoint execution continues.
 - Platform/browser/library/protocol uncertainty requires primary upstream evidence; a fully proven repository-local defect may use local evidence alone when the reasoning is recorded.
 - Blind reruns, guess-patching, safety-assertion deletion, and threshold weakening are not valid repair strategies. A third same failure without materially new evidence becomes BLOCKED + diagnostics/early audit.
