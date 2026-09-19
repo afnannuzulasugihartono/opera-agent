@@ -131,6 +131,7 @@ R0_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r0.html').read_text(e
 R1_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r1.html').read_text(encoding='utf-8')
 R2_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r2.html').read_text(encoding='utf-8')
 R3_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r3.html').read_text(encoding='utf-8')
+R4_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r4.html').read_text(encoding='utf-8')
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
@@ -156,8 +157,10 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3'):
-            if self.path.startswith('/pre8e-r3'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4'):
+            if self.path.startswith('/pre8e-r4'):
+                document = R4_PAGE
+            elif self.path.startswith('/pre8e-r3'):
                 document = R3_PAGE
             elif self.path.startswith('/pre8e-r2'):
                 document = R2_PAGE
@@ -768,6 +771,89 @@ async def run(port, profile):
         }
 
         cid = STATE.push('tabs.close', {'tabId': r3_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # --- Pre-8E R4: compact model-facing observation (tests-first) ---
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r4', 'active': False, 'wait': True})
+        r4_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 600, 'maxElements': 120}, benchmark='r4.page.read.legacy')
+        r4_legacy_result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        r4_legacy = r4_legacy_result['page']
+        assert 'semanticState' in r4_legacy, 'legacy default read must stay element-rich (compat)'
+        assert 'semanticViews' in r4_legacy
+        assert 'semanticDelta' in r4_legacy
+        r4_legacy_size = len(json.dumps(r4_legacy_result))
+
+        cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 600, 'maxElements': 120, 'view': 'compact'}, benchmark='r4.page.read.compact')
+        r4_compact_result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        r4_compact = r4_compact_result['page']
+        assert r4_compact.get('compactView') is True, 'compact read must be marked compactView'
+        assert 'semanticState' not in r4_compact, 'compact read must not project internal canonical state'
+        assert 'semanticViews' not in r4_compact, 'compact read must not project semantic views'
+        assert 'semanticDelta' in r4_compact, 'compact read must retain bounded change evidence'
+        r4_compact_size = len(json.dumps(r4_compact_result))
+        assert r4_compact_size <= 0.30 * r4_legacy_size, (
+            'compact read must reduce model-facing payload by >=70% '
+            f'(legacy={r4_legacy_size}, compact={r4_compact_size})'
+        )
+
+        def r4_noise_free(page):
+            banned = ('hidden-dialog', 'offscreen-link', 'recommendation-link')
+            return all(
+                not any(token in str(item.get('name', '')) or token in str(item.get('text', '')) for token in banned)
+                for item in page['elements']
+            )
+
+        assert r4_noise_free(r4_compact), 'hidden/offscreen/below-viewport noise must not dominate the compact view'
+        r4_skip = next((item for item in r4_compact['elements'] if item.get('text') == 'Skip ad'), None)
+        assert r4_skip is not None, 'compact view must retain the on-screen actionable target'
+        assert r4_skip['actionable'] is True and r4_skip['inViewport'] is True
+        r4_input = next((item for item in r4_compact['elements'] if item.get('tag') == 'input'), None)
+        assert r4_input is not None and r4_input.get('placeholder') == 'Search query', 'input placeholder must survive the compact projection'
+
+        cid = STATE.push('page.click', {'tabId': r4_tab_id, 'ref': r4_skip['ref']})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 600, 'maxElements': 120, 'view': 'compact'})
+        r4_after_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        r4_toggle = next(item for item in r4_after_click['elements'] if item.get('text', '').startswith('R4 toggle'))
+        cid = STATE.push('page.click', {'tabId': r4_tab_id, 'ref': r4_toggle['ref']})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 600, 'maxElements': 120, 'view': 'compact'})
+        r4_after_toggle = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        r4_changes = r4_after_toggle['semanticDelta']['changes']
+        assert r4_changes, 'compact read must expose the fresh change after an action'
+        assert any(change.get('logicalId') == r4_toggle.get('logicalId') or change.get('logicalId') == r4_toggle.get('stableKey') for change in r4_changes), (
+            'the changed target must be identifiable in the compact change evidence'
+        )
+        r4_toggle_fresh = next((item for item in r4_after_toggle['elements'] if item.get('text') == 'R4 toggle target pressed'), None)
+        assert r4_toggle_fresh is not None, 'the changed target must survive the compact projection with fresh state'
+
+        cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 300, 'maxElements': 40, 'view': 'full'})
+        r4_full_escape = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert 'semanticState' in r4_full_escape and 'semanticViews' in r4_full_escape, 'view=full must keep the trusted full observation escape hatch'
+
+        cid = STATE.push('page.query', {'tabId': r4_tab_id, 'selector': '#r4-route'})
+        r4_route_target = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {'tabId': r4_tab_id, 'ref': r4_route_target['ref']})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 600, 'maxElements': 120, 'view': 'compact'})
+        r4_after_route = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert r4_after_route['semanticDelta']['classification'] == 'RESET'
+        assert r4_after_route['semanticDelta']['resetReason'] == 'SPA_ROUTE'
+        assert r4_after_route['semanticDelta']['completeSnapshotRequired'] is True, 'compact must surface trusted reset recovery, not hide it'
+
+        r4_acceptance = {
+            'compactViewProjected': r4_compact.get('compactView') is True,
+            'payloadReductionPercent': round(100 * (1 - r4_compact_size / r4_legacy_size), 2),
+            'onScreenTargetRetained': r4_skip is not None,
+            'noiseExcluded': r4_noise_free(r4_compact),
+            'changeEvidenceRetained': bool(r4_changes),
+            'resetRecoverySurfaced': r4_after_route['semanticDelta']['classification'] == 'RESET'
+        }
+        print(json.dumps({'r4CompactAcceptance': r4_acceptance}, indent=2))
+
+        cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')

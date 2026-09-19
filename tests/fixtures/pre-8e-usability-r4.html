@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pre-8E R4 compact observation fixture</title>
+  <style>
+    body { font-family: sans-serif; padding: 24px; }
+    #r4-hidden-dialog { display: none; }
+    #r4-offscreen a { position: absolute; left: -9999px; top: 0; }
+    #r4-feed { margin-top: 4000px; }
+  </style>
+</head>
+<body>
+  <h1>R4 compact observation</h1>
+  <p>Task-relevant controls sit at the top. Irrelevant noise lives in a hidden
+     dialog, offscreen absolutely-positioned links, and a far below-viewport
+     recommendation feed so a compact model-facing view can be measured against
+     the legacy element-rich view on the same document.</p>
+
+  <section aria-label="task controls">
+    <button id="r4-skip" aria-label="Skip ad">Skip ad</button>
+    <input id="r4-query" name="r4-query" placeholder="Search query" />
+    <button id="r4-toggle" aria-label="R4 toggle target" aria-pressed="false">R4 toggle target</button>
+    <button id="r4-route" aria-label="R4 change route">R4 change route</button>
+  </section>
+
+  <div id="r4-hidden-dialog" role="dialog" aria-label="hidden dialog"></div>
+  <div id="r4-offscreen"></div>
+  <div id="r4-feed" role="feed" aria-label="recommendations"></div>
+
+  <script>
+    // Deterministic noise generated at parse time so the DOM is complete
+    // before any page.read command observes it.
+    (function buildNoise() {
+      var dialog = document.getElementById('r4-hidden-dialog');
+      var offscreen = document.getElementById('r4-offscreen');
+      var feed = document.getElementById('r4-feed');
+      for (var i = 0; i < 40; i += 1) {
+        var hidden = document.createElement('button');
+        hidden.type = 'button';
+        hidden.name = 'hidden-dialog-control-' + i;
+        hidden.textContent = 'hidden dialog control ' + i;
+        dialog.appendChild(hidden);
+        var off = document.createElement('a');
+        off.href = '#offscreen-' + i;
+        off.name = 'offscreen-link-' + i;
+        off.textContent = 'offscreen link ' + i;
+        offscreen.appendChild(off);
+        var rec = document.createElement('a');
+        rec.href = '#recommendation-' + i;
+        rec.name = 'recommendation-link-' + i;
+        rec.textContent = 'recommendation link ' + i;
+        feed.appendChild(rec);
+      }
+    })();
+
+    document.getElementById('r4-toggle').addEventListener('click', function () {
+      var toggle = document.getElementById('r4-toggle');
+      var pressed = toggle.getAttribute('aria-pressed') === 'true';
+      toggle.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+      toggle.textContent = pressed ? 'R4 toggle target' : 'R4 toggle target pressed';
+    });
+
+    document.getElementById('r4-route').addEventListener('click', function () {
+      history.pushState({}, '', '/pre8e-r4-alt');
+    });
+  </script>
+</body>
+</html>
