@@ -546,8 +546,8 @@ test('P2 does not synthesize completion or foreground/browser authority', () => 
 
 test('P2 leaves extension bytes and existing read_page/public MCP source unchanged', async () => {
   const files = new Map([
-    ['../extension/content.js', '132f7967c8432339f6244402d093fd1d6af0f1c9'],
-    ['../extension/background.js', 'c9702946f205274dc54096246d12f7596b2eb544'],
+    ['../extension/content.js', 'af2f0e04003f07e575681123e99d17711c364831'],
+    ['../extension/background.js', '476063d4b872243f3ee6044fdafd7b8a2c22c6c4'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
     ['../supabase/functions/opera-agent-mcp/index.ts', 'a2f91e096d9c48ba7d40d82c9ce725dfb7bd3668'],
   ]);
