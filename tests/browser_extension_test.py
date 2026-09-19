@@ -1,10 +1,12 @@
 import asyncio
+import io
 import json
 import queue
 import tempfile
 import threading
 import time
 import uuid
+import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from playwright.async_api import async_playwright
@@ -132,6 +134,18 @@ R1_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r1.html').read_text(e
 R2_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r2.html').read_text(encoding='utf-8')
 R3_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r3.html').read_text(encoding='utf-8')
 R4_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r4.html').read_text(encoding='utf-8')
+R5_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r5.html').read_text(encoding='utf-8')
+
+def build_r5_wav():
+    buffer = io.BytesIO()
+    with wave.open(buffer, 'wb') as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(1)
+        wav.setframerate(8000)
+        wav.writeframes(bytes([128]) * 16000)
+    return buffer.getvalue()
+
+R5_WAV = build_r5_wav()
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
@@ -157,8 +171,22 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4'):
-            if self.path.startswith('/pre8e-r4'):
+        if self.path.startswith('/pre8e-r5.wav'):
+            payload = R5_WAV
+            self.send_response(200)
+            self.send_header('Content-Type', 'audio/wav')
+            self.send_header('Content-Length', str(len(payload)))
+            self.end_headers()
+            try:
+                self.wfile.write(payload)
+            except (BrokenPipeError, ConnectionError, OSError):
+                pass
+            return
+
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5'):
+            if self.path.startswith('/pre8e-r5'):
+                document = R5_PAGE
+            elif self.path.startswith('/pre8e-r4'):
                 document = R4_PAGE
             elif self.path.startswith('/pre8e-r3'):
                 document = R3_PAGE
@@ -854,6 +882,86 @@ async def run(port, profile):
         print(json.dumps({'r4CompactAcceptance': r4_acceptance}, indent=2))
 
         cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # --- Pre-8E R5: ready-media local seek benchmark ---
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r5',
+            'active': False,
+            'wait': True
+        }, benchmark='r5.tabs.open.ready-media')
+        r5_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        r5_media = None
+        r5_ready_deadline = time.time() + 5.0
+        while time.time() < r5_ready_deadline:
+            cid = STATE.push('media.state', {'tabId': r5_tab_id, 'index': 0})
+            r5_media = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['media']
+            if (
+                r5_media.get('present') is True
+                and isinstance(r5_media.get('duration'), (int, float))
+                and r5_media['duration'] >= 1.5
+                and r5_media.get('readyState', 0) >= 1
+            ):
+                break
+            await asyncio.sleep(0.05)
+        assert r5_media is not None, 'R5 media state was never observed'
+        assert r5_media['present'] is True, r5_media
+        assert r5_media['duration'] >= 1.5, r5_media
+        assert r5_media['readyState'] >= 1, r5_media
+
+        # Keep the controlled media paused so each measured seek is independent
+        # of playback progress. The production workflow preserves prior playback
+        # state around this same media.seek primitive.
+        cid = STATE.push('media.pause', {'tabId': r5_tab_id, 'index': 0})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        r5_metric_start = len(STATE.metrics)
+        r5_seek_targets = [0.10, 0.25, 0.40, 0.55, 0.70, 0.85, 1.00, 1.20, 1.40]
+        r5_seek_results = []
+        for seconds in r5_seek_targets:
+            body = await audited_background_command(worker, focus_audit, 'media.seek', {
+                'tabId': r5_tab_id,
+                'index': 0,
+                'seconds': seconds
+            })
+            media = assert_completed_ok(body)['media']
+            assert media['present'] is True, media
+            assert abs(media['currentTime'] - seconds) <= 0.15, {
+                'targetSeconds': seconds,
+                'media': media
+            }
+            r5_seek_results.append(media['currentTime'])
+
+        r5_seek_metrics = [
+            item for item in STATE.metrics[r5_metric_start:]
+            if item['method'] == 'media.seek'
+        ]
+        assert len(r5_seek_metrics) == len(r5_seek_targets), r5_seek_metrics
+        r5_seek_latencies = sorted(item['latencyMs'] for item in r5_seek_metrics)
+        r5_seek_p50_ms = r5_seek_latencies[len(r5_seek_latencies) // 2]
+        assert r5_seek_p50_ms <= 1000, {
+            'p50Ms': r5_seek_p50_ms,
+            'latenciesMs': r5_seek_latencies
+        }
+        r5_measured_methods = [item['method'] for item in STATE.metrics[r5_metric_start:]]
+        assert 'tabs.navigate' not in r5_measured_methods
+        assert 'tabs.reload' not in r5_measured_methods
+
+        r5_acceptance = {
+            'readyMedia': r5_media['readyState'] >= 1 and r5_media['duration'] >= 1.5,
+            'seekRuns': len(r5_seek_latencies),
+            'seekP50Ms': r5_seek_p50_ms,
+            'seekLatenciesMs': r5_seek_latencies,
+            'seekPositionsVerified': len(r5_seek_results) == len(r5_seek_targets),
+            'navigationOrReloadUsed': (
+                'tabs.navigate' in r5_measured_methods or 'tabs.reload' in r5_measured_methods
+            ),
+            'backgroundFocusPreserved': True
+        }
+        print(json.dumps({'r5MediaSeekAcceptance': r5_acceptance}, indent=2))
+
+        cid = STATE.push('tabs.close', {'tabId': r5_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
@@ -1553,6 +1661,10 @@ async def run(port, profile):
             'semanticIdentityStaleRefRecovered': revalidated['ref'] == rerender_before['ref'],
             'r2FreshTargetRevalidation': all(r2_acceptance.values()),
             'r3PostActionEvidence': all(r3_acceptance.values()),
+            'r5ReadyMediaSeek': True,
+            'r5ReadyMediaSeekRuns': len(r5_seek_latencies),
+            'r5ReadyMediaSeekP50Ms': r5_seek_p50_ms,
+            'r5ReadyMediaSeekNoNavigationReload': not r5_acceptance['navigationOrReloadUsed'],
             'semanticIdentitySpaReset': spa_page['semanticState']['resetReason'] == 'SPA_ROUTE',
             'semanticDelta': True,
             'semanticDeltaSingleUpdate': len(semantic_updates) == 1,

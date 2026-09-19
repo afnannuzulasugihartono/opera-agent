@@ -469,6 +469,15 @@ workflow migration `media.sample_at`; it uses `media.state`, conditionally
 `media.state`. It never uses `tabs.navigate`/`tabs.reload` or timestamp
 URLs, and it does not add a public MCP tool.
 
+R5 T027 implementation head `bafddea8168d0f1933b18c0f394703ba453e0c83`
+has CircleCI #247 + Vercel SUCCESS. T028 candidate adds a deterministic
+ready-media browser benchmark: a local 2-second WAV fixture is loaded in a
+background tab, readiness/duration are verified, nine `media.seek` commands
+are measured through the normal extension command path, each resulting
+`currentTime` is checked, p50 must be <=1000ms, and the measured window must
+contain no `tabs.navigate` or `tabs.reload`. Background-focus preservation
+is audited on every seek.
+
 ## Governance / next boundary
 
 - one active writer;
