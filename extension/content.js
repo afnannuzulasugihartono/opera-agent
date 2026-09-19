@@ -630,36 +630,33 @@
     const before = args.before && typeof args.before === 'object' ? args.before : {};
     const settled = await waitForPostActionSettle();
     const resetReason = syncSemanticScope({});
-    let semantic;
-    if (resetReason) {
-      // Inspect reset state without observing it. This preserves the canonical
-      // pending RESET for the next full page observation while still returning
-      // bounded post-action discontinuity evidence.
-      const resetState = semanticIdentity.inspect();
-      semantic = {
-        schemaVersion: 1,
-        sourceRevision: resetState.observationRevision,
-        resultingRevision: resetState.observationRevision,
-        classification: 'RESET',
-        changeTypes: [],
-        changedEntityIds: [],
-        completeSnapshotRequired: true,
-        resetReason
-      };
-    } else {
-      const observed = observeSemanticBounded(120).observation;
-      semantic = summarizeSemanticDelta(observed.delta);
-    }
+    // Post-action verification must never consume the canonical semantic delta.
+    // Baseline observation happens before the action; after the action we only
+    // inspect revision/reset metadata and leave UPDATE/RESET delivery to the
+    // next canonical page observation.
+    const semanticState = semanticIdentity.inspect();
+    const semantic = {
+      schemaVersion: 1,
+      sourceRevision: semanticState.observationRevision,
+      resultingRevision: semanticState.observationRevision,
+      classification: resetReason ? 'RESET' : 'NO_RELEVANT_CHANGE',
+      changeTypes: [],
+      changedEntityIds: [],
+      completeSnapshotRequired: !!resetReason,
+      ...(resetReason ? { resetReason } : {})
+    };
     const target = resolveRef(args.ref);
     const sameContinuity = before.documentId === documentId && before.routeKey === currentRouteKey();
+    const beforeMutationVersion = Number.isFinite(Number(before.beforeMutationVersion))
+      ? Number(before.beforeMutationVersion)
+      : mutationVersion;
     return {
       schemaVersion: 1,
       documentId,
       continuity: sameContinuity ? 'SAME_DOCUMENT_ROUTE' : 'RESET_OR_ROUTE_CHANGE',
-      beforeMutationVersion: Number.isFinite(Number(before.beforeMutationVersion))
-        ? Number(before.beforeMutationVersion)
-        : mutationVersion,
+      beforeMutationVersion,
       mutationVersion,
+      mutationChanged: mutationVersion !== beforeMutationVersion,
       settled: settled.settled,
       stabilizationMs: settled.stabilizationMs,
       semantic,

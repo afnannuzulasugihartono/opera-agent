@@ -399,9 +399,10 @@ R2 adds bounded action-time fresh-target revalidation in `extension/content.js`:
 R3 remains in progress. Its current candidate adds bounded post-action evidence for
 synthetic and trusted clicks. SPA/runtime action refs are monotonic within a content-
 script lifetime and connected refs must still satisfy descriptor/document/route
-continuity. Route-reset post-action verification now uses
-`semanticIdentity.inspect()` to report bounded RESET evidence without consuming the
-canonical pending RESET required by the next full `page.read`.
+continuity. Post-action verification now uses `semanticIdentity.inspect()` for both normal and
+route-reset actions, so it reports bounded revision/reset metadata plus mutation/
+target evidence without consuming canonical UPDATE/RESET delivery required by the
+next full `page.read`.
 
 ## Governance / next boundary
 
