@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair Plan
 
-Status: **R0–R3 ACCEPTED / CLOSED; R4 AUTHORIZED / IN PROGRESS**
+Status: **R0–R3 ACCEPTED / CLOSED; R4 CLOSEOUT CANDIDATE — implementation/evidence gates PASS; final acceptance awaits closeout CI**
 
 Created: 2026-09-18
 

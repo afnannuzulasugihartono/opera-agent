@@ -240,7 +240,7 @@ User-approved planning on 2026-09-18 adds
 `docs/pre-8e-performance-usability-repair-plan.md` and Spec Kit feature
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0–R3 ACCEPTED / CLOSED (R3 accepted on CI evidence); R4 AUTHORIZED / IN PROGRESS under the 2026-09-19 standing CI-evidence authorization**.
+Status: **R0–R3 ACCEPTED / CLOSED; R4 CLOSEOUT CANDIDATE with T021–T025 complete and implementation/evidence gates PASS at CircleCI #244 + Vercel SUCCESS; exact closeout-head CI still required. R5 NOT STARTED.**
 
 Do not jump to 8E. R0–R3 are ACCEPTED/CLOSED. R3 (T017–T020) closed with durable evidence in `docs/pre-8e-performance-usability-r3.md`: runtime evidence head `285374f20ef1592d16246fe1e53ab4c9d8b8da81`, governance head `5b5ed172770e5b1ce6bc428c84902d48762ce8bf`, and closeout head `3f765cf` have CircleCI SUCCESS + Vercel SUCCESS, local full gates 423/423 PASS + `npm run check` PASS, and every R3 failure chain recorded. On 2026-09-19 the user accepted R3 on the CI basis and granted a standing authorization to proceed sequentially through the repair checkpoints without per-checkpoint manual sign-off, with CircleCI + Vercel SUCCESS on each checkpoint's evidence head as the acceptance criterion and computer-use assistance allowed. Safety rails remain: no production deployment or signed-release promotion without a separate explicit instruction; R6 T033's conditional transport stop stays binding; 8E start stays a separate explicit decision.
 
@@ -279,7 +279,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action for any coding agent (including Z Code):** verify the complete R4 derived-contract rebaseline candidate with exact-head CI on `feat/pre-8e-usability-repair-r3`. T021/T022/T023 are implemented. CircleCI #242 exposed seven stale MCP source locks; the first rebaseline reduced #243 to 423/426 PASS, leaving only three derived 6A/7A/8A digest mismatches. Those derived fixtures/constants are now aligned to MCP SHA-256 `4cf462a3cd4683b20e17fe2679e8dc762706129088b33a1c339826c6b43e31fb` and inventory digest `sha256:3f879c35ef89d30075d0ed9be08965f75f25f34f19a697f2b00fbe4b21a25137`, with no runtime/public-schema change. If the next CI reveals a different failure, restart the Evidence -> Research -> Regression Proof -> Minimal Repair -> Verification loop. If green, complete T024 (>=70% controlled payload reduction with zero relevant target/change loss), then T025 full gates and R4 evidence/closeout. STOP after R4 acceptance; do not start R5 implicitly. Milestone 8E remains paused/not started.
+**Exact next product action for any coding agent (including Z Code):** verify CircleCI + Vercel on the exact R4 documentation closeout head. R4 T021–T025 is complete; implementation/evidence head `4c1e4cbbe0644b06bf51ce952be78edac8aa9182` has CircleCI #244 + Vercel SUCCESS, 426/426 tests PASS, static check PASS, Chromium PASS, and 96.54% controlled compact payload reduction with relevant target/change/reset evidence retained. Durable evidence is `docs/pre-8e-performance-usability-r4.md`. Pending closeout CI means STOP. If exact closeout-head CircleCI + Vercel are SUCCESS, R4 is ACCEPTED/CLOSED on the standing CI-evidence basis; then stop for checkpoint review and do not start R5 in the same turn. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 

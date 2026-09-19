@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R3 ACCEPTED / CLOSED (R3 accepted on CI evidence). R4 is AUTHORIZED / IN PROGRESS under the 2026-09-19 standing CI-evidence authorization.
+**Status**: R0–R3 ACCEPTED / CLOSED. R4 T021–T025 COMPLETE with implementation/evidence gates PASS at CircleCI #244 + Vercel SUCCESS; R4 closeout acceptance awaits exact-head closeout CI. R5 is NOT STARTED.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -45,8 +45,8 @@
 - [x] T021 [US3] Freeze a compatibility test for the current MCP inventory/input schemas.
 - [x] T022 [US3] Add failing payload/relevant-fact tests for compact model-facing output.
 - [x] T023 [US3] Implement compact model-facing projection while retaining canonical internal state and trusted reset/full-snapshot recovery.
-- [ ] T024 [US3] Demonstrate >=70% controlled payload reduction with zero relevant target/change loss.
-- [ ] T025 Run compatibility/full/static/browser gates and STOP for R4 acceptance.
+- [x] T024 [US3] Demonstrate >=70% controlled payload reduction with zero relevant target/change loss. Controlled Chromium evidence: 96.54% reduction; on-screen target/change/reset evidence retained.
+- [x] T025 Run compatibility/full/static/browser gates and STOP for R4 acceptance. CircleCI #244: 426/426 unit tests PASS, `npm run check` PASS, Chromium extension regression PASS; Vercel SUCCESS.
 
 ## Phase R5 — Internal media fast path
 

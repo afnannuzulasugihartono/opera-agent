@@ -433,6 +433,19 @@ MCP source digest. The exact recomputed inventory digest reported by the canonic
 fixture/test constants; Protocol 1, 26 primitives, 18 tools, `read_page` schema,
 runtime code, production state, and safety assertions remain unchanged.
 
+R4 T021–T025 is complete on implementation/evidence head
+`4c1e4cbbe0644b06bf51ce952be78edac8aa9182`. CircleCI #244 + Vercel
+are SUCCESS. Exact gate evidence: 426/426 unit tests PASS, `npm run check`
+PASS, Chromium extension regression PASS, and controlled compact observation
+reduces the equivalent model-facing payload by **96.54%** while retaining the
+on-screen actionable target, fresh changed-target evidence, and SPA RESET
+recovery. Durable evidence is in
+`docs/pre-8e-performance-usability-r4.md`.
+
+R4 is now a closeout candidate only; final ACCEPTED/CLOSED status requires
+CircleCI + Vercel SUCCESS on the exact documentation closeout head. R5 is not
+started in this session.
+
 ## Governance / next boundary
 
 - one active writer;
