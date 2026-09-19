@@ -14,12 +14,13 @@ Work on the repository's current milestone branch and implement CHECKPOINT
 Before editing, fetch and inspect the latest remote head. Read completely, in this
 order:
 1. AGENTS.md
-2. docs/project-context.md
-3. docs/next-session-handoff.md
-4. the current milestone plan
-5. every accepted checkpoint record for this milestone
-6. SECURITY.md
-7. the relevant source, tests, migrations, and CI workflow
+2. SECURITY.md
+3. PROJECT_STATE.json
+4. docs/project-context.md
+5. docs/next-session-handoff.md
+6. the current milestone/repair plan and active Spec Kit feature
+7. every accepted checkpoint record for this milestone/track
+8. the relevant source, tests, migrations, and CI workflow
 
 Treat repository code, committed acceptance records, exact CI artifacts, direct
 browser observations, and production queries as evidence. Treat chat summaries,
@@ -33,6 +34,7 @@ At the start, report:
 
 Rules:
 - Follow AGENTS.md and the frozen milestone plan exactly.
+- `PROJECT_STATE.json` is the only authority for the exact next task. If current Git/CI/runtime evidence proves it stale, stop normal implementation and reconcile state before continuing; never infer a replacement next task from prose or chat.
 - Remain inside <CHECKPOINT>; do not start a later checkpoint or milestone.
 - Preserve one normal SemVer product line, signing identity, pairing, protocol,
   capability inventory, public MCP contract, and background-focus guarantees
@@ -78,7 +80,7 @@ Execution order:
    prescribed. Do not merge a PR used only as an exact-head CI runner.
 9. Write the checkpoint acceptance record with exact commands, counts, hashes,
    timings, limitations, rollback state, final SHA, and net diff.
-10. Update docs/project-context.md and docs/next-session-handoff.md.
+10. After required gates are green, atomically update the canonical task checkbox and `PROJECT_STATE.json`; update docs/project-context.md and docs/next-session-handoff.md as evidence/context only.
 11. Run final exact-head CI against the actual intended checkpoint head.
 12. Commit and push all accepted changes, then stop.
 

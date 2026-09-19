@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "repository": "afnannuzulasugihartono/opera-agent",
+  "track": "pre-8e-performance-usability-repair",
+  "activeFeature": "specs/001-pre-8e-performance-usability-repair",
+  "activeCheckpoint": "R6",
+  "status": "in_progress",
+  "acceptedThrough": "R5",
+  "next": {
+    "task": "T032",
+    "instruction": "Quantify residual queue/transport share after the verified T031 local-navigation optimization. Do not start T033 until T032 evidence is recorded."
+  },
+  "lastVerifiedTask": {
+    "task": "T031",
+    "evidenceHead": "3d21ecc58cfece6e55f40433525a7a6c1db27800",
+    "requiredGates": {
+      "circleci": "#256 SUCCESS",
+      "vercel": "SUCCESS"
+    }
+  },
+  "requiredGates": [
+    "ci/circleci: test",
+    "Vercel"
+  ],
+  "scopeLocks": {
+    "milestone8E": "explicit_user_instruction_required",
+    "productionPromotion": "explicit_user_instruction_required",
+    "realtimeTransport": "separate_review_required_if_T033_justifies"
+  },
+  "notes": [
+    "PROJECT_STATE.json is the only authority for the exact next task.",
+    "If Git/CI/runtime evidence contradicts this file, reconcile state before implementation.",
+    "GitHub Actions CI is not a required acceptance gate for this repair track unless repository governance explicitly changes."
+  ]
+}

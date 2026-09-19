@@ -2,21 +2,45 @@
 
 These instructions apply to the entire repository.
 
+## Current execution state authority
+
+`PROJECT_STATE.json` is the single machine-readable current execution state and
+the only repository artifact that may define the exact next task. For the question
+"what should the agent do now?", read it before roadmap/spec/handoff prose.
+
+Current Git/CI/runtime evidence still outranks a stale state file. If that evidence
+shows `PROJECT_STATE.json` is stale or internally inconsistent, STOP normal
+implementation and reconcile the state first; do not infer a replacement next task
+from chat history or historical documentation.
+
+`docs/roadmap.md`, active Spec Kit artifacts, `docs/project-context.md`, and
+`docs/next-session-handoff.md` may describe scope, evidence, history, and
+checkpoint intent, but they must not override or redefine the exact next task.
+Every accepted task transition must update the canonical task checkbox and
+`PROJECT_STATE.json` together after the required acceptance gates are green.
+`npm run check` must reject disagreement between the state file and active
+`tasks.md`.
+
+
 ## Required session close
 
 Before ending any work session that changes code, infrastructure, release state,
 architecture, milestone status, accepted decisions, known limitations, or the next
 task:
 
-1. Update `docs/project-context.md` with the durable factual state.
-2. Update `docs/next-session-handoff.md` so a fresh ChatGPT Web or Codex session
-   can continue without relying on chat history.
-3. Exclude transient quota values, speculation, passwords, tokens, pairing codes,
+1. If checkpoint/status/next-task state changed, update `PROJECT_STATE.json` and
+   the matching canonical task checkbox in the same accepted transition.
+2. Update `docs/project-context.md` with durable factual evidence, but do not put
+   a competing exact-next instruction there.
+3. Update `docs/next-session-handoff.md` so a fresh ChatGPT Web or Codex session
+   can continue without chat history; it must point to `PROJECT_STATE.json` for
+   the exact next task.
+4. Exclude transient quota values, speculation, passwords, tokens, pairing codes,
    OAuth secrets, private signing-key contents, raw sensitive page content, and
    other credentials.
-4. Verify both documents against the repository and completed test evidence.
-5. Include the context updates in the session's final commit and push them when
-   the rest of that session is pushed.
+5. Verify state/context/handoff against the repository and completed test evidence.
+6. Include the state/context updates in the session's final commit and push them
+   when the rest of that session is pushed.
 
 For read-only questions that do not change project state, do not create noisy
 context-only edits. If a session stops unexpectedly, perform this closeout at the

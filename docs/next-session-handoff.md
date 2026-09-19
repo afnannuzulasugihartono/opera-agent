@@ -2,6 +2,16 @@
 
 Last synchronized: 2026-09-19.
 
+## Current execution pointer — authoritative
+
+Read `PROJECT_STATE.json` before using this file. It is the sole repository
+authority for the exact next task. This handoff provides evidence and historical
+context only; older "next" instructions below must not override the state file.
+
+Current synchronized evidence: R6 is in progress and T031 is verified at
+`3d21ecc58cfece6e55f40433525a7a6c1db27800` with CircleCI #256 + Vercel
+SUCCESS. Use `PROJECT_STATE.json` to determine what may execute next.
+
 ## Latest repair continuation — read before historical instructions below
 
 Continue the user's explicit R6–R8 request sequentially, not Milestone 8E.
@@ -11,7 +21,7 @@ R6 is **IN PROGRESS**. The required Spec Kit consistency/constitution analysis i
 PASS and T030 is complete. Historical read-only command evidence found 78 non-reused
 YouTube timestamp seeks across four videos at p50 3045.3 ms total / 154.2 ms queue,
 versus YouTube Home navigation p50 3896.5 ms total / 82.8 ms queue. This is not an
-integrated production claim because the R1–R5 candidate is not promoted. T031 tests-first head `0f3f883254e2b30f4406842f01b8013832a04d5a` produced the expected CircleCI #254 FAILURE in Unit/static tests: only the new local-SPA regression fails because the latest workflow still directly uses `tabs.navigate` for the recommendation. A versioned implementation candidate now prefers the fresh recommendation ref via trusted `page.click`, waits up to 2500 ms for the SPA watch transition, and falls back to the same observed href only when the local path does not materialize. Historical migrations remain untouched. CircleCI #255 failed only because the newly added T031 regex assertions were over-escaped; its exact log already contains `openrecLocal` with `method":"page.click"`. Repair is test-only regex escaping and does not weaken the workflow contract. Exact next: verify repaired exact-head CI; if green mark T031 complete and proceed to T032 only.
+integrated production claim because the R1–R5 candidate is not promoted. T031 tests-first head `0f3f883254e2b30f4406842f01b8013832a04d5a` produced the expected CircleCI #254 FAILURE in Unit/static tests: only the new local-SPA regression fails because the latest workflow still directly uses `tabs.navigate` for the recommendation. A versioned implementation candidate now prefers the fresh recommendation ref via trusted `page.click`, waits up to 2500 ms for the SPA watch transition, and falls back to the same observed href only when the local path does not materialize. Historical migrations remain untouched. CircleCI #255 failed only because the newly added T031 regex assertions were over-escaped; its exact log already contains `openrecLocal` with `method":"page.click"`. Repair is test-only regex escaping and does not weaken the workflow contract. The repaired head `3d21ecc58cfece6e55f40433525a7a6c1db27800` is verified by CircleCI #256 + Vercel SUCCESS. Exact-next authority is now `PROJECT_STATE.json`.
 T032 and T033 remain pending; T033 must STOP for separate review if Realtime wake is
 still justified. No production deployment, signed release, Realtime cutover, or 8E
 permission was added.

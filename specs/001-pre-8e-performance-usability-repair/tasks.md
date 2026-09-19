@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R5 ACCEPTED / CLOSED. R6 is AUTHORIZED / IN PROGRESS. T030 measurement is complete; T031–T033 remain pending. Canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS.
+**Status**: R0–R5 ACCEPTED / CLOSED. R6 is IN PROGRESS. T030–T031 are complete; T032–T033 remain pending. The exact next task is defined only by `PROJECT_STATE.json`. Canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -58,7 +58,7 @@
 ## Phase R6 — Navigation and residual transport
 
 - [x] T030 Measure avoidable vs unavoidable navigation latency after R1-R5. Read-only production-history evidence: 78 non-reused YouTube timestamp seeks across 4 videos had p50 3045.3 ms total / 154.2 ms queue / 2882.0 ms execution, median queue share 4.81%; actual YouTube Home navigation p50 was 3896.5 ms total / 82.8 ms queue. Durable record: `docs/pre-8e-performance-usability-r6.md`.
-- [ ] T031 Prefer tab reuse/SPA/local action paths where behavior-equivalent and tested.
+- [x] T031 Prefer tab reuse/SPA/local action paths where behavior-equivalent and tested. Verified at `3d21ecc58cfece6e55f40433525a7a6c1db27800` with CircleCI #256 + Vercel SUCCESS.
 - [ ] T032 Quantify residual queue/transport share.
 - [ ] T033 If Realtime wake is still justified, STOP and request a separately reviewed production-transport scope before implementation; otherwise close R6 without transport migration.
 
