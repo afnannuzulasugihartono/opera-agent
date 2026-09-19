@@ -2,7 +2,7 @@
 
 Date: 2026-09-19
 
-Status: **IN PROGRESS — T030–T031 complete; T032–T033 pending.**
+Status: **R6 ACCEPTED / CLOSED (CI-evidence acceptance) — closed without transport migration.**
 
 Entry gate: R5 is ACCEPTED/CLOSED. Canonical R5 synchronization head
 `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel
@@ -81,7 +81,50 @@ needed. The minimal versioned repair leaves historical migrations untouched and:
 No public surface, protocol, browser primitive, production schema, VM, auth/signing,
 or transport change is included. Implementation head `1b20d3346129ddc32438ef3d1d20ac1d2c5c2067` exposed only an over-escaped test matcher in CircleCI #255. Test-only repair head `3d21ecc58cfece6e55f40433525a7a6c1db27800` then passed CircleCI #258 + Vercel SUCCESS. T031 is complete.
 
-## Continuation boundary
+## T032 — residual queue/transport share
 
-Exact next: **T032 only** — quantify residual workflow/command queue and transport share after the accepted navigation optimization. Do not infer a Realtime transport need before that measurement. T033's conditional STOP remains binding: Realtime
-transport cutover is not authorized here.
+Derived from the T030 production measurements (same window, same source; no new
+production queries were required):
+
+| Path | p50 total | p50 queue | residual queue share |
+| --- | ---: | ---: | ---: |
+| Legacy YouTube timestamp seeks (n=78) | 3045.3 ms | 154.2 ms | **5.1%** |
+| YouTube Home navigation (n=2) | 3896.5 ms | 82.8 ms | **2.1%** |
+| Watch-page navigation without seek (n=1) | 2353.5 ms | 51.6 ms | **2.2%** |
+| Other non-reused navigation (n=30) | 1593.3 ms | 130.9 ms | **8.2%** |
+
+Small primitive commands (frozen R0 findings) keep absolute queue times near
+100–250 ms. The bridge's fast-start polling window (6×50 ms, then conservative
+idle polling) already covers active command chains.
+
+Conclusion: after R1–R5 and the T031 navigation optimization, the residual
+queue/transport share on the paths that matter is single-digit percent, and the
+absolute residual is bounded by roughly 50–250 ms. Page execution and loading —
+not command transport — dominate every measured path.
+
+## T033 — Realtime wake decision
+
+Realtime transport migration is **not justified by the evidence** and R6 is
+closed without transport migration, exactly as the task's conditional branch
+requires:
+
+1. T030/T032 prove the residual transport share is 2–8% on navigation paths and
+   ≤ ~250 ms absolute on primitives; even a perfect zero-queue transport cannot
+   materially move navigation-dominated total latency.
+2. The existing fast-start polling window already returns ~50 ms first-poll
+   latency for active chains, so the marginal win of a push channel is smaller
+   than the measured queue residual itself.
+3. A transport cutover would touch production VM, schema, and reconnection
+   semantics for a benefit the data does not support — precisely the scope the
+   frozen repair plan defers behind separate reviewed authorization.
+
+## R6 closeout
+
+- T030–T033 complete; R6 closed **without** transport migration.
+- No public surface, protocol, primitive count, production schema, VM, or
+  auth/signing change was made in R6; the T031 repair is a versioned workflow
+  change plus tests only.
+- Next checkpoint: **R7 (T034–T038) YouTube workflow cleanup — AUTHORIZED /
+  NOT STARTED**, under the 2026-09-19 standing CI-evidence authorization.
+  Milestone 8E remains paused; the R8 real-Opera acceptance (T039–T041)
+  requires an Opera environment with the candidate extension installed.

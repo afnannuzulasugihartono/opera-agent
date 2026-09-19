@@ -4,19 +4,20 @@ Last synchronized: 2026-09-19
 
 ## Latest repair continuation (takes precedence over historical entries below)
 
-User explicitly requested R5 through R8 sequentially. R5 is **ACCEPTED / CLOSED**;
-canonical synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836`
-has CircleCI #252 + Vercel SUCCESS. R6 is now **AUTHORIZED / IN PROGRESS**.
-The required Spec Kit consistency/constitution analysis is PASS and T030 is
-complete using read-only command history: 78 non-reused YouTube timestamp seeks
-across four videos had p50 3045.3 ms total / 154.2 ms queue / 2882.0 ms execution;
-actual YouTube Home navigation had p50 3896.5 ms total / 82.8 ms queue. The live
-paired extension is still 1.6.0 and R1–R5 are not production-promoted, so this is
-historical navigation-cost evidence, not an integrated post-R5 production speed
-claim. T031 is now complete. The versioned `youtube.play_recommendation` workflow prefers a fresh trusted local `page.click`, waits up to 2500 ms for the SPA transition, and uses direct navigation only as a bounded fallback. Implementation head `1b20d3346129ddc32438ef3d1d20ac1d2c5c2067` exposed only an over-escaped regression matcher; test-only repair head `3d21ecc58cfece6e55f40433525a7a6c1db27800` passed CircleCI #258 + Vercel SUCCESS. Exact next is T032 residual queue/transport measurement. See
-`docs/pre-8e-performance-usability-r6.md`. Production deployments, signed
-promotion, Realtime transport cutover and 8E remain outside scope; T033's
-conditional STOP is binding. The live paired extension reports 1.6.0 / Protocol 1 / 26 capabilities;
+User explicitly requested R5 through R8 sequentially. R5 and R6 are **ACCEPTED /
+CLOSED**; R6 closed **without transport migration** (T032: residual queue share
+2–8% on navigation paths, ≤ ~250 ms absolute on primitives; T033: Realtime wake
+not justified). Evidence: `docs/pre-8e-performance-usability-r6.md`. T031's
+repair head `3d21ecc58cfece6e55f40433525a7a6c1db27800` passed CircleCI #258 +
+Vercel SUCCESS. **R7 (T034–T038) YouTube workflow cleanup is AUTHORIZED / NOT
+STARTED** under the 2026-09-19 standing CI-evidence authorization; R8 real-Opera
+acceptance requires an Opera environment this workstation lacks. On 2026-09-19
+the user additionally ordered repository consolidation (merge the closed repair
+line into `main`, archive-tag and prune stale branches) and stricter
+anti-mistake rules for future AI sessions; the consolidation supersedes the
+earlier "do not merge to main" caution because R6 is closed. Production
+deployments, signed promotion, Realtime transport cutover and 8E remain outside
+scope. The live paired extension reports 1.6.0 / Protocol 1 / 26 capabilities;
 that does not prove the unpromoted repair candidate is installed.
 
 Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,

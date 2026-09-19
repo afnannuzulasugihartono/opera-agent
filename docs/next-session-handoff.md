@@ -2,19 +2,33 @@
 
 Last synchronized: 2026-09-19.
 
+## Consolidation authorization — 2026-09-19 (supersedes the main-merge caution below)
+
+The user reviewed the repository survey (32 remote branches, four divergent
+lines, stale `main` at the 1.5.2 era while the update service actively serves
+1.6.0) and explicitly ordered: fix everything now, tidy the repository, and add
+strict rules preventing the next AI session from repeating the same mistakes.
+Because R6 is now ACCEPTED/CLOSED (no longer an in-progress track), the earlier
+"Do not merge the in-progress R6 track into `main`" caution no longer applies:
+merging the closed repair line into `main` is user-authorized consolidation,
+not branch-count cosmetics. The parallel local session's unpushed R6 work was
+preserved at `archive/local-session-r6-wip` before alignment. Branch cleanup
+proceeds by immutable archive tags (`archive/<branch>`) so every deleted ref
+remains recoverable.
+
 ## Latest repair continuation — read before historical instructions below
 
 Continue the user's explicit R6–R8 request sequentially, not Milestone 8E.
-R5 is **ACCEPTED / CLOSED** and canonical synchronization head
-`d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS.
-R6 is **IN PROGRESS**. The required Spec Kit consistency/constitution analysis is
-PASS and T030 is complete. Historical read-only command evidence found 78 non-reused
-YouTube timestamp seeks across four videos at p50 3045.3 ms total / 154.2 ms queue,
-versus YouTube Home navigation p50 3896.5 ms total / 82.8 ms queue. This is not an
-integrated production claim because the R1–R5 candidate is not promoted. T031 is complete. The versioned workflow prefers a fresh trusted local `page.click`, waits up to 2500 ms for the SPA transition, and falls back to the already-observed href only when needed. Implementation head `1b20d3346129ddc32438ef3d1d20ac1d2c5c2067` exposed only an over-escaped test matcher; repair head `3d21ecc58cfece6e55f40433525a7a6c1db27800` passed CircleCI #258 + Vercel SUCCESS. Exact next: T032 residual queue/transport measurement only.
-T032 and T033 remain pending; T033 must STOP for separate review if Realtime wake is
-still justified. No production deployment, signed release, Realtime cutover, or 8E
-permission was added.
+R6 is **ACCEPTED / CLOSED without transport migration**: T030–T031 (navigation
+measurement + local SPA-click repair, CircleCI #258 + Vercel SUCCESS), T032
+(residual queue/transport share 2–8% on navigation paths, ≤ ~250 ms absolute on
+primitives), and T033 (Realtime wake not justified — evidence in
+`docs/pre-8e-performance-usability-r6.md`). **R7 (T034–T038) YouTube workflow
+cleanup is AUTHORIZED / NOT STARTED** under the standing CI-evidence
+authorization. R8 real-Opera acceptance (T039–T041) requires an Opera
+environment with the candidate extension installed; this workstation has no
+Opera installation. No production deployment, signed release, Realtime cutover,
+or 8E permission was added.
 Worktree location is `C:/Users/ASUS/.zcode/workspace/default/opera-agent`.
 Use `SPECIFY_FEATURE_DIRECTORY` (not `SPECIFY_FEATURE`) for Spec Kit prerequisites.
 
