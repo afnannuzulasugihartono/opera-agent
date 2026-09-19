@@ -73,6 +73,41 @@ The reusable ChatGPT Web checkpoint prompt is
 `docs/prompts/chatgpt-web-checkpoint.md`.
 
 
+## Evidence-first bug repair loop
+
+Every unexpected error, bug, CI regression, browser mismatch, or failing acceptance
+gate MUST be handled as a research-and-repair loop before normal implementation
+continues.
+
+1. Capture the exact failure first: failing command/job, assertion/error text,
+   affected SHA, reproduction inputs, and the last known-good behavior.
+2. Reproduce or localize the problem using authoritative repository/runtime
+   evidence before changing code. Do not patch from a guess and do not blind-rerun
+   the same failing gate.
+3. Research the root cause before fixing it. Start with source, tests, Git history,
+   CI artifacts, browser/runtime observations, and applicable project docs. When
+   behavior depends on a browser/platform/library/protocol, or the cause remains
+   uncertain, consult primary external sources such as official documentation,
+   specifications, release notes, or upstream issue trackers. Prefer primary
+   sources over summaries.
+4. State a falsifiable root-cause hypothesis and identify the evidence that would
+   confirm the repair. If the defect is fully explained by local code, repository
+   research is sufficient; record why external research is unnecessary.
+5. Add or identify a deterministic regression test that fails for the bug before
+   changing runtime behavior. Preserve existing safety/compatibility assertions.
+6. Implement the smallest generic fix that addresses the root cause. Do not weaken
+   thresholds, delete assertions, broaden authority, add site-specific exceptions,
+   or change public contracts merely to make CI green.
+7. Run the focused regression first, then the full/static/browser/cloud/security
+   gates required by the active checkpoint. Treat a new failure as new evidence and
+   repeat this loop.
+8. If the same failure recurs three times without materially new evidence, mark the
+   work blocked, collect diagnostics, and request an early independent audit rather
+   than continuing speculative edits.
+9. Record the researched cause, regression evidence, fix, and verification result
+   in the checkpoint evidence/context/handoff when the issue materially affects the
+   active work.
+
 ## Spec Kit workflow guardrail
 
 Spec Kit is a workflow guardrail for bounded feature/checkpoint work; it is not

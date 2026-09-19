@@ -432,20 +432,24 @@
   }
 
   function syncSemanticScope(args) {
+    let resetReason = null;
     const routeKey = globalThis.OperaAgentSemanticIdentity.stableHash(`${location.origin}${location.pathname}${location.search}`);
     if (routeKey !== semanticRouteKey) {
       semanticRouteKey = routeKey;
       semanticIdentity.reset('SPA_ROUTE');
       semanticViews.reset();
       resetActionRefs();
+      resetReason = 'SPA_ROUTE';
     }
     const epoch = clean(args.__semanticRuntimeEpoch, 120);
     if (epoch && semanticRuntimeEpoch && epoch !== semanticRuntimeEpoch) {
       semanticIdentity.reset('EXTENSION_RESTART');
       semanticViews.reset();
       resetActionRefs();
+      resetReason = 'EXTENSION_RESTART';
     }
     if (epoch) semanticRuntimeEpoch = epoch;
+    return resetReason;
   }
 
   function observeSemanticBounded(maxElements = 120) {
@@ -625,8 +629,27 @@
   async function postActionEvidence(args) {
     const before = args.before && typeof args.before === 'object' ? args.before : {};
     const settled = await waitForPostActionSettle();
-    syncSemanticScope({});
-    const observed = observeSemanticBounded(120).observation;
+    const resetReason = syncSemanticScope({});
+    let semantic;
+    if (resetReason) {
+      // Inspect reset state without observing it. This preserves the canonical
+      // pending RESET for the next full page observation while still returning
+      // bounded post-action discontinuity evidence.
+      const resetState = semanticIdentity.inspect();
+      semantic = {
+        schemaVersion: 1,
+        sourceRevision: resetState.observationRevision,
+        resultingRevision: resetState.observationRevision,
+        classification: 'RESET',
+        changeTypes: [],
+        changedEntityIds: [],
+        completeSnapshotRequired: true,
+        resetReason
+      };
+    } else {
+      const observed = observeSemanticBounded(120).observation;
+      semantic = summarizeSemanticDelta(observed.delta);
+    }
     const target = resolveRef(args.ref);
     const sameContinuity = before.documentId === documentId && before.routeKey === currentRouteKey();
     return {
@@ -639,7 +662,7 @@
       mutationVersion,
       settled: settled.settled,
       stabilizationMs: settled.stabilizationMs,
-      semantic: summarizeSemanticDelta(observed.delta),
+      semantic,
       target: {
         ref: String(args.ref || ''),
         present: !!target

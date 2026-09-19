@@ -49,6 +49,14 @@ Rules:
 - Never silently fall back to foreground or activate a tab to hide a failure.
 - Preserve unrelated user changes and do not rewrite accepted historical records.
 - Do not weaken a threshold or security rule merely to make CI pass.
+- On every unexpected error, bug, CI regression, browser mismatch, or failing
+  acceptance gate, stop normal implementation and run the evidence-first bug
+  repair loop from AGENTS.md: capture exact evidence, reproduce/localize, research
+  the root cause, add or identify a deterministic regression, apply the smallest
+  generic fix, then rerun the focused and required full gates. Use primary external
+  documentation/specifications/upstream sources when the behavior is platform-
+  dependent or the local cause is not yet proven. Never blind-rerun or patch from
+  a guess.
 - If authentication, tenant isolation, encryption, signing, public MCP schemas,
   extension distribution, irreversible effects, or production schema will change,
   pause before promotion and request a Codex audit. A bounded dark probe may run

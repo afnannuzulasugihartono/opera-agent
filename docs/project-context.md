@@ -396,11 +396,26 @@ R1 changed only generic observation/actionability behavior in `extension/content
 
 R2 adds bounded action-time fresh-target revalidation in `extension/content.js`: a stale ref may rebind only to one same-document/same-route equivalent current target that matches frozen descriptor identity/metadata and is actionable/non-sensitive. Ambiguity, route reset, sensitivity change, weak evidence, or disappearance fail closed. Caller-provided observational `logicalId`/coordinates are not action authority. No production deployment/schema mutation, VM enablement, public MCP expansion, transaction authority, or 8E work was performed.
 
+R3 remains in progress. Its current candidate adds bounded post-action evidence for
+synthetic and trusted clicks. SPA/runtime action refs are monotonic within a content-
+script lifetime and connected refs must still satisfy descriptor/document/route
+continuity. Route-reset post-action verification now uses
+`semanticIdentity.inspect()` to report bounded RESET evidence without consuming the
+canonical pending RESET required by the next full `page.read`.
+
 ## Governance / next boundary
 
 - one active writer;
 - tests before runtime behavior;
 - pending required CI = STOP;
+- permanent evidence-first bug repair loop is now authoritative in `AGENTS.md`:
+  every unexpected error/bug/CI regression must be captured and researched before
+  repair, must have deterministic regression evidence before runtime changes, and
+  must use the smallest generic fix followed by focused + required full gates;
+  platform/library/browser uncertainty requires primary external documentation or
+  upstream evidence, while fully proven local defects may use repository research
+  alone; blind retries/guess-patching are prohibited and a third same failure
+  without new evidence becomes blocked + diagnostics/early audit;
 - the P6 independent audit gate is **PASS / CLOSED WITH USER-ACCEPTED REVIEWER
   DEVIATION**;
 - exact audited range:

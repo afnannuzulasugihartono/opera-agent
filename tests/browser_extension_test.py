@@ -772,7 +772,11 @@ async def run(port, profile):
 
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': spa_route['ref']})
-        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        spa_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert spa_click['postAction']['continuity'] == 'RESET_OR_ROUTE_CHANGE'
+        assert spa_click['postAction']['semantic']['classification'] == 'RESET'
+        assert spa_click['postAction']['semantic']['completeSnapshotRequired'] is True
+        assert spa_click['postAction']['semantic']['resetReason'] == 'SPA_ROUTE'
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
         spa_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert spa_page['semanticState']['documentGeneration'] == 2

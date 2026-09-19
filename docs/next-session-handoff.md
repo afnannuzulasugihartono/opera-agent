@@ -244,6 +244,15 @@ Status: **R0–R2 ACCEPTED / CLOSED; R3 AUTHORIZED / IN PROGRESS; R4 NOT AUTHORI
 
 Do not jump to 8E. R0–R2 are ACCEPTED/CLOSED. R2 closeout `57a73ce4fadca929e3a7aab345e1719c7d3459aa` has CircleCI #227 + Vercel SUCCESS. The user explicitly authorized **R3 only** on branch `feat/pre-8e-usability-repair-r3`; execute T017–T020 and STOP. R4 remains unauthorized.
 
+A permanent **Evidence-First Bug Repair Loop** now lives in `AGENTS.md` and the
+reusable ChatGPT Web checkpoint prompt. For every unexpected error/bug/CI/browser
+regression: capture exact evidence, reproduce/localize, research the root cause
+(repository evidence first; primary external docs/upstream sources when relevant),
+add or identify a deterministic regression, apply the smallest generic fix, and
+rerun focused + required full gates. No blind retries or guess-patching. Three
+repetitions of the same failure without new evidence means blocked + diagnostics
+and early audit.
+
 ## Exact next gate
 
 The P6 independent audit gate is now **PASS / CLOSED WITH USER-ACCEPTED REVIEWER
@@ -268,7 +277,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action:** implement **R3 / T017–T020 only**, then STOP for acceptance. Do not start R4 implicitly. Milestone 8E remains paused/not started.
+**Exact next product action:** verify the current **R3 / T017–T020** candidate with exact-head CI. The current implementation preserves SPA-route RESET evidence for both post-action verification and the next canonical page observation. If a gate fails, apply the Evidence-First Bug Repair Loop before any further edit. If all R3 gates pass, complete R3 evidence/closeout and STOP for acceptance. Do not start R4 implicitly. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 
