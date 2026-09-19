@@ -370,6 +370,26 @@ the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
 **Exact next product action for any coding agent (including Z Code):** R0–R6 are ACCEPTED/CLOSED and the consolidated `main` head is `608f76c` (CI SUCCESS). Execute **R7 / T034–T038** (YouTube workflow cleanup) on `feat/pre-8e-usability-repair-r3`: add output-shape/timing tests for `youtube.get_transcript` (T034), reduce redundant query/wait/activation while preserving background-first fallback (T035), exclude unrelated comments/recommendations/sponsored content from primary transcript output where safely possible (T036), demonstrate >=50% improvement from the ~20.514 s frozen baseline or record an evidence-backed residual bottleneck (T037), then STOP for R7 acceptance on the standing CI-evidence basis (T038). Milestone 8E remains paused/not started.
 
+## Browser-gate flakiness record — 2026-09-20
+
+CircleCI #276 failed on `e22bc9e` (a docs-only diff touching
+`next-session-handoff.md` and `project-context.md`; no runtime/test change).
+Local evidence gathered instead of a blind rerun: Node suite **431/431 PASS**,
+`npm run check` PASS, and the full Playwright/Chromium extension regression
+completed cleanly (exit 0) in headed Windows mode, captured end to end. An
+evidence-backed rerun commit then passed CircleCI + Vercel on identical runtime
+content. A later local rerun exited 1 with output discarded, and the following
+captured run exited 0 — confirming environment-sensitive flakiness (suspects:
+the live Google Maps network test, port binding races, or service-worker
+startup timing), not a repository defect.
+
+Policy: a single browser-gate failure on a runtime-unchanged head is treated as
+suspected flake; reproduce locally (headed on Windows), and rerun once with the
+evidence recorded in the commit message. Two consecutive failures on the same
+runtime content are NOT flakes: stop and follow the full Evidence → Research →
+Regression Proof → Minimal Repair → Verification branch with the CI log
+captured first.
+
 ## Preserved rollback / stash warning
 
 - Accepted P5 remains the clean rollback baseline for this candidate.
