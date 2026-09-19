@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-18
 
-**Status**: R0–R5 Accepted / Closed (R5 evidence CircleCI #250 + Vercel SUCCESS; documentation closeout CircleCI #251 + Vercel SUCCESS); R6 Authorized / Ready
+**Status**: R0–R5 Accepted / Closed; R6 Authorized / In Progress (T030 measurement complete; T031–T033 pending)
 
 **Input**: User-approved repair plan derived from a live Opera Agent YouTube responsiveness test. This feature is inserted after closed Performance Track P0-P6 and before Milestone 8E. It does not reopen P0-P6 and does not authorize 8E.
 

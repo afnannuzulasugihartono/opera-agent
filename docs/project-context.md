@@ -4,16 +4,18 @@ Last synchronized: 2026-09-19
 
 ## Latest repair continuation (takes precedence over historical entries below)
 
-User explicitly requested R5 through R8 sequentially. R5 is now **ACCEPTED / CLOSED**:
-implementation/evidence head `15270d5875bd9fa9ae350d1a866332895519abbb`
-has CircleCI #250 + Vercel SUCCESS, and documentation closeout head
-`50b19ee1f4ea91fd0be866565a1c1733bc8ff87b` has CircleCI #251 + Vercel
-SUCCESS. T028/T029 are complete; Protocol 1, 26 browser primitives, and 18 public
-MCP tools/input schemas remain unchanged. R6/R7/R8 remain authorized sequentially.
-The exact next checkpoint is R6/T030–T033, beginning with the required Spec Kit
-consistency/constitution analysis and navigation/transport measurement. See
-`docs/pre-8e-performance-usability-r5.md`. Production deployments, signed
-promotion, R6 Realtime transport cutover and 8E remain outside scope; T033's
+User explicitly requested R5 through R8 sequentially. R5 is **ACCEPTED / CLOSED**;
+canonical synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836`
+has CircleCI #252 + Vercel SUCCESS. R6 is now **AUTHORIZED / IN PROGRESS**.
+The required Spec Kit consistency/constitution analysis is PASS and T030 is
+complete using read-only command history: 78 non-reused YouTube timestamp seeks
+across four videos had p50 3045.3 ms total / 154.2 ms queue / 2882.0 ms execution;
+actual YouTube Home navigation had p50 3896.5 ms total / 82.8 ms queue. The live
+paired extension is still 1.6.0 and R1–R5 are not production-promoted, so this is
+historical navigation-cost evidence, not an integrated post-R5 production speed
+claim. Exact next is T031 only. See
+`docs/pre-8e-performance-usability-r6.md`. Production deployments, signed
+promotion, Realtime transport cutover and 8E remain outside scope; T033's
 conditional STOP is binding. The live paired extension reports 1.6.0 / Protocol 1 / 26 capabilities;
 that does not prove the unpromoted repair candidate is installed.
 

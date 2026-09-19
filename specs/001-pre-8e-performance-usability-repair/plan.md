@@ -54,7 +54,7 @@ required full gates before normal checkpoint work resumes.
 
 ## Constitution Check
 
-**PASS for R5 closeout. R0–R5 are accepted/closed; R5 implementation/evidence head `15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI #250 + Vercel SUCCESS and documentation closeout head `50b19ee1f4ea91fd0be866565a1c1733bc8ff87b` has CircleCI #251 + Vercel SUCCESS. R6 is authorized/ready, but its required consistency/constitution analysis must run before implementation.**
+**PASS for R6 entry. R0–R5 are accepted/closed; canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. The required R6 consistency/constitution analysis has been re-run and found no conflict. R6 is authorized/in progress: T030 measurement is complete; T031–T033 remain pending.**
 
 - Repository authority remains above Spec Kit.
 - 8E remains paused/not started.
@@ -72,6 +72,7 @@ required full gates before normal checkpoint work resumes.
 - R4 compact projection retains canonical semantic identity/state/delta internally, trusted full/reset recovery, and the frozen Protocol 1 / 26 primitives / 18 public MCP tools/input-schema boundary.
 - Controlled Chromium evidence reports 96.54% model-facing payload reduction with the on-screen actionable target, changed target evidence, and SPA RESET recovery all retained.
 - R5/T026–T029 is accepted/closed under the 2026-09-19 standing CI-evidence authorization. Repository + active Supabase + workflow-history audit found no existing URL timestamp/reload seek path to rewrite; R5 introduced the smallest approved internal media sampling path and locked it against navigation/reload-based seeking. Exact-head evidence is CircleCI #250 + Vercel SUCCESS, followed by documentation closeout CircleCI #251 + Vercel SUCCESS.
+- The R6 entry consistency/constitution analysis is PASS. T030 used read-only command history and found 78 non-reused YouTube timestamp seeks across four videos at p50 3045.3 ms total with only 154.2 ms p50 queue; actual YouTube Home navigation p50 was 3896.5 ms total with 82.8 ms p50 queue. No runtime/public/production mutation occurred. Exact next is T031.
 - The evidence-first bug repair loop in `AGENTS.md` is binding for this feature: failures must be evidenced, localized/reproduced, researched, regression-protected, minimally repaired, and verified before checkpoint execution continues.
 - Platform/browser/library/protocol uncertainty requires primary upstream evidence; a fully proven repository-local defect may use local evidence alone when the reasoning is recorded.
 - Blind reruns, guess-patching, safety-assertion deletion, and threshold weakening are not valid repair strategies. A third same failure without materially new evidence becomes BLOCKED + diagnostics/early audit.

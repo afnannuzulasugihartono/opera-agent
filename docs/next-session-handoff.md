@@ -5,14 +5,16 @@ Last synchronized: 2026-09-19.
 ## Latest repair continuation — read before historical instructions below
 
 Continue the user's explicit R6–R8 request sequentially, not Milestone 8E.
-R5 is **ACCEPTED / CLOSED**. Implementation/evidence head
-`15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI #250 + Vercel SUCCESS;
-documentation closeout head `50b19ee1f4ea91fd0be866565a1c1733bc8ff87b`
-has CircleCI #251 + Vercel SUCCESS. T028/T029 are complete and Protocol 1 / 26
-primitives / 18 public MCP tools/input schemas remain unchanged. Exact next:
-R6/T030–T033, starting with the required Spec Kit consistency/constitution analysis
-and measurement. T033 must STOP for separate review if Realtime wake is still
-justified. No production deployment, signed release, Realtime cutover, or 8E
+R5 is **ACCEPTED / CLOSED** and canonical synchronization head
+`d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS.
+R6 is **IN PROGRESS**. The required Spec Kit consistency/constitution analysis is
+PASS and T030 is complete. Historical read-only command evidence found 78 non-reused
+YouTube timestamp seeks across four videos at p50 3045.3 ms total / 154.2 ms queue,
+versus YouTube Home navigation p50 3896.5 ms total / 82.8 ms queue. This is not an
+integrated production claim because the R1–R5 candidate is not promoted. Exact next:
+**T031 only** — tests-first behavior-equivalent reuse/SPA/local-action optimization.
+T032 and T033 remain pending; T033 must STOP for separate review if Realtime wake is
+still justified. No production deployment, signed release, Realtime cutover, or 8E
 permission was added.
 Worktree location is `C:/Users/ASUS/.zcode/workspace/default/opera-agent`.
 Use `SPECIFY_FEATURE_DIRECTORY` (not `SPECIFY_FEATURE`) for Spec Kit prerequisites.

@@ -188,7 +188,7 @@ Acceptance/final-candidate records:
 
 ## Pre-8E Performance Usability Repair
 
-Status: **R0–R5 ACCEPTED / CLOSED; R6 AUTHORIZED / READY.**
+Status: **R0–R5 ACCEPTED / CLOSED; R6 AUTHORIZED / IN PROGRESS (T030 complete).**
 
 A live Opera Agent YouTube responsiveness test on 2026-09-18 exposed practical
 friction after P0-P6 closure: actionability/viewport ranking, stale dynamic refs,
@@ -227,7 +227,7 @@ SUCCESS. PR #46 is merged at
 SUCCESS.
 
 Production promotion is complete and verified at `opera-agent-vm` version 27.
-Performance Track P is closed. Pre-8E repair R0–R5 are ACCEPTED/CLOSED. R5 implementation/evidence head `15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI #250 + Vercel SUCCESS and documentation closeout head `50b19ee1f4ea91fd0be866565a1c1733bc8ff87b` has CircleCI #251 + Vercel SUCCESS. R6/T030–T033 is AUTHORIZED / READY under the standing CI-evidence authorization, with its required Spec Kit analysis before implementation and T033's conditional transport STOP still binding. **Milestone 8E remains paused/not started and must not start implicitly.**
+Performance Track P is closed. Pre-8E repair R0–R5 are ACCEPTED/CLOSED. Canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. R6 is AUTHORIZED / IN PROGRESS: required Spec Kit analysis is PASS and T030 navigation measurement is complete; exact next is T031. T033's conditional transport STOP remains binding. **Milestone 8E remains paused/not started and must not start implicitly.**
 
 ## Collaboration rule
 
