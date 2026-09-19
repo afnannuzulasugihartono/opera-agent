@@ -130,6 +130,7 @@ IFRAME_PAGE = '''<!doctype html><html><head><title>Opera Agent Iframe Privacy Te
 R0_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r0.html').read_text(encoding='utf-8')
 R1_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r1.html').read_text(encoding='utf-8')
 R2_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r2.html').read_text(encoding='utf-8')
+R3_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r3.html').read_text(encoding='utf-8')
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
@@ -155,8 +156,10 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2'):
-            if self.path.startswith('/pre8e-r2'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3'):
+            if self.path.startswith('/pre8e-r3'):
+                document = R3_PAGE
+            elif self.path.startswith('/pre8e-r2'):
                 document = R2_PAGE
             elif self.path.startswith('/pre8e-r1'):
                 document = R1_PAGE
@@ -690,6 +693,79 @@ async def run(port, profile):
             'disappearingRejected': r2_disappear_click['ok'] is False
         }
         assert all(r2_acceptance.values()), r2_acceptance
+
+        # R3 tests-first acceptance: page.click must return fresh bounded
+        # post-action evidence directly, without a mandatory model-mediated
+        # page.read. Current R2 runtime is expected to fail because page.click
+        # still returns only action acknowledgement.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r3',
+            'active': False,
+            'wait': True
+        }, benchmark='r3.tabs.open')
+        r3_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.query', {'tabId': r3_tab_id, 'selector': '#r3-change'})
+        r3_change_target = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {
+            'tabId': r3_tab_id,
+            'ref': r3_change_target['ref'],
+            'trusted': False
+        }, benchmark='r3.synthetic.post-action')
+        r3_synthetic_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.query', {'tabId': r3_tab_id, 'selector': '#r3-remove'})
+        r3_remove_target = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        cid = STATE.push('page.click', {
+            'tabId': r3_tab_id,
+            'ref': r3_remove_target['ref'],
+            'trusted': True,
+            'executionMode': 'background'
+        }, benchmark='r3.trusted.post-action')
+        r3_trusted_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        def assert_r3_post_action(result, expected_ref, expected_present):
+            evidence = result['postAction']
+            assert evidence['schemaVersion'] == 1, evidence
+            assert isinstance(evidence['documentId'], str) and evidence['documentId'], evidence
+            assert evidence['beforeMutationVersion'] >= 0, evidence
+            assert evidence['mutationVersion'] >= evidence['beforeMutationVersion'], evidence
+            assert evidence['settled'] is True, evidence
+            assert evidence['completionClaim'] is False, evidence
+            semantic = evidence['semantic']
+            assert semantic['schemaVersion'] == 1, semantic
+            assert semantic['resultingRevision'] >= semantic['sourceRevision'], semantic
+            assert semantic['classification'] in {
+                'NO_RELEVANT_CHANGE', 'UPDATE', 'INSERT', 'REMOVE', 'MOVE', 'MIXED', 'RESET'
+            }, semantic
+            assert len(semantic.get('changeTypes', [])) <= 8, semantic
+            assert len(semantic.get('changedEntityIds', [])) <= 20, semantic
+            target = evidence['target']
+            assert target['ref'] == expected_ref, target
+            assert target['present'] is expected_present, target
+            encoded = json.dumps(evidence).lower()
+            assert 'goalcomplete' not in encoded, evidence
+            assert '"complete":true' not in encoded, evidence
+            assert len(json.dumps(evidence).encode()) <= 8192, evidence
+
+        assert_r3_post_action(r3_synthetic_click, r3_change_target['ref'], True)
+        assert_r3_post_action(r3_trusted_click, r3_remove_target['ref'], False)
+
+        # No page.read occurs between either click and these assertions. The
+        # direct click result itself is the bounded verification evidence.
+        r3_acceptance = {
+            'syntheticPostAction': 'postAction' in r3_synthetic_click,
+            'trustedPostAction': 'postAction' in r3_trusted_click,
+            'changedTargetStillPresent': r3_synthetic_click['postAction']['target']['present'] is True,
+            'removedTargetAbsent': r3_trusted_click['postAction']['target']['present'] is False,
+            'noCompletionClaim': (
+                r3_synthetic_click['postAction']['completionClaim'] is False
+                and r3_trusted_click['postAction']['completionClaim'] is False
+            )
+        }
+
+        cid = STATE.push('tabs.close', {'tabId': r3_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': spa_route['ref']})
@@ -1383,6 +1459,7 @@ async def run(port, profile):
             'semanticIdentityRerenderStable': rerender_after['logicalId'] == rerender_before['logicalId'],
             'semanticIdentityStaleRefRecovered': revalidated['ref'] == rerender_before['ref'],
             'r2FreshTargetRevalidation': all(r2_acceptance.values()),
+            'r3PostActionEvidence': all(r3_acceptance.values()),
             'semanticIdentitySpaReset': spa_page['semanticState']['resetReason'] == 'SPA_ROUTE',
             'semanticDelta': True,
             'semanticDeltaSingleUpdate': len(semantic_updates) == 1,

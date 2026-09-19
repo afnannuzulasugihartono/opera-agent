@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pre-8E R3 local act verify fixture</title>
+  <style>
+    body { font-family: sans-serif; padding: 24px; }
+    section { margin: 16px 0; padding: 12px; border: 1px solid #bbb; }
+  </style>
+</head>
+<body>
+  <h1>R3 local act and verify</h1>
+
+  <section>
+    <button id="r3-change" aria-label="R3 change target" onclick="changeTarget()">R3 change target</button>
+    <output id="r3-change-status">change-state:before</output>
+  </section>
+
+  <section>
+    <button id="r3-remove" aria-label="R3 remove target" onclick="removeTarget()">R3 remove target</button>
+    <output id="r3-remove-status">remove-state:before</output>
+  </section>
+
+  <script>
+    function changeTarget() {
+      const target = document.getElementById('r3-change');
+      target.textContent = 'R3 change target changed';
+      target.setAttribute('aria-pressed', 'true');
+      document.getElementById('r3-change-status').textContent = 'change-state:after';
+    }
+
+    function removeTarget() {
+      const target = document.getElementById('r3-remove');
+      target.remove();
+      document.getElementById('r3-remove-status').textContent = 'remove-state:after';
+    }
+  </script>
+</body>
+</html>
