@@ -5,8 +5,9 @@ These instructions apply to the entire repository.
 ## Current execution state authority
 
 `PROJECT_STATE.json` is the single machine-readable current execution state and
-the only repository artifact that may define the exact next task. For the question
-"what should the agent do now?", read it before roadmap/spec/handoff prose.
+the only repository artifact that may define the exact next task. The exact next task
+authority is `PROJECT_STATE.json`. For the question "what should the agent do now?",
+read it before roadmap/spec/handoff prose.
 
 Current Git/CI/runtime evidence still outranks a stale state file. If that evidence
 shows `PROJECT_STATE.json` is stale or internally inconsistent, STOP normal
