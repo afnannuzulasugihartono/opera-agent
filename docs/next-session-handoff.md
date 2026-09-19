@@ -240,9 +240,9 @@ User-approved planning on 2026-09-18 adds
 `docs/pre-8e-performance-usability-repair-plan.md` and Spec Kit feature
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0–R2 ACCEPTED / CLOSED; R3 IMPLEMENTED / GATES GREEN — STOPPED FOR R3 ACCEPTANCE; R4 NOT AUTHORIZED**.
+Status: **R0–R3 ACCEPTED / CLOSED (R3 accepted on CI evidence); R4 AUTHORIZED / IN PROGRESS under the 2026-09-19 standing CI-evidence authorization**.
 
-Do not jump to 8E. R0–R2 are ACCEPTED/CLOSED. R3 (T017–T020) is implemented on `feat/pre-8e-usability-repair-r3` with durable evidence in `docs/pre-8e-performance-usability-r3.md`: runtime evidence head `285374f20ef1592d16246fe1e53ab4c9d8b8da81` and governance head `5b5ed172770e5b1ce6bc428c84902d48762ce8bf` have CircleCI SUCCESS + Vercel SUCCESS, local full gates are 423/423 PASS + `npm run check` PASS, and every R3 failure chain is recorded. The next explicit user action is R3 acceptance; R4 remains unauthorized.
+Do not jump to 8E. R0–R3 are ACCEPTED/CLOSED. R3 (T017–T020) closed with durable evidence in `docs/pre-8e-performance-usability-r3.md`: runtime evidence head `285374f20ef1592d16246fe1e53ab4c9d8b8da81`, governance head `5b5ed172770e5b1ce6bc428c84902d48762ce8bf`, and closeout head `3f765cf` have CircleCI SUCCESS + Vercel SUCCESS, local full gates 423/423 PASS + `npm run check` PASS, and every R3 failure chain recorded. On 2026-09-19 the user accepted R3 on the CI basis and granted a standing authorization to proceed sequentially through the repair checkpoints without per-checkpoint manual sign-off, with CircleCI + Vercel SUCCESS on each checkpoint's evidence head as the acceptance criterion and computer-use assistance allowed. Safety rails remain: no production deployment or signed-release promotion without a separate explicit instruction; R6 T033's conditional transport stop stays binding; 8E start stays a separate explicit decision.
 
 A permanent **Evidence-First Bug Repair Loop** lives in `AGENTS.md`, the reusable
 ChatGPT Web checkpoint prompt, and the active Spec Kit feature artifacts
@@ -279,7 +279,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action for any coding agent (including Z Code):** R3 / T017–T020 is complete on `feat/pre-8e-usability-repair-r3` with gates green and durable evidence in `docs/pre-8e-performance-usability-r3.md`. Post-action verification is inspect-only after the action: it returns bounded revision/reset metadata plus mutation/target evidence while preserving canonical semantic UPDATE/RESET for the next page observation. The explicit connected file-upload guard is preserved without allowing sensitive stale-target revalidation. Await the explicit **R3 acceptance** user instruction; only then may a separately authorized R4 checkpoint start. Do not start R4 implicitly. Milestone 8E remains paused/not started.
+**Exact next product action for any coding agent (including Z Code):** under the 2026-09-19 standing CI-evidence authorization, execute **R4 / T021–T025** (compact model-facing observation) on `feat/pre-8e-usability-repair-r3`: freeze MCP inventory/input-schema compatibility (T021), add failing payload/relevant-fact tests (T022), implement compact model-facing projection while retaining canonical internal state and trusted reset/full-snapshot recovery (T023), demonstrate >=70% controlled payload reduction with zero relevant target/change loss (T024), run compatibility/full/static/browser gates (T025), record evidence in `docs/pre-8e-performance-usability-r4.md`, and treat CircleCI + Vercel SUCCESS on the R4 evidence head as R4 acceptance before starting R5. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 

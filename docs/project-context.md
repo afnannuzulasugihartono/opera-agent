@@ -376,7 +376,7 @@ Canonical plan:
 Spec Kit feature:
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0–R2 ACCEPTED / CLOSED; R3 IMPLEMENTED / GATES GREEN — STOPPED FOR R3 ACCEPTANCE; R4 NOT AUTHORIZED**.
+Status: **R0–R3 ACCEPTED / CLOSED (R3 accepted on CI evidence); R4 AUTHORIZED / IN PROGRESS under the 2026-09-19 standing CI-evidence authorization**.
 
 Frozen findings include:
 - on-screen ad `Skip` competing with offscreen `Skip navigation`;
@@ -443,7 +443,8 @@ the immediate file guard; sensitive targets are never stale-rebound.
 - R2 implementation evidence head `70c79db6d76ab624d19bd5d6067a1469ef522045` has CircleCI #226 + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r2.md`;
 - R2 is **ACCEPTED / CLOSED** after unique same-document recovery, unsafe-case fail-closed coverage, authorized content hash-lock rebaseline, and controlled Chromium regression;
 - the user explicitly authorized **R3 only**; R3 implementation evidence head `285374f20ef1592d16246fe1e53ab4c9d8b8da81` and governance head `5b5ed172770e5b1ce6bc428c84902d48762ce8bf` have CircleCI SUCCESS + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r3.md`;
-- R3 is **IMPLEMENTED / GATES GREEN** after bounded post-action verification, recorded failure-repair chains (route-reset revival, reset evidence, semantic delta authority, read compatibility, file-upload guard) and a local Windows CRLF hash-lock mechanism repair; local gates 423/423 PASS + `npm run check` PASS; stopped for R3 acceptance; R4 remains unauthorized;
+- R3 is **ACCEPTED / CLOSED** on the user's 2026-09-19 CI-evidence acceptance (CircleCI + Vercel SUCCESS at `285374f`, `5b5ed17`, and closeout `3f765cf`; local gates 423/423 PASS + `npm run check` PASS) after bounded post-action verification, recorded failure-repair chains (route-reset revival, reset evidence, semantic delta authority, read compatibility, file-upload guard) and a local Windows CRLF hash-lock mechanism repair;
+- the user granted a standing 2026-09-19 authorization: repair checkpoints proceed sequentially without per-checkpoint manual sign-off, with CircleCI + Vercel SUCCESS on each checkpoint's evidence head as the acceptance criterion; production deployment/signed-release promotion, R6 T033's conditional transport stop, and the 8E start decision remain outside this standing authorization;
 - 8E remains paused/not started and cannot begin until the repair track reaches R8
   acceptance and the user separately authorizes 8E.
 

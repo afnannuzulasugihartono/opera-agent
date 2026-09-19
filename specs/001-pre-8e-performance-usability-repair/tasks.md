@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R2 ACCEPTED / CLOSED. R3 is IMPLEMENTED / GATES GREEN — stopped for R3 acceptance. R4 is NOT authorized.
+**Status**: R0–R3 ACCEPTED / CLOSED (R3 accepted on CI evidence). R4 is AUTHORIZED / IN PROGRESS under the 2026-09-19 standing CI-evidence authorization.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 

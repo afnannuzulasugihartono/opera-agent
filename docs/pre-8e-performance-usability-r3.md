@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair — R3 Evidence
 
-Status: **R3 IMPLEMENTED / GATES GREEN — STOPPED FOR R3 ACCEPTANCE. R4 NOT AUTHORIZED**
+Status: **R3 ACCEPTED / CLOSED (CI-evidence acceptance). R4 AUTHORIZED / IN PROGRESS**
 
 Date: 2026-09-19
 
@@ -153,10 +153,24 @@ Spec/plan/tasks, roadmap, project context, handoff, and constitution converge
 on the same boundary:
 
 - R0–R2 ACCEPTED / CLOSED;
-- R3 IMPLEMENTED / GATES GREEN — stopped for R3 acceptance;
-- R4 NOT AUTHORIZED / NOT STARTED;
+- R3 ACCEPTED / CLOSED;
+- R4 AUTHORIZED / STARTED;
 - Milestone 8E paused/not started;
-- no implicit checkpoint advancement.
+- no implicit 8E advancement.
 
-STOP after R3. Do not start R4 or Milestone 8E without a new explicit user
-instruction.
+## Acceptance record (2026-09-19)
+
+The user reviewed the R3 evidence and accepted R3 on the repository's standard
+CI basis: CircleCI SUCCESS (including the Playwright/Chromium controlled
+regression with the R3 acceptance assertions) plus Vercel SUCCESS at the
+runtime head `285374f`, governance head `5b5ed17`, and closeout head `3f765cf`,
+with local gates 423/423 PASS and `npm run check` PASS.
+
+At the same time the user granted a standing authorization: subsequent repair
+checkpoints may proceed sequentially without per-checkpoint manual sign-off,
+using the same CI basis (CircleCI + Vercel SUCCESS on the checkpoint's evidence
+head) as the acceptance criterion, with computer-use assistance allowed where
+useful. Unchanged safety rails: no production deployment or signed-release
+promotion without a separate explicit instruction; R6 T033's conditional
+transport stop remains binding; Milestone 8E start remains a separate explicit
+user decision.
