@@ -4,12 +4,16 @@ Last synchronized: 2026-09-19.
 
 ## Latest repair continuation — read before historical instructions below
 
-Continue the user's explicit R5–R8 request sequentially, not Milestone 8E.
-R5 implementation head `15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI
-#250 + Vercel SUCCESS, independently checked. Local full Node suite/static check
-PASS. Check R5 documentation closeout CI before R6; evidence record:
-`docs/pre-8e-performance-usability-r5.md`. R6–R8 remain pending.
-No production deployment, signed release, or Realtime cutover permission was added.
+Continue the user's explicit R6–R8 request sequentially, not Milestone 8E.
+R5 is **ACCEPTED / CLOSED**. Implementation/evidence head
+`15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI #250 + Vercel SUCCESS;
+documentation closeout head `50b19ee1f4ea91fd0be866565a1c1733bc8ff87b`
+has CircleCI #251 + Vercel SUCCESS. T028/T029 are complete and Protocol 1 / 26
+primitives / 18 public MCP tools/input schemas remain unchanged. Exact next:
+R6/T030–T033, starting with the required Spec Kit consistency/constitution analysis
+and measurement. T033 must STOP for separate review if Realtime wake is still
+justified. No production deployment, signed release, Realtime cutover, or 8E
+permission was added.
 Worktree location is `C:/Users/ASUS/.zcode/workspace/default/opera-agent`.
 Use `SPECIFY_FEATURE_DIRECTORY` (not `SPECIFY_FEATURE`) for Spec Kit prerequisites.
 

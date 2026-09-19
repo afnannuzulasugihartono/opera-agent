@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R4 ACCEPTED / CLOSED. R4 closeout head `c2f2875686014439404b47518f9cc1789e202a7f` has CircleCI #245 + Vercel SUCCESS. R5 is AUTHORIZED / IN PROGRESS.
+**Status**: R0–R5 ACCEPTED / CLOSED. R5 implementation/evidence head `15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI #250 + Vercel SUCCESS; documentation closeout head `50b19ee1f4ea91fd0be866565a1c1733bc8ff87b` has CircleCI #251 + Vercel SUCCESS. R6 is AUTHORIZED / READY.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -52,8 +52,8 @@
 
 - [x] T026 [US4] Add workflow tests that require an internal `media.sample_at` path using existing `media.state/play/pause/seek`, forbid navigation/reload timestamp seeking, and preserve the 18-tool public MCP surface. Tests-first commit is expected red until T027 implementation.
 - [x] T027 [US4] Implement the approved internal media seek path as versioned workflow `media.sample_at`: preserve prior playback state with `media.state/pause/seek/play`, and use no URL-time navigation/reload. Repository + active workflow history proved there was no legacy URL-time seek path to rewrite, so legitimate page/video navigation remains unchanged.
-- [ ] T028 [US4] Measure controlled ready-media seek p50 and verify no navigation/reload.
-- [ ] T029 Verify public MCP tool count/input schemas remain unchanged and STOP for R5 acceptance.
+- [x] T028 [US4] Measure controlled ready-media seek p50 and verify no navigation/reload. Exact-head CircleCI #250 PASS with nine ready-media seeks, p50 <=1000ms gate, 50ms position tolerance, zero navigate/reload, and background-focus preservation.
+- [x] T029 Verify public MCP tool count/input schemas remain unchanged and STOP for R5 acceptance. Protocol 1 / 26 primitives / 18 public MCP tools remain unchanged; R5 closeout CircleCI #251 + Vercel SUCCESS.
 
 ## Phase R6 — Navigation and residual transport
 

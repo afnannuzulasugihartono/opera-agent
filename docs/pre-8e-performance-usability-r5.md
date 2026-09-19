@@ -2,7 +2,7 @@
 
 Date: 2026-09-19
 
-Status: implementation gates PASS; documentation closeout CI pending.
+Status: **ACCEPTED / CLOSED**.
 
 Evidence head: `15270d5875bd9fa9ae350d1a866332895519abbb`.
 Exact-head statuses independently checked: CircleCI #250 SUCCESS and Vercel
@@ -30,6 +30,4 @@ still assigned to R8, not inferred from controlled Chromium.
 
 ## Continuation boundary
 
-The current user explicitly authorizes R5 through R8 sequentially. No deployment,
-signed release, transport cutover, VM enablement, or Milestone 8E is authorized.
-Closeout requires this documentation commit's CI before R6 implementation.
+R5 is accepted/closed. Documentation closeout head `50b19ee1f4ea91fd0be866565a1c1733bc8ff87b` has CircleCI #251 + Vercel SUCCESS. The current user explicitly authorizes R6 through R8 sequentially. No deployment, signed release, transport cutover, VM enablement, or Milestone 8E is authorized. R6 must begin with the required Spec Kit consistency/constitution analysis and T030 measurement; T033's conditional transport stop remains binding.
