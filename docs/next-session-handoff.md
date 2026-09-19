@@ -277,7 +277,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action:** verify the current **R3 / T017–T020** candidate with exact-head CI. Post-action verification is inspect-only after the action: it returns bounded revision/reset metadata plus mutation/target evidence while preserving canonical semantic UPDATE/RESET for the next page observation. If a gate fails, apply the Evidence-First Bug Repair Loop before any further edit. If all R3 gates pass, complete R3 evidence/closeout and STOP for acceptance. Do not start R4 implicitly. Milestone 8E remains paused/not started.
+**Exact next product action:** verify the current **R3 / T017–T020** candidate with exact-head CI. Post-action verification is inspect-only after the action: it returns bounded revision/reset metadata plus mutation/target evidence while preserving canonical semantic UPDATE/RESET for the next page observation. The explicit connected file-upload guard is preserved without allowing sensitive stale-target revalidation. If a gate fails, apply the Evidence-First Bug Repair Loop before any further edit. If all R3 gates pass, complete R3 evidence/closeout and STOP for acceptance. Do not start R4 implicitly. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 

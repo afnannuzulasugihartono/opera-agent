@@ -402,7 +402,9 @@ script lifetime and connected refs must still satisfy descriptor/document/route
 continuity. Post-action verification now uses `semanticIdentity.inspect()` for both normal and
 route-reset actions, so it reports bounded revision/reset metadata plus mutation/
 target evidence without consuming canonical UPDATE/RESET delivery required by the
-next full `page.read`.
+next full `page.read`. R2 action resolution also preserves the historical explicit
+file-upload rejection: only the original connected same-route file input may reach
+the immediate file guard; sensitive targets are never stale-rebound.
 
 ## Governance / next boundary
 

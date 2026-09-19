@@ -142,14 +142,22 @@
   function resolveActionRef(ref) {
     const key = String(ref || '');
     const descriptor = actionRefDescriptors.get(key);
-    if (!descriptor || descriptor.sensitive) return null;
+    if (!descriptor) return null;
     if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return null;
 
     const connected = resolveRef(key);
     if (connected) {
-      return descriptorMatchesElement(descriptor, connected) ? connected : null;
+      if (!descriptorMatchesElement(descriptor, connected)) return null;
+      // Preserve the historical explicit file-upload rejection without granting
+      // sensitive revalidation authority. Only the original connected file
+      // target may reach the caller's immediate fail-closed file guard.
+      if (descriptor.sensitive) {
+        return sensitiveDescriptor(connected) === 'file' ? connected : null;
+      }
+      return connected;
     }
 
+    if (descriptor.sensitive) return null;
     const candidates = revalidationCandidates(descriptor);
     if (candidates.length !== 1) return null;
 
