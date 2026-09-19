@@ -18,6 +18,49 @@ permission was added.
 Worktree location is `C:/Users/ASUS/.zcode/workspace/default/opera-agent`.
 Use `SPECIFY_FEATURE_DIRECTORY` (not `SPECIFY_FEATURE`) for Spec Kit prerequisites.
 
+## Repository hardening closeout — 2026-09-19
+
+The user requested a small, strict guardrail set that makes AI coding errors harder
+without adding another governance framework.
+
+- Tests-first head `81969607fd99adb41fed78fd478f7bbb07de2863` produced
+  expected CircleCI #266 FAILURE: **430/431 PASS** and only the new dynamic
+  static-check coverage regression failed because the old checker returned exit 0
+  for a newly added runtime file containing `eval()`.
+- Hardening head `e6fa6d2d5e5304c55d0e12a68dc1422e4f640526` has
+  **CircleCI #267 SUCCESS + Vercel SUCCESS**.
+- `scripts/check.mjs` now discovers runtime JS/TS/SQL recursively under
+  `extension/`, `lib/`, `supabase/functions/`, and
+  `supabase/migrations/`; new runtime files cannot silently fall outside the
+  generic `eval` / `new Function` safety scan.
+- The R6 recommendation regression now parses the workflow JSON and asserts its
+  structure instead of locking raw source text with brittle regex escaping.
+- Duplicate everyday GitHub Actions CI was removed. CircleCI is the canonical
+  code/test gate; Vercel remains the preview/deployment check; the GitHub
+  `release.yml` workflow remains release-only.
+- `AGENTS.md` now carries the minimal repository-discipline rules: verify the
+  active branch SHA, do not treat stale `main` as the execution baseline, prefer
+  behavior/structured tests, clean temporary validation state, and synchronize
+  accepted state before continuing.
+- No separate `PROJECT_STATE.json` authority was adopted. Draft PR #51 was
+  closed unmerged because it duplicated governance, diverged from the active
+  hardening branch, and contained stale CI evidence.
+- Obsolete draft PRs #17 and #48 were also closed unmerged.
+- Proven temporary branches `test/pre-8e-usability-repair-r0`,
+  `feat/pre-8e-usability-repair-r1`,
+  `feat/pre-8e-usability-repair-r2`, and `sonar/r6-baseline-r5` were deleted
+  after confirming each was fully behind the active R6 branch and had no open PR.
+- Historical issues #4 and #5 were closed with supersession notes so old
+  1.0.1/23-capability instructions do not masquerade as current state. Issue #1
+  remains open because its signing/passive-update follow-up is not fully obsolete.
+- `main` remains intentionally behind the active repair branch and must not be
+  used as the current implementation baseline. Do not merge the in-progress R6
+  track into `main` merely to reduce branch count.
+
+This hardening changes no extension/runtime/public MCP contract, production
+deployment, signing identity, or Milestone 8E authorization. The exact next product
+work remains **R6 T032 residual queue/transport measurement only**.
+
 Checkpoint 8D remains closed. Performance Track P0–P6 is **ACCEPTED / CLOSED**.
 The audited P6 candidate `96ef1cfdbecc7c5c0e40486b6378501db606b84d` has
 CircleCI #118 + Vercel SUCCESS. PR #46 merged as
