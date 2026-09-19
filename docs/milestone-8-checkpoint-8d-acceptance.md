@@ -49,7 +49,7 @@ A replacement Supabase project-scoped PAT was independently reviewed in Jules se
 
 The token value remained local and was stored via Windows DPAPI. No token value is committed or recorded here.
 
-Fresh read-only rerun authorization in Jules session `3236533720131047548` verified exact head `cf645799968458d55d5c2b391a5d354c369337b6`, a clean tree, and `324/324` tests PASS with zero failures/skips. Final verdict: **PASS**, authorizing exactly one normal live `RUN_8D_EDGE_CONCURRENCY.cmd` execution on that exact head.
+Fresh read-only rerun authorization in Jules session `3236533720131047548` verified exact head `cf645799968458d55d5c2b391a5d354c369337b6`, a clean tree, and `324/324` tests PASS with zero failures/skips. Final verdict: **PASS**, authorizing exactly one normal live `scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd` execution on that exact head.
 
 ## Real hosted Edge concurrency acceptance — PASS
 
@@ -194,4 +194,4 @@ That PASS authorizes marking Checkpoint 8D accepted. Checkpoint 8E is the next c
 2. Require CI/status checks green on the resulting exact head. Pending/queued/in-progress => STOP. A real test failure => diagnose only that failure.
 3. When those checks are green, Checkpoint 8D is durably closed and the next user-directed checkpoint may begin 8E.
 
-Do not rerun `RUN_8D_EDGE_CONCURRENCY.cmd`; its reviewed one-run authorization was consumed by the successful PASS.
+Do not rerun `scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd`; its reviewed one-run authorization was consumed by the successful PASS.

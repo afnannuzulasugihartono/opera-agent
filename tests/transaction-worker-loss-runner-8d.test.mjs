@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const runnerUrl=new URL('./cloud/transaction-worker-loss-8d.mjs',import.meta.url);
 const launcherUrl=new URL('../scripts/run-8d-worker-loss.ps1',import.meta.url);
-const cmdUrl=new URL('../RUN_8D_WORKER_LOSS.cmd',import.meta.url);
+const cmdUrl=new URL('../scripts/legacy/RUN_8D_WORKER_LOSS.cmd',import.meta.url);
 
 test('8D hosted child-worker-loss runner is bounded, recoverable, and has no browser/OAuth surface',async()=>{
   const source=await readFile(runnerUrl,'utf8');

@@ -91,6 +91,41 @@ failure that cost reconciliation work. They are not advisory.
   roadmap, project context, and handoff before starting the next task. Never leave
   the documented exact-next action pointing at work that is already green.
 
+### Naming conventions (binding)
+
+Enforced by `tests/repo-naming-governance.test.mjs`. A naming violation fails
+CI; do not weaken the test to admit a violation — fix the name or, when an
+exception is genuinely required, extend the test's explicit allowlist in the
+same commit with a one-line recorded reason.
+
+- **Repository root is allowlisted.** New top-level files/directories require a
+  conscious allowlist update with justification in the same commit. Ad-hoc
+  scripts, notes, helpers, and one-click entrypoints do not belong in the root.
+- **Filenames are lowercase kebab-case** for markdown and source files. Tracked
+  filenames must not contain process-lifecycle tokens (`tmp`, `temp`, `draft`,
+  `wip`, `untitled`, `backup`, `copy`, `old`, `final<N>`) — a name describes
+  content, not workflow state. Exemptions: conventional root documents
+  (`README.md`, `AGENTS.md`, `CHANGELOG.md`, and peers), vendored layouts under
+  `.specify/`, `.agents/`, and `tools/repowise/`, and `docs/releases/`, a frozen
+  historical archive whose filenames are the actual historical artifact names.
+- **Entrypoints (`.cmd`, `.bat`, `.ps1`, `.sh`) live under `scripts/`** (legacy
+  ones under `scripts/legacy/`); vendored tooling may keep its own layout under
+  `.specify/` and `.agents/`. Manual test/helper pages live under
+  `tests/fixtures/`.
+- **Branches**: `main`, `release/<semver>`, and
+  `feat|fix|chore|docs|test|perf|refactor/<kebab-description>` only. The
+  `tmp/`, `next/`, `ops/`, `autodev/`, `audit/`, and `sonar/` namespaces are
+  retired and must not be recreated; no tool-generated numeric-ID suffixes.
+- **Tags**: `archive/<original-branch-path>` preserves deleted branches;
+  `v<semver>` marks releases. Deleted refs without an archive tag are a
+  violation of the session lifecycle rules.
+- **Evidence records** follow the existing families: repair-track records are
+  `docs/pre-8e-performance-usability-r<N>.md`, milestone records are
+  `docs/milestone-<n>-checkpoint-<id>*.md`. Do not invent a new top-level doc
+  family without updating this section in the same commit.
+- `release-trigger/` is release automation input (`release.yml`); do not
+  repurpose or rename it without updating the workflow.
+
 ## Checkpoint implementation and milestone audit policy
 
 Use one active writer on the milestone branch at a time. ChatGPT Web may own the

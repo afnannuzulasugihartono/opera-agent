@@ -5,7 +5,7 @@ import { collectEdgeRoutingEvidence8D } from './helpers/transaction-edge-routing
 
 const runnerUrl=new URL('./cloud/transaction-edge-concurrency-8d.mjs',import.meta.url);
 const launcherUrl=new URL('../scripts/run-8d-edge-concurrency.ps1',import.meta.url);
-const cmdUrl=new URL('../RUN_8D_EDGE_CONCURRENCY.cmd',import.meta.url);
+const cmdUrl=new URL('../scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd',import.meta.url);
 
 test('8D real Edge concurrency runner is fixed, authenticated, bounded, and browser-dispatch free',async()=>{
   const source=await readFile(runnerUrl,'utf8');

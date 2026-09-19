@@ -279,7 +279,7 @@ Exact documentation head:
 
 Evidence:
 
-- `docs/AI_CODEBASE_CONTEXT.md` is the durable Repowise operating guide.
+- `docs/ai-codebase-context.md` is the durable Repowise operating guide.
 - CircleCI #143: SUCCESS.
 - Vercel: SUCCESS.
 - scope stayed documentation-only; no Opera Agent runtime/prod/public-MCP

@@ -22,7 +22,7 @@ merge, promote, or deploy P6 and does not start Milestone 8E.
 Net integration scope before this closeout record:
 
 - `.gitignore`
-- `docs/AI_CODEBASE_CONTEXT.md`
+- `docs/ai-codebase-context.md`
 - `docs/project-context.md`
 - `docs/next-session-handoff.md`
 - `docs/repowise-r6-validation.md`
@@ -121,7 +121,7 @@ Documentation head:
 
 `e9d6dc8659ac1d7c02bf753a6a2d46bfdae70887`
 
-`docs/AI_CODEBASE_CONTEXT.md` defines setup, indexing, refresh, query workflow,
+`docs/ai-codebase-context.md` defines setup, indexing, refresh, query workflow,
 MCP usage, freshness/privacy boundaries, source-of-truth precedence, and fallback
 to exact source/grep.
 

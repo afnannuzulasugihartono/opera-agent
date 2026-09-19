@@ -79,7 +79,7 @@ complementary retention, token/crypto, tenant and policy-fail-closed evidence.
 
 ## Static-master bracket
 
-Normal `RUN_8D_EDGE_CONCURRENCY.cmd` behavior is fixed to one project/secret:
+Normal `scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd` behavior is fixed to one project/secret:
 
 1. load the Management token only from current-shell or local Windows-DPAPI
    storage;

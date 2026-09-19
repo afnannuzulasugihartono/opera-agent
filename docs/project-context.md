@@ -348,7 +348,7 @@ Exact documentation head:
 
 Evidence:
 
-- `docs/AI_CODEBASE_CONTEXT.md` added as the durable operational entry point for
+- `docs/ai-codebase-context.md` added as the durable operational entry point for
   AI-assisted codebase context.
 - CircleCI #143: **SUCCESS**.
 - Vercel: **SUCCESS**.

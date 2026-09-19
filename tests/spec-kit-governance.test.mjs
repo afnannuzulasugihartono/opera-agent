@@ -33,7 +33,7 @@ test('Spec Kit governance scaffold stays complete and bounded', async () => {
     assert.doesNotMatch(body, /\{SCRIPT\}/);
   }
 
-  const guide = await readFile('docs/SPEC_KIT_GOVERNANCE.md', 'utf8');
+  const guide = await readFile('docs/spec-kit-governance.md', 'utf8');
   assert.match(guide, /Spec Kit does not replace existing governance/);
   assert.match(guide, /P6 is \*\*ACCEPTED \/ CLOSED\*\*/);
   assert.match(guide, /8E remains paused/);

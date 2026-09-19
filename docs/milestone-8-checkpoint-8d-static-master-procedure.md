@@ -30,7 +30,7 @@ Checkpoint 8D.
 
 ## Normal one-probe sequence
 
-`RUN_8D_EDGE_CONCURRENCY.cmd` performs this exact sequence after clean-worktree,
+`scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd` performs this exact sequence after clean-worktree,
 branch synchronization, exact-head display, and Management-token validation:
 
 1. POST the fixed master secret with value `false` to establish a fail-closed
@@ -58,7 +58,7 @@ for the gate.
   fixture creation, Edge concurrency probe, or browser action.
 - If automatic restore fails after three bounded attempts, the launcher exits
   nonzero and explicitly blocks further 8D probes until
-  `RUN_8D_EDGE_CONCURRENCY.cmd -RestoreMasterOnly` succeeds.
+  `scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd -RestoreMasterOnly` succeeds.
 - A normal rerun is prohibited when a recovery namespace was printed; recover that
   namespace first.
 - Abrupt OS termination, machine power loss, or forced process kill cannot be
@@ -89,7 +89,7 @@ Before any production secret is changed by this procedure:
 3. verdict must be **PASS**.
 
 Only that PASS authorizes the user to run exactly one normal
-`RUN_8D_EDGE_CONCURRENCY.cmd` invocation. Immediately afterward, production state
+`scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd` invocation. Immediately afterward, production state
 must be verified again as static master false, policy OFF, operator/namespace
 unowned, host false, synthetic 8D rows zero, and
 `opera_agent_private.goal_heads` zero.
