@@ -3,6 +3,52 @@
 **Date**: 2026-09-18  
 **Status**: Empirical findings frozen for planning; no runtime implementation authorized.
 
+## Evidence and Research Method
+
+This feature follows the repository-wide evidence-first bug repair loop. The
+method is deliberately ordered so repairs are based on observed causes rather than
+plausible guesses.
+
+### Evidence hierarchy
+
+Use the narrowest authoritative evidence that can explain the failure:
+
+1. exact branch/head SHA and failing command/job/assertion;
+2. current repository source and deterministic tests;
+3. Git diff/history and accepted checkpoint records;
+4. raw CI artifacts/logs;
+5. direct controlled-browser/Opera/runtime observations;
+6. production queries only when the active checkpoint explicitly authorizes them;
+7. primary external sources—official documentation, specifications, release
+   notes, or upstream issue trackers—when browser/platform/library/protocol
+   behavior is involved or repository evidence does not yet prove the cause.
+
+Chat summaries, model hypotheses, and secondary articles are leads, not proof.
+
+### Repair research sequence
+
+For each unexpected error, bug, regression, browser mismatch, or failed gate:
+
+1. capture the exact failure and last-known-good evidence;
+2. reproduce or localize the smallest failing boundary without editing runtime;
+3. state a falsifiable root-cause hypothesis;
+4. research enough evidence to support or reject that hypothesis;
+5. identify or add a deterministic regression that demonstrates the defect;
+6. implement the smallest generic repair that preserves existing safety and
+   compatibility contracts;
+7. run the focused regression, then the active checkpoint's required full gates;
+8. record the cause, sources, repair, and result in durable checkpoint evidence
+   when material.
+
+If source/tests/CI fully explain a repository-local defect, external research is
+not mandatory, but the local evidence and reasoning must be recorded. If behavior
+depends on external semantics or remains uncertain, primary upstream research is
+mandatory before repair.
+
+Three repetitions of the same failure without materially new evidence terminate
+speculative repair: mark BLOCKED, gather diagnostics, and request early independent
+audit.
+
 ## Live test
 
 Prompt exercised through the production Opera Agent/Supabase path:

@@ -16,6 +16,12 @@ only where measurements justify it.
 The track MUST reuse the existing semantic state/delta system; it must not build a
 second browser-state system or expand transaction authority.
 
+All checkpoints also use the repository's evidence-first bug repair loop. An
+unexpected error/regression interrupts normal execution: capture exact evidence,
+reproduce/localize, research the root cause, protect it with deterministic
+regression evidence, apply the smallest generic repair, then rerun focused and
+required full gates before normal checkpoint work resumes.
+
 ## Technical Context
 
 **Language/Version**: JavaScript ES modules for extension/tests; TypeScript/Deno for Supabase Edge functions/workflows where applicable.
@@ -63,6 +69,9 @@ second browser-state system or expand transaction authority.
 - The required read-only consistency analysis was re-run before R3 and found no conflict with the frozen R3 contract.
 - The user explicitly authorized R3 only; R4 and later checkpoints still require separate explicit instruction.
 - R3 is bounded to post-action settle/change evidence using existing semantic state/delta machinery and must not claim goal completion or add public surface.
+- The evidence-first bug repair loop in `AGENTS.md` is binding for this feature: failures must be evidenced, localized/reproduced, researched, regression-protected, minimally repaired, and verified before checkpoint execution continues.
+- Platform/browser/library/protocol uncertainty requires primary upstream evidence; a fully proven repository-local defect may use local evidence alone when the reasoning is recorded.
+- Blind reruns, guess-patching, safety-assertion deletion, and threshold weakening are not valid repair strategies. A third same failure without materially new evidence becomes BLOCKED + diagnostics/early audit.
 
 Re-check the constitution gate and run the required analysis again before any R4 implementation.
 
@@ -105,6 +114,37 @@ tests/
 ```
 
 **Structure Decision**: Use existing extension/server/test layout; do not add a new runtime layer.
+
+## Failure Handling Workflow
+
+This workflow applies to every R0-R8 checkpoint and interrupts the normal
+checkpoint sequence whenever an unexpected error, bug, CI regression, browser
+mismatch, or failing acceptance gate appears.
+
+1. **Evidence capture** — record exact branch/head SHA, failing gate/job/command,
+   assertion/error text, reproduction inputs, and last known-good evidence.
+2. **Reproduce/localize** — use authoritative source, tests, Git history, CI
+   artifacts, browser/runtime observations, and project docs to identify the
+   smallest failing boundary before editing.
+3. **Research** — form a falsifiable root-cause hypothesis. Use repository
+   evidence first; when the behavior depends on browser/platform/library/protocol
+   semantics or remains uncertain, consult primary official/upstream sources.
+   Record why external research is unnecessary when the defect is fully explained
+   locally.
+4. **Regression proof** — add or identify a deterministic test/assertion that
+   fails for the defect before runtime repair. Preserve existing safety and
+   compatibility assertions.
+5. **Minimal repair** — implement the smallest generic fix. Do not widen public
+   authority/surface, weaken thresholds, delete assertions, or introduce
+   site-specific exceptions just to make a gate pass.
+6. **Verification** — run the focused regression first, then all full/static/
+   browser/cloud/security gates required by the active checkpoint.
+7. **Loop or block** — any new failure restarts this workflow as new evidence.
+   Three repetitions of the same failure without materially new evidence mark the
+   work BLOCKED and require diagnostics plus an early independent audit request.
+
+Normal checkpoint work resumes only after the active failure is explained and its
+required verification gates pass.
 
 ## Repair Checkpoints
 

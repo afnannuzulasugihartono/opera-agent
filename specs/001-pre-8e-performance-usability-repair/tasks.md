@@ -6,6 +6,8 @@
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
+**Failure branch (mandatory for every task/checkpoint)**: Any unexpected error, bug, CI regression, browser mismatch, or failing acceptance gate immediately pauses normal task execution. Capture exact evidence, reproduce/localize, research the root cause, add or identify deterministic regression evidence, apply the smallest generic fix, and run the focused regression before required full gates. Use primary official/upstream sources when browser/platform/library/protocol behavior is relevant or the local cause is not proven; record when local repository evidence is sufficient. Do not blind-rerun, guess-patch, delete safety/compatibility assertions, weaken thresholds, or widen scope/surface to make CI pass. A new failure restarts this branch. Three repetitions of the same failure without materially new evidence => BLOCKED + diagnostics + early independent audit request.
+
 ## Phase R0 — Baseline and deterministic fixtures
 
 - [x] T001 Create `tests/fixtures/pre-8e-usability-baseline-r0-v1.json` with the frozen empirical timing/payload facts and clearly mark single-run measurements as non-distributional.
@@ -36,7 +38,7 @@
 - [ ] T017 [US3] Add failing tests for bounded post-action revision/change evidence.
 - [ ] T018 [US3] Implement post-action settle/verification using existing state/delta machinery without declaring task completion.
 - [ ] T019 [US3] Prove click that removes/changes a target returns fresh evidence without a mandatory full reread.
-- [ ] T020 Run focused/full/static/browser gates and STOP for R3 acceptance.
+- [ ] T020 Run focused/full/static/browser gates; for every failure encountered during R3, record the Evidence -> Research -> Regression Proof -> Minimal Repair -> Verification chain; then STOP for R3 acceptance.
 
 ## Phase R4 — Compact model-facing observation
 

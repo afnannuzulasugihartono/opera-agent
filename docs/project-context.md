@@ -411,14 +411,17 @@ the immediate file guard; sensitive targets are never stale-rebound.
 - one active writer;
 - tests before runtime behavior;
 - pending required CI = STOP;
-- permanent evidence-first bug repair loop is now authoritative in `AGENTS.md`:
-  every unexpected error/bug/CI regression must be captured and researched before
-  repair, must have deterministic regression evidence before runtime changes, and
-  must use the smallest generic fix followed by focused + required full gates;
-  platform/library/browser uncertainty requires primary external documentation or
-  upstream evidence, while fully proven local defects may use repository research
-  alone; blind retries/guess-patching are prohibited and a third same failure
-  without new evidence becomes blocked + diagnostics/early audit;
+- permanent evidence-first bug repair loop is authoritative in `AGENTS.md` and is
+  now projected into the active Spec Kit feature (`spec.md`, `plan.md`,
+  `tasks.md`, and `research.md`) using the repository's official Spec Kit
+  template structure: every unexpected error/bug/CI regression must be captured
+  and researched before repair, must have deterministic regression evidence
+  before runtime changes, and must use the smallest generic fix followed by
+  focused + required full gates; platform/library/browser/protocol uncertainty
+  requires primary external/upstream evidence, while fully proven local defects
+  may use repository research alone; blind retries/guess-patching are prohibited
+  and a third same failure without new evidence becomes blocked +
+  diagnostics/early audit;
 - the P6 independent audit gate is **PASS / CLOSED WITH USER-ACCEPTED REVIEWER
   DEVIATION**;
 - exact audited range:

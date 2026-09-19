@@ -85,6 +85,10 @@ As the AI, I want existing local media primitives and server-side workflows to a
 - No transcript/captions are available.
 - Page navigation time dominates transport latency.
 - Supabase queue latency is small relative to browser navigation, so transport changes must not be credited for page-load time they cannot remove.
+- A checkpoint gate fails for a reason not yet explained by existing evidence.
+- The same failure recurs after an attempted repair.
+- A browser/platform/library behavior differs from local assumptions.
+- A failure is fully explained by repository-local source/test behavior and does not require external research.
 
 ## Requirements
 
@@ -105,6 +109,11 @@ As the AI, I want existing local media primitives and server-side workflows to a
 - **FR-013**: Background-first behavior and all existing sensitive-data protections MUST remain unchanged; no silent foreground takeover is allowed.
 - **FR-014**: Milestone 8E, transaction authority, `milestone7_vm_enabled`, production VM tables, the preserved accidental 8E stash, and public MCP expansion are out of scope.
 - **FR-015**: Behavior-changing implementation MUST be tests-first and each repair checkpoint MUST stop for its own acceptance evidence before the next checkpoint begins.
+- **FR-016**: Every unexpected error, bug, CI regression, browser mismatch, or failing acceptance gate MUST enter an evidence-first repair loop before normal implementation continues.
+- **FR-017**: The repair loop MUST capture the exact failing SHA/gate/assertion or error, reproduce or localize the defect with authoritative repository/runtime evidence, state a falsifiable root-cause hypothesis, and identify the evidence that would confirm the repair before changing runtime behavior.
+- **FR-018**: The repair loop MUST research the root cause using repository source/tests/history, CI artifacts, browser/runtime observations, and project documentation first. When behavior depends on a browser, platform, library, protocol, or other upstream system—or the local cause remains uncertain—the research MUST consult primary external sources such as official documentation, specifications, release notes, or upstream issue trackers. Fully proven repository-local defects MAY proceed without external research when that reasoning is recorded.
+- **FR-019**: A deterministic regression test or pre-existing deterministic failing assertion MUST protect the defect before the runtime repair is accepted. The implementation MUST be the smallest generic fix and MUST NOT weaken thresholds, delete safety/compatibility assertions, broaden authority, or add site-specific exceptions merely to make CI green.
+- **FR-020**: After a repair, the focused regression MUST run before the required full/static/browser/cloud/security gates. A new failure is new evidence and MUST restart the same evidence-first loop. Three repetitions of the same failure without materially new evidence MUST be marked BLOCKED with diagnostics and an early independent audit request instead of further speculative edits.
 
 ### Key Entities
 
@@ -112,6 +121,7 @@ As the AI, I want existing local media primitives and server-side workflows to a
 - **Action Target Descriptor**: Non-authoritative evidence used to revalidate a stale ref, such as document continuity, stable key source, tag/role/label, geometry, sensitivity and uniqueness.
 - **Post-Action Evidence**: Fresh revision/change/target-presence evidence returned after a bounded action settle; never completion proof.
 - **YouTube Skip Benchmark**: The frozen real-world acceptance scenario derived from the 2026-09-18 live test.
+- **Bug Repair Evidence Record**: The bounded evidence set for an unexpected failure: exact SHA/gate/error, reproduction/localization facts, research sources, falsifiable root-cause hypothesis, regression proof, minimal repair, and verification result.
 
 ## Success Criteria
 
@@ -125,6 +135,8 @@ As the AI, I want existing local media primitives and server-side workflows to a
 - **SC-006**: The YouTube transcript/content workflow improves total time by at least 50% from the frozen ~20.514 second run, or records evidence that browser rendering dominates the remaining time without adding foreground takeover.
 - **SC-007**: Protocol remains 1, allowlisted browser primitive count remains 26, public MCP tool count remains 18, and public MCP input schemas remain unchanged throughout this repair track.
 - **SC-008**: No regression introduces foreground takeover, sensitive-value leakage, false completion, stale-state action, or missed relevant semantic change.
+- **SC-009**: For every unexpected failure encountered during R3-R8, the checkpoint evidence or durable context records the exact failure, researched cause, regression proof, repair, and verification result before the checkpoint can be accepted.
+- **SC-010**: Zero checkpoint failures are resolved by blind rerun, unverified guess-patching, deleted safety assertions, or weakened acceptance thresholds; three same-failure repetitions without new evidence transition to BLOCKED + diagnostics/audit rather than a fourth speculative repair.
 
 ## Assumptions
 
