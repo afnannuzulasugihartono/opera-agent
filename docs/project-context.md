@@ -365,7 +365,7 @@ or scope expansion is authorized implicitly. Any remote/public MCP, external
 provider, cloud upload, editor auto-configuration, or runtime coupling requires a
 new explicitly scoped review.
 
-## Pre-8E Performance Usability Repair — R0–R2 accepted
+## Pre-8E Performance Usability Repair — R0–R2 accepted; R3 implemented
 
 On 2026-09-18 the user approved inserting a findings-driven repair track before
 Milestone 8E after a live production-path YouTube test.
@@ -376,7 +376,7 @@ Canonical plan:
 Spec Kit feature:
 `specs/001-pre-8e-performance-usability-repair/`.
 
-Status: **R0–R2 ACCEPTED / CLOSED; R3 AUTHORIZED / IN PROGRESS; R4 NOT AUTHORIZED**.
+Status: **R0–R2 ACCEPTED / CLOSED; R3 IMPLEMENTED / GATES GREEN — STOPPED FOR R3 ACCEPTANCE; R4 NOT AUTHORIZED**.
 
 Frozen findings include:
 - on-screen ad `Skip` competing with offscreen `Skip navigation`;
@@ -442,7 +442,8 @@ the immediate file guard; sensitive targets are never stale-rebound.
 - R1 is **ACCEPTED / CLOSED** after actionability-first observation, bounded-ranking acceptance, historical hash-lock rebaseline, and controlled Chromium regression;
 - R2 implementation evidence head `70c79db6d76ab624d19bd5d6067a1469ef522045` has CircleCI #226 + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r2.md`;
 - R2 is **ACCEPTED / CLOSED** after unique same-document recovery, unsafe-case fail-closed coverage, authorized content hash-lock rebaseline, and controlled Chromium regression;
-- the user explicitly authorized **R3 only**; exact active work is T017–T020 on `feat/pre-8e-usability-repair-r3`; R4 remains unauthorized;
+- the user explicitly authorized **R3 only**; R3 implementation evidence head `285374f20ef1592d16246fe1e53ab4c9d8b8da81` and governance head `5b5ed172770e5b1ce6bc428c84902d48762ce8bf` have CircleCI SUCCESS + Vercel SUCCESS; durable evidence: `docs/pre-8e-performance-usability-r3.md`;
+- R3 is **IMPLEMENTED / GATES GREEN** after bounded post-action verification, recorded failure-repair chains (route-reset revival, reset evidence, semantic delta authority, read compatibility, file-upload guard) and a local Windows CRLF hash-lock mechanism repair; local gates 423/423 PASS + `npm run check` PASS; stopped for R3 acceptance; R4 remains unauthorized;
 - 8E remains paused/not started and cannot begin until the repair track reaches R8
   acceptance and the user separately authorizes 8E.
 

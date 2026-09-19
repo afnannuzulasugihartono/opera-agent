@@ -2,7 +2,7 @@
 
 **Input**: `spec.md`, `plan.md`, `research.md`
 
-**Status**: R0–R2 ACCEPTED / CLOSED. R3 is AUTHORIZED / IN PROGRESS. R4 is NOT authorized.
+**Status**: R0–R2 ACCEPTED / CLOSED. R3 is IMPLEMENTED / GATES GREEN — stopped for R3 acceptance. R4 is NOT authorized.
 
 **Execution rule**: Run `$speckit-analyze` and obtain explicit implementation instruction before T001. Complete checkpoints sequentially; STOP after each checkpoint acceptance.
 
@@ -35,10 +35,10 @@
 
 ## Phase R3 — Local action verification
 
-- [ ] T017 [US3] Add failing tests for bounded post-action revision/change evidence.
-- [ ] T018 [US3] Implement post-action settle/verification using existing state/delta machinery without declaring task completion.
-- [ ] T019 [US3] Prove click that removes/changes a target returns fresh evidence without a mandatory full reread.
-- [ ] T020 Run focused/full/static/browser gates; for every failure encountered during R3, record the Evidence -> Research -> Regression Proof -> Minimal Repair -> Verification chain; then STOP for R3 acceptance.
+- [x] T017 [US3] Add failing tests for bounded post-action revision/change evidence.
+- [x] T018 [US3] Implement post-action settle/verification using existing state/delta machinery without declaring task completion.
+- [x] T019 [US3] Prove click that removes/changes a target returns fresh evidence without a mandatory full reread.
+- [x] T020 Run focused/full/static/browser gates; for every failure encountered during R3, record the Evidence -> Research -> Regression Proof -> Minimal Repair -> Verification chain; then STOP for R3 acceptance.
 
 ## Phase R4 — Compact model-facing observation
 
