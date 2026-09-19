@@ -279,7 +279,7 @@ verified at `opera-agent-vm` version 27 with
 All deployed files match the merge commit, the VM feature flag remains false, and
 the VM tables remain empty. P6 is **ACCEPTED / CLOSED**.
 
-**Exact next product action for any coding agent (including Z Code):** under the 2026-09-19 standing CI-evidence authorization, execute **R4 / T021–T025** (compact model-facing observation) on `feat/pre-8e-usability-repair-r3`: freeze MCP inventory/input-schema compatibility (T021), add failing payload/relevant-fact tests (T022), implement compact model-facing projection while retaining canonical internal state and trusted reset/full-snapshot recovery (T023), demonstrate >=70% controlled payload reduction with zero relevant target/change loss (T024), run compatibility/full/static/browser gates (T025), record evidence in `docs/pre-8e-performance-usability-r4.md`, and treat CircleCI + Vercel SUCCESS on the R4 evidence head as R4 acceptance before starting R5. Milestone 8E remains paused/not started.
+**Exact next product action for any coding agent (including Z Code):** verify the T023 compact-projection candidate on `feat/pre-8e-usability-repair-r3` with exact-head CI. T021/T022/T023 are implemented; the prior #241 failure was the expected red test (`compactView` absent before T023). If the new CI exposes a different failure, follow the Evidence -> Research -> Regression Proof -> Minimal Repair -> Verification loop. If the implementation gate is green, complete T024 (prove >=70% controlled payload reduction with zero relevant target/change loss), then T025 compatibility/full/static/browser gates and R4 evidence/closeout. STOP after R4 acceptance; do not start R5 implicitly. Milestone 8E remains paused/not started.
 
 ## Preserved rollback / stash warning
 

@@ -42,9 +42,9 @@
 
 ## Phase R4 — Compact model-facing observation
 
-- [ ] T021 [US3] Freeze a compatibility test for the current MCP inventory/input schemas.
-- [ ] T022 [US3] Add failing payload/relevant-fact tests for compact model-facing output.
-- [ ] T023 [US3] Implement compact model-facing projection while retaining canonical internal state and trusted reset/full-snapshot recovery.
+- [x] T021 [US3] Freeze a compatibility test for the current MCP inventory/input schemas.
+- [x] T022 [US3] Add failing payload/relevant-fact tests for compact model-facing output.
+- [x] T023 [US3] Implement compact model-facing projection while retaining canonical internal state and trusted reset/full-snapshot recovery.
 - [ ] T024 [US3] Demonstrate >=70% controlled payload reduction with zero relevant target/change loss.
 - [ ] T025 Run compatibility/full/static/browser gates and STOP for R4 acceptance.
 

@@ -472,6 +472,64 @@
     return { regional, observation, views };
   }
 
+  function compactElementProjection(item) {
+    const projected = {
+      ref: item.ref,
+      logicalId: item.logicalId,
+      stableKey: item.stableKey,
+      tag: item.tag,
+      role: item.role,
+      text: item.text,
+      label: item.label,
+      href: item.href,
+      type: item.type,
+      name: item.name,
+      placeholder: item.placeholder,
+      checked: item.checked,
+      selected: item.selected,
+      disabled: item.disabled,
+      ariaPressed: item.ariaPressed,
+      ariaChecked: item.ariaChecked,
+      ariaExpanded: item.ariaExpanded,
+      ariaSelected: item.ariaSelected,
+      visible: !!item.visible,
+      inViewport: !!item.inViewport,
+      actionable: !!item.actionable,
+      rect: item.rect
+    };
+    return Object.fromEntries(
+      Object.entries(projected).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+  }
+
+  function compactObservationElements(items, delta, limit = 16) {
+    const changed = new Set(
+      (Array.isArray(delta?.changes) ? delta.changes : [])
+        .map((change) => String(change?.logicalId || ''))
+        .filter(Boolean)
+    );
+    const selected = [];
+    const selectedIds = new Set();
+    const add = (item) => {
+      if (!item || item.sensitive) return;
+      const key = String(item.logicalId || item.ref || item.stableKey || '');
+      if (!key || selectedIds.has(key) || selected.length >= limit) return;
+      selectedIds.add(key);
+      selected.push(compactElementProjection(item));
+    };
+
+    for (const item of items) {
+      if (changed.has(String(item.logicalId || ''))) add(item);
+    }
+    for (const item of items) {
+      if (item.actionable && item.inViewport) add(item);
+    }
+    for (const item of items) {
+      if (item.visible && item.inViewport) add(item);
+    }
+    return selected;
+  }
+
   function pageRead(args) {
     syncSemanticScope(args);
     const fullText = normalizeText(document.body?.innerText || document.documentElement?.innerText || '');
@@ -493,18 +551,33 @@
     };
     page.viewport = viewportState();
     page.mutationVersion = mutationVersion;
+    const compactView = args.view === 'compact';
+    if (compactView) page.compactView = true;
     if (args.includeElements !== false) {
       const regional = semanticRegionObservation(args.maxElements);
       const observation = semanticIdentity.observe(regional.items);
-      page.elements = observation.items;
-      page.semanticState = observation.state;
-      page.semanticDelta = observation.delta;
-      page.semanticViews = semanticViews.observe({
-        regions: regional.regions,
-        items: observation.items,
-        semanticState: observation.state,
-        delta: observation.delta,
-      });
+      if (compactView) {
+        // Advance the existing semantic view engine so internal canonical state
+        // stays current, but project only task-useful facts to the model.
+        semanticViews.observe({
+          regions: regional.regions,
+          items: observation.items,
+          semanticState: observation.state,
+          delta: observation.delta,
+        });
+        page.elements = compactObservationElements(observation.items, observation.delta);
+        page.semanticDelta = observation.delta;
+      } else {
+        page.elements = observation.items;
+        page.semanticState = observation.state;
+        page.semanticDelta = observation.delta;
+        page.semanticViews = semanticViews.observe({
+          regions: regional.regions,
+          items: observation.items,
+          semanticState: observation.state,
+          delta: observation.delta,
+        });
+      }
     }
     return {
       ok: true,

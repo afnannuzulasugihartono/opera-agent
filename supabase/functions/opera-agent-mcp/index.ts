@@ -334,7 +334,7 @@ function createServer() {
 
   server.registerTool("read_page", {
     title: "Read Opera page",
-    description: "Read page text and interactive elements with reusable refs, stable keys, screen rectangles, true viewport presence, document identity, viewport geometry, and zoom. Use pagination for long pages.",
+    description: "Read a compact task-facing page observation with reusable refs, stable keys, relevant change evidence, screen rectangles, true viewport presence, document identity, viewport geometry, and zoom. Use pagination for long pages.",
     inputSchema: {
       tabId: tabIdSchema,
       offset: z.number().int().nonnegative().optional(),
@@ -343,7 +343,8 @@ function createServer() {
       maxElements: z.number().int().min(1).max(300).optional()
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, (args: TargetTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) => execute("page.read", args));
+  }, (args: TargetTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) =>
+    execute("page.read", { ...args, view: "compact" }));
 
   server.registerTool("capture_page", {
     title: "Capture Opera page",

@@ -396,15 +396,22 @@ R1 changed only generic observation/actionability behavior in `extension/content
 
 R2 adds bounded action-time fresh-target revalidation in `extension/content.js`: a stale ref may rebind only to one same-document/same-route equivalent current target that matches frozen descriptor identity/metadata and is actionable/non-sensitive. Ambiguity, route reset, sensitivity change, weak evidence, or disappearance fail closed. Caller-provided observational `logicalId`/coordinates are not action authority. No production deployment/schema mutation, VM enablement, public MCP expansion, transaction authority, or 8E work was performed.
 
-R3 remains in progress. Its current candidate adds bounded post-action evidence for
-synthetic and trusted clicks. SPA/runtime action refs are monotonic within a content-
-script lifetime and connected refs must still satisfy descriptor/document/route
-continuity. Post-action verification now uses `semanticIdentity.inspect()` for both normal and
-route-reset actions, so it reports bounded revision/reset metadata plus mutation/
-target evidence without consuming canonical UPDATE/RESET delivery required by the
-next full `page.read`. R2 action resolution also preserves the historical explicit
-file-upload rejection: only the original connected same-route file input may reach
-the immediate file guard; sensitive targets are never stale-rebound.
+R3 is accepted/closed. Its bounded post-action verification uses
+`semanticIdentity.inspect()` after actions so mutation/target evidence is returned
+without consuming canonical UPDATE/RESET delivery required by the next full
+`page.read`. SPA/runtime action refs stay monotonic; connected refs still require
+descriptor/document/route continuity; explicit file-upload rejection remains
+fail-closed without sensitive stale rebind.
+
+R4 is authorized/in progress. T021 froze Protocol 1 / 26 browser primitives /
+18 public MCP tools and the existing `read_page` input schema. T022 added expected-
+red controlled compact-observation tests. T023 now projects compact model-facing
+elements from the existing canonical observation: canonical semantic identity/delta
+and semantic-view state still advance internally, while compact output retains
+bounded delta evidence and a small set of changed/actionable/in-viewport non-
+sensitive elements. Legacy/default primitive `page.read` and explicit
+`view=full` remain full; public MCP `read_page` selects compact mode internally
+without adding a public input field.
 
 ## Governance / next boundary
 

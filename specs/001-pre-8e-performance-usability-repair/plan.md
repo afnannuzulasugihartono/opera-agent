@@ -54,7 +54,7 @@ required full gates before normal checkpoint work resumes.
 
 ## Constitution Check
 
-**PASS for R3 start. R3 only is authorized; R4 is not authorized.**
+**PASS for R4 implementation. R0–R3 are accepted/closed; R4 is authorized/in progress.**
 
 - Repository authority remains above Spec Kit.
 - 8E remains paused/not started.
@@ -67,13 +67,14 @@ required full gates before normal checkpoint work resumes.
 - The required read-only consistency analysis was re-run before R2 and found no conflict with the frozen R2 contract.
 - R2 tests-first implementation and exact-head closeout are complete.
 - The required read-only consistency analysis was re-run before R3 and found no conflict with the frozen R3 contract.
-- The user explicitly authorized R3 only; R4 and later checkpoints still require separate explicit instruction.
-- R3 is bounded to post-action settle/change evidence using existing semantic state/delta machinery and must not claim goal completion or add public surface.
+- R0–R3 are accepted/closed on exact CI evidence.
+- Under the 2026-09-19 standing CI-evidence authorization, R4/T021–T025 is authorized; R5 and later checkpoints remain gated by R4 acceptance and the canonical checkpoint sequence.
+- R4 is bounded to compact model-facing projection while canonical semantic identity/state/delta remains internal and trusted full/reset recovery remains available.
 - The evidence-first bug repair loop in `AGENTS.md` is binding for this feature: failures must be evidenced, localized/reproduced, researched, regression-protected, minimally repaired, and verified before checkpoint execution continues.
 - Platform/browser/library/protocol uncertainty requires primary upstream evidence; a fully proven repository-local defect may use local evidence alone when the reasoning is recorded.
 - Blind reruns, guess-patching, safety-assertion deletion, and threshold weakening are not valid repair strategies. A third same failure without materially new evidence becomes BLOCKED + diagnostics/early audit.
 
-Re-check the constitution gate and run the required analysis again before any R4 implementation.
+Re-check the constitution gate and run the required analysis again before any R5 implementation.
 
 ## Project Structure
 

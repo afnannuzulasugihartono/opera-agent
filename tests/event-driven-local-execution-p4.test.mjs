@@ -486,7 +486,7 @@ test('P4 frozen boundary remains locked except the P6-authorized Reactive VM cut
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
-    ['../extension/content.js', '508201e936d8540f0ab4b07854cb841834c531ad'],
+    ['../extension/content.js', 'd8d48b17d4bc74c0fae24e9c6fa07bd2c6988cbc'],
     ['../extension/background.js', 'cba4e583e331362f2c9d9c7f73394be327bdb31d'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
     ['../supabase/functions/opera-agent-mcp/index.ts', 'a2f91e096d9c48ba7d40d82c9ce725dfb7bd3668'],
