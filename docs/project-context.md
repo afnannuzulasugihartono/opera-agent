@@ -478,6 +478,15 @@ are measured through the normal extension command path, each resulting
 contain no `tabs.navigate` or `tabs.reload`. Background-focus preservation
 is audited on every seek.
 
+The first T028 candidate `3384757f3e1249be0ed0fbfd222b601a8b55d12a`
+failed CircleCI #248 in the Chromium extension regression before any measured
+`media.seek`: the new benchmark referenced the legacy `focus_audit` local before
+that variable is initialized later in the harness. Repository-local source fully
+explains the failure, so no upstream research is required. The repair uses a
+dedicated `r5_focus_audit`, asserts the R5 media tab is not active, and derives
+background-focus preservation from all nine seek audits. It does not change the
+1-second threshold, runtime behavior, public MCP contract, or production state.
+
 ## Governance / next boundary
 
 - one active writer;

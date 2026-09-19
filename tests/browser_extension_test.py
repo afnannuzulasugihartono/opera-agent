@@ -891,6 +891,9 @@ async def run(port, profile):
             'wait': True
         }, benchmark='r5.tabs.open.ready-media')
         r5_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        r5_focus_audit = []
+        r5_focus_baseline = await browser_focus_state(worker)
+        assert r5_focus_baseline['activeTabId'] != r5_tab_id, r5_focus_baseline
 
         r5_media = None
         r5_ready_deadline = time.time() + 5.0
@@ -920,7 +923,7 @@ async def run(port, profile):
         r5_seek_targets = [0.10, 0.25, 0.40, 0.55, 0.70, 0.85, 1.00, 1.20, 1.40]
         r5_seek_results = []
         for seconds in r5_seek_targets:
-            body = await audited_background_command(worker, focus_audit, 'media.seek', {
+            body = await audited_background_command(worker, r5_focus_audit, 'media.seek', {
                 'tabId': r5_tab_id,
                 'index': 0,
                 'seconds': seconds
@@ -957,8 +960,17 @@ async def run(port, profile):
             'navigationOrReloadUsed': (
                 'tabs.navigate' in r5_measured_methods or 'tabs.reload' in r5_measured_methods
             ),
-            'backgroundFocusPreserved': True
+            'backgroundFocusPreserved': (
+                len(r5_focus_audit) == len(r5_seek_targets)
+                and all(
+                    item['focusPreserved']
+                    and item['before']['activeTabId'] != r5_tab_id
+                    and item['after']['activeTabId'] != r5_tab_id
+                    for item in r5_focus_audit
+                )
+            )
         }
+        assert r5_acceptance['backgroundFocusPreserved'], r5_focus_audit
         print(json.dumps({'r5MediaSeekAcceptance': r5_acceptance}, indent=2))
 
         cid = STATE.push('tabs.close', {'tabId': r5_tab_id})
