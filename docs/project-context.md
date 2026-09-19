@@ -487,6 +487,20 @@ dedicated `r5_focus_audit`, asserts the R5 media tab is not active, and derives
 background-focus preservation from all nine seek audits. It does not change the
 1-second threshold, runtime behavior, public MCP contract, or production state.
 
+The repaired candidate `0bb99e6d14251b2b9e0e40dcb39c9cd254338297` then
+failed CircleCI #249 only in the Chromium extension regression. Exact step-output
+evidence shows the second measured seek (target 0.25s) returned `currentTime: 0`
+while the fixture was only `readyState: 1` / HAVE_METADATA. WHATWG HTML defines
+HAVE_METADATA as metadata-only with no media data available at the immediate
+playback position, and defines `seekable` as the ranges the user agent can seek
+to; it also notes full-resource seekability when the server supports HTTP Range.
+The deterministic fixture therefore must not treat HAVE_METADATA as ready-media.
+The repair adds bounded single-range byte serving for the local WAV, requires
+HAVE_CURRENT_DATA-or-better (`readyState >= 2`) before measurement, and tightens
+the seek-position tolerance from 150ms to 50ms. This is test/fixture hardening
+only; the runtime media primitive, p50 <=1000ms threshold, public MCP surface,
+and production state remain unchanged.
+
 ## Governance / next boundary
 
 - one active writer;

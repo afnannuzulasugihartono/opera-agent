@@ -173,12 +173,49 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/pre8e-r5.wav'):
             payload = R5_WAV
-            self.send_response(200)
+            start = 0
+            end = len(payload) - 1
+            status = 200
+            range_header = self.headers.get('Range', '').strip()
+            if range_header:
+                if not range_header.startswith('bytes=') or ',' in range_header:
+                    self.send_response(416)
+                    self.send_header('Content-Range', f'bytes */{len(payload)}')
+                    self.end_headers()
+                    return
+                start_text, end_text = range_header[6:].split('-', 1)
+                try:
+                    if start_text:
+                        start = int(start_text)
+                        end = int(end_text) if end_text else end
+                    else:
+                        suffix_length = int(end_text)
+                        if suffix_length <= 0:
+                            raise ValueError('invalid suffix range')
+                        start = max(0, len(payload) - suffix_length)
+                except ValueError:
+                    self.send_response(416)
+                    self.send_header('Content-Range', f'bytes */{len(payload)}')
+                    self.end_headers()
+                    return
+                if start < 0 or end < start or start >= len(payload):
+                    self.send_response(416)
+                    self.send_header('Content-Range', f'bytes */{len(payload)}')
+                    self.end_headers()
+                    return
+                end = min(end, len(payload) - 1)
+                status = 206
+
+            response_payload = payload[start:end + 1]
+            self.send_response(status)
             self.send_header('Content-Type', 'audio/wav')
-            self.send_header('Content-Length', str(len(payload)))
+            self.send_header('Accept-Ranges', 'bytes')
+            if status == 206:
+                self.send_header('Content-Range', f'bytes {start}-{end}/{len(payload)}')
+            self.send_header('Content-Length', str(len(response_payload)))
             self.end_headers()
             try:
-                self.wfile.write(payload)
+                self.wfile.write(response_payload)
             except (BrokenPipeError, ConnectionError, OSError):
                 pass
             return
@@ -904,14 +941,14 @@ async def run(port, profile):
                 r5_media.get('present') is True
                 and isinstance(r5_media.get('duration'), (int, float))
                 and r5_media['duration'] >= 1.5
-                and r5_media.get('readyState', 0) >= 1
+                and r5_media.get('readyState', 0) >= 2
             ):
                 break
             await asyncio.sleep(0.05)
         assert r5_media is not None, 'R5 media state was never observed'
         assert r5_media['present'] is True, r5_media
         assert r5_media['duration'] >= 1.5, r5_media
-        assert r5_media['readyState'] >= 1, r5_media
+        assert r5_media['readyState'] >= 2, r5_media
 
         # Keep the controlled media paused so each measured seek is independent
         # of playback progress. The production workflow preserves prior playback
@@ -930,7 +967,7 @@ async def run(port, profile):
             })
             media = assert_completed_ok(body)['media']
             assert media['present'] is True, media
-            assert abs(media['currentTime'] - seconds) <= 0.15, {
+            assert abs(media['currentTime'] - seconds) <= 0.05, {
                 'targetSeconds': seconds,
                 'media': media
             }
@@ -952,7 +989,7 @@ async def run(port, profile):
         assert 'tabs.reload' not in r5_measured_methods
 
         r5_acceptance = {
-            'readyMedia': r5_media['readyState'] >= 1 and r5_media['duration'] >= 1.5,
+            'readyMedia': r5_media['readyState'] >= 2 and r5_media['duration'] >= 1.5,
             'seekRuns': len(r5_seek_latencies),
             'seekP50Ms': r5_seek_p50_ms,
             'seekLatenciesMs': r5_seek_latencies,
