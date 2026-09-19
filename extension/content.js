@@ -141,11 +141,15 @@
 
   function resolveActionRef(ref) {
     const key = String(ref || '');
-    const connected = resolveRef(key);
-    if (connected) return connected;
-
     const descriptor = actionRefDescriptors.get(key);
     if (!descriptor || descriptor.sensitive) return null;
+    if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return null;
+
+    const connected = resolveRef(key);
+    if (connected) {
+      return descriptorMatchesElement(descriptor, connected) ? connected : null;
+    }
+
     const candidates = revalidationCandidates(descriptor);
     if (candidates.length !== 1) return null;
 
@@ -420,7 +424,8 @@
   }
 
   function resetActionRefs() {
-    refCounter = 0;
+    // Keep refCounter monotonic for this content-script lifetime. Reusing a ref
+    // after an SPA/runtime reset could revive stale action authority.
     refs = new WeakMap();
     reverseRefs = new Map();
     actionRefDescriptors = new Map();

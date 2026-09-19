@@ -641,6 +641,9 @@ async def run(port, profile):
         r2_route_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
         cid = STATE.push('page.click', {'tabId': r2_route_tab, 'ref': r2_route_trigger['ref'], 'trusted': False})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.query', {'tabId': r2_route_tab, 'selector': '#r2-route'})
+        r2_route_fresh = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        assert r2_route_fresh['ref'] != r2_route_before['ref'], (r2_route_before, r2_route_fresh)
         cid = STATE.push('page.click', {'tabId': r2_route_tab, 'ref': r2_route_before['ref'], 'trusted': False}, benchmark='r2.route.fail-closed')
         r2_route_click = await asyncio.to_thread(STATE.wait, cid)
         cid = STATE.push('tabs.close', {'tabId': r2_route_tab})
