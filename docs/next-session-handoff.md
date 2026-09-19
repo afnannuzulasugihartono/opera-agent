@@ -2,6 +2,17 @@
 
 Last synchronized: 2026-09-19.
 
+## Latest repair continuation — read before historical instructions below
+
+Continue the user's explicit R5–R8 request sequentially, not Milestone 8E.
+R5 implementation head `15270d5875bd9fa9ae350d1a866332895519abbb` has CircleCI
+#250 + Vercel SUCCESS, independently checked. Local full Node suite/static check
+PASS. Check R5 documentation closeout CI before R6; evidence record:
+`docs/pre-8e-performance-usability-r5.md`. R6–R8 remain pending.
+No production deployment, signed release, or Realtime cutover permission was added.
+Worktree location is `C:/Users/ASUS/.zcode/workspace/default/opera-agent`.
+Use `SPECIFY_FEATURE_DIRECTORY` (not `SPECIFY_FEATURE`) for Spec Kit prerequisites.
+
 Checkpoint 8D remains closed. Performance Track P0–P6 is **ACCEPTED / CLOSED**.
 The audited P6 candidate `96ef1cfdbecc7c5c0e40486b6378501db606b84d` has
 CircleCI #118 + Vercel SUCCESS. PR #46 merged as

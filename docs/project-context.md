@@ -2,6 +2,17 @@
 
 Last synchronized: 2026-09-19
 
+## Latest repair continuation (takes precedence over historical entries below)
+
+User explicitly requested R5 through R8 sequentially. R5 implementation head
+`15270d5875bd9fa9ae350d1a866332895519abbb` has independently verified CircleCI
+#250 + Vercel SUCCESS; local full Node tests and static check PASS. R5 closeout
+documentation CI is pending. R6/R7/R8 are authorized but not yet implemented in
+this continuation. See `docs/pre-8e-performance-usability-r5.md`.
+Production deployments, signed promotion, R6 transport cutover and 8E remain
+outside scope. The live paired extension reports 1.6.0 / Protocol 1 / 26 capabilities;
+that does not prove the unpromoted repair candidate is installed.
+
 Repository/CI/production evidence outranks chat summaries. Follow `AGENTS.md`,
 `SECURITY.md`, accepted checkpoint records, and the selected execution plan.
 
