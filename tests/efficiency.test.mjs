@@ -109,13 +109,13 @@ test('R6 YouTube recommendation prefers local SPA click with bounded navigation 
 
   assert.ok(latest, 'youtube.play_recommendation workflow migration must exist');
   const section = latest.slice(latest.indexOf("'youtube.play_recommendation'"));
-  assert.match(section, /"id":"openrecLocal","method":"page\\.click"/);
-  assert.match(section, /"ref":\{"\\$ref":"steps\\.rec\\.result\\.item\\.ref"\}/);
+  assert.match(section, /"id":"openrecLocal","method":"page\.click"/);
+  assert.match(section, /"ref":\{"\$ref":"steps\.rec\.result\.item\.ref"\}/);
   assert.match(section, /"trusted":true/);
-  assert.match(section, /"id":"waitwatchLocal","method":"page\\.wait_for"/);
-  assert.match(section, /"steps\\.waitwatchLocal\\.result\\.item"/);
-  assert.match(section, /"id":"openrecFallback","method":"tabs\\.navigate"/);
-  assert.match(section, /"url":\{"\\$ref":"steps\\.rec\\.result\\.item\\.href"\}/);
+  assert.match(section, /"id":"waitwatchLocal","method":"page\.wait_for"/);
+  assert.match(section, /"steps\.waitwatchLocal\.result\.item"/);
+  assert.match(section, /"id":"openrecFallback","method":"tabs\.navigate"/);
+  assert.match(section, /"url":\{"\$ref":"steps\.rec\.result\.item\.href"\}/);
 });
 
 test('YouTube recommendation skips ad polling entirely when no ad is present', () => {
