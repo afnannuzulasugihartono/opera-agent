@@ -13,7 +13,7 @@ across four videos had p50 3045.3 ms total / 154.2 ms queue / 2882.0 ms executio
 actual YouTube Home navigation had p50 3896.5 ms total / 82.8 ms queue. The live
 paired extension is still 1.6.0 and R1–R5 are not production-promoted, so this is
 historical navigation-cost evidence, not an integrated post-R5 production speed
-claim. Exact next is T031 only. See
+claim. T031 tests-first is now staged as the next R6 gate: a deterministic efficiency regression requires the latest `youtube.play_recommendation` workflow to try the freshly queried recommendation ref via local `page.click`, verify the SPA watch transition, and retain a bounded `tabs.navigate` fallback to the same href only when the local transition does not materialize. No workflow/runtime behavior is changed in the tests-first commit. Exact next is to verify the expected-red CI, then implement the smallest versioned workflow repair for T031 only. See
 `docs/pre-8e-performance-usability-r6.md`. Production deployments, signed
 promotion, Realtime transport cutover and 8E remain outside scope; T033's
 conditional STOP is binding. The live paired extension reports 1.6.0 / Protocol 1 / 26 capabilities;

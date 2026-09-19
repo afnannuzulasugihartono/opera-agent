@@ -98,6 +98,26 @@ test('default crawl stays low-overhead while parallel crawl is explicit and boun
   assert.match(runner, /structuredClone\(ctx\)/);
 });
 
+test('R6 YouTube recommendation prefers local SPA click with bounded navigation fallback', () => {
+  const migrationDir = new URL('../supabase/migrations/', import.meta.url);
+  const latest = fs.readdirSync(migrationDir)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+    .reverse()
+    .map((name) => fs.readFileSync(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8'))
+    .find((sql) => sql.includes("'youtube.play_recommendation'"));
+
+  assert.ok(latest, 'youtube.play_recommendation workflow migration must exist');
+  const section = latest.slice(latest.indexOf("'youtube.play_recommendation'"));
+  assert.match(section, /"id":"openrecLocal","method":"page\\.click"/);
+  assert.match(section, /"ref":\{"\\$ref":"steps\\.rec\\.result\\.item\\.ref"\}/);
+  assert.match(section, /"trusted":true/);
+  assert.match(section, /"id":"waitwatchLocal","method":"page\\.wait_for"/);
+  assert.match(section, /"steps\\.waitwatchLocal\\.result\\.item"/);
+  assert.match(section, /"id":"openrecFallback","method":"tabs\\.navigate"/);
+  assert.match(section, /"url":\{"\\$ref":"steps\\.rec\\.result\\.item\\.href"\}/);
+});
+
 test('YouTube recommendation skips ad polling entirely when no ad is present', () => {
   const section = migration.slice(migration.indexOf("'youtube.play_recommendation'"), migration.indexOf("'youtube.get_transcript'"));
   assert.match(section, /"id":"adinitial"/);

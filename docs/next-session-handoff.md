@@ -11,8 +11,7 @@ R6 is **IN PROGRESS**. The required Spec Kit consistency/constitution analysis i
 PASS and T030 is complete. Historical read-only command evidence found 78 non-reused
 YouTube timestamp seeks across four videos at p50 3045.3 ms total / 154.2 ms queue,
 versus YouTube Home navigation p50 3896.5 ms total / 82.8 ms queue. This is not an
-integrated production claim because the R1–R5 candidate is not promoted. Exact next:
-**T031 only** — tests-first behavior-equivalent reuse/SPA/local-action optimization.
+integrated production claim because the R1–R5 candidate is not promoted. T031 tests-first is the active gate. A deterministic efficiency regression now requires the latest `youtube.play_recommendation` workflow to prefer local `page.click` on the freshly queried recommendation ref, verify the SPA watch transition, and keep a bounded `tabs.navigate` fallback to the same href only when the local path does not materialize. No runtime/workflow implementation is included in the tests-first commit. Exact next: verify the expected-red CI, then implement T031 only.
 T032 and T033 remain pending; T033 must STOP for separate review if Realtime wake is
 still justified. No production deployment, signed release, Realtime cutover, or 8E
 permission was added.
