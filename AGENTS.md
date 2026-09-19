@@ -25,6 +25,31 @@ start of the next resumed session before taking new architectural work.
 The durable context is a handoff aid, not a substitute for inspecting current code
 and git state.
 
+## Repository discipline
+
+Keep the repository easy for coding agents to reason about. Prefer a few enforced
+rules over overlapping process.
+
+- Never assume `main` is the current implementation baseline. Resolve the active
+  execution branch from the current roadmap/context, then verify its remote SHA
+  before every commit and push. If `main` is behind, do not compare or implement
+  against it as though it were current.
+- CircleCI is the canonical code/test CI gate. Vercel is the deployment/preview
+  check. SonarQube Cloud is the PR static-quality check when a PR exists. Do not add
+  a duplicate GitHub Actions test workflow; `.github/workflows/release.yml` is
+  release automation, not a second everyday CI.
+- Regression tests should verify behavior or parsed/structured artifacts. Raw
+  source-text regex or byte locks are allowed only when an exact literal/contract
+  is intentionally frozen and the test states why exact text is required.
+- `npm run check` must discover runtime JS/TS/SQL files automatically under
+  `extension/`, `lib/`, `supabase/functions/`, and
+  `supabase/migrations/`. Do not maintain a hand-picked safety-file list.
+- Temporary diagnostic PRs and branches must be closed/removed after their evidence
+  is captured. Do not create a branch per task unless isolation is actually needed.
+- When the required CI on an exact head turns green, synchronize the task list,
+  roadmap, project context, and handoff before starting the next task. Never leave
+  the documented exact-next action pointing at work that is already green.
+
 ## Checkpoint implementation and milestone audit policy
 
 Use one active writer on the milestone branch at a time. ChatGPT Web may own the

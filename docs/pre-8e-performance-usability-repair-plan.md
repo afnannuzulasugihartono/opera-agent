@@ -1,6 +1,6 @@
 # Pre-8E Performance Usability Repair Plan
 
-Status: **R0–R5 ACCEPTED / CLOSED; R6 AUTHORIZED / IN PROGRESS (T030 complete)**
+Status: **R0–R5 ACCEPTED / CLOSED; R6 AUTHORIZED / IN PROGRESS (T030–T031 complete; T032 next)**
 
 Created: 2026-09-18
 
@@ -133,7 +133,7 @@ R1 is ACCEPTED/CLOSED with durable evidence in `docs/pre-8e-performance-usabilit
 
 R2 and R3 are ACCEPTED/CLOSED with their durable evidence records. R4 is ACCEPTED/CLOSED with implementation/evidence head `4c1e4cbbe0644b06bf51ce952be78edac8aa9182` (CircleCI #244 + Vercel SUCCESS) and closeout head `c2f2875686014439404b47518f9cc1789e202a7f` (CircleCI #245 + Vercel SUCCESS).
 
-R5 / T026–T029 is **ACCEPTED / CLOSED**. Canonical synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. R6 is now **IN PROGRESS**. The required Spec Kit consistency/constitution analysis is PASS and T030 is complete: read-only command history found 78 non-reused YouTube timestamp seeks across four videos at p50 3045.3 ms total / 154.2 ms queue, while actual YouTube Home navigation had p50 3896.5 ms total / 82.8 ms queue. Exact next is **T031**: prefer behavior-equivalent reuse/SPA/local action paths only where tested. T032 then quantifies residual queue/transport share, and T033's mandatory STOP remains binding if Realtime wake is still justified.
+R5 / T026–T029 is **ACCEPTED / CLOSED**. Canonical synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. R6 is now **IN PROGRESS**. The required Spec Kit consistency/constitution analysis is PASS. T030 navigation measurement is complete. T031 local-SPA recommendation navigation is also complete at exact head `3d21ecc58cfece6e55f40433525a7a6c1db27800` with CircleCI #258 + Vercel SUCCESS. Exact next is **T032** residual queue/transport measurement; T033's mandatory STOP remains binding if Realtime wake is still justified.
 
 Milestone 8E remains paused/not started until R8 is accepted and the user separately
 authorizes 8E.

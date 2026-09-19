@@ -2,7 +2,7 @@
 
 Date: 2026-09-19
 
-Status: **IN PROGRESS — T030 complete; T031–T033 pending.**
+Status: **IN PROGRESS — T030–T031 complete; T032–T033 pending.**
 
 Entry gate: R5 is ACCEPTED/CLOSED. Canonical R5 synchronization head
 `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel
@@ -79,14 +79,9 @@ needed. The minimal versioned repair leaves historical migrations untouched and:
 4. preserves the existing final watch/video waits and ad/media handling.
 
 No public surface, protocol, browser primitive, production schema, VM, auth/signing,
-or transport change is included. Implementation CI must be green before T031 is
-marked complete.
+or transport change is included. Implementation head `1b20d3346129ddc32438ef3d1d20ac1d2c5c2067` exposed only an over-escaped test matcher in CircleCI #255. Test-only repair head `3d21ecc58cfece6e55f40433525a7a6c1db27800` then passed CircleCI #258 + Vercel SUCCESS. T031 is complete.
 
 ## Continuation boundary
 
-Exact next: **T031 only** — identify behavior-equivalent navigation/reload paths
-that can safely use tab reuse, SPA/local action, or the already-approved media
-path, protect every behavior-changing change tests-first, and preserve
-background-first/fail-closed semantics. T032 remains the later residual
-queue/transport measurement. T033's conditional STOP remains binding: Realtime
+Exact next: **T032 only** — quantify residual workflow/command queue and transport share after the accepted navigation optimization. Do not infer a Realtime transport need before that measurement. T033's conditional STOP remains binding: Realtime
 transport cutover is not authorized here.

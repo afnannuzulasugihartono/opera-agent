@@ -22,27 +22,22 @@ const identityDigest = crypto.createHash('sha256').update(Buffer.from(manifest.k
 const extensionId = [...identityDigest].map((byte) => `${String.fromCharCode(97 + (byte >> 4))}${String.fromCharCode(97 + (byte & 15))}`).join('');
 assert.equal(extensionId, 'ohbbpamcljckmjhcpkcmefdobkoeaick');
 
+function collectRuntimeFiles(relativeDir, extensions) {
+  const absoluteDir = path.join(root, relativeDir);
+  return fs.readdirSync(absoluteDir, { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = path.join(relativeDir, entry.name);
+    if (entry.isDirectory()) return collectRuntimeFiles(relativePath, extensions);
+    return extensions.has(path.extname(entry.name)) ? [relativePath] : [];
+  });
+}
+
 const files = [
-  'extension/background.js', 'extension/content.js', 'extension/semantic-identity.js', 'extension/semantic-views.js', 'extension/popup.js',
-  'supabase/functions/opera-agent-bridge/index.ts',
-  'supabase/functions/opera-agent-update/index.ts',
-  'supabase/functions/opera-agent-runner/index.ts',
-  'supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql',
-  'supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql',
-  'supabase/migrations/20260907204248_opera_agent_1_0_0_seed_workflows.sql',
-  'supabase/migrations/20260908021000_opera_agent_releases.sql',
-  'supabase/migrations/20260908025018_opera_agent_lock_internal_workflow_functions.sql',
-  'supabase/migrations/20260908025218_opera_agent_command_method_index.sql',
-  'supabase/migrations/20260908031800_opera_agent_async_workflow_runner.sql',
-  'supabase/migrations/20260908040000_opera_agent_two_phase_command_api.sql',
-  'supabase/migrations/20260908073800_opera_agent_update_telemetry.sql',
-  'supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql',
-  'supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql',
-  'supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql',
-  'supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql',
-  'supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql',
-  'supabase/migrations/20260910114405_opera_agent_adaptive_screenshot.sql'
-];
+  ...collectRuntimeFiles('extension', new Set(['.js'])),
+  ...collectRuntimeFiles('lib', new Set(['.js'])),
+  ...collectRuntimeFiles('supabase/functions', new Set(['.js', '.ts'])),
+  ...collectRuntimeFiles('supabase/migrations', new Set(['.sql'])),
+].sort();
+
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
   assert.doesNotMatch(text, /\beval\s*\(/, `${file} must not use eval`);
@@ -84,4 +79,4 @@ for (const marker of ['capturePage', 'Page.captureScreenshot', 'page.capture_pol
 const burstMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260910024820_opera_agent_bounded_browser_burst.sql'), 'utf8');
 assert.match(burstMigration, /browser\.burst/);
 for (const marker of ['BURST_MAX_STEPS', 'BURST_MAX_TIMEOUT_MS', 'runBurst', 'MAX_BURST_RESULT_BYTES']) assert.ok(`${fs.readFileSync(path.join(root, 'extension/lib/protocol.js'), 'utf8')}\n${background}`.includes(marker), marker);
-console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, version ${manifest.version}`);
+console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, ${files.length} runtime safety files, version ${manifest.version}`);
