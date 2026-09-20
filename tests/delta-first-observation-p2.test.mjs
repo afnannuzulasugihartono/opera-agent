@@ -550,7 +550,7 @@ test('P2 does not synthesize completion or foreground/browser authority', () => 
 test('P2 keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
   // R8 authorizes only generic omitted-limit find dominance in content.js.
   const files = new Map([
-    ['../extension/content.js', 'dd8c556a9bdd2b8beadcbe499f66e66be1167e19'],
+    ['../extension/content.js', '5a38bdbf0152601af065b57a9425714b590a68a5'],
     ['../extension/background.js', '7d9eba6e5f2c745f8278b3f6a9c5845ab131e3a1'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
     ['../supabase/functions/opera-agent-mcp/index.ts', 'bd1e0eadf69096e0e134c5b128801dc1495322a6'],

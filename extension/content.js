@@ -660,7 +660,7 @@
       if (role && String(s.role).toLowerCase() !== role) return false;
       if (tag && String(s.tag).toLowerCase() !== tag) return false;
       if (!text) return true;
-      return exact ? exactTextMatch : hay.includes(text);
+      return exact ? exactTextMatch || hay.trim() === text : hay.includes(text);
     });
     entries = entries
       .map((entry) => ({ ...entry, rank: actionabilityRank(entry.el) }))

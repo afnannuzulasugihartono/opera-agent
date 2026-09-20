@@ -661,6 +661,16 @@ async def run(port, profile):
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
+            'text': 'Alpha Beta',
+            'exact': True,
+            'limit': 6
+        }, benchmark='r8.page.find.combined-fields.exact')
+        r8_combined_exact = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_combined_exact['count'] == 1, r8_combined_exact
+        assert r8_combined_exact['item']['label'] == 'Alpha', r8_combined_exact
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
             'text': 'Skip',
             'limit': 1
         }, benchmark='r1.page.find.skip.limit1')
