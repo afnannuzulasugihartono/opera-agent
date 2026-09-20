@@ -223,6 +223,27 @@
     };
   }
 
+  function hitTestReachable(el, rect) {
+    const left = Math.max(0, rect.left);
+    const right = Math.min(innerWidth, rect.right);
+    const top = Math.max(0, rect.top);
+    const bottom = Math.min(innerHeight, rect.bottom);
+    if (right <= left || bottom <= top) return false;
+    const insetX = Math.min(1, (right - left) / 4);
+    const insetY = Math.min(1, (bottom - top) / 4);
+    const points = [
+      [(left + right) / 2, (top + bottom) / 2],
+      [left + insetX, top + insetY],
+      [right - insetX, top + insetY],
+      [left + insetX, bottom - insetY],
+      [right - insetX, bottom - insetY]
+    ];
+    return points.some(([x, y]) => {
+      const hit = document.elementFromPoint(x, y);
+      return hit === el || !!(hit && el.contains(hit));
+    });
+  }
+
   // inViewport keeps its original overlap semantics; fullyInViewport adds
   // strict viewport containment and viewportClipped reports whether an
   // ancestor's overflow box actually cut the element (transformed Maps-style
@@ -249,6 +270,10 @@
       const newTop = clipsY ? Math.max(top, parentRect.top) : top;
       const newBottom = clipsY ? Math.min(bottom, parentRect.bottom) : bottom;
       if (newRight <= newLeft || newBottom <= newTop) {
+        if (hitTestReachable(el, rect)) {
+          const fully = rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight;
+          return { inViewport: true, fullyInViewport: fully, viewportClipped: false };
+        }
         return { inViewport: false, fullyInViewport: false, viewportClipped: true };
       }
       if (newLeft !== left || newRight !== right || newTop !== top || newBottom !== bottom) clippedByAncestor = true;
@@ -665,14 +690,15 @@
     entries = entries
       .map((entry) => ({ ...entry, rank: actionabilityRank(entry.el) }))
       .sort((left, right) => left.rank - right.rank || left.index - right.index);
+    const dominant = entries.filter((entry) => entry.exactTextMatch && entry.rank === 0);
     let projected = entries;
-    if (args.limit == null && args.index == null) {
-      const dominant = entries.filter((entry) => entry.exactTextMatch && entry.rank === 0);
-      if (dominant.length === 1) projected = dominant;
-    }
+    if (args.limit == null && args.index == null && dominant.length === 1) projected = dominant;
     const items = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
     const index = Number.isInteger(args.index) ? args.index : 0;
-    return { ok: true, count: entries.length, item: items[index] ?? null, items };
+    const item = args.index == null && dominant.length === 1
+      ? serialize(dominant[0].el, { includeValue: !!args.includeValue })
+      : items[index] ?? null;
+    return { ok: true, count: entries.length, item, items };
   }
 
   function collectLinks(args) {

@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-18
 
-**Status**: R0–R7 Accepted / Closed; R8 T039–T040 complete, T041 failed and safely rolled back to 1.6.2; T042–T045 blocked
+**Status**: R0–R7 Accepted / Closed; R8 T039–T040 complete, T041 failed and safely rolled back to 1.6.2; bounded R8 repair T046–T052 authorized/in progress; T042–T045 remain blocked
 
 **Input**: User-approved repair plan derived from a live Opera Agent YouTube responsiveness test. This feature is inserted after closed Performance Track P0-P6 and before Milestone 8E. It does not reopen P0-P6 and does not authorize 8E.
 

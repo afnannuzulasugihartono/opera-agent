@@ -105,3 +105,28 @@ Opera installed `1.6.2_0` in place. Post-rollback `browser.ping` completed in
 - Production is safely on 1.6.2, which carries accepted 1.6.0 extension behavior.
 - R8 remains blocked pending a separately authorized evidence-first repair.
 - Do not tag/release 1.6.1 as accepted, fast-forward it to `main`, or start 8E.
+
+## Authorized repair continuation
+
+The user separately authorized a bounded R8 repair on 2026-09-20. Source and
+official browser/CSS research identified two generic defects:
+
+1. unique exact-actionable dominance selected `item` only when both `limit` and
+   `index` were omitted, while the real MCP caller supplied `limit:20`; and
+2. manual overflow-ancestor intersection ignored containing-block clipping
+   exceptions and could contradict browser hit testing.
+
+Tests first reproduced both failures. The content-only repair preserves explicit
+`items`, equal exact-actionable ambiguity, explicit `index`, genuine clipping,
+sensitivity, stale-ref failure, Protocol 1, 26 capabilities, and all 18 MCP
+schemas. It selects the one exact-actionable `item` even with an explicit limit
+and uses bounded `elementFromPoint` sampling only as conservative proof when
+manual ancestor clipping collapses an otherwise viewport-overlapping rect.
+
+Focused controlled Chromium passes, including explicit-limit dominance,
+explicit-index precedence, equal ambiguity, containing-block escape, genuine
+clipping, and 55/55 background-focus preservation. Static checks pass; the
+canonical Node suite excluding the known local-root filesystem check passes
+444/444. Production remains safely on 1.6.2. A version newer than 1.6.2,
+exact-head CI, signed artifact verification, independent audit, and repeat live
+acceptance remain required.

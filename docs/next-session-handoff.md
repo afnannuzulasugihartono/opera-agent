@@ -13,6 +13,15 @@ completed in 408 ms with pairing, Protocol 1, and 26 capabilities intact. Stop:
 do not start a new repair, merge 1.6.1 to main, tag it accepted, or start 8E
 without explicit authorization.
 
+The user then explicitly authorized the bounded T046-T052 repair. Tests-first
+source now selects a unique exact-actionable `item` even when callers request an
+explicit diagnostic limit, while retaining all `items`, equal ambiguity, and
+explicit index authority. A bounded browser hit-test override corrects false
+ancestor-clipping negatives without promoting genuinely clipped controls.
+Controlled browser, static checks, and 444 canonical local Node tests pass.
+Exact-head CI, version >1.6.2 signing, audit, and repeat live T041 are still
+required. Production remains on 1.6.2; do not activate a candidate yet.
+
 The user explicitly authorized a same-identity signed `1.6.1` update through the
 production update service. Implementation/release head
 `f38eddef508b96ec4df641af56377c611030ddf5` has CircleCI #295 + Vercel

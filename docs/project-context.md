@@ -15,6 +15,13 @@ with accepted 1.6.0 behavior. Opera installed `1.6.2_0`; post-rollback ping was
 do not continue speculative repair, merge 1.6.1 to main, tag it accepted, or
 start 8E.
 
+The user subsequently authorized bounded repair tasks T046-T052. Tests-first
+implementation now fixes explicit-limit dominant-item selection and over-broad
+manual overflow clipping using conservative browser hit-test proof. Controlled
+browser, static checks, and the 444-test canonical local Node subset pass;
+exact-head CI and a signed version newer than production 1.6.2 remain pending.
+Production is unchanged on 1.6.2 and this repair is not yet accepted.
+
 The user authorized a same-identity signed `1.6.1` update for R8 and requested
 the production update path rather than an unpacked extension. The R8 candidate
 head `f38eddef508b96ec4df641af56377c611030ddf5` has CircleCI #295 + Vercel

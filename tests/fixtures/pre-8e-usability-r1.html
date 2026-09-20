@@ -10,6 +10,13 @@
     #disabled-skip { position: absolute; left: 24px; top: 72px; width: 160px; height: 36px; }
     #sensitive-skip { position: absolute; left: 24px; top: 120px; width: 180px; height: 36px; }
     #ad-skip { position: absolute; left: 120px; top: 220px; width: 96px; height: 40px; }
+    #launch-options { position: absolute; left: 300px; top: 220px; width: 160px; height: 40px; }
+    #launch-exact { position: absolute; left: 480px; top: 220px; width: 120px; height: 40px; }
+    #escape-containing-block { position: absolute; left: 300px; top: 300px; width: 400px; height: 120px; }
+    #escape-static-clip { width: 20px; height: 20px; overflow: hidden; }
+    #escape-action { position: absolute; left: 100px; top: 30px; width: 180px; height: 36px; }
+    #genuine-clip { position: absolute; left: 750px; top: 300px; width: 20px; height: 20px; overflow: hidden; }
+    #genuine-clipped-action { position: absolute; left: 100px; top: 30px; width: 180px; height: 36px; }
     #disabled-noise { margin-top: 320px; }
   </style>
 </head>
@@ -18,7 +25,6 @@
   <button id="hidden-skip" aria-label="Skip hidden">Skip hidden</button>
   <button id="disabled-skip" aria-label="Skip disabled" disabled>Skip disabled</button>
   <input id="sensitive-skip" type="password" aria-label="Skip credential" value="" />
-
   <div id="disabled-noise" aria-label="Bounded truncation noise">
     <button disabled>Noise action 01</button>
     <button disabled>Noise action 02</button>
@@ -36,6 +42,16 @@
 
   <main id="main">
     <button id="ad-skip" aria-label="Skip">Skip</button>
+    <button id="launch-options" aria-label="Launch options">Launch options</button>
+    <button id="launch-exact" aria-label="Launch">Launch</button>
+    <div id="escape-containing-block">
+      <div id="escape-static-clip">
+        <button id="escape-action" aria-label="Viewport escape">Viewport escape</button>
+      </div>
+    </div>
+    <div id="genuine-clip">
+      <button id="genuine-clipped-action" aria-label="Genuine clipped">Genuine clipped</button>
+    </div>
     <button id="choose-first" aria-label="Choose">Choose</button>
     <button id="choose-second" aria-label="Choose">Choose</button>
     <button id="combined-fields" aria-label="Alpha">Beta</button>

@@ -1,6 +1,6 @@
 # Implementation Plan: Pre-8E Performance Usability Repair
 
-**Branch**: `feat/pre-8e-usability-repair-r3` (R3 only) | **Date**: 2026-09-18 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md`
+**Branch**: `feat/pre-8e-usability-repair-r8` (bounded R8 repair) | **Date**: 2026-09-20 | **Spec**: `specs/001-pre-8e-performance-usability-repair/spec.md`
 
 **Input**: Live YouTube responsiveness findings plus canonical Opera Agent governance.
 
@@ -32,7 +32,7 @@ required full gates before normal checkpoint work resumes.
 
 **Testing**: Node test suite, static `npm run check`, controlled Chromium/Opera acceptance, exact YouTube Skip benchmark, workflow timing evidence.
 
-**Target Platform**: Opera desktop with Opera Agent extension 1.6.0; current Supabase production architecture.
+**Target Platform**: Opera desktop with production rollback 1.6.2 carrying accepted 1.6.0 behavior; current Supabase production architecture.
 
 **Project Type**: Browser extension + MCP/Edge control plane.
 
@@ -54,7 +54,7 @@ required full gates before normal checkpoint work resumes.
 
 ## Constitution Check
 
-**PASS for R6 entry. R0–R5 are accepted/closed; canonical R5 synchronization head `d0782dd39806bd2a659c632d805d2592d07c4836` has CircleCI #252 + Vercel SUCCESS. The required R6 consistency/constitution analysis has been re-run and found no conflict. R6 is authorized/in progress: T030–T031 are complete; T032–T033 remain pending. T031 exact head `3d21ecc58cfece6e55f40433525a7a6c1db27800` has CircleCI #258 + Vercel SUCCESS.**
+**PASS for bounded R8 repair entry. R0–R7 are accepted/closed. R8 T039–T040 completed; T041 failed on exact live evidence and the audited signed 1.6.2 forward rollback completed. The user explicitly authorized T046–T052. The repair is limited to generic explicit-limit dominant-item selection and browser-authoritative viewport reachability, with Protocol 1 / 26 capabilities / 18 public MCP schemas unchanged.**
 
 - Repository authority remains above Spec Kit.
 - 8E remains paused/not started.
@@ -77,7 +77,9 @@ required full gates before normal checkpoint work resumes.
 - Platform/browser/library/protocol uncertainty requires primary upstream evidence; a fully proven repository-local defect may use local evidence alone when the reasoning is recorded.
 - Blind reruns, guess-patching, safety-assertion deletion, and threshold weakening are not valid repair strategies. A third same failure without materially new evidence becomes BLOCKED + diagnostics/early audit.
 
-Re-check the constitution gate and run the required analysis again before any R6 implementation.
+The required read-only consistency analysis was re-run before T047. It found
+stale historical R6 status plus missing repair tasks; this plan and `tasks.md`
+now record the bounded R8 repair. Re-run convergence before T042-T045 closeout.
 
 ## Project Structure
 

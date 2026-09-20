@@ -652,6 +652,16 @@ async def run(port, profile):
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
+            'text': 'Choose',
+            'limit': 20
+        }, benchmark='r8.page.find.choose.explicit-limit-ambiguous')
+        r8_explicit_ambiguous = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_explicit_ambiguous['count'] == 2, r8_explicit_ambiguous
+        assert len(r8_explicit_ambiguous['items']) == 2, r8_explicit_ambiguous
+        assert all(item['actionable'] is True for item in r8_explicit_ambiguous['items']), r8_explicit_ambiguous
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
             'text': 'Alpha Beta',
             'limit': 6
         }, benchmark='r8.page.find.combined-fields')
@@ -668,6 +678,58 @@ async def run(port, profile):
         r8_combined_exact = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert r8_combined_exact['count'] == 1, r8_combined_exact
         assert r8_combined_exact['item']['label'] == 'Alpha', r8_combined_exact
+
+        # R8 repair: callers may request a diagnostic list explicitly. Keep the
+        # list intact, but expose the one exact actionable match as `item`.
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Launch',
+            'limit': 20
+        }, benchmark='r8.page.find.explicit-limit-dominant')
+        r8_explicit_limit = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_explicit_limit['count'] == 2, r8_explicit_limit
+        assert len(r8_explicit_limit['items']) == 2, r8_explicit_limit
+        assert r8_explicit_limit['items'][0]['label'] == 'Launch options', r8_explicit_limit
+        assert r8_explicit_limit['item']['label'] == 'Launch', r8_explicit_limit
+        assert r8_explicit_limit['item']['actionable'] is True, r8_explicit_limit
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Launch',
+            'limit': 20,
+            'index': 0
+        }, benchmark='r8.page.find.explicit-index-wins')
+        r8_explicit_index = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_explicit_index['item']['label'] == 'Launch options', r8_explicit_index
+
+        # CSS overflow does not clip an absolutely positioned descendant when
+        # the clipping node lies between it and its containing block. Browser
+        # hit-testing is the authority for this reachable viewport target.
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Viewport escape',
+            'exact': True,
+            'limit': 20
+        }, benchmark='r8.page.find.containing-block-escape')
+        r8_containing_block_escape = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_containing_block_escape['count'] == 1, r8_containing_block_escape
+        assert r8_containing_block_escape['item']['visible'] is True, r8_containing_block_escape
+        assert r8_containing_block_escape['item']['inViewport'] is True, r8_containing_block_escape
+        assert r8_containing_block_escape['item']['viewportClipped'] is False, r8_containing_block_escape
+        assert r8_containing_block_escape['item']['actionable'] is True, r8_containing_block_escape
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Genuine clipped',
+            'exact': True,
+            'limit': 20
+        }, benchmark='r8.page.find.genuine-clipping')
+        r8_genuine_clipping = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_genuine_clipping['count'] == 1, r8_genuine_clipping
+        assert r8_genuine_clipping['item']['visible'] is True, r8_genuine_clipping
+        assert r8_genuine_clipping['item']['inViewport'] is False, r8_genuine_clipping
+        assert r8_genuine_clipping['item']['viewportClipped'] is True, r8_genuine_clipping
+        assert r8_genuine_clipping['item']['actionable'] is False, r8_genuine_clipping
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
