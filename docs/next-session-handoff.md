@@ -4,6 +4,15 @@ Last synchronized: 2026-09-20.
 
 ## R8 signed release gate — read first
 
+**Latest outcome: R8 T041 FAILED and production safely rolled forward to signed
+1.6.2.** The original prompt completed, but `find("Skip")` used explicit
+`limit:20`, exposed two candidates led by offscreen `Skip navigation`, suffered
+two stale ref clicks, and required coordinate fallback. See
+`docs/pre-8e-performance-usability-r8.md`. Opera installed `1.6.2_0`; ping
+completed in 408 ms with pairing, Protocol 1, and 26 capabilities intact. Stop:
+do not start a new repair, merge 1.6.1 to main, tag it accepted, or start 8E
+without explicit authorization.
+
 The user explicitly authorized a same-identity signed `1.6.1` update through the
 production update service. Implementation/release head
 `f38eddef508b96ec4df641af56377c611030ddf5` has CircleCI #295 + Vercel
@@ -22,18 +31,16 @@ version surfaces changed to 1.6.2. Its 10 packaged files match prepared source,
 and the accepted 1.6.0 browser harness passes with 20/20 burst stability and
 55-command focus preservation.
 
-Production now stores both signed artifacts. Database-decoded hashes/sizes match
-the local evidence; the audited atomic cutover made 1.6.1 the sole active row,
-with 1.6.0 and forward rollback 1.6.2 inactive. Identity-specific health/XML and
-the public download match 1.6.1 exactly. Opera installed `1.6.1_0` in place and
-the owner reports it remains active/paired. Two earlier audits
+Production stores both signed artifacts. Database-decoded hashes/sizes match the
+local evidence; after the failed gate the audited atomic rollback made 1.6.2 the
+sole active row, with 1.6.0 and 1.6.1 inactive. Identity-specific health/XML and
+the public download match 1.6.2 exactly. Two earlier audits
 returned CONDITIONAL PASS because registry pointer rollback alone cannot
 downgrade a browser that installed 1.6.1. The final independent audit on exact
 head `248d73ec05713a2f2b7682a3fb43fc3805279cef` returned **PASS** after
 verifying both CRX artifacts, identities, packaged bytes, exact-head CI, and the
-forward-rollback procedure. Exact next action: verify connector ping/version and
-run R8 T039-T041. Atomically activate 1.6.2 on any acceptance failure; on success
-leave 1.6.1 active and 1.6.2 inactive. Milestone 8E remains paused.
+forward-rollback procedure. That rollback has now completed. T039-T040 are done;
+T041 failed and T042-T045 remain open. Milestone 8E remains paused.
 
 The locally DPAPI-encrypted Management credential supplied the audited write
 authority without exposing its value. The pre-existing root `deno.lock` was

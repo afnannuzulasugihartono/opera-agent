@@ -13,11 +13,8 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.5.1](1.5.1.md) — professional responsive popup while preserving extension identity, pairing, protocol, and capability inventory.
 - [1.5.2](1.5.2.md) — popup intrinsic-width correction that prevents scrollbar-width collapse in Opera.
 - [1.6.0](1.6.0.md) — semantic identity, bounded deltas, generic materialized views, causal invalidation, and scoped completion evidence.
-- [1.6.1](1.6.1.md) — production-active unique exact-actionable find projection; final R8 live acceptance remains pending.
-
-## Pending release candidates
-
-- [1.6.2](1.6.2.md) — stored inactive same-identity forward rollback carrying accepted 1.6.0 behavior.
+- [1.6.1](1.6.1.md) — unique exact-actionable find candidate; deactivated after failing the R8 live Skip path.
+- [1.6.2](1.6.2.md) — production-active same-identity forward rollback carrying accepted 1.6.0 behavior.
 
 Future stable releases should use simple SemVer filenames:
 

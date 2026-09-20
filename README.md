@@ -2,8 +2,8 @@
 
 Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-- **Stable extension:** `1.6.1` (production-active; R8 live acceptance pending)
-- **Current stable release:** `1.6.1`
+- **Stable extension:** `1.6.2` (forward rollback to accepted 1.6.0 behavior)
+- **Current stable release:** `1.6.2`
 - **Protocol:** `1`
 - **Legacy extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 - **Current extension ID:** `ohbbpamcljckmjhcpkcmefdobkoeaick`
@@ -120,6 +120,6 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 
 Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, updates, ping, tab operations, bounded bursts, trusted debugger input, chunked semantic reads, ARIA state, media state, and bounded background screenshots. The backend uses a two-phase command/workflow API so queued work is committed before the browser consumes it.
 
-The production-active release is **1.6.1** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`; signed **1.6.2** is stored inactive as the forward rollback to accepted 1.6.0 behavior. They retain protocol 1, 26 capabilities, and the unchanged 18-tool MCP inventory. Version 1.6.1 adds unique exact-actionable projection for ordinary omitted-limit `page.find` calls while preserving explicit multi-result discovery and ambiguity.
+The production-active release is **1.6.2** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`. It is the signed forward rollback to accepted 1.6.0 behavior after 1.6.1 failed the R8 live Skip-path gate. Protocol 1, 26 capabilities, pairing identity, and the unchanged 18-tool MCP inventory are preserved.
 
-The pre-8E performance usability repair track R0–R7 is **ACCEPTED / CLOSED** (actionability-first observation, fresh-target revalidation, bounded post-action verification, compact model-facing observation, internal media fast path, navigation reuse, and transcript-scoped YouTube cleanup). R8 is active: the signed update is installed and only connector ping plus the original YouTube acceptance/closeout remain. Milestone 8E remains paused. `main` is fast-forwarded only after an accepted checkpoint; see `AGENTS.md` for the binding session and branch lifecycle rules.
+The pre-8E performance usability repair track R0–R7 is **ACCEPTED / CLOSED**. R8 T039-T040 completed, but T041 failed because the normal Skip path required candidate filtering, two stale-ref failures, and coordinate fallback. Production was safely rolled forward to 1.6.2; R8 remains blocked and Milestone 8E remains paused. `main` is fast-forwarded only after an accepted checkpoint; see `AGENTS.md` for the binding session and branch lifecycle rules.

@@ -72,13 +72,17 @@
 
 ## Phase R8 — Full acceptance and closeout
 
-- [ ] T039 Run the original YouTube recommendation/click/skip/summarize prompt in real Opera.
-- [ ] T040 Record total latency, per-step latency, model/tool round trips, stale-ref recovery, payload, foreground audit and relevant-state-loss audit.
+- [x] T039 Run the original YouTube recommendation/click/skip/summarize prompt in real Opera.
+- [x] T040 Record total latency, per-step latency, model/tool round trips, stale-ref recovery, payload, foreground audit and relevant-state-loss audit.
 - [ ] T041 Verify target path is `observe -> action/revalidate+verify -> compact delta` with no model-mediated refind in the normal Skip case.
 - [ ] T042 Run full required CI/security/browser gates.
 - [ ] T043 Run `$speckit-converge`; remove/defer unrequested work.
 - [ ] T044 Update `docs/project-context.md`, `docs/next-session-handoff.md` and acceptance record only after exact required evidence is green.
 - [ ] T045 STOP. Do not start 8E automatically; return to an explicit Milestone 8E start decision.
+
+R8 live evidence: T041 failed on 2026-09-20 and the audited 1.6.2 forward
+rollback was activated. See `docs/pre-8e-performance-usability-r8.md`. Stop;
+do not continue T042-T045 or start 8E without a separately authorized repair.
 
 ## Dependencies & Execution Order
 
