@@ -28,17 +28,19 @@ match the prepared source byte-for-byte. The accepted 1.6.0 controlled-browser
 harness passes with version-only expectations updated to 1.6.2, including 20/20
 burst stability and 55-command focus preservation.
 
-Neither artifact has been uploaded to the release registry or activated.
-Production still serves signed `1.6.0`. The final audit PASS permits the bounded
-procedure, but execution is blocked because this checkout has only a read-only
-Supabase access token and no production DB/service-role write authority. The
+Production now stores both artifacts with database-decoded hashes and sizes
+matching local evidence. The audited atomic cutover made signed `1.6.1` the sole
+active row; `1.6.0` and forward rollback `1.6.2` are inactive. Identity-specific
+health/XML serve 1.6.1 and the downloaded 40,441-byte CRX matches SHA-256 exactly.
+Opera installed `1.6.1_0` in place and the owner reports it remains active/paired.
+The connector ping and original R8 YouTube prompt are still pending, so R8 is not
+closed and 1.6.2 must remain immediately activatable. The
 pre-existing root `deno.lock` was confirmed as untracked, history-free, partial
 local Deno CLI resolver state rather than a repository dependency contract; it
 is now ignored explicitly as `/deno.lock` without deleting the local file.
-Exact next action: obtain authorized
-write tooling, insert both artifacts inactive, verify their database-decoded
-bytes while 1.6.0 remains solely active, then execute the audited atomic
-activation/acceptance/forward-rollback sequence. Milestone 8E remains paused.
+Exact next action: verify connector status/version and run the original YouTube
+prompt for T039–T041. Any failure triggers atomic activation of 1.6.2; success
+continues to T042–T045 closeout. Milestone 8E remains paused.
 
 ## Latest repair continuation (takes precedence over historical entries below)
 

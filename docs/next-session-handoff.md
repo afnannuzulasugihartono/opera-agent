@@ -22,20 +22,22 @@ version surfaces changed to 1.6.2. Its 10 packaged files match prepared source,
 and the accepted 1.6.0 browser harness passes with 20/20 burst stability and
 55-command focus preservation.
 
-Production has not been mutated and still serves 1.6.0. Two earlier audits
+Production now stores both signed artifacts. Database-decoded hashes/sizes match
+the local evidence; the audited atomic cutover made 1.6.1 the sole active row,
+with 1.6.0 and forward rollback 1.6.2 inactive. Identity-specific health/XML and
+the public download match 1.6.1 exactly. Opera installed `1.6.1_0` in place and
+the owner reports it remains active/paired. Two earlier audits
 returned CONDITIONAL PASS because registry pointer rollback alone cannot
 downgrade a browser that installed 1.6.1. The final independent audit on exact
 head `248d73ec05713a2f2b7682a3fb43fc3805279cef` returned **PASS** after
 verifying both CRX artifacts, identities, packaged bytes, exact-head CI, and the
-forward-rollback procedure. After obtaining authorized production write tooling:
-insert 1.6.1 and 1.6.2 inactive, verify
-database-decoded hashes/sizes and exactly one active 1.6.0 row, atomically
-activate 1.6.1, verify update/pairing/ping, run R8 T039-T041, and atomically
-activate 1.6.2 on any acceptance failure. Milestone 8E remains paused.
+forward-rollback procedure. Exact next action: verify connector ping/version and
+run R8 T039-T041. Atomically activate 1.6.2 on any acceptance failure; on success
+leave 1.6.1 active and 1.6.2 inactive. Milestone 8E remains paused.
 
-Current operational blocker: this checkout has Supabase CLI 2.117.0 and a
-read-only `SUPABASE_ACCESS_TOKEN`, but no service-role/DB write authority. The
-pre-existing root `deno.lock` was verified as history-free partial local Deno
+The locally DPAPI-encrypted Management credential supplied the audited write
+authority without exposing its value. The pre-existing root `deno.lock` was
+verified as history-free partial local Deno
 CLI resolver state and is ignored explicitly as `/deno.lock`; its local contents
 were not deleted or committed.
 
