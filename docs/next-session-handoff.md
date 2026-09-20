@@ -22,14 +22,22 @@ version surfaces changed to 1.6.2. Its 10 packaged files match prepared source,
 and the accepted 1.6.0 browser harness passes with 20/20 burst stability and
 55-command focus preservation.
 
-Production has not been mutated and still serves 1.6.0. Two audits returned
-**CONDITIONAL PASS**; registry pointer rollback alone cannot downgrade a browser
-that installed 1.6.1. Exact next action is an independent audit of the now-ready
-1.6.2 forward rollback and the bracketed release procedure. Only **PASS** permits
-inactive upload/activation. After PASS: insert 1.6.1 and 1.6.2 inactive, verify
+Production has not been mutated and still serves 1.6.0. Two earlier audits
+returned CONDITIONAL PASS because registry pointer rollback alone cannot
+downgrade a browser that installed 1.6.1. The final independent audit on exact
+head `248d73ec05713a2f2b7682a3fb43fc3805279cef` returned **PASS** after
+verifying both CRX artifacts, identities, packaged bytes, exact-head CI, and the
+forward-rollback procedure. After obtaining authorized production write tooling:
+insert 1.6.1 and 1.6.2 inactive, verify
 database-decoded hashes/sizes and exactly one active 1.6.0 row, atomically
 activate 1.6.1, verify update/pairing/ping, run R8 T039-T041, and atomically
 activate 1.6.2 on any acceptance failure. Milestone 8E remains paused.
+
+Current operational blockers: this checkout has Supabase CLI 2.117.0 and a
+read-only `SUPABASE_ACCESS_TOKEN`, but no service-role/DB write authority; root
+`deno.lock` is pre-existing and untracked, so production work must not begin
+until the owner chooses whether to preserve elsewhere, ignore, or intentionally
+track it. Do not delete or commit it automatically.
 
 ## U-V1 closed — 2026-09-20 (read first)
 
@@ -45,8 +53,8 @@ effect") matching the V2 unknown-outcome contract. MCP inventory stays frozen
 (18 tools, unchanged schemas — internal params follow the R4 precedent).
 Evidence: `docs/checkpoint-u-v1-self-verifying-actions.md` (controlled-browser
 acceptance all green). Remaining proposed checkpoints: **U-I** (identity
-hardening), **U-P1** (CDP AX-tree observation), **U-P3**, **U-P2**; R8 needs
-an Opera environment.
+hardening), **U-P1** (CDP AX-tree observation), **U-P3**, **U-P2**. The older
+R8 environment blocker is superseded by the signed release gate above.
 
 ## Research + quick wins — 2026-09-20 (perception / identity / verification)
 
@@ -86,9 +94,10 @@ render wait path — needing R8 real-Opera distribution data or a redesign beyon
 R7 scope. Evidence: `docs/pre-8e-performance-usability-r7.md`. Production DB
 access is available read-only via `SUPABASE_ACCESS_TOKEN` (user env var; token
 `opera-agent-zcode`, Read-only preset, project-scoped, expires 2026-12-19).
-**Exact next: R8 / T039–T045 — blocked on an Opera environment** (install Opera
-+ pair the candidate extension, then run the original YouTube prompt for
-T039–T041). Milestone 8E remains paused.
+**Superseded:** Opera is now installed and the signed 1.6.1/1.6.2 release path
+has final audit PASS. Exact next is the authorized inactive-upload and bounded
+activation procedure described at the top of this handoff. Milestone 8E remains
+paused.
 
 ## Production usage observations — 2026-09-20 (backlog seed)
 
@@ -148,10 +157,10 @@ measurement + local SPA-click repair, CircleCI #258 + Vercel SUCCESS), T032
 primitives), and T033 (Realtime wake not justified — evidence in
 `docs/pre-8e-performance-usability-r6.md`). **R7 (T034–T038) YouTube workflow
 cleanup is AUTHORIZED / NOT STARTED** under the standing CI-evidence
-authorization. R8 real-Opera acceptance (T039–T041) requires an Opera
-environment with the candidate extension installed; this workstation has no
-Opera installation. No production deployment, signed release, Realtime cutover,
-or 8E permission was added.
+authorization. R8 real-Opera acceptance (T039–T041) requires the audited signed
+1.6.1 update. Opera is installed on this workstation; the remaining blocker is
+authorized production registry write tooling, not the browser environment. No
+Realtime cutover or 8E permission was added.
 Worktree location is `C:/Users/ASUS/.zcode/workspace/default/opera-agent`.
 Use `SPECIFY_FEATURE_DIRECTORY` (not `SPECIFY_FEATURE`) for Spec Kit prerequisites.
 

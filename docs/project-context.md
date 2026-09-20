@@ -12,8 +12,11 @@ SUCCESS. Its offline CRX3 is 40,441 bytes, SHA-256
 and both manifest/proof keys derive the established extension ID
 `ohbbpamcljckmjhcpkcmefdobkoeaick`.
 
-Two independent pre-production audits returned **CONDITIONAL PASS**, not PASS.
-The remaining release-safety issue was that reactivating signed `1.6.0` in the
+Two earlier pre-production audits returned **CONDITIONAL PASS**. The final
+independent audit on exact evidence head
+`248d73ec05713a2f2b7682a3fb43fc3805279cef` returned **PASS** after verifying
+both artifacts and the forward-rollback plan. The earlier release-safety issue
+was that reactivating signed `1.6.0` in the
 registry cannot downgrade a browser that already installed `1.6.1`. An offline
 forward rollback `1.6.2` has therefore been prepared from accepted tag `v1.6.0`
 (`96ef1cfdbecc7c5c0e40486b6378501db606b84d`): all extension behavior bytes
@@ -26,21 +29,25 @@ harness passes with version-only expectations updated to 1.6.2, including 20/20
 burst stability and 55-command focus preservation.
 
 Neither artifact has been uploaded to the release registry or activated.
-Production still serves signed `1.6.0`. Exact next action: obtain an independent
-**PASS** for the complete inactive-upload, atomic 1.6.1 activation, real-Opera
-R8 acceptance, and forward-rollback-to-1.6.2 procedure. No production mutation
-is authorized by a CONDITIONAL PASS. Milestone 8E remains paused.
+Production still serves signed `1.6.0`. The final audit PASS permits the bounded
+procedure, but execution is blocked because this checkout has only a read-only
+Supabase access token and no production DB/service-role write authority. Before
+any production operation, the pre-existing untracked root `deno.lock` must also
+be resolved without discarding user state. Exact next action: obtain authorized
+write tooling, insert both artifacts inactive, verify their database-decoded
+bytes while 1.6.0 remains solely active, then execute the audited atomic
+activation/acceptance/forward-rollback sequence. Milestone 8E remains paused.
 
 ## Latest repair continuation (takes precedence over historical entries below)
 
-User explicitly requested R5 through R8 sequentially. R5 and R6 are **ACCEPTED /
+User explicitly requested R5 through R8 sequentially. R5–R7 are **ACCEPTED /
 CLOSED**; R6 closed **without transport migration** (T032: residual queue share
 2–8% on navigation paths, ≤ ~250 ms absolute on primitives; T033: Realtime wake
 not justified). Evidence: `docs/pre-8e-performance-usability-r6.md`. T031's
 repair head `3d21ecc58cfece6e55f40433525a7a6c1db27800` passed CircleCI #258 +
-Vercel SUCCESS. **R7 (T034–T038) YouTube workflow cleanup is AUTHORIZED / NOT
-STARTED** under the 2026-09-19 standing CI-evidence authorization; R8 real-Opera
-acceptance requires an Opera environment this workstation lacks. On 2026-09-19
+Vercel SUCCESS. R7 (T034–T038) YouTube workflow cleanup is closed. R8
+real-Opera acceptance now waits on the audited signed-update procedure described
+above, not on Opera installation. On 2026-09-19
 the user additionally ordered repository consolidation (merge the closed repair
 line into `main`, archive-tag and prune stale branches) and stricter
 anti-mistake rules for future AI sessions; the consolidation supersedes the
