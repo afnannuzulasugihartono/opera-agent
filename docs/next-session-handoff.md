@@ -33,11 +33,11 @@ database-decoded hashes/sizes and exactly one active 1.6.0 row, atomically
 activate 1.6.1, verify update/pairing/ping, run R8 T039-T041, and atomically
 activate 1.6.2 on any acceptance failure. Milestone 8E remains paused.
 
-Current operational blockers: this checkout has Supabase CLI 2.117.0 and a
-read-only `SUPABASE_ACCESS_TOKEN`, but no service-role/DB write authority; root
-`deno.lock` is pre-existing and untracked, so production work must not begin
-until the owner chooses whether to preserve elsewhere, ignore, or intentionally
-track it. Do not delete or commit it automatically.
+Current operational blocker: this checkout has Supabase CLI 2.117.0 and a
+read-only `SUPABASE_ACCESS_TOKEN`, but no service-role/DB write authority. The
+pre-existing root `deno.lock` was verified as history-free partial local Deno
+CLI resolver state and is ignored explicitly as `/deno.lock`; its local contents
+were not deleted or committed.
 
 ## U-V1 closed — 2026-09-20 (read first)
 

@@ -31,9 +31,11 @@ burst stability and 55-command focus preservation.
 Neither artifact has been uploaded to the release registry or activated.
 Production still serves signed `1.6.0`. The final audit PASS permits the bounded
 procedure, but execution is blocked because this checkout has only a read-only
-Supabase access token and no production DB/service-role write authority. Before
-any production operation, the pre-existing untracked root `deno.lock` must also
-be resolved without discarding user state. Exact next action: obtain authorized
+Supabase access token and no production DB/service-role write authority. The
+pre-existing root `deno.lock` was confirmed as untracked, history-free, partial
+local Deno CLI resolver state rather than a repository dependency contract; it
+is now ignored explicitly as `/deno.lock` without deleting the local file.
+Exact next action: obtain authorized
 write tooling, insert both artifacts inactive, verify their database-decoded
 bytes while 1.6.0 remains solely active, then execute the audited atomic
 activation/acceptance/forward-rollback sequence. Milestone 8E remains paused.
