@@ -14,6 +14,10 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.5.2](1.5.2.md) — popup intrinsic-width correction that prevents scrollbar-width collapse in Opera.
 - [1.6.0](1.6.0.md) — semantic identity, bounded deltas, generic materialized views, causal invalidation, and scoped completion evidence.
 
+## Pending release candidates
+
+- [1.6.1](1.6.1.md) — R8 unique actionable find projection; production activation and real-Opera acceptance remain pending.
+
 Future stable releases should use simple SemVer filenames:
 
 ```text

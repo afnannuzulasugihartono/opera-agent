@@ -4,6 +4,10 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### R8 usability release candidate
+- Prepared the same-identity `1.6.1` extension candidate with generic unique exact-actionable `page.find` projection for omitted-limit calls.
+- Preserved explicit multi-result diagnostics, equal actionable ambiguity, combined-field fuzzy/exact matching, sensitive/offscreen exclusion, Protocol 1, 26 browser capabilities, and the 18-tool MCP schema.
+
 ### Milestone 8 — Decision-Causal Transactions and Provenance Enforcement
 - Added an isolated local 8D admission candidate with trusted-adapter-only identity/ledger/target/provenance resolution contracts, exact argument coverage, immutable digest-only results, and no browser/production integration; 8D remains in progress.
 - Froze and independently reviewed the milestone plan after closing same-agent legacy-mutation bypass, limiting V1 to one state-changing action, and correcting MCP 2026 stateless approval binding.

@@ -227,8 +227,8 @@ test('8A hostile corpus contains at least 64 unique zero-unsafe-acceptance cases
 });
 
 test('8A locks accepted inventory, limits, and documentation-only compatibility boundary', () => {
-  assert.equal(pkg.version, '1.6.0');
-  assert.equal(manifest.version, '1.6.0');
+  assert.equal(pkg.version, '1.6.1');
+  assert.equal(manifest.version, '1.6.1');
   assert.equal(mcp.toolCount, 18);
   assert.equal(vm.inventory.digest, thresholds.milestone7InventoryDigest);
   assert.equal(contract.inventory.mcpSourceSha256, mcp.sourceSha256);

@@ -1,4 +1,4 @@
-export const PRODUCT_VERSION = '1.6.0';
+export const PRODUCT_VERSION = '1.6.1';
 export const PROTOCOL_VERSION = 1;
 
 export const BURST_MAX_STEPS = 8;
