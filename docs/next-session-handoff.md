@@ -2,6 +2,35 @@
 
 Last synchronized: 2026-09-20.
 
+## R8 signed release gate — read first
+
+The user explicitly authorized a same-identity signed `1.6.1` update through the
+production update service. Implementation/release head
+`f38eddef508b96ec4df641af56377c611030ddf5` has CircleCI #295 + Vercel
+SUCCESS. Offline signed artifacts are:
+
+- `1.6.1`: 40,441 bytes, SHA-256
+  `8c980dbe37cbccf2f272e45e8045fd7d6e91ad0d666dd289bc65eccaa6d49b1e`;
+- forward rollback `1.6.2`: 35,631 bytes, SHA-256
+  `bca7d9d5199f0075ac41fcc929e260943acd8c4e1e076fc26cf9294c408a085a`.
+
+Both manifest and CRX proof keys derive established ID
+`ohbbpamcljckmjhcpkcmefdobkoeaick`; neither artifact nor private key is in Git.
+The 1.6.2 behavior source is exactly accepted tag `v1.6.0` commit
+`96ef1cfdbecc7c5c0e40486b6378501db606b84d`, with only the three packaged
+version surfaces changed to 1.6.2. Its 10 packaged files match prepared source,
+and the accepted 1.6.0 browser harness passes with 20/20 burst stability and
+55-command focus preservation.
+
+Production has not been mutated and still serves 1.6.0. Two audits returned
+**CONDITIONAL PASS**; registry pointer rollback alone cannot downgrade a browser
+that installed 1.6.1. Exact next action is an independent audit of the now-ready
+1.6.2 forward rollback and the bracketed release procedure. Only **PASS** permits
+inactive upload/activation. After PASS: insert 1.6.1 and 1.6.2 inactive, verify
+database-decoded hashes/sizes and exactly one active 1.6.0 row, atomically
+activate 1.6.1, verify update/pairing/ping, run R8 T039-T041, and atomically
+activate 1.6.2 on any acceptance failure. Milestone 8E remains paused.
+
 ## U-V1 closed — 2026-09-20 (read first)
 
 **U-V1 (self-verifying actions) is ACCEPTED / CLOSED on CI evidence.** Actions

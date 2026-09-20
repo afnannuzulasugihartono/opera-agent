@@ -2,6 +2,35 @@
 
 Last synchronized: 2026-09-20
 
+## R8 signed-update continuation (takes precedence)
+
+The user authorized a same-identity signed `1.6.1` update for R8 and requested
+the production update path rather than an unpacked extension. The R8 candidate
+head `f38eddef508b96ec4df641af56377c611030ddf5` has CircleCI #295 + Vercel
+SUCCESS. Its offline CRX3 is 40,441 bytes, SHA-256
+`8c980dbe37cbccf2f272e45e8045fd7d6e91ad0d666dd289bc65eccaa6d49b1e`,
+and both manifest/proof keys derive the established extension ID
+`ohbbpamcljckmjhcpkcmefdobkoeaick`.
+
+Two independent pre-production audits returned **CONDITIONAL PASS**, not PASS.
+The remaining release-safety issue was that reactivating signed `1.6.0` in the
+registry cannot downgrade a browser that already installed `1.6.1`. An offline
+forward rollback `1.6.2` has therefore been prepared from accepted tag `v1.6.0`
+(`96ef1cfdbecc7c5c0e40486b6378501db606b84d`): all extension behavior bytes
+match that tag and only `manifest.json`, `lib/protocol.js`, and `popup.html`
+change their packaged version to `1.6.2`. The signed CRX3 is 35,631 bytes,
+SHA-256 `bca7d9d5199f0075ac41fcc929e260943acd8c4e1e076fc26cf9294c408a085a`;
+its manifest/proof identity matches the established ID and all 10 packaged files
+match the prepared source byte-for-byte. The accepted 1.6.0 controlled-browser
+harness passes with version-only expectations updated to 1.6.2, including 20/20
+burst stability and 55-command focus preservation.
+
+Neither artifact has been uploaded to the release registry or activated.
+Production still serves signed `1.6.0`. Exact next action: obtain an independent
+**PASS** for the complete inactive-upload, atomic 1.6.1 activation, real-Opera
+R8 acceptance, and forward-rollback-to-1.6.2 procedure. No production mutation
+is authorized by a CONDITIONAL PASS. Milestone 8E remains paused.
+
 ## Latest repair continuation (takes precedence over historical entries below)
 
 User explicitly requested R5 through R8 sequentially. R5 and R6 are **ACCEPTED /

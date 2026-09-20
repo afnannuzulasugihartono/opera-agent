@@ -17,6 +17,7 @@ Detailed release notes are stored in this directory. Release documents are histo
 ## Pending release candidates
 
 - [1.6.1](1.6.1.md) — R8 unique actionable find projection; production activation and real-Opera acceptance remain pending.
+- [1.6.2](1.6.2.md) — offline same-identity forward rollback carrying accepted 1.6.0 behavior; upload remains pending audit PASS.
 
 Future stable releases should use simple SemVer filenames:
 
