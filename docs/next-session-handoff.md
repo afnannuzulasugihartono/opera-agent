@@ -22,6 +22,12 @@ Controlled browser, static checks, and 444 canonical local Node tests pass.
 Exact-head CI, version >1.6.2 signing, audit, and repeat live T041 are still
 required. Production remains on 1.6.2; do not activate a candidate yet.
 
+Candidate source is versioned 1.6.3. Repair head `78e038b` has CircleCI #301 +
+Vercel SUCCESS; local 1.6.3 browser, version-contract, and static gates pass.
+Next: commit/push the versioned release head, wait for exact-head CI, build/sign
+from a clean checkout, verify CRX bytes/identity, then obtain an independent
+audit. Production must remain on 1.6.2 until audit PASS.
+
 The user explicitly authorized a same-identity signed `1.6.1` update through the
 production update service. Implementation/release head
 `f38eddef508b96ec4df641af56377c611030ddf5` has CircleCI #295 + Vercel

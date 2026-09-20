@@ -489,7 +489,7 @@ test('P4 frozen boundary remains locked except the P6-authorized Reactive VM cut
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
     ['../extension/content.js', '9872dd3e82c8519ab5b1c81df7bb631ad9ac263e'],
     ['../extension/background.js', '7d9eba6e5f2c745f8278b3f6a9c5845ab131e3a1'],
-    ['../extension/manifest.json', 'c1e20fe6057f27bd1bc9282996aa8e7555092f22'],
+    ['../extension/manifest.json', 'bb32e89af637c5d2efc8d14ee2a8038fd5b8704b'],
     ['../supabase/functions/opera-agent-mcp/index.ts', 'bd1e0eadf69096e0e134c5b128801dc1495322a6'],
   ]);
   for (const [relativePath, expected] of files) {

@@ -26,8 +26,8 @@ const FROZEN_READ_PAGE_PROPERTIES = [
   'includeElements', 'limit', 'maxElements', 'offset', 'tabId'
 ];
 
-test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for release 1.6.1', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.1');
+test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for release 1.6.3', () => {
+  assert.equal(PRODUCT_VERSION, '1.6.3');
   assert.equal(ALLOWED_METHODS.length, 26);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });

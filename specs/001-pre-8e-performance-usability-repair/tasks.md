@@ -89,7 +89,7 @@ the user separately authorized the following evidence-first repair on 2026-09-20
 - [x] T046 Capture the exact live explicit-limit, geometry, stale-ref and rollback evidence; state falsifiable root-cause hypotheses.
 - [x] T047 Add deterministic failing browser tests for explicit-limit dominance, explicit-index precedence, equal exact-actionable ambiguity and containing-block overflow escape.
 - [x] T048 Implement the smallest generic content-only repair without public MCP/protocol/capability changes.
-- [ ] T049 Run focused browser regression, full Node/static/browser gates and rebaseline only explicitly authorized source locks.
+- [x] T049 Run focused browser regression, full Node/static/browser gates and rebaseline only explicitly authorized source locks.
 - [ ] T050 Prepare a same-identity signed version greater than production 1.6.2 and obtain the required independent pre-production audit.
 - [ ] T051 Repeat the original real-Opera prompt and require T041 to pass without filtering, refind, stale failure or coordinate fallback.
 - [ ] T052 On PASS return to T042-T045; on failure use the audited forward rollback and stop with evidence.

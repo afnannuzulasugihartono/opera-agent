@@ -16,6 +16,10 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.6.1](1.6.1.md) — unique exact-actionable find candidate; deactivated after failing the R8 live Skip path.
 - [1.6.2](1.6.2.md) — production-active same-identity forward rollback carrying accepted 1.6.0 behavior.
 
+## Pending release candidates
+
+- [1.6.3](1.6.3.md) — bounded R8 explicit-limit and viewport-truth repair; signing, audit, and live acceptance pending.
+
 Future stable releases should use simple SemVer filenames:
 
 ```text

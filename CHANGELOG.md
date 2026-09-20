@@ -4,6 +4,10 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### R8 repair candidate 1.6.3
+- Preserve explicit diagnostic `items` while selecting the unique exact-actionable `item`, even when callers supply a limit.
+- Correct false overflow-ancestor clipping only when bounded browser hit testing proves the target reachable; genuine clipping remains fail-closed.
+
 ## [1.6.2] - 2026-09-20
 
 ### Audited forward rollback

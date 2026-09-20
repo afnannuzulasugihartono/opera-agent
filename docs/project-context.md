@@ -22,6 +22,11 @@ browser, static checks, and the 444-test canonical local Node subset pass;
 exact-head CI and a signed version newer than production 1.6.2 remain pending.
 Production is unchanged on 1.6.2 and this repair is not yet accepted.
 
+Release candidate source is now versioned 1.6.3. Repair head `78e038b` has
+CircleCI #301 + Vercel SUCCESS, and the 1.6.3 controlled browser/version/static
+gates pass locally. Exact 1.6.3 release-head CI, signed artifact verification,
+and independent audit remain required before any production upload or cutover.
+
 The user authorized a same-identity signed `1.6.1` update for R8 and requested
 the production update path rather than an unpacked extension. The R8 candidate
 head `f38eddef508b96ec4df641af56377c611030ddf5` has CircleCI #295 + Vercel
