@@ -420,29 +420,17 @@ async function withInputFocusEmulation(target, mode, work) {
   }
 }
 
-async function trustedClick(tabId, ref, context, mode = 'background', options = {}) {
-  const attempts = Math.max(1, Math.min(3, Number(options.attempts) || 1));
-  let last = null;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const info = await contentCall(tabId, 'page.click_info', { ref });
-    const x = info.rect?.centerX;
-    const y = info.rect?.centerY;
-    if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
-    const action = await withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
-      return { ok: true, ref, method: 'debugger', x, y };
-    }));
-    const postAction = await contentCall(tabId, 'page.post_action', {
-      ref,
-      before: info.postActionBefore,
-      expect: options.expect || undefined
-    });
-    last = { ...action, postAction, attempts: attempt };
-    if (postAction.verified !== false || attempt >= attempts) break;
-  }
-  return last;
+async function trustedClick(tabId, ref, context, mode = 'background') {
+  const info = await contentCall(tabId, 'page.click_info', { ref });
+  const x = info.rect?.centerX;
+  const y = info.rect?.centerY;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
+    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+    return { ok: true, ref, method: 'debugger', x, y };
+  }));
 }
 
 async function trustedFill(tabId, ref, value, context, mode = 'background') {
@@ -581,21 +569,7 @@ async function runBurst(params, outerContext = {}) {
   try {
     for (let index = 0; index < params.steps.length; index += 1) {
       const remainingMs = deadline - Date.now();
-      // A burst timeout is an unknown outcome, not a failure: steps that already
-      // ran may have taken effect, so their evidence must reach the caller.
-      if (remainingMs < 50) {
-        return {
-          ok: false,
-          tabId,
-          timedOut: true,
-          completedSteps: results.length,
-          failedAt: index,
-          executionMode: mode,
-          error: { code: 'BURST_TIMEOUT', message: 'Burst timeout before this step; completed steps may have taken effect.' },
-          results,
-          timingMs: Math.round((performance.now() - startedAt) * 100) / 100
-        };
-      }
+      if (remainingMs < 50) throw new Error('Burst timeout.');
       const step = params.steps[index];
       const method = BURST_ACTION_METHODS[step.action];
       const stepStartedAt = performance.now();
@@ -747,10 +721,7 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.click': {
       const tabId = await resolveTabId(params);
-      const clickOptions = { expect: params.expect, attempts: params.retry?.attempts };
-      const result = params.trusted
-        ? await trustedClick(tabId, params.ref, context, executionMode(params), clickOptions)
-        : await contentCall(tabId, 'page.click', params);
+      const result = params.trusted ? await trustedClick(tabId, params.ref, context, executionMode(params)) : await contentCall(tabId, 'page.click', params);
       return { ...result, tabId };
     }
     case 'page.pointer': {

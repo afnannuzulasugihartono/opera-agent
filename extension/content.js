@@ -15,7 +15,6 @@
   let refCounter = 0;
   let refs = new WeakMap();
   let reverseRefs = new Map();
-  let actionRefDescriptors = new Map();
   let semanticRouteKey = globalThis.OperaAgentSemanticIdentity.stableHash(`${location.origin}${location.pathname}${location.search}`);
   let semanticRuntimeEpoch = null;
   let disposed = false;
@@ -43,17 +42,6 @@
     return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
-  // Model-facing labels pick up private-use glyphs (icon fonts) and status
-  // suffixes like "Visited link" that break exact matching; strip them before
-  // the text reaches results or find matching.
-  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\u200D\uFEFF]/g;
-  const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
-  function normalizeObservableText(value, max = 500) {
-    const text = clean(value, max + 40).replace(PUA_GLYPH_RE, ' ').replace(/\s+/g, ' ').trim();
-    const untagged = VISITED_SUFFIX_RE.test(text) ? text.replace(VISITED_SUFFIX_RE, '').trim() : text;
-    return untagged.slice(0, max);
-  }
-
   function normalizeText(value) {
     return String(value ?? '')
       .replace(/\r\n?/g, '\n')
@@ -61,74 +49,6 @@
       .replace(/ *\n */g, '\n')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
-  }
-
-  function currentRouteKey() {
-    return globalThis.OperaAgentSemanticIdentity.stableHash(
-      `${location.origin}${location.pathname}${location.search}`
-    );
-  }
-
-  function actionRefDescriptor(el) {
-    const identity = stableElementIdentity(el);
-    return {
-      documentId,
-      routeKey: currentRouteKey(),
-      stableKey: identity.stableKey,
-      stableKeySource: identity.stableKeySource,
-      id: clean(el.id, 200),
-      tag: String(el.tagName || '').toLowerCase(),
-      role: clean(el.getAttribute?.('role'), 80),
-      name: clean(el.getAttribute?.('name'), 120),
-      type: clean(el.getAttribute?.('type'), 80),
-      label: getAssociatedLabel(el),
-      href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
-      sensitive: !!sensitiveDescriptor(el)
-    };
-  }
-
-  function descriptorMatchesElement(descriptor, el) {
-    if (!descriptor || !el?.isConnected) return false;
-    if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return false;
-    const current = actionRefDescriptor(el);
-    return (
-      current.documentId === descriptor.documentId
-      && current.routeKey === descriptor.routeKey
-      && current.stableKey === descriptor.stableKey
-      && current.stableKeySource === descriptor.stableKeySource
-      && current.id === descriptor.id
-      && current.tag === descriptor.tag
-      && current.role === descriptor.role
-      && current.name === descriptor.name
-      && current.type === descriptor.type
-      && current.label === descriptor.label
-      && current.href === descriptor.href
-      && current.sensitive === descriptor.sensitive
-    );
-  }
-
-  function revalidationCandidates(descriptor) {
-    if (!descriptor || descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return [];
-    let pool = [];
-    if (descriptor.stableKeySource === 'id' && descriptor.id) {
-      try {
-        pool = [...document.querySelectorAll(`#${CSS.escape(descriptor.id)}`)];
-      } catch {
-        return [];
-      }
-    } else if (descriptor.stableKeySource === 'href' && descriptor.href) {
-      pool = [...document.querySelectorAll('a[href]')].filter(
-        (el) => clean(el.href, 1200) === descriptor.href
-      );
-    } else {
-      const maxScan = 500;
-      pool = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].slice(0, maxScan);
-    }
-    return pool.filter((el) => {
-      if (!descriptorMatchesElement(descriptor, el)) return false;
-      const state = actionabilityState(el);
-      return state.actionable && !state.sensitive;
-    });
   }
 
   function getRef(el) {
@@ -139,46 +59,13 @@
       ref = `oa_${documentId.slice(0, 8)}_${refCounter.toString(36)}`;
       refs.set(el, ref);
       reverseRefs.set(ref, el);
-      actionRefDescriptors.set(ref, actionRefDescriptor(el));
     }
     return ref;
   }
 
   function resolveRef(ref) {
-    const key = String(ref || '');
-    const el = reverseRefs.get(key);
+    const el = reverseRefs.get(String(ref || ''));
     return el && el.isConnected ? el : null;
-  }
-
-  function resolveActionRef(ref) {
-    const key = String(ref || '');
-    const descriptor = actionRefDescriptors.get(key);
-    if (!descriptor) return null;
-    if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return null;
-
-    const connected = resolveRef(key);
-    if (connected) {
-      if (!descriptorMatchesElement(descriptor, connected)) return null;
-      // Preserve the historical explicit file-upload rejection without granting
-      // sensitive revalidation authority. Only the original connected file
-      // target may reach the caller's immediate fail-closed file guard.
-      if (descriptor.sensitive) {
-        return sensitiveDescriptor(connected) === 'file' ? connected : null;
-      }
-      return connected;
-    }
-
-    if (descriptor.sensitive) return null;
-    const candidates = revalidationCandidates(descriptor);
-    if (candidates.length !== 1) return null;
-
-    const replacement = candidates[0];
-    const existingRef = refs.get(replacement);
-    if (existingRef && existingRef !== key) reverseRefs.delete(existingRef);
-    refs.set(replacement, key);
-    reverseRefs.set(key, replacement);
-    actionRefDescriptors.set(key, actionRefDescriptor(replacement));
-    return replacement;
   }
 
   function getAssociatedLabel(el) {
@@ -223,83 +110,24 @@
     };
   }
 
-  // inViewport keeps its original overlap semantics; fullyInViewport adds
-  // strict viewport containment and viewportClipped reports whether an
-  // ancestor's overflow box actually cut the element (transformed Maps-style
-  // panels report large negative x without any ancestor clipping).
-  function viewportFlags(el) {
-    if (!isVisible(el)) return { inViewport: false, fullyInViewport: false, viewportClipped: false };
-    const rect = el.getBoundingClientRect();
-    if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) {
-      return { inViewport: false, fullyInViewport: false, viewportClipped: false };
-    }
-    let left = rect.left;
-    let right = rect.right;
-    let top = rect.top;
-    let bottom = rect.bottom;
-    let clippedByAncestor = false;
+  function isInViewport(el) {
+    if (!isVisible(el)) return false;
+    let rect = el.getBoundingClientRect();
+    if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) return false;
     for (let parent = el.parentElement; parent; parent = parent.parentElement) {
       const style = getComputedStyle(parent);
       const clipsX = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowX);
       const clipsY = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowY);
       if (!clipsX && !clipsY) continue;
       const parentRect = parent.getBoundingClientRect();
-      const newLeft = clipsX ? Math.max(left, parentRect.left) : left;
-      const newRight = clipsX ? Math.min(right, parentRect.right) : right;
-      const newTop = clipsY ? Math.max(top, parentRect.top) : top;
-      const newBottom = clipsY ? Math.min(bottom, parentRect.bottom) : bottom;
-      if (newRight <= newLeft || newBottom <= newTop) {
-        return { inViewport: false, fullyInViewport: false, viewportClipped: true };
-      }
-      if (newLeft !== left || newRight !== right || newTop !== top || newBottom !== bottom) clippedByAncestor = true;
-      left = newLeft;
-      right = newRight;
-      top = newTop;
-      bottom = newBottom;
+      const left = clipsX ? Math.max(rect.left, parentRect.left) : rect.left;
+      const right = clipsX ? Math.min(rect.right, parentRect.right) : rect.right;
+      const top = clipsY ? Math.max(rect.top, parentRect.top) : rect.top;
+      const bottom = clipsY ? Math.min(rect.bottom, parentRect.bottom) : rect.bottom;
+      if (right <= left || bottom <= top) return false;
+      rect = { left, right, top, bottom };
     }
-    const fully = left >= 0 && top >= 0 && right <= innerWidth && bottom <= innerHeight;
-    return { inViewport: true, fullyInViewport: fully, viewportClipped: clippedByAncestor };
-  }
-
-  function isInViewport(el) {
-    return viewportFlags(el).inViewport;
-  }
-
-  function actionabilityState(el, sensitiveReason = undefined) {
-    const visible = isVisible(el);
-    const viewport = visible ? viewportFlags(el) : { inViewport: false, fullyInViewport: false, viewportClipped: false };
-    const sensitive = sensitiveReason === undefined ? !!sensitiveDescriptor(el) : !!sensitiveReason;
-    const ariaDisabled = clean(el?.getAttribute?.('aria-disabled'), 20).toLowerCase() === 'true';
-    const nativeDisabled = !!(el && 'disabled' in el && el.disabled);
-    const readOnly = !!(el && 'readOnly' in el && el.readOnly);
-    const enabled = !nativeDisabled && !readOnly && !ariaDisabled;
-    const pointerEnabled = visible && getComputedStyle(el).pointerEvents !== 'none';
-    return {
-      visible,
-      inViewport: viewport.inViewport,
-      fullyInViewport: viewport.fullyInViewport,
-      viewportClipped: viewport.viewportClipped,
-      enabled,
-      sensitive,
-      actionable: visible && viewport.inViewport && enabled && !sensitive && pointerEnabled
-    };
-  }
-
-  function actionabilityRank(el) {
-    const state = actionabilityState(el);
-    if (state.actionable) return 0;
-    if (state.sensitive) return 5;
-    if (!state.visible) return 4;
-    if (state.inViewport) return 1;
-    if (state.enabled) return 2;
-    return 3;
-  }
-
-  function prioritizeActionableNodes(nodes) {
-    return nodes
-      .map((el, index) => ({ el, index, rank: actionabilityRank(el) }))
-      .sort((left, right) => left.rank - right.rank || left.index - right.index)
-      .map((entry) => entry.el);
+    return true;
   }
 
   function stableHash(value) {
@@ -376,18 +204,17 @@
   function serialize(el, options = {}) {
     const includeValue = !!options.includeValue;
     const blocked = sensitiveDescriptor(el);
-    const actionability = actionabilityState(el, blocked);
     const data = {
       ...stableElementIdentity(el),
       ref: getRef(el),
       tag: String(el.tagName || '').toLowerCase(),
       role: clean(el.getAttribute?.('role'), 80),
-      text: normalizeObservableText(el.innerText || el.textContent || '', 300),
-      label: normalizeObservableText(getAssociatedLabel(el), 300),
+      text: clean(el.innerText || el.textContent || '', 300),
+      label: getAssociatedLabel(el),
       href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
       type: clean(el.getAttribute?.('type'), 80),
-      name: normalizeObservableText(el.getAttribute?.('name'), 120),
-      placeholder: normalizeObservableText(el.getAttribute?.('placeholder'), 200),
+      name: clean(el.getAttribute?.('name'), 120),
+      placeholder: clean(el.getAttribute?.('placeholder'), 200),
       checked: 'checked' in el ? !!el.checked : undefined,
       selected: 'selected' in el ? !!el.selected : undefined,
       disabled: 'disabled' in el ? !!el.disabled : undefined,
@@ -395,12 +222,9 @@
       ariaChecked: el.getAttribute?.('aria-checked') ?? null,
       ariaExpanded: el.getAttribute?.('aria-expanded') ?? null,
       ariaSelected: el.getAttribute?.('aria-selected') ?? null,
-      visible: actionability.visible,
-      inViewport: actionability.inViewport,
-      fullyInViewport: actionability.fullyInViewport,
-      viewportClipped: actionability.viewportClipped,
-      sensitive: actionability.sensitive,
-      actionable: actionability.actionable,
+      visible: isVisible(el),
+      inViewport: isInViewport(el),
+      sensitive: !!blocked,
       rect: rectOf(el)
     };
     if (includeValue && !blocked && ('value' in el || el.isContentEditable)) {
@@ -417,9 +241,7 @@
 
   function semanticRegionObservation(maxElements = 120) {
     const max = clamp(maxElements, 1, MAX_ELEMENTS, 120);
-    const nodes = prioritizeActionableNodes(
-      [...document.querySelectorAll(INTERACTIVE_SELECTOR)].filter((el) => el.isConnected)
-    ).slice(0, max);
+    const nodes = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].filter((el) => el.isConnected).slice(0, max);
     const regionNodes = new Set([document.body || document.documentElement]);
     const semanticSelector = 'main,nav,aside,header,footer,form,dialog,[role="dialog"],[role="feed"],[role="list"],[role="listbox"],[role="grid"],[role="table"]';
     for (const node of document.querySelectorAll(semanticSelector)) {
@@ -469,102 +291,26 @@
   }
 
   function resetActionRefs() {
-    // Keep refCounter monotonic for this content-script lifetime. Reusing a ref
-    // after an SPA/runtime reset could revive stale action authority.
+    refCounter = 0;
     refs = new WeakMap();
     reverseRefs = new Map();
-    actionRefDescriptors = new Map();
   }
 
   function syncSemanticScope(args) {
-    let resetReason = null;
     const routeKey = globalThis.OperaAgentSemanticIdentity.stableHash(`${location.origin}${location.pathname}${location.search}`);
     if (routeKey !== semanticRouteKey) {
       semanticRouteKey = routeKey;
       semanticIdentity.reset('SPA_ROUTE');
       semanticViews.reset();
       resetActionRefs();
-      resetReason = 'SPA_ROUTE';
     }
     const epoch = clean(args.__semanticRuntimeEpoch, 120);
     if (epoch && semanticRuntimeEpoch && epoch !== semanticRuntimeEpoch) {
       semanticIdentity.reset('EXTENSION_RESTART');
       semanticViews.reset();
       resetActionRefs();
-      resetReason = 'EXTENSION_RESTART';
     }
     if (epoch) semanticRuntimeEpoch = epoch;
-    return resetReason;
-  }
-
-  function observeSemanticBounded(maxElements = 120) {
-    const regional = semanticRegionObservation(maxElements);
-    const observation = semanticIdentity.observe(regional.items);
-    const views = semanticViews.observe({
-      regions: regional.regions,
-      items: observation.items,
-      semanticState: observation.state,
-      delta: observation.delta,
-    });
-    return { regional, observation, views };
-  }
-
-  function compactElementProjection(item) {
-    const projected = {
-      ref: item.ref,
-      logicalId: item.logicalId,
-      stableKey: item.stableKey,
-      tag: item.tag,
-      role: item.role,
-      text: item.text,
-      label: item.label,
-      href: item.href,
-      type: item.type,
-      name: item.name,
-      placeholder: item.placeholder,
-      checked: item.checked,
-      selected: item.selected,
-      disabled: item.disabled,
-      ariaPressed: item.ariaPressed,
-      ariaChecked: item.ariaChecked,
-      ariaExpanded: item.ariaExpanded,
-      ariaSelected: item.ariaSelected,
-      visible: !!item.visible,
-      inViewport: !!item.inViewport,
-      actionable: !!item.actionable,
-      rect: item.rect
-    };
-    return Object.fromEntries(
-      Object.entries(projected).filter(([, value]) => value !== undefined && value !== null && value !== '')
-    );
-  }
-
-  function compactObservationElements(items, delta, limit = 16) {
-    const changed = new Set(
-      (Array.isArray(delta?.changes) ? delta.changes : [])
-        .map((change) => String(change?.logicalId || ''))
-        .filter(Boolean)
-    );
-    const selected = [];
-    const selectedIds = new Set();
-    const add = (item) => {
-      if (!item || item.sensitive) return;
-      const key = String(item.logicalId || item.ref || item.stableKey || '');
-      if (!key || selectedIds.has(key) || selected.length >= limit) return;
-      selectedIds.add(key);
-      selected.push(compactElementProjection(item));
-    };
-
-    for (const item of items) {
-      if (changed.has(String(item.logicalId || ''))) add(item);
-    }
-    for (const item of items) {
-      if (item.actionable && item.inViewport) add(item);
-    }
-    for (const item of items) {
-      if (item.visible && item.inViewport) add(item);
-    }
-    return selected;
   }
 
   function pageRead(args) {
@@ -588,33 +334,18 @@
     };
     page.viewport = viewportState();
     page.mutationVersion = mutationVersion;
-    const compactView = args.view === 'compact';
-    if (compactView) page.compactView = true;
     if (args.includeElements !== false) {
       const regional = semanticRegionObservation(args.maxElements);
       const observation = semanticIdentity.observe(regional.items);
-      if (compactView) {
-        // Advance the existing semantic view engine so internal canonical state
-        // stays current, but project only task-useful facts to the model.
-        semanticViews.observe({
-          regions: regional.regions,
-          items: observation.items,
-          semanticState: observation.state,
-          delta: observation.delta,
-        });
-        page.elements = compactObservationElements(observation.items, observation.delta);
-        page.semanticDelta = observation.delta;
-      } else {
-        page.elements = observation.items;
-        page.semanticState = observation.state;
-        page.semanticDelta = observation.delta;
-        page.semanticViews = semanticViews.observe({
-          regions: regional.regions,
-          items: observation.items,
-          semanticState: observation.state,
-          delta: observation.delta,
-        });
-      }
+      page.elements = observation.items;
+      page.semanticState = observation.state;
+      page.semanticDelta = observation.delta;
+      page.semanticViews = semanticViews.observe({
+        regions: regional.regions,
+        items: observation.items,
+        semanticState: observation.state,
+        delta: observation.delta,
+      });
     }
     return {
       ok: true,
@@ -633,7 +364,6 @@
       throw new Error('Invalid CSS selector.');
     }
     if (args.visibleOnly !== false) nodes = nodes.filter(isVisible);
-    nodes = prioritizeActionableNodes(nodes);
     const items = nodes.slice(0, limit).map((el) => serialize(el, { includeValue: !!args.includeValue }));
     const index = Number.isInteger(args.index) ? args.index : null;
     return {
@@ -650,29 +380,19 @@
     const tag = clean(args.tag, 80).toLowerCase();
     const exact = !!args.exact;
     const limit = clamp(args.limit, 1, MAX_QUERY, 30);
-    let entries = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].map((el, index) => {
+    let nodes = [...document.querySelectorAll(INTERACTIVE_SELECTOR)];
+    if (args.visibleOnly !== false) nodes = nodes.filter(isVisible);
+    nodes = nodes.filter((el) => {
       const s = serialize(el);
-      const fields = [s.label, s.text, s.placeholder].map((value) => String(value || '').trim().toLowerCase());
-      return { el, index, s, fields, hay: fields.join(' '), exactTextMatch: !!text && fields.includes(text) };
-    });
-    if (args.visibleOnly !== false) entries = entries.filter(({ el }) => isVisible(el));
-    entries = entries.filter(({ s, hay, exactTextMatch }) => {
       if (role && String(s.role).toLowerCase() !== role) return false;
       if (tag && String(s.tag).toLowerCase() !== tag) return false;
       if (!text) return true;
-      return exact ? exactTextMatch || hay.trim() === text : hay.includes(text);
+      const hay = `${s.label} ${s.text} ${s.placeholder}`.toLowerCase();
+      return exact ? hay.trim() === text : hay.includes(text);
     });
-    entries = entries
-      .map((entry) => ({ ...entry, rank: actionabilityRank(entry.el) }))
-      .sort((left, right) => left.rank - right.rank || left.index - right.index);
-    let projected = entries;
-    if (args.limit == null && args.index == null) {
-      const dominant = entries.filter((entry) => entry.exactTextMatch && entry.rank === 0);
-      if (dominant.length === 1) projected = dominant;
-    }
-    const items = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
+    const items = nodes.slice(0, limit).map((el) => serialize(el, { includeValue: !!args.includeValue }));
     const index = Number.isInteger(args.index) ? args.index : 0;
-    return { ok: true, count: entries.length, item: items[index] ?? null, items };
+    return { ok: true, count: nodes.length, item: items[index] ?? null, items };
   }
 
   function collectLinks(args) {
@@ -710,156 +430,15 @@
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  function preparePostAction(ref) {
-    syncSemanticScope({});
-    const baseline = observeSemanticBounded(120).observation;
-    return {
-      schemaVersion: 1,
-      documentId,
-      routeKey: currentRouteKey(),
-      ref: String(ref || ''),
-      url: String(location.href),
-      beforeMutationVersion: mutationVersion,
-      semanticRevision: baseline.state.observationRevision
-    };
-  }
-
-  // U-V1: expected-state checks evaluated in-page right after the settle, so
-  // verifying an action costs no extra round trip and no full re-read.
-  function normalizeExpectSpec(raw) {
-    if (!raw || typeof raw !== 'object') return null;
-    const spec = {};
-    if (raw.urlChanged === true) spec.urlChanged = true;
-    if (typeof raw.urlContains === 'string' && raw.urlContains.trim()) spec.urlContains = raw.urlContains.trim().toLowerCase().slice(0, 300);
-    if (typeof raw.selectorAppears === 'string' && raw.selectorAppears.trim() && raw.selectorAppears.length <= 500) spec.selectorAppears = raw.selectorAppears.trim();
-    if (typeof raw.selectorGone === 'string' && raw.selectorGone.trim() && raw.selectorGone.length <= 500) spec.selectorGone = raw.selectorGone.trim();
-    if (typeof raw.textGone === 'string' && raw.textGone.trim()) spec.textGone = raw.textGone.trim().toLowerCase().slice(0, 300);
-    const minDelta = Number(raw.minMutationDelta);
-    if (Number.isFinite(minDelta) && minDelta >= 0) spec.minMutationDelta = Math.floor(minDelta);
-    return Object.keys(spec).length ? spec : null;
-  }
-
-  function evaluateExpectations(spec, before) {
-    const expectations = [];
-    let verified = true;
-    const check = (key, pass) => {
-      expectations.push({ key, pass: pass === true });
-      verified = verified && pass === true;
-    };
-    const url = String(location.href);
-    if ('urlContains' in spec) check('urlContains', url.toLowerCase().includes(spec.urlContains));
-    if ('urlChanged' in spec) check('urlChanged', url !== String(before.url || ''));
-    if ('selectorAppears' in spec) {
-      try { check('selectorAppears', document.querySelector(spec.selectorAppears) != null); } catch { check('selectorAppears', false); }
-    }
-    if ('selectorGone' in spec) {
-      try { check('selectorGone', document.querySelector(spec.selectorGone) == null); } catch { check('selectorGone', false); }
-    }
-    if ('textGone' in spec) check('textGone', !(document.body?.innerText || '').toLowerCase().includes(spec.textGone));
-    if ('minMutationDelta' in spec) check('minMutationDelta', (mutationVersion - Number(before.beforeMutationVersion ?? mutationVersion)) >= spec.minMutationDelta);
-    return { verified, expectations };
-  }
-
-  async function waitForPostActionSettle(maxWaitMs = 400, stableRoundsRequired = 2) {
-    const startedAt = performance.now();
-    let stableRounds = 0;
-    let previousMutationVersion = mutationVersion;
-    while (performance.now() - startedAt < maxWaitMs && stableRounds < stableRoundsRequired) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      if (mutationVersion === previousMutationVersion) stableRounds += 1;
-      else stableRounds = 0;
-      previousMutationVersion = mutationVersion;
-    }
-    return {
-      settled: stableRounds >= stableRoundsRequired,
-      stabilizationMs: Math.round((performance.now() - startedAt) * 100) / 100
-    };
-  }
-
-  function summarizeSemanticDelta(delta) {
-    const changes = Array.isArray(delta?.changes) ? delta.changes : [];
-    return {
-      schemaVersion: 1,
-      sourceRevision: Number(delta?.sourceRevision || 0),
-      resultingRevision: Number(delta?.resultingRevision || 0),
-      classification: String(delta?.classification || 'NO_RELEVANT_CHANGE'),
-      changeTypes: [...new Set(changes.map((change) => String(change?.type || '')).filter(Boolean))].slice(0, 8),
-      changedEntityIds: changes.map((change) => String(change?.logicalId || '')).filter(Boolean).slice(0, 20),
-      completeSnapshotRequired: !!delta?.completeSnapshotRequired,
-      ...(delta?.resetReason ? { resetReason: clean(delta.resetReason, 80) } : {})
-    };
-  }
-
-  async function postActionEvidence(args) {
-    const before = args.before && typeof args.before === 'object' ? args.before : {};
-    const settled = await waitForPostActionSettle();
-    const resetReason = syncSemanticScope({});
-    // Post-action verification must never consume the canonical semantic delta.
-    // Baseline observation happens before the action; after the action we only
-    // inspect revision/reset metadata and leave UPDATE/RESET delivery to the
-    // next canonical page observation.
-    const semanticState = semanticIdentity.inspect();
-    const semantic = {
-      schemaVersion: 1,
-      sourceRevision: semanticState.observationRevision,
-      resultingRevision: semanticState.observationRevision,
-      classification: resetReason ? 'RESET' : 'NO_RELEVANT_CHANGE',
-      changeTypes: [],
-      changedEntityIds: [],
-      completeSnapshotRequired: !!resetReason,
-      ...(resetReason ? { resetReason } : {})
-    };
-    const target = resolveRef(args.ref);
-    const sameContinuity = before.documentId === documentId && before.routeKey === currentRouteKey();
-    const beforeMutationVersion = Number.isFinite(Number(before.beforeMutationVersion))
-      ? Number(before.beforeMutationVersion)
-      : mutationVersion;
-    const expectSpec = normalizeExpectSpec(args.expect);
-    const verification = expectSpec ? evaluateExpectations(expectSpec, before) : null;
-    const fallbackHref = verification && !verification.verified && target instanceof HTMLAnchorElement && target.href
-      ? String(target.href)
-      : null;
-    return {
-      schemaVersion: 1,
-      documentId,
-      continuity: sameContinuity ? 'SAME_DOCUMENT_ROUTE' : 'RESET_OR_ROUTE_CHANGE',
-      beforeMutationVersion,
-      mutationVersion,
-      mutationChanged: mutationVersion !== beforeMutationVersion,
-      settled: settled.settled,
-      stabilizationMs: settled.stabilizationMs,
-      semantic,
-      target: {
-        ref: String(args.ref || ''),
-        present: !!target
-      },
-      completionClaim: false,
-      ...(verification ? { verified: verification.verified, expectations: verification.expectations } : {}),
-      ...(fallbackHref ? { fallbackHref } : {})
-    };
-  }
-
-  async function clickSynthetic(args) {
-    const attempts = Math.max(1, Math.min(3, Number(args.retry?.attempts) || 1));
-    let el = resolveActionRef(args.ref);
+  function clickSynthetic(args) {
+    const el = resolveRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
-    let result = null;
-    for (let attempt = 1; attempt <= attempts; attempt += 1) {
-      el = resolveActionRef(args.ref);
-      if (!el) break;
-      const before = preparePostAction(args.ref);
-      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
-      el.focus?.({ preventScroll: true });
-      el.click();
-      const postAction = await postActionEvidence({ ref: args.ref, before, expect: args.expect });
-      result = { ok: true, ref: args.ref, method: 'synthetic', attempts: attempt, postAction };
-      if (postAction.verified !== false) break;
-      if (el instanceof HTMLAnchorElement && el.href) result.fallbackHref = String(el.href);
-      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 150));
-    }
-    return result;
+    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    el.focus?.({ preventScroll: true });
+    el.click();
+    return { ok: true, ref: args.ref, method: 'synthetic' };
   }
 
   function fill(args) {
@@ -899,14 +478,13 @@
   }
 
   function clickInfo(args) {
-    const el = resolveActionRef(args.ref);
+    const el = resolveRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
-    const postActionBefore = preparePostAction(args.ref);
     el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
     const rect = rectOf(el);
-    return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el), postActionBefore };
+    return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el) };
   }
 
   function pointerTarget(args) {
@@ -1129,10 +707,6 @@
   async function waitFor(args) {
     const timeoutMs = clamp(args.timeoutMs, 50, 30000, 8000);
     const intervalMs = clamp(args.intervalMs, 25, 1000, 75);
-    const absent = args.absent === true;
-    if (absent && !args.ref && !args.selector && !args.text) {
-      throw new Error('absent wait requires ref, selector, or text.');
-    }
     const deadline = Date.now() + timeoutMs;
     const text = clean(args.text, 300).toLowerCase();
     while (Date.now() <= deadline) {
@@ -1154,16 +728,10 @@
         }
         return stateMatches(el, args.state);
       });
-      if (absent) {
-        if (!found) return { ok: true, absent: true };
-      } else if (found) {
-        return { ok: true, item: serialize(found, { includeValue: !!args.includeValue }) };
-      }
+      if (found) return { ok: true, item: serialize(found, { includeValue: !!args.includeValue }) };
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
-    return absent
-      ? { ok: false, error: 'wait_for timeout', stillPresent: true }
-      : { ok: false, error: 'wait_for timeout' };
+    return { ok: false, error: 'wait_for timeout' };
   }
 
   function mediaElement(index = 0) {
@@ -1215,7 +783,6 @@
       case 'page.collect_links': return collectLinks(args);
       case 'page.click': return clickSynthetic(args);
       case 'page.click_info': return clickInfo(args);
-      case 'page.post_action': return postActionEvidence(args);
       case 'page.pointer_target': return pointerTarget(args);
       case 'page.scroll_settle': return settleScroll(args);
       case 'page.scroll_target': return scrollTargetBy(args);
