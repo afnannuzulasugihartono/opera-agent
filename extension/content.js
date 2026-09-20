@@ -650,20 +650,29 @@
     const tag = clean(args.tag, 80).toLowerCase();
     const exact = !!args.exact;
     const limit = clamp(args.limit, 1, MAX_QUERY, 30);
-    let nodes = [...document.querySelectorAll(INTERACTIVE_SELECTOR)];
-    if (args.visibleOnly !== false) nodes = nodes.filter(isVisible);
-    nodes = nodes.filter((el) => {
+    let entries = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].map((el, index) => {
       const s = serialize(el);
+      const fields = [s.label, s.text, s.placeholder].map((value) => String(value || '').trim().toLowerCase());
+      return { el, index, s, fields, hay: fields.join(' '), exactTextMatch: !!text && fields.includes(text) };
+    });
+    if (args.visibleOnly !== false) entries = entries.filter(({ el }) => isVisible(el));
+    entries = entries.filter(({ s, hay, exactTextMatch }) => {
       if (role && String(s.role).toLowerCase() !== role) return false;
       if (tag && String(s.tag).toLowerCase() !== tag) return false;
       if (!text) return true;
-      const hay = `${s.label} ${s.text} ${s.placeholder}`.toLowerCase();
-      return exact ? hay.trim() === text : hay.includes(text);
+      return exact ? exactTextMatch : hay.includes(text);
     });
-    nodes = prioritizeActionableNodes(nodes);
-    const items = nodes.slice(0, limit).map((el) => serialize(el, { includeValue: !!args.includeValue }));
+    entries = entries
+      .map((entry) => ({ ...entry, rank: actionabilityRank(entry.el) }))
+      .sort((left, right) => left.rank - right.rank || left.index - right.index);
+    let projected = entries;
+    if (args.limit == null && args.index == null) {
+      const dominant = entries.filter((entry) => entry.exactTextMatch && entry.rank === 0);
+      if (dominant.length === 1) projected = dominant;
+    }
+    const items = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
     const index = Number.isInteger(args.index) ? args.index : 0;
-    return { ok: true, count: nodes.length, item: items[index] ?? null, items };
+    return { ok: true, count: entries.length, item: items[index] ?? null, items };
   }
 
   function collectLinks(args) {

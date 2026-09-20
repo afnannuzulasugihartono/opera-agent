@@ -618,6 +618,47 @@ async def run(port, profile):
         assert r1_sensitive['actionable'] is False, r1_sensitive
         assert all(item['label'] != 'Skip hidden' for item in r1_items), r1_items
 
+        # R8 acceptance: the normal omitted-limit find path projects a unique
+        # exact actionable match without hiding genuine actionable ambiguity.
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Skip'
+        }, benchmark='r8.page.find.skip.default')
+        r8_default_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_default_find['count'] >= 4, r8_default_find
+        assert len(r8_default_find['items']) == 1, r8_default_find
+        assert r8_default_find['item'] == r8_default_find['items'][0], r8_default_find
+        assert r8_default_find['item']['label'] == 'Skip', r8_default_find
+        assert r8_default_find['item']['actionable'] is True, r8_default_find
+        assert r8_default_find['item']['sensitive'] is False, r8_default_find
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Skip',
+            'exact': True
+        }, benchmark='r8.page.find.skip.exact')
+        r8_exact_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_exact_find['count'] == 1, r8_exact_find
+        assert r8_exact_find['item']['label'] == 'Skip', r8_exact_find
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Choose'
+        }, benchmark='r8.page.find.choose.ambiguous')
+        r8_ambiguous_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_ambiguous_find['count'] == 2, r8_ambiguous_find
+        assert len(r8_ambiguous_find['items']) == 2, r8_ambiguous_find
+        assert all(item['actionable'] is True for item in r8_ambiguous_find['items']), r8_ambiguous_find
+
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Alpha Beta',
+            'limit': 6
+        }, benchmark='r8.page.find.combined-fields')
+        r8_combined_find = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r8_combined_find['count'] == 1, r8_combined_find
+        assert r8_combined_find['item']['label'] == 'Alpha', r8_combined_find
+
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
             'text': 'Skip',

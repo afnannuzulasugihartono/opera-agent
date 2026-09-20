@@ -480,13 +480,14 @@ test('P4 repetitive read workload cuts model-mediated reasoning/tool round trips
 });
 
 test('P4 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
+  // R8 authorizes only generic omitted-limit find dominance in content.js.
   const files = new Map([
     ['../lib/multi-signal-relevance-p3.js', '1c42d1d034767979ce87ff4ffb8eb85efcc3dc10'],
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
-    ['../extension/content.js', '7c7bad738a07a582064a436230c6db8cca8d1e2c'],
+    ['../extension/content.js', 'dd8c556a9bdd2b8beadcbe499f66e66be1167e19'],
     ['../extension/background.js', '7d9eba6e5f2c745f8278b3f6a9c5845ab131e3a1'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
     ['../supabase/functions/opera-agent-mcp/index.ts', 'bd1e0eadf69096e0e134c5b128801dc1495322a6'],

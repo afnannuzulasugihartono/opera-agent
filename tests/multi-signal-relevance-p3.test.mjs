@@ -524,9 +524,10 @@ test('P3 does not synthesize completion, action authority, foreground control, o
 });
 
 test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
+  // R8 authorizes only generic omitted-limit find dominance in content.js.
   const files = new Map([
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
-    ['../extension/content.js', '7c7bad738a07a582064a436230c6db8cca8d1e2c'],
+    ['../extension/content.js', 'dd8c556a9bdd2b8beadcbe499f66e66be1167e19'],
     ['../extension/background.js', '7d9eba6e5f2c745f8278b3f6a9c5845ab131e3a1'],
     ['../extension/manifest.json', 'ef0890b1dfbc6e24a3741bee04c5099179c936c1'],
     ['../supabase/functions/opera-agent-mcp/index.ts', 'bd1e0eadf69096e0e134c5b128801dc1495322a6'],
