@@ -2,6 +2,29 @@
 
 Last synchronized: 2026-09-21
 
+## U-I implemented on the R8 branch (takes precedence)
+
+On 2026-09-21 the user requested a change that makes the agent "faster and
+easier for ChatGPT web to use", and U-I (identity hardening; methods I1, I2,
+I3 from the perception/identity/verification research) was implemented
+**tests-first on `feat/pre-8e-usability-repair-r8`** by a separate writer:
+action-ref descriptors record mint-time document-coordinate geometry
+(`rectAtMint`) and `mutationVersionAtMint`; rebind through the R2 path now
+fails closed with a 24 px document-coordinate tolerance and names current
+plausible candidates when the target moved (production Maps hazard);
+`page.find` annotates multi-candidate results with `candidateRank` +
+disambiguation `hint`, and projects one bounded `fuzzy` candidate (exact-text
+or closest-actionable-to-visible-text, I3) on a zero exact match instead of a
+bare zero. No public MCP schema, protocol, or primitive changed. Local gates:
+Node suite 453/454 (single failure = pre-existing local-only governance
+test), `npm run check` PASS, controlled-browser regression (Edge headless=new)
+exit 0 including three new U-I scenarios; P2/P3/P4/P5 content.js blob locks
+rebaselined `9872dd3e…` → `0340d471…` (recorded reason: U-I runtime change).
+Evidence record: `docs/checkpoint-ui-identity-hardening.md`. The R8 signed
+release gate section below still governs 1.6.3 activation and 8E; U-I is
+versioned inside the 1.6.3 candidate source until a newer signed version is
+explicitly prepared.
+
 ## R8 signed-update continuation (takes precedence)
 
 **Latest outcome: R8 T041 FAILED and the audited forward rollback completed.**

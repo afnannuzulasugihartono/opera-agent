@@ -4,6 +4,12 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### U-I identity hardening (ChatGPT-web usability)
+- Added geometry-aware action-ref rebind rejection: descriptors record mint-time document-coordinate geometry and mutation version; a stale ref refuses to rebind when its candidate moved more than 24 px since mint and the refusal names the current plausible candidates (addresses the production stale-`Zoom in` mis-click hazard).
+- `page.find` now annotates multi-candidate results with `candidateRank` and a disambiguation `hint` including the explicit `index:` selection instruction.
+- On a zero exact-field match, `page.find` projects one bounded fuzzy candidate (`fuzzy: true` plus a fallback hint) or, when only visible text exists, the closest actionable element to that text, replacing capture/re-read recovery loops with one round trip.
+- Protocol 1, 26 browser primitives, and the 18-tool MCP inventory remain unchanged; additions are extension-internal result fields.
+
 ### R8 repair candidate 1.6.3
 - Preserve explicit diagnostic `items` while selecting the unique exact-actionable `item`, even when callers supply a limit.
 - Correct false overflow-ancestor clipping only when bounded browser hit testing proves the target reachable; genuine clipping remains fail-closed.

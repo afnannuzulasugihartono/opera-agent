@@ -69,7 +69,7 @@
     );
   }
 
-  function actionRefDescriptor(el) {
+  function actionRefDescriptor(el, options = {}) {
     const identity = stableElementIdentity(el);
     return {
       documentId,
@@ -83,7 +83,9 @@
       type: clean(el.getAttribute?.('type'), 80),
       label: getAssociatedLabel(el),
       href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
-      sensitive: !!sensitiveDescriptor(el)
+      sensitive: !!sensitiveDescriptor(el),
+      rectAtMint: options.rectAtMint ?? null,
+      mutationVersionAtMint: options.mutationVersionAtMint ?? null
     };
   }
 
@@ -104,6 +106,30 @@
       && current.label === descriptor.label
       && current.href === descriptor.href
       && current.sensitive === descriptor.sensitive
+    );
+  }
+
+  // U-I (I1): a ref minted before a geometric relocation must not silently
+  // rebind to an element that now sits somewhere else — that produced the
+  // production Street-View mis-click. Rebind is allowed only when the current
+  // target still sits within the mint-time geometry tolerance. Comparison
+  // happens in document coordinates so ordinary scrolling never trips it.
+  const GEOMETRY_DRIFT_TOLERANCE_PX = 24;
+
+  function documentRectOf(el) {
+    const rect = el.getBoundingClientRect();
+    return { x: rect.x + scrollX, y: rect.y + scrollY, width: rect.width, height: rect.height };
+  }
+
+  function geometryMatchesMint(el, descriptor) {
+    if (!descriptor?.rectAtMint) return true;
+    const rect = documentRectOf(el);
+    const mint = descriptor.rectAtMint;
+    return (
+      Math.abs(rect.x - mint.x) <= GEOMETRY_DRIFT_TOLERANCE_PX
+      && Math.abs(rect.y - mint.y) <= GEOMETRY_DRIFT_TOLERANCE_PX
+      && Math.abs(rect.width - mint.width) <= GEOMETRY_DRIFT_TOLERANCE_PX
+      && Math.abs(rect.height - mint.height) <= GEOMETRY_DRIFT_TOLERANCE_PX
     );
   }
 
@@ -139,7 +165,7 @@
       ref = `oa_${documentId.slice(0, 8)}_${refCounter.toString(36)}`;
       refs.set(el, ref);
       reverseRefs.set(ref, el);
-      actionRefDescriptors.set(ref, actionRefDescriptor(el));
+      actionRefDescriptors.set(ref, actionRefDescriptor(el, { rectAtMint: documentRectOf(el), mutationVersionAtMint: mutationVersion }));
     }
     return ref;
   }
@@ -173,6 +199,18 @@
     if (candidates.length !== 1) return null;
 
     const replacement = candidates[0];
+    if (!geometryMatchesMint(replacement, descriptor)) {
+      const currentCandidates = candidates.slice(0, 3).map((el) => {
+        const s = serialize(el);
+        return { label: s.label || s.text, tag: s.tag, rect: rectOf(el) };
+      });
+      throw new Error(
+        `Ref target moved beyond the geometry tolerance since mint `
+        + `(mutationVersion ${descriptor.mutationVersionAtMint ?? 'unknown'} -> ${mutationVersion}); `
+        + `refusing automatic rebind. Current plausible candidates: ${JSON.stringify(currentCandidates)}. `
+        + `Re-run page.find and use a fresh ref.`
+      );
+    }
     const existingRef = refs.get(replacement);
     if (existingRef && existingRef !== key) reverseRefs.delete(existingRef);
     refs.set(replacement, key);
@@ -669,6 +707,50 @@
     };
   }
 
+  // U-I (I2): disambiguation hints make ranked candidate lists actionable
+  // without another round trip — the model sees why each rank was produced
+  // and how to select a specific candidate explicitly.
+  function findDisambiguationHint(el, position) {
+    const state = actionabilityState(el);
+    const facts = [];
+    facts.push(state.actionable ? 'actionable' : 'not actionable');
+    facts.push(state.inViewport ? 'in viewport' : 'outside viewport');
+    if (state.sensitive) facts.push('sensitive');
+    return `chose:${position + 1} — ${facts.join(', ')}; select explicitly with index:${position} or narrow the query`;
+  }
+
+  // U-I (I3): Docs-style surfaces show the target text in the page but attach
+  // it to no interactive element, so exact field matching returns zero.
+  // Surface the closest actionable element near the visible text so the model
+  // can act in one round trip instead of a capture/re-read loop.
+  function findVisibleTextCandidate(text) {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const maxTextNodes = 2000;
+    let node;
+    let scanned = 0;
+    while ((node = walker.nextNode()) && scanned < maxTextNodes) {
+      scanned += 1;
+      if (!(node.nodeValue || '').toLowerCase().includes(text)) continue;
+      const anchor = node.parentElement?.getBoundingClientRect?.();
+      if (!anchor || (anchor.width === 0 && anchor.height === 0)) continue;
+      const centerX = anchor.left + anchor.width / 2;
+      const centerY = anchor.top + anchor.height / 2;
+      let best = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      for (const el of document.querySelectorAll(INTERACTIVE_SELECTOR)) {
+        if (!actionabilityState(el).actionable) continue;
+        const rect = el.getBoundingClientRect();
+        const distance = Math.hypot(rect.left + rect.width / 2 - centerX, rect.top + rect.height / 2 - centerY);
+        if (distance < bestDistance) {
+          best = el;
+          bestDistance = distance;
+        }
+      }
+      if (best) return best;
+    }
+    return null;
+  }
+
   function pageFind(args) {
     const text = clean(args.text, 300).toLowerCase();
     const role = clean(args.role, 80).toLowerCase();
@@ -693,11 +775,39 @@
     const dominant = entries.filter((entry) => entry.exactTextMatch && entry.rank === 0);
     let projected = entries;
     if (args.limit == null && args.index == null && dominant.length === 1) projected = dominant;
-    const items = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
+    const rawItems = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
+    // U-I (I2): ambiguous candidate lists carry rank + disambiguation hints so
+    // the model can pick explicitly instead of guessing or re-reading.
+    const items = rawItems.length > 1
+      ? rawItems.map((entry, position) => ({
+          ...entry,
+          candidateRank: position + 1,
+          hint: findDisambiguationHint(projected[position].el, position)
+        }))
+      : rawItems;
     const index = Number.isInteger(args.index) ? args.index : 0;
     const item = args.index == null && dominant.length === 1
       ? serialize(dominant[0].el, { includeValue: !!args.includeValue })
       : items[index] ?? null;
+    // U-I (I2): a bare zero forces the model into capture/re-read loops.
+    // When the exact-field search finds nothing, project one bounded fuzzy
+    // candidate with an explicit hint so recovery costs one round trip.
+    if (text && entries.length === 0) {
+      const fuzzyMatch = [...document.querySelectorAll(INTERACTIVE_SELECTOR)]
+        .find((el) => serialize(el).text.toLowerCase().includes(text));
+      const fallbackEl = fuzzyMatch || findVisibleTextCandidate(text);
+      if (fallbackEl) {
+        const serialized = serialize(fallbackEl, { includeValue: !!args.includeValue });
+        return {
+          ok: true,
+          count: 0,
+          item: { ...serialized, candidateRank: 1, hint: findDisambiguationHint(fallbackEl, 0) },
+          items: [],
+          fuzzy: true,
+          hint: 'No exact field match; exact-match fallback from fuzzy text match. Verify the target before acting.'
+        };
+      }
+    }
     return { ok: true, count: entries.length, item, items };
   }
 

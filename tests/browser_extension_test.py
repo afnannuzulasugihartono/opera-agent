@@ -135,6 +135,7 @@ R2_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r2.html').read_text(e
 R3_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r3.html').read_text(encoding='utf-8')
 R4_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r4.html').read_text(encoding='utf-8')
 R5_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r5.html').read_text(encoding='utf-8')
+UI_IDENTITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ui-identity.html').read_text(encoding='utf-8')
 
 def build_r5_wav():
     buffer = io.BytesIO()
@@ -220,7 +221,7 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-ui-identity'):
             if self.path.startswith('/pre8e-r5'):
                 document = R5_PAGE
             elif self.path.startswith('/pre8e-r4'):
@@ -229,6 +230,8 @@ class Handler(BaseHTTPRequestHandler):
                 document = R3_PAGE
             elif self.path.startswith('/pre8e-r2'):
                 document = R2_PAGE
+            elif self.path.startswith('/pre8e-ui-identity'):
+                document = UI_IDENTITY_PAGE
             elif self.path.startswith('/pre8e-r1'):
                 document = R1_PAGE
             elif self.path.startswith('/pre8e-r0'):
@@ -751,7 +754,89 @@ async def run(port, profile):
         assert r1_read['elements'][0]['label'] == 'Skip', r1_read['elements']
         assert r1_read['elements'][0]['actionable'] is True, r1_read['elements'][0]
 
-        cid = STATE.push('tabs.close', {'tabId': r1_tab_id})
+        # U-I: ranked candidates expose disambiguation hints (I2).
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'Choose',
+            'limit': 20,
+            'index': 1
+        }, benchmark='ui.page.find.ambiguity-hints')
+        ui_hints = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert len(ui_hints['items']) == 2, ui_hints
+        assert ui_hints['items'][0]['candidateRank'] == 1, ui_hints
+        assert ui_hints['items'][1]['candidateRank'] == 2, ui_hints
+        assert 'chose:1' in ui_hints['items'][0]['hint'], ui_hints
+        assert 'chose:2' in ui_hints['items'][1]['hint'], ui_hints
+
+        # U-I: when no exact-field match exists, one bounded fuzzy projection
+        # is returned with an explicit hint instead of a bare zero (I2).
+        cid = STATE.push('page.find', {
+            'tabId': r1_tab_id,
+            'text': 'nav',
+            'exact': True,
+            'limit': 20
+        }, benchmark='ui.page.find.fuzzy-projection')
+        ui_fuzzy = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert ui_fuzzy['count'] == 0, ui_fuzzy
+        assert ui_fuzzy['items'] == [], ui_fuzzy
+        assert ui_fuzzy['fuzzy'] is True, ui_fuzzy
+        assert ui_fuzzy['item']['label'] == 'Skip navigation', ui_fuzzy
+        assert ui_fuzzy['item']['actionable'] is False, ui_fuzzy
+        assert 'exact-match' in ui_fuzzy['hint'], ui_fuzzy
+
+        # U-I: a ref minted before a geometric relocation refuses rebind and
+        # names the plausible current candidate with fresh geometry (I1).
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-ui-identity',
+            'active': False,
+            'wait': True
+        }, benchmark='ui.tabs.open')
+        ui_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.find', {
+            'tabId': ui_tab_id,
+            'text': 'Zoom in',
+            'exact': True,
+            'limit': 20,
+            'index': 0
+        }, benchmark='ui.page.find.mint-zoom')
+        ui_zoom = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        ui_zoom_ref = ui_zoom['item']['ref']
+        ui_zoom_x = ui_zoom['item']['rect']['x']
+        assert ui_zoom['item']['actionable'] is True, ui_zoom
+
+        cid = STATE.push('page.find', {
+            'tabId': ui_tab_id,
+            'text': 'Relocate control',
+            'exact': True
+        }, benchmark='ui.page.find.trigger')
+        ui_trigger_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
+
+        cid = STATE.push('page.click', {'tabId': ui_tab_id, 'ref': ui_trigger_ref}, benchmark='ui.page.click.trigger')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.click', {'tabId': ui_tab_id, 'ref': ui_zoom_ref}, benchmark='ui.page.click.geometry-reject')
+        ui_reject = await asyncio.to_thread(STATE.wait, cid)
+        ui_reject_msg = ui_reject['error']['message'] if isinstance(ui_reject.get('error'), dict) else str(ui_reject.get('error'))
+        assert ui_reject['ok'] is False, ui_reject
+        assert 'moved beyond the geometry tolerance' in ui_reject_msg, ui_reject
+        assert 'Zoom in' in ui_reject_msg, ui_reject
+        assert str(int(ui_zoom_x) + 600) in ui_reject_msg, ui_reject
+
+        # U-I: visible text without an interactive element surfaces a nearby
+        # actionable candidate in one round trip (I3).
+        cid = STATE.push('page.find', {
+            'tabId': ui_tab_id,
+            'text': 'Quarterly document',
+            'limit': 20
+        }, benchmark='ui.page.find.visible-text-fallback')
+        ui_fallback = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert ui_fallback['count'] == 0, ui_fallback
+        assert ui_fallback['fuzzy'] is True, ui_fallback
+        assert ui_fallback['item']['label'] == 'Save', ui_fallback
+        assert ui_fallback['item']['ref'] is not None, ui_fallback
+
+        cid = STATE.push('tabs.close', {'tabId': ui_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         # R2 tests-first acceptance. Current R1 runtime is expected to fail the

@@ -2,6 +2,28 @@
 
 Last synchronized: 2026-09-21.
 
+## U-I identity hardening implemented on r8 — read first
+
+After the R8/1.6.3 state below was recorded, the user asked for a change that
+makes the agent "faster and easier for ChatGPT web to use". U-I (research
+methods I1/I2/I3) was implemented **tests-first on this same branch by a
+separate writer**; see `docs/checkpoint-ui-identity-hardening.md` for the
+full contract and evidence. Short form: geometry-aware rebind rejection
+(24 px document-coordinate tolerance; refusal names current candidates),
+`page.find` ambiguity `candidateRank`+`hint` annotations, bounded `fuzzy`
+projection on zero exact matches, and a visible-text → closest-actionable
+fallback (I3). Public MCP inventory, schemas, protocol, and primitives
+unchanged. Local gates green (453/454 node — one pre-existing local-only
+governance failure; check PASS; controlled-browser Edge headless=new exit 0
+with three new U-I scenarios); content.js blob locks rebaselined
+`9872dd3e…` → `0340d471…` with the reason recorded. The one-writer rule was
+respected: this writer did not touch the working tree before verifying it
+matched the handoff head. Exact-head CI (CircleCI + Vercel) on the pushed U-I
+head is the remaining acceptance step under the standing authorization. The
+signed 1.6.3 gate section below still governs production activation; U-I
+rides the 1.6.3 candidate source until a newer signed version is explicitly
+prepared.
+
 ## R8 signed release gate — read first
 
 **Latest outcome: R8 T041 FAILED and production safely rolled forward to signed
