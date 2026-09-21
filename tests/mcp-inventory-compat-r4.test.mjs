@@ -10,7 +10,7 @@ const FROZEN_MCP_TOOLS = [
   'activate_tab', 'browser_status', 'capture_page', 'click_at', 'click_element',
   'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
   'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page',
-  'run_browser_burst', 'scroll_page', 'wheel_at'
+  'run_browser_burst', 'run_workflow', 'scroll_page', 'wheel_at'
 ];
 
 const FROZEN_METHODS = [
@@ -26,16 +26,16 @@ const FROZEN_READ_PAGE_PROPERTIES = [
   'includeElements', 'limit', 'maxElements', 'offset', 'tabId'
 ];
 
-test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for release 1.6.4', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.4');
+test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for release 1.6.5', () => {
+  assert.equal(PRODUCT_VERSION, '1.6.5');
   assert.equal(ALLOWED_METHODS.length, 26);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 18 tools', async () => {
+test('R4 keeps the public MCP tool inventory frozen at 19 tools', async () => {
   const source = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 18);
+  assert.equal(registered.length, 19);
   assert.deepEqual([...registered].sort(), FROZEN_MCP_TOOLS);
 });
 

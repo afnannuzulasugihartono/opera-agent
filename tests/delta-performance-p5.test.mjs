@@ -127,9 +127,9 @@ test('P5 frozen boundary remains locked except the P6-authorized Reactive VM cut
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
     ['../extension/content.js', '2ee26615f6b6e8b1d96793719a0f73d75b2584e2'],
-    ['../extension/background.js', '7d9eba6e5f2c745f8278b3f6a9c5845ab131e3a1'],
-    ['../extension/manifest.json', 'd9de8b59c946d6bddb5cbc07fb3acc9a18683629'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', 'bd1e0eadf69096e0e134c5b128801dc1495322a6'],
+    ['../extension/background.js', '619cecf8c165885ad21c21840686ae5198e63ca1'],
+    ['../extension/manifest.json', 'bd46c3f0a4bfea6aafa0a0759e7d5ad9cbb10bde'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '80a8e31d153a46e049d74087a7a2df500ef73c15'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));

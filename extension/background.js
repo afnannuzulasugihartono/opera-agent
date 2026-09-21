@@ -552,11 +552,37 @@ async function trustedKey(tabId, keyName, context, mode = 'background') {
   }));
 }
 
-function burstStepParams(step, tabId, remainingMs, mode) {
+// Burst ref passthrough: a click/fill step may take its ref from a previous
+// find/query step in the same burst, so the reference is minted and consumed
+// within milliseconds instead of surviving a model round-trip (live evidence:
+// YouTube skip control died in the 14.1 s between find and click).
+function burstPassthroughRef(results, step, index) {
+  const from = step.refFromStep;
+  if (from === undefined || from === null) return null;
+  const source = results[Number(from)];
+  const sourceItems = ((source && source.result) || {}).items;
+  if (!Array.isArray(sourceItems) || sourceItems.length === 0) {
+    throw new Error(`refFromStep must reference an earlier burst step with items (step ${from} returned none).`);
+  }
+  const want = step.refIndex;
+  const pick = want === undefined || want === null ? sourceItems[0] : sourceItems[Number(want)];
+  if (!pick || typeof pick.ref !== 'string' || !pick.ref) {
+    throw new Error(`refFromStep must reference an earlier burst step with items (step ${from} item has no ref).`);
+  }
+  return { ref: pick.ref, resolvedFrom: `step:${from}` };
+}
+
+function burstStepParams(step, tabId, remainingMs, mode, results) {
   const { action, pointerAction, ...values } = step;
   const params = { ...values, tabId, executionMode: mode };
-  if (action === 'click') params.trusted = true;
-  if (action === 'fill') params.trusted = true;
+  if (action === 'click' || action === 'fill') {
+    const passthrough = burstPassthroughRef(results || [], step);
+    if (passthrough) {
+      params.ref = passthrough.ref;
+      params.resolvedFrom = passthrough.resolvedFrom;
+    }
+    params.trusted = true;
+  }
   if (action === 'key') params.trusted = true;
   if (action === 'pointer') {
     params.action = pointerAction || 'click';
@@ -600,7 +626,11 @@ async function runBurst(params, outerContext = {}) {
       const method = BURST_ACTION_METHODS[step.action];
       const stepStartedAt = performance.now();
       try {
-        const result = await dispatch(method, burstStepParams(step, tabId, remainingMs, mode), context);
+        const result = await dispatch(method, burstStepParams(step, tabId, remainingMs, mode, results), context);
+        if ((step.action === 'click' || step.action === 'fill') && step.refFromStep !== undefined && step.refFromStep !== null
+          && result && typeof result === 'object' && result.ok === true) {
+          result.resolvedFrom = `step:${step.refFromStep}`;
+        }
         if (step.action === 'wait' && result?.ok === false) throw new Error(String(result.error || 'wait_for timeout'));
         const entry = { index, action: step.action, ok: true, timingMs: Math.round((performance.now() - stepStartedAt) * 100) / 100, result };
         if (burstResultSize([...results, entry]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);

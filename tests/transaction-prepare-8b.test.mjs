@@ -84,7 +84,7 @@ test('8B trusted classification is internal and conservative for every generic p
   assert.throws(() => classifyTransactionEffect({ descriptorId: 'bad', method: 'raw.cdp' }), (error) => error.code === 'INVALID_ACTION');
 });
 
-test('8B enforcement decision covers all 18 tools and rejects mixed bursts atomically', () => {
+test('8B enforcement decision covers all 19 tools and rejects mixed bursts atomically', () => {
   assert.deepEqual(contract.enforcement.toolDecisions.map((item) => item.tool), mcp.tools);
   for (const entry of contract.enforcement.toolDecisions) {
     const expected = entry.classification === 'OBSERVATION' ? 'ALLOW' : 'TRANSACTION_REQUIRED';

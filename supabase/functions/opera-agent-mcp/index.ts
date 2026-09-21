@@ -41,6 +41,8 @@ const timeoutSchema = z.number().int().min(500).max(30000).optional()
   .describe("Maximum wait in milliseconds.");
 const burstTimeoutSchema = z.number().int().min(500).max(12000).optional()
   .describe("Maximum total burst duration in milliseconds; defaults to and cannot exceed 12000.");
+const workflowNameSchema = z.string().min(1).max(200).regex(/^[a-z0-9_.-]+$/)
+  .describe("Registered workflow name, e.g. youtube.skip_ads.");
 const navigationKeySchema = z.enum(["Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Space"]);
 const burstStepSchema = z.discriminatedUnion("action", [
   z.object({
@@ -58,8 +60,20 @@ const burstStepSchema = z.discriminatedUnion("action", [
     exact: z.boolean().optional(),
     limit: z.number().int().min(1).max(100).optional()
   }).strict(),
-  z.object({ action: z.literal("click"), ref: z.string().min(1).max(300) }).strict(),
-  z.object({ action: z.literal("fill"), ref: z.string().min(1).max(300), value: z.string().max(20000) }).strict(),
+  z.object({
+    action: z.literal("click"),
+    ref: z.string().min(1).max(300).optional(),
+    refFromStep: z.number().int().nonnegative().optional()
+      .describe("Take the ref from the items of an earlier burst step in the same burst (0-based step index). Keeps find+click atomic for dynamic UIs."),
+    refIndex: z.number().int().nonnegative().optional()
+  }).strict().refine((step) => !!step.ref || step.refFromStep !== undefined, "Burst click requires ref or refFromStep."),
+  z.object({
+    action: z.literal("fill"),
+    ref: z.string().min(1).max(300).optional(),
+    refFromStep: z.number().int().nonnegative().optional(),
+    refIndex: z.number().int().nonnegative().optional(),
+    value: z.string().max(20000)
+  }).strict().refine((step) => !!step.ref || step.refFromStep !== undefined, "Burst fill requires ref or refFromStep."),
   z.object({ action: z.literal("key"), key: navigationKeySchema }).strict(),
   z.object({
     action: z.literal("scroll"),
@@ -268,11 +282,61 @@ function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number) 
   return runCommand("page.capture", params, timeoutMs).then(screenshotResult).catch(toolError);
 }
 
+function sleepMs(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Versioned site workflows are the normal path for repeated multi-step
+// intents: opera_start_workflow snapshots the definition, inserts the run, and
+// fires the runner itself via pg_net, so a single RPC starts the whole plan.
+// The runner re-queries fresh controls on every retry iteration, which keeps
+// fast-changing UIs (ad overlays) from dying between observation and action.
+async function runWorkflow(name: string, input: Record<string, unknown>, waitTimeoutMs: number) {
+  const started = await rpc("opera_start_workflow", {
+    p_name: name,
+    p_input: input,
+    p_timeout_ms: Math.max(1000, Math.min(120000, waitTimeoutMs)),
+    p_device_name: DEVICE_NAME
+  });
+  if (!started?.ok || !started.runId) {
+    const detail = started?.error;
+    const code = detail && typeof detail === "object" && "code" in detail
+      ? String((detail as { code?: unknown }).code || "WORKFLOW_START_FAILED")
+      : "WORKFLOW_START_FAILED";
+    const message = detail && typeof detail === "object" && "message" in detail
+      ? String((detail as { message?: unknown }).message)
+      : "Unable to start workflow.";
+    throw new CommandFailure(code, message);
+  }
+  const runId = String(started.runId);
+  const startedAt = Date.now();
+  let last: Record<string, unknown> | null = null;
+  while (Date.now() - startedAt < waitTimeoutMs + 8000) {
+    await sleepMs(400);
+    last = await rpc("opera_get_workflow_run", { p_run_id: runId }) as Record<string, unknown> | null;
+    if (last?.ok && !["queued", "running"].includes(String(last.status))) break;
+  }
+  if (!last?.ok) {
+    throw new CommandFailure("WORKFLOW_RUN_LOST", "Workflow run could not be read.");
+  }
+  const status = String(last.status);
+  const timing = last.timing && typeof last.timing === "object" ? last.timing as Record<string, unknown> : {};
+  return {
+    ok: status === "completed",
+    runId,
+    workflow: name,
+    status,
+    result: last.result ?? null,
+    error: last.error ?? null,
+    timing
+  };
+}
+
 function createServer() {
   const server = new McpServer(
     { name: "opera-agent", version: "1.6.0" },
     {
-      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Treat coordinates as stale when documentId, viewport, zoomFactor, visualScale, or screenshot hash changes. For lazy result lists, call wheel_at inside the intended list, inspect scroll.after, moved, contentChanged, and reachedBoundary, collect stableKey/href values, and repeat only with an explicit bound until the boundary is reached and no new stable keys appear. Coordinate actions default to invisible background CDP input; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Surfaces rendered as canvas, editors, games, or remote screens expose little or no DOM: when read_page returns little or no useful text while the task needs visual content, use capture_page and reason from the screenshot. If find_elements returns nothing while read_page shows the text, target an ancestor clickable element or capture the page instead of retrying the same query. Maps search results are viewport-scoped: after panning or zooming, re-read or re-search rather than trusting the earlier list, and re-find targets after any large page redraw before clicking them. When a tool reports a timeout or an unknown outcome, verify the page state before repeating the action. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
+      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. For dynamic or fast-changing UIs (video players, ad overlays, countdown controls) run find, click, and a wait verification inside ONE run_browser_burst call, passing the found ref to the click step via refFromStep so the reference is consumed within milliseconds of being minted; do not split find and click into separate round trips there. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Treat coordinates as stale when documentId, viewport, zoomFactor, visualScale, or screenshot hash changes. For lazy result lists, call wheel_at inside the intended list, inspect scroll.after, moved, contentChanged, and reachedBoundary, collect stableKey/href values, and repeat only with an explicit bound until the boundary is reached and no new stable keys appear. Coordinate actions default to invisible background CDP input; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Surfaces rendered as canvas, editors, games, or remote screens expose little or no DOM: when read_page returns little or no useful text while the task needs visual content, use capture_page and reason from the screenshot. If find_elements returns nothing while read_page shows the text, target an ancestor clickable element or capture the page instead of retrying the same query. Maps search results are viewport-scoped: after panning or zooming, re-read or re-search rather than trusting the earlier list, and re-find targets after any large page redraw before clicking them. When a tool reports a timeout or an unknown outcome, verify the page state before repeating the action. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
     }
   );
@@ -305,6 +369,20 @@ function createServer() {
     const params = executionMode === "foreground" ? { tabId, steps, executionMode } : { tabId, steps };
     return execute("browser.burst", params, timeoutMs);
   });
+
+  server.registerTool("run_workflow", {
+    title: "Run Opera Agent workflow",
+    description: "Run a versioned site workflow (for example youtube.skip_ads) end to end on the paired Opera device: ad detection, retrying skip clicks against freshly re-queried controls, and ad-state verification all happen inside one run. Use this for known repeated intents instead of hand-driving each click and risking stale element references.",
+    inputSchema: {
+      name: workflowNameSchema,
+      input: z.record(z.string(), z.unknown()).optional()
+        .describe("Workflow input object, shaped by the workflow definition."),
+      timeoutMs: z.number().int().min(1000).max(120000).optional()
+        .describe("Workflow timeout in milliseconds; defaults to 60000.")
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ name, input, timeoutMs }: { name: string; input?: Record<string, unknown>; timeoutMs?: number }) =>
+    runWorkflow(name, input || {}, timeoutMs ?? 60000).then(textResult).catch(toolError));
 
   server.registerTool("list_tabs", {
     title: "List Opera tabs",

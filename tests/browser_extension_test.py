@@ -386,7 +386,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.6.4'
+        assert result['version'] == '1.6.5'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -875,7 +875,68 @@ async def run(port, profile):
         ui_after_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'Skipped' in (ui_after_skip.get('text') or ''), ui_after_skip
 
-        cid = STATE.push('tabs.close', {'tabId': ui_tab_id})
+        # U-S (P1): burst ref passthrough — find and click in ONE command so the
+        # ref is minted and consumed within milliseconds, immune to the model
+        # round-trip staleness observed live (find 15:29:36.329Z -> click
+        # 15:29:50.434Z on YouTube). find result feeds click via refFromStep,
+        # and a trailing wait acts as the in-burst post-condition check.
+        # Reuses the already-verified U-I fixture tab.
+        us_tab_id = ui_tab_id
+
+        cid = STATE.push('browser.burst', {
+            'tabId': us_tab_id,
+            'steps': [
+                {'action': 'find', 'text': 'Save', 'exact': True, 'limit': 20},
+                {'action': 'click', 'refFromStep': 0, 'refIndex': 0},
+                {'action': 'wait', 'selector': '#docs-result', 'timeoutMs': 2000}
+            ]
+        }, benchmark='us.burst.find-click-wait')
+        us_burst = await asyncio.to_thread(STATE.wait, cid)
+        if us_burst.get('ok') is not True:
+            raise AssertionError({
+                'benchmark': 'us.burst.find-click-wait',
+                'recentMetrics': STATE.metrics[-8:],
+                'body': us_burst
+            })
+        us_steps = (us_burst.get('result') or {}).get('results') or []
+        assert len(us_steps) == 3, us_burst
+        us_found = (us_steps[0].get('result') or {}).get('item') or {}
+        assert us_found.get('label') == 'Save', us_burst
+        us_clicked = us_steps[1].get('result') or {}
+        assert us_clicked.get('resolvedFrom') == 'step:0', us_burst
+        assert (us_steps[2].get('result') or {}).get('ok') is True, us_burst
+
+        # U-S negative: a burst click may only reference an EARLIER step.
+        cid = STATE.push('browser.burst', {
+            'tabId': us_tab_id,
+            'steps': [{'action': 'click', 'refFromStep': 3, 'refIndex': 0}]
+        }, benchmark='us.burst.forward-ref.rejected')
+        us_forward = await asyncio.to_thread(STATE.wait, cid)
+        assert us_forward.get('ok') is False, us_forward
+        assert 'refFromStep' in str(us_forward.get('error')), us_forward
+
+        # U-S control: the same find-then-click split across two model round
+        # trips (the shape that went stale live) still resolves on this fixture
+        # through the established rebind path, because the Save control is
+        # never destroyed here — the contrast is timing, not selection.
+        cid = STATE.push('page.find', {
+            'tabId': us_tab_id,
+            'text': 'Save',
+            'exact': True,
+            'limit': 20
+        }, benchmark='us.page.find.save')
+        us_save_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
+
+        cid = STATE.push('page.click', {'tabId': us_tab_id, 'ref': us_save_ref}, benchmark='us.page.click.separate-roundtrip')
+        us_separate = await asyncio.to_thread(STATE.wait, cid)
+        if us_separate.get('ok') is not True:
+            raise AssertionError({
+                'benchmark': 'us.page.click.separate-roundtrip',
+                'recentMetrics': STATE.metrics[-8:],
+                'body': us_separate
+            })
+
+        cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         # R2 tests-first acceptance. Current R1 runtime is expected to fail the
@@ -1960,7 +2021,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.6.4'
+        assert result['version'] == '1.6.5'
 
         await context.close()
         import os

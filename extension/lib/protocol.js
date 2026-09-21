@@ -1,4 +1,4 @@
-export const PRODUCT_VERSION = '1.6.4';
+export const PRODUCT_VERSION = '1.6.5';
 export const PROTOCOL_VERSION = 1;
 
 export const BURST_MAX_STEPS = 8;
@@ -14,11 +14,11 @@ export const BURST_ACTION_METHODS = Object.freeze({
   wait: 'page.wait_for',
   pointer: 'page.pointer'
 });
-const BURST_STEP_KEYS = Object.freeze({
+export const BURST_STEP_KEYS = Object.freeze({
   read: ['action', 'offset', 'limit', 'includeElements', 'maxElements'],
   find: ['action', 'text', 'role', 'tag', 'exact', 'limit'],
-  click: ['action', 'ref'],
-  fill: ['action', 'ref', 'value'],
+  click: ['action', 'ref', 'refFromStep', 'refIndex'],
+  fill: ['action', 'ref', 'value', 'refFromStep', 'refIndex'],
   key: ['action', 'key'],
   scroll: ['action', 'x', 'y', 'absolute', 'smooth'],
   wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs'],
@@ -78,9 +78,10 @@ function validateBurstStep(step) {
   const unexpectedKey = Object.keys(step).find((key) => !allowedKeys.has(key));
   if (unexpectedKey) return `Burst ${action} does not allow ${unexpectedKey}.`;
 
-  if (action === 'click' && !validRef(step.ref)) return 'Burst click requires a valid ref.';
-  if (action === 'fill' && (!validRef(step.ref) || typeof step.value !== 'string' || step.value.length > 20000)) {
-    return 'Burst fill requires a valid ref and a value of at most 20000 characters.';
+  if (action === 'click' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst click requires a valid ref or refFromStep.';
+  if (action === 'fill' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
+  if (action === 'fill' && step.refFromStep === undefined && (typeof step.value !== 'string' || step.value.length > 20000)) {
+    return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
   }
   if (action === 'key' && !['Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Space'].includes(step.key)) {
     return 'Burst key is not allowlisted.';
@@ -115,6 +116,17 @@ export function validateBurst(params) {
   for (let index = 0; index < params.steps.length; index += 1) {
     const error = validateBurstStep(params.steps[index]);
     if (error) return { ok: false, error: `Invalid burst step ${index}: ${error}` };
+    const passthrough = params.steps[index].refFromStep;
+    if (passthrough !== undefined && passthrough !== null) {
+      const fromIndex = Number(passthrough);
+      if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= index) {
+        return { ok: false, error: `Invalid burst step ${index}: refFromStep must reference an earlier burst step.` };
+      }
+      const refIndex = params.steps[index].refIndex;
+      if (refIndex !== undefined && refIndex !== null && (!Number.isInteger(Number(refIndex)) || Number(refIndex) < 0)) {
+        return { ok: false, error: `Invalid burst step ${index}: refIndex must be a non-negative integer.` };
+      }
+    }
   }
   return { ok: true };
 }

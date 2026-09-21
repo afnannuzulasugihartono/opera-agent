@@ -1,0 +1,18 @@
+-- U-S burst atomic actions (2026-09-21): register a versioned youtube.skip_ads
+-- workflow so ad handling runs as one retrying, self-verifying plan instead of
+-- separate model round trips that let fast-changing ad controls go stale.
+--
+-- The loop re-queries the skip control on every iteration (locator-style
+-- freshness) and polls the ad-state post-condition, so late-appearing controls
+-- (countdown-gated skip buttons) are handled without stale refs. Historical
+-- workflow migrations remain untouched; this adds a new version.
+--
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
+-- transport boundary changes are introduced here.
+
+select public.opera_register_workflow(
+  'youtube.skip_ads',
+  $wf${"steps":[{"type":"command","id":"findtab","method":"tabs.find","params":{"urlContains":"youtube.com/watch","limit":10}},{"type":"if","condition":{"left":{"$ref":"steps.findtab.result.tab"},"op":"exists"},"then":[{"type":"set","name":"tabId","value":{"$ref":"steps.findtab.result.tab.id"}}],"else":[]},{"type":"if","condition":{"left":{"$ref":"vars.tabId"},"op":"not_exists"},"then":[{"type":"fail","code":"TAB_NOT_FOUND","message":"No YouTube watch tab was found."}],"else":[]},{"type":"command","id":"adinitial","method":"page.query","params":{"tabId":{"$ref":"vars.tabId"},"selector":".ad-showing, .ytp-ad-player-overlay","index":0,"limit":5},"continueOnError":true},{"type":"if","condition":{"left":{"$ref":"steps.adinitial.result.item"},"op":"exists"},"then":[{"type":"repeat","steps":[{"type":"command","id":"skip","method":"page.query","params":{"tabId":{"$ref":"vars.tabId"},"selector":".ytp-ad-skip-button-modern, .ytp-ad-skip-button, button.ytp-skip-ad-button, .ytp-ad-skip-button-container button","index":0,"limit":5},"continueOnError":true},{"type":"if","condition":{"left":{"$ref":"steps.skip.result.item"},"op":"exists"},"then":[{"type":"command","id":"skipclick","method":"page.click","params":{"tabId":{"$ref":"vars.tabId"},"ref":{"$ref":"steps.skip.result.item.ref"},"trusted":true},"continueOnError":true}],"else":[]},{"type":"command","id":"adstate","method":"page.query","params":{"tabId":{"$ref":"vars.tabId"},"selector":".ad-showing, .ytp-ad-player-overlay","index":0,"limit":5},"continueOnError":true},{"type":"if","condition":{"left":{"$ref":"steps.adstate.result.item"},"op":"exists"},"then":[{"type":"wait","ms":250}],"else":[]}],"until":{"left":{"$ref":"steps.adstate.result.item"},"op":"not_exists"},"maxIterations":40,"failOnLimit":false,"id":"ads"}],"else":[{"type":"set","name":"noAd","value":true}]},{"type":"command","id":"media","method":"media.state","params":{"tabId":{"$ref":"vars.tabId"},"index":0},"continueOnError":true},{"type":"command","id":"tab","method":"tabs.get","params":{"tabId":{"$ref":"vars.tabId"}}}],"output":{"tabId":{"$ref":"vars.tabId"},"ad":{"$ref":"steps.adstate.result.item"},"noAd":{"$ref":"vars.noAd"},"media":{"$ref":"steps.media.result.media"},"url":{"$ref":"steps.tab.result.tab.url"}}}$wf$::jsonb,
+  'Skip YouTube ads on an existing watch tab: bounded retry loop that re-queries the skip control fresh on every iteration and verifies the ad-state post-condition before returning.',
+  true
+);

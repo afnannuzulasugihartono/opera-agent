@@ -2,7 +2,31 @@
 
 Last synchronized: 2026-09-21.
 
-## Signed 1.6.4 candidate built and uploaded inactive — read first
+## U-S burst atomic actions implemented (1.6.5 candidate) — read first
+
+2026-09-21. The live T041 rerun on 1.6.4 (15:29 UTC) proved target selection is
+fixed but the model round trip kills dynamic controls: find at 15:29:36.329Z
+selected the real Skip control perfectly; the click 14.1 s later hit "Element
+not found or reference is stale" — the node was destroyed with no successor, so
+even I4 rebind could not help. Grounded in the JIT-Planner (ICML 2026) and
+Efficient GUI Agents (arXiv 2609.02309) literature, checkpoint **U-S** shipped:
+(1) **burst ref passthrough** — burst click/fill steps take `refFromStep`/
+`refIndex` from an earlier find/query step in the same burst (forward refs
+rejected at validation; results annotated `resolvedFrom:"step:N"`), so
+find→click→verify now runs in ONE command: measured **161.6 ms** vs the
+14,100 ms live round trip in `us.burst.find-click-wait` (Edge headless,
+exit 0); (2) **`run_workflow` MCP tool** (inventory 18→19, contracts
+rebaselined with recorded reason) calling the audited `opera_start_workflow`
+pg_net path + polling `opera_get_workflow_run` — closing the "insert row does
+not execute anything" gap; (3) versioned **`youtube.skip_ads`** workflow
+migration: bounded re-query-every-iteration skip loop with ad-state
+post-condition. Version 1.6.5; node suite 463/464 (single fail = pre-existing
+local governance artifact); `check` PASS; see
+`docs/checkpoint-us-burst-atomic-actions.md`. CRX 1.6.5 packed/signed/uploaded
+inactive (see release section below); live T041 acceptance pending, then
+activation.
+
+## Signed 1.6.4 candidate built and uploaded inactive — superseded by U-S above
 
 2026-09-21 evening. The 1.6.4 candidate (U-I + I4) is built, signed, verified,
 and uploaded **inactive**. Exact build head `3f947d3` (version sweep commit,

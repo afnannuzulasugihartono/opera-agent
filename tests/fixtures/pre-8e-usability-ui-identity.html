@@ -10,6 +10,7 @@
     #zoom-in { position: absolute; left: 100px; top: 60px; width: 120px; height: 36px; }
     #docs-heading { position: absolute; left: 8px; top: 420px; font-size: 18px; }
     #docs-save { position: absolute; left: 8px; top: 320px; width: 140px; height: 36px; }
+    #docs-result { position: absolute; left: 8px; top: 370px; font-size: 14px; }
     #skip-ad { position: absolute; left: 8px; top: 560px; width: 120px; height: 36px; }
     #rerender-trigger { position: absolute; left: 8px; top: 610px; width: 170px; height: 32px; }
   </style>
@@ -33,6 +34,15 @@
       const clone = moved.cloneNode(true);
       clone.style.left = `${Math.round(rect.left) + 600}px`;
       document.body.appendChild(clone);
+    });
+    document.getElementById('docs-save').addEventListener('click', () => {
+      let result = document.getElementById('docs-result');
+      if (!result) {
+        result = document.createElement('div');
+        result.id = 'docs-result';
+        document.body.appendChild(result);
+      }
+      result.textContent = 'Saved';
     });
     document.getElementById('rerender-trigger').addEventListener('click', () => {
       // YouTube-style ad lifecycle: the original control (keyed by its DOM id)

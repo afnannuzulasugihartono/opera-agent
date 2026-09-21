@@ -34,11 +34,11 @@ test('R5 media sampling does not seek by navigation or reload', () => {
   assert.doesNotMatch(migration, /(?:[?&#](?:t|start)=|time_continue)/i);
 });
 
-test('R5 keeps media controls internal and preserves the 18-tool public MCP surface', () => {
+test('R5 keeps media controls internal and preserves the 19-tool public MCP surface', () => {
   const registered = [
     ...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)
   ].map((match) => match[1]);
-  assert.equal(registered.length, 18);
+  assert.equal(registered.length, 19);
   assert.equal(registered.some((name) => name.startsWith('media_')), false);
   assert.doesNotMatch(mcpSource, /server\.registerTool\("media_/);
 });

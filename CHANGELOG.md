@@ -4,6 +4,12 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### U-S burst atomic actions (observation→action gap, journal-grounded)
+- Burst `click`/`fill` steps accept `refFromStep`/`refIndex` to consume a ref minted by an earlier `find`/`query` step inside the same burst, eliminating the model round trip that let YouTube destroy freshly-found controls between find and click (live: 14.1 s gap → 161.6 ms atomic burst, ~87× faster). Forward/self references fail closed at validation; step results carry `resolvedFrom:"step:N"` provenance.
+- New `run_workflow` MCP tool (public inventory 18→19, contracts rebaselined) runs versioned site workflows end-to-end via the audited `opera_start_workflow` pg_net path and `opera_get_workflow_run` polling — inserting a run row alone never executes anything.
+- New versioned `youtube.skip_ads` workflow: bounded re-query-every-iteration skip-click loop with the `.ad-showing` post-condition, following the locator-style freshness pattern for late-appearing (countdown-gated) controls.
+- MCP instructions now teach the atomic pattern: for dynamic UIs run find+click+wait inside one `run_browser_burst` via `refFromStep` instead of separate round trips.
+
 ### I4 signature rebind (live T041 stale-ref repair)
 - When a keyed action-ref target is recreated without its key (YouTube rebuilds the ad Skip control without its id between find and click), rebind now falls back to a unique intrinsic-signature successor: normalized visible text/label + tag + explicit descriptor fields, still actionable and non-sensitive; uniqueness is still required and the mint-time geometry guard remains the final authority.
 - Verified against the live 07:47:45Z T041 failure captured in `opera_commands`; controlled-browser regression passes with a dedicated no-id successor scenario.

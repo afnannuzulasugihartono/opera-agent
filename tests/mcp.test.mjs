@@ -25,7 +25,7 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'run_browser_burst', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
+    'browser_status', 'run_browser_burst', 'run_workflow', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
     'move_pointer', 'click_at', 'drag_pointer', 'wheel_at'
   ]);
