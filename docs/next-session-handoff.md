@@ -39,7 +39,16 @@ the Chromium-exact construction (`CRX3 SignedData\x00` + u32le(size) +
 `SignedData{crx_id}` + archive), calibrated against the production 1.6.3 and
 1.6.4 artifacts (both also VALID). Registry row `1.6.5 / active=false`
 uploaded through the audited DPAPI Management write path; DB byte length and
-SHA-256 match the artifact exactly. Zero production impact verified:
+SHA-256 match the artifact exactly. **Live acceptance on the side-loaded 1.6.5
+PASSED (2026-09-22):** organic T041 (find → synthetic click ignored by player
+→ fresh-ref trusted/debugger click → ad gone, main video playing) and the
+single-burst T041 (`find("Skip") → click(refFromStep:0)`, `ok:true`,
+`resolvedFrom:"step:0"`, 645.7 ms total / 43 ms find + 601.9 ms click, zero
+stale errors) both skipped real YouTube ads. The `youtube.skip_ads` workflow
+registration migration was applied to the hosted database (owner-initiated
+`opera_run_workflow` had returned WORKFLOW_NOT_FOUND because only the repo
+file existed); `opera_register_workflow` returned `ok:true, version:1` and the
+workflow is verified alongside the other `youtube.*` entries. Zero production impact verified:
 `update.xml?id=ohbb…` still serves 1.6.2; the identity CRX path for 1.6.5 is
 404 while inactive. Next: owner side-loads the CRX in real Opera (same
 identity, pairing preserved), reruns live T041 (find→click burst or
