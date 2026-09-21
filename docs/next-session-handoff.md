@@ -22,10 +22,10 @@ not execute anything" gap; (3) versioned **`youtube.skip_ads`** workflow
 migration: bounded re-query-every-iteration skip loop with ad-state
 post-condition. Version 1.6.5; node suite 463/464 (single fail = pre-existing
 local governance artifact); `check` PASS; see
-`docs/checkpoint-us-burst-atomic-actions.md`. Live T041 acceptance pending, then
-activation.
+`docs/checkpoint-us-burst-atomic-actions.md`. Live T041 acceptance PASSED and
+production activation is DONE — see the 1.6.5 release section below.
 
-## Signed 1.6.5 candidate built and uploaded inactive — the U-S candidate
+## 1.6.5 ACTIVATED in production — the U-S release
 
 2026-09-22. Artifact `D:\Opera\opera-agent-1.6.5.crx` — 43,634 bytes,
 SHA-256 `584a200517c7b7bd7e3c90a3cbb88cd7dbe477cda3311a1d3f129b7e051ead6d`,
@@ -48,12 +48,19 @@ stale errors) both skipped real YouTube ads. The `youtube.skip_ads` workflow
 registration migration was applied to the hosted database (owner-initiated
 `opera_run_workflow` had returned WORKFLOW_NOT_FOUND because only the repo
 file existed); `opera_register_workflow` returned `ok:true, version:1` and the
-workflow is verified alongside the other `youtube.*` entries. Zero production impact verified:
-`update.xml?id=ohbb…` still serves 1.6.2; the identity CRX path for 1.6.5 is
-404 while inactive. Next: owner side-loads the CRX in real Opera (same
-identity, pairing preserved), reruns live T041 (find→click burst or
-`youtube.skip_ads` workflow), then activation is unlocked. Rollback =
-re-install `D:\Opera\opera-agent-1.6.2.crx`.
+workflow is verified alongside the other `youtube.*` entries. Zero production impact was verified pre-activation:
+`update.xml?id=ohbb…` still served 1.6.2 and the identity CRX path for 1.6.5
+was 404 while inactive. **ACTIVATED 2026-09-21 23:37 UTC** through the audited
+DPAPI write path: one atomic identity-scoped update set `1.6.5 / active=true`
+and every other opera-agent row (1.6.2–1.6.4 included) `active=false` —
+exactly one active row (verified `active_count=1`); the unrelated legacy
+identity `pagjlnoh…` (1.0.1 active) was left untouched. Public release path
+verified post-activation: `update.xml?id=ohbbpamcljckmjhcpkcmefdobkoeaick`
+advertises 1.6.5 and its codebase URL returned HTTP 200 with 43,634 bytes,
+SHA-256 `584a200517c7b7bd7e3c90a3cbb88cd7dbe477cda3311a1d3f129b7e051ead6d`
+identical across the DB row, the disk artifact, and a fresh download.
+Rollback: rows 1.6.2/1.6.3/1.6.4 remain present (inactive) and
+`D:\Opera\opera-agent-1.6.2.crx` is on disk for re-install.
 
 ## Signed 1.6.4 candidate built and uploaded inactive — superseded by U-S above
 
