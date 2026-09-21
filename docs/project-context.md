@@ -1,6 +1,6 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-20
+Last synchronized: 2026-09-21
 
 ## R8 signed-update continuation (takes precedence)
 
@@ -22,10 +22,17 @@ browser, static checks, and the 444-test canonical local Node subset pass;
 exact-head CI and a signed version newer than production 1.6.2 remain pending.
 Production is unchanged on 1.6.2 and this repair is not yet accepted.
 
-Release candidate source is now versioned 1.6.3. Repair head `78e038b` has
-CircleCI #301 + Vercel SUCCESS, and the 1.6.3 controlled browser/version/static
-gates pass locally. Exact 1.6.3 release-head CI, signed artifact verification,
-and independent audit remain required before any production upload or cutover.
+Release candidate source is versioned 1.6.3. Repair head `78e038b` has
+CircleCI #301 + Vercel SUCCESS. Exact release head `f1458c3` has CircleCI #302 +
+Vercel SUCCESS (verified via the GitHub commit status API on 2026-09-21), and the
+1.6.3 controlled browser/version/static gates pass locally. The signed 1.6.3 CRX3
+(`D:\Opera\opera-agent-1.6.3.crx`, 40,690 bytes, SHA-256
+`60bab5e1aae66f6f3ac34f56e2f75644da9c86e1731a294fb4098c0fd2a93897`) was packed
+from a clean detached checkout of `f1458c3`; its RSA-SHA256 proof verifies per
+the CRX3 specification, manifest key and proof key both derive the established
+extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, and all 10 packaged files match
+the source byte-for-byte. The independent audit on the latest pushed evidence
+head remains required before any production upload or cutover.
 
 The user authorized a same-identity signed `1.6.1` update for R8 and requested
 the production update path rather than an unpacked extension. The R8 candidate

@@ -1,6 +1,6 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-20.
+Last synchronized: 2026-09-21.
 
 ## R8 signed release gate — read first
 
@@ -23,10 +23,26 @@ Exact-head CI, version >1.6.2 signing, audit, and repeat live T041 are still
 required. Production remains on 1.6.2; do not activate a candidate yet.
 
 Candidate source is versioned 1.6.3. Repair head `78e038b` has CircleCI #301 +
-Vercel SUCCESS; local 1.6.3 browser, version-contract, and static gates pass.
-Next: commit/push the versioned release head, wait for exact-head CI, build/sign
-from a clean checkout, verify CRX bytes/identity, then obtain an independent
-audit. Production must remain on 1.6.2 until audit PASS.
+Vercel SUCCESS. The versioned release head `f1458c3` has CircleCI #302 + Vercel
+SUCCESS, verified through the GitHub commit status API on 2026-09-21. Local
+1.6.3 static, controlled-browser (55/55 background-focus, 20/20 burst stability,
+all R8 find gates), and version-contract gates pass; the local Node suite shows
+448/449 with the single governance failure explained by ignored local root state
+that is absent on clean CI checkouts.
+
+The signed 1.6.3 artifact is built and verified offline: CRX3 at
+`D:\Opera\opera-agent-1.6.3.crx`, 40,690 bytes, SHA-256
+`60bab5e1aae66f6f3ac34f56e2f75644da9c86e1731a294fb4098c0fd2a93897`, packed from a
+clean detached checkout of `f1458c3` with the private signing key kept outside
+the repository. The RSA-SHA256 proof verifies against the CRX3 specification
+over `CRX3 SignedData\x00` + signed_header_size + signed_header_data + archive
+with the manifest public key; manifest key and proof key both derive the
+established extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, and all 10 packaged
+files match the source byte-for-byte.
+
+Next: obtain the independent audit on the latest pushed evidence head before any
+production mutation, then upload inactive, repeat live R8 acceptance, and only
+then activate. Production must remain on 1.6.2 until audit PASS.
 
 The user explicitly authorized a same-identity signed `1.6.1` update through the
 production update service. Implementation/release head
