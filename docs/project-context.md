@@ -31,8 +31,15 @@ Vercel SUCCESS (verified via the GitHub commit status API on 2026-09-21), and th
 from a clean detached checkout of `f1458c3`; its RSA-SHA256 proof verifies per
 the CRX3 specification, manifest key and proof key both derive the established
 extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, and all 10 packaged files match
-the source byte-for-byte. The independent audit on the latest pushed evidence
-head remains required before any production upload or cutover.
+the source byte-for-byte. The independent Codex audit on head `2ae2016` returned **PASS** with no blocking
+findings, and the 1.6.3 registry row was uploaded inactive through the audited
+Management write path (DPAPI-encrypted credential, value never exposed;
+database-decoded bytes match the recorded 40,690-byte artifact and SHA-256
+exactly, 1.6.2 remains the sole active row for the identity, identity-specific
+health/XML still serve 1.6.2, and the identity-specific 1.6.3 CRX path returns
+404 while inactive). Remaining: bounded live R8 acceptance in real Opera
+(side-loaded 1.6.3; manual rollback = re-installing the 1.6.2 CRX), then explicit
+user activation.
 
 The user authorized a same-identity signed `1.6.1` update for R8 and requested
 the production update path rather than an unpacked extension. The R8 candidate

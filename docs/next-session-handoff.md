@@ -40,9 +40,19 @@ with the manifest public key; manifest key and proof key both derive the
 established extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, and all 10 packaged
 files match the source byte-for-byte.
 
-Next: obtain the independent audit on the latest pushed evidence head before any
-production mutation, then upload inactive, repeat live R8 acceptance, and only
-then activate. Production must remain on 1.6.2 until audit PASS.
+The independent Codex audit on head `2ae2016` returned **PASS** with no blocking
+findings. After the audit, the 1.6.3 registry row was uploaded inactive through
+the audited Management write path (DPAPI-encrypted credential, value never
+exposed): the database-decoded bytes reproduce the recorded 40,690-byte artifact
+and SHA-256 exactly, 1.6.2 remains the sole active row for the identity,
+identity-specific health/XML still serve 1.6.2, and the identity-specific 1.6.3
+CRX path returns 404 while the row is inactive.
+
+Next: bounded live R8 acceptance in the owner's real Opera — side-load the
+signed 1.6.3 CRX (same identity, replaces 1.6.2 in place), repeat the T041
+Skip-path acceptance, and record evidence. If it fails, roll back by manually
+re-installing `D:\Opera\opera-agent-1.6.2.crx`. Production activation remains
+prohibited until that live acceptance passes.
 
 The user explicitly authorized a same-identity signed `1.6.1` update through the
 production update service. Implementation/release head
