@@ -22,9 +22,29 @@ not execute anything" gap; (3) versioned **`youtube.skip_ads`** workflow
 migration: bounded re-query-every-iteration skip loop with ad-state
 post-condition. Version 1.6.5; node suite 463/464 (single fail = pre-existing
 local governance artifact); `check` PASS; see
-`docs/checkpoint-us-burst-atomic-actions.md`. CRX 1.6.5 packed/signed/uploaded
-inactive (see release section below); live T041 acceptance pending, then
+`docs/checkpoint-us-burst-atomic-actions.md`. Live T041 acceptance pending, then
 activation.
+
+## Signed 1.6.5 candidate built and uploaded inactive — the U-S candidate
+
+2026-09-22. Artifact `D:\Opera\opera-agent-1.6.5.crx` — 43,634 bytes,
+SHA-256 `584a200517c7b7bd7e3c90a3cbb88cd7dbe477cda3311a1d3f129b7e051ead6d`,
+packed from a clean worktree of build head `12b2c88` (CircleCI + Vercel
+SUCCESS) and signed offline with the established identity key
+(`D:\Opera\signing-private\opera-agent-new-identity.pem`). Offline proof:
+extension ID derived from the AsymmetricKeyProof public key =
+`ohbbpamcljckmjhcpkcmefdobkoeaick` AND present as the CRX3 crx_id field —
+two independent derivations agree; RSA-SHA256 CRX3 SignedData proof VALID via
+the Chromium-exact construction (`CRX3 SignedData\x00` + u32le(size) +
+`SignedData{crx_id}` + archive), calibrated against the production 1.6.3 and
+1.6.4 artifacts (both also VALID). Registry row `1.6.5 / active=false`
+uploaded through the audited DPAPI Management write path; DB byte length and
+SHA-256 match the artifact exactly. Zero production impact verified:
+`update.xml?id=ohbb…` still serves 1.6.2; the identity CRX path for 1.6.5 is
+404 while inactive. Next: owner side-loads the CRX in real Opera (same
+identity, pairing preserved), reruns live T041 (find→click burst or
+`youtube.skip_ads` workflow), then activation is unlocked. Rollback =
+re-install `D:\Opera\opera-agent-1.6.2.crx`.
 
 ## Signed 1.6.4 candidate built and uploaded inactive — superseded by U-S above
 
