@@ -836,6 +836,45 @@ async def run(port, profile):
         assert ui_fallback['item']['label'] == 'Save', ui_fallback
         assert ui_fallback['item']['ref'] is not None, ui_fallback
 
+        # U-I (I4): a keyed ref survives a same-place successor recreated
+        # WITHOUT its id (YouTube-style control re-render) via the unique
+        # intrinsic-signature rebind fallback.
+        cid = STATE.push('page.find', {
+            'tabId': ui_tab_id,
+            'text': 'Skip',
+            'exact': True,
+            'limit': 20,
+            'index': 0
+        }, benchmark='ui.page.find.mint-skip')
+        ui_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        ui_skip_ref = ui_skip['item']['ref']
+        assert ui_skip['count'] == 1, ui_skip
+        assert ui_skip['item']['label'] == 'Skip', ui_skip
+        assert ui_skip['item']['actionable'] is True, ui_skip
+
+        cid = STATE.push('page.find', {
+            'tabId': ui_tab_id,
+            'text': 'Re-render control',
+            'exact': True
+        }, benchmark='ui.page.find.rerender-trigger')
+        ui_rerender_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
+
+        cid = STATE.push('page.click', {'tabId': ui_tab_id, 'ref': ui_rerender_ref}, benchmark='ui.page.click.rerender-trigger')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.click', {'tabId': ui_tab_id, 'ref': ui_skip_ref}, benchmark='ui.page.click.signature-rebind')
+        ui_rebind = await asyncio.to_thread(STATE.wait, cid)
+        if ui_rebind.get('ok') is not True:
+            raise AssertionError({
+                'benchmark': 'ui.page.click.signature-rebind',
+                'recentMetrics': STATE.metrics[-8:],
+                'body': ui_rebind
+            })
+
+        cid = STATE.push('page.read', {'tabId': ui_tab_id, 'offset': 0, 'limit': 1200, 'includeElements': False})
+        ui_after_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert 'Skipped' in (ui_after_skip.get('text') or ''), ui_after_skip
+
         cid = STATE.push('tabs.close', {'tabId': ui_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 

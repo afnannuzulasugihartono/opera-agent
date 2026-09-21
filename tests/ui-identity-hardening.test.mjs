@@ -40,3 +40,16 @@ test('I3: visible text without an interactive element surfaces a nearby actionab
   assert.match(content, /function findVisibleTextCandidate/);
   assert.match(content, /closest actionable element near the visible text/);
 });
+
+test('I4: rebind falls back to a unique intrinsic-signature successor when the keyed node loses its id', () => {
+  // Live T041 (2026-09-21 07:47:45Z): YouTube recreated the Skip control
+  // without its id between find and click; the keyed pool was empty and the
+  // ref died as "Element not found or reference is stale." The fallback must
+  // scan the interactive pool by intrinsic signature, keep uniqueness, and
+  // leave the mint-time geometry guard as the last line of defense.
+  assert.match(content, /function signatureRebindCandidates/);
+  assert.match(content, /signatureRebindCandidates\(descriptor\)/);
+  assert.match(content, /Keyed successor recreated without its id/);
+  assert.match(content, /INTERACTIVE_SELECTOR\)\]\.slice\(0, 500\)/);
+  assert.match(content, /visibleKey !== expectedKey/);
+});

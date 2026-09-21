@@ -2,6 +2,25 @@
 
 Last synchronized: 2026-09-21.
 
+## I4 signature rebind + live T041 evidence — read before anything else
+
+Same day, later: the installed 1.6.3 candidate (pre-U-I) **failed its live T041
+rerun** the same way 1.6.2 did — `page.find "Skip"` now returns the correct
+dominant item (R8 find repair verified live, 07:47:38Z), but the click 6.8 s
+later died with `Element not found or reference is stale` because YouTube
+recreates the Skip control without its id and the keyed rebind pool emptied.
+Full evidence in `docs/checkpoint-ui-identity-hardening.md` (I4 section).
+A bounded **signature rebind fallback (I4)** was implemented tests-first on
+r8: when a keyed successor disappears, a unique intrinsic-signature
+replacement (visible text/label + tag + explicit fields, actionable,
+non-sensitive) may rebind — uniqueness still required, mint-time geometry
+still the last guard. Local gates green again (454/455 node; check PASS;
+browser regression **exit 0** Edge headless incl. the new I4 scenario);
+content.js locks rebaselined `0340d471…` → `2ee26615…`. Exact-head CI on the
+pushed I4 head is the remaining acceptance step. **A new signed version is
+required for the fix to reach real Opera** — the installed 1.6.3 predates both
+U-I and I4; do not activate any candidate before its live T041 passes.
+
 ## U-I identity hardening implemented on r8 — read first
 
 After the R8/1.6.3 state below was recorded, the user asked for a change that

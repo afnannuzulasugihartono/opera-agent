@@ -4,6 +4,10 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### I4 signature rebind (live T041 stale-ref repair)
+- When a keyed action-ref target is recreated without its key (YouTube rebuilds the ad Skip control without its id between find and click), rebind now falls back to a unique intrinsic-signature successor: normalized visible text/label + tag + explicit descriptor fields, still actionable and non-sensitive; uniqueness is still required and the mint-time geometry guard remains the final authority.
+- Verified against the live 07:47:45Z T041 failure captured in `opera_commands`; controlled-browser regression passes with a dedicated no-id successor scenario.
+
 ### U-I identity hardening (ChatGPT-web usability)
 - Added geometry-aware action-ref rebind rejection: descriptors record mint-time document-coordinate geometry and mutation version; a stale ref refuses to rebind when its candidate moved more than 24 px since mint and the refusal names the current plausible candidates (addresses the production stale-`Zoom in` mis-click hazard).
 - `page.find` now annotates multi-candidate results with `candidateRank` and a disambiguation `hint` including the explicit `index:` selection instruction.

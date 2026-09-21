@@ -10,6 +10,8 @@
     #zoom-in { position: absolute; left: 100px; top: 60px; width: 120px; height: 36px; }
     #docs-heading { position: absolute; left: 8px; top: 420px; font-size: 18px; }
     #docs-save { position: absolute; left: 8px; top: 320px; width: 140px; height: 36px; }
+    #skip-ad { position: absolute; left: 8px; top: 560px; width: 120px; height: 36px; }
+    #rerender-trigger { position: absolute; left: 8px; top: 610px; width: 170px; height: 32px; }
   </style>
 </head>
 <body>
@@ -19,6 +21,8 @@
   <button id="relocate-trigger" aria-label="Relocate control">Relocate control</button>
   <button id="docs-save" aria-label="Save">Save</button>
   <div id="docs-heading">Quarterly document</div>
+  <button id="skip-ad" aria-label="Skip">Skip</button>
+  <button id="rerender-trigger" aria-label="Re-render control">Re-render control</button>
   <script>
     document.getElementById('relocate-trigger').addEventListener('click', () => {
       // Maps-style redraw: the original control is destroyed and an identical
@@ -29,6 +33,33 @@
       const clone = moved.cloneNode(true);
       clone.style.left = `${Math.round(rect.left) + 600}px`;
       document.body.appendChild(clone);
+    });
+    document.getElementById('rerender-trigger').addEventListener('click', () => {
+      // YouTube-style ad lifecycle: the original control (keyed by its DOM id)
+      // is destroyed and an identical successor is recreated WITHOUT any id,
+      // at the same position. The keyed pool empties; only a signature
+      // fallback can keep the ref alive.
+      const original = document.getElementById('skip-ad');
+      const rect = original.getBoundingClientRect();
+      original.remove();
+      const successor = document.createElement('button');
+      successor.setAttribute('aria-label', 'Skip');
+      successor.textContent = 'Skip';
+      successor.style.position = 'absolute';
+      // Same DOCUMENT position as the original (convert viewport rect to
+      // document coordinates) — the ad lifecycle recreates the control in
+      // place, it does not move it.
+      successor.style.left = `${Math.round(rect.left + window.scrollX)}px`;
+      successor.style.top = `${Math.round(rect.top + window.scrollY)}px`;
+      successor.style.width = `${Math.round(rect.width)}px`;
+      successor.style.height = `${Math.round(rect.height)}px`;
+      successor.addEventListener('click', () => {
+        const result = document.createElement('div');
+        result.id = 'skip-result';
+        result.textContent = 'Skipped';
+        document.body.appendChild(result);
+      });
+      document.body.appendChild(successor);
     });
   </script>
 </body>

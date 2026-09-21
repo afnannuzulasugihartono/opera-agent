@@ -133,6 +133,37 @@
     );
   }
 
+  // U-I (I4, live T041 evidence 2026-09-21 07:47:45Z): the keyed rebind pool
+  // goes empty when the page recreates a control whose keyed successor is
+  // rewritten without its original id (YouTube rebuilt the Skip button during
+  // the ad lifecycle between find and click). Match a unique replacement by
+  // intrinsic signature instead: identical visible key, tag, and explicit
+  // fields, still actionable and non-sensitive. Uniqueness is enforced by the
+  // caller (candidates must be exactly one) and the mint-time geometry guard
+  // still decides, so a same-place successor rebinds but a moved or ambiguous
+  // one fails closed.
+  function signatureRebindCandidates(descriptor) {
+    const expectedKey = clean(descriptor.label || descriptor.text, 300);
+    if (!expectedKey) return [];
+    let pool = [];
+    try {
+      pool = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].slice(0, 500);
+    } catch {
+      return [];
+    }
+    return pool.filter((el) => {
+      const visibleKey = clean(getAssociatedLabel(el) || el.innerText || el.textContent || '', 300);
+      if (visibleKey !== expectedKey) return false;
+      if (String(el.tagName || '').toLowerCase() !== descriptor.tag) return false;
+      if (descriptor.href && !(el instanceof HTMLAnchorElement && clean(el.href, 1200) === descriptor.href)) return false;
+      if (descriptor.role && clean(el.getAttribute?.('role'), 80) !== descriptor.role) return false;
+      if (descriptor.type && clean(el.getAttribute?.('type'), 80) !== descriptor.type) return false;
+      if (descriptor.name && clean(el.getAttribute?.('name'), 120) !== descriptor.name) return false;
+      const state = actionabilityState(el);
+      return state.actionable && !state.sensitive;
+    });
+  }
+
   function revalidationCandidates(descriptor) {
     if (!descriptor || descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return [];
     let pool = [];
@@ -150,11 +181,16 @@
       const maxScan = 500;
       pool = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].slice(0, maxScan);
     }
-    return pool.filter((el) => {
+    const keyed = pool.filter((el) => {
       if (!descriptorMatchesElement(descriptor, el)) return false;
       const state = actionabilityState(el);
       return state.actionable && !state.sensitive;
     });
+    if (keyed.length > 0 || descriptor.stableKeySource === 'semantic') return keyed;
+    // Keyed successor recreated without its id: fall back to the intrinsic
+    // signature pool. The caller still requires exactly one candidate and the
+    // geometry guard still applies before any rebind.
+    return keyed.concat(signatureRebindCandidates(descriptor));
   }
 
   function getRef(el) {

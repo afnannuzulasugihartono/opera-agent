@@ -87,6 +87,44 @@ observational error messages, following the R4 `view:"compact"` and U-V1
   rather than the CI Chromium job; exact-head CI evidence remains the
   acceptance basis per the standing authorization.
 
+## I4 follow-up (2026-09-21 afternoon): live T041 stale-ref evidence + signature rebind
+
+After this checkpoint shipped (commit `d230451`), the live rerun of T041 in
+production Opera on the installed 1.6.3 candidate was captured in
+`opera_commands` (Supabase, times UTC):
+
+- 07:47:38.481 `page.find {"text":"Skip"}` (no limit — the repaired R8
+  projection path) returned the correct dominant item: the real Skip button,
+  `actionable:true`, `inViewport:true`, `stableKeySource:"id"`. The R8 find
+  repair itself worked.
+- 07:47:45.244 `page.click ref=oa_f514a741_wx` failed with
+  `EXECUTION_ERROR "Element not found or reference is stale."` 6.8 s later.
+
+Root cause: the Skip control's stable key is its DOM id. YouTube recreates the
+ad Skip control during the ad lifecycle, and the successor frequently carries
+**no id**. `revalidationCandidates` only searched the keyed pool
+(`#id`/href/semantic), so the pool emptied and the ref failed closed — the same
+failure mode as the original 1.6.2 gate.
+
+Repair (I4): a bounded **signature rebind fallback** now runs when a keyed
+successor disappears: it scans the first 500 interactive elements for a unique
+replacement matching the intrinsic signature (normalized visible text/label,
+tag, and every explicit descriptor field), still actionable and non-sensitive.
+Uniqueness is still enforced by the caller; the mint-time geometry guard is
+still the last line of defense, so a moved successor still refuses.
+
+Evidence: tests-first (node source-contract red → green), controlled-browser
+regression **PASS exit 0** on Edge headless (new U-I I4 scenario: find "Skip"
+→ same-place successor without id → old ref click succeeds and the result
+marker appears; plus all prior gates). Node suite 454/455 (single pre-existing
+local governance artifact); `npm run check` PASS; content.js blob hash
+`0340d471…` → `2ee26615…` rebaselined in the P2/P3/P4/P5 locks.
+
+Environment note: the browser regression is non-deterministic on a used
+workstation when headed (R5 foreground pointer gate requires real OS window
+focus; `window.focused` flips while the user works). Headless
+(`OA_BROWSER_HEADLESS=1`) is deterministic and now the recorded local gate.
+
 ## Disposition
 
 Remaining proposed checkpoints: U-P1 (CDP accessibility-tree observation),
