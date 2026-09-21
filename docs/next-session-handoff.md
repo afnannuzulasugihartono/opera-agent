@@ -2,6 +2,31 @@
 
 Last synchronized: 2026-09-21.
 
+## Signed 1.6.4 candidate built and uploaded inactive — read first
+
+2026-09-21 evening. The 1.6.4 candidate (U-I + I4) is built, signed, verified,
+and uploaded **inactive**. Exact build head `3f947d3` (version sweep commit,
+contains U-I `d230451` + I4 `6e9ddd7`) passed CircleCI + Vercel before packing.
+Artifact: `D:\Opera\opera-agent-1.6.4.crx` — 42,908 bytes, SHA-256
+`0a9fe577e7493e4c4046bddf89000821045a02788ecd71ffe5f2e8a21782d5f3` — packed
+from a clean detached worktree with `--pack-extension-key` against the
+established private key; offline verification reproduced the established
+extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick` from the proof public key and
+the RSA-SHA256 CRX3 SignedData proof verified VALID (verifier calibrated
+against the production 1.6.3 artifact; SignedData = `CRX3 SignedData\x00` +
+uint32le(shd.size) + shd + archive, no archive-size field). Registry: one
+`opera_releases` row `1.6.4 / active=false` uploaded through the audited
+DPAPI-encrypted Management-token write path; decoded bytes and SHA-256 match
+exactly; update.xml still serves active 1.6.2; identity CRX path for 1.6.4
+returns 404 while inactive.
+
+Next: owner side-loads `D:\Opera\opera-agent-1.6.4.crx` in real Opera (same
+identity, replaces 1.6.3 in place) and repeats the T041 Skip-path live
+acceptance — with I4, the find→click Skip path should survive YouTube's no-id
+control re-render. Record evidence either way; on failure roll back by
+re-installing `D:\Opera\opera-agent-1.6.2.crx`. Production activation of 1.6.4
+remains prohibited until that live acceptance passes.
+
 ## I4 signature rebind + live T041 evidence — read before anything else
 
 Same day, later: the installed 1.6.3 candidate (pre-U-I) **failed its live T041
