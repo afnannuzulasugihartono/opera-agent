@@ -99,18 +99,20 @@ async function command(req: Request, url: URL) {
       error: { code: "AWAIT_TIMEOUT", message: "The device did not report back before waitMs. The action may still have succeeded — verify page state before repeating it." }
     }, 504);
   }
-  return json(result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, (result as any)?.ok ? 200 : 502);
+  // Structured device results (ok true OR ok false) are 200: AI platforms
+  // read the envelope and recover; 5xx bodies can be dropped by GPT Actions.
+  return json(result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
 }
 
-function openApiSpec(origin: string) {
+function openApiSpec(basePath: string) {
   return {
     openapi: "3.0.0",
     info: {
       title: "Opera Agent Gateway",
       description: "One-hop browser control for any AI platform. Authenticate with body.apiKey (GPT Actions) or the x-opera-agent-token header.",
-      version: "1.0.0"
+      version: "1.0.1"
     },
-    servers: [{ url: origin }],
+    servers: [{ url: basePath }],
     paths: {
       "/command": {
         post: {
@@ -135,9 +137,10 @@ function openApiSpec(origin: string) {
             }
           },
           responses: {
-            "200": { description: "Command result (ok true) or structured failure.", content: { "application/json": { schema: { type: "object" } } } },
-            "401": { description: "Missing/invalid token." },
-            "504": { timeout: true } as any
+            "200": { description: "Command result: ok true on success, or ok false with a structured error the caller can act on (e.g. stale element, element not found).", content: { "application/json": { schema: { type: "object" } } } },
+            "401": { description: "Missing or invalid device token." },
+            "504": { description: "Device did not report back within waitMs; the action may still have succeeded — verify page state before repeating."
+            }
           }
         }
       }
@@ -146,7 +149,12 @@ function openApiSpec(origin: string) {
 }
 
 function health() {
-  return json({ ok: true, service: "opera-agent-gateway", time: new Date().toISOString() });
+  return json({
+    ok: true,
+    service: "opera-agent-gateway",
+    version: "1.0.1",
+    time: new Date().toISOString()
+  });
 }
 
 Deno.serve(async (req: Request) => {
@@ -154,7 +162,10 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     const url = new URL(req.url);
     if (url.pathname.endsWith("/openapi.json")) {
-      return json(openApiSpec(url.origin), 200);
+      // servers must carry the FULL function base path: GPT Actions appends the
+      // spec's paths to servers[url], so a bare origin would hit /command at the
+      // domain root instead of /functions/v1/opera-agent-gateway/command.
+      return json(openApiSpec(url.origin + url.pathname.slice(0, -"/openapi.json".length)), 200);
     }
     if (url.pathname.endsWith("/health")) return health();
   }
