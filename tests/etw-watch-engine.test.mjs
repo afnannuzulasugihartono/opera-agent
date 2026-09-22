@@ -121,7 +121,7 @@ test('gateway is one-hop universal ingress with GPT-Actions-compatible auth', ()
   assert.match(src, /Deno\.serve/);
   assert.match(src, /x-opera-agent-token/, 'header auth');
   assert.match(src, /apiKey/, 'body auth because GPT Actions cannot set headers');
-  assert.match(src, /opera_run_fast/, 'enqueue+await in ONE SQL call');
+  // Transaction ordering is covered by the executable gateway regression tests.
   assert.match(src, /openapi\.json/, 'GPT Actions schema endpoint');
   assert.match(src, /p_request_id/, 'idempotency key passthrough');
 });

@@ -1,6 +1,72 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-21
+Last synchronized: 2026-09-22
+
+## Gateway transaction repair + hosted deploy (2026-09-22)
+
+The authorized local repair is based on `58264c5f2ffafe8e94ca8c51d2cae43019f5f768`
+on `feat/pre-8e-usability-repair-r8`. The owner confirmed no other writer and
+explicitly exempted existing untracked `.kilo/` and `graphify-out/` from the
+clean-tree prerequisite; both remain untouched. Push remains on explicit owner
+request.
+
+The U-T `opera_run_fast` wrapper enqueues and waits within one SQL transaction,
+so a separate device transaction cannot see the newly queued command before
+the wait returns and commits. Local gateway source now verifies the token,
+reads the non-disabled device's heartbeat to preserve the pairing/offline guard,
+awaits `opera_enqueue`, then calls `opera_await_adaptive` with its command ID.
+The caller still makes one HTTP request. Request-ID deduplication remains in
+the existing enqueue RPC; no retries, public schema or SQL changes were added.
+Existing enqueue failures, structured device results, 401/502 handling and
+504 unknown-outcome warning are retained. The offline cutoff now uses the
+gateway clock rather than the database clock; hosted clock/permission behavior
+has not been exercised in this repair.
+
+Tests-first evidence: the new executable gateway regression suite initially
+failed 4/6 tests, including rejection of the combined RPC. After repair, the
+gateway plus ETW suite passed 14/14; `npm run check` passed (72 runtime files,
+26 primitives, 1.6.6). Full `npm test`: 477/478 passed, with only the existing
+root-directory governance failure listing `.kilo`, `.opera-agent-8d-state`,
+`deno.lock`, `graphify-out`, and `node_modules`. No assertion was weakened to
+hide it. The old source assertion requiring the defective combined RPC was
+replaced by executable request-ordering coverage.
+
+Validation uses the real gateway handler with a mocked Supabase client; it is
+not a live PostgreSQL/device acceptance test. The owner supplied an independent
+audit finding P2: an await RPC/transport failure after committed enqueue lost
+command identity and uncertainty in a generic 502. A new behavioral regression
+failed first (6/7 passed; missing commandId), then passed after a bounded catch
+around only the await RPC. That response retains HTTP 502 / GATEWAY_ERROR,
+includes commandId and outcome="unknown", and instructs callers to verify page
+state before repeating because the action may still have succeeded. No retry
+is attempted. Both returned RPC errors and thrown transport errors are covered
+without a caller requestId. Final focused suite: 15/15; static checks PASS.
+The full-suite 477/478 result above predates this audit fix; it was not rerun.
+The SQL wrapper remains unchanged and unsafe for new commands if called by
+other clients. Review the local diff and obtain independent audit plus clean
+CI/live acceptance under separate authorization before promotion. Earlier
+deployment-readiness and single-SQL-call claims are superseded by this section.
+
+Hosted deploy (2026-09-22, direct Supabase connection, owner-authorized without
+DPAPI): `opera-agent-gateway` deployed to `nenmkmtvjremqphfqnfw` as version 2,
+`ACTIVE`. The Management deploy tool exposes no `verify_jwt` parameter and the
+first deploy landed with platform JWT enforcement, so `/health` and
+`/openapi.json` returned 401 `UNAUTHORIZED_NO_AUTH_HEADER`; the owner disabled
+"Verify JWT with legacy secret" in the dashboard. A redeploy reset the toggle
+(401 recurred), the owner disabled it again, and with no further deploy it held.
+Also found and fixed on the first hosted smoke: the hosted proxy rewrites the
+request URL (strips `/functions/v1`, downgrades scheme), so the openapi
+`servers[0].url` computed from `url.origin` was wrong
+(`http://…/opera-agent-gateway`); the base path now comes from `SUPABASE_URL`
+with a behavioral regression test (focused suite 16/16, `npm run check` PASS).
+Final smoke (2026-09-22 11:28 UTC): `GET /health` 200 `ok:true, version 1.0.1`;
+`GET /openapi.json` 200 with `servers[0].url` exactly
+`https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway`;
+`POST /command` without token 401 `UNAUTHORIZED` (gateway envelope, not a
+platform error). Hosted source verified byte-exact against the working tree
+(SHA-256 `1ad14896680b6c3525d4cb31b495aae8e03c53791d51a887333398502fe921f1`,
+9508 bytes, `EXACT EQUAL: True`) and hosted config `verify_jwt: false`.
+No other function, table `opera_releases`, or legacy identity was touched.
 
 ## U-I implemented on the R8 branch (takes precedence)
 

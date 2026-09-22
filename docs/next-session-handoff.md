@@ -2,6 +2,54 @@
 
 Last synchronized: 2026-09-22.
 
+## Gateway transaction repair: local changes awaiting review
+
+Baseline HEAD: `58264c5f2ffafe8e94ca8c51d2cae43019f5f768` on
+`feat/pre-8e-usability-repair-r8`. The owner explicitly confirmed no other
+writer and allowed edits despite untracked `.kilo/` and `graphify-out/`;
+leave those directories untouched. The owner requires intended edits to remain
+uncommitted and unpushed in this stage. Do not discard them or mistake them
+for unexplained concurrent changes.
+
+Local changes: gateway now uses authenticated device preflight followed by
+separately awaited `opera_enqueue` and `opera_await_adaptive` requests, retaining
+one external HTTP request. This fixes queue invisibility caused by the old
+wrapper waiting before its enqueue transaction commits. Pairing/offline guards,
+enqueue rejection, request-ID passthrough/reuse, structured 200 results and
+401/502/504 behavior remain covered. The heartbeat guard uses gateway time
+instead of SQL time; verify hosted behavior before rollout. No SQL or other
+Edge Function was changed; direct callers of `opera_run_fast` remain affected.
+
+Evidence: new `tests/gateway-transactions.test.mjs` initially failed 4/6 before
+runtime edits, specifically detecting the combined transaction path. After
+repair, `node --test tests/gateway-transactions.test.mjs tests/etw-watch-engine.test.mjs`
+passed 14/14. `npm run check` passed (72 files, 26 primitives, version 1.6.6).
+`npm test` passed 477/478; the sole failure is the root allowlist check on
+existing `.kilo`, `.opera-agent-8d-state`, `deno.lock`, `graphify-out`, and
+`node_modules`. The defective one-SQL-call source assertion was replaced by
+executable ordering coverage, not by relaxing safety checks.
+
+Audit follow-up: the owner supplied an independent P2 finding that a failed
+await RPC after enqueue commits returned generic 502 without command identity
+or an uncertain-outcome warning. Added a tests-first regression (6/7 passed,
+new test failed on missing commandId), then caught only post-enqueue await
+errors. HTTP 502 / GATEWAY_ERROR remain; the response adds commandId,
+outcome="unknown", and an explicit verify-before-repeating warning. No retries.
+The regression covers returned RPC errors and thrown transport errors with no
+requestId, asserting exactly one enqueue and one await call. Focused suite now
+passes 15/15; static checks pass. The full-suite evidence above predates this
+follow-up and was not rerun. The owner reports the audit otherwise confirmed
+auth, signatures, grants and the prior 14/14 focused result.
+
+Remaining: audit re-review of this fix, clean
+CI evidence, and separately authorized hosted acceptance/deployment. Tests
+execute the gateway handler with mocked Supabase transactions, not a live DB
+or device. No deploy, activation, production mutation, token search, device
+test, commit or push was performed. The prior deploy-ready instructions below
+are historical: do not deploy the baseline gateway or call the combined RPC
+as a workaround. Review the local repair first; production rollout is not
+authorized by this local task. This section supersedes older exact-next steps.
+
 ## U-T Event-Triggered Workflows implemented (1.6.6 candidate) — read first
 
 2026-09-22. Owner reframed the target: the remaining latency is the model
@@ -35,20 +83,37 @@ and the 1.6.6 CRX path 404s while inactive. The ETW migration is DEPLOYED to
 hosted and verified live (`opera_watch_events` table;
 `opera_watch_event_ingest`, `opera_watch_events_wait`, `opera_await_adaptive`,
 `opera_run_fast` RPCs; `youtube.skip_ads` enabled; devices still on 1.6.5).
-Remaining before activation: deploy the `opera-agent-gateway` edge function —
-BLOCKED: the DPAPI management PAT passes the functions:read preflight but the
-Management API answers deploy with "Your account does not have the necessary
-privileges" — a token with Write & Deploy scope is required. Everything else
-is READY: `deno.json` added (mirror of bridge's), gateway hardened (spec
+Remaining before activation: live acceptance (watcher skips a real ad,
+zero analysis trips). The `opera-agent-gateway` edge function is now
+**DEPLOYED to hosted and verified (2026-09-22, direct Supabase connection,
+owner-authorized without DPAPI):** version 2, `ACTIVE`, `verify_jwt: false`
+(owner disabled "Verify JWT with legacy secret" in the dashboard after the
+Management deploy tool landed the function with platform JWT enforcement and
+a redeploy reset the toggle; with no further deploy it held). Final smoke
+(11:28 UTC): `GET /health` 200 `ok:true, version 1.0.1`; `GET /openapi.json`
+200 with `servers[0].url` exactly
+`https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway`;
+`POST /command` without token 401 `UNAUTHORIZED` (gateway envelope). Hosted
+source verified byte-exact against the working tree (SHA-256 `1ad1489668…`,
+9508 bytes, `EXACT EQUAL: True`). The hosted proxy rewrites the request URL
+(strips `/functions/v1`), so the openapi base path now comes from
+`SUPABASE_URL` instead of `url.origin` (regression-tested, focused suite
+16/16, `npm run check` PASS). The gateway itself was also repaired locally:
+separate awaited `opera_enqueue` / `opera_await_adaptive` RPC transactions in
+one caller HTTP request (the former `opera_run_fast` wrapper hid the queued
+command until timeout inside one SQL transaction); post-enqueue wait failures
+keep HTTP 502 `GATEWAY_ERROR` with `commandId`, `outcome: "unknown"` and a
+verify-before-repeating warning; no retries. Gateway/ETW focused suite 16/16;
+full `npm test` 477/478 (single fail = pre-existing local root-governance
+artifact); `npm run check` PASS. Everything else is READY:
+`deno.json` added (mirror of bridge's), gateway hardened (spec
 `servers` now carries the full `/functions/v1/opera-agent-gateway` base path
 so GPT Actions hit the right URL; 504 described; structured device failures
-returned as 200 so AI callers can read the envelope), and
-`scripts/deploy-gateway.ps1` automates preflight → bulk deploy → byte-exact
-verify → health/openapi/no-token smoke tests; it reads the DPAPI token itself
-(never printed) and prefers a dedicated
-`%LOCALAPPDATA%\OperaAgent\8D\deploy-token.dpapi` (DPAPI-encrypted Write &
-Deploy token) when present — then live acceptance (watcher skips a real ad,
-zero analysis trips).
+returned as 200 so AI callers can read the envelope) —
+then live acceptance (watcher skips a real ad,
+zero analysis trips) in a tool-capable client via the OAuth Opera Agent
+connector (no Opera/MCP tools were exposed in this session; Edge-headless
+fixture results are not live acceptance).
 
 ## U-S burst atomic actions shipped, 1.6.5 ACTIVATED — superseded by U-T above
 
