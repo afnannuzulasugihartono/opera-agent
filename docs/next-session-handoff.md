@@ -36,9 +36,19 @@ hosted and verified live (`opera_watch_events` table;
 `opera_watch_event_ingest`, `opera_watch_events_wait`, `opera_await_adaptive`,
 `opera_run_fast` RPCs; `youtube.skip_ads` enabled; devices still on 1.6.5).
 Remaining before activation: deploy the `opera-agent-gateway` edge function —
-BLOCKED: the DPAPI management PAT carries database scope only, so function
-deployment needs a Supabase dashboard token with Write & Deploy scope — then
-live acceptance (watcher skips a real ad, zero analysis trips).
+BLOCKED: the DPAPI management PAT passes the functions:read preflight but the
+Management API answers deploy with "Your account does not have the necessary
+privileges" — a token with Write & Deploy scope is required. Everything else
+is READY: `deno.json` added (mirror of bridge's), gateway hardened (spec
+`servers` now carries the full `/functions/v1/opera-agent-gateway` base path
+so GPT Actions hit the right URL; 504 described; structured device failures
+returned as 200 so AI callers can read the envelope), and
+`scripts/deploy-gateway.ps1` automates preflight → bulk deploy → byte-exact
+verify → health/openapi/no-token smoke tests; it reads the DPAPI token itself
+(never printed) and prefers a dedicated
+`%LOCALAPPDATA%\OperaAgent\8D\deploy-token.dpapi` (DPAPI-encrypted Write &
+Deploy token) when present — then live acceptance (watcher skips a real ad,
+zero analysis trips).
 
 ## U-S burst atomic actions shipped, 1.6.5 ACTIVATED — superseded by U-T above
 
