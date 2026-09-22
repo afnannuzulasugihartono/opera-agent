@@ -93,7 +93,7 @@ after(async () => {
 
 test('8D cloud fixture goal head fits actual production DDL rather than the reduced journal double', async () => {
   const f = await createCloudFixtureData8D({ namespace: '12345678-1234-4234-8234-123456789abc', userId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', preparedAt: '2026-09-14T00:00:00.000Z' });
-  const source = await fs.readFile(new URL('../../supabase/migrations/20260911164000_opera_agent_goal_head.sql', import.meta.url), 'utf8');
+  const source = await fs.readFile(new URL('../../supabase/migrations/20260911162525_opera_agent_goal_head.sql', import.meta.url), 'utf8');
   const ddl = source.match(/create table opera_agent_private\.goal_heads \([\s\S]*?\n\);/)?.[0];
   assert.ok(ddl, 'Production goal-head DDL must be available unchanged');
   const table = 'fixture_shape_8d.goal_heads';

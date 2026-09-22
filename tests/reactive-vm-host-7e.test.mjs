@@ -102,7 +102,7 @@ test('7E opaque tokens authenticate kind and ciphertext while retaining bounded 
 });
 
 test('7E SQL migration is private, default-off, lease-fenced, queue-bounded, and service-role only', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20260912130000_opera_agent_reactive_vm_host.sql', import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20260912061541_opera_agent_reactive_vm_host.sql', import.meta.url), 'utf8');
   assert.match(sql, /milestone7_vm_enabled', 'false'/);
   assert.match(sql, /create table if not exists opera_agent_private\.vm_runs/i);
   assert.match(sql, /create table if not exists opera_agent_private\.vm_effects/i);
@@ -135,7 +135,7 @@ test('7E Edge host authenticates OAuth users, invokes 7D, and reuses opera_enque
 });
 
 test('7E source keeps public MCP and extension outside the checkpoint', () => {
-  const migration = fs.readFileSync(new URL('../supabase/migrations/20260912130000_opera_agent_reactive_vm_host.sql', import.meta.url), 'utf8');
+  const migration = fs.readFileSync(new URL('../supabase/migrations/20260912061541_opera_agent_reactive_vm_host.sql', import.meta.url), 'utf8');
   assert.doesNotMatch(migration, /opera_methods\s*\(/i);
   assert.doesNotMatch(migration, /opera_devices\s+set/i);
   assert.doesNotMatch(migration, /opera_pairing/i);

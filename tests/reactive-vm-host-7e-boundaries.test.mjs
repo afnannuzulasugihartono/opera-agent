@@ -7,7 +7,7 @@ const source = fs.readFileSync(
   'utf8',
 );
 const migration = fs.readFileSync(
-  new URL('../supabase/migrations/20260912130000_opera_agent_reactive_vm_host.sql', import.meta.url),
+  new URL('../supabase/migrations/20260912061541_opera_agent_reactive_vm_host.sql', import.meta.url),
   'utf8',
 );
 

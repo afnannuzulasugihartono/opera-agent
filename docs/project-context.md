@@ -1,6 +1,53 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-22
+Last synchronized: 2026-09-22 (repository-production sync session)
+
+## Repository-production sync (2026-09-22)
+
+Gateway repair committed and pushed: HEAD `715031d` on
+`feat/pre-8e-usability-repair-r8`, fast-forwarded to `main`. CI on the exact
+head: CircleCI `ci` SUCCESS and Vercel SUCCESS; the SonarCloud failure is the
+PR static gate with no PR open. The earlier "push remains on explicit owner
+request" note is superseded.
+
+Migration drift found and repaired:
+
+- Ten local migration files carried version IDs that differ from the
+  production `schema_migrations` records (names matched). Renamed to the
+  production IDs via `git mv` (`20260908021039`, `20260908031756`,
+  `20260908035531`, `20260908074202`, `20260910121107`, `20260911162525`,
+  `20260911162819`, `20260911231331`, `20260912061541`, `20260912061656`)
+  with test path updates in `tests/ledger-server.test.mjs`,
+  `tests/reactive-vm-host-7e.test.mjs`,
+  `tests/reactive-vm-host-7e-boundaries.test.mjs`, and
+  `tests/postgres/transaction-journal-8d.test.mjs`. Focused suites pass
+  15/15 (ledger + 7E); `npm run check` PASS at 1.6.6. The postgres fixture
+  test cannot run locally (`OPERA_PG_BIN` unset, no native PostgreSQL
+  installed); CI verifies it on push.
+- The production ledger was missing records for two verified-applied
+  migrations. Verified applied first — workflow `youtube.skip_ads` v1
+  enabled (`updated_at` 2026-09-21 23:28 UTC) and the `opera_watch_events`
+  table plus all six ETW RPCs live — then recorded `20260921163000`
+  `opera_agent_youtube_skip_ads_workflow` and `20260922000000`
+  `opera_agent_ut_etw` in `schema_migrations` (41 rows) with pointer
+  statements; exact SQL fidelity lives in the tracked repo files.
+- Three migrations in the accepted line were never applied to production:
+  `20260919171500` `pre_8e_r5_media_fast_path` (workflow `media.sample_at`
+  absent), `20260919213000` `pre_8e_r6_navigation_fast_path` (production
+  `youtube.play_recommendation` still v2 with the pre-R6 body), and
+  `20260920090000` `pre_8e_r7_transcript_cleanup` (production
+  `youtube.get_transcript` still v4 with 16 steps vs the R7 14-step v5
+  body). They remain unrecorded; applying their content to production is a
+  separate explicit owner decision (U-T may supersede the R5/R6 fast-path
+  intent).
+
+Kilo tooling state: the GitHub MCP server moved to global config
+(`~/.config/kilo/kilo.jsonc`) as the remote `api.githubcopilot.com/mcp/`
+server with a read-only header; the PAT was verified live (28 tools,
+`get_me` OK), the broken Docker-based project config was removed, and
+`.kilo/.gitignore` now ignores project `kilo.jsonc`. Supabase project
+`nenmkmtvjremqphfqnfw` is ACTIVE_HEALTHY with `opera-agent-gateway` v2
+ACTIVE.
 
 ## Gateway transaction repair + hosted deploy (2026-09-22)
 

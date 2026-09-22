@@ -1,15 +1,58 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-22.
+Last synchronized: 2026-09-22 (repository-production sync session).
 
-## Gateway transaction repair: local changes awaiting review
+## Repository-production sync executed 2026-09-22 — read first
 
-Baseline HEAD: `58264c5f2ffafe8e94ca8c51d2cae43019f5f768` on
+Owner asked to check GitHub, Supabase, and local state and synchronize, then
+continue unfinished work. Findings and actions (all verified against live
+state):
+
+- Local `feat/pre-8e-usability-repair-r8` HEAD `715031d` equals `origin/main`;
+  the gateway repair below was committed, pushed, and `main` fast-forwarded.
+  CI on the exact head: CircleCI `ci` SUCCESS + Vercel SUCCESS; SonarCloud
+  failure is the PR static gate and no PR is open.
+- Ten local migration files carried version IDs differing from production
+  `schema_migrations` records (names matched). Renamed via `git mv` to the
+  production IDs (`20260908021039`, `20260908031756`, `20260908035531`,
+  `20260908074202`, `20260910121107`, `20260911162525`, `20260911162819`,
+  `20260911231331`, `20260912061541`, `20260912061656`) with test path updates
+  in `tests/ledger-server.test.mjs`, `tests/reactive-vm-host-7e.test.mjs`,
+  `tests/reactive-vm-host-7e-boundaries.test.mjs`, and
+  `tests/postgres/transaction-journal-8d.test.mjs`. Focused suites pass
+  (15/15 and 15/15); `npm run check` PASS at 1.6.6. The postgres fixture test
+  cannot run locally (`OPERA_PG_BIN` unset, no native PostgreSQL); CI covers it.
+- Production ledger was missing records for two verified-applied migrations:
+  `20260921163000` `opera_agent_youtube_skip_ads_workflow` and `20260922000000`
+  `opera_agent_ut_etw`. Both recorded in `schema_migrations` (41 rows now)
+  with pointer statements; exact SQL lives in the tracked repo files, not the
+  ledger.
+- Three migrations in the accepted line were NEVER applied to production:
+  `20260919171500` `pre_8e_r5_media_fast_path` (workflow `media.sample_at`
+  absent), `20260919213000` `pre_8e_r6_navigation_fast_path` (production
+  `youtube.play_recommendation` still v2 with the pre-R6 body, `updated_at`
+  2026-09-08), and `20260920090000` `pre_8e_r7_transcript_cleanup`
+  (production `youtube.get_transcript` still v4 with 16 steps vs the R7
+  14-step v5 body). They are deliberately NOT recorded in the ledger.
+  Applying their content to production is a separate explicit owner decision;
+  U-T event-triggered workflows may supersede the R5/R6 fast-path intent.
+- Remaining unfinished (unchanged by this sync): independent audit re-review
+  of the gateway repair, and live acceptance (watcher skips a real ad, zero
+  analysis trips) in a tool-capable client via the OAuth Opera Agent
+  connector. Both remain owner-gated.
+
+## Gateway transaction repair: COMMITTED and DEPLOYED (supersedes awaiting-review state)
+
+The repair was committed at `715031d` on `feat/pre-8e-usability-repair-r8`,
+pushed, and `main` was fast-forwarded to it. CI on the exact head is green
+(CircleCI + Vercel; SonarCloud is the PR static gate with no open PR). The
+gateway is deployed and byte-exact verified (version 2, `ACTIVE`, `verify_jwt:
+false`; see the U-T section below). The earlier awaiting-review/uncommitted
+state and the "push remains on explicit owner request" note are historical.
+
+Historical baseline: `58264c5f2ffafe8e94ca8c51d2cae43019f5f768` on
 `feat/pre-8e-usability-repair-r8`. The owner explicitly confirmed no other
 writer and allowed edits despite untracked `.kilo/` and `graphify-out/`;
-leave those directories untouched. The owner requires intended edits to remain
-uncommitted and unpushed in this stage. Do not discard them or mistake them
-for unexplained concurrent changes.
 
 Local changes: gateway now uses authenticated device preflight followed by
 separately awaited `opera_enqueue` and `opera_await_adaptive` requests, retaining
@@ -41,14 +84,14 @@ passes 15/15; static checks pass. The full-suite evidence above predates this
 follow-up and was not rerun. The owner reports the audit otherwise confirmed
 auth, signatures, grants and the prior 14/14 focused result.
 
-Remaining: audit re-review of this fix, clean
-CI evidence, and separately authorized hosted acceptance/deployment. Tests
-execute the gateway handler with mocked Supabase transactions, not a live DB
-or device. No deploy, activation, production mutation, token search, device
-test, commit or push was performed. The prior deploy-ready instructions below
-are historical: do not deploy the baseline gateway or call the combined RPC
-as a workaround. Review the local repair first; production rollout is not
-authorized by this local task. This section supersedes older exact-next steps.
+Remaining: independent audit re-review of this fix and live acceptance under
+separate explicit authorization. CI evidence is green on `715031d` and the
+hosted deploy is complete (version 2, byte-exact). Tests execute the gateway
+handler with mocked Supabase transactions, not a live DB or device. The
+earlier no-deploy/no-commit statements are historical: the deploy, commit,
+and push were completed on 2026-09-22. The prior deploy-ready instructions
+below are historical: do not deploy the baseline gateway or call the combined
+RPC as a workaround. This section supersedes older exact-next steps.
 
 ## U-T Event-Triggered Workflows implemented (1.6.6 candidate) — read first
 

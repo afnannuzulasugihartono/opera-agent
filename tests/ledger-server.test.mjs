@@ -13,9 +13,9 @@ import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 
 const replay = JSON.parse(fs.readFileSync(new URL('./fixtures/goal-ledger-replay-v1.json', import.meta.url), 'utf8'));
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8'));
-const migration = fs.readFileSync(new URL('../supabase/migrations/20260911164000_opera_agent_goal_head.sql', import.meta.url), 'utf8');
-const retryFixMigration = fs.readFileSync(new URL('../supabase/migrations/20260911165500_opera_agent_goal_head_first_apply.sql', import.meta.url), 'utf8');
-const timestampFixMigration = fs.readFileSync(new URL('../supabase/migrations/20260912143000_opera_agent_goal_head_timestamp_order.sql', import.meta.url), 'utf8');
+const migration = fs.readFileSync(new URL('../supabase/migrations/20260911162525_opera_agent_goal_head.sql', import.meta.url), 'utf8');
+const retryFixMigration = fs.readFileSync(new URL('../supabase/migrations/20260911162819_opera_agent_goal_head_first_apply.sql', import.meta.url), 'utf8');
+const timestampFixMigration = fs.readFileSync(new URL('../supabase/migrations/20260911231331_opera_agent_goal_head_timestamp_order.sql', import.meta.url), 'utf8');
 const endpoint = fs.readFileSync(new URL('../supabase/functions/opera-agent-ledger/index.ts', import.meta.url), 'utf8');
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url));
 const NOW = '2026-09-11T00:01:00Z';
