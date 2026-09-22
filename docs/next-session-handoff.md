@@ -27,10 +27,18 @@ governance artifact #250), check PASS at 1.6.6, browser regression EXIT=0
 (Edge headless): the fixture control appearing 1.2 s AFTER arming was clicked
 locally with zero model trips. MCP inventory 19→22 (start_watch, wait_events,
 stop_watch — OBSERVATION class); contracts/thresholds/hash-locks rebaselined
-with this reason. See `docs/checkpoint-ut-etw.md`. CRX 1.6.6 signed +
-uploaded inactive (see release section); hosted deploy of the migration +
-gateway then live acceptance (watcher skips a real ad, zero analysis trips)
-still pending before activation.
+with this reason. See `docs/checkpoint-ut-etw.md`. CRX 1.6.6 signed,
+verified offline (50,049 bytes, SHA-256 `a33e5f36…`, CRX3 signature + two-way
+ID + deterministic resign proven via the calibrated verifier) and uploaded
+inactive — disk SHA equals the DB row SHA, `update.xml` still serves 1.6.5
+and the 1.6.6 CRX path 404s while inactive. The ETW migration is DEPLOYED to
+hosted and verified live (`opera_watch_events` table;
+`opera_watch_event_ingest`, `opera_watch_events_wait`, `opera_await_adaptive`,
+`opera_run_fast` RPCs; `youtube.skip_ads` enabled; devices still on 1.6.5).
+Remaining before activation: deploy the `opera-agent-gateway` edge function —
+BLOCKED: the DPAPI management PAT carries database scope only, so function
+deployment needs a Supabase dashboard token with Write & Deploy scope — then
+live acceptance (watcher skips a real ad, zero analysis trips).
 
 ## U-S burst atomic actions shipped, 1.6.5 ACTIVATED — superseded by U-T above
 
