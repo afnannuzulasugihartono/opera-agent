@@ -128,6 +128,42 @@ async function complete(body: Record<string, unknown>) {
   return json(result || { ok: false }, (result as any)?.ok ? 200 : 400);
 }
 
+// U-T Event-Triggered Workflows: device pushes a fired watcher event. The
+// envelope is device-supplied but capped; the watcher identity is carried in
+// the envelope itself (the relay does not resolve watcher rows).
+async function watchEvent(body: Record<string, unknown>) {
+  if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
+    return json({ ok: false, error: "Unauthorized device." }, 401);
+  }
+  const tokenHash = await sha256(body.token.toLowerCase());
+  const env = (body.envelope && typeof body.envelope === "object") ? body.envelope as Record<string, unknown> : null;
+  if (!env || typeof env.watcherId !== "string" || env.watcherId.length > 64) {
+    return json({ ok: false, error: "Invalid watch event envelope." }, 400);
+  }
+  const result = await rpc("opera_watch_event_ingest", {
+    p_device_name: body.deviceName.trim(),
+    p_token_hash: tokenHash,
+    p_watcher_id: env.watcherId,
+    p_envelope: env
+  });
+  return json(result || { ok: false }, (result as any)?.ok ? 200 : 400);
+}
+
+async function startWorkflow(body: Record<string, unknown>) {
+  if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
+    return json({ ok: false, error: "Unauthorized device." }, 401);
+  }
+  const name = typeof body.name === "string" ? body.name.trim().slice(0, 100) : "";
+  if (!name) return json({ ok: false, error: "Invalid workflow name." }, 400);
+  const result = await rpc("opera_start_workflow", {
+    p_name: name,
+    p_input: (body.params && typeof body.params === "object") ? body.params : {},
+    p_timeout_ms: clamp(body.timeoutMs, 5000, 300000, 60000),
+    p_device_name: body.deviceName.trim()
+  });
+  return json(result || { ok: false }, (result as any)?.ok ? 200 : 400);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required." }, 405);
@@ -141,6 +177,8 @@ Deno.serve(async (req: Request) => {
     if (action === "pull") return await pull(body);
     if (action === "complete") return await complete(body);
     if (action === "heartbeat") return await heartbeat(body);
+    if (action === "watch_event") return await watchEvent(body);
+    if (action === "start_workflow") return await startWorkflow(body);
     return json({ ok: false, error: "Unknown action." }, 400);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -55,10 +55,10 @@ test('6A freezes a bounded goal ledger and proof contract without runtime change
   assert.equal(contract.publicApiDecision.extensionChangeAllowedIn6A, false);
   assert.equal(contract.publicApiDecision.productionSchemaChangeAllowedIn6A, false);
 
-  assert.equal(pkg.version, '1.6.5');
-  assert.equal(manifest.version, '1.6.5');
+  assert.equal(pkg.version, '1.6.6');
+  assert.equal(manifest.version, '1.6.6');
   assert.match(protocolSource, /PROTOCOL_VERSION = 1/);
-  assert.equal(mcpContract.toolCount, 19);
+  assert.equal(mcpContract.toolCount, 22);
   assert.equal(contract.publicApiDecision.existingMcpToolCount, mcpContract.toolCount);
 });
 
@@ -144,7 +144,7 @@ test('6A locks quantitative gates to the accepted 1.6.0 baseline', () => {
   assert.equal(thresholds.pairedSemanticBaseline.singleUpdateDeltaToSnapshotRatio, 0.12);
   assert.equal(thresholds.publicSurfaceBaseline.protocolVersion, 1);
   assert.equal(thresholds.publicSurfaceBaseline.capabilityCount, 26);
-  assert.equal(thresholds.publicSurfaceBaseline.mcpToolCount, 19);
+  assert.equal(thresholds.publicSurfaceBaseline.mcpToolCount, 22); // U-T rebaseline: watch tools added
   assert.equal(thresholds.publicSurfaceBaseline.mcpSourceSha256, mcpContract.sourceSha256);
   assert.equal(digest(contract), thresholds.contractCorpusDigest);
   assert.equal(digest(replay), thresholds.replayCorpusDigest);

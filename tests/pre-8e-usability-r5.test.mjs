@@ -38,7 +38,7 @@ test('R5 keeps media controls internal and preserves the 19-tool public MCP surf
   const registered = [
     ...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)
   ].map((match) => match[1]);
-  assert.equal(registered.length, 19);
+  assert.equal(registered.length, 22); // U-T rebaseline
   assert.equal(registered.some((name) => name.startsWith('media_')), false);
   assert.doesNotMatch(mcpSource, /server\.registerTool\("media_/);
 });

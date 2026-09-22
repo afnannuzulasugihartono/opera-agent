@@ -154,7 +154,7 @@ test('8A approval is exact-bound, expiring, one-shot-contract data and session i
 });
 
 test('8A enforced mode gates every legacy mutator and preserves observation tools', () => {
-  assert.equal(contract.enforcement.toolDecisions.length, 19);
+  assert.equal(contract.enforcement.toolDecisions.length, 22); // U-T rebaseline
   assert.deepEqual(contract.enforcement.toolDecisions.map((item) => item.tool), mcp.tools);
   for (const entry of contract.enforcement.toolDecisions) {
     if (entry.classification === 'OBSERVATION') assert.equal(enforcementDecision('ENFORCED', entry.tool), 'ALLOW', entry.tool);
@@ -227,12 +227,12 @@ test('8A hostile corpus contains at least 64 unique zero-unsafe-acceptance cases
 });
 
 test('8A locks accepted inventory, limits, and documentation-only compatibility boundary', () => {
-  assert.equal(pkg.version, '1.6.5');
-  assert.equal(manifest.version, '1.6.5');
-  assert.equal(mcp.toolCount, 19);
+  assert.equal(pkg.version, '1.6.6');
+  assert.equal(manifest.version, '1.6.6');
+  assert.equal(mcp.toolCount, 22); // U-T rebaseline
   assert.equal(vm.inventory.digest, thresholds.milestone7InventoryDigest);
   assert.equal(contract.inventory.mcpSourceSha256, mcp.sourceSha256);
-  assert.equal(contract.inventory.publicMcpTools, 19);
+  assert.equal(contract.inventory.publicMcpTools, 22); // U-T rebaseline
   assert.equal(contract.inventory.browserCapabilities, 26);
   assert.equal(thresholds.minimumHostileCases, 64);
   assert.equal(thresholds.canonicalReplayRuns, 100);

@@ -386,7 +386,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.6.5'
+        assert result['version'] == '1.6.6'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -935,6 +935,51 @@ async def run(port, profile):
                 'recentMetrics': STATE.metrics[-8:],
                 'body': us_separate
             })
+
+        # U-T (ETW): a device-local watcher must click a control that appears
+        # AFTER arming, with zero model round trips between trigger and action.
+        cid = STATE.push('watch.start', {
+            'tabId': us_tab_id,
+            'rule': {
+                'trigger': {'kind': 'selectorPresence', 'selector': '#etw-late-save'},
+                'action': {'type': 'click', 'trusted': False},
+                'mode': 'once',
+                'deadlineMs': 15000
+            }
+        }, benchmark='ut.watch.start')
+        us_watch = await asyncio.to_thread(STATE.wait, cid)
+        if us_watch.get('ok') is not True:
+            raise AssertionError({
+                'benchmark': 'ut.watch.start',
+                'recentMetrics': STATE.metrics[-8:],
+                'body': us_watch
+            })
+
+        # Wait past the 1.2s fixture delay, then inspect the debug markers.
+        etw_verified = False
+        us_watch_debug = None
+        for attempt in range(20):
+            await asyncio.sleep(0.7)
+            cid = STATE.push('page.read', {'tabId': us_tab_id, 'limit': 600}, benchmark='ut.watch.verify')
+            us_watch_read = await asyncio.to_thread(STATE.wait, cid)
+            body = str(us_watch_read)
+            if 'SavedByWatcher' in body:
+                etw_verified = True
+                break
+            m = __import__('re').search(r"watch-(?:action|sent|err)[^\\]*", body)
+            if m:
+                us_watch_debug = m.group(0)[:220]
+        assert etw_verified, {
+            'benchmark': 'ut.watch.local-action',
+            'recentMetrics': STATE.metrics[-8:],
+            'watchStartBody': us_watch,
+            'watchDebug': us_watch_debug,
+            'note': 'watcher did not click the late control locally'
+        }
+
+        cid = STATE.push('watch.list', {'tabId': us_tab_id}, benchmark='ut.watch.list')
+        us_watch_list = await asyncio.to_thread(STATE.wait, cid)
+        assert us_watch_list.get('ok') is True, us_watch_list
 
         cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -2021,7 +2066,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.6.5'
+        assert result['version'] == '1.6.6'
 
         await context.close()
         import os

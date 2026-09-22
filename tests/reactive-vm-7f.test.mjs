@@ -22,7 +22,7 @@ const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import
 const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url));
 
-const EXPECTED_MCP_SHA256 = '4868c57a6897703525a81679f3c7a2b626cfc77f66ede9d9fd334254ed63705c';
+const EXPECTED_MCP_SHA256 = 'bfc2793298f2b0581ea46fbe87481b213cd853ab821f3adc3694c42829dd0025';
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -100,14 +100,14 @@ function collectFeed({ stable = false, maxItems = 10 } = {}) {
   return dedupSemanticRecords7D(second, ['logicalId'], { destination: 'unique', collectionBudget: 1000 });
 }
 
-test('7F keeps the 1.6.5 public surface and frozen read-only VM effect policy unchanged', () => {
-  assert.equal(packageJson.version, '1.6.5');
-  assert.equal(manifest.version, '1.6.5');
+test('7F keeps the 1.6.6 public surface and frozen read-only VM effect policy unchanged', () => {
+  assert.equal(packageJson.version, '1.6.6');
+  assert.equal(manifest.version, '1.6.6');
   assert.equal(contract.baselineVersion, '1.6.0');
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
-  assert.equal(contract.inventory.value.mcpToolCount, 19);
-  assert.equal(contract.inventory.digest, 'sha256:19ce6d12d487021b86419b4ed7a88fef6f8e22ff12b41f167c20c0caa286d0b8');
+  assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
+  assert.equal(contract.inventory.digest, 'sha256:ad74aeb0b33d421def8f362513b7e2a35936e8441b09ab89c511afde9fec7598');
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

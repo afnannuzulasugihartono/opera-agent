@@ -1,8 +1,38 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-21.
+Last synchronized: 2026-09-22.
 
-## U-S burst atomic actions implemented (1.6.5 candidate) — read first
+## U-T Event-Triggered Workflows implemented (1.6.6 candidate) — read first
+
+2026-09-22. Owner reframed the target: the remaining latency is the model
+trip pattern itself (request snapshot → analyze seconds → act). Checkpoint
+**U-T** eliminates the pattern per the approved plan: the model compiles
+intent into device-local watch rules ONCE (`watch.start` primitive family:
+`watch.start/stop/stop_all/list`, internal — protocol stays frozen at 26),
+the extension evaluates them continuously (`extension/lib/watch.js` pure
+engine: presence/gone/text/url/adState/mediaTime, already-true-at-arm fires
+immediately, debounce/deadline/maxEvents bounded, 8/tab + 32 global caps,
+site-agnostic — ad selectors live in the rule, not the extension) and fires
+LOCAL actions through the proven paths (page.click trusted, runBurst,
+relay workflow). Events reach the model via `wait_events` (MCP tool →
+`opera_watch_events_wait` long-poll over `opera_watch_events`) with action
+evidence attached; `stop_watch` disarms. Universal fastpath: new
+`opera-agent-gateway` edge function — POST /command = ONE HTTP hop via
+`opera_run_fast` (enqueue + `opera_await_adaptive` ramp 5→30 ms then 50 ms in
+one SQL call), token verified first via `opera_verify_device` (header or
+body.apiKey — GPT Actions cannot set headers), GET /openapi.json is
+GPT-Actions-ready. Bridge gained `watch_event` ingest + `start_workflow`
+device path. Gates: node suite 471/472 (single fail = pre-existing local
+governance artifact #250), check PASS at 1.6.6, browser regression EXIT=0
+(Edge headless): the fixture control appearing 1.2 s AFTER arming was clicked
+locally with zero model trips. MCP inventory 19→22 (start_watch, wait_events,
+stop_watch — OBSERVATION class); contracts/thresholds/hash-locks rebaselined
+with this reason. See `docs/checkpoint-ut-etw.md`. CRX 1.6.6 signed +
+uploaded inactive (see release section); hosted deploy of the migration +
+gateway then live acceptance (watcher skips a real ad, zero analysis trips)
+still pending before activation.
+
+## U-S burst atomic actions shipped, 1.6.5 ACTIVATED — superseded by U-T above
 
 2026-09-21. The live T041 rerun on 1.6.4 (15:29 UTC) proved target selection is
 fixed but the model round trip kills dynamic controls: find at 15:29:36.329Z

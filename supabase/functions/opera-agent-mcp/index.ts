@@ -384,8 +384,94 @@ function createServer() {
   }, ({ name, input, timeoutMs }: { name: string; input?: Record<string, unknown>; timeoutMs?: number }) =>
     runWorkflow(name, input || {}, timeoutMs ?? 60000).then(textResult).catch(toolError));
 
+  server.registerTool("start_watch", {
+    title: "Start live watch",
+    description: "Arm a device-local trigger on an Opera tab: when the trigger condition becomes true (already-true-at-arm fires immediately), the device executes the action locally and an event appears in wait_events — no model round trip in between. Prefer this over polling with repeated find/read calls on fast-changing pages (ad overlays, countdowns, dynamic lists). Trigger kinds: selectorPresence, selectorGone, textMatch, urlChange, navigation, adState, mediaTime. Action types: report (default), click, burst, workflow, confirm.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      rule: z.object({
+        ruleId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
+        trigger: z.object({
+          kind: z.enum(['selectorPresence', 'selectorGone', 'textMatch', 'urlChange', 'navigation', 'adState', 'mediaTime']),
+          selector: z.string().min(1).max(500).optional(),
+          text: z.string().min(1).max(500).optional(),
+          mode: z.enum(['contains', 'exact']).optional(),
+          state: z.enum(['on', 'off', 'any']).optional(),
+          atSeconds: z.number().min(0).max(86400).optional(),
+          withinSeconds: z.number().min(0).max(60).optional()
+        }),
+        action: z.object({
+          type: z.enum(['report', 'click', 'burst', 'workflow', 'confirm']).default('report'),
+          selector: z.string().max(500).optional(),
+          trusted: z.boolean().optional(),
+          steps: z.array(z.record(z.string(), z.unknown())).max(8).optional(),
+          workflowName: z.string().max(100).optional(),
+          params: z.record(z.string(), z.unknown()).optional(),
+          message: z.string().max(500).optional()
+        }),
+        mode: z.enum(['once', 'repeat']).optional(),
+        maxEvents: z.number().int().min(1).max(100).optional(),
+        deadlineMs: z.number().int().min(1000).max(600000).optional(),
+        debounceMs: z.number().int().min(0).max(60000).optional()
+      }),
+      timeoutMs: timeoutSchema
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      commandId: z.string(),
+      status: z.string(),
+      result: z.record(z.string(), z.unknown()),
+      timing: z.record(z.string(), z.unknown())
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, rule, timeoutMs }: TargetTab & { rule: Record<string, unknown>; timeoutMs?: number }) => execute("watch.start", { tabId, rule }, timeoutMs));
+
+  server.registerTool("wait_events", {
+    title: "Wait for watch events",
+    description: "Long-poll for device-local watch events (from start_watch). Returns immediately when one or more events arrive; returns an empty list after the wait window. Pass the returned cursor on the next call to receive only newer events. Events carry the fired rule, the page URL/adState/mediaTime, and the local action result (click/burst/workflow outcome).",
+    inputSchema: {
+      watcherId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional().describe("Only events from this watcher."),
+      cursor: z.number().int().min(0).optional().describe("Pass the cursor from the previous wait_events result."),
+      waitMs: z.number().int().min(500).max(30000).optional(),
+      timeoutMs: timeoutSchema
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      commandId: z.string(),
+      status: z.string(),
+      result: z.record(z.string(), z.unknown()),
+      timing: z.record(z.string(), z.unknown())
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false }
+  }, ({ watcherId, cursor, waitMs }: { watcherId?: string; cursor?: number; waitMs?: number }) =>
+    rpc("opera_watch_events_wait", {
+      p_watcher: watcherId ?? null,
+      p_after_seq: cursor ?? 0,
+      p_timeout_ms: Math.max(500, Math.min(30000, waitMs ?? 25000))
+    }).then(textResult).catch(toolError));
+
+  server.registerTool("stop_watch", {
+    title: "Stop live watch",
+    description: "Disarm one watcher by id (stop_watch) or every active watcher (stopAll). Watchers also self-retire at their deadline/maxEvents, when their tab closes, or via the popup kill switch.",
+    inputSchema: {
+      watcherId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
+      stopAll: z.boolean().optional(),
+      timeoutMs: timeoutSchema
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      commandId: z.string(),
+      status: z.string(),
+      result: z.record(z.string(), z.unknown()),
+      timing: z.record(z.string(), z.unknown())
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
+  }, ({ watcherId, stopAll, timeoutMs }: { watcherId?: string; stopAll?: boolean; timeoutMs?: number }) =>
+    stopAll
+      ? execute("watch.stop_all", {}, timeoutMs)
+      : execute("watch.stop", { watcherId }, timeoutMs));
+
   server.registerTool("list_tabs", {
-    title: "List Opera tabs",
     description: "List open Opera tabs, including tab IDs, titles, URLs, and active state.",
     inputSchema: { currentWindow: z.boolean().optional().describe("Only return tabs in the current Opera window.") },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }

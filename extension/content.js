@@ -23,6 +23,7 @@
 
   const mutationObserver = new MutationObserver(() => {
     mutationVersion += 1;
+    scheduleWatchCheck();
   });
   mutationObserver.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
 
@@ -1377,9 +1378,92 @@
     return mediaState(args);
   }
 
+  // ---- U-T Event-Triggered Workflows: page-side watch facts ----
+  // content.js stays dumb: it only reports FACTS for armed rules (plus a
+  // compact text snapshot for textMatch). Evaluation lives in background.
+  const watchRules = [];
+  let watchState = {};
+  let watchChecking = false;
+  let watchCheckQueued = false;
+
+  function watchFacts(rules) {
+    const facts = {};
+    for (const rule of rules) {
+      const sel = rule.trigger?.selector;
+      if (!sel) continue;
+      try {
+        const el = document.querySelector(sel);
+        facts[rule.ruleId] = { present: !!el };
+      } catch {
+        facts[rule.ruleId] = { present: false, invalidSelector: true };
+      }
+    }
+    let text = null;
+    if (rules.some((r) => r.trigger?.kind === 'textMatch')) {
+      try { text = String(document.body?.innerText || '').slice(0, 20000); } catch { text = ''; }
+    }
+    return { facts, text };
+  }
+
+  function adShowingNow(adSelectors) {
+    const list = Array.isArray(adSelectors) ? adSelectors.filter((s) => typeof s === 'string').slice(0, 8) : [];
+    return list.some((sel) => {
+      try { return !!document.querySelector(sel); } catch { return false; }
+    });
+  }
+
+  function mediaTimeNow() {
+    const v = document.querySelector('video');
+    return v ? (Number(v.currentTime) || 0) : 0;
+  }
+
+  async function checkWatches() {
+    if (disposed || watchChecking || !watchRules.length) return;
+    watchChecking = true;
+    try {
+      const { facts, text } = watchFacts(watchRules);
+      const snapshot = {
+        rules: watchRules,
+        facts,
+        text,
+        url: location.href,
+        adState: adShowingNow(watchRules.flatMap((r) => (r.trigger?.kind === 'adState' && Array.isArray(r.trigger.adSelectors)) ? r.trigger.adSelectors : [])),
+        mediaTime: mediaTimeNow(),
+        now: Date.now(),
+        state: watchState
+      };
+      const r = await chrome.runtime.sendMessage({ scope: 'opera-agent-watch', method: 'watch.facts', params: snapshot });
+      if (r && r.state) watchState = r.state;
+    } catch (watchError) {
+      // extension context invalidated or transient; the next mutation retries
+    } finally {
+      watchChecking = false;
+    }
+  }
+
+  function scheduleWatchCheck() {
+    if (watchChecking || !watchRules.length) return;
+    if (watchCheckQueued) return;
+    watchCheckQueued = true;
+    setTimeout(() => {
+      watchCheckQueued = false;
+      checkWatches();
+    }, 100);
+  }
+
   async function handle(method, args = {}) {
     if (disposed) throw new Error('Extension context invalidated.');
     switch (method) {
+      case 'watch.arm': {
+        const incoming = Array.isArray(args.rules) ? args.rules : [];
+        watchRules.length = 0;
+        for (const r of incoming) {
+          if (r && typeof r.ruleId === 'string') watchRules.push(r);
+        }
+        watchState = args.state || {};
+        scheduleWatchCheck();
+        return { ok: true, armed: watchRules.length };
+      }
       case 'content.ping': return { ok: true, documentId, readyState: document.readyState };
       case 'page.read': return pageRead(args);
       case 'page.query': return pageQuery(args);
@@ -1429,5 +1513,6 @@
     disposed = true;
     mutationObserver.disconnect();
     reverseRefs.clear();
+    watchRules.length = 0;
   }, { once: true });
 })();

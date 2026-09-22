@@ -4,6 +4,13 @@ All notable changes to Opera Agent are documented here. The project follows Sema
 
 ## [Unreleased]
 
+### U-T event-triggered workflows (eliminates the model trip pattern)
+- Device-local watch rules: the model arms a trigger ONCE (watch.start: selectorPresence/selectorGone/textMatch/urlChange/adState/mediaTime) and the extension reacts locally within ~50 ms of the page changing — no model round trip between trigger and action. Already-true-at-arm fires immediately (the T041 lesson); debounce, deadlineMs, maxEvents, 8/tab + 32 global caps, and stop/stop_all bound every rule; rules carry their own site selectors so the extension stays site-agnostic.
+- Local actions run through proven executors: trusted page.click, runBurst, or the relay workflow runner; every firing produces an event envelope (rule, url/adState/mediaTime, action result) in opera_watch_events via the bridge watch_event ingest.
+- wait_events MCP tool long-polls the event stream (opera_watch_events_wait, 5 ms SQL ramp) and returns the instant an event lands; stop_watch disarms; start_watch/wait_events/stop_watch join the public inventory (19→22, OBSERVATION class, contracts rebaselined).
+- Universal fastpath: new opera-agent-gateway edge function — POST /command completes a browser action in ONE HTTP hop via opera_run_fast (enqueue + adaptive await in a single SQL call, ramp 5→30 ms then the proven 50 ms); token verified via opera_verify_device from a header or body.apiKey (GPT Actions cannot set custom headers); GET /openapi.json is GPT-Actions-ready.
+- Version 1.6.6; node suite 471/472 (single fail = pre-existing local governance artifact); browser regression EXIT=0 (watcher clicked a control that appeared 1.2 s after arming, zero model trips).
+
 ### U-S burst atomic actions (observation→action gap, journal-grounded)
 - Burst `click`/`fill` steps accept `refFromStep`/`refIndex` to consume a ref minted by an earlier `find`/`query` step inside the same burst, eliminating the model round trip that let YouTube destroy freshly-found controls between find and click (live: 14.1 s gap → 161.6 ms atomic burst, ~87× faster). Forward/self references fail closed at validation; step results carry `resolvedFrom:"step:N"` provenance.
 - New `run_workflow` MCP tool (public inventory 18→19, contracts rebaselined) runs versioned site workflows end-to-end via the audited `opera_start_workflow` pg_net path and `opera_get_workflow_run` polling — inserting a run row alone never executes anything.

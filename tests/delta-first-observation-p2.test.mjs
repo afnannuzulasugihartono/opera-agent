@@ -550,10 +550,10 @@ test('P2 does not synthesize completion or foreground/browser authority', () => 
 test('P2 keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
   // R8 authorizes only generic omitted-limit find dominance in content.js.
   const files = new Map([
-    ['../extension/content.js', '2ee26615f6b6e8b1d96793719a0f73d75b2584e2'],
-    ['../extension/background.js', '619cecf8c165885ad21c21840686ae5198e63ca1'],
-    ['../extension/manifest.json', 'bd46c3f0a4bfea6aafa0a0759e7d5ad9cbb10bde'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '80a8e31d153a46e049d74087a7a2df500ef73c15'],
+    ['../extension/content.js', '5ef066256f2bfae033014dbe62a8a706b984f76a'],
+    ['../extension/background.js', 'dfe37ea63409ec329ee64dca7ba1ea36a061df5d'],
+    ['../extension/manifest.json', '1382ae2f2211fd5e7ab21f4d1688992e758ff407'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '8a9d36f71eaf4c03661b531ce3f7ce78bf57cab1'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));

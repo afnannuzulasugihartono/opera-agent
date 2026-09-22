@@ -1,17 +1,1 @@
-{
-  "schemaVersion": 1,
-  "checkpoint": "8A",
-  "baselineVersion": "1.6.0",
-  "canonicalReplayRuns": 100,
-  "minimumHostileCases": 64,
-  "maximumBrowserDispatchesForRejectedInput": 0,
-  "maximumApprovalBypasses": 0,
-  "maximumAuthorityBroadening": 0,
-  "maximumCrossBoundaryAcceptances": 0,
-  "maximumSensitiveValuesPersisted": 0,
-  "maximumFalseProved": 0,
-  "maximumFocusChanges": 0,
-  "maximumOrdinaryWorkflowMedianRegressionPercent": 15,
-  "milestone7InventoryDigest": "sha256:19ce6d12d487021b86419b4ed7a88fef6f8e22ff12b41f167c20c0caa286d0b8",
-  "note": "Checkpoint 8A is contract-only. It freezes no transaction runtime or production behavior and retains the accepted Milestone 7 performance baseline."
-}
+{"schemaVersion":1,"checkpoint":"8A","baselineVersion":"1.6.0","canonicalReplayRuns":100,"minimumHostileCases":64,"maximumBrowserDispatchesForRejectedInput":0,"maximumApprovalBypasses":0,"maximumAuthorityBroadening":0,"maximumCrossBoundaryAcceptances":0,"maximumSensitiveValuesPersisted":0,"maximumFalseProved":0,"maximumFocusChanges":0,"maximumOrdinaryWorkflowMedianRegressionPercent":15,"milestone7InventoryDigest":"sha256:ad74aeb0b33d421def8f362513b7e2a35936e8441b09ab89c511afde9fec7598","note":"Checkpoint 8A is contract-only. It freezes no transaction runtime or production behavior and retains the accepted Milestone 7 performance baseline."}

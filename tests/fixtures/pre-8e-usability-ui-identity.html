@@ -74,3 +74,19 @@
   </script>
 </body>
 </html>
+<script>
+  // U-T (ETW): a delayed control appears 1.2s after load; clicking it appends
+  // the etw-result marker. The watch scenario arms before it exists.
+  setTimeout(() => {
+    const late = document.createElement('button');
+    late.id = 'etw-late-save';
+    late.textContent = 'Late Save';
+    late.addEventListener('click', () => {
+      const marker = document.createElement('div');
+      marker.id = 'etw-result';
+      marker.textContent = 'SavedByWatcher';
+      document.body.appendChild(marker);
+    });
+    document.body.appendChild(late);
+  }, 1200);
+</script>

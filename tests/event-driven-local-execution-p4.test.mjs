@@ -487,10 +487,10 @@ test('P4 frozen boundary remains locked except the P6-authorized Reactive VM cut
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
-    ['../extension/content.js', '2ee26615f6b6e8b1d96793719a0f73d75b2584e2'],
-    ['../extension/background.js', '619cecf8c165885ad21c21840686ae5198e63ca1'],
-    ['../extension/manifest.json', 'bd46c3f0a4bfea6aafa0a0759e7d5ad9cbb10bde'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '80a8e31d153a46e049d74087a7a2df500ef73c15'],
+    ['../extension/content.js', '5ef066256f2bfae033014dbe62a8a706b984f76a'],
+    ['../extension/background.js', 'dfe37ea63409ec329ee64dca7ba1ea36a061df5d'],
+    ['../extension/manifest.json', '1382ae2f2211fd5e7ab21f4d1688992e758ff407'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '8a9d36f71eaf4c03661b531ce3f7ce78bf57cab1'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));

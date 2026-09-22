@@ -9,6 +9,7 @@ import {
   safeUrl,
   clamp
 } from './lib/protocol.js';
+import { evaluateRules, validateRule } from './lib/watch.js';
 
 const DEFAULT_BRIDGE_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-bridge';
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId'];
@@ -139,6 +140,15 @@ async function contentCall(tabId, method, params = {}) {
   if (!response) throw new Error('No response from page bridge.');
   if (response.ok === false) throw new Error(response.error || 'Page bridge error.');
   return response;
+}
+
+async function executeInTab(tabId, method, params = {}) {
+  try {
+    const r = await contentCall(tabId, method, params);
+    return r;
+  } catch (error) {
+    return { ok: false, error: { code: 'CONTENT_CALL_FAILED', message: String(error?.message || error).slice(0, 300) } };
+  }
 }
 
 async function privateTabIds() {
@@ -681,6 +691,47 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'browser.burst':
       return runBurst(params, context);
+    case 'watch.start': {
+      const cfg = await getConfig();
+      if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');
+      const tabId = await resolveTabId(params);
+      const w = await pruneWatchers();
+      const tabCount = watcherIdsForTab(w, tabId).length;
+      const globalCount = w.watchers.length;
+      if (globalCount >= MAX_WATCHERS_GLOBAL) throw new Error(`Watcher cap reached (${MAX_WATCHERS_GLOBAL} global).`);
+      if (tabCount >= MAX_WATCHERS_PER_TAB) throw new Error(`Watcher cap reached (${MAX_WATCHERS_PER_TAB} per tab).`);
+      const candidate = { ...params.rule, ruleId: params.rule?.ruleId || watchRuleId('w') };
+      const v = validateRule(candidate);
+      if (!v.ok) throw new Error(v.reason);
+      const entry = { id: candidate.ruleId, tabId, rule: candidate, createdAt: Date.now(), runtime: {} };
+      w.watchers.push(entry);
+      (w.byTab[tabId] ||= []).push(entry.id);
+      await saveWatchers(w);
+      const arm = await armWatchersForTab(tabId);
+      return { ok: true, watcherId: entry.id, tabId, armed: arm.armed, ...(!arm.armed && arm.error ? { warning: arm.error } : {}) };
+    }
+    case 'watch.stop': {
+      const { watcherId } = params;
+      const w = await pruneWatchers();
+      const before = w.watchers.length;
+      w.watchers = w.watchers.filter((e) => e.id !== watcherId);
+      for (const ids of Object.values(w.byTab)) {
+        const i = ids.indexOf(watcherId); if (i >= 0) ids.splice(i, 1);
+      }
+      w.byTab = Object.fromEntries(Object.entries(w.byTab).filter(([, ids]) => ids.length));
+      await saveWatchers(w);
+      return { ok: true, removed: before - w.watchers.length };
+    }
+    case 'watch.stop_all': {
+      const w = await pruneWatchers();
+      const removed = w.watchers.length;
+      await saveWatchers({ watchers: [], byTab: {} });
+      return { ok: true, removed };
+    }
+    case 'watch.list': {
+      const w = await pruneWatchers();
+      return { ok: true, watchers: w.watchers.map((e) => ({ id: e.id, tabId: e.tabId, rule: e.rule, fireCount: e.runtime?.fireCount || 0 })) };
+    }
     case 'tabs.list': {
       const tabs = await chrome.tabs.query(params.currentWindow ? { currentWindow: true } : {});
       return { ok: true, tabs: tabs.map(publicTab) };
@@ -811,7 +862,193 @@ function boundedResult(value) {
   return value;
 }
 
+// ---- U-T Event-Triggered Workflows: watch registry ----
+// Rules are validated by the pure engine in lib/watch.js. content.js stays
+// dumb: it reports FACTS (presence/url/adState/mediaTime/text) on mutations;
+// background evaluates rules with the engine and executes actions through the
+// proven burst/query/trusted-click machinery. The model is out of the loop.
+const WATCH_STATE_KEY = 'watchers';
+const MAX_WATCHERS_PER_TAB = 8;
+const MAX_WATCHERS_GLOBAL = 32;
+const WATCH_MAX_RULES_PER_ARM = 8;
+
+function watchRuleId(prefix) {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return `${prefix}_${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+}
+
+async function loadWatchers() {
+  const bag = await chrome.storage.local.get(WATCH_STATE_KEY);
+  return bag[WATCH_STATE_KEY] || { watchers: [], byTab: {} };
+}
+
+async function saveWatchers(w) {
+  await chrome.storage.local.set({ [WATCH_STATE_KEY]: w });
+}
+
+function watcherIdsForTab(w, tabId) {
+  return (w.byTab[tabId] || []).filter((id) => w.watchers.some((e) => e.id === id));
+}
+
+async function pruneWatchers() {
+  const w = await loadWatchers();
+  const now = Date.now();
+  const alive = [];
+  let changed = false;
+  for (const entry of w.watchers) {
+    const expired = now - entry.createdAt > entry.rule.deadlineMs;
+    const tabGone = entry.tabId != null && !await tabExists(entry.tabId);
+    if (expired || tabGone) { changed = true; continue; }
+    alive.push(entry);
+  }
+  if (!changed) return w;
+  const byTab = {};
+  for (const entry of alive) (byTab[entry.tabId] ||= []).push(entry.id);
+  const next = { watchers: alive, byTab };
+  await saveWatchers(next);
+  return next;
+}
+
+async function tabExists(tabId) {
+  try { await chrome.tabs.get(tabId); return true; } catch { return false; }
+}
+
+async function armWatchersForTab(tabId) {
+  const w = await pruneWatchers();
+  const entries = watcherIdsForTab(w, tabId)
+    .map((id) => w.watchers.find((e) => e.id === id))
+    .filter(Boolean);
+  const rules = entries.map((e) => e.rule);
+  if (!rules.length) return { armed: 0 };
+  try {
+    const r = await executeInTab(tabId, 'watch.arm', { rules: rules.slice(0, WATCH_MAX_RULES_PER_ARM) });
+    if (!r?.ok) return { armed: 0, error: r?.error?.code || 'ARM_FAILED' };
+    return { armed: rules.length, facts: r.facts || null };
+  } catch (error) {
+    return { armed: 0, error: String(error?.message || error).slice(0, 200) };
+  }
+}
+
+async function handleWatchFacts(tabId, facts) {
+  const w = await pruneWatchers();
+  const entries = watcherIdsForTab(w, tabId)
+    .map((id) => w.watchers.find((e) => e.id === id))
+    .filter(Boolean);
+  if (!entries.length) return { fired: 0 };
+  const rules = entries.map((e) => e.rule);
+  const out = evaluateRules(rules, facts, facts.state || {}, facts.now || Date.now());
+  // persist engine state per watcher
+  for (const entry of entries) {
+    const st = out.state[entry.rule.ruleId];
+    if (st) entry.runtime = st;
+  }
+  await saveWatchers(w);
+  for (const fire of out.fired) {
+    const entry = entries.find((e) => e.rule.ruleId === fire.ruleId);
+    if (entry) handleWatchFire(entry, fire, facts).catch(() => {});
+  }
+  return { fired: out.fired.length };
+}
+
+async function emitWatchEvent(entry, fire, facts, actionResult) {
+  const cfg = await getConfig();
+  if (!cfg.paired || !cfg.deviceToken) return;
+  const envelope = {
+    watcherId: entry.id,
+    tabId: entry.tabId,
+    rule: {
+      ruleId: entry.rule.ruleId,
+      trigger: entry.rule.trigger,
+      actionType: entry.rule.action?.type || 'report'
+    },
+    event: {
+      firedAtMs: fire.atMs,
+      fireCount: fire.fireCount,
+      url: String(facts?.url || '').slice(0, 500),
+      adState: !!facts?.adState,
+      mediaTime: Number(facts?.mediaTime) || 0,
+      context: typeof facts?.context === 'string' ? facts.context.slice(0, 2000) : null,
+      actionResult: actionResult || null
+    }
+  };
+  try {
+    await fetchJson(cfg.bridgeUrl, {
+      action: 'watch_event',
+      token: cfg.deviceToken,
+      deviceId: cfg.deviceId,
+      watcherId: entry.id,
+      envelope
+    }, 8000);
+  } catch (error) {
+    await setState({ lastError: `watch_event delivery failed: ${String(error?.message || error).slice(0, 300)}` });
+  }
+}
+
+async function executeWatchAction(entry, facts) {
+  const action = entry.rule.action || { type: 'report' };
+  try {
+    if (action.type === 'report' || action.type === 'confirm') {
+      return { type: action.type, ok: true };
+    }
+    if (action.type === 'click') {
+      const sel = action.selector || entry.rule.trigger.selector;
+      const q = await executeInTab(entry.tabId, 'page.query', { selector: sel, index: 0, limit: 1 });
+      const ref = q?.ok && q.item && q.item.ref ? q.item.ref : null;
+      if (!ref) return { type: 'click', ok: false, error: { code: 'TARGET_GONE', message: 'Matched element had no actionable ref.' } };
+      const clickContext = { deadline: Date.now() + 15000, debuggerSession: { tabId: entry.tabId, attached: false } };
+      const result = action.trusted === true
+        ? await trustedClick(entry.tabId, ref, clickContext, 'background', {})
+        : await dispatch('page.click', { tabId: entry.tabId, ref, trusted: false }, clickContext);
+      return { type: 'click', ok: !!result?.ok, error: result?.error || null };
+    }
+    if (action.type === 'burst') {
+      const res = await runBurst({ tabId: entry.tabId, steps: action.steps }, { deadline: Date.now() + 15000 });
+      return { type: 'burst', ok: !!res?.ok, steps: res?.completedSteps, error: res?.error || null };
+    }
+    if (action.type === 'workflow') {
+      // The proven relay-side runner: snapshots the definition, retries per
+      // iteration, enforces its own post-condition.
+      const cfg = await getConfig();
+      if (!cfg.paired || !cfg.deviceToken) {
+        return { type: 'workflow', ok: false, error: { code: 'NOT_PAIRED', message: 'Device is not paired.' } };
+      }
+      const res = await fetchJson(cfg.bridgeUrl, {
+        action: 'start_workflow',
+        token: cfg.deviceToken,
+        deviceId: cfg.deviceId,
+        name: action.workflowName,
+        params: action.params || {}
+      }, 8000);
+      return { type: 'workflow', ok: !!res?.ok, runId: res?.runId || null, error: res?.error || null };
+    }
+    return { type: action.type, ok: false, error: 'UNSUPPORTED_ACTION' };
+  } catch (error) {
+    return { type: action.type, ok: false, error: { code: 'WATCH_ACTION_FAILED', message: String(error?.message || error).slice(0, 300) } };
+  }
+}
+
+async function handleWatchFire(entry, fire, facts) {
+  const actionResult = await executeWatchAction(entry, facts);
+  await emitWatchEvent(entry, fire, facts, actionResult);
+  return actionResult;
+}
+
 async function executeCommand(raw) {
+  // U-T: watch.* is an internal extension-side family (protocol primitive
+  // count stays frozen at 26); its validation lives in lib/watch.js.
+  if (raw && typeof raw.method === 'string' && raw.method.startsWith('watch.')) {
+    const deadlineW = Date.now() + 10000;
+    try {
+      const result = await Promise.race([
+        dispatch(raw.method, raw.params || {}, { deadline: deadlineW }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout.')), 10000))
+      ]);
+      return { ok: true, result: boundedResult(result) };
+    } catch (error) {
+      return { ok: false, error: normalizeError(error) };
+    }
+  }
   const validated = validateCommand(raw);
   if (!validated.ok) return { ok: false, error: { code: 'INVALID_COMMAND', message: validated.error } };
   const { command } = validated;
@@ -1012,7 +1249,15 @@ async function localSelfTest() {
   };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {
+    const tabId = sender?.tab?.id;
+    if (tabId == null) { sendResponse({ ok: false, error: 'No sender tab.' }); return true; }
+    Promise.resolve(handleWatchFacts(tabId, message.params || {}))
+      .then((r) => sendResponse({ ok: true, ...r }))
+      .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 500) }));
+    return true;
+  }
   if (!message || message.scope !== 'opera-agent-popup') return false;
   Promise.resolve().then(async () => {
     if (message.action === 'status') {
@@ -1060,6 +1305,16 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.paired || changes.deviceToken || changes.bridgeUrl || changes.deviceName) {
     restartPullLoop();
+  }
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Re-arm after full navigations; content.js re-injects itself on the new document.
+  if (changeInfo.status === 'complete' && /^https?:/i.test(tab.url || '')) {
+    const w = loadWatchers();
+    Promise.resolve(w).then((watchers) => {
+      if ((watchers.byTab[tabId] || []).length) armWatchersForTab(tabId).catch(() => {});
+    }).catch(() => {});
   }
 });
 
