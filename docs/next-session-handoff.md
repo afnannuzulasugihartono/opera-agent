@@ -1,8 +1,9 @@
 # Opera Agent next-session handoff
 
 Last synchronized: 2026-09-22 (repository-production sync session).
-Session head SHA: `f45b04d7e80856f16b545e9eb519ff748baeb686` on
-`feat/pre-8e-usability-repair-r8` (sync commit; verify remote before writing).
+Session content head: `f45b04d7e80856f16b545e9eb519ff748baeb686` on
+`feat/pre-8e-usability-repair-r8`; the SHA-record commit itself is the tip.
+Verify the actual tip via `git log -1` and the remote before the first write.
 
 ## Repository-production sync executed 2026-09-22 — read first
 
