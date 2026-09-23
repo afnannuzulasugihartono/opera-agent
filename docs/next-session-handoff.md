@@ -1,9 +1,11 @@
 # Opera Agent next-session handoff
 
-Last synchronized: 2026-09-22 (repository-production sync session).
-Session content head: `f45b04d7e80856f16b545e9eb519ff748baeb686` on
-`feat/pre-8e-usability-repair-r8`; the SHA-record commit itself is the tip.
-Verify the actual tip via `git log -1` and the remote before the first write.
+Last synchronized: 2026-09-23 (repository-production sync session).
+Session content head: `c9b0c74f0d7bc904ecb3e3c0a10a8fee0dcfc795` on
+`feat/pre-8e-usability-repair-r8` (CI green: CircleCI `ci` + Vercel;
+`main` fast-forwarded to it on 2026-09-23). Later handoff-only commits may
+follow; verify the actual tip via `git log -1` and the remote before the
+first write.
 
 ## Repository-production sync executed 2026-09-22 — read first
 
@@ -11,10 +13,11 @@ Owner asked to check GitHub, Supabase, and local state and synchronize, then
 continue unfinished work. Findings and actions (all verified against live
 state):
 
-- Local `feat/pre-8e-usability-repair-r8` HEAD `715031d` equals `origin/main`;
-  the gateway repair below was committed, pushed, and `main` fast-forwarded.
-  CI on the exact head: CircleCI `ci` SUCCESS + Vercel SUCCESS; SonarCloud
-  failure is the PR static gate and no PR is open.
+- Local `feat/pre-8e-usability-repair-r8` HEAD `c9b0c74` equals `origin/main`;
+  the gateway repair and this sync were committed and pushed. CI green on both
+  evidence heads (`715031d` and `c9b0c74`: CircleCI `ci` SUCCESS + Vercel
+  SUCCESS; SonarCloud failure is the PR static gate and no PR is open).
+  `main` fast-forwarded to `c9b0c74` on 2026-09-23.
 - Ten local migration files carried version IDs differing from production
   `schema_migrations` records (names matched). Renamed via `git mv` to the
   production IDs (`20260908021039`, `20260908031756`, `20260908035531`,

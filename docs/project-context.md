@@ -8,7 +8,9 @@ Gateway repair committed and pushed: HEAD `715031d` on
 `feat/pre-8e-usability-repair-r8`, fast-forwarded to `main`. CI on the exact
 head: CircleCI `ci` SUCCESS and Vercel SUCCESS; the SonarCloud failure is the
 PR static gate with no PR open. The earlier "push remains on explicit owner
-request" note is superseded.
+request" note is superseded. The sync commits (`f45b04d`, `44fa4cf`,
+`c9b0c74` — migration renames, test path updates, ledger/docs sync) are also
+CI green and `main` is fast-forwarded to `c9b0c74` (2026-09-23).
 
 Migration drift found and repaired:
 
