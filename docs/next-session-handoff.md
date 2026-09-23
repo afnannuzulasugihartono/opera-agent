@@ -32,6 +32,20 @@ read-only mode (`transaction_read_only=on`), lifted via the documented
 exactly one active row (1.6.6), `update.xml?id=` still serves 1.6.6, and the
 1.6.7 CRX path returns 404 while inactive.
 
+## 1.6.8 candidate uploaded inactive 2026-09-24 (popup redesign)
+
+Popup visual language reworked to a polished-enterprise style (type scale,
+tabular numerals, calm palette, focus rings, stable hovers) — `87c7bdc` — then
+version sweep to 1.6.8 `b574e50` (suite 490/490, browser regression exit 0).
+CRX packed from a clean worktree at `b574e50`, offline-verified: 53,908 bytes,
+SHA-256 `aecf0c104c9c7f4a89b1db002769f119172163dc794934b98c50dc5f2e77ff75`,
+two-way ID + signature + deterministic resign all valid. Uploaded
+`1.6.8 / active=false` (DB SHA = disk); verified post-upload: single active row
+is still 1.6.7, `update.xml?id=` serves 1.6.7, and the 1.6.8 CRX path 404s
+while inactive. Artifact: `D:\Opera\opera-agent-1.6.8.crx`. Next: owner
+side-load, eyeball the new popup, then decide activation (rollback = 1.6.7 row
+stays intact).
+
 ## 1.6.7 ACTIVATED 2026-09-23 (owner-ordered, supersedes acceptance-first ordering)
 
 Owner explicitly ordered activation before live acceptance (recorded reason:
