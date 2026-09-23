@@ -50,3 +50,7 @@ tmp/
 # Python test artifacts
 __pycache__/
 *.py[cod]
+
+# Local agent-tool state and analysis caches (machine-local, never tracked)
+.kilo/
+graphify-out/

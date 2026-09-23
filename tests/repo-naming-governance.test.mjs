@@ -38,15 +38,30 @@ function currentBranch() {
 }
 
 test('repository root contains only allowlisted entries, and every allowlisted entry exists', () => {
-  const root = readdirSync(new URL('..', import.meta.url)).filter((name) => name !== '.git');
-  const unexpected = root.filter((name) => !ALLOWED_ROOT_ENTRIES.has(name));
+  // Judge TRACKED entries, not raw disk listings: machine-local agent-tool
+  // state (.kilo/, graphify-out/) and OS noise must not fail governance on a
+  // developer machine while the repository itself stays clean. Untracked
+  // droppings are the concern of .gitignore (enforced below).
+  const root = trackedFiles()
+    .map((file) => file.split('/')[0])
+    .filter((name) => name !== '.git');
+  const disk = readdirSync(new URL('..', import.meta.url)).filter((name) => name !== '.git');
+  const unexpected = [...new Set(root)].filter((name) => !ALLOWED_ROOT_ENTRIES.has(name));
   assert.deepEqual(
     unexpected,
     [],
-    `unexpected root entries (move them into their proper directory, or extend the allowlist with a recorded reason): ${unexpected.join(', ')}`
+    `unexpected tracked root entries (move them into their proper directory, or extend the allowlist with a recorded reason): ${unexpected.join(', ')}`
   );
-  const missing = [...ALLOWED_ROOT_ENTRIES].filter((name) => !root.includes(name));
+  const missing = [...ALLOWED_ROOT_ENTRIES].filter((name) => !disk.includes(name));
   assert.deepEqual(missing, [], `allowlisted root entries that no longer exist: ${missing.join(', ')}`);
+  const untrackedButUngnored = disk.filter(
+    (name) => !ALLOWED_ROOT_ENTRIES.has(name) && !name.startsWith('.') && execSync(`git check-ignore -q "${name}" || echo untracked`, { encoding: 'utf8' }).trim() === 'untracked'
+  );
+  assert.deepEqual(
+    untrackedButUngnored,
+    [],
+    `root entries are neither tracked, allowlisted, nor gitignored: ${untrackedButUngnored.join(', ')} (add them to .gitignore or remove them)`
+  );
 });
 
 test('tracked filenames never carry process-lifecycle tokens', () => {
