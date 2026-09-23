@@ -7,6 +7,30 @@ Session content head: `c9b0c74f0d7bc904ecb3e3c0a10a8fee0dcfc795` on
 follow; verify the actual tip via `git log -1` and the remote before the
 first write.
 
+## U-V Action Pipeline + CRX 1.6.7 candidate — 2026-09-23 (read first)
+
+U-V shipped on r8 `ee3c661`: one pure engine
+(`extension/lib/action-pipeline.js`) wraps every action route (MCP, burst,
+workflow, ETW) with Resolve→Wait→Heal→Execute→Verify. Success envelopes carry
+`resolved{attempts,waitedMs,healed,verified}`; dead targets return structured
+`TARGET_NOT_READY` (message preserved verbatim for legacy consumers) instead of
+the stale dead-end string; sensitive targets hand off to their executor guards
+(masked) instead of stalling the deadline. Full details + evidence:
+`docs/checkpoint-uv-action-pipeline.md`. Suite 489/490 (pre-existing #268);
+browser regression EXIT 0; version 1.6.7.
+
+CRX 1.6.7 built from a clean worktree at `ee3c661`, offline-verified
+(53,583 bytes, SHA-256 `6485f74de0213d5fbec9bb43398bd113e15c40dfaef7a3926d14dd8a58248496`,
+two-way ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, signature + deterministic resign
+valid). **Upload pending owner:** the Supabase project is in read-only mode
+(`transaction_read_only=on`; /readonly/temporary-disable → 403
+`database_readonly_config_write` missing on the current token). Owner must lift
+read-only (or grant the permission), then run `D:\github\us-release-167.ps1`
+(idempotent inactive insert; prints SHA/bytes to compare with disk). The old
+DPAPI `management-token.dpapi` (2026-09-16) is now 401 — rotate it; the env
+`SUPABASE_ACCESS_TOKEN` is the valid credential. Production unchanged:
+`update.xml?id=` serves 1.6.6; 1.6.7 CRX path 404 while absent.
+
 ## Repository-production sync executed 2026-09-22 — read first
 
 Owner asked to check GitHub, Supabase, and local state and synchronize, then
