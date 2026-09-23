@@ -32,6 +32,21 @@ read-only mode (`transaction_read_only=on`), lifted via the documented
 exactly one active row (1.6.6), `update.xml?id=` still serves 1.6.6, and the
 1.6.7 CRX path returns 404 while inactive.
 
+## 1.6.9 candidate uploaded inactive 2026-09-24 (popup second pass)
+
+Owner feedback on 1.6.8: "masih sama" — at the ~200px width the popup actually
+renders at, 1.6.8 still looked bushy (wrapping local-only chip, looming
+label/value stacks, block-filled buttons). Second pass `c1d60b4`: 12px base,
+9px uppercase section labels, ONE accent (primary; danger is ghost red),
+hairline secondary buttons, compact rows, nowrap status chip, uppercase
+micro-label rows in the narrow layout. Version sweep 1.6.9 (suite 490/490,
+browser exit 0). CRX offline-verified: 53,804 bytes, SHA-256
+`6182119941dfd6f0b00b26c71090524fd49f117cb0a346f76fa54e0b25f499a1`; uploaded
+`1.6.9 / active=false` (DB SHA = disk); single active row remains 1.6.7;
+update.xml serves 1.6.7; 1.6.9 CRX path 404s while inactive. Artifact:
+`D:\Opera\opera-agent-1.6.9.crx`. 1.6.8 remains available inactive as the
+first-pass alternative.
+
 ## 1.6.8 candidate uploaded inactive 2026-09-24 (popup redesign)
 
 Popup visual language reworked to a polished-enterprise style (type scale,
