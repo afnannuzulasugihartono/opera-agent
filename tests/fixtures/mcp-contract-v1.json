@@ -1,1 +1,30 @@
-{"schemaVersion":1,"protocolVersion":1,"toolCount":22,"sourceSha256":"bfc2793298f2b0581ea46fbe87481b213cd853ab821f3adc3694c42829dd0025","tools":["browser_status","run_browser_burst","run_workflow","start_watch","wait_events","stop_watch","list_tabs","open_url","activate_tab","navigate_tab","close_tab","read_page","capture_page","find_elements","click_element","fill_element","press_key","scroll_page","move_pointer","click_at","drag_pointer","wheel_at"]}
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "toolCount": 22,
+  "sourceSha256": "1caf54b52ca03f5232e83d6226d0f1c2a77f36225797856e932b439e0db95511",
+  "tools": [
+    "browser_status",
+    "run_browser_burst",
+    "run_workflow",
+    "start_watch",
+    "wait_events",
+    "stop_watch",
+    "list_tabs",
+    "open_url",
+    "activate_tab",
+    "navigate_tab",
+    "close_tab",
+    "read_page",
+    "capture_page",
+    "find_elements",
+    "click_element",
+    "fill_element",
+    "press_key",
+    "scroll_page",
+    "move_pointer",
+    "click_at",
+    "drag_pointer",
+    "wheel_at"
+  ]
+}

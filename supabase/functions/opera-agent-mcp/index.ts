@@ -394,6 +394,7 @@ function createServer() {
         trigger: z.object({
           kind: z.enum(['selectorPresence', 'selectorGone', 'textMatch', 'urlChange', 'navigation', 'adState', 'mediaTime']),
           selector: z.string().min(1).max(500).optional(),
+          adSelectors: z.array(z.string().min(1).max(500)).max(8).optional(),
           text: z.string().min(1).max(500).optional(),
           mode: z.enum(['contains', 'exact']).optional(),
           state: z.enum(['on', 'off', 'any']).optional(),

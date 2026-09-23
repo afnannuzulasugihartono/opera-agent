@@ -132,3 +132,29 @@ test('MCP gains start_watch/wait_events/stop_watch wired to the device path', ()
   assert.match(src, /wait_events/);
   assert.match(src, /stop_watch/);
 });
+
+test('MCP start_watch schema preserves adSelectors for adState rules', () => {
+  // The content script reads trigger.adSelectors (array) to detect ad overlays
+  // (site-agnostic: the selectors live in the rule). A zod object without the
+  // field strips unknown keys, so an adState rule armed through the MCP could
+  // never fire — live evidence 2026-09-23. The exact schema shape is the
+  // frozen contract: array of 1..8 non-empty selectors, optional.
+  const src = read('supabase/functions/opera-agent-mcp/index.ts');
+  assert.match(src, /adSelectors:\s*z\.array\(z\.string\(\)\.min\(1\)\.max\(500\)\)\.max\(8\)\.optional\(\)/, 'trigger schema must carry adSelectors');
+});
+
+test('migration seeds watch methods into the opera_methods enqueue allowlist', () => {
+  // Exact seed text is the frozen contract: MCP start_watch/stop_watch enqueue
+  // through opera_enqueue, whose allowlist is the opera_methods table. The ETW
+  // migration shipped the engine and MCP tools without these rows, so arming
+  // failed live with "Method is not allowlisted." (2026-09-23). The watch
+  // family stays out of the 26 browser primitives (internal), but the three
+  // methods the MCP surface needs must be seeded and enabled.
+  const src = read('supabase/migrations/20260923010000_opera_agent_watch_methods.sql');
+  assert.match(src, /insert into public\.opera_methods/i);
+  for (const method of ['watch.start', 'watch.stop', 'watch.stop_all']) {
+    assert.match(src, new RegExp(`'${method.replace('.', '\\.')}'`), `${method} must be seeded`);
+  }
+  assert.match(src, /true/, 'watch methods must be enabled so the MCP start/stop path can enqueue them');
+  assert.doesNotMatch(src, /'watch\.list'/, 'watch.list stays extension-internal (no MCP tool needs it)');
+});
