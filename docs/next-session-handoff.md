@@ -30,9 +30,29 @@ read-only mode (`transaction_read_only=on`), lifted via the documented
 `opera_releases` row was inserted `1.6.7 / active=false` (base64 71,444 chars =
 53,583 bytes; DB SHA-256 equals the disk SHA). Verified post-upload:
 exactly one active row (1.6.6), `update.xml?id=` still serves 1.6.6, and the
-1.6.7 CRX path returns 404 while inactive. Remaining (owner-gated):
-side-load `D:\Opera\opera-agent-1.6.7.crx`, run live acceptance, then decide
-activation explicitly.
+1.6.7 CRX path returns 404 while inactive.
+
+## 1.6.7 ACTIVATED 2026-09-23 (owner-ordered, supersedes acceptance-first ordering)
+
+Owner explicitly ordered activation before live acceptance (recorded reason:
+release-train timing; rollback exists by re-activating 1.6.6 via the same
+atomic flip). Executed and verified against live production:
+
+- Read-only mode lifted again via `/readonly/temporary-disable` (window had
+  expired), then **atomic flip in one transaction**: `1.6.6` -> `active = false`,
+  `1.6.7` -> `active = true`. Verified: exactly one active row for
+  `ohbbpamcljckmjhcpkcmefdobkoeaick`, and it is `1.6.7`
+  (sha256 `6485f74de0213d5fbec9bb43398bd113e15c40dfaef7a3926d14dd8a58248496`).
+- Live serving chain: `update.xml?id=` now serves `version="1.6.7"` with the
+  correct codebase; the `1.6.7` CRX path returns HTTP 200 with 53,583 bytes
+  whose SHA-256 equals the DB row AND the offline-verified disk SHA
+  (`SHA_MATCH_DISK: YES`).
+- Rollback path: `1.6.6` row intact (inactive); its CRX path 404s while
+  inactive. Roll forward-back = one atomic flip re-activating 1.6.6.
+- Devices self-update via the update service; the local Opera device may need
+  a restart or manual update check to pick up 1.6.7 (check
+  `opera_devices.extension_version`). U-V live acceptance (YouTube skip in one
+  command, `resolved` telemetry) remains open and should now be run on 1.6.7.
 
 ## Repository-production sync executed 2026-09-22 — read first
 
