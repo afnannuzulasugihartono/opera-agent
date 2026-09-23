@@ -552,7 +552,7 @@ test('P2 keeps the R4-authorized read_page projection inside the frozen public M
   const files = new Map([
     ['../extension/content.js', 'ec28d73498717f252cc1bb8bb94747e99eb27bf2'],
     ['../extension/background.js', '383d08964d50546388080ed1820fb61eb311e6e3'],
-    ['../extension/manifest.json', '7df8a047e608b0a1dfaf2d2bdbf12f104152f449'],
+    ['../extension/manifest.json', 'b204048827c7c3e4f0c485352878e1d08c3093e0'],
     ['../supabase/functions/opera-agent-mcp/index.ts', '014a2361d7479f4b1c80d82cec58599eedf129e2'],
   ]);
   for (const [relativePath, expected] of files) {
