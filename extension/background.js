@@ -10,6 +10,7 @@ import {
   clamp
 } from './lib/protocol.js';
 import { evaluateRules, validateRule } from './lib/watch.js';
+import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 
 const DEFAULT_BRIDGE_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-bridge';
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId'];
@@ -430,6 +431,63 @@ async function withInputFocusEmulation(target, mode, work) {
   }
 }
 
+// U-V Action Pipeline (2026-09-23): Resolve -> Wait -> Heal -> Verify around
+// the shared trusted executors. Every action path (MCP page.*, burst steps,
+// gateway /command, workflow steps, ETW local actions) reaches the dispatch
+// action cases or the ETW click site below, so this one host gives all of
+// them the same guarantee: never return `stale`, wait out dynamic targets via
+// the adaptive ramp, rebind through the U-I machinery, and report final
+// outcome telemetry. Pointers are coordinate-based (no ref), so their wait
+// phase is a pass-through; their own guards and scroll verification apply.
+const UV_WAIT_FLOOR_MS = 250; // keep the wait strictly inside the command race
+
+async function runActionPipeline(tabId, method, params, context, exec) {
+  const started = Date.now();
+  const specTimeout = METHOD_SPECS[method]?.timeoutMs ?? 8000;
+  const cmdDeadline = Number(context?.deadline) || (started + specTimeout);
+  const deadline = Math.min(cmdDeadline, started + specTimeout);
+  const hasRef = typeof params?.ref === 'string' && params.ref.length > 0;
+  let attempts = 0;
+  let healed = false;
+  let waitedMs = 0;
+  let state = null;
+  const resolveState = async () => {
+    attempts += 1;
+    try {
+      state = await contentCall(tabId, 'page.action_state', { ref: params.ref });
+    } catch {
+      state = null; // non-ambiguity content refusal: not resolvable this cycle
+    }
+    if (state?.rebound) healed = true;
+    return classifyResolve(state);
+  };
+  let verdict = hasRef ? await resolveState() : 'ready';
+  const delays = pollDelays(deadline - started, 0);
+  for (let di = 0; hasRef && verdict !== 'ready' && verdict !== 'ambiguous' && di < delays.length; di += 1) {
+    if (Date.now() + delays[di] > deadline - UV_WAIT_FLOOR_MS) break;
+    await new Promise((r) => setTimeout(r, delays[di]));
+    waitedMs += delays[di];
+    verdict = await resolveState();
+  }
+  if (verdict === 'ambiguous') {
+    throw makeNotReady('ambiguous', waitedMs, 'Refusal is deliberate (geometry guard). Pick a listed candidate deliberately or re-find with narrower text.', state?.candidates);
+  }
+  if (verdict !== 'ready') {
+    const hints = {
+      'not-found': 'Target never appeared before the deadline. Arm watch.start for late UI or re-find later.',
+      'not-actionable': 'Target is present but not actionable (hidden/offscreen/disabled). Scroll into view or re-find.'
+    };
+    throw makeNotReady(verdict, waitedMs, hints[verdict]);
+  }
+  const result = await exec(params.ref);
+  // Verify: only from an actual post-action check (postAction.verified exists
+  // only when an expect spec was evaluated) - never invented.
+  if (method === 'page.click' && result?.postAction?.verified !== undefined) {
+    return attachResolution(result, { attempts, waitedMs, healed, verified: result.postAction.verified === true });
+  }
+  return attachResolution(result, { attempts, waitedMs, healed });
+}
+
 async function trustedClick(tabId, ref, context, mode = 'background', options = {}) {
   const attempts = Math.max(1, Math.min(3, Number(options.attempts) || 1));
   let last = null;
@@ -812,7 +870,6 @@ async function dispatch(method, params = {}, context = {}) {
     case 'page.query':
     case 'page.find':
     case 'page.collect_links':
-    case 'page.fill':
     case 'page.focus':
     case 'page.scroll':
     case 'page.wait_for':
@@ -821,22 +878,23 @@ async function dispatch(method, params = {}, context = {}) {
     case 'media.pause':
     case 'media.seek': {
       const tabId = await resolveTabId(params);
-      const result = method === 'page.fill' && params.trusted
-        ? await trustedFill(tabId, params.ref, params.value, context, executionMode(params))
-        : await contentCall(tabId, method, params);
+      const result = await contentCall(tabId, method, params);
+      return { ...result, tabId };
+    }
+    case 'page.fill': {
+      const tabId = await resolveTabId(params);
+      const result = await runActionPipeline(tabId, 'page.fill', params, context, (ref) => (params.trusted ? trustedFill(tabId, ref, params.value, context, executionMode(params)) : contentCall(tabId, 'page.fill', { ...params, ref })));
       return { ...result, tabId };
     }
     case 'page.click': {
       const tabId = await resolveTabId(params);
       const clickOptions = { expect: params.expect, attempts: params.retry?.attempts };
-      const result = params.trusted
-        ? await trustedClick(tabId, params.ref, context, executionMode(params), clickOptions)
-        : await contentCall(tabId, 'page.click', params);
+      const result = await runActionPipeline(tabId, 'page.click', params, context, (ref) => (params.trusted ? trustedClick(tabId, ref, context, executionMode(params), clickOptions) : contentCall(tabId, 'page.click', { ...params, ref })));
       return { ...result, tabId };
     }
     case 'page.pointer': {
       const tabId = await resolveTabId(params);
-      const result = await trustedPointer(tabId, params, context);
+      const result = await runActionPipeline(tabId, 'page.pointer', params, context, () => trustedPointer(tabId, params, context));
       return { ...result, tabId };
     }
     case 'page.capture': {
@@ -845,7 +903,7 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.key': {
       const tabId = await resolveTabId(params);
-      const result = params.trusted ? await trustedKey(tabId, params.key, context, executionMode(params)) : await contentCall(tabId, 'page.key', params);
+      const result = await runActionPipeline(tabId, 'page.key', params, context, () => (params.trusted ? trustedKey(tabId, params.key, context, executionMode(params)) : contentCall(tabId, 'page.key', params)));
       return { ...result, tabId };
     }
     default:
@@ -998,7 +1056,7 @@ async function executeWatchAction(entry, facts) {
       if (!ref) return { type: 'click', ok: false, error: { code: 'TARGET_GONE', message: 'Matched element had no actionable ref.' } };
       const clickContext = { deadline: Date.now() + 15000, debuggerSession: { tabId: entry.tabId, attached: false } };
       const result = action.trusted === true
-        ? await trustedClick(entry.tabId, ref, clickContext, 'background', {})
+        ? await runActionPipeline(entry.tabId, 'page.click', { ref }, clickContext, (ref2) => trustedClick(entry.tabId, ref2, clickContext, 'background', {}))
         : await dispatch('page.click', { tabId: entry.tabId, ref, trusted: false }, clickContext);
       return { type: 'click', ok: !!result?.ok, error: result?.error || null };
     }
@@ -1046,6 +1104,9 @@ async function executeCommand(raw) {
       ]);
       return { ok: true, result: boundedResult(result) };
     } catch (error) {
+      if (error && error.code === 'TARGET_NOT_READY') {
+        return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
+      }
       return { ok: false, error: normalizeError(error) };
     }
   }

@@ -59,3 +59,17 @@ test('content exposes page.action_state for the U-V pipeline', () => {
   assert.match(src, /refusing automatic rebind/, 'ambiguity surfaced via the U-I refusal path');
   assert.match(src, /candidates/, 'ambiguity must surface candidates');
 });
+
+// --- Task 3: host wiring source-contract ---
+test('every action route funnels through runActionPipeline', () => {
+  const src = read('extension/background.js');
+  for (const site of ['trustedFill(tabId', 'trustedClick(tabId', 'trustedPointer(tabId', 'trustedKey(tabId']) {
+    const direct = src.split('\n').filter(l => l.includes(site) && !l.includes('async function') && !l.includes('runActionPipeline'));
+    assert.deepEqual(direct, [], `unwrapped direct call: ${site}`);
+  }
+  const uses = src.match(/runActionPipeline/g) || [];
+  assert.ok(uses.length >= 5, 'host must exist and wrap the dispatch action cases');
+  const etw = src.split('\n').filter(l => l.includes('trustedClick(entry.tabId'));
+  assert.ok(etw.length === 1 && etw[0].includes('runActionPipeline'), 'ETW local click must route through the pipeline');
+  assert.match(src, /TARGET_NOT_READY/, 'structured error must be mapped verbatim in executeCommand');
+});
