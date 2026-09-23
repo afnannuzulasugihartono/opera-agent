@@ -42,10 +42,36 @@ state):
   14-step v5 body). They are deliberately NOT recorded in the ledger.
   Applying their content to production is a separate explicit owner decision;
   U-T event-triggered workflows may supersede the R5/R6 fast-path intent.
-- Remaining unfinished (unchanged by this sync): independent audit re-review
-  of the gateway repair, and live acceptance (watcher skips a real ad, zero
-  analysis trips) in a tool-capable client via the OAuth Opera Agent
-  connector. Both remain owner-gated.
+- Remaining unfinished: independent audit re-review of the gateway repair
+  (owner-gated), and live acceptance — now UNBLOCKED by the 1.6.6 activation
+  below.
+
+## 1.6.6 ACTIVATED 2026-09-23 (owner-ordered, supersedes acceptance-first ordering)
+
+The owner explicitly ordered activation (the AGENTS.md separate explicit user
+decision). This inverts the frozen release-workflow ordering ("upload
+inactive, then acceptance before activation") with a recorded reason: devices
+on 1.6.5 lack the ETW watch engine required for live acceptance, so
+acceptance mechanically needs 1.6.6 served first; rollback exists (re-activate
+1.6.5 via the same atomic flip).
+
+Executed and verified against live production:
+
+- Atomic flip in one transaction: `1.6.5` -> `active = false`, `1.6.6` ->
+  `active = true`. Verified: exactly one active release for
+  `ohbbpamcljckmjhcpkcmefdobkoeaick`, and it is `1.6.6`
+  (sha256 `a33e5f36e805a240c2399415656373fad1461b9630299f2abf4f2d5b4de58e9b`).
+- Live serving chain: `update.xml` with the signed identity (`?id=` query
+  param; the bare path intentionally falls back to the legacy identity per
+  `requestedExtensionId`) now serves `version="1.6.6"` with the correct
+  codebase; the `1.6.6` CRX path returns HTTP 200 with 50,049 bytes whose
+  SHA-256 equals the DB row and the offline-verified disk SHA.
+- Devices self-update via the update service; the local Opera device may need
+  a restart or manual update check to pick up 1.6.6.
+
+Next: live acceptance in a tool-capable client via the OAuth Opera Agent
+connector (watcher skips a real ad, zero analysis trips), then the
+independent audit re-review.
 
 ## Gateway transaction repair: COMMITTED and DEPLOYED (supersedes awaiting-review state)
 

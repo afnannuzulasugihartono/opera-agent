@@ -51,6 +51,23 @@ server with a read-only header; the PAT was verified live (28 tools,
 `nenmkmtvjremqphfqnfw` is ACTIVE_HEALTHY with `opera-agent-gateway` v2
 ACTIVE.
 
+## 1.6.6 ACTIVATED 2026-09-23 (owner-ordered)
+
+The owner explicitly ordered activation, superseding the frozen
+release-workflow ordering ("upload inactive, then acceptance before
+activation") with a recorded reason: devices on 1.6.5 lack the ETW watch
+engine required for live acceptance, so acceptance mechanically needs 1.6.6
+served first. Rollback exists via the same atomic flip.
+
+Executed and verified: atomic flip (`1.6.5` inactive, `1.6.6` active; exactly
+one active release for `ohbbpamcljckmjhcpkcmefdobkoeaick`, sha256
+`a33e5f36e805a240c2399415656373fad1461b9630299f2abf4f2d5b4de58e9b`); live
+`update.xml` serves `version="1.6.6"` for the signed identity (the bare path
+intentionally falls back to the legacy identity); the `1.6.6` CRX path
+returns HTTP 200 with 50,049 bytes whose SHA-256 equals the DB row.
+Remaining: live acceptance (watcher skips a real ad, zero analysis trips),
+then the independent audit re-review.
+
 ## Gateway transaction repair + hosted deploy (2026-09-22)
 
 The authorized local repair is based on `58264c5f2ffafe8e94ca8c51d2cae43019f5f768`
