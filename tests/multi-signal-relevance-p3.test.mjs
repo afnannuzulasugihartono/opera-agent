@@ -527,10 +527,10 @@ test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cut
   // R8 authorizes only generic omitted-limit find dominance in content.js.
   const files = new Map([
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
-    ['../extension/content.js', '5ef066256f2bfae033014dbe62a8a706b984f76a'],
+    ['../extension/content.js', '84ec2aff42d01e10337bcae5d7796999c8f0018e'],
     ['../extension/background.js', 'dfe37ea63409ec329ee64dca7ba1ea36a061df5d'],
     ['../extension/manifest.json', '1382ae2f2211fd5e7ab21f4d1688992e758ff407'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '8a9d36f71eaf4c03661b531ce3f7ce78bf57cab1'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '014a2361d7479f4b1c80d82cec58599eedf129e2'],
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],

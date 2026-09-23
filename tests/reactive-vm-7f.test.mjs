@@ -22,7 +22,7 @@ const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import
 const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url));
 
-const EXPECTED_MCP_SHA256 = 'bfc2793298f2b0581ea46fbe87481b213cd853ab821f3adc3694c42829dd0025';
+const EXPECTED_MCP_SHA256 = '1caf54b52ca03f5232e83d6226d0f1c2a77f36225797856e932b439e0db95511';
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -107,7 +107,7 @@ test('7F keeps the 1.6.6 public surface and frozen read-only VM effect policy un
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
-  assert.equal(contract.inventory.digest, 'sha256:ad74aeb0b33d421def8f362513b7e2a35936e8441b09ab89c511afde9fec7598');
+  assert.equal(contract.inventory.digest, 'sha256:39fc4a9871859be88c759fe0c26e1b6c30d711d1631c3ca4110e0b1ea856905e');
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

@@ -1082,6 +1082,36 @@
     return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el), postActionBefore };
   }
 
+  // U-V Action Pipeline (2026-09-23): compact resolve snapshot for the
+  // background host. Reuses resolveActionRef (the U-I rebind machinery) so
+  // rebind authority stays in one place; ambiguity is read from the existing
+  // geometry-guard refusal, which already carries the candidate list.
+  function actionState(args) {
+    const key = String(args?.ref || '');
+    const before = resolveRef(key);
+    let el;
+    try {
+      el = resolveActionRef(key);
+    } catch (error) {
+      const msg = String(error?.message || error);
+      if (msg.includes('refusing automatic rebind')) {
+        const m = msg.match(/candidates: (\[.*?\])/);
+        let candidates;
+        try { candidates = m ? JSON.parse(m[1]) : []; } catch { candidates = []; }
+        return { present: true, actionable: false, ambiguous: true, candidates };
+      }
+      throw error;
+    }
+    if (!el) return { present: false, actionable: false, ambiguous: false };
+    const state = actionabilityState(el);
+    return {
+      present: true,
+      actionable: state.actionable,
+      ambiguous: false,
+      ...(before && el !== before ? { rebound: true } : {})
+    };
+  }
+
   function pointerTarget(args) {
     const x = Number(args.x);
     const y = Number(args.y);
@@ -1471,6 +1501,7 @@
       case 'page.collect_links': return collectLinks(args);
       case 'page.click': return clickSynthetic(args);
       case 'page.click_info': return clickInfo(args);
+      case 'page.action_state': return actionState(args);
       case 'page.post_action': return postActionEvidence(args);
       case 'page.pointer_target': return pointerTarget(args);
       case 'page.scroll_settle': return settleScroll(args);

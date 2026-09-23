@@ -47,3 +47,15 @@ test('attachResolution adds resolved and omits absent verified', () => {
   const env2 = attachResolution({ ok: true }, { attempts: 1, waitedMs: 0, healed: false, verified: true });
   assert.equal(env2.resolved.verified, true);
 });
+
+// --- Task 2: content resolver source-contract ---
+import fs from 'node:fs';
+const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+
+test('content exposes page.action_state for the U-V pipeline', () => {
+  const src = read('extension/content.js');
+  assert.match(src, /page\.action_state/, 'handler must exist');
+  assert.match(src, /resolveActionRef\(.*ref/, 'must resolve through the U-I rebind machinery');
+  assert.match(src, /refusing automatic rebind/, 'ambiguity surfaced via the U-I refusal path');
+  assert.match(src, /candidates/, 'ambiguity must surface candidates');
+});
