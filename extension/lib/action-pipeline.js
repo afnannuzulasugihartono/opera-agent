@@ -27,6 +27,7 @@ export function pollDelays(deadlineMs, elapsedMs = 0) {
 export function classifyResolve(state) {
   if (!state || state.present !== true) return 'not-found';
   if (state.ambiguous === true) return 'ambiguous';
+  if (state.masked === true) return 'ready'; // executor-owned guard (e.g. sensitive fields)
   return state.actionable === true ? 'ready' : 'not-actionable';
 }
 

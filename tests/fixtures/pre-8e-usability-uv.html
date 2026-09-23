@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Opera Agent U-V Action Pipeline Fixture</title>
+  <style>
+    body { margin: 0; min-height: 900px; font-family: sans-serif; }
+    #uv-late { position: absolute; left: 8px; top: 40px; width: 160px; height: 36px; }
+    #uv-victim { position: absolute; left: 8px; top: 120px; width: 160px; height: 36px; }
+    #uv-kill { position: absolute; left: 8px; top: 200px; width: 160px; height: 36px; }
+    #uv-tog { position: absolute; left: 8px; top: 280px; width: 160px; height: 36px; }
+    #uv-gone { position: absolute; left: 8px; top: 360px; width: 160px; height: 36px; }
+    #uv-goner { position: absolute; left: 8px; top: 440px; width: 160px; height: 36px; }
+  </style>
+</head>
+<body>
+  <button id="uv-late" disabled>Late</button>
+  <button id="uv-victim">Victim</button>
+  <button id="uv-kill">Kill</button>
+  <button id="uv-tog" aria-pressed="false">Toggle</button>
+  <button id="uv-gone">Gone</button>
+  <button id="uv-arm">Arm</button>
+  <button id="uv-goner">Goner</button>
+  <script>
+    // Test controller: arm sets t0 so the 2.5s delay is measured from the
+    // test's explicit arm click, not from page load (deterministic timing).
+    // Generous margin: relay latency between arm-click and the click command
+    // arriving must eat into the 8s deadline, not into the assertion margin.
+    let uvArmedAt = 0;
+    document.getElementById('uv-arm').addEventListener('click', () => { uvArmedAt = performance.now(); }, { once: true });
+    setInterval(() => {
+      if (uvArmedAt && performance.now() - uvArmedAt >= 2500) {
+        document.getElementById('uv-late').disabled = false;
+      }
+    }, 100);
+    document.getElementById('uv-late').addEventListener('click', () => {
+      const r = document.createElement('div');
+      r.id = 'uv-late-result';
+      r.textContent = 'LateResult';
+      document.body.appendChild(r);
+    });
+    // (b) same-place successor: Kill destroys Victim and recreates an
+    // identical button at the same document position without an id.
+    document.getElementById('uv-kill').addEventListener('click', () => {
+      const v = document.getElementById('uv-victim');
+      const rect = v.getBoundingClientRect();
+      const s = document.createElement('button');
+      s.textContent = 'Victim';
+      s.style.position = 'absolute';
+      s.style.left = `${Math.round(rect.left + window.scrollX)}px`;
+      s.style.top = `${Math.round(rect.top + window.scrollY)}px`;
+      s.style.width = `${Math.round(rect.width)}px`;
+      s.style.height = `${Math.round(rect.height)}px`;
+      s.addEventListener('click', () => {
+        const r = document.createElement('div');
+        r.id = 'uv-victim-result';
+        r.textContent = 'VictimResult';
+        document.body.appendChild(r);
+      });
+      v.remove();
+      document.body.appendChild(s);
+    });
+    // (c) expect-verifiable toggle: the click appends a checkable node.
+    document.getElementById('uv-tog').addEventListener('click', () => {
+      const t = document.getElementById('uv-tog');
+      t.setAttribute('aria-pressed', t.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      const r = document.createElement('div');
+      r.id = 'uv-tog-result';
+      r.textContent = 'TogResult';
+      document.body.appendChild(r);
+    });
+    // (d) never-ready target: Goner removes Gone with no successor.
+    document.getElementById('uv-goner').addEventListener('click', () => {
+      document.getElementById('uv-gone').remove();
+    });
+  </script>
+</body>
+</html>

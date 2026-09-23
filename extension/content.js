@@ -381,6 +381,7 @@
       viewportClipped: viewport.viewportClipped,
       enabled,
       sensitive,
+      pointerEnabled,
       actionable: visible && viewport.inViewport && enabled && !sensitive && pointerEnabled
     };
   }
@@ -1098,17 +1099,35 @@
         const m = msg.match(/candidates: (\[.*?\])/);
         let candidates;
         try { candidates = m ? JSON.parse(m[1]) : []; } catch { candidates = []; }
-        return { present: true, actionable: false, ambiguous: true, candidates };
+        return { present: true, actionable: false, ambiguous: true, candidates, refusal: msg };
       }
       throw error;
     }
-    if (!el) return { present: false, actionable: false, ambiguous: false };
+    if (!el) {
+      // Sensitive targets are fail-closed from ref resolution (rebind
+      // authority never hands them over), but they ARE present and owned by
+      // the executor's own guard. Report masked instead of not-found so the
+      // pipeline hands off immediately instead of waiting out the deadline.
+      if (before && sensitiveDescriptor(before)) {
+        return { present: true, actionable: false, ambiguous: false, masked: true };
+      }
+      return { present: false, actionable: false, ambiguous: false };
+    }
     const state = actionabilityState(el);
+    // Pipeline readiness is executor-contract readiness: click_info requires
+    // only visibility and the trusted executor scrolls into view itself, so
+    // inViewport must NOT gate the wait (offscreen-but-clickable is normal).
     return {
       present: true,
-      actionable: state.actionable,
+      // Sensitive is NOT an actionability gate: sensitive targets are owned by
+      // the executor's own guard (which names the real reason - sensitive/
+      // file), so the pipeline must hand off instead of waiting them out.
+      actionable: state.visible && state.enabled && state.pointerEnabled,
       ambiguous: false,
-      ...(before && el !== before ? { rebound: true } : {})
+      gates: { visible: state.visible, enabled: state.enabled, sensitive: state.sensitive, pointerEnabled: state.pointerEnabled, inViewport: state.inViewport },
+      // Rebind recovery means the ref was NOT connected before the resolve and
+      // IS resolved now (fresh refs and live refs resolve without recovery).
+      ...(before == null && el != null ? { rebound: true } : {})
     };
   }
 

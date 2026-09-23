@@ -136,6 +136,7 @@ R3_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r3.html').read_text(e
 R4_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r4.html').read_text(encoding='utf-8')
 R5_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r5.html').read_text(encoding='utf-8')
 UI_IDENTITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ui-identity.html').read_text(encoding='utf-8')
+UV_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-uv.html').read_text(encoding='utf-8')
 
 def build_r5_wav():
     buffer = io.BytesIO()
@@ -221,8 +222,10 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-ui-identity'):
-            if self.path.startswith('/pre8e-r5'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ui-identity'):
+            if self.path.startswith('/pre8e-uv'):
+                document = UV_PAGE
+            elif self.path.startswith('/pre8e-r5'):
                 document = R5_PAGE
             elif self.path.startswith('/pre8e-r4'):
                 document = R4_PAGE
@@ -386,7 +389,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.6.6'
+        assert result['version'] == '1.6.7'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -981,6 +984,83 @@ async def run(port, profile):
         us_watch_list = await asyncio.to_thread(STATE.wait, cid)
         assert us_watch_list.get('ok') is True, us_watch_list
 
+        # U-V (action pipeline): instant-by-default actions. One command waits
+        # out a late-actionable target, heals a stale ref via the U-I rebind
+        # machinery, verifies via the expect machinery, and reports a final
+        # structured outcome for a never-ready target.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-uv',
+            'active': False,
+            'wait': True
+        }, benchmark='uv.tabs.open')
+        uv_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        def uv_push(method, params, benchmark=None):
+            return asyncio.to_thread(STATE.push, method, params, 12000, benchmark)
+
+        async def uv_wait(cid_, benchmark):
+            body = await asyncio.to_thread(STATE.wait, cid_)
+            return body
+
+        # Arm the fixture clock, then find the still-disabled Late button.
+        cid = await uv_push('page.query', {'tabId': uv_tab_id, 'selector': '#uv-arm'})
+        uv_arm_ref = assert_completed_ok(await uv_wait(cid, 'uv.arm.query'))['item']['ref']
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_arm_ref, 'trusted': False})
+        assert_completed_ok(await uv_wait(cid, 'uv.arm.click'))
+        cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Late', 'exact': True, 'limit': 5}, benchmark='uv.page.find.late')
+        uv_late_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.late'))['item']['ref']
+
+        # (a) The target becomes actionable at t0+1.5s; ONE trusted command
+        # must wait it out (waitedMs >= ~1400) and land the click.
+        t0 = time.perf_counter()
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_late_ref, 'trusted': True}, benchmark='uv.page.click.late')
+        uv_late_click = assert_completed_ok(await uv_wait(cid, 'uv.page.click.late'))
+        uv_waited = uv_late_click['resolved']['waitedMs']
+        uv_wall = (time.perf_counter() - t0) * 1000
+        assert uv_waited >= 1200, uv_late_click
+        assert uv_late_click['resolved']['attempts'] >= 2, uv_late_click
+        assert uv_waited <= uv_wall + 100, (uv_waited, uv_wall)
+        assert uv_late_click['resolved']['healed'] is False, uv_late_click
+        cid = await uv_push('page.query', {'tabId': uv_tab_id, 'selector': '#uv-late-result'})
+        assert assert_completed_ok(await uv_wait(cid, 'uv.late.effect'))['item'], 'late click did not land'
+
+        # (b) Same-place successor: destroy the ref, then ONE trusted click on
+        # the stale ref must heal (rebind) and land on the successor.
+        cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Victim', 'exact': True, 'limit': 5}, benchmark='uv.page.find.victim')
+        uv_victim_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.victim'))['item']['ref']
+        cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Kill', 'exact': True, 'limit': 5}, benchmark='uv.page.find.kill')
+        uv_kill_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.kill'))['item']['ref']
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_kill_ref, 'trusted': False})
+        assert_completed_ok(await uv_wait(cid, 'uv.kill.click'))
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_victim_ref, 'trusted': True}, benchmark='uv.page.click.heal')
+        uv_heal_click = assert_completed_ok(await uv_wait(cid, 'uv.page.click.heal'))
+        assert uv_heal_click['resolved']['healed'] is True, uv_heal_click
+        cid = await uv_push('page.query', {'tabId': uv_tab_id, 'selector': '#uv-victim-result'})
+        assert assert_completed_ok(await uv_wait(cid, 'uv.heal.effect'))['item'], 'healed click did not land on successor'
+
+        # (c) Verify path: click with an expect spec must surface the real
+        # post-action verification as resolved.verified.
+        cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Toggle', 'exact': True, 'limit': 5}, benchmark='uv.page.find.tog')
+        uv_tog_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.tog'))['item']['ref']
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_tog_ref, 'trusted': True, 'expect': {'selectorAppears': '#uv-tog-result'}}, benchmark='uv.page.click.verify')
+        uv_tog_click = assert_completed_ok(await uv_wait(cid, 'uv.page.click.verify'))
+        assert uv_tog_click['resolved'].get('verified') is True, uv_tog_click
+
+        # (d) Never-ready target: one command returns the structured final
+        # outcome after waiting out the deadline (single command, no retry).
+        cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Gone', 'exact': True, 'limit': 5}, benchmark='uv.page.find.gone')
+        uv_gone_find = assert_completed_ok(await uv_wait(cid, 'uv.page.find.gone'))
+        uv_gone_ref = next(i['ref'] for i in uv_gone_find['items'] if i['label'] == 'Gone')
+        cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Goner', 'exact': True, 'limit': 5}, benchmark='uv.page.find.goner')
+        uv_goner_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.goner'))['item']['ref']
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_goner_ref, 'trusted': False})
+        assert_completed_ok(await uv_wait(cid, 'uv.goner.click'))
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_gone_ref, 'trusted': True, 'expect': {'selectorGone': '#uv-late-result'}}, benchmark='uv.page.click.not-ready')
+        uv_nr = await asyncio.to_thread(STATE.wait, cid)
+        assert uv_nr.get('ok') is False and uv_nr.get('error', {}).get('code') == 'TARGET_NOT_READY', uv_nr
+        assert uv_nr['error']['reason'] == 'not-found', uv_nr
+        assert uv_nr['error']['waitedMs'] >= 3000, uv_nr
+
         cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
@@ -1542,6 +1622,12 @@ async def run(port, profile):
         assert result['item']['ariaPressed'] == 'true'
         toggle = result['item']
 
+        # Windows blocks background processes from stealing OS focus, so a
+        # headless-adjacent CI run can start with the browser window
+        # unfocused; foreground pointer actions require focus (FOREGROUND_REQUIRED).
+        # Prime it through the extension's own activation path.
+        cid = STATE.push('tabs.activate', {'tabId': tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': toggle['rect']['centerX'], 'y': toggle['rect']['centerY'], 'executionMode': 'foreground'})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['action'] == 'click'
@@ -1609,12 +1695,12 @@ async def run(port, profile):
         assert 'Pointer blocked on sensitive target' in failed['error']['message']
         cid = STATE.push('page.fill', {'tabId': tab_id, 'ref': secret['ref'], 'value': 'should-not-enter'})
         failed = await asyncio.to_thread(STATE.wait, cid)
-        assert failed['ok'] is False
-        assert 'Sensitive field blocked' in failed['error']['message']
+        assert failed['ok'] is False, failed
+        assert 'Sensitive field blocked' in failed['error']['message'], failed
         cid = STATE.push('page.fill', {'tabId': tab_id, 'ref': secret['ref'], 'value': 'should-not-enter', 'trusted': True})
         failed = await asyncio.to_thread(STATE.wait, cid)
-        assert failed['ok'] is False
-        assert 'Sensitive field blocked' in failed['error']['message']
+        assert failed['ok'] is False, failed
+        assert 'Sensitive field blocked' in failed['error']['message'], failed
 
         cid = STATE.push('browser.burst', {
             'tabId': tab_id,
@@ -2066,7 +2152,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.6.6'
+        assert result['version'] == '1.6.7'
 
         await context.close()
         import os

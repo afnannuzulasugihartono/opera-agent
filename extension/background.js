@@ -451,12 +451,15 @@ async function runActionPipeline(tabId, method, params, context, exec) {
   let healed = false;
   let waitedMs = 0;
   let state = null;
+  let resolveError = null;
   const resolveState = async () => {
     attempts += 1;
     try {
       state = await contentCall(tabId, 'page.action_state', { ref: params.ref });
-    } catch {
+      resolveError = null;
+    } catch (error) {
       state = null; // non-ambiguity content refusal: not resolvable this cycle
+      resolveError = String(error?.message || error);
     }
     if (state?.rebound) healed = true;
     return classifyResolve(state);
@@ -469,15 +472,24 @@ async function runActionPipeline(tabId, method, params, context, exec) {
     waitedMs += delays[di];
     verdict = await resolveState();
   }
+  // Synthetic actions historically act on present-but-not-actionable targets
+  // (their content paths own disabled/hidden gates — regression R0 proves the
+  // revalidate-then-click contract), so only TRUSTED actions wait for full
+  // actionability; synthetic waits resolve on presence.
+  if (verdict === 'not-actionable' && params?.trusted !== true) verdict = 'ready';
   if (verdict === 'ambiguous') {
-    throw makeNotReady('ambiguous', waitedMs, 'Refusal is deliberate (geometry guard). Pick a listed candidate deliberately or re-find with narrower text.', state?.candidates);
+    // Carry the original geometry-guard refusal text: legacy consumers assert
+    // on it, and it names the concrete tolerance mismatch behind the refusal.
+    throw makeNotReady('ambiguous', waitedMs, state?.refusal || 'Refusal is deliberate (geometry guard). Pick a listed candidate deliberately or re-find with narrower text.', state?.candidates);
   }
   if (verdict !== 'ready') {
     const hints = {
       'not-found': 'Target never appeared before the deadline. Arm watch.start for late UI or re-find later.',
       'not-actionable': 'Target is present but not actionable (hidden/offscreen/disabled). Scroll into view or re-find.'
     };
-    throw makeNotReady(verdict, waitedMs, hints[verdict]);
+    const gates = state?.gates ? ` [gates: ${JSON.stringify(state.gates)}]` : '';
+    const resolver = resolveError ? ` [resolver: ${resolveError}]` : '';
+    throw makeNotReady(verdict, waitedMs, hints[verdict] + gates + resolver);
   }
   const result = await exec(params.ref);
   // Verify: only from an actual post-action check (postAction.verified exists
@@ -704,6 +716,10 @@ async function runBurst(params, outerContext = {}) {
         if (burstResultSize([...results, entry]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);
         results.push(entry);
       } catch (error) {
+        let burstError = normalizeError(error);
+        if (error && error.code === 'TARGET_NOT_READY') {
+          burstError = { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) };
+        }
         return {
           ok: false,
           tabId,
@@ -711,7 +727,7 @@ async function runBurst(params, outerContext = {}) {
           failedAt: index,
           failedAction: step.action,
           executionMode: mode,
-          error: normalizeError(error),
+          error: burstError,
           results,
           timingMs: Math.round((performance.now() - startedAt) * 100) / 100
         };
@@ -1105,7 +1121,7 @@ async function executeCommand(raw) {
       return { ok: true, result: boundedResult(result) };
     } catch (error) {
       if (error && error.code === 'TARGET_NOT_READY') {
-        return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
+        return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
       }
       return { ok: false, error: normalizeError(error) };
     }
@@ -1121,6 +1137,9 @@ async function executeCommand(raw) {
     ]);
     return { ok: true, result: boundedResult(result) };
   } catch (error) {
+    if (error && error.code === 'TARGET_NOT_READY') {
+      return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
+    }
     return { ok: false, error: normalizeError(error) };
   }
 }
