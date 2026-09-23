@@ -1,5 +1,29 @@
 # Opera Agent next-session handoff
 
+## Egress fix live: bridge claim-loop cadence 2026-09-24 (read first)
+
+Owner asked how to cut org egress (dashboard 4.64/5 GB FREE, per-org across
+both projects, resets each billing cycle). ClickHouse evidence over
+`logs` (edge_logs, 24h): `/rest/v1/rpc/opera_claim_next` = 222,873 reqs —
+95%+ of ALL platform traffic, flat ~13k/hour 24/7 from ONE paired device.
+Root cause: bridge `pull()` long-poll ran `opera_claim_next` every 250ms after
+6x50ms fast-polls (~52 claims per 12s pull). Both `opera_heartbeat` (2/min,
+alarm 0.5min) and `update.xml` polling are negligible; BarangPas project is
+close to idle. Note: a separate node-on-AWS caller hits
+`relay_device_heartbeat` ~1k/hour under a `sb_publishable_jAbS_` key — not
+from this repo; harmless bytes-wise but worth identifying later.
+
+Fix deployed 2026-09-24T23:35Z: bridge v31 `FAST_PULL_POLLS 8` +
+`IDLE_PULL_INTERVAL_MS 2000` (was 6/250ms) — deployed via MCP
+`deploy_edge_function` (entrypoint index.ts, import_map_path deno.json).
+Measured per-minute claim rate: ~215 before → ~66 steady-state after
+(14 claims per 12s pull), −69%; worst-case idle latency for a new command
+rises 250ms→2s, first ~400ms fast path unchanged. No 5xx on bridge after
+deploy; update.xml still 200 serving 1.6.7. Suite 490/490 + browser EXIT 0
+before deploy. Commit: see `git log` — "perf(bridge): cut idle claim-loop...".
+If the 2s idle worst-case ever feels slow for real bursts, drop
+IDLE_PULL_INTERVAL_MS to 1000 (−53% traffic vs old, 1s worst case).
+
 Last synchronized: 2026-09-23 (repository-production sync session).
 Session content head: `c9b0c74f0d7bc904ecb3e3c0a10a8fee0dcfc795` on
 `feat/pre-8e-usability-repair-r8` (CI green: CircleCI `ci` + Vercel;

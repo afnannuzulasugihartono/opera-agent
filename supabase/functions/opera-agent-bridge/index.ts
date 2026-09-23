@@ -14,9 +14,16 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-const FAST_PULL_POLLS = 6;
+// Egress budget (2026-09-24): idle claim-polling dominated platform traffic —
+// one 12s long-poll minted ~52 `opera_claim_next` calls (6x50ms + 250ms loop),
+// ~13k claims/hour/device, 95%+ of all edge traffic. Poll cadence now ramps:
+// 8x50ms covers the burst window where commands are enqueued right behind the
+// HTTP round-trip (snappy path unchanged), then falls back to 2s. A new
+// command now waits <=2s instead of <=250ms in the worst case; median stays
+// sub-second because real work arrives while the fast window is still open.
+const FAST_PULL_POLLS = 8;
 const FAST_PULL_INTERVAL_MS = 50;
-const IDLE_PULL_INTERVAL_MS = 250;
+const IDLE_PULL_INTERVAL_MS = 2000;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
