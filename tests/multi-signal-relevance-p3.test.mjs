@@ -529,7 +529,7 @@ test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cut
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
     ['../extension/content.js', 'ec28d73498717f252cc1bb8bb94747e99eb27bf2'],
     ['../extension/background.js', '383d08964d50546388080ed1820fb61eb311e6e3'],
-    ['../extension/manifest.json', 'b204048827c7c3e4f0c485352878e1d08c3093e0'],
+    ['../extension/manifest.json', '93efe53987750491fd86976a9b6224bcf05879db'],
     ['../supabase/functions/opera-agent-mcp/index.ts', '014a2361d7479f4b1c80d82cec58599eedf129e2'],
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
