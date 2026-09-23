@@ -22,14 +22,17 @@ browser regression EXIT 0; version 1.6.7.
 CRX 1.6.7 built from a clean worktree at `ee3c661`, offline-verified
 (53,583 bytes, SHA-256 `6485f74de0213d5fbec9bb43398bd113e15c40dfaef7a3926d14dd8a58248496`,
 two-way ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, signature + deterministic resign
-valid). **Upload pending owner:** the Supabase project is in read-only mode
-(`transaction_read_only=on`; /readonly/temporary-disable → 403
-`database_readonly_config_write` missing on the current token). Owner must lift
-read-only (or grant the permission), then run `D:\github\us-release-167.ps1`
-(idempotent inactive insert; prints SHA/bytes to compare with disk). The old
-DPAPI `management-token.dpapi` (2026-09-16) is now 401 — rotate it; the env
-`SUPABASE_ACCESS_TOKEN` is the valid credential. Production unchanged:
-`update.xml?id=` serves 1.6.6; 1.6.7 CRX path 404 while absent.
+valid). **Uploaded INACTIVE 2026-09-23 evening** after the owner supplied a
+fresh PAT (the old DPAPI `management-token.dpapi` from 2026-09-16 is 401-stale
+— rotate or re-save it; do not rely on it): the Supabase project was in
+read-only mode (`transaction_read_only=on`), lifted via the documented
+`/readonly/temporary-disable` (15-minute window) with the new PAT, then the
+`opera_releases` row was inserted `1.6.7 / active=false` (base64 71,444 chars =
+53,583 bytes; DB SHA-256 equals the disk SHA). Verified post-upload:
+exactly one active row (1.6.6), `update.xml?id=` still serves 1.6.6, and the
+1.6.7 CRX path returns 404 while inactive. Remaining (owner-gated):
+side-load `D:\Opera\opera-agent-1.6.7.crx`, run live acceptance, then decide
+activation explicitly.
 
 ## Repository-production sync executed 2026-09-22 — read first
 
