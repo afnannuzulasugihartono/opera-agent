@@ -16,6 +16,10 @@ shadow-DOM controls are now findable/clickable through normal refs; (B)
 in `extension/lib/ax-summary.js`; editable subtrees and AX values excluded,
 fail-open). MCP guidance documents both; no new tools/schemas.
 
+U-P1 implementation head: `0df9110875076eb550ba795f8baf179cd7e7fe48`
+(pushed to origin `feat/pre-8e-usability-repair-r8`; this handoff update
+follows on top — verify the remote tip before the next write).
+
 Gates: node 499/499, `npm run check` PASS at 1.6.11, Edge-headless browser
 regression EXIT 0 (six new `up1.*` scenarios, incl. shadow click end-to-end
 and value-leak guards). Locks rebaselined with recorded reason: P2/P3/P4/P5
