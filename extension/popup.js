@@ -36,7 +36,7 @@ function setBusy(button, busy) {
 async function refresh() {
   const data = await call('status');
   if (!data?.ok) return;
-  $('version').textContent = `v${data.version} \u00b7 Protocol ${data.protocolVersion}`;
+  $('version').textContent = `${data.version} \u00b7 Protocol ${data.protocolVersion}`;
   $('deviceName').textContent = data.config.deviceName || 'opera';
   const state = data.state || {};
   const status = String(state.status || (data.config.paired ? 'connecting' : 'unpaired'));

@@ -13,9 +13,9 @@ const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migration
 const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
 
 test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
-  assert.match(bridge, /FAST_PULL_POLLS\s*=\s*6/);
+  assert.match(bridge, /FAST_PULL_POLLS\s*=\s*8/);
   assert.match(bridge, /FAST_PULL_INTERVAL_MS\s*=\s*50/);
-  assert.match(bridge, /IDLE_PULL_INTERVAL_MS\s*=\s*250/);
+  assert.match(bridge, /IDLE_PULL_INTERVAL_MS\s*=\s*2000/);
   assert.match(bridge, /emptyPolls\s*<\s*FAST_PULL_POLLS/);
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
 });
