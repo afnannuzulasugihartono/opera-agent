@@ -1,5 +1,38 @@
 # Opera Agent next-session handoff
 
+## 1.6.10 candidate uploaded inactive 2026-09-24 (v8 Warm redesign + Cursor logo)
+
+Owner-driven design cycle (brainstorming skill, local previews at
+`C:\Users\ASUS\freebuff-workspace\popup-tone-preview.html` + `popup-logo-lab.html`,
+served by Python312 `http.server` on port 8478 from that folder — the old
+8477 server dies on Freebuff restart; inline CSS into the preview to avoid
+proxy fetch flakiness). Research: Vercel Geist DESIGN.md, Pencil & Paper
+dashboard UX, Rams #10, 2026 UI trends (Liquid Glass/calm-tech). Owner ACC-ed the "v8 Warm Command" direction + the Cursor logo mark.
+
+Shipped in `d7509bf`: full palette swap (warm charcoal `#16161a` dark /
+`#fbfbfa` light, gradient teal tile `#2dd4bf→#0f766e`, soft-shadow floating
+cards, badge tinted rounded-square, ghost danger button, 32px controls);
+`popup.html` brand-mark replaced by inline-SVG **Cursor** (drives-the-browser
+pointer); `popup.js:39` version string drops the "v" prefix
+(`1.6.10 · Protocol 1`). Version sweep 1.6.10 across 17 files INCLUDING
+`tests/efficiency.test.mjs` bridge cadence pins (now 8x50ms fast / 2000ms idle
+— these were missed during the 2026-09-24 egress deploy, keep them in the
+sweep list) and the 4 P2/P3/P4/P5 manifest hash-locks (re-derived via
+`git hash-object`, new lock `56d142679e08bb95…`). Suite 490/490; browser
+regression EXIT 0 (two timing-sensitive assertions flaked once across four
+runs — `tabs.activate reused`, `etw_verified` — both pass on rerun,
+untouched paths).
+
+CRX packed from clean worktree at `d7509bf`: 53,950 bytes, SHA-256
+`7b3b9226e481700c99af511039ea99a7e61cd27fe809a15964469af86aab13e4`,
+two-way ID + signature + deterministic resign valid
+(`D:\Opera\opera-agent-1.6.10.crx`). Uploaded `1.6.10 / active=false` via
+Management API with the read-only lift; payload built programmatically from
+the CRX on disk (temp payload files deleted after use). Post-upload state:
+1.6.9 still the single active row, update.xml serves 1.6.9, 1.6.10 CRX 404s.
+NEXT: owner decides activation (atomic flip 1.6.9 off / 1.6.10 on via MCP
+`execute_sql`, same procedure as the 1.6.9 activation above).
+
 ## 1.6.9 ACTIVATED 2026-09-24 (owner-ordered)
 
 Owner ordered activation of the popup second-pass build. Atomic flip executed
