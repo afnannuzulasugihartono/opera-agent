@@ -524,13 +524,13 @@ test('P3 does not synthesize completion, action authority, foreground control, o
 });
 
 test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
-  // R8 authorizes only generic omitted-limit find dominance in content.js.
+  // U-P1 (2026-09-24) authorizes the accessibility observation layer: shadow-piercing collection + computed accessible names in content.js, the poverty-triggered CDP axSummary in background.js, MCP guidance text, and the 1.6.11 version sweep. Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen.
   const files = new Map([
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
-    ['../extension/content.js', 'ec28d73498717f252cc1bb8bb94747e99eb27bf2'],
-    ['../extension/background.js', '383d08964d50546388080ed1820fb61eb311e6e3'],
-    ['../extension/manifest.json', '56d142679e08bb95491a8ad0a9ca387b15dd7662'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '014a2361d7479f4b1c80d82cec58599eedf129e2'],
+    ['../extension/content.js', '0ea3094659b50eb6f199f417d000874e8712d526'],
+    ['../extension/background.js', 'bdeac6af44095ad79dd0f1f2bca4d44608f20847'],
+    ['../extension/manifest.json', '757191f0e9f232589b972e3bc514a70bf80b5a60'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '5fc059f2e4cce17c0a294f0e7183c96f169e7256'],
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],

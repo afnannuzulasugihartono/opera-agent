@@ -548,12 +548,12 @@ test('P2 does not synthesize completion or foreground/browser authority', () => 
 });
 
 test('P2 keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
-  // R8 authorizes only generic omitted-limit find dominance in content.js.
+  // U-P1 (2026-09-24) authorizes the accessibility observation layer: shadow-piercing collection + computed accessible names in content.js, the poverty-triggered CDP axSummary in background.js, MCP guidance text, and the 1.6.11 version sweep. Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen.
   const files = new Map([
-    ['../extension/content.js', 'ec28d73498717f252cc1bb8bb94747e99eb27bf2'],
-    ['../extension/background.js', '383d08964d50546388080ed1820fb61eb311e6e3'],
-    ['../extension/manifest.json', '56d142679e08bb95491a8ad0a9ca387b15dd7662'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '014a2361d7479f4b1c80d82cec58599eedf129e2'],
+    ['../extension/content.js', '0ea3094659b50eb6f199f417d000874e8712d526'],
+    ['../extension/background.js', 'bdeac6af44095ad79dd0f1f2bca4d44608f20847'],
+    ['../extension/manifest.json', '757191f0e9f232589b972e3bc514a70bf80b5a60'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '5fc059f2e4cce17c0a294f0e7183c96f169e7256'],
   ]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));

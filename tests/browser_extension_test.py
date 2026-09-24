@@ -136,6 +136,7 @@ R3_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r3.html').read_text(e
 R4_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r4.html').read_text(encoding='utf-8')
 R5_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r5.html').read_text(encoding='utf-8')
 UI_IDENTITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ui-identity.html').read_text(encoding='utf-8')
+AX_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ax.html').read_text(encoding='utf-8')
 UV_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-uv.html').read_text(encoding='utf-8')
 
 def build_r5_wav():
@@ -222,9 +223,11 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ui-identity'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-ax'):
             if self.path.startswith('/pre8e-uv'):
                 document = UV_PAGE
+            elif self.path.startswith('/pre8e-ax'):
+                document = AX_PAGE
             elif self.path.startswith('/pre8e-r5'):
                 document = R5_PAGE
             elif self.path.startswith('/pre8e-r4'):
@@ -389,7 +392,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.6.10'
+        assert result['version'] == '1.6.11'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -406,6 +409,9 @@ async def run(port, profile):
         assert small_page['textChars'] == 300
         assert len(small_page['elements']) == 1
         assert small_page['viewport']['width'] > 0
+        # U-P1: text-rich pages keep the unchanged fast path — no CDP
+        # accessibility snapshot is attached.
+        assert 'axSummary' not in small_page, small_page.keys()
         assert small_page['viewport']['height'] > 0
         assert small_page['viewport']['zoomFactor'] > 0
         assert isinstance(small_page['mutationVersion'], int)
@@ -877,6 +883,69 @@ async def run(port, profile):
         cid = STATE.push('page.read', {'tabId': ui_tab_id, 'offset': 0, 'limit': 1200, 'includeElements': False})
         ui_after_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'Skipped' in (ui_after_skip.get('text') or ''), ui_after_skip
+
+        # U-P1 Layer A (research P1): controls inside open shadow roots join
+        # the model-facing observation. Flat document scans never saw them;
+        # the fixture hosts a shadow button that must be findable and
+        # clickable through its normal ref.
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-ax',
+            'active': False,
+            'wait': True
+        }, benchmark='up1.tabs.open')
+        ax_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.find', {
+            'tabId': ax_tab_id,
+            'text': 'Shadow save control',
+            'exact': True,
+            'limit': 20
+        }, benchmark='up1.page.find.shadow-control')
+        ax_shadow = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert ax_shadow['count'] == 1, ax_shadow
+        assert ax_shadow['item']['actionable'] is True, ax_shadow
+        ax_shadow_ref = ax_shadow['item']['ref']
+
+        cid = STATE.push('page.click', {'tabId': ax_tab_id, 'ref': ax_shadow_ref}, benchmark='up1.page.click.shadow-control')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.read', {'tabId': ax_tab_id, 'offset': 0, 'limit': 300, 'includeElements': False}, benchmark='up1.page.read.after-shadow-click')
+        ax_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert 'SavedByShadow' in (ax_after.get('text') or ''), ax_after
+
+        # U-P1 Layer A: icon-only controls match through the computed
+        # accessible name (field data: Maps transport buttons read as glyph
+        # labels like " 3 min" while their icon vocabulary is an img alt).
+        cid = STATE.push('page.find', {
+            'tabId': ax_tab_id,
+            'text': 'Motorcycle',
+            'limit': 20
+        }, benchmark='up1.page.find.accessible-name')
+        ax_icon = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert ax_icon['count'] == 1, ax_icon
+        assert ax_icon['item']['accessibleName'] == 'Motorcycle, 3 minutes', ax_icon
+
+        # U-P1 Layer B (research P1): the text-poor canvas-class fixture
+        # attaches a read-only CDP accessibility snapshot so the model can
+        # read canvas-app state. Editable field values must never surface
+        # anywhere in the result.
+        cid = STATE.push('page.read', {
+            'tabId': ax_tab_id,
+            'offset': 0,
+            'limit': 300,
+            'maxElements': 5
+        }, benchmark='up1.page.read.ax-summary')
+        ax_read = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert 'axSummary' in ax_read, ax_read.keys()
+        ax_summary = ax_read['axSummary']
+        assert ax_summary['source'] == 'cdp-ax', ax_summary
+        ax_items = {(item.get('role'), item.get('name')) for item in ax_summary['items']}
+        assert ('StaticText', 'Canvas layer Cat uploaded') in ax_items, ax_items
+        assert ('button', 'Shadow save control') in ax_items, ax_items
+        assert ('application', 'Design board') in ax_items, ax_items
+        ax_serialized = json.dumps(ax_read)
+        assert 'typed secret text' not in ax_serialized, 'field values must never surface through axSummary'
+        assert 'hunter2' not in ax_serialized, 'password content must never surface'
 
         # U-S (P1): burst ref passthrough — find and click in ONE command so the
         # ref is minted and consumed within milliseconds, immune to the model
@@ -2152,7 +2221,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.6.10'
+        assert result['version'] == '1.6.11'
 
         await context.close()
         import os

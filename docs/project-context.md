@@ -1,6 +1,41 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-22 (repository-production sync session)
+Last synchronized: 2026-09-24 (U-P1 AX-tree observation session)
+
+## U-P1 AX-tree observation implemented on r8 (2026-09-24, takes precedence)
+
+Under the user's "faster and easier for AI like ChatGPT web" request, checkpoint
+**U-P1** (research P1 flagship, `docs/checkpoint-up1-ax-observation.md`) was
+implemented tests-first on `feat/pre-8e-usability-repair-r8`:
+
+- Layer A (always on, pure DOM, no debugger): `collectInteractiveNodes()`
+  pierces open shadow roots (bounded 120 roots / 600 nodes) across
+  `semanticRegionObservation`, `pageFind`, `findVisibleTextCandidate`, and
+  `page.wait_for` polling; `computeAccessibleName(el)` resolves the accname
+  subset plus descendant `img[alt]`/`svg title`; `serialize()` attaches
+  `accessibleName` only when it adds signal and `pageFind` matches it; the
+  clipping hit-test accepts shadow-host hits via `composedHostChain`.
+  Rebind pools stay flat light-DOM (fail-closed for shadow-originated refs).
+- Layer B (poverty-triggered, CDP, read-only): `page.read` with
+  `totalTextChars <= 400` attaches `page.axSummary` built by the pure
+  `extension/lib/ax-summary.js` from one `Accessibility.getFullAXTree`
+  collect via `withDebugger`. AX `value` fields and editable-role subtrees
+  (memoized parentId closure) are excluded unconditionally; InlineTextBox,
+  ignored, RootWebArea, and unnamed nodes dropped; deduped, 60-entry cap.
+  Failures fail open (no axSummary). Rich pages keep the unchanged fast path.
+- MCP guidance only (read_page description + instructions); **Protocol 1,
+  26 primitives, 22 tools, frozen read_page input schema unchanged**.
+- Version 1.6.11. Gates: node suite 499/499; `npm run check` PASS
+  (26 primitives, 75 runtime files, 1.6.11); Edge-headless browser
+  regression EXIT 0 with six new `up1.*` benchmarks (shadow find/click,
+  accessibleName find, axSummary content + value-leak guards, rich-page
+  no-trigger). P2/P3/P4/P5 blob locks and the derived MCP digest chain
+  rebaselined with the recorded U-P1 reason.
+- Non-goals: no AX→DOM actionable mapping, no AX geometry, no U-P2/U-P3,
+  no production deploy, no CRX build/upload/activation (owner-gated).
+  The 1.6.10 CRX remains the pending inactive release row awaiting the
+  owner's activation decision; U-P1 rides 1.6.11 source for a future release.
+
 
 ## Repository-production sync (2026-09-22)
 

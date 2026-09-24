@@ -298,6 +298,31 @@
     };
   }
 
+  // U-P1 (research P1): document.elementFromPoint retargets at open shadow
+  // boundaries, so a control inside an open shadow root hit-tests as its
+  // host element. Accept a hit when it is the element, a light-DOM
+  // descendant, or a host on the element's composed path.
+  function composedHostChain(el) {
+    const hosts = [];
+    let node = el;
+    while (node) {
+      const root = node.getRootNode();
+      if (!(root instanceof ShadowRoot)) break;
+      hosts.push(root.host);
+      node = root.host;
+    }
+    return hosts;
+  }
+
+  function hitTestAcceptable(el, hit) {
+    if (!hit) return false;
+    if (hit === el || el.contains(hit)) return true;
+    for (const host of composedHostChain(el)) {
+      if (hit === host || host.contains(hit) || hit.contains(host)) return true;
+    }
+    return false;
+  }
+
   function hitTestReachable(el, rect) {
     const left = Math.max(0, rect.left);
     const right = Math.min(innerWidth, rect.right);
@@ -315,7 +340,7 @@
     ];
     return points.some(([x, y]) => {
       const hit = document.elementFromPoint(x, y);
-      return hit === el || !!(hit && el.contains(hit));
+      return hitTestAcceptable(el, hit);
     });
   }
 
@@ -478,13 +503,18 @@
     const includeValue = !!options.includeValue;
     const blocked = sensitiveDescriptor(el);
     const actionability = actionabilityState(el, blocked);
+    const text = normalizeObservableText(el.innerText || el.textContent || '', 300);
+    const label = normalizeObservableText(getAssociatedLabel(el), 300);
+    // U-P1: attach the computed accessible name only when it adds signal the
+    // label/text fields do not already carry, keeping payloads bounded.
+    const accessibleName = computeAccessibleName(el);
     const data = {
       ...stableElementIdentity(el),
       ref: getRef(el),
       tag: String(el.tagName || '').toLowerCase(),
       role: clean(el.getAttribute?.('role'), 80),
-      text: normalizeObservableText(el.innerText || el.textContent || '', 300),
-      label: normalizeObservableText(getAssociatedLabel(el), 300),
+      text,
+      label,
       href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
       type: clean(el.getAttribute?.('type'), 80),
       name: normalizeObservableText(el.getAttribute?.('name'), 120),
@@ -496,6 +526,9 @@
       ariaChecked: el.getAttribute?.('aria-checked') ?? null,
       ariaExpanded: el.getAttribute?.('aria-expanded') ?? null,
       ariaSelected: el.getAttribute?.('aria-selected') ?? null,
+      accessibleName: accessibleName && accessibleName !== label && accessibleName !== text
+        ? accessibleName
+        : undefined,
       visible: actionability.visible,
       inViewport: actionability.inViewport,
       fullyInViewport: actionability.fullyInViewport,
@@ -516,11 +549,63 @@
     '[role="menuitem"]', '[role="menuitemradio"]', '[role="tab"]', '[contenteditable="true"]'
   ].join(',');
 
+  // U-P1 (research P1): flat document scans miss controls inside open shadow
+  // roots; collect through open shadow boundaries with a bounded traversal.
+  // Closed roots stay invisible (fail closed) and deeper trees stop at the
+  // bounds below, so the walk stays proportional to existing observation work.
+  const MAX_SHADOW_ROOTS = 120;
+  const MAX_COLLECTED_NODES = 600;
+  function collectInteractiveNodes() {
+    const nodes = [];
+    const seen = new Set();
+    let shadowRoots = 0;
+    const visit = (root) => {
+      let matches;
+      try { matches = [...root.querySelectorAll(INTERACTIVE_SELECTOR)]; } catch { return; }
+      for (const el of matches) {
+        if (!el.isConnected || seen.has(el)) continue;
+        seen.add(el);
+        nodes.push(el);
+        if (nodes.length >= MAX_COLLECTED_NODES) return;
+      }
+      for (const el of root.querySelectorAll('*')) {
+        const shadow = el.shadowRoot;
+        if (!shadow) continue;
+        shadowRoots += 1;
+        if (shadowRoots > MAX_SHADOW_ROOTS || nodes.length >= MAX_COLLECTED_NODES) return;
+        visit(shadow);
+      }
+    };
+    visit(document);
+    return nodes;
+  }
+
+  // U-P1 (research P1): compute a bounded accessible name for icon-only
+  // controls whose DOM text is glyphs or whitespace. The priority follows the
+  // W3C accessible-name subset the serializer already resolves via
+  // getAssociatedLabel (aria-label, aria-labelledby, label, title,
+  // placeholder); descendant img alt and svg title add the icon vocabulary
+  // plain DOM text never carries.
+  function computeAccessibleName(el) {
+    const primary = normalizeObservableText(getAssociatedLabel(el), 300);
+    if (primary) return primary;
+    const parts = [];
+    for (const img of el?.querySelectorAll?.('img[alt]') || []) {
+      const alt = clean(img.getAttribute('alt'), 120);
+      if (alt) parts.push(alt);
+      if (parts.length >= 5) break;
+    }
+    for (const title of el?.querySelectorAll?.('svg title') || []) {
+      const text = normalizeObservableText(title.textContent, 120);
+      if (text) parts.push(text);
+      if (parts.length >= 10) break;
+    }
+    return parts.join(' ');
+  }
+
   function semanticRegionObservation(maxElements = 120) {
     const max = clamp(maxElements, 1, MAX_ELEMENTS, 120);
-    const nodes = prioritizeActionableNodes(
-      [...document.querySelectorAll(INTERACTIVE_SELECTOR)].filter((el) => el.isConnected)
-    ).slice(0, max);
+    const nodes = prioritizeActionableNodes(collectInteractiveNodes()).slice(0, max);
     const regionNodes = new Set([document.body || document.documentElement]);
     const semanticSelector = 'main,nav,aside,header,footer,form,dialog,[role="dialog"],[role="feed"],[role="list"],[role="listbox"],[role="grid"],[role="table"]';
     for (const node of document.querySelectorAll(semanticSelector)) {
@@ -619,6 +704,7 @@
       role: item.role,
       text: item.text,
       label: item.label,
+      accessibleName: item.accessibleName,
       href: item.href,
       type: item.type,
       name: item.name,
@@ -775,7 +861,7 @@
       const centerY = anchor.top + anchor.height / 2;
       let best = null;
       let bestDistance = Number.POSITIVE_INFINITY;
-      for (const el of document.querySelectorAll(INTERACTIVE_SELECTOR)) {
+      for (const el of collectInteractiveNodes()) {
         if (!actionabilityState(el).actionable) continue;
         const rect = el.getBoundingClientRect();
         const distance = Math.hypot(rect.left + rect.width / 2 - centerX, rect.top + rect.height / 2 - centerY);
@@ -795,9 +881,9 @@
     const tag = clean(args.tag, 80).toLowerCase();
     const exact = !!args.exact;
     const limit = clamp(args.limit, 1, MAX_QUERY, 30);
-    let entries = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].map((el, index) => {
+    let entries = collectInteractiveNodes().map((el, index) => {
       const s = serialize(el);
-      const fields = [s.label, s.text, s.placeholder].map((value) => String(value || '').trim().toLowerCase());
+      const fields = [s.label, s.text, s.placeholder, s.accessibleName].map((value) => String(value || '').trim().toLowerCase());
       return { el, index, s, fields, hay: fields.join(' '), exactTextMatch: !!text && fields.includes(text) };
     });
     if (args.visibleOnly !== false) entries = entries.filter(({ el }) => isVisible(el));
@@ -831,7 +917,7 @@
     // When the exact-field search finds nothing, project one bounded fuzzy
     // candidate with an explicit hint so recovery costs one round trip.
     if (text && entries.length === 0) {
-      const fuzzyMatch = [...document.querySelectorAll(INTERACTIVE_SELECTOR)]
+      const fuzzyMatch = collectInteractiveNodes()
         .find((el) => serialize(el).text.toLowerCase().includes(text));
       const fallbackEl = fuzzyMatch || findVisibleTextCandidate(text);
       if (fallbackEl) {
@@ -1365,13 +1451,13 @@
       } else if (args.selector) {
         try { candidates = [...document.querySelectorAll(String(args.selector))]; } catch { throw new Error('Invalid CSS selector.'); }
       } else {
-        candidates = [...document.querySelectorAll(INTERACTIVE_SELECTOR)];
+        candidates = collectInteractiveNodes();
       }
       const found = candidates.find((el) => {
         if (args.visibleOnly !== false && !isVisible(el)) return false;
         if (text) {
           const s = serialize(el);
-          const hay = `${s.label} ${s.text} ${s.placeholder}`.toLowerCase();
+          const hay = `${s.label} ${s.text} ${s.placeholder} ${s.accessibleName || ''}`.toLowerCase();
           if (!hay.includes(text)) return false;
         }
         return stateMatches(el, args.state);

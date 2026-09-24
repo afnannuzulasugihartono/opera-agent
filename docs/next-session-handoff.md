@@ -1,5 +1,38 @@
 # Opera Agent next-session handoff
 
+## U-P1 AX-tree observation shipped 2026-09-24 (read first)
+
+Implemented under the user's "faster and easier for AI (ChatGPT web)" order
+(research → plan → execute). Evidence: `docs/checkpoint-up1-ax-observation.md`.
+Version is now **1.6.11**. Branch head after this session is the U-P1 commit
+on `feat/pre-8e-usability-repair-r8` (verify exact SHA via `git log -1`).
+
+Shipped: (A) open-shadow-root piercing element collection + computed
+`accessibleName` (img alt / svg title) matched by `page.find`/`page.wait_for`
+and projected in compact reads — icon-only glyph controls (" 3 min") and
+shadow-DOM controls are now findable/clickable through normal refs; (B)
+`page.read` on text-poor pages (≤400 chars) attaches a read-only, value-free
+`axSummary` from one CDP `Accessibility.getFullAXTree` collect (pure filter
+in `extension/lib/ax-summary.js`; editable subtrees and AX values excluded,
+fail-open). MCP guidance documents both; no new tools/schemas.
+
+Gates: node 499/499, `npm run check` PASS at 1.6.11, Edge-headless browser
+regression EXIT 0 (six new `up1.*` scenarios, incl. shadow click end-to-end
+and value-leak guards). Locks rebaselined with recorded reason: P2/P3/P4/P5
+blob locks (content `0ea3094…`, background `bdeac6af…`, manifest `757191f0…`,
+MCP index `5fc059f2…`), MCP sourceSha256
+`5da5f3cef258b7b2b9da905351e233af56466bb85832f77ef6460bb7fec3cf1c`, inventory
+digest `sha256:f672f8dd…` across the 7A/8A/6A/7F fixture chain.
+
+Remaining in this line: U-P3 (stale semantic pruning) and U-P2 (vision
+sampling) are the next proposed checkpoints from the 2026-09-20 research;
+U-V live acceptance on a served release remains open (owner-gated); the
+1.6.10 CRX popup redesign still awaits the owner's activation decision, and
+1.6.11 source now needs its own signed CRX when the owner orders a release.
+Local browser regression command:
+`OA_BROWSER_HEADLESS=1 OA_BROWSER_EXECUTABLE="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" python tests/browser_extension_test.py`
+(bundled Playwright Chromium does not start the MV3 service worker).
+
 ## 1.6.10 candidate uploaded inactive 2026-09-24 (v8 Warm redesign + Cursor logo)
 
 Owner-driven design cycle (brainstorming skill, local previews at

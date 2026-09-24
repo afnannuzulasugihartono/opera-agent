@@ -11,6 +11,7 @@ import {
 } from './lib/protocol.js';
 import { evaluateRules, validateRule } from './lib/watch.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
+import { buildAxSummary } from './lib/ax-summary.js';
 
 const DEFAULT_BRIDGE_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-bridge';
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId'];
@@ -23,6 +24,10 @@ const MAX_SCREENSHOT_BYTES = 220 * 1024;
 const SCREENSHOT_CACHE_MS = 750;
 const SCREENSHOT_CACHE_LIMIT = 8;
 const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
+// U-P1 (research P1): canvas-class pages expose almost no DOM text while their
+// accessibility tree still carries state. A read this text-poor attaches a
+// bounded read-only axSummary; rich pages keep the unchanged fast path.
+const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 
 let loopPromise = null;
 let loopGeneration = 0;
@@ -245,6 +250,29 @@ function codedError(code, message, details = {}) {
   error.code = code;
   error.details = details;
   return error;
+}
+
+// U-P1 Layer B (research P1): semantically poor surfaces (canvas apps, hidden
+// DOM mirrors) keep their accessibility tree even when DOM text is empty. The
+// snapshot runs once per poor read through the bounded debugger session and is
+// filtered by the pure value-free builder; every failure mode fails open (no
+// axSummary, the observation result stays intact).
+async function collectAxSummary(tabId, context) {
+  try {
+    return await withDebugger(tabId, context, async (target) => {
+      try { await chrome.debugger.sendCommand(target, 'Accessibility.enable'); } catch {}
+      let tree;
+      try {
+        tree = await chrome.debugger.sendCommand(target, 'Accessibility.getFullAXTree');
+      } finally {
+        try { await chrome.debugger.sendCommand(target, 'Accessibility.disable'); } catch {}
+      }
+      const summary = buildAxSummary(tree?.nodes || []);
+      return summary.items.length > 0 ? summary : null;
+    });
+  } catch {
+    return null;
+  }
 }
 
 function screenshotBytes(data) {
@@ -880,6 +908,12 @@ async function dispatch(method, params = {}, context = {}) {
       const result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
       if (result?.page?.viewport) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch {}
+      }
+      // U-P1: only text-poor surfaces pay the debugger round trip; collection
+      // failures fail open and leave the observation unchanged.
+      if (result?.ok !== false && result?.page && Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS) {
+        const summary = await collectAxSummary(tabId, context);
+        if (summary) result.page.axSummary = summary;
       }
       return { ...result, tabId };
     }
