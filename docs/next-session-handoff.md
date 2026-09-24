@@ -1,5 +1,19 @@
 # Opera Agent next-session handoff
 
+## 1.6.9 ACTIVATED 2026-09-24 (owner-ordered)
+
+Owner ordered activation of the popup second-pass build. Atomic flip executed
+via MCP `execute_sql` (no PAT needed, no read-only lift required):
+`update ... set active=false` for 1.6.7 then `active=true` for 1.6.9 — one
+active row confirmed. Post-flip verification: `update.xml?id=` serves
+version 1.6.9; CRX `opera-agent-ohbbpamcljckmjhcpkcmefdobkoeaick-1.6.9.crx`
+returns 200 with 53,804 bytes, SHA-256
+`6182119941dfd6f0b00b26c71090524fd49f117cb0a346f76fa54e0b25f499a1`
+(DB = disk = served); 1.6.7 CRX path now 404s. Rollback = same atomic flip
+with 1.6.7 (or 1.6.8). Note: the installed extension picks the new CRX up on
+its next update check (update.xml is served `no-store`, browser checks are
+browser-scheduled).
+
 ## Egress fix live: bridge claim-loop cadence 2026-09-24 (read first)
 
 Owner asked how to cut org egress (dashboard 4.64/5 GB FREE, per-org across
