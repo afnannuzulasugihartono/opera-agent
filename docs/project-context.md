@@ -1,6 +1,44 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-24 (U-P1 AX-tree observation session)
+Last synchronized: 2026-09-24 (U-P1 AX-tree observation + 1.6.10 activation + 1.6.11 upload session)
+
+## 1.6.10 ACTIVATED and 1.6.11 uploaded inactive (2026-09-24, owner-ordered)
+
+The owner ordered 1.6.10 activation and continuation of the 1.6.11 release
+train. Both were executed and verified against live production:
+
+- **1.6.10 activation**: atomic single-statement identity-scoped flip via MCP
+  `execute_sql` (`set active = (version = '1.6.10')`), superseding the
+  acceptance-first ordering on the recorded owner order; rollback exists via
+  the same flip re-activating 1.6.9 (row intact, inactive). Pre-state was
+  verified first (exactly one active row = 1.6.9; update.xml served 1.6.9;
+  1.6.10 CRX path 404; disk artifact `D:\Opera\opera-agent-1.6.10.crx`
+  53,950 bytes SHA-256 `7b3b9226…` = DB). Post-state verified: exactly one
+  active row = 1.6.10; `update.xml?id=` serves `version="1.6.10"` with the
+  1.6.10 codebase; the 1.6.10 CRX path returns 200 with 53,950 bytes whose
+  SHA-256 equals DB and disk; the 1.6.9 CRX path 404s.
+- **1.6.11 release train continued** (source = U-P1 head; CircleCI + Vercel
+  SUCCESS on the exact release head `d13a4b9` before signing, per the frozen
+  signing gate): CRX packed from a clean detached worktree of `d13a4b9` with
+  the established private key kept outside the repository. Artifact
+  `D:\Opera\opera-agent-1.6.11.crx` — **57,264 bytes**, SHA-256
+  `1f6a1968030a2e994734d7f943dc582e996df1b9d5bcf7966c670a6afda9a462`.
+  Offline verification (CRX3 protobuf-header verifier, calibrated against
+  the production-served 1.6.10 artifact — byte/SHA-exact agreement):
+  two-way ID from manifest key, proof key, and crx_id field all equal
+  `ohbbpamcljckmjhcpkcmefdobkoeaick`; RSA-SHA256 CRX3 proof VALID over the
+  Chromium-exact `CRX3 SignedData\x00` + u32le(SignedData) + SignedData +
+  archive construction; deterministic resign matches and rebuilds a
+  byte-identical CRX; all 13 packaged files match the worktree source
+  byte-for-byte. Uploaded `1.6.11 / active=false` through the Management
+  API path (documented read-only lift + database-query insert; payload built
+  from the CRX on disk, temp payload file deleted). Post-upload verified:
+  DB-decoded bytes 57,264 and SHA-256 equal the disk artifact; exactly one
+  active row remains 1.6.10; `update.xml?id=` still serves 1.6.10; the
+  1.6.11 CRX path 404s while inactive.
+- Remaining owner decisions: live acceptance of 1.6.11 (U-P1 + U-V paths in
+  real Opera after devices update to 1.6.10), then explicit activation of
+  1.6.11 via the same atomic flip.
 
 ## U-P1 AX-tree observation implemented on r8 (2026-09-24, takes precedence)
 

@@ -1,5 +1,34 @@
 # Opera Agent next-session handoff
 
+## 1.6.10 ACTIVATED + 1.6.11 uploaded inactive 2026-09-24 (read first)
+
+Owner ordered both. Executed and live-verified:
+
+- **1.6.10 is the single active release.** Atomic flip via MCP `execute_sql`
+  (single statement: `update opera_releases set active = (version = '1.6.10')
+  where extension_id = 'ohbb…'`). Verified: one active row; `update.xml?id=`
+  serves `version="1.6.10"`; 1.6.10 CRX 200 with 53,950 bytes SHA-256
+  `7b3b9226…` (DB = disk = served); 1.6.9 CRX now 404. Rollback = same flip
+  re-activating 1.6.9. Devices self-update on their next browser-scheduled
+  update check (`opera_devices.extension_version` shows adoption).
+- **1.6.11 (U-P1) is uploaded INACTIVE** — packed from a clean detached
+  worktree of release head `d13a4b9` (CircleCI + Vercel SUCCESS verified on
+  that exact head BEFORE signing, per the frozen gate). Artifact:
+  `D:\Opera\opera-agent-1.6.11.crx` — **57,264 bytes**, SHA-256
+  `1f6a1968030a2e994734d7f943dc582e996df1b9d5bcf7966c670a6afda9a462`.
+  Offline-verified (verifier calibrated byte-exact against the production
+  1.6.10 artifact): two-way ID `ohbbpamcljckmjhcpkcmefdobkoeaick` (manifest
+  key + proof key + crx_id field), CRX3 RSA-SHA256 proof VALID, deterministic
+  resign → byte-identical rebuild, all 13 packaged files match source.
+  Management-API upload: DB bytes/SHA = disk; 1.6.11 CRX path 404 while
+  inactive; single active row still 1.6.10.
+- **NEXT (owner-gated)**: live acceptance of 1.6.11 in real Opera once a
+  device runs 1.6.10 (watcher/skip + U-P1 shadow/axSummary + `resolved`
+  telemetry), then explicit activation via the same atomic flip. U-V live
+  acceptance remains open. Read-only lift window (15 min) from the upload
+  auto-expires; if a later write hits `transaction_read_only`, lift via
+  Management API `/readonly/temporary-disable` first.
+
 ## U-P1 AX-tree observation shipped 2026-09-24 (read first)
 
 Implemented under the user's "faster and easier for AI (ChatGPT web)" order
