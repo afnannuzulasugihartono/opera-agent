@@ -1,8 +1,85 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-28 (U-P3 stale semantic pruning implemented, 1.6.12 candidate)
+Last synchronized: 2026-09-28 (U-R timeout/retry/popup parity implemented, 1.6.13 candidate)
 
-## U-P3 stale semantic pruning implemented on r8 (2026-09-28, takes precedence)
+## U-R timeout/retry/popup parity implemented on r8 (2026-09-28, takes precedence)
+
+Checkpoint **U-R** — from the owner field-testing verdict (7/10 usability:
+timeouts unretried, OAuth popups invisible, SPA-slow redirects verified too
+early and re-clicked) — implemented on `feat/pre-8e-usability-repair-r8`:
+
+- `extension/lib/popup-events.js` (new, pure/no-chrome): `recordPopup` /
+  `popupsSince` / `resolvePopupOpener` / `POPUP_LOG_LIMIT = 8`. Bounded
+  per-opener log of tab creations filtered by time.
+- `extension/background.js`: bounded `popupLog` fed by `tabs.onCreated` /
+  `tabs.onRemoved`; `page.click`/`page.fill` results carry `openedTabs` when a
+  popup opened during the action. Live diagnosis 2026-09-28 found Chromium
+  attributes `window.open` from a BACKGROUND acted-on tab to the window's
+  *active* tab, so `openerTabId` alone misses automation popups; while a page
+  action is in flight (`withActionPopupTracking`), new tabs are claimed for the
+  acted-on tab (`resolvePopupOpener`), otherwise the real `openerTabId` applies.
+  Command timeouts now reject with coded `COMMAND_TIMEOUT` mapped to
+  `outcome:'unknown'` + verify-before-repeating guidance (parity with the
+  BURST_TIMEOUT/GATEWAY_ERROR unknown-outcome family) on both watch and main
+  race branches. `page.fill` dispatch reads `expect`/`retry.attempts`; resolved
+  verified telemetry covers fill; `trustedFill` runs the in-page post-action
+  check with the expect spec.
+- `extension/content.js`: `EXPECT_VERIFY_WINDOW_MS = 2000` polling loop
+  (`waitForExpectVerification`) so a slow SPA/OAuth redirect inside the window
+  verifies on attempt 1 instead of declaring failure and re-clicking;
+  `postActionEvidence` polls until verified; `fill` is async with the same
+  retry/expect parity as click (1..3 attempts, 150 ms pause); `fillInfo`
+  returns `postActionBefore` for the trusted path.
+- `supabase/functions/opera-agent-mcp/index.ts`: `AWAIT_TIMEOUT` maps to the
+  `AWAIT_OUTCOME_UNKNOWN` envelope with `outcome:"unknown"`; `toolError`
+  surfaces top-level `outcome:"unknown"` for details that carry it (the frozen
+  `code: error.code, message: error.message` literal is preserved); the
+  instructions text now covers OAuth/`openedTabs` follow-through and
+  expect-based verification. Tool names, count (22), and input schemas are
+  byte-unchanged; only source bytes moved, so the MCP `sourceSha256` in
+  `tests/fixtures/mcp-contract-v1.json` (and the copies in the
+  goal-ledger/reactive-vm/transaction contract+threshold fixtures) and the
+  inventory digest were rebaselined with recorded reasons — the schema
+  projection itself is unchanged.
+- Boundary locks rebaselined in the same commit with U-R authorization notes
+  (`delta-first-observation-p2`, `delta-performance-p5`,
+  `event-driven-local-execution-p4`, `multi-signal-relevance-p3`,
+  `reactive-vm-7f`): SHA1 blob locks for content.js/background.js/
+  manifest.json/MCP index.ts and the MCP SHA256 contract fixtures. Protocol 1,
+  26 primitives, 22 tools unchanged.
+- Version 1.6.13 sweep across protocol/manifest/package/check.mjs + 12
+  version-lock test files.
+- `scripts/check.mjs` now parses every runtime `.js` file standalone
+  (`node --check`) — recorded reason: a `trustedFill` parenthesis break in
+  background.js shipped green through the regex-only `npm test` and the old
+  check gate; only the live service worker surfaced it.
+- Tests: `tests/timeout-retry-popup-parity.test.mjs` (11: popup-events
+  behavior incl. background-tab attribution + source contracts for the coded
+  timeout, expect polling, fill parity, trusted-fill post-action, MCP
+  AWAIT_TIMEOUT envelope, OAuth instructions, release version). Live browser
+  acceptance `ur.*` in `tests/browser_extension_test.py` against
+  `tests/fixtures/pre-8e-usability-ur.html`: slow-redirect click verifies
+  `resolved.verified=true` with `resolved.attempts==1` (no re-click); fill
+  verifies via characterData delta and reports an honest `verified:false` for
+  an impossible delta; trusted popup click returns `openedTabs` with the
+  popup `tabId` and `tabs.get` confirms `?popup=1`.
+- Gates: `npm test` 517/517; `npm run check` PASS (26 primitives, 76 runtime
+  files, 1.6.13); Edge-headless `tests/browser_extension_test.py` exit 0
+  (`urAcceptance` all true: slowRedirectVerifiedWithoutReclick, fillVerified,
+  fillHonestFailure, popupFollowThrough).
+- Working-tree hygiene found this session: a prior interrupted writer had
+  re-encoded many files with UTF-8 BOM and double-encoded em-dashes
+  (`—` → mojibake) in `browser_extension_test.py`,
+  `goal-ledger-contract.test.mjs`, and `mcp-inventory-compat-r4.test.mjs`;
+  all were restored from HEAD and re-applied cleanly. Two stray owner JSON
+  dumps at repo root (`ma-perkara-response.json`, `spi-2024-response.json`)
+  failed naming governance; they were moved to `%TEMP%\kilo` (not deleted).
+- Non-goals: no MCP tool/schema change, no new public params on the MCP layer,
+  no refind mechanism, no production deploy, no CRX build/upload/activation.
+  1.6.10 remains the single active release; 1.6.11/1.6.12 sources await their
+  own signed CRX when the owner orders a release; 1.6.13 is a candidate.
+
+## U-P3 stale semantic pruning implemented on r8 (2026-09-28)
 
 Checkpoint **U-P3** (research P3, the second proposed follow-up after U-P1)
 was implemented on `feat/pre-8e-usability-repair-r8`; the working tree carried

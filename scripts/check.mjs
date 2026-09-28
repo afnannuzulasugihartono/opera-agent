@@ -3,15 +3,16 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.equal(manifest.name, 'Opera Agent');
-assert.equal(manifest.version, '1.6.12');
-assert.equal(PRODUCT_VERSION, '1.6.12');
-assert.equal(pkg.version, '1.6.12');
+assert.equal(manifest.version, '1.6.13');
+assert.equal(PRODUCT_VERSION, '1.6.13');
+assert.equal(pkg.version, '1.6.13');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));
@@ -42,6 +43,17 @@ for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
   assert.doesNotMatch(text, /\beval\s*\(/, `${file} must not use eval`);
   assert.doesNotMatch(text, /new\s+Function\s*\(/, `${file} must not use Function constructor`);
+  // U-R (2026-09-28) recorded reason: a trustedFill parenthesis break in
+  // extension/background.js shipped green through npm test (regex source
+  // contracts) and npm run check (no parse step); only the live service
+  // worker surfaced it. Every runtime .js file must parse standalone.
+  if (file.endsWith('.js') && !file.startsWith('supabase' + path.sep)) {
+    try {
+      execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
+    } catch (error) {
+      assert.fail(`${file} must parse as standalone JavaScript: ${String(error.stderr || error.message).slice(0, 300)}`);
+    }
+  }
 }
 const background = fs.readFileSync(path.join(root, 'extension/background.js'), 'utf8');
 for (const marker of ['pendingCompletion','completeWithRetry','flushPendingCompletion']) assert.ok(background.includes(marker), marker);

@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pre-8E U-R retry and popup fixture</title>
+  <style>
+    body { font-family: sans-serif; padding: 24px; }
+    section { margin: 16px 0; padding: 12px; border: 1px solid #bbb; }
+  </style>
+</head>
+<body>
+  <h1>U-R retry and popup</h1>
+
+  <section>
+    <button id="ur-slow-redirect" aria-label="UR slow redirect" onclick="slowRedirect()">UR slow redirect</button>
+  </section>
+
+  <section>
+    <label for="ur-field">UR field</label>
+    <input id="ur-field" type="text" aria-label="UR field" />
+    <output id="ur-mirror">mirror:before</output>
+  </section>
+
+  <section>
+    <button id="ur-popup" aria-label="UR popup opener" onclick="openPopup()">UR popup opener</button>
+  </section>
+
+  <script>
+    // U-R: SPA-slow redirect — the URL changes well after the 400 ms settle
+    // window, so a single early expect evaluation would wrongly report
+    // verified:false and drive a re-click. The expect polling window must
+    // cover this.
+    function slowRedirect() {
+      setTimeout(() => { location.hash = '#ur-redirected'; }, 1200);
+    }
+
+    // U-R: fill verification via characterData mutation (MutationObserver
+    // sees text changes; value-property changes are invisible to it).
+    document.getElementById('ur-field').addEventListener('input', (event) => {
+      document.getElementById('ur-mirror').textContent = 'mirror:' + event.target.value;
+    });
+
+    // U-R: OAuth-style popup — opens synchronously inside the click handler
+    // (real OAuth/login buttons open the provider popup during the gesture),
+    // so the popup log records it before the action result returns.
+    function openPopup() {
+      window.open(location.origin + location.pathname + '?popup=1', '_blank');
+    }
+  </script>
+</body>
+</html>

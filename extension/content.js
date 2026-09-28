@@ -1036,6 +1036,23 @@
     };
   }
 
+  // U-R: SPA-slow transitions (OAuth redirects, heavy SPA route changes) do
+  // not complete inside the 400 ms settle window; a single early evaluation
+  // declares verified:false and drives a harmful re-click. When an expect spec
+  // is present, poll the expectations until they pass or the bounded window
+  // ends, so verification is only reported once it had a fair chance.
+  const EXPECT_VERIFY_WINDOW_MS = 2000;
+
+  async function waitForExpectVerification(spec, before, budgetMs = EXPECT_VERIFY_WINDOW_MS) {
+    const startedAt = performance.now();
+    let verification = evaluateExpectations(spec, before);
+    while (!verification.verified && performance.now() - startedAt < budgetMs) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      verification = evaluateExpectations(spec, before);
+    }
+    return verification;
+  }
+
   function summarizeSemanticDelta(delta) {
     const changes = Array.isArray(delta?.changes) ? delta.changes : [];
     return {
@@ -1075,7 +1092,10 @@
       ? Number(before.beforeMutationVersion)
       : mutationVersion;
     const expectSpec = normalizeExpectSpec(args.expect);
-    const verification = expectSpec ? evaluateExpectations(expectSpec, before) : null;
+    let verification = expectSpec ? evaluateExpectations(expectSpec, before) : null;
+    if (verification && !verification.verified) {
+      verification = await waitForExpectVerification(expectSpec, before);
+    }
     const fallbackHref = verification && !verification.verified && target instanceof HTMLAnchorElement && target.href
       ? String(target.href)
       : null;
@@ -1122,14 +1142,25 @@
     return result;
   }
 
-  function fill(args) {
-    const el = resolveRef(args.ref);
-    assertEditableSafe(el);
+  // U-R: fill gains the same retry/expect parity as click — re-verify through
+  // postActionEvidence, re-fill only on verification failure, bounded 1..3.
+  async function fill(args) {
+    const attempts = Math.max(1, Math.min(3, Number(args.retry?.attempts) || 1));
     const value = String(args.value ?? '').slice(0, 20000);
-    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
-    el.focus({ preventScroll: true });
-    nativeSetValue(el, value);
-    return { ok: true, ref: args.ref, valueLength: value.length };
+    let result = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      const el = resolveRef(args.ref);
+      assertEditableSafe(el);
+      const before = preparePostAction(args.ref);
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      el.focus({ preventScroll: true });
+      nativeSetValue(el, value);
+      const postAction = await postActionEvidence({ ref: args.ref, before, expect: args.expect });
+      result = { ok: true, ref: args.ref, valueLength: value.length, attempts: attempt, postAction };
+      if (postAction.verified !== false) break;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return result;
   }
 
   function fillInfo(args) {
@@ -1146,7 +1177,7 @@
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
-    return { ok: true, ref: args.ref, contentEditable: !!el.isContentEditable };
+    return { ok: true, ref: args.ref, contentEditable: !!el.isContentEditable, postActionBefore: preparePostAction(args.ref) };
   }
 
   function focus(args) {

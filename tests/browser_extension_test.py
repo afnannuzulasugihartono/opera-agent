@@ -138,6 +138,7 @@ R5_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r5.html').read_text(e
 UI_IDENTITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ui-identity.html').read_text(encoding='utf-8')
 AX_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ax.html').read_text(encoding='utf-8')
 UV_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-uv.html').read_text(encoding='utf-8')
+UR_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ur.html').read_text(encoding='utf-8')
 
 def build_r5_wav():
     buffer = io.BytesIO()
@@ -223,9 +224,11 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-ax'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-ax'):
             if self.path.startswith('/pre8e-uv'):
                 document = UV_PAGE
+            elif self.path.startswith('/pre8e-ur'):
+                document = UR_PAGE
             elif self.path.startswith('/pre8e-ax'):
                 document = AX_PAGE
             elif self.path.startswith('/pre8e-r5'):
@@ -392,7 +395,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.6.12'
+        assert result['version'] == '1.6.13'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -1505,6 +1508,103 @@ async def run(port, profile):
         }
         print(json.dumps({'uv1Acceptance': uv1_acceptance}, indent=2))
 
+        # --- U-R: timeout/retry/popup parity (owner field-testing) ---
+        # (1) SPA-slow redirect: the URL only changes 1200ms after the click,
+        # well past the 400ms settle. A single early evaluation used to report
+        # verified:false and drive a harmful re-click. The bounded expect window
+        # must observe the redirect so attempts stays 1 (no re-click).
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-ur', 'active': False, 'wait': True})
+        ur_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-slow-redirect'})
+        ur_redirect_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
+        cid = STATE.push('page.click', {
+            'tabId': ur_tab,
+            'ref': ur_redirect_ref,
+            'expect': {'urlChanged': True},
+            'retry': {'attempts': 2}
+        }, benchmark='ur.page.click.slow-redirect')
+        ur_redirect = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert ur_redirect['postAction'].get('verified') is True, ur_redirect
+        assert ur_redirect['resolved'].get('verified') is True, ur_redirect
+        assert ur_redirect['resolved'].get('attempts') == 1, ur_redirect
+        assert any(item['key'] == 'urlChanged' and item['pass'] for item in ur_redirect['postAction']['expectations']), ur_redirect
+        assert ur_redirect['postAction']['continuity'] == 'SAME_DOCUMENT_ROUTE', ur_redirect
+
+        # (2) Fill parity: page.fill now verifies through the same post-action
+        # check as page.click. A verified fill stops after one attempt.
+        cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-field'})
+        ur_field_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
+        cid = STATE.push('page.fill', {
+            'tabId': ur_tab,
+            'ref': ur_field_ref,
+            'value': 'ur-verified',
+            'expect': {'minMutationDelta': 1},
+            'retry': {'attempts': 2}
+        }, benchmark='ur.page.fill.verify')
+        ur_fill_ok = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert ur_fill_ok['postAction'].get('verified') is True, ur_fill_ok
+        assert ur_fill_ok['resolved'].get('verified') is True, ur_fill_ok
+        assert ur_fill_ok.get('attempts') == 1, ur_fill_ok
+        assert any(item['key'] == 'minMutationDelta' and item['pass'] for item in ur_fill_ok['postAction']['expectations']), ur_fill_ok
+        cid = STATE.push('page.read', {'tabId': ur_tab, 'limit': 200, 'includeElements': False})
+        ur_mirror = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert 'mirror:ur-verified' in ur_mirror['text'], ur_mirror['text']
+
+        # (3) A fill whose expectation can never hold must report verified:false
+        # without an unbounded wait and without a fabricated success. Attempts
+        # stays 1 because retry.attempts is 1 (fail-closed, honest reporting).
+        cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-field'})
+        ur_field_ref2 = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
+        cid = STATE.push('page.fill', {
+            'tabId': ur_tab,
+            'ref': ur_field_ref2,
+            'value': 'ur-unverified',
+            'expect': {'minMutationDelta': 50},
+            'retry': {'attempts': 1}
+        }, benchmark='ur.page.fill.unverified')
+        ur_fill_bad = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert ur_fill_bad['postAction'].get('verified') is False, ur_fill_bad
+        assert ur_fill_bad['resolved'].get('verified') is False, ur_fill_bad
+        assert ur_fill_bad.get('attempts') == 1, ur_fill_bad
+        assert any(item['key'] == 'minMutationDelta' and not item['pass'] for item in ur_fill_bad['postAction']['expectations']), ur_fill_bad
+
+        # (4) OAuth-style popup follow-through: a trusted click opens a popup
+        # synchronously inside the gesture (as real login buttons do). The action
+        # result must carry openedTabs so the model can continue in the popup by
+        # tabId, without auto-activating it.
+        cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-popup'})
+        ur_popup_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
+        cid = STATE.push('page.click', {
+            'tabId': ur_tab,
+            'ref': ur_popup_ref,
+            'trusted': True,
+            'executionMode': 'background'
+        }, benchmark='ur.page.click.popup')
+        ur_popup_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        ur_opened = ur_popup_click.get('openedTabs') or []
+        assert ur_opened, f'popup click must report openedTabs: {json.dumps(ur_popup_click)[:600]}'
+        ur_popup_tab = ur_opened[0].get('tabId')
+        assert isinstance(ur_popup_tab, int) and ur_popup_tab != ur_tab, ur_opened
+        cid = STATE.push('tabs.get', {'tabId': ur_popup_tab})
+        ur_popup_tab_info = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']
+        assert 'popup=1' in ur_popup_tab_info['url'], ur_popup_tab_info
+        cid = STATE.push('tabs.close', {'tabId': ur_popup_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('tabs.close', {'tabId': ur_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        ur_acceptance = {
+            'slowRedirectVerifiedWithoutReclick': (
+                ur_redirect['resolved'].get('verified') is True
+                and ur_redirect['resolved'].get('attempts') == 1
+            ),
+            'fillVerified': ur_fill_ok['resolved'].get('verified') is True,
+            'fillHonestFailure': ur_fill_bad['resolved'].get('verified') is False,
+            'popupFollowThrough': bool(ur_opened) and 'popup=1' in ur_popup_tab_info['url']
+        }
+        assert all(ur_acceptance.values()), ur_acceptance
+        print(json.dumps({'urAcceptance': ur_acceptance}, indent=2))
+
         # --- Pre-8E R5: ready-media local seek benchmark ---
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r5',
@@ -2249,7 +2349,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.6.12'
+        assert result['version'] == '1.6.13'
 
         await context.close()
         import os

@@ -1,6 +1,63 @@
 # Opera Agent next-session handoff
 
-## U-P3 stale semantic pruning implemented (1.6.12 candidate) — 2026-09-28 (read first)
+## U-R timeout/retry/popup parity implemented (1.6.13 candidate) — 2026-09-28 (read first)
+
+Continuation session on `feat/pre-8e-usability-repair-r8` (start head
+`dc70404` = origin tip; verified clean at session start).
+
+**Tree recovery first**: a prior interrupted writer had re-saved most
+working-tree files through a CP1252 round-trip: UTF-8 BOM added to ~15 files
+and em-dash mojibake in `browser_extension_test.py` (also corrupting a
+functional `é` assertion in `goal-ledger-contract.test.mjs` and a comment in
+`mcp-inventory-compat-r4.test.mjs`). All were restored from HEAD and the
+intended edits re-applied byte-clean; the whole tree was re-verified BOM/CRLF/
+mojibake-free before commit. Two owner JSON dumps (`ma-perkara-response.json`,
+`spi-2024-response.json`) at repo root failed naming governance; moved (not
+deleted) to `%TEMP%\kilo\`.
+
+**Root-caused live bug**: the prior session's U-R draft carried a broken
+parenthesis in `trustedFill` (`});` vs `}));`) — the service worker never
+started, which is why Edge-headless pairing timed out. Neither `npm test`
+(regex source contracts) nor the old `npm run check` parses runtime JS, so it
+shipped green locally. `scripts/check.mjs` now runs `node --check` over every
+discovered runtime `.js` file (recorded reason inline).
+
+**Live popup attribution discovery** (Edge headless, `ur.*` scenarios):
+Chromium attributes `window.open` fired during a background-tab CDP click to
+the window's ACTIVE tab, not the clicked tab — `openerTabId`-only logging
+misses exactly the automation case U-R targets. Fix: `resolvePopupOpener` in
+`extension/lib/popup-events.js` + `withActionPopupTracking` in background.js
+— while a `page.click`/`page.fill` is in flight, new tabs are claimed for the
+acted-on tab; otherwise the real `openerTabId` is used. Covered by a behavior
+test in `tests/timeout-retry-popup-parity.test.mjs`.
+
+Shipped U-R (full detail in `docs/project-context.md` §U-R): expect-polling
+window in content.js (slow SPA/OAuth redirect verifies without re-click),
+fill retry/expect parity (synthetic + trusted post-action), coded
+`COMMAND_TIMEOUT` → `outcome:'unknown'` parity (extension + MCP
+`AWAIT_OUTCOME_UNKNOWN`), bounded popup log + `openedTabs` on click/fill
+results, MCP instructions OAuth/expect guidance. Version 1.6.12 → 1.6.13 sweep.
+Boundary locks rebaselined with U-R authorization notes (4×P2/P3/P4/P5 SHA1
+maps, MCP SHA256 fixtures + inventory digests) — tool names/count/schemas are
+byte-unchanged; only file digests moved.
+
+Gates: `npm test` **517/517**; `npm run check` PASS (26 primitives, 76 runtime
+files, 1.6.13, parse gate live); Edge-headless `tests/browser_extension_test.py`
+**exit 0** with `urAcceptance` all-true:
+`OA_BROWSER_HEADLESS=1 OA_BROWSER_EXECUTABLE="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" python tests/browser_extension_test.py`
+(Chrome/Edge: bundled Playwright Chromium does not start the MV3 worker; note
+regular Chrome ≥137 also rejects `--load-extension`).
+
+U-R implementation head: recorded below after commit/push — verify the remote
+tip before the next write. Non-goals held: no MCP schema/tool change, no
+refind, no production deploy, no CRX. Live Opera-owner acceptance of 1.6.13
+remains owner-gated, as do 1.6.11/1.6.12 CRX signing.
+
+Remaining in this line: U-P2 (vision sampling) is the last proposed checkpoint
+from the 2026-09-20 research; U-V live acceptance on a served release remains
+open (owner-gated).
+
+## U-P3 stale semantic pruning implemented (1.6.12 candidate) — 2026-09-28
 
 Continuation session: the working tree carried an uncommitted U-P3
 implementation from an interrupted writer (WIP file mtimes 2026-09-27

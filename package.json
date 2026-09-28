@@ -1,6 +1,6 @@
 {
   "name": "opera-agent",
-  "version": "1.6.12",
+  "version": "1.6.13",
   "private": true,
   "description": "Local Opera browser control bridge with Supabase-powered workflows and automation.",
   "type": "module",

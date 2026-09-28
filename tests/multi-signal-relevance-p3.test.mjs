@@ -524,13 +524,13 @@ test('P3 does not synthesize completion, action authority, foreground control, o
 });
 
 test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
-  // U-P1 (2026-09-24) authorizes the accessibility observation layer: shadow-piercing collection + computed accessible names in content.js, the poverty-triggered CDP axSummary in background.js, MCP guidance text, and the 1.6.12 version sweep. Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen.
+  // U-P1 (2026-09-24) authorizes the accessibility observation layer: shadow-piercing collection + computed accessible names in content.js, the poverty-triggered CDP axSummary in background.js, MCP guidance text, and the 1.6.13 version sweep. Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen. U-R (2026-09-28) then authorizes timeout/retry/popup parity: an unknown-outcome command timeout in background.js, expect-polling and fill retry parity in content.js, the popup/openedTabs log, MCP OAuth/openedTabs guidance, and the 1.6.13 version sweep. Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen.
   const files = new Map([
     ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
-    ['../extension/content.js', '1c073c92263f13408bd18a0c97b80f3bb2c37920'],
-    ['../extension/background.js', 'bdeac6af44095ad79dd0f1f2bca4d44608f20847'],
-    ['../extension/manifest.json', 'fc79a49707abbaf260c70d19a7be8f56b6f4518a'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '5fc059f2e4cce17c0a294f0e7183c96f169e7256'],
+    ['../extension/content.js', '4398bce76ca6c848a57dde8fb8767041ff310adf'],
+    ['../extension/background.js', '4eabbd940898538cd211885b8890e05c9ee4fc25'],
+    ['../extension/manifest.json', 'e69324b7c2abb194d15459d55eddd3a838c04e53'],
+    ['../supabase/functions/opera-agent-mcp/index.ts', '825651427a13ab3d6d2c404b07f62001fa672c71'],
     ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
     ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
     ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],

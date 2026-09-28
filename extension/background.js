@@ -12,6 +12,7 @@ import {
 import { evaluateRules, validateRule } from './lib/watch.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 import { buildAxSummary } from './lib/ax-summary.js';
+import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
 
 const DEFAULT_BRIDGE_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-bridge';
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId'];
@@ -469,6 +470,57 @@ async function withInputFocusEmulation(target, mode, work) {
 // phase is a pass-through; their own guards and scroll verification apply.
 const UV_WAIT_FLOOR_MS = 250; // keep the wait strictly inside the command race
 
+// U-R popup/redirect follow-through: clicks and fills on OAuth/login controls
+// open popup tabs (window.open / target=_blank) whose creation the original
+// tab's DOM never shows. A bounded per-opener log records them so the action
+// result can carry openedTabs and the model can continue in the popup by
+// tabId (no auto-activation; activation stays an explicit user decision).
+// Chromium attributes window.open on a BACKGROUND acted-on tab to the window's
+// active tab, so while a page action is in flight its tab claims new tabs
+// (see resolvePopupOpener).
+const popupLog = new Map();
+const popupActionStack = [];
+const POPUP_LOG_MAX_AGE_MS = 60000;
+
+function popupInFlightTab() {
+  return popupActionStack.length ? popupActionStack[popupActionStack.length - 1] : null;
+}
+
+async function withActionPopupTracking(tabId, work) {
+  popupActionStack.push(Number(tabId));
+  try {
+    return await work();
+  } finally {
+    const index = popupActionStack.lastIndexOf(Number(tabId));
+    if (index >= 0) popupActionStack.splice(index, 1);
+  }
+}
+
+function prunePopupLog(now = Date.now()) {
+  for (const [opener, list] of popupLog) {
+    const fresh = list.filter((e) => now - e.at <= POPUP_LOG_MAX_AGE_MS);
+    if (fresh.length) popupLog.set(opener, fresh);
+    else popupLog.delete(opener);
+  }
+}
+
+chrome.tabs.onCreated.addListener((tab) => {
+  try {
+    prunePopupLog();
+    const opener = resolvePopupOpener(popupInFlightTab(), tab);
+    if (opener !== null) recordPopup(popupLog, { id: tab.id, openerTabId: opener, pendingUrl: tab.pendingUrl, url: tab.url }, Date.now(), POPUP_LOG_LIMIT);
+  } catch {}
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  popupLog.delete(tabId);
+  for (const [opener, list] of popupLog) {
+    const withoutPopup = list.filter((e) => e.tabId !== tabId);
+    if (withoutPopup.length) popupLog.set(opener, withoutPopup);
+    else popupLog.delete(opener);
+  }
+});
+
 async function runActionPipeline(tabId, method, params, context, exec) {
   const started = Date.now();
   const specTimeout = METHOD_SPECS[method]?.timeoutMs ?? 8000;
@@ -522,7 +574,7 @@ async function runActionPipeline(tabId, method, params, context, exec) {
   const result = await exec(params.ref);
   // Verify: only from an actual post-action check (postAction.verified exists
   // only when an expect spec was evaluated) - never invented.
-  if (method === 'page.click' && result?.postAction?.verified !== undefined) {
+  if ((method === 'page.click' || method === 'page.fill') && result?.postAction?.verified !== undefined) {
     return attachResolution(result, { attempts, waitedMs, healed, verified: result.postAction.verified === true });
   }
   return attachResolution(result, { attempts, waitedMs, healed });
@@ -553,22 +605,32 @@ async function trustedClick(tabId, ref, context, mode = 'background', options = 
   return last;
 }
 
-async function trustedFill(tabId, ref, value, context, mode = 'background') {
+async function trustedFill(tabId, ref, value, context, mode = 'background', options = {}) {
   const text = String(value ?? '').slice(0, 20000);
-  await contentCall(tabId, 'page.fill_info', { ref });
+  const info = await contentCall(tabId, 'page.fill_info', { ref });
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
     const active = await contentCall(tabId, 'page.active_state', {});
     if (active.sensitive || active.active?.ref !== ref) {
       throw new Error('Trusted fill target lost safe document focus before text insertion.');
     }
+    let action;
     if (text) {
       await chrome.debugger.sendCommand(target, 'Input.insertText', { text });
+      action = { ok: true, ref, valueLength: text.length, method: 'debugger' };
     } else {
       const key = { key: 'Backspace', code: 'Backspace', windowsVirtualKeyCode: 8, nativeVirtualKeyCode: 8 };
       await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...key });
       await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...key });
+      action = { ok: true, ref, valueLength: 0, method: 'debugger' };
     }
-    return { ok: true, ref, valueLength: text.length, method: 'debugger' };
+    // U-R: verify the fill in-page (expect parity with trustedClick); verified
+    // exists only when an expect spec was evaluated - never invented.
+    const postAction = await contentCall(tabId, 'page.post_action', {
+      ref,
+      before: info.postActionBefore,
+      expect: options.expect || undefined
+    });
+    return { ...action, postAction };
   }));
 }
 
@@ -933,14 +995,19 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.fill': {
       const tabId = await resolveTabId(params);
-      const result = await runActionPipeline(tabId, 'page.fill', params, context, (ref) => (params.trusted ? trustedFill(tabId, ref, params.value, context, executionMode(params)) : contentCall(tabId, 'page.fill', { ...params, ref })));
-      return { ...result, tabId };
+      const fillOptions = { expect: params.expect, attempts: params.retry?.attempts };
+      const actionStart = Date.now();
+      const result = await withActionPopupTracking(tabId, () => runActionPipeline(tabId, 'page.fill', params, context, (ref) => (params.trusted ? trustedFill(tabId, ref, params.value, context, executionMode(params), fillOptions) : contentCall(tabId, 'page.fill', { ...params, ref }))));
+      const openedTabs = popupsSince(popupLog, tabId, actionStart);
+      return { ...result, tabId, ...(openedTabs.length ? { openedTabs } : {}) };
     }
     case 'page.click': {
       const tabId = await resolveTabId(params);
       const clickOptions = { expect: params.expect, attempts: params.retry?.attempts };
-      const result = await runActionPipeline(tabId, 'page.click', params, context, (ref) => (params.trusted ? trustedClick(tabId, ref, context, executionMode(params), clickOptions) : contentCall(tabId, 'page.click', { ...params, ref })));
-      return { ...result, tabId };
+      const actionStart = Date.now();
+      const result = await withActionPopupTracking(tabId, () => runActionPipeline(tabId, 'page.click', params, context, (ref) => (params.trusted ? trustedClick(tabId, ref, context, executionMode(params), clickOptions) : contentCall(tabId, 'page.click', { ...params, ref }))));
+      const openedTabs = popupsSince(popupLog, tabId, actionStart);
+      return { ...result, tabId, ...(openedTabs.length ? { openedTabs } : {}) };
     }
     case 'page.pointer': {
       const tabId = await resolveTabId(params);
@@ -1142,6 +1209,14 @@ async function handleWatchFire(entry, fire, facts) {
   return actionResult;
 }
 
+// U-R: a command timeout is an unknown outcome, not a definite failure — the
+// action may have taken effect (parity with the BURST_TIMEOUT / GATEWAY_ERROR
+// unknown-outcome contract family), so the model must verify page state
+// before repeating it.
+function commandTimeoutError() {
+  return codedError('COMMAND_TIMEOUT', 'Command timed out: the browser action may have taken effect. Verify page state before repeating it.');
+}
+
 async function executeCommand(raw) {
   // U-T: watch.* is an internal extension-side family (protocol primitive
   // count stays frozen at 26); its validation lives in lib/watch.js.
@@ -1150,12 +1225,15 @@ async function executeCommand(raw) {
     try {
       const result = await Promise.race([
         dispatch(raw.method, raw.params || {}, { deadline: deadlineW }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout.')), 10000))
+        new Promise((_, reject) => setTimeout(() => reject(commandTimeoutError()), 10000))
       ]);
       return { ok: true, result: boundedResult(result) };
     } catch (error) {
       if (error && error.code === 'TARGET_NOT_READY') {
         return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
+      }
+      if (error && error.code === 'COMMAND_TIMEOUT') {
+        return { ok: false, error: { code: 'COMMAND_TIMEOUT', outcome: 'unknown', message: error.message } };
       }
       return { ok: false, error: normalizeError(error) };
     }
@@ -1167,12 +1245,15 @@ async function executeCommand(raw) {
   try {
     const result = await Promise.race([
       dispatch(command.method, command.params, { deadline }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout.')), Math.max(1, deadline - Date.now())))
+      new Promise((_, reject) => setTimeout(() => reject(commandTimeoutError()), Math.max(1, deadline - Date.now())))
     ]);
     return { ok: true, result: boundedResult(result) };
   } catch (error) {
     if (error && error.code === 'TARGET_NOT_READY') {
       return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
+    }
+    if (error && error.code === 'COMMAND_TIMEOUT') {
+      return { ok: false, error: { code: 'COMMAND_TIMEOUT', outcome: 'unknown', message: error.message } };
     }
     return { ok: false, error: normalizeError(error) };
   }
