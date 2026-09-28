@@ -1,5 +1,42 @@
 # Opera Agent next-session handoff
 
+## U-P3 stale semantic pruning implemented (1.6.12 candidate) — 2026-09-28 (read first)
+
+Continuation session: the working tree carried an uncommitted U-P3
+implementation from an interrupted writer (WIP file mtimes 2026-09-27
+23:00–23:33 +07). Tree/mtimes were stable across the session and all gates
+were re-verified green before commit.
+
+Shipped on `feat/pre-8e-usability-repair-r8`: (A)
+`extension/semantic-identity.js` — `invisibleGraceObservations` (default 2,
+clamp 1..3): entities present-but-invisible for N consecutive observations
+are marked `stale:true` on the model-facing item (advisory; canonical state
+keeps them with identity/revision intact; the mark clears when visible
+again); entities returning after the removal grace now report
+`UPDATE … RETURNED_AFTER_ABSENCE` instead of `INSERT … NEW_ENTITY` (bounded
+`returnedAfterGrace` set, cleared by `forget()`/`reset()`); (B)
+`extension/content.js` — compact reads drop `stale` items so dismissed
+panels/controls stop reaching the model. Version 1.6.12 sweep across
+protocol/manifest/package/check + version-lock tests rebaselined. Protocol 1,
+26 primitives, 22 MCP tools, schemas unchanged.
+
+Gates: `tests/stale-semantic-pruning.test.mjs` 7/7; `npm test` 506/506;
+`npm run check` PASS (26 primitives, 75 runtime files, 1.6.12). Live
+acceptance steps were added to `tests/browser_extension_test.py` (`up3.*`
+scenarios + dismissible panel in `tests/fixtures/pre-8e-usability-ax.html`)
+but the live Opera run is NOT executed (owner-gated; the Edge-headless
+command in the U-P1 section covers it when run).
+
+U-P3 implementation head: `b45e8bf` (pushed to origin
+`feat/pre-8e-usability-repair-r8`; this handoff update follows on top —
+verify the remote tip before the next write).
+
+Remaining in this line: U-P2 (vision sampling) is the last proposed
+checkpoint from the 2026-09-20 research; U-V live acceptance on a served
+release remains open (owner-gated); 1.6.11 (U-P1) and 1.6.12 (U-P3) sources
+each need their own signed CRX when the owner orders a release; 1.6.10
+remains the single active release.
+
 ## 1.6.10 ACTIVATED + 1.6.11 uploaded inactive 2026-09-24 (read first)
 
 Owner ordered both. Executed and live-verified:
@@ -57,11 +94,12 @@ MCP index `5fc059f2…`), MCP sourceSha256
 `5da5f3cef258b7b2b9da905351e233af56466bb85832f77ef6460bb7fec3cf1c`, inventory
 digest `sha256:f672f8dd…` across the 7A/8A/6A/7F fixture chain.
 
-Remaining in this line: U-P3 (stale semantic pruning) and U-P2 (vision
-sampling) are the next proposed checkpoints from the 2026-09-20 research;
-U-V live acceptance on a served release remains open (owner-gated); the
-1.6.10 CRX popup redesign still awaits the owner's activation decision, and
-1.6.11 source now needs its own signed CRX when the owner orders a release.
+Remaining in this line: U-P3 (stale semantic pruning) is now implemented as
+the 1.6.12 candidate — see the top section; U-P2 (vision sampling) is the
+last proposed checkpoint from the 2026-09-20 research; U-V live acceptance on
+a served release remains open (owner-gated); the 1.6.10 CRX popup redesign
+still awaits the owner's activation decision, and the 1.6.11 and 1.6.12
+sources each need their own signed CRX when the owner orders a release.
 Local browser regression command:
 `OA_BROWSER_HEADLESS=1 OA_BROWSER_EXECUTABLE="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" python tests/browser_extension_test.py`
 (bundled Playwright Chromium does not start the MV3 service worker).

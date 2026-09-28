@@ -1,6 +1,42 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-24 (U-P1 AX-tree observation + 1.6.10 activation + 1.6.11 upload session)
+Last synchronized: 2026-09-28 (U-P3 stale semantic pruning implemented, 1.6.12 candidate)
+
+## U-P3 stale semantic pruning implemented on r8 (2026-09-28, takes precedence)
+
+Checkpoint **U-P3** (research P3, the second proposed follow-up after U-P1)
+was implemented on `feat/pre-8e-usability-repair-r8`; the working tree carried
+the implementation from an interrupted writer and all gates were re-verified
+green before commit:
+
+- `extension/semantic-identity.js`: new `invisibleGraceObservations` option
+  (default 2, clamped 1..3). Each entity tracks an `invisibleStreak` of
+  consecutive present-but-invisible observations; at the grace the
+  model-facing item carries `stale: true` (advisory only — canonical state
+  keeps the entity with identity and revision intact). The mark clears on the
+  next visible observation. Entities emitted as REMOVE after the existing
+  removal grace enter a bounded `returnedAfterGrace` set: a later
+  re-observation reports `UPDATE … RETURNED_AFTER_ABSENCE` instead of
+  `INSERT … NEW_ENTITY`, so virtualized feeds stop surfacing returning
+  content as new state. `forget()` and `reset()` clear the set.
+- `extension/content.js`: the compact-observation selection drops `stale`
+  items alongside sensitive ones, so dismissed panels/controls stop reaching
+  the model in compact reads while remaining in the rich snapshot.
+- Version 1.6.12 across `extension/lib/protocol.js`, `extension/manifest.json`,
+  `package.json`, `scripts/check.mjs`, and the version-lock assertions in the
+  test suite. Protocol 1, 26 primitives, 22 MCP tools, and all public schemas
+  unchanged.
+- Live acceptance steps added to `tests/browser_extension_test.py` (`up3.*`:
+  dismiss → first read `visible:false` without stale → second read
+  `stale:true` → compact read drops the item) against a new dismissible panel
+  in `tests/fixtures/pre-8e-usability-ax.html`; the live Opera run is NOT
+  executed yet (owner-gated).
+- Gates: focused `tests/stale-semantic-pruning.test.mjs` 7/7; full `npm test`
+  506/506; `npm run check` PASS (26 primitives, 75 runtime files, 1.6.12).
+- Non-goals: no U-P2 (vision sampling), no production deploy, no CRX
+  build/upload/activation. 1.6.10 remains the single active release; 1.6.11
+  remains the uploaded-inactive candidate; 1.6.12 source awaits its own
+  signed CRX when the owner orders a release.
 
 ## 1.6.10 ACTIVATED and 1.6.11 uploaded inactive (2026-09-24, owner-ordered)
 
