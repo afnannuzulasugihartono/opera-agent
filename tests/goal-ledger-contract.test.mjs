@@ -55,8 +55,8 @@ test('6A freezes a bounded goal ledger and proof contract without runtime change
   assert.equal(contract.publicApiDecision.extensionChangeAllowedIn6A, false);
   assert.equal(contract.publicApiDecision.productionSchemaChangeAllowedIn6A, false);
 
-  assert.equal(pkg.version, '1.6.11');
-  assert.equal(manifest.version, '1.6.11');
+  assert.equal(pkg.version, '1.6.12');
+  assert.equal(manifest.version, '1.6.12');
   assert.match(protocolSource, /PROTOCOL_VERSION = 1/);
   assert.equal(mcpContract.toolCount, 22);
   assert.equal(contract.publicApiDecision.existingMcpToolCount, mcpContract.toolCount);

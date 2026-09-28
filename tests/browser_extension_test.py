@@ -392,7 +392,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.6.11'
+        assert result['version'] == '1.6.12'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -946,6 +946,34 @@ async def run(port, profile):
         ax_serialized = json.dumps(ax_read)
         assert 'typed secret text' not in ax_serialized, 'field values must never surface through axSummary'
         assert 'hunter2' not in ax_serialized, 'password content must never surface'
+
+        # U-P3 (research P3): dismissed panels go stale in the model-facing
+        # view and drop out of compact observations, so dismissed FAQ/cookie
+        # controls stop reaching the model. Canonical state keeps them.
+        cid = STATE.push('page.find', {'tabId': ax_tab_id, 'text': 'Dismiss panel', 'exact': True, 'limit': 10}, benchmark='up3.page.find.dismiss')
+        dismiss = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert dismiss['count'] == 1, dismiss
+        cid = STATE.push('page.click', {'tabId': ax_tab_id, 'ref': dismiss['item']['ref']}, benchmark='up3.page.click.dismiss')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.read', {'tabId': ax_tab_id, 'offset': 0, 'limit': 300, 'maxElements': 40}, benchmark='up3.page.read.stale-first')
+        stale_first = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        first_panel = [item for item in stale_first['elements'] if item.get('label') == 'Dismiss panel']
+        assert len(first_panel) == 1, first_panel
+        assert first_panel[0]['visible'] is False, first_panel[0]
+        assert first_panel[0].get('stale') is not True, first_panel[0]
+
+        cid = STATE.push('page.read', {'tabId': ax_tab_id, 'offset': 0, 'limit': 300, 'maxElements': 40}, benchmark='up3.page.read.stale-marked')
+        stale_marked = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        marked_panel = [item for item in stale_marked['elements'] if item.get('label') == 'Dismiss panel']
+        assert len(marked_panel) == 1, marked_panel
+        assert marked_panel[0]['stale'] is True, marked_panel[0]
+        assert marked_panel[0]['visible'] is False, marked_panel[0]
+
+        cid = STATE.push('page.read', {'tabId': ax_tab_id, 'offset': 0, 'limit': 300, 'view': 'compact'}, benchmark='up3.page.read.stale-dropped')
+        stale_dropped = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        dropped_panel = [item for item in stale_dropped['elements'] if item.get('label') == 'Dismiss panel']
+        assert len(dropped_panel) == 0, dropped_panel
 
         # U-S (P1): burst ref passthrough — find and click in ONE command so the
         # ref is minted and consumed within milliseconds, immune to the model
@@ -2221,7 +2249,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.6.11'
+        assert result['version'] == '1.6.12'
 
         await context.close()
         import os

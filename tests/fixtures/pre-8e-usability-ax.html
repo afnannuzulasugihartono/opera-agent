@@ -20,6 +20,10 @@
   <button id="icon-ride" type="button" aria-label=""><img alt="Motorcycle, 3 minutes" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="></button>
   <input id="ax-search" type="text" value="typed secret text" aria-label="Search box" />
   <input id="ax-secret" type="password" value="hunter2" aria-label="Password" />
+  <div id="stale-panel" style="position: absolute; left: 160px; top: 300px; width: 220px; height: 80px; border: 1px solid #ccc; padding: 4px">
+    <span>Stale FAQ panel</span>
+    <button id="panel-close" type="button" aria-label="Dismiss panel" onclick="document.getElementById('stale-panel').style.display='none'">×</button>
+  </div>
   <div id="shadow-host"></div>
   <script>
     // Canvas-class surface: controls live inside an open shadow root so flat

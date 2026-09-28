@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Opera Agent",
-  "version": "1.6.11",
+  "version": "1.6.12",
   "description": "Private local Opera bridge for secure browser control through Supabase workflows.",
   "permissions": [
     "tabs",

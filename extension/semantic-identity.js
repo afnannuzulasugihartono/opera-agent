@@ -77,12 +77,21 @@
     const maxDeltaBytes = positiveInteger(options.maxDeltaBytes, DEFAULT_MAX_DELTA_BYTES);
     const removalGraceObservations = Number.isInteger(options.removalGraceObservations) && options.removalGraceObservations >= 0
       ? Math.min(options.removalGraceObservations, 3) : 1;
+    // U-P3 (research P3): an entity observed present-but-invisible for this
+    // many consecutive observations is marked stale in the model-facing view.
+    // Canonical state keeps stale entities; the marking is advisory only.
+    const invisibleGraceObservations = Number.isInteger(options.invisibleGraceObservations) && options.invisibleGraceObservations >= 1
+      ? Math.min(options.invisibleGraceObservations, 3) : 2;
     const now = typeof options.now === 'function' ? options.now : Date.now;
     const records = new Map();
     const bindingIndex = new Map();
     const refIndex = new Map();
     const lastObserved = new Map();
     const missingObservations = new Map();
+    // U-P3: entities emitted as REMOVE after grace; a later re-observation
+    // reports RETURNED_AFTER_ABSENCE instead of NEW_ENTITY so virtualized
+    // feeds stop surfacing returning content as new state.
+    const returnedAfterGrace = new Set();
     let documentGeneration = 1;
     let observationRevision = 0;
     let logicalCounter = 0;
@@ -100,6 +109,7 @@
       const record = records.get(logicalId);
       if (!record) return;
       records.delete(logicalId);
+      returnedAfterGrace.delete(logicalId);
       retainedBytes -= record.retainedBytes;
       if (record.ref && refIndex.get(record.ref) === logicalId) refIndex.delete(record.ref);
       const ids = bindingIndex.get(record.bindingHash);
@@ -147,6 +157,8 @@
         lastSeenAt: timestamp,
         createdOrder: logicalCounter,
         confidence: binding.confidence,
+        invisibleStreak: 0,
+        stale: false,
         ambiguous: false,
       };
       record.retainedBytes = recordBytes(record);
@@ -183,6 +195,20 @@
       retainedBytes += record.retainedBytes;
       if (record.ref) refIndex.set(record.ref, record.logicalId);
       return record;
+    }
+
+    // U-P3 (research P3): track consecutive present-but-invisible observations
+    // per entity. After the grace the entity is marked stale in the
+    // model-facing view; canonical state keeps it and the marking is advisory.
+    function trackStaleness(record, item) {
+      const rendered = item.visible !== false;
+      if (rendered) {
+        record.invisibleStreak = 0;
+        record.stale = false;
+        return;
+      }
+      record.invisibleStreak = (record.invisibleStreak || 0) + 1;
+      if (record.invisibleStreak >= invisibleGraceObservations) record.stale = true;
     }
 
     function observe(inputItems = []) {
@@ -223,9 +249,11 @@
         } else {
           updateRecord(record, item, timestamp);
         }
+        trackStaleness(record, item);
         if (ambiguous) ambiguityCount += 1;
         item.logicalId = record.logicalId;
         item.semanticRevision = record.revision;
+        if (record.stale) item.stale = true;
         record.ambiguous = ambiguous;
         record.confidence = ambiguous ? 0.25 : binding.confidence;
         if (ambiguous) {
@@ -261,10 +289,18 @@
           const previous = lastObserved.get(current.logicalId);
           missingObservations.delete(current.logicalId);
           if (!previous) {
-            changes.push({
-              type: 'INSERT', logicalId: current.logicalId, revision: current.revision,
-              reason: 'NEW_ENTITY', confidence: current.confidence,
-            });
+            if (returnedAfterGrace.has(current.logicalId)) {
+              returnedAfterGrace.delete(current.logicalId);
+              changes.push({
+                type: 'UPDATE', logicalId: current.logicalId, revision: current.revision,
+                reason: 'RETURNED_AFTER_ABSENCE', confidence: current.confidence,
+              });
+            } else {
+              changes.push({
+                type: 'INSERT', logicalId: current.logicalId, revision: current.revision,
+                reason: 'NEW_ENTITY', confidence: current.confidence,
+              });
+            }
           } else if (current.revision !== previous.revision) {
             changes.push({
               type: 'UPDATE', logicalId: current.logicalId, revision: current.revision,
@@ -290,6 +326,7 @@
             });
             missingObservations.delete(logicalId);
             lastObserved.delete(logicalId);
+            returnedAfterGrace.add(logicalId);
           }
         }
       } else {
@@ -359,6 +396,7 @@
       refIndex.clear();
       lastObserved.clear();
       missingObservations.clear();
+      returnedAfterGrace.clear();
       retainedBytes = 0;
       documentGeneration += 1;
       observationRevision = 0;

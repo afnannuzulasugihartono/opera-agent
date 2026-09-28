@@ -735,7 +735,7 @@
     const selected = [];
     const selectedIds = new Set();
     const add = (item) => {
-      if (!item || item.sensitive) return;
+      if (!item || item.sensitive || item.stale) return;
       const key = String(item.logicalId || item.ref || item.stableKey || '');
       if (!key || selectedIds.has(key) || selected.length >= limit) return;
       selectedIds.add(key);
