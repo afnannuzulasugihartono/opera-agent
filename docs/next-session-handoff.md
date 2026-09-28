@@ -48,10 +48,12 @@ files, 1.6.13, parse gate live); Edge-headless `tests/browser_extension_test.py`
 (Chrome/Edge: bundled Playwright Chromium does not start the MV3 worker; note
 regular Chrome ≥137 also rejects `--load-extension`).
 
-U-R implementation head: recorded below after commit/push — verify the remote
-tip before the next write. Non-goals held: no MCP schema/tool change, no
-refind, no production deploy, no CRX. Live Opera-owner acceptance of 1.6.13
-remains owner-gated, as do 1.6.11/1.6.12 CRX signing.
+U-R implementation head: `00835f7` (pushed to origin
+`feat/pre-8e-usability-repair-r8`; this SHA-recording docs commit follows on
+top — verify the remote tip before the next write). Non-goals held: no MCP
+schema/tool change, no refind, no production deploy, no CRX. Live
+Opera-owner acceptance of 1.6.13 remains owner-gated, as do 1.6.11/1.6.12
+CRX signing.
 
 Remaining in this line: U-P2 (vision sampling) is the last proposed checkpoint
 from the 2026-09-20 research; U-V live acceptance on a served release remains
