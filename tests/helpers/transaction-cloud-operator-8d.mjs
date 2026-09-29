@@ -10,7 +10,7 @@ const MANIFEST_FILE=/^manifest-([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a
 const SAFE=/^[A-Za-z0-9_-]{1,128}$/;
 const PHASES=new Set(['OWNED','INSTALLED','SEALED','HOST_ENABLED','DARK','CLEANING']);
 const BACKEND_METHODS=['describe','preflight','acquireFence','heartbeatFence','releaseFence','verifySession','insertFixture','sealLedger','enableHost','setDark','verifyCancelled','disableHost','setOff','cleanupFixture','verifyClean'];
-const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
+const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')===keys;
 const fail=code=>{throw new Error(code);};
 const clone=value=>JSON.parse(JSON.stringify(value));
 const cleanCleanup=value=>{
@@ -60,7 +60,7 @@ export function createFileOwnershipStore8D({directory,isProcessAlive=defaultProc
   const readManifest=async namespace=>{try{return validateManifest(JSON.parse(await readFile(manifestPath(directory,namespace),'utf8')));}catch(error){if(error?.code==='ENOENT')return null;throw error;}};
   const readPendingManifest=async()=>{
     await ensure();
-    const names=(await readdir(directory,{withFileTypes:true})).filter(entry=>entry.isFile()&&MANIFEST_FILE.test(entry.name)).map(entry=>entry.name).sort();
+    const names=(await readdir(directory,{withFileTypes:true})).filter(entry=>entry.isFile()&&MANIFEST_FILE.test(entry.name)).map(entry=>entry.name).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     if(names.length===0)return null;
     if(names.length>1)fail('8D_MULTIPLE_DIRTY_MANIFESTS');
     const match=names[0].match(MANIFEST_FILE);if(!match)fail('INVALID_8D_MANIFEST');
@@ -78,16 +78,24 @@ export function createFileOwnershipStore8D({directory,isProcessAlive=defaultProc
         }
         const claimId=randomUUID(),stage=join(directory,'global-control.pending-'+claimId);
         await mkdir(stage);
+        // Same publish-then-cleanup sequence as before without throwing inside a
+        // finally block: the original lease error must never be swallowed by a
+        // cleanup failure.
+        let claimed=false;
+        let leaseError=null;
         try {
           await writeFile(join(stage,'lease.json'),JSON.stringify({version:2,claimId,ownerId,namespace,pid,expiresAt:nowMs+ttlMs})+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});
           // Publish the complete nonempty directory in one filesystem operation.
-          await rename(stage,leaseDir(directory));return Object.freeze({leaseEpoch:attempt});
+          await rename(stage,leaseDir(directory));claimed=true;
         }catch(error){
-          if(!['EEXIST','ENOTEMPTY','EPERM'].includes(error?.code))throw error;
-        }finally{
-          await rm(join(stage,'lease.json'),{force:true});
-          try{await rmdir(stage);}catch(error){if(error?.code!=='ENOENT')throw error;}
+          if(!['EEXIST','ENOTEMPTY','EPERM'].includes(error?.code))leaseError=error;
         }
+        await rm(join(stage,'lease.json'),{force:true});
+        let stageError=null;
+        try{await rmdir(stage);}catch(error){if(error?.code!=='ENOENT')stageError=error;}
+        if(leaseError)throw leaseError;
+        if(stageError)throw stageError;
+        if(claimed)return Object.freeze({leaseEpoch:attempt});
       }
       fail('8D_GLOBAL_CONTROL_BUSY');
     },

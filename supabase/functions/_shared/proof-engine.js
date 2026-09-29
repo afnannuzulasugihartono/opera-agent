@@ -300,7 +300,7 @@ export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, op
   const contradictions = [];
   for (const [predicate, group] of contradictionGroups) {
     if (group.yes.length && group.no.length) {
-      const evidenceRefs = [...group.yes, ...group.no].sort();
+      const evidenceRefs = [...group.yes, ...group.no].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
       contradictions.push({ predicate, evidenceRefs });
       for (const evidenceId of evidenceRefs) rejected.push({ index: Number.MAX_SAFE_INTEGER, rejection: { evidenceId, reason: 'CONTRADICTION_UNRESOLVED' } });
     }

@@ -76,9 +76,14 @@ async def run():
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
 
+    head_proc = await asyncio.create_subprocess_exec(
+        "git", "rev-parse", "HEAD", cwd=ROOT, stdout=asyncio.subprocess.PIPE,
+    )
+    head_stdout, _ = await head_proc.communicate()
+
     report = {
         "schema": "opera-agent-repowise-r6-v1",
-        "repository_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+        "repository_head": head_stdout.decode().strip(),
         "repowise": {},
         "baseline": {},
     }

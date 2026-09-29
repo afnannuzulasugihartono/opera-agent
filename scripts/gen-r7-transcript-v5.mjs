@@ -40,7 +40,10 @@ const segments = {
 const segIf = {
   type: 'if', id: 'segmentsAvailable',
   condition: { left: { $ref: 'steps.segments.result.count' }, op: 'truthy' },
-  then: [], else: [...textInit, chunks]
+  // `then` is the serialized IF-branch field of the workflow AST (JSON contract
+  // consumed by the runner VM); renaming would change bytes, not fix a promise
+  // misuse.
+  then: [], else: [...textInit, chunks] // NOSONAR S7739 - serialized AST field names
 };
 
 const v5 = {

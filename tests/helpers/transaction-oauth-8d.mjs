@@ -81,7 +81,7 @@ export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyA
       let extra={};
       if(verifyAccessToken){
         extra=await verifyAccessToken(accessToken,signal);
-        if(!extra||Object.keys(extra).sort().join(',')!=='browserDispatchAllowed,hostDisabled,hostIdentityAccepted,hostStatusHttpStatus,signedClaimsVerified'||
+        if(!extra||Object.keys(extra).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!=='browserDispatchAllowed,hostDisabled,hostIdentityAccepted,hostStatusHttpStatus,signedClaimsVerified'||
           extra.signedClaimsVerified!==true||extra.browserDispatchAllowed!==false||![200,401,503].includes(extra.hostStatusHttpStatus)||
           extra.hostIdentityAccepted!==(extra.hostStatusHttpStatus===200)||extra.hostDisabled!==(extra.hostStatusHttpStatus===503))throw new Error();
       }

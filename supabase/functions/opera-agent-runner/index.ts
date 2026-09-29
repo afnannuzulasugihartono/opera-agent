@@ -332,7 +332,7 @@ async function runCommand(
   if (RETRY_SAFE_METHODS.has(method) && retryable && Date.now() + 400 < workflowDeadline) {
     await sleep(SAFE_RETRY_DELAY_MS);
     const second = await runCommandOnce(run, method, params, timeoutMs, workflowDeadline, null);
-    return second.ok ? { ...second, retried: true, previous: first } : { ...second, retried: true, previous: first };
+    return { ...second, retried: true, previous: first };
   }
   return first;
 }

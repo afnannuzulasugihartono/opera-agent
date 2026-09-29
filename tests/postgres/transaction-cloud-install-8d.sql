@@ -17,10 +17,10 @@ begin
     or exists(select 1 from opera_agent_tx_candidate.runs)
     then raise exception 'PROBE_REQUIRES_CLEAN_OFF'; end if;
   caught:=false;
-  begin update opera_agent_tx_candidate.policy set agent_commit_enabled=true;
+  begin update opera_agent_tx_candidate.policy set agent_commit_enabled=true where singleton=true;
   exception when check_violation then caught:=true; end;
   if not caught then raise exception 'AGENT_COMMIT_POLICY_BYPASS'; end if; gates:=gates+1;
-  update opera_agent_tx_candidate.policy set mode='DARK';
+  update opera_agent_tx_candidate.policy set mode='DARK' where singleton=true;
   insert into opera_agent_tx_candidate.principals values
     (p,a,'m8d_cloud_user_a','m8d_cloud_client_a'),
     (b,'m8d_cloud_actor_b','m8d_cloud_user_b','m8d_cloud_client_b');

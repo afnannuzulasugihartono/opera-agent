@@ -26,7 +26,7 @@ export async function verifyOAuthHostStatus(client,credential,{publicKey,signal,
       body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
     }finally{await reader.cancel().catch(()=>{});}
     if(signal?.aborted||c.exp<=now()/1000||body?.browserDispatchAllowed!==false)throw new Error();
-    const keys=Object.keys(body).sort().join(',');
+    const keys=Object.keys(body).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',');
     if(response.status===200){if(keys!=='browserDispatchAllowed,result'||body.result!==null)throw new Error();}
     else if(response.status===503){if(keys!=='browserDispatchAllowed,error'||body.error!=='TRANSACTION_DISABLED')throw new Error();}
     else if(response.status===401){if(keys!=='browserDispatchAllowed,error'||body.error!=='AUTHENTICATION_REQUIRED')throw new Error();}

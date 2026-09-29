@@ -47,7 +47,7 @@
   // Model-facing labels pick up private-use glyphs (icon fonts) and status
   // suffixes like "Visited link" that break exact matching; strip them before
   // the text reaches results or find matching.
-  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\u200D\uFEFF]/g;
+  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\uFEFF]|\u200D/g;
   const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
   function normalizeObservableText(value, max = 500) {
     const text = clean(value, max + 40).replace(PUA_GLYPH_RE, ' ').replace(/\s+/g, ' ').trim();

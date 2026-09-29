@@ -19,7 +19,7 @@ const TOKEN=/^[A-Za-z0-9._~-]{16,8192}$/;
 const SECRET_DIGEST=/^[0-9a-f]{64}$/;
 const PUBLIC_JWT=/^[A-Za-z0-9_-]{1,4096}\.[A-Za-z0-9_-]{1,4096}\.[A-Za-z0-9_-]{1,1024}$/;
 const ENABLED_MASTER_DIGEST=createHash('sha256').update('true').digest('hex');
-const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
+const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')===keys;
 const fail=code=>{throw new Error(code);};
 const plain=value=>value&&typeof value==='object'&&!Array.isArray(value)&&[Object.prototype,null].includes(Object.getPrototypeOf(value));
 const safeCleanup=value=>plain(value)&&exact(value,'actorId,goalId,tenantId,transactionId')&&UUID.test(value.tenantId??'')&&[value.actorId,value.goalId,value.transactionId].every(v=>typeof v==='string'&&SAFE.test(v));
@@ -102,7 +102,7 @@ select control.host_enabled,
 from fence cross join control`;
 
 export function createManagementOperatorBackend8D(configuration){
-  if(!plain(configuration)||Object.keys(configuration).sort().join(',')!=='credentialProvider,fetchImpl,now'||
+  if(!plain(configuration)||Object.keys(configuration).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!=='credentialProvider,fetchImpl,now'||
     typeof configuration.credentialProvider!=='function'||typeof configuration.fetchImpl!=='function'||typeof configuration.now!=='function') fail('INVALID_8D_MANAGEMENT_BACKEND');
   const {credentialProvider,fetchImpl,now}=configuration;
   async function credential(){const value=await credentialProvider();if(typeof value!=='string'||!TOKEN.test(value)||/\s/.test(value))fail('8D_OPERATOR_CREDENTIAL_UNAVAILABLE');return value;}

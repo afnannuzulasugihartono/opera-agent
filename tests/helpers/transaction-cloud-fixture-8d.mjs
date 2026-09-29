@@ -12,7 +12,7 @@ const freeze = value => {
 };
 export async function createCloudFixtureData8D(options) {
   if (!options || ![Object.prototype, null].includes(Object.getPrototypeOf(options)) ||
-      Object.keys(options).sort().join(',') !== 'namespace,preparedAt,userId' ||
+      Object.keys(options).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',') !== 'namespace,preparedAt,userId' ||
       !UUID.test(options.namespace??'') || !UUID.test(options.userId??'') ||
       typeof options.preparedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(options.preparedAt) ||
       !Number.isFinite(Date.parse(options.preparedAt)) || new Date(options.preparedAt).toISOString() !== options.preparedAt) {
