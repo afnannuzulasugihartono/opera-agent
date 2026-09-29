@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { PUBLIC_SURFACE_LOCKS, OBSERVATION_STACK_LOCKS } from './helpers/boundary-locks.mjs';
 import {
   P3_DECISIONS,
   P3_SIGNAL_TYPES,
@@ -524,17 +525,8 @@ test('P3 does not synthesize completion, action authority, foreground control, o
 });
 
 test('P3 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
-  // U-P1 (2026-09-24) authorizes the accessibility observation layer: shadow-piercing collection + computed accessible names in content.js, the poverty-triggered CDP axSummary in background.js, MCP guidance text, and the 1.6.13 version sweep. Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen. U-R (2026-09-28) then authorizes timeout/retry/popup parity: an unknown-outcome command timeout in background.js, expect-polling and fill retry parity in content.js, the popup/openedTabs log, MCP OAuth/openedTabs guidance, and the 1.6.13 version sweep. U-Sonar (2026-09-29) authorizes the new-code reliability sweep: explicit code-unit sort comparators (order byte-identical, frozen digests unchanged) in content.js and multi-signal-relevance-p3.js, ZWJ split out of the PUA strip class in content.js (same code-point set), while the byte-pinned 8D transaction bundle libs and the boundary-locked reactive-vm-7d then-field stay byte-identical (canonical ASCII-key sorts / serialized AST field = false-positive, resolved in Sonar). Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen. Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain frozen.
-  const files = new Map([
-    ['../lib/delta-first-observation-p2.js', '5335e1d09a8b8357a2fb20ecb30f1908c3c7d7e3'],
-    ['../extension/content.js', 'f4d15ef55bd68131cff98598328b2ba8d648cc3e'],
-    ['../extension/background.js', '4eabbd940898538cd211885b8890e05c9ee4fc25'],
-    ['../extension/manifest.json', 'e69324b7c2abb194d15459d55eddd3a838c04e53'],
-    ['../supabase/functions/opera-agent-mcp/index.ts', '825651427a13ab3d6d2c404b07f62001fa672c71'],
-    ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
-    ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
-    ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
-  ]);
+  // P3 lock set: public surface plus the observation stack (see helper for the authorization history).
+  const files = new Map([...PUBLIC_SURFACE_LOCKS, ...OBSERVATION_STACK_LOCKS]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
     assert.equal(sha1Blob(bytes), expected, `${relativePath} must match the current authorized boundary lock after P6 supersession`);
