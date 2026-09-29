@@ -1,6 +1,23 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-29 (CRX 1.6.13 ACTIVATED as production release)
+Last synchronized: 2026-09-29 (repo tidy: README rebuilt, changelog/release index completed)
+
+## Repository tidy round (2026-09-29, owner-ordered)
+
+Public-facing docs rebuilt to the verified contract: `README.md` now leads
+with a current-release table (1.6.13 active, Protocol 1, 26 primitives,
+22 MCP tools, CI stack) and capability groups; the stale "What 1.0.x
+includes"/23-primitive text is gone. `CHANGELOG.md` gained a `[1.6.13]`
+section and an attribution note (1.6.3–1.6.12 records live here and in
+`docs/releases/`). `docs/releases/README.md` indexes the full activation
+sequence verified against this document and the handoff history: 1.6.5
+(2026-09-22) → 1.6.6 → 1.6.7 (09-23) → 1.6.9 → 1.6.10 (09-24) → **1.6.13
+(09-29, current)**; 1.6.4/1.6.8/1.6.11 were uploaded but never activated;
+1.6.12 was never packed. `CONTRIBUTING.md` branch patterns were aligned to
+the binding governance. GitHub page: dev-URL homepage cleared, v1.6.0
+release body corrected to cite the 1.6.13 line. Naming governance audit:
+clean (allowlist green, remote refs compliant). Docs heads `ab5e7f0`/
+`da7d52d`/`8b6e083`/`43e8e65`/`716c9a1`, all CI green; `main` = r8 tip.
 
 ## CRX 1.6.13 ACTIVATED (2026-09-29, owner-ordered)
 
