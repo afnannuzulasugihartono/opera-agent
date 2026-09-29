@@ -2,8 +2,8 @@
 
 Opera Agent is a private local-browser bridge for Opera. It lets ChatGPT/Supabase send **allowlisted browser primitives** to the user's local Opera session and receive structured results without moving the browsing session to a cloud browser.
 
-- **Stable extension:** `1.6.10` (active in the production update service)
-- **Checkpoint line:** `1.6.11` signed and uploaded inactive; `1.6.12`/`1.6.13` source candidates awaiting owner-ordered CRX signing
+- **Stable extension:** `1.6.13` (active in the production update service)
+- **Checkpoint line:** `1.6.13` signed, audited, and activated; `1.6.11` uploaded inactive; `1.6.12` source awaits its own signed CRX
 - **Protocol:** `1`
 - **Legacy extension ID:** `pagjlnohdemoohcncicjmaejedcmcocm`
 - **Current extension ID:** `ohbbpamcljckmjhcpkcmefdobkoeaick`
@@ -120,6 +120,6 @@ See [docs/install.md](docs/install.md). The initial installation/pairing is a on
 
 Opera Agent has passed local unit/security tests, real Chromium extension regression, Supabase cloud integration, and real Opera acceptance for pairing, updates, ping, tab operations, bounded bursts, trusted debugger input, chunked semantic reads, ARIA state, media state, and bounded background screenshots. The backend uses a two-phase command/workflow API so queued work is committed before the browser consumes it.
 
-The production-active release is **1.6.10** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, verified live from the production `update.xml`. The current public contract is Protocol 1, 26 browser capabilities, and the 22-tool MCP inventory (U-T rebaseline; earlier 18-tool records are historical). Release candidates `1.6.11` (uploaded inactive) and `1.6.12`/`1.6.13` (U-P1/U-P3/U-R on the r8 checkpoint line) are documented in `docs/project-context.md`.
+The production-active release is **1.6.13** under extension ID `ohbbpamcljckmjhcpkcmefdobkoeaick`, verified live from the production `update.xml`. The current public contract is Protocol 1, 26 browser capabilities, and the 22-tool MCP inventory (U-T rebaseline; earlier 18-tool records are historical). `1.6.13` carries the U-P1/U-P3/U-R checkpoint line; `1.6.10`/`1.6.11` remain intact inactive rows (rollback targets), and `1.6.12` source awaits its own signed CRX. Full records in `docs/project-context.md`.
 
 The pre-8E usability repair track runs as sequential U-* checkpoints on `feat/pre-8e-usability-repair-r8`; `main` is fast-forwarded to each checkpoint only after CircleCI + Vercel succeed on the exact head. Production deployment, signed-release promotion, and Milestone 8E start remain explicit owner decisions; see `AGENTS.md` for the binding session and branch lifecycle rules.

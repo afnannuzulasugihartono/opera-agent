@@ -1,6 +1,25 @@
 # Opera Agent next-session handoff
 
-## CRX 1.6.13 signed, audited, uploaded inactive (2026-09-29, takes precedence)
+## 1.6.13 ACTIVATED as production release (2026-09-29, owner-ordered, takes precedence)
+
+- Active release is now **1.6.13** (single active row; SHA-256
+  `8420872b2ce3bf7c1ce1cefcb66037eb453441bd73cde80c4fa1eeb1b2d263df`, 60,188
+  bytes, release head `83be509`). Verified live: `update.xml?id=` serves
+  1.6.13, served CRX bytes/SHA = DB = disk, 1.6.10 CRX path now 404.
+- 1.6.10 row intact inactive = rollback target (same ordered flip).
+  1.6.11 remains uploaded inactive; 1.6.12 source still awaits its own signed
+  CRX (activation of superseded intermediate builds is not planned).
+- **Flip mechanics gotcha (recorded)**: `opera_releases_one_active_per_identity_idx`
+  is an immediate partial UNIQUE index; a single multi-row UPDATE trips 23505
+  depending on row order. Use the two-statement ordered flip
+  (deactivate-active, then activate-target) inside one transaction.
+- Devices self-update on the next browser-scheduled check; watch adoption via
+  `opera_devices.extension_version`. If a later DB write hits
+  `transaction_read_only`, lift via Management API `/readonly/temporary-disable`.
+- Next implementation work (unchanged, owner-gated): U-P2 (vision sampling);
+  U-V live acceptance on a served release can now be exercised on 1.6.13.
+
+## CRX 1.6.13 signed, audited, uploaded inactive (2026-09-29)
 
 Owner-ordered continuation of the interrupted 2026-09-29 signing session.
 Full record in `docs/project-context.md` §CRX 1.6.13. Key facts:

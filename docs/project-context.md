@@ -1,6 +1,30 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-29 (CRX 1.6.13 signed, audited, uploaded inactive)
+Last synchronized: 2026-09-29 (CRX 1.6.13 ACTIVATED as production release)
+
+## CRX 1.6.13 ACTIVATED (2026-09-29, owner-ordered)
+
+Owner ordered activation of the audited 1.6.13 candidate. Executed and
+live-verified; this is now the production release for the signed identity:
+
+- Flip: transactional two-statement update (deactivate current active row,
+  then activate 1.6.13) because `opera_releases_one_active_per_identity_idx`
+  is an immediate partial UNIQUE index on `extension_id WHERE active`, which a
+  single multi-row `UPDATE ... set active = (version='1.6.13')` cannot satisfy
+  deterministically (row-order-dependent 23505). Record this ordering for any
+  future flip/rollback.
+- Post-state verified: exactly one active row = 1.6.13 (SHA-256
+  `8420872b...263df`); live `update.xml?id=` serves `version="1.6.13"` with the
+  1.6.13 CRX codebase URL; the served CRX returns HTTP 200, 60,188 bytes, and
+  its SHA-256 equals the recorded/disk/DB hash (DB = disk = served); the
+  previously-active 1.6.10 CRX path now returns 404 (inactive).
+- 1.6.10 row remains intact and inactive; rollback is the same ordered flip
+  re-activating 1.6.10.
+- Installed devices self-update on their next browser-scheduled update check;
+  adoption is observable in `opera_devices.extension_version`.
+- Note: the owner ordered activation directly; the live Opera acceptance gate
+  was not separately recorded as performed before this activation (owner
+  decision on 2026-09-29).
 
 ## CRX 1.6.13 signed, audited, uploaded inactive (2026-09-29)
 
