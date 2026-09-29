@@ -10,7 +10,7 @@ const MANIFEST_FILE=/^manifest-([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a
 const SAFE=/^[A-Za-z0-9_-]{1,128}$/;
 const PHASES=new Set(['OWNED','INSTALLED','SEALED','HOST_ENABLED','DARK','CLEANING']);
 const BACKEND_METHODS=['describe','preflight','acquireFence','heartbeatFence','releaseFence','verifySession','insertFixture','sealLedger','enableHost','setDark','verifyCancelled','disableHost','setOff','cleanupFixture','verifyClean'];
-const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')===keys;
+const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
 const fail=code=>{throw new Error(code);};
 const clone=value=>JSON.parse(JSON.stringify(value));
 const cleanCleanup=value=>{

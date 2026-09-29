@@ -16,7 +16,7 @@ export const PROJECT_REF_8D = 'nenmkmtvjremqphfqnfw';
 const EDGE_URL = `${ISSUER}/functions/v1/opera-agent-transactions-8d`;
 const MGMT=/^[A-Za-z0-9._~-]{16,8192}$/;
 const PUBLIC=/^sb_publishable_[A-Za-z0-9_-]+$/;
-const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')===keys;
+const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys;
 
 async function consumeEdgeResponse(response) {
   if(!response||response.status!==200||!response.body)throw new Error('8D_EDGE_RACE_HTTP_FAILED');
@@ -90,7 +90,7 @@ export function createEdgeConcurrencyFetch8D(configuration) {
 }
 
 export async function runEdgeConcurrencyCli8D(configuration){
-  if(!configuration||Object.keys(configuration).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!=='args,createClient,credential,fetchImpl,now,publicKey,randomUUID,stateDirectory,write'||
+  if(!configuration||Object.keys(configuration).sort().join(',')!=='args,createClient,credential,fetchImpl,now,publicKey,randomUUID,stateDirectory,write'||
     !Array.isArray(configuration.args)||typeof configuration.createClient!=='function'||typeof configuration.credential!=='string'||!MGMT.test(configuration.credential)||/\s/.test(configuration.credential)||
     typeof configuration.fetchImpl!=='function'||typeof configuration.now!=='function'||typeof configuration.randomUUID!=='function'||typeof configuration.stateDirectory!=='string'||configuration.stateDirectory.length<1||typeof configuration.write!=='function')
     throw new Error('INVALID_8D_EDGE_CONCURRENCY_RUNNER_CONFIGURATION');
