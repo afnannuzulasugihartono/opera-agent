@@ -1,6 +1,29 @@
 # Opera Agent next-session handoff
 
-## GitHub repo cleanup completed — 2026-09-28 (read first)
+## U-Sonar new-code reliability sweep merged (2026-09-29, takes precedence)
+
+Owner ordered the SonarCloud Quality Gate green. Full record in
+`docs/project-context.md` §U-Sonar. Key facts for the next session:
+
+- PR #52 (`fix/sonar-new-code-reliability`) resolved all 56 new-code reliability
+  bugs: 44 code fixes + 12 false-positive transitions on byte-pinned deployed
+  artifacts (`lib/transaction-*-8d.js` bundle set, token-identical `exact=`
+  helper lines, frozen-AST `then` in boundary-locked `reactive-vm-7d.js`).
+- Two DRY refactors landed because SonarJS counts inline duplication:
+  `lib/canonical-order.js` (`codeUnitCompare` exported helper) and
+  `tests/helpers/boundary-locks.mjs` (single-source P2/P3/P4/P5 lock arrays
+  with the U-P1/U-R/U-Sonar authorization history). Behavior and digests are
+  byte-identical; every sort still yields code-unit order.
+- New runtime file count is 77 (`npm run check` discovers it automatically).
+- PR #52 gates: Sonar Quality Gate **passed**, CircleCI `ci` + Vercel success
+  on `4ceb838`; `main` fast-forwarded to `4ceb838`.
+- Owner's Sonar token was used transiently for inspection/transitions and
+  should be revoked in the SonarCloud account (never stored in the repo).
+- 1.6.10 remains the active production release; 1.6.11/1.6.12/1.6.13 remain
+  owner-gated (CRX signing/activation unchanged). Next implementation work:
+  U-P2 (vision sampling) only when the owner orders it.
+
+## GitHub repo cleanup completed — 2026-09-28
 
 Owner-ordered repository tidying on top of U-R (see §U-R below):
 

@@ -1,6 +1,41 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-28 (GitHub repository cleanup; U-R 1.6.13 candidate at main)
+Last synchronized: 2026-09-29 (U-Sonar new-code reliability sweep on PR #52)
+
+## U-Sonar new-code reliability sweep (2026-09-29, PR #52)
+
+Owner-ordered SonarCloud Quality Gate cleanup. The r8 push heads carried
+`new_reliability_rating=D` with **56 open new-code BUGs** (inspected live with
+an owner-supplied Sonar token; token revoked after use). Resolution split, all
+verified `npm test` 517/517 + `npm run check` + Edge-headless regression:
+
+- **44 code fixes**: S2871 sorts switched to explicit code-unit comparators
+  (byte-identical order for ASCII key sets — digests unchanged), later
+  centralized as `lib/canonical-order.js` `codeUnitCompare` after inline
+  21-token comparator strings tripped the PR duplication gate; 8D cloud
+  controller/operator S1143 throws removed from `finally` blocks with
+  flag/captured-error equivalents preserving semantics; runner S3923 identical
+  ternary collapsed; content.js PUA regex ZWJ split out of the character class
+  (same code-point set); 11 fixtures got `lang="en"`, r4 input got
+  `aria-label` (placeholder preserved); policy probe UPDATE scoped
+  `where singleton=true`; repowise r6_validate switched to async subprocess.
+- **12 false-positive transitions (byte-pinned files, untouched)**: the 5
+  `lib/transaction-*-8d.js` bundle sources (compiled into the deployed,
+  `EXPECTED_TRANSACTION_BUNDLE_SHA_8D`-pinned edge bundle) and the 4
+  token-identical `exact=` helper lines + 2 CLI-config validation lines whose
+  default sort is provably code-unit identical; plus the frozen serialized-AST
+  `then` field in boundary-locked `lib/reactive-vm-7d.js`. Recorded in the
+  single-source `tests/helpers/boundary-locks.mjs` authorization note (U-Sonar
+  paragraph) alongside the U-P1/U-R history.
+- Boundary lock digests updated once for `content.js` (`f4d15ef5…`) and
+  `multi-signal-relevance-p3.js` (`97ef64a6…` via helper); the P2/P3/P4/P5 test
+  locks were refactored into `tests/helpers/boundary-locks.mjs` to remove the
+  duplicated authorization-comment/Map blocks flagged by the duplication gate.
+- **Result**: PR #52 SonarCloud Quality Gate PASSED (0 new issues, 0
+  duplication), CircleCI + Vercel green on the exact PR head, merged
+  fast-forward to `main`.
+- No public contract, MCP schema, capability list, or deployed-bundle bytes
+  changed; 1.6.13 remains the unsigned candidate and 1.6.10 the active release.
 
 ## GitHub repository cleanup (2026-09-28, owner-ordered)
 
