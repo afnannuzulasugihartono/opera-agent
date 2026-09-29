@@ -38,6 +38,11 @@ Owner requested tidying the remote repository. Executed and verified:
   was cleared (internal OAuth page, not a public product URL — the repo is
   private). No LICENSE file was added: choosing a license is an owner/legal
   decision, not housekeeping.
+- **Checks on the r8 push heads**: CircleCI + Vercel green. SonarCloud reports
+  a Quality Gate failure ("Reliability Rating on New Code" < A). Per the
+  recorded gate scope, SonarCloud is the PR static-quality gate, not an
+  acceptance gate, and no PR exists on r8 — informational here; the next PR
+  author should resolve the new-code reliability findings before opening it.
 - No production/database/release-activation state was changed by this cleanup.
 
 ## U-R timeout/retry/popup parity implemented on r8 (2026-09-28, takes precedence)
