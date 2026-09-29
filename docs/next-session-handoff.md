@@ -4,9 +4,9 @@
 
 Owner-ordered repository tidying on top of U-R (see §U-R below):
 
-- Remote branches are now only `main` and `feat/pre-8e-usability-repair-r8`
-  (both at the current tip; obsolete merged `feat/pre-8e-usability-repair-r3`,
-  `release/1.3.0`, `release/1.3.1` deleted after `archive/*` tags).
+- Remote branches are now only `main` and `feat/pre-8e-usability-repair-r8`.
+  README evidence head `05202ba` (CI green, `main` fast-forwarded); this
+  cleanup-records head is `8c7d42a` on r8.
 - README status block corrected to the verified production state: 1.6.10
   active (live-checked against `update.xml`), Protocol 1 / 26 capabilities /
   22-tool MCP inventory, U-* checkpoint line on r8.
