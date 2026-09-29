@@ -1,5 +1,29 @@
 # Opera Agent next-session handoff
 
+## GitHub repo cleanup completed — 2026-09-28 (read first)
+
+Owner-ordered repository tidying on top of U-R (see §U-R below):
+
+- Remote branches are now only `main` and `feat/pre-8e-usability-repair-r8`
+  (both at the current tip; obsolete merged `feat/pre-8e-usability-repair-r3`,
+  `release/1.3.0`, `release/1.3.1` deleted after `archive/*` tags).
+- README status block corrected to the verified production state: 1.6.10
+  active (live-checked against `update.xml`), Protocol 1 / 26 capabilities /
+  22-tool MCP inventory, U-* checkpoint line on r8.
+- GitHub Release **v1.6.0** published with assets (`Opera-Agent-1.6.0.crx`
+  byte-verified vs recorded production SHA-256 `cd50933e...`, extension +
+  source zips from `git archive v1.6.0`, `SHA256SUMS`). Versions above 1.6.0
+  ship only through the private Supabase update service — GitHub releases are
+  archive pages, not install channels.
+- Stale 1.0.1-era issue #1 closed as superseded (comment records the
+  replacements). Open issues/PRs: zero.
+- Repo metadata: description + 8 topics set; internal OAuth homepage cleared;
+  no LICENSE added (owner/legal decision, left to the owner).
+- Full record: `docs/project-context.md` §GitHub repository cleanup.
+- Next exact action: unchanged U-R follow-ups — owner live acceptance of
+  1.6.13, owner-gated CRX signing/activation chain, then U-P2 (vision
+  sampling) as the last proposed research checkpoint.
+
 ## U-R timeout/retry/popup parity implemented (1.6.13 candidate) — 2026-09-28 (read first)
 
 Continuation session on `feat/pre-8e-usability-repair-r8` (start head

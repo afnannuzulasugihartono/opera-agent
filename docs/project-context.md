@@ -1,6 +1,44 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-28 (U-R timeout/retry/popup parity implemented, 1.6.13 candidate)
+Last synchronized: 2026-09-28 (GitHub repository cleanup; U-R 1.6.13 candidate at main)
+
+## GitHub repository cleanup (2026-09-28, owner-ordered)
+
+Owner requested tidying the remote repository. Executed and verified:
+
+- **Branches**: deleted the obsolete merged tips after creating archive tags
+  first — `archive/feat/pre-8e-usability-repair-r3` (r3 tip `7ac21fe`),
+  `archive/release/1.3.0`, `archive/release/1.3.1`. Remote now holds only
+  `main` and the active line `feat/pre-8e-usability-repair-r8` (both
+  `05202ba`), per the branch-lifecycle rule.
+- **README status block was governance-drifted**: it still claimed 1.6.2 as
+  production-active with the 18-tool inventory. Verified live against the
+  production `update.xml` (serving 1.6.10 for ID
+  `ohbbpamcljckmjhcpkcmefdobkoeaick`) and rewrote the status block to the
+  true current contract (1.6.10 active, 26 capabilities, 22-tool MCP
+  inventory, U-* checkpoint line on r8). Committed as `05202ba`
+  (`docs(readme): ...`) after `npm test` 517/517 and CI green; `main`
+  fast-forwarded.
+- **GitHub Releases**: tag `v1.6.0` existed without a release page. Created
+  release **v1.6.0** with assets: `Opera-Agent-1.6.0.crx` (local copy
+  byte-verified against the recorded production SHA-256 `cd50933e...`,
+  35,855 bytes), extension ZIP and full-source ZIP built via
+  `git archive v1.6.0`, and a `SHA256SUMS`. Note: versions above 1.6.0 are
+  distributed through the private Supabase update service only — the GitHub
+  release page is an archive, not the installation channel.
+- **Issue tracker**: the stale 1.0.1-era acceptance issue #1 was closed with a
+  comment recording why it is superseded (signing identity, passive-update
+  chain, Phase 2 features all replaced by the 1.2→1.6.x line). Open issues
+  and PRs now zero.
+- **Repo metadata**: description updated (local-browser bridge / MCP /
+  Supabase / signed CRX); topics added
+  (`browser-automation`, `opera-extension`, `model-context-protocol`,
+  `mcp-server`, `supabase`, `edge-functions`, `ai-agents`,
+  `chromium-extension`); the old `oauth-consent-three.vercel.app` homepage
+  was cleared (internal OAuth page, not a public product URL — the repo is
+  private). No LICENSE file was added: choosing a license is an owner/legal
+  decision, not housekeeping.
+- No production/database/release-activation state was changed by this cleanup.
 
 ## U-R timeout/retry/popup parity implemented on r8 (2026-09-28, takes precedence)
 
