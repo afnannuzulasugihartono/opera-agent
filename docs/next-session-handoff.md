@@ -1,5 +1,42 @@
 # Opera Agent next-session handoff
 
+## Repository tidying round 2: front page + naming audit (2026-09-29)
+
+Owner-ordered professionalization pass. All commits docs-only; head `43e8e65`
+on r8 = `main` (CircleCI + Vercel green, tree clean):
+
+- **README rebuilt** to the verified contract: current-release table,
+  capability groups, architecture, repo layout, dev commands; removed stale
+  "What 1.0.x includes" and the 23-primitive claim (source of truth: 26 via
+  `ALLOWED_METHODS.length`, 22 tools via fixture + `mcp-inventory-compat-r4`
+  locks). `ab5e7f0`.
+- **CHANGELOG**: added `[1.6.13]` section with U-R delta + cumulative
+  attribution (U-P1@1.6.11 source, U-P3@1.6.12 source; 1.6.12 never packed);
+  note that 1.6.3–1.6.12 records live in context/docs/releases. `da7d52d`.
+- **Release archive index** (`docs/releases/README.md`) completed through
+  1.6.13: verified activation sequence 1.6.5 -> 1.6.6 -> 1.6.7 -> 1.6.9 ->
+  1.6.10 -> 1.6.13; 1.6.4/1.6.8/1.6.11 uploaded-never-active; 1.6.12 never
+  packed. `8b6e083`, corrected `43e8e65`.
+- **CONTRIBUTING**: branch patterns aligned to binding governance
+  (`feature/*` was invalid vs `feat|fix|chore|docs|test|perf|refactor/*`).
+  `8b6e083`.
+- **GitHub page**: homepage field cleared (was the OAuth dev Vercel URL);
+  v1.6.0 release body corrected to "current 1.6.13 active release line".
+- **Governance audit clean**: naming test green; root entries all
+  allowlisted/tracked-or-ignored; remote holds only `main` + r8 +
+  archive/*/v* tags.
+- **Push auth (this machine)**: the SSH agent's github key is gone
+  (`~/.ssh` only holds the read-only CircleCI deploy key) and the global
+  `url.ssh://github.com.insteadOf=https` rewrite breaks SSH transport.
+  Push via: `git -c credential.helper="!gh auth git-credential" -c
+  "url.https://github.com/.insteadOf=https://github.com/" -c
+  "url.https://github.com/.insteadOf=ssh://git@github.com/" push
+  https://github.com/afnannuzulasugihartono/opera-agent.git <ref>` (gh CLI
+  PAT authenticates HTTPS).
+
+Previous sections remain accurate below (1.6.10-active lines are superseded
+by the 1.6.13 activation section at the top of this file's predecessor).
+
 ## 1.6.13 ACTIVATED as production release (2026-09-29, owner-ordered, takes precedence)
 
 - Active release is now **1.6.13** (single active row; SHA-256
