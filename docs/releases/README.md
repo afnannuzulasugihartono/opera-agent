@@ -24,13 +24,16 @@ Detailed release notes are stored in this directory. Release documents are histo
 
 Per-version notes were not written for the r8 checkpoint line; these releases
 shipped exclusively through the private signed-update service and are
-recorded per checkpoint in `docs/project-context.md` and the
-`docs/pre-8e-performance-usability-r*.md` evidence families. Activation
-sequence (owner-ordered, from the records): 1.6.6 (2026-09-23, ETW watch
-line), then 1.6.7, 1.6.9, and 1.6.10 (2026-09-24), and **1.6.13
-(2026-09-29, current production)**. `1.6.11` remains an uploaded-inactive
-candidate and `1.6.12` source was never packed as a signed CRX; superseded
-rows stay intact as rollback targets.
+recorded per checkpoint in `docs/project-context.md`, `docs/next-session-handoff.md`,
+and the `docs/pre-8e-performance-usability-r*.md` evidence families.
+
+Activation sequence (owner-ordered flips): **1.6.5** (2026-09-22, the U-S
+burst release) → **1.6.6** (2026-09-23, ETW watch line) → **1.6.7**
+(2026-09-23) → **1.6.9** (2026-09-24) → **1.6.10** (2026-09-24) → **1.6.13**
+(2026-09-29, current production). `1.6.4` and `1.6.8` were signed and
+uploaded inactive but never activated; `1.6.11` remains an uploaded-inactive
+candidate and the `1.6.12` source was never packed as a signed CRX. All
+superseded rows stay intact as rollback targets.
 
 Future stable releases should use simple SemVer filenames:
 
