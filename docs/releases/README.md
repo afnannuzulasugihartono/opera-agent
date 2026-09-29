@@ -6,7 +6,10 @@ Detailed release notes are stored in this directory. Release documents are histo
 
 - [1.0.0](1.0.0.md) — first clean Opera Agent release.
 - [1.0.1](1.0.1.md) — durable completion/two-phase command fix and verified same-ID signed update.
+- [1.1.0](1.1.0.md) — new-signing-identity candidate: text-only reads, pointer groundwork, 23 primitives retained.
+- [1.1.1](1.1.1.md) — first signed production update under the new identity; generic `page.pointer` input.
 - [1.2.0](1.2.0.md) — bounded same-tab action bursts through one relay command.
+- [1.3.0](1.3.0.md) — invisible-coordinate input candidate; superseded by 1.3.1 after CDP-focus issues on Maps.
 - [1.3.1](1.3.1.md) — stable background CDP input with bounded page-focus emulation and no real tab activation.
 - [1.4.0](1.4.0.md) — bounded adaptive screenshots with native ChatGPT image delivery and background-focus preservation.
 - [1.5.0](1.5.0.md) — generic vision-navigation observability and deterministic nested scrolling with an unchanged MCP tool inventory.
@@ -14,11 +17,20 @@ Detailed release notes are stored in this directory. Release documents are histo
 - [1.5.2](1.5.2.md) — popup intrinsic-width correction that prevents scrollbar-width collapse in Opera.
 - [1.6.0](1.6.0.md) — semantic identity, bounded deltas, generic materialized views, causal invalidation, and scoped completion evidence.
 - [1.6.1](1.6.1.md) — unique exact-actionable find candidate; deactivated after failing the R8 live Skip path.
-- [1.6.2](1.6.2.md) — production-active same-identity forward rollback carrying accepted 1.6.0 behavior.
+- [1.6.2](1.6.2.md) — same-identity forward rollback carrying accepted 1.6.0 behavior.
+- [1.6.3](1.6.3.md) — bounded R8 explicit-limit and viewport-truth repair; signed and uploaded to the release registry inactive.
 
-## Pending release candidates
+## 1.6.4–1.6.13
 
-- [1.6.3](1.6.3.md) — bounded R8 explicit-limit and viewport-truth repair; signing, audit, and live acceptance pending.
+Per-version notes were not written for the r8 checkpoint line; these releases
+shipped exclusively through the private signed-update service and are
+recorded per checkpoint in `docs/project-context.md` and the
+`docs/pre-8e-performance-usability-r*.md` evidence families. Activation
+sequence (owner-ordered, from the records): 1.6.6 (2026-09-23, ETW watch
+line), then 1.6.7, 1.6.9, and 1.6.10 (2026-09-24), and **1.6.13
+(2026-09-29, current production)**. `1.6.11` remains an uploaded-inactive
+candidate and `1.6.12` source was never packed as a signed CRX; superseded
+rows stay intact as rollback targets.
 
 Future stable releases should use simple SemVer filenames:
 

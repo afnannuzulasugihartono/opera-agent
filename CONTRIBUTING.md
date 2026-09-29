@@ -2,12 +2,12 @@
 
 ## Development workflow
 
-Use short-lived branches for changes:
+Use short-lived branches for changes, following the binding naming rules in
+`AGENTS.md`:
 
 ```text
-feature/*
-fix/*
-release/*
+feat/*      fix/*      chore/*      docs/*      test/*      perf/*      refactor/*
+release/<semver>
 ```
 
 Before merging:
