@@ -2,6 +2,30 @@
 
 All notable changes to Opera Agent are documented here. The project follows Semantic Versioning.
 
+Releases `1.6.3`–`1.6.12` shipped through the private signed-update service
+and are recorded per checkpoint in `docs/project-context.md` and
+`docs/releases/`; the sections below keep the GitHub-facing history through
+`1.6.2` plus the current release line.
+
+## [1.6.13] - 2026-09-29
+
+Signed, audited, and activated as the production release (owner-ordered).
+
+- U-R delta for this version: timeout/retry/popup parity — expect-polling
+  window, fill retry parity, coded `COMMAND_TIMEOUT` → `outcome:"unknown"`,
+  bounded popup log + `openedTabs`, background-tab popup attribution fix.
+  The binary also carries the cumulative line history: U-P1 (added at the
+  1.6.11 source) and U-P3 (added at 1.6.12 source) — `1.6.12` itself was
+  never packed as a signed CRX.
+- U-Sonar: new-code reliability sweep (56 issues resolved, Quality Gate
+  passed) plus DRY centralization (`lib/canonical-order.js`,
+  `tests/helpers/boundary-locks.mjs`).
+- Distribution: CRX3 60,188 bytes, SHA-256
+  `8420872b2ce3bf7c1ce1cefcb66037eb453441bd73cde80c4fa1eeb1b2d263df`;
+  `1.6.10`/`1.6.11` remain intact inactive rollback rows.
+- Protocol 1, 26 browser primitives, and the 22-tool MCP inventory are
+  unchanged across this line.
+
 ## [Unreleased]
 
 ### U-T event-triggered workflows (eliminates the model trip pattern)
