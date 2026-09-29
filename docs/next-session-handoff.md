@@ -1,6 +1,27 @@
 # Opera Agent next-session handoff
 
-## U-Sonar new-code reliability sweep merged (2026-09-29, takes precedence)
+## CRX 1.6.13 signed, audited, uploaded inactive (2026-09-29, takes precedence)
+
+Owner-ordered continuation of the interrupted 2026-09-29 signing session.
+Full record in `docs/project-context.md` §CRX 1.6.13. Key facts:
+
+- Signed `D:\Opera\opera-agent-1.6.13.crx` (60,188 bytes, SHA-256 `8420872b...
+  263df`) from clean worktree at release head `83be509` (CI/Vercel/Sonar green
+  on that exact head). Offline audit PASS: identity + owner-PEM match, RSA
+  proof valid over the Chromium-exact blob (signature padding is PKCS#1 v1.5 —
+  the old `%TEMP%\kilo\verify-crx.mjs` PSS-only check false-flagged every
+  artifact, including served 1.6.10), all 14 archive entries byte-identical
+  to source.
+- Uploaded to `opera_releases` as `active=false` via the Supabase Management
+  API (project `nenmkmtvjremqphfqnfw`). Verified DB bytes/SHA = disk; live
+  `update.xml` still serves 1.6.10 and the 1.6.13 CRX path 404s while
+  inactive.
+- **Exact next actions (both owner-gated, NOT performed)**: owner live Opera
+  acceptance of 1.6.13, then the owner-ordered atomic activation flip
+  (1.6.13 active / 1.6.10 inactive). Rollback = same flip re-activating 1.6.10.
+- This head is docs-only; code state is unchanged from `83be509`.
+
+## U-Sonar new-code reliability sweep merged (2026-09-29)
 
 Owner ordered the SonarCloud Quality Gate green. Full record in
 `docs/project-context.md` §U-Sonar. Key facts for the next session:

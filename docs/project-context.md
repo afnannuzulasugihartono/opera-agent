@@ -1,6 +1,48 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-29 (U-Sonar new-code reliability sweep on PR #52)
+Last synchronized: 2026-09-29 (CRX 1.6.13 signed, audited, uploaded inactive)
+
+## CRX 1.6.13 signed, audited, uploaded inactive (2026-09-29)
+
+Continuation of the interrupted 2026-09-29 signing session. The signed artifact
+already existed from that session; this session completed the audit and the
+upload-inactive step of the frozen release workflow (activation remains an
+explicit owner decision and has NOT been performed).
+
+- Artifact: `D:\Opera\opera-agent-1.6.13.crx` — 60,188 bytes, SHA-256
+  `8420872b2ce3bf7c1ce1cefcb66037eb453441bd73cde80c4fa1eeb1b2d263df`, packed
+  from a clean detached worktree of release head `83be509` (manifest
+  `version` 1.6.13). Signing gate satisfied before packing: CircleCI `ci`,
+  Vercel, and SonarCloud all SUCCESS on exact head `83be509`.
+- Offline audit PASS:
+  - CRX3 header parses; `crx_id` derived from the proof public key equals the
+  established identity `ohbbpamcljckmjhcpkcmefdobkoeaick`; the proof public key
+  equals the owner signing PEM (`D:\Opera\signing-private\opera-agent-new-
+  identity.pem`); the RSA-SHA256 proof is VALID over the exact Chromium blob
+  `CRX3 SignedData\0` + u32le(|SignedData|) + SignedData + archive; all 14
+  archive entries are byte-identical to the audited worktree source.
+  - **Validator correction (recorded root cause)**: the prior session's
+  `%TEMP%\kilo\verify-crx.mjs` only attempted RSA-PSS verification and printed
+  `INVALID` for every artifact — including production-served, accepted 1.6.10
+  and 1.6.8 — a false negative. Recovering the digest by raw RSA public-op
+  exponentiation of each artifact's signature proved the signature padding is
+  **PKCS#1 v1.5**, and the recovered SHA-256 equals the Chromium-exact blob
+  digest for 1.6.0/1.6.10/1.6.11/1.6.13. Live Opera installs of these served
+  releases are the corroborating acceptance evidence.
+- Upload-inactive executed via Supabase Management API SQL on project
+  `nenmkmtvjremqphfqnfw`: new `opera_releases` row
+  (`version=1.6.13`, correct `extension_id`, `active=false`). Verified: DB
+  base64 decodes to 60,188 bytes whose in-DB SHA-256 digest equals the
+  recorded/disk hash (DB = disk).
+- Post-upload serving state verified live and unchanged: `update.xml` still
+  serves 1.6.10 (the single active row) and the 1.6.13 CRX path returns 404
+  while inactive — exactly the pre-acceptance posture required by the release
+  workflow. 1.6.11 remains uploaded inactive; 1.6.12 source still awaits its
+  own signed CRX.
+- Next actions, both owner-gated and NOT performed here: owner live Opera
+  acceptance of 1.6.13, then the owner-ordered atomic activation flip
+  (1.6.13 active / 1.6.10 inactive). Rollback remains the same flip re-
+  activating 1.6.10 (row intact).
 
 ## U-Sonar new-code reliability sweep (2026-09-29, PR #52)
 
@@ -35,7 +77,9 @@ verified `npm test` 517/517 + `npm run check` + Edge-headless regression:
   duplication), CircleCI + Vercel green on the exact PR head, merged
   fast-forward to `main`.
 - No public contract, MCP schema, capability list, or deployed-bundle bytes
-  changed; 1.6.13 remains the unsigned candidate and 1.6.10 the active release.
+  changed; at the U-Sonar close 1.6.13 was the unsigned candidate and 1.6.10
+  the active release (1.6.13 has since been signed and uploaded inactive —
+  see the CRX 1.6.13 section above).
 
 ## GitHub repository cleanup (2026-09-28, owner-ordered)
 
