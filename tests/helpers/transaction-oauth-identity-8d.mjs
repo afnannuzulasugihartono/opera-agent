@@ -1,6 +1,7 @@
 // Test-only in-process adapter. No enrollment, private RPC, prepare/cancel/approval.
 import { ISSUER,CLIENT_ID } from './transaction-oauth-8d.mjs';
 import { Buffer } from 'node:buffer';
+import { codeUnitCompare } from '../../lib/canonical-order.js';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export async function verifyOAuthHostStatus(client,credential,{publicKey,signal,now=Date.now,fetchImpl=fetch}) {
   try {
@@ -26,7 +27,7 @@ export async function verifyOAuthHostStatus(client,credential,{publicKey,signal,
       body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
     }finally{await reader.cancel().catch(()=>{});}
     if(signal?.aborted||c.exp<=now()/1000||body?.browserDispatchAllowed!==false)throw new Error();
-    const keys=Object.keys(body).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',');
+    const keys=Object.keys(body).sort(codeUnitCompare).join(',');
     if(response.status===200){if(keys!=='browserDispatchAllowed,result'||body.result!==null)throw new Error();}
     else if(response.status===503){if(keys!=='browserDispatchAllowed,error'||body.error!=='TRANSACTION_DISABLED')throw new Error();}
     else if(response.status===401){if(keys!=='browserDispatchAllowed,error'||body.error!=='AUTHENTICATION_REQUIRED')throw new Error();}

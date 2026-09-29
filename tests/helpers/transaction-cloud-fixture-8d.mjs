@@ -4,6 +4,7 @@
 import { transactionFixture } from './transaction-dark-fixture.mjs';
 import { digestCanonical } from '../../lib/goal-ledger.js';
 import { CLIENT_ID } from './transaction-oauth-8d.mjs';
+import { codeUnitCompare } from '../../lib/canonical-order.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const freeze = value => {
@@ -12,7 +13,7 @@ const freeze = value => {
 };
 export async function createCloudFixtureData8D(options) {
   if (!options || ![Object.prototype, null].includes(Object.getPrototypeOf(options)) ||
-      Object.keys(options).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',') !== 'namespace,preparedAt,userId' ||
+      Object.keys(options).sort(codeUnitCompare).join(',') !== 'namespace,preparedAt,userId' ||
       !UUID.test(options.namespace??'') || !UUID.test(options.userId??'') ||
       typeof options.preparedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(options.preparedAt) ||
       !Number.isFinite(Date.parse(options.preparedAt)) || new Date(options.preparedAt).toISOString() !== options.preparedAt) {

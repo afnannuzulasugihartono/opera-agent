@@ -2,6 +2,7 @@
 // No storage, logging, token export, refresh, browser dispatch or approval authority.
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { Buffer } from 'node:buffer';
+import { codeUnitCompare } from '../../lib/canonical-order.js';
 
 export const ISSUER='https://nenmkmtvjremqphfqnfw.supabase.co';
 export const CLIENT_ID='8bf1ff0e-7088-4881-ba76-e36c672453c6';
@@ -81,7 +82,7 @@ export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyA
       let extra={};
       if(verifyAccessToken){
         extra=await verifyAccessToken(accessToken,signal);
-        if(!extra||Object.keys(extra).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!=='browserDispatchAllowed,hostDisabled,hostIdentityAccepted,hostStatusHttpStatus,signedClaimsVerified'||
+        if(!extra||Object.keys(extra).sort(codeUnitCompare).join(',')!=='browserDispatchAllowed,hostDisabled,hostIdentityAccepted,hostStatusHttpStatus,signedClaimsVerified'||
           extra.signedClaimsVerified!==true||extra.browserDispatchAllowed!==false||![200,401,503].includes(extra.hostStatusHttpStatus)||
           extra.hostIdentityAccepted!==(extra.hostStatusHttpStatus===200)||extra.hostDisabled!==(extra.hostStatusHttpStatus===503))throw new Error();
       }

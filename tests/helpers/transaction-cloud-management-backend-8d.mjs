@@ -6,6 +6,7 @@ import { CLIENT_ID } from './transaction-oauth-8d.mjs';
 import { CALLBACK_8D, PROJECT_REF_8D } from './transaction-cloud-operator-8d.mjs';
 import { decodeLedgerKey, sealLedgerToken } from '../../lib/ledger-token.js';
 import { createHash } from 'node:crypto';
+import { codeUnitCompare } from '../../lib/canonical-order.js';
 
 export const TRANSACTION_FUNCTION_8D='opera-agent-transactions-8d';
 export const EXPECTED_TRANSACTION_BUNDLE_SHA_8D='96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1';
@@ -102,7 +103,7 @@ select control.host_enabled,
 from fence cross join control`;
 
 export function createManagementOperatorBackend8D(configuration){
-  if(!plain(configuration)||Object.keys(configuration).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!=='credentialProvider,fetchImpl,now'||
+  if(!plain(configuration)||Object.keys(configuration).sort(codeUnitCompare).join(',')!=='credentialProvider,fetchImpl,now'||
     typeof configuration.credentialProvider!=='function'||typeof configuration.fetchImpl!=='function'||typeof configuration.now!=='function') fail('INVALID_8D_MANAGEMENT_BACKEND');
   const {credentialProvider,fetchImpl,now}=configuration;
   async function credential(){const value=await credentialProvider();if(typeof value!=='string'||!TOKEN.test(value)||/\s/.test(value))fail('8D_OPERATOR_CREDENTIAL_UNAVAILABLE');return value;}

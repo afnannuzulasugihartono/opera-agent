@@ -5,6 +5,7 @@ import {
   digestCanonical,
   validateLedger,
 } from './goal-ledger.js';
+import { codeUnitCompare } from '../../../lib/canonical-order.js';
 
 const SCHEMA_VERSION = 1;
 const EVALUATOR_VERSION = 'OA_PROOF_V1';
@@ -300,7 +301,7 @@ export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, op
   const contradictions = [];
   for (const [predicate, group] of contradictionGroups) {
     if (group.yes.length && group.no.length) {
-      const evidenceRefs = [...group.yes, ...group.no].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      const evidenceRefs = [...group.yes, ...group.no].sort(codeUnitCompare);
       contradictions.push({ predicate, evidenceRefs });
       for (const evidenceId of evidenceRefs) rejected.push({ index: Number.MAX_SAFE_INTEGER, rejection: { evidenceId, reason: 'CONTRADICTION_UNRESOLVED' } });
     }

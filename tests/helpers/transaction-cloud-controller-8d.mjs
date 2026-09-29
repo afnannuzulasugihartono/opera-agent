@@ -5,6 +5,7 @@ import { Buffer } from 'node:buffer';
 import { createCloudFixtureData8D } from './transaction-cloud-fixture-8d.mjs';
 import { ISSUER, CLIENT_ID } from './transaction-oauth-8d.mjs';
 import { digestCanonical } from '../../lib/goal-ledger.js';
+import { codeUnitCompare } from '../../lib/canonical-order.js';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const OPERATIONS=['preflight','recordOwnership','installFixture','sealLedger','enableHost','setDark','verifyCancelled','disableHost','setOff','cleanupFixture','verifyClean'];
@@ -13,12 +14,12 @@ const fail=code=>{throw new Error(code);};
 const freeze=value=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
 
 export function createCloudAcceptanceController8D(configuration) {
-  if(!configuration||Object.keys(configuration).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!=='fetchImpl,namespace,now,operator,publicKey,sdk'||
+  if(!configuration||Object.keys(configuration).sort(codeUnitCompare).join(',')!=='fetchImpl,namespace,now,operator,publicKey,sdk'||
     typeof configuration.namespace!=='string'||!UUID.test(configuration.namespace)||
     typeof configuration.publicKey!=='string'||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(configuration.publicKey)||
     typeof configuration.now!=='function'||typeof configuration.fetchImpl!=='function'||
     !configuration.sdk?.auth||typeof configuration.sdk.auth.getClaims!=='function'||typeof configuration.sdk.auth.getUser!=='function'||
-    !configuration.operator||Object.keys(configuration.operator).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!==[...OPERATIONS].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')||
+    !configuration.operator||Object.keys(configuration.operator).sort(codeUnitCompare).join(',')!==[...OPERATIONS].sort(codeUnitCompare).join(',')||
     OPERATIONS.some(name=>typeof configuration.operator[name]!=='function'))fail('INVALID_CLOUD_CONTROLLER_CONFIGURATION');
   const {namespace,publicKey,now,fetchImpl}=configuration;
   const operator=Object.freeze(Object.fromEntries(OPERATIONS.map(name=>[name,configuration.operator[name].bind(configuration.operator)])));

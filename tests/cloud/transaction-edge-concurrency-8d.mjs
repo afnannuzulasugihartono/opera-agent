@@ -10,6 +10,7 @@ import { collectEdgeRoutingEvidence8D } from '../helpers/transaction-edge-routin
 import { createOAuthProbe, ISSUER } from '../helpers/transaction-oauth-8d.mjs';
 import { startOAuthListener } from '../helpers/transaction-oauth-listener-8d.mjs';
 import { parseAcceptanceArgs8D, SDK_SPECIFIER_8D, STATE_DIRECTORY_8D, LEASE_TTL_MS_8D } from './transaction-cloud-acceptance-8d.mjs';
+import { codeUnitCompare } from '../../lib/canonical-order.js';
 
 export const CONCURRENCY_8D = 8;
 export const PROJECT_REF_8D = 'nenmkmtvjremqphfqnfw';
@@ -41,7 +42,7 @@ async function consumeEdgeResponse(response) {
 }
 
 export function createEdgeConcurrencyFetch8D(configuration) {
-  if(!configuration||Object.keys(configuration).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(',')!=='fetchImpl,write'||typeof configuration.fetchImpl!=='function'||typeof configuration.write!=='function')
+  if(!configuration||Object.keys(configuration).sort(codeUnitCompare).join(',')!=='fetchImpl,write'||typeof configuration.fetchImpl!=='function'||typeof configuration.write!=='function')
     throw new Error('INVALID_8D_EDGE_CONCURRENCY_CONFIGURATION');
   const baseFetch=configuration.fetchImpl,write=configuration.write;
   const evidence={prepare:null,cancel:null};
