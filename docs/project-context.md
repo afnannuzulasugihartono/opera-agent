@@ -2,6 +2,10 @@
 
 Last synchronized: 2026-09-30 (head `4e90d31`: R9 complete in source, CI green, not released)
 
+## Enterprise standards Fase 1 closed (2026-09-30, branch-only)
+Fase 1 compliance & security baseline on `chore/enterprise-standards-phase-1` (code head `e3221a7`): MIT LICENSE, SECURITY.md/SUPPORT.md, CODEOWNERS, .env.example, install.md 1.6.13, env-driven ops scripts, CircleCI gitleaks/audit/deno/SBOM gates.
+Verified 2026-09-30: `npm test` 588/588, `npm run check` ok (26 primitives, 81 safety files, 1.6.13), browser suite exit 0 first run; Vercel success, CircleCI red at the deno gate only (pre-existing debt incl. mcp `index.ts:372` parse error — accepted outcome, Fase 2 greens it); Sonar red on C Reliability Rating on New Code (per-issue detail needs SonarCloud project access). No merge to `main`, no PR opened; Fase 2 punch list in the `e3221a7` trailer.
+
 ## R9 complete in source — head `4e90d31`, CI green, NOT released
 
 Record: `docs/pre-8e-performance-usability-r9-evidence.md`.

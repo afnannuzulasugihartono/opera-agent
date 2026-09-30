@@ -1817,3 +1817,37 @@ checkpoint.
   (proposed: `afnannuzulasugihartono`, 2026).
 - No runtime/test changes in this session; `npm test` / `npm run check`
   not rerun (no code touched).
+
+## Enterprise standards Fase 1 closed (2026-09-30, branch-only, deno gate red)
+
+Branch `chore/enterprise-standards-phase-1`, code head
+`e3221a72607daa1ea83acd6681916b44a0cdec51` (this closeout docs commit sits on
+top; resolve the tip via `git log`). Per-task commits: `a7bda2e` (MIT
+LICENSE), `dfeacd5` (SECURITY.md/SUPPORT.md), `9e72fe6` (CODEOWNERS),
+`84be166` (.env.example), `129df92` (install.md 1.6.13), `b00949c`
+(env-driven ops scripts), `c694298` + `e3221a7` (CI gates: gitleaks, audit,
+deno, SBOM); Task 8 Sonar diagnosis (no-change investigation), Task 9
+closeout (this entry). Full per-task evidence:
+`.superpowers/sdd/2026-09-30-enterprise-standards-phase1/` (gitignored).
+
+Gates rerun by Task 9 on code head `e3221a7` (2026-09-30): `npm test`
+588/588 PASS, `npm run check` exit 0 (26 primitives, 81 safety files,
+1.6.13), `py tests/browser_extension_test.py` exit 0 on the first run (no
+flake, no rerun needed). Exact-head CI: Vercel Preview Comments success,
+CircleCI `ci` FAILURE, combined status `failure` — red at the deno gate only
+(5m50s run reaching the deno step; local Deno 2.1.4 repro: 72 lint problems
++ 5 type errors + a genuine parse error at
+`supabase/functions/opera-agent-mcp/index.ts:372`, pre-existing debt). This
+is the accepted Fase 1 outcome per controller ruling (recorded in the SDD
+ledger); greening it is Fase 2 scope — do not touch runtime source to chase
+it. Gitleaks, audit, SBOM, and Vercel gates are green. Sonar (Task 8, basis
+head `a99978d`): Quality Gate failed on the single condition C Reliability
+Rating on New Code; per-issue detail is blocked on SonarCloud project access
+(private project — anonymous API calls 404). `gh` auth is fine.
+
+No merge to `main`, no PR opened (branch-only default). PR link if the owner
+asks:
+`https://github.com/afnannuzulasugihartono/opera-agent/pull/new/chore/enterprise-standards-phase-1`.
+Exact-next: Fase 2 — deno debt (punch list with codes/locations in the
+`e3221a7` trailer + task-7-report), Sonar per-issue read with project
+access, then the owner decides promotion.
