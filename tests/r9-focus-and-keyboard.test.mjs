@@ -206,6 +206,22 @@ test('R9: the shared key allowlist is the single source of truth for bursts and 
   }
 });
 
+test('R9-B: the synthetic path explains its narrower surface instead of a bare rejection', async () => {
+  // The synthetic key path accepts only 12 unmodified navigation keys while the
+  // runtime allowlist has 79. A bare "Key is not allowlisted" reads as a bug for
+  // a key the product accepts everywhere else, so the message must name the
+  // reason and the alternative.
+  const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /throw new Error\('Key is not allowlisted\.'\)/);
+  assert.match(source, /Key is not allowlisted for the synthetic path/);
+  assert.match(source, /require the trusted path/);
+  // The guard itself must stay: the synthetic path may not accept chords.
+  assert.match(source, /Chords, text, and /);
+  assert.match(source, /non-navigation keys require the trusted path/);
+  // And it must still refuse chords and text outright.
+  assert.match(source, /Key chords and text entry require the trusted path\./);
+});
+
 test('R9: trusted input executors never activate a tab or focus a window', async () => {
   const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
   const start = source.indexOf('async function trustedClick');

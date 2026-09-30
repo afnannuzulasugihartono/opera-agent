@@ -1549,7 +1549,17 @@
       throw new Error('Key chords and text entry require the trusted path.');
     }
     const keyName = args.key === 'Space' ? ' ' : String(args.key || '');
-    if (!NAV_KEYS.has(args.key) && !NAV_KEYS.has(keyName)) throw new Error('Key is not allowlisted.');
+    if (!NAV_KEYS.has(args.key) && !NAV_KEYS.has(keyName)) {
+      // The synthetic path is deliberately narrower than the trusted path: it
+      // can only re-dispatch unmodified navigation keys, because dispatching a
+      // fabricated chord or text event would let a caller believe input landed
+      // on a surface that never received it. Say so, rather than reporting a
+      // bare allowlist rejection for a key the product accepts elsewhere.
+      throw new Error(
+        'Key is not allowlisted for the synthetic path. Chords, text, and '
+        + 'non-navigation keys require the trusted path (page.key with trusted: true).'
+      );
+    }
     const target = document.activeElement || document.body;
     const blocked = target && sensitiveDescriptor(target);
     if (blocked) throw new Error(`Keyboard input blocked on sensitive field (${blocked}).`);

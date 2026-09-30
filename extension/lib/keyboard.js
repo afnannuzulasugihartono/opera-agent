@@ -72,10 +72,9 @@ export function keyNames() {
 }
 
 // The single source of truth for what may be requested. The burst validator,
-// the MCP schema, and the content-script path all read this one list, so a key
-// can never be accepted on one surface and rejected on another.
+// the MCP schema parity test, and the content-script path all read this one
+// list, so a key can never be accepted on one surface and rejected on another.
 export const KEY_ALLOWLIST = Object.freeze(keyNames());
-export const MODIFIER_ALLOWLIST = Object.freeze(Object.keys(MODIFIER_BITS));
 
 export function resolveModifiers(modifiers) {
   if (modifiers == null) return { mask: 0, names: [] };

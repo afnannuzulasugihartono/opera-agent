@@ -86,4 +86,45 @@ test('the R9 modules expose no unused surface', async () => {
   const uses = keyboard.match(/keyNames/g) || [];
   assert.equal(uses.length, 2, 'keyNames must be referenced only by its declaration and its one caller');
   assert.match(keyboard, /export const KEY_ALLOWLIST = Object\.freeze\(keyNames\(\)\)/);
+  // MODIFIER_ALLOWLIST was exported and referenced nowhere at all, not even
+  // inside its own file.
+  assert.doesNotMatch(keyboard, /MODIFIER_ALLOWLIST/);
+  // isPlainObject is a pure internal predicate; exporting it was dead surface.
+  assert.doesNotMatch(background, /export function isPlainObject/);
+  const protocol = await readFile(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
+  assert.match(protocol, /^function isPlainObject\(value\)/m);
+  assert.equal((protocol.match(/isPlainObject/g) || []).length, 7, 'declared once and used six times');
+});
+
+test('no module under extension/ exports a symbol nothing else reaches', async () => {
+  // A general guard, so the next dead export fails here instead of
+  // accumulating. A symbol is "reached" if it appears in any other extension
+  // file, a test, a script, or the edge functions.
+  const files = [
+    '../extension/lib/keyboard.js',
+    '../extension/lib/focus-gate.js',
+    '../extension/lib/protocol.js',
+    '../extension/lib/action-pipeline.js',
+    '../extension/lib/ax-summary.js',
+    '../extension/role-reconcile.js',
+    '../extension/hover-settle.js'
+  ];
+  const consumers = await Promise.all(
+    [...files, '../extension/background.js', '../extension/content.js', '../tests/r9-public-surface-unchanged.test.mjs',
+      '../tests/r9-keyboard-vocabulary-parity.test.mjs', '../tests/r9-hygiene.test.mjs', '../tests/r9-focus-and-keyboard.test.mjs',
+      '../tests/r9-hover-settle.test.mjs', '../tests/r9-role-reconcile.test.mjs', '../tests/protocol.test.mjs',
+      '../tests/action-pipeline.test.mjs', '../tests/ax-observation.test.mjs', '../scripts/check.mjs']
+      .map(async (p) => ({ p, text: await readFile(new URL(p, import.meta.url), 'utf8') }))
+  );
+  const dead = [];
+  for (const { p, text } of consumers.filter(({ p }) => p.startsWith('../extension/'))) {
+    const names = [...text.matchAll(/^export (?:const|function|class) (\w+)/gm)].map((m) => m[1]);
+    for (const name of names) {
+      const usedElsewhere = consumers.some(
+        (other) => other.p !== p && new RegExp(`\\b${name}\\b`).test(other.text)
+      );
+      if (!usedElsewhere) dead.push(`${p.split('/').pop()} :: ${name}`);
+    }
+  }
+  assert.deepEqual(dead, [], 'these exports are referenced nowhere else');
 });

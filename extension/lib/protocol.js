@@ -66,7 +66,7 @@ export function clamp(value, min, max, fallback = min) {
   return Math.min(max, Math.max(min, n));
 }
 
-export function isPlainObject(value) {
+function isPlainObject(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
