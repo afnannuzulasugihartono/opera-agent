@@ -1,5 +1,48 @@
 # Opera Agent next-session handoff
 
+## R9-A/B/C closed — main fast-forwarded to `024696b` (CI green 2026-09-30)
+
+**Canonical head: `024696b` on `main` and `feat/pre-8e-usability-repair-r8`
+(identical).** CircleCI run 389 SUCCESS + Vercel SUCCESS on that exact SHA,
+combined commit status `success`. Fast-forwarded from `5ffa75e` with `--ff-only`
+after confirming `origin/main` was an ancestor. The branch-protection rule added
+this session (linear history, no force-push, no deletion, enforced on admins,
+no required status checks) did not block it.
+
+Four commits closed together: `136a11f` (R9 assessment), `a123bb5` (R9-A focus
+gate + R9-B keyboard chords), `06375a3` (R9-G instructions-only MCP guidance),
+`024696b` (R9-C role reconciliation + repository tidy).
+
+**This closes a source checkpoint only. Nothing is released or activated.**
+Production still serves CRX **1.6.13**, which predates every R9 change — the
+new `role-reconcile.js` content script ships with the next release. Per
+`AGENTS.md`, release promotion, activation, and Milestone 8E remain separate
+explicit owner decisions, and a public-MCP-touching checkpoint needs an
+independent audit before promotion.
+
+### Verifying CI in this environment
+
+`circleci_list_runs` on the CircleCI MCP connector returns only a count
+(`"Found 1 run(s)"`) with no run payload, so the documented
+`list_runs -> get_run -> list_workflow_jobs` chain cannot be followed. The error
+path works (`get_run` with a bad UUID returns `Run not found.`), so the connector
+is healthy; only the list payload is not surfaced.
+
+Use the GitHub check-runs API instead — it is *more* precise because it binds the
+result to an exact SHA, which is what the acceptance rule in `AGENTS.md` requires:
+
+```powershell
+gh api repos/afnannuzulasugihartono/opera-agent/commits/<sha>/check-runs `
+  --jq '[.check_runs[] | {name: .name, status: .status, conclusion: .conclusion}]'
+gh api repos/afnannuzulasugihartono/opera-agent/commits/<sha>/status --jq .state
+```
+
+Required checks: `ci/circleci: test` (CircleCI) and `Vercel`.
+
+Note: `git push` to GitHub **worked over SSH** this session despite the recorded
+`url.ssh://...insteadOf=https` SSH-agent breakage; the recorded HTTPS workaround
+remains the reliable path and is kept in the git history section below.
+
 ## R9-C role reconciliation + repository tidy (2026-09-30)
 
 Base `06375a3`. Record: `docs/pre-8e-performance-usability-r9-evidence.md`.

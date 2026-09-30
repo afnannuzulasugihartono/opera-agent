@@ -1,6 +1,34 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-30 (R9-C role reconciliation + GitHub repo tidy)
+Last synchronized: 2026-09-30 (R9-A/B/C closed; main = `024696b`, CI green)
+
+## R9-A/B/C closed — `main` fast-forwarded to `024696b` (2026-09-30)
+
+CircleCI run 389 SUCCESS + Vercel SUCCESS on that exact SHA, combined commit
+status `success`. Fast-forwarded from `5ffa75e` with `--ff-only` after confirming
+`origin/main` was an ancestor. Commits: `136a11f` (assessment), `a123bb5` (R9-A
+focus gate + R9-B keyboard chords), `06375a3` (R9-G instructions-only MCP
+guidance), `024696b` (R9-C role reconciliation + repository tidy). The
+branch-protection rule added this session did not block the fast-forward.
+
+**This closes a source checkpoint only — nothing released or activated.**
+Production still serves CRX **1.6.13**, which predates every R9 change; the new
+`role-reconcile.js` content script ships with the next release. Release
+promotion, activation, and Milestone 8E remain separate explicit owner
+decisions, and a public-MCP-touching checkpoint needs an independent audit
+before promotion.
+
+**CI verification method in this environment.** The CircleCI MCP connector's
+`list_runs` returns only a count with no run payload, so its documented
+`list_runs -> get_run -> list_workflow_jobs` chain cannot be followed (the error
+path works, so the connector itself is healthy). Use the GitHub check-runs API
+instead, which is more precise because it binds the result to an exact SHA:
+`gh api repos/<owner>/<repo>/commits/<sha>/check-runs` and `.../status`. Required
+checks are `ci/circleci: test` and `Vercel`.
+
+Also recorded: `git push` succeeded over **SSH** this session despite the
+recorded SSH-agent/`insteadOf` breakage; the HTTPS workaround is kept in the
+handoff git-history section as the reliable path.
 
 ## R9-C role reconciliation + repository tidy (2026-09-30)
 
