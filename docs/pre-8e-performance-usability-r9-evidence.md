@@ -552,19 +552,45 @@ it activates a tab, and several later cases depend on which tab the browser
 reports as active. CI passed on `a3af071`, but that was luck, not
 determinism.
 
-A partial mitigation was measured: activating the tab with `focusWindow: False`
-and restoring the expected tab at the end took the local rate from 1-in-3-pass
-to 4-in-5-pass. That is not good enough to ship, because a gate which cannot
-pass reliably is a gate the team learns to ignore — the same lesson as the 7C
-estimator. The correct fix is isolation: move the R9 block to the end of the
-run, or give it its own browser context. That refactor was not completed here
-because it could not be verified to the standard this track has used, so the
-browser test file is left at its last CI-verified state rather than shipping a
-partially fixed, still-flaky gate. **This is open work.**
+### Diagnosis, and what was tried
 
-The R9 capabilities themselves remain covered by unit tests and by that
-live-acceptance block; the outstanding item is the harness's isolation, not the
-product behaviour.
+The isolation fix is to make the R9 block a nested function **called last**,
+so it cannot perturb any earlier case. That transformation was applied and the
+flake disappeared — the suite went from intermittent to fully deterministic —
+but it surfaced a second, independent problem, and the combination is not yet
+verified:
+
+- **With the block last, the suite failed every run** at the block's first
+  command, `tabs.list`, with `TimeoutError: command ... not completed`. A
+  trivial read-only command timing out means the bridge was unresponsive, not
+  slow.
+- The likely cause is the **MV3 service-worker idle timeout**: a service worker
+  is terminated after roughly 30 seconds of inactivity, and by the end of a
+  long run the first command has to wake it. Adding a `browser.ping` warm-up
+  before the block was the natural response, but the verification run then
+  exceeded the 15-minute command budget and could not be completed.
+
+### Why it was not shipped
+
+The test file is left at its last **CI-verified** state. An unverified
+refactor of the suite's most complex test file is exactly the kind of change
+that turns a known flake into an unknown failure, and a gate that cannot be
+shown to pass reliably is a gate the team learns to ignore — the same lesson as
+the 7C estimator. Shipping "probably fixed" would have been the wrong call.
+
+### What a follow-up should do
+
+1. Move the R9 block to a nested function called last — the flake fix, proven
+   to remove the intermittency.
+2. Wake the bridge explicitly before it: a `browser.ping` with a generous
+   timeout, and a retry, so the MV3 wake-up is paid by a cheap command instead
+   of the first real one.
+3. Re-measure the local flake rate over at least 5 consecutive runs before
+   calling it fixed, and only then land it.
+
+The R9 capabilities themselves remain covered by unit tests and by the existing
+live-acceptance block; **the outstanding item is the harness's isolation, not
+the product behaviour.**
 
 ## Verification
 
