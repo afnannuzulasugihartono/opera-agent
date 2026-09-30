@@ -481,7 +481,7 @@ async function persistSlice(_program: VmProgram, state: VmState, transition: VmT
     resultToken = await sealVmHostToken(state.result, key, { kind: "RESULT" });
   }
   const errorCode = classification.terminal && state.status !== "RETURNED"
-    ? boundedErrorCode(state.suspension?.reason || state.status, state.status)
+    ? boundedErrorCode(state.suspension?.reason || state.status, String(state.status))
     : null;
 
   let stored = await rpc("opera_vm_checkpoint", {
@@ -536,7 +536,7 @@ async function processSlice(runId: string, tenantId: string) {
     if (await digestCanonical(state) !== claim.checkpointDigest || state.runId !== runId || state.tenantId !== tenantId) {
       throw new HostError("STALE_RUN", "Encrypted checkpoint no longer matches durable metadata.", 409);
     }
-    await assertGoalCurrent(tenantId, claim.goalId, Number(claim.goalRevision));
+    await assertGoalCurrent(tenantId, String(claim.goalId), Number(claim.goalRevision));
     const device = await resolveDevice(String(validatedProgram.target.deviceId));
 
     const sliceDeadline = performance.now() + REACTIVE_VM_HOST_7E_LIMITS.executionSliceMs - REACTIVE_VM_HOST_7E_LIMITS.sliceSafetyMarginMs;

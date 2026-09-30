@@ -15,6 +15,10 @@ export class VmHostTokenError extends Error {
   }
 }
 
+/**
+ * @returns {never} Always throws; annotated so Deno infers that key decoders
+ * return bytes rather than bytes-or-undefined.
+ */
 function fail(code, message) {
   throw new VmHostTokenError(code, message);
 }

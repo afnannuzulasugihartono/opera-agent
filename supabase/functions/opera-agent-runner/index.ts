@@ -341,7 +341,7 @@ async function runCommandOnce(
     p_request_id: requestId || null
   });
   if (!enqueued?.ok || !enqueued?.commandId) {
-    throw new WorkflowError("COMMAND_ENQUEUE_FAILED", enqueued?.error || "Unable to enqueue command.", enqueued);
+    throw new WorkflowError("COMMAND_ENQUEUE_FAILED", String(enqueued?.error || "Unable to enqueue command."), enqueued);
   }
 
   const commandId = String(enqueued.commandId);

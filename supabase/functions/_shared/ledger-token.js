@@ -18,6 +18,10 @@ export class LedgerTokenError extends Error {
     this.code = code;
   }
 }
+/**
+ * @returns {never} Always throws; annotated so Deno infers that callers
+ * never fall through (otherwise token openers look nullable).
+ */
 function fail(code, message) {
   throw new LedgerTokenError(code, message);
 }
@@ -68,6 +72,11 @@ export async function sealLedgerToken(ledgerInput, keyBytes, { requestId, issued
   return token;
 }
 
+/**
+ * @param {string} token
+ * @param {Uint8Array} keyBytes
+ * @param {{ now?: string, allowExpired?: boolean }} [options]
+ */
 export async function openLedgerToken(token, keyBytes, { now, allowExpired = false } = {}) {
   if (typeof token !== 'string' || new TextEncoder().encode(token).byteLength > LEDGER_SERVER_LIMITS.tokenBytes) {
     fail('INVALID_TOKEN', 'Ledger token is invalid or over its byte limit.');

@@ -205,6 +205,7 @@ Deno.serve(async (req: Request) => {
     if (url.pathname.endsWith("/command")) return await command(req, url);
     return json({ ok: false, error: { code: "NOT_FOUND", message: "Unknown path." } }, 404);
   } catch (error) {
-    return json({ ok: false, error: { code: "GATEWAY_ERROR", message: String(error?.message || error).slice(0, 300) } }, 502);
+    const message = error instanceof Error ? error.message : String(error);
+    return json({ ok: false, error: { code: "GATEWAY_ERROR", message: message.slice(0, 300) } }, 502);
   }
 });
