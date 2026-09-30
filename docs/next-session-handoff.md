@@ -1,6 +1,71 @@
 # Opera Agent next-session handoff
 
-## Head `4e90d31` — R9 complete in source, CI green, NOT released
+## Head `8e05b3e` — R9 complete in source WITH live browser acceptance; not released
+
+`main` = `feat/pre-8e-usability-repair-r8` = **`8e05b3e`**. CircleCI `ci`
+**success** — that check includes the Chromium extension regression step.
+Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+Live browser acceptance now exists for all four R9 capabilities
+(`tests/fixtures/pre-8e-usability-r9.html` plus cases in
+`tests/browser_extension_test.py`): implicit role discovery, a real `Ctrl+A`
+chord and bounded text into a contenteditable editor, sensitive-field refusal
+for both chord and text, a two-level hover menu driven by **one** burst, and
+stale-ref refusal with a usable `freshRef`.
+
+**It immediately paid for itself.** The burst validator only accepted a literal
+`ref` for a hover, not the `refFromStep` form that `click` and `fill` allow — so
+the documented multi-level menu pattern was impossible and **R9-E shipped broken
+for its primary use case**. No unit test caught it because the unit test used a
+literal ref. Fixed in `extension/lib/protocol.js` with a test.
+
+Two harness facts to keep: sensitive fields are **not actionable**, so the key
+guard must be exercised via `page.focus` rather than a click (a first attempt
+passed `selector` to `page.find`, which has no such parameter, so the guard was
+silently never tested — an explicit `activeElement` assertion caught it); and a
+**connected** element always resolves, so the geometry guard only applies to a
+real DOM replacement, not a CSS transform.
+
+**Nothing is released or activated.** Production serves CRX **1.6.13**, which
+predates every R9 change; `role-reconcile.js` and `hover-settle.js` ship with the
+next release. R9-F (canvas/rich-editor fill) remains **recommended for
+deferral**.
+
+### Environment notes for this machine
+
+- Python is not on `PATH` as `python`/`python3`, but `py` works (3.12.10) with
+  Playwright and Chromium installed. Use `py tests/browser_extension_test.py`.
+- Read CI with `gh api .../commits/<sha>/check-runs` **and** `.../status`. The
+  combined status can read `success` while a check-run is still pending or red.
+- The CircleCI MCP connector's `list_runs` returns only a count with no run
+  payload, so its `list_runs -> get_run -> list_workflow_jobs` chain cannot be
+  followed. Use the GitHub API.
+
+### Open: SonarCloud quality gate
+
+`SonarCloud Code Analysis` reports **Quality Gate failed** on every R9 head.
+Acceptance is CircleCI + Vercel and Sonar is the **PR** gate, so it does not
+block acceptance — but it is red for the whole track and **undiagnosed**: no
+`sonar-project.properties`, no `SONAR_*` env var, and no Sonar step in
+`.circleci/config.yml`, so it runs through the Sonar GitHub integration and its
+findings are unreachable from here. **Needs SonarCloud project access to read
+the actual findings.** Do not guess.
+
+### Still gated, and not on this line of work
+
+1. **Independent audit** before promotion. R9 touches four named `AGENTS.md`
+   audit triggers: public MCP surface (R9-B, R9-G), sensitive-input contract
+   (R9-B), ref-authority contract (R9-D), foreground gate (R9-A). The
+   implementing agent cannot clear this gate.
+2. **Live acceptance against a real third-party editor.** The R9 capabilities
+   are now verified in a real browser, but the motivating case is Google Docs
+   with a real account, which was not exercised.
+3. **Owner-ordered release**: build, sign, audit, upload inactive, live
+   acceptance, then the atomic activation flip. `opera_releases_one_active_per_
+   identity_idx` is an immediate partial UNIQUE index, so use the two-statement
+   ordered flip, not one multi-row UPDATE.
+
+## R9-A/B/C closed — main fast-forwarded to `024696b` (CI green 2026-09-30)
 
 `main` = `feat/pre-8e-usability-repair-r8` = **`4e90d31`**. CircleCI `ci`
 **success** and Vercel **success** on that exact SHA. Record:

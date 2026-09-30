@@ -478,15 +478,54 @@ reachable from this environment. **This needs someone with SonarCloud project
 access to read the actual findings.** Guessing at them would be worse than
 saying so.
 
+## R9 live browser acceptance — and a real product bug it found
+
+The unit suite covers the pure policy and the structural wiring, but **nothing
+ran the R9 capabilities in a real browser**. `npm test` does not cover the
+extension at all — which is precisely how the earlier Chromium-only regression
+slipped through. So live acceptance was added to the existing browser harness.
+
+`tests/fixtures/pre-8e-usability-r9.html` plus live cases verify, against a real
+page: an unannotated `<button>` is discoverable with `role: "button"` (it
+serialized as `""` before R9-C); a real `Ctrl+A` chord and bounded text entry
+actually land in a contenteditable editor; a sensitive OTP field is neither
+clickable nor typeable by chord or text; a two-level hover menu is driven by
+**one** burst with two hover steps; and a relocated control's stale ref is
+refused while the advertised `freshRef` is genuinely usable.
+
+### Product bug found and fixed
+
+**The burst validator only accepted a literal `ref` for a hover**, rejecting the
+`refFromStep` form that `click` and `fill` both allow. Since a `refFromStep`
+hover is the entire point of putting it in a burst, the documented multi-level
+menu pattern was impossible — the feature was shipped broken for its primary use
+case, and no test caught it because the unit test asserted a literal ref.
+`extension/lib/protocol.js` now accepts `refFromStep` for hover, with the
+earlier-step rule preserved and a test.
+
+This is the strongest argument for live acceptance in this record: the feature
+that motivated R9-E did not work.
+
+### Two harness details worth keeping
+
+- **Sensitive fields are not actionable**, so a click on one is refused before
+  focus. The key guard must be exercised via `page.focus`, not a click. The
+  first attempt passed a `selector` to `page.find` — which has no such
+  parameter, so it was silently ignored and the click landed on the wrong
+  element, meaning **the guard was never actually tested**. An explicit
+  `document.activeElement` assertion is what caught that.
+- **A connected element always resolves.** The geometry guard only applies to a
+  genuine DOM *replacement*; a CSS transform on a live element does not make a
+  ref stale.
+
 ## Verification
 
 | Gate | Result |
 | --- | --- |
-| `npm test` (full suite) | **573/573 pass** (three consecutive runs) |
+| `npm test` (full suite) | **573/573 pass** |
 | `npm run check` | ok — 26 primitives, 81 safety files, version 1.6.13 |
-| `py tests/browser_extension_test.py` | **exit 0** |
-| CircleCI `ci` on `4e90d31` | **success** |
-| Vercel on `4e90d31` | **success** |
+| `py tests/browser_extension_test.py` | **exit 0**, including R9 live acceptance |
+| CircleCI `ci` on `8e05b3e` (includes the Chromium gate) | **success** |
 | naming governance | pass (5/5) |
 | secret scan over the R9 diff | clean |
 | SonarCloud quality gate | **failing, undiagnosed — needs project access** |
