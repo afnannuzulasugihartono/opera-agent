@@ -47,13 +47,50 @@ ChatGPT / MCP client
 - Structured element state: `aria-pressed`/`aria-checked`/`aria-expanded`/
   `aria-selected`, `checked`, `selected`, `disabled`, visibility, geometry,
   stable element keys, and delta-first observations so re-reads stay small.
+- Roles are derived from what the platform reports, not only from a `role`
+  attribute, so an unannotated control is still discoverable by role. On
+  text-poor surfaces the accessibility tree additionally fills in roles the
+  markup does not carry; it stays read-only and never grants clickable refs.
 
 **Action**
 - CSS query, semantic find, link collection, wait-for, focus, fill, scroll,
-  navigation keys, and atomic click/fill bursts.
+  and atomic click/fill bursts.
 - Trusted debugger/CDP click and key paths with expect-based post-action
   verification; slow SPA/OAuth redirects resolve without a re-click.
+- Key chords with modifiers (`Ctrl+A`, `Ctrl+V`, `Shift+Enter`, `Ctrl+Shift+Z`)
+  and bounded text entry up to 20,000 characters for rich and canvas editors.
+- A `hover` burst step that moves the pointer and settles on the reveal, so
+  multi-level menus are one step per level instead of a hand-built wait chain.
 - Generic media state/play/pause/seek.
+
+**Reliability**
+- Foreground input re-checks tab and window focus at dispatch time and retries
+  a bounded number of times, instead of failing on a single early sample.
+- A stale ref after a legitimate re-render is refused on purpose, and the
+  failure carries fresh refs that are already validated and safe to act on.
+- Reconnect/retry across network drops and browser restarts.
+- Idempotent command completion with request IDs; coded timeout outcomes.
+- Versioned Supabase workflow registry with rollback; server-side revisions
+  improve behavior without reinstalling the extension.
+
+## Maturity
+
+The `main` branch is the consolidated source of truth. A source checkpoint is
+complete when CircleCI and Vercel are green on that exact head and a durable
+evidence record exists.
+
+That is **not** the same as being live. Production serves a signed, audited
+CRX through a self-hosted update service, and the `main` head is normally
+ahead of it. Promoting source to production — building, signing, an
+independent audit, uploading inactive, live acceptance, then activation — is a
+separate, explicit step. See
+[`docs/release-process.md`](docs/release-process.md) and
+[`SECURITY.md`](SECURITY.md).
+
+Changes that touch authentication, authorization, tenant isolation, encryption,
+signing identity, public MCP schemas, extension distribution, irreversible
+actions, or production database shape require an independent audit before
+promotion, not merely green CI.
 
 **Safety**
 - Password/PIN/OTP/2FA/CVV/CVC/security-code interaction protection.

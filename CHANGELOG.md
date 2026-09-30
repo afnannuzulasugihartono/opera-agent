@@ -28,6 +28,71 @@ Signed, audited, and activated as the production release (owner-ordered).
 
 ## [Unreleased]
 
+Complex-application control track (R9), developed against a live Google Docs
+session. **Source only — nothing in this section is released or activated.**
+Production still serves CRX `1.6.13`. Record:
+`docs/pre-8e-performance-usability-r9-evidence.md`.
+
+### Added
+
+- **Keyboard chords and bounded text entry on the trusted key path.** Modifier
+  bitmask support (alt/control/meta/shift with common aliases), an expanded
+  fixed 79-entry key vocabulary, and `Input.insertText`-based text entry up to
+  20,000 characters, chunked at 4,000, behind the unchanged sensitive-field
+  guard. Every previously allowlisted unmodified key resolves to a
+  byte-identical CDP payload. Exposed publicly on `press_key` and the burst
+  `key` step as optional fields, so the capability is reachable rather than
+  dormant behind the schema.
+- **Role reconciliation.** `serialize` now derives the role the platform would
+  report from an element's own tag, input type, href, and contenteditable state
+  instead of reading only the literal `role` attribute, so an unannotated
+  `<button>` is no longer reported as `role: ''` and is visible to a
+  role-filtered `find_elements`. The existing bounded text-poor accessibility
+  walk additionally fills in roles the markup does not carry, so a custom
+  control the platform reports as a radio becomes discoverable.
+- **Hover as a first-class burst step.** A `hover` step moves the trusted
+  pointer onto a resolved ref and settles on the reveal — an awaited submenu
+  name, an `aria-expanded` flip, or DOM stability — so a multi-level menu is one
+  step per level instead of a hand-built hover/wait chain.
+- **At-dispatch foreground focus gate.** Foreground pointer, click, fill, and
+  key input now re-sample tab/window focus from inside the debugger session
+  immediately before dispatch and retry a bounded number of times, instead of
+  sampling once before a content round trip and a debugger attach.
+
+### Changed
+
+- Model instructions now teach batching menu and dialog work into a single
+  `run_browser_burst` via `refFromStep`, using the new hover step for
+  multi-level menus, and acting directly on the `freshRefs` a moved-ref refusal
+  carries.
+- A stale-ref refusal after legitimate re-render now reports the measured drift
+  and the tolerance, and hands back fresh refs for candidates that already
+  passed uniqueness, intrinsic identity, actionability, and the non-sensitive
+  check.
+
+### Safety
+
+- **The mint-time 24px geometry tolerance is unchanged and unbroadened**, and a
+  moved successor is still refused. Recovery was made cheap by removing the
+  extra `page.find` round trip, not by relaxing the guard.
+- A hover dispatches exactly one pointer event and it is a move; it can never
+  click, and it routes through the same foreground focus gate as every other
+  pointer input.
+- Role reconciliation never downgrades an explicit DOM role, never adopts an
+  ambiguous accessibility name, never annotates a sensitive element, and never
+  mints, moves, or invalidates a ref.
+- No implicit tab activation, window focus, OS cursor movement, or keyboard
+  redirection. `userActiveTab != automationTargetTab` still holds.
+- No arbitrary JavaScript, `Runtime.evaluate`, raw CDP passthrough, or network
+  interception. None exists in the extension and none was added.
+
+### Unchanged
+
+- Protocol 1, the 26 allowlisted browser primitives, and all 22 public MCP tool
+  names. `page.hover` is burst-internal and is not a 27th primitive.
+- `stableElementIdentity` keeps the raw `role` attribute, so no stableKey in the
+  product changes.
+
 ### U-T event-triggered workflows (eliminates the model trip pattern)
 - Device-local watch rules: the model arms a trigger ONCE (watch.start: selectorPresence/selectorGone/textMatch/urlChange/adState/mediaTime) and the extension reacts locally within ~50 ms of the page changing — no model round trip between trigger and action. Already-true-at-arm fires immediately (the T041 lesson); debounce, deadlineMs, maxEvents, 8/tab + 32 global caps, and stop/stop_all bound every rule; rules carry their own site selectors so the extension stays site-agnostic.
 - Local actions run through proven executors: trusted page.click, runBurst, or the relay workflow runner; every firing produces an event envelope (rule, url/adState/mediaTime, action result) in opera_watch_events via the bridge watch_event ingest.
