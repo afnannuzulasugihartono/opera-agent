@@ -67,12 +67,15 @@
 // passed uniqueness, intrinsic identity, actionability, and the non-sensitive
 // check, so the model no longer needs a whole extra page.find just to obtain a
 // usable ref. The instructions say to act on those directly and never to widen
-// the tolerance.
+// the tolerance. The candidate payload KEEPS its rectangle: the Chromium
+// regression suite asserts on candidate coordinates, and dropping it broke that
+// gate — recorded here because it is the one field in the payload that is
+// load-bearing for a test rather than for the model.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
 // frozen.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'c2d02d11669d355e1150b173285e4257159f429d'],
+  ['../extension/content.js', '706bf90fe12cb3651fc35125a733499ba3cfcdd7'],
   ['../extension/background.js', '82f87ff54d1f6b55929429c610da273959c89bf0'],
   ['../extension/manifest.json', 'b62deba0ed431054a3e1ff039e58396f0e1891b9'],
   ['../supabase/functions/opera-agent-mcp/index.ts', '68373e76b4d7b863e32c57f082375c47617eccf5'],

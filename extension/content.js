@@ -263,6 +263,10 @@
           label: s.label || s.text,
           tag: s.tag,
           role: s.role,
+          // The rectangle stays in the payload: a caller diagnosing a
+          // geometry rejection needs the candidate's actual position, and the
+          // browser regression suite asserts on those coordinates.
+          rect: rectOf(el),
           freshRef: getRef(el),
           actionable: s.actionable,
           driftFromMintPx: Math.round(driftPx)
