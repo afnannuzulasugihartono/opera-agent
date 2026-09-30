@@ -1,5 +1,69 @@
 # Opera Agent next-session handoff
 
+## R9 complex-application control assessment (2026-09-30) — PROPOSED, awaiting authorization
+
+A live operator test of Opera Agent against **Google Docs** (long-document
+editing, `Insert > Page elements > Page numbers > More options`, the Page
+numbers dialog) exposed the product's real weakness. Ordinary browsing
+(Stanford HAI, MDPI, UNESCO, NIST), tab switching, reading, and simple
+click/form flows were smooth; the friction was concentrated in canvas-class
+editors, hover-revealed submenus, custom dialog controls, and focus stability.
+The operator's own scoring was Opera Agent 7.5–8/10 vs Playwright 9/10, and the
+code agrees with that scoring.
+
+Full assessment with per-observation code mapping and proposed checkpoints:
+**`docs/pre-8e-performance-usability-r9.md`**. Findings are also summarized in
+`docs/project-context.md` under the same heading.
+
+**This was documentation only. No runtime behavior changed.** Verified at head
+`5ffa75e` with `npm test` 517/517 passing. Nothing is authorized to start yet —
+per `AGENTS.md` each checkpoint needs owner authorization, deterministic failing
+tests first, and CI evidence on its exact head.
+
+Root causes, in descending reported impact:
+
+1. **Focus is sampled, not held** — `extension/background.js:637-648` reads
+   `tab.active`/`window.focused` once, then dispatches after a content round
+   trip and a debugger attach. Foreground mode deliberately runs *without*
+   `Emulation.setFocusEmulationEnabled` (only background enables it,
+   `background.js:446-461`). A window that loses focus in that window fails with
+   no retry. This is a race by construction and was the most frequent failure.
+2. **Keyboard has no modifiers** — `KEY_MAP` (`background.js:698-711`) is 12
+   unmodified keys. No `Ctrl`/`Shift`/`Alt`/`Meta` bitmask, no chords, no
+   `Ctrl+A`/`Ctrl+V`, no arbitrary text entry outside `fill`. Cheapest fix in
+   the track with an outsized effect.
+3. **Discovery is DOM-role based** — `content.js:514`, `content.js:546-550`.
+   Controls rich in the AX tree but attribute-poor in the DOM are
+   under-discovered. Enabling screen-reader support made them legible to the AX
+   tree immediately, which is the direct evidence for this cause.
+4. **Refs are pins, not locators** — `content.js:216-257` fails closed unless
+   the successor is unique *and* within `GEOMETRY_DRIFT_TOLERANCE_PX = 24`
+   (`content.js:118`) of the mint rect. The guard is deliberate (Street-View
+   mis-click, `content.js:113-117`) and **must not be weakened**; what is
+   missing is a bounded re-acquisition step.
+5. **Canvas/rich editors are outside the fill contract** — `Input.insertText`
+   exists (`background.js:618`) but `assertEditableSafe` (`content.js:491-500`)
+   admits only `input`/`textarea`/`isContentEditable`, and the synthetic path
+   writes `textContent` (`content.js:958-971`), which is wrong for rich text.
+6. **Hover is not first-class** — menu chains are only expressible as manual
+   bursts; no dwell, no submenu/`aria-expanded` settle.
+
+**Not gaps to close:** arbitrary JavaScript/`Runtime.evaluate` (none exists in
+`extension/`), raw CDP passthrough, network interception. All three are frozen
+in `docs/roadmap.md` "Explicitly deferred" and require a separate explicitly
+reviewed decision.
+
+**The `statement timeout` errors were not the extension's.** They are
+Postgres-side in the gateway `opera_await_adaptive` wait path
+(`supabase/functions/opera-agent-gateway/index.ts:27-28,72,105`).
+
+Proposed order if authorized: **R9-A** focus stability → **R9-B** modifier/text
+keyboard → **R9-C** AX-reconciled discovery → **R9-D** bounded ref
+re-acquisition (guard preserved) → **R9-E** hover as a first-class step →
+**R9-F** canvas/rich-editor fill contract **last** (widens what may receive
+typed text). R9-B, R9-D, and R9-F touch sensitive-input or ref-authority
+contracts and need an independent Codex audit before promotion.
+
 ## Repository tidying round 2: front page + naming audit (2026-09-29)
 
 Owner-ordered professionalization pass. All commits docs-only; head `43e8e65`

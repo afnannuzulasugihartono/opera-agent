@@ -1,6 +1,75 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-29 (repo tidy: README rebuilt, changelog/release index completed)
+Last synchronized: 2026-09-30 (R9 complex-application control assessment, docs-only)
+
+## R9 complex-application control assessment (2026-09-30, PROPOSED / not authorized)
+
+A live operator test of Opera Agent against Google Docs (long-document editing,
+`Insert > Page elements > Page numbers > More options`, the Page numbers dialog)
+exposed friction that ordinary browsing did not. Ordinary browsing, tab
+management, reading, and simple click/form flows were reported smooth; the
+difficulty was concentrated in canvas-class editors, hover-revealed submenus,
+custom dialog controls, and focus stability. Full assessment, code-path mapping,
+and proposed checkpoints: `docs/pre-8e-performance-usability-r9.md`.
+
+**No runtime behavior changed.** Documentation only. Verified at head `5ffa75e`
+with `npm test` 517/517 passing.
+
+Findings, each traced to code at head `5ffa75e`:
+
+- **Focus is sampled, not held.** `extension/background.js:637-648` reads
+  `tab.active` / `window.focused` once before dispatch and never re-verifies;
+  foreground mode deliberately runs without `Emulation.setFocusEmulationEnabled`
+  (background mode enables it, `background.js:446-461`). A window that loses
+  focus between the check and the dispatch fails with no recovery. This is the
+  highest-frequency reported failure and is a race by construction.
+- **Refs are pins, not locators.** `extension/content.js:216-257` fails closed
+  unless the successor pool is exactly one candidate *and* it sits within
+  `GEOMETRY_DRIFT_TOLERANCE_PX = 24` (`content.js:118`) of the mint rectangle.
+  The guard is deliberate and exists to prevent the recorded Street-View
+  mis-click (`content.js:113-117`); the gap is the missing bounded
+  re-acquisition step, not the guard.
+- **Semantics come from the DOM, not the accessibility tree.** Roles and
+  editability are read from attributes (`content.js:514`,
+  `content.js:546-550`). Controls that are rich in the AX tree but
+  attribute-poor in the DOM are under-discovered. `axSummary`
+  (`extension/lib/ax-summary.js`) is deliberately read-only and non-clickable.
+- **Keyboard is a toy.** `KEY_MAP` (`background.js:698-711`) has 12 unmodified
+  keys and **no modifier support at all**: no `Ctrl`/`Shift`/`Alt`/`Meta`
+  bitmask on `Input.dispatchKeyEvent`, no chords, no arbitrary text entry
+  outside `fill`.
+- **Canvas/rich editors sit outside the trusted-fill contract.** The right
+  primitive exists — `trustedFill` uses CDP `Input.insertText`
+  (`background.js:618`) — but `assertEditableSafe` (`content.js:491-500`)
+  admits only `input`, `textarea`, and `isContentEditable`, and the synthetic
+  `nativeSetValue` path (`content.js:958-971`) writes `textContent`, which is
+  wrong for a rich-text surface. Fill is also capped at 20 000 characters.
+- **Hover is not a first-class step.** `page.pointer` supports `move` and
+  `page.wait_for` supports text, so a menu chain is only expressible as a
+  hand-built burst. No dwell, no submenu/`aria-expanded`-aware settle.
+- **The statement timeouts were not in the extension.** They are Postgres-side
+  in the gateway `opera_await_adaptive` wait path
+  (`supabase/functions/opera-agent-gateway/index.ts:27-28,72,105`). Extension
+  budgets are `page.read` 10 s, `page.find` 8 s, `page.wait_for` 15 s
+  (`extension/lib/protocol.js:28-55`).
+- **`read_page` is already bounded** — `MAX_ELEMENTS = 200`, compact projection,
+  `axSummary` capped at 60 entries, hard 512 KB ceiling that throws rather than
+  truncating (`content.js:757-810`, `background.js:1031-1038`). Remaining noise
+  is inherent to apps that keep hundreds of toolbar/menu nodes live.
+
+Deliberately **not** in scope, because they are frozen boundaries in
+`docs/roadmap.md` "Explicitly deferred": arbitrary JavaScript / `Runtime.evaluate`
+(none exists in `extension/` today), raw CDP passthrough, and network
+interception. Adding them is a separate explicitly reviewed decision, never a
+default.
+
+Proposed checkpoint order, awaiting owner authorization: R9-A focus stability,
+R9-B modifier/text keyboard, R9-C AX-reconciled discovery, R9-D bounded ref
+re-acquisition with the geometry guard preserved, R9-E hover as a first-class
+step, R9-F canvas/rich-editor fill contract **last** (widens what may receive
+typed text; needs its own review and a Codex audit). R9-B, R9-D, and R9-F touch
+the sensitive-input or ref-authority contracts and require an independent audit
+before promotion.
 
 ## Repository tidy round (2026-09-29, owner-ordered)
 
