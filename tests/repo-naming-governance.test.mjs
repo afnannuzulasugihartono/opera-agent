@@ -17,6 +17,8 @@ const ALLOWED_ROOT_ENTRIES = new Set([
   'LICENSE',
   // Enterprise Phase 1 (2026-09-30): user support entry point at root.
   'SUPPORT.md',
+  // Enterprise Phase 1 (2026-09-30): env template; values stay empty/example.
+  '.env.example',
 ]);
 
 const JUNK_TOKEN =
