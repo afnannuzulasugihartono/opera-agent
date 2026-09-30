@@ -22,7 +22,19 @@ const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import
 const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url));
 
-const EXPECTED_MCP_SHA256 = '47c1fef5317a7acc7aa30d418326c8c1e64528cbb0d489ab73364d5bfb6b8353';
+// R9-G rebaseline (2026-09-30): an INSTRUCTIONS-ONLY MCP edit, authorized and
+// recorded. Menu/dialog work is batched into one burst via refFromStep, and the
+// model is told to click an editor surface before sending a key. No tool was
+// added, removed, or renamed, and all 22 per-tool inputSchemas are byte-
+// identical — proved by tests/r9-public-surface-unchanged.test.mjs. The chords
+// and bounded text from R9-B stay runtime-only because press_key still
+// validates against the 12-key navigationKeySchema and the burst key step is
+// still .strict(); the instructions say so rather than promising calls the
+// schema would reject. This constant tracks the accepted public-surface digest
+// and must be moved together with mcp-contract-v1.json sourceSha256,
+// goal-ledger-thresholds publicSurfaceBaseline, the reactive-vm inventory
+// digest, and the transaction inventory digest.
+const EXPECTED_MCP_SHA256 = 'cf76f10c42b091659210726b02b1c802efbc6a3ea0b5879fcf50444eb4b251f5';
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -107,7 +119,7 @@ test('7F keeps the 1.6.13 public surface and frozen read-only VM effect policy u
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
-  assert.equal(contract.inventory.digest, 'sha256:6ac9f2e41ae68931fda4086493d4b23ab749c7cd0fc25dde4cca706df90ce89a');
+  assert.equal(contract.inventory.digest, 'sha256:0626245241b7039065ceb08c28e4998b2b4f7320079f2cbce00ac92465fa591a'); // R9-G rebaseline: instructions-only MCP edit
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

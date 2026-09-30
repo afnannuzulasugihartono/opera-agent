@@ -22,7 +22,18 @@
 // source stays byte-identical in this checkpoint: the public MCP contract
 // (22 tools, the read_page schema, and the whole-file digest in
 // mcp-contract-v1.json) is deliberately NOT changed here, so exposing the new
-// keyboard surface publicly remains a separately reviewed decision.
+// keyboard surface publicly remains a separately reviewed decision. R9-G
+// (2026-09-30) then authorizes an INSTRUCTIONS-ONLY MCP edit: menu and dialog
+// work is batched into one burst via refFromStep, and the model is told to click
+// an editor surface before sending a key and to verify the keystroke landed. No
+// tool was added, removed, or renamed, and every per-tool inputSchema is
+// byte-identical — proved by tests/r9-public-surface-unchanged.test.mjs, which
+// pins each schema block individually because the whole-file digest alone
+// cannot distinguish an instructions edit from a schema edit. The chords and
+// bounded text entry built in R9-B remain runtime-only: press_key still
+// validates against the 12-key navigationKeySchema and the burst key step is
+// still .strict(), so the instructions explicitly tell the model those chords
+// are not available yet rather than advertising calls the schema would reject.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
 // frozen.
 
@@ -30,7 +41,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'bd082ba69bc094dadb698d8cd8b3d6592534c3e3'],
   ['../extension/background.js', '9ae4a85c89bece87a7e4acbb029d31fecd55b59f'],
   ['../extension/manifest.json', 'e69324b7c2abb194d15459d55eddd3a838c04e53'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '825651427a13ab3d6d2c404b07f62001fa672c71'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'a9fa0eeb7ac1fe015894328e715feeeb31e73250'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

@@ -1,5 +1,55 @@
 # Opera Agent next-session handoff
 
+## R9-G — instructions-only MCP guidance (2026-09-30, owner-selected option 1)
+
+Base `a123bb5`. Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+MCP instructions now extend `refFromStep` to **menus and dialogs** (open menu,
+then find + click by `refFromStep` in one burst; chain one find/click per level
+with a `wait` step between levels) and tell the model to click an editor surface
+before sending a key and verify the keystroke landed. This directly targets the
+reported stale-ref-in-menus friction.
+
+**Chord guidance deliberately NOT added.** `press_key.key` is still validated
+against the 12-key `navigationKeySchema` and the burst `key` step is still
+`.strict()`, so documenting `Ctrl+A`/text would make the model emit calls the
+frozen schema rejects. The instructions state that chords are not available yet.
+R9-B's runtime capability stays dormant behind the public schema.
+
+**Cost, corrected.** Option 1 was called the "smallest delta" — wrong. The MCP
+source digest is frozen in `mcp-contract-v1.json` and **derived into four more
+contract fixtures** plus two tests that hardcode it, so an instructions-only
+edit still required a full rebaseline across six minified fixtures (one line
+each), `tests/helpers/boundary-locks.mjs`, and `tests/reactive-vm-7f.test.mjs`.
+Derived digests are recomputed by the contract tests from canonical JSON, so they
+are proven, not hand-written. No historical `checkpointBoundary` record was
+falsified; only the accepted public-surface digest moved, as U-T also did.
+
+**Proof it is instructions-only.** New `tests/r9-public-surface-unchanged.test.mjs`
+pins all 22 `inputSchema` blocks individually (the whole-file digest cannot tell
+an instructions edit from a schema edit) and asserts `press_key` still exposes
+only `key: navigationKeySchema`, the 12-key enum is unchanged, the burst key step
+is still `.strict()`, and the instructions never promise chords. Verified against
+`HEAD` by comparing all 22 extracted schema blocks: **no drift**.
+
+`npm test` **538/538 pass** (was 534); `npm run check` ok — 26 primitives, 79
+safety files, 1.6.13. 22 tools and their names unchanged; Protocol 1 and the 26
+primitives unchanged; no production mutation, release, activation, CRX, or deploy.
+
+### Still pending
+1. `press_key` optional `modifiers` and `text`.
+2. Burst `key` step optional `modifiers` and `text`.
+
+Both need the same rebaseline, now already performed, so bundling is cheaper than
+it was. When they land: replace the "chords not available yet" sentence AND
+rebaseline the frozen schema map in `tests/r9-public-surface-unchanged.test.mjs`
+**in the same commit** — that test is designed to fail loudly if the schema moves
+without the instructions moving with it.
+
+**R9-C (AX-reconciled discovery) is the next substantive engineering item** and
+touches none of the above. R9-D, R9-E, R9-F not started; **R9-F still recommended
+for deferral**.
+
 ## R9-A / R9-B implemented — focus stability + keyboard chords (2026-09-30)
 
 Owner-authorized after the R9 assessment. **Implemented and verified in the

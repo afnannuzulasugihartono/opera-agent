@@ -1,6 +1,74 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-30 (R9-A/R9-B implemented: focus gate + keyboard chords)
+Last synchronized: 2026-09-30 (R9-G: instructions-only MCP guidance, owner-selected)
+
+## R9-G — instructions-only MCP guidance (2026-09-30, owner-selected)
+
+Base `a123bb5`. Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+MCP instructions now extend the existing `refFromStep` habit to **menus and
+dialogs**, which re-render their own DOM on every open: open the menu, then find
+and click the entry by `refFromStep` inside one burst; chain one find/click per
+level inside a single burst with a `wait` step between levels, instead of
+hovering by coordinate across separate calls. This is the direct fix for the
+"ref valid when found, dead by the time I click it" friction in the place it
+actually occurred. In a rich editor or canvas surface the model is told to click
+the surface so it takes focus, send an allowlisted key, then re-read the page to
+confirm the keystroke landed.
+
+**The chord guidance was deliberately NOT added — a correction to the option as
+it was presented to the owner.** `press_key.key` is still validated against the
+12-key `navigationKeySchema` and the burst `key` step is still `.strict()`, so
+documenting `Ctrl+A` or text entry would make the model emit calls the frozen
+schema rejects. The instructions say plainly that control chords are not
+available on this surface yet. The R9-B runtime capability stays dormant behind
+the public schema.
+
+**Cost correction.** Option 1 was described as the "smallest delta"; that was
+wrong. The MCP source digest is frozen in `mcp-contract-v1.json` and **derived
+into four more contract fixtures** plus two tests that hardcode it, so even an
+instructions-only edit required a full rebaseline: `mcp-contract-v1.json`,
+`goal-ledger-thresholds-v1.json`, `reactive-vm-contract-v1.json`,
+`reactive-vm-thresholds-v1.json`, `transaction-contract-v1.json`,
+`transaction-thresholds-v1.json`, `tests/helpers/boundary-locks.mjs`, and
+`tests/reactive-vm-7f.test.mjs`. Each fixture edit is a **single line** (the
+fixtures are minified JSON and values were replaced surgically; a pretty-printed
+attempt produced a 1 000-line diff and was reverted). The derived digests are
+recomputed by the contract tests from canonical JSON, so they are proven
+consistent rather than hand-written. No historical `checkpointBoundary` record
+was falsified; only the "currently accepted public surface" digest moved, the
+same rebaseline U-T performed when the tool count went 18 -> 22.
+
+**Proof it is genuinely instructions-only.** New
+`tests/r9-public-surface-unchanged.test.mjs` pins each of the 22 `inputSchema`
+blocks individually by digest — something the whole-file digest cannot do, since
+it cannot distinguish an instructions edit from a schema edit. It also asserts
+`press_key` still exposes only `key: navigationKeySchema` (no `modifiers`, no
+`text`), the 12-key enum is unchanged, the burst key step is still `.strict()`,
+and the instructions never advertise chords the schema would reject. Verified
+independently against `HEAD` by extracting and comparing all 22 schema blocks:
+**no drift**.
+
+| Gate | Result |
+| --- | --- |
+| `node --test tests/r9-public-surface-unchanged.test.mjs` | 4/4 pass |
+| `npm test` | **538/538 pass** (was 534) |
+| `npm run check` | ok — 26 primitives, 79 safety files, 1.6.13 |
+| per-tool schema diff vs `a123bb5` | no drift, 22/22 identical |
+
+22 public tools and their names unchanged; Protocol 1 and the 26 primitives
+unchanged; no production mutation, release, activation, CRX, or deploy.
+
+**Still pending:** (1) `press_key` optional `modifiers`/`text`; (2) burst `key`
+step optional `modifiers`/`text`. Both need the same rebaseline, now already
+performed, so bundling them is cheaper than it was. When they land, the "chords
+not available yet" sentence must be replaced in the same commit and the frozen
+schema map in `tests/r9-public-surface-unchanged.test.mjs` rebaselined in that
+same commit.
+
+**R9-C (AX-reconciled discovery) is the next substantive engineering item and
+touches none of the above.** R9-D, R9-E, R9-F not started; R9-F still recommended
+for deferral.
 
 ## R9-A / R9-B implemented — focus stability and keyboard chords (2026-09-30)
 
