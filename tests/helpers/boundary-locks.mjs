@@ -46,7 +46,15 @@
 // invalidates a ref, an explicit DOM role always wins, an ambiguous AX name is
 // never adopted, and sensitive elements are never annotated. stableElementIdentity
 // deliberately keeps the raw attribute, because deriving a role there would
-// change every stableKey in the product.
+// change every stableKey in the product. R9-B public (2026-09-30) then
+// authorizes the keyboard surface: press_key and the burst key step gain
+// OPTIONAL `modifiers` and `text`, the key enum grows to a fixed 79-entry
+// vocabulary, and the R9-G placeholder sentence is replaced with real chord
+// guidance. This is the commit that makes the R9-B runtime capability reachable
+// from a public tool instead of dormant behind the schema. Additive and
+// backward compatible: every previously valid call still validates, the tool
+// count and all 22 names are unchanged, and the sensitive-field guard is
+// untouched.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
 // frozen.
 
@@ -54,7 +62,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '89911c248a8e768cb1aa7f22c39f7d4e282c714d'],
   ['../extension/background.js', 'dbd134d54e8bc280528bbef00c89f18129fed800'],
   ['../extension/manifest.json', 'd30e9d32c3554d09a2ca7d213d7b135b6530db56'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'a9fa0eeb7ac1fe015894328e715feeeb31e73250'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '9ab4717dc1edfe7107815c0587d9bc170adf683d'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
