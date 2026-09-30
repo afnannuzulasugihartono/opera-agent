@@ -1,5 +1,67 @@
 # Opera Agent next-session handoff
 
+## R9-C role reconciliation + repository tidy (2026-09-30)
+
+Base `06375a3`. Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+**The reported symptom pointed at accessibility; the defect was serialization.**
+`serialize()` read `role: clean(el.getAttribute?.('role'), 80)`, so a plain
+`<button>Send</button>` was reported as `role: ''` and **any** unannotated control
+was invisible to a role-filtered `find_elements`. That is exactly why the Page
+numbers dialog showed `Footer` / `Show on first page` as text but never as a
+radio or checkbox.
+
+- **Layer 1 — implicit role from markup** (tag, input type, href, contenteditable);
+  an explicit author role still wins.
+- **Layer 2 — AX reconciliation** reusing the *existing* single bounded
+  `getFullAXTree` call on the text-poor path. No second AX walk, so the
+  poverty-gated cost profile is unchanged.
+- **Safety:** explicit DOM roles are never downgraded; reconciliation is
+  read-only and never mints/moves/invalidates a ref; a name shared by two AX
+  roles is never adopted; sensitive elements are never annotated.
+- **One role table, not two.** Content scripts are classic scripts and cannot
+  `import`, so `extension/role-reconcile.js` has no `export` statements and is
+  both a valid manifest-loaded content script and a valid ES module that
+  `background.js` side-effect imports. Test-pinned against drift.
+- **Deliberately unchanged and now test-pinned:** `stableElementIdentity` (an
+  implicit role there would change every stableKey in the product), region
+  classification, and `scrollTargetBy`.
+
+`npm test` **553/553 pass** (was 538); `npm run check` ok — 26 primitives, 80
+safety files, 1.6.13. No public MCP change, so no contract rebaseline needed.
+The shipped 1.6.13 CRX is unaffected; the new manifest entry ships with the next
+release.
+
+### Repository tidy
+
+- **Fixed a regression:** the GitHub `homepage` had been reset to
+  `https://oauth-consent-three.vercel.app` (an OAuth consent **dev** URL) after
+  the handoff recorded it cleared on 2026-09-29. Cleared again.
+- **Branch protection on `main`:** linear history, no force-push, no deletion,
+  enforced on admins, conversations must resolve. Required status checks left
+  **null** on purpose so the `AGENTS.md` fast-forward workflow still works.
+- **Verified, no action:** `main` + one active work branch; all 52 PRs closed;
+  `v1.6.0` body already notes it is superseded by 1.6.13; description/topics
+  accurate.
+- **`archive/tmp/ignore` and `archive/feat/performance-runtime-cutover-p6-4571636311958769504`
+  were re-examined and KEPT.** They look like governance violations but are not:
+  `AGENTS.md` mandates `archive/<original-branch-path>`, so preserving the
+  original name is the archive mechanism working. Both commits are also
+  reachable from `main`. An earlier read of them as violations was wrong.
+
+### Still pending
+1. `press_key` optional `modifiers` and `text`.
+2. Burst `key` step optional `modifiers` and `text`.
+
+Both need the contract rebaseline R9-G already performed, so bundling is cheaper
+now. When they land, replace the "chords not available yet" instruction AND
+rebaseline the frozen schema map in
+`tests/r9-public-surface-unchanged.test.mjs` **in the same commit** — that test
+fails loudly if the schema moves without the instructions moving with it.
+
+R9-D (bounded ref re-acquisition, geometry guard preserved) and R9-E (hover as a
+first-class step) unstarted. **R9-F still recommended for deferral.**
+
 ## R9-G — instructions-only MCP guidance (2026-09-30, owner-selected option 1)
 
 Base `a123bb5`. Record: `docs/pre-8e-performance-usability-r9-evidence.md`.

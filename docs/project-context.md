@@ -1,6 +1,73 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-30 (R9-G: instructions-only MCP guidance, owner-selected)
+Last synchronized: 2026-09-30 (R9-C role reconciliation + GitHub repo tidy)
+
+## R9-C role reconciliation + repository tidy (2026-09-30)
+
+Base `06375a3`. Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+### R9-C — the reported symptom pointed at accessibility; the defect was serialization
+
+`serialize()` read `role: clean(el.getAttribute?.('role'), 80)`. A plain
+`<button>Send</button>` was therefore reported as `role: ''`, so **any** control
+an author did not annotate was invisible to a role-filtered `find_elements`. That
+is why the Page numbers dialog exposed `Footer` and `Show on first page` as
+readable text but never as a radio or checkbox role.
+
+- **Layer 1 — implicit role from markup.** `serialize` now derives the role the
+  platform would report from tag, input type, href, and contenteditable, with an
+  explicit author role still winning.
+- **Layer 2 — AX reconciliation.** The text-poor path's existing single bounded
+  `Accessibility.getFullAXTree` call also builds a name→role index and fills in
+  roles the markup lacks. **No second AX walk**; the poverty-gated cost profile
+  is unchanged.
+- **Safety:** an explicit DOM role is never downgraded; reconciliation is
+  read-only and never mints, moves, or invalidates a ref; a name shared by two
+  different AX roles is never adopted; sensitive elements are never annotated.
+- **One role table, not two.** Content scripts are classic scripts and cannot
+  `import`. `extension/role-reconcile.js` declares no `export` statements, so it
+  is both a valid classic content script (manifest-loaded before `content.js`)
+  and a valid ES module that `background.js` side-effect imports — the same
+  pattern as `semantic-identity.js`. Asserted by test so it cannot drift.
+- **Deliberately unchanged:** `stableElementIdentity` keeps the raw role
+  attribute, because deriving one there would change **every stableKey in the
+  product**. Region classification and `scrollTargetBy` likewise. All three are
+  now pinned by test so nobody "fixes" them by accident.
+
+`npm test` **553/553 pass** (was 538); `npm run check` ok — 26 primitives, 80
+safety files, 1.6.13. No public MCP change, so no contract rebaseline was needed;
+`boundary-locks.mjs` digests for `content.js`, `background.js`, and
+`manifest.json` were updated per its recorded convention. The shipped 1.6.13
+CRX is unaffected — it is a separate artifact and already lagged the repository.
+
+### Repository tidy
+
+- **Fixed a regression:** the GitHub `homepage` had been reset to
+  `https://oauth-consent-three.vercel.app`, an OAuth consent **development** URL,
+  after the handoff recorded it cleared on 2026-09-29. Cleared again.
+- **Branch protection on `main`:** linear history required, force-push and
+  deletion blocked, enforced on admins, unresolved conversations blocked.
+  Required status checks deliberately left **null** so the `AGENTS.md`
+  checkpoint fast-forward workflow still works.
+- **Verified, no action:** branches are `main` + one active work branch (the
+  healthy state); all 52 PRs closed; the `v1.6.0` body already states it is
+  superseded by the 1.6.13 line; description and topics accurate.
+- **Two archive tags re-examined and KEPT.** `archive/tmp/ignore` and
+  `archive/feat/performance-runtime-cutover-p6-4571636311958769504` look like
+  governance violations but are not: `AGENTS.md` requires
+  `archive/<original-branch-path>`, so preserving the original name is the
+  archive mechanism working. Both commits are also reachable from `main`. An
+  earlier read of them as violations was wrong.
+
+**Still pending:** `press_key` optional `modifiers`/`text` (1) and the burst
+`key` step optional `modifiers`/`text` (2). Both need the contract rebaseline
+R9-G already performed, so bundling is cheaper now. When they land, the "chords
+not available yet" instruction must change AND the frozen schema map in
+`tests/r9-public-surface-unchanged.test.mjs` must be rebaselined **in the same
+commit**.
+
+R9-D (bounded ref re-acquisition, geometry guard preserved) and R9-E (hover as a
+first-class step) unstarted. **R9-F still recommended for deferral.**
 
 ## R9-G — instructions-only MCP guidance (2026-09-30, owner-selected)
 

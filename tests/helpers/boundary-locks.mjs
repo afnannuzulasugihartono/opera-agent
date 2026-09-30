@@ -34,13 +34,26 @@
 // validates against the 12-key navigationKeySchema and the burst key step is
 // still .strict(), so the instructions explicitly tell the model those chords
 // are not available yet rather than advertising calls the schema would reject.
+// R9-C (2026-09-30) then authorizes role reconciliation: `serialize` now derives
+// the role the platform reports from an element's own markup, because reading
+// the literal `role` attribute meant an unannotated <button> was reported as
+// role '' and invisible to a role-filtered find_elements; and the existing
+// bounded text-poor AX round trip now also fills roles the markup does not
+// carry, so a custom control the platform reports as a radio is discoverable.
+// The shared helpers live in extension/role-reconcile.js, a classic content
+// script that background.js side-effect imports, so there is one role table
+// rather than two. Reconciliation is read-only: it never mints, moves, or
+// invalidates a ref, an explicit DOM role always wins, an ambiguous AX name is
+// never adopted, and sensitive elements are never annotated. stableElementIdentity
+// deliberately keeps the raw attribute, because deriving a role there would
+// change every stableKey in the product.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
 // frozen.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'bd082ba69bc094dadb698d8cd8b3d6592534c3e3'],
-  ['../extension/background.js', '9ae4a85c89bece87a7e4acbb029d31fecd55b59f'],
-  ['../extension/manifest.json', 'e69324b7c2abb194d15459d55eddd3a838c04e53'],
+  ['../extension/content.js', '89911c248a8e768cb1aa7f22c39f7d4e282c714d'],
+  ['../extension/background.js', 'dbd134d54e8bc280528bbef00c89f18129fed800'],
+  ['../extension/manifest.json', 'd30e9d32c3554d09a2ca7d213d7b135b6530db56'],
   ['../supabase/functions/opera-agent-mcp/index.ts', 'a9fa0eeb7ac1fe015894328e715feeeb31e73250'],
 ]);
 

@@ -13,6 +13,12 @@ import { evaluateRules, validateRule } from './lib/watch.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
+// R9-C: the same file the content script loads via the manifest. It declares no
+// export statements, so this is a valid side-effect import that publishes the
+// pure helpers on globalThis — one source of truth for both contexts, and no
+// second, drifting copy of the role table.
+import './role-reconcile.js';
+const { axRoleIndex, reconcileElements } = globalThis.OperaAgentRoleReconcile || {};
 import { buildAxSummary } from './lib/ax-summary.js';
 import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
 
@@ -1031,7 +1037,18 @@ async function dispatch(method, params = {}, context = {}) {
       // failures fail open and leave the observation unchanged.
       if (result?.ok !== false && result?.page && Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS) {
         const summary = await collectAxSummary(tabId, context);
-        if (summary) result.page.axSummary = summary;
+        if (summary) {
+          result.page.axSummary = summary;
+          // R9-C: reuse the SAME bounded AX round trip to fill in roles the
+          // markup does not carry, so a custom control that the platform
+          // reports as a radio is finally discoverable by role. This is
+          // read-only annotation: no ref is minted, moved, or invalidated, and
+          // an explicit DOM role still wins over the AX one.
+          const index = axRoleIndex?.(summary.items);
+          if (index && index.size > 0 && Array.isArray(result.page.elements)) {
+            result.page.elements = reconcileElements?.(result.page.elements, index) || result.page.elements;
+          }
+        }
       }
       return { ...result, tabId };
     }

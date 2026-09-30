@@ -243,19 +243,122 @@ Still no production mutation, no release, no activation, no CRX, no deploy. The
 22 public tools and their names are unchanged. Protocol 1 and the 26 primitives
 are unchanged.
 
+## R9-C — role reconciliation (owner-directed: "perbaiki semua masalah")
+
+### Root cause was broader than reported
+
+`serialize()` read the role straight off the DOM attribute:
+
+```js
+role: clean(el.getAttribute?.('role'), 80)
+```
+
+So a plain `<button>Send</button>` was reported as `role: ''`, and **any**
+control the author did not annotate was invisible to a role-filtered
+`find_elements`. This is not a Google Docs quirk — it is most of the web, and
+it is exactly why the Page numbers dialog exposed `Footer` and `Show on first
+page` as readable text but never as a radio or a checkbox role. The reported
+symptom pointed at accessibility; the defect was in serialization.
+
+### Layer 1 — implicit role, from markup
+
+`serialize` now derives the role the platform would report from the element's
+own tag, input type, href, and contenteditable state, with an explicit author
+role still winning. `<button>` → `button`, `<input type=checkbox>` → `checkbox`,
+`<select>` → `combobox`, `<a href>` → `link`, `[contenteditable]` → `textbox`,
+`<h3>` → `heading level-3`, and so on.
+
+### Layer 2 — AX reconciliation, reusing the walk that already existed
+
+The text-poor path already made one bounded `Accessibility.getFullAXTree` call
+for `axSummary`. That same response now also builds a name→role index and fills
+in roles the markup does not carry, so a custom widget the platform reports as
+`RadioButton` is finally discoverable by role. **No second AX walk was added**,
+so the poverty-gated cost profile is unchanged.
+
+Safety properties, all locked by test:
+
+- an explicit DOM role is never downgraded or overwritten — AX only fills a gap;
+- reconciliation is **read-only**: it never mints, moves, or invalidates a ref,
+  and never makes an element clickable;
+- a name shared by two different AX roles is **never** adopted, because that
+  would be a guess; agreement among several nodes on one role is fine;
+- a sensitive element is never annotated at all.
+
+### One role table, not two
+
+Content scripts are classic scripts and cannot `import`, so a first attempt put
+the helpers in `lib/` and failed the wiring. The repo already has the right
+pattern — `semantic-identity.js` and `semantic-views.js` are classic scripts
+loaded by the manifest and tested by import-for-side-effect. The same approach
+is used: `extension/role-reconcile.js` declares **no** export statements, so it
+is simultaneously a valid classic content script (loaded by the manifest before
+`content.js`) and a valid ES module that `background.js` side-effect imports.
+One table, both contexts, asserted by test — so it cannot drift.
+
+### What deliberately did NOT change
+
+`stableElementIdentity` still reads the raw `role` attribute. Deriving an
+implicit role there would silently change **every stableKey in the product**,
+which is a compatibility event, not a fix. Region classification and
+`scrollTargetBy` also keep the raw attribute for the same reason. A test now
+pins all three so a future reader cannot "fix" them by accident.
+
+| Gate | Result |
+| --- | --- |
+| `node --test tests/r9-role-reconcile.test.mjs` | 15/15 pass |
+| `npm test` (full suite) | **553/553 pass**, 0 fail (was 538) |
+| `npm run check` | ok — 26 primitives, 80 safety files, 1.6.13 |
+| `mcp-contract-v1.json` / MCP blob lock | untouched by R9-C |
+
+No public MCP surface change, so no contract rebaseline was needed for R9-C.
+`boundary-locks.mjs` digests for `content.js`, `background.js`, and
+`manifest.json` were updated per that file's recorded convention, with the
+reason and the safety properties written into the comment.
+
+The shipped 1.6.13 CRX is unaffected: it is a separate artifact and already
+lagged the repository. The new manifest entry ships with the next release.
+
+## Repository tidy (2026-09-30, owner-directed)
+
+- **Fixed a regression:** the GitHub `homepage` had been reset to
+  `https://oauth-consent-three.vercel.app`, an OAuth consent **development**
+  URL, after the handoff recorded it as cleared on 2026-09-29. Cleared again.
+- **Added branch protection on `main`**: linear history required, force-push
+  blocked, deletion blocked, enforced on admins, unresolved conversations
+  blocked. Required status checks were deliberately left **null** so the
+  checkpoint fast-forward workflow in `AGENTS.md` still works.
+- **Verified, no action needed:**
+  - branches are `main` + the single active work branch, which is the healthy
+    state the governance rules require;
+  - all 52 PRs are closed, no stale open PRs;
+  - the `v1.6.0` release body already states it is superseded by the 1.6.13
+    active line, and GitHub releases are archive pages only;
+  - description and topics are accurate.
+- **Two archive tags were re-examined and deliberately KEPT:**
+  `archive/tmp/ignore` and
+  `archive/feat/performance-runtime-cutover-p6-4571636311958769504` look like
+  governance violations (`tmp` is a retired namespace, and the second has a
+  tool-generated numeric suffix). They are not. `AGENTS.md` requires
+  `archive/<original-branch-path>`, so preserving the original name is the
+  archive mechanism working as designed. Both commits are also reachable from
+  `main`, so nothing would be lost by deleting them — but deleting the
+  preservation record is exactly what the rule forbids. An earlier read of
+  these as violations was wrong.
+
 ## Still pending
 
 1. `press_key` optional `modifiers` and `text`.
 2. Burst `key` step optional `modifiers` and `text`.
 
-Items 1 and 2 need the same rebaseline, which has now been performed and its cost
-is known, so bundling them is cheaper than it was. They widen what the public
-contract accepts, which is the part that genuinely needs review. Once they land,
-the "chords are not available yet" sentence in the instructions must be replaced
-in the same commit, and `tests/r9-public-surface-unchanged.test.mjs` must have its
+Items 1 and 2 need the same contract rebaseline that R9-G already performed, so
+bundling them is cheaper than it was. They widen what the public contract
+accepts, which is the part that genuinely needs review. Once they land, the
+"chords are not available yet" sentence in the instructions must be replaced in
+the same commit, and `tests/r9-public-surface-unchanged.test.mjs` must have its
 frozen schema map rebaselined in that same commit — it is designed to fail
 loudly if the schema moves without the instructions moving with it.
 
-**R9-C (AX-reconciled discovery) is the next substantive engineering item and
-touches none of the above.**
+R9-D (bounded ref re-acquisition, geometry guard preserved) and R9-E (hover as a
+first-class step) remain unstarted. **R9-F remains recommended for deferral.**
 

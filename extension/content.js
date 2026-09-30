@@ -2,6 +2,11 @@
   'use strict';
   if (globalThis.__operaAgentContentV1) return;
   globalThis.__operaAgentContentV1 = true;
+  // R9-C: published by role-reconcile.js, which the manifest loads before this
+  // file. Content scripts are classic scripts and cannot import, so the same
+  // global pattern as the semantic engines is used.
+  const { implicitRole } = globalThis.OperaAgentRoleReconcile || {};
+  if (typeof implicitRole !== 'function') throw new Error('Role reconcile runtime is unavailable.');
 
   const MAX_TEXT_CHUNK = 12000;
   const MAX_ELEMENTS = 200;
@@ -508,11 +513,22 @@
     // U-P1: attach the computed accessible name only when it adds signal the
     // label/text fields do not already carry, keeping payloads bounded.
     const accessibleName = computeAccessibleName(el);
+    // R9-C: an explicit author role still wins; otherwise derive the role the
+    // platform would report from the element's own markup, so an unannotated
+    // <button> is no longer serialized as role ''.
+    const tag = String(el.tagName || '').toLowerCase();
+    const explicitRole = clean(el.getAttribute?.('role'), 80);
+    const role = explicitRole || implicitRole({
+      tag,
+      type: clean(el.getAttribute?.('type'), 80),
+      href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
+      contenteditable: el.isContentEditable === true
+    });
     const data = {
       ...stableElementIdentity(el),
       ref: getRef(el),
-      tag: String(el.tagName || '').toLowerCase(),
-      role: clean(el.getAttribute?.('role'), 80),
+      tag,
+      role,
       text,
       label,
       href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
