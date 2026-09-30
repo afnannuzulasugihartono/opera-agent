@@ -1647,3 +1647,10 @@ user-accepted reviewer deviation. P6 is **ACCEPTED / CLOSED** after PR #46 merge
 and verified production promotion to `opera-agent-vm` version 27. 8E remains
 paused/not started until separately instructed. No later Spec Kit scope is
 authorized implicitly.
+
+## Enterprise standards track (2026-09-30)
+
+Planning-only session: approved phased approach A. Fase 1 spec at
+`docs/superpowers/specs/2026-09-30-enterprise-standards-phase1-design.md`
+on branch `chore/enterprise-standards-phase-1` (basis `a99978d`).
+No runtime, test, or infrastructure changes yet.

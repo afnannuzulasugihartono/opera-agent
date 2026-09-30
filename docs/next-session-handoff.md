@@ -1802,3 +1802,18 @@ Do not use the Spec Kit tooling change itself to merge/promote P6 or start 8E.
 The separate P6 audit gate is now closed by
 `docs/p6-independent-audit-closeout.md`. There is no implicit next Spec Kit
 checkpoint.
+
+## Enterprise standards track (2026-09-30, read-only planning + spec)
+
+- Reconciliation: handoff head `8e05b3e` is an ancestor of `a99978d`;
+  origin `main` = origin `feat/pre-8e-usability-repair-r8` = `a99978d`.
+  No divergence; handoff was stale. Working tree was clean.
+- New track branch `chore/enterprise-standards-phase-1` from `a99978d`
+  (separate from the milestone line; one writer: this session).
+- Owner approved phased approach A; Fase 1 = compliance & security baseline.
+- Spec: `docs/superpowers/specs/2026-09-30-enterprise-standards-phase1-design.md`
+  (approved sections; awaiting owner spec review, then `writing-plans`).
+- Open decision before plan execution: LICENSE copyright holder/year
+  (proposed: `afnannuzulasugihartono`, 2026).
+- No runtime/test changes in this session; `npm test` / `npm run check`
+  not rerun (no code touched).
