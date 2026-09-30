@@ -418,15 +418,78 @@ recorded rather than papered over, and is worth fixing separately: a
 performance gate that cannot pass reliably under `npm test` will eventually
 teach the team to ignore it.
 
+## CI failures found and fixed during the release-readiness push
+
+Both of these were caught by CI, not by the local suite, and both were real.
+
+### 1. The 7C p95 gate was a flaky perf gate, not a real regression
+
+It failed CircleCI on `3355404` while passing locally, and reproduced at roughly
+**1 run in 3** on this machine, with ratios up to 1.282 against a 1.15 budget.
+Reproduced by running the suite repeatedly.
+
+The budget was never the problem; the **estimator** was. The gate took the p95 of
+two *independently* measured series, so the compared samples came from different
+iterations and a load spike inside one window inflated one side only. Two fixes
+were measured and rejected with recorded numbers before the third worked:
+
+| Estimator | Observed | Verdict |
+| --- | --- | --- |
+| p95 of two independent series | 1.13-1.28 under load (budget 1.15) | original, flaky |
+| p95 of paired ratios | steady 1.65-1.87 | worse — scheduler/GC noise, says nothing about the code |
+| **median of paired ratios** | **1.025-1.044, stable** | adopted |
+
+The gate now asserts the **median of paired ratios**. The 15% budget is
+unchanged; only the estimator is sound. A broad 20% regression still fails, and
+a meta-test proves both that it can fail and that isolated outliers do not.
+
+### 2. R9-D broke the Chromium extension regression — my regression
+
+The Chromium step failed and was **not** the 7C flake. Reproduced locally with
+the `py` launcher (Python 3.12.10 was present but not on `PATH`).
+
+Root cause: R9-D replaced the geometry-rejection candidate payload's `rect` with
+the new `freshRef` / `driftFromMintPx` fields, and
+`tests/browser_extension_test.py:836` asserts the moved button's coordinate
+appears in the rejection message. The rectangle is restored alongside the new
+fields — and removing it was wrong on the merits too, since a caller diagnosing
+a geometry rejection needs the candidate's actual position.
+
+**Lesson worth carrying:** the local suite was 573/573 green while the extension
+was broken in a real browser. `npm test` does not cover the extension at all.
+The Chromium gate is not optional.
+
+## Known limitation: SonarCloud quality gate
+
+`SonarCloud Code Analysis` has reported **Quality Gate failed** on every R9 head
+including `024696b`, which I earlier reported as fully green. That was my error:
+I read the combined commit status, which reported success, before Sonar's
+check-run had settled. The `ci` job and Vercel were and are green; Sonar was
+not, and I did not look.
+
+Per the project's recorded gate scope, acceptance is **CircleCI + Vercel on the
+exact evidence head**, and SonarCloud is the **PR** static-quality gate rather
+than an acceptance gate. So this does not block acceptance by policy — but it is
+a genuine quality signal that has been red for the whole track, and I could not
+diagnose it here: there is no `sonar-project.properties` in the repository, no
+`SONAR_*` environment variable, and the CircleCI config contains no Sonar step,
+so the analysis runs through the Sonar GitHub integration and its issues are not
+reachable from this environment. **This needs someone with SonarCloud project
+access to read the actual findings.** Guessing at them would be worse than
+saying so.
+
 ## Verification
 
 | Gate | Result |
 | --- | --- |
-| `npm test` (full suite) | **572/572 pass** |
+| `npm test` (full suite) | **573/573 pass** (three consecutive runs) |
 | `npm run check` | ok — 26 primitives, 81 safety files, version 1.6.13 |
+| `py tests/browser_extension_test.py` | **exit 0** |
+| CircleCI `ci` on `4e90d31` | **success** |
+| Vercel on `4e90d31` | **success** |
 | naming governance | pass (5/5) |
 | secret scan over the R9 diff | clean |
-| version consistency | manifest / package / protocol all 1.6.13 |
+| SonarCloud quality gate | **failing, undiagnosed — needs project access** |
 
 ## What is still gated, and on whom
 

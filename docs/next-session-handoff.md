@@ -1,6 +1,69 @@
 # Opera Agent next-session handoff
 
-## R9 complete (source) — A/B/C/D/E/G done, R9-F deferred (2026-09-30)
+## Head `4e90d31` — R9 complete in source, CI green, NOT released
+
+`main` = `feat/pre-8e-usability-repair-r8` = **`4e90d31`**. CircleCI `ci`
+**success** and Vercel **success** on that exact SHA. Record:
+`docs/pre-8e-performance-usability-r9-evidence.md`.
+
+**Nothing is released or activated.** Production serves CRX **1.6.13**, which
+predates every R9 change; `role-reconcile.js` and `hover-settle.js` ship with the
+next release. R9-F (canvas/rich-editor fill) remains **recommended for
+deferral**.
+
+### Two CI failures found and fixed at the end of the track
+
+1. **The 7C p95 gate was a flaky perf gate.** It failed CI on `3355404` while
+   passing locally, and reproduced at ~1 run in 3 locally (ratios to 1.282 vs a
+   1.15 budget). The budget was never the problem; the estimator was. It now
+   asserts the **median of paired ratios** — stable at 1.025-1.044. Two
+   alternative estimators were measured and rejected with numbers recorded in the
+   evidence doc; a meta-test prevents a quiet revert.
+2. **R9-D broke the Chromium extension regression** — my regression, not the
+   flake. R9-D dropped `rect` from the geometry-rejection candidate payload and
+   `tests/browser_extension_test.py:836` asserts on that coordinate. Restored.
+
+   **Carry this lesson:** the local suite was 573/573 green while the extension
+   was broken in a real browser. `npm test` does not cover the extension. Run
+   `py tests/browser_extension_test.py` before calling extension work done.
+
+### Environment notes for this machine
+
+- Python is **not on `PATH`** as `python`/`python3`, but the launcher works:
+  `py --version` is 3.12.10 and Playwright plus Chromium are already installed.
+  Use `py tests/browser_extension_test.py`, not `npm run test:browser`.
+- CI state is read via `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`
+  and `.../status`. **Check `check-runs`, not just `status`** — the combined
+  status can read `success` while a check-run such as SonarCloud is still
+  pending or red.
+- The CircleCI MCP connector's `list_runs` returns only a count with no run
+  payload, so its `list_runs -> get_run -> list_workflow_jobs` chain cannot be
+  followed. Use the GitHub API as above.
+
+### Open quality gate: SonarCloud
+
+`SonarCloud Code Analysis` reports **Quality Gate failed** on every R9 head
+including `024696b`. Per the recorded gate scope, acceptance is CircleCI +
+Vercel and Sonar is the **PR** gate, so this does not block acceptance — but it
+has been red for the whole track and **is undiagnosed**. There is no
+`sonar-project.properties`, no `SONAR_*` env var, and no Sonar step in
+`.circleci/config.yml`, so the analysis runs through the Sonar GitHub
+integration and its findings are unreachable from this environment. **Someone
+with SonarCloud project access must read the actual findings.** Do not guess.
+
+### Still gated, and not on this line of work
+
+1. **Independent audit** before promotion. R9 touches four named `AGENTS.md`
+   audit triggers: public MCP surface (R9-B, R9-G), sensitive-input contract
+   (R9-B), ref-authority contract (R9-D), foreground gate (R9-A). **The
+   implementing agent cannot clear this gate.**
+2. **Live acceptance** in a real Opera profile against a real document editor.
+3. **Owner-ordered release**: build, sign, audit, upload inactive, live
+   acceptance, then the atomic activation flip. The recorded flip mechanic:
+   `opera_releases_one_active_per_identity_idx` is an immediate partial UNIQUE
+   index, so use the two-statement ordered flip, not one multi-row UPDATE.
+
+## R9-A/B/C closed — main fast-forwarded to `024696b` (CI green 2026-09-30)
 
 Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
 

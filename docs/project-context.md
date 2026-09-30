@@ -1,6 +1,69 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-30 (R9-A/B/C/D/E/G complete; source-only, not released)
+Last synchronized: 2026-09-30 (head `4e90d31`: R9 complete in source, CI green, not released)
+
+## R9 complete in source — head `4e90d31`, CI green, NOT released
+
+Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+`main` = `feat/pre-8e-usability-repair-r8` = `4e90d31`. CircleCI `ci` success and
+Vercel success on that exact SHA. `npm test` 573/573, `npm run check` ok — 26
+primitives, 81 safety files, 1.6.13. `py tests/browser_extension_test.py` exits 0.
+
+**Nothing is released or activated.** Production serves CRX **1.6.13**, which
+predates every R9 change; `role-reconcile.js` and `hover-settle.js` ship with the
+next release. R9-F remains **recommended for deferral**.
+
+Track contents: R9-A at-dispatch foreground focus gate; R9-B keyboard chords and
+bounded text entry, now publicly reachable; R9-C role reconciliation from markup
+plus the accessibility tree; R9-D cheap stale-ref recovery with the 24px
+geometry tolerance **unchanged**; R9-E `hover` burst step that can never click;
+R9-G menu/dialog batching instructions.
+
+### Two CI failures found and fixed at the end of the track
+
+- **The 7C p95 gate was a flaky perf gate.** It failed CI while passing locally
+  and reproduced at ~1 run in 3 (ratios to 1.282 vs a 1.15 budget). The budget
+  was never wrong; the estimator was — it compared p95s of two *independently*
+  measured series. It now asserts the **median of paired ratios** (stable
+  1.025-1.044). Two alternatives were measured and rejected with numbers recorded
+  in the evidence doc; a meta-test prevents a quiet revert.
+- **R9-D broke the Chromium extension regression** — my regression. R9-D dropped
+  `rect` from the geometry-rejection candidate payload, and
+  `tests/browser_extension_test.py:836` asserts on that coordinate. Restored.
+  **Lesson:** the local suite was 573/573 green while the extension was broken in
+  a real browser. `npm test` does not cover the extension; run
+  `py tests/browser_extension_test.py` before calling extension work done.
+
+### Environment notes
+
+- Python is not on `PATH` as `python`/`python3`, but `py` works (3.12.10) with
+  Playwright and Chromium installed. Use `py tests/browser_extension_test.py`.
+- Read CI with `gh api .../commits/<sha>/check-runs` **and** `.../status`. The
+  combined status can read `success` while a check-run is still pending or red.
+
+### Open: SonarCloud quality gate
+
+`SonarCloud Code Analysis` reports **Quality Gate failed** on every R9 head,
+including `024696b`, which I earlier reported as fully green — an error on my
+part: I read the combined status before Sonar's check-run had settled. Per the
+recorded gate scope, acceptance is CircleCI + Vercel and Sonar is the **PR**
+gate, so this does not block acceptance — but it has been red for the whole
+track and is **undiagnosed**: no `sonar-project.properties`, no `SONAR_*` env
+var, and no Sonar step in `.circleci/config.yml`, so the analysis runs through
+the Sonar GitHub integration and its findings are unreachable from here. Someone
+with SonarCloud project access must read the actual findings.
+
+### Still gated, and not on this line of work
+
+1. **Independent audit** before promotion — R9 touches four named `AGENTS.md`
+   audit triggers (public MCP surface, sensitive-input contract, ref-authority
+   contract, foreground gate). The implementing agent cannot clear this gate.
+2. **Live acceptance** in a real Opera profile against a real document editor.
+3. **Owner-ordered release**: build, sign, audit, upload inactive, live
+   acceptance, then the atomic activation flip (two-statement ordered flip —
+   `opera_releases_one_active_per_identity_idx` is an immediate partial UNIQUE
+   index).
 
 ## R9 complete (source) — A/B/C/D/E/G done; R9-F deferred (2026-09-30)
 
