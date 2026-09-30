@@ -84,7 +84,9 @@ async function setState(patch) {
   connectionState = { ...connectionState, ...patch };
   try {
     await chrome.storage.local.set({ connectionState });
-  } catch {}
+  } catch (error) {
+    log.warn('STATE_PERSIST_FAILED', error?.message || String(error));
+  }
 }
 
 async function fetchJson(url, body, timeoutMs = 30000) {
@@ -100,7 +102,7 @@ async function fetchJson(url, body, timeoutMs = 30000) {
     });
     const text = await response.text();
     let data = {};
-    try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || `HTTP ${response.status}` }; }
+    try { data = text ? JSON.parse(text) : {}; } catch (error) { log.debug('RESPONSE_BODY_PARSE_FAILED', error?.message || String(error)); data = { error: text || `HTTP ${response.status}` }; }
     if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
     return data;
   } finally {
@@ -151,7 +153,9 @@ async function ensureContent(tabId) {
   try {
     const pong = await chrome.tabs.sendMessage(tabId, { scope: 'opera-agent-content', method: 'content.ping', params: {} });
     if (pong?.ok) return;
-  } catch {}
+  } catch (error) {
+    log.debug('CONTENT_PING_FAILED', error?.message || String(error));
+  }
   await chrome.scripting.executeScript({ target: { tabId }, files: ['semantic-identity.js', 'semantic-views.js', 'content.js'] });
 }
 
@@ -255,7 +259,7 @@ async function withDebugger(tabId, context, work) {
     return await work(target);
   } finally {
     if (attached) {
-      try { await chrome.debugger.detach(target); } catch {}
+      try { await chrome.debugger.detach(target); } catch (error) { log.debug('DEBUGGER_DETACH_FAILED', error?.message || String(error)); }
     }
   }
 }
@@ -275,23 +279,24 @@ function codedError(code, message, details = {}) {
 async function collectAxSummary(tabId, context) {
   try {
     return await withDebugger(tabId, context, async (target) => {
-      try { await chrome.debugger.sendCommand(target, 'Accessibility.enable'); } catch {}
+      try { await chrome.debugger.sendCommand(target, 'Accessibility.enable'); } catch (error) { log.warn('ACCESSIBILITY_ENABLE_FAILED', error?.message || String(error)); }
       let tree;
       try {
         tree = await chrome.debugger.sendCommand(target, 'Accessibility.getFullAXTree');
       } finally {
-        try { await chrome.debugger.sendCommand(target, 'Accessibility.disable'); } catch {}
+        try { await chrome.debugger.sendCommand(target, 'Accessibility.disable'); } catch (error) { log.debug('ACCESSIBILITY_DISABLE_FAILED', error?.message || String(error)); }
       }
       const summary = buildAxSummary(tree?.nodes || []);
       return summary.items.length > 0 ? summary : null;
     });
-  } catch {
+  } catch (error) {
+    log.debug('AX_SUMMARY_COLLECTION_FAILED', error?.message || String(error));
     return null;
   }
 }
 
 function screenshotBytes(data) {
-  try { return atob(data).length; } catch { return Number.POSITIVE_INFINITY; }
+  try { return atob(data).length; } catch (error) { log.debug('SCREENSHOT_BYTES_PARSE_FAILED', error?.message || String(error)); return Number.POSITIVE_INFINITY; }
 }
 
 async function screenshotHash(data) {
@@ -325,7 +330,8 @@ async function screenshotLooksBlank(data) {
     const mean = sum / count;
     const variance = Math.max(0, sumSquares / count - mean * mean);
     return { checked: true, blank: variance < 2 && (mean < 3 || mean > 252), mean, variance };
-  } catch {
+  } catch (error) {
+    log.debug('SCREENSHOT_BLANK_CHECK_FAILED', error?.message || String(error));
     return { checked: false, blank: false };
   }
 }
@@ -463,13 +469,15 @@ async function withInputFocusEmulation(target, mode, work) {
     try {
       await chrome.debugger.sendCommand(target, 'Emulation.setFocusEmulationEnabled', { enabled: true });
       focusEmulated = true;
-    } catch {}
+    } catch (error) {
+      log.warn('FOCUS_EMULATION_ENABLE_FAILED', error?.message || String(error));
+    }
   }
   try {
     return { ...(await work()), focusEmulated };
   } finally {
     if (focusEmulated) {
-      try { await chrome.debugger.sendCommand(target, 'Emulation.setFocusEmulationEnabled', { enabled: false }); } catch {}
+      try { await chrome.debugger.sendCommand(target, 'Emulation.setFocusEmulationEnabled', { enabled: false }); } catch (error) { log.debug('FOCUS_EMULATION_DISABLE_FAILED', error?.message || String(error)); }
     }
   }
 }
@@ -576,7 +584,9 @@ chrome.tabs.onCreated.addListener((tab) => {
     prunePopupLog();
     const opener = resolvePopupOpener(popupInFlightTab(), tab);
     if (opener !== null) recordPopup(popupLog, { id: tab.id, openerTabId: opener, pendingUrl: tab.pendingUrl, url: tab.url }, Date.now(), POPUP_LOG_LIMIT);
-  } catch {}
+  } catch (error) {
+    log.warn('POPUP_TRACK_FAILED', error?.message || String(error));
+  }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
@@ -843,7 +853,7 @@ function burstStepParams(step, tabId, remainingMs, mode, results) {
 }
 
 function burstResultSize(results) {
-  try { return new TextEncoder().encode(JSON.stringify(results)).byteLength; } catch { return Number.POSITIVE_INFINITY; }
+  try { return new TextEncoder().encode(JSON.stringify(results)).byteLength; } catch (error) { log.debug('BURST_RESULT_SIZE_FAILED', error?.message || String(error)); return Number.POSITIVE_INFINITY; }
 }
 
 async function runBurst(params, outerContext = {}) {
@@ -913,7 +923,7 @@ async function runBurst(params, outerContext = {}) {
     };
   } finally {
     if (context.debuggerSession.attached) {
-      try { await chrome.debugger.detach({ tabId }); } catch {}
+      try { await chrome.debugger.detach({ tabId }); } catch (error) { log.debug('BURST_DEBUGGER_DETACH_FAILED', error?.message || String(error)); }
     }
   }
 }
@@ -1066,7 +1076,7 @@ async function dispatch(method, params = {}, context = {}) {
         };
       }
       if (result?.page?.viewport) {
-        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch {}
+        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
       }
       // U-P1: text-poor surfaces pay the debugger round trip; collection
       // failures fail open and leave the observation unchanged.
@@ -1227,7 +1237,7 @@ async function pruneWatchers() {
 }
 
 async function tabExists(tabId) {
-  try { await chrome.tabs.get(tabId); return true; } catch { return false; }
+  try { await chrome.tabs.get(tabId); return true; } catch (error) { log.debug('TAB_EXISTS_PROBE_FAILED', error?.message || String(error)); return false; }
 }
 
 async function armWatchersForTab(tabId) {
@@ -1262,7 +1272,7 @@ async function handleWatchFacts(tabId, facts) {
   await saveWatchers(w);
   for (const fire of out.fired) {
     const entry = entries.find((e) => e.rule.ruleId === fire.ruleId);
-    if (entry) handleWatchFire(entry, fire, facts).catch(() => {});
+    if (entry) handleWatchFire(entry, fire, facts).catch((error) => { log.warn('WATCH_FIRE_FAILED', error?.message || String(error)); });
   }
   return { fired: out.fired.length };
 }
@@ -1679,8 +1689,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && /^https?:/i.test(tab.url || '')) {
     const w = loadWatchers();
     Promise.resolve(w).then((watchers) => {
-      if ((watchers.byTab[tabId] || []).length) armWatchersForTab(tabId).catch(() => {});
-    }).catch(() => {});
+      if ((watchers.byTab[tabId] || []).length) armWatchersForTab(tabId).catch((error) => { log.warn('WATCH_ARM_FAILED', error?.message || String(error)); });
+    }).catch((error) => { log.warn('WATCHERS_LOAD_FAILED', error?.message || String(error)); });
   }
 });
 
@@ -1689,8 +1699,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   privateTabIds().then((ids) => {
     if (!ids.delete(tabId)) return;
     return chrome.storage.local.set({ [PRIVATE_TABS_KEY]: [...ids] });
-  }).catch(() => {});
+  }).catch((error) => { log.debug('PRIVATE_TAB_CLEANUP_FAILED', error?.message || String(error)); });
 });
 
-chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
+chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 }).catch((error) => { log.warn('WAKE_ALARM_CREATE_FAILED', error?.message || String(error)); });
 ensurePullLoop();

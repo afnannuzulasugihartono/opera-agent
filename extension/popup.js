@@ -16,7 +16,8 @@ function friendlyTime(value) {
       hour: '2-digit',
       minute: '2-digit'
     });
-  } catch {
+  } catch (error) {
+    log.debug('TIME_FORMAT_FAILED', error?.message || String(error));
     return '\u2014';
   }
 }

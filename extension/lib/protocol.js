@@ -229,7 +229,11 @@ export function safeUrl(value) {
     const url = new URL(String(value));
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
     return url.toString();
-  } catch {
+  } catch (error) {
+    // Classic-or-module safe: protocol.js loads in the module service worker,
+    // Node tests, and any future classic context — never import the logger,
+    // resolve it lazily and tolerate its absence.
+    globalThis.OperaAgentLog?.debug?.('SAFE_URL_PARSE_FAILED', error?.message || String(error));
     return null;
   }
 }

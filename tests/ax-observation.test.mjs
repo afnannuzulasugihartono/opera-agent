@@ -144,7 +144,9 @@ test('background.js attaches a poverty-triggered, fail-open CDP axSummary (Layer
   // The trigger must be text poverty only, and collection failures must not
   // break the observation: fail-open to no axSummary.
   assert.match(background, /totalTextChars/);
-  assert.match(background, /catch[^{]*\{\s*\}/);
+  // Re-frozen 2026-10-01 (Phase 2 Task 6): silent catches now log, so fail-open
+  // is a logged catch returning null rather than an empty catch block.
+  assert.match(background, /catch \(error\) \{\s*log\.debug\('AX_SUMMARY_COLLECTION_FAILED',[\s\S]*?return null;/);
 });
 
 test('MCP guidance documents the accessibility surface without new tools', () => {

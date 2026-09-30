@@ -31,7 +31,11 @@
       if (!['http:', 'https:'].includes(url.protocol)) return '';
       url.hash = '';
       return url.toString();
-    } catch {
+    } catch (error) {
+      // Classic-script safe: this IIFE loads via manifest content scripts,
+      // executeScript injection, and Node test imports — never import the
+      // logger, resolve it lazily and tolerate its absence.
+      globalThis.OperaAgentLog?.debug?.('HREF_CANONICALIZE_FAILED', error?.message || String(error));
       return '';
     }
   }
