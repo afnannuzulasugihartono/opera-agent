@@ -1818,7 +1818,7 @@ checkpoint.
 - No runtime/test changes in this session; `npm test` / `npm run check`
   not rerun (no code touched).
 
-## Integration decision (2026-10-01, owner-chosen option B / hold)
+## Integration decision (2026-09-30, owner-chosen option B / hold)
 
 - Fase 1 branch `chore/enterprise-standards-phase-1` (tip `0f2c6dc`,
   pushed, in sync) is NOT merged: head is CI-red at the new deno gate
