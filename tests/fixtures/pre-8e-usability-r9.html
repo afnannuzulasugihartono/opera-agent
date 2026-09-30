@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Opera Agent R9 control fixture</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 24px; }
+  .menu { position: relative; display: inline-block; }
+  .panel { position: absolute; left: 0; top: 26px; display: none; background: #fff;
+           border: 1px solid #444; padding: 6px; z-index: 20; white-space: nowrap; }
+  .menu.open > .panel { display: block; }
+  .submenu { position: relative; }
+  .subpanel { position: absolute; left: 100%; top: 0; display: none; background: #fff;
+              border: 1px solid #444; padding: 6px; z-index: 21; white-space: nowrap; }
+  .submenu.open > .subpanel { display: block; }
+  [contenteditable] { border: 1px solid #888; min-height: 70px; padding: 6px; }
+  #moved { display: inline-block; }
+  #sink { border: 1px dashed #999; min-height: 24px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<h1>R9 control fixture</h1>
+
+<!-- R9-C: an unannotated <button>. It carries NO role attribute, so before
+     R9-C it serialized as role: '' and was invisible to a role-filtered
+     find_elements. It must now be discoverable as role "button". -->
+<p><button id="unannotated">Unannotated action</button></p>
+
+<!-- R9-C: an unannotated checkbox-like control. No role, no type=checkbox:
+     a custom widget whose semantics must come from the AX tree. -->
+<p><div id="custom-check" aria-label="Show on first page" tabindex="0" role="switch">Show on first page</div></p>
+
+<!-- R9-E: a two-level menu revealed by hover, each level driven by
+     aria-expanded so the settle has a real signal to observe. -->
+<div class="menu" id="menu-root">
+  <button id="insert" aria-expanded="false" aria-haspopup="true">Insert</button>
+  <div class="panel" id="insert-panel">
+    <div class="submenu" id="page-elements">
+      <button id="page-elements-trigger" aria-expanded="false" aria-haspopup="true">Page elements</button>
+      <div class="subpanel" id="page-elements-panel">
+        <div><button id="page-numbers">Page numbers</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p><button id="after-menu">After menu</button></p>
+
+<!-- R9-B: a rich-editor surface. contenteditable, so trusted text entry and
+     chords must reach it; the synthetic key path must refuse them. -->
+<div id="editor" contenteditable="true">seed</div>
+<p><input id="plain" type="text" value=""></p>
+<p><input id="secret" type="password" value=""></p>
+
+<!-- R9-D: a control that is DESTROYED and replaced elsewhere on click, so its
+     ref goes stale and the geometry guard must refuse the STALE ref while
+     handing back a fresh one for the replacement. -->
+<p><button id="relocate-trigger">Relocate the control</button></p>
+<p><button id="moved">Relocate me</button></p>
+
+<!-- R9-A: sensitive-field refusal surface. -->
+<p><input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code"></p>
+
+<div id="sink"></div>
+
+<script>
+  // R9-E hover behaviour: opening a level closes its siblings, so the caller
+  // has to hover each level in turn rather than clicking once.
+  const root = document.getElementById('menu-root');
+  const insert = document.getElementById('insert');
+  const pageElements = document.getElementById('page-elements');
+  const trigger = document.getElementById('page-elements-trigger');
+
+  function open(node) {
+    node.classList.add('open');
+    node.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'true');
+  }
+  function closeAll(except) {
+    for (const node of document.querySelectorAll('.menu, .submenu')) {
+      if (node !== except) {
+        node.classList.remove('open');
+        node.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false');
+      }
+    }
+  }
+
+  insert.addEventListener('mouseenter', () => { closeAll(root); open(root); });
+  pageElements.addEventListener('mouseenter', () => { closeAll(root); open(root); open(pageElements); });
+
+  // R9-D relocation: a maps-style redraw. The original control is DESTROYED and
+  // an identical replacement is appended far away, so the minted ref's element
+  // is genuinely disconnected. A CSS transform would not do: a connected
+  // element always resolves, and the geometry guard only applies to
+  // replacements.
+  const moved = document.getElementById('moved');
+  document.getElementById('relocate-trigger').addEventListener('click', () => {
+    const rect = moved.getBoundingClientRect();
+    const clone = moved.cloneNode(true);
+    clone.id = 'moved-successor';
+    clone.style.position = 'absolute';
+    clone.style.left = `${Math.round(rect.left) + 600}px`;
+    clone.style.top = `${Math.round(rect.top)}px`;
+    document.body.appendChild(clone);
+    moved.remove();
+  });
+  document.getElementById('moved-successor')?.addEventListener('click', () => {
+    document.getElementById('sink').textContent = 'moved-clicked';
+  });
+
+  document.getElementById('page-numbers').addEventListener('click', (event) => {
+    event.preventDefault();
+    document.getElementById('sink').textContent = 'page-numbers-clicked';
+  });
+</script>
+</body>
+</html>

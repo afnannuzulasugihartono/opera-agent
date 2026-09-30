@@ -139,6 +139,7 @@ UI_IDENTITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ui-identity.
 AX_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ax.html').read_text(encoding='utf-8')
 UV_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-uv.html').read_text(encoding='utf-8')
 UR_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ur.html').read_text(encoding='utf-8')
+R9_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r9.html').read_text(encoding='utf-8')
 
 def build_r5_wav():
     buffer = io.BytesIO()
@@ -224,7 +225,7 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-ax'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax'):
             if self.path.startswith('/pre8e-uv'):
                 document = UV_PAGE
             elif self.path.startswith('/pre8e-ur'):
@@ -241,6 +242,8 @@ class Handler(BaseHTTPRequestHandler):
                 document = R2_PAGE
             elif self.path.startswith('/pre8e-ui-identity'):
                 document = UI_IDENTITY_PAGE
+            elif self.path.startswith('/pre8e-r9'):
+                document = R9_PAGE
             elif self.path.startswith('/pre8e-r1'):
                 document = R1_PAGE
             elif self.path.startswith('/pre8e-r0'):
@@ -834,6 +837,239 @@ async def run(port, profile):
         assert 'moved beyond the geometry tolerance' in ui_reject_msg, ui_reject
         assert 'Zoom in' in ui_reject_msg, ui_reject
         assert str(int(ui_zoom_x) + 600) in ui_reject_msg, ui_reject
+
+        # ------------------------------------------------------------------
+        # R9 live acceptance. The unit suite covers the pure policy and the
+        # structural wiring, but nothing in it runs the extension in a browser.
+        # These cases exercise the four R9 capabilities against a real page.
+        # ------------------------------------------------------------------
+        # Later cases assert on the ALREADY-active tab, so remember which tab
+        # was active and put it back when this block finishes.
+        cid = STATE.push('tabs.list', {}, benchmark='r9.tabs.list.before')
+        r9_before_tabs = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tabs']
+        r9_previous_active = next((t['id'] for t in r9_before_tabs if t.get('active')), None)
+
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r9',
+            'active': False,
+            'wait': True
+        }, benchmark='r9.tabs.open')
+        r9_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        async def r9_evaluate(expression, label):
+            page = context.pages[-1]
+            return await page.evaluate(expression)
+
+        # Bring the fixture tab to the front so trusted input reaches it.
+        cid = STATE.push('tabs.activate', {'tabId': r9_tab_id}, benchmark='r9.tabs.activate')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        # R9-C: an unannotated <button> has no role attribute. Before R9-C it
+        # serialized as role: '' and a role-filtered find returned nothing.
+        cid = STATE.push('page.find', {
+            'tabId': r9_tab_id,
+            'role': 'button',
+            'text': 'Unannotated action',
+            'exact': True
+        }, benchmark='r9.page.find.implicit-role')
+        r9_role = await asyncio.to_thread(STATE.wait, cid)
+        r9_role = assert_completed_ok(r9_role)
+        assert r9_role['count'] == 1, r9_role
+        assert r9_role['item']['role'] == 'button', r9_role
+        assert r9_role['item']['tag'] == 'button', r9_role
+        r9_unannotated_ref = r9_role['item']['ref']
+
+        # R9-B: a trusted chord must reach a real surface. Click the editor,
+        # select all with Ctrl+A, then replace the contents with typed text.
+        cid = STATE.push('page.click', {
+            'tabId': r9_tab_id,
+            'ref': r9_unannotated_ref
+        }, benchmark='r9.page.click.unannotated')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.find', {
+            'tabId': r9_tab_id,
+            'text': 'seed',
+            'exact': False
+        }, benchmark='r9.page.find.editor')
+        r9_editor = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        r9_editor_ref = r9_editor['item']['ref']
+        assert r9_editor['item']['role'] == 'textbox', r9_editor
+
+        cid = STATE.push('page.click', {'tabId': r9_tab_id, 'ref': r9_editor_ref}, benchmark='r9.page.click.editor')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.key', {
+            'tabId': r9_tab_id,
+            'key': 'a',
+            'modifiers': ['control'],
+            'trusted': True
+        }, benchmark='r9.page.key.chord')
+        r9_chord = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r9_chord['input'] == 'chord', r9_chord
+        assert 'control' in r9_chord['modifiers'], r9_chord
+
+        cid = STATE.push('page.key', {
+            'tabId': r9_tab_id,
+            'text': 'R9 keyboard acceptance',
+            'trusted': True
+        }, benchmark='r9.page.key.text')
+        r9_text = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r9_text['input'] == 'text', r9_text
+        assert r9_text['valueLength'] == len('R9 keyboard acceptance'), r9_text
+
+        # The keystrokes must have actually landed in the editor.
+        r9_editor_text = await r9_evaluate(
+            'document.getElementById("editor").textContent', 'r9.editor.text')
+        assert 'R9 keyboard acceptance' in r9_editor_text, r9_editor_text
+
+        # R9-B: a chord and text must be mutually exclusive at the boundary.
+        cid = STATE.push('page.key', {
+            'tabId': r9_tab_id,
+            'key': 'a',
+            'text': 'both',
+            'trusted': True
+        }, benchmark='r9.page.key.conflict')
+        r9_conflict = await asyncio.to_thread(STATE.wait, cid)
+        assert r9_conflict['ok'] is False, r9_conflict
+
+        # R9-B: the sensitive-field guard must survive the new key path.
+        cid = STATE.push('page.query', {'tabId': r9_tab_id, 'selector': '#otp'}, benchmark='r9.page.query.otp')
+        r9_otp = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        assert r9_otp['sensitive'] is True, r9_otp
+
+        # A sensitive field is not actionable, so it cannot even be clicked.
+        # That is the first line of defence and it is unchanged by R9.
+        cid = STATE.push('page.click', {'tabId': r9_tab_id, 'ref': r9_otp['ref']}, benchmark='r9.page.click.otp-refused')
+        r9_otp_click = await asyncio.to_thread(STATE.wait, cid)
+        assert r9_otp_click['ok'] is False, r9_otp_click
+
+        # Focus it directly instead, so the KEY guard is genuinely exercised:
+        # R9-B added a text path, and it must not become a way to type secrets.
+        cid = STATE.push('page.focus', {'tabId': r9_tab_id, 'ref': r9_otp['ref']}, benchmark='r9.page.focus.otp')
+        await asyncio.to_thread(STATE.wait, cid)
+
+        cid = STATE.push('page.key', {
+            'tabId': r9_tab_id,
+            'text': 'should-not-land',
+            'trusted': True
+        }, benchmark='r9.page.key.otp-guard')
+        r9_otp_key = await asyncio.to_thread(STATE.wait, cid)
+        assert r9_otp_key['ok'] is False, r9_otp_key
+        r9_otp_key_msg = r9_otp_key['error']['message'] if isinstance(r9_otp_key.get('error'), dict) else str(r9_otp_key.get('error'))
+        assert 'sensitive' in r9_otp_key_msg.lower(), r9_otp_key
+        # And the field must still be empty.
+        r9_otp_value = await r9_evaluate('document.getElementById("otp").value', 'r9.otp.value')
+        assert r9_otp_value == '', r9_otp_value
+
+        # The same must hold for a chord, not just text.
+        cid = STATE.push('page.key', {
+            'tabId': r9_tab_id,
+            'key': 'a',
+            'modifiers': ['control'],
+            'trusted': True
+        }, benchmark='r9.page.key.otp-chord-guard')
+        r9_otp_chord = await asyncio.to_thread(STATE.wait, cid)
+        assert r9_otp_chord['ok'] is False, r9_otp_chord
+
+        # R9-E: hover must reveal a submenu and settle, in one burst, without
+        # the caller hand-building hover/wait chains or touching coordinates.
+        cid = STATE.push('browser.burst', {
+            'steps': [
+                {'action': 'find', 'text': 'Insert', 'exact': True},
+                {'action': 'hover', 'refFromStep': 0, 'text': 'Page elements'},
+                {'action': 'find', 'text': 'Page elements', 'exact': True},
+                {'action': 'hover', 'refFromStep': 2, 'text': 'Page numbers'},
+                {'action': 'find', 'text': 'Page numbers', 'exact': True},
+                {'action': 'click', 'refFromStep': 4}
+            ]
+        }, benchmark='r9.browser.burst.hover')
+        r9_burst = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        hover_results = [step for step in r9_burst['results'] if step['action'] == 'hover']
+        assert len(hover_results) == 2, r9_burst
+        for step in hover_results:
+            assert step['ok'] is True, step
+            assert step['result']['input'] == 'hover', step
+            assert step['result']['settle']['settled'] is True, step
+        # The submenu click must have actually fired.
+        r9_sink = await r9_evaluate('document.getElementById("sink").textContent', 'r9.sink')
+        assert r9_sink == 'page-numbers-clicked', r9_sink
+
+        # R9-D: after a legitimate relocation the stale ref is refused on
+        # purpose, and the refusal carries a fresh ref that is safe to act on.
+        cid = STATE.push('page.find', {
+            'tabId': r9_tab_id,
+            'text': 'Relocate me',
+            'exact': True
+        }, benchmark='r9.page.find.mint-moved')
+        r9_minted = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        r9_moved_ref = r9_minted['item']['ref']
+
+        cid = STATE.push('page.find', {
+            'tabId': r9_tab_id,
+            'text': 'Relocate the control',
+            'exact': True
+        }, benchmark='r9.page.find.relocate-trigger')
+        r9_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.click', {
+            'tabId': r9_tab_id,
+            'ref': r9_trigger['item']['ref']
+        }, benchmark='r9.page.click.relocate')
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('page.click', {'tabId': r9_tab_id, 'ref': r9_moved_ref}, benchmark='r9.page.click.stale-ref')
+        r9_stale = await asyncio.to_thread(STATE.wait, cid)
+        assert r9_stale['ok'] is False, r9_stale
+        r9_stale_msg = r9_stale['error']['message'] if isinstance(r9_stale.get('error'), dict) else str(r9_stale.get('error'))
+        assert 'moved beyond the geometry tolerance' in r9_stale_msg, r9_stale_msg
+        assert 'freshRef' in r9_stale_msg, r9_stale_msg
+        assert 'rect' in r9_stale_msg, r9_stale_msg
+
+        # The advertised fresh ref must be genuinely usable. The candidate array
+        # is embedded in the message; slice the first JSON object array only, so
+        # the trailing "Candidates: []" suffix is not mistaken for it.
+        r9_fresh_ref = None
+        for candidate in r9_stale.get('error', {}).get('candidates', []) or []:
+            if candidate.get('freshRef'):
+                r9_fresh_ref = candidate['freshRef']
+        if r9_fresh_ref is None:
+            start = r9_stale_msg.find('[{')
+            end = r9_stale_msg.rindex('}]') if '}]' in r9_stale_msg else -1
+            if start >= 0 and end > start:
+                try:
+                    import json as _json
+                    r9_fresh_ref = _json.loads(r9_stale_msg[start:end + 2])[0]['freshRef']
+                except Exception:
+                    r9_fresh_ref = None
+        assert r9_fresh_ref, r9_stale_msg
+        cid = STATE.push('page.click', {
+            'tabId': r9_tab_id,
+            'ref': r9_fresh_ref
+        }, benchmark='r9.page.click.fresh-ref')
+        r9_fresh = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert r9_fresh['ok'] is True, r9_fresh
+
+        # R9-A: foreground mode must still be refused without a real focused
+        # window, and must never auto-activate anything to work around it.
+        cid = STATE.push('page.pointer', {
+            'tabId': r9_tab_id,
+            'action': 'move',
+            'x': 10,
+            'y': 10,
+            'executionMode': 'foreground'
+        }, benchmark='r9.page.pointer.foreground-gate')
+        r9_fg = await asyncio.to_thread(STATE.wait, cid)
+        if r9_fg['ok'] is False:
+            r9_fg_msg = r9_fg['error']['message'] if isinstance(r9_fg.get('error'), dict) else str(r9_fg.get('error'))
+            assert 'FOREGROUND_REQUIRED' in str(r9_fg.get('error', {}).get('code', '')) or 'focus' in r9_fg_msg.lower(), r9_fg
+
+        # Teardown: restore the previously active tab and close the fixture tab,
+        # so the surrounding suite keeps the preconditions it expects.
+        if r9_previous_active is not None:
+            cid = STATE.push('tabs.activate', {'tabId': r9_previous_active, 'focusWindow': False}, benchmark='r9.tabs.activate.restore')
+            await asyncio.to_thread(STATE.wait, cid)
+        cid = STATE.push('tabs.close', {'tabId': r9_tab_id}, benchmark='r9.tabs.close')
+        await asyncio.to_thread(STATE.wait, cid)
 
         # U-I: visible text without an interactive element surfaces a nearby
         # actionable candidate in one round trip (I3).

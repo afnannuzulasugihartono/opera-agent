@@ -104,8 +104,8 @@ function validateBurstStep(step) {
   // R9-E: a hover needs a ref to hover; `text` is the optional submenu name to
   // wait for, never the hover target itself, so a hover can never be guessed
   // from a loose text match.
-  if (action === 'hover' && !validRef(step.ref)) {
-    return 'Burst hover requires a ref target.';
+  if (action === 'hover' && !validRef(step.ref) && step.refFromStep === undefined) {
+    return 'Burst hover requires a valid ref or refFromStep.';
   }
   if (action === 'pointer') {
     const pointerAction = String(step.pointerAction || 'click');

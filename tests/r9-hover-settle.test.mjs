@@ -79,6 +79,16 @@ test('R9-E: the hover burst step exists and requires a ref target', () => {
   // A hover needs a concrete target: text is the submenu to WAIT for, never the
   // thing to hover, so a hover can never be guessed from a loose text match.
   assert.equal(validateBurst({ steps: [{ action: 'hover', ref: 'oa-1' }] }).ok, true);
+  // refFromStep is the whole point of a burst: the ref is minted and consumed
+  // inside the same call. Found by live browser acceptance, where a
+  // find-then-hover-by-refFromStep chain was rejected at validation time
+  // because the validator only accepted a literal ref.
+  assert.deepEqual(
+    validateBurst({ steps: [{ action: 'find', text: 'Insert' }, { action: 'hover', refFromStep: 0, text: 'Page numbers' }] }),
+    { ok: true }
+  );
+  // A refFromStep must still point at an earlier step, exactly as click/fill do.
+  assert.equal(validateBurst({ steps: [{ action: 'hover', refFromStep: 0 }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'hover' }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'hover', text: 'Insert' }] }).ok, false);
   // Unknown keys are still rejected, and the burst stays bounded at 8 steps.
