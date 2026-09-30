@@ -28,6 +28,38 @@ jobs:
             npm test
             npm run check
       - run:
+          name: Secret scan (gitleaks)
+          command: |
+            GITLEAKS_VERSION="8.24.0"
+            curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz || {
+              GITLEAKS_VERSION="$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/^v//')"
+              echo "pinned gitleaks missing; falling back to latest v8: ${GITLEAKS_VERSION}"
+              curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+            }
+            tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+            /tmp/gitleaks detect --source . --verbose
+      - run:
+          name: Dependency audit
+          command: npm audit --audit-level=high
+      - run:
+          name: Install Deno and lint/typecheck edge functions
+          command: |
+            # Root deno.lock is machine-local (gitignored); the tracked
+            # per-function lockfile is the reproducible surface, hence --no-lock.
+            curl -fsSL https://deno.land/install.sh | sh -s "v2.1.4" || curl -fsSL https://deno.land/install.sh | sh
+            export DENO_INSTALL="$HOME/.deno"
+            export PATH="$DENO_INSTALL/bin:$PATH"
+            deno --version
+            deno lint supabase/functions/
+            for fn in supabase/functions/opera-agent-*/index.ts; do deno check --no-lock "$fn"; done
+      - run:
+          name: SBOM artifact (CycloneDX, informational)
+          command: |
+            npx --yes @cyclonedx/cdxgen@11 --output-file bom.json --fail-on-error .
+      - store_artifacts:
+          path: bom.json
+          destination: sbom
+      - run:
           name: Install Playwright
           command: |
             python -m pip install --upgrade pip
