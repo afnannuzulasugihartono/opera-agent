@@ -26,6 +26,7 @@
         "https://*/*"
       ],
       "js": [
+        "lib/agent-log.js",
         "semantic-identity.js",
         "semantic-views.js",
         "role-reconcile.js",

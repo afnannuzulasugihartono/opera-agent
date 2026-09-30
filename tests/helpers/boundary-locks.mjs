@@ -83,8 +83,8 @@
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '3ee6b781b50e9c3c02e4eb3831c94d96b240bb9e'],
-  ['../extension/background.js', '5642089f1b2e3eacadb0f219702e86cf9af4d446'],
-  ['../extension/manifest.json', 'b62deba0ed431054a3e1ff039e58396f0e1891b9'],
+  ['../extension/background.js', '18e1d7e4cc987215058a561c21857183f552e3e2'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 5 authorizes the shared agent-log side-effect import + availability assert (same R9-C no-export pattern as role-reconcile.js). Additive only; MCP/tool/schema surface unchanged.
+  ['../extension/manifest.json', 'cd7c1e67af1bc9d791ef3b6eb4b118cfc4169798'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 5 prepends lib/agent-log.js to content_scripts js (manifest-first load for classic content scripts). No permission or surface change.
   ['../supabase/functions/opera-agent-mcp/index.ts', '102cf47078dae8e37ae976288434db6eabffec69'], // Re-frozen 2026-10-01: intentional req->_req rename (deno no-unused-vars, Task 3 8a73e41), served contract unchanged.
 ]);
 

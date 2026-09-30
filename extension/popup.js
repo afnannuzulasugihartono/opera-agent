@@ -1,3 +1,6 @@
+import './lib/agent-log.js';
+const log = globalThis.OperaAgentLog || {};
+if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 const $ = (id) => document.getElementById(id);
 let currentTabId = null;
 let currentTabPrivate = false;
