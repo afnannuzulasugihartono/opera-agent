@@ -1,5 +1,76 @@
 # Opera Agent next-session handoff
 
+## R9-A / R9-B implemented — focus stability + keyboard chords (2026-09-30)
+
+Owner-authorized after the R9 assessment. **Implemented and verified in the
+extension + protocol layer. NOT promoted, NOT activated, NOT live-verified.**
+Full record: `docs/pre-8e-performance-usability-r9-evidence.md`. Base `136a11f`,
+branch `feat/pre-8e-usability-repair-r8`.
+
+Evidence: 17 new deterministic tests in `tests/r9-focus-and-keyboard.test.mjs`
+(written red before implementation); `npm test` **534/534 pass** (was 517);
+`npm run check` ok — 26 primitives, 79 safety files, version 1.6.13.
+
+**R9-A (focus).** The old check sampled `tab.active`/`window.focused` once,
+before a content round trip and a debugger attach, and never re-checked;
+foreground mode runs *without* `Emulation.setFocusEmulationEnabled`, so any focus
+loss in that window returned `FOREGROUND_REQUIRED` — a race by construction, and
+the most frequent reported failure. `withForegroundFocusGate` now re-samples at
+dispatch time **inside the debugger session** and retries a bounded number of
+times. All four trusted executors route through it. It never activates a tab or
+focuses a window, and a genuinely unfocused window still returns the structured
+requirement with `attempts`/`tabActive`/`windowFocused` attached.
+
+**R9-B (keyboard).** `KEY_MAP` was 12 unmodified keys with no modifier bitmask,
+so no `Ctrl+A`/`Ctrl+V`/`Shift+Enter`. `extension/lib/keyboard.js` (new, pure)
+resolves a `{key, modifiers}` chord or a bounded `{text}` request to an exact CDP
+payload, implicit Shift for uppercase, text chunked at 4 000 chars, behind the
+**unchanged** sensitive-field guard. Every previously allowlisted unmodified key
+resolves byte-identically.
+
+**Deliberate limitation.** `content.js` is a classic content script and cannot
+import `lib/keyboard.js`. Rather than keep a second, drifting copy of the
+allowlist, the synthetic key path stays unmodified-key only and refuses chords
+and text explicitly, pointing at the trusted path.
+
+**Public MCP surface is byte-identical and unchanged.** No tool, schema, or
+instruction change; `tests/fixtures/mcp-contract-v1.json` untouched, so 22 tools,
+the `read_page` schema, and the whole-file public contract all hold. Protocol 1
+and the 26 primitives unchanged. No production mutation, release, CRX, or deploy.
+
+`tests/helpers/boundary-locks.mjs` digests for `content.js`/`background.js` were
+updated per that file's own documented convention (U-P1, U-R, U-Sonar each
+appended a recorded line and updated digests). No assertion was removed or
+relaxed; no lock narrowed.
+
+### Decision the owner still owes — do not rebaseline this unilaterally
+
+The other half of R9-B, plus the menu/dialog `refFromStep` instruction win, both
+live in `supabase/functions/opera-agent-mcp/index.ts`, frozen byte-for-byte by
+`tests/fixtures/mcp-contract-v1.json` and consumed by **seven** test files
+(`semantic-release-gate`, `mcp-inventory-compat-r4`, `goal-ledger-contract`,
+`ledger-server`, `reactive-vm-contract`, `transaction-contract-8a`,
+`transaction-prepare-8b`). `AGENTS.md` puts public MCP schema changes behind
+their own explicit review boundary, and that was not disclosed when R9-B was
+authorized, so the digest was deliberately left alone.
+
+Pending, best value per contract risk:
+1. **Instructions only** — menu/dialog `refFromStep` + chord guidance. Zero
+   schema change, highest value, smallest delta. Recommended first.
+2. `press_key` optional `modifiers` and `text`.
+3. Burst `key` step optional `modifiers` and `text`.
+4. Rebaseline `mcp-contract-v1.json` `sourceSha256` and the MCP boundary-lock
+   entry with a recorded reason, per the existing U-T precedent.
+
+Until 2-4 land, the extension supports chords and text but no public tool can
+request them. The runtime work is done, verified, and dormant rather than absent.
+
+**Next substantive engineering item: R9-C (AX-reconciled discovery)**, which does
+*not* touch the public MCP surface. R9-D, R9-E, R9-F not started; **R9-F remains
+recommended for deferral** — it widens what may receive typed text, and the
+Google Docs scenario that motivated it already has a better path via the Docs
+API.
+
 ## R9 complex-application control assessment (2026-09-30) — PROPOSED, awaiting authorization
 
 A live operator test of Opera Agent against **Google Docs** (long-document

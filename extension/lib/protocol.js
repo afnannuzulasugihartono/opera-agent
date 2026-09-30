@@ -1,6 +1,8 @@
 export const PRODUCT_VERSION = '1.6.13';
 export const PROTOCOL_VERSION = 1;
 
+import { resolveKeyInput } from './keyboard.js';
+
 export const BURST_MAX_STEPS = 8;
 export const BURST_MAX_TIMEOUT_MS = 12000;
 export const EXECUTION_MODES = Object.freeze(['background', 'foreground']);
@@ -19,7 +21,7 @@ export const BURST_STEP_KEYS = Object.freeze({
   find: ['action', 'text', 'role', 'tag', 'exact', 'limit'],
   click: ['action', 'ref', 'refFromStep', 'refIndex'],
   fill: ['action', 'ref', 'value', 'refFromStep', 'refIndex'],
-  key: ['action', 'key'],
+  key: ['action', 'key', 'modifiers', 'text'],
   scroll: ['action', 'x', 'y', 'absolute', 'smooth'],
   wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs'],
   pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY']
@@ -83,8 +85,15 @@ function validateBurstStep(step) {
   if (action === 'fill' && step.refFromStep === undefined && (typeof step.value !== 'string' || step.value.length > 20000)) {
     return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
   }
-  if (action === 'key' && !['Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Space'].includes(step.key)) {
-    return 'Burst key is not allowlisted.';
+  if (action === 'key') {
+    // R9-B: a key step is either a chord or bounded text. The shared resolver
+    // is the single source of truth, so a key can never be accepted here and
+    // rejected later by the executor.
+    try {
+      resolveKeyInput({ key: step.key, modifiers: step.modifiers, text: step.text });
+    } catch (error) {
+      return `Burst key is not allowlisted: ${error.message}`;
+    }
   }
   if (action === 'scroll' && !Number.isFinite(Number(step.y))) return 'Burst scroll requires a finite y value.';
   if (action === 'wait' && !validRef(step.ref) && !(typeof step.selector === 'string' && step.selector.length >= 1 && step.selector.length <= 500) && !(typeof step.text === 'string' && step.text.length >= 1 && step.text.length <= 300)) {

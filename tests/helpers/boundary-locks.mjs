@@ -12,12 +12,23 @@
 // unchanged) and the ZWJ split in the content.js PUA strip class (same
 // code-point set), while the byte-pinned 8D transaction bundle libs and the
 // boundary-locked reactive-vm-7d then-field stay byte-identical (false-positive,
-// resolved in Sonar). Protocol 1, 26 primitives, 22 tools, and the read_page
-// input schema remain frozen.
+// resolved in Sonar). R9-A/R9-B (2026-09-30) then authorize complex-application
+// control: the foreground focus gate moves from a single racing pre-flight
+// sample to a bounded at-dispatch re-check inside the debugger session, and the
+// trusted key path resolves modifier chords and bounded text instead of a flat
+// 12-entry table. The content.js synthetic key path stays unmodified-key only
+// and refuses chords explicitly rather than keeping a second, drifting copy of
+// the allowlist. Both changes are additive and backward compatible. The MCP
+// source stays byte-identical in this checkpoint: the public MCP contract
+// (22 tools, the read_page schema, and the whole-file digest in
+// mcp-contract-v1.json) is deliberately NOT changed here, so exposing the new
+// keyboard surface publicly remains a separately reviewed decision.
+// Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
+// frozen.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'f4d15ef55bd68131cff98598328b2ba8d648cc3e'],
-  ['../extension/background.js', '4eabbd940898538cd211885b8890e05c9ee4fc25'],
+  ['../extension/content.js', 'bd082ba69bc094dadb698d8cd8b3d6592534c3e3'],
+  ['../extension/background.js', '9ae4a85c89bece87a7e4acbb029d31fecd55b59f'],
   ['../extension/manifest.json', 'e69324b7c2abb194d15459d55eddd3a838c04e53'],
   ['../supabase/functions/opera-agent-mcp/index.ts', '825651427a13ab3d6d2c404b07f62001fa672c71'],
 ]);

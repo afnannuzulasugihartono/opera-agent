@@ -1436,6 +1436,14 @@
   }
 
   function key(args) {
+    // The synthetic path stays unmodified-key only. Content scripts are classic
+    // scripts and cannot import the shared lib/keyboard.js resolver, so allowing
+    // chords here would mean a second, drifting copy of the allowlist. Chords
+    // and text entry are refused with a pointer to the trusted path, which is
+    // what every public tool actually uses.
+    if (args?.modifiers != null || args?.text != null) {
+      throw new Error('Key chords and text entry require the trusted path.');
+    }
     const keyName = args.key === 'Space' ? ' ' : String(args.key || '');
     if (!NAV_KEYS.has(args.key) && !NAV_KEYS.has(keyName)) throw new Error('Key is not allowlisted.');
     const target = document.activeElement || document.body;

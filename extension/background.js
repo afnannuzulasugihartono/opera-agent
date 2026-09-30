@@ -11,6 +11,8 @@ import {
 } from './lib/protocol.js';
 import { evaluateRules, validateRule } from './lib/watch.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
+import { decideFocusGate, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
+import { resolveKeyInput } from './lib/keyboard.js';
 import { buildAxSummary } from './lib/ax-summary.js';
 import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
 
@@ -460,6 +462,55 @@ async function withInputFocusEmulation(target, mode, work) {
   }
 }
 
+// R9-A (2026-09-30): the at-dispatch foreground focus gate.
+//
+// The historical check sampled `tab.active` / `window.focused` ONCE, before a
+// content-script round trip and a debugger attach, and never re-checked. A
+// window that lost focus inside that window produced FOREGROUND_REQUIRED even
+// though the user had just activated the tab. This gate re-samples AT dispatch
+// time from inside the debugger session, so the decision is made against the
+// state that will actually receive the input, and it retries a bounded number
+// of times before refusing.
+//
+// It never activates a tab, never focuses a window, and never moves the OS
+// cursor: that authority stays with the explicit tabs.activate primitive and
+// with the user's own foreground permission. A window that genuinely is not
+// focused still returns the structured FOREGROUND_REQUIRED requirement, now
+// carrying the observed state so the failure is diagnosable.
+async function sampleTabFocus(tabId) {
+  const tab = await chrome.tabs.get(tabId);
+  const win = await chrome.windows.get(tab.windowId);
+  return { tabActive: !!tab.active, windowFocused: !!win.focused, windowId: tab.windowId };
+}
+
+async function withForegroundFocusGate(tabId, mode, work) {
+  if (mode !== 'foreground') return work();
+  for (let attempt = 1; ; attempt += 1) {
+    let sample = null;
+    try {
+      sample = await sampleTabFocus(tabId);
+    } catch (error) {
+      throw foregroundRequired('Foreground focus state could not be verified before the input was dispatched.', {
+        targetTabId: tabId,
+        attempts: attempt,
+        reason: String(error?.message || error)
+      });
+    }
+    const decision = decideFocusGate({ mode, sample, attempt });
+    if (decision.outcome === 'dispatch') {
+      const result = await work();
+      return { ...result, focusGate: { attempts: attempt, recovered: decision.recovered, ...sample } };
+    }
+    if (decision.outcome === 'refuse') {
+      throw foregroundRequired(
+        'Pointer actions require the target tab and its window to already be active and focused.',
+        { targetTabId: tabId, attempts: attempt, ...sample }
+      );
+    }
+    await sleep(FOCUS_GATE_SETTLE_MS);
+  }
+}
+
 // U-V Action Pipeline (2026-09-23): Resolve -> Wait -> Heal -> Verify around
 // the shared trusted executors. Every action path (MCP page.*, burst steps,
 // gateway /command, workflow steps, ETW local actions) reaches the dispatch
@@ -588,12 +639,13 @@ async function trustedClick(tabId, ref, context, mode = 'background', options = 
     const x = info.rect?.centerX;
     const y = info.rect?.centerY;
     if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
-    const action = await withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
-      return { ok: true, ref, method: 'debugger', x, y };
-    }));
+    const action = await withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
+      withForegroundFocusGate(tabId, mode, async () => {
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+        return { ok: true, ref, method: 'debugger', x, y };
+      })));
     const postAction = await contentCall(tabId, 'page.post_action', {
       ref,
       before: info.postActionBefore,
@@ -608,7 +660,8 @@ async function trustedClick(tabId, ref, context, mode = 'background', options = 
 async function trustedFill(tabId, ref, value, context, mode = 'background', options = {}) {
   const text = String(value ?? '').slice(0, 20000);
   const info = await contentCall(tabId, 'page.fill_info', { ref });
-  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
+    withForegroundFocusGate(tabId, mode, async () => {
     const active = await contentCall(tabId, 'page.active_state', {});
     if (active.sensitive || active.active?.ref !== ref) {
       throw new Error('Trusted fill target lost safe document focus before text insertion.');
@@ -631,28 +684,19 @@ async function trustedFill(tabId, ref, value, context, mode = 'background', opti
       expect: options.expect || undefined
     });
     return { ...action, postAction };
-  }));
+  })));
 }
 
 async function trustedPointer(tabId, params, context) {
-  const tab = await chrome.tabs.get(tabId);
-  const window = await chrome.windows.get(tab.windowId);
   const mode = executionMode(params);
-  if (mode === 'foreground' && (!tab.active || !window.focused)) {
-    throw foregroundRequired('Pointer actions require the target tab and its window to already be active and focused.', {
-      targetTabId: tabId,
-      targetWindowId: tab.windowId,
-      targetTabActive: !!tab.active,
-      targetWindowFocused: !!window.focused
-    });
-  }
   const action = String(params.action || 'click');
   const visiblePointer = mode === 'foreground' && params.showCursor !== false;
   const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: visiblePointer, action });
   const end = action === 'drag'
     ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: visiblePointer, action })
     : null;
-  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
+    withForegroundFocusGate(tabId, mode, async () => {
     let scroll = null;
     await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
     if (action === 'click') {
@@ -692,34 +736,46 @@ async function trustedPointer(tabId, params, context) {
       scroll.reachedBoundary = deltaY > 0 ? scroll.after?.reachedBottom : deltaY < 0 ? scroll.after?.reachedTop : deltaX > 0 ? scroll.after?.reachedRight : deltaX < 0 ? scroll.after?.reachedLeft : false;
     }
     return { ok: true, method: 'debugger', action, executionMode: mode, visiblePointer, start, end, ...(scroll ? { scroll } : {}) };
-  }));
+  })));
 }
 
-const KEY_MAP = {
-  Enter: { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 },
-  Tab: { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 },
-  Escape: { key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 },
-  ArrowUp: { key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38, nativeVirtualKeyCode: 38 },
-  ArrowDown: { key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40, nativeVirtualKeyCode: 40 },
-  ArrowLeft: { key: 'ArrowLeft', code: 'ArrowLeft', windowsVirtualKeyCode: 37, nativeVirtualKeyCode: 37 },
-  ArrowRight: { key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39, nativeVirtualKeyCode: 39 },
-  Home: { key: 'Home', code: 'Home', windowsVirtualKeyCode: 36, nativeVirtualKeyCode: 36 },
-  End: { key: 'End', code: 'End', windowsVirtualKeyCode: 35, nativeVirtualKeyCode: 35 },
-  PageUp: { key: 'PageUp', code: 'PageUp', windowsVirtualKeyCode: 33, nativeVirtualKeyCode: 33 },
-  PageDown: { key: 'PageDown', code: 'PageDown', windowsVirtualKeyCode: 34, nativeVirtualKeyCode: 34 },
-  Space: { key: ' ', code: 'Space', windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 }
-};
-
-async function trustedKey(tabId, keyName, context, mode = 'background') {
-  const spec = KEY_MAP[keyName];
-  if (!spec) throw new Error('Key is not allowlisted.');
+// R9-B (2026-09-30): the trusted key path resolves a declarative chord or a
+// bounded text request through lib/keyboard.js instead of a flat 12-entry table
+// with no modifier support at all. The sensitive-field guard is unchanged and
+// still runs before anything is dispatched.
+async function trustedKey(tabId, params, context, mode = 'background') {
+  const request = resolveKeyInput({
+    key: params?.key,
+    modifiers: params?.modifiers,
+    text: params?.text
+  });
   const active = await contentCall(tabId, 'page.active_state', {});
   if (active.sensitive) throw new Error('Keyboard input blocked on sensitive field.');
-  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, async () => {
-    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...spec });
-    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...spec });
-    return { ok: true, key: keyName, method: 'debugger' };
-  }));
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
+    withForegroundFocusGate(tabId, mode, async () => {
+    if (request.kind === 'text') {
+      for (const chunk of request.chunks) {
+        await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
+      }
+      return { ok: true, method: 'debugger', input: 'text', valueLength: request.chars, chunks: request.chunks.length };
+    }
+    const spec = {
+      key: request.key,
+      code: request.code,
+      windowsVirtualKeyCode: request.windowsVirtualKeyCode,
+      nativeVirtualKeyCode: request.nativeVirtualKeyCode
+    };
+    const modifiers = request.modifiers ? { modifiers: request.modifiers } : {};
+    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...modifiers, ...spec });
+    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...modifiers, ...spec });
+    return {
+      ok: true,
+      key: request.name,
+      modifiers: request.modifierNames,
+      method: 'debugger',
+      input: 'chord'
+    };
+  })));
 }
 
 // Burst ref passthrough: a click/fill step may take its ref from a previous
@@ -1020,7 +1076,7 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.key': {
       const tabId = await resolveTabId(params);
-      const result = await runActionPipeline(tabId, 'page.key', params, context, () => (params.trusted ? trustedKey(tabId, params.key, context, executionMode(params)) : contentCall(tabId, 'page.key', params)));
+      const result = await runActionPipeline(tabId, 'page.key', params, context, () => (params.trusted ? trustedKey(tabId, params, context, executionMode(params)) : contentCall(tabId, 'page.key', params)));
       return { ...result, tabId };
     }
     default:

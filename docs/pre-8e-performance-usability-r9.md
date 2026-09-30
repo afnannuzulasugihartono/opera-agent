@@ -1,11 +1,15 @@
-# Pre-8E performance/usability R9 — complex-application control track (PROPOSED)
+# Pre-8E performance/usability R9 — complex-application control track
 
 Date: 2026-09-30
 
-Status: **PROPOSED / NOT AUTHORIZED.** This document is an assessment and a
-proposed plan. No runtime behavior changed on its authority. Per `AGENTS.md`,
-each checkpoint below still needs explicit owner authorization, deterministic
-failing tests first, and CI evidence on its exact head before it is called done.
+Status: **R9-A and R9-B IMPLEMENTED AND VERIFIED in the extension + protocol
+layer. The public MCP surface half is deliberately NOT done and is handed back
+as an owner decision.** Implementation record and the reasoning:
+`docs/pre-8e-performance-usability-r9-evidence.md`.
+
+Sections 1-5 below are the original assessment and proposed plan, written before
+implementation. Where the plan and the delivered work differ, the evidence record
+is authoritative.
 
 Scope of the assessment: a live operator test of Opera Agent against Google
 Docs (long-document editing, `Insert > Page elements > Page numbers > More
