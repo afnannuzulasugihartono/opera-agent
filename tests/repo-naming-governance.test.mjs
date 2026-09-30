@@ -12,7 +12,9 @@ const ALLOWED_ROOT_ENTRIES = new Set([
   '.agents', '.circleci', '.github', '.specify', 'docs', 'extension', 'lib',
   'oauth-consent', 'release-trigger', 'scripts', 'specs', 'supabase', 'tests',
   'tools', '.gitignore', 'AGENTS.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
-  'README.md', 'ROADMAP.md', 'SECURITY.md', 'package.json'
+  'README.md', 'ROADMAP.md', 'SECURITY.md', 'package.json',
+  // Enterprise Phase 1 (2026-09-30): OSI license file at root.
+  'LICENSE',
 ]);
 
 const JUNK_TOKEN =
