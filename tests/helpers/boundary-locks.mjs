@@ -70,13 +70,20 @@
 // the tolerance. The candidate payload KEEPS its rectangle: the Chromium
 // regression suite asserts on candidate coordinates, and dropping it broke that
 // gate — recorded here because it is the one field in the payload that is
-// load-bearing for a test rather than for the model.
+// load-bearing for a test rather than for the model. R9 hygiene then fixes three
+// defects the R9 code itself introduced: page.read serialized its result twice
+// (once to check the ceiling, once in the dispatcher) on the hottest
+// observation path, now a per-command memoized single serialization; the
+// foreground gate loop was a conditionless for(;;) and is now bounded by
+// construction; and the runtimes published on globalThis are frozen.
+// Note that Object.freeze does NOT make a Set immutable, so GENERIC_ROLES is
+// published as a frozen array.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
 // frozen.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '706bf90fe12cb3651fc35125a733499ba3cfcdd7'],
-  ['../extension/background.js', '80aeb1b7f89c5bcda32c5698c01d87a0bda94cd8'],
+  ['../extension/background.js', '5642089f1b2e3eacadb0f219702e86cf9af4d446'],
   ['../extension/manifest.json', 'b62deba0ed431054a3e1ff039e58396f0e1891b9'],
   ['../supabase/functions/opera-agent-mcp/index.ts', '68373e76b4d7b863e32c57f082375c47617eccf5'],
 ]);

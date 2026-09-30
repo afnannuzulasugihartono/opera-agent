@@ -129,7 +129,7 @@ test('R9-C: AX roles normalize to the lowercase ARIA vocabulary', () => {
   assert.equal(normalizeAxRole('SomeFutureThing'), 'somefuturething');
   assert.equal(isGenericRole('statictext'), true);
   assert.equal(isGenericRole('radiobutton'), false);
-  assert.ok(GENERIC_ROLES.has('generic'));
+  assert.ok(GENERIC_ROLES.includes('generic'));
 });
 
 test('R9-C: the join uses the best available name and survives junk input', () => {

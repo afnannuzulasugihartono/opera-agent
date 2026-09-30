@@ -41,6 +41,10 @@
   // accessibility walk. Small pages and healthy pages both stay off it.
   const ROLE_GAP_SAMPLE_SIZE = 3;
 
+  // These are published on globalThis, where a sibling content script could
+  // reach them. A mutable Set or object would let any of them silently change
+  // role decisions for every later call, so they are frozen on the way out.
+  // genericRoleSet is internal and never exported.
   const GENERIC_ROLES = new Set([
     '', 'generic', 'presentation', 'none', 'div', 'span', 'text', 'statictext',
     'paragraph', 'group', 'region', 'section', 'figure', 'blockquote', 'label',
@@ -166,8 +170,12 @@
     return items.map((item) => reconcileElementRole(item, index));
   }
 
-  globalThis.OperaAgentRoleReconcile = {
-    GENERIC_ROLES,
+  globalThis.OperaAgentRoleReconcile = Object.freeze({
+    // Published as a frozen ARRAY, not the Set. Object.freeze does NOT make a
+    // Set immutable — .add() still works, because it mutates internal state
+    // rather than a property — so handing out the Set would leave it writable
+    // by any sibling content script. isGenericRole is the functional API.
+    GENERIC_ROLES: Object.freeze([...GENERIC_ROLES]),
     ROLE_GAP_SAMPLE_SIZE,
     isGenericRole,
     hasRoleGap,
@@ -176,5 +184,5 @@
     axRoleIndex,
     reconcileElementRole,
     reconcileElements
-  };
+  });
 })();

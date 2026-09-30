@@ -11,7 +11,7 @@ import {
 } from './lib/protocol.js';
 import { evaluateRules, validateRule } from './lib/watch.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
-import { decideFocusGate, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
+import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
 // R9-C: the same file the content script loads via the manifest. It declares no
 // export statements, so this is a valid side-effect import that publishes the
@@ -491,7 +491,11 @@ async function sampleTabFocus(tabId) {
 
 async function withForegroundFocusGate(tabId, mode, work) {
   if (mode !== 'foreground') return work();
-  for (let attempt = 1; ; attempt += 1) {
+  // Bounded by construction: decideFocusGate refuses on the final attempt, so
+  // the loop always terminates. Written with an explicit bound rather than a
+  // conditionless for(;;) so the termination is visible here and not only in
+  // the policy module.
+  for (let attempt = 1; attempt <= FOCUS_GATE_ATTEMPTS; attempt += 1) {
     let sample = null;
     try {
       sample = await sampleTabFocus(tabId);
@@ -1142,8 +1146,7 @@ async function dispatch(method, params = {}, context = {}) {
 }
 
 function boundedResult(value) {
-  let text;
-  try { text = JSON.stringify(value); } catch { throw new Error('Result is not serializable.'); }
+  const text = serializeResult(value);
   if (text.length > MAX_RESULT_BYTES) {
     throw new Error(`Result exceeds ${MAX_RESULT_BYTES} bytes. Use bounded/chunked reads.`);
   }
@@ -1151,7 +1154,22 @@ function boundedResult(value) {
 }
 
 function oversized(value) {
-  try { return JSON.stringify(value).length > MAX_RESULT_BYTES; } catch { return false; }
+  return serializeResult(value).length > MAX_RESULT_BYTES;
+}
+
+// Single-entry memo for result serialization. page.read measures the result
+// against the ceiling and the dispatcher then measures it again; without this,
+// every read paid a second full JSON.stringify on the hottest observation path.
+// Keyed on object identity, so a rebuilt result serializes exactly once, and
+// cleared per command so nothing large is retained between commands.
+let serializedResult = { value: null, text: '' };
+
+function serializeResult(value) {
+  if (serializedResult.value === value) return serializedResult.text;
+  let text;
+  try { text = JSON.stringify(value); } catch { throw new Error('Result is not serializable.'); }
+  serializedResult = { value, text };
+  return text;
 }
 
 // ---- U-T Event-Triggered Workflows: watch registry ----
@@ -1362,6 +1380,9 @@ async function trustedHover(tabId, params, context) {
 }
 
 async function executeCommand(raw) {
+  // Drop any memoized result serialization from the previous command so a large
+  // page.read result is not pinned for the worker's lifetime.
+  serializedResult = { value: null, text: '' };
   // U-T: watch.* is an internal extension-side family (protocol primitive
   // count stays frozen at 26); its validation lives in lib/watch.js.
   if (raw && typeof raw.method === 'string' && raw.method.startsWith('watch.')) {

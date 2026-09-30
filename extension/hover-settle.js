@@ -21,7 +21,9 @@
   'use strict';
   if (globalThis.OperaAgentHoverSettle) return;
 
-  const DEFAULTS = { timeoutMs: 1500, intervalMs: 50, stableRounds: 2 };
+  // Published on globalThis, so it is frozen: a sibling content script must not
+  // be able to change the default settle budget for every later hover.
+  const DEFAULTS = Object.freeze({ timeoutMs: 1500, intervalMs: 50, stableRounds: 2 });
 
   function clamp(value, min, max, fallback) {
     const number = Number(value);
@@ -69,5 +71,5 @@
     return { done: false, reason: 'mutating' };
   }
 
-  globalThis.OperaAgentHoverSettle = { DEFAULTS, normalize, plan };
+  globalThis.OperaAgentHoverSettle = Object.freeze({ DEFAULTS, normalize, plan });
 })();

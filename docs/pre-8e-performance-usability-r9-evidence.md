@@ -518,6 +518,54 @@ that motivated R9-E did not work.
   genuine DOM *replacement*; a CSS transform on a live element does not make a
   ref stale.
 
+## R9 hygiene: three defects the R9 code itself introduced
+
+Found by auditing the R9 code rather than by a failing test, and one of them
+was a performance regression I introduced in this same track.
+
+- **`page.read` serialized its result twice.** The oversized-read degradation
+  added a `JSON.stringify` to check the ceiling, and the dispatcher then
+  serialized the same result again in `boundedResult` — a second full
+  serialization on the hottest observation path in the product. Now a
+  single-entry memo keyed on object identity, cleared per command so a large
+  read is not pinned for the worker's lifetime.
+- **The foreground focus gate loop was a conditionless `for(;;)`.** It always
+  terminated because the policy module refuses on the final attempt, but the
+  bound was invisible at the call site. It is now bounded explicitly.
+- **The runtimes published on `globalThis` were mutable.** `GENERIC_ROLES` was
+  handed out as a live `Set` and `DEFAULTS` as a live object, so any sibling
+  content script could silently change role decisions or the settle budget for
+  every later call. Both are frozen. Worth recording that the *first* attempt
+  at this fix was wrong: `Object.freeze` does **not** make a `Set` immutable,
+  because `.add()` mutates internal state rather than a property. The test
+  caught it, and `GENERIC_ROLES` is now published as a frozen array with
+  `isGenericRole` as the functional API.
+
+`tests/r9-hygiene.test.mjs` locks all of these so they cannot regress.
+
+## Known issue: the browser suite is intermittently red
+
+`py tests/browser_extension_test.py` fails **roughly 1 run in 3** locally, at
+either the `reused` assertion or the `audited_background_command` focus audit.
+This is caused by the R9 live-acceptance block added earlier in this track:
+it activates a tab, and several later cases depend on which tab the browser
+reports as active. CI passed on `a3af071`, but that was luck, not
+determinism.
+
+A partial mitigation was measured: activating the tab with `focusWindow: False`
+and restoring the expected tab at the end took the local rate from 1-in-3-pass
+to 4-in-5-pass. That is not good enough to ship, because a gate which cannot
+pass reliably is a gate the team learns to ignore — the same lesson as the 7C
+estimator. The correct fix is isolation: move the R9 block to the end of the
+run, or give it its own browser context. That refactor was not completed here
+because it could not be verified to the standard this track has used, so the
+browser test file is left at its last CI-verified state rather than shipping a
+partially fixed, still-flaky gate. **This is open work.**
+
+The R9 capabilities themselves remain covered by unit tests and by that
+live-acceptance block; the outstanding item is the harness's isolation, not the
+product behaviour.
+
 ## Verification
 
 | Gate | Result |
