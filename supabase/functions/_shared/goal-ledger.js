@@ -355,7 +355,7 @@ export async function createLedger(input, options = {}) {
   if (normalized.authorizations.length && options.authoritySource !== 'USER') {
     fail('UNTRUSTED_INTENT_SOURCE', 'Only a trusted user source can create authorization.');
   }
-  return attachDigest(normalized);
+  return await attachDigest(normalized);
 }
 
 export async function validateLedger(input, options = {}) {

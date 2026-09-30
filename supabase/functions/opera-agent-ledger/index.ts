@@ -6,7 +6,6 @@ import {
   expireLedger,
   inspectLedger,
   reviseLedger,
-  validateLedger,
 } from "../_shared/goal-ledger.js";
 import {
   decodeLedgerKey,

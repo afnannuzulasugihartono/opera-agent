@@ -206,11 +206,6 @@ function compareRejection(left, right) {
   return left.index - right.index;
 }
 
-function withoutProofDigest(value) {
-  const { proofDigest: _ignored, ...rest } = value;
-  return rest;
-}
-
 function proofBytes(value) {
   return new TextEncoder().encode(canonicalJson(value)).length;
 }

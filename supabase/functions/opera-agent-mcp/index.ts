@@ -180,7 +180,7 @@ function publicBaseUrl() {
   return `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/opera-agent-mcp`;
 }
 
-function unauthorized(req: Request) {
+function unauthorized(_req: Request) {
   const metadata = `${publicBaseUrl()}/.well-known/oauth-protected-resource`;
   return json(
     { error: "unauthorized", error_description: "A valid Opera Agent access token is required." },

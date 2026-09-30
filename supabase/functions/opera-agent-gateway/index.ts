@@ -53,7 +53,7 @@ async function rpc(name: string, args: Record<string, unknown>) {
   return data as Record<string, unknown> | null;
 }
 
-async function command(req: Request, url: URL) {
+async function command(req: Request, _url: URL) {
   let body: Record<string, unknown> | null = null;
   try {
     body = await req.json() as Record<string, unknown>;

@@ -58,7 +58,7 @@ export function decodeVmHostKey(encoded) {
 
 async function importKey(keyBytes) {
   if (!(keyBytes instanceof Uint8Array) || keyBytes.byteLength !== 32) fail('INVALID_SERVER_KEY', 'VM host key must contain exactly 32 bytes.');
-  return crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  return await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 }
 
 export async function sealVmHostToken(payload, keyBytes, { kind } = {}) {

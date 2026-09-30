@@ -7,7 +7,7 @@ import {createTransactionDarkHttpHandler} from "../../../lib/transaction-http-8d
 import {decodeLedgerKey} from "../../../lib/ledger-token.js";
 
 const masterEnabled=Deno.env.get("OPERA_AGENT_TRANSACTION_DARK_8D")==="true";
-let host: (input: unknown,credential: string)=>Promise<unknown>=async()=>{throw Object.assign(new Error("TRANSACTION_DISABLED"),{code:"TRANSACTION_DISABLED"});};
+let host: (input: unknown,credential: string)=>Promise<unknown>=()=>Promise.reject(Object.assign(new Error("TRANSACTION_DISABLED"),{code:"TRANSACTION_DISABLED"}));
 if(masterEnabled){
   const url=Deno.env.get("SUPABASE_URL")||"";
   const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";

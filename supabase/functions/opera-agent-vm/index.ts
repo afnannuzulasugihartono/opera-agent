@@ -442,7 +442,7 @@ async function executeEffect(program: VmProgram, state: VmState, claim: VmClaim,
 }
 
 async function checkpointOriginal(claim: VmClaim, workerId: string, tenantId: string, status: string, errorCode: string | null) {
-  return rpc("opera_vm_checkpoint", {
+  return await rpc("opera_vm_checkpoint", {
     p_tenant_id: tenantId,
     p_run_id: claim.runId,
     p_worker_id: workerId,
@@ -463,7 +463,7 @@ async function checkpointOriginal(claim: VmClaim, workerId: string, tenantId: st
   });
 }
 
-async function persistSlice(program: VmProgram, state: VmState, transition: VmTransition, claim: VmClaim, workerId: string, tenantId: string, key: Uint8Array) {
+async function persistSlice(_program: VmProgram, state: VmState, transition: VmTransition, claim: VmClaim, workerId: string, tenantId: string, key: Uint8Array) {
   const logicalNowMs = nowMsAtLeast(state.lastLogicalNowMs);
   const classification = classifyVmPersistence7E(state, transition, logicalNowMs);
   const checkpointBytes = canonicalBytes(state);
