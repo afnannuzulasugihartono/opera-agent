@@ -15,6 +15,8 @@ const ALLOWED_ROOT_ENTRIES = new Set([
   'README.md', 'ROADMAP.md', 'SECURITY.md', 'package.json',
   // Enterprise Phase 1 (2026-09-30): OSI license file at root.
   'LICENSE',
+  // Enterprise Phase 1 (2026-09-30): user support entry point at root.
+  'SUPPORT.md',
 ]);
 
 const JUNK_TOKEN =
@@ -80,7 +82,9 @@ test('tracked filenames never carry process-lifecycle tokens', () => {
 });
 
 test('markdown documents use lowercase kebab-case names', () => {
-  const conventional = /^(README|AGENTS|SECURITY|CONTRIBUTING|CHANGELOG|ROADMAP|CODE_OF_CONDUCT|LICENSE)\.md$|^SKILL\.md$/;
+  // Enterprise Phase 1 (2026-09-30): SUPPORT.md follows the same
+  // conventional-uppercase-doc exemption as README/SECURITY.
+  const conventional = /^(README|AGENTS|SECURITY|CONTRIBUTING|CHANGELOG|ROADMAP|CODE_OF_CONDUCT|LICENSE|SUPPORT)\.md$|^SKILL\.md$/;
   const exemptPrefixes = ['.specify/', '.agents/', 'tools/repowise/'];
   const offenders = trackedFiles().filter((file) => {
     if (!file.endsWith('.md')) return false;
