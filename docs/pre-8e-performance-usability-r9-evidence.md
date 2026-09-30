@@ -346,19 +346,107 @@ lagged the repository. The new manifest entry ships with the next release.
   preservation record is exactly what the rule forbids. An earlier read of
   these as violations was wrong.
 
-## Still pending
+## R9-D — cheap ref recovery, guard untouched (owner-directed continuation)
 
-1. `press_key` optional `modifiers` and `text`.
-2. Burst `key` step optional `modifiers` and `text`.
+The design decision is deliberately a **negative** one, and it is the point of
+the checkpoint.
 
-Items 1 and 2 need the same contract rebaseline that R9-G already performed, so
-bundling them is cheaper than it was. They widen what the public contract
-accepts, which is the part that genuinely needs review. Once they land, the
-"chords are not available yet" sentence in the instructions must be replaced in
-the same commit, and `tests/r9-public-surface-unchanged.test.mjs` must have its
-frozen schema map rebaselined in that same commit — it is designed to fail
-loudly if the schema moves without the instructions moving with it.
+### What was NOT done
 
-R9-D (bounded ref re-acquisition, geometry guard preserved) and R9-E (hover as a
-first-class step) remain unstarted. **R9-F remains recommended for deferral.**
+The 24px mint-time geometry tolerance is **not** relaxed. It exists because a
+same-place successor can be a *different* control — the recorded Street-View
+mis-click at `content.js:113-117` is the evidence. A moved successor is still
+refused and the stale ref is still never revived. Widening the tolerance would
+have been easy, would have made the reported symptom disappear, and would have
+reintroduced a real failure mode. It was rejected.
+
+### What was actually broken
+
+The cost of *recovery*. After a legitimate re-render moved a control, the model
+had to run a whole new `page.find` purely to obtain a usable ref. That round
+trip — not the refusal — was the friction.
+
+### The fix
+
+The refusal now hands back fresh refs for candidates that have **already**
+passed uniqueness, intrinsic identity, actionability, and the non-sensitive
+check. Minting a ref for such a candidate grants exactly what a `page.find`
+would have granted, so this is not a widening of authority. The message also
+reports the measured drift and the tolerance, making the failure diagnosable
+instead of guesswork, and the instructions tell the model to act on those refs
+directly rather than re-running `find_elements` or widening the tolerance.
+
+Sensitive descriptors still short-circuit before any candidate pool is built, so
+a re-acquisition can never touch one.
+
+`tests/r9-ref-reacquire.test.mjs` locks the negatives as hard as the positives:
+the tolerance is pinned at 24, the guard must still be the deciding test before
+any rebind assignment, short-circuit and force-rebind escape hatches are
+rejected, and the candidate offer is capped at 3.
+
+## R9-B public, R9-E hover, and the release-readiness sweep
+
+- **R9-B made public.** `press_key` and the burst `key` step gained optional
+  `modifiers` and `text`; the key enum grew to a fixed 79-entry vocabulary.
+  The R9-G placeholder sentence was replaced in the same commit, so the schema
+  and the guidance cannot diverge. The dormant runtime is now reachable.
+- **R9-E hover.** A `hover` burst step moves the trusted pointer onto a resolved
+  ref and settles on the reveal (awaited submenu name, `aria-expanded` flip, or
+  DOM stability). It dispatches exactly one pointer event and it is a move — a
+  hover can never click. It routes through the same foreground focus gate as
+  every other pointer input, and its in-page settle returns a presence boolean,
+  never document text. `page.hover` is burst-internal, **not** a 27th primitive.
+- **A test gap was found and closed.** `run_browser_burst`'s `inputSchema` is a
+  *reference* to the shared `burstStepSchema` constant, so the per-tool digest
+  could not observe a change inside it. The public burst vocabulary is now also
+  pinned by step name, and the step union is asserted `.strict()` throughout.
+- **Release-readiness sweep:** version consistency verified (manifest, package,
+  and protocol all 1.6.13; README's production line still 1.6.13, which is
+  correct because nothing is released); secret scan over the full R9 diff
+  returned no secrets — the only matches were the literal words "password" and
+  "OTP" inside safety instruction text; CHANGELOG records the track under
+  Unreleased, explicitly source-only; README gained a Maturity section
+  separating a complete source checkpoint from being live.
+
+## Known limitation found during verification
+
+The `7C ordinary transition p95 regression` test flaked **twice** under
+full-suite parallel load and passes in isolation at ratio 1.013-1.044 against a
+15% budget. This is a pre-existing timing sensitivity in that test — a latency
+gate competing for CPU with 500+ other tests — not a regression from R9. It is
+recorded rather than papered over, and is worth fixing separately: a
+performance gate that cannot pass reliably under `npm test` will eventually
+teach the team to ignore it.
+
+## Verification
+
+| Gate | Result |
+| --- | --- |
+| `npm test` (full suite) | **572/572 pass** |
+| `npm run check` | ok — 26 primitives, 81 safety files, version 1.6.13 |
+| naming governance | pass (5/5) |
+| secret scan over the R9 diff | clean |
+| version consistency | manifest / package / protocol all 1.6.13 |
+
+## What is still gated, and on whom
+
+**Nothing here is released or activated.** Production serves CRX `1.6.13`,
+which predates every R9 change; the new `role-reconcile.js` and
+`hover-settle.js` content scripts ship with the next release. Per `AGENTS.md`,
+promotion requires, in order:
+
+1. **An independent audit** before promotion, not merely green CI. R9 touches
+   the public MCP surface (twice), the sensitive-input contract (R9-B), the ref
+   authority contract (R9-D), and the foreground gate (R9-A) — four of the
+   named audit triggers. **I cannot satisfy this**: I am the implementing agent,
+   and an independent audit by definition has to be someone else. This is the
+   single hardest gate and it is not mine to clear.
+2. **Live acceptance** in a real Opera profile with a real document editor.
+   The Google Docs session that motivated this track is the acceptance case, and
+   nothing in this work has been exercised against a live browser.
+3. **Owner-ordered release**: build, sign, audit, upload inactive, live
+   acceptance, then atomic activation flip.
+
+R9-F (canvas/rich-editor fill widening what may receive typed text) remains
+**recommended for deferral** and was not started.
 

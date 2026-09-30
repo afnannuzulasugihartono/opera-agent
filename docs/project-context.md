@@ -1,6 +1,63 @@
 # Opera Agent project context
 
-Last synchronized: 2026-09-30 (R9-A/B/C closed; main = `024696b`, CI green)
+Last synchronized: 2026-09-30 (R9-A/B/C/D/E/G complete; source-only, not released)
+
+## R9 complete (source) — A/B/C/D/E/G done; R9-F deferred (2026-09-30)
+
+Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+**Nothing is released or activated.** Production serves CRX **1.6.13**, which
+predates every R9 change; `role-reconcile.js` and `hover-settle.js` ship with
+the next release. `npm test` 572/572, `npm run check` ok — 26 primitives, 81
+safety files, 1.6.13.
+
+- **R9-A** foreground focus gate re-samples at dispatch inside the debugger
+  session and retries boundedly; a genuinely unfocused window still returns
+  `FOREGROUND_REQUIRED` with the observed state.
+- **R9-B** keyboard chords (modifier bitmask, 79-entry fixed key vocabulary) and
+  bounded text entry (20,000 chars, chunked 4,000) behind the unchanged
+  sensitive-field guard; **now publicly reachable** via `press_key` and the burst
+  `key` step.
+- **R9-C** roles derived from what the platform reports, not only the `role`
+  attribute; the existing bounded text-poor AX walk additionally fills roles the
+  markup lacks. Read-only, never downgrades an explicit role, never adopts an
+  ambiguous name, never annotates a sensitive element.
+- **R9-D** the 24px geometry tolerance is **unchanged and unbroadened**; a moved
+  successor is still refused. Recovery was made cheap by returning fresh refs for
+  already-validated candidates, not by relaxing the guard.
+- **R9-E** `hover` burst step that moves the pointer and settles on the reveal.
+  One pointer event, a move — it can never click. `page.hover` is burst-internal,
+  **not** a 27th primitive.
+- **R9-G** instructions teach menu/dialog `refFromStep` batching.
+
+Two test-design gaps were found and closed: `run_browser_burst`'s `inputSchema`
+is a reference to the shared `burstStepSchema` constant, so per-tool digests
+could not see changes inside it (now also pinned by step name); and the
+`7C ordinary transition p95 regression` test **flaked twice** under full-suite
+parallel load (1.013-1.044 in isolation against a 15% budget). That is a
+pre-existing timing sensitivity, recorded rather than papered over, and worth
+fixing separately — a perf gate that cannot pass reliably under `npm test` will
+teach the team to ignore it.
+
+Release-readiness sweep: version consistency verified (manifest/package/protocol
+all 1.6.13, and README's production line correctly still 1.6.13 because nothing
+is released); secret scan over the R9 diff clean; CHANGELOG records the track
+under Unreleased as source-only; README gained a Maturity section separating a
+complete source checkpoint from being live.
+
+### Gated, and not on me
+
+1. **Independent audit before promotion** — R9 touches four named audit
+   triggers: public MCP surface, sensitive-input contract, ref-authority
+   contract, and the foreground gate. **I am the implementing agent and cannot
+   clear this gate**; an independent audit must come from outside this line of
+   work.
+2. **Live acceptance** in a real Opera profile against a real document editor.
+   Nothing here has been exercised against a live browser.
+3. **Owner-ordered release**: build, sign, audit, upload inactive, live
+   acceptance, then atomic activation flip.
+
+**R9-F remains recommended for deferral** and was not started.
 
 ## R9-A/B/C closed — `main` fast-forwarded to `024696b` (2026-09-30)
 

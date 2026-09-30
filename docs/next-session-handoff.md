@@ -1,5 +1,57 @@
 # Opera Agent next-session handoff
 
+## R9 complete (source) — A/B/C/D/E/G done, R9-F deferred (2026-09-30)
+
+Record: `docs/pre-8e-performance-usability-r9-evidence.md`.
+
+**Nothing is released or activated.** Production serves CRX **1.6.13**, which
+predates every R9 change; `role-reconcile.js` and `hover-settle.js` ship with the
+next release. `npm test` 572/572, `npm run check` ok — 26 primitives, 81 safety
+files, 1.6.13. Secret scan over the R9 diff clean; version consistency verified.
+
+- **R9-A** focus gate re-samples at dispatch inside the debugger session,
+  retries boundedly, never takes the foreground itself.
+- **R9-B** chords + bounded text, **now publicly reachable** (`press_key`, burst
+  `key` step) behind the unchanged sensitive-field guard.
+- **R9-C** roles derived from the platform, not only the `role` attribute; the
+  existing bounded AX walk fills roles the markup lacks. Read-only.
+- **R9-D** the 24px tolerance is **unchanged and unbroadened**; recovery is
+  cheap because the refusal returns fresh refs for already-validated candidates.
+- **R9-E** `hover` burst step: one pointer event, a move, so it can never click.
+  `page.hover` is burst-internal, not a 27th primitive.
+- **R9-G** instructions teach menu/dialog `refFromStep` batching.
+
+### Two test gaps found and closed
+
+- `run_browser_burst`'s `inputSchema` is a *reference* to the shared
+  `burstStepSchema` constant, so the per-tool digest could not observe a change
+  inside it. The burst vocabulary is now also pinned by step name.
+- The `7C ordinary transition p95 regression` test **flaked twice** under
+  full-suite parallel load (ratio 1.013-1.044 in isolation vs a 15% budget).
+  Pre-existing timing sensitivity, not an R9 regression. Worth fixing
+  separately: a perf gate that cannot pass reliably under `npm test` will
+  eventually be ignored.
+
+### Gated, and NOT on this line of work
+
+1. **Independent audit before promotion.** R9 touches four named `AGENTS.md`
+   audit triggers: public MCP surface (R9-B, R9-G), sensitive-input contract
+   (R9-B), ref-authority contract (R9-D), foreground gate (R9-A). **The
+   implementing agent cannot clear this gate** — an independent audit has to
+   come from outside this work.
+2. **Live acceptance** in a real Opera profile against a real document editor.
+   Nothing here has run against a live browser; the Google Docs session that
+   motivated R9 is the acceptance case.
+3. **Owner-ordered release**: build, sign, audit, upload inactive, live
+   acceptance, then the atomic activation flip. Note the recorded flip
+   mechanic: `opera_releases_one_active_per_identity_idx` is an immediate
+   partial UNIQUE index, so use the two-statement ordered flip, not one
+   multi-row UPDATE.
+
+**R9-F (canvas/rich-editor fill) remains recommended for deferral** — it widens
+what may receive typed text, and the motivating case already has a better path
+via the Google Docs API.
+
 ## R9-A/B/C closed — main fast-forwarded to `024696b` (CI green 2026-09-30)
 
 **Canonical head: `024696b` on `main` and `feat/pre-8e-usability-repair-r8`
