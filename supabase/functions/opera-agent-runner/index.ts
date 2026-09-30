@@ -34,6 +34,74 @@ class WorkflowError extends Error {
   }
 }
 
+interface WorkflowMetrics {
+  version: number;
+  workflowQueueMs: number | null;
+  workflowExecutionMs: number | null;
+  commandCount: number;
+  commandQueueMs: number;
+  commandExecutionMs: number;
+  commandTotalMs: number;
+  returnedBytes: number;
+  returnedBytesTruncated: boolean;
+  retries: number;
+  fixedWaitCount: number;
+  intentionalWaitMs: number;
+  commands: Array<Record<string, unknown>>;
+  commandsTruncated: boolean;
+}
+
+interface WorkflowCtx {
+  input?: unknown;
+  vars: Record<string, unknown>;
+  steps: Record<string, unknown>;
+  metrics: WorkflowMetrics;
+  [key: string]: unknown;
+}
+
+interface WorkflowStep {
+  type?: unknown;
+  id?: unknown;
+  method?: unknown;
+  params?: unknown;
+  timeoutMs?: unknown;
+  requestId?: unknown;
+  continueOnError?: unknown;
+  name?: unknown;
+  value?: unknown;
+  ms?: unknown;
+  code?: unknown;
+  message?: unknown;
+  condition?: unknown;
+  then?: unknown;
+  else?: unknown;
+  maxIterations?: unknown;
+  until?: unknown;
+  failOnLimit?: unknown;
+  items?: unknown;
+  maxItems?: unknown;
+  itemVar?: unknown;
+  collectVar?: unknown;
+  collect?: unknown;
+  parallel?: unknown;
+  maxConcurrency?: unknown;
+  continueOnItemError?: unknown;
+  steps?: unknown;
+}
+
+interface CommandResult {
+  ok: boolean;
+  commandId: string;
+  status: string;
+  outcome?: string;
+  result?: unknown;
+  error?: unknown;
+  timing?: unknown;
+  retried?: boolean;
+  previous?: unknown;
+  [key: string]: unknown;
+}
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function json(data: unknown, status = 200) {
@@ -48,47 +116,49 @@ async function sha256(value: string) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function getRef(ctx: any, path: string) {
+function getRef(ctx: Record<string, unknown>, path: string): unknown {
   if (!path) return null;
-  let cur: any = ctx;
+  let cur: unknown = ctx;
   for (const part of path.split(".")) {
     if (cur == null || typeof cur !== "object" || !(part in cur)) return null;
-    cur = cur[part];
+    cur = (cur as Record<string, unknown>)[part];
   }
   return cur;
 }
 
-function resolveValue(value: any, ctx: any): any {
+function resolveValue(value: unknown, ctx: Record<string, unknown>): unknown {
   if (value == null) return value;
   if (Array.isArray(value)) return value.map((v) => resolveValue(v, ctx));
   if (typeof value === "object") {
-    if (Object.prototype.hasOwnProperty.call(value, "$ref")) return getRef(ctx, String(value.$ref || ""));
-    if (Object.prototype.hasOwnProperty.call(value, "$concat")) {
-      const parts = Array.isArray(value.$concat) ? value.$concat : [];
-      return parts.map((part: any) => {
+    const record = value as Record<string, unknown>;
+    if (Object.prototype.hasOwnProperty.call(record, "$ref")) return getRef(ctx, String(record.$ref || ""));
+    if (Object.prototype.hasOwnProperty.call(record, "$concat")) {
+      const parts = Array.isArray(record.$concat) ? record.$concat : [];
+      return parts.map((part: unknown) => {
         const resolved = resolveValue(part, ctx);
         if (resolved == null) return "";
         return typeof resolved === "string" ? resolved : JSON.stringify(resolved);
       }).join("");
     }
     const out: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value)) out[key] = resolveValue(item, ctx);
+    for (const [key, item] of Object.entries(record)) out[key] = resolveValue(item, ctx);
     return out;
   }
   return value;
 }
 
-function truthy(value: any) {
+function truthy(value: unknown) {
   if (value == null || value === false || value === 0 || value === "") return false;
   if (Array.isArray(value) && value.length === 0) return false;
   if (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0) return false;
   return true;
 }
 
-function evaluateCondition(condition: any, ctx: any) {
-  const op = String(condition?.op || "truthy");
-  const left = resolveValue(condition?.left, ctx);
-  const right = resolveValue(condition?.right, ctx);
+function evaluateCondition(condition: unknown, ctx: Record<string, unknown>) {
+  const source = (condition ?? {}) as { op?: unknown; left?: unknown; right?: unknown };
+  const op = String(source.op || "truthy");
+  const left = resolveValue(source.left, ctx);
+  const right = resolveValue(source.right, ctx);
   if (op === "exists") return left !== null && left !== undefined;
   if (op === "not_exists") return left === null || left === undefined;
   if (op === "eq") return JSON.stringify(left) === JSON.stringify(right);
@@ -103,9 +173,10 @@ function timestampMs(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function normalizeAwaitTiming(timing: any) {
-  const queuedMs = Number(timing?.queuedMs);
-  const totalMs = Number(timing?.totalMs);
+function normalizeAwaitTiming(timing: unknown) {
+  const source = (timing ?? {}) as { queuedMs?: unknown; totalMs?: unknown };
+  const queuedMs = Number(source.queuedMs);
+  const totalMs = Number(source.totalMs);
   const queueMs = Number.isFinite(queuedMs) ? Math.max(0, queuedMs) : null;
   const normalizedTotal = Number.isFinite(totalMs) ? Math.max(0, totalMs) : null;
   return {
@@ -120,7 +191,7 @@ const METRIC_SAMPLE_DEPTH = 6;
 const METRIC_SAMPLE_ITEMS = 50;
 const METRIC_SAMPLE_NODES = 200;
 
-function metricSample(value: any, budget: { remainingChars: number; remainingNodes: number; truncated: boolean }, depth = 0): any {
+function metricSample(value: unknown, budget: { remainingChars: number; remainingNodes: number; truncated: boolean }, depth = 0): unknown {
   if (budget.remainingNodes <= 0) {
     budget.truncated = true;
     return null;
@@ -142,17 +213,18 @@ function metricSample(value: any, budget: { remainingChars: number; remainingNod
     return value.slice(0, METRIC_SAMPLE_ITEMS).map((item) => metricSample(item, budget, depth + 1));
   }
   if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
     const sampled: Record<string, unknown> = {};
     let itemCount = 0;
-    for (const rawKey in value) {
-      if (!Object.prototype.hasOwnProperty.call(value, rawKey)) continue;
+    for (const rawKey in record) {
+      if (!Object.prototype.hasOwnProperty.call(record, rawKey)) continue;
       if (itemCount >= METRIC_SAMPLE_ITEMS) {
         budget.truncated = true;
         break;
       }
       const key = rawKey.slice(0, 128);
       if (key.length < rawKey.length) budget.truncated = true;
-      sampled[key] = metricSample(value[rawKey], budget, depth + 1);
+      sampled[key] = metricSample(record[rawKey], budget, depth + 1);
       itemCount += 1;
       if (budget.remainingChars <= 0 || budget.remainingNodes <= 0) break;
     }
@@ -172,7 +244,7 @@ function sampledJsonBytes(value: unknown) {
   }
 }
 
-function createWorkflowMetrics(workflowQueueMs: number | null) {
+function createWorkflowMetrics(workflowQueueMs: number | null): WorkflowMetrics {
   return {
     version: 1,
     workflowQueueMs,
@@ -191,12 +263,14 @@ function createWorkflowMetrics(workflowQueueMs: number | null) {
   };
 }
 
-function recordCommandMetrics(metrics: any, method: string, result: any) {
+function recordCommandMetrics(metrics: WorkflowMetrics | null | undefined, method: string, result: unknown) {
   if (!metrics) return;
-  const queueMs = Number(result?.timing?.queueMs);
-  const executionMs = Number(result?.timing?.executionMs);
-  const totalMs = Number(result?.timing?.totalMs);
-  const returned = sampledJsonBytes(result?.ok ? result?.result : result?.error);
+  const source = (result ?? {}) as { timing?: unknown; ok?: unknown; result?: unknown; error?: unknown; retried?: unknown; status?: unknown };
+  const timing = (source.timing ?? {}) as { queueMs?: unknown; executionMs?: unknown; totalMs?: unknown };
+  const queueMs = Number(timing.queueMs);
+  const executionMs = Number(timing.executionMs);
+  const totalMs = Number(timing.totalMs);
+  const returned = sampledJsonBytes(source.ok ? source.result : source.error);
   const returnedBytes = returned.bytes;
   metrics.commandCount += 1;
   if (Number.isFinite(queueMs)) metrics.commandQueueMs += Math.max(0, queueMs);
@@ -204,26 +278,28 @@ function recordCommandMetrics(metrics: any, method: string, result: any) {
   if (Number.isFinite(totalMs)) metrics.commandTotalMs += Math.max(0, totalMs);
   metrics.returnedBytes += returnedBytes;
   if (returned.truncated) metrics.returnedBytesTruncated = true;
-  if (result?.retried) metrics.retries += 1;
+  if (source.retried) metrics.retries += 1;
   if (metrics.commands.length < 200) {
     metrics.commands.push({
       method,
-      status: String(result?.status || (result?.ok ? "completed" : "failed")),
+      status: String(source.status || (source.ok ? "completed" : "failed")),
       queueMs: Number.isFinite(queueMs) ? Math.max(0, queueMs) : null,
       executionMs: Number.isFinite(executionMs) ? Math.max(0, executionMs) : null,
       totalMs: Number.isFinite(totalMs) ? Math.max(0, totalMs) : null,
       returnedBytes,
       returnedBytesTruncated: returned.truncated,
-      retried: !!result?.retried
+      retried: !!source.retried
     });
   } else {
     metrics.commandsTruncated = true;
   }
 }
 
-function transientFailure(result: any) {
-  if (result?.status !== "failed") return false;
-  const message = String(result?.error?.message || result?.error || "").toLowerCase();
+function transientFailure(result: unknown) {
+  const source = (result ?? {}) as { status?: unknown; error?: unknown };
+  if (source.status !== "failed") return false;
+  const failure = (source.error ?? {}) as { message?: unknown };
+  const message = String(failure.message || source.error || "").toLowerCase();
   return [
     "no response from page bridge",
     "receiving end does not exist",
@@ -244,17 +320,17 @@ function normalizeWorkflowError(error: unknown) {
 async function rpc(name: string, args: Record<string, unknown>) {
   const { data, error } = await supabase.rpc(name, args);
   if (error) throw new WorkflowError("RPC_ERROR", `${name}: ${error.message}`);
-  return data as any;
+  return data as Record<string, unknown> | null;
 }
 
 async function runCommandOnce(
-  run: any,
+  run: { device_name: string },
   method: string,
-  params: any,
+  params: unknown,
   timeoutMs: number | null,
   workflowDeadline: number,
   requestId?: string | null
-) {
+): Promise<CommandResult> {
   if (Date.now() >= workflowDeadline) throw new WorkflowError("WORKFLOW_TIMEOUT", "Workflow deadline exceeded.");
 
   const enqueued = await rpc("opera_enqueue", {
@@ -270,7 +346,7 @@ async function runCommandOnce(
 
   const commandId = String(enqueued.commandId);
   const remainingMs = Math.max(100, Math.min(55000, workflowDeadline - Date.now()));
-  let awaited: any;
+  let awaited: Record<string, unknown> | null;
   try {
     awaited = await rpc("opera_await", {
       p_command_id: commandId,
@@ -307,7 +383,8 @@ async function runCommandOnce(
   }
 
   const error = awaited?.error || { code: "COMMAND_FAILED", message: `Command ${method} failed.` };
-  const awaitTimedOut = String(error?.code || "").toUpperCase() === "AWAIT_TIMEOUT";
+  const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+  const awaitTimedOut = String(failure.code || "").toUpperCase() === "AWAIT_TIMEOUT";
   return {
     ok: false,
     commandId,
@@ -318,13 +395,13 @@ async function runCommandOnce(
 }
 
 async function runCommand(
-  run: any,
+  run: { device_name: string },
   method: string,
-  params: any,
+  params: unknown,
   timeoutMs: number | null,
   workflowDeadline: number,
   requestId?: string | null
-) {
+): Promise<CommandResult> {
   const first = await runCommandOnce(run, method, params, timeoutMs, workflowDeadline, requestId);
   if (first.ok) return first;
 
@@ -337,8 +414,9 @@ async function runCommand(
   return first;
 }
 
-async function executeSteps(steps: any[], ctx: any, run: any, deadline: number): Promise<any> {
-  for (const step of Array.isArray(steps) ? steps : []) {
+async function executeSteps(steps: unknown, ctx: WorkflowCtx, run: { device_name: string }, deadline: number): Promise<WorkflowCtx> {
+  for (const item of Array.isArray(steps) ? steps : []) {
+    const step = (item ?? {}) as WorkflowStep;
     if (Date.now() >= deadline) throw new WorkflowError("WORKFLOW_TIMEOUT", "Workflow deadline exceeded.");
 
     const type = String(step?.type || "command");
@@ -357,7 +435,8 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
       recordCommandMetrics(ctx.metrics, method, result);
       if (!result.ok && !step?.continueOnError) {
         const error = result.error || { code: "COMMAND_FAILED", message: "Workflow command failed." };
-        throw new WorkflowError(String(error.code || "COMMAND_FAILED"), String(error.message || "Workflow command failed."), error);
+        const failure = error && typeof error === "object" ? error as { code?: unknown; message?: unknown } : {};
+        throw new WorkflowError(String(failure.code || "COMMAND_FAILED"), String(failure.message || "Workflow command failed."), error);
       }
       continue;
     }
@@ -418,7 +497,7 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
 
       if (step?.parallel === true && count > 1) {
         const concurrency = Math.max(1, Math.min(MAX_PARALLEL_ITEMS, count, Number(step?.maxConcurrency || MAX_PARALLEL_ITEMS)));
-        const collected: any[] = new Array(count).fill(null);
+        const collected: unknown[] = new Array(count).fill(null);
         let cursor = 0;
         let firstError: unknown = null;
         const continueOnItemError = step?.continueOnItemError === true;
@@ -457,7 +536,7 @@ async function executeSteps(steps: any[], ctx: any, run: any, deadline: number):
         continue;
       }
 
-      const collected: any[] = [];
+      const collected: unknown[] = [];
       for (let index = 0; index < count; index += 1) {
         ctx.vars[itemVar] = items[index];
         ctx.vars.index = index;

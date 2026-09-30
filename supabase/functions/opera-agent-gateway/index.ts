@@ -117,10 +117,10 @@ async function command(req: Request, url: URL) {
     }
   }
 
-  if (result && (result as any).ok === false && typeof (result as any).error === "string" && (result as any).error.includes("not paired")) {
+  if (result && result.ok === false && typeof result.error === "string" && result.error.includes("not paired")) {
     return json({ ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
   }
-  if (result && (result as any).ok === false && (result as any).error && typeof (result as any).error === "object" && (result as any).error.code === "AWAIT_TIMEOUT") {
+  if (result && result.ok === false && result.error && typeof result.error === "object" && (result.error as { code?: unknown }).code === "AWAIT_TIMEOUT") {
     return json({
       ok: false,
       error: { code: "AWAIT_TIMEOUT", message: "The device did not report back before waitMs. The action may still have succeeded — verify page state before repeating it." }

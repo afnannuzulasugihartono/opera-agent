@@ -72,7 +72,7 @@ async function pair(body: Record<string, unknown>) {
     p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
     p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : []
   });
-  return json(result || { ok: false, error: "Pairing failed." }, (result as any)?.ok ? 200 : 401);
+  return json(result || { ok: false, error: "Pairing failed." }, result?.ok ? 200 : 401);
 }
 
 async function heartbeat(body: Record<string, unknown>) {
@@ -86,7 +86,7 @@ async function heartbeat(body: Record<string, unknown>) {
     p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
     p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : []
   });
-  return json(result || { ok: false }, (result as any)?.ok ? 200 : 401);
+  return json(result || { ok: false }, result?.ok ? 200 : 401);
 }
 
 async function pull(body: Record<string, unknown>) {
@@ -106,8 +106,8 @@ async function pull(body: Record<string, unknown>) {
       p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
       p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : []
     });
-    if (!(result as any)?.ok) return json(result || { ok: false }, 401);
-    if ((result as any)?.command) return json(result, 200);
+    if (!result?.ok) return json(result || { ok: false }, 401);
+    if (result?.command) return json(result, 200);
     if (Date.now() >= deadline) {
       return json({ ok: true, command: null, serverTime: new Date().toISOString() }, 200);
     }
@@ -132,7 +132,7 @@ async function complete(body: Record<string, unknown>) {
     p_result: body.ok === true ? (body.result ?? {}) : null,
     p_error: body.ok === true ? null : (body.error ?? { code: "EXECUTION_ERROR", message: "Command failed." })
   });
-  return json(result || { ok: false }, (result as any)?.ok ? 200 : 400);
+  return json(result || { ok: false }, result?.ok ? 200 : 400);
 }
 
 // U-T Event-Triggered Workflows: device pushes a fired watcher event. The
@@ -153,7 +153,7 @@ async function watchEvent(body: Record<string, unknown>) {
     p_watcher_id: env.watcherId,
     p_envelope: env
   });
-  return json(result || { ok: false }, (result as any)?.ok ? 200 : 400);
+  return json(result || { ok: false }, result?.ok ? 200 : 400);
 }
 
 async function startWorkflow(body: Record<string, unknown>) {
@@ -168,7 +168,7 @@ async function startWorkflow(body: Record<string, unknown>) {
     p_timeout_ms: clamp(body.timeoutMs, 5000, 300000, 60000),
     p_device_name: body.deviceName.trim()
   });
-  return json(result || { ok: false }, (result as any)?.ok ? 200 : 400);
+  return json(result || { ok: false }, result?.ok ? 200 : 400);
 }
 
 Deno.serve(async (req: Request) => {

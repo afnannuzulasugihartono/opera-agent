@@ -56,6 +56,67 @@ class HostError extends Error {
   }
 }
 
+interface VmProgramTarget {
+  deviceId?: unknown;
+  tabId?: unknown;
+  documentGeneration?: unknown;
+  [key: string]: unknown;
+}
+
+interface VmProgram {
+  target: VmProgramTarget;
+  goalId?: unknown;
+  goalRevision?: unknown;
+  taskDependencies?: unknown;
+  [key: string]: unknown;
+}
+
+interface VmPendingEffect {
+  target?: { deviceId?: unknown; tabId?: unknown; [key: string]: unknown } | null;
+  arguments?: unknown;
+  method?: unknown;
+  requestDigest?: unknown;
+  [key: string]: unknown;
+}
+
+interface VmState {
+  pendingEffect?: VmPendingEffect | null;
+  lastLogicalNowMs?: unknown;
+  status?: unknown;
+  result?: unknown;
+  suspension?: { reason?: unknown; [key: string]: unknown } | null;
+  runId?: unknown;
+  tenantId?: unknown;
+  [key: string]: unknown;
+}
+
+interface VmClaim {
+  runId?: unknown;
+  programDigest?: unknown;
+  leaseEpoch?: unknown;
+  logicalTransition?: unknown;
+  goalRevision?: unknown;
+  targetDigest?: unknown;
+  programToken?: unknown;
+  checkpointToken?: unknown;
+  checkpointDigest?: unknown;
+  checkpointBytes?: unknown;
+  goalId?: unknown;
+  [key: string]: unknown;
+}
+
+interface VmDevice {
+  id?: unknown;
+  [key: string]: unknown;
+}
+
+interface VmTransition {
+  kind?: unknown;
+  nextPollAtMs?: unknown;
+  notBeforeMs?: unknown;
+  [key: string]: unknown;
+}
+
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers });
 }
@@ -76,7 +137,7 @@ async function authenticatedUser(req: Request) {
 async function rpc(name: string, args: Record<string, unknown> = {}) {
   const { data, error } = await supabase.rpc(name, args);
   if (error) throw new HostError("STORAGE_ERROR", `${name} failed.`, 503);
-  return data as any;
+  return data as Record<string, unknown> | null;
 }
 
 async function readBody(req: Request) {
@@ -87,7 +148,7 @@ async function readBody(req: Request) {
   try {
     const value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error();
-    return value as Record<string, any>;
+    return value as Record<string, unknown>;
   } catch {
     throw new HostError("INVALID_REQUEST", "Request body must be a JSON object.", 400);
   }
@@ -107,28 +168,29 @@ function boundedErrorCode(value: unknown, fallback = "HOST_ERROR") {
   return text || fallback;
 }
 
-function safePublicRun(value: any) {
-  if (!value || typeof value !== "object") return value;
+function safePublicRun(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object") return value as Record<string, unknown>;
+  const record = value as Record<string, unknown>;
   return {
-    ok: !!value.ok,
-    ...(value.code ? { code: value.code } : {}),
-    ...(value.runId ? { runId: value.runId } : {}),
-    ...(value.requestId ? { requestId: value.requestId } : {}),
-    ...(value.programDigest ? { programDigest: value.programDigest } : {}),
-    ...(value.goalId ? { goalId: value.goalId } : {}),
-    ...(value.goalRevision !== undefined ? { goalRevision: value.goalRevision } : {}),
-    ...(value.targetDigest ? { targetDigest: value.targetDigest } : {}),
-    ...(value.status ? { status: value.status } : {}),
-    ...(value.checkpointDigest ? { checkpointDigest: value.checkpointDigest } : {}),
-    ...(value.resultDigest ? { resultDigest: value.resultDigest } : {}),
-    ...(value.logicalTransition !== undefined ? { logicalTransition: value.logicalTransition } : {}),
-    ...(value.leaseEpoch !== undefined ? { leaseEpoch: value.leaseEpoch } : {}),
-    ...(value.cancelRequested !== undefined ? { cancelRequested: value.cancelRequested } : {}),
-    ...(value.availableAt !== undefined ? { availableAt: value.availableAt } : {}),
-    ...(value.errorCode !== undefined ? { errorCode: value.errorCode } : {}),
-    ...(value.createdAt ? { createdAt: value.createdAt } : {}),
-    ...(value.updatedAt ? { updatedAt: value.updatedAt } : {}),
-    ...(value.expiresAt ? { expiresAt: value.expiresAt } : {}),
+    ok: !!record.ok,
+    ...(record.code ? { code: record.code } : {}),
+    ...(record.runId ? { runId: record.runId } : {}),
+    ...(record.requestId ? { requestId: record.requestId } : {}),
+    ...(record.programDigest ? { programDigest: record.programDigest } : {}),
+    ...(record.goalId ? { goalId: record.goalId } : {}),
+    ...(record.goalRevision !== undefined ? { goalRevision: record.goalRevision } : {}),
+    ...(record.targetDigest ? { targetDigest: record.targetDigest } : {}),
+    ...(record.status ? { status: record.status } : {}),
+    ...(record.checkpointDigest ? { checkpointDigest: record.checkpointDigest } : {}),
+    ...(record.resultDigest ? { resultDigest: record.resultDigest } : {}),
+    ...(record.logicalTransition !== undefined ? { logicalTransition: record.logicalTransition } : {}),
+    ...(record.leaseEpoch !== undefined ? { leaseEpoch: record.leaseEpoch } : {}),
+    ...(record.cancelRequested !== undefined ? { cancelRequested: record.cancelRequested } : {}),
+    ...(record.availableAt !== undefined ? { availableAt: record.availableAt } : {}),
+    ...(record.errorCode !== undefined ? { errorCode: record.errorCode } : {}),
+    ...(record.createdAt ? { createdAt: record.createdAt } : {}),
+    ...(record.updatedAt ? { updatedAt: record.updatedAt } : {}),
+    ...(record.expiresAt ? { expiresAt: record.expiresAt } : {}),
   };
 }
 
@@ -158,20 +220,25 @@ async function resolveDevice(expectedDeviceId: string) {
   return data;
 }
 
-function extractDocumentGeneration(value: any): unknown {
+function extractDocumentGeneration(value: unknown): unknown {
   if (!value || typeof value !== "object") return undefined;
-  if (Object.prototype.hasOwnProperty.call(value, "documentGeneration")) return value.documentGeneration;
-  if (value.semantic && typeof value.semantic === "object" && Object.prototype.hasOwnProperty.call(value.semantic, "documentGeneration")) {
-    return value.semantic.documentGeneration;
+  const record = value as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(record, "documentGeneration")) return record.documentGeneration;
+  const semantic = record.semantic && typeof record.semantic === "object" ? record.semantic as Record<string, unknown> : null;
+  if (semantic && Object.prototype.hasOwnProperty.call(semantic, "documentGeneration")) {
+    return semantic.documentGeneration;
   }
-  if (value.document && typeof value.document === "object" && Object.prototype.hasOwnProperty.call(value.document, "generation")) {
-    return value.document.generation;
+  const document = record.document && typeof record.document === "object" ? record.document as Record<string, unknown> : null;
+  if (document && Object.prototype.hasOwnProperty.call(document, "generation")) {
+    return document.generation;
   }
   return undefined;
 }
 
-function mapEffectError(awaited: any) {
-  const code = String(awaited?.error?.code || awaited?.status || "EFFECT_FAILED").toUpperCase();
+function mapEffectError(awaited: unknown) {
+  const source = (awaited ?? {}) as { error?: unknown; status?: unknown };
+  const failure = (source.error ?? {}) as { code?: unknown };
+  const code = String(failure.code || source.status || "EFFECT_FAILED").toUpperCase();
   if (["AWAIT_TIMEOUT", "EXPIRED", "TIMEOUT"].includes(code)) return "TIMEOUT";
   if (["NETWORK_ERROR", "NETWORK_DISCONNECTED", "CONNECTION_RESET", "TEMPORARY_UNAVAILABLE", "SERVICE_UNAVAILABLE", "TRANSIENT", "RETRYABLE"].includes(code)) return code;
   if (["UNAUTHORIZED", "FORBIDDEN", "MISSING_AUTHORITY", "AUTHORIZATION_FAILED"].includes(code)) return code;
@@ -181,13 +248,14 @@ function mapEffectError(awaited: any) {
 
 async function authoritativeProgram(programInput: unknown, tenantId: string) {
   if (!programInput || typeof programInput !== "object" || Array.isArray(programInput)) throw new HostError("INVALID_PROGRAM", "program must be an object.");
-  const candidate = programInput as Record<string, any>;
+  const candidate = programInput as Record<string, unknown>;
   if (candidate.tenantId !== tenantId) throw new HostError("CROSS_TENANT", "Program tenant differs from authenticated tenant.", 403);
   let program;
   try {
     program = await validateReactiveProgram7D(candidate);
   } catch (error) {
-    throw new HostError(boundedErrorCode((error as any)?.code, "INVALID_PROGRAM"), "Reactive VM program validation failed.");
+    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    throw new HostError(boundedErrorCode(failure.code, "INVALID_PROGRAM"), "Reactive VM program validation failed.");
   }
   if (canonicalBytes(program) > REACTIVE_VM_HOST_7E_LIMITS.programBytes) throw new HostError("OVER_LIMIT", "Program exceeds the frozen byte budget.", 413);
   await assertGoalCurrent(tenantId, program.goalId, program.goalRevision);
@@ -196,7 +264,7 @@ async function authoritativeProgram(programInput: unknown, tenantId: string) {
   return { program, targetDigest };
 }
 
-async function enqueueRun(body: Record<string, any>, tenantId: string) {
+async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
   if (typeof body.requestId !== "string") throw new HostError("INVALID_REQUEST", "requestId is required.");
   const { program, targetDigest } = await authoritativeProgram(body.program, tenantId);
   const key = await cryptoKey();
@@ -212,7 +280,8 @@ async function enqueueRun(body: Record<string, any>, tenantId: string) {
       deadlineAtMs: logicalNowMs + Math.min(program.budgets.runDeadlineMs, REACTIVE_VM_HOST_7E_LIMITS.runDeadlineMs),
     });
   } catch (error) {
-    throw new HostError(boundedErrorCode((error as any)?.code, "INVALID_PROGRAM"), "Unable to initialize Reactive VM state.");
+    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    throw new HostError(boundedErrorCode(failure.code, "INVALID_PROGRAM"), "Unable to initialize Reactive VM state.");
   }
   const programBytes = canonicalBytes(program);
   const checkpointBytes = canonicalBytes(state);
@@ -239,15 +308,17 @@ async function enqueueRun(body: Record<string, any>, tenantId: string) {
   return safePublicRun(stored);
 }
 
-async function executeEffect(program: any, state: any, claim: any, workerId: string, tenantId: string, device: any, sliceDeadline: number) {
+async function executeEffect(program: VmProgram, state: VmState, claim: VmClaim, workerId: string, tenantId: string, device: VmDevice, sliceDeadline: number) {
   const pending = state.pendingEffect;
   if (!pending) throw new HostError("INVALID_HOST_STATE", "No pending effect exists.");
   if (String(pending.target?.deviceId) !== String(device.id) || pending.target?.tabId !== program.target.tabId) {
     throw new HostError("STALE_TARGET", "Pending effect target no longer matches the locked run target.", 409);
   }
-  if (pending.arguments && typeof pending.arguments === "object" && !Array.isArray(pending.arguments)
-      && Object.prototype.hasOwnProperty.call(pending.arguments, "tabId")
-      && pending.arguments.tabId !== program.target.tabId) {
+  const pendingArgs = pending.arguments && typeof pending.arguments === "object" && !Array.isArray(pending.arguments)
+    ? pending.arguments as Record<string, unknown>
+    : null;
+  if (pendingArgs && Object.prototype.hasOwnProperty.call(pendingArgs, "tabId")
+      && pendingArgs.tabId !== program.target.tabId) {
     throw new HostError("CROSS_TAB", "Effect arguments target another tab.", 409);
   }
 
@@ -331,7 +402,7 @@ async function executeEffect(program: any, state: any, claim: any, workerId: str
     const programContext = {
       goalId: program.goalId,
       goalRevision: program.goalRevision,
-      taskDependencies: (program as any).taskDependencies ?? null,
+      taskDependencies: program.taskDependencies ?? null,
     };
     const reconciled = reconcileVmEffectObservation7E(observationIdentity, awaited.result, programContext);
     effectValue = {
@@ -370,7 +441,7 @@ async function executeEffect(program: any, state: any, claim: any, workerId: str
   };
 }
 
-async function checkpointOriginal(claim: any, workerId: string, tenantId: string, status: string, errorCode: string | null) {
+async function checkpointOriginal(claim: VmClaim, workerId: string, tenantId: string, status: string, errorCode: string | null) {
   return rpc("opera_vm_checkpoint", {
     p_tenant_id: tenantId,
     p_run_id: claim.runId,
@@ -392,7 +463,7 @@ async function checkpointOriginal(claim: any, workerId: string, tenantId: string
   });
 }
 
-async function persistSlice(program: any, state: any, transition: any, claim: any, workerId: string, tenantId: string, key: Uint8Array) {
+async function persistSlice(program: VmProgram, state: VmState, transition: VmTransition, claim: VmClaim, workerId: string, tenantId: string, key: Uint8Array) {
   const logicalNowMs = nowMsAtLeast(state.lastLogicalNowMs);
   const classification = classifyVmPersistence7E(state, transition, logicalNowMs);
   const checkpointBytes = canonicalBytes(state);
@@ -469,7 +540,7 @@ async function processSlice(runId: string, tenantId: string) {
     const device = await resolveDevice(String(validatedProgram.target.deviceId));
 
     const sliceDeadline = performance.now() + REACTIVE_VM_HOST_7E_LIMITS.executionSliceMs - REACTIVE_VM_HOST_7E_LIMITS.sliceSafetyMarginMs;
-    let transition: any = { kind: "CONTINUE" };
+    let transition: VmTransition = { kind: "CONTINUE" };
     let steps = 0;
     while (!TERMINAL.has(String(state.status)) && performance.now() < sliceDeadline && steps < 1000) {
       const lease = await rpc("opera_vm_lease_status", {
@@ -512,7 +583,8 @@ async function processSlice(runId: string, tenantId: string) {
       ...(persisted.result === undefined ? {} : { result: persisted.result }),
     };
   } catch (error) {
-    const code = boundedErrorCode((error as any)?.code, "HOST_ERROR");
+    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    const code = boundedErrorCode(failure.code, "HOST_ERROR");
     if (code === "STALE_LEASE") throw error;
     const status = ["GOAL_REVISED", "STALE_TARGET", "STALE_DOCUMENT", "MISSING_AUTHORITY", "CROSS_TAB"].includes(code) ? "SUSPENDED" : "FAILED";
     const stored = await checkpointOriginal(claim, workerId, tenantId, status, code);
@@ -558,7 +630,8 @@ Deno.serve(async (req: Request) => {
     }
     throw new HostError("INVALID_OPERATION", "Unsupported VM host operation.", 400);
   } catch (error) {
-    const code = boundedErrorCode((error as any)?.code, "VM_HOST_ERROR");
+    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    const code = boundedErrorCode(failure.code, "VM_HOST_ERROR");
     const status = error instanceof HostError ? error.status : code === "CROSS_TENANT" ? 403 : code === "OVER_LIMIT" ? 413 : 400;
     console.error("opera-agent-vm", code);
     return response({ ok: false, error: { code } }, status);
