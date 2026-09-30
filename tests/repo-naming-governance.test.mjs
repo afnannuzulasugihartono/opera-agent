@@ -19,6 +19,8 @@ const ALLOWED_ROOT_ENTRIES = new Set([
   'SUPPORT.md',
   // Enterprise Phase 1 (2026-09-30): env template; values stay empty/example.
   '.env.example',
+  // Enterprise Phase 1 Task 7 (2026-09-30): gitleaks exception config for the CircleCI secret-scan gate.
+  '.gitleaks.toml',
 ]);
 
 const JUNK_TOKEN =

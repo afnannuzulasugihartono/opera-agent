@@ -40,7 +40,12 @@ jobs:
             /tmp/gitleaks detect --source . --verbose
       - run:
           name: Dependency audit
-          command: npm audit --audit-level=high
+          command: |
+            # Zero-dependency today: npm audit requires a lockfile (ENOLOCK
+            # without one), so generate it ephemerally. The threshold is
+            # unchanged: any high-or-worse advisory still fails the gate.
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            npm audit --audit-level=high
       - run:
           name: Install Deno and lint/typecheck edge functions
           command: |
@@ -51,7 +56,11 @@ jobs:
             export PATH="$DENO_INSTALL/bin:$PATH"
             deno --version
             deno lint supabase/functions/
-            for fn in supabase/functions/opera-agent-*/index.ts; do deno check --no-lock "$fn"; done
+            # Deno discovers deno.json/import maps from the working directory,
+            # so each function must be checked from its own directory: a
+            # root-CWD loop ignores the per-function import maps and fails
+            # every bare-specifier import with a bogus "not prefixed" error.
+            for d in supabase/functions/opera-agent-*/; do (cd "$d" && deno check --no-lock index.ts); done
       - run:
           name: SBOM artifact (CycloneDX, informational)
           command: |
