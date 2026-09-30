@@ -29,6 +29,7 @@
         "semantic-identity.js",
         "semantic-views.js",
         "role-reconcile.js",
+        "hover-settle.js",
         "content.js"
       ],
       "run_at": "document_start",

@@ -816,6 +816,14 @@ function burstStepParams(step, tabId, remainingMs, mode, results) {
     params.trusted = true;
   }
   if (action === 'key') params.trusted = true;
+  if (action === 'hover') {
+    const passthrough = burstPassthroughRef(results || [], step);
+    if (passthrough) {
+      params.ref = passthrough.ref;
+      params.resolvedFrom = passthrough.resolvedFrom;
+    }
+    params.trusted = true;
+  }
   if (action === 'pointer') {
     params.action = pointerAction || 'click';
     params.showCursor = true;
@@ -1087,6 +1095,11 @@ async function dispatch(method, params = {}, context = {}) {
       const result = await runActionPipeline(tabId, 'page.pointer', params, context, () => trustedPointer(tabId, params, context));
       return { ...result, tabId };
     }
+    case 'page.hover': {
+      const tabId = await resolveTabId(params);
+      const result = await runActionPipeline(tabId, 'page.hover', params, context, () => trustedHover(tabId, params, context));
+      return { ...result, tabId };
+    }
     case 'page.capture': {
       const tabId = await resolveTabId(params);
       return capturePage(tabId, params, context);
@@ -1288,6 +1301,33 @@ async function handleWatchFire(entry, fire, facts) {
 // before repeating it.
 function commandTimeoutError() {
   return codedError('COMMAND_TIMEOUT', 'Command timed out: the browser action may have taken effect. Verify page state before repeating it.');
+}
+
+// R9-E (2026-09-30): hover a resolved target and settle on the reveal.
+//
+// Multi-level menus previously needed a hand-built hover -> wait -> hover -> wait
+// burst. This makes one level a single step: move the trusted pointer onto the
+// target, then wait, bounded, for the reveal — an awaited submenu name, an
+// aria-expanded flip, or DOM stability. It never clicks, so a hover cannot
+// become an action the caller did not ask for, and it routes through the same
+// foreground focus gate as every other pointer input.
+async function trustedHover(tabId, params, context) {
+  const mode = executionMode(params);
+  const info = await contentCall(tabId, 'page.click_info', { ref: params.ref });
+  const x = info.rect?.centerX;
+  const y = info.rect?.centerY;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no hoverable rectangle.');
+  const timeoutMs = clamp(params.timeoutMs, 50, 8000, 1500);
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
+    withForegroundFocusGate(tabId, mode, async () => {
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+      const settle = await contentCall(tabId, 'page.hover_settle', {
+        ref: params.ref,
+        ...(params.text != null ? { text: String(params.text).slice(0, 300) } : {}),
+        timeoutMs
+      });
+      return { ok: true, method: 'debugger', input: 'hover', ref: params.ref, x, y, settle };
+    })));
 }
 
 async function executeCommand(raw) {

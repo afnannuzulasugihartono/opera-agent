@@ -14,6 +14,7 @@ export const BURST_ACTION_METHODS = Object.freeze({
   key: 'page.key',
   scroll: 'page.scroll',
   wait: 'page.wait_for',
+  hover: 'page.hover',
   pointer: 'page.pointer'
 });
 export const BURST_STEP_KEYS = Object.freeze({
@@ -24,6 +25,7 @@ export const BURST_STEP_KEYS = Object.freeze({
   key: ['action', 'key', 'modifiers', 'text'],
   scroll: ['action', 'x', 'y', 'absolute', 'smooth'],
   wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs'],
+  hover: ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs'],
   pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY']
 });
 
@@ -98,6 +100,12 @@ function validateBurstStep(step) {
   if (action === 'scroll' && !Number.isFinite(Number(step.y))) return 'Burst scroll requires a finite y value.';
   if (action === 'wait' && !validRef(step.ref) && !(typeof step.selector === 'string' && step.selector.length >= 1 && step.selector.length <= 500) && !(typeof step.text === 'string' && step.text.length >= 1 && step.text.length <= 300)) {
     return 'Burst wait requires a ref, selector, or text target.';
+  }
+  // R9-E: a hover needs a ref to hover; `text` is the optional submenu name to
+  // wait for, never the hover target itself, so a hover can never be guessed
+  // from a loose text match.
+  if (action === 'hover' && !validRef(step.ref)) {
+    return 'Burst hover requires a ref target.';
   }
   if (action === 'pointer') {
     const pointerAction = String(step.pointerAction || 'click');

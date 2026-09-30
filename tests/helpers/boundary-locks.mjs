@@ -54,15 +54,21 @@
 // from a public tool instead of dormant behind the schema. Additive and
 // backward compatible: every previously valid call still validates, the tool
 // count and all 22 names are unchanged, and the sensitive-field guard is
-// untouched.
+// untouched. R9-E (2026-09-30) then authorizes hover as a burst step: a new
+// `hover` step in burstStepSchema moves the trusted pointer onto a resolved ref
+// and settles on the reveal, so a multi-level menu is one step per level instead
+// of a hand-built hover/wait chain. `page.hover` is burst-internal and is NOT a
+// 27th primitive. A hover never clicks, goes through the same foreground focus
+// gate as every other pointer input, and its in-page settle returns a presence
+// boolean rather than document text.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
 // frozen.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', '89911c248a8e768cb1aa7f22c39f7d4e282c714d'],
-  ['../extension/background.js', 'dbd134d54e8bc280528bbef00c89f18129fed800'],
-  ['../extension/manifest.json', 'd30e9d32c3554d09a2ca7d213d7b135b6530db56'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '9ab4717dc1edfe7107815c0587d9bc170adf683d'],
+  ['../extension/content.js', 'd6bceee36049bdd7bf37aab14101d201411fe510'],
+  ['../extension/background.js', '82f87ff54d1f6b55929429c610da273959c89bf0'],
+  ['../extension/manifest.json', 'b62deba0ed431054a3e1ff039e58396f0e1891b9'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '7ca99e7bdd4cd8d5888fe61d387518c1ad17e8ea'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

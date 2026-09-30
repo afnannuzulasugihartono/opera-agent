@@ -7,6 +7,9 @@
   // global pattern as the semantic engines is used.
   const { implicitRole } = globalThis.OperaAgentRoleReconcile || {};
   if (typeof implicitRole !== 'function') throw new Error('Role reconcile runtime is unavailable.');
+  // R9-E: hover settle policy, published by hover-settle.js.
+  const hoverSettle = globalThis.OperaAgentHoverSettle;
+  if (!hoverSettle || typeof hoverSettle.plan !== 'function') throw new Error('Hover settle runtime is unavailable.');
 
   const MAX_TEXT_CHUNK = 12000;
   const MAX_ELEMENTS = 200;
@@ -768,6 +771,65 @@
       if (item.visible && item.inViewport) add(item);
     }
     return selected;
+  }
+
+  // R9-E: bounded settle after a hover. A submenu is the common case, so an
+  // expected name is honoured first; otherwise DOM mutation stability or an
+  // aria-expanded flip ends the wait. It only observes — it never clicks, moves
+  // the pointer, or mints a ref, so it cannot become an action of its own.
+  async function hoverSettleState(args) {
+    const options = hoverSettle.normalize(args);
+    const startedAt = Date.now();
+    const ref = clean(args.ref, 80);
+    const el = ref ? resolveRef(ref) : null;
+    const beforeMutationVersion = mutationVersion;
+    const previousAriaExpanded = el ? el.getAttribute?.('aria-expanded') ?? null : null;
+    let rounds = 0;
+    while (true) {
+      const elapsedMs = Date.now() - startedAt;
+      const decision = hoverSettle.plan({
+        text: options.text,
+        observedText: options.text ? containsVisibleText(options.text) : '',
+        ariaExpanded: el ? el.getAttribute?.('aria-expanded') ?? null : null,
+        previousAriaExpanded,
+        mutationVersion,
+        // The first poll must observe a real change, so a page that is already
+        // quiet cannot report "stable" before anything has been measured.
+        previousMutationVersion: rounds > 0 ? beforeMutationVersion : -1,
+        elapsedMs,
+        timeoutMs: options.timeoutMs,
+        stableRounds: options.stableRounds
+      });
+      if (decision.done) {
+        return {
+          ok: true,
+          settled: true,
+          reason: decision.reason,
+          expectedText: decision.expectedText,
+          targetVisible: el ? isVisible(el) : false,
+          ariaExpanded: el ? el.getAttribute?.('aria-expanded') ?? null : null,
+          elapsedMs
+        };
+      }
+      rounds += 1;
+      await new Promise((resolve) => setTimeout(resolve, options.intervalMs));
+    }
+  }
+
+  // Presence-only signal for the awaited name. It returns a boolean, never page
+  // content, so a settle result cannot carry document text into the payload.
+  function containsVisibleText(wanted) {
+    const needle = String(wanted || '').trim().toLowerCase();
+    if (!needle) return false;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const maxTextNodes = 400;
+    let node;
+    let scanned = 0;
+    while ((node = walker.nextNode()) && scanned < maxTextNodes) {
+      scanned += 1;
+      if ((node.nodeValue || '').toLowerCase().includes(needle)) return true;
+    }
+    return false;
   }
 
   function pageRead(args) {
@@ -1665,6 +1727,7 @@
       case 'page.post_action': return postActionEvidence(args);
       case 'page.pointer_target': return pointerTarget(args);
       case 'page.scroll_settle': return settleScroll(args);
+    case 'page.hover_settle': return hoverSettleState(args);
       case 'page.scroll_target': return scrollTargetBy(args);
       case 'page.capture_policy': return capturePolicy();
       case 'page.fill': return fill(args);

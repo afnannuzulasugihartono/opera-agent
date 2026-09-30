@@ -49,6 +49,9 @@ const R9B_CHANGED_TOOL = 'press_key';
 // The press_key digest before R9-B, kept so the record of the change is visible
 // and a silent revert cannot be mistaken for "nothing ever changed".
 const PRE_R9B_PRESS_KEY_DIGEST = '41a4003cadb60196';
+// R9-E then added the hover burst step, which lives inside run_browser_burst's
+// schema rather than in a tool of its own.
+const R9E_CHANGED_TOOL = 'run_browser_burst';
 
 function toolBlocks() {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
@@ -71,8 +74,25 @@ test('the frozen schema map matches the live file, and records the one authorize
   // Every recorded digest must match the file, so a stale entry cannot mask a
   // later edit and an unauthorized edit cannot pass unnoticed.
   assert.deepEqual(actual, FROZEN_TOOL_SCHEMAS);
-  // And the one tool that was authorized to change must be recorded as changed.
+  // And the tools that were authorized to change must be recorded as changed.
   assert.notEqual(FROZEN_TOOL_SCHEMAS[R9B_CHANGED_TOOL], PRE_R9B_PRESS_KEY_DIGEST);
+  assert.ok(FROZEN_TOOL_SCHEMAS[R9E_CHANGED_TOOL]);
+});
+
+test('the shared burst step schema is pinned by its step set, not only by digest', () => {
+  // run_browser_burst's inputSchema is a *reference* to burstStepSchema, so the
+  // per-tool digest above cannot observe a change inside the shared constant.
+  // This is the layer that closes that gap: the public burst vocabulary is
+  // pinned by name, so adding or removing a step fails loudly here.
+  const steps = [...source.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
+  assert.deepEqual(steps, [
+    'read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer'
+  ]);
+  // The burst union must stay strict so unknown step keys are still rejected.
+  const union = source.match(/const burstStepSchema = z\.discriminatedUnion\("action", \[([\s\S]*?)\n\]\);/);
+  assert.ok(union, 'the burst step union must be locatable');
+  assert.equal((union[1].match(/\}\)\.strict\(\)/g) || []).length, steps.length);
+  assert.match(source, /z\.array\(burstStepSchema\)\.min\(1\)\.max\(8\)/);
 });
 
 test('the keyboard surface now exposes chords and bounded text on both entry points', () => {
@@ -135,9 +155,11 @@ test('the instructions now teach the chords the schema actually accepts', () => 
   assert.doesNotMatch(instructions, /are not available on this surface yet/);
   assert.match(instructions, /select all with key "a" and modifiers \["control"\]/);
   assert.match(instructions, /paste with key "v" and modifiers \["control"\]/);
-  // The menu/dialog habit from R9-G must survive.
+  // The menu/dialog habit from R9-G must survive, now expressed with the R9-E
+  // hover step rather than a hand-built wait between levels.
   assert.match(instructions, /The same rule applies to MENUS and DIALOGS/);
-  assert.match(source, /chain one find\/click per level inside a single burst/);
+  assert.match(instructions, /use a hover burst step with the found ref via refFromStep/);
+  assert.match(instructions, /chain the levels in a single burst/);
 });
 
 test('the sensitive-field guard is still advertised for keyboard input', () => {
