@@ -245,15 +245,37 @@
 
     const replacement = candidates[0];
     if (!geometryMatchesMint(replacement, descriptor)) {
+      // R9-D: the mint-time geometry guard still decides this ref, unchanged and
+      // unbroadened — it exists because a same-place successor can be a
+      // DIFFERENT control, and widening it would reintroduce that mis-click.
+      // What was genuinely broken is the cost of recovery: the model had to run
+      // a fresh page.find purely to obtain a usable ref. The candidates below
+      // have already passed uniqueness, intrinsic identity, actionability, and
+      // the non-sensitive check, so handing back their fresh refs is exactly as
+      // safe as a find would have been. The stale ref is still refused.
+      const driftPx = Math.max(
+        Math.abs(documentRectOf(replacement).x - descriptor.rectAtMint.x),
+        Math.abs(documentRectOf(replacement).y - descriptor.rectAtMint.y)
+      );
       const currentCandidates = candidates.slice(0, 3).map((el) => {
         const s = serialize(el);
-        return { label: s.label || s.text, tag: s.tag, rect: rectOf(el) };
+        return {
+          label: s.label || s.text,
+          tag: s.tag,
+          role: s.role,
+          freshRef: getRef(el),
+          actionable: s.actionable,
+          driftFromMintPx: Math.round(driftPx)
+        };
       });
       throw new Error(
         `Ref target moved beyond the geometry tolerance since mint `
-        + `(mutationVersion ${descriptor.mutationVersionAtMint ?? 'unknown'} -> ${mutationVersion}); `
-        + `refusing automatic rebind. Current plausible candidates: ${JSON.stringify(currentCandidates)}. `
-        + `Re-run page.find and use a fresh ref.`
+        + `(mutationVersion ${descriptor.mutationVersionAtMint ?? 'unknown'} -> ${mutationVersion}, `
+        + `drift ${Math.round(driftPx)}px, tolerance ${GEOMETRY_DRIFT_TOLERANCE_PX}px); `
+        + `refusing automatic rebind of the stale ref. `
+        + `These fresh refs are already validated and may be acted on directly without re-running find: `
+        + `${JSON.stringify(currentCandidates)}. `
+        + `Otherwise re-run page.find and use a fresh ref.`
       );
     }
     const existingRef = refs.get(replacement);

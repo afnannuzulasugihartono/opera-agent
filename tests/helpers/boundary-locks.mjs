@@ -60,15 +60,22 @@
 // of a hand-built hover/wait chain. `page.hover` is burst-internal and is NOT a
 // 27th primitive. A hover never clicks, goes through the same foreground focus
 // gate as every other pointer input, and its in-page settle returns a presence
-// boolean rather than document text.
+// boolean rather than document text. R9-D (2026-09-30) then makes ref recovery
+// cheap WITHOUT touching the safety guard: the mint-time 24px geometry
+// tolerance is unchanged and still unbroadened, and a moved successor is still
+// refused, but the refusal now hands back fresh refs for candidates that already
+// passed uniqueness, intrinsic identity, actionability, and the non-sensitive
+// check, so the model no longer needs a whole extra page.find just to obtain a
+// usable ref. The instructions say to act on those directly and never to widen
+// the tolerance.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
 // frozen.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'd6bceee36049bdd7bf37aab14101d201411fe510'],
+  ['../extension/content.js', 'c2d02d11669d355e1150b173285e4257159f429d'],
   ['../extension/background.js', '82f87ff54d1f6b55929429c610da273959c89bf0'],
   ['../extension/manifest.json', 'b62deba0ed431054a3e1ff039e58396f0e1891b9'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '7ca99e7bdd4cd8d5888fe61d387518c1ad17e8ea'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '68373e76b4d7b863e32c57f082375c47617eccf5'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
