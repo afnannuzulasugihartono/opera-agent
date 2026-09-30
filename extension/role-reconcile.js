@@ -37,6 +37,10 @@
   'use strict';
   if (globalThis.OperaAgentRoleReconcile) return;
 
+  // A page needs enough unlabelled controls to be worth one bounded
+  // accessibility walk. Small pages and healthy pages both stay off it.
+  const ROLE_GAP_SAMPLE_SIZE = 3;
+
   const GENERIC_ROLES = new Set([
     '', 'generic', 'presentation', 'none', 'div', 'span', 'text', 'statictext',
     'paragraph', 'group', 'region', 'section', 'figure', 'blockquote', 'label',
@@ -133,6 +137,30 @@
     return { ...item, role, roleSource: 'ax-reconciled' };
   }
 
+  // R9-C follow-up: whether a read left a semantic gap worth paying a bounded
+  // accessibility walk for.
+  //
+  // The accessibility walk used to be gated on text poverty alone, which meant
+  // it never ran on the app that motivated R9-C: a Google Docs document with 70
+  // pages is NOT text-poor, so its axSummary was never collected and the role
+  // reconciliation below never fired. The Page numbers dialog radios and
+  // checkboxes therefore stayed undiscoverable by role, which is why they had to
+  // be found by pointer probing. A page whose elements still carry no real role
+  // is a semantic gap whether or not it has plenty of text.
+  function hasRoleGap(elements) {
+    if (!Array.isArray(elements) || elements.length === 0) return false;
+    let gaps = 0;
+    for (const item of elements) {
+      if (isGenericRole(item && item.role)) {
+        gaps += 1;
+        // A few clear gaps are enough to justify the walk; do not require every
+        // element to be unlabelled, which would also fire on healthy pages.
+        if (gaps >= ROLE_GAP_SAMPLE_SIZE) return true;
+      }
+    }
+    return false;
+  }
+
   function reconcileElements(items, index) {
     if (!Array.isArray(items) || !index || typeof index.get !== 'function') return items;
     return items.map((item) => reconcileElementRole(item, index));
@@ -140,7 +168,9 @@
 
   globalThis.OperaAgentRoleReconcile = {
     GENERIC_ROLES,
+    ROLE_GAP_SAMPLE_SIZE,
     isGenericRole,
+    hasRoleGap,
     implicitRole,
     normalizeAxRole,
     axRoleIndex,

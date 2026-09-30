@@ -145,6 +145,55 @@ test('R9-C: the join uses the best available name and survives junk input', () =
   assert.deepEqual(reconcileElements([{ role: '' }], null), [{ role: '' }]);
 });
 
+test('R9-C: a semantic gap justifies the accessibility walk even on a text-rich page', async () => {
+  // The root cause of the reported "found the dialog controls by probing
+  // coordinates": the AX walk was gated on text poverty alone, so a 70-page
+  // Google Docs document never produced an axSummary and the reconciliation
+  // never ran. Text richness must not disable it.
+  const { hasRoleGap, ROLE_GAP_SAMPLE_SIZE } = globalThis.OperaAgentRoleReconcile;
+  assert.equal(ROLE_GAP_SAMPLE_SIZE, 3);
+  // Three unlabelled controls are enough to justify one bounded walk.
+  const gapped = [
+    { role: 'button' }, { role: '' }, { role: 'generic' }, { role: 'presentation' }, { role: 'textbox' }
+  ];
+  assert.equal(hasRoleGap(gapped), true);
+  // A healthy page must not pay for it.
+  assert.equal(hasRoleGap([{ role: 'button' }, { role: 'link' }, { role: 'textbox' }]), false);
+  assert.equal(hasRoleGap([]), false);
+  assert.equal(hasRoleGap(null), false);
+  // One or two stray gaps in a mostly-labelled list are not enough; the sample
+  // guards the cost of the walk.
+  assert.equal(hasRoleGap([{ role: 'button' }, { role: 'link' }, { role: '' }]), false);
+  assert.equal(hasRoleGap([{ role: 'button' }, { role: '' }, { role: 'presentation' }]), false);
+  assert.equal(hasRoleGap([{ role: 'button' }, { role: '' }, { role: 'generic' }, { role: 'textbox' }]), false);
+  assert.equal(hasRoleGap([{ role: 'button' }, { role: '' }, { role: 'generic' }, { role: 'textbox' }, { role: 'presentation' }]), true);
+
+  const background = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const start = background.indexOf("case 'page.read': {");
+  const end = background.indexOf("case 'page.query':", start);
+  const block = background.slice(start, end);
+  assert.match(block, /hasRoleGap\(result\?\.page\?\.elements\)/);
+  assert.match(block, /AX_SUMMARY_TEXT_POVERTY_CHARS \|\| r9SemanticGap/);
+  // Still exactly one accessibility walk, never a second one.
+  assert.equal((block.match(/collectAxSummary\(/g) || []).length, 1);
+});
+
+test('R9: an oversized read degrades instead of failing the whole call', async () => {
+  const background = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const start = background.indexOf("case 'page.read': {");
+  const end = background.indexOf("case 'page.query':", start);
+  const block = background.slice(start, end);
+  // The text and the observation survive; only the element list is dropped.
+  assert.match(block, /if \(result\?\.page && oversized\(result\)\)/);
+  assert.match(block, /const \{ elements, \.\.\.withoutElements \} = result\.page/);
+  assert.match(block, /truncated: true/);
+  assert.match(block, /omittedElementCount/);
+  assert.match(block, /includeElements disabled/);
+  // The generic ceiling still throws for everything else: this is a page.read
+  // degradation, not a blanket removal of the bound.
+  assert.match(background, /Result exceeds \$\{MAX_RESULT_BYTES\} bytes/);
+});
+
 test('R9-C: serialize derives roles from markup instead of only the role attribute', async () => {
   const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
   // Content scripts are classic scripts: the shared helpers arrive on

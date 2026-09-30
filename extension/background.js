@@ -18,7 +18,7 @@ import { resolveKeyInput } from './lib/keyboard.js';
 // pure helpers on globalThis — one source of truth for both contexts, and no
 // second, drifting copy of the role table.
 import './role-reconcile.js';
-const { axRoleIndex, reconcileElements } = globalThis.OperaAgentRoleReconcile || {};
+const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRoleReconcile || {};
 import { buildAxSummary } from './lib/ax-summary.js';
 import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
 
@@ -1037,13 +1037,40 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.read': {
       const tabId = await resolveTabId(params);
-      const result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
+      let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
+      // R9 read degradation: an oversized result used to fail the whole call at
+      // the 512KB ceiling, which on a large application is a hard failure the
+      // caller can only guess its way out of. Degrade instead: keep the text and
+      // the observation, drop the element list, and say so. The caller can then
+      // re-read with a narrower scope rather than starting over.
+      if (result?.page && oversized(result)) {
+        const { elements, ...withoutElements } = result.page;
+        result = {
+          ...result,
+          page: {
+            ...withoutElements,
+            truncated: true,
+            truncationReason: `Element list omitted: the result exceeded the ${MAX_RESULT_BYTES}-byte ceiling. Re-read with a narrower offset, a smaller maxElements, or includeElements disabled.`,
+            omittedElementCount: Array.isArray(elements) ? elements.length : 0
+          }
+        };
+      }
       if (result?.page?.viewport) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch {}
       }
-      // U-P1: only text-poor surfaces pay the debugger round trip; collection
+      // U-P1: text-poor surfaces pay the debugger round trip; collection
       // failures fail open and leave the observation unchanged.
-      if (result?.ok !== false && result?.page && Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS) {
+      //
+      // R9-C follow-up: text poverty alone was the wrong trigger. A 70-page
+      // Google Docs document is NOT text-poor, so its accessibility tree was
+      // never collected and the role reconciliation below never ran — the exact
+      // app that motivated R9-C. A page whose elements still carry no real role
+      // is a semantic gap regardless of how much text it has, and it is worth
+      // the same one bounded walk.
+      const r9SemanticGap = hasRoleGap(result?.page?.elements);
+      const shouldCollectAx = result?.ok !== false && result?.page
+        && (Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS || r9SemanticGap);
+      if (shouldCollectAx) {
         const summary = await collectAxSummary(tabId, context);
         if (summary) {
           result.page.axSummary = summary;
@@ -1121,6 +1148,10 @@ function boundedResult(value) {
     throw new Error(`Result exceeds ${MAX_RESULT_BYTES} bytes. Use bounded/chunked reads.`);
   }
   return value;
+}
+
+function oversized(value) {
+  try { return JSON.stringify(value).length > MAX_RESULT_BYTES; } catch { return false; }
 }
 
 // ---- U-T Event-Triggered Workflows: watch registry ----
