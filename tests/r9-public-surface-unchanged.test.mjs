@@ -153,8 +153,9 @@ test('the instructions now teach the chords the schema actually accepts', () => 
   const instructions = source.match(/instructions: "([\s\S]*?)",\n/)[1];
   // The R9-G placeholder must be gone: the schema moved, so the guidance moves.
   assert.doesNotMatch(instructions, /are not available on this surface yet/);
-  assert.match(instructions, /select all with key "a" and modifiers \["control"\]/);
-  assert.match(instructions, /paste with key "v" and modifiers \["control"\]/);
+  // Re-frozen 2026-10-01: instructions literal escaped (\"), served text unchanged — see 77ec536.
+  assert.match(instructions, /select all with key \\"a\\" and modifiers \[\\"control\\"\]/);
+  assert.match(instructions, /paste with key \\"v\\" and modifiers \[\\"control\\"\]/);
   // The menu/dialog habit from R9-G must survive, now expressed with the R9-E
   // hover step rather than a hand-built wait between levels.
   assert.match(instructions, /The same rule applies to MENUS and DIALOGS/);

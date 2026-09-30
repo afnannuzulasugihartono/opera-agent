@@ -34,7 +34,8 @@ const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp
 // and must be moved together with mcp-contract-v1.json sourceSha256,
 // goal-ledger-thresholds publicSurfaceBaseline, the reactive-vm inventory
 // digest, and the transaction inventory digest.
-const EXPECTED_MCP_SHA256 = 'c9dd68e344f9a5d60cb3a457f67d1891d367c586e44c5c8f71b38b9516bbd296';
+// Re-frozen 2026-10-01: instructions literal escaped (\"), served text unchanged — see 77ec536.
+const EXPECTED_MCP_SHA256 = '84ca111aaf8de90b2b668157d85b19fdea63637026c50bf069ef25a15872089d';
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -119,7 +120,7 @@ test('7F keeps the 1.6.13 public surface and frozen read-only VM effect policy u
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
-  assert.equal(contract.inventory.digest, 'sha256:3afe62619b02e2c4c1e0f38a6d33cdef89fd6ea5fd639d6d5adc7b25785d6f59'); // R9-G rebaseline: instructions-only MCP edit
+  assert.equal(contract.inventory.digest, 'sha256:9c93ba1465d4342643575f275432e18f821e48e802ec86a2b45c43297fd17943'); // Re-frozen 2026-10-01: instructions-literal escape (77ec536), served text unchanged
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

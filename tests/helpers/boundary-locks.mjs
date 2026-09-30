@@ -85,7 +85,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '3ee6b781b50e9c3c02e4eb3831c94d96b240bb9e'],
   ['../extension/background.js', '5642089f1b2e3eacadb0f219702e86cf9af4d446'],
   ['../extension/manifest.json', 'b62deba0ed431054a3e1ff039e58396f0e1891b9'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '68373e76b4d7b863e32c57f082375c47617eccf5'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '66921e3583db5ae54fe9e17664746b2cc4a050e0'], // Re-frozen 2026-10-01: instructions literal escaped (\"), served text unchanged — see 77ec536.
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
