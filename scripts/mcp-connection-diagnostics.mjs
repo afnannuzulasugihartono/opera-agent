@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'node:url';
 
-const BASE = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp';
+const BASE = process.env.OPERA_AGENT_MCP_BASE_URL || 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp';
 const MAX_BYTES = 64 * 1024;
 
 // Read-only diagnostics, not a host reconnect manager. Never reads stored OAuth

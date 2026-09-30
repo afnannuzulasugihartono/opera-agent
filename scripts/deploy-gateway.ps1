@@ -3,7 +3,7 @@
 # printed. Preflights the token scope, deploys, verifies byte-exact, then
 # smoke-tests the public surfaces. ASCII-only (PS 5.1 reads no-BOM as ANSI).
 $ErrorActionPreference = 'Stop'
-$ref = 'nenmkmtvjremqphfqnfw'
+$ref = if ($env:SUPABASE_PROJECT_REF) { $env:SUPABASE_PROJECT_REF } else { 'nenmkmtvjremqphfqnfw' }
 $fn  = 'opera-agent-gateway'
 $localPath = Join-Path $PSScriptRoot 'opera-agent\supabase\functions\opera-agent-gateway\index.ts'
 if (-not (Test-Path $localPath)) { $localPath = Join-Path $PSScriptRoot '..\supabase\functions\opera-agent-gateway\index.ts' }
