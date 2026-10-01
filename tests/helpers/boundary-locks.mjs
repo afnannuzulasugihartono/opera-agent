@@ -85,7 +85,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '1cc7b5efeaabaca456a1a1829e87f6aa7b9a8610'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 7 converts silent catches to logged catches (log.debug for tested fallbacks, log.warn for pure swallows and thrown validation, fallback/throw semantics byte-identical). Additive only; MCP/tool/schema surface unchanged.
   ['../extension/background.js', 'cbf7cc22115f47227df026472a67c802082a1697'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 6 converts silent catches to logged catches (log.debug/log.warn, fallback semantics byte-identical). Additive only; MCP/tool/schema surface unchanged.
   ['../extension/manifest.json', 'cd7c1e67af1bc9d791ef3b6eb4b118cfc4169798'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 5 prepends lib/agent-log.js to content_scripts js (manifest-first load for classic content scripts). No permission or surface change.
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'ccddcd457b4a89d1b4d9e2871d7539e1c6605d3a'], // Re-frozen 2026-10-02: pinned jsr edge-runtime import version (line 1 only), served contract unchanged.
+  ['../supabase/functions/opera-agent-mcp/index.ts', '3a0772068e78a8a0ec16add7726b41b79051067e'], // Re-frozen 2026-10-02: edge-runtime import moved to deno.json import map (same locked version), served contract unchanged.
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

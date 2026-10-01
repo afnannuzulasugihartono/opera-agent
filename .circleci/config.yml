@@ -143,21 +143,13 @@ jobs:
       - node/install:
           node-version: "22.20.0"
           install-yarn: false
-      # DIAGNOSTIC QUARANTINE 2026-10-02: the SBOM step is the only gate
-      # with zero green CI runs; all other gates are proven green locally
-      # (lint/check/audit/gitleaks/SBOM-exit/unit). Disabled for one cycle
-      # to bisect the red workflow — re-enable with a proper fix, never
-      # leave quarantined.
-      # - run:
-      #     name: SBOM artifact (CycloneDX, informational)
-      #     command: |
-      #       npx --yes @cyclonedx/cdxgen@11 --output-file bom.json --fail-on-error .
-      # - store_artifacts:
-      #     path: bom.json
-      #     destination: sbom
       - run:
-          name: SBOM gate quarantined (diagnostic, see comment above)
-          command: echo "SBOM_STEP_QUARANTINED_FOR_BISECTION"
+          name: SBOM artifact (CycloneDX, informational)
+          command: |
+            npx --yes @cyclonedx/cdxgen@11 --output-file bom.json --fail-on-error .
+      - store_artifacts:
+          path: bom.json
+          destination: sbom
   browser:
     executor:
       name: python/default
