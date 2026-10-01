@@ -5,8 +5,10 @@ import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 // U-T universal fastpath gateway: ONE HTTP round trip from any AI platform
 // (ChatGPT GPTs/Actions, Claude/MCP, n8n, plain curl) to a completed browser
 // action. GPT Actions cannot set custom headers, so the token may arrive via
-// header, body.apiKey, or ?apiKey=. Query tokens are accepted ONLY for the
-// read-only /openapi.json + /health surfaces, never for /command.
+// the x-opera-agent-token header, an Authorization header (whose "Bearer "
+// prefix is optional and case-insensitive), or body.apiKey. The query string
+// is never read: a ?apiKey= token is ignored on every route.
+// /openapi.json and /health need no token at all.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
