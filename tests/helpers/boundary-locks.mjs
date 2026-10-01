@@ -83,7 +83,7 @@
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '1cc7b5efeaabaca456a1a1829e87f6aa7b9a8610'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 7 converts silent catches to logged catches (log.debug for tested fallbacks, log.warn for pure swallows and thrown validation, fallback/throw semantics byte-identical). Additive only; MCP/tool/schema surface unchanged.
-  ['../extension/background.js', 'cbf7cc22115f47227df026472a67c802082a1697'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 6 converts silent catches to logged catches (log.debug/log.warn, fallback semantics byte-identical). Additive only; MCP/tool/schema surface unchanged.
+  ['../extension/background.js', '6f8dbc572874430cfec8160afd7ae991d86ac4fe'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 6 converts silent catches to logged catches (log.debug/log.warn, fallback semantics byte-identical). Additive only; MCP/tool/schema surface unchanged. Re-frozen 2026-10-02: Enterprise Phase 5 Task 1 moves DEFAULT_BRIDGE_URL to extension/lib/endpoints.js (single endpoint source per deploy unit; import plus literal removal only), served behavior unchanged.
   ['../extension/manifest.json', 'cd7c1e67af1bc9d791ef3b6eb4b118cfc4169798'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 5 prepends lib/agent-log.js to content_scripts js (manifest-first load for classic content scripts). No permission or surface change.
   ['../supabase/functions/opera-agent-mcp/index.ts', 'b1ecc0652d0e39792b0f65e371faeac2e977b624'], // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 wires fail-closed CORS (per-request ACAO via the shared resolver; Allow-Headers/Methods/Expose-Headers/Cache-Control unchanged), served MCP contract unchanged.
 ]);

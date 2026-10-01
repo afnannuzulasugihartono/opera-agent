@@ -13,6 +13,7 @@ import { evaluateRules, validateRule } from './lib/watch.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
+import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
 // R9-C: the same file the content script loads via the manifest. It declares no
 // export statements, so this is a valid side-effect import that publishes the
 // pure helpers on globalThis — one source of truth for both contexts, and no
@@ -28,7 +29,6 @@ if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavai
 import { buildAxSummary } from './lib/ax-summary.js';
 import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
 
-const DEFAULT_BRIDGE_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-bridge';
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId'];
 const PRIVATE_TABS_KEY = 'privateTabIds';
 const WAKE_ALARM = 'opera-agent-wake';

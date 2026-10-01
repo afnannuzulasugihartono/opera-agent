@@ -83,7 +83,7 @@ Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const path = url.pathname;
-    const base = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update";
+    const base = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/opera-agent-update`;
     // CRX downloads do not carry the updater's `x` metadata. Their canonical
     // path embeds the ID, so resolve that request from the path instead.
     const identityCrxMatch = path.match(/\/opera-agent-([a-p]{32})-([0-9]+\.[0-9]+\.[0-9]+)\.crx$/);
