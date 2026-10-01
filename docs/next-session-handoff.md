@@ -2007,10 +2007,11 @@ machine deno, no upgrade): `deno lint supabase/functions/` exit 0
 when run FROM each function dir (root-dir invocation fails with "not a
 dependency" - from-dir is the gate method, no env masking involved);
 `py tests/browser_extension_test.py` headed FAIL on focus assertions
-(`browser.burst`, then `page.click` on the one rerun; `after=None` both
-times = OS window lost focus entirely) - halted per flake policy (one
-headed rerun max); CI `ci-browser` green on the same head, so assessed
-as environment flake, not product regression. Bare repo-wide `deno lint`
+3 runs total (initial + 2 reruns; `browser.burst`, then `page.click`;
+`after=None` all three times = OS window lost focus entirely) -
+halted; the second rerun was one over the one-headed-rerun-max policy
+by miscount, read-only, no code touched; CI `ci-browser` green on the
+same head, so assessed as environment flake, not product regression. Bare repo-wide `deno lint`
 reports 180 pre-existing extension-file hits - outside the CI gate scope
 (`supabase/functions/` only), recorded not fixed.
 
@@ -2020,6 +2021,12 @@ ci-browser, ci-deno-install, ci-deno-lint, ci-secrets, ci-deno-check,
 ci-sbom); combined status = success (Vercel + 8 CircleCI contexts).
 Pushed `3546ac0..0a5bbf3`; remote tip = `0a5bbf3` before this commit.
 
+CI on final head `988774b`
+(`988774b9e1972c1b24af5ca8d903be582cd55724`, docs-only delta):
+check-runs = 9/9 completed/success (Vercel Preview Comments,
+ci-audit, ci-unit, ci-browser, ci-deno-install, ci-deno-lint,
+ci-secrets, ci-deno-check, ci-sbom); combined status = success.
+
 Carried concerns (from task reports, for later phases): `vm:636` +
 `update:71/134` raw console calls outside the 4-function hygiene scope
 (parked); consent SDK-bump fragility (mcp `deno check` leans on the
@@ -2028,5 +2035,6 @@ applies); `cors.js` second comment line references the unknown lint rule
 (stale rationale, zero runtime effect).
 
 Merge readiness: branch is clean, pushed, all gates green - merge stays
-an explicit owner decision. Tip after this commit: verify via
-`git log -1` and the remote before the next write.
+an explicit owner decision. Closeout head `988774b`
+(`988774b9e1972c1b24af5ca8d903be582cd55724`); this fix commit is its
+child on `chore/enterprise-security-phase4`, remote in sync after push.
