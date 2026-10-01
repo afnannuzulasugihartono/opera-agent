@@ -1,5 +1,63 @@
 # Opera Agent next-session handoff
 
+## Phase 5 review follow-ups on main (2026-10-02) — head `be7bbea`
+
+The residual items from the Fase 5 final review were closed on
+`chore/phase5-review-followups` (base `ab58874`, head `be7bbea`, 4 commits),
+fast-forwarded into `main`. Suite is now **633/633** (was 631; two new `node:test`
+cases, nothing removed).
+
+What changed, and what each one actually fixed:
+
+- `extension/background.js` — a comment said a corrupt stored log level "falls
+  back silently to the current threshold" while the code sets the literal `warn`.
+  Comment-only change; the `background.js` lock was re-frozen with the reason, and
+  the reviewer independently confirmed by hashing comment-stripped blobs that no
+  executable byte moved.
+- `tests/endpoint-source.test.mjs` — the update deploy unit was pinned only to
+  *omit* one project ref, so any other hard-coded URL passed. Now pinned to
+  derive from `SUPABASE_URL`, and every exported constant is asserted to be
+  derived from `SUPABASE_PROJECT_REF`. Proven to fail on a hard-coded literal.
+- `tests/api-docs.test.mjs` — the endpoint table is now pinned in BOTH directions
+  ("served ⊆ documented" and "documented ⊆ served"), so a stale extra row fails.
+  Proven by inserting a fake `/legacy-gone` row.
+- `tests/options-store.test.mjs` — the default and reset paths assert equality
+  with `DEFAULT_BRIDGE_URL` instead of an `https://` prefix, which any https URL
+  would have satisfied. Proven by drifting the default.
+- `tests/browser_extension_test.py` — live options-page coverage: version and
+  protocol line, prefill from storage, a non-https URL refused with a mapped
+  message that never reaches storage, an https override persisting, and the log
+  level persisting. The empty-reset path stays in the node unit tests because it
+  would overwrite the live bridge URL the harness depends on.
+
+Three defects in that new harness code were caught by review before merge, all
+worth recording because they are easy to repeat:
+
+1. The log-level save waited for the status text `'Saved.'`, which the element
+   already contained, so the wait returned on its first poll and the storage read
+   raced the async submit handler. It now waits on the storage write itself.
+2. The prefill assertions were not synchronized to `options.js`'s async prefill.
+   Waiting on visibility would read empty fields.
+3. `wait_for_function` defaults to `requestAnimationFrame` polling, which is
+   paused in a hidden tab — so on the reused background tab the predicate could
+   never evaluate. Fixed with `bring_to_front()` (the operative fix; Playwright's
+   rAF-based click actionability has no polling option and hangs on a hidden tab
+   regardless) plus an explicit interval so the wait does not depend on frame
+   scheduling at all. The block also sits after every focus-integrity assertion
+   and reuses the popup tab instead of opening a second one, because an extra
+   Playwright page becomes the foreground tab.
+
+Flake evidence, recorded because it is easy to misattribute: the headed-Windows
+`page.pointer stole browser focus` / `FOREGROUND_REQUIRED` failure was measured at
+the BASE commit with these changes stashed — it failed 1 run in 3 before any of
+this work. It is a pre-existing local flake, not caused by this branch. With the
+block relocated, 3 of 3 runs passed. CI is the gate.
+
+Still NOT done, and still owner decisions: removing the unused `activeTab`
+manifest permission (held out of scope deliberately), a release so the shipped
+CRX contains the options page, SonarCloud project access, publishable-key
+rotation, and the independent audit.
+
 ## Enterprise UI & Docs Fase 5 MERGED to main (2026-10-02, owner decision)
 
 `chore/enterprise-ui-docs-phase5` was fast-forwarded into `main` (`--ff-only`)

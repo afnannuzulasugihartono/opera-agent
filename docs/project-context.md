@@ -1663,6 +1663,24 @@ Planning-only session: approved phased approach A. Fase 1 spec at
 on branch `chore/enterprise-standards-phase-1` (basis `a99978d`).
 No runtime, test, or infrastructure changes yet.
 
+## Phase 5 review follow-ups merged to main (2026-10-02)
+
+Closed the residual items from the Fase 5 final review on
+`chore/phase5-review-followups` (base `ab58874`, head `be7bbea`, 4 commits),
+fast-forwarded into `main`. Corrected a `getConfig` comment that misdescribed the
+log-level fallback (comment-only, with the `background.js` lock re-frozen and the
+no-executable-byte claim independently verified by hashing comment-stripped
+blobs). Hardened three tests that could not fail on the drift they claimed to
+guard: the update deploy unit is now pinned to derive from `SUPABASE_URL` rather
+than merely to omit one project ref, the api.md endpoint table is pinned in both
+directions so a stale row fails, and the options default is asserted by equality
+with the shared constant. Each new assertion was proven to fail against a
+deliberately drifted file and to pass once restored. Added live options-page
+coverage to the browser harness after three review-found defects in it were fixed
+(two async races and a `requestAnimationFrame` wait on a hidden tab). Suite is now
+**633/633**. The headed-Windows focus flake was measured at the base commit and
+pre-exists this work.
+
 ## Enterprise UI & docs track (2026-10-02, Fase 5 closed branch-only)
 
 Fase 5 (spec `docs/superpowers/specs/2026-10-02-enterprise-ui-docs-phase5-design.md`,

@@ -2643,8 +2643,11 @@ async def run(port, profile):
         await options.goto(f'chrome-extension://{ext_id}/options.html')
         # options.js prefills asynchronously after the load event, so waiting on
         # visibility would race the storage read and read empty fields.
-        # polling is set explicitly: wait_for_function defaults to requestAnimationFrame,
-        # which is paused in a background tab and would never evaluate the predicate.
+        # bring_to_front() above is what makes this tab foreground; polling is set
+        # explicitly because wait_for_function defaults to requestAnimationFrame,
+        # which is paused while a tab is hidden. BOTH are needed: the explicit
+        # interval cannot help Playwright's rAF-based click actionability checks
+        # below, which hang on a hidden tab regardless.
         await options.wait_for_function(
             "() => document.getElementById('bridgeUrl').value !== ''",
             polling=100, timeout=10000)
