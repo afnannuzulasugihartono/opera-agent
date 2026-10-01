@@ -51,7 +51,10 @@ jobs:
           command: |
             # Root deno.lock is machine-local (gitignored); the tracked
             # per-function lockfile is the reproducible surface, hence --no-lock.
-            curl -fsSL https://deno.land/install.sh | sh -s "v2.1.4" || curl -fsSL https://deno.land/install.sh | sh
+            # Pinned 2.9.6: 2.1.4 cannot resolve the SDK 1.30.0 wildcard
+            # types (mcp.js.d.ts wall); 2.9.x falls back to the adjacent
+            # mcp.d.ts. Verified locally 2026-10-02 (all 9 functions green).
+            curl -fsSL https://deno.land/install.sh | sh -s "v2.9.6" || curl -fsSL https://deno.land/install.sh | sh
             export DENO_INSTALL="$HOME/.deno"
             export PATH="$DENO_INSTALL/bin:$PATH"
             deno --version
