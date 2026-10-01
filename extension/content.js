@@ -157,7 +157,8 @@
     let pool = [];
     try {
       pool = [...document.querySelectorAll(INTERACTIVE_SELECTOR)].slice(0, 500);
-    } catch {
+    } catch (error) {
+      globalThis.OperaAgentLog?.warn?.('SIGNATURE_REBIND_POOL_FAILED', error?.message || String(error));
       return [];
     }
     return pool.filter((el) => {
@@ -179,7 +180,8 @@
     if (descriptor.stableKeySource === 'id' && descriptor.id) {
       try {
         pool = [...document.querySelectorAll(`#${CSS.escape(descriptor.id)}`)];
-      } catch {
+      } catch (error) {
+        globalThis.OperaAgentLog?.warn?.('REVALIDATION_POOL_FAILED', error?.message || String(error));
         return [];
       }
     } else if (descriptor.stableKeySource === 'href' && descriptor.href) {
@@ -606,7 +608,7 @@
     let shadowRoots = 0;
     const visit = (root) => {
       let matches;
-      try { matches = [...root.querySelectorAll(INTERACTIVE_SELECTOR)]; } catch { return; }
+      try { matches = [...root.querySelectorAll(INTERACTIVE_SELECTOR)]; } catch (error) { globalThis.OperaAgentLog?.debug?.('SHADOW_COLLECT_FAILED', error?.message || String(error)); return; }
       for (const el of matches) {
         if (!el.isConnected || seen.has(el)) continue;
         seen.add(el);
@@ -920,7 +922,8 @@
     let nodes;
     try {
       nodes = [...document.querySelectorAll(selector)];
-    } catch {
+    } catch (error) {
+      globalThis.OperaAgentLog?.warn?.('PAGE_QUERY_INVALID_SELECTOR', error?.message || String(error));
       throw new Error('Invalid CSS selector.');
     }
     if (args.visibleOnly !== false) nodes = nodes.filter(isVisible);
@@ -1046,7 +1049,7 @@
     const links = [];
     for (const a of document.querySelectorAll('a[href]')) {
       let url;
-      try { url = new URL(a.href, location.href); } catch { continue; }
+      try { url = new URL(a.href, location.href); } catch (error) { globalThis.OperaAgentLog?.debug?.('LINK_URL_PARSE_FAILED', error?.message || String(error)); continue; }
       if (!['http:', 'https:'].includes(url.protocol)) continue;
       if (sameOrigin && url.origin !== location.origin) continue;
       url.hash = '';
@@ -1114,10 +1117,10 @@
     if ('urlContains' in spec) check('urlContains', url.toLowerCase().includes(spec.urlContains));
     if ('urlChanged' in spec) check('urlChanged', url !== String(before.url || ''));
     if ('selectorAppears' in spec) {
-      try { check('selectorAppears', document.querySelector(spec.selectorAppears) != null); } catch { check('selectorAppears', false); }
+      try { check('selectorAppears', document.querySelector(spec.selectorAppears) != null); } catch (error) { globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_APPEARS_FAILED', error?.message || String(error)); check('selectorAppears', false); }
     }
     if ('selectorGone' in spec) {
-      try { check('selectorGone', document.querySelector(spec.selectorGone) == null); } catch { check('selectorGone', false); }
+      try { check('selectorGone', document.querySelector(spec.selectorGone) == null); } catch (error) { globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_GONE_FAILED', error?.message || String(error)); check('selectorGone', false); }
     }
     if ('textGone' in spec) check('textGone', !(document.body?.innerText || '').toLowerCase().includes(spec.textGone));
     if ('minMutationDelta' in spec) check('minMutationDelta', (mutationVersion - Number(before.beforeMutationVersion ?? mutationVersion)) >= spec.minMutationDelta);
@@ -1319,7 +1322,7 @@
       if (msg.includes('refusing automatic rebind')) {
         const m = msg.match(/candidates: (\[.*?\])/);
         let candidates;
-        try { candidates = m ? JSON.parse(m[1]) : []; } catch { candidates = []; }
+        try { candidates = m ? JSON.parse(m[1]) : []; } catch (error) { globalThis.OperaAgentLog?.debug?.('REBIND_CANDIDATES_PARSE_FAILED', error?.message || String(error)); candidates = []; }
         return { present: true, actionable: false, ambiguous: true, candidates, refusal: msg };
       }
       throw error;
@@ -1602,7 +1605,7 @@
         const el = resolveRef(args.ref);
         if (el) candidates = [el];
       } else if (args.selector) {
-        try { candidates = [...document.querySelectorAll(String(args.selector))]; } catch { throw new Error('Invalid CSS selector.'); }
+        try { candidates = [...document.querySelectorAll(String(args.selector))]; } catch (error) { globalThis.OperaAgentLog?.warn?.('WAIT_INVALID_SELECTOR', error?.message || String(error)); throw new Error('Invalid CSS selector.'); }
       } else {
         candidates = collectInteractiveNodes();
       }
@@ -1682,13 +1685,14 @@
       try {
         const el = document.querySelector(sel);
         facts[rule.ruleId] = { present: !!el };
-      } catch {
+      } catch (error) {
+        globalThis.OperaAgentLog?.warn?.('WATCH_FACTS_SELECTOR_FAILED', error?.message || String(error));
         facts[rule.ruleId] = { present: false, invalidSelector: true };
       }
     }
     let text = null;
     if (rules.some((r) => r.trigger?.kind === 'textMatch')) {
-      try { text = String(document.body?.innerText || '').slice(0, 20000); } catch { text = ''; }
+      try { text = String(document.body?.innerText || '').slice(0, 20000); } catch (error) { globalThis.OperaAgentLog?.debug?.('WATCH_TEXT_SNAPSHOT_FAILED', error?.message || String(error)); text = ''; }
     }
     return { facts, text };
   }
@@ -1696,7 +1700,7 @@
   function adShowingNow(adSelectors) {
     const list = Array.isArray(adSelectors) ? adSelectors.filter((s) => typeof s === 'string').slice(0, 8) : [];
     return list.some((sel) => {
-      try { return !!document.querySelector(sel); } catch { return false; }
+      try { return !!document.querySelector(sel); } catch (error) { globalThis.OperaAgentLog?.debug?.('AD_SELECTOR_PROBE_FAILED', error?.message || String(error)); return false; }
     });
   }
 
@@ -1794,7 +1798,8 @@
 
   try {
     chrome.runtime.onMessage.addListener(onMessage);
-  } catch {
+  } catch (error) {
+    globalThis.OperaAgentLog?.warn?.('MESSAGE_LISTENER_REGISTER_FAILED', error?.message || String(error));
     disposed = true;
     mutationObserver.disconnect();
   }

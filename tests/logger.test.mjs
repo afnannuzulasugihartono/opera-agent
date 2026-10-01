@@ -6,6 +6,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 await import('../extension/lib/agent-log.js');
 let Log = globalThis.OperaAgentLog;
@@ -135,4 +136,37 @@ test('logger: code and message are bounded like normalizeError', () => {
   }
   assert.ok(entry.code.length <= 100);
   assert.ok(entry.message.length <= 1000);
+});
+
+test('logger: hot path of 300 debug calls keeps a bounded 200-entry buffer with zero console output', () => {
+  // Review-Focus spam pin (Enterprise Phase 2 Task 7): content.js hot paths
+  // log per-iteration debug entries (selector probes, URL parses), so 300
+  // rapid debug calls must leave the buffer at exactly 200 with the newest
+  // retained and stay silent under the default warn threshold.
+  Log.clear();
+  Log.configure({ level: 'warn' });
+  const debugged = [];
+  const origDebug = console.debug;
+  console.debug = (...args) => { debugged.push(args.join(' ')); };
+  try {
+    for (let i = 0; i < 300; i += 1) Log.debug('HOT', `hot-${i}`);
+  } finally {
+    console.debug = origDebug;
+  }
+  const entries = Log.entries();
+  assert.equal(entries.length, 200);
+  assert.equal(entries[0].message, 'hot-100');
+  assert.equal(entries[199].message, 'hot-299');
+  assert.equal(debugged.length, 0, 'debug stays silent under the default warn threshold');
+});
+
+test('content.js still throws Invalid CSS selector on unparseable selectors', () => {
+  // Frozen-contract pin (Enterprise Phase 2 Task 7): pageQuery and wait_for
+  // validate caller selectors by throwing the exact literal
+  // `Invalid CSS selector.` A logged-catch conversion must warn first and
+  // still throw rather than swallow, so the literal is asserted by exact
+  // source-text match — intentional here because the message is the contract.
+  const src = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
+  const hits = src.match(/throw new Error\('Invalid CSS selector\.'\)/g) || [];
+  assert.equal(hits.length, 2, 'pageQuery and wait_for each keep their Invalid CSS selector throw');
 });
