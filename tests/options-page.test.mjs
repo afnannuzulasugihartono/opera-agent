@@ -39,7 +39,8 @@ test('getConfig applies a stored log level with a safe fallback and never throws
     apply({ logLevel: 'not-a-level' });
     apply({ logLevel: 'debug' });
   } finally {
-    globalThis.OperaAgentLog = saved;
+    if (saved === undefined) delete globalThis.OperaAgentLog;
+    else globalThis.OperaAgentLog = saved;
   }
   assert.deepEqual(calls, [{ level: 'warn' }, { level: 'debug' }]);
 
@@ -47,6 +48,7 @@ test('getConfig applies a stored log level with a safe fallback and never throws
   try {
     assert.doesNotThrow(() => new Function('cfg', guarded[0])({ logLevel: 'debug' }));
   } finally {
-    globalThis.OperaAgentLog = saved;
+    if (saved === undefined) delete globalThis.OperaAgentLog;
+    else globalThis.OperaAgentLog = saved;
   }
 });

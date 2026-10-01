@@ -19,6 +19,25 @@ test('known errors map to actionable messages', () => {
   );
 });
 
+test('options settings validation errors map to actionable messages', () => {
+  // The options page routes save failures through this mapper; the two
+  // client-side validation literals thrown by lib/options-store.js must not
+  // degrade to the generic backend diagnosis. The neighbouring unknown row
+  // pins that the generic fallback still covers everything else.
+  assert.equal(
+    userErrorMessage('Enter an https:// URL or leave empty to reset.'),
+    'Enter an https:// address, or leave the field empty to use the default bridge.',
+  );
+  assert.equal(
+    userErrorMessage('Log level must be debug, warn, or error.'),
+    'Choose a log level: debug, warn, or error.',
+  );
+  assert.equal(
+    userErrorMessage('Enter an http:// URL or leave empty to reset.'),
+    'Something went wrong. Run self-test, then check the connection.',
+  );
+});
+
 test('unknown, garbage, and token-shaped inputs fall back to generic', () => {
   assert.equal(userErrorMessage('Error: connect ECONNREFUSED 127.0.0.1'), 'Something went wrong. Run self-test, then check the connection.');
   assert.equal(userErrorMessage('ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'), 'Something went wrong. Run self-test, then check the connection.');
