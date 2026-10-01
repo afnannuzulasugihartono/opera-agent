@@ -344,6 +344,21 @@ async def wait_worker(context, timeout_ms=10000):
         await asyncio.sleep(0.1)
     raise RuntimeError('extension service worker did not start')
 
+async def wait_text(page, selector, needle, timeout_ms=5000):
+    """Wait until the element's text contains `needle`.
+
+    The settings status line ships holding a non-breaking space, so waiting on
+    visibility would return immediately against the placeholder.
+    """
+    deadline = time.time() + timeout_ms / 1000
+    while time.time() < deadline:
+        text = (await page.inner_text(selector)) or ''
+        if needle in text:
+            return text
+        await asyncio.sleep(0.1)
+    raise AssertionError(
+        f'{selector} never showed {needle!r}; last text was {(await page.inner_text(selector))!r}')
+
 def managed_browser_resources(func):
     async def wrapped():
         server = ThreadingHTTPServer((HOST, 0), Handler)
@@ -400,6 +415,51 @@ async def run(port, profile):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['version'] == '1.6.13'
         assert result['protocolVersion'] == 1
+
+        # Options page: the only settings surface. Read-only assertions plus one
+        # REJECTED save. The empty-reset path is deliberately not exercised here
+        # because it would overwrite the live bridge URL this harness depends on;
+        # it is covered by tests/options-store.test.mjs instead.
+        bridge_url = f'http://{HOST}:{port}/bridge'
+        options = await context.new_page()
+        await options.goto(f'chrome-extension://{ext_id}/options.html')
+        await options.locator('#bridgeUrl').wait_for(state='visible', timeout=10000)
+        version_line = await options.inner_text('#version')
+        assert '1.6.13' in version_line, version_line
+        assert 'Protocol 1' in version_line, version_line
+        assert await options.input_value('#bridgeUrl') == bridge_url
+        assert await options.input_value('#logLevel') == 'warn'
+
+        # A non-https value must be refused with a mapped message and must not
+        # reach storage.
+        await options.fill('#bridgeUrl', 'not-a-url')
+        await options.click('#saveButton')
+        status = await wait_text(options, '#saveStatus', 'https')
+        stored = await options.evaluate(
+            "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
+        assert stored == bridge_url, stored
+        assert await options.input_value('#bridgeUrl') == 'not-a-url'
+
+        # A valid https override must be accepted and persisted, then restored so
+        # the rest of the harness keeps using the local bridge.
+        await options.fill('#bridgeUrl', 'https://bridge.example.test/hook')
+        await options.click('#saveButton')
+        await wait_text(options, '#saveStatus', 'Saved')
+        stored = await options.evaluate(
+            "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
+        assert stored == 'https://bridge.example.test/hook', stored
+
+        # Log level persistence.
+        await options.select_option('#logLevel', 'debug')
+        await options.click('#saveButton')
+        await wait_text(options, '#saveStatus', 'Saved')
+        level = await options.evaluate(
+            "async () => (await chrome.storage.local.get(['logLevel'])).logLevel")
+        assert level == 'debug', level
+
+        await options.evaluate(
+            f"async () => chrome.storage.local.set({{bridgeUrl:{bridge_url!r}}})")
+        await options.close()
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
