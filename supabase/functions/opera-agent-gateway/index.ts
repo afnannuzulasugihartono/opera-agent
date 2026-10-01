@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js@2.116.0/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
 
 // U-T universal fastpath gateway: ONE HTTP round trip from any AI platform
