@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
+import { createEdgeLog } from "../_shared/edge-log.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -189,7 +190,7 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: "Unknown action." }, 400);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error("opera-agent-bridge error", message.slice(0, 500));
+    createEdgeLog({}).error("opera-agent-bridge error", message);
     return json({ ok: false, error: "Bridge request failed." }, 500);
   }
 });

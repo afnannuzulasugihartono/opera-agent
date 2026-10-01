@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
+import { createEdgeLog } from "../_shared/edge-log.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -642,7 +643,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const code = error instanceof WorkflowError ? error.code : "RUNNER_ERROR";
     const message = error instanceof Error ? error.message : String(error);
-    console.error("opera-agent-runner", code, message.slice(0, 500));
+    createEdgeLog({}).error(code, message);
     return json({ ok: false, error: { code, message } }, code === "UNAUTHORIZED" ? 401 : 500);
   }
 });

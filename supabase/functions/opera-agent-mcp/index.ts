@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createClient } from "@supabase/supabase-js";
 import * as z from "zod/v4";
+import { createEdgeLog } from "../_shared/edge-log.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -719,7 +720,7 @@ Deno.serve(async (req: Request) => {
     for (const [key, value] of Object.entries(corsHeaders)) headers.set(key, value);
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   } catch (error) {
-    console.error("opera-agent-mcp", errorMessage(error));
+    createEdgeLog({}).error("opera-agent-mcp", errorMessage(error));
     return json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error." }, id: null }, 500);
   }
 });

@@ -40,7 +40,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   move_pointer: 'b8adb741ad19103a',
   click_at: 'c50c98d5f209134b',
   drag_pointer: '52474fc5dc262439',
-  wheel_at: '5b9c6fed7bbce95a'
+  wheel_at: 'ef8179d548a9766a' // Re-frozen 2026-10-01: Task 8 edge-log conversion (last tool block runs to EOF, covering the converted Deno.serve catch; schema bytes unchanged).
 });
 
 // The only tool whose schema the R9-B keyboard commit changed. Everything else
