@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opera Agent Settings</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Options opens in a full browser tab; widen the popup's fixed 352px
+       column and cover the controls styles.css does not style. */
+    html,
+    body { width: auto; max-width: 560px; }
+    select {
+      width: 100%;
+      margin: 0 0 8px;
+      padding: 8px 11px;
+      border: 0;
+      border-radius: 9px;
+      outline: none;
+      background: var(--surface-soft);
+      box-shadow: 0 0 0 1px var(--surface-raised);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+    }
+    select:focus { box-shadow: 0 0 0 1px var(--surface-raised), 0 0 0 4px rgba(20, 184, 166, .35); }
+    .troubleshoot { margin: 8px 0 0; padding: 0 0 0 16px; color: var(--muted); font-size: 10.5px; line-height: 1.55; }
+    .troubleshoot li { margin: 0 0 6px; overflow-wrap: anywhere; }
+    .troubleshoot li:last-child { margin-bottom: 0; }
+    .troubleshoot strong { color: var(--text); font-weight: 550; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="app-header">
+      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#fff" fill-opacity=".96"/></svg></div>
+      <div class="brand-copy">
+        <p class="eyebrow">Local browser bridge</p>
+        <h1>Settings</h1>
+        <p><span id="version">&nbsp;</span></p>
+      </div>
+    </header>
+
+    <section class="card" aria-labelledby="connectionTitle">
+      <div class="section-heading">
+        <h2 id="connectionTitle">Connection</h2>
+        <span class="secure-label">Local only</span>
+      </div>
+      <form id="settingsForm">
+        <label for="bridgeUrl">Bridge URL</label>
+        <input id="bridgeUrl" type="text" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="Leave empty to reset to the default bridge" />
+        <label for="logLevel">Log level</label>
+        <select id="logLevel">
+          <option value="debug">debug</option>
+          <option value="warn">warn</option>
+          <option value="error">error</option>
+        </select>
+        <button id="saveButton" type="submit" class="primary">Save settings</button>
+        <p id="saveStatus" class="hint" role="status" aria-live="polite">&nbsp;</p>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="troubleshootTitle">
+      <div class="section-heading">
+        <h2 id="troubleshootTitle">Troubleshooting</h2>
+      </div>
+      <ul class="troubleshoot">
+        <li><strong>Install:</strong> load the unpacked extension from <code>opera://extensions</code> and accept the requested permissions, including debugger access for trusted input.</li>
+        <li><strong>Pairing:</strong> pairing rejected? Generate a fresh one-time pairing value from the connected Supabase project, then pair again from the popup.</li>
+        <li><strong>Bridge override:</strong> an https:// address here overrides the default bridge; leave the field empty and save to reset to the default.</li>
+        <li><strong>Log level:</strong> debug, warn, or error &mdash; debug is the most verbose and the default is warn.</li>
+        <li><strong>Self-test:</strong> run self-test from the popup to probe the bridge, then read the connection line.</li>
+      </ul>
+    </section>
+
+    <footer>Private by design &middot; Background-first &middot; Local execution</footer>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

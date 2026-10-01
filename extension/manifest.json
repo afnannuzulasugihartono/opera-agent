@@ -41,6 +41,7 @@
     "default_title": "Opera Agent",
     "default_popup": "popup.html"
   },
+  "options_page": "options.html",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://127.0.0.1:* https://*.supabase.co"
   },

@@ -29,7 +29,7 @@ if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavai
 import { buildAxSummary } from './lib/ax-summary.js';
 import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
 
-const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId'];
+const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel'];
 const PRIVATE_TABS_KEY = 'privateTabIds';
 const WAKE_ALARM = 'opera-agent-wake';
 const HTTP_URL_RE = /^https?:\/\//i;
@@ -71,12 +71,17 @@ function randomToken() {
 
 async function getConfig() {
   const cfg = await chrome.storage.local.get(STORAGE_KEYS);
+  // Task 3: apply the stored log level to the shared logger. Guarded so a
+  // corrupt or invalid stored value falls back silently to the current
+  // threshold; getConfig never throws.
+  try { globalThis.OperaAgentLog?.configure?.({ level: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn' }); } catch {}
   return {
     paired: !!cfg.paired,
     deviceName: String(cfg.deviceName || 'opera'),
     deviceToken: String(cfg.deviceToken || ''),
     deviceId: String(cfg.deviceId || ''),
-    bridgeUrl: String(cfg.bridgeUrl || DEFAULT_BRIDGE_URL)
+    bridgeUrl: String(cfg.bridgeUrl || DEFAULT_BRIDGE_URL),
+    logLevel: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn'
   };
 }
 
@@ -1679,7 +1684,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
-  if (changes.paired || changes.deviceToken || changes.bridgeUrl || changes.deviceName) {
+  if (changes.paired || changes.deviceToken || changes.bridgeUrl || changes.deviceName || changes.logLevel) {
     restartPullLoop();
   }
 });
