@@ -24,8 +24,10 @@ test('update function derives base from SUPABASE_URL, no literal ref', async () 
   // negative one -- without it, replacing the derivation with any other literal
   // URL would still pass.
   assert.doesNotMatch(src, /nenmkmtvjremqphfqnfw/);
-  // Quote-style tolerant on purpose: the contract is "derives from the
-  // environment with a trailing-slash strip", not one exact spelling of it.
+  // Quote-style tolerant on purpose: the contract is that this deploy unit
+  // derives its base from the environment rather than hard-coding it. The
+  // replacement pattern is deliberately NOT asserted; only the
+  // SUPABASE_URL-derived interpolation is.
   assert.match(src, /\$\{SUPABASE_URL\.replace\(\/[^)]*\/,\s*["']["']\)\}/);
 });
 

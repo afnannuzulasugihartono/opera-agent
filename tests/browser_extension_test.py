@@ -371,13 +371,21 @@ async def wait_stored(page, key, expected, timeout_ms=5000):
     reading storage straight after a click races the write.
     """
     deadline = time.time() + timeout_ms / 1000
+    value = None
     while time.time() < deadline:
         value = await page.evaluate(
             'async (k) => (await chrome.storage.local.get([k]))[k]', key)
         if value == expected:
             return value
         await asyncio.sleep(0.1)
-    raise AssertionError(f'storage[{key!r}] never became {expected!r}; last value was {value!r}')
+    status = ''
+    try:
+        status = await page.inner_text('#saveStatus')
+    except Exception:
+        pass
+    raise AssertionError(
+        f'storage[{key!r}] never became {expected!r}; last value was {value!r};'
+        f' status line was {status!r}')
 
 def managed_browser_resources(func):
     async def wrapped():
@@ -2631,11 +2639,15 @@ async def run(port, profile):
         # live bridge URL the extension still needs.
         bridge_url = f'http://{HOST}:{port}/bridge'
         options = popup
+        await options.bring_to_front()
         await options.goto(f'chrome-extension://{ext_id}/options.html')
         # options.js prefills asynchronously after the load event, so waiting on
         # visibility would race the storage read and read empty fields.
+        # polling is set explicitly: wait_for_function defaults to requestAnimationFrame,
+        # which is paused in a background tab and would never evaluate the predicate.
         await options.wait_for_function(
-            "() => document.getElementById('bridgeUrl').value !== ''", timeout=10000)
+            "() => document.getElementById('bridgeUrl').value !== ''",
+            polling=100, timeout=10000)
         version_line = await options.inner_text('#version')
         assert '1.6.13' in version_line, version_line
         assert 'Protocol 1' in version_line, version_line
