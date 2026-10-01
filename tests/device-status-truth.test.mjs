@@ -22,15 +22,25 @@ const repoRoot = new URL('../', import.meta.url);
 const runbook = await readFile(new URL('docs/runbook.md', repoRoot), 'utf8');
 
 // Every shape by which a source could assign the literal to a device status.
+//
+// KNOWN LIMITS, so nobody over-reads this lock. It does NOT see: a value passed
+// through a variable (`const s = 'disabled'; update({ status: s })`), a
+// parameter bound from an array (`set status = $1` with $1 = 'disabled'), a value
+// assembled at runtime (`concat('dis','abled')`), or a row read back out of JSON.
+// Those are deliberate: a lock that tried to follow values would have to model
+// evaluation, and a lock that guesses would fail on correct code. What this DOES
+// catch is the plain and overwhelmingly likely form, which is the form the audit
+// request proposes.
 const DISABLE_WRITER = [
-  // Raw SQL: status = 'disabled', status='disabled', status = $1 (where the bound
-  // value could be this literal) is deliberately NOT matched -- see PARAMETERISED.
+  // Raw SQL: status = 'disabled' / status='disabled' / status = "disabled".
   /\bstatus\s*=\s*['"`]disabled['"`]/i,
-  // Object literal / SDK update: { status: 'disabled' } or { status: "disabled" }.
-  /\bstatus\s*:\s*['"`]disabled['"`]/i,
-  // A writer parameterised on status whose default is the literal:
-  // p_status text default 'disabled'.
-  /\bstatus\b[^\n;]{0,80}?\bdefault\s+['"`]disabled['"`]/i
+  // Object literal / SDK update: { status: 'disabled' } in any quote style,
+  // including a prefixed parameter name such as { p_status: 'disabled' }.
+  /[\w.]*status\s*:\s*['"`]disabled['"`]/i,
+  // A writer parameterised on status whose default is the literal. The name may
+  // carry a prefix (`p_status`, `p_device_status`), which a plain \bstatus\b cannot
+  // match because `_` is a word character.
+  /[\w.]*status\b[^\n;]{0,80}?\bdefault\s+['"`]disabled['"`]/i
 ];
 
 const sources = [

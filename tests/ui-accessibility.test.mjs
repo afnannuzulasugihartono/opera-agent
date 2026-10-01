@@ -67,16 +67,24 @@ function hasIntrinsicName(tag) {
 
 // Text content of the element STARTING AT `from`, up to its matching close tag.
 // `from` must be the match index of this exact occurrence: resolving by tag text
-// alone would let a nameless button inherit a sibling's identical open tag.
+// alone would let a nameless element inherit a sibling's identical open tag.
+// Close tags are matched case-insensitively and tolerate whitespace before `>`,
+// because both are legal HTML and neither should read as a missing name.
 function textOf(src, tag, from) {
   const name = tagNameOf(tag);
-  const close = `</${name}>`;
-  const end = src.indexOf(close, from);
-  if (from < 0 || end === -1) return '';
-  const inner = src.slice(from + tag.length, end);
-  // A button named only by an image uses the image's alt text.
-  const alt = inner.match(/<img\b[^>]*\balt\s*=\s*["']([^"']+)["']/i);
-  return `${inner.replace(/<[^>]*>/g, ' ')} ${alt ? alt[1] : ''}`.replace(/\s+/g, ' ').trim();
+  const close = new RegExp(`</${name}\\s*>`, 'i');
+  const rest = src.slice(from + tag.length);
+  const m = close.exec(rest);
+  const inner = m ? rest.slice(0, m.index) : '';
+  // A name inside aria-hidden is not exposed to assistive technology, so it does
+  // not name the control.
+  const exposed = inner.replace(
+    /<([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*aria-hidden\s*=\s*"true"[^>]*>[\s\S]*?<\/\1\s*>/gi,
+    ' '
+  );
+  // A control named only by an image uses the image's alt text.
+  const alt = exposed.match(/<img\b[^>]*\balt\s*=\s*["']([^"']+)["']/i);
+  return `${exposed.replace(/<[^>]*>/g, ' ')} ${alt ? alt[1] : ''}`.replace(/\s+/g, ' ').trim();
 }
 
 function tagNameOf(tag) {
@@ -128,13 +136,22 @@ for (const surface of surfaces) {
         .map((m) => attr(m[0], 'for'))
         .filter(Boolean)
     );
-    // The implicit association -- <label>Name <input></label> -- is legal and
-    // common, so it counts. Detected by whether the nearest preceding opening tag
-    // before this control is a <label> that has not been closed yet.
+    // The implicit association -- <label>Name <input></label> -- is legal and common,
+    // so it counts, including when the label wraps markup such as <br> or a <span>.
+    // It does NOT count when the label contains no text, because an empty label
+    // names nothing.
     const wrappingLabel = (at) => {
       const before = src.slice(0, at);
-      const lastOpen = [...before.matchAll(/<(\/?)([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)].pop();
-      return Boolean(lastOpen) && lastOpen[1] === '' && lastOpen[2].toLowerCase() === 'label';
+      // Consider only <label> tags, not the last tag of any kind: a label may
+      // legitimately contain <br> or a <span>, and those must not hide the
+      // enclosing label.
+      const labels = [...before.matchAll(/<(\/?)label\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)];
+      const last = labels.pop();
+      // Group 1 is the leading slash: '' for an opening tag, '/' for a closing one.
+      // An opening tag is the one still unclosed at this point.
+      if (!last || last[1] === '/') return false;
+      const labelBody = src.slice(last.index + last[0].length, at);
+      return labelBody.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() !== '';
     };
     for (const name of ['input', 'select', 'textarea']) {
       for (const m of src.matchAll(tagPattern(name))) {
@@ -164,9 +181,9 @@ for (const surface of surfaces) {
     for (const img of tags(src, 'img')) {
       assert.ok(hasAttr(img, 'alt'), `img carries an alt attribute (may be empty): ${img}`);
     }
-    for (const svg of tags(src, 'svg')) {
-      const at = src.indexOf(svg);
-      const insideHiddenWrapper = hidden.some(([start, end]) => at >= start && at < end);
+    for (const m of src.matchAll(tagPattern('svg'))) {
+      const svg = m[0];
+      const insideHiddenWrapper = hidden.some(([start, end]) => m.index >= start && m.index < end);
       assert.ok(
         hasAttr(svg, 'aria-hidden') || insideHiddenWrapper || hasIntrinsicName(svg),
         `svg is hidden or labelled: ${svg}`
@@ -190,7 +207,7 @@ for (const surface of surfaces) {
   test(`${surface.name} uses unique ids`, async () => {
     const src = await readFile(surface.url, 'utf8');
     // Quote-aware and hyphen-aware: `id='a'` counts, `data-id="a"` does not.
-    const ids = [...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/g)].map((m) => m[1]);
+    const ids = [...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
     const seen = new Set();
     const duplicates = ids.filter((id) => (seen.has(id) ? true : (seen.add(id), false)));
     assert.deepEqual(duplicates, [], `duplicate ids: ${duplicates.join(', ')}`);
@@ -198,7 +215,7 @@ for (const surface of surfaces) {
 
   test(`${surface.name} resolves every aria reference to a real element`, async () => {
     const src = await readFile(surface.url, 'utf8');
-    const ids = new Set([...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/g)].map((m) => m[1]));
+    const ids = new Set([...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]));
     for (const tag of anyTags(src)) {
       for (const name of ['aria-labelledby', 'aria-describedby', 'aria-controls']) {
         const value = attr(tag, name);
@@ -214,21 +231,24 @@ for (const surface of surfaces) {
     const src = await readFile(surface.url, 'utf8');
     assert.doesNotMatch(
       src,
-      /(?<![\w-])tabindex\s*=\s*["']?[1-9]/i,
+      /(?<![\w-])tabindex\s*=\s*["']?\s*\+?[1-9]/i,
       'no positive tabindex reorders focus'
     );
-    // Any element that is not natively interactive, plus anchors (which are only
-    // focusable with href).
-    const nonInteractive = 'div|span|p|li|section|header|footer|h1|h2|h3|h4|h5|h6|td|th|dt|dd|label|ul|ol';
+    // Any element that is not natively interactive. Anchors are handled
+    // separately because they are focusable only when they carry href.
+    const nonInteractive = 'div|span|p|li|section|header|footer|main|nav|article|aside|figure'
+      + '|h1|h2|h3|h4|h5|h6|td|th|tr|thead|tbody|table|dt|dd|label|ul|ol|img|form';
     for (const tag of src.match(new RegExp(`<(?:${nonInteractive})\\b(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi')) || []) {
       assert.doesNotMatch(tag, /\bon(?:click|dblclick|mousedown|mouseup)\s*=/i,
         `click handler on a non-focusable element: ${tag}`);
     }
-    // Anchors are focusable only with href; an href-less one must not carry the
-    // click handler either.
+    // An anchor is focusable only with href, so only an href-less anchor is a
+    // violation here. A handler on a real link is a different smell and out of
+    // scope for this file.
     for (const tag of src.match(/<a\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi) || []) {
+      if (hasAttr(tag, 'href')) continue;
       assert.doesNotMatch(tag, /\bon(?:click|dblclick|mousedown|mouseup)\s*=/i,
-        `click handler on an anchor: ${tag}`);
+        `click handler on an href-less anchor: ${tag}`);
     }
   });
 }

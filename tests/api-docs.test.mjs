@@ -83,28 +83,62 @@ test('api.md documents every error code the gateway emits', async () => {
   }
 });
 
-test('the gateway reads no query-string token, and api.md says so', async () => {
-  // The narrative states that ?apiKey= is not a carrier on ANY route. That
-  // correction is easy to silently re-drift, because the gateway's own header
-  // comment used to describe the opposite. Pin both halves: the code must read no
-  // query string, and the document must keep saying so.
+test('extractToken accepts exactly the three documented carriers', async () => {
+  // The narrative states that ?apiKey= is not a carrier on ANY route. Rather than
+  // trying to ban every way a query string could be parsed -- which misses
+  // URLSearchParams and helper functions and falsely rejects a legitimate
+  // non-token query parameter -- this pins the carrier set POSITIVELY inside the
+  // function that decides it. That is the contract docs/api.md actually documents,
+  // and it holds however the surrounding code is written.
   const gateway = await readFile(gatewayPath, 'utf8');
-  const doc = await readFile(docPath, 'utf8');
   const code = stripComments(gateway, 'javascript');
-
-  assert.doesNotMatch(
-    code,
-    /searchParams|url\.search\b|url\.searchParams\b|\?apiKey=/,
-    'the gateway reads no query-string token'
-  );
 
   const extract = code.match(/function extractToken[\s\S]*?\n}/);
   assert.ok(extract, 'extractToken is present in the gateway');
-  for (const carrier of ['x-opera-agent-token', 'authorization', 'apiKey']) {
-    assert.ok(extract[0].includes(carrier), `extractToken reads the ${carrier} carrier`);
-  }
-  assert.doesNotMatch(extract[0], /searchParams|url\.search/, 'extractToken reads no query parameter');
+  const body = extract[0];
 
+  for (const carrier of ['x-opera-agent-token', 'authorization', 'apiKey']) {
+    assert.ok(body.includes(carrier), `extractToken reads the ${carrier} carrier`);
+  }
+  // No query-string access of any spelling, scoped to the deciding function only.
+  assert.doesNotMatch(
+    body,
+    /searchParams|\.search\b|searchParams\b|URLSearchParams|\?apiKey=/,
+    'extractToken reads no query-string carrier'
+  );
+  // And it consults no other source: the only request member it touches is headers.
+  const requestMembers = [...body.matchAll(/\breq(?:uest)?\.(\w+)/g)].map((m) => m[1]);
+  assert.deepEqual(
+    [...new Set(requestMembers)],
+    ['headers'],
+    'extractToken reads nothing but request headers'
+  );
+});
+
+test('the security policy states the corrected carrier set', async () => {
+  // SECURITY.md carried the same false premise and is the most-read statement of
+  // the topic, so it is pinned here rather than left to rot. The patterns allow a
+  // markdown blockquote continuation (`\n> `) inside a sentence.
+  const security = await readFile(new URL('../SECURITY.md', import.meta.url), 'utf8');
+  assert.match(
+    security,
+    /Query tokens[\s>]+are confined to the read-only/,
+    'SECURITY.md keeps the original sentence as history'
+  );
+  assert.match(
+    security,
+    /No gateway[\s>]+route reads the query string/,
+    'SECURITY.md must carry the correction'
+  );
+  assert.match(
+    security,
+    /tests\/api-docs\.test\.mjs/,
+    'SECURITY.md must point at the test that enforces it'
+  );
+});
+
+test('api.md states that the query string is never a carrier', async () => {
+  const doc = await readFile(docPath, 'utf8');
   assert.match(
     doc,
     /A `\?apiKey=` query parameter is \*\*never\*\* read by the gateway/,

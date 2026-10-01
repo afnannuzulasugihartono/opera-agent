@@ -1,28 +1,123 @@
 // Source-text scanning helpers for drift locks.
 //
 // WHY THIS EXISTS: several locks assert something about code that comments and
-// documentation also discuss in prose. Without stripping comments those locks
+// documentation also discuss in prose. Without neutralising comments those locks
 // fire on a sentence that merely *describes* the behaviour, which makes them
 // noisy and trains reviewers to ignore them.
 //
-// SQL and JavaScript share two comment forms: `--` to end of line and `/* */`.
-// JavaScript adds `//`, which is only treated as a comment when it starts a line
-// (optionally indented) so that a `//` inside a URL string is left alone.
+// WHY A STATE MACHINE INSTEAD OF REGEXES: the first version of this file removed
+// comment text with regular expressions, which had two failure modes that both
+// produce a FALSE PASS on a security-relevant lock -- exactly the wrong direction
+// to fail. A `/*` inside a string literal started a block comment that swallowed
+// the rest of the file, and a `//` line inside a template literal blanked real
+// code. This scanner is a small character-level state machine so that comment and
+// string states are mutually exclusive and neither can delete live code.
 
 const LINE_COMMENT = { sql: /^\s*--/, javascript: /^\s*\/\// };
 
 /**
- * Remove comments so a scan cannot match prose that only describes code.
+ * Replace comment text with equivalent whitespace, preserving offsets and line
+ * structure so that a caller scanning the result cannot accidentally join two
+ * previously-separate tokens.
  *
  * @param {string} src
  * @param {'sql'|'javascript'} kind
- * @returns {string} the source with comment text blanked out
+ * @returns {string} the source with comments blanked, same length and line count
  */
 export function stripComments(src, kind) {
   const lineStart = LINE_COMMENT[kind];
-  const lines = src.split('\n');
-  const withoutLines = lines.map((line) => (lineStart.test(line) ? '' : line));
-  return withoutLines.join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
+  const out = [];
+  let i = 0;
+  // 'code' | 'sq' | 'dq' | 'bt' | 'block' | 'line'
+  let state = 'code';
+  // True while nothing but whitespace has been seen on the current line, so a
+  // `//` that begins a line is a comment and a `//` after code is not.
+  let lineBlank = true;
+
+  while (i < src.length) {
+    const ch = src[i];
+    const next = src[i + 1];
+
+    if (state === 'code') {
+      if (ch === '\n') {
+        out.push(ch);
+        lineBlank = true;
+        i += 1;
+        continue;
+      }
+      if (kind !== 'sql' && ch === '/' && next === '/' && lineBlank) {
+        state = 'line';
+        out.push(' ', ' ');
+        i += 2;
+        continue;
+      }
+      if (kind === 'sql' && ch === '-' && next === '-') {
+        state = 'line';
+        out.push(' ', ' ');
+        i += 2;
+        continue;
+      }
+      if (ch === '/' && next === '*') {
+        state = 'block';
+        out.push(' ', ' ');
+        i += 2;
+        continue;
+      }
+      if (ch === "'") state = 'sq';
+      else if (ch === '"') state = 'dq';
+      else if (ch === '`') state = 'bt';
+      if (!/\s/.test(ch)) lineBlank = false;
+      out.push(ch);
+      i += 1;
+      continue;
+    }
+
+    if (state === 'line') {
+      if (ch === '\n') {
+        state = 'code';
+        lineBlank = true;
+        out.push(ch);
+      } else {
+        out.push(' ');
+      }
+      i += 1;
+      continue;
+    }
+
+    if (state === 'block') {
+      if (ch === '*' && next === '/') {
+        out.push(' ', ' ');
+        i += 2;
+        state = 'code';
+        continue;
+      }
+      if (ch === '\n') lineBlank = true;
+      out.push(ch === '\n' ? '\n' : ' ');
+      i += 1;
+      continue;
+    }
+
+    // Inside a string of some flavour. A newline inside a single- or
+    // double-quoted string is not valid JS/SQL, so return to code rather than
+    // swallowing the remainder of the file. Template literals may span lines.
+    if (ch === '\\') {
+      out.push(ch, next ?? '');
+      i += 2;
+      continue;
+    }
+    if ((state === 'sq' && ch === "'") || (state === 'dq' && ch === '"') || (state === 'bt' && ch === '`')) {
+      state = 'code';
+    }
+    if (ch === '\n') {
+      lineBlank = true;
+      if (state !== 'bt') state = 'code';
+    } else if (!/\s/.test(ch)) {
+      lineBlank = false;
+    }
+    out.push(ch);
+    i += 1;
+  }
+  return out.join('');
 }
 
 /**
