@@ -1889,7 +1889,6 @@ checkpoint.
   not rerun (no code touched).
 
 ## Integration decision (2026-09-30, owner-chosen option B / hold)
-
 - Fase 1 branch `chore/enterprise-standards-phase-1` (tip `0f2c6dc`,
   pushed, in sync) is NOT merged: head is CI-red at the new deno gate
   (pre-existing debt, Fase 2 scope), and `AGENTS.md` admits only CI-green
@@ -1931,3 +1930,22 @@ asks:
 Exact-next: Fase 2 — deno debt (punch list with codes/locations in the
 `e3221a7` trailer + task-7-report), Sonar per-issue read with project
 access, then the owner decides promotion.
+
+## Enterprise track merged to main (2026-10-02, owner-chosen Option 1)
+
+- Owner chose local merge with EXPLICIT acceptance of residual risk (stated
+  in-session before merging): head `b785e85` is CI-red ONLY at the new deno
+  gate for `opera-agent-mcp` (pre-existing SDK-1.30.0/Deno-2.1.4
+  `mcp.js.d.ts` resolution wall, environmental, out of Fase 1+2 scope).
+  This knowingly deviates from the binding rule that `main` takes only
+  CI-green heads — recorded here so no future session mistakes it for a
+  green baseline.
+- Merge: `git checkout main` (pulled `79df5a1`→`a99978d`, ff) +
+  `git merge --ff-only chore/enterprise-standards-phase-1` → `b785e85`.
+  Merged-result verification: `npm test` 599/599 PASS, `npm run check` ok
+  (26/83/1.6.13).
+- NOT pushed: `main` is locally ahead of `origin/main` (`a99978d`).
+  Pushing publishes the red head (CI `ci` will fail at the deno gate;
+  Sonar will re-evaluate the merged tree) — owner decision pending.
+- Track branch archived as tag `archive/chore/enterprise-standards-phase-1`
+  at `b785e85`; local branch deleted after merge per finishing flow.
