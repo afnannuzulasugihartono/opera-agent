@@ -30,3 +30,12 @@ maintainer. Include: affected version, reproduction steps, and impact.
 Proposed response targets: acknowledgement within 5 business days,
 critical fix or mitigation within 30 days. These targets are proposed
 for owner adjustment during review.
+
+## Token transport
+
+The gateway accepts device tokens via header (`x-opera-agent-token`,
+`Authorization: Bearer`) or `body.apiKey` because GPT Actions cannot
+set custom headers (platform limitation, not a choice). Query tokens
+are confined to the read-only `/openapi.json` and `/health` surfaces.
+Tokens are verified then dropped: regression tests pin that they never
+appear in logs, error payloads, or persisted records.
