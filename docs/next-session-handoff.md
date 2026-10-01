@@ -2051,3 +2051,19 @@ child on `chore/enterprise-security-phase4`, remote in sync after push.
 - Archive tags: `archive/chore/deno-wall-infra` at `7e6e7d3`;
   `archive/chore/enterprise-security-phase4` at `aca6b98`. Local
   branches deleted after merge per finishing flow.
+
+## Linear rebuild pushed to main (2026-10-02) — first green main since R9
+
+- `origin/main` rejects merge commits (`6e0f349` violation), so the line
+  was rebuilt linearly via cherry-pick onto `ae7ede9` (empty retrigger
+  skipped, merge commit dropped, content proven byte-identical by empty
+  tree diff). Pushed as `d493aef`; local `main` reset to it.
+- CI on `d493aef`: ALL CircleCI workflows green (unit, secrets, audit,
+  deno-install/lint/check, sbom, browser) + Vercel; combined success.
+  Sonar still fails on C Reliability Rating on New Code (per-issue
+  detail needs project access — unchanged wall).
+- Cleanup: 3 archive tags pushed; remote track branches
+  (`enterprise-standards-phase-1`, `deno-wall-infra`,
+  `enterprise-security-phase4`) deleted. No `chore/*` branches remain
+  on remote. Remaining: Sonar access decision, Fase 5, publishable
+  rotation, independent audit, production promotion (all owner calls).
