@@ -6,7 +6,7 @@
 > `docs/next-session-handoff.md`.
 >
 > Each entry below was learned the hard way and is worth more than a paragraph of
-> description would be. Keep the file under roughly 100 lines.
+> description would be. Keep the file under roughly 120 lines.
 
 ## Toolchain facts
 

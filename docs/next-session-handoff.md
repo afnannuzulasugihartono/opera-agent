@@ -69,14 +69,19 @@ None of these is blocked on engineering work:
 
 ## Exact next action
 
-Nothing is in progress. Await an owner decision from the list above. If new work
-is requested, branch from `main` and follow the session lifecycle rules in
-`AGENTS.md`.
+`chore/trim-context-docs` is complete and awaiting its closeout:
+
+1. Confirm all 8 CircleCI workflows are green on the branch tip.
+2. Fast-forward `main` onto this branch with `--ff-only` and push.
+3. Create `archive/chore/trim-context-docs` at the merged head, then delete the
+   remote track branch.
+4. Then there is nothing in progress. Await an owner decision from the list above.
 
 ## Rules for the next session
 
-- Verify the tree is clean and that `main` equals the recorded tip before the
-  first write.
+- Before the first write, verify the tree is clean and that `HEAD` equals the
+  branch tip you are on. Do not assume `main` is the baseline; resolve the current
+  branch with `git branch --show-current` and its tip with `git log -1`.
 - Do not merge, promote, or sign anything without an explicit owner instruction.
 - A claim in a commit message or a test comment is not evidence. If it says
   something is locked, make the lock fail before you repeat it.
