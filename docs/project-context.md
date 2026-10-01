@@ -1671,9 +1671,10 @@ Code head `0a5bbf3`: shared fail-closed CORS resolver
 (`supabase/functions/_shared/cors.js`) wired into gateway/mcp/update;
 token-hygiene regression locks + `SECURITY.md` Token transport note;
 mapped popup/consent user-facing errors (no raw internals); publishable
-key env-first in the 8d scripts. Suite 615/615, `npm run check` ok
+key env-first in the 2 ps1 scripts. Suite 615/615, `npm run check` ok
 (26 primitives, 85 safety files, 1.6.13), Deno 2.9.6 lint + 9/9
 function checks green, full CI green on the code head (9/9 check-runs +
 combined status success). No merge to `main`, no PR - merge is an
 explicit owner decision. Parked for later: `vm:636` + update log calls
-outside the hygiene scope; consent SDK-bump fragility.
+outside the hygiene scope; consent SDK-bump fragility; `cors.js`
+stale lint-rule comment (zero runtime effect).
