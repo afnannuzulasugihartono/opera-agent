@@ -17,8 +17,10 @@ Companion documents:
 
 ## Conventions used here
 
-Two endpoint bases appear repeatedly. Both are read from
-`extension/lib/endpoints.js`:
+Three function bases appear repeatedly, each built from the same project URL.
+The bridge and update bases are exported by `extension/lib/endpoints.js` as
+`DEFAULT_BRIDGE_URL` and `UPDATE_BASE_URL`; the **gateway base is not in that
+module at all** and is documented in `docs/api.md:19-23`:
 
 ```bash
 SUPABASE_URL="https://nenmkmtvjremqphfqnfw.supabase.co"
@@ -38,6 +40,22 @@ functions are reachable from the SQL editor as the owner and **not** through
 PostgREST with the service key — a PostgREST call will fail with a permission
 error. The two cleanup RPCs are the opposite: they *are* granted to
 `service_role` (`…_goal_head.sql:242`, `…_reactive_vm_host.sql:741`).
+
+**Disabled devices — one rule for every incident.** A row in
+`public.opera_devices` with `status = 'disabled'` was disabled by a human:
+nothing in this repository writes `disabled`, and nothing writes it back.
+**Re-enabling one is owner-only. Do not do it during an incident** (see
+*Actions that are owner-only*). One narrow way a disabled device comes back
+exists, and it is a side effect rather than a permission: `opera_pair_device`
+does not check `status`, so pairing a device name whose row is disabled runs an
+`ON CONFLICT (device_name) DO UPDATE` that sets `status = 'online'`
+(`20260907204146_opera_agent_1_0_0_core.sql:129-132`; the `status='online'`
+assignment is at `:131`). That is why "re-pair it" and "do not re-enable it
+yourself" are both correct at once — but a re-pair is still a production write
+to a shared row, it **overwrites `token_hash`** and invalidates every other
+client using that device name, and if you do not know why the row was disabled
+you must stop and escalate first. Incidents 1, 2, and 4 all defer to this
+paragraph rather than restating it.
 
 Device token handling: the device token is a 64-character lowercase hex string.
 **Never print it, paste it into a ticket, or echo it into a shell transcript.**
@@ -229,7 +247,8 @@ Database-side (operator with SQL access):
 ### Escalate when
 
 - `status = 'disabled'` on the row. Nothing in the repository disables a device;
-  a human did. Do not re-enable it yourself.
+  a human did. See **Disabled devices** in *Conventions used here* — do not
+  re-enable it during this incident.
 - The gateway returns `GATEWAY_ERROR` with `outcome: "unknown"` — the command was
   committed to the queue and the wait response was lost
   (`opera-agent-gateway/index.ts:121-129`). The action may already have run.
@@ -254,16 +273,24 @@ few fixed sentences:
 
 | What the user sees | What it actually means |
 | --- | --- |
-| *"That pairing code is invalid. Check the code and try again."* | The popup's own length check rejected the input. The code must be 8–64 characters (`extension/background.js:1450`); real codes are 16 uppercase hex characters. |
-| *"Pairing failed. Check the code and try again."* | Everything else. This is the fallback for **any** pairing failure, including a database rejection, a transport failure, and an HTTP error. |
-| *"Something went wrong. Run self-test, then check the connection."* | Anything the mapper does not recognise, including the connection state error from the pull loop. |
+| *"That pairing code is invalid. Check the code and try again."* | The input failed a **length** check — it must be 8–64 characters. Two different checks produce that same string: the extension's own, before any request is sent (`extension/background.js:1450`), and the bridge's identical check on the same range (`supabase/functions/opera-agent-bridge/index.ts:62-63`). So this sentence does **not** tell you which side rejected it. Real codes are 16 uppercase hex characters. |
+| *"Pairing failed. Check the code and try again."* | A **narrow** fallback, not the general one. It is the bridge's own placeholder used when the `opera_pair_device` RPC returns no JSON at all (`opera-agent-bridge/index.ts:76`). The extension's equivalent fallback (`extension/background.js:1462`) only fires on a `2xx` response whose `ok` is falsy, and this bridge never returns that — so **in practice an operator will rarely see this sentence at all.** |
+| *"Something went wrong. Run self-test, then check the connection."* | **The common case, and the least specific one. Both of the two most frequent real failures land here**, because neither of their strings is a key in the mapper's `KNOWN` table (`extension/lib/error-messages.js:10-24`): a **rejected, expired, consumed, or superseded code** comes back as `'Pairing code is invalid or expired.'` (`…_core.sql:128`), and an **unreachable bridge or a pairing request that hits the 15 s timeout** rejects with a network/abort error instead of any string the mapper knows (`extension/background.js:1453-1461`; `fetchJson` throws the raw rejection at `extension/background.js:101-115`). Both fall through to the generic sentence. **Never read this as "connection problem"** — it is at least as likely to be a bad code. Diagnose the code row (step 1) before touching the network. |
 
 The underlying reasons — an expired code, a consumed code, a superseded code, a
-disabled device, an unreachable bridge — are **not** shown to the user and
-**cannot** be recovered from the popup. This is deliberate: raw backend strings
-are suppressed so internals never reach the UI
+bridge-URL override pointing at the wrong function, an unreachable bridge — are
+**not** shown to the user and **cannot** be recovered from the popup. This is
+deliberate: raw backend strings are suppressed so internals never reach the UI
 (`extension/lib/error-messages.js:1-9`). Diagnose from the database side, below.
 Do not send the user back to the popup expecting a clearer message.
+
+**Triage rule, because GENERIC covers two different faults.** The same sentence
+means "the database rejected the code" *or* "the bridge was not reached", and the
+popup cannot tell you which. **Step 1 is the discriminator:** a code row that is
+no longer `still_usable` means the database rejected it (fix: step 4, make a
+fresh code); a code row that is still `still_usable` means the request did not
+come back successfully at the bridge (fix: check the bridge-URL override, then
+re-pair). Run step 1 before blaming the network.
 
 ### Diagnose
 
@@ -303,12 +330,12 @@ select device_name, status, extension_version, protocol_version,
  order by device_name;
 ```
 
-- A row with `status = 'disabled'` can never pair: every authentication helper
-  filters on `status <> 'disabled'`
-  (`opera_auth_device`, `…_core.sql:141`; `opera_pair_device` is the exception —
-  it does not check status, so a disabled device *can* be re-paired and will come
-  back with `status = 'online'` via its `ON CONFLICT` upsert,
-  `…_core.sql:131`).
+- A row with `status = 'disabled'` can never authenticate: every authentication
+  helper filters on `status <> 'disabled'`
+  (`opera_auth_device`, `…_core.sql:141`). `opera_pair_device` is the exception —
+  it does not check status, so a disabled device *can* be re-paired and comes back
+  as `online`. See **Disabled devices** in *Conventions used here* for why that
+  is still not something to do during an incident.
 - A row that already exists is **not** an error. `device_name` is unique and
   `opera_pair_device` upserts on it, so pairing again **overwrites
   `token_hash`**. If a second browser pairs as `opera`, the first browser's token
@@ -345,8 +372,8 @@ otherwise the function returns `{"ok":false,"error":"Invalid device name."}`
 - **Wrong bridge URL on the device** → the pairing request went somewhere that
   has no pairing RPC. Fix the override on the options page first, then re-pair.
   See the options-page troubleshooting note "Bridge override".
-- **`status = 'disabled'`** → re-pairing the device name brings it back to
-  `online`. If you do not know why it was disabled, stop and escalate first.
+- **`status = 'disabled'`** → the single rule is in **Disabled devices** under
+  *Conventions used here*. Read it before doing anything with this row.
 - **No repo-side fix exists** for: a browser that refuses to store the token, a
   profile that resets `chrome.storage.local`, or a user who loses the pairing
   code before using it.
@@ -390,17 +417,32 @@ select version, extension_id, active, created_at
 ```
 
 Current identity is `ohbbpamcljckmjhcpkcmefdobkoeaick`
-(`extension/lib/endpoints.js` and `docs/install.md:8`). The legacy identity is
-`pagjlnohdemoohcncicjmaejedcmcocm`
+(`docs/install.md:8`; the identity history is at `docs/install.md:13`). The
+legacy identity is `pagjlnohdemoohcncicjmaejedcmcocm`
 (`opera-agent-update/index.ts:11`).
 
-**Read the constraint before you change anything.** There is a unique index
+**Read the constraint before you change anything.** The active-row constraint is
+the partial unique index `opera_releases_one_active_per_identity_idx` on
+`(extension_id) where active = true`
+(`supabase/migrations/20260909045456_opera_agent_per_identity_update_channels.sql:13-15`).
+It permits **at most one active release per signing identity, and places no limit
+across identities.** An earlier table-wide index,
 `opera_releases_one_active_idx` on `(active) where active = true`
-(`20260908021039_opera_agent_releases.sql:13-14`). That permits **at most one
-active release row in the entire table**, not one per extension ID. So if the
-active row belongs to the legacy identity, the current identity has *no* active
-release and the update endpoint will 404 for it. There is no configuration in
-which both identities are served simultaneously.
+(`20260908021039_opera_agent_releases.sql:13-14`), was deliberately **dropped** at
+`…per_identity_update_channels.sql:5`; that same migration moved the primary key
+to `(extension_id, version)` (`:10-11`) and states its purpose in the first line:
+"Allow the legacy and replacement signing identities to publish independently."
+
+So **each identity can have its own active release at the same time**, and a
+request is always resolved by its own extension ID
+(`opera-agent-update/index.ts:46-56,90-91`) — one identity is never served
+another's CRX.
+
+**The mundane reading of a 404.** If step 1 shows an active row for
+`pagjlnohdemoohcncicjmaejedcmcocm` but none for `ohbbpamcljckmjhcpkcmefdobkoeaick`,
+the current identity simply has **no active release published**. That is a
+publishing gap, not a schema limit, and not by itself evidence that anything is
+"stuck on the legacy channel".
 
 **Step 2 — the identity diagnostic.** Requesting the shared URL with no ID
 returns the legacy channel **by design**: when no ID is present the function
@@ -450,16 +492,42 @@ select requested_at,
 
 Interpretation:
 
-- **No recent row for this identity** → the browser is not polling. The update
-  check is browser-scheduled and no repository code forces or schedules it. Check
+`query_string` is stored verbatim from the request URL, leading `?` included
+(`opera-agent-update/index.ts:70`), so it is the raw record of which identity the
+updater presented. Three forms matter, and you need the healthy one to judge the
+others:
+
+- **Healthy (a real browser):** `?x=id%3Dohbbpamcljckmjhcpkcmefdobkoeaick%26v%3D1.6.13`
+  — the Chromium app-metadata parameter, which the resolver reads **first**
+  (`:36-44`).
+- **Operator-issued:** `?id=ohbbpamcljckmjhcpkcmefdobkoeaick` — the manual
+  diagnostic form, read only as a fallback when `x` carries no `id` (`:41`). Rows
+  in this shape are your own `curl`s, not a browser.
+- **No ID resolvable:** the field is empty, or holds an `x=` with no `id=` inside
+  it. The resolver then falls back to `LEGACY_EXTENSION_ID` (`:42`), so the
+  request was resolved against the legacy identity — and would have been
+  answered with a `404` if the legacy identity has no active release, which is
+  also why such a row can be absent.
+
+Then, per row:
+
+- **No recent row for this identity** → the browser may not be polling, **or the
+  request never reached a served response.** Telemetry is written only *after* a
+  matching active release has been found (`:92-99,112`), so a
+  `404 No active release for extension ID` is **never recorded**. An empty
+  `opera_update_events` therefore cannot distinguish "the browser is not asking"
+  from "the browser asked and was 404'd" — confirm with the step 2 `curl` before
+  concluding anything about the browser. If the channel is healthy, the update
+  check is browser-scheduled and no repository code forces or schedules it; check
   that the installed extension still has the private `update_url` from
   `extension/manifest.json:49` and that the browser has not been switched to a
   different update policy by enterprise policy.
 - **Rows present, `served_version` is the version you expect, device still old** →
   the channel is fine and the browser declined or has not yet applied the update.
-- **Rows present with an empty `query_string`** → the request arrived with no ID
-  and was resolved to the legacy channel. The browser is not appending its
-  installed ID, which per `docs/install.md:21` it normally does automatically.
+- **Rows present with an empty or ID-less `query_string`** → the request arrived
+  with no usable ID and was resolved to the legacy channel. The browser is not
+  appending its installed ID, which per `docs/install.md:21` it normally does
+  automatically.
 
 **Step 4 — confirm what the device reports.**
 
@@ -477,9 +545,10 @@ incident 1.
 
 ### Fix
 
-- **No active row for the current identity, or the active row is the legacy
-  identity** → this is a production data change to `public.opera_releases`.
-  Owner-only. Do not write to that table during an incident.
+- **No active row for the current identity** (the legacy identity may or may not
+  have one; the two are independent) → this is a production data change to
+  `public.opera_releases`. Owner-only. Do not write to that table during an
+  incident.
 - **A new release is needed** → publishing is owner-only work. `docs/release-process.md`
   requires a git tag, a GitHub Release, a `CHANGELOG.md` update, passing tests, and
   a packaged and signed extension artifact. None of that is an incident action.
@@ -512,7 +581,10 @@ different things:
 | `{"ok":false,"error":{"code":"UNAUTHORIZED","message":"Invalid token for device."}}` | `UNAUTHORIZED` | A token arrived and did not match. |
 | `{"ok":false,"error":{"code":"DEVICE_NOT_PAIRED","message":"Device is not paired."}}` | `DEVICE_NOT_PAIRED` | The device disappeared or was disabled while the command was in flight. |
 
-Both source and full table: `docs/api.md:93-107`.
+Both source and full table: `docs/api.md:93-107`. The `DEVICE_NOT_PAIRED` row in
+that table has been corrected to match the code, so the two documents now agree:
+**an already-disabled device returns `UNAUTHORIZED`, not `DEVICE_NOT_PAIRED`**
+(step 3 below is the reading to use, and it is the one the code supports).
 
 ### Diagnose
 
@@ -657,7 +729,8 @@ ACAO header, it reached the gateway or the update function, never the bridge.**
   it is a security fix too, because the token has been in URLs and logs.
 - **Token rotated by a re-pair** → the caller must obtain a new token by pairing
   again. See incident 2.
-- **Device disabled** → owner-only. Do not re-enable during an incident.
+- **Device disabled** → see **Disabled devices** in *Conventions used here*.
+  Owner-only; do not re-enable during an incident.
 - **Origin not allowlisted** → add the origin to `CORS_ALLOWED_ORIGINS` for the
   deployed function. That is an environment change and therefore owner-only.
 - **No repo-side fix exists** for: a token that was never issued, a caller
@@ -775,8 +848,9 @@ must not be quoted as one.
 
 # Part 3 — Data retention
 
-**Read this first: there is no scheduler in this repository.** Both cleanup RPCs
-exist and both are safe to call, but **nothing in the repository calls them.**
+**Read this first: there is no scheduler in this repository.** The two cleanup
+RPCs and the VM deadline reaper all exist and are all safe to call, but
+**nothing in the repository calls them.**
 Verified by searching the whole tree: there is no `pg_cron` extension, no
 `cron.schedule` call, no `pgagent`, no GitHub Actions `schedule:` block (the only
 workflow file is `.github/workflows/release.yml`, which has no schedule), no
@@ -795,10 +869,10 @@ not exist yet.
 | Update telemetry | `public.opera_update_events` | **manual** | **none enforced.** No IP address is stored (table comment). |
 | Pairing-code rows | `public.opera_pairing_codes` | **manual.** Nothing deletes them. Codes expire functionally via `expires_at` checked in `opera_pair_device`; the rows persist. | **none enforced.** Functional expiry only: default 10 minutes, clamped to 1–60 minutes. |
 | Goal-head metadata | `opera_agent_private.goal_heads` | `public.opera_goal_cleanup(p_retention_seconds integer default 86400)` | **86400 s (1 day) by default.** Rejects anything outside **3600–604800 s** with SQLSTATE `22023`. Deletes rows whose `expires_at` is older than the retention window, **or** whose `status` is `CANCELLED`/`EXPIRED` and whose `updated_at` is older than the window. Returns the deleted row count. `security definer`, `search_path = pg_catalog, opera_agent_private` (`20260911162525_opera_agent_goal_head.sql:215-233`). |
-| Reactive-VM runs and rate windows | `opera_agent_private.vm_runs`, `opera_agent_private.vm_rate_windows` | `public.opera_vm_cleanup(p_retention_seconds integer default 86400)` | **86400 s (1 day) by default**, same **3600–604800 s** guard and same SQLSTATE `22023`. Deletes `vm_runs` whose `status` is one of `SUSPENDED`, `RETURNED`, `LIMIT_REACHED`, `FAILED`, `CANCELLED`, `EXPIRED` and whose `updated_at` is older than the window; deletes `vm_rate_windows` whose `window_start` is more than 10 minutes old. Returns `{"runsDeleted":n,"rateWindowsDeleted":n}`. `security definer`, same `search_path` (`20260912061541_opera_agent_reactive_vm_host.sql:693-715`). Note the rate-window cutoff is a hardcoded 10 minutes and is **not** affected by `p_retention_seconds`. |
+| Reactive-VM runs and rate windows | `opera_agent_private.vm_runs`, `opera_agent_private.vm_rate_windows` | `public.opera_vm_cleanup(p_retention_seconds integer default 86400)` | **86400 s (1 day) by default**, same **3600–604800 s** guard and same SQLSTATE `22023`. Deletes `vm_runs` whose `status` is one of `SUSPENDED`, `RETURNED`, `LIMIT_REACHED`, `FAILED`, `CANCELLED`, `EXPIRED` and whose `updated_at` is older than the window; deletes `vm_rate_windows` whose `window_start` is more than 10 minutes old. Returns `{"runsDeleted":n,"rateWindowsDeleted":n}`. `security definer`, same `search_path` (`20260912061541_opera_agent_reactive_vm_host.sql:693-715`). Note the rate-window cutoff is a hardcoded 10 minutes and is **not** affected by `p_retention_seconds`. A run's `status` becoming `EXPIRED` is not retention either — see **Not a purge: `opera_vm_expire`** below. |
 | Workflow run history | `public.opera_workflow_runs` | **manual** | **none enforced.** |
 | Edge logs | Whatever log collector the Supabase project has configured | the platform's own retention settings — **not a repository concern** | **unknown.** No repository artifact states the platform's retention. |
-| Browser logs | In-memory ring buffer, max 200 entries, per context (`extension/lib/agent-log.js:3`); plus the browser's own devtools console | nothing — the buffer is discarded when the context ends | **none.** Not persisted anywhere. A service-worker restart or tab navigation loses it. Level defaults to `warn`; raise it to `debug` on the options page for an active incident. |
+| Browser logs | In-memory ring buffer, max 200 entries, per context (`extension/lib/agent-log.js:4`); plus the browser's own devtools console | nothing — the buffer is discarded when the context ends | **none.** Not persisted anywhere. A service-worker restart or tab navigation loses it. Level defaults to `warn`; raise it to `debug` on the options page for an active incident. |
 | Device tokens | `public.opera_devices.token_hash` (SHA-256 hex only; the plaintext token exists only in `chrome.storage.local` on the paired browser) | **manual.** The popup's **Unpair device** button is *local only* — it removes the local storage keys and stops the pull loop (`extension/background.js:1475-1480`). It does **not** delete or disable the database row. | **none enforced.** Rotating a token means re-pairing the device name, which overwrites `token_hash` (`20260907204146_opera_agent_1_0_0_core.sql:129-132`). |
 
 ## Calling the two cleanup RPCs
@@ -824,6 +898,46 @@ select public.opera_vm_cleanup(3600);       -- 1 hour, the minimum allowed
 production.** Treat the first run as a rehearsal: run it with the default window,
 read the returned counts, and confirm the numbers are plausible before choosing a
 window.
+
+## Not a purge: `opera_vm_expire` — the VM *deadline* reaper
+
+`opera_vm_expire` is the third RPC an operator looking for "what expires VM
+runs" should know about, and it is **not** a retention function. It changes a
+run's `status`; it never deletes a row. Deleting is `opera_vm_cleanup`'s job
+alone.
+
+```sql
+public.opera_vm_expire(p_limit integer default 100) returns integer
+```
+
+`security definer`, `search_path = pg_catalog, opera_agent_private`, `revoke`d
+from `public`/`anon`/`authenticated` and granted to `service_role` — the same
+posture as the two cleanup RPCs
+(`20260912061541_opera_agent_reactive_vm_host.sql:664-691,727,740`). What it
+does, verified from the body:
+
+- Flips `QUEUED` or `RUNNING` runs in `opera_agent_private.vm_runs` whose
+  `expires_at <= clock_timestamp()` to `EXPIRED` (`:675-687`). `expires_at` is
+  the run's own hard deadline and is bounded to at most 5 minutes after
+  `created_at` by a table check constraint (`:81`).
+- Clears `available_at`, `lease_owner`, and `lease_expires_at` on those rows, and
+  sets `error_code` to `RUN_DEADLINE` **only if it is still null** (`:684-685`) —
+  so a run that already failed for another reason keeps its original code.
+- Processes **all tenants**, oldest `expires_at` first, capped at `p_limit` rows
+  per call, using `for update skip locked` so it is safe to run concurrently
+  (`:675-682`). A limit outside **1–1000** raises SQLSTATE `22023` (`:674`).
+- Returns the number of rows it transitioned.
+
+It is the **cross-tenant, batched** form of a transition that
+`opera_vm_claim` already performs for one tenant on demand
+(`:314-319`), so a run that is being claimed is not going to be missed. Two
+differences worth knowing: `opera_vm_expire` does **not** check the
+`milestone7_vm_enabled` config flag that `opera_vm_claim` checks
+(`:304-307`), and it can be run as a standalone sweep for tenants that are not
+currently claiming. There is no repository evidence it has ever been executed.
+**What the code does not say:** whether the design intends it as a periodic
+sweeper or purely as an operator-triggered repair for abandoned runs. Nothing in
+this repository calls it, so the intent is not recoverable from the code.
 
 ## Purging the classes with no automated purge
 

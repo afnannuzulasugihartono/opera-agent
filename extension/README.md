@@ -44,8 +44,13 @@ not a necessity: its only unique contribution is visible URL/title on
 privileged-scheme tabs in list/find output. None of the `chrome.tabs.*` calls in
 this extension — `query`, `get`, `create`, `update`, `remove`, `reload`,
 `sendMessage`, `getZoom`, and the three event listeners — requires the `tabs`
-permission itself. A reviewer who wants the smallest possible surface should
-consider dropping it and accepting blank URLs on non-web tabs.
+permission itself. **That last sentence is a platform-behaviour assumption, not
+a repository fact:** the call enumeration is verified against the tree, but
+which of them the `tabs` permission gates is Chrome's own behaviour and is
+recorded here from documentation, not from anything in this repository. Subject
+to that, a reviewer who wants the smallest possible surface should consider
+dropping it and accepting blank URLs on non-web tabs — and should check the
+platform behaviour against the current Chrome extension documentation first.
 
 ### `activeTab`
 

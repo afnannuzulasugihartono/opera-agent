@@ -99,7 +99,7 @@ Every code the gateway emits, with the HTTP status it is returned with:
 | `INVALID_JSON` | 400 | The request body could not be parsed as JSON. |
 | `UNAUTHORIZED` | 401 | No token was supplied, or the token is not valid for device `opera`. |
 | `INVALID_METHOD` | 400 | `method` is missing or does not match the method pattern. |
-| `DEVICE_NOT_PAIRED` | 401 | Device `opera` is not paired, is disabled, or reported "not paired" while the command was in flight. |
+| `DEVICE_NOT_PAIRED` | 401 | The device row named `opera` was absent, or had become `disabled`, at the moment of the device lookup that follows token verification. An **already-disabled** device never reaches this code — `opera_verify_device` excludes `status = 'disabled'`, so it is rejected earlier with `UNAUTHORIZED`. This code is therefore a missing device row or a narrow race in the window between verification and enqueue, not the ordinary disabled-device case. |
 | `AWAIT_TIMEOUT` | 504 | The device did not report back before `waitMs`. The action may still have succeeded; verify page state before repeating it. |
 | `GATEWAY_ERROR` | 502; also 200 on the empty-result path | The gateway could not complete the round trip: a database failure, an empty result, or a lost wait response after the command was enqueued. The action may still have succeeded; verify page state before repeating it. |
 | `METHOD_NOT_ALLOWED` | 405 | The route does not accept this HTTP method. `/command` accepts `POST` only. |
