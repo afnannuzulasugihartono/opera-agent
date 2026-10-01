@@ -1,4 +1,5 @@
 import './lib/agent-log.js';
+import { userErrorMessage } from './lib/error-messages.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 const $ = (id) => document.getElementById(id);
@@ -57,7 +58,7 @@ async function refresh() {
   $('pairSection').hidden = !!data.config.paired;
   $('pairedSection').hidden = !data.config.paired;
   $('error').hidden = !state.lastError;
-  $('error').textContent = state.lastError || '';
+  $('error').textContent = state.lastError ? userErrorMessage(state.lastError) : '';
 }
 
 $('pairButton').addEventListener('click', async () => {
@@ -71,7 +72,7 @@ $('pairButton').addEventListener('click', async () => {
     await refresh();
   } catch (error) {
     $('error').hidden = false;
-    $('error').textContent = String(error?.message || error);
+    $('error').textContent = userErrorMessage(error?.message || error);
   } finally {
     setBusy($('pairButton'), false);
   }
@@ -108,7 +109,7 @@ $('privateTabButton').addEventListener('click', async () => {
     await refresh();
   } catch (error) {
     $('error').hidden = false;
-    $('error').textContent = String(error?.message || error);
+    $('error').textContent = userErrorMessage(error?.message || error);
   } finally {
     setBusy($('privateTabButton'), false);
   }
