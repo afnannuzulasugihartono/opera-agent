@@ -78,6 +78,17 @@ test('missing and invalid tokens cannot read devices or enqueue', async () => {
   }
 });
 
+test('gateway 401 responses never echo the submitted token', async () => {
+  const marker = 'TEST-TOKEN-UNIQUE-12345';
+  const h = harness({ auth: { ok: false } });
+  const r1 = await h.request({ apiKey: marker });
+  assert.equal(r1.status, 401);
+  assert.doesNotMatch(await r1.text(), /TEST-TOKEN-UNIQUE-12345/);
+  const r2 = await h.request({ apiKey: null }, { authorization: 'Bearer ' + marker });
+  assert.equal(r2.status, 401);
+  assert.doesNotMatch(await r2.text(), /TEST-TOKEN-UNIQUE-12345/);
+});
+
 test('unpaired and offline devices are rejected before enqueue', async () => {
   for (const device of [null, { last_seen_at: null }, { last_seen_at: '2000-01-01T00:00:00Z' }]) {
     const h = harness({ device });
