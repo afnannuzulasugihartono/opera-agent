@@ -32,6 +32,12 @@ cannot set custom headers).
 advertised integration with no migration path (platform limitation).
 Therefore: header-first order stays, body fallback stays, query tokens
 stay confined to read-only surfaces (existing rule). Hardening instead:
+> **SUPERSEDED PHRASE — "query tokens stay confined to read-only surfaces"
+> overstates what the code does.** Later verification found that no gateway
+> route reads the query string at all, so `?apiKey=` is not a token carrier
+> anywhere; the gateway's own header comment said otherwise and was corrected in
+> Fase 5. The security conclusion is unchanged and slightly stronger: there are
+> exactly three carriers, and none of them is the query string.
 audit bridge/runner/mcp/gateway for any logging or error-echo of
 `Authorization` / `body.apiKey` (redaction exists in `_shared/` +
 reactive-vm; prove by test that secrets never reach logs or error

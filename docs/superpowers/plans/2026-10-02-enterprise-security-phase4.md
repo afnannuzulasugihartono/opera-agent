@@ -236,6 +236,10 @@ The gateway accepts device tokens via header (`x-opera-agent-token`,
 `Authorization: Bearer`) or `body.apiKey` because GPT Actions cannot
 set custom headers (platform limitation, not a choice). Query tokens
 are confined to the read-only `/openapi.json` and `/health` surfaces.
+> **SUPERSEDED PHRASE — corrected during Fase 5 execution.** No gateway route
+> reads the query string, so `?apiKey=` is not a token carrier on any route; the
+> sentence above is preserved as part of the plan record. The three real carriers
+> are the two headers and `body.apiKey`.
 Tokens are verified then dropped: regression tests pin that they never
 appear in logs, error payloads, or persisted records.
 ```

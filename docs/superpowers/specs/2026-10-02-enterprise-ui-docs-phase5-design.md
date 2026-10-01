@@ -60,6 +60,14 @@ troubleshooting instead. Narrower scope, zero identity risk.
 - Narrative: base URLs, auth (header-first, body.apiKey for GPT
   Actions, query confined to read-only), endpoints table, error codes,
   curl examples. Machine source of truth stays live `/openapi.json`.
+  > **SUPERSEDED PHRASE — "query confined to read-only" is FALSE.** Review during
+  > execution found that no route in `opera-agent-gateway` reads the query string
+  > at all: `extractToken` checks the two headers and then `body.apiKey`, and
+  > there is no `searchParams` read anywhere in the function. `?apiKey=` is
+  > therefore not a token carrier on any route, including `/openapi.json` and
+  > `/health`. `docs/api.md` and the gateway's own header comment state the
+  > corrected behaviour. The phrase above is preserved unedited as part of the
+  > design record; treat it as superseded, not as intent.
 - New test asserts every endpoint path documented in `docs/api.md`
   exists in the gateway `openApiSpec` source (frozen-contract idiom);
   failures force doc-or-spec alignment, never silent drift.

@@ -346,6 +346,11 @@ log level applied via getConfig with safe fallback."
 - [ ] **Step 1: Write `docs/api.md`**
 
 Sections: base URLs (project functions root + gateway path), auth (header-first `x-opera-agent-token`/`Authorization: Bearer`, `body.apiKey` for GPT Actions with platform-limitation note, query confined to read-only), endpoint table (`POST /command`, `GET /openapi.json`, `GET /health` with purpose + auth requirement each), error-code table (UNAUTHORIZED, INVALID_METHOD, INVALID_JSON, METHOD_NOT_ALLOWED, TOO_LARGE, NOT_FOUND, DEVICE_NOT_PAIRED, AWAIT_TIMEOUT, GATEWAY_ERROR — verify each exists in gateway source before writing; drop any not found), two curl examples (tabs.list via header; openapi.json), pointer: machine source of truth is live `GET /openapi.json`.
+> **SUPERSEDED PHRASE — "query confined to read-only" is FALSE, and this brief
+> caused the error.** The controller supplied it as a verified fact without
+> checking whether any route reads the query string; none does. A task review
+> caught it, `docs/api.md` and the gateway header comment were corrected, and the
+> drift pin now covers the carrier list. Preserved unedited as the plan record.
 
 - [ ] **Step 2: Drift pin test**
 
