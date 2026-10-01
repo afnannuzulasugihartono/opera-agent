@@ -2038,3 +2038,16 @@ Merge readiness: branch is clean, pushed, all gates green - merge stays
 an explicit owner decision. Closeout head `988774b`
 (`988774b9e1972c1b24af5ca8d903be582cd55724`); this fix commit is its
 child on `chore/enterprise-security-phase4`, remote in sync after push.
+
+## Infra + Fase 4 merged to main (2026-10-02, owner-chosen Option 1)
+
+- Infra branch (`7e6e7d3`, all CI green) merged `--ff-only` into `main`
+  first (verified `npm test` 599/599 + check ok on the result), then
+  Fase 4 branch (`aca6b98`) merged `--ff-only` on top. Merged-result
+  verification: `npm test` 615/615 PASS, `npm run check` ok (26/85).
+- NOT pushed: `main` is locally 20 commits ahead of `origin/main`
+  (`ae7ede9`). Pushing publishes the combined green tree (CI expected
+  green: all gates proven on both branch heads) — owner decision pending.
+- Archive tags: `archive/chore/deno-wall-infra` at `7e6e7d3`;
+  `archive/chore/enterprise-security-phase4` at `aca6b98`. Local
+  branches deleted after merge per finishing flow.
