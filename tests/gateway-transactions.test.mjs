@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
@@ -39,7 +40,10 @@ function harness({ auth = { ok: true }, device = { last_seen_at: new Date().toIS
       throw new Error(`Unexpected RPC ${name}`);
     }
   };
-  vm.runInNewContext(source, { createClient: () => client, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, crypto });
+  // The harness strips edge import lines, so runtime dependencies resolved by
+  // the edge loader (createClient, the shared CORS resolver) are injected
+  // here from the real shared module — the same code the function imports.
+  vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, crypto });
   return { calls, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list', ...body })

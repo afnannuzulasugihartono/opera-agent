@@ -1,5 +1,6 @@
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
 // U-T universal fastpath gateway: ONE HTTP round trip from any AI platform
 // (ChatGPT GPTs/Actions, Claude/MCP, n8n, plain curl) to a completed browser
@@ -13,12 +14,21 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
+const CORS_BASE_HEADERS = {
   "Access-Control-Allow-Headers": "content-type, x-opera-agent-token, authorization",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   "Cache-Control": "no-store"
 };
+
+// Fail-closed CORS: the allow origin is echoed ONLY for exact allowlist
+// matches (CORS_ALLOWED_ORIGINS env override, else the extension + consent
+// page defaults). A missing or non-allowlisted Origin gets no ACAO header.
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
+  return origin === null
+    ? { ...CORS_BASE_HEADERS }
+    : { ...CORS_BASE_HEADERS, "Access-Control-Allow-Origin": origin };
+}
 
 const DEVICE_NAME = "opera";
 const METHOD_RE = /^[a-z][a-z0-9_.]{1,48}$/;
@@ -27,10 +37,10 @@ const MAX_BODY = 256 * 1024;
 const WAIT_MIN = 500;
 const WAIT_MAX = 32000;
 
-function json(data: unknown, status = 200) {
+function json(req: Request, data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, "Content-Type": "application/json; charset=utf-8" }
+    headers: { ...corsHeaders(req), "Content-Type": "application/json; charset=utf-8" }
   });
 }
 
@@ -58,15 +68,15 @@ async function command(req: Request, _url: URL) {
   try {
     body = await req.json() as Record<string, unknown>;
   } catch {
-    return json({ ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
+    return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
   }
   const token = extractToken(req, body);
   if (!token) {
-    return json({ ok: false, error: { code: "UNAUTHORIZED", message: "Missing token (x-opera-agent-token header or body.apiKey)." } }, 401);
+    return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Missing token (x-opera-agent-token header or body.apiKey)." } }, 401);
   }
   const method = typeof body!.method === "string" ? body!.method.trim() : "";
   if (!METHOD_RE.test(method)) {
-    return json({ ok: false, error: { code: "INVALID_METHOD", message: "Missing/invalid method." } }, 400);
+    return json(req, { ok: false, error: { code: "INVALID_METHOD", message: "Missing/invalid method." } }, 400);
   }
   const params = (body!.params && typeof body!.params === "object") ? body!.params as Record<string, unknown> : {};
   const timeoutMs = Math.max(WAIT_MIN, Math.min(WAIT_MAX, Number(body!.waitMs) || 12000));
@@ -80,15 +90,15 @@ async function command(req: Request, _url: URL) {
     p_token_hash: tokenHash
   });
   if (!auth?.ok) {
-    return json({ ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
+    return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
   }
   // Preserve the former wrapper's pairing/offline preflight before enqueue.
   const { data: device, error: deviceError } = await supabase.from("opera_devices")
     .select("last_seen_at").eq("device_name", DEVICE_NAME).neq("status", "disabled").maybeSingle();
   if (deviceError) throw new Error(`Device lookup failed: ${deviceError.message}`);
-  if (!device) return json({ ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
+  if (!device) return json(req, { ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
   if (!device.last_seen_at || Date.parse(device.last_seen_at) < Date.now() - 90000) {
-    return json({ ok: false, error: "Device is offline.", lastSeenAt: device.last_seen_at });
+    return json(req, { ok: false, error: "Device is offline.", lastSeenAt: device.last_seen_at });
   }
   // Separate awaited RPC requests commit the queue row before the device must
   // claim it. Enqueue + await in one SQL transaction hides it until timeout.
@@ -108,7 +118,7 @@ async function command(req: Request, _url: URL) {
       });
     } catch {
       // Enqueue already committed; a lost wait response is not action failure.
-      return json({
+      return json(req, {
         ok: false,
         commandId,
         outcome: "unknown",
@@ -118,17 +128,17 @@ async function command(req: Request, _url: URL) {
   }
 
   if (result && result.ok === false && typeof result.error === "string" && result.error.includes("not paired")) {
-    return json({ ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
+    return json(req, { ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
   }
   if (result && result.ok === false && result.error && typeof result.error === "object" && (result.error as { code?: unknown }).code === "AWAIT_TIMEOUT") {
-    return json({
+    return json(req, {
       ok: false,
       error: { code: "AWAIT_TIMEOUT", message: "The device did not report back before waitMs. The action may still have succeeded — verify page state before repeating it." }
     }, 504);
   }
   // Structured device results (ok true OR ok false) are 200: AI platforms
   // read the envelope and recover; 5xx bodies can be dropped by GPT Actions.
-  return json(result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
+  return json(req, result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
 }
 
 function openApiSpec(basePath: string) {
@@ -175,8 +185,8 @@ function openApiSpec(basePath: string) {
   };
 }
 
-function health() {
-  return json({
+function health(req: Request) {
+  return json(req, {
     ok: true,
     service: "opera-agent-gateway",
     version: "1.0.1",
@@ -185,7 +195,7 @@ function health() {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(req) });
   if (req.method === "GET") {
     const url = new URL(req.url);
     if (url.pathname.endsWith("/openapi.json")) {
@@ -193,19 +203,19 @@ Deno.serve(async (req: Request) => {
       // appends the spec's paths to servers[url]. The hosted proxy rewrites
       // the request URL (strips /functions/v1, downgrades scheme), so the
       // base path comes from SUPABASE_URL, never from the request URL.
-      return json(openApiSpec(`${SUPABASE_URL}/functions/v1/opera-agent-gateway`), 200);
+      return json(req, openApiSpec(`${SUPABASE_URL}/functions/v1/opera-agent-gateway`), 200);
     }
-    if (url.pathname.endsWith("/health")) return health();
+    if (url.pathname.endsWith("/health")) return health(req);
   }
-  if (req.method !== "POST") return json({ ok: false, error: { code: "METHOD_NOT_ALLOWED", message: "POST /command only." } }, 405);
+  if (req.method !== "POST") return json(req, { ok: false, error: { code: "METHOD_NOT_ALLOWED", message: "POST /command only." } }, 405);
   const url = new URL(req.url);
   const length = Number(req.headers.get("content-length") || 0);
-  if (length > MAX_BODY) return json({ ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
+  if (length > MAX_BODY) return json(req, { ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
   try {
     if (url.pathname.endsWith("/command")) return await command(req, url);
-    return json({ ok: false, error: { code: "NOT_FOUND", message: "Unknown path." } }, 404);
+    return json(req, { ok: false, error: { code: "NOT_FOUND", message: "Unknown path." } }, 404);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return json({ ok: false, error: { code: "GATEWAY_ERROR", message: message.slice(0, 300) } }, 502);
+    return json(req, { ok: false, error: { code: "GATEWAY_ERROR", message: message.slice(0, 300) } }, 502);
   }
 });

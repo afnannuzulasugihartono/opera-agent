@@ -4,6 +4,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { createClient } from "@supabase/supabase-js";
 import * as z from "zod/v4";
 import { createEdgeLog } from "../_shared/edge-log.js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -26,13 +27,22 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+// Fail-closed CORS: the allow origin is echoed ONLY for exact allowlist
+// matches (CORS_ALLOWED_ORIGINS env override, else the extension + consent
+// page defaults). A missing or non-allowlisted Origin gets no ACAO header.
+const CORS_BASE_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Expose-Headers": "mcp-protocol-version, mcp-session-id",
   "Cache-Control": "no-store"
 };
+
+function corsHeadersFor(req: Request): Record<string, string> {
+  const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
+  return origin === null
+    ? { ...CORS_BASE_HEADERS }
+    : { ...CORS_BASE_HEADERS, "Access-Control-Allow-Origin": origin };
+}
 
 const tabIdSchema = z.number().int().nonnegative()
   .describe("Explicit Opera automation target tab ID returned by open_url or list_tabs.");
@@ -145,10 +155,10 @@ class CommandFailure extends Error {
   }
 }
 
-function json(data: unknown, status = 200, extraHeaders: HeadersInit = {}) {
+function json(req: Request, data: unknown, status = 200, extraHeaders: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json", ...extraHeaders }
+    headers: { ...corsHeadersFor(req), "Content-Type": "application/json", ...extraHeaders }
   });
 }
 
@@ -181,9 +191,10 @@ function publicBaseUrl() {
   return `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/opera-agent-mcp`;
 }
 
-function unauthorized(_req: Request) {
+function unauthorized(req: Request) {
   const metadata = `${publicBaseUrl()}/.well-known/oauth-protected-resource`;
   return json(
+    req,
     { error: "unauthorized", error_description: "A valid Opera Agent access token is required." },
     401,
     { "WWW-Authenticate": `Bearer resource_metadata="${metadata}"` }
@@ -689,15 +700,15 @@ function createServer() {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeadersFor(req) });
   const url = new URL(req.url);
 
   if (url.pathname.endsWith("/health")) {
-    return json({ ok: true, service: "opera-agent-mcp", transport: "streamable-http", authConfigured: !!STATIC_TOKEN || ALLOWED_USER_IDS.size > 0 || ALLOWED_USER_EMAILS.size > 0 });
+    return json(req, { ok: true, service: "opera-agent-mcp", transport: "streamable-http", authConfigured: !!STATIC_TOKEN || ALLOWED_USER_IDS.size > 0 || ALLOWED_USER_EMAILS.size > 0 });
   }
 
   if (url.pathname.endsWith("/.well-known/oauth-protected-resource")) {
-    return json({
+    return json(req, {
       resource: publicBaseUrl(),
       authorization_servers: [`${SUPABASE_URL}/auth/v1`],
       bearer_methods_supported: ["header"],
@@ -705,9 +716,9 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  if (req.method !== "POST") return json({ error: "method_not_allowed", error_description: "Use POST for stateless Streamable HTTP MCP." }, 405);
+  if (req.method !== "POST") return json(req, { error: "method_not_allowed", error_description: "Use POST for stateless Streamable HTTP MCP." }, 405);
   if (!STATIC_TOKEN && ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) {
-    return json({ error: "server_misconfigured", error_description: "MCP authentication is not configured." }, 503);
+    return json(req, { error: "server_misconfigured", error_description: "MCP authentication is not configured." }, 503);
   }
   if (!await authenticate(req)) return unauthorized(req);
 
@@ -717,10 +728,13 @@ Deno.serve(async (req: Request) => {
     await server.connect(transport);
     const response = await transport.handleRequest(req);
     const headers = new Headers(response.headers);
-    for (const [key, value] of Object.entries(corsHeaders)) headers.set(key, value);
+    // Fail-closed: strip anything the transport set, then apply exactly the
+    // per-request allowlist headers (no ACAO unless the origin matched).
+    headers.delete("Access-Control-Allow-Origin");
+    for (const [key, value] of Object.entries(corsHeadersFor(req))) headers.set(key, value);
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   } catch (error) {
     createEdgeLog({}).error("opera-agent-mcp", errorMessage(error));
-    return json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error." }, id: null }, 500);
+    return json(req, { jsonrpc: "2.0", error: { code: -32603, message: "Internal server error." }, id: null }, 500);
   }
 });
