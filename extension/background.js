@@ -71,9 +71,9 @@ function randomToken() {
 
 async function getConfig() {
   const cfg = await chrome.storage.local.get(STORAGE_KEYS);
-  // Task 3: apply the stored log level to the shared logger. Guarded so a
-  // corrupt or invalid stored value falls back silently to the current
-  // threshold; getConfig never throws.
+  // Apply the stored log level to the shared logger. Guarded so a corrupt or
+  // invalid stored value falls back silently to `warn`, the default level;
+  // getConfig never throws.
   try { globalThis.OperaAgentLog?.configure?.({ level: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn' }); } catch {}
   return {
     paired: !!cfg.paired,

@@ -26,15 +26,41 @@ function hasTableRow(doc, firstCell) {
   return tableRows(doc).some((row) => tableCells(row)[0] === firstCell);
 }
 
+// The gateway section, isolated from the request-body and error-code tables.
+function section(doc, heading) {
+  const start = doc.indexOf(heading);
+  assert.notEqual(start, -1, `docs/api.md has a "${heading}" section`);
+  const rest = doc.slice(start + heading.length);
+  const next = rest.search(/^## /m);
+  return next === -1 ? rest : rest.slice(0, next);
+}
+
+function routedPaths(gateway) {
+  return [...gateway.matchAll(/url\.pathname\.endsWith\("([^"]+)"\)/g)].map((m) => m[1]);
+}
+
 test('api.md documents every path the gateway routes', async () => {
   const gateway = await readFile(gatewayPath, 'utf8');
   const doc = await readFile(docPath, 'utf8');
-  const routed = [...gateway.matchAll(/url\.pathname\.endsWith\("([^"]+)"\)/g)].map((m) => m[1]);
+  const routed = routedPaths(gateway);
   assert.deepEqual([...routed].sort(), ['/command', '/health', '/openapi.json']);
   for (const path of routed) {
     assert.ok(doc.includes(`\`${path}\``), `docs/api.md documents ${path}`);
     assert.ok(hasTableRow(doc, `\`${path}\``), `docs/api.md lists ${path} in the endpoint table`);
   }
+});
+
+test('api.md documents no path the gateway stopped serving', async () => {
+  // The complement of the test above. Without it, a route deleted from the
+  // gateway would leave its row behind in docs/api.md forever, and the
+  // operator would keep reading about an endpoint that 404s.
+  const gateway = await readFile(gatewayPath, 'utf8');
+  const doc = await readFile(docPath, 'utf8');
+  const listed = tableRows(section(doc, '## Endpoints'))
+    .map((row) => tableCells(row)[0])
+    .filter((cell) => cell.startsWith('`/') && cell.endsWith('`'))
+    .map((cell) => cell.replaceAll('`', ''));
+  assert.deepEqual([...listed].sort(), [...routedPaths(gateway)].sort());
 });
 
 test('api.md documents every error code the gateway emits', async () => {
