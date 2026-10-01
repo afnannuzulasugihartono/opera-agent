@@ -152,6 +152,7 @@ headless Chromium/Edge (see [`docs/testing.md`](docs/testing.md)).
 - [Architecture](docs/architecture.md) · [Protocol](docs/protocol.md) · [Versioning](docs/versioning.md)
 - [Roadmap](docs/roadmap.md) · [Efficiency](docs/efficiency.md) · [Performance](docs/performance.md)
 - [Installation](docs/install.md) · [MCP server](docs/mcp.md) · [Testing](docs/testing.md)
+- [Operator runbook](docs/runbook.md) · [Gateway API](docs/api.md)
 - [Release process](docs/release-process.md) · [Release archive](docs/releases/README.md)
 - [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 - [Project history](docs/history.md) · [Durable context](docs/project-context.md) · [Handoff](docs/next-session-handoff.md)

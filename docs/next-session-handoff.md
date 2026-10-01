@@ -1,6 +1,6 @@
 # Opera Agent next-session handoff
 
-## Enterprise UI & Docs Fase 5 closed (2026-10-02, branch-only) — head `1f91078`
+## Enterprise UI & Docs Fase 5 closed (2026-10-02, branch-only) — code/evidence head `1f91078`
 
 Fase 5 (spec `docs/superpowers/specs/2026-10-02-enterprise-ui-docs-phase5-design.md`,
 plan `docs/superpowers/plans/2026-10-02-enterprise-ui-docs-phase5.md`) executed
@@ -53,6 +53,32 @@ Per-task tips (all on the track branch):
 - Archive tag NOT yet created for this branch. After the owner merges, create
   `archive/chore/enterprise-ui-docs-phase5` at the merged head and delete the
   remote track branch (AGENTS.md rule 4).
+- The Options page live pass (extension-context Chromium, storage prefill, invalid
+  URL rejection, empty-resets-to-default, level persistence, version line, plus a
+  service-worker `onChanged → getConfig → threshold` chain check) was performed on
+  a headed Chromium during Task 3 and passed 9/9, but that evidence lived only in
+  the gitignored per-task report. `tests/browser_extension_test.py` has NO
+  `options.html` coverage, so re-run the manual pass if the page changes.
+
+### Residual follow-ups from the final whole-branch review (not defects, not fixed)
+
+- `extension/background.js` carries a source comment saying a corrupt stored log
+  level "falls back silently to the current threshold" while the code sets the
+  literal `warn`. The reset-to-`warn` behavior was deliberately ratified (it
+  matches the store's own normalization and the pinned test); only the comment
+  wording is imprecise. Fixing it is a byte change, so it requires a
+  `background.js` digest re-freeze with reason — the last such move was Task 3
+  (`851d8e8`).
+- Test-hardening opportunities, all non-blocking: `tests/endpoint-source.test.mjs`
+  pins the update deploy unit only negatively (any other literal URL would still
+  pass) and imports `DEFAULT_BRIDGE_URL` / `SUPABASE_PROJECT_REF` without
+  asserting them; `tests/api-docs.test.mjs` enforces "served ⊆ documented" but not
+  the spec's "documented ⊆ served", so a stale extra endpoint row would not fail;
+  `tests/options-store.test.mjs` asserts `/^https:\/\//` instead of equality with
+  `DEFAULT_BRIDGE_URL` on the default and reset paths.
+- The spec's token-carrier premise ("query confined to read-only") is false and
+  was corrected in code and in `docs/api.md`, but the spec and plan files still
+  carry the original wording. Treat the spec/plan as superseded on that point.
 
 ### Facts a future session must not have to re-derive
 

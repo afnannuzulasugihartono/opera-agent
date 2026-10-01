@@ -23,7 +23,9 @@ document.
 The complete set of browser APIs this extension calls is small enough to
 enumerate, which is how each claim below was checked: `chrome.alarms.*`,
 `chrome.debugger.*`, `chrome.runtime.*`, `chrome.scripting.executeScript`,
-`chrome.storage.local` / `onChanged`, and `chrome.tabs.*`. Nothing else.
+`chrome.storage.local` / `onChanged`, `chrome.tabs.*`, and `chrome.windows.*`
+(`get` and `update`, used only to read a tab's window and to focus it; these
+need no manifest permission). Nothing else.
 
 ### `tabs`
 
@@ -203,6 +205,16 @@ Not a permission, but it bounds what the permissions above can reach:
 http://127.0.0.1:* https://*.supabase.co`. No remote code execution, no inline
 script, and network egress limited to the local loopback and the Supabase
 project. `SECURITY.md` records the same principle.
+
+### Where the settings and the operator docs live
+
+- The only UI for settings is the extension **Options page**
+  (`extension/options.html`, reachable from `opera://extensions` → this
+  extension → Options). It sets the bridge URL override and the log level, and
+  it never displays the device token, a pairing code, or any other secret.
+- [Operator runbook](../docs/runbook.md) — incidents, retention, proposed SLOs.
+- [Install, pairing, and smoke test](../docs/install.md).
+- [Gateway API reference](../docs/api.md).
 
 ### Summary of reviewer-facing notes
 
