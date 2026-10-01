@@ -133,14 +133,25 @@ jobs:
           name: Chromium extension regression
           command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
+# One workflow per gate (2026-10-02): CircleCI reports a single check-run
+# per WORKFLOW (job splits do not surface), so per-gate visibility
+# requires per-gate workflows. Gate commands are unchanged.
 workflows:
-  ci:
+  ci-unit:
     jobs:
       - unit
+  ci-secrets:
+    jobs:
       - secret-scan
+  ci-audit:
+    jobs:
       - audit
+  ci-deno:
+    jobs:
       - deno
+  ci-sbom:
+    jobs:
       - sbom
-      - browser:
-          requires:
-            - unit
+  ci-browser:
+    jobs:
+      - browser
