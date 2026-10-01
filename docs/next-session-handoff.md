@@ -37,8 +37,10 @@ Per-task tips (all on the track branch):
 
 ### Exact state at close
 
-- Head `1f91078`, branch pushed and in sync with
-  `origin/chore/enterprise-ui-docs-phase5`. Working tree clean.
+- Code/evidence head `1f91078`; this docs closeout commits on top of it, so the
+  real branch tip is one commit newer — resolve it with `git log -1` and the
+  remote before the next write rather than assuming `1f91078`. Working tree
+  clean; branch pushed and in sync with `origin/chore/enterprise-ui-docs-phase5`.
 - Full `npm test` **631/631 PASS**, `npm run check` ok (26 allowlisted browser
   primitives, 88 runtime safety files, version 1.6.13), pinned Deno 2.9.6
   `lint supabase/functions/` clean and **9/9** per-function

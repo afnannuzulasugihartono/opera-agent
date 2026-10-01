@@ -1678,7 +1678,7 @@ reference under a source-extracting drift pin; `docs/runbook.md` (incidents,
 owner-adjustable proposed SLOs, honest retention table, accessibility appendix);
 and a per-permission rationale in `extension/README.md`.
 
-Head `1f91078`, pushed and in sync. `npm test` 631/631, `npm run check` ok
+Head `1f91078` (docs closeout on top), pushed and in sync. `npm test` 631/631, `npm run check` ok
 (26 primitives, 88 safety files, 1.6.13), pinned Deno 2.9.6 lint clean + 9/9
 per-function checks, browser harness green, and all 9 check-runs plus combined
 status `success` on that exact head. No merge to `main`, no PR; merge is an
