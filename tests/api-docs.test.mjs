@@ -56,6 +56,9 @@ test('api.md documents no path the gateway stopped serving', async () => {
   // operator would keep reading about an endpoint that 404s.
   const gateway = await readFile(gatewayPath, 'utf8');
   const doc = await readFile(docPath, 'utf8');
+  // The first-column convention is load-bearing: only a cell that opens with
+  // a backticked slash is read as a path, so a request-body or error-code row
+  // can never be mistaken for one.
   const listed = tableRows(section(doc, '## Endpoints'))
     .map((row) => tableCells(row)[0])
     .filter((cell) => cell.startsWith('`/') && cell.endsWith('`'))

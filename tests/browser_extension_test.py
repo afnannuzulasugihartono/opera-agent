@@ -359,6 +359,26 @@ async def wait_text(page, selector, needle, timeout_ms=5000):
     raise AssertionError(
         f'{selector} never showed {needle!r}; last text was {(await page.inner_text(selector))!r}')
 
+async def clear_status(page):
+    """Blank the status line so the next wait_text observes a real transition."""
+    await page.evaluate(
+        "() => { document.getElementById('saveStatus').textContent = ''; }")
+
+async def wait_stored(page, key, expected, timeout_ms=5000):
+    """Wait until a chrome.storage.local key actually holds `expected`.
+
+    The submit handler is async and Playwright's click does not await it, so
+    reading storage straight after a click races the write.
+    """
+    deadline = time.time() + timeout_ms / 1000
+    while time.time() < deadline:
+        value = await page.evaluate(
+            'async (k) => (await chrome.storage.local.get([k]))[k]', key)
+        if value == expected:
+            return value
+        await asyncio.sleep(0.1)
+    raise AssertionError(f'storage[{key!r}] never became {expected!r}; last value was {value!r}')
+
 def managed_browser_resources(func):
     async def wrapped():
         server = ThreadingHTTPServer((HOST, 0), Handler)
@@ -415,51 +435,6 @@ async def run(port, profile):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['version'] == '1.6.13'
         assert result['protocolVersion'] == 1
-
-        # Options page: the only settings surface. Read-only assertions plus one
-        # REJECTED save. The empty-reset path is deliberately not exercised here
-        # because it would overwrite the live bridge URL this harness depends on;
-        # it is covered by tests/options-store.test.mjs instead.
-        bridge_url = f'http://{HOST}:{port}/bridge'
-        options = await context.new_page()
-        await options.goto(f'chrome-extension://{ext_id}/options.html')
-        await options.locator('#bridgeUrl').wait_for(state='visible', timeout=10000)
-        version_line = await options.inner_text('#version')
-        assert '1.6.13' in version_line, version_line
-        assert 'Protocol 1' in version_line, version_line
-        assert await options.input_value('#bridgeUrl') == bridge_url
-        assert await options.input_value('#logLevel') == 'warn'
-
-        # A non-https value must be refused with a mapped message and must not
-        # reach storage.
-        await options.fill('#bridgeUrl', 'not-a-url')
-        await options.click('#saveButton')
-        status = await wait_text(options, '#saveStatus', 'https')
-        stored = await options.evaluate(
-            "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
-        assert stored == bridge_url, stored
-        assert await options.input_value('#bridgeUrl') == 'not-a-url'
-
-        # A valid https override must be accepted and persisted, then restored so
-        # the rest of the harness keeps using the local bridge.
-        await options.fill('#bridgeUrl', 'https://bridge.example.test/hook')
-        await options.click('#saveButton')
-        await wait_text(options, '#saveStatus', 'Saved')
-        stored = await options.evaluate(
-            "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
-        assert stored == 'https://bridge.example.test/hook', stored
-
-        # Log level persistence.
-        await options.select_option('#logLevel', 'debug')
-        await options.click('#saveButton')
-        await wait_text(options, '#saveStatus', 'Saved')
-        level = await options.evaluate(
-            "async () => (await chrome.storage.local.get(['logLevel'])).logLevel")
-        assert level == 'debug', level
-
-        await options.evaluate(
-            f"async () => chrome.storage.local.set({{bridgeUrl:{bridge_url!r}}})")
-        await options.close()
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -2646,6 +2621,58 @@ async def run(port, profile):
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
         assert result['version'] == '1.6.13'
+
+        # Options page: the only settings surface. Placed AFTER every
+        # focus-sensitive assertion on purpose -- an extra Playwright page
+        # becomes the foreground tab, and the pointer/query primitives assert
+        # that browser focus is never taken over. Reusing the popup tab (unused
+        # since pairing) keeps the tab count unchanged. The empty-reset path is
+        # covered by tests/options-store.test.mjs instead: it would overwrite the
+        # live bridge URL the extension still needs.
+        bridge_url = f'http://{HOST}:{port}/bridge'
+        options = popup
+        await options.goto(f'chrome-extension://{ext_id}/options.html')
+        # options.js prefills asynchronously after the load event, so waiting on
+        # visibility would race the storage read and read empty fields.
+        await options.wait_for_function(
+            "() => document.getElementById('bridgeUrl').value !== ''", timeout=10000)
+        version_line = await options.inner_text('#version')
+        assert '1.6.13' in version_line, version_line
+        assert 'Protocol 1' in version_line, version_line
+        assert await options.input_value('#bridgeUrl') == bridge_url
+        assert await options.input_value('#logLevel') == 'warn'
+
+        # A non-https value must be refused with a mapped message and must not
+        # reach storage.
+        await options.fill('#bridgeUrl', 'not-a-url')
+        await options.click('#saveButton')
+        await wait_text(options, '#saveStatus', 'https')
+        stored = await options.evaluate(
+            "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
+        assert stored == bridge_url, stored
+        assert await options.input_value('#bridgeUrl') == 'not-a-url'
+
+        # A valid https override must be accepted and persisted. The status line
+        # is cleared first: it already reads 'Saved.', so waiting for that text
+        # again would return immediately and race the async submit handler.
+        await options.fill('#bridgeUrl', 'https://bridge.example.test/hook')
+        await clear_status(options)
+        await options.click('#saveButton')
+        await wait_text(options, '#saveStatus', 'Saved')
+        stored = await options.evaluate(
+            "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
+        assert stored == 'https://bridge.example.test/hook', stored
+
+        # Log level persistence, waited on the storage write itself.
+        await options.select_option('#logLevel', 'debug')
+        await options.click('#saveButton')
+        await wait_stored(options, 'logLevel', 'debug')
+
+        # Restore the live harness state before continuing.
+        await options.evaluate(
+            f"async () => chrome.storage.local.set("
+            f"{{bridgeUrl:{bridge_url!r}, logLevel:'warn'}})")
+        await options.close()
 
         await context.close()
         import os

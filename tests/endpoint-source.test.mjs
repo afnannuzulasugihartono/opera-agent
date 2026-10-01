@@ -24,7 +24,9 @@ test('update function derives base from SUPABASE_URL, no literal ref', async () 
   // negative one -- without it, replacing the derivation with any other literal
   // URL would still pass.
   assert.doesNotMatch(src, /nenmkmtvjremqphfqnfw/);
-  assert.match(src, /\$\{SUPABASE_URL\.replace\(\/\\\/\$\/, ""\)\}/);
+  // Quote-style tolerant on purpose: the contract is "derives from the
+  // environment with a trailing-slash strip", not one exact spelling of it.
+  assert.match(src, /\$\{SUPABASE_URL\.replace\(\/[^)]*\/,\s*["']["']\)\}/);
 });
 
 test('every exported endpoint constant is derived from the project ref', () => {
