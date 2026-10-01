@@ -1662,3 +1662,18 @@ Planning-only session: approved phased approach A. Fase 1 spec at
 `docs/superpowers/specs/2026-09-30-enterprise-standards-phase1-design.md`
 on branch `chore/enterprise-standards-phase-1` (basis `a99978d`).
 No runtime, test, or infrastructure changes yet.
+
+## Enterprise security track (2026-10-02, Fase 4 closed branch-only)
+
+Fase 4 (plan `docs/superpowers/plans/2026-10-02-enterprise-security-phase4.md`)
+executed 7/7 tasks on `chore/enterprise-security-phase4` (basis `3546ac0`).
+Code head `0a5bbf3`: shared fail-closed CORS resolver
+(`supabase/functions/_shared/cors.js`) wired into gateway/mcp/update;
+token-hygiene regression locks + `SECURITY.md` Token transport note;
+mapped popup/consent user-facing errors (no raw internals); publishable
+key env-first in the 8d scripts. Suite 615/615, `npm run check` ok
+(26 primitives, 85 safety files, 1.6.13), Deno 2.9.6 lint + 9/9
+function checks green, full CI green on the code head (9/9 check-runs +
+combined status success). No merge to `main`, no PR - merge is an
+explicit owner decision. Parked for later: `vm:636` + update log calls
+outside the hygiene scope; consent SDK-bump fragility.

@@ -1975,3 +1975,58 @@ access, then the owner decides promotion.
   deno-install/lint/check, sbom, browser, Vercel) — first fully green
   CI since R9. Served contract unchanged (digests re-frozen with
   reason; derivations proven faithful by reproduction).
+
+## Enterprise Security Fase 4 closed (2026-10-02, branch-only) - code head `0a5bbf3`
+
+Fase 4 executed 7/7 tasks on `chore/enterprise-security-phase4` (plan
+`docs/superpowers/plans/2026-10-02-enterprise-security-phase4.md`, spec
+`docs/superpowers/specs/2026-10-02-enterprise-security-phase4-design.md`;
+per-task ledger at
+`.superpowers/sdd/2026-10-02-enterprise-security-phase4/progress.md`,
+gitignored). Basis `3546ac0` (green `main` merged underneath). No merge
+to `main`, no PR (branch-only default stands).
+
+Per-task tips: T1 `b8bd493` (shared CORS resolver + edge-cors tests; fix
+round `6fd83cd` drops the unknown-rule lint-ignore - Deno 2.9.6 has no
+`no-process-globals` rule, so the ignore broke the gate it meant to
+satisfy); T2 `2e16415` (fail-closed CORS on gateway/mcp/update + machine-
+recomputed digest refreeze); T3 `d0175ee` (token-hygiene proofs: gateway
+401 no-echo + edge-token-hygiene locks + `SECURITY.md` Token transport
+note); T4 `dae34eb` (mapped popup/consent errors, no raw internals;
+consent 3->5 site expansion accepted as same defect class); T5 `0a5bbf3`
+(publishable key env-first in 2 ps1 scripts, literal fallback
+byte-identical); T6 read-only (no commit, tree verified clean); T7 this
+commit. Suite 604 (T1-T2) -> 612 (T3) -> 615 (T4-T5, held at closeout).
+
+Verification on exact code head `0a5bbf3`: `npm test` 615/615 PASS;
+`npm run check` exit 0 (26 allowlisted browser primitives, 85 runtime
+safety files, 1.6.13); pinned Deno 2.9.6
+(`C:\Users\ASUS\AppData\Local\Temp\opencode\deno296\deno.exe`, never
+machine deno, no upgrade): `deno lint supabase/functions/` exit 0
+(15 files); per-function `deno check --no-lock index.ts` 9/9 exit 0
+when run FROM each function dir (root-dir invocation fails with "not a
+dependency" - from-dir is the gate method, no env masking involved);
+`py tests/browser_extension_test.py` headed FAIL on focus assertions
+(`browser.burst`, then `page.click` on the one rerun; `after=None` both
+times = OS window lost focus entirely) - halted per flake policy (one
+headed rerun max); CI `ci-browser` green on the same head, so assessed
+as environment flake, not product regression. Bare repo-wide `deno lint`
+reports 180 pre-existing extension-file hits - outside the CI gate scope
+(`supabase/functions/` only), recorded not fixed.
+
+CI on exact head `0a5bbf3` (BOTH signals): check-runs = 9/9
+completed/success (Vercel Preview Comments, ci-audit, ci-unit,
+ci-browser, ci-deno-install, ci-deno-lint, ci-secrets, ci-deno-check,
+ci-sbom); combined status = success (Vercel + 8 CircleCI contexts).
+Pushed `3546ac0..0a5bbf3`; remote tip = `0a5bbf3` before this commit.
+
+Carried concerns (from task reports, for later phases): `vm:636` +
+`update:71/134` raw console calls outside the 4-function hygiene scope
+(parked); consent SDK-bump fragility (mcp `deno check` leans on the
+2.9.6 fallback for the SDK wildcard types - Fase 3 lesson still
+applies); `cors.js` second comment line references the unknown lint rule
+(stale rationale, zero runtime effect).
+
+Merge readiness: branch is clean, pushed, all gates green - merge stays
+an explicit owner decision. Tip after this commit: verify via
+`git log -1` and the remote before the next write.
