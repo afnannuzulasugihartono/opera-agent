@@ -1,5 +1,6 @@
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -10,11 +11,15 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 const LEGACY_EXTENSION_ID = "pagjlnohdemoohcncicjmaejedcmcocm";
 const EXTENSION_ID_PATTERN = /^[a-p]{32}$/;
 
-function response(body: BodyInit | null, status: number, headers: Record<string,string>) {
+function response(req: Request, body: BodyInit | null, status: number, headers: Record<string,string>) {
+  // Fail-closed CORS: echo the origin ONLY for exact allowlist matches
+  // (CORS_ALLOWED_ORIGINS env override, else the extension + consent page
+  // defaults). A missing or non-allowlisted Origin gets no ACAO header.
+  const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   return new Response(body, {
     status,
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      ...(origin === null ? {} : { "Access-Control-Allow-Origin": origin }),
       "X-Content-Type-Options": "nosniff",
       ...headers
     }
@@ -73,7 +78,7 @@ async function logUpdateEvent(
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
-    return response("Method Not Allowed", 405, { "Allow": "GET, HEAD" });
+    return response(req, "Method Not Allowed", 405, { "Allow": "GET, HEAD" });
   }
   try {
     const url = new URL(req.url);
@@ -83,17 +88,17 @@ Deno.serve(async (req: Request) => {
     // path embeds the ID, so resolve that request from the path instead.
     const identityCrxMatch = path.match(/\/opera-agent-([a-p]{32})-([0-9]+\.[0-9]+\.[0-9]+)\.crx$/);
     const extensionId = identityCrxMatch?.[1] ?? requestedExtensionId(url);
-    if (!extensionId) return response("Invalid extension ID", 400, { "Content-Type": "text/plain; charset=utf-8" });
+    if (!extensionId) return response(req, "Invalid extension ID", 400, { "Content-Type": "text/plain; charset=utf-8" });
     const release = await activeRelease(extensionId);
-    if (!release) return response("No active release for extension ID", 404, { "Content-Type": "text/plain; charset=utf-8" });
+    if (!release) return response(req, "No active release for extension ID", 404, { "Content-Type": "text/plain; charset=utf-8" });
     if (identityCrxMatch && identityCrxMatch[2] !== release.version) {
-      return response("Release not found", 404, { "Content-Type": "text/plain; charset=utf-8" });
+      return response(req, "Release not found", 404, { "Content-Type": "text/plain; charset=utf-8" });
     }
 
     if (path.endsWith("/update.xml")) {
       await logUpdateEvent("update_xml", req, release, url);
       const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">\n  <app appid="${release.extension_id}">\n    <updatecheck codebase="${base}/opera-agent-${release.extension_id}-${release.version}.crx" version="${release.version}" />\n  </app>\n</gupdate>\n`;
-      return response(req.method === "HEAD" ? null : xml, 200, {
+      return response(req, req.method === "HEAD" ? null : xml, 200, {
         "Content-Type": "application/xml; charset=utf-8",
         "Cache-Control": "no-store, max-age=0"
       });
@@ -106,7 +111,7 @@ Deno.serve(async (req: Request) => {
     if (path.endsWith(identityCrxPath) || (legacyCrxPath !== null && path.endsWith(legacyCrxPath))) {
       await logUpdateEvent("crx", req, release, url);
       const bytes = bytesFromBase64(release.crx_base64);
-      return response(req.method === "HEAD" ? null : bytes, 200, {
+      return response(req, req.method === "HEAD" ? null : bytes, 200, {
         "Content-Type": "application/x-chrome-extension",
         "Content-Length": String(bytes.byteLength),
         "Cache-Control": "public, max-age=31536000, immutable",
@@ -123,15 +128,15 @@ Deno.serve(async (req: Request) => {
         sha256: release.sha256,
         passiveUpdateTelemetry: true
       });
-      return response(req.method === "HEAD" ? null : body, 200, {
+      return response(req, req.method === "HEAD" ? null : body, 200, {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-store"
       });
     }
 
-    return response("Not Found", 404, { "Content-Type": "text/plain; charset=utf-8" });
+    return response(req, "Not Found", 404, { "Content-Type": "text/plain; charset=utf-8" });
   } catch (error) {
     console.error("opera-agent-update", error instanceof Error ? error.message : String(error));
-    return response("Update service error", 500, { "Content-Type": "text/plain; charset=utf-8" });
+    return response(req, "Update service error", 500, { "Content-Type": "text/plain; charset=utf-8" });
   }
 });
