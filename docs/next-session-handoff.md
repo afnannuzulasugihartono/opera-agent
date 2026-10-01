@@ -11,19 +11,15 @@
 
 ## Current state (2026-10-02)
 
-- `main` and `origin/main` are both at `b2991b2`, green. That is the baseline
-  this work forked from.
-- The one active work branch is `chore/trim-context-docs`. **Its head is the
-  branch tip — resolve it with `git log -1` and compare against
-  `origin/chore/trim-context-docs` before the next write.** Do not assume
-  `b2991b2`; the repo's pre-write rule requires HEAD to match this record, and
-  after the merge both advance together.
-- Baseline gate evidence at `b2991b2`: `npm test` **659/659**, `npm run check`
-  ok (26 browser primitives, 88 runtime safety files, version 1.6.13), pinned
-  Deno 2.9.6 lint clean and 9/9 per-function checks green, browser harness green,
-  all 8 CircleCI workflows green.
-- Before this trim the remote held exactly one branch, `main`. `main` must not lag
-  an accepted CI-green head by more than one closed checkpoint.
+- `main` and `origin/main` are both at `a49ca4d`. This is the only branch on the
+  remote. There is no active work branch.
+- Gate evidence on `a49ca4d`: `npm test` **659/659**, `npm run check` ok (26
+  browser primitives, 88 runtime safety files, version 1.6.13), pinned Deno 2.9.6
+  lint clean and 9/9 per-function checks green, browser harness green, and all 8
+  CircleCI workflows plus Vercel green. Verified on the merged result, not only on
+  the branch.
+- The context split described below was merged as `b2991b2..a49ca4d`, fast-forward,
+  0 merge commits, and archived as `archive/chore/trim-context-docs`.
 
 ## Do not touch
 
@@ -31,7 +27,8 @@
   on `feat/semantic-runtime-1.6.0`. Do **not** pop, apply, delete, or build from
   it. Inspect it only against canonical Milestone 8E scope if 8E ever resumes.
   8E is paused and must not start implicitly.
-- `archive/*` tags and `docs/releases/` are historical records; do not rewrite.
+- `archive/*` tags, `docs/releases/`, and the existing sections of
+  `docs/context-archive.md` are historical records; do not rewrite them.
 
 ## What happened most recently
 
@@ -47,9 +44,11 @@
    stays valid until a human edits the row) and enforced data retention (no
    scheduler exists; `pg_cron` is not installed and nothing in the repository
    calls the cleanup RPCs).
-3. **This context trimming** — this file and `docs/project-context.md` were
-   rewritten short, with all prior content relocated to
-   `docs/context-archive.md`.
+3. **Context trimming merged as `b2991b2..a49ca4d`.** `docs/next-session-handoff.md`
+   and `docs/project-context.md` were rewritten to 87 and 103 lines; all prior
+   content was relocated verbatim to `docs/context-archive.md`, which holds 110
+   sections. Mandatory per-session context fell from 238 KB to 8 KB. `AGENTS.md`
+   now gives each of the three files one job and a line cap.
 
 ## Awaiting an owner decision
 
@@ -69,13 +68,11 @@ None of these is blocked on engineering work:
 
 ## Exact next action
 
-`chore/trim-context-docs` is complete and awaiting its closeout:
+Nothing is in progress. There is no open branch and no work awaiting a
+verification step.
 
-1. Confirm all 8 CircleCI workflows are green on the branch tip.
-2. Fast-forward `main` onto this branch with `--ff-only` and push.
-3. Create `archive/chore/trim-context-docs` at the merged head, then delete the
-   remote track branch.
-4. Then there is nothing in progress. Await an owner decision from the list above.
+Await an owner decision from the list above. When work is requested, branch from
+`main` and follow the session lifecycle rules in `AGENTS.md`.
 
 ## Rules for the next session
 
@@ -85,3 +82,5 @@ None of these is blocked on engineering work:
 - Do not merge, promote, or sign anything without an explicit owner instruction.
 - A claim in a commit message or a test comment is not evidence. If it says
   something is locked, make the lock fail before you repeat it.
+- This file has a 150-line cap. When a session's detail stops being actionable,
+  relocate it into `docs/context-archive.md` rather than appending here.
