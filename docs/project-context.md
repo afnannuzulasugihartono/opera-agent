@@ -1678,14 +1678,18 @@ reference under a source-extracting drift pin; `docs/runbook.md` (incidents,
 owner-adjustable proposed SLOs, honest retention table, accessibility appendix);
 and a per-permission rationale in `extension/README.md`.
 
-Head `1f91078` (docs closeout on top), pushed and in sync. `npm test` 631/631, `npm run check` ok
+Head `1f91078`, final tip `41a2ae7`. `npm test` 631/631, `npm run check` ok
 (26 primitives, 88 safety files, 1.6.13), pinned Deno 2.9.6 lint clean + 9/9
 per-function checks, browser harness green, and all 9 check-runs plus combined
-status `success` on that exact head. No merge to `main`, no PR; merge is an
-explicit owner decision. Documentation-only findings reported and deliberately
-left unfixed: `activeTab` declared but unused, `tabs` near-convenience, popup
-Unpair not revoking the server token, no writer for the `offline` device status,
-and no scheduler or caller for the cleanup/expire RPCs.
+status `success` on that exact head. **Merged to `main` by owner decision** as
+`eef35e5..41a2ae7` (17 commits, `--ff-only`, 0 merge commits); the merged `main`
+was re-verified green at `41a2ae7`. Track branch archived as
+`archive/chore/enterprise-ui-docs-phase5` and deleted from remote; a stale
+`feat/pre-8e-usability-repair-r8` branch fully contained in `main` was archived
+and deleted in the same pass. Documentation-only findings reported and
+deliberately left unfixed: `activeTab` declared but unused, `tabs`
+near-convenience, popup Unpair not revoking the server token, no writer for the
+`offline` device status, and no scheduler or caller for the cleanup/expire RPCs.
 
 ## Enterprise security track (2026-10-02, Fase 4 closed branch-only)
 

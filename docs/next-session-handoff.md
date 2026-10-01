@@ -1,6 +1,39 @@
 # Opera Agent next-session handoff
 
-## Enterprise UI & Docs Fase 5 closed (2026-10-02, branch-only) — code/evidence head `1f91078`
+## Enterprise UI & Docs Fase 5 MERGED to main (2026-10-02, owner decision)
+
+`chore/enterprise-ui-docs-phase5` was fast-forwarded into `main` (`--ff-only`)
+and pushed: `eef35e5..41a2ae7`, 17 commits, **0 merge commits** (required —
+`origin/main` rejects merge commits, same wall as the earlier linear rebuild).
+`origin/main` was exactly the merge base, so only this track landed.
+
+Merged-result verification, on the merged `main` and not just on the branch:
+`npm test` **631/631 PASS**, `npm run check` ok (26 primitives, 88 safety files,
+1.6.13), and all 8 CircleCI workflows + Vercel `success` with combined commit
+status `success` on head `41a2ae7`. `SonarCloud Code Analysis` reports
+`cancelled` on `main` — that is SonarCloud deduplicating the same commit already
+analysed on the branch head, not a new finding; the pre-existing Sonar C
+Reliability wall on New Code is unchanged and still needs project access.
+
+Remote hygiene after the merge:
+
+- Archive tag `archive/chore/enterprise-ui-docs-phase5` pushed at `41a2ae7`
+  (AGENTS.md rule 4), then the remote track branch was deleted.
+- A stale remote branch `feat/pre-8e-usability-repair-r8` (at `a99978d`) was also
+  found and cleaned: it is **fully contained in `main`** (63 commits behind,
+  nothing unique), so it violated the healthy-remote rule rather than the
+  divergence rule. Archived as `archive/feat/pre-8e-usability-repair-r8` and
+  deleted. A previous session had swept `chore/*` but missed `feat/*`.
+- `origin` now holds exactly one branch: `main` at `41a2ae7`.
+
+Owner decisions still outstanding, unchanged by this merge: SonarCloud project
+access, publishable-key rotation, the independent audit, production promotion,
+and any Fase 6 scope. No follow-on phase is authorized.
+
+The full Fase 5 record — per-task tips, fix rounds, rulings, gate evidence, and
+the residual follow-ups — is the branch section immediately below.
+
+## Enterprise UI & Docs Fase 5 (2026-10-02) — code/evidence head `1f91078`
 
 Fase 5 (spec `docs/superpowers/specs/2026-10-02-enterprise-ui-docs-phase5-design.md`,
 plan `docs/superpowers/plans/2026-10-02-enterprise-ui-docs-phase5.md`) executed
@@ -35,12 +68,19 @@ Per-task tips (all on the track branch):
   `DEVICE_NOT_PAIRED` wording shared with `docs/api.md`. `1f91078` tightened two
   pairing details.
 
+- Final-review follow-ups landed in `41a2ae7`: the permissions rationale's API
+  enumeration was missing `chrome.windows.*`, the spec-required pointer to the
+  runbook/install docs was absent, and neither `README.md` nor
+  `extension/README.md` linked an operator to the two new documents or the Options
+  page. The whole-branch review verdict was "Merge with follow-ups" and the
+  branch was approved for the owner's merge decision.
+
 ### Exact state at close
 
-- Code/evidence head `1f91078`; this docs closeout commits on top of it, so the
-  real branch tip is one commit newer — resolve it with `git log -1` and the
-  remote before the next write rather than assuming `1f91078`. Working tree
-  clean; branch pushed and in sync with `origin/chore/enterprise-ui-docs-phase5`.
+- Code/evidence head `1f91078`, final branch tip `41a2ae7` — now merged into
+  `main`, which is at `41a2ae7` (plus this closeout on top). The branch no longer
+  exists on remote; its tip is preserved as the tag
+  `archive/chore/enterprise-ui-docs-phase5`.
 - Full `npm test` **631/631 PASS**, `npm run check` ok (26 allowlisted browser
   primitives, 88 runtime safety files, version 1.6.13), pinned Deno 2.9.6
   `lint supabase/functions/` clean and **9/9** per-function
@@ -48,11 +88,9 @@ Per-task tips (all on the track branch):
   exit 0.
 - **All 9 check-runs green on `1f91078`** (`ci-unit`, `ci-secrets`, `ci-audit`,
   `ci-deno-install`, `ci-deno-lint`, `ci-deno-check`, `ci-sbom`, `ci-browser`,
-  Vercel) and combined commit status `success`. `_shared/` is a helper directory
-  with no `index.ts`; it is not one of the 9 edge functions.
-- Archive tag NOT yet created for this branch. After the owner merges, create
-  `archive/chore/enterprise-ui-docs-phase5` at the merged head and delete the
-  remote track branch (AGENTS.md rule 4).
+  Vercel) and combined commit status `success`; re-confirmed green on the merged
+  `main` head `41a2ae7`. `_shared/` is a helper directory with no `index.ts`; it
+  is not one of the 9 edge functions.
 - The Options page live pass (extension-context Chromium, storage prefill, invalid
   URL rejection, empty-resets-to-default, level persistence, version line, plus a
   service-worker `onChanged → getConfig → threshold` chain check) was performed on
