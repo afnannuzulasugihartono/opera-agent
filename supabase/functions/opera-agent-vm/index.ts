@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js@2.116.0/edge-runtime.d.ts";
+import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 
 import { canonicalJson, digestCanonical } from "../../../lib/goal-ledger.js";

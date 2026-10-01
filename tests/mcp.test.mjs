@@ -16,9 +16,12 @@ const vercelConfig = JSON.parse(await readFile(vercelConfigUrl, 'utf8'));
 const supabaseConfig = await readFile(supabaseConfigUrl, 'utf8');
 
 test('MCP dependencies are pinned', () => {
+  // Re-frozen 2026-10-02: JSR file imports carry a path after the version
+  // (edge-runtime.d.ts); the pin requirement is unchanged, only the
+  // version-may-be-followed-by-path form is admitted.
   for (const specifier of Object.values(config.imports)) {
-    assert.match(specifier, /@[0-9]+\.[0-9]+\.[0-9]+$/);
-    assert.doesNotMatch(specifier, /@(latest|next)$/);
+    assert.match(specifier, /@[0-9]+\.[0-9]+\.[0-9]+(\/|$)/);
+    assert.doesNotMatch(specifier, /@(latest|next)(\/|$)/);
   }
 });
 
