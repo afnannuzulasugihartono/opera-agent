@@ -11,7 +11,6 @@ export function resolveAllowedOrigin(req, defaults) {
   // Bare `process` read keeps the zero-import contract (the rule's node:process import hint would add an import).
   const raw = typeof Deno !== 'undefined' && Deno.env
     ? Deno.env.get('CORS_ALLOWED_ORIGINS') || ''
-    // deno-lint-ignore no-process-globals
     : (typeof process !== 'undefined' && process.env ? process.env.CORS_ALLOWED_ORIGINS || '' : '');
   const configured = String(raw).split(',').map((s) => s.trim()).filter(Boolean);
   const allowed = new Set(configured.length > 0 ? configured : list);
