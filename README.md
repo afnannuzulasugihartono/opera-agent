@@ -156,6 +156,7 @@ headless Chromium/Edge (see [`docs/testing.md`](docs/testing.md)).
 - [Release process](docs/release-process.md) · [Release archive](docs/releases/README.md)
 - [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 - [Project history](docs/history.md) · [Durable context](docs/project-context.md) · [Handoff](docs/next-session-handoff.md)
+- [Context archive (frozen)](docs/context-archive.md) — prior session logs, read only when tracing a past decision
 - Milestone plans: [6](docs/milestone-6-plan.md) · [7](docs/milestone-7-plan.md) · [8](docs/milestone-8-plan.md)
 
 ## Status

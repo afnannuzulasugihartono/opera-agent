@@ -4,18 +4,33 @@ These instructions apply to the entire repository.
 
 ## Required session close
 
+Three files carry session state, and each has one job. Do not blur them.
+
+| File | Job | Cap |
+|---|---|---|
+| `docs/next-session-handoff.md` | What just happened, what to do next | ~150 lines |
+| `docs/project-context.md` | Durable facts that cannot be recovered from the code | ~100 lines |
+| `docs/context-archive.md` | Frozen history. Never edit, never append | none |
+
 Before ending any work session that changes code, infrastructure, release state,
 architecture, milestone status, accepted decisions, known limitations, or the next
 task:
 
-1. Update `docs/project-context.md` with the durable factual state.
-2. Update `docs/next-session-handoff.md` so a fresh ChatGPT Web or Codex session
-   can continue without relying on chat history.
-3. Exclude transient quota values, speculation, passwords, tokens, pairing codes,
+1. Update `docs/next-session-handoff.md` so a fresh session can continue without
+   relying on chat history: current state, what changed, owner decisions pending,
+   and the exact next action.
+2. Update `docs/project-context.md` only when a fact was learned that cannot be
+   derived by reading the code — a toolchain pin, a platform trap, a blind alley
+   already walked, a claim that code contradicts.
+3. When a session's detail is no longer actionable, move it into
+   `docs/context-archive.md`. **Do not append history to the two live files.**
+   Before this rule existed, those two files reached 67 and 43 sections and 238 KB
+   combined, and both were read at the start of every task.
+4. Exclude transient quota values, speculation, passwords, tokens, pairing codes,
    OAuth secrets, private signing-key contents, raw sensitive page content, and
    other credentials.
-4. Verify both documents against the repository and completed test evidence.
-5. Include the context updates in the session's final commit and push them when
+5. Verify the updates against the repository and completed test evidence.
+6. Include the context updates in the session's final commit and push them when
    the rest of that session is pushed.
 
 For read-only questions that do not change project state, do not create noisy
@@ -123,6 +138,10 @@ same commit with a one-line recorded reason.
   `docs/pre-8e-performance-usability-r<N>.md`, milestone records are
   `docs/milestone-<n>-checkpoint-<id>*.md`. Do not invent a new top-level doc
   family without updating this section in the same commit.
+- **Context records** are `docs/next-session-handoff.md` (current, capped),
+  `docs/project-context.md` (durable facts, capped), and
+  `docs/context-archive.md` (frozen history, append-only by relocation and never
+  edited in place). A new session appends to the handoff, not to the archive.
 - `release-trigger/` is release automation input (`release.yml`); do not
   repurpose or rename it without updating the workflow.
 
