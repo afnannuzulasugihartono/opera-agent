@@ -1,4 +1,4 @@
-// User-facing error mapping for the popup (page lang `en`).
+// User-facing error mapping for the popup and options page (page lang `en`).
 //
 // Background-supplied strings can carry raw internals (fetch TypeErrors,
 // `HTTP <status>`, gateway `data.error`, chrome tab errors, truncated

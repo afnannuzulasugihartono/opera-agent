@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { userErrorMessage } from '../extension/lib/error-messages.js';
+
+const GENERIC = 'Something went wrong. Run self-test, then check the connection.';
 
 test('known errors map to actionable messages', () => {
   assert.equal(userErrorMessage('Pairing failed.'), 'Pairing failed. Check the code and try again.');
@@ -22,7 +25,7 @@ test('known errors map to actionable messages', () => {
 test('options settings validation errors map to actionable messages', () => {
   // The options page routes save failures through this mapper; the two
   // client-side validation literals thrown by lib/options-store.js must not
-  // degrade to the generic backend diagnosis. The neighbouring unknown row
+  // degrade to the generic backend diagnosis. The http:// near-miss row below
   // pins that the generic fallback still covers everything else.
   assert.equal(
     userErrorMessage('Enter an https:// URL or leave empty to reset.'),
@@ -34,8 +37,22 @@ test('options settings validation errors map to actionable messages', () => {
   );
   assert.equal(
     userErrorMessage('Enter an http:// URL or leave empty to reset.'),
-    'Something went wrong. Run self-test, then check the connection.',
+    GENERIC,
   );
+});
+
+test('every literal options-store error stays mapped, not generic (drift lock)', async () => {
+  // Frozen contract: this mapper only recognises exact literals, so editing a
+  // thrown string in lib/options-store.js silently degrades the options page
+  // back to the generic backend diagnosis. Reading the literals out of the
+  // store source makes that drift fail here instead. Source form is required
+  // because the behaviour is exactly "this literal is/is not in KNOWN".
+  const store = await readFile(new URL('../extension/lib/options-store.js', import.meta.url), 'utf8');
+  const literals = [...store.matchAll(/throw new Error\('([^']+)'\)/g)].map((m) => m[1]);
+  assert.ok(literals.length >= 2, `expected store validation literals, found ${literals.length}`);
+  for (const literal of literals) {
+    assert.notEqual(userErrorMessage(literal), GENERIC, `unmapped store error: ${literal}`);
+  }
 });
 
 test('unknown, garbage, and token-shaped inputs fall back to generic', () => {
