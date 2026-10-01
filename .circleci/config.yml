@@ -66,7 +66,7 @@ jobs:
             # unchanged: any high-or-worse advisory still fails the gate.
             npm install --package-lock-only --ignore-scripts --no-audit --no-fund
             npm audit --audit-level=high
-  deno:
+  deno-install:
     executor:
       name: python/default
       tag: "3.12"
@@ -74,15 +74,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Deno and lint/typecheck edge functions
+          name: Install pinned Deno
           command: |
-            # Root deno.lock is machine-local (gitignored); the tracked
-            # per-function lockfile is the reproducible surface, hence --no-lock.
-            # Pinned 2.9.6: 2.1.4 cannot resolve the SDK 1.30.0 wildcard
-            # types (mcp.js.d.ts wall); 2.9.x falls back to the adjacent
-            # mcp.d.ts. Verified locally 2026-10-02 (all 9 functions green).
-            # Direct zip install via python stdlib: no install.sh argument
-            # quirks, no unzip dependency on the image.
             DENO_VERSION="v2.9.6"
             curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip" -o /tmp/deno.zip
             mkdir -p "$HOME/.deno/bin"
@@ -90,11 +83,55 @@ jobs:
             chmod +x "$HOME/.deno/bin/deno"
             export PATH="$HOME/.deno/bin:$PATH"
             deno --version
+  deno-lint:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Deno
+          command: |
+            DENO_VERSION="v2.9.6"
+            curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip" -o /tmp/deno.zip
+            mkdir -p "$HOME/.deno/bin"
+            python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            chmod +x "$HOME/.deno/bin/deno"
+            export PATH="$HOME/.deno/bin:$PATH"
+            deno --version
+      - run:
+          name: Lint edge functions
+          command: |
+            export PATH="$HOME/.deno/bin:$PATH"
             deno lint supabase/functions/
+  deno-check:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Deno
+          command: |
+            DENO_VERSION="v2.9.6"
+            curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip" -o /tmp/deno.zip
+            mkdir -p "$HOME/.deno/bin"
+            python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            chmod +x "$HOME/.deno/bin/deno"
+            export PATH="$HOME/.deno/bin:$PATH"
+            deno --version
+      - run:
+          name: Typecheck edge functions
+          command: |
+            # Root deno.lock is machine-local (gitignored); the tracked
+            # per-function lockfile is the reproducible surface, hence --no-lock.
             # Deno discovers deno.json/import maps from the working directory,
             # so each function must be checked from its own directory: a
             # root-CWD loop ignores the per-function import maps and fails
             # every bare-specifier import with a bogus "not prefixed" error.
+            export PATH="$HOME/.deno/bin:$PATH"
             for d in supabase/functions/opera-agent-*/; do (cd "$d" && deno check --no-lock index.ts); done
   sbom:
     executor:
@@ -151,9 +188,15 @@ workflows:
   ci-audit:
     jobs:
       - audit
-  ci-deno:
+  ci-deno-install:
     jobs:
-      - deno
+      - deno-install
+  ci-deno-lint:
+    jobs:
+      - deno-lint
+  ci-deno-check:
+    jobs:
+      - deno-check
   ci-sbom:
     jobs:
       - sbom
