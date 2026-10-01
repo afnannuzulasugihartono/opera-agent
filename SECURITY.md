@@ -39,3 +39,11 @@ set custom headers (platform limitation, not a choice). Query tokens
 are confined to the read-only `/openapi.json` and `/health` surfaces.
 Tokens are verified then dropped: regression tests pin that they never
 appear in logs, error payloads, or persisted records.
+
+> **Correction (2026-10-02).** The "query tokens are confined to the read-only
+> surfaces" sentence above is wrong and is preserved only as history. No gateway
+> route reads the query string: `extractToken` checks the two headers and then
+> `body.apiKey`, and there is no `searchParams` read anywhere in the function. So
+> `?apiKey=` is **not** a token carrier on any route, and the carriers are exactly
+> the three listed. `tests/api-docs.test.mjs` now pins both halves of that
+> statement so the code and this file cannot drift apart silently.

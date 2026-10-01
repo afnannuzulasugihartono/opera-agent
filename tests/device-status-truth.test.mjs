@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import { collectSources, stripComments } from './helpers/source-scan.mjs';
 
 // Frozen contract: the operator runbook tells the reader that a device row with
 // status = 'disabled' can only have been disabled by a human with direct
@@ -12,49 +13,43 @@ import { readdir, readFile } from 'node:fs/promises';
 // of pinning a value that must match, it pins the ABSENCE of a writer. If someone
 // adds a write path, this test fails on purpose and tells them to reconcile the
 // runbook rather than leaving the two disagreeing.
+//
+// Comments are stripped before scanning. The runbook rule and the gateway header
+// comment both *describe* the disabled state in prose, and a lock that fires on a
+// sentence describing the behaviour is a lock nobody trusts.
 
 const repoRoot = new URL('../', import.meta.url);
 const runbook = await readFile(new URL('docs/runbook.md', repoRoot), 'utf8');
 
-// Any statement that assigns the literal to a device status column.
+// Every shape by which a source could assign the literal to a device status.
 const DISABLE_WRITER = [
-  /status\s*=\s*'disabled'/i,
-  /set\s+[^;]*status\s*=\s*'disabled'/i,
-  /'disabled'\s*:\s*/i
+  // Raw SQL: status = 'disabled', status='disabled', status = $1 (where the bound
+  // value could be this literal) is deliberately NOT matched -- see PARAMETERISED.
+  /\bstatus\s*=\s*['"`]disabled['"`]/i,
+  // Object literal / SDK update: { status: 'disabled' } or { status: "disabled" }.
+  /\bstatus\s*:\s*['"`]disabled['"`]/i,
+  // A writer parameterised on status whose default is the literal:
+  // p_status text default 'disabled'.
+  /\bstatus\b[^\n;]{0,80}?\bdefault\s+['"`]disabled['"`]/i
 ];
-
-async function collectSources(dir, extensions) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const url = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
-    if (entry.isDirectory()) {
-      out.push(...await collectSources(url, extensions));
-      continue;
-    }
-    if (extensions.some((ext) => entry.name.endsWith(ext))) {
-      out.push({ name: entry.name, url, src: await readFile(url, 'utf8') });
-    }
-  }
-  return out;
-}
 
 const sources = [
   ...await collectSources(new URL('supabase/migrations/', repoRoot), ['.sql']),
   ...await collectSources(new URL('supabase/functions/', repoRoot), ['.ts', '.js']),
   ...await collectSources(new URL('extension/', repoRoot), ['.js'])
-];
+].map(({ name, url, src }) => ({ name, url, code: stripComments(src, url.pathname.endsWith('.sql') ? 'sql' : 'javascript') }));
 
 test('no repository source assigns status = disabled to a device row', () => {
-  const writers = [];
-  for (const { name, url, src } of sources) {
-    if (DISABLE_WRITER.some((pattern) => pattern.test(src))) writers.push(name);
-  }
+  const writers = sources
+    .filter(({ code }) => DISABLE_WRITER.some((pattern) => pattern.test(code)))
+    .map(({ name }) => name);
   assert.deepEqual(
     writers,
     [],
-    'a source now writes status = \'disabled\'. That invalidates the runbook rule that only '
-    + 'a human with direct database access can disable a device. Reconcile docs/runbook.md, '
-    + 'and consider whether the extension Unpair action should now revoke server-side.'
+    'a source now assigns the literal disabled to a device status. That invalidates the '
+    + 'runbook rule that only a human with direct database access can disable a device. '
+    + 'Reconcile docs/runbook.md, and consider whether the extension Unpair action '
+    + 'should now revoke server-side.'
   );
 });
 
@@ -71,11 +66,30 @@ test('the runbook still states the owner-only disable rule', () => {
   );
 });
 
-test('the device status constraint still admits the unreachable-by-code value', async () => {
+test('prose describing the disabled state does not trip the lock', () => {
+  // Guards the lock itself, on a self-contained string so that when the real
+  // lock fires, exactly one test fails and points at the cause.
+  const described = stripComments(
+    "-- a human may set status = 'disabled' by hand\n"
+    + "/* { status: 'disabled' } is what the operator writes in SQL */\n"
+    + "const hint = { 'disabled': 'Disabled' };\n",
+    'sql'
+  );
+  assert.doesNotMatch(described, /status\s*=\s*['"`]disabled['"`]/i);
+  assert.doesNotMatch(described, /status\s*:\s*['"`]disabled['"`]/i);
+  assert.ok(described.includes("'disabled': 'Disabled'"), 'a non-status key is not a writer');
+
+  // And the raw, unstripped text WOULD have matched -- otherwise this test would
+  // pass for the wrong reason.
+  const raw = "-- a human may set status = 'disabled' by hand\n";
+  assert.match(raw, /status\s*=\s*['"`]disabled['"`]/i, 'the pattern does match real code');
+});
+
+test('the device status constraint still admits the unreachable-by-code value', () => {
   const core = sources.find((s) => s.name === '20260907204146_opera_agent_1_0_0_core.sql');
   assert.ok(core, 'the core migration is present');
   assert.match(
-    core.src,
+    core.code,
     /check \(status in \('offline','online','disabled'\)\)/,
     'the status constraint still lists disabled, so direct SQL remains the only way to set it'
   );

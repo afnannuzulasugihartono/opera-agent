@@ -32,6 +32,12 @@ function tags(src, name) {
   return [...src.matchAll(tagPattern(name))].map((m) => m[0]);
 }
 
+// Every opening tag, quote-aware, so an attribute value containing `>` cannot
+// truncate the match.
+function anyTags(src) {
+  return [...src.matchAll(/<[a-z][a-z0-9-]*\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)].map((m) => m[0]);
+}
+
 function attr(tag, name) {
   const m = tag.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, 'i'));
   if (m) return m[1];
@@ -59,16 +65,18 @@ function hasIntrinsicName(tag) {
   return false;
 }
 
-// Text content of an element up to its matching close tag, whitespace collapsed.
-// Good enough for the button-label check on these small, well-formed documents.
-function textOf(src, tag) {
-  const open = tagPattern(tag.source ? tag.source.slice(1, -1).split('\\b')[0] : 'button');
+// Text content of the element STARTING AT `from`, up to its matching close tag.
+// `from` must be the match index of this exact occurrence: resolving by tag text
+// alone would let a nameless button inherit a sibling's identical open tag.
+function textOf(src, tag, from) {
   const name = tagNameOf(tag);
-  const start = src.indexOf(tag);
   const close = `</${name}>`;
-  const end = src.indexOf(close, start);
-  if (start === -1 || end === -1) return '';
-  return src.slice(start + tag.length, end).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const end = src.indexOf(close, from);
+  if (from < 0 || end === -1) return '';
+  const inner = src.slice(from + tag.length, end);
+  // A button named only by an image uses the image's alt text.
+  const alt = inner.match(/<img\b[^>]*\balt\s*=\s*["']([^"']+)["']/i);
+  return `${inner.replace(/<[^>]*>/g, ' ')} ${alt ? alt[1] : ''}`.replace(/\s+/g, ' ').trim();
 }
 
 function tagNameOf(tag) {
@@ -120,19 +128,33 @@ for (const surface of surfaces) {
         .map((m) => attr(m[0], 'for'))
         .filter(Boolean)
     );
-    for (const control of [...tags(src, 'input'), ...tags(src, 'select'), ...tags(src, 'textarea')]) {
-      // A hidden control is not exposed to the user, so it needs no name.
-      if (attr(control, 'type') === 'hidden') continue;
-      const name = hasIntrinsicName(control) || (idOf(control) !== null && labelFor.has(idOf(control)));
-      assert.ok(name, `control has an accessible name: ${control}`);
+    // The implicit association -- <label>Name <input></label> -- is legal and
+    // common, so it counts. Detected by whether the nearest preceding opening tag
+    // before this control is a <label> that has not been closed yet.
+    const wrappingLabel = (at) => {
+      const before = src.slice(0, at);
+      const lastOpen = [...before.matchAll(/<(\/?)([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)].pop();
+      return Boolean(lastOpen) && lastOpen[1] === '' && lastOpen[2].toLowerCase() === 'label';
+    };
+    for (const name of ['input', 'select', 'textarea']) {
+      for (const m of src.matchAll(tagPattern(name))) {
+        const control = m[0];
+        // A hidden control is not exposed to the user, so it needs no name.
+        if (attr(control, 'type') === 'hidden') continue;
+        const id = idOf(control);
+        const named = hasIntrinsicName(control)
+          || (id !== null && labelFor.has(id))
+          || wrappingLabel(m.index);
+        assert.ok(named, `control has an accessible name: ${control}`);
+      }
     }
   });
 
   test(`${surface.name} gives every button an accessible name`, async () => {
     const src = await readFile(surface.url, 'utf8');
-    for (const button of tags(src, 'button')) {
-      const named = hasIntrinsicName(button) || textOf(src, button) !== '';
-      assert.ok(named, `button has an accessible name: ${button}`);
+    for (const m of src.matchAll(tagPattern('button'))) {
+      const named = hasIntrinsicName(m[0]) || textOf(src, m[0], m.index) !== '';
+      assert.ok(named, `button has an accessible name: ${m[0]}`);
     }
   });
 
@@ -167,7 +189,8 @@ for (const surface of surfaces) {
 
   test(`${surface.name} uses unique ids`, async () => {
     const src = await readFile(surface.url, 'utf8');
-    const ids = [...src.matchAll(/\bid\s*=\s*"([^"]+)"/gi)].map((m) => m[1]);
+    // Quote-aware and hyphen-aware: `id='a'` counts, `data-id="a"` does not.
+    const ids = [...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/g)].map((m) => m[1]);
     const seen = new Set();
     const duplicates = ids.filter((id) => (seen.has(id) ? true : (seen.add(id), false)));
     assert.deepEqual(duplicates, [], `duplicate ids: ${duplicates.join(', ')}`);
@@ -175,8 +198,8 @@ for (const surface of surfaces) {
 
   test(`${surface.name} resolves every aria reference to a real element`, async () => {
     const src = await readFile(surface.url, 'utf8');
-    const ids = new Set([...src.matchAll(/\bid\s*=\s*"([^"]+)"/gi)].map((m) => m[1]));
-    for (const tag of src.match(/<[a-z][^>]*>/gi) || []) {
+    const ids = new Set([...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/g)].map((m) => m[1]));
+    for (const tag of anyTags(src)) {
       for (const name of ['aria-labelledby', 'aria-describedby', 'aria-controls']) {
         const value = attr(tag, name);
         if (value === null) continue;
@@ -189,10 +212,23 @@ for (const surface of surfaces) {
 
   test(`${surface.name} keeps interaction on natively focusable elements`, async () => {
     const src = await readFile(surface.url, 'utf8');
-    assert.doesNotMatch(src, /\btabindex\s*=\s*"?[1-9]/i, 'no positive tabindex reorders focus');
-    for (const tag of src.match(/<(?:div|span|p|li|section)\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi) || []) {
+    assert.doesNotMatch(
+      src,
+      /(?<![\w-])tabindex\s*=\s*["']?[1-9]/i,
+      'no positive tabindex reorders focus'
+    );
+    // Any element that is not natively interactive, plus anchors (which are only
+    // focusable with href).
+    const nonInteractive = 'div|span|p|li|section|header|footer|h1|h2|h3|h4|h5|h6|td|th|dt|dd|label|ul|ol';
+    for (const tag of src.match(new RegExp(`<(?:${nonInteractive})\\b(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi')) || []) {
       assert.doesNotMatch(tag, /\bon(?:click|dblclick|mousedown|mouseup)\s*=/i,
         `click handler on a non-focusable element: ${tag}`);
+    }
+    // Anchors are focusable only with href; an href-less one must not carry the
+    // click handler either.
+    for (const tag of src.match(/<a\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi) || []) {
+      assert.doesNotMatch(tag, /\bon(?:click|dblclick|mousedown|mouseup)\s*=/i,
+        `click handler on an anchor: ${tag}`);
     }
   });
 }

@@ -349,8 +349,10 @@ Sections: base URLs (project functions root + gateway path), auth (header-first 
 > **SUPERSEDED PHRASE — "query confined to read-only" is FALSE, and this brief
 > caused the error.** The controller supplied it as a verified fact without
 > checking whether any route reads the query string; none does. A task review
-> caught it, `docs/api.md` and the gateway header comment were corrected, and the
-> drift pin now covers the carrier list. Preserved unedited as the plan record.
+> caught it; `docs/api.md`, `SECURITY.md` and the gateway's own header comment were
+> corrected, and `tests/api-docs.test.mjs` now pins both halves — the gateway reads
+> no query-string token, and the document says so. Preserved unedited as the plan
+> record.
 
 - [ ] **Step 2: Drift pin test**
 

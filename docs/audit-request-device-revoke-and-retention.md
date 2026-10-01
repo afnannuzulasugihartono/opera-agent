@@ -37,7 +37,7 @@ Each was verified by reading the repository during this session. None is assumed
    code alone: the bridge hashes `body.token` and passes `p_token_hash` into
    `opera_pair_device`, which upserts on `(device_name)`.
 5. **There is no scheduler.** `pg_cron` is not among the installed extensions
-   (only `pgcrypto` and `pg_net`); no `cron.schedule` call exists; `opera-config.toml`
+   (only `pgcrypto` and `pg_net`); no `cron.schedule` call exists; `supabase/config.toml`
    has no cron block. `opera_goal_cleanup`, `opera_vm_cleanup` and `opera_vm_expire`
    have **no caller anywhere in the repository**.
 6. **Retention is therefore currently aspirational.** Of roughly eleven data

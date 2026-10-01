@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { SUPABASE_PROJECT_REF } from '../extension/lib/endpoints.js';
+import { stripComments } from './helpers/source-scan.mjs';
 
 // Frozen contract: docs/api.md is the narrative API reference and must cover
 // everything the gateway actually serves. The machine source of truth remains
@@ -80,6 +81,35 @@ test('api.md documents every error code the gateway emits', async () => {
     });
     assert.ok(listed, `docs/api.md lists ${code} in the error-code table with its status`);
   }
+});
+
+test('the gateway reads no query-string token, and api.md says so', async () => {
+  // The narrative states that ?apiKey= is not a carrier on ANY route. That
+  // correction is easy to silently re-drift, because the gateway's own header
+  // comment used to describe the opposite. Pin both halves: the code must read no
+  // query string, and the document must keep saying so.
+  const gateway = await readFile(gatewayPath, 'utf8');
+  const doc = await readFile(docPath, 'utf8');
+  const code = stripComments(gateway, 'javascript');
+
+  assert.doesNotMatch(
+    code,
+    /searchParams|url\.search\b|url\.searchParams\b|\?apiKey=/,
+    'the gateway reads no query-string token'
+  );
+
+  const extract = code.match(/function extractToken[\s\S]*?\n}/);
+  assert.ok(extract, 'extractToken is present in the gateway');
+  for (const carrier of ['x-opera-agent-token', 'authorization', 'apiKey']) {
+    assert.ok(extract[0].includes(carrier), `extractToken reads the ${carrier} carrier`);
+  }
+  assert.doesNotMatch(extract[0], /searchParams|url\.search/, 'extractToken reads no query parameter');
+
+  assert.match(
+    doc,
+    /A `\?apiKey=` query parameter is \*\*never\*\* read by the gateway/,
+    'docs/api.md must keep stating that the query string is never read'
+  );
 });
 
 test('api.md base URL matches the shared endpoint constants', async () => {
