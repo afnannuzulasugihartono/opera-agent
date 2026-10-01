@@ -13,7 +13,11 @@
 // code. This scanner is a small character-level state machine so that comment and
 // string states are mutually exclusive and neither can delete live code.
 
-const LINE_COMMENT = { sql: /^\s*--/, javascript: /^\s*\/\// };
+// KNOWN LIMITS. The SQL side does not model dollar-quoted bodies as a distinct
+// state, so a `$$`-quoted function body that contains a bare `--` or `/*` outside
+// any string literal would be treated as a comment. No migration in this
+// repository uses that shape. Inside `$$` bodies, quoted strings containing those
+// markers are handled correctly, which is the realistic case.
 
 /**
  * Replace comment text with equivalent whitespace, preserving offsets and line
@@ -25,7 +29,6 @@ const LINE_COMMENT = { sql: /^\s*--/, javascript: /^\s*\/\// };
  * @returns {string} the source with comments blanked, same length and line count
  */
 export function stripComments(src, kind) {
-  const lineStart = LINE_COMMENT[kind];
   const out = [];
   let i = 0;
   // 'code' | 'sq' | 'dq' | 'bt' | 'block' | 'line'

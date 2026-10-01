@@ -85,11 +85,17 @@ test('api.md documents every error code the gateway emits', async () => {
 
 test('extractToken accepts exactly the three documented carriers', async () => {
   // The narrative states that ?apiKey= is not a carrier on ANY route. Rather than
-  // trying to ban every way a query string could be parsed -- which misses
-  // URLSearchParams and helper functions and falsely rejects a legitimate
-  // non-token query parameter -- this pins the carrier set POSITIVELY inside the
-  // function that decides it. That is the contract docs/api.md actually documents,
-  // and it holds however the surrounding code is written.
+  // trying to ban every way a query string could be parsed across the whole file --
+  // which misses helpers and rejects legitimate non-token query parameters -- this
+  // pins the carrier set POSITIVELY inside the function that decides it.
+  //
+  // KNOWN LIMITS. This pins the body of `extractToken` as written here. It cannot
+  // see a carrier reached by calling a helper (`queryCarrier(req)`), and it cannot
+  // see a route handler that reads the query string and ORs the result in
+  // afterwards. It also reads the last request member syntactically, so an honest
+  // refactor to destructuring (`const { headers } = req`) would fail it. Those are
+  // the trade for not rejecting correct code, and they are the shapes a future
+  // reviewer should re-examine if a query-string carrier is ever suspected.
   const gateway = await readFile(gatewayPath, 'utf8');
   const code = stripComments(gateway, 'javascript');
 
@@ -100,18 +106,17 @@ test('extractToken accepts exactly the three documented carriers', async () => {
   for (const carrier of ['x-opera-agent-token', 'authorization', 'apiKey']) {
     assert.ok(body.includes(carrier), `extractToken reads the ${carrier} carrier`);
   }
-  // No query-string access of any spelling, scoped to the deciding function only.
   assert.doesNotMatch(
     body,
-    /searchParams|\.search\b|searchParams\b|URLSearchParams|\?apiKey=/,
+    /searchParams|\.search\b|URLSearchParams|\?apiKey=/,
     'extractToken reads no query-string carrier'
   );
-  // And it consults no other source: the only request member it touches is headers.
+  // Reads the request member syntactically; see KNOWN LIMITS above.
   const requestMembers = [...body.matchAll(/\breq(?:uest)?\.(\w+)/g)].map((m) => m[1]);
   assert.deepEqual(
     [...new Set(requestMembers)],
     ['headers'],
-    'extractToken reads nothing but request headers'
+    'every request member extractToken reads is a header (syntactic check, see KNOWN LIMITS)'
   );
 });
 

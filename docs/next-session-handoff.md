@@ -58,6 +58,66 @@ manifest permission (held out of scope deliberately), a release so the shipped
 CRX contains the options page, SonarCloud project access, publishable-key
 rotation, and the independent audit.
 
+## Accessibility, doc-truth locks, and an audit request (2026-10-02) — merged to `main`
+
+Branch `chore/followups-accessibility-and-doc-truths`, base `629631d`, 5 commits,
+fast-forwarded into `main`. Suite **659/659** (was 633 at the Phase 5 closeout).
+
+Closed three owner-approved gaps and specified two audit-gated ones:
+
+1. **`tests/ui-accessibility.test.mjs`** — automated STRUCTURE checks over
+   `extension/popup.html` and `extension/options.html`: accessible names on every
+   control and button, language declaration, unique ids, resolvable aria
+   references, no skipped heading level, no positive tabindex, no click handler on
+   a non-focusable element, decorative graphics hidden or labelled. These are **not
+   a WCAG audit** and the file forbids citing itself as conformance evidence.
+2. **`tests/device-status-truth.test.mjs`** — an inverted drift lock pinning the
+   ABSENCE of any runtime source that assigns `status = 'disabled'`, because the
+   runbook tells operators only a human with direct database access can disable a
+   device. Verified: nothing writes that value, so the state is unreachable through
+   the application's own API. It scans the same roots `scripts/check.mjs` walks.
+3. **Four spec/plan files** carrying the false "query confined to read-only"
+   premise are annotated; the original text is preserved unedited as the record.
+4. **`docs/audit-request-device-revoke-and-retention.md`** — a specification for
+   server-side device revoke and enforced retention, deliberately NOT implemented
+   because both change production database shape, which AGENTS.md gates behind an
+   independent audit.
+
+### What three review rounds taught, recorded because it recurred
+
+Each round found that a claim was stronger than the code. The pattern was the
+defect, not the individual gaps:
+
+- A commit message claimed "the drift pin now covers the carrier list". It did not
+  — proven by making `?apiKey=` a working carrier and watching every gateway test
+  stay green. `SECURITY.md` had asserted the same correction while no test read
+  it at all.
+- The carrier pin then "passed" three realistic implementations, including
+  `new URLSearchParams(...)`, while rejecting a legitimate non-token query
+  parameter. It was rewritten to pin `extractToken`'s carrier set positively, and
+  its scope and blind spots are now documented in the file rather than implied.
+- `stripComments` had two false-PASS shapes: a `/*` inside a string literal
+  swallowed the rest of the file, and a `//` line inside a template literal
+  blanked real code. It is now a character-level state machine with committed
+  tests in `tests/source-scan.test.mjs` — note that file lives at the top level
+  because `npm test` globs `tests/*.test.mjs` and does not recurse; the same is
+  true of the integration tests in `tests/postgres/`, which is why they are not in
+  the fast suite.
+- A latent inversion in the implicit-label check made it always return false. It
+  surfaced only because the mutation harness runs legitimate cases as well as
+  broken ones; a harness that only proves rejection would have shipped it.
+
+**Working rule adopted: a lock is not accepted until it has been made to fail on
+a realistic violation, and not described as broader than it is.**
+
+### Still owner decisions, unchanged
+
+Removing the unused `activeTab` permission; a release so the shipped CRX contains
+the options page; commissioning the audit the request document asks for; SonarCloud
+project access; publishable-key rotation; and the independent audit. Items 8 and 9
+of the earlier list (Unpair revocation, enforced retention) are now specified and
+waiting on that audit.
+
 ## Enterprise UI & Docs Fase 5 MERGED to main (2026-10-02, owner decision)
 
 `chore/enterprise-ui-docs-phase5` was fast-forwarded into `main` (`--ff-only`)

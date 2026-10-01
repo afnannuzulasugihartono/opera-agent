@@ -45,5 +45,7 @@ appear in logs, error payloads, or persisted records.
 > route reads the query string: `extractToken` checks the two headers and then
 > `body.apiKey`, and there is no `searchParams` read anywhere in the function. So
 > `?apiKey=` is **not** a token carrier on any route, and the carriers are exactly
-> the three listed. `tests/api-docs.test.mjs` now pins both halves of that
-> statement so the code and this file cannot drift apart silently.
+> the three listed. `tests/api-docs.test.mjs` pins the carrier set inside
+> `extractToken`, so a query-string carrier added there fails CI. It does not see
+> a carrier reached through a helper function or read by a route handler outside
+> `extractToken`; those remain covered by review, not by the test.

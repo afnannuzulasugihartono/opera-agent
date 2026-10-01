@@ -23,17 +23,26 @@ const runbook = await readFile(new URL('docs/runbook.md', repoRoot), 'utf8');
 
 // Every shape by which a source could assign the literal to a device status.
 //
-// KNOWN LIMITS, so nobody over-reads this lock. It does NOT see: a value passed
-// through a variable (`const s = 'disabled'; update({ status: s })`), a
-// parameter bound from an array (`set status = $1` with $1 = 'disabled'), a value
-// assembled at runtime (`concat('dis','abled')`), or a row read back out of JSON.
-// Those are deliberate: a lock that tried to follow values would have to model
-// evaluation, and a lock that guesses would fail on correct code. What this DOES
-// catch is the plain and overwhelmingly likely form, which is the form the audit
-// request proposes.
+// KNOWN LIMITS, so nobody over-reads this lock.
+//
+// SCOPE: the roots below are the runtime trees. They are the same roots
+// `scripts/check.mjs` walks, so a source added outside them would not be scanned.
+// A writer in any other directory is not detected by this lock.
+//
+// VALUE FOLLOWING: it does NOT see a value passed through a variable
+// (`const s = 'disabled'; update({ status: s })`), a parameter bound from an array
+// (`set status = $1` with $1 = 'disabled'), a value assembled at runtime
+// (`concat('dis','abled')`), or a row read back out of JSON. It also does not see
+// a writer written as a CASE expression, a positional INSERT with no `=`, a quoted
+// identifier (`set "status" = ...`), or a quoted JSON key. Those are deliberate: a
+// lock that tried to follow values would have to model evaluation, and a lock that
+// guessed would fail on correct code. What this DOES catch is the plain and
+// overwhelmingly likely form, which is the form the audit request proposes.
 const DISABLE_WRITER = [
-  // Raw SQL: status = 'disabled' / status='disabled' / status = "disabled".
-  /\bstatus\s*=\s*['"`]disabled['"`]/i,
+  // Raw SQL assignment: status = 'disabled' / status='disabled' / status = "disabled".
+  // A read filter (`where status = 'disabled'`) is excluded, because the repository
+  // contains many of those and they are not writers.
+  /(?<!where\s)(?<!,\s)status\s*=\s*['"`]disabled['"`]/i,
   // Object literal / SDK update: { status: 'disabled' } in any quote style,
   // including a prefixed parameter name such as { p_status: 'disabled' }.
   /[\w.]*status\s*:\s*['"`]disabled['"`]/i,
@@ -43,13 +52,23 @@ const DISABLE_WRITER = [
   /[\w.]*status\b[^\n;]{0,80}?\bdefault\s+['"`]disabled['"`]/i
 ];
 
-const sources = [
-  ...await collectSources(new URL('supabase/migrations/', repoRoot), ['.sql']),
-  ...await collectSources(new URL('supabase/functions/', repoRoot), ['.ts', '.js']),
-  ...await collectSources(new URL('extension/', repoRoot), ['.js'])
-].map(({ name, url, src }) => ({ name, url, code: stripComments(src, url.pathname.endsWith('.sql') ? 'sql' : 'javascript') }));
+// The same roots `scripts/check.mjs` discovers runtime files under, so the lock's
+// coverage cannot drift away from what the repository already treats as runtime.
+const RUNTIME_ROOTS = [
+  { dir: 'supabase/migrations/', ext: ['.sql'] },
+  { dir: 'supabase/functions/', ext: ['.ts', '.js'] },
+  { dir: 'extension/', ext: ['.js'] },
+  { dir: 'lib/', ext: ['.js'] },
+  { dir: 'scripts/', ext: ['.mjs', '.js'] }
+];
 
-test('no repository source assigns status = disabled to a device row', () => {
+const sources = (await Promise.all(
+  RUNTIME_ROOTS.map(({ dir, ext }) => collectSources(new URL(dir, repoRoot), ext))
+)).flat().map(({ name, url, src }) => ({
+  name, url, code: stripComments(src, url.pathname.endsWith('.sql') ? 'sql' : 'javascript')
+}));
+
+test('no runtime source assigns status = disabled to a device row', () => {
   const writers = sources
     .filter(({ code }) => DISABLE_WRITER.some((pattern) => pattern.test(code)))
     .map(({ name }) => name);

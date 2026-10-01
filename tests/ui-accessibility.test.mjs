@@ -42,7 +42,10 @@ function attr(tag, name) {
   const m = tag.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, 'i'));
   if (m) return m[1];
   const single = tag.match(new RegExp(`\\b${name}\\s*=\\s*'([^']*)'`, 'i'));
-  return single ? single[1] : null;
+  if (single) return single[1];
+  // HTML also permits an unquoted attribute value.
+  const bare = tag.match(new RegExp(`\\b${name}\\s*=\\s*([^\\s"'>]+)`, 'i'));
+  return bare ? bare[1] : null;
 }
 
 function hasAttr(tag, name) {
@@ -79,7 +82,7 @@ function textOf(src, tag, from) {
   // A name inside aria-hidden is not exposed to assistive technology, so it does
   // not name the control.
   const exposed = inner.replace(
-    /<([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*aria-hidden\s*=\s*"true"[^>]*>[\s\S]*?<\/\1\s*>/gi,
+    /<([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*aria-hidden\s*=\s*(?:"true"|'true'|true)[^>]*>[\s\S]*?<\/\1\s*>/gi,
     ' '
   );
   // A control named only by an image uses the image's alt text.
@@ -184,8 +187,11 @@ for (const surface of surfaces) {
     for (const m of src.matchAll(tagPattern('svg'))) {
       const svg = m[0];
       const insideHiddenWrapper = hidden.some(([start, end]) => m.index >= start && m.index < end);
+      // aria-hidden only hides when its value is true; aria-hidden="false" is an
+      // explicit request to expose the element.
+      const hiddenSelf = (attr(svg, 'aria-hidden') ?? '').toLowerCase() === 'true';
       assert.ok(
-        hasAttr(svg, 'aria-hidden') || insideHiddenWrapper || hasIntrinsicName(svg),
+        hiddenSelf || insideHiddenWrapper || hasIntrinsicName(svg),
         `svg is hidden or labelled: ${svg}`
       );
     }
@@ -237,7 +243,8 @@ for (const surface of surfaces) {
     // Any element that is not natively interactive. Anchors are handled
     // separately because they are focusable only when they carry href.
     const nonInteractive = 'div|span|p|li|section|header|footer|main|nav|article|aside|figure'
-      + '|h1|h2|h3|h4|h5|h6|td|th|tr|thead|tbody|table|dt|dd|label|ul|ol|img|form';
+      + '|h1|h2|h3|h4|h5|h6|td|th|tr|thead|tbody|tfoot|table|dt|dd|label|ul|ol|img|form'
+      + '|fieldset|legend|option|optgroup|col|colgroup|caption|summary';
     for (const tag of src.match(new RegExp(`<(?:${nonInteractive})\\b(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi')) || []) {
       assert.doesNotMatch(tag, /\bon(?:click|dblclick|mousedown|mouseup)\s*=/i,
         `click handler on a non-focusable element: ${tag}`);

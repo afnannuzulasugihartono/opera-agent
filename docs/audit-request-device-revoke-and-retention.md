@@ -33,9 +33,14 @@ Each was verified by reading the repository during this session. None is assumed
    `opera_heartbeat`, `opera_claim_next`, `opera_complete_command`,
    `opera_watch_event_ingest`, `opera_start_workflow` via `supabase.rpc`. There is
    no direct RPC path from the extension.
-4. **Pairing is authenticated by possession of the token**, not by the pairing
-   code alone: the bridge hashes `body.token` and passes `p_token_hash` into
-   `opera_pair_device`, which upserts on `(device_name)`.
+4. **Pairing is authorised by the pairing code; the token is the credential
+   stored afterwards.** The bridge validates the code's length (`bridge/index.ts:62`),
+   hashes the presented token, and calls `opera_pair_device`, which rejects unless
+   the code hash matches an unconsumed, unexpired row (`…_core.sql:127-128`) and
+   then upserts on `(device_name)`. So the code is the authorisation, and the token
+   is what the device is subsequently authenticated by. This distinction matters
+   for Item 1: a revoke authenticated by token possession cannot be used by
+   someone who has lost the token, which is exactly the case that may need it.
 5. **There is no scheduler.** `pg_cron` is not among the installed extensions
    (only `pgcrypto` and `pg_net`); no `cron.schedule` call exists; `supabase/config.toml`
    has no cron block. `opera_goal_cleanup`, `opera_vm_cleanup` and `opera_vm_expire`
@@ -65,8 +70,10 @@ application can disable a device, the only remedy today is direct SQL by the own
      the row's history survive. A delete would destroy the evidence that a revoke
      happened.
    - MUST be revoked from `public`, `anon`, `authenticated` and granted only to
-     `service_role`, matching every other function in this database. The existing
-     pattern is at `…_core.sql:227-230`.
+     `service_role`. The existing pattern for a comparable function is the revoke
+     list at `…_core.sql:218-226` with the grants at `:227-230`. Note that revoking
+     is not universal in this database: several helpers are revoke-only, so the
+     reviewer should decide the exact grant set rather than assume a precedent.
    - MUST write an `opera_audit` row, consistent with `opera_pair_device`
      (`…_core.sql:134`).
    - MUST be idempotent.
@@ -117,12 +124,14 @@ application can disable a device, the only remedy today is direct SQL by the own
 
 ### The problem, stated concretely
 
-`docs/runbook.md` documents a retention table. Eleven of its rows say the purge is
-`manual`, because no routine and no scheduler exists. Two rows claim an automated
-purge, but those functions (`opera_goal_cleanup`, `opera_vm_cleanup`) have no caller.
-So **no data class is purged automatically today**. For a project handling page
-content, command results and telemetry, that is the most consequential of the
-documented gaps.
+`docs/runbook.md` documents a retention table of eleven data rows. Seven of them
+say the purge is `manual`, because no routine exists for the class. Two name the
+cleanup RPCs (`opera_goal_cleanup`, `opera_vm_cleanup`) and are honest that
+nothing calls them. The remaining two are not repository concerns at all — edge
+logs, which no repository artifact manages, and the in-memory log ring buffer,
+which is discarded rather than stored. So **no data class is purged automatically
+today**. For a project handling page content, command results and telemetry, that
+is the most consequential of the documented gaps.
 
 ### Proposed change, for review
 
@@ -144,9 +153,11 @@ pick, or reject all three in favour of a documented manual procedure.
   review. **This spec recommends against Option C** for that reason, and asks the
   reviewer to confirm or overrule.
 
-Regardless of option, `docs/runbook.md` must stop claiming an automated purge for
-any class until a caller demonstrably exists. That correction is safe to make now
-and should not wait for this audit.
+No runbook correction is required before this audit, and a reviewer should not make
+one. `docs/runbook.md` already states the situation accurately — that there is no
+scheduler in the repository and that nothing calls the cleanup RPCs — so editing it
+to "stop claiming an automated purge" would delete a correct warning rather than fix
+a defect. The runbook only needs revisiting once a caller actually exists.
 
 ### Retention periods
 

@@ -1681,6 +1681,30 @@ coverage to the browser harness after three review-found defects in it were fixe
 **633/633**. The headed-Windows focus flake was measured at the base commit and
 pre-exists this work.
 
+## Accessibility, doc-truth locks, and an audit request (2026-10-02) — merged to `main`
+
+Closed three owner-approved gaps on `chore/followups-accessibility-and-doc-truths`
+(base `629631d`, 5 commits), fast-forwarded into `main`. Suite **659/659** (was
+633). Added `tests/ui-accessibility.test.mjs` (automated STRUCTURE checks over the
+extension's own UI surfaces — explicitly not a WCAG audit and not citable as
+conformance evidence) and `tests/device-status-truth.test.mjs` (an inverted lock
+pinning the absence of any runtime source that assigns `status = 'disabled'`,
+backed by `tests/helpers/source-scan.mjs` and its committed tests). Annotated four
+spec/plan files that carried a false "query confined to read-only" premise,
+preserving the original text. Wrote
+`docs/audit-request-device-revoke-and-retention.md` as a specification for
+server-side device revoke and enforced retention WITHOUT implementing either,
+because both change production database shape and AGENTS.md gates that behind an
+independent audit.
+
+Three review rounds found, each time, that a claim was stronger than the code: a
+commit message asserted a drift pin that did not exist, the pin that was then
+written passed three realistic carrier implementations while rejecting a correct
+one, and the comment stripper had two false-PASS shapes that could have blinded the
+security lock. The recorded working rule is that a lock is not accepted until it
+has been made to fail on a realistic violation, and is not described as broader
+than it is.
+
 ## Enterprise UI & docs track (2026-10-02, Fase 5 closed branch-only)
 
 Fase 5 (spec `docs/superpowers/specs/2026-10-02-enterprise-ui-docs-phase5-design.md`,
