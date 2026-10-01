@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 
 $Branch = 'feat/semantic-runtime-1.6.0'
 $ProjectRef = if ($env:SUPABASE_PROJECT_REF) { $env:SUPABASE_PROJECT_REF } else { 'nenmkmtvjremqphfqnfw' }
-$PublishableKey = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6'
+$PublishableKey = if ($env:OPERA_AGENT_PUBLISHABLE_KEY) { $env:OPERA_AGENT_PUBLISHABLE_KEY } else { 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6' }
 $CredentialDir = Join-Path $env:LOCALAPPDATA 'OperaAgent\8D'
 $CredentialFile = Join-Path $CredentialDir 'management-token.dpapi'
 $StateDir = '.opera-agent-8d-state'
