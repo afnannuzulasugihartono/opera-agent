@@ -9,8 +9,8 @@ Three files carry session state, and each has one job. Do not blur them.
 | File | Job | Cap |
 |---|---|---|
 | `docs/next-session-handoff.md` | What just happened, what to do next | ~150 lines |
-| `docs/project-context.md` | Durable facts that cannot be recovered from the code | ~100 lines |
-| `docs/context-archive.md` | Frozen history. Never edit, never append | none |
+| `docs/project-context.md` | Durable facts that cannot be recovered from the code | ~120 lines |
+| `docs/context-archive.md` | Relocated history. Existing sections are never edited; new sessions append a dated section when retiring detail out of the two live files | none |
 
 Before ending any work session that changes code, infrastructure, release state,
 architecture, milestone status, accepted decisions, known limitations, or the next
@@ -140,8 +140,11 @@ same commit with a one-line recorded reason.
   family without updating this section in the same commit.
 - **Context records** are `docs/next-session-handoff.md` (current, capped),
   `docs/project-context.md` (durable facts, capped), and
-  `docs/context-archive.md` (frozen history, append-only by relocation and never
-  edited in place). A new session appends to the handoff, not to the archive.
+  `docs/context-archive.md` (relocated history). A session appends new state to
+  the handoff. The archive receives content only by **relocation** — a dated
+  section moved out of a live file — and never by editing what is already there.
+  Adding a new dated section to the archive is expected; rewriting an archived
+  section is a violation.
 - `release-trigger/` is release automation input (`release.yml`); do not
   repurpose or rename it without updating the workflow.
 

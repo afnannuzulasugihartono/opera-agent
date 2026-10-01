@@ -22,7 +22,7 @@ hot-update independently of the installed extension.
 | CI | CircleCI (tests) · Vercel (deploy/preview) · SonarCloud (PR quality gate) |
 
 Older releases `1.6.10`/`1.6.11` remain intact inactive rows as rollback
-targets. Full release records: [`docs/project-context.md`](docs/project-context.md),
+targets. Full release records: [`docs/context-archive.md`](docs/context-archive.md), [`docs/project-context.md`](docs/project-context.md),
 [`docs/releases/`](docs/releases/README.md).
 
 ## Architecture

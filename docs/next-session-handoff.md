@@ -11,30 +11,45 @@
 
 ## Current state (2026-10-02)
 
-- Branch `main`, tip `b2991b2`, pushed and in sync with `origin/main`.
-- `npm test` **659/659**, `npm run check` ok (26 browser primitives, 88 runtime
-  safety files, version 1.6.13). Pinned Deno 2.9.6 lint clean and 9/9
-  per-function checks green. Browser harness green.
-- All 8 CircleCI workflows green on `b2991b2`, combined status `success`.
-- Remote holds exactly one branch, `main`.
+- `main` and `origin/main` are both at `b2991b2`, green. That is the baseline
+  this work forked from.
+- The one active work branch is `chore/trim-context-docs`. **Its head is the
+  branch tip — resolve it with `git log -1` and compare against
+  `origin/chore/trim-context-docs` before the next write.** Do not assume
+  `b2991b2`; the repo's pre-write rule requires HEAD to match this record, and
+  after the merge both advance together.
+- Baseline gate evidence at `b2991b2`: `npm test` **659/659**, `npm run check`
+  ok (26 browser primitives, 88 runtime safety files, version 1.6.13), pinned
+  Deno 2.9.6 lint clean and 9/9 per-function checks green, browser harness green,
+  all 8 CircleCI workflows green.
+- Before this trim the remote held exactly one branch, `main`. `main` must not lag
+  an accepted CI-green head by more than one closed checkpoint.
+
+## Do not touch
+
+- **`stash@{0}` — "preserve accidental 8E files before completing checkpoint 8D"**,
+  on `feat/semantic-runtime-1.6.0`. Do **not** pop, apply, delete, or build from
+  it. Inspect it only against canonical Milestone 8E scope if 8E ever resumes.
+  8E is paused and must not start implicitly.
+- `archive/*` tags and `docs/releases/` are historical records; do not rewrite.
 
 ## What happened most recently
 
-1. **Enterprise Phase 5 (UI and docs) merged to `main`** as `629631d..b2991b2`.
+1. **Enterprise Phase 5 (UI and docs) merged to `main`** as `eef35e5..41a2ae7`.
    Shipped an Options page for bridge URL and log level, a single endpoint source
    per deploy unit, `docs/api.md`, `docs/runbook.md`, and a permissions rationale
    in `extension/README.md`.
-2. **Accessibility structure checks and two documentation-truth locks added.**
-   `tests/ui-accessibility.test.mjs`, `tests/device-status-truth.test.mjs`,
-   `tests/source-scan.test.mjs`, `tests/helpers/source-scan.mjs`.
-3. **Two audit-gated items specified but deliberately NOT implemented**:
-   server-side device revoke (the popup Unpair action only clears local storage,
-   so a copied device token stays valid until a human edits the row) and enforced
-   data retention (no scheduler exists; `pg_cron` is not installed and nothing in
-   the repository calls the cleanup RPCs). See
-   `docs/audit-request-device-revoke-and-retention.md`.
-4. **This context trimming** — this file and `docs/project-context.md` were
-   rewritten short, with all prior content moved to `docs/context-archive.md`.
+2. **Accessibility structure checks and two documentation-truth locks added** in
+   `629631d..b2991b2`, together with
+   `docs/audit-request-device-revoke-and-retention.md`. Two audit-gated items are
+   specified there but deliberately **not implemented**: server-side device revoke
+   (the popup Unpair action only clears local storage, so a copied device token
+   stays valid until a human edits the row) and enforced data retention (no
+   scheduler exists; `pg_cron` is not installed and nothing in the repository
+   calls the cleanup RPCs).
+3. **This context trimming** — this file and `docs/project-context.md` were
+   rewritten short, with all prior content relocated to
+   `docs/context-archive.md`.
 
 ## Awaiting an owner decision
 

@@ -1,6 +1,8 @@
-# Context archive (frozen)
+# Context archive
 
-**This file is frozen. Do not append to it and do not edit it.**
+**Existing sections in this file are never edited.** A session may append a new
+dated section here when it retires detail out of the two live context files.
+Rewriting what is already archived is a violation.
 
 It holds the historical session log that used to live inline in
 `docs/next-session-handoff.md` and `docs/project-context.md`. Those two files
@@ -11,11 +13,15 @@ that nothing already written is lost, and for searching when a specific past
 decision has to be traced.
 
 Git history holds the same material, so this is a convenience copy rather than
-the only record.
+the only record. Content was relocated here from `main` at `b2991b2`.
 
 Read `docs/project-context.md` for durable facts that must survive, and
 `docs/next-session-handoff.md` for what to do next. Read this file only when
 you need to know when or why something past happened.
+
+Cross-references inside the archived body that point at
+`docs/project-context.md` or `docs/next-session-handoff.md` section headings now
+resolve in Part 1 or Part 2 below, not in the two live files.
 
 ---
 

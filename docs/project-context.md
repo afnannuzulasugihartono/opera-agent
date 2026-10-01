@@ -19,9 +19,9 @@
   tests under `tests/postgres/` therefore never run in the fast suite, by design,
   because they need a live database. A new test placed in a subdirectory will
   silently never run.
-- **The browser test needs `py` on Windows**, not `python`. CI calls `python`
-  directly and is unaffected. `package.json`'s `test:browser` script documents the
-  non-Windows invocation.
+- **The browser test needs `py` on Windows**, not `python`. Do not use
+  `npm run test:browser` on this machine; run `py tests/browser_extension_test.py`
+  directly. CI calls `python` and is unaffected.
 
 ## Branch and history traps
 
@@ -53,6 +53,15 @@
   focus` or `FOREGROUND_REQUIRED`. This was measured at a base commit with later
   changes stashed and **pre-exists them**. Do not attribute it to current work, and
   do not spend a session chasing it.
+
+## Gate-signal traps
+
+- **GitHub combined status can read `success` while a check-run is still pending
+  or red.** This has already produced one recorded false-green in this repository.
+  Read the per-context statuses, never the roll-up. A session that trusts the
+  roll-up can accept a head whose `ci-unit` is still running.
+- **A green local suite is not acceptance.** Acceptance is CircleCI plus Vercel
+  SUCCESS on the exact evidence head.
 
 ## How a claim gets accepted here
 
