@@ -1932,7 +1932,6 @@ Exact-next: Fase 2 — deno debt (punch list with codes/locations in the
 access, then the owner decides promotion.
 
 ## Enterprise track merged to main (2026-10-02, owner-chosen Option 1)
-
 - Owner chose local merge with EXPLICIT acceptance of residual risk (stated
   in-session before merging): head `b785e85` is CI-red ONLY at the new deno
   gate for `opera-agent-mcp` (pre-existing SDK-1.30.0/Deno-2.1.4
@@ -1949,3 +1948,30 @@ access, then the owner decides promotion.
   Sonar will re-evaluate the merged tree) — owner decision pending.
 - Track branch archived as tag `archive/chore/enterprise-standards-phase-1`
   at `b785e85`; local branch deleted after merge per finishing flow.
+
+## Fase 3 infra closeout (2026-10-02, branch chore/deno-wall-infra)
+
+- Correction to the entry above: `main` WAS pushed (`ae7ede9`) later the
+  same session on explicit owner instruction ("push sekarang").
+- Deno wall root-caused (not guessed): SDK 1.30.0 ships only `mcp.d.ts`
+  while Deno 2.1.4 resolves wildcard types to `mcp.js.d.ts` (proven from
+  the local npm cache); Deno 2.9.6 falls back correctly (proven: 9/9
+  functions check green). CI pin moved 2.1.4 → 2.9.6.
+- `no-import-prefix` (8× inline `jsr:` imports) surfaced only after the
+  bump — earlier local repros hid it behind `DENO_NO_PACKAGE_JSON=1`
+  (lesson recorded: verify without masking env). Fixed by moving the
+  specifier into per-function `deno.json` import maps at the lockfile-
+  pinned 2.116.0 (zero resolution change) + new `deno.json` for auth.
+- CI restructured to per-gate workflows after proving CircleCI reports
+  one check-run per workflow (job splits do not surface): `ci-unit`,
+  `ci-secrets`, `ci-audit`, `ci-deno-install/lint/check`, `ci-sbom`,
+  `ci-browser`. This visibility is what localized the red gate.
+- Blind-alley log (for future sessions): SBOM quarantined for one cycle
+  to bisect — exonerated (green on restore); gitleaks proven green
+  locally with the same 8.24.0 binary; browser job green (extension
+  changes innocent); `node --check` exits 0 on broken `.ts` (check.mjs
+  blind spot, Fase 2 hardening candidate).
+- Verdict on head `443f9a4`: ALL checks green (unit, secrets, audit,
+  deno-install/lint/check, sbom, browser, Vercel) — first fully green
+  CI since R9. Served contract unchanged (digests re-frozen with
+  reason; derivations proven faithful by reproduction).

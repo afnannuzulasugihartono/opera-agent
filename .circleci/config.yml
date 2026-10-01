@@ -4,8 +4,11 @@ orbs:
   node: circleci/node@7.2.1
   python: circleci/python@2.0.3
 
+# One job per gate (split 2026-10-02): a red build names its failing gate
+# in the GitHub check list instead of hiding inside a single job log.
+# Gate commands and pins are unchanged from the single-job layout.
 jobs:
-  test:
+  unit:
     executor:
       name: python/default
       tag: "3.12"
@@ -27,6 +30,13 @@ jobs:
           command: |
             npm test
             npm run check
+  secret-scan:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
       - run:
           name: Secret scan (gitleaks)
           command: |
@@ -38,6 +48,16 @@ jobs:
             }
             tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
             /tmp/gitleaks detect --source . --verbose
+  audit:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - node/install:
+          node-version: "22.20.0"
+          install-yarn: false
       - run:
           name: Dependency audit
           command: |
@@ -46,21 +66,83 @@ jobs:
             # unchanged: any high-or-worse advisory still fails the gate.
             npm install --package-lock-only --ignore-scripts --no-audit --no-fund
             npm audit --audit-level=high
+  deno-install:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
       - run:
-          name: Install Deno and lint/typecheck edge functions
+          name: Install pinned Deno
+          command: |
+            DENO_VERSION="v2.9.6"
+            curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip" -o /tmp/deno.zip
+            mkdir -p "$HOME/.deno/bin"
+            python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            chmod +x "$HOME/.deno/bin/deno"
+            export PATH="$HOME/.deno/bin:$PATH"
+            deno --version
+  deno-lint:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Deno
+          command: |
+            DENO_VERSION="v2.9.6"
+            curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip" -o /tmp/deno.zip
+            mkdir -p "$HOME/.deno/bin"
+            python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            chmod +x "$HOME/.deno/bin/deno"
+            export PATH="$HOME/.deno/bin:$PATH"
+            deno --version
+      - run:
+          name: Lint edge functions
+          command: |
+            export PATH="$HOME/.deno/bin:$PATH"
+            deno lint supabase/functions/
+  deno-check:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Deno
+          command: |
+            DENO_VERSION="v2.9.6"
+            curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip" -o /tmp/deno.zip
+            mkdir -p "$HOME/.deno/bin"
+            python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            chmod +x "$HOME/.deno/bin/deno"
+            export PATH="$HOME/.deno/bin:$PATH"
+            deno --version
+      - run:
+          name: Typecheck edge functions
           command: |
             # Root deno.lock is machine-local (gitignored); the tracked
             # per-function lockfile is the reproducible surface, hence --no-lock.
-            curl -fsSL https://deno.land/install.sh | sh -s "v2.1.4" || curl -fsSL https://deno.land/install.sh | sh
-            export DENO_INSTALL="$HOME/.deno"
-            export PATH="$DENO_INSTALL/bin:$PATH"
-            deno --version
-            deno lint supabase/functions/
             # Deno discovers deno.json/import maps from the working directory,
             # so each function must be checked from its own directory: a
             # root-CWD loop ignores the per-function import maps and fails
             # every bare-specifier import with a bogus "not prefixed" error.
+            export PATH="$HOME/.deno/bin:$PATH"
             for d in supabase/functions/opera-agent-*/; do (cd "$d" && deno check --no-lock index.ts); done
+  sbom:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
+      - node/install:
+          node-version: "22.20.0"
+          install-yarn: false
       - run:
           name: SBOM artifact (CycloneDX, informational)
           command: |
@@ -68,6 +150,13 @@ jobs:
       - store_artifacts:
           path: bom.json
           destination: sbom
+  browser:
+    executor:
+      name: python/default
+      tag: "3.12"
+    resource_class: medium
+    steps:
+      - checkout
       - run:
           name: Install Playwright
           command: |
@@ -78,7 +167,31 @@ jobs:
           name: Chromium extension regression
           command: xvfb-run -a env OA_BROWSER_HEADLESS=0 python tests/browser_extension_test.py
 
+# One workflow per gate (2026-10-02): CircleCI reports a single check-run
+# per WORKFLOW (job splits do not surface), so per-gate visibility
+# requires per-gate workflows. Gate commands are unchanged.
 workflows:
-  ci:
+  ci-unit:
     jobs:
-      - test
+      - unit
+  ci-secrets:
+    jobs:
+      - secret-scan
+  ci-audit:
+    jobs:
+      - audit
+  ci-deno-install:
+    jobs:
+      - deno-install
+  ci-deno-lint:
+    jobs:
+      - deno-lint
+  ci-deno-check:
+    jobs:
+      - deno-check
+  ci-sbom:
+    jobs:
+      - sbom
+  ci-browser:
+    jobs:
+      - browser

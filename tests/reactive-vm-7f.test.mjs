@@ -35,7 +35,7 @@ const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp
 // goal-ledger-thresholds publicSurfaceBaseline, the reactive-vm inventory
 // digest, and the transaction inventory digest.
 // Re-frozen 2026-10-01: Enterprise Phase 2 Task 8 converts the ad-hoc console.error to the structured edge-log helper (same level/message; explicit truncation bound), served contract unchanged.
-const EXPECTED_MCP_SHA256 = '45efd69bc591c928bd6a8acd0f52e967b1f5fae9af9c355f1253d943b89ea209';
+const EXPECTED_MCP_SHA256 = '72e1d5d6e56700285da30289616593f97ef54d3c0034971bee5e54e1fbb77a76';
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -120,7 +120,7 @@ test('7F keeps the 1.6.13 public surface and frozen read-only VM effect policy u
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
-  assert.equal(contract.inventory.digest, 'sha256:3b49af5e1a4cd09bc5e5e33be45688033a6711f072b4c1ea13f5a286cc40621e'); // Re-frozen 2026-10-01: Task 8 edge-log conversion (derived from EXPECTED_MCP_SHA256 above), served contract unchanged
+  assert.equal(contract.inventory.digest, 'sha256:741afd318644f31dda0c9db2a1a8779ca9eff27cdc0695958e403aee286948cb'); // Re-frozen 2026-10-02: edge-runtime import moved to deno.json import map (derived from EXPECTED_MCP_SHA256 above), served contract unchanged
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

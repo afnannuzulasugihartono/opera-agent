@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import {
   cancelLedger,
