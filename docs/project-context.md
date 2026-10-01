@@ -2,6 +2,10 @@
 
 Last synchronized: 2026-09-30 (head `4e90d31`: R9 complete in source, CI green, not released)
 
+## Enterprise Quality Fase 2 closed (2026-10-01, branch-only, code head `92d93c6`)
+10/10 tasks on `chore/enterprise-standards-phase-1`: mcp quote-escape + explicit edge types + lint/await hygiene + gateway/ledger/vm/runner type fixes + shared extension logger + logged silent catches (background/popup/protocol/identity/content) + structured edge log helper; suite 599/599, check ok (26 primitives, 83 files, 1.6.13), browser exit 0 on the single headed rerun after one tab-drag flake.
+CI on `92d93c6`: Vercel success, CircleCI `ci` failure at the deno gate ONLY (`opera-agent-mcp`, pre-existing SDK-1.30.0/Deno-2.1.4 `mcp.js.d.ts` wall; lint + 7/8 functions green); Sonar BLOCKED on access (main still C Reliability, Fase 2 fixes unevaluated until merge). Branch approved pending owner decision EXCEPT the deno-mcp wall keeps `main` closed until resolved (Deno upgrade or SDK/lockfile work — Fase 3 or standalone infra task).
+
 ## Enterprise standards Fase 1 closed (2026-09-30, branch-only)
 Fase 1 compliance & security baseline on `chore/enterprise-standards-phase-1` (code head `e3221a7`): MIT LICENSE, SECURITY.md/SUPPORT.md, CODEOWNERS, .env.example, install.md 1.6.13, env-driven ops scripts, CircleCI gitleaks/audit/deno/SBOM gates.
 Verified 2026-09-30: `npm test` 588/588, `npm run check` ok (26 primitives, 81 safety files, 1.6.13), browser suite exit 0 first run; Vercel success, CircleCI red at the deno gate only (pre-existing debt incl. mcp `index.ts:372` parse error — accepted outcome, Fase 2 greens it); Sonar red on C Reliability Rating on New Code (per-issue detail needs SonarCloud project access). No merge to `main`, no PR opened; Fase 2 punch list in the `e3221a7` trailer.

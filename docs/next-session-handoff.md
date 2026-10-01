@@ -1,5 +1,75 @@
 # Opera Agent next-session handoff
 
+## Enterprise Quality Fase 2 closed (2026-10-01, branch-only) — code head `92d93c6`
+
+Fase 2 executed 10/10 tasks on `chore/enterprise-standards-phase-1` (plan
+`docs/superpowers/plans/2026-09-30-enterprise-quality-phase2.md`; per-task
+ledger at `.superpowers/sdd/2026-09-30-enterprise-quality-phase2/progress.md`,
+gitignored). Code head `92d93c6`; this docs closeout commits on top — verify
+the tip via `git log -1` and the remote before the next write. No merge to
+`main`, no PR (branch-only default stands).
+
+Per-task tips: T1 `77ec536` (+ refreeze fix `2e49d37` via `243c17a`); T2
+`243c17a` (explicit edge types, 63 `any` → 0); T3 `8647a46` (via `8a73e41`,
+await/unused hygiene + `req` → `_req` refreeze); T4 `72a57c4`
+(gateway/ledger/vm/runner type fixes); T5 `7787c17` (shared extension logger);
+T6 `0224e5e` (logged silent catches: background/popup/protocol/identity); T7
+`1ced58c` (logged silent catches: content.js); T8 `92d93c6` (structured edge
+log helper, 3 ad-hoc sites); T9 read-only (no commit, tree verified clean at
+`92d93c6`); T10 this commit. Suite 589 (T1–T4) → 597 (T5–T6) → 599 (T7–T8,
+held at closeout).
+
+Verification on exact code head `92d93c6` (2026-10-01): `npm test` **599/599
+PASS**; `npm run check` exit 0 (26 allowlisted browser primitives, 83 runtime
+safety files, 1.6.13); `py tests/browser_extension_test.py` first run FAIL on
+`EXECUTION_ERROR: Tabs cannot be edited right now (user may be dragging a
+tab)` (unchanged runtime → suspected flake), single headed rerun exit 0 PASS
+per policy. Pushed `2e49d37..92d93c6`; remote tip = `92d93c6`.
+
+CI on exact head `92d93c6` (BOTH signals): check-runs = `Vercel Preview
+Comments` completed/success + `ci` completed/**failure**; combined status =
+**failure** (`Vercel=success`, `ci/circleci: test=failure`). `ci` is one
+CircleCI `test` job (checkout → versions → `npm test`+`npm run check` →
+gitleaks → audit → deno lint+check → SBOM → playwright → browser regression;
+sequential, stops at first red). Per-step CircleCI API needs a token
+(unreachable here); reproduced the exact CI deno gate locally with
+authoritative Deno 2.1.4: `deno lint` PASS (14 files); per-function `deno
+check --no-lock` 7/8 PASS, ONLY `opera-agent-mcp` FAILS with the known wall
+`Unable to load .../@modelcontextprotocol/sdk/1.30.0/dist/esm/server/mcp.js.d.ts
+(os error 2)`. Unit/static run the identical commands CI runs and are green
+locally (node v22.22.2 vs CI pin 22.20.0, same major). No evidence of any red
+gate beyond the known mcp wall.
+
+Deno-green proof state: lint clean; `deno check` green for
+auth/bridge/gateway/ledger/runner/transactions-8d/update/vm; mcp red ONLY on
+the SDK-1.30.0/Deno-2.1.4 `.d.ts` resolution wall (pre-existing/environmental,
+reproduced on the unmodified resolution path in T1; needs Deno upgrade or
+SDK/lockfile work).
+
+Sonar verdict (Task 9 report, quoted verbatim):
+
+> **BLOCKED: needs SonarCloud project access** (same gate as Task 8).
+>
+> - Not GREEN: the only Sonar run retrievable (main @ a99978d) is `failure` on `C Reliability Rating on New Code`.
+> - Not DIAGNOSIS: 8 anonymous probes reproduce the Task 8 404/empty wall; no per-issue data, no guessing per the brief.
+> - Unblocking requires one of: (a) authenticated SonarCloud project access (token or member login) to read the leak-period BUG issues; or (b) pushing the branch (owner decision — this task was read-only) so a fresh Sonar analysis evaluates the Fase 2 fixes, then re-running this chase against the new run.
+
+Task-10 update: the branch IS now pushed (tip `92d93c6`), satisfying the push
+half of (b); Sonar analyzes `main` per the Task 9 finding, so Fase 2 fixes
+stay unevaluated until merge — rerun the chase after any merge/PR to see
+whether the leak-period C rating clears.
+
+Merge readiness: branch approved pending owner decision EXCEPT the deno-mcp
+wall keeps `main` closed until resolved (needs Deno upgrade or SDK/lockfile
+work — out of Fase 2 scope, propose as Fase 3 or standalone infra task, do
+not fix here).
+
+Exact next actions (all owner-gated): resolve the deno-mcp wall (Fase 3 or
+standalone infra task); independent audit before promotion (public MCP
+surface/instructions + content/background catches touch AGENTS.md audit
+triggers); merge, then a fresh Sonar chase. Release/activation unchanged:
+production still serves CRX 1.6.13.
+
 ## Head `8e05b3e` — R9 complete in source WITH live browser acceptance; not released
 
 `main` = `feat/pre-8e-usability-repair-r8` = **`8e05b3e`**. CircleCI `ci`
