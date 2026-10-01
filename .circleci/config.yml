@@ -81,9 +81,14 @@ jobs:
             # Pinned 2.9.6: 2.1.4 cannot resolve the SDK 1.30.0 wildcard
             # types (mcp.js.d.ts wall); 2.9.x falls back to the adjacent
             # mcp.d.ts. Verified locally 2026-10-02 (all 9 functions green).
-            curl -fsSL https://deno.land/install.sh | sh -s "v2.9.6" || curl -fsSL https://deno.land/install.sh | sh
-            export DENO_INSTALL="$HOME/.deno"
-            export PATH="$DENO_INSTALL/bin:$PATH"
+            # Direct zip install via python stdlib: no install.sh argument
+            # quirks, no unzip dependency on the image.
+            DENO_VERSION="v2.9.6"
+            curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip" -o /tmp/deno.zip
+            mkdir -p "$HOME/.deno/bin"
+            python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            chmod +x "$HOME/.deno/bin/deno"
+            export PATH="$HOME/.deno/bin:$PATH"
             deno --version
             deno lint supabase/functions/
             # Deno discovers deno.json/import maps from the working directory,
