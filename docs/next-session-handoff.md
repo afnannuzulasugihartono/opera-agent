@@ -1,5 +1,94 @@
 # Opera Agent next-session handoff
 
+## Enterprise UI & Docs Fase 5 closed (2026-10-02, branch-only) — head `1f91078`
+
+Fase 5 (spec `docs/superpowers/specs/2026-10-02-enterprise-ui-docs-phase5-design.md`,
+plan `docs/superpowers/plans/2026-10-02-enterprise-ui-docs-phase5.md`) executed
+5/5 build tasks on `chore/enterprise-ui-docs-phase5` (basis `a97f9ff`), plus this
+closeout. Every task ran a fresh implementer and a fresh reviewer, with a fix round
+where the reviewer returned Needs fixes. **Merge to `main` is still an explicit
+owner decision; nothing was merged and no PR was opened.**
+
+Per-task tips (all on the track branch):
+
+- T1 `a3c4cd8` — `extension/lib/endpoints.js` (single endpoint source per deploy
+  unit) + `tests/endpoint-source.test.mjs`; consent `configEndpoint` locked equal,
+  `opera-agent-update` derives its base from `SUPABASE_URL`. background.js blob
+  digest re-frozen with reason.
+- T2 `9a606a5` — `extension/lib/options-store.js` (DI storage, https-only bridge
+  URL, empty resets to default, three log levels) + unit tests.
+- T3 `851d8e8` — options page (`options.html`/`options.js`, `options_page`
+  registered) + background log-level wiring; manifest/background digests
+  re-frozen with reason. Fix round `188549a` mapped the two client-side validation
+  strings into the error mapper `KNOWN` table. Follow-up `57d3bda` added a drift
+  lock pinning every thrown `options-store` literal as mapped.
+- T4 `dd9d0ba` — `docs/api.md` + `tests/api-docs.test.mjs` (drift pin extracting
+  routed paths, error codes, and base URL from source). `7e3d7a4` corrected the
+  gateway's stale auth-carrier header comment (the query string is never read).
+  `5e7195c` fixed two wrong behavior claims and tightened the pin to require a
+  table row per code and per route (proved by a negative test). `9fbe7e6` added
+  the `content-length` caveat to the `TOO_LARGE` row.
+- T5 `0ca9975` — `docs/runbook.md` (4 incidents, proposed SLOs marked
+  owner-adjustable, honest retention table, accessibility appendix) plus the
+  `extension/README.md` permissions rationale. Fix round `bd25b57` corrected an
+  inverted schema claim, a mis-mapped pairing symptom table, and the
+  `DEVICE_NOT_PAIRED` wording shared with `docs/api.md`. `1f91078` tightened two
+  pairing details.
+
+### Exact state at close
+
+- Head `1f91078`, branch pushed and in sync with
+  `origin/chore/enterprise-ui-docs-phase5`. Working tree clean.
+- Full `npm test` **631/631 PASS**, `npm run check` ok (26 allowlisted browser
+  primitives, 88 runtime safety files, version 1.6.13), pinned Deno 2.9.6
+  `lint supabase/functions/` clean and **9/9** per-function
+  `check --no-lock index.ts` green, browser harness `py tests/browser_extension_test.py`
+  exit 0.
+- **All 9 check-runs green on `1f91078`** (`ci-unit`, `ci-secrets`, `ci-audit`,
+  `ci-deno-install`, `ci-deno-lint`, `ci-deno-check`, `ci-sbom`, `ci-browser`,
+  Vercel) and combined commit status `success`. `_shared/` is a helper directory
+  with no `index.ts`; it is not one of the 9 edge functions.
+- Archive tag NOT yet created for this branch. After the owner merges, create
+  `archive/chore/enterprise-ui-docs-phase5` at the merged head and delete the
+  remote track branch (AGENTS.md rule 4).
+
+### Facts a future session must not have to re-derive
+
+- The pinned Deno 2.9.6 binary at
+  `C:\Users\ASUS\AppData\Local\Temp\opencode\deno296\deno.exe` went missing once
+  and was restored by extracting that same directory's own `deno.zip` (no
+  download, no upgrade; machine deno is 2.1.4 and was never used).
+- **Two of the controller's own Task 4 brief facts were wrong and were corrected
+  by review**: (a) the gateway reads NO query-string token anywhere, so `?apiKey=`
+  is a non-carrier on every route; (b) a device that is already `disabled` is
+  rejected by `opera_verify_device` (`20260922000000:88`) BEFORE the device
+  select, so it yields `UNAUTHORIZED`, never `DEVICE_NOT_PAIRED`. Lesson applied:
+  a brief fact handed to an implementer still has to be verified against the
+  call order, not just the presence of a filter clause.
+- `opera_releases_one_active_idx` was DROPPED by
+  `20260909045456_opera_agent_per_identity_update_channels.sql:5`; the live
+  constraint is `opera_releases_one_active_per_identity_idx` on
+  `(extension_id) where active = true`. Both identities CAN hold an active
+  release; a 404 for the current identity is a publishing gap, not a schema
+  limit. An earlier implementer report asserted the inverse; that claim was
+  retracted in place and must never be cited.
+- Documentation-only findings raised during Fase 5 and reported, deliberately NOT
+  fixed (out of docs scope): `activeTab` is declared in the manifest but verifiably
+  unused (`background.js:1626` is a self-test field name); `tabs` is close to a
+  convenience given the host permissions; the popup's **Unpair is local-only** and
+  does not revoke the server-side token; nothing in the repo writes
+  `opera_devices.status = 'offline'`; there is no scheduler for
+  `opera_goal_cleanup` / `opera_vm_cleanup` / `opera_vm_expire` (pg_cron is not even
+  installed) and nothing in the repo calls `opera_vm_expire`.
+
+### Next action
+
+Owner decision on merging `chore/enterprise-ui-docs-phase5` into `main`. Per
+AGENTS.md rule 3, `main` is fast-forwarded only to a CI-green head with a durable
+evidence record, and rule 7 keeps production promotion, signing, publishable-key
+rotation, and the independent audit as separate explicit owner decisions. No
+follow-on Fase 6 is authorized.
+
 ## Enterprise Quality Fase 2 closed (2026-10-01, branch-only) — code head `92d93c6`
 
 Fase 2 executed 10/10 tasks on `chore/enterprise-standards-phase-1` (plan

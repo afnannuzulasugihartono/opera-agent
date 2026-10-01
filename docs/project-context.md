@@ -1663,6 +1663,30 @@ Planning-only session: approved phased approach A. Fase 1 spec at
 on branch `chore/enterprise-standards-phase-1` (basis `a99978d`).
 No runtime, test, or infrastructure changes yet.
 
+## Enterprise UI & docs track (2026-10-02, Fase 5 closed branch-only)
+
+Fase 5 (spec `docs/superpowers/specs/2026-10-02-enterprise-ui-docs-phase5-design.md`,
+plan `docs/superpowers/plans/2026-10-02-enterprise-ui-docs-phase5.md`) executed
+5/5 build tasks on `chore/enterprise-ui-docs-phase5` (basis `a97f9ff`), each with
+a fresh implementer, a fresh reviewer, and a fix round where review returned
+Needs fixes. Shipped: `extension/lib/endpoints.js` as the single endpoint source
+per deploy unit (consent locked equal, update function derives from
+`SUPABASE_URL`, manifest `update_url` the documented static exception);
+`extension/lib/options-store.js` plus an options page for bridge URL and log
+level with secrets never surfaced; `docs/api.md` as the narrative gateway
+reference under a source-extracting drift pin; `docs/runbook.md` (incidents,
+owner-adjustable proposed SLOs, honest retention table, accessibility appendix);
+and a per-permission rationale in `extension/README.md`.
+
+Head `1f91078`, pushed and in sync. `npm test` 631/631, `npm run check` ok
+(26 primitives, 88 safety files, 1.6.13), pinned Deno 2.9.6 lint clean + 9/9
+per-function checks, browser harness green, and all 9 check-runs plus combined
+status `success` on that exact head. No merge to `main`, no PR; merge is an
+explicit owner decision. Documentation-only findings reported and deliberately
+left unfixed: `activeTab` declared but unused, `tabs` near-convenience, popup
+Unpair not revoking the server token, no writer for the `offline` device status,
+and no scheduler or caller for the cleanup/expire RPCs.
+
 ## Enterprise security track (2026-10-02, Fase 4 closed branch-only)
 
 Fase 4 (plan `docs/superpowers/plans/2026-10-02-enterprise-security-phase4.md`)
