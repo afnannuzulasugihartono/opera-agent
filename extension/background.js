@@ -177,10 +177,27 @@ async function ensureContent(tabId) {
 }
 
 async function contentCall(tabId, method, params = {}) {
-  await ensureContent(tabId);
-  const response = await chrome.tabs.sendMessage(tabId, { scope: 'opera-agent-content', method, params });
-  if (!response) throw new Error('No response from page bridge.');
-  if (response.ok === false) throw new Error(response.error || 'Page bridge error.');
+  // Optimistic send: the content script is already there in the normal case,
+  // so the command goes out first and costs one IPC instead of three
+  // (tabs.get + ping + send). Only a transport failure -- sendMessage throwing
+  // or answering nothing -- falls back to ensureContent, which keeps the
+  // http/https guard and the re-inject step. A page-bridge refusal (ok:false)
+  // is an answer, not a transport failure, and throws without re-injection.
+  const message = { scope: 'opera-agent-content', method, params };
+  let response = null;
+  try {
+    response = await chrome.tabs.sendMessage(tabId, message);
+  } catch (error) {
+    // Transport failure, not an answer: fall through to recovery below.
+    log.debug('CONTENT_SEND_FAILED', error?.message || String(error));
+  }
+  if (response && response.ok === false) throw new Error(response.error || 'Page bridge error.');
+  if (!response) {
+    await ensureContent(tabId);
+    response = await chrome.tabs.sendMessage(tabId, message);
+    if (!response) throw new Error('No response from page bridge.');
+    if (response.ok === false) throw new Error(response.error || 'Page bridge error.');
+  }
   return response;
 }
 

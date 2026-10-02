@@ -66,6 +66,26 @@ test('content readiness uses an internal zero-payload ping instead of a semantic
   assert.match(content, /case 'content\.ping'/);
 });
 
+test('contentCall sends first and only re-establishes the bridge on transport failure', () => {
+  // Source-text pin with a stated reason: contentCall needs chrome.* and cannot
+  // run in node, so the wiring order is pinned here while the latency effect is
+  // measured by the browser harness (page.read/page.query medians before/after).
+  // Optimistic send: the normal case costs one sendMessage instead of
+  // tabs.get + ping + send. A page-bridge refusal (ok:false) is an answer, not
+  // a transport failure, and must never trigger re-injection.
+  const call = background.slice(background.indexOf('async function contentCall'), background.indexOf('async function executeInTab'));
+  const firstSend = call.indexOf('chrome.tabs.sendMessage');
+  const ensure = call.indexOf('ensureContent(');
+  assert.ok(firstSend >= 0 && ensure > firstSend, 'the command must go out before any ensure step');
+  // The fallback path still goes through ensureContent, which keeps the
+  // http/https guard message and the inject step byte-for-byte untested here
+  // but covered by the unchanged readiness test above.
+  assert.match(call, /await ensureContent\(tabId\)/);
+  // Refusal short-circuits: ok:false throws without touching ensureContent.
+  const refusal = call.indexOf('response.ok === false');
+  assert.ok(refusal >= 0 && refusal < ensure, 'a refusal must throw before the fallback');
+});
+
 test('page.read supports a backward-compatible text-only response', () => {
   assert.match(content, /args\.includeElements !== false/);
   assert.match(content, /semanticIdentity\.observe\(regional\.items/);
