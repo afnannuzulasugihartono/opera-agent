@@ -184,8 +184,8 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
 });
 
-test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for release 1.6.14', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.14');
+test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for release 1.6.15', () => {
+  assert.equal(PRODUCT_VERSION, '1.6.15');
   assert.equal(ALLOWED_METHODS.length, 26);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });

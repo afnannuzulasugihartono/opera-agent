@@ -7,6 +7,25 @@ and are recorded per checkpoint in `docs/project-context.md` and
 `docs/releases/`; the sections below keep the GitHub-facing history through
 `1.6.2` plus the current release line.
 
+## [1.6.15] - 2026-10-03 (candidate — signed, uploaded, and activated separately)
+
+Latency and capability work on top of the 1.6.14 line, owner-ordered.
+**Source only — nothing in this section is released or activated.**
+
+- Burst `navigate` step: the tenth burst kind, mapped onto the existing
+  `tabs.navigate` primitive (primitive count stays 26). Post-navigate refs are
+  refused with `BURST_STALE_REF`; per-step `tabId` on all ten kinds makes
+  cross-tab bursts reachable from `run_browser_burst`.
+- Optimistic `contentCall`: the command goes out before any ensure step, so the
+  normal case costs one sendMessage instead of tabs.get + ping + send. A
+  page-bridge refusal (`ok:false`) is an answer, not a transport failure, and
+  never triggers re-injection.
+- Gateway offline-check folded into auth (4 trips to 3, behavior kept).
+- Version 1.6.14 → 1.6.15 sweep across protocol/manifest/package/check.mjs and
+  every version pin, per the recorded sweep convention. A same-version repack
+  would never propagate (update checks compare version numbers), so the bump is
+  required for the auto-update chain to deliver the work.
+
 ## [1.6.14] - 2026-10-03 (candidate — signed, uploaded, and activated separately)
 
 Machine-audit repair of the 1.6.13 line, owner-ordered. **Source only — nothing

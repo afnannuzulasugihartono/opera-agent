@@ -441,7 +441,7 @@ async def run(port, profile):
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert result['version'] == '1.6.14'
+        assert result['version'] == '1.6.15'
         assert result['protocolVersion'] == 1
 
         cid = STATE.push('tabs.find', {'urlContains': 'definitely-not-open.invalid'}, benchmark='tabs.find')
@@ -2628,7 +2628,7 @@ async def run(port, profile):
         await asyncio.sleep(1.5)
         cid = STATE.push('browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
-        assert result['version'] == '1.6.14'
+        assert result['version'] == '1.6.15'
 
         # Options page: the only settings surface. Placed AFTER every
         # focus-sensitive assertion on purpose -- an extra Playwright page
@@ -2652,7 +2652,7 @@ async def run(port, profile):
             "() => document.getElementById('bridgeUrl').value !== ''",
             polling=100, timeout=10000)
         version_line = await options.inner_text('#version')
-        assert '1.6.14' in version_line, version_line
+        assert '1.6.15' in version_line, version_line
         assert 'Protocol 1' in version_line, version_line
         assert await options.input_value('#bridgeUrl') == bridge_url
         assert await options.input_value('#logLevel') == 'warn'

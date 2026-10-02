@@ -144,7 +144,7 @@ test('R9-E: the manifest loads the settle runtime before the content script', as
   const scripts = manifest.content_scripts[0].js;
   assert.ok(scripts.includes('hover-settle.js'), 'the settle runtime must be injected');
   assert.ok(scripts.indexOf('hover-settle.js') < scripts.indexOf('content.js'));
-  assert.equal(manifest.version, '1.6.14');
+  assert.equal(manifest.version, '1.6.15');
 });
 
 test('R9-E: the public burst schema accepts a hover step and still bounds everything', async () => {

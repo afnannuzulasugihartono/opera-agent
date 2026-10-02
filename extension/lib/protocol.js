@@ -1,4 +1,4 @@
-export const PRODUCT_VERSION = '1.6.14';
+export const PRODUCT_VERSION = '1.6.15';
 export const PROTOCOL_VERSION = 1;
 
 import { resolveKeyInput } from './keyboard.js';
