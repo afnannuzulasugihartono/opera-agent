@@ -9,27 +9,28 @@
 > Durable facts — the ones that must never be lost — live in
 > `docs/project-context.md`. Historical detail lives in `docs/context-archive.md`.
 
-## Current state (2026-10-02)
+## Current state (2026-10-03)
 
-- `main` and `origin/main` are both at `5fe91aa`.
-- One active work branch: `test/phase-a-latency-measurement` at `0108f48`, local and
-  remote identical. **Phases A, B, C and D are all complete.** Not merged; merging
-  is owner-only.
-- Gate evidence on `0108f48`: `npm test` **762/762**, `npm run check` ok (26 browser
-  primitives, 92 runtime safety files, version 1.6.13), and **all 9 CircleCI check-runs
-  plus Vercel green**, verified per check-run rather than from the roll-up. The
-  browser harness was not run locally; `ci-browser` is green on the head, but
-  Phase D touches real input and debugger attach, so live browser acceptance is
-  still outstanding and matters more here than in the earlier phases.
-- Baseline evidence on `5fe91aa`: 659/659, 8 CircleCI workflows plus Vercel green.
+- `main` and `origin/main` are both at `a9af637` — Phases A through D, merged
+  fast-forward with 0 merge commits. No work branch is open; `origin/main` is the
+  only remote branch. Archived as `archive/test/phase-a-latency-measurement`.
+- Gate evidence on `a9af637`: `npm test` **762/762**, `npm run check` ok, and all
+  **9 CircleCI workflows plus Vercel green**, verified per check-run.
+  **SonarCloud Code Analysis is `cancelled`, not green** — verified pre-existing,
+  identical on `5fe91aa` before the merge, and it is the known open item about
+  missing SonarCloud project access. Do not describe this head as fully green.
+- The browser harness was never run locally. `ci-browser` is green on the head,
+  but Phase D touches real input and debugger attach, so **live browser acceptance
+  is still outstanding** and matters more here than in the earlier phases.
 
-## Deployment hazard on this branch — read before deploying
+## Deployment hazard — read before deploying
 
-**This branch carries TWO unapplied migrations, and CI applies none of them.**
-Apply both, in this order, before deploying the bridge:
+**Three migrations are unapplied, and CI applies none of them.** Apply all three,
+in this order, before deploying the bridge:
 
 1. `20261002090000_opera_agent_claim_wait.sql`
 2. `20261003110000_opera_agent_claim_budget_and_wait_ramp.sql`
+3. `20261004090000_opera_agent_restore_run_fast.sql`
 
 `.circleci/config.yml` only runs `deno lint` and `deno check`, and
 `docs/runbook.md` treats a migration as an environment change that is owner-only.
@@ -56,15 +57,15 @@ the core migration, unrewritten.
 
 ## What happened most recently
 
-All four phases are done. Arc, oldest first:
+All four phases are done, merged to `main` as `a9af637` (fast-forward, 0 merge
+commits), archived as `archive/test/phase-a-latency-measurement`, branch deleted.
+Then an owner review of what had actually been removed.
 
-- **Goal:** make Opera Agent faster and easier for AI to drive. A full architecture
-  pass mapped the AI-facing MCP surface, the gateway and SQL queue, and the
-  in-browser execution path.
+- **Goal:** make Opera Agent faster and easier for AI to drive.
 - **Phase A, `8e78b5c`** — measurement only, no runtime change. Queue wait p50
   **830ms** / p95 **1910ms**, the fast window only 400ms of 12000ms so ~97% of
-  waits paid the idle rate, 14 claim calls per window. Burst ceiling: only **8 of
-  26** primitives expressible; all 8 `tabs.*` and all 4 `media.*` un-burstable.
+  waits paid the idle rate. Burst ceiling: only **8 of 26** primitives
+  expressible; all 8 `tabs.*` and all 4 `media.*` un-burstable.
 - **B1+B2, `016ed52`** — the pull wait moved from the bridge into Postgres. Queue
   wait **830→118ms (7.0x)** p50, **1910→238ms (8.0x)** p95, HTTP trips per window
   **14→1**, database load only **1.1x** (one index-served lookup per cycle).
@@ -76,7 +77,7 @@ All four phases are done. Arc, oldest first:
   queued while the device was offline could be swept to `expired` mid-execution and
   its result silently discarded. Both claim paths now restart the clock from
   `timeout_ms`; `opera_watch_events_wait` went from 6400 to 648 iterations per 32s
-  call; `created_at` defaults to `clock_timestamp()` so queue order is strict.
+  call; `created_at` defaults to `clock_timestamp()`.
 - **Phase C, `bb46af1`** — four defects on the AI-facing surface. The command path
   moved onto the `opera_await_adaptive` ramp the gateway already used (5 ms first
   response, same iteration count, identical envelope). `wait_events` began
@@ -120,6 +121,16 @@ Editing `opera-agent-mcp/index.ts` is not a one-line change: `sourceSha256` in
 `tests/helpers/boundary-locks.mjs`. Re-freezing is the designed workflow, but it
 needs a recorded reason in the same commit.
 
+- **Do not delete pre-existing code this work did not create; mention it.** An owner
+  review found Phase B3 dropped `opera_run_fast`, a dead service_role-granted
+  function, and locked the drop in a test so it became irreversible without a
+  further test change. It had no caller and nothing depended on its absence, so the
+  removal was a preference, not a requirement, and discarding another author's
+  artifact is an owner decision. Restored in `20261004090000`. The other three
+  Phase B removals were audited and were justified: `waitMs` was kept, the bridge
+  cadence constants had to go so dead code could not mislead, and the replaced
+  comment was less accurate, not more.
+
 ## Still open, unchanged
 
 Carried over from earlier sessions and untouched by the four phases:
@@ -137,17 +148,18 @@ Carried over from earlier sessions and untouched by the four phases:
 
 ## Exact next action
 
-**Await an owner decision.** Phases A through D are closed and green on `0108f48`.
+**Await an owner decision.** All four phases are merged to `main` at `a9af637`, and
+the `opera_run_fast` reversion is on top of that. Nothing is in progress.
 
 Phase D is a capability change on real input and debugger attach, so it needs an
 **independent audit and live browser acceptance** before any deployment; neither has
-happened. Both migrations on this branch remain unapplied. Do not apply a migration,
-merge, or deploy anything without an explicit owner instruction.
+happened. All three migrations remain unapplied. Do not apply one, merge, or deploy
+without an explicit owner instruction.
 
 ## Rules for the next session
 
 - Before the first write, verify the tree is clean and `HEAD` equals the branch
-  tip you are on. Resolve the branch with `git branch --show-current`.
+  tip you are on.
 - Do not merge, promote, or sign anything without an explicit owner instruction.
 - A claim in a commit message or a test comment is not evidence. Make the lock
   fail before you repeat it.

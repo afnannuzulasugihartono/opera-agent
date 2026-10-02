@@ -34,6 +34,11 @@ const MIGRATION_URL = new URL(
 );
 const migration = fs.existsSync(MIGRATION_URL) ? fs.readFileSync(MIGRATION_URL, 'utf8') : null;
 
+const RESTORE_URL = new URL(
+  '../supabase/migrations/20261004090000_opera_agent_restore_run_fast.sql',
+  import.meta.url
+);
+
 const core = fs.readFileSync(
   new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url),
   'utf8'
@@ -164,8 +169,26 @@ test('the queue index still serves the claim ordering', () => {
 
 // --- 4. the dead trap is removed ------------------------------------------
 
-test('opera_run_fast is dropped and no longer granted', () => {
-  assert.ok(migration);
+// Corrected 2026-10-03 after an owner review of what Phase B actually removed.
+// opera_run_fast was dropped on the reasoning that a dead, service_role-granted
+// function is a trap. It was not a caller and nothing broke either way, so the
+// drop was a preference rather than a requirement -- and removing pre-existing
+// code that this work did not create is an owner decision, not an
+// implementation detail. The drop was reverted in
+// 20261004090000_opera_agent_restore_run_fast.sql; the function is documented as
+// non-functional instead, which changes no behavior and keeps the warning
+// without discarding someone else's artifact.
+test('opera_run_fast is not dropped, and a later migration restores it', () => {
+  const restore = fs.existsSync(RESTORE_URL) ? fs.readFileSync(RESTORE_URL, 'utf8') : null;
+  assert.ok(restore, '20261004090000_opera_agent_restore_run_fast.sql must exist');
+  assert.match(restore, /create or replace function public\.opera_run_fast\(/i);
+  // It is granted again, because the grant is part of the pre-existing surface.
+  assert.match(restore, /grant execute on function public\.opera_run_fast\(text,jsonb,integer,text,text\) to service_role;/);
+  // And the defect that makes it non-functional is recorded rather than removed.
+  assert.match(restore, /cannot work|not visible until|always times out/i);
+});
+
+test('the drop still exists in history, so the reversion is auditable', () => {
   assert.match(migration, /drop\s+function\s+(if\s+exists\s+)?public\.opera_run_fast\(/i);
   assert.doesNotMatch(migration, /grant execute on function public\.opera_run_fast/i);
 });
