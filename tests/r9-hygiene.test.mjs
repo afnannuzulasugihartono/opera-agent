@@ -6,8 +6,25 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { FOCUS_GATE_ATTEMPTS } from '../extension/lib/focus-gate.js';
+
+// Recursively collect the code files under a directory. The dead-export guard
+// below needs every runtime module and every test as a consumer, and it must
+// discover new files rather than carry a list that goes stale.
+const collectTests = async (dir) => {
+  const out = [];
+  for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+    const p = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      if (entry.name === '__pycache__') continue;
+      out.push(...await collectTests(p));
+    } else if (/\.(?:test\.)?mjs$/.test(entry.name)) {
+      out.push(p);
+    }
+  }
+  return out;
+};
 
 await import('../extension/role-reconcile.js');
 await import('../extension/hover-settle.js');
@@ -96,32 +113,51 @@ test('the R9 modules expose no unused surface', async () => {
   assert.equal((protocol.match(/isPlainObject/g) || []).length, 7, 'declared once and used six times');
 });
 
-test('no module under extension/ exports a symbol nothing else reaches', async () => {
+test('no module under extension/ or lib/ exports a symbol nothing else reaches', async () => {
   // A general guard, so the next dead export fails here instead of
-  // accumulating. A symbol is "reached" if it appears in any other extension
-  // file, a test, a script, or the edge functions.
-  const files = [
-    '../extension/lib/keyboard.js',
-    '../extension/lib/focus-gate.js',
-    '../extension/lib/protocol.js',
-    '../extension/lib/action-pipeline.js',
-    '../extension/lib/ax-summary.js',
-    '../extension/role-reconcile.js',
-    '../extension/hover-settle.js'
-  ];
+  // accumulating. A symbol is "reached" if it appears in any other runtime
+  // file, any test, any script, or any edge function.
+  //
+  // Replaced a hand-picked list on 2026-10-03. Two reasons, both found by
+  // running it against a tree it had never seen: the old version named seven
+  // module files and twelve consumer files by hand, so a symbol consumed only
+  // by an unlisted test read as dead, and any new module was unchecked
+  // entirely. Its regex also read only `export const|function|class`, which
+  // silently skipped `export async function` -- where three of the five dead
+  // exports were hiding. AGENTS.md requires auto-discovery here for the same
+  // reason `npm run check` must not carry a hand-written safety list.
+  const roots = ['../extension', '../lib'];
+  const collect = async (dir) => {
+    const out = [];
+    for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
+      const p = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) out.push(...await collect(p));
+      else if (entry.name.endsWith('.js')) out.push(p);
+    }
+    return out;
+  };
+  const modules = (await Promise.all(roots.map(collect))).flat();
+
+  // Consumers: every runtime module, every fast-suite test, every script, and
+  // every edge function entry point.
+  const testDir = await collectTests('../tests');
+  const edgeDir = await collectTests('../supabase/functions');
+  const scripts = (await readdir(new URL('../scripts', import.meta.url)))
+    .filter((n) => n.endsWith('.mjs'))
+    .map((n) => `../scripts/${n}`);
   const consumers = await Promise.all(
-    [...files, '../extension/background.js', '../extension/content.js', '../tests/mcp-surface.test.mjs',
-      '../tests/r9-keyboard-vocabulary-parity.test.mjs', '../tests/r9-hygiene.test.mjs', '../tests/r9-focus-and-keyboard.test.mjs',
-      '../tests/r9-hover-settle.test.mjs', '../tests/r9-role-reconcile.test.mjs', '../tests/protocol.test.mjs',
-      '../tests/action-pipeline.test.mjs', '../tests/ax-observation.test.mjs', '../scripts/check.mjs']
+    [...modules, ...testDir, ...edgeDir, ...scripts]
       .map(async (p) => ({ p, text: await readFile(new URL(p, import.meta.url), 'utf8') }))
   );
+
   const dead = [];
-  for (const { p, text } of consumers.filter(({ p }) => p.startsWith('../extension/'))) {
-    const names = [...text.matchAll(/^export (?:const|function|class) (\w+)/gm)].map((m) => m[1]);
+  for (const { p, text } of consumers.filter(({ p }) => p.startsWith('../extension/') || p.startsWith('../lib/'))) {
+    const names = [...text.matchAll(
+      /^export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm
+    )].map((m) => m[1]);
     for (const name of names) {
       const usedElsewhere = consumers.some(
-        (other) => other.p !== p && new RegExp(`\\b${name}\\b`).test(other.text)
+        (other) => other.p !== p && new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\b`).test(other.text)
       );
       if (!usedElsewhere) dead.push(`${p.split('/').pop()} :: ${name}`);
     }

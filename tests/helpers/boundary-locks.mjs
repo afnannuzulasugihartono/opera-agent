@@ -110,9 +110,23 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', 'e035d282b642c7fb0dfe687e034ec200072da991'],
-  ['../lib/reactive-vm-7c.js', '2e5f63f2c5d7c0ee2341c5a88a407783ae4523f4'],
-  ['../lib/reactive-vm-7d.js', 'f08445f142d001aeb45b40a4d1a77fd6d2c7b6c8'],
+  // Re-frozen 2026-10-03 (dead-export elimination): `replayReactiveVm` removed.
+  // It was declared once and reached by nothing -- not the edge function, not
+  // the tests, not the module itself -- so it was unreachable surface rather
+  // than a contract. `REACTIVE_VM_7B_LIMITS` lost only its `export` keyword; it
+  // is still used by three budget checks inside this file. No evaluator, digest,
+  // status or error code changed; every remaining export is byte-identical.
+  ['../lib/reactive-vm.js', 'ecc3559d2d0ae98d681ce0df6fc365123c646052'],
+  // Re-frozen 2026-10-03 (dead-export elimination): `replayReactiveVm7C`
+  // removed. Declared once, reached by nothing, 11 lines of wrapper around
+  // createReactiveVm7C/advanceReactiveVm7C that no caller ever used. No
+  // evaluator, digest, status or error code changed.
+  ['../lib/reactive-vm-7c.js', '212b324840fa347bf058cfaee8fad8cc9f80efc2'],
+  // Re-frozen 2026-10-03 (dead-export elimination): `replayReactiveVm7D` and
+  // `canonicalCollectionDigest7D` removed, both declared once and reached by
+  // nothing. Every other 7D export -- including the collection, dedup and
+  // binding surface the P4/P5 stacks depend on -- is byte-identical.
+  ['../lib/reactive-vm-7d.js', 'e0fb0e1119410c467bad89984fd894af2e29cb23'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
