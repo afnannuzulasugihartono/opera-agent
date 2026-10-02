@@ -1,7 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
+// Extension UI surface, consolidated 2026-10-03.
+//
+// Three files locked the extension's own UI, all by reading the same popup and
+// options sources as text, because popup.js and content.js need chrome.* and
+// cannot be imported in node. They are one file here, in surface order.
+//
+//   tests/ui-accessibility.test.mjs        8 tests x 2 surfaces = 16
+//   tests/popup-ui.test.mjs                1 test
+//   tests/ui-identity-hardening.test.mjs   6 tests
+//   -> tests/ui-surface.test.mjs          23 tests
+//
+//   A  accessible names and document structure, popup + options
+//   B  popup control, layout and status contract
+//   C  identity hardening: ref rebind, ranked find, visible-text fallback
+//
+// Test count and assertion count are the invariants: 23 tests and 45 assertions
+// before, 23 and 45 after, none dropped, weakened or added. No identifier had
+// to be renamed for the merge; the three files shared no top-level names.
+//
+// The scope limits are preserved verbatim in the section that owns them. They
+// are not boilerplate: each one says what these checks deliberately do NOT
+// establish, so a future reader cannot cite this file as evidence it does not
+// provide.
+
+// --- A. accessible names and document structure -----------------------------
+//
 // Structural accessibility contract for the extension's own UI surfaces.
 //
 // SCOPE, stated plainly so nobody over-reads this file: these are automated
@@ -259,3 +286,84 @@ for (const surface of surfaces) {
     }
   });
 }
+
+// --- B. popup control, layout and status contract ---------------------------
+
+const popup = fs.readFileSync(new URL('../extension/popup.html', import.meta.url), 'utf8');
+const script = fs.readFileSync(new URL('../extension/popup.js', import.meta.url), 'utf8');
+const styles = fs.readFileSync(new URL('../extension/styles.css', import.meta.url), 'utf8');
+
+test('popup keeps its controls accessible and responsive in narrow Opera panels', () => {
+  for (const id of [
+    'statusBadge', 'deviceName', 'connection', 'lastCommand', 'visionPrivacy',
+    'pairSection', 'pairCode', 'pairButton', 'pairedSection', 'privateTabButton',
+    'selfTestButton', 'selfTestResult', 'unpairButton'
+  ]) {
+    assert.match(popup, new RegExp(`id="${id}"`));
+  }
+
+  assert.match(popup, /<dl class="details">/);
+  assert.match(popup, /role="alert"/);
+  assert.match(styles, /width:\s*352px/);
+  assert.match(styles, /min-width:\s*148px/);
+  assert.match(styles, /max-width:\s*100vw/);
+  assert.doesNotMatch(styles, /width:\s*min\(/);
+  assert.match(styles, /@media \(max-width: 239px\)/);
+  assert.doesNotMatch(styles, /min-width:\s*340px/);
+  assert.match(script, /ready:\s*'Connected'/);
+  assert.match(script, /currentTabPrivate \? 'blocked' : 'allowed'/);
+});
+
+// --- C. identity hardening --------------------------------------------------
+//
+// U-I identity hardening (2026-09-21): geometry-aware action-ref rebind
+// rejection, ambiguity-ranked find with disambiguation hints, and a
+// visible-text actionable fallback. Source-contract style: the runtime
+// behavior is exercised by the controlled browser regression; these
+// assertions lock the contract in source.
+
+const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
+const content = read('../extension/content.js');
+
+test('I1: action-ref descriptors carry mint-time geometry and mutation version', () => {
+  assert.match(content, /function actionRefDescriptor\(el, options = \{\}\)/);
+  assert.match(content, /rectAtMint:/);
+  assert.match(content, /mutationVersionAtMint:/);
+  assert.match(content, /actionRefDescriptor\(el, \{ rectAtMint: documentRectOf\(el\), mutationVersionAtMint: mutationVersion \}\)/);
+});
+
+test('I1: rebind requires geometry continuity and rejects drift with current candidates', () => {
+  assert.match(content, /function geometryMatchesMint/);
+  assert.match(content, /GEOMETRY_DRIFT_TOLERANCE_PX = 24/);
+  assert.match(content, /moved beyond the geometry tolerance/);
+  assert.match(content, /currentCandidates/);
+});
+
+test('I2: ranked find results expose candidateRank plus a disambiguation hint', () => {
+  assert.match(content, /function findDisambiguationHint/);
+  assert.match(content, /candidateRank: position \+ 1/);
+  assert.match(content, /chose:\$\{position \+ 1\}/);
+});
+
+test('I2: a zero exact match projects one bounded fuzzy candidate with an explicit hint', () => {
+  assert.match(content, /fuzzy: true/);
+  assert.match(content, /exact-match fallback from fuzzy text match/);
+});
+
+test('I3: visible text without an interactive element surfaces a nearby actionable candidate', () => {
+  assert.match(content, /function findVisibleTextCandidate/);
+  assert.match(content, /closest actionable element near the visible text/);
+});
+
+test('I4: rebind falls back to a unique intrinsic-signature successor when the keyed node loses its id', () => {
+  // Live T041 (2026-09-21 07:47:45Z): YouTube recreated the Skip control
+  // without its id between find and click; the keyed pool was empty and the
+  // ref died as "Element not found or reference is stale." The fallback must
+  // scan the interactive pool by intrinsic signature, keep uniqueness, and
+  // leave the mint-time geometry guard as the last line of defense.
+  assert.match(content, /function signatureRebindCandidates/);
+  assert.match(content, /signatureRebindCandidates\(descriptor\)/);
+  assert.match(content, /Keyed successor recreated without its id/);
+  assert.match(content, /INTERACTIVE_SELECTOR\)\]\.slice\(0, 500\)/);
+  assert.match(content, /visibleKey !== expectedKey/);
+});
