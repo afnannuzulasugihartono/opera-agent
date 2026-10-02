@@ -17,8 +17,7 @@
   `deno.zip` — do not download anything.
 - **`npm test` globs `tests/*.test.mjs` and does not recurse.** The integration
   tests under `tests/postgres/` therefore never run in the fast suite, by design,
-  because they need a live database. A new test placed in a subdirectory will
-  silently never run.
+  because they need a live database. A new test in a subdirectory silently never runs.
 - **The browser test needs `py` on Windows**, not `python`. Do not use
   `npm run test:browser` on this machine; run `py tests/browser_extension_test.py`
   directly. CI calls `python` and is unaffected.
@@ -50,9 +49,8 @@
 ## Known flake
 
 - The headed-Windows browser harness can fail with `page.pointer stole browser
-  focus` or `FOREGROUND_REQUIRED`. This was measured at a base commit with later
-  changes stashed and **pre-exists them**. Do not attribute it to current work, and
-  do not spend a session chasing it.
+  focus` or `FOREGROUND_REQUIRED`. Measured at a base commit with later changes
+  stashed, so it **pre-exists them**. Do not attribute it to current work.
 
 ## Gate-signal traps
 
@@ -65,10 +63,9 @@
 
 ## How a claim gets accepted here
 
-The rule that cost the most to learn. How it was arrived at is recorded in
+The rule that cost the most to learn. How it was arrived at is in
 `docs/context-archive.md`; three review rounds in a row produced claims stronger
-than the code, and building the Phase A latency measurement repeated the pattern
-three more times.
+than the code, and the Phase A measurement repeated the pattern three more times.
 
 - A lock is **not accepted** until it has been made to fail on a realistic
   violation.
@@ -78,8 +75,13 @@ three more times.
 - A file must not claim more than it delivers. If a test cannot see a case, say so
   in the test file instead of letting the commit message imply otherwise.
 
-## Platform traps confirmed 2026-10-02
+## Deployment and platform traps
 
+- **CI does not apply migrations.** `.circleci/config.yml` runs only `deno lint` and
+  `deno check`; there is no `supabase db push` and no project link. Migrations are
+  applied by hand and `docs/runbook.md` treats that as an owner-only environment
+  change. So a change that makes an edge function call a new RPC has a hard ordering
+  requirement: migration first, then deploy, or the control path fails outright.
 - **The Chrome debugger banner cannot be hidden** — it persists for the whole
   attachment, and Chrome's guidance is attach-during-a-task, detach-immediately
   after. So caching an attach across commands is a product regression, not an
@@ -108,12 +110,11 @@ Recorded so a later session does not repeat them.
 - **Renaming the 22 MCP tools to dotted form was investigated and declined.** They
   deliberately differ from the primitives and follow no rule: some reverse word
   order (`list_tabs`/`tabs.list`), some are renamed outright
-  (`click_element`/`page.click`), four pointer tools share one primitive, and
-  `browser_status` maps to `browser.ping`. Restructuring buys no consistency.
-  Worse, three test files extract names with `/registerTool\("([a-z_]+)"/g`, which
-  would silently truncate `browser.status` to `browser` instead of failing.
-- **The bridge comment at `opera-agent-bridge/index.ts:18-24` is not stale.** It
-  describes the pre-2026-09-24 250ms cadence the ramp replaced, and its "~52 calls,
-  ~13k claims/hour" fairly approximates that old loop (53 modelled with
-  instantaneous polls, 49 at 20ms). I claimed it was out of date and was wrong;
-  `tests/latency-bridge-cadence.test.mjs` now pins both cadences.
+  (`click_element`/`page.click`), four pointer tools share one primitive.
+  Restructuring buys no consistency, and three test files extract names with
+  `/registerTool\("([a-z_]+)"/g`, which would silently truncate `browser.status` to
+  `browser` instead of failing.
+- **The bridge pull-cadence comment was not stale; I was wrong.** It described the
+  pre-2026-09-24 250ms cadence, and its "~52 calls, ~13k claims/hour" fairly
+  approximates that old loop (53 modelled with instantaneous polls, 49 at 20ms).
+  Superseded on 2026-10-02 and both cadences are now pinned in tests.

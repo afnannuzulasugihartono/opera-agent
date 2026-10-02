@@ -12,13 +12,25 @@
 ## Current state (2026-10-02)
 
 - `main` and `origin/main` are both at `5fe91aa`.
-- One active work branch: `test/phase-a-latency-measurement` at `8e78b5c`, local and
-  remote identical. Phase A only; **not merged, and merging is owner-only**.
-- Gate evidence on `8e78b5c`: `npm test` **686/686** (was 659), `npm run check` ok
-  (26 browser primitives, 88 runtime safety files, version 1.6.13). Browser and
-  cloud gates were **not** run because no runtime code changed. CircleCI and
-  Vercel on this head are **not yet read** — do not treat this as accepted.
+- One active work branch: `test/phase-a-latency-measurement` at `016ed52`, local and
+  remote identical. Phases A and B1+B2 are on it. **Not merged; merging is owner-only.**
+- Gate evidence on `016ed52`: `npm test` **701/701**, `npm run check` ok (26 browser
+  primitives, 89 runtime safety files, version 1.6.13), and **all 9 CircleCI check-runs
+  plus Vercel green**, verified per check-run rather than from the roll-up. The
+  browser harness was not run locally; `ci-browser` is green on the head.
 - Baseline evidence on `5fe91aa`: 659/659, 8 CircleCI workflows plus Vercel green.
+
+## Deployment hazard on this branch — read before deploying
+
+**Apply `supabase/migrations/20261002090000_opera_agent_claim_wait.sql` BEFORE
+deploying the bridge.** CI does not apply migrations; `.circleci/config.yml` only
+runs `deno lint` and `deno check`, and `docs/runbook.md` treats a migration as an
+environment change that is owner-only.
+
+If the order is reversed, `opera_claim_next_wait` does not exist, `rpc()` throws,
+`pull` returns 500, and **the extension can no longer receive any command at all.**
+That is a total loss of the control path, not a degradation. There is deliberately
+no fallback to the single-shot `opera_claim_next`, so the failure cannot be masked.
 
 ## Do not touch
 
@@ -49,16 +61,25 @@
    reason a real task still needs several model round trips.
 5. **MCP tool renaming was investigated and declined** — see the blind-alley entry
    in `docs/project-context.md`.
+6. **Phase B1+B2 delivered as `016ed52`.** `opera_claim_next_wait` moves the pull wait
+   from the bridge into Postgres; `pull` now makes one call per window and the
+   `FAST_PULL_*` / `IDLE_PULL_*` constants are gone. Measured before/after on the
+   same model: queue wait **p50 830→118ms (7.0x)**, **p95 1910→238ms (8.0x)**,
+   max **2030→251ms**; HTTP trips per window **14→1**, per hour **4200→300**.
+   Database load rises only **1.1x** (21000→23100 queries/hour) because the cycle
+   body is a single index-served lookup; running the whole `opera_claim_next` body
+   per iteration would have been roughly 18x.
 
 ## The plan these measurements feed
 
-- **Phase B, cheap and reversible, no audit needed:** a SQL-side
-  `opera_claim_next_wait` loop, `expires_at` moved from enqueue to claim, an
-  adaptive ramp for `opera_watch_events_wait`, `created_at` to `clock_timestamp()`,
-  removal of the dead `opera_run_fast`, an optimistic `ensureContent`, the debugger
-  leak at `background.js:1330`, a `chrome.debugger.onDetach` listener, clearing the
-  never-cleared `Promise.race` timers, `wait_events` honouring its declared
-  `timeoutMs`, and dropping the gateway's redundant `last_seen_at` re-read.
+- **Phase B, remaining items — cheap and reversible, no audit needed:** `expires_at`
+  moved from enqueue to claim, an adaptive ramp for `opera_watch_events_wait`,
+  `created_at` to `clock_timestamp()`, removal of the dead `opera_run_fast`, an
+  optimistic `ensureContent`, the debugger leak at `background.js:1330`, a
+  `chrome.debugger.onDetach` listener, clearing the never-cleared `Promise.race`
+  timers, `wait_events` honouring its declared `timeoutMs`, and dropping the
+  gateway's redundant `last_seen_at` re-read. The bug fixes were deliberately held
+  out of B1+B2 so the before/after measurement would not be ambiguous.
 - **Phase C, needs an audit:** move the MCP path from flat `opera_await` to the
   adaptive ramp, and fix the instructions, which never mention `start_watch`,
   `wait_events`, or `run_workflow` even though all three exist to remove round
@@ -66,6 +87,12 @@
 - **Phase D, needs an audit, largest win:** let a burst navigate and switch tabs.
   `background.js:865` resolves `tabId` once and `withDebugger` throws
   `"Burst debugger cannot switch tabs."`, so no navigation can be batched.
+
+Locks that had to be replaced because B1+B2 removed the behavior they asserted:
+`tests/efficiency.test.mjs` and the bridge block in `scripts/check.mjs`. Both now
+assert the *absence* of the old cadence constants. Phase A's own tests then failed,
+which is why the "before" baseline is pinned as `RECORDED_BRIDGE_CADENCE` in
+`tests/helpers/pull-cadence-sim.mjs` rather than read from live source.
 
 Editing `opera-agent-mcp/index.ts` is not a one-line change: `sourceSha256` in
 `tests/fixtures/mcp-contract-v1.json` is asserted by 7 test files, and
@@ -89,11 +116,14 @@ needs a recorded reason in the same commit.
 
 ## Exact next action
 
-Read CircleCI and Vercel on `8e78b5c`. Then report the measured numbers to the
-owner and let them choose whether Phase B is still worth it now that the queue
-wait is known to be p50 830ms rather than an estimate. If Phase B proceeds, start
-with the SQL migration because it is the only item that touches the measured
-2000ms floor. Do not begin Phase C or D without an explicit owner instruction.
+Phase A and B1+B2 are both closed and green on `016ed52`. Report the measured
+7.0x median improvement and ask whether to continue with the remaining Phase B
+items — the bug fixes first, since the debugger leak at `background.js:1330` leaves
+a "debugging this browser" banner stuck on the user's tab until it is closed.
+
+Do not apply the migration or deploy anything without an explicit owner
+instruction; see the deployment hazard above. Do not begin Phase C or D without one
+either — both change the public MCP surface.
 
 ## Rules for the next session
 
