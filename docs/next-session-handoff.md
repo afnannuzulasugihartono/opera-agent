@@ -12,10 +12,11 @@
 ## Current state (2026-10-02)
 
 - `main` and `origin/main` are both at `5fe91aa`.
-- One active work branch: `test/phase-a-latency-measurement` at `016ed52`, local and
-  remote identical. Phases A and B1+B2 are on it. **Not merged; merging is owner-only.**
-- Gate evidence on `016ed52`: `npm test` **701/701**, `npm run check` ok (26 browser
-  primitives, 89 runtime safety files, version 1.6.13), and **all 9 CircleCI check-runs
+- One active work branch: `test/phase-a-latency-measurement` at `3740027`, local and
+  remote identical. Phases A, B1+B2 and B2-extension are on it. **Not merged; merging
+  is owner-only.**
+- Gate evidence on `3740027`: `npm test` **716/716**, `npm run check` ok (26 browser
+  primitives, 91 runtime safety files, version 1.6.13), and **all 9 CircleCI check-runs
   plus Vercel green**, verified per check-run rather than from the roll-up. The
   browser harness was not run locally; `ci-browser` is green on the head.
 - Baseline evidence on `5fe91aa`: 659/659, 8 CircleCI workflows plus Vercel green.
@@ -69,30 +70,36 @@ no fallback to the single-shot `opera_claim_next`, so the failure cannot be mask
    Database load rises only **1.1x** (21000→23100 queries/hour) because the cycle
    body is a single index-served lookup; running the whole `opera_claim_next` body
    per iteration would have been roughly 18x.
+7. **Phase B2 extension lifecycle fixes delivered as `3740027`.** Three defects
+   fixed with no protocol change: a watch-fired trusted click now releases its
+   shared debugger session in a finally (it previously leaked, leaving Chrome's
+   "started debugging this browser" bar stuck on the tab); a
+   `chrome.debugger.onDetach` listener now invalidates a session Chrome ended on
+   its own, so a cached `attached: true` can no longer outlive the debugger; and
+   both `executeCommand` timeout races go through `raceWithTimeout`, which clears
+   its timer. `extension/background.js` re-frozen to `fc5a1403` with the reason
+   recorded in `tests/helpers/boundary-locks.mjs`. All six structural assertions
+   were run against the pre-fix source and every one failed, so the lock is proven
+   rather than merely descriptive.
 
 ## The plan these measurements feed
 
 - **Phase B, remaining items — cheap and reversible, no audit needed:** `expires_at`
-  moved from enqueue to claim, an adaptive ramp for `opera_watch_events_wait`,
-  `created_at` to `clock_timestamp()`, removal of the dead `opera_run_fast`, an
-  optimistic `ensureContent`, the debugger leak at `background.js:1330`, a
-  `chrome.debugger.onDetach` listener, clearing the never-cleared `Promise.race`
-  timers, `wait_events` honouring its declared `timeoutMs`, and dropping the
-  gateway's redundant `last_seen_at` re-read. The bug fixes were deliberately held
-  out of B1+B2 so the before/after measurement would not be ambiguous.
+  computed at enqueue rather than at claim, so queue wait is charged against the
+  command's own execution budget; an adaptive ramp for `opera_watch_events_wait`,
+  measured at 6400 iterations per full-length call at a flat 5ms; `created_at`
+  to `clock_timestamp()`, since `now()` is constant within a transaction and FIFO
+  tie-breaking is non-deterministic for rows inserted together; removal of the
+  dead `opera_run_fast`, which would always return `AWAIT_TIMEOUT` because the
+  INSERT is invisible to the claimer until commit; and the gateway's redundant
+  `last_seen_at` re-read, which `opera_verify_device` already fetched.
 - **Phase C, needs an audit:** move the MCP path from flat `opera_await` to the
   adaptive ramp, and fix the instructions, which never mention `start_watch`,
   `wait_events`, or `run_workflow` even though all three exist to remove round
   trips.
 - **Phase D, needs an audit, largest win:** let a burst navigate and switch tabs.
-  `background.js:865` resolves `tabId` once and `withDebugger` throws
+  `runBurst` resolves `tabId` once and `withDebugger` throws
   `"Burst debugger cannot switch tabs."`, so no navigation can be batched.
-
-Locks that had to be replaced because B1+B2 removed the behavior they asserted:
-`tests/efficiency.test.mjs` and the bridge block in `scripts/check.mjs`. Both now
-assert the *absence* of the old cadence constants. Phase A's own tests then failed,
-which is why the "before" baseline is pinned as `RECORDED_BRIDGE_CADENCE` in
-`tests/helpers/pull-cadence-sim.mjs` rather than read from live source.
 
 Editing `opera-agent-mcp/index.ts` is not a one-line change: `sourceSha256` in
 `tests/fixtures/mcp-contract-v1.json` is asserted by 7 test files, and
@@ -116,10 +123,17 @@ needs a recorded reason in the same commit.
 
 ## Exact next action
 
-Phase A and B1+B2 are both closed and green on `016ed52`. Report the measured
-7.0x median improvement and ask whether to continue with the remaining Phase B
-items — the bug fixes first, since the debugger leak at `background.js:1330` leaves
-a "debugging this browser" banner stuck on the user's tab until it is closed.
+Phases A, B1+B2 and the extension lifecycle fixes are closed and green on
+`3740027`. The remaining Phase B items are listed above; the cheapest next unit is
+a single migration covering `expires_at`, the `opera_watch_events_wait` ramp,
+`created_at`, and dropping `opera_run_fast`.
+
+Two items are deliberately excluded from that migration: `wait_events` ignoring its
+declared `timeoutMs`, and an optimistic `ensureContent`. The first edits the MCP
+source and belongs with Phase C and its digest re-freeze. The second is a behaviour
+change rather than a bug fix — the manifest already declares `content_scripts` at
+`document_start`, so the per-call ping is redundant in the normal case — and it
+needs its own before/after measurement.
 
 Do not apply the migration or deploy anything without an explicit owner
 instruction; see the deployment hazard above. Do not begin Phase C or D without one
