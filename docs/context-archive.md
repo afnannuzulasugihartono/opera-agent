@@ -4150,3 +4150,110 @@ recorded figures rather than ranges chosen after the fact:
 
 Each was caught by running the test rather than by reading it. Writing the
 measurement down first is what turned three guesses into three corrections.
+
+## Four-phase latency work, and the audit that followed (2026-10-02 to 2026-10-03)
+
+Relocated from `docs/next-session-handoff.md` on 2026-10-03, when the handoff
+passed its own cap. Nothing here is actionable; it is kept because the numbers
+are the only record of what the latency work actually measured.
+
+Goal: make Opera Agent faster and easier for an AI to drive, closer to a
+human driving a browser directly.
+
+- **Phase A, `8e78b5c`** — measurement only, no runtime change. Queue wait p50
+  **830ms** / p95 **1910ms**; the fast window was only 400ms of 12000ms, so
+  roughly 97% of waits paid the idle rate. Burst ceiling: only **8 of 26**
+  primitives expressible; all 8 `tabs.*` and all 4 `media.*` un-burstable.
+- **B1+B2, `016ed52`** — the pull wait moved out of the bridge into Postgres.
+  p50 **830 -> 118ms (7.0x)**, p95 **1910 -> 238ms (8.0x)**, HTTP trips per
+  window **14 -> 1**, database load only **1.1x** because the cycle body is one
+  index-served lookup.
+- **B2 extension, `3740027`** — a watch-fired trusted click leaked its debugger
+  session, leaving Chrome's "started debugging this browser" bar stuck on the
+  tab; nothing listened for `onDetach`, so a cached `attached: true` outlived
+  the debugger; both `executeCommand` timeout races leaked their timers.
+- **B3 SQL, `f16b88a`** — the execution budget started at enqueue, so a command
+  queued while the device was offline could be swept to `expired` mid-execution
+  and its result silently discarded. Both claim paths now restart the clock
+  from `timeout_ms`; `opera_watch_events_wait` went from 6400 to 648 iterations
+  per 32s call; `created_at` defaults to `clock_timestamp()`.
+- **Phase C, `bb46af1`** — four defects on the AI-facing surface: the command
+  path moved onto the `opera_await_adaptive` ramp the gateway already used;
+  `wait_events` began honouring the `timeoutMs` it had been ignoring; its
+  `outputSchema` was corrected from the command envelope to the actual
+  `{ok, events, cursor, count}`; and the 4.5 KB instructions now name
+  `start_watch`, `wait_events` and `run_workflow`, which existed to remove round
+  trips but had never been mentioned. Twelve digest values recomputed across
+  nine files.
+- **Phase D, `0108f48`** — a burst step may carry an optional `tabId`, closing the
+  gap Phase A measured: a real task needed a model round trip at every
+  navigation. Switching tab while holding a `refFromStep` is refused with
+  `BURST_CROSS_TAB_REF`, because a ref is a live handle into one document.
+  Still 26 primitives, no new action, same 1-8 step and 12000ms budget.
+- Merged as `a9af637` (fast-forward, 0 merge commits), archived as
+  `archive/test/phase-a-latency-measurement`, branch deleted.
+- **Declined:** renaming the 22 MCP tools to dotted form — see the blind-alley
+  entry in `docs/project-context.md`.
+
+### The removal that was reversed, and the rule it produced
+
+An owner review of what had actually been removed found Phase B3 had dropped
+`opera_run_fast` — a dead function, no callers — and then locked the drop in a
+test so it became irreversible without a further test change. No requirement
+forced the removal; that made it a preference, and discarding another author's
+artifact is an owner decision.
+
+- `57cfa7b` restored the function byte-for-byte with its original
+  `service_role` grant, via `20261004090000_opera_agent_restore_run_fast.sql`.
+  The test was flipped to *demand* the restore while still asserting that the
+  drop remains auditable in `20261003110000`.
+- `b0f14ed` extended AGENTS.md rule 6: mention do not delete pre-existing code;
+  removal is allowed when the change requires it and the commit says which case
+  it was; and **never lock a removal in a test**. Eight assertions in
+  `tests/preserve-before-overwrite-rule.test.mjs`, five proven failing first.
+- `2facfa0` installed `.agents/skills/karpathy-guidelines/SKILL.md` — after, not
+  before, the rule was tightened, so the guideline could not be installed
+  already-violated. It is MIT, community-authored, and the frontmatter says so.
+- The other three Phase B removals were audited and were justified: `waitMs` was
+  kept, the bridge cadence constants had to go so dead code could not mislead,
+  and the replaced comment was less accurate, not more.
+
+## Supabase access and the migration of six pending files (2026-10-03)
+
+The handoff claimed three migrations were unapplied. **It was six.** Three more
+had been pending since September without anyone noticing: the `pre_8e_r5`,
+`pre_8e_r6` and `pre_8e_r7` repair-track files, whose timestamps precede the
+already-applied `20260923010000`.
+
+- Verified before acting, against `supabase_migrations.schema_migrations`:
+  42 applied, last `20260923010000`, and `opera_claim_next_wait` **absent** while
+  the bridge at `main` calls it. The deployment hazard was real, not theoretical.
+- Dependency check: none of the three target files referenced anything from the
+  three `pre_8e` files, and the `pre_8e` files contain **zero** `drop`, `delete`,
+  `insert` or `update` statements — they are inert function definitions until a
+  workflow calls them.
+- All six applied 2026-10-03 in timestamp order, each SQL body read from disk
+  byte-for-byte rather than retyped. Production reached **48 migrations, 0
+  pending, 0 name divergence**. `opera_claim_next_wait` now exists with its
+  `p_wait_ms` parameter, `opera_run_fast` is present again, and
+  `media.sample_at` v1, `youtube.play_recommendation` v3 and
+  `youtube.get_transcript` v5 are live.
+- The migration endpoint **rewrites the version** — it ignored the version in the
+  filename and generated one from the apply timestamp, which would have left
+  `supabase db push` re-applying all six forever. Caught by applying the most
+  inert file first, then corrected in place. See the platform trap in
+  `docs/project-context.md`.
+
+## Credentials exposed during that session (2026-10-03)
+
+Recorded because the cause is reusable and the rotation is still outstanding.
+
+- A `function H` collided with the PowerShell alias `h` for `Get-History`.
+  Aliases outrank functions in command resolution, so the error message printed
+  two live Supabase PATs verbatim into the transcript. Both are burned; one is
+  confirmed still live.
+- A separate, pre-existing PAT sits in plaintext in `~/.config/kilo/kilo.jsonc`
+  and two `.bak` copies, scoped to two projects. It was never in the transcript.
+- The repository is clean: 1017 files scanned, no `sbp_` pattern anywhere, and
+  `.kilo/` and `.superpowers/` are untracked. `git log --all -S'sbp_'` flagged two
+  commits that `git grep` could not reproduce in either tree.
