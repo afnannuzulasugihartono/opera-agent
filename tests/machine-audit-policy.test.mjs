@@ -14,7 +14,7 @@ import fs from 'node:fs';
 const agentsPath = new URL('../AGENTS.md', import.meta.url);
 const agents = fs.readFileSync(agentsPath, 'utf8');
 
-const policyStart = agents.indexOf('## Checkpoint implementation and milestone audit policy');
+const policyStart = agents.indexOf('## Audit policy');
 const policyEnd = agents.indexOf('## Evidence-first bug repair loop');
 assert.ok(policyStart >= 0 && policyEnd > policyStart, 'the policy section must exist and be findable');
 const policy = agents.slice(policyStart, policyEnd);
@@ -106,9 +106,11 @@ test('the addition did not restructure the section around it', () => {
   // `preserve-before-overwrite-rule` keep working.
   // The full heading line, not just the "## " prefix.
   const headings = policy.match(/^#{2,3} .+$/gm) || [];
+  // Renamed 2026-10-03 (owner-ordered short titles): the locator follows the
+  // rename; the assertion itself is unchanged.
   assert.deepEqual(
     headings,
-    ['## Checkpoint implementation and milestone audit policy'],
+    ['## Audit policy'],
     'no new heading may be introduced inside the policy section'
   );
 });
