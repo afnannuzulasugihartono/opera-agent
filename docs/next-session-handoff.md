@@ -19,7 +19,7 @@
   tree, version asserts included.
 - Commits after `a9af637`: `57cfa7b` restore `opera_run_fast`, `b0f14ed` extend
   rule 6, `2facfa0` karpathy skill, `4a79713` machine audit, `c3fa582` audit fix,
-  `f313d66` 1.6.14 sweep, then context records.
+  `f313d66` 1.6.14 sweep, `4d8428d` remove speckit skills, then context records.
 
 ## Production database — measured, not assumed
 
