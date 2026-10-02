@@ -62,6 +62,9 @@ mandated) and a recorded waiver with residual risk. Pinned by
 **Deployed 2026-10-03:** bridge v31→v32, MCP v36→v37, both ACTIVE (CLI v2.119.0).
 Smoke `browser.ping` on the new claim-wait path: 366ms total / 85ms queued,
 device on 1.6.13 with all 26 capabilities.
+**Redeployed bridge v32→v33 same-code:** the serving isolate wedged and 401'd
+authenticated pull/heartbeat while direct SQL with identical creds passed; a
+probe device proved it and the redeploy cleared it. Probe device removed after.
 
 ## Incoming change: Opera removed, Brave next, rename planned
 
