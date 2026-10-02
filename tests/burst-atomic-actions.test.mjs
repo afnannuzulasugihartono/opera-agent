@@ -80,10 +80,10 @@ test('skip_ads workflow migration registers a re-querying loop workflow', () => 
   assert.match(sql, /ad-showing/, 'must poll the ad-state post-condition');
 });
 
-test('version bumped to 1.6.13 for the U-P3 candidate', () => {
+test('version bumped to 1.6.14 for the audit-repair candidate', () => {
   assert.equal(BURST_STEP_KEYS && true, true);
   const protocol = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
-  assert.match(protocol, /PRODUCT_VERSION = '1.6.13'/);
+  assert.match(protocol, /PRODUCT_VERSION = '1.6.14'/);
   const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
-  assert.equal(manifest.version, '1.6.13');
+  assert.equal(manifest.version, '1.6.14');
 });

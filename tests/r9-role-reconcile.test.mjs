@@ -235,7 +235,7 @@ test('R9-C: the manifest loads the role runtime before the content script', asyn
     scripts.indexOf('role-reconcile.js') < scripts.indexOf('content.js'),
     'the role runtime must load before content.js reads it'
   );
-  assert.equal(manifest.version, '1.6.13');
+  assert.equal(manifest.version, '1.6.14');
 });
 
 test('R9-C: background shares the one content-script copy instead of duplicating it', async () => {

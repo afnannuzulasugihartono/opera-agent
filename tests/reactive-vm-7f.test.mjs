@@ -115,9 +115,9 @@ function collectFeed({ stable = false, maxItems = 10 } = {}) {
   return dedupSemanticRecords7D(second, ['logicalId'], { destination: 'unique', collectionBudget: 1000 });
 }
 
-test('7F keeps the 1.6.13 public surface and frozen read-only VM effect policy unchanged', () => {
-  assert.equal(packageJson.version, '1.6.13');
-  assert.equal(manifest.version, '1.6.13');
+test('7F keeps the 1.6.14 public surface and frozen read-only VM effect policy unchanged', () => {
+  assert.equal(packageJson.version, '1.6.14');
+  assert.equal(manifest.version, '1.6.14');
   assert.equal(contract.baselineVersion, '1.6.0');
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);

@@ -7,6 +7,26 @@ and are recorded per checkpoint in `docs/project-context.md` and
 `docs/releases/`; the sections below keep the GitHub-facing history through
 `1.6.2` plus the current release line.
 
+## [1.6.14] - 2026-10-03 (candidate — signed, uploaded, and activated separately)
+
+Machine-audit repair of the 1.6.13 line, owner-ordered. **Source only — nothing
+in this section is released or activated.**
+
+- Burst cross-tab ref fence closed: `runBurst` refused a `refFromStep` only when
+  the consuming step itself switched tabs, so a step staying on the
+  already-active tab could consume a ref minted elsewhere. The check now
+  compares the source step's recorded tab via pure helper `burstCrossTabRef`,
+  pinned behaviorally in both directions. Same `BURST_CROSS_TAB_REF` code,
+  same 26 primitives, no new action.
+- MCP schema now accepts the per-step `tabId` the extension executes (all nine
+  burst step kinds, strictness kept), so Phase D cross-tab bursts are reachable
+  from `run_browser_burst`. Additive and backward compatible; 22 tools
+  unchanged.
+- Version 1.6.13 → 1.6.14 sweep across protocol/manifest/package/check.mjs and
+  every version pin, per the recorded sweep convention. A same-version repack
+  would never propagate (update checks compare version numbers), so the bump is
+  required for the auto-update chain to deliver the fix.
+
 ## [1.6.13] - 2026-09-29
 
 Signed, audited, and activated as the production release (owner-ordered).
