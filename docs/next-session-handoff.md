@@ -136,10 +136,11 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner packs 1.6.14.** Swept, 797/797, browser-green; copy at
-`D:\Opera\opera-agent-1.6.14-extension`, 1.6.13 kept for rollback.
-Pack → verify → upload inactive → acceptance → activation. Then: key rotation,
-SonarCloud, `activeTab`, rename.
+**Owner reloads 1.6.14 and watches the badge.** `48f2ee1` shortens the pull to
+waitMs 5000 / 10s timeout: the badge sat yellow while heartbeats flowed because
+every 12s long-poll died in flight on a hostile path (server cleared by probe).
+Copy refreshed at `D:\Opera\opera-agent-1.6.14-extension`. If green: pack 1.6.14
+as planned. If still yellow: the hypothesis is dead, revert, dig deeper.
 
 ## Rules for the next session
 
