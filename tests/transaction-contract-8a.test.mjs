@@ -1,3 +1,12 @@
+// Why source-text and fixture pins, stated per AGENTS.md: milestone 8A is
+// contract-only, with runtimeChanges and productionChanges recorded as empty
+// in the fixture itself. The deliverable is the closed V1 contract, so these
+// tests parse the fixture and replay it -- canonical prepare/approval/commit
+// vectors, the hostile corpus, the provenance and approval role boundaries,
+// fail-closed behavior on invalid and spoofed input -- rather than merely
+// diffing the JSON. Runtime behavior for these paths is exercised by the live
+// suites under tests/cloud and tests/postgres, which this file cannot replace.
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';

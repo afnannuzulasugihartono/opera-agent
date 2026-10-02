@@ -1,3 +1,13 @@
+// Why source-text pins, stated per AGENTS.md: R0 is an evidence record, not a
+// behavior change. Its job is to fix the measured baseline so a later phase
+// cannot quietly claim an improvement, and to demonstrate on this tree that the
+// two defects R1 targets are still present -- the legacy Skip ordering and the
+// stale ref after a benign same-document rerender. Each is a single controlled
+// run against a frozen fixture, so the numbers are single-run and
+// non-distributional. Nothing here authorizes a public-surface change, and the
+// measurements are model-facing payload sizes from a deterministic fixture, not
+// timings from a live model loop.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

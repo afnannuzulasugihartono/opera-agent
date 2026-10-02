@@ -1,3 +1,12 @@
+// Why source-text and fixture pins, stated per AGENTS.md: this is the corpus
+// the identity and view work is measured against, so its value is that it is
+// fixed. These assertions check the required synthetic shapes are present, that
+// the corpus and runner persist metadata only (no page text, no screenshots, no
+// credentials in the evidence), and that the thresholds are bounded before
+// identity work begins. They intentionally pin a baseline rather than behavior:
+// the point is that a later change to these numbers must be a deliberate,
+// visible act.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

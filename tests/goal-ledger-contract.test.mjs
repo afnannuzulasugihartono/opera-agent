@@ -1,3 +1,12 @@
+// Why source-text and fixture pins, stated per AGENTS.md: this checkpoint is
+// contract-only. There is no runtime ledger implementation to execute, so the
+// deliverable IS the frozen contract: the schema shape, the canonical digest
+// behaviour (recomputed here over 100 runs, not read from a file), the hostile
+// corpus, the metadata-only persistence boundary, and the quantitative gates.
+// Asserting the fixture JSON alone would only prove the file did not change;
+// these tests parse it and evaluate it, so a contract that stops rejecting
+// floats or stops failing closed fails here.
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';

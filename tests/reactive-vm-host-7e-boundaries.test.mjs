@@ -1,3 +1,12 @@
+// Why source-text pins, stated per AGENTS.md: the 7E host is a Deno edge
+// function that cannot be imported in node, so its boundary is locked in
+// source. The two hazards are fail-closed on every identity input (tenant,
+// target, tab, goal, and document generation must all match) and never
+// widening authority (the OAuth allowlist stays closed and the storage RPCs
+// stay service-role only). Both are claims about what the handler checks before
+// it executes anything, which is exactly what source text can show. Runtime
+// behavior for the same host is exercised by the live suites.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
