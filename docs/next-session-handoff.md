@@ -136,10 +136,10 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner accepts 1.6.14, then orders activation.** Packed from `0d5db94` (CI 8/9):
-`opera-agent-1.6.14.crx`, 89.287 byte, identity proven (key = .der = manifest,
-26 entries byte-identical, deterministic repack). Row inactive; update.xml still
-1.6.13, 1.6.14 path 404s. One active row per identity. Flip = explicit order.
+**1.6.14 ACTIVATED (owner-ordered).** Flip dua-statement transaksional (indeks
+parsial menolak single-UPDATE). Tepat satu baris aktif per identitas; update.xml
+sajikan 1.6.14; CRX tersaji 89.287 byte sha `6e038bb2…` = DB = disk; path 1.6.13
+404. Rollback = flip yang sama ke 1.6.13 (baris utuh).
 
 ## Rules for the next session
 
