@@ -136,11 +136,10 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner reloads 1.6.14 and watches the badge.** `48f2ee1` shortens the pull to
-waitMs 5000 / 10s timeout: the badge sat yellow while heartbeats flowed because
-every 12s long-poll died in flight on a hostile path (server cleared by probe).
-Copy refreshed at `D:\Opera\opera-agent-1.6.14-extension`. If green: pack 1.6.14
-as planned. If still yellow: the hypothesis is dead, revert, dig deeper.
+**Owner reloads 1.6.14, watches 60s.** `48f2ee1` shortens pull to waitMs 5000 /
+10s timeout: badge stayed yellow while heartbeats flowed, every 12s long-poll
+died in flight, server cleared by probe. Copy refreshed. Green → pack 1.6.14.
+Yellow → hypothesis dead, revert.
 
 ## Rules for the next session
 
