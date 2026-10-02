@@ -135,10 +135,10 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner packs 1.6.14.** Code is swept, tested (797/797), and browser-green; the
-copy sits at `D:\Opera\opera-agent-1.6.14-extension` with 1.6.13 kept for
-rollback. Pack → offline-verify → upload inactive → side-load acceptance →
-atomic activation. After that: key rotation, SonarCloud, `activeTab`, rename.
+**Owner packs 1.6.14.** Swept, 797/797, browser-green; copy at
+`D:\Opera\opera-agent-1.6.14-extension`, 1.6.13 kept for rollback.
+Pack → verify → upload inactive → acceptance → activation. Then: key rotation,
+SonarCloud, `activeTab`, rename.
 
 ## Rules for the next session
 
