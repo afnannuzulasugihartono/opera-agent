@@ -108,11 +108,11 @@ Chromium-based browser is planned. Known, not started:
 
 ## Unfinished code work, all needing an owner instruction
 
-- An **optimistic `ensureContent`** — `content.ping` per call is redundant in the
-  normal case and costs 2 IPCs, two or three times per action. A behaviour change,
-  so it needs its own before/after measurement.
-- The **gateway's redundant `last_seen_at` re-read**: four HTTP round trips per
-  command where three would do.
+- **Optimistic `ensureContent` — done (`aac0242`).** Command goes out first (1
+  IPC vs 3); ensure runs only on transport failure, refusal never re-injects.
+  Harness: no measurable shift (noise dominates), no regression.
+- **Gateway `last_seen_at` re-read — done (gateway v3).** Verify folded into
+  auth: 4 trips to 3 per command, behavior preserved.
 - A **navigation action inside a burst**. Phase D let a step *address* a tab but did
   not add `navigate` to the burst vocabulary.
 - **Unmeasured, and the largest unknown:** how many model round trips a real task
