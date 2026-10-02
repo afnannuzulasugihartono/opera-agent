@@ -16,11 +16,47 @@ import {
   sealVmHostToken,
 } from '../supabase/functions/_shared/vm-token.js';
 
+// 7E host surface, consolidated 2026-10-03.
+//
+// Two files locked the 7E host: its limits, tokens, persistence and migration
+// contract, and its fail-closed boundary in the Edge function. The second was
+// filed separately as "boundaries", which read as a different subsystem; it is
+// the same host, and the two share both the Edge source and the migration.
+//
+//   tests/reactive-vm-host-7e.test.mjs          9 tests  55 assertions
+//   tests/reactive-vm-host-7e-boundaries.test.mjs 2 tests 17 assertions
+//   -> tests/reactive-vm-host-7e.test.mjs       11 tests, 72 assertions
+//
+//   A  limits, idempotency, persistence, tokens
+//   B  the SQL migration contract
+//   C  the Edge host boundary: fail-closed and authority
+//
+// Test count and assertion count are the invariants: 11 tests and 72
+// assertions before, 11 and 72 after, none dropped, weakened or added. Both
+// numbers were measured before this header was written.
+//
+// The two files read the same two sources -- the Edge function and the
+// migration -- so those reads are declared once and shared. No test body
+// changed. The siblings reactive-vm-7c, 7d, 7f, core and contract stay
+// separate: each is one checkpoint's engine or contract, and folding them
+// together would erase the milestone boundary their names carry.
+
+const edgeSource = fs.readFileSync(
+  new URL('../supabase/functions/opera-agent-vm/index.ts', import.meta.url),
+  'utf8',
+);
+const hostMigration = fs.readFileSync(
+  new URL('../supabase/migrations/20260912061541_opera_agent_reactive_vm_host.sql', import.meta.url),
+  'utf8',
+);
+
 const digest = (c = 'a') => `sha256:${c.repeat(64)}`;
 
 async function hostError(code, fn) {
   await assert.rejects(fn, (error) => error instanceof ReactiveVmHostError && error.code === code);
 }
+
+// --- A. limits, idempotency, persistence, tokens -----------------------------
 
 test('7E freezes bounded host/storage limits at or below Milestone 7 budgets', () => {
   assert.equal(REACTIVE_VM_HOST_7E_LIMITS.programBytes, 131072);
@@ -101,42 +137,75 @@ test('7E opaque tokens authenticate kind and ciphertext while retaining bounded 
   await assert.rejects(() => openVmHostToken(changed, key, { kind: 'CHECKPOINT' }));
 });
 
-test('7E SQL migration is private, default-off, lease-fenced, queue-bounded, and service-role only', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20260912061541_opera_agent_reactive_vm_host.sql', import.meta.url), 'utf8');
-  assert.match(sql, /milestone7_vm_enabled', 'false'/);
-  assert.match(sql, /create table if not exists opera_agent_private\.vm_runs/i);
-  assert.match(sql, /create table if not exists opera_agent_private\.vm_effects/i);
-  assert.match(sql, /create table if not exists opera_agent_private\.vm_rate_windows/i);
-  assert.match(sql, /for update skip locked/i);
-  assert.match(sql, /pg_advisory_xact_lock/i);
-  assert.match(sql, /opera_vm_effect_reserve/i);
-  assert.match(sql, /opera_vm_effect_attach/i);
-  assert.match(sql, /opera_vm_checkpoint/i);
-  assert.match(sql, /opera_vm_cancel/i);
-  assert.match(sql, /opera_vm_cleanup/i);
-  assert.match(sql, /grant execute on function public\.opera_vm_claim/i);
-  assert.match(sql, /to service_role/i);
-  assert.match(sql, /revoke all on table opera_agent_private\.vm_runs from public, anon, authenticated/i);
-  assert.doesNotMatch(sql, /grant\s+(?:select|insert|update|delete|execute)[\s\S]{0,120}\b(?:anon|authenticated)\b/i);
-});
+// --- B. the SQL migration contract -------------------------------------------
 
-test('7E Edge host authenticates OAuth users, invokes 7D, and reuses opera_enqueue request IDs', () => {
-  const source = fs.readFileSync(new URL('../supabase/functions/opera-agent-vm/index.ts', import.meta.url), 'utf8');
-  assert.match(source, /auth\.getUser/);
-  assert.match(source, /validateReactiveProgram7D/);
-  assert.match(source, /createReactiveVm7D/);
-  assert.match(source, /advanceReactiveVm7D/);
-  assert.match(source, /opera_vm_claim/);
-  assert.match(source, /opera_vm_checkpoint/);
-  assert.match(source, /opera_vm_effect_reserve/);
-  assert.match(source, /opera_enqueue/);
-  assert.match(source, /p_request_id:\s*idempotencyKey/);
-  assert.doesNotMatch(source, /opera-agent-vm[^\n]*fetch\(/i);
+test('7E SQL migration is private, default-off, lease-fenced, queue-bounded, and service-role only', () => {
+  assert.match(hostMigration, /milestone7_vm_enabled', 'false'/);
+  assert.match(hostMigration, /create table if not exists opera_agent_private\.vm_runs/i);
+  assert.match(hostMigration, /create table if not exists opera_agent_private\.vm_effects/i);
+  assert.match(hostMigration, /create table if not exists opera_agent_private\.vm_rate_windows/i);
+  assert.match(hostMigration, /for update skip locked/i);
+  assert.match(hostMigration, /pg_advisory_xact_lock/i);
+  assert.match(hostMigration, /opera_vm_effect_reserve/i);
+  assert.match(hostMigration, /opera_vm_effect_attach/i);
+  assert.match(hostMigration, /opera_vm_checkpoint/i);
+  assert.match(hostMigration, /opera_vm_cancel/i);
+  assert.match(hostMigration, /opera_vm_cleanup/i);
+  assert.match(hostMigration, /grant execute on function public\.opera_vm_claim/i);
+  assert.match(hostMigration, /to service_role/i);
+  assert.match(hostMigration, /revoke all on table opera_agent_private\.vm_runs from public, anon, authenticated/i);
+  assert.doesNotMatch(hostMigration, /grant\s+(?:select|insert|update|delete|execute)[\s\S]{0,120}\b(?:anon|authenticated)\b/i);
 });
 
 test('7E source keeps public MCP and extension outside the checkpoint', () => {
-  const migration = fs.readFileSync(new URL('../supabase/migrations/20260912061541_opera_agent_reactive_vm_host.sql', import.meta.url), 'utf8');
-  assert.doesNotMatch(migration, /opera_methods\s*\(/i);
-  assert.doesNotMatch(migration, /opera_devices\s+set/i);
-  assert.doesNotMatch(migration, /opera_pairing/i);
+  assert.doesNotMatch(hostMigration, /opera_methods\s*\(/i);
+  assert.doesNotMatch(hostMigration, /opera_devices\s+set/i);
+  assert.doesNotMatch(hostMigration, /opera_pairing/i);
+});
+
+// --- C. the Edge host boundary -----------------------------------------------
+//
+// Why source-text pins, stated per AGENTS.md: the 7E host is a Deno edge
+// function that cannot be imported in node, so its boundary is locked in
+// source. The two hazards are fail-closed on every identity input (tenant,
+// target, tab, goal, and document generation must all match) and never
+// widening authority (the OAuth allowlist stays closed and the storage RPCs
+// stay service-role only). Both are claims about what the handler checks before
+// it executes anything, which is exactly what source text can show. Runtime
+// behavior for the same host is exercised by the live suites.
+
+test('7E Edge host authenticates OAuth users, invokes 7D, and reuses opera_enqueue request IDs', () => {
+  assert.match(edgeSource, /auth\.getUser/);
+  assert.match(edgeSource, /validateReactiveProgram7D/);
+  assert.match(edgeSource, /createReactiveVm7D/);
+  assert.match(edgeSource, /advanceReactiveVm7D/);
+  assert.match(edgeSource, /opera_vm_claim/);
+  assert.match(edgeSource, /opera_vm_checkpoint/);
+  assert.match(edgeSource, /opera_vm_effect_reserve/);
+  assert.match(edgeSource, /opera_enqueue/);
+  assert.match(edgeSource, /p_request_id:\s*idempotencyKey/);
+  assert.doesNotMatch(edgeSource, /opera-agent-vm[^\n]*fetch\(/i);
+});
+
+test('7E Edge host fails closed on tenant, target, tab, goal, and document generations', () => {
+  assert.match(edgeSource, /candidate\.tenantId\s*!==\s*tenantId/);
+  assert.match(edgeSource, /HostError\("CROSS_TENANT"/);
+  assert.match(edgeSource, /HostError\("GOAL_REVISED"/);
+  assert.match(edgeSource, /HostError\("STALE_TARGET"/);
+  assert.match(edgeSource, /HostError\("CROSS_TAB"/);
+  assert.match(edgeSource, /extractDocumentGeneration\(awaited\.result\)/);
+  assert.match(edgeSource, /observedGeneration\s*!==\s*program\.target\.documentGeneration/);
+  assert.match(edgeSource, /errorCode:\s*"STALE_DOCUMENT"/);
+  assert.match(edgeSource, /\["GOAL_REVISED",\s*"STALE_TARGET",\s*"STALE_DOCUMENT",\s*"MISSING_AUTHORITY",\s*"CROSS_TAB"\]/);
+});
+
+test('7E authority remains OAuth-allowlisted and storage RPCs remain service-role only', () => {
+  assert.match(edgeSource, /auth\.getUser\(token\)/);
+  assert.match(edgeSource, /ALLOWED_USER_IDS\.size\s*===\s*0\s*&&\s*ALLOWED_USER_EMAILS\.size\s*===\s*0/);
+  assert.match(edgeSource, /if \(!user\) return response\(\{ ok: false, error: \{ code: "UNAUTHORIZED" \} \}, 401\)/);
+  assert.match(edgeSource, /p_tenant_id:\s*user\.id/);
+  assert.match(hostMigration, /revoke all on function public\.opera_vm_get\(uuid,uuid\) from public, anon, authenticated/i);
+  assert.match(hostMigration, /grant execute on function public\.opera_vm_get\(uuid,uuid\) to service_role/i);
+  assert.match(hostMigration, /revoke all on schema opera_agent_private from public, anon, authenticated/i);
+  assert.match(hostMigration, /grant usage on schema opera_agent_private to service_role/i);
 });
