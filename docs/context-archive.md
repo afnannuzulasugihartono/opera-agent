@@ -4118,3 +4118,35 @@ combined status success). No merge to `main`, no PR - merge is an
 explicit owner decision. Parked for later: `vm:636` + update log calls
 outside the hygiene scope; consent SDK-bump fragility; `cors.js`
 stale lint-rule comment (zero runtime effect).
+## How the claim-acceptance rule was learned (relocated 2026-10-02)
+
+Moved out of `docs/project-context.md` to keep that file inside its own
+stated scope, which is durable traps rather than history. The rule itself
+stays live in `project-context.md`; only the account of how it was arrived at
+moved here.
+
+In three consecutive review rounds every one of my own claims turned out to be
+stronger than the code:
+
+1. A commit message asserted that a drift pin covered the carrier list. It did
+   not exist. Proof: making `?apiKey=` a working carrier left every gateway
+   test green.
+2. The pin then written passed three realistic implementations, including
+   `new URLSearchParams(...)`, while rejecting a legitimate non-token query
+   parameter. It was rewritten to pin the carrier set positively, and its
+   blind spots are now written into the test file rather than left implied.
+3. The comment stripper had two shapes that silently deleted live code, which
+   would have blinded a security lock while appearing to pass.
+
+The same failure mode repeated while building the Phase A latency measurement
+(`tests/latency-*.test.mjs`, commit `8e78b5c`), which is why those tests assert
+recorded figures rather than ranges chosen after the fact:
+
+- An assertion claimed four round trips exceeded the 12000ms burst budget. They
+  total 3320ms. The test title also said "5 round trips" when the plan had four.
+- A ratio was written as "~20x the burst execution" when 830 / 161.6 is 5.1x.
+- The old bridge cadence was asserted to mint exactly 52 calls; the model gives
+  53 with instantaneous polls and 49 at a realistic 20ms RPC cost.
+
+Each was caught by running the test rather than by reading it. Writing the
+measurement down first is what turned three guesses into three corrections.

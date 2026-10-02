@@ -65,19 +65,10 @@
 
 ## How a claim gets accepted here
 
-This is the rule that cost the most to learn. In three consecutive review rounds
-every one of my own claims turned out to be stronger than the code:
-
-1. A commit message asserted that a drift pin covered the carrier list. It did not
-   exist. Proof: making `?apiKey=` a working carrier left every gateway test green.
-2. The pin then written passed three realistic implementations, including
-   `new URLSearchParams(...)`, while rejecting a legitimate non-token query
-   parameter. It was rewritten to pin the carrier set positively, and its blind
-   spots are now written into the test file rather than left implied.
-3. The comment stripper had two shapes that silently deleted live code, which would
-   have blinded a security lock while appearing to pass.
-
-The rule that follows:
+The rule that cost the most to learn. How it was arrived at is recorded in
+`docs/context-archive.md`; three review rounds in a row produced claims stronger
+than the code, and building the Phase A latency measurement repeated the pattern
+three more times.
 
 - A lock is **not accepted** until it has been made to fail on a realistic
   violation.
@@ -86,6 +77,19 @@ The rule that follows:
   logic; a check that always returned false passed the first version.
 - A file must not claim more than it delivers. If a test cannot see a case, say so
   in the test file instead of letting the commit message imply otherwise.
+
+## Platform traps confirmed 2026-10-02
+
+- **The Chrome debugger banner cannot be hidden** — it persists for the whole
+  attachment, and Chrome's guidance is attach-during-a-task, detach-immediately
+  after. So caching an attach across commands is a product regression, not an
+  optimisation; the only lever is batching more work per attach.
+- **Edge functions run on Supavisor transaction mode, which does not support
+  `LISTEN/NOTIFY`.** Any wakeup has to be server-side `pg_sleep` polling, which
+  already is this repository's established pattern.
+- **OpenAI reportedly rejects `.` in MCP tool names** (`^[a-zA-Z0-9_-]+$` per a
+  developer report, not an official document) while MCP's spec permits dots.
+  Treat dotted names as unverified against OpenAI until actually tested.
 
 ## Blind alleys already explored
 
@@ -101,3 +105,15 @@ Recorded so a later session does not repeat them.
 - Two stale git worktrees (`.kilo/worktrees/exclusive-vacation` and a temp one)
   held 3.7 MB of duplicate tree. Both were verified clean and fully merged, then
   removed with `git worktree remove`.
+- **Renaming the 22 MCP tools to dotted form was investigated and declined.** They
+  deliberately differ from the primitives and follow no rule: some reverse word
+  order (`list_tabs`/`tabs.list`), some are renamed outright
+  (`click_element`/`page.click`), four pointer tools share one primitive, and
+  `browser_status` maps to `browser.ping`. Restructuring buys no consistency.
+  Worse, three test files extract names with `/registerTool\("([a-z_]+)"/g`, which
+  would silently truncate `browser.status` to `browser` instead of failing.
+- **The bridge comment at `opera-agent-bridge/index.ts:18-24` is not stale.** It
+  describes the pre-2026-09-24 250ms cadence the ramp replaced, and its "~52 calls,
+  ~13k claims/hour" fairly approximates that old loop (53 modelled with
+  instantaneous polls, 49 at 20ms). I claimed it was out of date and was wrong;
+  `tests/latency-bridge-cadence.test.mjs` now pins both cadences.

@@ -11,15 +11,14 @@
 
 ## Current state (2026-10-02)
 
-- `main` and `origin/main` are both at `a49ca4d`. This is the only branch on the
-  remote. There is no active work branch.
-- Gate evidence on `a49ca4d`: `npm test` **659/659**, `npm run check` ok (26
-  browser primitives, 88 runtime safety files, version 1.6.13), pinned Deno 2.9.6
-  lint clean and 9/9 per-function checks green, browser harness green, and all 8
-  CircleCI workflows plus Vercel green. Verified on the merged result, not only on
-  the branch.
-- The context split described below was merged as `b2991b2..a49ca4d`, fast-forward,
-  0 merge commits, and archived as `archive/chore/trim-context-docs`.
+- `main` and `origin/main` are both at `5fe91aa`.
+- One active work branch: `test/phase-a-latency-measurement` at `8e78b5c`, local and
+  remote identical. Phase A only; **not merged, and merging is owner-only**.
+- Gate evidence on `8e78b5c`: `npm test` **686/686** (was 659), `npm run check` ok
+  (26 browser primitives, 88 runtime safety files, version 1.6.13). Browser and
+  cloud gates were **not** run because no runtime code changed. CircleCI and
+  Vercel on this head are **not yet read** — do not treat this as accepted.
+- Baseline evidence on `5fe91aa`: 659/659, 8 CircleCI workflows plus Vercel green.
 
 ## Do not touch
 
@@ -32,34 +31,56 @@
 
 ## What happened most recently
 
-1. **Enterprise Phase 5 (UI and docs) merged to `main`** as `eef35e5..41a2ae7`.
-   Shipped an Options page for bridge URL and log level, a single endpoint source
-   per deploy unit, `docs/api.md`, `docs/runbook.md`, and a permissions rationale
-   in `extension/README.md`.
-2. **Accessibility structure checks and two documentation-truth locks added** in
-   `629631d..b2991b2`, together with
-   `docs/audit-request-device-revoke-and-retention.md`. Two audit-gated items are
-   specified there but deliberately **not implemented**: server-side device revoke
-   (the popup Unpair action only clears local storage, so a copied device token
-   stays valid until a human edits the row) and enforced data retention (no
-   scheduler exists; `pg_cron` is not installed and nothing in the repository
-   calls the cleanup RPCs).
-3. **Context trimming merged as `b2991b2..a49ca4d`.** `docs/next-session-handoff.md`
-   and `docs/project-context.md` were rewritten to 87 and 103 lines; all prior
-   content was relocated verbatim to `docs/context-archive.md`, which holds 110
-   sections. Mandatory per-session context fell from 238 KB to 8 KB. `AGENTS.md`
-   now gives each of the three files one job and a line cap.
+1. **Owner goal restated: make Opera Agent faster and easier for AI to drive**,
+   specifically closer to controlling a browser directly. A full architecture pass
+   mapped the AI-facing MCP surface, the gateway and SQL queue, and the in-browser
+   execution path, and produced a ranked gap list.
+2. **Phase A delivered as `8e78b5c` on `test/phase-a-latency-measurement`** —
+   measurement only, no runtime behavior changed. Four new files:
+   `tests/helpers/pull-cadence-sim.mjs` plus `latency-bridge-cadence`,
+   `latency-sql-ramps`, and `latency-burst-budget` tests.
+3. **Measured, not estimated:** 14 `opera_claim_next` calls per 12s window, 4200
+   claim calls/hour/device, queue wait p50 **830ms** and p95 **1910ms**; the
+   fast window is only 400ms of 12000ms so ~97% of waits are idle-rate. A
+   four-round-trip reference task pays ~3320ms of queue wait before any work
+   starts — about 5x the 161.6ms a burst itself takes to execute.
+4. **Burst ceiling measured:** only 8 of 26 primitives are expressible in a burst.
+   All 8 `tabs.*` and all 4 `media.*` are un-burstable. This is the structural
+   reason a real task still needs several model round trips.
+5. **MCP tool renaming was investigated and declined** — see the blind-alley entry
+   in `docs/project-context.md`.
 
-## Awaiting an owner decision
+## The plan these measurements feed
 
-None of these is blocked on engineering work:
+- **Phase B, cheap and reversible, no audit needed:** a SQL-side
+  `opera_claim_next_wait` loop, `expires_at` moved from enqueue to claim, an
+  adaptive ramp for `opera_watch_events_wait`, `created_at` to `clock_timestamp()`,
+  removal of the dead `opera_run_fast`, an optimistic `ensureContent`, the debugger
+  leak at `background.js:1330`, a `chrome.debugger.onDetach` listener, clearing the
+  never-cleared `Promise.race` timers, `wait_events` honouring its declared
+  `timeoutMs`, and dropping the gateway's redundant `last_seen_at` re-read.
+- **Phase C, needs an audit:** move the MCP path from flat `opera_await` to the
+  adaptive ramp, and fix the instructions, which never mention `start_watch`,
+  `wait_events`, or `run_workflow` even though all three exist to remove round
+  trips.
+- **Phase D, needs an audit, largest win:** let a burst navigate and switch tabs.
+  `background.js:865` resolves `tabId` once and `withDebugger` throws
+  `"Burst debugger cannot switch tabs."`, so no navigation can be batched.
+
+Editing `opera-agent-mcp/index.ts` is not a one-line change: `sourceSha256` in
+`tests/fixtures/mcp-contract-v1.json` is asserted by 7 test files, and
+`reactive-vm-contract-v1.json` folds it into `inventory.digest`.
+`extension/background.js` and `extension/content.js` are pinned by blob SHA in
+`tests/helpers/boundary-locks.mjs`. Re-freezing is the designed workflow, but it
+needs a recorded reason in the same commit.
+
+## Still open, unchanged
 
 1. **Release so the shipped CRX contains the Options page.** The manifest in
-   `main` registers `options_page`, but the installed CRX predates it, so users do
-   not have the page yet. Requires the private signing key.
+   `main` registers `options_page`, but the installed CRX predates it. Requires the
+   private signing key.
 2. **Remove the unused `activeTab` manifest permission.** Verified unused; held
-   out of scope because it touches the manifest, which is the extension's
-   declared surface.
+   out of scope because it touches the extension's declared surface.
 3. **Commission the audit** that `docs/audit-request-device-revoke-and-retention.md`
    asks for.
 4. **SonarCloud project access** — the pre-existing C Reliability wall on New Code
@@ -68,11 +89,11 @@ None of these is blocked on engineering work:
 
 ## Exact next action
 
-Nothing is in progress. There is no open branch and no work awaiting a
-verification step.
-
-Await an owner decision from the list above. When work is requested, branch from
-`main` and follow the session lifecycle rules in `AGENTS.md`.
+Read CircleCI and Vercel on `8e78b5c`. Then report the measured numbers to the
+owner and let them choose whether Phase B is still worth it now that the queue
+wait is known to be p50 830ms rather than an estimate. If Phase B proceeds, start
+with the SQL migration because it is the only item that touches the measured
+2000ms floor. Do not begin Phase C or D without an explicit owner instruction.
 
 ## Rules for the next session
 
