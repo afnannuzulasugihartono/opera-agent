@@ -136,10 +136,11 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner reloads 1.6.14, watches 60s.** Wedged isolate fixed by redeploy, but badge
-persisted: server works nearly every window while the client rarely receives ok
-(responses die in flight). Short pull restored (`30290b4`, see its message for
-the full revert chain). Test-harness stub cleared (mock bridge, never production).
+**Owner reloads 1.6.14, watches 60s.** Root cause mapped by boundary probe: the
+edge-to-DB path kills statements past ~8s (5s waits ok, 12s waits die at
+~8.7-9.8s; same 12s runs 12.4s via direct SQL). Every idle 12s pull died while
+busy pulls returned early -- yellow badge with working commands. Short pull
+(`30290b4`) is the fix; copy refreshed and verified per-file. Then pack.
 
 ## Rules for the next session
 
