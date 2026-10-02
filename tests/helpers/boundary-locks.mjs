@@ -27,7 +27,7 @@
 // work is batched into one burst via refFromStep, and the model is told to click
 // an editor surface before sending a key and to verify the keystroke landed. No
 // tool was added, removed, or renamed, and every per-tool inputSchema is
-// byte-identical â€” proved by tests/r9-public-surface-unchanged.test.mjs, which
+// byte-identical â€” proved by tests/mcp-surface.test.mjs section B, which
 // pins each schema block individually because the whole-file digest alone
 // cannot distinguish an instructions edit from a schema edit. The chords and
 // bounded text entry built in R9-B remain runtime-only: press_key still

@@ -26,7 +26,7 @@ const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp
 // recorded. Menu/dialog work is batched into one burst via refFromStep, and the
 // model is told to click an editor surface before sending a key. No tool was
 // added, removed, or renamed, and all 22 per-tool inputSchemas are byte-
-// identical — proved by tests/r9-public-surface-unchanged.test.mjs. The chords
+// identical — proved by tests/mcp-surface.test.mjs section B. The chords
 // and bounded text from R9-B stay runtime-only because press_key still
 // validates against the 12-key navigationKeySchema and the burst key step is
 // still .strict(); the instructions say so rather than promising calls the
