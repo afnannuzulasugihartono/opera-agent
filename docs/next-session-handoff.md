@@ -12,10 +12,9 @@
 ## Current state (2026-10-02)
 
 - `main` and `origin/main` are both at `5fe91aa`.
-- One active work branch: `test/phase-a-latency-measurement` at `f16b88a`, local and
-  remote identical. Phases A, B1+B2, B2-extension and B3-SQL are on it. **Not merged;
-  merging is owner-only.**
-- Gate evidence on `f16b88a`: `npm test` **732/732**, `npm run check` ok (26 browser
+- One active work branch: `test/phase-a-latency-measurement` at `bb46af1`, local and
+  remote identical. Phases A, B and C are on it. **Not merged; merging is owner-only.**
+- Gate evidence on `bb46af1`: `npm test` **746/746**, `npm run check` ok (26 browser
   primitives, 92 runtime safety files, version 1.6.13), and **all 9 CircleCI check-runs
   plus Vercel green**, verified per check-run rather than from the roll-up. The
   browser harness was not run locally; `ci-browser` is green on the head.
@@ -73,32 +72,38 @@ Phase A and all of Phase B are done. The measured arc, oldest first:
   the tab; nothing listened for `onDetach`, so a cached `attached: true` could
   outlive the debugger; and both `executeCommand` timeout races leaked their
   timer. All three fixed, no protocol change.
-- **B3 SQL, `f16b88a`** — the execution budget started at enqueue, so queue wait
-  was charged against the command's own budget. A command enqueued while the
-  device was offline could be swept to `expired` mid-execution and its result
-  silently discarded. Both claim paths now restart the clock from `timeout_ms`.
-  `opera_watch_events_wait` went from 6400 to 648 iterations per 32s call,
-  `created_at` defaults to `clock_timestamp()` so the queue order is strict, and
-  the dead `opera_run_fast` is dropped.
+- **B3 SQL, `f16b88a`** — the execution budget started at enqueue, so a command
+  queued while the device was offline could be swept to `expired` mid-execution
+  and its result silently discarded. Both claim paths now restart the clock from
+  `timeout_ms`; `opera_watch_events_wait` went from 6400 to 648 iterations per
+  32s call; `created_at` defaults to `clock_timestamp()` so queue order is strict.
+- **Phase C, `bb46af1`** — four defects on the AI-facing surface. The command path
+  moved onto the `opera_await_adaptive` ramp the gateway already used (5 ms first
+  response, same iteration count, identical envelope). `wait_events` began
+  honouring the `timeoutMs` it had been ignoring, and its `outputSchema` was
+  corrected: it advertised the command envelope while the SQL returns
+  `{ok, events, cursor, count}`. The 4.5 KB instructions now name `start_watch`,
+  `wait_events` and `run_workflow`, which exist to remove round trips but had
+  never been mentioned. Twelve digest values recomputed across nine files.
 - **Declined:** renaming the 22 MCP tools to dotted form — see the blind-alley
   entry in `docs/project-context.md`.
 
 ## The plan these measurements feed
 
-- **Phase B is complete.** Everything below is Phase C or later and none of it may
-  start without an explicit owner instruction.
-- **Phase C, needs an audit, cheap and high value:** move the MCP path from flat
-  `opera_await` to the adaptive ramp — measured at the same iteration count for a
-  10x finer first response, so it is not a database-cost change — and fix the
-  instructions, which never mention `start_watch`, `wait_events`, or
-  `run_workflow` even though all three exist to remove round trips. Also fix
-  `wait_events` declaring a `timeoutMs` its handler ignores. All of this edits the
-  MCP source, so it lands in one commit with one digest re-freeze.
-- **Phase D, needs an audit, largest win:** let a burst navigate and switch tabs.
+- **Phase D is the only work left, and it needs an independent audit before
+  deployment, not before implementation.** Let a burst navigate and switch tabs.
   `runBurst` resolves `tabId` once and `withDebugger` throws
-  `"Burst debugger cannot switch tabs."`, so no navigation can be batched. This is
-  where the literature's 2x latency and 11.8x cost reduction live, and Phase C's
-  audit should precede it.
+  `"Burst debugger cannot switch tabs."`, so no navigation can be batched and every
+  real browsing task still costs several model round trips. This is where the
+  literature's 2x latency and 11.8x cost reduction live (ActionEngine, arXiv
+  2602.20502), whose target is one LLM call per task rather than one per step.
+- **Held back deliberately:** an optimistic `ensureContent`. The manifest already
+  declares `content_scripts` at `document_start`, so the per-call ping is
+  redundant in the normal case, but it is a behaviour change rather than a bug
+  fix and needs its own before/after measurement.
+- **Also untouched:** the gateway's redundant `last_seen_at` re-read, which
+  `opera_verify_device` already fetched. Cheap, but off the AI's path, and not
+  bundled into a commit whose measurements mattered.
 
 Editing `opera-agent-mcp/index.ts` is not a one-line change: `sourceSha256` in
 `tests/fixtures/mcp-contract-v1.json` is asserted by 7 test files, and
@@ -122,19 +127,16 @@ needs a recorded reason in the same commit.
 
 ## Exact next action
 
-**Phase A and all of Phase B are closed and green on `f16b88a`.** Phase B is done:
-measurement, the server-side pull wait, the debugger and timer lifecycle fixes, and
-the SQL corrections.
+**Phases A, B and C are closed and green on `bb46af1`.** Await an owner decision
+on Phase D, the only work left: letting a burst navigate and switch tabs, which is
+where the measured 2x latency and 11.8x cost reduction from the literature lives.
 
-Await an owner decision. The next unit is Phase C, and it needs an audit before it
-starts, because all four of its items change the public MCP surface: the
-`opera_await` to adaptive-ramp swap, the instructions that never mention
-`start_watch` / `wait_events` / `run_workflow`, `wait_events` honouring its
-declared `timeoutMs`, and the MCP source digest re-freeze that carries all of them.
+Phase C changed the public MCP surface, so an **independent audit is required
+before deployment** — not before the commit, which is why Phase C proceeded once
+approved. Both migrations on this branch remain unapplied.
 
-Do not apply either migration and do not deploy anything without an explicit owner
-instruction; see the deployment hazard above. Do not begin Phase C or D without one
-either.
+Do not apply either migration, do not merge, and do not deploy anything without an
+explicit owner instruction.
 
 ## Rules for the next session
 
