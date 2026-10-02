@@ -268,10 +268,6 @@ continues.
 
 ## Spec Kit skills removed (2026-10-03, owner-ordered)
 
-The ten `speckit-*` skills, their governance test, and `docs/spec-kit-governance.md`
-were removed: invoked zero times across a full session of repair, migration,
-release, and capability work, while their context cost was paid every task.
-`.specify/`, `specs/`, and `tools/spec-kit/` remain untouched, as does the
-historical record in `docs/context-archive.md`. Reinstall from upstream if a
-future feature-planning task earns it back; until then, unrequested process is
-scope creep — remove or defer it rather than widening the active checkpoint.
+Ten `speckit-*` skills removed (zero invocations; context cost unpaid by use).
+`.specify/`, `specs/`, `tools/` kept; reinstall from upstream if earned back.
+Details: commit `4d8428d`.
