@@ -28,6 +28,17 @@ const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 import { buildAxSummary } from './lib/ax-summary.js';
 import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
+import { raceWithTimeout } from './lib/deadline-race.js';
+import {
+  registerDebuggerSession,
+  releaseDebuggerSession,
+  handleDebuggerDetach
+} from './lib/debugger-session.js';
+
+// Without this, a cached `attached: true` outlives the debugger: if the user
+// opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
+// the session and every later CDP call in it fails against a dead debugger.
+chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel'];
 const PRIVATE_TABS_KEY = 'privateTabIds';
@@ -252,6 +263,7 @@ async function withDebugger(tabId, context, work) {
     if (!shared.attached) {
       await chrome.debugger.attach({ tabId }, '1.3');
       shared.attached = true;
+      registerDebuggerSession(shared);
     }
     return work({ tabId });
   }
@@ -927,9 +939,7 @@ async function runBurst(params, outerContext = {}) {
       timingMs: Math.round((performance.now() - startedAt) * 100) / 100
     };
   } finally {
-    if (context.debuggerSession.attached) {
-      try { await chrome.debugger.detach({ tabId }); } catch (error) { log.debug('BURST_DEBUGGER_DETACH_FAILED', error?.message || String(error)); }
-    }
+    await releaseDebuggerSession(context.debuggerSession, log);
   }
 }
 
@@ -1328,10 +1338,18 @@ async function executeWatchAction(entry, facts) {
       const ref = q?.ok && q.item && q.item.ref ? q.item.ref : null;
       if (!ref) return { type: 'click', ok: false, error: { code: 'TARGET_GONE', message: 'Matched element had no actionable ref.' } };
       const clickContext = { deadline: Date.now() + 15000, debuggerSession: { tabId: entry.tabId, attached: false } };
-      const result = action.trusted === true
-        ? await runActionPipeline(entry.tabId, 'page.click', { ref }, clickContext, (ref2) => trustedClick(entry.tabId, ref2, clickContext, 'background', {}))
-        : await dispatch('page.click', { tabId: entry.tabId, ref, trusted: false }, clickContext);
-      return { type: 'click', ok: !!result?.ok, error: result?.error || null };
+      // This path shares a debugger session, which is why it needs the release
+      // that runBurst already had. Without it a single ad-overlay click left
+      // the debugger attached to the tab, and Chrome's "started debugging this
+      // browser" bar stuck on it for the tab's lifetime.
+      try {
+        const result = action.trusted === true
+          ? await runActionPipeline(entry.tabId, 'page.click', { ref }, clickContext, (ref2) => trustedClick(entry.tabId, ref2, clickContext, 'background', {}))
+          : await dispatch('page.click', { tabId: entry.tabId, ref, trusted: false }, clickContext);
+        return { type: 'click', ok: !!result?.ok, error: result?.error || null };
+      } finally {
+        await releaseDebuggerSession(clickContext.debuggerSession, log);
+      }
     }
     if (action.type === 'burst') {
       const res = await runBurst({ tabId: entry.tabId, steps: action.steps }, { deadline: Date.now() + 15000 });
@@ -1409,10 +1427,11 @@ async function executeCommand(raw) {
   if (raw && typeof raw.method === 'string' && raw.method.startsWith('watch.')) {
     const deadlineW = Date.now() + 10000;
     try {
-      const result = await Promise.race([
-        dispatch(raw.method, raw.params || {}, { deadline: deadlineW }),
-        new Promise((_, reject) => setTimeout(() => reject(commandTimeoutError()), 10000))
-      ]);
+      const result = await raceWithTimeout(
+        () => dispatch(raw.method, raw.params || {}, { deadline: deadlineW }),
+        10000,
+        commandTimeoutError
+      );
       return { ok: true, result: boundedResult(result) };
     } catch (error) {
       if (error && error.code === 'TARGET_NOT_READY') {
@@ -1429,10 +1448,11 @@ async function executeCommand(raw) {
   const { command } = validated;
   const deadline = Date.now() + command.timeoutMs;
   try {
-    const result = await Promise.race([
-      dispatch(command.method, command.params, { deadline }),
-      new Promise((_, reject) => setTimeout(() => reject(commandTimeoutError()), Math.max(1, deadline - Date.now())))
-    ]);
+    const result = await raceWithTimeout(
+      () => dispatch(command.method, command.params, { deadline }),
+      Math.max(1, deadline - Date.now()),
+      commandTimeoutError
+    );
     return { ok: true, result: boundedResult(result) };
   } catch (error) {
     if (error && error.code === 'TARGET_NOT_READY') {

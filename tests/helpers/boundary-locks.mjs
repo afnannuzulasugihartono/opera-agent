@@ -27,7 +27,7 @@
 // work is batched into one burst via refFromStep, and the model is told to click
 // an editor surface before sending a key and to verify the keystroke landed. No
 // tool was added, removed, or renamed, and every per-tool inputSchema is
-// byte-identical — proved by tests/r9-public-surface-unchanged.test.mjs, which
+// byte-identical â€” proved by tests/r9-public-surface-unchanged.test.mjs, which
 // pins each schema block individually because the whole-file digest alone
 // cannot distinguish an instructions edit from a schema edit. The chords and
 // bounded text entry built in R9-B remain runtime-only: press_key still
@@ -69,7 +69,7 @@
 // usable ref. The instructions say to act on those directly and never to widen
 // the tolerance. The candidate payload KEEPS its rectangle: the Chromium
 // regression suite asserts on candidate coordinates, and dropping it broke that
-// gate — recorded here because it is the one field in the payload that is
+// gate â€” recorded here because it is the one field in the payload that is
 // load-bearing for a test rather than for the model. R9 hygiene then fixes three
 // defects the R9 code itself introduced: page.read serialized its result twice
 // (once to check the ceiling, once in the dispatcher) on the hottest
@@ -79,11 +79,18 @@
 // Note that Object.freeze does NOT make a Set immutable, so GENERIC_ROLES is
 // published as a frozen array.
 // Protocol 1, 26 primitives, 22 tools, and the read_page input schema remain
-// frozen.
+// frozen. Phase B Task 2 (2026-10-02) then authorizes the debugger/timer
+// lifecycle repair in background.js: the watch-fired trusted click gains the
+// release that runBurst already had, a `chrome.debugger.onDetach` listener
+// invalidates a session Chrome ended on its own, and both `executeCommand`
+// timeout races go through a helper that clears its timer. The protocol surface
+// is untouched â€” same 26 primitives, same error branches, same refusal to
+// switch tabs inside one shared session â€” so this re-freeze is a behavior fix
+// within the existing contract rather than a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '1cc7b5efeaabaca456a1a1829e87f6aa7b9a8610'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 7 converts silent catches to logged catches (log.debug for tested fallbacks, log.warn for pure swallows and thrown validation, fallback/throw semantics byte-identical). Additive only; MCP/tool/schema surface unchanged.
-  ['../extension/background.js', '43875d240653facb100c82e5850a77e580c66c7c'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 6 converts silent catches to logged catches (log.debug/log.warn, fallback semantics byte-identical). Additive only; MCP/tool/schema surface unchanged. Re-frozen 2026-10-02: Enterprise Phase 5 Task 1 moves DEFAULT_BRIDGE_URL to extension/lib/endpoints.js (single endpoint source per deploy unit; import plus literal removal only), served behavior unchanged. Re-frozen 2026-10-02: Enterprise Phase 5 Task 3 wires the stored log level through getConfig (STORAGE_KEYS gains logLevel; guarded OperaAgentLog.configure with a safe 'warn' fallback that never throws) and extends the onChanged restart condition. Additive only; MCP/tool/schema surface unchanged. Re-frozen 2026-10-02: comment-only correction in getConfig. The stored log level always falls back to the literal 'warn' (the default level), never to a previously applied threshold; the preceding comment said 'the current threshold', which misdescribed the code. Zero executable-byte change: the guarded configure statement, the returned logLevel, and every call site are untouched, so this is not a behavior change.
+  ['../extension/background.js', 'fc5a14033d24f7b11ffa06f5749d340a68c51930'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 6 converts silent catches to logged catches (log.debug/log.warn, fallback semantics byte-identical). Additive only; MCP/tool/schema surface unchanged. Re-frozen 2026-10-02: Enterprise Phase 5 Task 1 moves DEFAULT_BRIDGE_URL to extension/lib/endpoints.js (single endpoint source per deploy unit; import plus literal removal only), served behavior unchanged. Re-frozen 2026-10-02: Enterprise Phase 5 Task 3 wires the stored log level through getConfig (STORAGE_KEYS gains logLevel; guarded OperaAgentLog.configure with a safe 'warn' fallback that never throws) and extends the onChanged restart condition. Additive only; MCP/tool/schema surface unchanged. Re-frozen 2026-10-02: comment-only correction in getConfig. The stored log level always falls back to the literal 'warn' (the default level), never to a previously applied threshold; the preceding comment said 'the current threshold', which misdescribed the code. Zero executable-byte change: the guarded configure statement, the returned logLevel, and every call site are untouched, so this is not a behavior change. Re-frozen 2026-10-02 (Phase B Task 2): repairs three lifecycle defects with no protocol change. (1) The watch-fired trusted click built a shared `debuggerSession` but had no release, so one ad-overlay click left the debugger attached and Chrome's 'started debugging this browser' bar stuck on that tab; it now releases in a finally, the same way runBurst already did, through one shared helper. (2) Nothing listened to `chrome.debugger.onDetach`, so a cached `attached: true` outlived the debugger whenever the user opened DevTools on the tab or the tab closed, and every later CDP call in that session failed against a dead debugger; a listener now invalidates the session through a module-level registry. (3) Both `Promise.race` timeout sites in `executeCommand` leaked their timer, and a pending timer is one of the things that keeps an MV3 service worker alive; they now go through `raceWithTimeout`, which clears in a finally. Public surface unchanged: METHOD_SPECS still lists 26 primitives, no MCP source or manifest change, the command error branches (TARGET_NOT_READY, COMMAND_TIMEOUT with outcome 'unknown') are untouched, commandTimeoutError is still what rejects, and withDebugger still refuses to switch tabs inside one shared session.
   ['../extension/manifest.json', 'c4d9e1e90b6547e6bdfbc8687fd6079471e5b0f7'], // Re-frozen 2026-10-01: Enterprise Phase 2 Task 5 prepends lib/agent-log.js to content_scripts js (manifest-first load for classic content scripts). No permission or surface change. Re-frozen 2026-10-02: Enterprise Phase 5 Task 3 registers options_page (options.html) beside the action block. No permission or surface change.
   ['../supabase/functions/opera-agent-mcp/index.ts', 'b1ecc0652d0e39792b0f65e371faeac2e977b624'], // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 wires fail-closed CORS (per-request ACAO via the shared resolver; Allow-Headers/Methods/Expose-Headers/Cache-Control unchanged), served MCP contract unchanged.
 ]);
