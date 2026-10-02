@@ -108,14 +108,11 @@ Chromium-based browser is planned. Known, not started:
 
 ## Unfinished code work, all needing an owner instruction
 
-- **Optimistic `ensureContent` — done (`aac0242`).** Command goes out first (1
-  IPC vs 3); ensure runs only on transport failure, refusal never re-injects.
-  Harness: no measurable shift (noise dominates), no regression.
-- **Gateway `last_seen_at` re-read — done (gateway v3).** Verify folded into
-  auth: 4 trips to 3 per command, behavior preserved.
-- **Navigate in burst — done (`93a4b04`, audit PASS).** 10th step kind on existing
-  `tabs.navigate` (26 primitives); `BURST_STALE_REF` for post-navigate refs.
-  MCP deploy + pack separate.
+- **Optimistic `ensureContent` — done (`aac0242`).** 1 IPC vs 3; ensure only on
+  transport failure. Harness: no measurable shift, no regression.
+- **Gateway `last_seen_at` re-read — done (gateway v3).** 4 trips to 3, behavior kept.
+- **Navigate in burst — done (`93a4b04`, audit PASS).** 10th kind on existing
+  primitive; `BURST_STALE_REF` for post-navigate refs. MCP deploy + pack separate.
 - **Unmeasured, and the largest unknown:** how many model round trips a real task
   actually costs. Every latency figure in this repo is a deterministic model of
   the server and extension path, not an observation of the model loop.
