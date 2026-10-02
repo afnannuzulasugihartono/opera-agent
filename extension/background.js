@@ -1604,8 +1604,13 @@ async function pullOnce(cfg) {
     extensionVersion: PRODUCT_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     capabilities: Object.keys(METHOD_SPECS),
-    waitMs: 12000
-  }, 15000);
+    // Short-window pull: the server wait stays well inside the fetch timeout
+    // with room for a cold start. A 12s wait leaves only a 3s margin, and any
+    // path hostile to long idle requests turns every window into an abort
+    // while fast requests keep passing. Idle cost rises from one trip per 12s
+    // window to one per 5s; worst-case claim latency falls from ~12s to ~5s.
+    waitMs: 5000
+  }, 10000);
 }
 
 async function pullLoop(generation) {
