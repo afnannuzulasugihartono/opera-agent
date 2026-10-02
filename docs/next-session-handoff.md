@@ -10,22 +10,19 @@
   remote branch, every merge `--ff-only`. No runtime file changed after
   `2facfa0`, so the code head and HEAD are the same tree.
 - **Local gates only:** `npm test` **800/800**, `npm run check` ok (26
-  primitives, 94 safety files, **1.6.14**). **CI on `9afa7c1` was not read** —
-  the repo is private and no check-run tool is wired here, so acceptance is not
-  claimed. Last known state was 8 of 9 green with **SonarCloud `cancelled`, not
-  green** (pre-existing, missing project access). Never call a head fully green.
-- **Test consolidation, 2026-10-03:** 16 files merged into 3, 98 test files to
-  85, suite 800/800 throughout. `tests/mcp-surface.test.mjs` (38 tests),
-  `tests/latency-surface.test.mjs` (59), `tests/transaction-cloud-8d.test.mjs`
-  (53). Moved, never dropped: a masked source scan compared every `assert.*`
-  call on both sides — 0 missing, 0 added per cluster. Recorded caveat: that
-  scan strips whitespace before matching, so a leading word boundary silently
-  dropped every `await assert.rejects` from *both* sides and the totals still
-  matched. Fixed before the last cluster; the other two were re-checked and
-  contain no `await assert.*`.
-- Commits: `8f35600` MCP cluster, `fa31ea8` latency cluster, `807cab7` 8D cloud
-  cluster plus the `.gitleaks.toml` path repoint, `9afa7c1` two lock-provenance
-  comments.
+  primitives, 94 safety files, **1.6.14**). **CI on `9afa7c1` was not read** — the
+  repo is private and no check-run tool is wired here, so acceptance is not
+  claimed. Last known was 8 of 9 green, **SonarCloud `cancelled`, not green**
+  (pre-existing). Never call a head fully green.
+- **Test consolidation, 2026-10-03:** commits `8f35600` `fa31ea8` `807cab7`
+  `9afa7c1`, plus a `.gitleaks.toml` allowlist path repoint. 16 files merged
+  into 3, 98 test files to 85, suite 800/800 throughout: `mcp-surface` (38),
+  `latency-surface` (59), `transaction-cloud-8d` (53). Moved, never dropped — a
+  masked source scan compared every `assert.*` on both sides, 0 missing and 0
+  added per cluster. Caveat worth keeping: that scan strips whitespace before
+  matching, so a leading word boundary dropped every `await assert.rejects` from
+  *both* sides while the totals still matched. Caught and fixed; the other two
+  clusters were re-checked and contain no `await assert.*`.
 
 ## Production database — measured, not assumed
 
