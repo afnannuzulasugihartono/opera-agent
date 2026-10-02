@@ -20,8 +20,8 @@ import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 // those reasons are the audit trail for why each pin exists.
 //
 // What this file does NOT cover stays where it was: semantic engine behavior
-// remains in tests/semantic-release-gate.test.mjs (only its MCP digest angle
-// is duplicated here by necessity, not by design).
+// remains in tests/semantic-engine.test.mjs section F (only its MCP digest
+// angle is duplicated here by necessity, not by design).
 
 const sourceUrl = new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url);
 const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', import.meta.url);
