@@ -78,7 +78,9 @@ test('MCP returns screenshots as image content without duplicating base64 in str
   assert.match(source, /type: "image", data, mimeType/);
   assert.match(source, /delete metadataScreenshot\.data/);
   assert.match(source, /runCommand\("page\.capture"/);
-  assert.match(source, /method === "page\.capture" \? "opera_await_capture" : "opera_await"/);
+  // page.capture keeps opera_await_capture because it scrubs the image bytes out
+  // of the command row; the ordinary path moved to the adaptive ramp in Phase C.
+  assert.match(source, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
   assert.match(source, /user-private, password, OTP, payment/);
   assert.doesNotMatch(source, /captureVisibleTab/);
 });

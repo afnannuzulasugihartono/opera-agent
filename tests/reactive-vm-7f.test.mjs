@@ -36,7 +36,8 @@ const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp
 // digest, and the transaction inventory digest.
 // Re-frozen 2026-10-01: Enterprise Phase 2 Task 8 converts the ad-hoc console.error to the structured edge-log helper (same level/message; explicit truncation bound), served contract unchanged.
 // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 wires fail-closed CORS (per-request ACAO via the shared resolver; Allow-Headers/Methods/Expose-Headers/Cache-Control unchanged), served MCP contract unchanged.
-const EXPECTED_MCP_SHA256 = 'c3d3e21612b88514dddadaa9dd280ecec53594619f581b848fdd34cc4fe8e06f';
+// Re-frozen 2026-10-02 (Phase C): the MCP command path moved onto opera_await_adaptive, wait_events began honouring the timeoutMs it declares and now declares the envelope opera_watch_events_wait actually returns, and the instructions named start_watch / wait_events / run_workflow. Tool inventory unchanged at 22.
+const EXPECTED_MCP_SHA256 = '71cf1fbc542670a7eaed1a0ad0f37f6e3945b3e3c72f29860a25428e808bfa78';
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -121,7 +122,7 @@ test('7F keeps the 1.6.13 public surface and frozen read-only VM effect policy u
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
-  assert.equal(contract.inventory.digest, 'sha256:ac0170aa92e01c8e1eec00da4b878eef785183daecd6454dbfedbbd3ae4d61ce'); // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 fail-closed CORS (derived from EXPECTED_MCP_SHA256 above), served contract unchanged
+  assert.equal(contract.inventory.digest, 'sha256:29c944e658a11f9238a37558bf23b32a5f809348928c3d1a0c48c46a7dfd746a'); // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 fail-closed CORS (derived from EXPECTED_MCP_SHA256 above), served contract unchanged. Re-frozen 2026-10-02 (Phase C): recomputed from the new EXPECTED_MCP_SHA256; the inventory digest folds the MCP whole-file SHA, so it moves with it.
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

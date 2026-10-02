@@ -203,17 +203,32 @@ test('the watch wait now costs about the same as a 32s command wait', () => {
   assert.ok(watch < 700, `watch wait should now be well under 700 iterations, got ${watch}`);
 });
 
-test('the AI-facing MCP path uses the flat 50ms wait, not the adaptive ramp', () => {
+test('the AI-facing MCP path uses the adaptive ramp, not the flat 50ms wait', () => {
+  // Superseded 2026-10-02 (Phase C). The MCP server waited on `opera_await`,
+  // whose flat 50ms sleep was the coarser of the two available waits, while the
+  // gateway already used the ramp. The two share a signature and a response
+  // envelope, so the swap is latency-only; see
+  // tests/mcp-roundtrip-efficiency.test.mjs for the contract-neutrality proof.
   const mcp = fs.readFileSync(
     new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url),
     'utf8'
   );
-  const line = mcp.split('\n').find((l) => l.includes('opera_await'));
-  assert.ok(line, 'MCP must still choose an await function');
-  assert.match(line, /"opera_await"/);
+  // Match the assignment, not the comment above it.
+  const line = mcp.split('\n').find((l) => l.includes('const awaitFunction'));
+  assert.ok(line, 'MCP must choose an await function');
+  assert.match(line, /"opera_await_adaptive"/);
   assert.match(line, /page\.capture/);
-  assert.doesNotMatch(line, /opera_await_adaptive/);
-  // The gateway, not the MCP server, is the only caller of the adaptive ramp.
+  assert.doesNotMatch(line, /: "opera_await"/);
+  // page.capture keeps its own wait because it rewrites the stored screenshot.
+  assert.match(line, /"opera_await_capture"/);
+  // The flat 50ms wait still exists and is still granted; it is simply no longer
+  // on the AI's path.
+  const core = fs.readFileSync(
+    new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url),
+    'utf8'
+  );
+  assert.match(core, /create or replace function public\.opera_await\(/);
+  assert.match(core, /pg_sleep\(0\.05\)/);
   const gateway = fs.readFileSync(
     new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url),
     'utf8'

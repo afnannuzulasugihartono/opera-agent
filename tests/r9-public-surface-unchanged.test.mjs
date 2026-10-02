@@ -23,7 +23,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   run_browser_burst: 'a195bbb8a3566db7',
   run_workflow: '352a3d543e9786b0',
   start_watch: '411495a345c1446c',
-  wait_events: '94d5f8173df971fa',
+  wait_events: '711f765e7122133f', // Re-frozen 2026-10-02 (Phase C): wait_events stops ignoring its declared timeoutMs and declares the envelope opera_watch_events_wait actually returns. It previously advertised the command envelope {ok, commandId, status, result, timing} while the SQL returned {ok, events, cursor, count}, so a model trusting the schema looked for fields that do not exist. The wait_events outputSchema is now the only schema that changed; every other tool digest is byte-identical above.
   stop_watch: 'd4a280daed0ec9c7',
   list_tabs: '2d4798f5650f17b7',
   open_url: '8512165d9e2ca0f2',

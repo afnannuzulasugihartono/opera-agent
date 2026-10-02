@@ -79,7 +79,10 @@ for (const marker of ['opera_await', 'normalizeAwaitTiming', 'SAFE_RETRY_DELAY_M
 assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);
 assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
 const mcp = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-mcp/index.ts'), 'utf8');
-assert.match(mcp, /method === "page\.capture" \? "opera_await_capture" : "opera_await"/);
+assert.match(mcp, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
+// The AI path uses the adaptive ramp (Phase C 2026-10-02); the flat 50ms wait is
+// still the gateway's older choice, so only the MCP file is pinned here.
+assert.doesNotMatch(mcp, /: "opera_await"/);
 const efficiency = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql'), 'utf8');
 for (const marker of ['research.read_current_full', 'research.read_url_full', 'youtube.get_transcript', '"limit":12000', '"maxElements":1']) assert.ok(efficiency.includes(marker), marker);
 const parallel = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql'), 'utf8');
