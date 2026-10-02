@@ -57,8 +57,12 @@ review of live production behavior, which no audit here exercised.
 
 `AGENTS.md` now requires a machine audit by default (Codex permitted, not
 mandated) and a recorded waiver with residual risk. Pinned by
-`tests/machine-audit-policy.test.mjs`, proven to fail on 8 violations. Deployment
-remains a separate owner decision and has not been made.
+`tests/machine-audit-policy.test.mjs`, proven to fail on 8 violations.
+
+**Deployed 2026-10-03:** bridge v31→v32, MCP v36→v37, both ACTIVE, via
+`supabase functions deploy` (CLI v2.119.0). Smoke `browser.ping` through the new
+bridge: queued→completed, total 366ms / queued 85ms, device on 1.6.13 with all
+26 capabilities. First live command on the `opera_claim_next_wait` path.
 
 ## Incoming change: Opera removed, Brave next, rename planned
 
@@ -88,10 +92,12 @@ Chromium-based browser is planned. Known, not started:
 
 ## Still open
 
-1. **Revoke the three burned Supabase tokens** — owner-only, no API exists.
-2. **Decide on the three debris edge functions** in production with no repo
-   counterpart: `local-opera-agent-final`, `opera-clipboard-test`,
-   `opera-agent-update-v2`. Reported, not deleted — they are not ours to remove.
+1. **Three burned Supabase tokens — revoked 2026-10-03.** One scoped token
+   remains, verified `opera-agent` only.
+2. **Three debris edge functions — deleted 2026-10-03** via the Management API
+   (`local-opera-agent-final`, `opera-clipboard-test`, `opera-agent-update-v2`;
+   the last documented as experimental in `docs/releases/experimental-v2.md`).
+   Production holds 9 functions, all with repo counterparts.
 3. **Release so the shipped CRX contains the Options page.** The manifest in
    `main` registers `options_page`; the installed build predates it. Needs the
    private signing key.
@@ -130,9 +136,9 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Await owner instruction.** Nothing is in progress; the tree is clean and pushed.
-The migration blocker is resolved and the browser gate is met, so deployment is the
-next real step — it needs the CLI, `supabase link`, and a database password.
+**Await owner instruction.** Deployed and verified live; nothing is in progress.
+Remaining: CRX release (private key), key rotation, SonarCloud, `activeTab`
+removal, and the planned rename (needs a new name first).
 
 ## Rules for the next session
 
