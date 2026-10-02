@@ -113,8 +113,9 @@ Chromium-based browser is planned. Known, not started:
   Harness: no measurable shift (noise dominates), no regression.
 - **Gateway `last_seen_at` re-read — done (gateway v3).** Verify folded into
   auth: 4 trips to 3 per command, behavior preserved.
-- A **navigation action inside a burst**. Phase D let a step *address* a tab but did
-  not add `navigate` to the burst vocabulary.
+- **Navigate in burst — done (`93a4b04`).** 10th step kind mapping to existing
+  `tabs.navigate` (still 26 primitives); `BURST_STALE_REF` refuses refs minted
+  before a same-tab navigate. Machine audit PASS. MCP deploy + pack separate.
 - **Unmeasured, and the largest unknown:** how many model round trips a real task
   actually costs. Every latency figure in this repo is a deterministic model of
   the server and extension path, not an observation of the model loop.
