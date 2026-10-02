@@ -1,2 +1,0 @@
-# Repowise is a local developer tool, isolated from the Node runtime.
-repowise==0.51.0

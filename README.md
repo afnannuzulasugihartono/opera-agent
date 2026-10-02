@@ -125,9 +125,8 @@ oauth-consent/        OAuth consent page (deployed to Vercel)
 scripts/              validation/build/ops scripts
 tests/                unit, security, efficiency, and Chromium regression suites
 docs/                 architecture, protocol, checkpoints, releases, governance
-specs/                Spec Kit feature artifacts
+specs/                frozen feature-plan artifacts (kept as record)
 release-trigger/      release-automation input (.github/workflows/release.yml)
-tools/                vendored tooling (repowise)
 ```
 
 ## Quick start

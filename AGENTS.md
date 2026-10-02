@@ -268,6 +268,7 @@ continues.
 
 ## Spec Kit skills removed (2026-10-03, owner-ordered)
 
-Ten `speckit-*` skills removed (zero invocations; context cost unpaid by use).
-`.specify/`, `specs/`, `tools/` kept; reinstall from upstream if earned back.
-Details: commit `4d8428d`.
+Ten `speckit-*` skills removed (zero invocations; context cost unpaid by use),
+then the unused carcasses followed: `tools/repowise/`, `tools/spec-kit/`, and
+`.specify/` (no MCP registration, no index, no entry points left). `specs/001`
+stays as a frozen work record. Details: commits `4d8428d`, `1b547d7`.
