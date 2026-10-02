@@ -57,10 +57,19 @@ matches a Chromium-based browser is planned. Treat this as known, not started:
   `sourceSha256` for `opera-agent-mcp/index.ts` and `extension/background.js`,
   and `tests/helpers/boundary-locks.mjs` pins them by blob SHA.
   `tests/repo-naming-governance.test.mjs` also allowlists root entries.
-- **Nothing has been tested on Brave.** `ci-browser` drives Chrome via Puppeteer.
-  Brave is Chromium so MV3 loads, but Shields, `chrome.debugger`, and
-  cross-extension messaging behaviour are unverified. Prior browser evidence was
-  gathered against Opera and no longer applies.
+- **Brave is verified, 2026-10-03.** `tests/browser_extension_test.py` honours
+  `OA_BROWSER_EXECUTABLE`, so it runs against Brave directly. Headless and headed
+  both exited 0, and the two logs are **structurally identical** once every
+  numeric value is masked — same assertions, same fail-closed cases, same
+  `browser.burst`. The extension ID derives to the expected
+  `ohbbpamcljckmjhcpkcmefdobkoeaick` because the manifest carries a `key`.
+- **Correction to an earlier note here:** `ci-browser` is not a separate Chrome
+  harness. `.circleci/config.yml:168` runs the *same* file under
+  `xvfb-run -a env OA_BROWSER_HEADLESS=0`. So local runs are not a different
+  suite, only a different display and browser binary.
+- **Still unverified on Brave:** the production backend (both local runs used the
+  harness's own bridge stub) and Brave Shields against real sites. The debugger
+  banner cannot be assessed headless, which is why the headed run matters.
 - Sequence matters: verify on Brave first, then rename, then re-freeze digests.
   Renaming before the Brave check would make a Brave regression indistinguishable
   from a rename regression.
@@ -105,11 +114,16 @@ there is no Management API for PATs.
 
 - Two tokens were **printed into this session's transcript** by a PowerShell
   alias collision and are burned. One is confirmed still live.
-- A third live PAT sits in plaintext in `~/.config/kilo/kilo.jsonc` plus two
-  `.bak` copies, scoped to two projects. It was never in the transcript.
+- A third live PAT sat in plaintext in `~/.config/kilo/kilo.jsonc` plus two
+  `.bak` copies, scoped to two projects. **Cleaned 2026-10-03:** the
+  `--access-token` flag and its value were removed and both `.bak` files deleted,
+  with backups kept outside the repo. Kilo's Supabase MCP will not start until it
+  is reconfigured — a loud failure rather than a silent one.
 - A fourth token is the active one, correctly scoped to `opera-agent` alone.
 - The repo and its history are clean: 1017 files scanned, no `sbp_` anywhere, and
   `.kilo/` and `.superpowers/` are untracked.
+- **Revoking is owner-only and still outstanding** for the three burned tokens —
+  Supabase exposes no PAT API, so there is nothing left for an agent to do.
 
 ## Exact next action
 
