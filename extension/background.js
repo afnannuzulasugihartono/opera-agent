@@ -4,6 +4,7 @@ import {
   METHOD_SPECS,
   BURST_ACTION_METHODS,
   BURST_MAX_TIMEOUT_MS,
+  burstCrossTabRef,
   validateCommand,
   normalizeError,
   safeUrl,
@@ -918,10 +919,12 @@ async function runBurst(params, outerContext = {}) {
       const method = BURST_ACTION_METHODS[step.action];
       const stepStartedAt = performance.now();
       // A refFromStep binding may only be consumed on the tab that minted it. A
-      // ref is a live handle into one document, so reusing one across a tab
-      // switch is exactly the stale-reference failure the ref-recovery work
-      // exists to prevent.
-      if (switched && step.refFromStep !== undefined && step.refFromStep !== null) {
+      // ref is a live handle into one document, so reusing one across tabs is
+      // exactly the stale-reference failure the ref-recovery work exists to
+      // prevent. The comparison is against the source step's recorded tab, not
+      // the switch flag: a step that stays on the already-active tab must also
+      // refuse a ref minted elsewhere.
+      if (step.refFromStep !== undefined && step.refFromStep !== null && burstCrossTabRef(results, step.refFromStep, stepTabId)) {
         return {
           ok: false,
           tabId,

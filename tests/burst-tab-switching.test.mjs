@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { validateBurst, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
+import { validateBurst, burstCrossTabRef, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
 
 // Phase D (2026-10-02): a burst may address more than one tab.
 //
@@ -199,6 +199,31 @@ test('the burst still refuses to run JavaScript or loop or branch', () => {
   // Navigation is still not an action; Phase D made a step address a tab, not
   // gain the tabs.* vocabulary.
   assert.equal(validateBurst({ steps: [burstStep('navigate')] }).ok, false);
+});
+
+test('a ref consumed on a different tab than its source is refused, even without a switch', () => {
+  // Audit repair (2026-10-03): the executor used to refuse only when the
+  // consuming step itself switched tabs (`switched && refFromStep`). A step
+  // that stays on the already-active tab could consume a ref minted on another
+  // tab, and nothing tested even the switch case. The check must compare the
+  // source step's recorded tab against the consuming step's tab instead.
+  const results = [{ index: 0, action: 'find', tabId: 1, ok: true, result: { items: [{ ref: 'r1' }] } }];
+  assert.equal(burstCrossTabRef(results, 0, 2), true, 'consume on a foreign tab must be a violation');
+  assert.equal(burstCrossTabRef(results, 0, 1), false, 'consume on the minting tab must be allowed');
+  // Both directions: a missing source is the schema layer's refusal
+  // (validateBurst rejects non-earlier refs), so the executor helper must not
+  // invent a cross-tab refusal for it.
+  assert.equal(burstCrossTabRef([], 0, 1), false, 'missing source must not read as cross-tab');
+  assert.equal(burstCrossTabRef(results, 0, 1), false, 'same-tab consume stays allowed');
+});
+
+test('runBurst enforces the source-tab comparison instead of the switch flag', () => {
+  // Source-text pin with a stated reason: runBurst lives in the service worker
+  // and cannot be imported in node, so the wiring itself is pinned by the exact
+  // call while the behavior is pinned by the helper tests above.
+  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  assert.match(burst, /burstCrossTabRef\(results, step\.refFromStep, stepTabId\)/);
+  assert.doesNotMatch(burst, /switched && step\.refFromStep/);
 });
 
 test('per-step tabId does not widen the primitive count', () => {

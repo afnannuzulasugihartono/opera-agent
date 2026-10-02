@@ -157,6 +157,19 @@ export function validateBurst(params) {
   return { ok: true };
 }
 
+export function burstCrossTabRef(results, from, stepTabId) {
+  // Executor-side half of the ref tab scope: schema validation can only check
+  // that a ref points at an earlier step, because tab assignment happens at
+  // runtime. Each recorded result carries the tab it ran on, so the executor
+  // compares the source step's tab against the consuming step's tab. A missing
+  // source is not a cross-tab case: validateBurst already refuses non-earlier
+  // refs, so this helper must not invent a refusal for it.
+  const source = (results || [])[Number(from)];
+  const sourceTab = source ? source.tabId : undefined;
+  if (sourceTab === undefined || sourceTab === null) return false;
+  return sourceTab !== stepTabId;
+}
+
 export function validateCommand(command) {
   if (!isPlainObject(command)) return { ok: false, error: 'Command must be an object.' };
   if (typeof command.id !== 'string' || command.id.length < 8 || command.id.length > 128) {

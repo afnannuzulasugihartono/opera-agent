@@ -110,6 +110,24 @@ test('MCP burst schema is bounded and does not expose arbitrary commands or code
   assert.doesNotMatch(source, /browser\.plan/);
 });
 
+test('every burst step kind accepts an optional per-step tabId', () => {
+  // Audit repair (2026-10-03): the extension executes a per-step tabId, but
+  // every burstStepSchema object was .strict() without one, so the public tool
+  // rejected cross-tab bursts while appearing to support them. Each of the nine
+  // step kinds must carry the optional field; strictness stays so nothing else
+  // rides in. Counted structurally: one optional tabId per step kind.
+  const start = source.indexOf('const burstStepSchema');
+  const end = source.indexOf(']);', start);
+  assert.ok(start >= 0 && end > start, 'burstStepSchema block must exist');
+  const block = source.slice(start, end);
+  const kinds = [...block.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
+  const tabFields = [...block.matchAll(/tabId: tabIdSchema\.optional\(\)/g)];
+  const stricts = [...block.matchAll(/\.strict\(\)/g)];
+  assert.deepEqual(kinds, ['read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer']);
+  assert.equal(tabFields.length, kinds.length, `each of the ${kinds.length} step kinds must accept tabId`);
+  assert.equal(stricts.length, kinds.length, 'strictness must stay on every step kind');
+});
+
 test('OAuth config endpoint exposes only public client configuration', () => {
   assert.match(authSource, /SUPABASE_ANON_KEY/);
   assert.match(authSource, /Access-Control-Allow-Origin/);

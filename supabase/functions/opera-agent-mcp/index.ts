@@ -62,6 +62,7 @@ const modifierSchema = z.enum(["alt", "control", "ctrl", "shift", "meta", "cmd",
 const burstStepSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("read"),
+    tabId: tabIdSchema.optional(),
     offset: z.number().int().nonnegative().optional(),
     limit: z.number().int().min(300).max(12000).optional(),
     includeElements: z.boolean().optional(),
@@ -69,6 +70,7 @@ const burstStepSchema = z.discriminatedUnion("action", [
   }).strict(),
   z.object({
     action: z.literal("find"),
+    tabId: tabIdSchema.optional(),
     text: z.string().max(300).optional(),
     role: z.string().max(80).optional(),
     tag: z.string().max(80).optional(),
@@ -77,6 +79,7 @@ const burstStepSchema = z.discriminatedUnion("action", [
   }).strict(),
   z.object({
     action: z.literal("click"),
+    tabId: tabIdSchema.optional(),
     ref: z.string().min(1).max(300).optional(),
     refFromStep: z.number().int().nonnegative().optional()
       .describe("Take the ref from the items of an earlier burst step in the same burst (0-based step index). Keeps find+click atomic for dynamic UIs."),
@@ -84,6 +87,7 @@ const burstStepSchema = z.discriminatedUnion("action", [
   }).strict().refine((step) => !!step.ref || step.refFromStep !== undefined, "Burst click requires ref or refFromStep."),
   z.object({
     action: z.literal("fill"),
+    tabId: tabIdSchema.optional(),
     ref: z.string().min(1).max(300).optional(),
     refFromStep: z.number().int().nonnegative().optional(),
     refIndex: z.number().int().nonnegative().optional(),
@@ -91,12 +95,14 @@ const burstStepSchema = z.discriminatedUnion("action", [
   }).strict().refine((step) => !!step.ref || step.refFromStep !== undefined, "Burst fill requires ref or refFromStep."),
   z.object({
     action: z.literal("key"),
+    tabId: tabIdSchema.optional(),
     key: navigationKeySchema.optional(),
     modifiers: z.array(modifierSchema).max(4).optional(),
     text: z.string().min(1).max(20000).optional()
   }).strict(),
   z.object({
     action: z.literal("scroll"),
+    tabId: tabIdSchema.optional(),
     x: z.number().min(-1000000).max(1000000).optional(),
     y: z.number().min(-1000000).max(1000000),
     absolute: z.boolean().optional(),
@@ -104,6 +110,7 @@ const burstStepSchema = z.discriminatedUnion("action", [
   }).strict(),
   z.object({
     action: z.literal("hover"),
+    tabId: tabIdSchema.optional(),
     ref: z.string().max(200).optional(),
     refFromStep: z.number().int().nonnegative().max(7).optional(),
     refIndex: z.number().int().nonnegative().max(30).optional(),
@@ -113,6 +120,7 @@ const burstStepSchema = z.discriminatedUnion("action", [
   }).strict(),
   z.object({
     action: z.literal("wait"),
+    tabId: tabIdSchema.optional(),
     ref: z.string().min(1).max(300).optional(),
     selector: z.string().min(1).max(500).optional(),
     text: z.string().min(1).max(300).optional(),
@@ -122,6 +130,7 @@ const burstStepSchema = z.discriminatedUnion("action", [
   }).strict().refine((step) => !!(step.ref || step.selector || step.text), "Wait requires ref, selector, or text."),
   z.object({
     action: z.literal("pointer"),
+    tabId: tabIdSchema.optional(),
     pointerAction: z.enum(["move", "click", "drag", "wheel"]),
     x: z.number().nonnegative(),
     y: z.number().nonnegative(),
@@ -400,7 +409,7 @@ function createServer() {
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
-    description: "Run 1-8 dependent page actions sequentially on one explicit Opera target tab. Defaults to background execution, including invisible coordinate steps. Foreground mode displays pointer steps and requires a tab the user already allowed to be activated. It stops at the first failure, has a 12-second total limit, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
+    description: "Run 1-8 dependent page actions sequentially. Each step may name its own tab and defaults to the burst tab. Defaults to background execution, including invisible coordinate steps. Foreground mode displays pointer steps and requires a tab the user already allowed to be activated. A step that consumes another step's ref must run on the tab that minted it. It stops at the first failure, has a 12-second total limit, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
     inputSchema: {
       tabId: tabIdSchema,
       steps: z.array(burstStepSchema).min(1).max(8),
