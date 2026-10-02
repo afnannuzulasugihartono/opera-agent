@@ -105,6 +105,19 @@ export function percentile(values, p) {
  * spread evenly across the window so the result is the distribution a real
  * interactive user experiences, not a single lucky case.
  */
+/** Loop iterations needed to cover `budgetMs` of waiting at this schedule. */
+export function countPolls(schedule, budgetMs) {
+  let elapsed = 0;
+  let polls = 0;
+  while (elapsed < budgetMs) {
+    const step = schedule.find((s) => polls + 1 <= s.upto) || schedule[schedule.length - 1];
+    elapsed += step.seconds * 1000;
+    polls += 1;
+    if (polls > 1_000_000) throw new Error('runaway schedule');
+  }
+  return polls;
+}
+
 export function measureCadence(cadence, { rpcMs = 20, samples = 1200 } = {}) {
   const issued = pollIssueTimes({ ...cadence, rpcMs });
   const waits = [];

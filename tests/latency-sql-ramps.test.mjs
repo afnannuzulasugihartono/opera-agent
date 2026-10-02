@@ -105,8 +105,8 @@ const BUDGETS_MS = {
   opera_await_adaptive: 55000
 };
 
-test('all seven pg_sleep loops in the migrations are accounted for', () => {
-  assert.equal(sleeps.length, 7, 'migration sleep count changed; update this record');
+test('all nine pg_sleep loops in the migrations are accounted for', () => {
+  assert.equal(sleeps.length, 9, 'migration sleep count changed; update this record');
   assert.deepEqual(
     sleeps.map((s) => `${s.file.split('_')[0]}:${s.line}`),
     [
@@ -116,9 +116,11 @@ test('all seven pg_sleep loops in the migrations are accounted for', () => {
       '20260910121107:110',
       '20260922000000:79',
       '20260922000000:104',
-      // Added 2026-10-02: the pull-path wait moved from the bridge into the
-      // database. See tests/latency-claim-wait.test.mjs.
-      '20261002090000:61'
+      '20261002090000:61',
+      // 2026-10-03: the claim wait repeated here after the budget fix, and the
+      // watch wait replaced its flat 5ms spin with a ramp.
+      '20261003110000:112',
+      '20261003110000:156'
     ]
   );
 });
@@ -147,12 +149,20 @@ test('MEASURED: opera_await burns 1100 iterations for a 55s wait at a flat 50ms'
   assert.equal(iterationsFor(entry.schedule, BUDGETS_MS.opera_await), 1100);
 });
 
-test('MEASURED: opera_watch_events_wait burns 6400 iterations for a 32s wait', () => {
+test('MEASURED: opera_watch_events_wait dropped from 6400 iterations to 648', () => {
+  // Superseded on 2026-10-03. The flat 5ms figure is kept as the recorded
+  // baseline so the comparison stays reproducible; see
+  // tests/latency-sql-waits.test.mjs for the repair and its measurement.
+  assert.equal(
+    iterationsFor([{ upto: Infinity, seconds: 0.005 }], BUDGETS_MS.opera_watch_events_wait),
+    6400,
+    'the flat 5ms baseline Phase A recorded'
+  );
   const entry = schedules.get('opera_watch_events_wait');
   assert.ok(entry, 'opera_watch_events_wait must still be a spin loop');
-  assert.equal(entry.schedule[0].seconds, 0.005);
+  assert.ok(entry.schedule.length > 1, 'the flat 5ms spin must no longer be live');
   assert.equal(finestMs(entry.schedule), 5);
-  assert.equal(iterationsFor(entry.schedule, BUDGETS_MS.opera_watch_events_wait), 6400);
+  assert.equal(iterationsFor(entry.schedule, BUDGETS_MS.opera_watch_events_wait), 648);
 });
 
 test('MEASURED: the adaptive ramp detects a fast completion in 5ms, then settles at 50ms', () => {
@@ -184,11 +194,13 @@ test('MEASURED: adaptive and flat waits cost the same iterations but differ 10x 
   assert.equal(flatFirst / adaptiveFirst, 10);
 });
 
-test('the 5ms watch wait costs ~10x the iterations of a 32s command wait', () => {
+test('the watch wait now costs about the same as a 32s command wait', () => {
+  // It used to be ~10x, because a flat 5ms is 10x finer than the command
+  // wait's flat 50ms. Both now ramp, so they cost about the same.
   const watch = iterationsFor(schedules.get('opera_watch_events_wait').schedule, 32000);
   const command = iterationsFor(schedules.get('opera_await').schedule, 32000);
-  assert.ok(watch / command >= 9, `watch=${watch} command=${command}`);
-  assert.ok(watch >= 6000, 'watch wait is at least 6000 loop iterations per full-length call');
+  assert.ok(watch / command < 1.2, `watch=${watch} command=${command}, expected them close`);
+  assert.ok(watch < 700, `watch wait should now be well under 700 iterations, got ${watch}`);
 });
 
 test('the AI-facing MCP path uses the flat 50ms wait, not the adaptive ramp', () => {
