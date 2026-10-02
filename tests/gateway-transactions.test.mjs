@@ -9,19 +9,15 @@ const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/
   .replace(/^import .*;\r?\n/gm, ''));
 const commandId = '00000000-0000-4000-8000-000000000001';
 
-function harness({ auth = { ok: true }, device = { last_seen_at: new Date().toISOString() }, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
+function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
   const calls = [];
   let handler;
   let committed = false;
   const client = {
     from(table) {
-      calls.push(table);
-      const query = {
-        select: (columns) => { assert.equal(columns, 'last_seen_at'); return query; },
-        eq: (column, value) => { assert.equal(column, 'device_name'); assert.equal(value, 'opera'); return query; },
-        neq: (column, value) => { assert.equal(column, 'status'); assert.equal(value, 'disabled'); return query; },
-        maybeSingle: async () => ({ data: device, error: fail === 'device' ? { message: 'lookup failed' } : null }) };
-      return query;
+      // The offline check moved into opera_verify_device, so any REST read is
+      // a regression back to four round trips, not a tolerated fallback.
+      throw new Error(`REST read removed: gateway must not query ${table}`);
     },
     async rpc(name, args) {
       calls.push({ name, args });
@@ -65,9 +61,9 @@ test('one caller request waits for committed enqueue, then adaptive await with u
   release();
   assert.equal((await response).status, 200);
   const calls = JSON.parse(JSON.stringify(h.calls));
-  assert.deepEqual(calls.map((c) => c.name || c), ['opera_verify_device', 'opera_devices', 'opera_enqueue', 'opera_await_adaptive']);
-  assert.deepEqual(calls[2].args, { p_method: 'tabs.list', p_params: { active: false }, p_timeout_ms: 2000, p_device_name: 'opera', p_request_id: 'retry-1' });
-  assert.deepEqual(calls[3].args, { p_command_id: commandId, p_timeout_ms: 2000 });
+  assert.deepEqual(calls.map((c) => c.name || c), ['opera_verify_device', 'opera_enqueue', 'opera_await_adaptive']);
+  assert.deepEqual(calls[1].args, { p_method: 'tabs.list', p_params: { active: false }, p_timeout_ms: 2000, p_device_name: 'opera', p_request_id: 'retry-1' });
+  assert.deepEqual(calls[2].args, { p_command_id: commandId, p_timeout_ms: 2000 });
 });
 
 test('missing and invalid tokens cannot read devices or enqueue', async () => {
@@ -90,12 +86,23 @@ test('gateway 401 responses never echo the submitted token', async () => {
 });
 
 test('unpaired and offline devices are rejected before enqueue', async () => {
-  for (const device of [null, { last_seen_at: null }, { last_seen_at: '2000-01-01T00:00:00Z' }]) {
-    const h = harness({ device });
+  // The auth answer now carries last_seen_at, so unpaired and offline are both
+  // decided from the single verify call. Note the old null-device sub-case is
+  // gone on purpose: a valid token requires its row, so "authenticated but no
+  // row" is unreachable in production and only ever exercised the removed REST
+  // layer rather than a reachable state.
+  {
+    const h = harness({ auth: { ok: false } });
     const response = await h.request();
-    assert.equal(response.status, device ? 200 : 401);
-    const body = await response.json();
-    assert.equal(device ? body.error : body.error.code, device ? 'Device is offline.' : 'DEVICE_NOT_PAIRED');
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).error.code, 'UNAUTHORIZED');
+    assert.equal(h.calls.some((c) => c.name === 'opera_enqueue'), false);
+  }
+  for (const last_seen_at of [null, '2000-01-01T00:00:00Z']) {
+    const h = harness({ auth: { ok: true, last_seen_at } });
+    const response = await h.request();
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).error, 'Device is offline.');
     assert.equal(h.calls.some((c) => c.name === 'opera_enqueue'), false);
   }
 });
@@ -126,7 +133,7 @@ test('reused command IDs, result envelopes and timeout semantics are preserved',
 });
 
 test('RPC failures retain gateway errors and do not retry enqueue', async () => {
-  for (const fail of ['opera_verify_device', 'device', 'opera_enqueue', 'opera_await_adaptive']) {
+  for (const fail of ['opera_verify_device', 'opera_enqueue', 'opera_await_adaptive']) {
     const h = harness({ fail });
     const response = await h.request();
     assert.equal(response.status, 502);

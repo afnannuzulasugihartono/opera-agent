@@ -86,7 +86,9 @@ async function command(req: Request, _url: URL) {
 
   const tokenHash = await sha256Hex(token.toLowerCase());
   // Verify the device token BEFORE touching the command queue: enqueue
-  // resolves the device by name only, so the hash check must happen here.
+  // resolves the device by name only, so the hash check must happen here. The
+  // verify answer also carries last_seen_at, so the 90s offline preflight
+  // rides the same round trip instead of a second REST read of the same row.
   const auth = await rpc("opera_verify_device", {
     p_device_name: DEVICE_NAME,
     p_token_hash: tokenHash
@@ -95,12 +97,12 @@ async function command(req: Request, _url: URL) {
     return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
   }
   // Preserve the former wrapper's pairing/offline preflight before enqueue.
-  const { data: device, error: deviceError } = await supabase.from("opera_devices")
-    .select("last_seen_at").eq("device_name", DEVICE_NAME).neq("status", "disabled").maybeSingle();
-  if (deviceError) throw new Error(`Device lookup failed: ${deviceError.message}`);
-  if (!device) return json(req, { ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
-  if (!device.last_seen_at || Date.parse(device.last_seen_at) < Date.now() - 90000) {
-    return json(req, { ok: false, error: "Device is offline.", lastSeenAt: device.last_seen_at });
+  // A valid token requires its row, so an authenticated answer without a
+  // last_seen_at can only mean a device never seen: refused as offline, which
+  // is the same outcome the old REST layer produced for it.
+  const lastSeenAt = typeof auth.last_seen_at === "string" ? auth.last_seen_at : null;
+  if (!lastSeenAt || Date.parse(lastSeenAt) < Date.now() - 90000) {
+    return json(req, { ok: false, error: "Device is offline.", lastSeenAt });
   }
   // Separate awaited RPC requests commit the queue row before the device must
   // claim it. Enqueue + await in one SQL transaction hides it until timeout.
