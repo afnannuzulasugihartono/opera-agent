@@ -136,12 +136,10 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner reloads 1.6.14, watches 60s.** Wedged isolate fixed by redeploy, but the
-badge persisted: server does its part nearly every window (last_seen advances,
-claims occasionally complete) while the client rarely receives ok -- responses
-die in flight. Short-window pull restored (`30290b4`, mechanism corrected after
-a revert in between; full chain in its message). Harness stub cleared as a
-suspect (mock bridge, never touches production). Copy refreshed. Then pack.
+**Owner reloads 1.6.14, watches 60s.** Wedged isolate fixed by redeploy, but badge
+persisted: server works nearly every window while the client rarely receives ok
+(responses die in flight). Short pull restored (`30290b4`, see its message for
+the full revert chain). Test-harness stub cleared (mock bridge, never production).
 
 ## Rules for the next session
 
