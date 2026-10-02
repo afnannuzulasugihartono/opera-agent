@@ -31,7 +31,7 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 
 | Skill | Path | Use when |
 |---|---|---|
-| `karpathy-guidelines` | `.agents/skills/karpathy-guidelines/SKILL.md` | Writing, reviewing, refactoring: think first, simplicity, surgical changes, goal-driven execution (this file enforces the strict form — failing tests first) |
+| `karpathy-guidelines` | `.agents/skills/karpathy-guidelines/SKILL.md` | Writing, reviewing, refactoring |
 
 ## Coding standards
 
@@ -40,12 +40,12 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 - Regression tests verify behavior or parsed artifacts. Source-text regex only for
   intentionally frozen literals, with the test stating why.
 - `npm run check` auto-discovers runtime files. No hand-picked safety lists.
-- Match existing style. Touch only what the task requires.
+- Match existing style. Touch only what the task requires. Never improve adjacent code, comments, or formatting it did not require.
 
 ## Boundaries
 
 - **Always:** clean tree, `HEAD` matching the handoff, before writing; commit descriptively and push.
-- **Ask first:** deleting foreign code; merge, promote, sign, rename, deploy; new top-level entries; production DB shape.
+- **Ask first:** deleting foreign code; merge, promote, sign, rename, deploy; new top-level entries; production DB shape. Push back with a simpler approach when one exists; decline unclear work instead of guessing.
 - **Never:** Never lock a removal in a test (a test that *requires* an artifact to stay deleted converts a preference into an irreversible decision); commit secrets or tokens; rewrite archive history; weaken a test to admit a violation; share one checkout between writers.
 
 ## Repository discipline
@@ -60,16 +60,13 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 
 ## Naming conventions (enforced by `tests/repo-naming-governance.test.mjs`)
 
-Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<N>`).
-Root allowlisted. Branches: `main`, `release/<semver>`,
-`feat|fix|chore|docs|test|perf|refactor/<kebab>`. Tags: `archive/<path>`,
-`v<semver>`. Keep existing doc families; new ones update this section in the same commit.
+Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<N>`). Root allowlisted. Branches: `main`, `release/<semver>`, `feat|fix|…/<kebab>` (retired namespaces stay retired). Tags: `archive/<path>`, `v<semver>`. No new doc families without updating this section in the same commit.
 
-## Checkpoint implementation and milestone audit policy
+## Audit policy
 
 One writer per milestone branch. Audit is by machine: a separate agent session, or Codex. A machine audit is the required default. The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority. Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope.
 
-Audit before production mutation (auth, authorization, tenant isolation, encryption, signing, public MCP schemas, CRX distribution, irreversible actions, production DB shape), after a bounded dark probe, on repeated unexplained failure, or frozen-contract deviation.
+Audit before production mutation, after a bounded dark probe, on repeated unexplained failure, or frozen-contract deviation. Triggers include auth, tenant isolation, signing, public MCP schemas, CRX distribution, irreversible actions, DB shape — illustrative, not exhaustive.
 
 At a milestone boundary the auditor reviews the full diff and reruns proportionate tests first. The audit must distinguish code present, automated tests passing, live acceptance passing, and production promotion. Its verdict is `PASS`, `CONDITIONAL PASS`, or `FAIL`; only `PASS` permits the next milestone unless the user explicitly accepts documented residual risk. Where the user waives the audit instead, record the waiver, the residual risk, and who accepted it — a missing audit and an accepted risk must never be readable as the same thing.
 
