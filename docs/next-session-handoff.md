@@ -136,10 +136,10 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner reloads 1.6.14, watches 60s.** `48f2ee1` shortens pull to waitMs 5000 /
-10s timeout: badge stayed yellow while heartbeats flowed, every 12s long-poll
-died in flight, server cleared by probe. Copy refreshed. Green → pack 1.6.14.
-Yellow → hypothesis dead, revert.
+**Owner reloads 1.6.14, watches 60s.** Root cause was a wedged edge isolate
+(401s cleared by same-code redeploy v32→v33, next ping completed). The
+short-window experiment (`48f2ee1`) was reverted (`de1a7ac`) per its own promise
+once the hypothesis died; 12s baseline restored. Copy refreshed. Then pack.
 
 ## Rules for the next session
 
