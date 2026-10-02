@@ -12,12 +12,25 @@ const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/2026
 const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
 const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
 
-test('bridge uses a short fast-start polling window then returns to conservative idle polling', () => {
-  assert.match(bridge, /FAST_PULL_POLLS\s*=\s*8/);
-  assert.match(bridge, /FAST_PULL_INTERVAL_MS\s*=\s*50/);
-  assert.match(bridge, /IDLE_PULL_INTERVAL_MS\s*=\s*2000/);
-  assert.match(bridge, /emptyPolls\s*<\s*FAST_PULL_POLLS/);
+test('bridge delegates the pull wait to Postgres and issues one claim call per request', () => {
+  // Replaces the previous fast-start/idle client-side cadence lock. That
+  // behavior was removed deliberately on 2026-10-02: the bridge used to sleep
+  // between `opera_claim_next` calls, which cost one HTTP round trip per poll
+  // (14 per 12s window) and left a queue wait of p50 830ms / p95 1910ms. The
+  // cadence constants are gone because the cadence is no longer the bridge's
+  // to choose. This lock asserts the replacement contract, and the measured
+  // figures live in tests/latency-claim-wait.test.mjs.
+  assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
+  assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
+  assert.match(bridge, /p_wait_ms:\s*waitMs/);
+  // The long-poll window is still clamped to the same range the extension
+  // relies on: it sends waitMs 12000 and a 15000ms fetch timeout.
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
+  // One claim call per pull, no client-side retry or pacing.
+  const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
+  assert.equal((pull.match(/rpc\(/g) || []).length, 1, 'pull must make exactly one RPC call');
+  assert.doesNotMatch(pull, /while\s*\(true\)|do\s*\{/);
+  assert.doesNotMatch(bridge, /FAST_PULL_|IDLE_PULL_/);
 });
 
 test('runner awaits command completion inside Postgres and keeps safe transient retries', () => {

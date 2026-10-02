@@ -8,7 +8,7 @@ import {
   BURST_MAX_STEPS,
   BURST_MAX_TIMEOUT_MS
 } from '../extension/lib/protocol.js';
-import { readCadenceConstants, measureCadence } from './helpers/pull-cadence-sim.mjs';
+import { RECORDED_BRIDGE_CADENCE, measureCadence } from './helpers/pull-cadence-sim.mjs';
 
 // Phase A latency measurement (2026-10-02), evidence record.
 //
@@ -26,12 +26,11 @@ const SETTLE_TICK_MS = 50;
 const SETTLE_STABLE_ROUNDS = 2;
 const SETTLE_FLOOR_MS = SETTLE_TICK_MS * SETTLE_STABLE_ROUNDS;
 
-const bridge = fs.readFileSync(
-  new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url),
-  'utf8'
-);
-const cadence = readCadenceConstants(bridge);
-const queueWait = measureCadence(cadence, { rpcMs: 20 });
+// Queue wait is measured against the recorded Phase A baseline (the bridge's
+// client-side cadence before 2026-10-02), so the reference task cost below
+// stays comparable across the change documented in
+// tests/latency-claim-wait.test.mjs.
+const queueWait = measureCadence(RECORDED_BRIDGE_CADENCE, { rpcMs: 20 });
 
 const primitives = Object.keys(METHOD_SPECS);
 const burstTargets = new Set(Object.values(BURST_ACTION_METHODS));

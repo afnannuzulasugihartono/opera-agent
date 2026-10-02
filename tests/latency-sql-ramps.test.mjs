@@ -105,12 +105,37 @@ const BUDGETS_MS = {
   opera_await_adaptive: 55000
 };
 
-test('all six pg_sleep loops in the migrations are accounted for', () => {
-  assert.equal(sleeps.length, 6, 'migration sleep count changed; update this record');
+test('all seven pg_sleep loops in the migrations are accounted for', () => {
+  assert.equal(sleeps.length, 7, 'migration sleep count changed; update this record');
   assert.deepEqual(
     sleeps.map((s) => `${s.file.split('_')[0]}:${s.line}`),
-    ['20260907204146:204', '20260907204221:212', '20260908031756:110', '20260910121107:110', '20260922000000:79', '20260922000000:104']
+    [
+      '20260907204146:204',
+      '20260907204221:212',
+      '20260908031756:110',
+      '20260910121107:110',
+      '20260922000000:79',
+      '20260922000000:104',
+      // Added 2026-10-02: the pull-path wait moved from the bridge into the
+      // database. See tests/latency-claim-wait.test.mjs.
+      '20261002090000:61'
+    ]
   );
+});
+
+test('the new claim wait ramp is fine through the interactive burst window', () => {
+  const entry = schedules.get('opera_claim_next_wait');
+  assert.ok(entry, 'opera_claim_next_wait must be an inventory entry');
+  assert.deepEqual(entry.schedule, [
+    { upto: 8, seconds: 0.005 },
+    { upto: 16, seconds: 0.01 },
+    { upto: 24, seconds: 0.025 },
+    { upto: 32, seconds: 0.05 },
+    { upto: Infinity, seconds: 0.25 }
+  ]);
+  // The 5ms stages cover the first 40ms; the sub-50ms stages cover 720ms.
+  assert.equal(finestMs(entry.schedule), 5);
+  assert.equal(detectionLagMs(entry.schedule), 250);
 });
 
 test('MEASURED: opera_await burns 1100 iterations for a 55s wait at a flat 50ms', () => {

@@ -65,7 +65,15 @@ assert.doesNotMatch(ensureContent, /method: 'page\.read'/);
 assert.match(content, /args\.includeElements !== false/);
 assert.match(content, /case 'content\.ping'/);
 const bridge = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-bridge/index.ts'), 'utf8');
-for (const marker of ['FAST_PULL_POLLS', 'FAST_PULL_INTERVAL_MS', 'IDLE_PULL_INTERVAL_MS']) assert.ok(bridge.includes(marker), marker);
+// The client-side pull cadence was removed on 2026-10-02: `pull` now delegates
+// the wait to `opera_claim_next_wait`, so the bridge must issue exactly one
+// claim call per request and must not reintroduce pacing constants.
+// See tests/latency-claim-wait.test.mjs for the measured before/after.
+assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
+assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
+for (const marker of ['FAST_PULL_POLLS', 'FAST_PULL_INTERVAL_MS', 'IDLE_PULL_INTERVAL_MS']) {
+  assert.ok(!bridge.includes(marker), `${marker} must not return to the bridge`);
+}
 const runner = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-runner/index.ts'), 'utf8');
 for (const marker of ['opera_await', 'normalizeAwaitTiming', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'MAX_PARALLEL_ITEMS', 'createWorkflowMetrics', 'recordCommandMetrics', 'intentionalWaitMs']) assert.ok(runner.includes(marker), marker);
 assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);

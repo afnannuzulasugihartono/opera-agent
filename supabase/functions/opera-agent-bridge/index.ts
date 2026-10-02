@@ -15,16 +15,22 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-// Egress budget (2026-09-24): idle claim-polling dominated platform traffic —
-// one 12s long-poll minted ~52 `opera_claim_next` calls (6x50ms + 250ms loop),
-// ~13k claims/hour/device, 95%+ of all edge traffic. Poll cadence now ramps:
-// 8x50ms covers the burst window where commands are enqueued right behind the
-// HTTP round-trip (snappy path unchanged), then falls back to 2s. A new
-// command now waits <=2s instead of <=250ms in the worst case; median stays
-// sub-second because real work arrives while the fast window is still open.
-const FAST_PULL_POLLS = 8;
-const FAST_PULL_INTERVAL_MS = 50;
-const IDLE_PULL_INTERVAL_MS = 2000;
+// Poll cadence history, kept because it explains why the wait moved server-side.
+//
+// 2026-09-24 (egress budget): idle claim-polling dominated platform traffic. A
+// 12s long-poll minted ~52 `opera_claim_next` calls on a 6x50ms + 250ms loop,
+// ~13k claims/hour/device, 95%+ of all edge traffic. The cadence was ramped to
+// 8x50ms then 2s, which cut claim calls to 14 per window (4200/hour/device) but
+// left a new command waiting up to 2000ms. Phase A measured that queue wait at
+// p50 830ms / p95 1910ms and showed the fast window is only 400ms of 12000ms,
+// so ~97% of waits were paid at the idle rate.
+//
+// 2026-10-02: the client-side cadence constants are gone. `pull` now makes one
+// `opera_claim_next_wait` call per window and the database owns the wait, so
+// the cost is one HTTP round trip per window instead of fourteen, and the
+// detection ramp stays fine where follow-up commands actually arrive.
+// See `tests/latency-bridge-cadence.test.mjs` and
+// `tests/latency-claim-wait.test.mjs` for the recorded figures.
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -96,29 +102,24 @@ async function pull(body: Record<string, unknown>) {
   }
   const tokenHash = await sha256(body.token.toLowerCase());
   const waitMs = clamp(body.waitMs, 0, 25000, 12000);
-  const deadline = Date.now() + waitMs;
-  let emptyPolls = 0;
 
-  do {
-    const result = await rpc("opera_claim_next", {
-      p_device_name: body.deviceName.trim(),
-      p_token_hash: tokenHash,
-      p_extension_version: String(body.extensionVersion || "").slice(0, 64),
-      p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
-      p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : []
-    });
-    if (!result?.ok) return json(result || { ok: false }, 401);
-    if (result?.command) return json(result, 200);
-    if (Date.now() >= deadline) {
-      return json({ ok: true, command: null, serverTime: new Date().toISOString() }, 200);
-    }
-
-    const intervalMs = emptyPolls < FAST_PULL_POLLS
-      ? FAST_PULL_INTERVAL_MS
-      : IDLE_PULL_INTERVAL_MS;
-    emptyPolls += 1;
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  } while (true);
+  // The wait lives in Postgres, next to the queue. This handler used to sleep
+  // between `opera_claim_next` calls, which minted one HTTP round trip per poll
+  // -- 14 per 12s window per idle device -- and left a command waiting up to
+  // 2000ms for the device to ask again. Phase A measured that queue wait at
+  // p50 830ms and p95 1910ms. `opera_claim_next_wait` polls with a ramp that
+  // stays under 50ms for the first 720ms of an idle window, which is where
+  // follow-up commands actually arrive. One call, one response.
+  const result = await rpc("opera_claim_next_wait", {
+    p_device_name: body.deviceName.trim(),
+    p_token_hash: tokenHash,
+    p_extension_version: String(body.extensionVersion || "").slice(0, 64),
+    p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
+    p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : [],
+    p_wait_ms: waitMs
+  });
+  if (!result?.ok) return json(result || { ok: false }, 401);
+  return json({ ...result, serverTime: new Date().toISOString() }, 200);
 }
 
 async function complete(body: Record<string, unknown>) {

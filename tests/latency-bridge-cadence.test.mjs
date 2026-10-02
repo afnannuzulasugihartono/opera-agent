@@ -7,7 +7,8 @@ import {
   measureCadence,
   pollIssueTimes,
   claimWaitMs,
-  percentile
+  percentile,
+  RECORDED_BRIDGE_CADENCE
 } from './helpers/pull-cadence-sim.mjs';
 
 // Phase A latency measurement (2026-10-02), evidence record.
@@ -27,15 +28,30 @@ const bridge = fs.readFileSync(
   'utf8'
 );
 
-const cadence = readCadenceConstants(bridge);
+// The bridge delegated this wait to Postgres on 2026-10-02, so the cadence is
+// measured from the recorded baseline rather than from live source. The
+// constants below are pinned in tests/helpers/pull-cadence-sim.mjs so these
+// "before" figures remain reproducible; see tests/latency-claim-wait.test.mjs
+// for the measurement that replaced them.
+const cadence = RECORDED_BRIDGE_CADENCE;
 
 // Assumed cost of one `opera_claim_next` round trip (PostgREST + Postgres).
 // The model is reported at three values because the real figure is not
 // measured here; the latency conclusions below hold across all three.
 const RPC_COSTS_MS = [10, 20, 50];
 
-test('the bridge cadence model reads its constants from live source', () => {
+test('the recorded baseline matches the constants the bridge used to declare', () => {
   assert.deepEqual(cadence, { fastPolls: 8, fastIntervalMs: 50, idleIntervalMs: 2000, windowMs: 12000 });
+});
+
+test('the bridge no longer carries a client-side cadence', () => {
+  assert.equal(
+    readCadenceConstants(bridge),
+    null,
+    'the bridge must not reintroduce FAST_PULL_*/IDLE_PULL_* constants'
+  );
+  assert.doesNotMatch(bridge, /FAST_PULL_|IDLE_PULL_/);
+  assert.match(bridge, /opera_claim_next_wait/);
 });
 
 test('an idle device issues 14 claim calls per 12s window (4200/hour)', () => {
