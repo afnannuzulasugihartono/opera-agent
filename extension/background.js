@@ -259,9 +259,17 @@ async function assertCaptureFramesSafe(tabId) {
 async function withDebugger(tabId, context, work) {
   const shared = context?.debuggerSession;
   if (shared) {
-    if (shared.tabId !== tabId) throw new Error('Burst debugger cannot switch tabs.');
+    // Phase D: a burst step may target another tab. Chrome allows one debugger
+    // attachment per tab but not two at once, so switching tabs releases the
+    // previous session before attaching the next. The release is a real detach:
+    // a session left attached keeps Chrome's "started debugging this browser"
+    // bar on the user's tab.
+    if (shared.tabId !== tabId) {
+      await releaseDebuggerSession(shared, log);
+    }
     if (!shared.attached) {
       await chrome.debugger.attach({ tabId }, '1.3');
+      shared.tabId = tabId;
       shared.attached = true;
       registerDebuggerSession(shared);
     }
@@ -880,9 +888,17 @@ async function runBurst(params, outerContext = {}) {
   const deadline = Math.min(outerContext.deadline || Date.now() + BURST_MAX_TIMEOUT_MS, Date.now() + BURST_MAX_TIMEOUT_MS);
   const context = { ...outerContext, deadline, debuggerSession: { tabId, attached: false } };
   const results = [];
+  // Phase D: the tab the current step runs against. It starts at the burst tab
+  // and only moves when a step names its own tabId, so every existing caller
+  // behaves exactly as before.
+  let activeTabId = tabId;
 
   try {
     for (let index = 0; index < params.steps.length; index += 1) {
+      const step = params.steps[index];
+      const stepTabId = step.tabId === undefined || step.tabId === null ? activeTabId : step.tabId;
+      const switched = stepTabId !== activeTabId;
+      if (switched) activeTabId = stepTabId;
       const remainingMs = deadline - Date.now();
       // A burst timeout is an unknown outcome, not a failure: steps that already
       // ran may have taken effect, so their evidence must reach the caller.
@@ -899,17 +915,37 @@ async function runBurst(params, outerContext = {}) {
           timingMs: Math.round((performance.now() - startedAt) * 100) / 100
         };
       }
-      const step = params.steps[index];
       const method = BURST_ACTION_METHODS[step.action];
       const stepStartedAt = performance.now();
+      // A refFromStep binding may only be consumed on the tab that minted it. A
+      // ref is a live handle into one document, so reusing one across a tab
+      // switch is exactly the stale-reference failure the ref-recovery work
+      // exists to prevent.
+      if (switched && step.refFromStep !== undefined && step.refFromStep !== null) {
+        return {
+          ok: false,
+          tabId,
+          completedSteps: index,
+          failedAt: index,
+          failedAction: step.action,
+          executionMode: mode,
+          error: {
+            code: 'BURST_CROSS_TAB_REF',
+            message: `Step ${index} switches tab and cannot consume a ref minted by step ${step.refFromStep} on another tab. Re-find on the target tab.`
+          },
+          results,
+          timingMs: Math.round((performance.now() - startedAt) * 100) / 100
+        };
+      }
       try {
-        const result = await dispatch(method, burstStepParams(step, tabId, remainingMs, mode, results), context);
+        const result = await dispatch(method, burstStepParams(step, stepTabId, remainingMs, mode, results), context);
         if ((step.action === 'click' || step.action === 'fill') && step.refFromStep !== undefined && step.refFromStep !== null
           && result && typeof result === 'object' && result.ok === true) {
           result.resolvedFrom = `step:${step.refFromStep}`;
         }
         if (step.action === 'wait' && result?.ok === false) throw new Error(String(result.error || 'wait_for timeout'));
-        const entry = { index, action: step.action, ok: true, timingMs: Math.round((performance.now() - stepStartedAt) * 100) / 100, result };
+        const entry = { index, action: step.action, tabId: stepTabId, ok: true, timingMs: Math.round((performance.now() - stepStartedAt) * 100) / 100, result };
+        if (entry.tabId !== tabId) entry.switchedTab = true;
         if (burstResultSize([...results, entry]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);
         results.push(entry);
       } catch (error) {

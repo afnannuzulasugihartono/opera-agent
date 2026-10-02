@@ -75,7 +75,9 @@ test('R9-E: settle bounds are clamped so a caller cannot ask for an unbounded wa
 
 test('R9-E: the hover burst step exists and requires a ref target', () => {
   assert.equal(BURST_ACTION_METHODS.hover, 'page.hover');
-  assert.deepEqual(BURST_STEP_KEYS.hover, ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs']);
+  // tabId was appended by Phase D (2026-10-02) so a step can target its own tab.
+  // The hover target rules are otherwise unchanged.
+  assert.deepEqual(BURST_STEP_KEYS.hover, ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId']);
   // A hover needs a concrete target: text is the submenu to WAIT for, never the
   // thing to hover, so a hover can never be guessed from a loose text match.
   assert.equal(validateBurst({ steps: [{ action: 'hover', ref: 'oa-1' }] }).ok, true);

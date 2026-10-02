@@ -1,0 +1,209 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+import { validateBurst, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
+
+// Phase D (2026-10-02): a burst may address more than one tab.
+//
+// The measured reason: only 8 of 26 primitives were burstable, and all 8
+// `tabs.*` operations were excluded, so a real browsing task needed a separate
+// model round trip at every navigation. ActionEngine (arXiv 2602.20502) reports
+// collapsing to one LLM call per task at 2x lower latency and 11.8x lower cost,
+// and BrowserArena (arXiv 2510.02418) names direct URL navigation as one of the
+// three dominant failure modes of browser agents. So this is the structural gap.
+//
+// This is a CAPABILITY change, and the guards around it are the point of the
+// file. What must not move:
+//
+// - The VM's own cross-tab fence is a different layer and stays untouched:
+//   `opera-agent-vm` throws HostError("CROSS_TAB") for effect arguments aimed at
+//   another tab, and three tests pin that. This change touches the extension's
+//   burst, not the VM host.
+//
+// - The per-step `refFromStep` binding must become tab-scoped. A ref minted in a
+//   step that ran on tab A is meaningless on tab B, and silently reusing it would
+//   be exactly the kind of stale-reference failure the repo has been burned by.
+//
+// - The debugger cannot be attached to two tabs at once, so switching tabs must
+//   release the previous session rather than hold both.
+//
+// - A step that switches tabs must still be bounded by the single 12s budget and
+//   must still report completed evidence on timeout.
+
+const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+
+function sliceBetween(startMarker, endMarker) {
+  const start = background.indexOf(startMarker);
+  const end = background.indexOf(endMarker, start);
+  assert.ok(start >= 0, `${startMarker} must exist`);
+  assert.ok(end > start, `${endMarker} must follow ${startMarker}`);
+  return background.slice(start, end);
+}
+
+function burstStep(action, extra = {}) {
+  return { action, ...extra };
+}
+
+// --- schema: tabId per step, optional and additive ------------------------
+
+// A minimal valid step per action, so this test isolates the tabId change from
+// each action's own required fields.
+const VALID_STEP = Object.freeze({
+  read: {},
+  find: {},
+  click: { ref: 'r1' },
+  fill: { ref: 'r1', value: 'hello' },
+  key: { key: 'Enter' },
+  scroll: { y: 100 },
+  wait: { selector: '.ready' },
+  hover: { ref: 'r1' },
+  pointer: { pointerAction: 'click', x: 10, y: 20 }
+});
+
+test('tabId is an accepted optional key on every existing burst step', () => {
+  // No step is removed and no existing call breaks: a step without tabId keeps
+  // resolving to the burst-level tab, which is what every current caller does.
+  for (const action of Object.keys(VALID_STEP)) {
+    const withoutTab = validateBurst({ tabId: 7, steps: [burstStep(action, VALID_STEP[action])] });
+    assert.equal(withoutTab.ok, true, `${action} without tabId: ${withoutTab.error || ''}`);
+    const withTab = validateBurst({ tabId: 7, steps: [burstStep(action, { ...VALID_STEP[action], tabId: 3 })] });
+    assert.equal(withTab.ok, true, `${action} with tabId: ${withTab.error || ''}`);
+  }
+});
+
+test('a per-step tabId must be a non-negative integer', () => {
+  const bad = [-1, 1.5, 'x', null];
+  for (const tabId of bad) {
+    const check = validateBurst({ steps: [burstStep('find', { tabId })] });
+    if (tabId === null) {
+      // null is allowed: it means "use the burst tab".
+      assert.equal(check.ok, true);
+      continue;
+    }
+    assert.equal(check.ok, false, `tabId ${JSON.stringify(tabId)} must be rejected`);
+  }
+  assert.equal(validateBurst({ steps: [burstStep('find', { tabId: 0 })] }).ok, true);
+});
+
+test('step keys stay strict, so an unknown key cannot ride in', () => {
+  const check = validateBurst({ steps: [burstStep('find', { tabId: 3, navigate: 'https://evil.test' })] });
+  assert.equal(check.ok, false, 'an unknown per-step key must fail closed');
+});
+
+test('the step count and budget are unchanged', () => {
+  assert.equal(BURST_MAX_STEPS, 8);
+  assert.equal(BURST_MAX_TIMEOUT_MS, 12000);
+  assert.equal(validateBurst({ steps: [burstStep('find')] }).ok, true);
+});
+
+// --- forward reference must not cross a tab ------------------------------
+
+test('refFromStep still refuses a forward or self reference', () => {
+  // "forward" is relative to the referencing step, so step 1 may only bind to
+  // step 0. from:1 in a two-step burst is a forward reference, not a valid one.
+  const check = validateBurst({
+    steps: [burstStep('find'), burstStep('click', { ref: 'r1', refFromStep: 1 })]
+  });
+  assert.equal(check.ok, false, 'a forward reference must fail closed');
+
+  const self = validateBurst({
+    steps: [burstStep('find'), burstStep('click', { ref: 'r1', refFromStep: 0 })]
+  });
+  assert.equal(self.ok, true, 'binding to the immediately earlier step is the supported case');
+});
+
+test('refFromStep validation still runs before any tab check', () => {
+  const check = validateBurst({
+    steps: [burstStep('find'), burstStep('click', { ref: 'r1', refFromStep: 1, tabId: 9 })]
+  });
+  assert.equal(check.ok, false);
+});
+
+// --- execution: the session follows the active tab -----------------------
+
+test('a burst step may carry its own tabId', () => {
+  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  assert.match(burst, /step\.tabId/);
+  assert.match(burst, /activeTabId/);
+});
+
+test('the debugger session is re-keyed when the active tab changes', () => {
+  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  // The old single-tab guard must not survive as a blanket refusal.
+  assert.doesNotMatch(burst, /cannot switch tabs/);
+  // Switching releases the previous session before attaching the next.
+  assert.match(burst, /releaseDebuggerSession\(/);
+});
+
+test('withDebugger no longer refuses a different tab outright', () => {
+  const fn = sliceBetween('async function withDebugger(', 'function codedError(');
+  assert.doesNotMatch(fn, /cannot switch tabs/);
+  // But it still refuses to hand one work call a target it was not asked for.
+  assert.match(fn, /debuggerSession/);
+});
+
+test('every released session is detached, not merely forgotten', async () => {
+  const { releaseDebuggerSession } = await import('../extension/lib/debugger-session.js');
+  // A non-attached session is a no-op; that is what makes a finally safe.
+  await assert.doesNotReject(releaseDebuggerSession({ tabId: 5, attached: false }));
+});
+
+// --- evidence and budget ------------------------------------------------
+
+test('a burst still reports completed evidence when it times out mid-sequence', () => {
+  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  assert.match(burst, /timedOut: true/);
+  assert.match(burst, /completedSteps: results\.length/);
+  assert.match(burst, /failedAt: index/);
+  assert.match(burst, /BURST_TIMEOUT/);
+});
+
+test('the single 12s budget is not extended by a tab switch', () => {
+  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  assert.match(burst, /BURST_MAX_TIMEOUT_MS/);
+  // The per-step remaining time is recomputed from the same deadline.
+  assert.match(burst, /deadline - Date\.now\(\)/);
+});
+
+test('the burst-level tabId is still resolved and still reported', () => {
+  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  assert.match(burst, /resolveTabId\(params\)/);
+  assert.match(burst, /tabId,/);
+});
+
+// --- guards that must not move ------------------------------------------
+
+test('the VM cross-tab fence is untouched', () => {
+  const vm = fs.readFileSync(
+    new URL('../supabase/functions/opera-agent-vm/index.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(vm, /HostError\("CROSS_TAB", "Effect arguments target another tab\."/);
+});
+
+test('the burst still refuses to run JavaScript or loop or branch', () => {
+  const steps = [
+    burstStep('read'), burstStep('find'), burstStep('click', { ref: 'r' }),
+    burstStep('fill', { ref: 'r', value: 'v' }), burstStep('key', { key: 'Enter' }),
+    burstStep('scroll', { y: 1 }), burstStep('wait', { selector: '.x' }),
+    burstStep('hover', { ref: 'r' }), burstStep('pointer', { pointerAction: 'click', x: 1, y: 1 })
+  ];
+  assert.equal(steps.length, 9, 'the fixture lists the current vocabulary plus one');
+  assert.equal(validateBurst({ steps: steps.slice(0, BURST_MAX_STEPS) }).ok, true);
+  assert.equal(validateBurst({ steps }).ok, false, '9 steps must still exceed the cap');
+
+  // No escape hatch: an unknown action and a JavaScript-looking key both fail.
+  assert.equal(validateBurst({ steps: [burstStep('eval')] }).ok, false);
+  assert.equal(validateBurst({ steps: [burstStep('find', { js: 'fetch("x")' })] }).ok, false);
+  // Navigation is still not an action; Phase D made a step address a tab, not
+  // gain the tabs.* vocabulary.
+  assert.equal(validateBurst({ steps: [burstStep('navigate')] }).ok, false);
+});
+
+test('per-step tabId does not widen the primitive count', () => {
+  const protocol = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
+  const block = protocol.match(/export const METHOD_SPECS = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
+  const count = [...block[1].matchAll(/^\s*'([^']+)':\s*\{/gm)].length;
+  assert.equal(count, 26, 'a burst parameter is not a new primitive');
+});

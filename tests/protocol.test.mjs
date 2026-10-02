@@ -22,14 +22,22 @@ test('method allowlist contains only named primitives', () => {
   }
 });
 
-test('bounded browser burst accepts only linear same-tab page actions', () => {
+test('bounded browser burst accepts only linear page actions', () => {
   assert.equal(validateBurst({ steps: [{ action: 'fill', ref: 'oa-1', value: 'query' }, { action: 'key', key: 'Enter' }] }).ok, true);
   assert.equal(validateBurst({ executionMode: 'background', steps: [{ action: 'read' }] }).ok, true);
   assert.equal(validateBurst({ executionMode: 'foreground', steps: [{ action: 'pointer', pointerAction: 'click', x: 1, y: 2 }] }).ok, true);
   assert.equal(validateBurst({ executionMode: 'auto', steps: [{ action: 'read' }] }).ok, false);
   assert.equal(validateBurst({ steps: [] }).ok, false);
   assert.equal(validateBurst({ steps: Array.from({ length: 9 }, () => ({ action: 'read' })) }).ok, false);
-  assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: 9 }] }).ok, false);
+  // Phase D (2026-10-02): a step may now name its own tab. This line previously
+  // asserted the opposite and was the same-tab guarantee at the schema layer;
+  // it is superseded by the per-step tabId, which stays optional so a step
+  // without one still resolves to the burst tab.
+  assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: 9 }] }).ok, true);
+  // Still strict: a malformed tab is rejected, and the burst-level tabId is
+  // still required to be a non-negative integer.
+  assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: -1 }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'read' }], tabId: -1 }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'read' }], output: { arbitrary: true } }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'navigate', url: 'https://example.com' }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'pointer', pointerAction: 'drag', x: 1, y: 2 }] }).ok, false);

@@ -18,15 +18,15 @@ export const BURST_ACTION_METHODS = Object.freeze({
   pointer: 'page.pointer'
 });
 export const BURST_STEP_KEYS = Object.freeze({
-  read: ['action', 'offset', 'limit', 'includeElements', 'maxElements'],
-  find: ['action', 'text', 'role', 'tag', 'exact', 'limit'],
-  click: ['action', 'ref', 'refFromStep', 'refIndex'],
-  fill: ['action', 'ref', 'value', 'refFromStep', 'refIndex'],
-  key: ['action', 'key', 'modifiers', 'text'],
-  scroll: ['action', 'x', 'y', 'absolute', 'smooth'],
-  wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs'],
-  hover: ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs'],
-  pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY']
+  read: ['action', 'offset', 'limit', 'includeElements', 'maxElements', 'tabId'],
+  find: ['action', 'text', 'role', 'tag', 'exact', 'limit', 'tabId'],
+  click: ['action', 'ref', 'refFromStep', 'refIndex', 'tabId'],
+  fill: ['action', 'ref', 'value', 'refFromStep', 'refIndex', 'tabId'],
+  key: ['action', 'key', 'modifiers', 'text', 'tabId'],
+  scroll: ['action', 'x', 'y', 'absolute', 'smooth', 'tabId'],
+  wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs', 'tabId'],
+  hover: ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId'],
+  pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY', 'tabId']
 });
 
 export const METHOD_SPECS = Object.freeze({
@@ -81,6 +81,15 @@ function validateBurstStep(step) {
   const allowedKeys = new Set(BURST_STEP_KEYS[action]);
   const unexpectedKey = Object.keys(step).find((key) => !allowedKeys.has(key));
   if (unexpectedKey) return `Burst ${action} does not allow ${unexpectedKey}.`;
+
+  // Phase D: a step may name its own tab. Optional and additive, so a step that
+  // omits it still resolves to the burst-level tab and every existing caller is
+  // unaffected. A ref minted by an earlier step is NOT carried across a tab
+  // boundary: `refFromStep` below still binds only to earlier steps, and the
+  // executor refuses a passthrough whose source ran on a different tab.
+  if (step.tabId !== undefined && step.tabId !== null) {
+    if (!Number.isInteger(step.tabId) || step.tabId < 0) return 'Invalid burst step tabId.';
+  }
 
   if (action === 'click' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst click requires a valid ref or refFromStep.';
   if (action === 'fill' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';

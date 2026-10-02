@@ -178,10 +178,16 @@ test('executeCommand uses the clearing helper instead of a bare race', () => {
 
 // --- guard: the shared-session contract itself is unchanged -----------------
 
-test('withDebugger still refuses to switch tabs inside one shared session', () => {
+test('withDebugger releases the previous session when a burst step switches tabs', () => {
   const fn = sliceBetween('async function withDebugger(', 'function codedError(');
+  // Phase D (2026-10-02) superseded the blanket refusal. Chrome permits one
+  // debugger attachment per tab but not two at once, so a switch must detach
+  // before attaching the next, or the banner stays on the first tab.
+  assert.doesNotMatch(fn, /cannot switch tabs/);
   assert.match(fn, /shared\.tabId !== tabId/);
-  assert.match(fn, /cannot switch tabs/);
+  assert.match(fn, /releaseDebuggerSession\(shared, log\)/);
+  // And the re-key must happen on attach, so the next switch is detected.
+  assert.match(fn, /shared\.tabId = tabId/);
 });
 
 test('releaseDebuggerSession tolerates a session that is not attached', async () => {
