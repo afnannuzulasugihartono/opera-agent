@@ -110,7 +110,7 @@ test('no module under extension/ exports a symbol nothing else reaches', async (
     '../extension/hover-settle.js'
   ];
   const consumers = await Promise.all(
-    [...files, '../extension/background.js', '../extension/content.js', '../tests/r9-public-surface-unchanged.test.mjs',
+    [...files, '../extension/background.js', '../extension/content.js', '../tests/mcp-surface.test.mjs',
       '../tests/r9-keyboard-vocabulary-parity.test.mjs', '../tests/r9-hygiene.test.mjs', '../tests/r9-focus-and-keyboard.test.mjs',
       '../tests/r9-hover-settle.test.mjs', '../tests/r9-role-reconcile.test.mjs', '../tests/protocol.test.mjs',
       '../tests/action-pipeline.test.mjs', '../tests/ax-observation.test.mjs', '../scripts/check.mjs']
