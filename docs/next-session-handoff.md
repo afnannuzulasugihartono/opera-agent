@@ -6,8 +6,10 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`2facfa0`**, tree clean, `origin/main` is the only
-  remote branch. Ten commits past the four-phase merge, zero merge commits.
+- `main` = `origin/main`, tree clean, `origin/main` is the only remote branch, and
+  every merge was `--ff-only`. The **code head is `2facfa0`**; context-record
+  commits sit on top of it and touch no runtime file, so read `git log --oneline
+  -3` rather than expecting the code head to still be HEAD.
 - Gate evidence on `2facfa0`: `npm test` **781/781**, `npm run check` ok (26
   primitives, 93 runtime safety files), **8 of 9 check-runs green** —
   `ci-audit`, `ci-browser`, `ci-deno-check`, `ci-deno-install`, `ci-deno-lint`,
@@ -15,7 +17,8 @@
   not green** — verified pre-existing on `5fe91aa`, caused by missing project
   access. Never describe a head as fully green.
 - Commits after `a9af637`: `57cfa7b` restore `opera_run_fast`, `b0f14ed` extend
-  AGENTS.md rule 6, `2facfa0` install the karpathy-guidelines skill.
+  AGENTS.md rule 6, `2facfa0` install the karpathy-guidelines skill, then this
+  context record.
 
 ## Production database — measured, not assumed
 
