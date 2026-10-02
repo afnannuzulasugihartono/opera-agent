@@ -59,10 +59,9 @@ review of live production behavior, which no audit here exercised.
 mandated) and a recorded waiver with residual risk. Pinned by
 `tests/machine-audit-policy.test.mjs`, proven to fail on 8 violations.
 
-**Deployed 2026-10-03:** bridge v31→v32, MCP v36→v37, both ACTIVE, via
-`supabase functions deploy` (CLI v2.119.0). Smoke `browser.ping` through the new
-bridge: queued→completed, total 366ms / queued 85ms, device on 1.6.13 with all
-26 capabilities. First live command on the `opera_claim_next_wait` path.
+**Deployed 2026-10-03:** bridge v31→v32, MCP v36→v37, both ACTIVE (CLI v2.119.0).
+Smoke `browser.ping` on the new claim-wait path: 366ms total / 85ms queued,
+device on 1.6.13 with all 26 capabilities.
 
 ## Incoming change: Opera removed, Brave next, rename planned
 
