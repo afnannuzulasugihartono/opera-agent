@@ -168,9 +168,10 @@ same commit with a one-line recorded reason.
 ## Checkpoint implementation and milestone audit policy
 
 Use one active writer on the milestone branch at a time. ChatGPT Web may own the
-individual checkpoint implementation and live Opera/MCP acceptance. Codex performs
-an independent audit after the complete milestone, before work starts on the next
-milestone. Do not let two agents edit or push the same branch concurrently.
+individual checkpoint implementation and live Opera/MCP acceptance. The audit after
+the complete milestone, before work starts on the next milestone, is performed by
+a machine: a separate agent session, or Codex. Do not let two agents edit or push
+the same branch concurrently.
 
 For every checkpoint implementation:
 
@@ -196,18 +197,35 @@ For every checkpoint implementation:
 9. Stop after the assigned checkpoint. Do not begin the next checkpoint in the
    same turn unless the user explicitly requests it after reviewing the result.
 
-Request a Codex audit before production mutation, or immediately after a bounded
-dark probe and before promotion, when a checkpoint changes authentication,
+Request an audit before production mutation, or immediately after a bounded dark
+probe and before promotion, when a checkpoint changes authentication,
 authorization, tenant isolation, encryption, signing identity, public MCP schemas,
 extension/CRX distribution, irreversible actions, or production database shape.
 An unexplained repeated failure or a proposed deviation from a frozen contract is
 also an early-audit trigger.
 
-At a milestone boundary, do not start the next milestone until Codex independently
-reviews the complete diff and reruns proportionate tests. The audit must distinguish
-code present, automated tests passing, live acceptance passing, and production
-promotion. Its verdict is `PASS`, `CONDITIONAL PASS`, or `FAIL`; only `PASS` permits
-the next milestone unless the user explicitly accepts documented residual risk.
+A machine audit is the required default. The auditor must be a session that did
+not write the code under review, must start from fresh task context, and must be
+read-only: no edit, commit, push, deployment, or production authority. Give it the
+exact head, the diff range, and the question. Do not hand it a summary of your own
+reasoning and call that a scope.
+
+At a milestone boundary, do not start the next milestone until the auditor reviews
+the complete diff and reruns proportionate tests. The audit must distinguish code
+present, automated tests passing, live acceptance passing, and production promotion.
+Its verdict is `PASS`, `CONDITIONAL PASS`, or `FAIL`; only `PASS` permits the next
+milestone unless the user explicitly accepts documented residual risk. Where the
+user waives the audit instead, record the waiver, the residual risk, and who
+accepted it in the checkpoint evidence — a missing audit and an accepted risk must
+never be readable as the same thing.
+
+Be accurate about what this is. A machine auditor catches anchoring, sunk cost,
+stale recall, tests that assert what the author believed, and drift between a
+document and the code. It does not bring a category of threat nobody thought to
+check for, and it shares its author's blind spots. So state the residual risk in the
+record instead of letting a `PASS` stand in for human judgement that never happened.
+An auditor that only reruns what the author already ran has not audited anything;
+if that is all it managed, it must say so in the verdict.
 
 The reusable ChatGPT Web checkpoint prompt is
 `docs/prompts/chatgpt-web-checkpoint.md`.
