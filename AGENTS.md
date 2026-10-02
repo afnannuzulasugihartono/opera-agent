@@ -96,6 +96,23 @@ failure that cost reconciliation work. They are not advisory.
 6. **Preserve before overwrite.** Never discard or reset away work you did not
    create without archiving it first. Parallel-session work is assumed valuable
    until inspected.
+   - **Mention, do not delete, pre-existing code this work did not create.** Dead
+     code, a superseded constant, a stale comment, or a function that cannot work
+     is something to **report to the owner in the same session**, not something to
+     remove as tidying-up. "It is dead and nobody calls it" is an argument for
+     asking, not for acting.
+   - Removing it *is* allowed when the removal is **required** by the change being
+     made — a constant whose continued presence would mislead, a lock that pins
+     behavior this commit supersedes, a value this commit's own logic replaces.
+     Say which of the two it is, in the commit message.
+   - **Never lock a removal in a test.** A test that *requires* an artifact to stay
+     deleted converts a preference into an irreversible decision. Tests may require
+     that a superseded artifact is gone; a test that forbids its restoration is a
+     decision the owner did not make.
+   - This rule existed as "preserve before overwrite" alone and was still violated:
+     `opera_run_fast` was dropped and locked in a test on 2026-10-02, then restored
+     on 2026-10-03 after review. The gap was that the rule covered *overwriting* and
+     said nothing about *discovering* something unusable.
 7. **Acceptance basis is CI evidence.** Checkpoint acceptance = CircleCI +
    Vercel SUCCESS on the exact evidence head plus a durable evidence record,
    per the standing authorization of 2026-09-19. Production deployment, signed
