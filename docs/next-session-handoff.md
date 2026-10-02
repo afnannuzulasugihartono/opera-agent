@@ -136,11 +136,10 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner accepts 1.6.14, then orders activation.** Packed from worktree `0d5db94`
-(CI 8/9 green): `D:\Opera\opera-agent-1.6.14.crx`, 89.287 byte. Identity proven
-(proof key = .der = manifest key, crx_id `e711…`, 26 entries byte-identical,
-deterministic repack). Row uploaded inactive; update.xml still serves 1.6.13,
-1.6.14 path 404s. One active row per identity holds. Flip = explicit order.
+**Owner accepts 1.6.14, then orders activation.** Packed from `0d5db94` (CI 8/9):
+`opera-agent-1.6.14.crx`, 89.287 byte, identity proven (key = .der = manifest,
+26 entries byte-identical, deterministic repack). Row inactive; update.xml still
+1.6.13, 1.6.14 path 404s. One active row per identity. Flip = explicit order.
 
 ## Rules for the next session
 
