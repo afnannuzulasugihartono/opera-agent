@@ -145,7 +145,5 @@ SonarCloud, `activeTab`, rename.
 - Before the first write, verify the tree is clean and `HEAD` is the tip you are on.
 - Do not merge, promote, sign, rename, or deploy without an explicit owner
   instruction.
-- A claim in a commit message or a test comment is not evidence. Make the lock fail
-  before you repeat it.
-- Relocate detail into `docs/context-archive.md` once it stops being actionable
-  rather than appending it here; this file has a 150-line cap.
+- A claim in a commit message or a test comment is not evidence. Make the lock fail before you repeat it.
+- Relocate detail into `docs/context-archive.md` once it stops being actionable rather than appending it here.
