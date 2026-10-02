@@ -6,20 +6,26 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main`, tree clean, `origin/main` is the only remote branch, and
-  every merge was `--ff-only`. The **code head is `2facfa0`**; context-record
-  commits sit on top of it and touch no runtime file, so read `git log --oneline
-  -3` rather than expecting the code head to still be HEAD.
-- Gate evidence: `npm run check` ok (26 primitives, 93 files, **1.6.14**) and
-  **8 of 9 check-runs green** — `ci-audit`, `ci-browser`, `ci-deno-check`,
-  `ci-deno-install`, `ci-deno-lint`, `ci-sbom`, `ci-secrets`, `ci-unit`.
-  **SonarCloud Code Analysis is `cancelled`, not green** — verified pre-existing
-  on `5fe91aa`, missing project access. Never describe a head as fully green.
-  Suite is 797/797. Browser harness exit 0 on Brave headless against the bumped
-  tree, version asserts included.
-- Commits after `a9af637`: `57cfa7b` restore `opera_run_fast`, `b0f14ed` extend
-  rule 6, `2facfa0` karpathy skill, `4a79713` machine audit, `c3fa582` audit fix,
-  `f313d66` 1.6.14 sweep, `4d8428d` remove speckit skills, then context records.
+- `main` = `origin/main` = **`9afa7c1`**, tree clean, `origin/main` is the only
+  remote branch, every merge `--ff-only`. No runtime file changed after
+  `2facfa0`, so the code head and HEAD are the same tree.
+- **Local gates only:** `npm test` **800/800**, `npm run check` ok (26
+  primitives, 94 safety files, **1.6.14**). **CI on `9afa7c1` was not read** —
+  the repo is private and no check-run tool is wired here, so acceptance is not
+  claimed. Last known state was 8 of 9 green with **SonarCloud `cancelled`, not
+  green** (pre-existing, missing project access). Never call a head fully green.
+- **Test consolidation, 2026-10-03:** 16 files merged into 3, 98 test files to
+  85, suite 800/800 throughout. `tests/mcp-surface.test.mjs` (38 tests),
+  `tests/latency-surface.test.mjs` (59), `tests/transaction-cloud-8d.test.mjs`
+  (53). Moved, never dropped: a masked source scan compared every `assert.*`
+  call on both sides — 0 missing, 0 added per cluster. Recorded caveat: that
+  scan strips whitespace before matching, so a leading word boundary silently
+  dropped every `await assert.rejects` from *both* sides and the totals still
+  matched. Fixed before the last cluster; the other two were re-checked and
+  contain no `await assert.*`.
+- Commits: `8f35600` MCP cluster, `fa31ea8` latency cluster, `807cab7` 8D cloud
+  cluster plus the `.gitleaks.toml` path repoint, `9afa7c1` two lock-provenance
+  comments.
 
 ## Production database — measured, not assumed
 
