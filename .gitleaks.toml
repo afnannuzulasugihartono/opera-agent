@@ -60,5 +60,5 @@ id = "jwt"
   [[rules.allowlists]]
   description = "Admission test uses a synthetic JWT-shaped fixture explicitly suffixed public_fixture_signature."
   condition = "AND"
-  paths = ['''^tests/transaction-cloud-management-backend-8d\.test\.mjs$''']
+  paths = ['''^tests/transaction-cloud-8d\.test\.mjs$''']
   regexes = ['''public_fixture_signature''']
