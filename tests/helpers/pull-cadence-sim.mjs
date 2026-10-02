@@ -16,7 +16,7 @@
  * `opera_claim_next_wait`. Pinned here so the Phase A "before" figures stay
  * reproducible after the constants were removed from the bridge.
  *
- * Measured by tests/latency-bridge-cadence.test.mjs at the time it was live:
+ * Measured by tests/latency-surface.test.mjs section B when it was recorded:
  * 14 claim calls per 12s window, p50 queue wait 830ms, p95 1910ms.
  */
 export const RECORDED_BRIDGE_CADENCE = Object.freeze({

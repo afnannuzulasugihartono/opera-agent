@@ -19,7 +19,7 @@ test('bridge delegates the pull wait to Postgres and issues one claim call per r
   // (14 per 12s window) and left a queue wait of p50 830ms / p95 1910ms. The
   // cadence constants are gone because the cadence is no longer the bridge's
   // to choose. This lock asserts the replacement contract, and the measured
-  // figures live in tests/latency-claim-wait.test.mjs.
+  // figures live in tests/latency-surface.test.mjs section C.
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
   assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
   assert.match(bridge, /p_wait_ms:\s*waitMs/);

@@ -77,7 +77,7 @@ test('the restore migration still exists, so the rule has a real referent', () =
 
 test('the test that used to demand the drop now demands the restore', () => {
   const waits = fs.readFileSync(
-    new URL('./latency-sql-waits.test.mjs', import.meta.url),
+    new URL('./latency-surface.test.mjs', import.meta.url),
     'utf8'
   );
   assert.match(waits, /opera_run_fast is not dropped, and a later migration restores it/);

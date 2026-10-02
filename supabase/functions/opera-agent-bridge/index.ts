@@ -29,8 +29,8 @@ const cors = {
 // `opera_claim_next_wait` call per window and the database owns the wait, so
 // the cost is one HTTP round trip per window instead of fourteen, and the
 // detection ramp stays fine where follow-up commands actually arrive.
-// See `tests/latency-bridge-cadence.test.mjs` and
-// `tests/latency-claim-wait.test.mjs` for the recorded figures.
+// See `tests/latency-surface.test.mjs` sections B and C for the recorded
+// figures.
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {

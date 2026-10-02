@@ -13,7 +13,7 @@ import { validateBurst, burstCrossTabRef, burstStaleRef, BURST_MAX_STEPS, BURST_
 // and BrowserArena (arXiv 2510.02418) names direct URL navigation as one of the
 // three dominant failure modes of browser agents. So this is the structural gap.
 // (2026-10-03: navigate joined the vocabulary, re-measured at 9 of 26 in
-// tests/latency-burst-budget.test.mjs. The gap this file guards is unchanged:
+// tests/latency-surface.test.mjs section E. The gap this file guards is unchanged:
 // addressing a tab is not navigating it.)
 //
 // This is a CAPABILITY change, and the guards around it are the point of the
