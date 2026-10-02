@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { validateBurst, burstCrossTabRef, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
+import { validateBurst, burstCrossTabRef, burstStaleRef, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
 
 // Phase D (2026-10-02): a burst may address more than one tab.
 //
@@ -12,6 +12,9 @@ import { validateBurst, burstCrossTabRef, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS 
 // collapsing to one LLM call per task at 2x lower latency and 11.8x lower cost,
 // and BrowserArena (arXiv 2510.02418) names direct URL navigation as one of the
 // three dominant failure modes of browser agents. So this is the structural gap.
+// (2026-10-03: navigate joined the vocabulary, re-measured at 9 of 26 in
+// tests/latency-burst-budget.test.mjs. The gap this file guards is unchanged:
+// addressing a tab is not navigating it.)
 //
 // This is a CAPABILITY change, and the guards around it are the point of the
 // file. What must not move:
@@ -196,9 +199,10 @@ test('the burst still refuses to run JavaScript or loop or branch', () => {
   // No escape hatch: an unknown action and a JavaScript-looking key both fail.
   assert.equal(validateBurst({ steps: [burstStep('eval')] }).ok, false);
   assert.equal(validateBurst({ steps: [burstStep('find', { js: 'fetch("x")' })] }).ok, false);
-  // Navigation is still not an action; Phase D made a step address a tab, not
-  // gain the tabs.* vocabulary.
-  assert.equal(validateBurst({ steps: [burstStep('navigate')] }).ok, false);
+  // Opening and closing tabs are still not burst actions; navigate joined the
+  // vocabulary above, so only a bare (URL-less) navigate fails here now.
+  assert.equal(validateBurst({ steps: [burstStep('open')] }).ok, false);
+  assert.equal(validateBurst({ steps: [burstStep('close')] }).ok, false);
 });
 
 test('a ref consumed on a different tab than its source is refused, even without a switch', () => {
@@ -224,6 +228,42 @@ test('runBurst enforces the source-tab comparison instead of the switch flag', (
   const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
   assert.match(burst, /burstCrossTabRef\(results, step\.refFromStep, stepTabId\)/);
   assert.doesNotMatch(burst, /switched && step\.refFromStep/);
+});
+
+test('navigate is a burst step that maps to the existing tabs.navigate primitive', () => {
+  // Navigation is not new authority: tabs.navigate already exists. What is new
+  // is composing it inside a burst, so the schema requires a URL and the real
+  // gate (http/https) stays at dispatch, the single source of truth.
+  assert.equal(validateBurst({ steps: [burstStep('navigate')] }).ok, false, 'bare navigate must fail closed');
+  assert.equal(validateBurst({ steps: [burstStep('navigate', { url: 'https://example.test/' })] }).ok, true);
+  assert.equal(validateBurst({ steps: [burstStep('navigate', { url: 'https://example.test/', tabId: 2 })] }).ok, true);
+  assert.equal(validateBurst({ steps: [burstStep('navigate', { url: '' })] }).ok, false, 'empty URL must fail closed');
+});
+
+test('a ref minted before a navigate on the same tab is dead', () => {
+  // A navigation replaces the document, so every ref minted at or before it is
+  // stale by definition. Consuming one is the same failure class as cross-tab
+  // reuse, with its own code so the model recovers by re-finding.
+  const results = [
+    { index: 0, action: 'find', tabId: 1, ok: true, result: { items: [{ ref: 'r1' }] } },
+    { index: 1, action: 'navigate', tabId: 1, ok: true, result: {} }
+  ];
+  assert.equal(burstStaleRef(results, 0, 1), true, 'ref before navigate on the same tab must be refused');
+  assert.equal(burstStaleRef(results, 0, 2), false, 'cross-tab is the other check, not this one');
+  const otherTab = [
+    { index: 0, action: 'find', tabId: 1, ok: true, result: { items: [{ ref: 'r1' }] } },
+    { index: 1, action: 'navigate', tabId: 2, ok: true, result: {} }
+  ];
+  assert.equal(burstStaleRef(otherTab, 0, 1), false, 'navigate on another tab kills nothing here');
+  assert.equal(burstStaleRef([{ index: 0, action: 'find', tabId: 1, ok: true }], 0, 1), false, 'no navigate means no staleness');
+});
+
+test('runBurst enforces the navigate staleness check with its own code', () => {
+  // Same wiring-pin convention as the cross-tab check: runBurst cannot run in
+  // node, so the exact call is pinned by source text and the behavior above.
+  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  assert.match(burst, /burstStaleRef\(results, step\.refFromStep, stepTabId\)/);
+  assert.match(burst, /BURST_STALE_REF/);
 });
 
 test('per-step tabId does not widen the primitive count', () => {

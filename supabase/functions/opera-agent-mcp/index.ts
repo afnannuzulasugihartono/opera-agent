@@ -145,7 +145,12 @@ const burstStepSchema = z.discriminatedUnion("action", [
     if (step.pointerAction === "wheel" && step.deltaY == null) {
       ctx.addIssue({ code: "custom", message: "Wheel requires deltaY." });
     }
-  })
+  }),
+  z.object({
+    action: z.literal("navigate"),
+    tabId: tabIdSchema.optional(),
+    url: z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed.").describe("HTTP/HTTPS URL to navigate to. A navigation replaces the document: refs minted before it cannot be used after it.")
+  }).strict()
 ]);
 
 type AuthContext = { type: "static" } | { type: "user"; userId: string };
@@ -409,7 +414,7 @@ function createServer() {
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
-    description: "Run 1-8 dependent page actions sequentially. Each step may name its own tab and defaults to the burst tab. Defaults to background execution, including invisible coordinate steps. Foreground mode displays pointer steps and requires a tab the user already allowed to be activated. A step that consumes another step's ref must run on the tab that minted it. It stops at the first failure, has a 12-second total limit, and cannot open, navigate, close, loop, branch, or execute JavaScript.",
+    description: "Run 1-8 dependent page actions sequentially. Each step may name its own tab and defaults to the burst tab. Defaults to background execution, including invisible coordinate steps. Foreground mode displays pointer steps and requires a tab the user already allowed to be activated. A step that consumes another step's ref must run on the tab that minted it, and no ref survives a navigate step on that tab. It stops at the first failure, has a 12-second total limit, and cannot open, close, loop, branch, or execute JavaScript.",
     inputSchema: {
       tabId: tabIdSchema,
       steps: z.array(burstStepSchema).min(1).max(8),

@@ -39,7 +39,10 @@ test('bounded browser burst accepts only linear page actions', () => {
   assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: -1 }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'read' }], tabId: -1 }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'read' }], output: { arbitrary: true } }).ok, false);
-  assert.equal(validateBurst({ steps: [{ action: 'navigate', url: 'https://example.com' }] }).ok, false);
+  // navigate joined the burst vocabulary (maps to tabs.navigate; the http/https
+  // gate stays at dispatch). Bare navigate still fails closed on the missing URL.
+  assert.equal(validateBurst({ steps: [{ action: 'navigate' }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'navigate', url: 'https://example.com' }] }).ok, true);
   assert.equal(validateBurst({ steps: [{ action: 'pointer', pointerAction: 'drag', x: 1, y: 2 }] }).ok, false);
   const command = validateCommand({ id: 'burst-123', method: 'browser.burst', params: { steps: [{ action: 'read' }] }, timeoutMs: 30000 });
   assert.equal(command.ok, true);

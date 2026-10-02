@@ -15,7 +15,11 @@ export const BURST_ACTION_METHODS = Object.freeze({
   scroll: 'page.scroll',
   wait: 'page.wait_for',
   hover: 'page.hover',
-  pointer: 'page.pointer'
+  pointer: 'page.pointer',
+  // Navigation is not new authority: tabs.navigate already exists as a
+  // primitive. Composing it into a burst is what is new, and the stale-ref
+  // guard below is the safety half of that composition.
+  navigate: 'tabs.navigate'
 });
 export const BURST_STEP_KEYS = Object.freeze({
   read: ['action', 'offset', 'limit', 'includeElements', 'maxElements', 'tabId'],
@@ -26,7 +30,8 @@ export const BURST_STEP_KEYS = Object.freeze({
   scroll: ['action', 'x', 'y', 'absolute', 'smooth', 'tabId'],
   wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs', 'tabId'],
   hover: ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId'],
-  pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY', 'tabId']
+  pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY', 'tabId'],
+  navigate: ['action', 'url', 'tabId']
 });
 
 export const METHOD_SPECS = Object.freeze({
@@ -123,6 +128,9 @@ function validateBurstStep(step) {
     if (pointerAction === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(step[key]))) return `Invalid burst pointer ${key}.`;
     if (pointerAction === 'wheel' && !Number.isFinite(Number(step.deltaY))) return 'Invalid burst pointer deltaY.';
   }
+  // Presence only: safeUrl at dispatch is the single source of truth for what
+  // counts as a navigable URL, same as the tabs.navigate tool path.
+  if (action === 'navigate' && (typeof step.url !== 'string' || !step.url)) return 'Burst navigate requires a URL.';
   return null;
 }
 
@@ -155,6 +163,19 @@ export function validateBurst(params) {
     }
   }
   return { ok: true };
+}
+
+export function burstStaleRef(results, from, stepTabId) {
+  // Companion to burstCrossTabRef for navigation: a navigate step replaces the
+  // document, so every ref minted at or before it is dead by definition. Only
+  // navigations on the consuming tab matter; a navigate elsewhere kills
+  // nothing here (cross-tab reuse is the other helper's refusal).
+  const list = results || [];
+  for (let index = Number(from); index < list.length; index += 1) {
+    const entry = list[index];
+    if (entry && entry.action === 'navigate' && entry.tabId === stepTabId) return true;
+  }
+  return false;
 }
 
 export function burstCrossTabRef(results, from, stepTabId) {

@@ -85,8 +85,11 @@ test('the shared burst step schema is pinned by its step set, not only by digest
   // This is the layer that closes that gap: the public burst vocabulary is
   // pinned by name, so adding or removing a step fails loudly here.
   const steps = [...source.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
+  // navigate joined the burst vocabulary (maps to the existing tabs.navigate
+  // primitive; see the audit-repair note in boundary-locks.mjs). The list stays
+  // exact so any further addition fails loudly here.
   assert.deepEqual(steps, [
-    'read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer'
+    'read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer', 'navigate'
   ]);
   // The burst union must stay strict so unknown step keys are still rejected.
   const union = source.match(/const burstStepSchema = z\.discriminatedUnion\("action", \[([\s\S]*?)\n\]\);/);

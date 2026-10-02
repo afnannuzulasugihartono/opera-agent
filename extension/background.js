@@ -5,6 +5,7 @@ import {
   BURST_ACTION_METHODS,
   BURST_MAX_TIMEOUT_MS,
   burstCrossTabRef,
+  burstStaleRef,
   validateCommand,
   normalizeError,
   safeUrl,
@@ -952,6 +953,22 @@ async function runBurst(params, outerContext = {}) {
           error: {
             code: 'BURST_CROSS_TAB_REF',
             message: `Step ${index} switches tab and cannot consume a ref minted by step ${step.refFromStep} on another tab. Re-find on the target tab.`
+          },
+          results,
+          timingMs: Math.round((performance.now() - startedAt) * 100) / 100
+        };
+      }
+      if (step.refFromStep !== undefined && step.refFromStep !== null && burstStaleRef(results, step.refFromStep, stepTabId)) {
+        return {
+          ok: false,
+          tabId,
+          completedSteps: index,
+          failedAt: index,
+          failedAction: step.action,
+          executionMode: mode,
+          error: {
+            code: 'BURST_STALE_REF',
+            message: `Step ${index} cannot consume a ref minted by step ${step.refFromStep} before a navigation on this tab replaced the document. Re-find after the navigation.`
           },
           results,
           timingMs: Math.round((performance.now() - startedAt) * 100) / 100

@@ -37,7 +37,7 @@ const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp
 // Re-frozen 2026-10-01: Enterprise Phase 2 Task 8 converts the ad-hoc console.error to the structured edge-log helper (same level/message; explicit truncation bound), served contract unchanged.
 // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 wires fail-closed CORS (per-request ACAO via the shared resolver; Allow-Headers/Methods/Expose-Headers/Cache-Control unchanged), served MCP contract unchanged.
 // Re-frozen 2026-10-02 (Phase C): the MCP command path moved onto opera_await_adaptive, wait_events began honouring the timeoutMs it declares and now declares the envelope opera_watch_events_wait actually returns, and the instructions named start_watch / wait_events / run_workflow. Tool inventory unchanged at 22.
-const EXPECTED_MCP_SHA256 = 'ac69fe7a6ea9e3c6df79ea7888152d4b336f6d26cdbdd1b2ef0d2976be3a14c2'; // Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; see boundary-locks.mjs.
+const EXPECTED_MCP_SHA256 = '3534444b185e2ee5cb8f34b27e9b5b1d6bbaa0c32fb058db949c987414323b3b'; // Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; see boundary-locks.mjs. Re-frozen 2026-10-03 (navigate step): burstStepSchema gains the navigate kind; see boundary-locks.mjs.
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -122,7 +122,7 @@ test('7F keeps the 1.6.14 public surface and frozen read-only VM effect policy u
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
-  assert.equal(contract.inventory.digest, 'sha256:21894c07d1e830652541c1e5fe326820bb33ca7db396a4af505609956415d7c1'); // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 fail-closed CORS (derived from EXPECTED_MCP_SHA256 above), served contract unchanged. Re-frozen 2026-10-02 (Phase C): recomputed from the new EXPECTED_MCP_SHA256; the inventory digest folds the MCP whole-file SHA, so it moves with it. Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; recomputed from the new EXPECTED_MCP_SHA256 above.
+  assert.equal(contract.inventory.digest, 'sha256:261cb3e070a27ccc4082edacf010878ab8f9e8aca5c6289bc06ec5a84055de02'); // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 fail-closed CORS (derived from EXPECTED_MCP_SHA256 above), served contract unchanged. Re-frozen 2026-10-02 (Phase C): recomputed from the new EXPECTED_MCP_SHA256; the inventory digest folds the MCP whole-file SHA, so it moves with it. Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; recomputed from the new EXPECTED_MCP_SHA256 above. Re-frozen 2026-10-03 (navigate step): recomputed from the new EXPECTED_MCP_SHA256 above.
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);

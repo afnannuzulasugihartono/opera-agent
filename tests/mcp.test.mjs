@@ -106,7 +106,8 @@ test('MCP preserves structured command failures for foreground permission handli
 
 test('MCP burst schema is bounded and does not expose arbitrary commands or code', () => {
   assert.match(source, /z\.array\(burstStepSchema\)\.min\(1\)\.max\(8\)/);
-  assert.match(source, /cannot open, navigate, close, loop, branch, or execute JavaScript/);
+  assert.match(source, /cannot open, close, loop, branch, or execute JavaScript/);
+  assert.doesNotMatch(source, /cannot open, navigate, close/);
   assert.doesNotMatch(source, /browser\.plan/);
 });
 
@@ -123,7 +124,7 @@ test('every burst step kind accepts an optional per-step tabId', () => {
   const kinds = [...block.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
   const tabFields = [...block.matchAll(/tabId: tabIdSchema\.optional\(\)/g)];
   const stricts = [...block.matchAll(/\.strict\(\)/g)];
-  assert.deepEqual(kinds, ['read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer']);
+  assert.deepEqual(kinds, ['read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer', 'navigate']);
   assert.equal(tabFields.length, kinds.length, `each of the ${kinds.length} step kinds must accept tabId`);
   assert.equal(stricts.length, kinds.length, 'strictness must stay on every step kind');
 });

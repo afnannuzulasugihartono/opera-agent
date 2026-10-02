@@ -37,9 +37,12 @@ const burstTargets = new Set(Object.values(BURST_ACTION_METHODS));
 const burstable = primitives.filter((m) => burstTargets.has(m));
 const notBurstable = primitives.filter((m) => !burstTargets.has(m));
 
-test('MEASURED: only 8 of 26 primitives can be expressed inside a burst', () => {
+test('MEASURED: only 9 of 26 primitives can be expressed inside a burst', () => {
+  // Re-measured 2026-10-03: navigate joined the burst vocabulary (maps to the
+  // existing tabs.navigate primitive, so the count stays 26). Computed from the
+  // live module above, so the numbers cannot drift from the code.
   assert.equal(primitives.length, 26, 'primitive count changed; re-measure the burst ceiling');
-  assert.equal(burstable.length, 8);
+  assert.equal(burstable.length, 9);
   assert.deepEqual(burstable.sort(), [
     'page.click',
     'page.fill',
@@ -48,22 +51,26 @@ test('MEASURED: only 8 of 26 primitives can be expressed inside a burst', () => 
     'page.pointer',
     'page.read',
     'page.scroll',
-    'page.wait_for'
+    'page.wait_for',
+    'tabs.navigate'
   ]);
-  assert.equal(notBurstable.length, 18);
+  assert.equal(notBurstable.length, 17);
 });
 
-test('MEASURED: every tabs.* and every media.* operation is un-burstable', () => {
+test('MEASURED: every media.* operation is un-burstable; tabs.* all but navigate are', () => {
+  // Re-measured 2026-10-03: tabs.navigate is reachable from a burst now. The
+  // rest of tabs.* still is not, and media.* is untouched.
   const tabs = primitives.filter((m) => m.startsWith('tabs.'));
   const media = primitives.filter((m) => m.startsWith('media.'));
   assert.equal(tabs.length, 8, 'all 8 tabs.* primitives exist');
   assert.equal(media.length, 4, 'all 4 media.* primitives exist');
-  for (const method of [...tabs, ...media]) {
+  for (const method of [...tabs.filter((m) => m !== 'tabs.navigate'), ...media]) {
     assert.ok(!burstTargets.has(method), `${method} must not be reachable from a burst`);
   }
-  // Opening, navigating, activating and closing a tab each cost a full
+  assert.ok(burstTargets.has('tabs.navigate'), 'navigate must be reachable from a burst');
+  // Opening, activating and closing a tab each cost a full
   // blocking round trip, which is exactly what a human never has to wait for.
-  for (const method of ['tabs.open', 'tabs.navigate', 'tabs.activate', 'tabs.close']) {
+  for (const method of ['tabs.open', 'tabs.activate', 'tabs.close']) {
     assert.ok(!burstTargets.has(method));
   }
 });
