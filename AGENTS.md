@@ -266,15 +266,12 @@ continues.
    in the checkpoint evidence/context/handoff when the issue materially affects the
    active work.
 
-## Spec Kit workflow guardrail
+## Spec Kit skills removed (2026-10-03, owner-ordered)
 
-Spec Kit is a workflow guardrail for bounded feature/checkpoint work; it is not
-a new authority above this file or `SECURITY.md`. Active Spec Kit artifacts
-must agree with the applicable roadmap/checkpoint records and current Git/CI/
-runtime evidence.
-
-For non-trivial implementation using Spec Kit, run its consistency analysis
-before implementation and convergence after implementation. Treat unrequested
-implementation as scope creep: remove or defer it rather than widening the
-active checkpoint. Spec Kit never authorizes automatic advancement to the next
-checkpoint or milestone.
+The ten `speckit-*` skills, their governance test, and `docs/spec-kit-governance.md`
+were removed: invoked zero times across a full session of repair, migration,
+release, and capability work, while their context cost was paid every task.
+`.specify/`, `specs/`, and `tools/spec-kit/` remain untouched, as does the
+historical record in `docs/context-archive.md`. Reinstall from upstream if a
+future feature-planning task earns it back; until then, unrequested process is
+scope creep — remove or defer it rather than widening the active checkpoint.

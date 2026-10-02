@@ -117,7 +117,11 @@ test('the rest of AGENTS.md is intact', () => {
   // Guards against an over-broad edit taking a neighbouring rule with it.
   assert.match(agents, /## Repository discipline/);
   assert.match(agents, /## Naming conventions/);
-  assert.match(agents, /## Spec Kit workflow guardrail/);
+  // The Spec Kit guardrail section was intentionally removed 2026-10-03 with
+  // the skills themselves (owner-ordered); what must remain is the removal
+  // record, not the guardrail.
+  assert.match(agents, /## Spec Kit skills removed/);
+  assert.doesNotMatch(agents, /## Spec Kit workflow guardrail/);
   assert.match(agents, /6\. \*\*Preserve before overwrite\.\*\*/);
   assert.match(agents, /7\. \*\*Acceptance basis is CI evidence\.\*\*/);
   // The reusable prompt pointer must remain reachable from the policy.
