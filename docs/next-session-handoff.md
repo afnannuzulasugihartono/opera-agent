@@ -140,6 +140,9 @@ there is no Management API for PATs**, so nothing further is possible from here.
 parsial menolak single-UPDATE). Tepat satu baris aktif per identitas; update.xml
 sajikan 1.6.14; CRX tersaji 89.287 byte sha `6e038bb2…` = DB = disk; path 1.6.13
 404. Rollback = flip yang sama ke 1.6.13 (baris utuh).
+**Gateway v3 deployed:** offline-check folded into auth (4→3 trip, migrasi
+`20261004120000`, 49 migrasi). Health 200. Smoke penuh menunggu command AI
+pertama (butuh device token, hanya di extension).
 
 ## Rules for the next session
 
