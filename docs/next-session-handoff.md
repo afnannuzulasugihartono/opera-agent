@@ -136,10 +136,11 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Owner reloads 1.6.14, watches 60s.** Edge-to-DB path kills statements past ~8s
-(5s waits ok, 12s die at ~8.7-9.8s; same 12s runs 12.4s via direct SQL). Idle
-pulls died while busy ones returned early -- yellow badge, working commands.
-Fix (`30290b4`) in refreshed copy, verified per-file. Then pack.
+**Owner accepts 1.6.14, then orders activation.** Packed from worktree `0d5db94`
+(CI 8/9 green): `D:\Opera\opera-agent-1.6.14.crx`, 89.287 byte. Identity proven
+(proof key = .der = manifest key, crx_id `e711…`, 26 entries byte-identical,
+deterministic repack). Row uploaded inactive; update.xml still serves 1.6.13,
+1.6.14 path 404s. One active row per identity holds. Flip = explicit order.
 
 ## Rules for the next session
 
