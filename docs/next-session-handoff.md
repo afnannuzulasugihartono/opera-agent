@@ -10,16 +10,16 @@
   every merge was `--ff-only`. The **code head is `2facfa0`**; context-record
   commits sit on top of it and touch no runtime file, so read `git log --oneline
   -3` rather than expecting the code head to still be HEAD.
-- Gate evidence on the code head: `npm run check` ok (26 primitives, 93 runtime
-  safety files) and **8 of 9 check-runs green** — `ci-audit`, `ci-browser`,
-  `ci-deno-check`, `ci-deno-install`, `ci-deno-lint`, `ci-sbom`, `ci-secrets`,
-  `ci-unit`. **SonarCloud Code Analysis is `cancelled`, not green** — verified
-  pre-existing on `5fe91aa`, caused by missing project access. Never describe a
-  head as fully green. Suite is 797/797; the AGENTS.md change added 13 tests and
-  the audit repair 3 more, with one runtime fix between them.
+- Gate evidence: `npm run check` ok (26 primitives, 93 files, **1.6.14**) and
+  **8 of 9 check-runs green** — `ci-audit`, `ci-browser`, `ci-deno-check`,
+  `ci-deno-install`, `ci-deno-lint`, `ci-sbom`, `ci-secrets`, `ci-unit`.
+  **SonarCloud Code Analysis is `cancelled`, not green** — verified pre-existing
+  on `5fe91aa`, missing project access. Never describe a head as fully green.
+  Suite is 797/797. Browser harness exit 0 on Brave headless against the bumped
+  tree, version asserts included.
 - Commits after `a9af637`: `57cfa7b` restore `opera_run_fast`, `b0f14ed` extend
-  AGENTS.md rule 6, `2facfa0` install the karpathy skill, `4a79713` allow machine
-  audit, `c3fa582` fix the two audit findings, then context records.
+  rule 6, `2facfa0` karpathy skill, `4a79713` machine audit, `c3fa582` audit fix,
+  `f313d66` 1.6.14 sweep, then context records.
 
 ## Production database — measured, not assumed
 
@@ -135,9 +135,10 @@ there is no Management API for PATs**, so nothing further is possible from here.
 
 ## Exact next action
 
-**Await owner instruction.** Deployed and verified live; nothing is in progress.
-Remaining: CRX release (private key), key rotation, SonarCloud, `activeTab`
-removal, and the planned rename (needs a new name first).
+**Owner packs 1.6.14.** Code is swept, tested (797/797), and browser-green; the
+copy sits at `D:\Opera\opera-agent-1.6.14-extension` with 1.6.13 kept for
+rollback. Pack → offline-verify → upload inactive → side-load acceptance →
+atomic activation. After that: key rotation, SonarCloud, `activeTab`, rename.
 
 ## Rules for the next session
 
