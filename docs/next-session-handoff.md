@@ -15,10 +15,11 @@
   `ci-deno-check`, `ci-deno-install`, `ci-deno-lint`, `ci-sbom`, `ci-secrets`,
   `ci-unit`. **SonarCloud Code Analysis is `cancelled`, not green** — verified
   pre-existing on `5fe91aa`, caused by missing project access. Never describe a
-  head as fully green. Suite was 781/781 at that head; the AGENTS.md change below
-  adds 13 tests (794) and touches no runtime file.
+  head as fully green. Suite is 797/797; the AGENTS.md change added 13 tests and
+  the audit repair 3 more, with one runtime fix between them.
 - Commits after `a9af637`: `57cfa7b` restore `opera_run_fast`, `b0f14ed` extend
-  AGENTS.md rule 6, `2facfa0` install the karpathy skill, then context records.
+  AGENTS.md rule 6, `2facfa0` install the karpathy skill, `4a79713` allow machine
+  audit, `c3fa582` fix the two audit findings, then context records.
 
 ## Production database — measured, not assumed
 
@@ -35,35 +36,29 @@ The six pending migrations are **applied**, verified by query against
 
 **The ordering hazard is closed.** The bridge is no longer blocked on a migration.
 
-## Deploy gate — audit WAIVED by the owner, 2026-10-03
+## Deploy gate — machine audit done, findings fixed, 2026-10-03
 
-Live acceptance is done: Brave, headless and headed, both exit 0. The independent
-audit is **not** done, and the owner waived it. Recorded here so a missing audit
-and an accepted risk never read as the same thing.
+Live acceptance is done: Brave, headless and headed, both exit 0. The audit the
+owner first waived was then performed by a machine instead, per the rule change
+below — a separate, read-only session that did not write the code, given the head
+and the `5fe91aa..main` range. Verdict: **CONDITIONAL PASS**, with two findings,
+both fixed in `c3fa582`:
 
-- **What was given up.** Phase D changes real input handling and debugger attach;
-  Phase C changed a public MCP `outputSchema`. An agent wrote both and cannot
-  self-certify either. No independent reviewer has read the nine runtime files in
-  `5fe91aa..main`.
-- **What partially compensates.** `tests/browser_extension_test.py` ran twice
-  against Brave with structurally identical results — headless and headed, both
-  exit 0, same assertions, same four fail-closed cases, same `browser.burst`, and
-  the extension ID derives to `ohbbpamcljckmjhcpkcmefdobkoeaick` because the
-  manifest carries a `key`. Note `ci-browser` runs that same file under `xvfb`, so
-  local runs are the same suite with a different browser binary, not a separate
-  check. Production state was verified by query rather than assumed: 48 migrations,
-  0 pending, `opera_claim_next_wait` present. That is evidence, not review.
-- **Residual risk.** A defect in the burst tab-switching path, the debugger
-  release/re-key, or the corrected `wait_events` schema that neither the test suite
-  nor the browser run exercises. Unquantified.
-- **Accepted by:** the owner, in session, on 2026-10-03. Deployment remains a
-  separate decision and has not been made.
+- The `BURST_CROSS_TAB_REF` fence missed consume-on-active-tab; the check now
+  compares the source step's recorded tab via a pure helper pinned both ways.
+- The MCP schema rejected the per-step `tabId` the extension executes; all nine
+  step kinds accept it now, strictness kept. Phase D is reachable from the tool.
 
-`AGENTS.md` changed the same day: a machine audit — a separate, read-only session
-that did not write the code — is now the required default, Codex is permitted but
-no longer mandated, and a waiver must be recorded with its residual risk, which is
-why this section exists. Pinned by `tests/machine-audit-policy.test.mjs`, proven to
-fail on 8 realistic violations.
+`tests/browser_extension_test.py` ran twice against Brave with structurally
+identical results, and `ci-browser` runs that same file under `xvfb`, so local
+runs are the same suite with a different binary. Production verified by query:
+48 migrations, 0 pending, `opera_claim_next_wait` present. That is evidence, not
+review of live production behavior, which no audit here exercised.
+
+`AGENTS.md` now requires a machine audit by default (Codex permitted, not
+mandated) and a recorded waiver with residual risk. Pinned by
+`tests/machine-audit-policy.test.mjs`, proven to fail on 8 violations. Deployment
+remains a separate owner decision and has not been made.
 
 ## Incoming change: Opera removed, Brave next, rename planned
 

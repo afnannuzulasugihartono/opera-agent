@@ -7,10 +7,10 @@
 
 ## Toolchain facts
 
-- **Deno is pinned to 2.9.6** at
-  `C:\Users\ASUS\AppData\Local\Temp\opencode\deno296\deno.exe`. The machine's own
-  `deno` is 2.1.4 and unreliable for the gates. Never `deno upgrade`; if the
-  binary vanishes, re-extract it from that directory's own `deno.zip`.
+- **The pinned Deno 2.9.6 is gone and not restorable locally.** Its whole
+  directory (binary and `deno.zip`) vanished; only the machine's 2.1.4 remains,
+  which is unreliable for the gates. Never `deno upgrade`, never download a
+  replacement. Until the pin is re-established, `deno lint`/`check` rest on CI.
 - **`npm test` globs `tests/*.test.mjs` and does not recurse**, so the integration
   tests under `tests/postgres/` never run in the fast suite, by design — they need
   a live database. A new test in a subdirectory silently never runs.
