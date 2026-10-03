@@ -1,3 +1,9 @@
+// Ring buffer of the last 200 log entries, published on globalThis as
+// OperaAgentLog for the popup's log view.
+//
+// WHY a classic script and not a module: the manifest loads this file into both the
+// module service worker and a classic content script, and a classic script cannot
+// import. Hence the IIFE and the globalThis publish, and hence the guard below.
 (() => {
   'use strict';
   if (globalThis.OperaAgentLog) return;

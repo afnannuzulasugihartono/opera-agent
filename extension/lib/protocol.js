@@ -1,3 +1,10 @@
+// The wire contract: the allowlist of browser primitives, their parameter schemas,
+// and the burst step vocabulary. This file is what `npm run check` reads to report the
+// primitive count, and it is frozen by tests/fixtures and the boundary locks.
+//
+// WHY one file: the service worker, the MCP server, and the Node tests must agree on
+// exactly which primitives exist. A second copy of the list would eventually disagree.
+
 export const PRODUCT_VERSION = '1.6.15';
 export const PROTOCOL_VERSION = 1;
 

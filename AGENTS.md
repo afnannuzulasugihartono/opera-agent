@@ -31,6 +31,7 @@ The mission, in order. Later items only matter once the earlier ones hold.
 |---|---|
 | "lanjutkan" | read `AGENTS.md`, `docs/HANDOFF.md`, `docs/CONTEXT.md`, then act |
 | **"autonomously" / "lanjutkan sendiri" / "sampai mission tercapai"** | keep going on your own until the mission is reached. Do not ask permission, do not stop to confirm, do not hand back a partial result with a question at the end. Choose, act, verify, then report |
+| **"upgrade terus" / "keep upgrading" / the owner leaves** | keep improving until the wall clock time the owner named. Work unattended: commit each verified step, keep the tree clean, and leave a short note in `docs/HANDOFF.md` so the next session resumes without re-deriving anything |
 | "apa langkah selanjutnya" | do not start work; say in plain language what is broken or undecided, and the choice the owner must make |
 | "merelakan" / "hapus aja" | the owner has decided; stop relitigating and do it |
 | something is broken | fix it first, before any feature or speed work |
@@ -114,6 +115,10 @@ no document is an island. Adding or renaming one means updating both.
 - A lock that only asserts a sentence exists proves nothing — do not add one.
 - Failing test first, then the smallest generic mechanism.
 - Comments answer WHY, never WHAT. One line per lock entry.
+- Every file and every function carries a comment naming what it is and what it does,
+  in one or two lines, at the top. That is WHAT and it is required. WHY belongs in the
+  comments inside the body. A function nobody can name from its signature is a function
+  nobody can find later.
 - Write current state, never history. Say what is true now and why; git keeps the
   past. No change narrative, incident timeline, or migration story.
 - `.md` files are bullets, not prose. One idea per line, a table for a list of facts.

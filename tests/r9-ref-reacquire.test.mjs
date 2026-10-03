@@ -95,7 +95,12 @@ test('R9-D: sensitive targets are never offered a fresh ref', () => {
 test('R9-D: the model is told the fresh refs are directly actionable', async () => {
   const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   assert.match(mcp, /that stale ref is refused on purpose/);
-  assert.match(mcp, /the error carries freshRefs for the already-validated replacement/);
+  // The instructions must name the field the extension actually ships. The envelope
+  // carries `candidates`, and each entry carries `freshRef`; an instruction that
+  // said "freshRefs" pointed a model at a field that does not exist.
+  assert.match(mcp, /the error carries candidates, each entry holding a freshRef/);
+  assert.match(mcp, /act on one of those freshRef values directly/);
+  assert.doesNotMatch(mcp, /carries freshRefs/);
   // The instructions must not tell the model to bypass the guard.
   assert.doesNotMatch(mcp, /increase the geometry tolerance|widen the tolerance/);
 });

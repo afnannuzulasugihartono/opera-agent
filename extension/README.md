@@ -18,6 +18,35 @@ stale the moment the file is edited.
 - Returning results to Supabase.
 - Reconnecting safely after service-worker, browser, sleep, or network interruption.
 
+## Files
+
+| File | What it is |
+|---|---|
+| `background.js` | The worker. Command dispatch, the pull loop, pairing, and every primitive's host-side half |
+| `content.js` | The top-document script. Element refs, semantic reads, hit-testing, pointer input |
+| `lib/protocol.js` | The wire contract: the 26 allowlisted primitives and the burst vocabulary |
+| `lib/action-pipeline.js` | Pure policy for resolve, wait, heal, verify. No DOM, no chrome |
+| `lib/focus-gate.js` | Pure policy for whether a foreground action may proceed |
+| `lib/keyboard.js` | Resolves a key or chord request to exact CDP key events |
+| `lib/watch.js` | Pure policy for `watch.*` rules |
+| `lib/ax-summary.js` | Bounded, value-free accessibility summary for semantically poor surfaces |
+| `lib/debugger-session.js` | Lazy, shared CDP attach bookkeeping |
+| `lib/deadline-race.js` | Decides a command's deadline against work already in flight |
+| `lib/error-messages.js` | Maps error codes to text for the popup and options page |
+| `lib/popup-events.js` | Pure policy for popup and redirect follow-through |
+| `lib/endpoints.js` | The single source of deployment endpoint truth |
+| `lib/options-store.js` | Validates and persists the Options page settings |
+| `lib/agent-log.js` | Ring buffer of log entries, published for the popup. Classic script |
+| `lib/role-reconcile.js` | Fills roles from the accessibility tree. Classic script |
+| `semantic-identity.js` | Stable identity for elements across re-renders |
+| `semantic-views.js` | Bounded materialized views over a region |
+| `hover-settle.js` | Pointer settle timing before a hover or click is trusted |
+| `popup.html`, `options.html` | The only two UI surfaces. Neither shows a secret |
+
+Pure modules under `lib/` have no DOM and no chrome dependency, so the Node suite tests
+the same source the browser runs. The MCP server does not import them: it speaks the
+wire contract, and `lib/protocol.js` is where that contract is defined on this side.
+
 ## Permissions
 
 Six declared. Each row says what would break without it, which is the only question a

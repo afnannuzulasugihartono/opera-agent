@@ -12,6 +12,6 @@
   "maximumFalseProved": 0,
   "maximumFocusChanges": 0,
   "maximumOrdinaryWorkflowMedianRegressionPercent": 15,
-  "milestone7InventoryDigest": "sha256:261cb3e070a27ccc4082edacf010878ab8f9e8aca5c6289bc06ec5a84055de02",
+  "milestone7InventoryDigest": "sha256:7ad7e0e71a7c8a63833ce62c8d1b15e4bbd71b0bd3a296b2166f9ba6b457c19e",
   "note": "Checkpoint 8A is contract-only. It freezes no transaction runtime or production behavior and retains the accepted Milestone 7 performance baseline."
 }

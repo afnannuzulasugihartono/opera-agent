@@ -189,11 +189,28 @@ async def case_click_through(tab, page, name, limit=6):
             body = getattr(exc, 'body', None)
             err = body.get('error') if isinstance(body, dict) else None
             code = err.get('code') if isinstance(err, dict) else ''
+            # The extension's own remedy comes first: a stale-ref refusal carries
+            # error.candidates, each entry holding a freshRef that already passed
+            # uniqueness, identity, actionability and the non-sensitive check. Using
+            # them verifies that path actually reaches a caller.
+            candidates = (err or {}).get('candidates') if isinstance(err, dict) else None
+            fresh = [c['freshRef'] for c in (candidates or []) if isinstance(c, dict) and c.get('freshRef')]
+            if fresh:
+                stale += 1
+                try:
+                    await drive('page.click', {'tabId': tab['id'], 'ref': fresh[0]})
+                    await asyncio.sleep(1.5)
+                    page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
+                    responded += 1
+                    continue
+                except Exception as retry:
+                    errors.append(f"{control.get('label', '')[:16]!r} freshRef failed: {type(retry).__name__}")
+                    continue
             if code == 'TARGET_NOT_READY':
-                # A live SPA can re-render between the read and the click, so the
-                # ref names a node that is gone. That is the site being alive, not
-                # a defect, and a person simply looks again and clicks it. Re-find
-                # by the same label and try once more.
+                # No successor at the same place, so the node is genuinely gone.
+                # A live SPA re-renders between the read and the click; that is the
+                # site being alive, not a defect. A person looks again and clicks it,
+                # so re-read and find the same label.
                 stale += 1
                 page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 800}))['page']
                 again = by_label(page, control.get('label', ''))
@@ -209,6 +226,8 @@ async def case_click_through(tab, page, name, limit=6):
                         continue
             if isinstance(err, dict):
                 detail = f"{err.get('code')}: {err.get('message')}"
+                if err.get('candidates'):
+                    detail += f' (carries {len(err["candidates"])} freshRef candidates)'
             elif isinstance(body, dict):
                 # record() redacts, so printing the whole completion is safe and is
                 # the only way to tell a refusal apart from a success with no result.

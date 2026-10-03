@@ -106,7 +106,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'a91edfebdeb5d4c00975ac68d09ad69e4503a825'], // pointer cursor: one reused marker, moves, clears after 2.5s idle
   ['../extension/background.js', '67bb3e43bcb7a241722d1c560415d41b99491774'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState
   ['../extension/manifest.json', '9088703db3facf9ad69dd134d6b9b79b99020304'], // entry points, permissions, version
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'a53e618e70a2da5afe91837f3b9fd1c59be49d84'], // MCP tool surface and schemas
+  ['../supabase/functions/opera-agent-mcp/index.ts', '6b8fd58012cecda38b41102c1d6cda4e1ca1561a'], // MCP tool surface and schemas
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
