@@ -6,14 +6,14 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`fc181ac`** pre-edit, tree clean,
+- `main` = `origin/main` = **`90d0cfe`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-  Context commits on top (docs-only): `a3f2450` (relokasi ai-doc),
-  `62e2870` (relokasi detail + cap locks).
-- **Anti-bloat package** (owner: preseden + cap): rantai preseden tunggal
-  (`ai-codebase-context.md` 251 baris direlokasi ke arsip; `tools/` kosong,
-  tooling mati), test kunci cap 150/120, handoff + context dipangkas via
-  relokasi. 0 konten hilang (git + arsip). No runtime file touched.
+- **Scoped-instructions rules** (owner: aturan AGENTS.md baru/edit):
+  `## Scoped instructions` (cap 15, pointer-only, root-binds, daftar di tabel)
+  + 2 lock test (section + konsistensi tabel, merah-dulu). Inventaris:
+  4 AGENTS.md, 6 README.md. Stale disebut, tak disentuh: root README tabel CI
+  + acceptance CircleCI, `supabase/README.md` voice "Planned".
+  785/785 hijau, check ok. No runtime file touched.
 - Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
   tinggalkan jejak; gating milestone hanya di handoff + commit.
 - **Local gates only:** `npm test` **800/800**, `npm run check` ok (26

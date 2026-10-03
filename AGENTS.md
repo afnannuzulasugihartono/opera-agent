@@ -51,6 +51,11 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 | `lib/` | `lib/AGENTS.md` |
 | `supabase/` | `supabase/AGENTS.md` |
 
+## Scoped instructions
+
+- New area `AGENTS.md`: ≤15 lines, pointers only, opens with the root-binds line, must not contradict the root. Register it in the Bootstrap table the same commit.
+- Editing one: keep the cap and the root pointer; update stale paths the same commit.
+
 ## Coding standards
 
 - Failing test first, then the smallest generic mechanism. A lock is not accepted

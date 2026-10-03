@@ -9,6 +9,7 @@ import fs from 'node:fs';
 // second manual, so the haystack does not grow a new haystack.
 
 const areas = ['extension', 'lib', 'supabase'];
+const root = fs.readFileSync(new URL('../AGENTS.md', import.meta.url), 'utf8');
 
 for (const area of areas) {
   test(`${area}/AGENTS.md exists, stays short, and points at the root`, () => {
@@ -22,3 +23,17 @@ for (const area of areas) {
     assert.match(text, /Root `AGENTS\.md` binds/);
   });
 }
+
+test('root AGENTS.md states the scoped-file rules', () => {
+  assert.match(root, /## Scoped instructions/);
+  assert.match(root, /must not contradict/);
+});
+
+test('every scoped file is registered in the root area table', () => {
+  for (const area of areas) {
+    assert.ok(
+      root.includes(`| \`${area}/\` |`),
+      `${area}/AGENTS.md exists but has no row in the root Bootstrap table`
+    );
+  }
+});
