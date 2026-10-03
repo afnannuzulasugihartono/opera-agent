@@ -16,10 +16,10 @@ Observations, never latency assertions. One machine's timings are not a threshol
 | Proof evaluator | `npm run benchmark:proof` |
 | Live internet (opt-in) | `OA_REAL_SITE=1 py tests/real_site_smoke.py` |
 
-The browser harness uses an OS-assigned loopback port, an isolated temporary profile,
-a local synthetic article, and the real signed-identity manifest key. Every command
-records end-to-end local bridge latency and request/response byte counts. Results are
-observations, not latency assertions.
+- OS-assigned loopback port, isolated temporary profile, a local synthetic article, and
+  the real signed-identity manifest key.
+- Every command records end-to-end local bridge latency and request/response byte counts.
+- Results are observations, not latency assertions.
 
 ## Locked ceilings
 
@@ -62,11 +62,10 @@ and no output file is written.
 | ledger: metadata-only inspection | 0.0009 ms | 0.0011 ms |
 | proof: 500 evidence items | 1.9055 ms | 2.4166 ms |
 
-Ledger numbers are 1,000 operations per operation type after 100 warm-up validations.
-Proof numbers are 30 runs over 500 prevalidated immutable evidence objects after five
-warm-up evaluations. Evidence arriving without the core's in-memory validation marker
-is still canonicalized and digest-verified; the fast path cannot be supplied through
-serialized input.
+- Ledger: 1,000 operations per operation type after 100 warm-up validations.
+- Proof: 30 runs over 500 prevalidated immutable evidence objects after five warm-ups.
+- Evidence arriving without the core's in-memory validation marker is still canonicalized and
+  digest-verified. The fast path cannot be supplied through serialized input.
 
 ## Contract digests
 

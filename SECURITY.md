@@ -25,13 +25,14 @@ Only the latest patch of the current minor line receives security fixes.
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Report privately via the repository
-Security tab (Report a vulnerability) or direct contact with the
-maintainer. Include: affected version, reproduction steps, and impact.
+- Do not open a public issue.
+- Report privately via the repository Security tab (Report a vulnerability) or direct
+  contact with the maintainer.
+- Include: affected version, reproduction steps, and impact.
 
-Proposed response targets: acknowledgement within 5 business days,
-critical fix or mitigation within 30 days. These targets are proposed
-for owner adjustment during review.
+- Acknowledgement within 5 business days.
+- Critical fix or mitigation within 30 days.
+- Both targets are proposed, and the owner may adjust them during review.
 
 ## Token transport
 
