@@ -33,15 +33,11 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 |---|---|---|
 | `karpathy-guidelines` | `.agents/skills/karpathy-guidelines/SKILL.md` | Writing, reviewing, refactoring |
 
-Skill loading is binding for the task it covers. Every commit touching runtime files carries a `Karpathy:` trailer naming the principle applied (e.g. `Karpathy: surgical-3`); trivial non-code turns use judgment instead.
+Skill loading is binding for the task it covers: every runtime commit carries a `Karpathy:` trailer (e.g. `Karpathy: surgical-3`). Non-code turns use judgment.
 
 ## Bootstrap order
 
-Read in this order, then follow pointers — do not grep the whole repo first.
-
-1. This file (already in context).
-2. `docs/next-session-handoff.md` (current task).
-3. `docs/project-context.md` (durable traps).
+This file, then `docs/next-session-handoff.md`, then `docs/project-context.md`. Then follow pointers — do not grep the whole repo first.
 
 | Area | Read first |
 |---|---|
