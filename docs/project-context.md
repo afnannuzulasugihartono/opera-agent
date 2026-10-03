@@ -109,9 +109,6 @@ Recorded so a later session does not repeat them.
 - `npm audit` and SBOM quarantines were investigated and exonerated.
 - The gated `node --check` exits 0 on a broken `.ts` file — `scripts/check.mjs` is
   the gate that actually works.
-- The pinned `deno` binary vanished once and was restored from its own zip.
-- Two stale git worktrees held 3.7 MB of duplicate tree. Both were verified clean
-  and fully merged, then removed with `git worktree remove`.
 - **Renaming the 22 MCP tools to dotted form was declined.** They deliberately
   differ from the primitives and follow no rule: some reverse word order
   (`list_tabs`/`tabs.list`), some are renamed outright

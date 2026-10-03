@@ -6,28 +6,20 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`92473e3`** pre-edit, tree clean,
+- `main` = `origin/main` = **`fc181ac`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **Cleanup + comment rule** (owner: hapus modul tak-terpakai + komen boros):
-  2 dead export + 3 modul (~36 KB) + 2 test pendamping dihapus; README tes
-  + 1 komen preseden diselaraskan. WHY-only rule + lock test baru.
-  781/781 hijau, check ok (91 files). No runtime behavior changed.
-- Residual aktif (dari hapus 3+4): tanpa waiver rule, audit yang dilewati
-  tak wajib tinggalkan jejak; gating milestone hanya di handoff + commit.
+- **Anti-bloat package** (owner: preseden + cap): rantai preseden tunggal
+  (`ai-codebase-context.md` 251 baris direlokasi ke arsip; `tools/` kosong,
+  tooling mati), test kunci cap 150/120, handoff + context dipangkas via
+  relokasi. 0 konten hilang (git + arsip). No runtime file touched.
+- Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
+  tinggalkan jejak; gating milestone hanya di handoff + commit.
 - **Local gates only:** `npm test` **800/800**, `npm run check` ok (26
   primitives, 94 safety files, **1.6.14**). **CI on `9afa7c1` was not read** — the
   repo is private and no check-run tool is wired here, so acceptance is not
   claimed. Last known was 8 of 9 green, **SonarCloud `cancelled`, not green**
   (pre-existing). Never call a head fully green.
-- **Test consolidation, 2026-10-03:** commits `8f35600` `fa31ea8` `807cab7`
-  `9afa7c1`, plus a `.gitleaks.toml` allowlist path repoint. 16 files merged
-  into 3, 98 test files to 85, suite 800/800 throughout: `mcp-surface` (38),
-  `latency-surface` (59), `transaction-cloud-8d` (53). Moved, never dropped — a
-  masked source scan compared every `assert.*` on both sides, 0 missing and 0
-  added per cluster. Caveat worth keeping: that scan strips whitespace before
-  matching, so a leading word boundary dropped every `await assert.rejects` from
-  *both* sides while the totals still matched. Caught and fixed; the other two
-  clusters were re-checked and contain no `await assert.*`.
+- **Test consolidation, 2026-10-03:** RETIRED to archive (spent record).
 
 ## Production database — measured, not assumed
 
@@ -148,9 +140,3 @@ sajikan 1.6.14; CRX tersaji 89.287 byte sha `6e038bb2…` = DB = disk; path 1.6.
 404. Rollback = flip yang sama ke 1.6.13 (baris utuh).
 **Gateway v3 deployed** (offline-check folded into auth, 4→3 trip, migrasi
 `20261004120000`). Health 200. Smoke penuh menunggu command AI pertama.
-
-## Rules for the next session
-
-- Before the first write, verify the tree is clean and `HEAD` is the tip you are on.
-- Do not merge, promote, sign, rename, or deploy without an explicit owner instruction.
-- A claim in a commit message or a test comment is not evidence. Make the lock fail before you repeat it.
