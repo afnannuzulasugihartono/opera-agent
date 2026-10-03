@@ -68,6 +68,23 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
   waits for lazy DOM changes to settle. That is the first place to look for a real
   latency win, not the round trip count.
 
+## Real sites, measured
+
+- Google sign-in is **two steps**: the first screen has only "Email or phone" and a
+  Next button, and the password field appears afterwards. A login case that asserts a
+  password box on the first read fails on Google's own flow, not on a defect.
+- GitHub's sign-in screen lists "Sign in with a passkey" before the password submit,
+  so a first-match label lookup picks the passkey button. Match on the exact label.
+- YouTube's search field carries role `combobox`, not `searchbox`. Anything that
+  filters on role must accept both or it will not see the one field on the page.
+- `media.play` on a document the user never interacted with is refused by Chrome's
+  autoplay policy, in Chrome's own words. A trusted click on the player is the gesture
+  it wants, and it starts the video.
+- On a page whose header re-renders continuously, a ref read in one round trip is
+  stale by the time the click runs, and re-finding in a second round trip is equally
+  stale. `find` plus `click` with `refFromStep` inside one `browser.burst` is what
+  works, and it succeeded on every control that failed the other way.
+
 ## Deployment and platform
 
 | Trap | Consequence |

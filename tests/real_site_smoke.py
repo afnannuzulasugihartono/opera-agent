@@ -916,6 +916,52 @@ async def maybe(coro_factory, label):
     await coro_factory()
 
 
+async def case_login_form(site, login_url):
+    """Prove the login form is found, without ever submitting anything.
+
+    The credentials are not needed for this part, and finding the fields is the part
+    that was unverified: a wrong selector heuristic would fail at the submit step
+    with no way to tell whether the form or the credentials were at fault. It also
+    reports what roles were actually seen, so a miss is diagnosable instead of a
+    bare "no login form found".
+    """
+    try:
+        tab = (await drive('tabs.open', {'url': login_url, 'active': True, 'wait': True}))['tab']
+        page = {'totalTextChars': 0, 'elements': [], 'axSummary': {}}
+        for _ in range(8):
+            page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1500}))['page']
+            if page['elements']:
+                break
+            await asyncio.sleep(1.2)
+
+        boxes = [i for i in page['elements']
+                 if str(i.get('role', '')).lower() in ('textbox', 'searchbox', 'combobox')]
+        email_box = (by_role(page, 'textbox', 'mail') or by_role(page, 'textbox', 'email')
+                     or by_role(page, 'textbox', 'identifier')
+                     or by_label(page, 'email') or by_label(page, 'identifier'))
+        password_box = (by_role(page, 'textbox', 'assword')
+                        or by_label(page, 'password'))
+        # Google asks for the identifier first and only reveals the password field
+        # after Next, so a missing password on the first screen is that site's flow,
+        # not a missed control. The submit control is what proves the step.
+        submit = (by_label(page, 'next') or by_label(page, 'continue')
+                  or by_label(page, 'sign in') or by_label(page, 'log in'))
+        record(f'{site} login form detected', bool(email_box and submit),
+               f'identifier={bool(email_box)} password={bool(password_box)} '
+               f'step={"two-step" if not password_box else "single-step"} '
+               f'boxes={len(boxes)} labels='
+               f'{[str(i.get("label", ""))[:18] for i in boxes[:3]]}')
+
+        record(f'{site} login submit control found', bool(submit),
+               f'{str(submit.get("label"))[:28]!r}' if submit else 'no submit control seen')
+
+        # Nothing is typed and nothing is submitted. The point is that the next
+        # session, with credentials, starts from a form it has already located.
+        await drive('tabs.close', {'tabId': tab['id']})
+    except Exception as exc:
+        record(f'{site} login form', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -976,6 +1022,10 @@ async def run(port, profile):
 
         await case_landing('https://docs.google.com/', 'google docs')
         await case_landing('https://www.youtube.com/', 'youtube')
+        await maybe(lambda: case_login_form('google', 'https://accounts.google.com/signin'),
+                    'google-form')
+        await maybe(lambda: case_login_form('github', 'https://github.com/login'),
+                    'github-form')
         await maybe(lambda: case_youtube_search_and_open(), 'youtube-search')
         await maybe(lambda: case_primitive_sweep(), 'sweep')
         await maybe(lambda: case_media_on_real_video(), 'media')
