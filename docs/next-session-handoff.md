@@ -6,13 +6,16 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`f186f3e`** pre-edit, tree clean,
+- `main` = `origin/main` = **`a25af6c`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **Task scope** (owner: fokus satu area, window terbatas): repo 3,76 MB
-  (~0,94M token ≈ 1 window penuh; docs+tests 2/3-nya). Aturan: declare scope,
-  diff di dalam scope; slice bukan whole; spec≠code task. 83→89 baris
-  (cap 64 aspirasional, jebol 25 — mekanisme ini alasannya).
-  789/789 hijau, check ok. No runtime file touched.
+- **`npm run scope -- "<task>"` = preflight scope, mechanism (not just a rule).**
+  Repo 940K token: runtime source only 60K (6%); docs+tests ~94%. Script ranks
+  the read set, caps it, flags >500-line files as slice-only, prints the cost
+  against reading everything. Example: "burst navigate" = 7 files / 29.7K token
+  (3.2%). `tests/scope-preflight.test.mjs` red-first 0/5. Rules that made it
+  reachable: Task scope section, Bootstrap order, `## Principles` inline.
+  **794/794 green, check ok. AGENTS.md 90 lines (cap-64 goal unreachable without
+  deleting locked incident-derived sections).**
 - Stale tak-tersentuh: root README CI/acceptance CircleCI, supabase/README voice "Planned".
 - Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
   tinggalkan jejak; gating milestone hanya di handoff + commit.

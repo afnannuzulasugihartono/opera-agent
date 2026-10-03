@@ -34,6 +34,7 @@ Skill: `karpathy-guidelines` (`.agents/skills/karpathy-guidelines/SKILL.md`) —
 ## Bootstrap order
 
 - Read this file, then `docs/next-session-handoff.md`, then `docs/project-context.md` — in that order, before anything else; afterwards open only files those three name. Never grep the repo for guidance.
+- Before any edit, run `npm run scope -- "<task>"`: it ranks the read set and prints the token cost against reading everything. Reading the repo whole is the failure mode, not the shortcut.
 
 | Area | Read first |
 |---|---|
