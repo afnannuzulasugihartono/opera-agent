@@ -13,7 +13,7 @@ const ALLOWED_ROOT_ENTRIES = new Set([
   // existed for (repowise + spec-kit); re-adding either needs a conscious
   // allowlist entry with justification, per the rule below.
   '.agents', '.github', 'docs', 'extension', 'lib',
-  'oauth-consent', 'release-trigger', 'scripts', 'specs', 'supabase', 'tests',
+  'oauth-consent', 'release-trigger', 'scripts', 'supabase', 'tests',
   '.gitignore', 'AGENTS.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
   'README.md', 'ROADMAP.md', 'SECURITY.md', 'opencode.json', 'package.json',
   // Enterprise Phase 1 (2026-09-30): OSI license file at root.
