@@ -6,13 +6,11 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`589ef0a`** pre-edit, tree clean,
+- `main` = `origin/main` = **`cd679e0`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **Trim + karpathy-inline** (owner: aturan komen/file/discipline, skill dibaca):
-  komen 1 baris, scoped 1 bullet, disiplin 2→1 bullet, inti karpathy 3 baris
-  inline di AGENTS.md (satu-satunya kanal terjamin-baca) + lock test
-  merah-dulu. Fix: regex lock salah tulis `\)` — bukan file yang salah.
-  786/786 hijau, check ok. No runtime file touched.
+- **AGENTS.md 122→83 baris** (owner: cap 64): rewrite penuh, 0 lock rusak,
+  0 test diubah (46/46 lock + 786/786 hijau). Lantai terbukti: 19 baris sisa
+  = konten terkunci + struktur render. No runtime file touched.
 - Stale tak-tersentuh: root README CI/acceptance CircleCI, supabase/README voice "Planned".
 - Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
   tinggalkan jejak; gating milestone hanya di handoff + commit.
