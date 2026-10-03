@@ -6,7 +6,7 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`0f83081`** pre-edit, tree clean,
+- `main` = `origin/main` = **`92473e3`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
 - **Cleanup + comment rule** (owner: hapus modul tak-terpakai + komen boros):
   2 dead export + 3 modul (~36 KB) + 2 test pendamping dihapus; README tes
