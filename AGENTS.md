@@ -58,7 +58,7 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 - 6. **Preserve before overwrite.** Never discard work you did not create without archiving first. **Mention, do not delete, pre-existing code this work did not create** — report to the owner in the same session instead of tidying-up. Removing it *is* allowed when the removal is **required** by the change being made. Say which of the two it is, in the commit message. Precedent: `opera_run_fast` was dropped and locked in a test on 2026-10-02, then restored on 2026-10-03 — the rule was still violated in its narrower form.
 - 7. **Acceptance basis is CI evidence.** Checkpoint acceptance = GitHub Actions + Vercel SUCCESS on the exact evidence head plus a durable record (standing authorization 2026-09-19). CircleCI is frozen (free-plan credits exhausted 2026-10-03; `.circleci/config.yml` retained, not run). Deployment, release promotion, transport cutover, Milestone 8E start stay explicit user decisions, never granted by CI green alone.
 
-## Naming conventions (enforced by `tests/repo-naming-governance.test.mjs`)
+## Naming conventions
 
 Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<N>`). Root allowlisted. Branches: `main`, `release/<semver>`, `feat|fix|…/<kebab>` (retired namespaces stay retired). Tags: `archive/<path>`, `v<semver>`. No new doc families without updating this section in the same commit.
 
