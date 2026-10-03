@@ -1365,14 +1365,23 @@
     const blocked = el && sensitiveDescriptor(el);
     if (blocked) throw new Error(`Pointer blocked on sensitive target (${blocked}).`);
     if (args.showCursor) {
-      const existing = document.getElementById('__opera_agent_pointer_cursor');
-      existing?.remove();
-      const cursor = document.createElement('div');
-      cursor.id = '__opera_agent_pointer_cursor';
-      cursor.setAttribute('aria-hidden', 'true');
-      cursor.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:16px;height:16px;border:2px solid #ef4444;border-radius:50%;background:#ef444433;transform:translate(-50%,-50%);pointer-events:none;z-index:2147483647;`;
-      document.documentElement.append(cursor);
-      setTimeout(() => cursor.remove(), 900);
+      // WHY one persistent marker instead of a blip: an owner working in another
+      // window needs to see where the run is and follow it across a sequence. It
+      // was recreated and dropped after 900ms, so a multi-step burst flickered and
+      // vanished between steps. It now moves to each new target and clears only
+      // once the run has been idle for a moment.
+      let cursor = document.getElementById('__opera_agent_pointer_cursor');
+      if (!cursor) {
+        cursor = document.createElement('div');
+        cursor.id = '__opera_agent_pointer_cursor';
+        cursor.setAttribute('aria-hidden', 'true');
+        cursor.style.cssText = 'position:fixed;width:16px;height:16px;border:2px solid #ef4444;border-radius:50%;background:#ef444433;transform:translate(-50%,-50%);pointer-events:none;z-index:2147483647;transition:left 90ms linear,top 90ms linear;';
+        document.documentElement.append(cursor);
+      }
+      cursor.style.left = `${x}px`;
+      cursor.style.top = `${y}px`;
+      clearTimeout(window.__operaAgentCursorClear);
+      window.__operaAgentCursorClear = setTimeout(() => cursor.remove(), 2500);
     }
     return {
       ok: true,

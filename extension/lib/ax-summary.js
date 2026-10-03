@@ -20,7 +20,12 @@ export const AX_SUMMARY_LIMITS = Object.freeze({
   maxNameChars: 200
 });
 
-const SKIP_ROLES = new Set(['RootWebArea', 'InlineTextBox', 'generic', 'none', 'presentation']);
+// WHY 'generic' is not skipped outright: canvas and SPA surfaces label their
+// controls as generic, so dropping every generic node threw away the only named
+// thing such a page exposes. A generic node WITH a name is still information; an
+// unnamed one is noise and is dropped below by the empty-name check, which is
+// also where RootWebArea-only noise ends up.
+const SKIP_ROLES = new Set(['RootWebArea', 'InlineTextBox', 'none', 'presentation']);
 const EDITABLE_ROLES = new Set(['textbox', 'searchbox', 'spinbutton', 'combobox', 'entry']);
 
 function roleOf(node) {

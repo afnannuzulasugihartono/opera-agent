@@ -28,6 +28,7 @@ printed, including in a failure message.
 """
 
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -87,16 +88,18 @@ CONSENT_MARKERS = ('before you continue', 'accept all', 'consent', 'cookies',
 
 
 def gated_reason(tab, page):
-    """Why the site did not serve real content, or None if it did."""
+    """Why the site gave us nothing usable, or None if it did."""
     url = tab['url'].lower()
     if any(host in url for host in AUTH_HOSTS):
         return f'site redirected to sign-in ({url[:50]})'
+    if (page.get('axSummary') or {}).get('items'):
+        return None  # a named accessibility tree is usable even with no DOM text
     haystack = f"{tab['title']} {page.get('text', '')[:400]}".lower()
     marker = next((m for m in CONSENT_MARKERS if m in haystack), None)
     if marker:
         return f'site served a consent/interstitial wall ({marker!r})'
     if page['totalTextChars'] < 400:
-        return f'page rendered almost no text ({page["totalTextChars"]} chars)'
+        return f'no usable content ({page["totalTextChars"]} chars, no named a11y nodes)'
     return None
 
 
@@ -122,11 +125,16 @@ async def case_landing(url, name):
     try:
         tab, page = await open_and_read(url)
         gated = gated_reason(tab, page)
+        ax = page.get('axSummary') or {}
+        ax_items = ax.get('items', [])
+        detail = (f'{host_of(tab["url"])} chars={page["totalTextChars"]} '
+                  f'elements={len(page["elements"])} ax={len(ax_items)}')
+        if ax_items:
+            detail += ' [' + ', '.join(f'{i["role"]}:{i["name"][:14]}' for i in ax_items[:3]) + ']'
         if gated:
-            skip(name, gated)
+            skip(name, f'{gated} — {detail}')
             return tab, page
-        record(name, page['totalTextChars'] > 400,
-               f'{host_of(tab["url"])} title={tab["title"][:36]!r} chars={page["totalTextChars"]} elements={len(page["elements"])}')
+        record(name, page['totalTextChars'] > 400 or bool(ax_items), detail)
         return tab, page
     except Exception as exc:  # a real site can fail any number of ways
         record(name, False, f'{type(exc).__name__}: {str(exc)[:120]}')
@@ -159,7 +167,13 @@ async def case_click_through(tab, page, name, limit=6):
                 errors.append(f"{control.get('label', '')[:18]!r} inert")
             page = after
         except Exception as exc:
-            errors.append(f"{control.get('label', '')[:18]!r} {type(exc).__name__}")
+            body = getattr(exc, 'body', None)
+            if isinstance(body, dict) and body.get('error'):
+                err = body['error']
+                detail = f"{err.get('code')}: {err.get('message')}" if isinstance(err, dict) else json.dumps(err, ensure_ascii=False)
+            else:
+                detail = str(body or exc)
+            errors.append(f"{control.get('label', '')[:16]!r} {detail[:100]}")
     # Every control was dispatched without an error; "responded" counts the ones
     # that visibly changed the page. A control that does nothing is information,
     # not a failure, so the pass condition is delivery.
