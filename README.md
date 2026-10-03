@@ -1,13 +1,13 @@
 # Opera Agent
 
-**A private, local-browser control bridge.** Lets MCP clients drive the user's
-own browser session through a strict allowlist of generic browser primitives,
-returning structured results without moving the browsing session to a cloud
-browser.
+A private, local-browser control bridge.
 
-The extension is deliberately thin (`receive → validate → execute → collect →
-return`). Site-specific behavior lives in server-side Supabase workflows, which
-hot-update independently of the installed extension.
+- Lets MCP clients drive the user's own browser session through a strict allowlist of
+  generic browser primitives.
+- Returns structured results; the session never moves to a cloud browser.
+- The extension is deliberately thin: receive, validate, execute, collect, return.
+- Site-specific behavior lives in server-side Supabase workflows, which hot-update
+  independently of the installed extension.
 
 ## Contract
 
@@ -31,7 +31,7 @@ hot-update independently of the installed extension.
 ## Commands
 
 ```bash
-npm test          # fast suite, 772 tests
+npm test          # fast suite
 npm run check     # runtime discovery + version pins
 ```
 
@@ -39,7 +39,7 @@ Local green is not acceptance — see the acceptance rule in `AGENTS.md`.
 
 ## Where to start
 
-Start at `AGENTS.md`. Its Triggers table says what to do; this table says which file answers which question.
+Start at `AGENTS.md`: its Triggers table says what to do, this table says which file answers which question.
 
 | Question | File |
 |---|---|
@@ -51,5 +51,16 @@ Start at `AGENTS.md`. Its Triggers table says what to do; this table says which 
 | Latency baselines and locked ceilings | [`docs/benchmarks.md`](docs/benchmarks.md) |
 | Traps that caused a false claim | [`docs/CONTEXT.md`](docs/CONTEXT.md) |
 | What changed in each release | [`CHANGELOG.md`](CHANGELOG.md) |
+| Security boundary and token transport | [`SECURITY.md`](SECURITY.md) |
+| How to propose a change | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| Where to ask for help | [`SUPPORT.md`](SUPPORT.md) |
+| Extension scope rules | [`extension/AGENTS.md`](extension/AGENTS.md) |
+| What the extension may do | [`extension/README.md`](extension/README.md) |
+| Shared pure modules | [`lib/AGENTS.md`](lib/AGENTS.md) |
+| Edge functions and migrations | [`supabase/README.md`](supabase/README.md) |
+| Scripts | [`scripts/README.md`](scripts/README.md) |
+| Tests | [`tests/README.md`](tests/README.md) |
+| Delta-first runtime plan | [`docs/delta-first-performance-plan.md`](docs/delta-first-performance-plan.md) |
+| Accessibility-tree checkpoint | [`docs/checkpoint-up1-ax-observation.md`](docs/checkpoint-up1-ax-observation.md) |
 
 Spent detail is recoverable from git history. There is no archive file.

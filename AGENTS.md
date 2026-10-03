@@ -4,7 +4,7 @@ MV3 browser extension + Supabase backend. Read before changing anything.
 
 ## Precedence
 
-Highest wins. Written out in full so there is nothing to guess.
+Highest wins, written out in full so there is nothing to guess.
 
 1. The owner, in this conversation.
 2. `AGENTS.md` — this file. Area scopes: `extension/AGENTS.md`, `lib/AGENTS.md`, `supabase/AGENTS.md`.
@@ -15,17 +15,22 @@ Highest wins. Written out in full so there is nothing to guess.
 
 ## Priority order
 
-1. **Fungsi** — the code works, proven by driving it.
-2. **Fitur** — a feature that solves a real problem.
-3. **Kecepatan** — only once 1 and 2 hold.
+The mission, in order. Later items only matter once the earlier ones hold.
 
-Simplicity outranks all three. Simple and working beats clever and broken.
+1. **Fungsi** — make opera agent actually work. Verified by driving it, not by a green suite.
+2. **Fitur** — a feature is justified by a real case: a problem observed on a real site, a
+   real failure, or a real owner need. No case, no feature.
+3. **Kecepatan** — short round trips. One burst beats several calls. Measure before
+   claiming a gain.
+
+- Simplicity outranks all three: simple and working beats clever and broken.
 
 ## Triggers
 
 | Trigger | Action |
 |---|---|
 | "lanjutkan" | read `AGENTS.md`, `docs/HANDOFF.md`, `docs/CONTEXT.md`, then act |
+| **"autonomously" / "lanjutkan sendiri" / "sampai mission tercapai"** | keep going on your own until the mission is reached. Do not ask permission, do not stop to confirm, do not hand back a partial result with a question at the end. Choose, act, verify, then report |
 | "apa langkah selanjutnya" | do not start work; say in plain language what is broken or undecided, and the choice the owner must make |
 | "merelakan" / "hapus aja" | the owner has decided; stop relitigating and do it |
 | something is broken | fix it first, before any feature or speed work |
@@ -37,6 +42,8 @@ Simplicity outranks all three. Simple and working beats clever and broken.
 | three failures with no new evidence | blocked: stop editing and report |
 | the mission is not reached | do not stop; keep going |
 | you need a document | use the map below, never a guess or a repo-wide grep |
+| adding or renaming a `.md` | give it a one-line `Related:` header and check every link resolves. No document is an island |
+| a real site shows a new problem | treat it as ours until proven otherwise, and record it in `docs/CONTEXT.md` if it can bite again |
 
 ## Mission
 
@@ -80,9 +87,18 @@ Simplicity outranks all three. Simple and working beats clever and broken.
 | what is still open | `ROADMAP.md` |
 | what changed in a release | `CHANGELOG.md` |
 | security boundary and token transport | `SECURITY.md` |
+| the overview and the same map for humans | [`README.md`](README.md) |
+| how to propose a change | `CONTRIBUTING.md` |
+| where to ask for help | `SUPPORT.md` |
+| what the extension may do, and why it holds those permissions | `extension/README.md` |
+| what the scripts folder is for | `scripts/README.md` |
+| what the edge functions and migrations are | `supabase/README.md` |
+| what the suites cover | `tests/README.md` |
+| the delta-first runtime plan | `docs/delta-first-performance-plan.md` |
+| the accessibility-tree checkpoint | `docs/checkpoint-up1-ax-observation.md` |
 
-`README.md` holds the same map for humans. Every `.md` links back here or to a sibling,
-so no document is an island.
+Every `.md` carries a one-line `Related:` header, and this table plus those headers mean
+no document is an island. Adding or renaming one means updating both.
 
 ## Commands
 
@@ -151,24 +167,30 @@ Full text: `.agents/skills/karpathy-guidelines/SKILL.md`. Load it with
 
 ## Repository discipline
 
-- One writer per checkout. A dirty tree means STOP and preserve to
-  `archive/<topic>`; never end dirty or diverged.
-- **Preserve before overwrite.** Never discard work you did not create without
-  archiving it first.
-  - **Mention, do not delete, pre-existing code this work did not create** — report
-    to the owner in the same session.
-  - Removing it *is* allowed when the change **requires** the removal.
-  - Say which of the two happened, in the commit message.
-- **Acceptance basis is CI evidence.**
-  - Checkpoint acceptance = GitHub Actions + Vercel SUCCESS on the exact head.
-  - Deployment and release promotion are explicit user decisions,
-    never granted by CI green alone.
+- One writer per checkout. A dirty tree means STOP; never end dirty or diverged.
+- Preserve before overwrite: never discard work you did not create.
+- Mention, do not delete, pre-existing code this work did not create. Report it to the
+  owner in the same session.
+- Remove it only when the change requires it, and say which of the two happened in the
+  commit message.
+- Put work you must not lose on a branch or a stash, never in a directory nothing reads.
+- Acceptance basis is CI evidence: GitHub Actions and Vercel SUCCESS on the exact head.
+- Deployment and release promotion are owner decisions, never granted by CI green alone.
 
 ## Naming
 
-- Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<N>`).
-- Root allowlisted.
-- Branches: `main`, `release/<semver>`, `feat|fix|chore|docs|test|perf|refactor/<kebab>`.
+- Files are kebab-case. The conventional root documents are the exception and stay
+  uppercase: `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`,
+  `ROADMAP.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, `LICENSE`.
+- No lifecycle token in any name: `tmp`, `temp`, `draft`, `wip`, `untitled`, `backup`,
+  `copy`, `old`, `final<n>`.
+- A name says what a thing is, not where it sits in a workflow.
+- Root entries are allowlisted in `tests/repo-naming-governance.test.mjs`. Extend that
+  list with a reason in the same commit, or move the file into its proper directory.
+- Branches: `main`, `release/<semver>`, or
+  `feat|fix|chore|docs|test|perf|refactor/<kebab>`.
+- Tests are `tests/<name>.test.mjs`. `tests/cloud`, `tests/postgres`, and `tests/deno`
+  are live-only and never run in `npm test`.
 
 ## Model
 

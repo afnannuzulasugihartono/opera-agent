@@ -9,27 +9,16 @@ import assert from 'node:assert/strict';
 // same commit with a recorded reason. Do not weaken these assertions.
 
 const ALLOWED_ROOT_ENTRIES = new Set([
-  // 2026-10-03: '.specify' and 'tools' removed with the dead tooling they
-  // existed for (repowise + spec-kit); re-adding either needs a conscious
-  // allowlist entry with justification, per the rule below.
   '.agents', '.github', 'docs', 'extension', 'lib',
   'oauth-consent', 'release-trigger', 'scripts', 'supabase', 'tests',
-  '.gitignore', 'AGENTS.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
-  'README.md', 'ROADMAP.md', 'SECURITY.md', 'opencode.json', 'package.json',
-  // Enterprise Phase 1 (2026-09-30): OSI license file at root.
-  'LICENSE',
-  // Enterprise Phase 1 (2026-09-30): user support entry point at root.
-  'SUPPORT.md',
-  // Enterprise Phase 1 (2026-09-30): env template; values stay empty/example.
-  '.env.example',
-  // Enterprise Phase 1 Task 7 (2026-09-30): gitleaks exception config for the CircleCI secret-scan gate.
-  '.gitleaks.toml',
+  '.gitignore', '.env.example', '.gitleaks.toml',
+  'AGENTS.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE', 'README.md',
+  'ROADMAP.md', 'SECURITY.md', 'SUPPORT.md', 'opencode.json', 'package.json',
 ]);
 
 const JUNK_TOKEN =
   /(^|[-_.])(tmp|temp|draft|wip|untitled|backup|copy|old|final[0-9]*)([-_.]|$)/i;
-const JUNK_TOKEN_EXEMPT_PREFIXES = ['docs/releases/'];
-const ENTRYPOINT_EXEMPT_PREFIXES = ['scripts/', '.specify/', '.agents/'];
+const ENTRYPOINT_EXEMPT_PREFIXES = ['scripts/', '.agents/'];
 const BRANCH_PATTERN =
   /^(main|release\/\d+\.\d+\.\d+|(feat|fix|chore|docs|test|perf|refactor)\/[a-z0-9-]+)$/;
 
@@ -76,11 +65,7 @@ test('repository root contains only allowlisted entries, and every allowlisted e
 });
 
 test('tracked filenames never carry process-lifecycle tokens', () => {
-  const offenders = trackedFiles().filter(
-    (file) =>
-      !JUNK_TOKEN_EXEMPT_PREFIXES.some((prefix) => file.startsWith(prefix)) &&
-      JUNK_TOKEN.test(file.split('/').pop())
-  );
+  const offenders = trackedFiles().filter((file) => JUNK_TOKEN.test(file.split('/').pop()));
   assert.deepEqual(
     offenders,
     [],
@@ -89,10 +74,8 @@ test('tracked filenames never carry process-lifecycle tokens', () => {
 });
 
 test('markdown documents use lowercase kebab-case names', () => {
-  // Enterprise Phase 1 (2026-09-30): SUPPORT.md follows the same
-  // conventional-uppercase-doc exemption as README/SECURITY.
   const conventional = /^(README|AGENTS|SECURITY|CONTRIBUTING|CHANGELOG|ROADMAP|CODE_OF_CONDUCT|LICENSE|SUPPORT|HANDOFF|CONTEXT)\.md$|^SKILL\.md$/;
-  const exemptPrefixes = ['.specify/', '.agents/', 'tools/repowise/'];
+  const exemptPrefixes = ['.agents/'];
   const offenders = trackedFiles().filter((file) => {
     if (!file.endsWith('.md')) return false;
     if (conventional.test(file.split('/').pop())) return false;
@@ -102,7 +85,7 @@ test('markdown documents use lowercase kebab-case names', () => {
   assert.deepEqual(offenders, [], `non-kebab-case markdown names: ${offenders.join(', ')}`);
 });
 
-test('entrypoint scripts live under scripts/ (or vendored .specify/.agents layouts)', () => {
+test('entrypoint scripts live under scripts/', () => {
   const offenders = trackedFiles().filter(
     (file) =>
       /\.(cmd|bat|ps1|sh)$/i.test(file) &&

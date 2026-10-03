@@ -2,13 +2,12 @@
 
 Related: [AGENTS.md](../AGENTS.md) - [runbook.md](runbook.md)
 
-The machine source of truth for this gateway is the live
-`GET /openapi.json` served by the gateway itself. This file is the narrative
-reference for operators and integrators. It is drift-pinned by
-`tests/api-docs.test.mjs`, which extracts the routed paths and error codes from
-the gateway source and fails if this document stops covering them. If this
-document and the live spec ever disagree, the live spec wins and the
-discrepancy is a bug worth reporting.
+- Machine source of truth: the live `GET /openapi.json` the gateway serves itself.
+- This file is the narrative reference for operators and integrators.
+- Drift-pinned by `tests/api-docs.test.mjs`, which reads routed paths and error
+  codes out of the gateway source and fails when this document stops covering them.
+- If this document and the live spec disagree, the live spec wins and the discrepancy
+  is a bug worth reporting.
 
 ## Base URLs
 
@@ -24,16 +23,15 @@ Gateway base (append the routed paths to this):
 https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway
 ```
 
-The gateway does not trust the incoming request URL when it advertises its own
-base. The hosted proxy rewrites the request URL, so the base path in the served
-`servers[].url` entry is derived from the `SUPABASE_URL` environment variable,
-never from the request. Callers should always address the base above directly.
+- The gateway does not trust the incoming request URL when advertising its own base.
+- The hosted proxy rewrites that URL, so `servers[].url` is derived from the
+  `SUPABASE_URL` environment variable, never from the request.
+- Callers should always address the base above directly.
 
 ## Authentication
 
-The token is a **device token** for the single fixed device name `opera`. The
-gateway always looks up that one device; there is no device selector in the
-request, and the caller cannot target a different device.
+- The token is a **device token** for the single fixed device name `opera`.
+- There is no device selector in the request; a caller cannot target another device.
 
 The gateway accepts the token in three carriers, checked in this order:
 
@@ -42,16 +40,14 @@ The gateway accepts the token in three carriers, checked in this order:
    optional and matched case-insensitively, so a bare token is accepted too.
 3. `apiKey` in the JSON request body.
 
-The body carrier exists because GPT Actions cannot set custom request headers.
-Header carriers are preferred: they keep the token out of request bodies that
-may be logged.
+- The body carrier exists because GPT Actions cannot set custom request headers.
+- Prefer header carriers: they keep the token out of request bodies that may be logged.
 
-A `?apiKey=` query parameter is **never** read by the gateway. The three
-carriers above are the complete list; a token sent as a query parameter is
-ignored on every route.
+- A `?apiKey=` query parameter is **never** read by the gateway. The three carriers
+  above are the complete list; a token sent as a query parameter is ignored on
+  every route.
 
-`GET /openapi.json` and `GET /health` require no token at all — they are
-unauthenticated.
+- `GET /openapi.json` and `GET /health` require no token at all; both are unauthenticated.
 
 ## Endpoints
 
@@ -61,18 +57,19 @@ unauthenticated.
 | `/openapi.json` | `GET` | Live OpenAPI document for the gateway | None |
 | `/health` | `GET` | Liveness probe: service name, version, server time | None |
 
-`POST` is the only method the gateway executes. An `OPTIONS` preflight is
-answered with `204` on any path before routing happens, and every other method
-on any path — including an unrouted one — returns `METHOD_NOT_ALLOWED`. CORS is
-fail-closed: an allow-origin header is echoed only for an exact allowlist match,
-so a browser-based caller from an unlisted origin will see its request blocked.
+- `POST` is the only method the gateway executes.
+- An `OPTIONS` preflight is answered `204` on any path, before routing.
+- Every other method on any path, including an unrouted one, returns
+  `METHOD_NOT_ALLOWED`.
+- CORS is fail-closed: an allow-origin header is echoed only on an exact allowlist
+  match, so a browser caller from an unlisted origin is blocked.
 
 ## `POST /command` request body
 
-Body must be JSON. A body over 256 KiB (256 * 1024 bytes) is rejected with
-`TOO_LARGE`, but only when the client sends a `content-length` header. The
-gateway reads that header alone, so a chunked body sent without one is not
-size-checked.
+- Body must be JSON.
+- A body over 256 KiB is rejected with `TOO_LARGE`, but only when the client sends a
+  `content-length` header. The gateway reads that header alone, so a chunked body
+  without one is not size-checked.
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
@@ -82,15 +79,15 @@ size-checked.
 | `requestId` | string | No | Idempotency key. Must match `/^[A-Za-z0-9_-]{1,100}$/`. A value that does not match is ignored rather than rejected, so a malformed key silently gives up replay protection. |
 | `apiKey` | string | No | Device token carrier, for clients that cannot set headers. |
 
-A successful command and a structured device-side failure both return HTTP 200
-with an envelope the caller is expected to read: `ok: true` on success, or
-`ok: false` with an actionable error such as a stale element or an element not
-found. Do not treat HTTP 200 alone as success.
+- A successful command and a structured device-side failure both return HTTP 200.
+- Read the envelope: `ok: true`, or `ok: false` with an actionable error such as a
+  stale element or an element not found.
+- Do not treat HTTP 200 alone as success.
 
-The device must be paired and must have been seen within the last 90 seconds.
-A paired-but-offline device answers with HTTP 200 whose error body is a plain
-string with `lastSeenAt`, not an error-code object, so there is no `error.code`
-to switch on in that case.
+- The device must be paired and seen within the last 90 seconds.
+- A paired-but-offline device answers HTTP 200 with a plain string error body
+  carrying `lastSeenAt`, not an error-code object, so there is no `error.code` to
+  switch on.
 
 ## Error codes
 
@@ -108,16 +105,15 @@ Every code the gateway emits, with the HTTP status it is returned with:
 | `TOO_LARGE` | 413 | The request body exceeds 256 KiB. Only detected when the client sends a `content-length` header. |
 | `NOT_FOUND` | 404 | The path is not one the gateway routes. Only a `POST` can reach this: any other method on an unrouted path is answered with `METHOD_NOT_ALLOWED` 405 instead. |
 
-When a `504` or `502` occurs, the command may already have been enqueued and
-executed. Verify page state rather than blindly retrying a non-idempotent
-action; pass `requestId` when you need replay protection.
+- On `504` or `502` the command may already have run. Verify page state rather than
+  retrying a non-idempotent action, and pass `requestId` when you need replay protection.
 
-`GATEWAY_ERROR` is the one code the gateway returns with two statuses. Its
-`502` cases — a database failure, or a lost wait response after the command was
-already committed to the queue — may have run the action. Its `200` case is the
-empty result instead: the gateway got no command row back from the database, so
-no command was enqueued and no action ran. That one is still a failure and must
-be read from the `ok` field, never from the status.
+- `GATEWAY_ERROR` is the only code returned with two statuses.
+- Its `502` cases, a database failure or a lost wait response after the command was
+  committed to the queue, may have run the action.
+- Its `200` case is the empty result: no command row came back, so nothing was
+  enqueued and nothing ran.
+- That one is still a failure and must be read from `ok`, never from the status.
 
 ## Examples
 
@@ -142,11 +138,12 @@ Fetch the live spec (no token required):
 curl "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway/openapi.json"
 ```
 
-Export `$OPERA_AGENT_TOKEN` from the device token issued at pairing time. Do
-not paste a real token into a script, a shell history file, or a commit.
+- Export `$OPERA_AGENT_TOKEN` from the device token issued at pairing time.
+- Never paste a real token into a script, a shell history file, or a commit.
 
 ## If this document disagrees with the gateway
 
-Fetch `GET /openapi.json` and trust it. Report the drift instead of trusting
-this file: `tests/api-docs.test.mjs` only pins routed paths, error codes, and
-the base URL, so it cannot catch a changed field constraint or response shape.
+- Fetch `GET /openapi.json` and trust it.
+- Report the drift instead of trusting this file. `tests/api-docs.test.mjs` pins only
+  routed paths, error codes, and the base URL, so it cannot catch a changed field
+  constraint or a changed response shape.
