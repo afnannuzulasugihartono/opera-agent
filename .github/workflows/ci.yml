@@ -17,6 +17,14 @@ on:
 permissions:
   contents: read
 
+# The machine's global git config rewrites every https://github.com URL to SSH
+# (url.ssh://git@github.com.insteadOf), so checkout failed with "Host key
+# verification failed" and all eight jobs died at the first step. Bypassing the
+# global config for this job keeps the fetch on HTTPS; checkout embeds the job
+# token in its own remote URL, so no global credential helper is needed.
+env:
+  GIT_CONFIG_GLOBAL: /dev/null
+
 defaults:
   run:
     shell: bash
