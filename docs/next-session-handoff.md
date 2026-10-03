@@ -6,8 +6,13 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`f5e2ef0`** pre-edit, tree clean,
+- `main` = `origin/main` = **`8779b8f`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
+- **Foreign commit found post-write: `8779b8f ci: bypass the global SSH
+  rewrite`** (same git identity, 2026-10-04 00:59, ci.yml only, verified root
+  cause in message). Reported, not deleted. This session skipped the HEAD
+  check before its first write — violation of one-writer; tree happened to be
+  clean, no work lost. Verify HEAD before the first write, every session.
 - **Mission-first** (owner: AI fokus runtime, bukan kamus): `## Mission` di
   atas — runtime code adalah produk, docs/tests support bukan task, sesi tanpa
   perubahan runtime wajib justifikasi. Codeblock commands dilipat jadi bullet
