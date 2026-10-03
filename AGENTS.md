@@ -11,7 +11,9 @@ npm run check                           # runtime discovery + version pins
 py tests/browser_extension_test.py      # browser harness on Windows (py, not python)
 ```
 
-Deno gates run only on CI. Order: focused, full suite, required gates. Green local is not acceptance.
+- Deno gates run only on CI.
+- Order: focused, full suite, required gates.
+- Green local is not acceptance.
 
 ## Repository structure
 
@@ -33,11 +35,15 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 |---|---|---|
 | `karpathy-guidelines` | `.agents/skills/karpathy-guidelines/SKILL.md` | Writing, reviewing, refactoring |
 
-Before a writing, reviewing, or refactoring task, load the skill first: `skill({ name: "karpathy-guidelines" })`, or read `.agents/skills/karpathy-guidelines/SKILL.md` directly. Every runtime commit carries a `Karpathy:` trailer (e.g. `Karpathy: surgical-3`). Non-code turns use judgment.
+- Before a writing, reviewing, or refactoring task, load the skill first: `skill({ name: "karpathy-guidelines" })`, or read `.agents/skills/karpathy-guidelines/SKILL.md` directly.
+- Every runtime commit carries a `Karpathy:` trailer (e.g. `Karpathy: surgical-3`).
+- Non-code turns use judgment.
 
 ## Bootstrap order
 
-Read this file, then `docs/next-session-handoff.md`, then `docs/project-context.md` — in that order, before anything else. Afterwards open only files those three name (area files in the table below; code and tests as the task needs). Never grep the repo for guidance.
+- Read this file, then `docs/next-session-handoff.md`, then `docs/project-context.md` — in that order, before anything else.
+- Afterwards open only files those three name (area files in the table below; code and tests as the task needs).
+- Never grep the repo for guidance.
 
 | Area | Read first |
 |---|---|
@@ -67,23 +73,43 @@ Read this file, then `docs/next-session-handoff.md`, then `docs/project-context.
 - **`main` is the truth.** `--ff-only` at every green checkpoint; never merge in-progress work.
 - **Branches die on close.** Merge or archive-tag; tag before deleting.
 - **Divergent lines get a decision.** Merge, cherry-pick, or archive-tag-and-delete with reason.
-- 6. **Preserve before overwrite.** Never discard work you did not create without archiving first. **Mention, do not delete, pre-existing code this work did not create** — report to the owner in the same session instead of tidying-up. Removing it *is* allowed when the removal is **required** by the change being made. Say which of the two it is, in the commit message. Precedent: `opera_run_fast` was dropped and locked in a test on 2026-10-02, then restored on 2026-10-03 — the rule was still violated in its narrower form.
-- 7. **Acceptance basis is CI evidence.** Checkpoint acceptance = GitHub Actions + Vercel SUCCESS on the exact evidence head plus a durable record (standing authorization 2026-09-19). CircleCI is frozen (free-plan credits exhausted 2026-10-03; `.circleci/config.yml` retained, not run). Deployment, release promotion, transport cutover, Milestone 8E start stay explicit user decisions, never granted by CI green alone.
+- 6. **Preserve before overwrite.** Never discard work you did not create without archiving first.
+  - **Mention, do not delete, pre-existing code this work did not create** — report to the owner in the same session instead of tidying-up.
+  - Removing it *is* allowed when the removal is **required** by the change being made. Say which of the two it is, in the commit message.
+  - Never lock a removal in a test (a test that *requires* an artifact to stay deleted converts a preference into an irreversible decision).
+  - Precedent: `opera_run_fast` was dropped and locked in a test on 2026-10-02, then restored on 2026-10-03 — the rule was still violated in its narrower form.
+- 7. **Acceptance basis is CI evidence.** Checkpoint acceptance = GitHub Actions + Vercel SUCCESS on the exact evidence head plus a durable record (standing authorization 2026-09-19).
+  - CircleCI is frozen (free-plan credits exhausted 2026-10-03; `.circleci/config.yml` retained, not run).
+  - Deployment, release promotion, transport cutover, Milestone 8E start stay explicit user decisions, never granted by CI green alone.
 
 ## Naming conventions
 
-Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<N>`). Root allowlisted. Branches: `main`, `release/<semver>`, `feat|fix|…/<kebab>` (retired namespaces stay retired). Tags: `archive/<path>`, `v<semver>`. No new doc families without updating this section in the same commit.
+- Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<N>`).
+- Root allowlisted. No new doc families without updating this section in the same commit.
+- Branches: `main`, `release/<semver>`, `feat|fix|…/<kebab>` (retired namespaces stay retired).
+- Tags: `archive/<path>`, `v<semver>`.
 
 ## Audit policy
 
-`audit(head, range, question) -> PASS | CONDITIONAL PASS | FAIL`. One writer per milestone branch. Audit is by machine: a separate agent session, or Codex. A machine audit is the required default. The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority. Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope. Request before production mutation, dark-probe promotion, repeat failure, or contract deviation.
-
-At a milestone boundary the auditor reviews the full diff and reruns proportionate tests first. The audit must distinguish code present, automated tests passing, live acceptance passing, and production promotion. Prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
+- `audit(head, range, question) -> PASS | CONDITIONAL PASS | FAIL`. One writer per milestone branch.
+- Audit is by machine: a separate agent session, or Codex. A machine audit is the required default.
+- The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority.
+- Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope.
+- Request before production mutation, dark-probe promotion, repeat failure, or contract deviation.
+- At a milestone boundary the auditor reviews the full diff and reruns proportionate tests first.
+- The audit must distinguish code present, automated tests passing, live acceptance passing, and production promotion.
+- Prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
 
 ## Evidence-first bug repair loop
 
-Capture the exact failure; reproduce from authoritative evidence, never guess or blind-rerun; research the root cause; state a falsifiable hypothesis; add the failing test; fix smallest-generic without weakening anything to go green; re-run focused then full gates; three strikeless recurrences → blocked, request early audit.
+- Capture the exact failure; reproduce from authoritative evidence, never guess or blind-rerun.
+- Research the root cause; state a falsifiable hypothesis.
+- Add the failing test; fix smallest-generic without weakening anything to go green.
+- Re-run focused then full gates.
+- Three strikeless recurrences → blocked, request early audit.
 
 ## Session close
 
-Update handoff; project-context only for unrecoverable facts; relocate spent detail; verify; push together. No context-only edits for read-only work.
+- Update handoff; verify; push together.
+- project-context only for unrecoverable facts; relocate spent detail.
+- No context-only edits for read-only work.
