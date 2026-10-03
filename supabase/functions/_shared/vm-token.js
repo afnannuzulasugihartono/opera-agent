@@ -106,8 +106,3 @@ export async function openVmHostToken(token, keyBytes, { kind } = {}) {
     fail('INVALID_TOKEN', 'VM host token authentication failed.');
   }
 }
-
-export const VM_HOST_TOKEN_LIMITS = Object.freeze({
-  plaintextBytes: MAX_PLAINTEXT_BYTES,
-  tokenBytes: MAX_TOKEN_BYTES,
-});

@@ -58,6 +58,7 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 - Regression tests verify behavior or parsed artifacts. Source-text regex only for
   intentionally frozen literals, with the test stating why.
 - `npm run check` auto-discovers runtime files. No hand-picked safety lists.
+- Comments answer WHY, never WHAT. One line per trap, incident, or frozen-contract reason; self-explanatory code carries none.
 - Match existing style. Touch only what the task requires. Never improve adjacent code, comments, or formatting it did not require.
 
 ## Boundaries
@@ -68,11 +69,8 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 
 ## Repository discipline
 
-- **One writer per checkout.** Dirty/unknown: STOP, preserve to `archive/<topic>`, record, align.
-- **No session ends dirty.** Nothing uncommitted or unpushed.
-- **`main` is the truth.** `--ff-only` at every green checkpoint; never merge in-progress work.
-- **Branches die on close.** Merge or archive-tag; tag before deleting.
-- **Divergent lines get a decision.** Merge, cherry-pick, or archive-tag-and-delete with reason.
+- **One writer, clean close.** Dirty/unknown tree: STOP, preserve to `archive/<topic>`, record, align. Never end dirty or diverged.
+- **`main` is the truth, branches die on close.** `--ff-only` at green checkpoints; merge or archive-tag closed work, tag before deleting; divergent lines get a decision (merge, cherry-pick, or archive-tag-and-delete with reason).
 - 6. **Preserve before overwrite.** Never discard work you did not create without archiving first.
   - **Mention, do not delete, pre-existing code this work did not create** — report to the owner in the same session instead of tidying-up.
   - Removing it *is* allowed when the removal is **required** by the change being made. Say which of the two it is, in the commit message.

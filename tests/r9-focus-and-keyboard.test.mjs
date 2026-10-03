@@ -7,7 +7,7 @@
 //    trusted input executors must never activate a tab or focus a window. That
 //    is a frozen product invariant (`userActiveTab != automationTargetTab`),
 //    which is exactly the case where a structural assertion is warranted
-//    instead of a behavioral one (precedent: event-driven-local-execution-p4).
+//    instead of a behavioral one (the frozen-invariant case).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

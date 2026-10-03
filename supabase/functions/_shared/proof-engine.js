@@ -399,9 +399,3 @@ export async function validateProof(input) {
   if (expected !== input.proofDigest) fail('INVALID_DIGEST', 'Proof digest does not match canonical content.');
   return deepFreeze({ ...normalized, proofDigest: expected });
 }
-
-export const PROOF_LIMITS = Object.freeze({
-  maximumEvidenceItems: MAX_EVIDENCE_ITEMS,
-  maximumProofResponseBytes: LEDGER_LIMITS.proofResponseBytes,
-  evaluatorVersion: EVALUATOR_VERSION,
-});

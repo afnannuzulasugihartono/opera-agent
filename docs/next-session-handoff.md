@@ -8,9 +8,10 @@
 
 - `main` = `origin/main` = **`0f83081`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **AGENTS.md bullet rewrite** (owner: karpathy + web format): 9 section edits,
-  semua substring terkunci dipertahankan verbatim, heading/order utuh
-  (115 baris). 40/40 lock + 804/804 hijau. No runtime file touched.
+- **Cleanup + comment rule** (owner: hapus modul tak-terpakai + komen boros):
+  2 dead export + 3 modul (~36 KB) + 2 test pendamping dihapus; README tes
+  + 1 komen preseden diselaraskan. WHY-only rule + lock test baru.
+  781/781 hijau, check ok (91 files). No runtime behavior changed.
 - Residual aktif (dari hapus 3+4): tanpa waiver rule, audit yang dilewati
   tak wajib tinggalkan jejak; gating milestone hanya di handoff + commit.
 - **Local gates only:** `npm test` **800/800**, `npm run check` ok (26
