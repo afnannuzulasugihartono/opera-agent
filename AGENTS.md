@@ -76,9 +76,7 @@ Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<
 
 ## Audit policy
 
-`audit(head, range, question) -> PASS | CONDITIONAL PASS | FAIL`. One writer per milestone branch. Audit is by machine: a separate agent session, or Codex. A machine audit is the required default. The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority. Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope.
-
-Request before production mutation, dark-probe promotion, repeat failure, or contract deviation (e.g. auth, signing, MCP schemas, CRX, irreversible, DB shape).
+`audit(head, range, question) -> PASS | CONDITIONAL PASS | FAIL`. One writer per milestone branch. Audit is by machine: a separate agent session, or Codex. A machine audit is the required default. The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority. Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope. Request before production mutation, dark-probe promotion, repeat failure, or contract deviation (e.g. auth, signing, MCP schemas, CRX, irreversible, DB shape).
 
 At a milestone boundary the auditor reviews the full diff and reruns proportionate tests first. The audit must distinguish code present, automated tests passing, live acceptance passing, and production promotion. Its verdict is `PASS`, `CONDITIONAL PASS`, or `FAIL`; only `PASS` permits the next milestone unless the user explicitly accepts documented residual risk. Where the user waives the audit instead, record the waiver, the residual risk, and who accepted it — a missing audit and an accepted risk must never be readable as the same thing.
 
