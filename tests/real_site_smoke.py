@@ -962,6 +962,66 @@ async def case_login_form(site, login_url):
         record(f'{site} login form', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_stale_ref_recovery():
+    """Does a refused ref ever come back if you wait longer than the deadline?
+
+    TARGET_NOT_READY on a re-rendering header costs 7.5s of waiting per attempt. If
+    the same ref would have resolved given more time, the wait is earning its cost and
+    failing fast would be a regression. If it never resolves, the wait is pure loss.
+    This measures which, by retrying one refused ref on a fixed interval and counting
+    the recoveries.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://www.youtube.com/', 'active': True, 'wait': True
+        }))['tab']
+        tid = tab['id']
+
+        page = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1200}))['page']
+        logo = next((i for i in page['elements']
+                     if str(i.get('role', '')).lower() == 'link'
+                     and 'youtube home' in str(i.get('label', '')).lower()), None)
+        if not logo:
+            record('stale ref recovery', False,
+                   f'no header link among {[str(i.get("label", ""))[:14] for i in page["elements"][:5]]}')
+            await drive('tabs.close', {'tabId': tid})
+            return
+
+        first = None
+        recoveries = 0
+        attempts = 0
+        for attempt in range(5):
+            started = time.perf_counter()
+            try:
+                await drive('page.click', {'tabId': tid, 'ref': logo['ref'],
+                                            'executionMode': 'background'})
+                elapsed = (time.perf_counter() - started) * 1000
+                record(f'stale ref attempt {attempt + 1}', True,
+                       f'resolved after {elapsed:.0f}ms')
+                recoveries += 1
+                first = first or elapsed
+                break
+            except Exception as exc:
+                body = getattr(exc, 'body', None)
+                err = body.get('error') if isinstance(body, dict) else None
+                code = err.get('code') if isinstance(err, dict) else type(exc).__name__
+                attempts += 1
+                record(f'stale ref attempt {attempt + 1}', None,
+                       f'{code} after {(time.perf_counter() - started) * 1000:.0f}ms')
+            await asyncio.sleep(3)
+
+        # The measurement completing is the pass. What it found is the point: zero
+        # recoveries means the deadline spent on this ref bought nothing.
+        record('stale ref recovery', True,
+               f'the same ref resolved {recoveries} time(s) in {attempts + recoveries} '
+               f'attempts spaced 3s apart, so the deadline spent waiting on it is '
+               f'{"earned" if recoveries else "pure loss"}')
+
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('stale ref recovery', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -1027,6 +1087,7 @@ async def run(port, profile):
         await maybe(lambda: case_login_form('github', 'https://github.com/login'),
                     'github-form')
         await maybe(lambda: case_youtube_search_and_open(), 'youtube-search')
+        await maybe(lambda: case_stale_ref_recovery(), 'stale-ref')
         await maybe(lambda: case_primitive_sweep(), 'sweep')
         await maybe(lambda: case_media_on_real_video(), 'media')
         await maybe(lambda: case_click_every_control('https://opencode.ai/', 'opencode'),
