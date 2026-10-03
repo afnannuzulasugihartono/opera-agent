@@ -783,7 +783,10 @@ async function trustedFill(tabId, ref, value, context, mode = 'background', opti
 async function trustedPointer(tabId, params, context) {
   const mode = executionMode(params);
   const action = String(params.action || 'click');
-  const visiblePointer = mode === 'foreground' && params.showCursor !== false;
+  // WHY: the cursor is how a person sees an unattended run working, so gating it
+  // on foreground left the normal background run invisible. An explicit
+  // showCursor:true now works in either mode; the default is unchanged.
+  const visiblePointer = params.showCursor === true || (mode === 'foreground' && params.showCursor !== false);
   const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: visiblePointer, action });
   const end = action === 'drag'
     ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: visiblePointer, action })

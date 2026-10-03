@@ -2403,7 +2403,11 @@ async def run(port, profile):
         assert background_input_burst['executionMode'] == 'background'
         assert background_input_burst['results'][0]['result']['method'] == 'debugger'
         assert background_input_burst['results'][0]['result']['focusEmulated'] is True
-        assert background_input_burst['results'][2]['result']['visiblePointer'] is False
+        # A burst pointer step asks for the cursor, so it shows in background too:
+        # a run the owner cannot see is the one they most need to watch. The
+        # direct background page.pointer above still asserts False, so the
+        # default stays off and only an explicit request turns it on.
+        assert background_input_burst['results'][2]['result']['visiblePointer'] is True
         assert background_input_burst['results'][2]['result']['focusEmulated'] is True
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#canvas-status'

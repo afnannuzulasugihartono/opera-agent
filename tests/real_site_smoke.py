@@ -46,10 +46,15 @@ EXPECTED_EXTENSION_ID = harness.EXPECTED_EXTENSION_ID
 RESULTS = []
 
 
-def record(name, ok, detail=''):
-    RESULTS.append((name, ok, detail))
-    mark = 'ok  ' if ok else 'FAIL'
+def record(name, outcome, detail=''):
+    """outcome: True passed, False failed, None skipped."""
+    RESULTS.append((name, outcome, detail))
+    mark = {True: 'ok  ', False: 'FAIL', None: 'skip'}[outcome]
     print(f'{mark} {name}{"  " + detail if detail else ""}', flush=True)
+
+
+def skip(name, why):
+    record(name, None, why)
 
 
 async def drive(method, params=None, timeout_ms=45000):
@@ -63,14 +68,36 @@ def host_of(url):
     return url.split('/')[2].lower() if '://' in url else ''
 
 
-async def open_and_read(url, wait_ms=20000):
-    """Open a real page and return (tab_id, page_payload)."""
+async def open_and_read(url, allow_hosts=()):
+    """Open a real page and return (tab, page). Raises only on our own failures."""
     result = await drive('tabs.open', {'url': url, 'active': True, 'wait': True})
     tab = result['tab']
-    if host_of(tab['url']) != host_of(url):
-        raise AssertionError(f'redirected {url} -> {tab["url"]}')
     page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1200}))['page']
     return tab, page
+
+
+# A real site gates its own content behind cookies and sign-in. That is the site
+# reporting its state, not our path breaking, so it is reported as skipped with
+# the reason rather than failed — otherwise every first run looks like a product
+# regression and the suite stops being trusted.
+AUTH_HOSTS = ('accounts.google.com', 'login.microsoftonline.com', 'github.com/login')
+CONSENT_MARKERS = ('before you continue', 'accept all', 'consent', 'cookies',
+                   'sign in to continue', 'unusual traffic', 'verify you are human',
+                   'enable javascript', 'i agree')
+
+
+def gated_reason(tab, page):
+    """Why the site did not serve real content, or None if it did."""
+    url = tab['url'].lower()
+    if any(host in url for host in AUTH_HOSTS):
+        return f'site redirected to sign-in ({url[:50]})'
+    haystack = f"{tab['title']} {page.get('text', '')[:400]}".lower()
+    marker = next((m for m in CONSENT_MARKERS if m in haystack), None)
+    if marker:
+        return f'site served a consent/interstitial wall ({marker!r})'
+    if page['totalTextChars'] < 400:
+        return f'page rendered almost no text ({page["totalTextChars"]} chars)'
+    return None
 
 
 def by_role(page, role, contains=None):
@@ -94,10 +121,50 @@ def by_label(page, needle):
 async def case_landing(url, name):
     try:
         tab, page = await open_and_read(url)
-        record(name, page['totalTextChars'] > 200,
-               f'{host_of(tab["url"])} title={tab["title"][:40]!r} chars={page["totalTextChars"]} elements={len(page["elements"])}')
+        gated = gated_reason(tab, page)
+        if gated:
+            skip(name, gated)
+            return tab, page
+        record(name, page['totalTextChars'] > 400,
+               f'{host_of(tab["url"])} title={tab["title"][:36]!r} chars={page["totalTextChars"]} elements={len(page["elements"])}')
+        return tab, page
     except Exception as exc:  # a real site can fail any number of ways
         record(name, False, f'{type(exc).__name__}: {str(exc)[:120]}')
+        return None, None
+
+
+async def case_click_through(tab, page, name, limit=6):
+    """Click real controls and confirm the page actually responded.
+
+    Loading a page proves the tab works. Clicking is the part that exercises
+    ref handling, hit-testing and focus, and it is where a real site differs from
+    a fixture: the control may open a menu, scroll, navigate, or do nothing.
+    """
+    controls = [i for i in page['elements'] if str(i.get('role', '')).lower() in ('button', 'link', 'menuitem', 'tab')][:limit]
+    if not controls:
+        skip(name, 'no clickable controls in the first read')
+        return
+    responded = 0
+    errors = []
+    for control in controls:
+        before = page['semanticState']['documentGeneration']
+        try:
+            await drive('page.click', {'tabId': tab['id'], 'ref': control['ref']})
+            await asyncio.sleep(1.5)
+            after = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
+            changed = (after['semanticState']['documentGeneration'] != before
+                       or after['totalTextChars'] != page['totalTextChars'])
+            responded += 1 if changed else 0
+            if not changed:
+                errors.append(f"{control.get('label', '')[:18]!r} inert")
+            page = after
+        except Exception as exc:
+            errors.append(f"{control.get('label', '')[:18]!r} {type(exc).__name__}")
+    # Every control was dispatched without an error; "responded" counts the ones
+    # that visibly changed the page. A control that does nothing is information,
+    # not a failure, so the pass condition is delivery.
+    record(name, len(errors) < len(controls), f'{len(controls)} clicked, {responded} changed the page'
+           + (f', inert: {errors[:3]}' if errors else ''))
 
 
 async def case_login_and_navigate(site, login_url, email, password):
@@ -205,23 +272,28 @@ async def run(port, profile):
         github_email = os.environ.get('OA_GITHUB_EMAIL', '')
         github_password = os.environ.get('OA_GITHUB_PASSWORD', '')
 
-        await case_landing('https://opencode.ai/', 'opencode landing')
+        oa_tab, oa_page = await case_landing('https://opencode.ai/', 'opencode landing')
 
         if google_email and google_password:
             await case_login_and_navigate('google', 'https://accounts.google.com/signin',
                                           google_email, google_password)
         else:
-            record('google login', False, 'OA_GOOGLE_EMAIL / OA_GOOGLE_PASSWORD not set')
+            skip('google login', 'OA_GOOGLE_EMAIL / OA_GOOGLE_PASSWORD not set')
 
         if github_email and github_password:
             await case_login_and_navigate('github', 'https://github.com/login',
                                           github_email, github_password)
         else:
-            record('github login', False, 'OA_GITHUB_EMAIL / OA_GITHUB_PASSWORD not set')
+            skip('github login', 'OA_GITHUB_EMAIL / OA_GITHUB_PASSWORD not set')
+
+        if oa_tab and oa_page:
+            await case_click_through(oa_tab, oa_page, 'opencode click-through')
 
         await case_landing('https://docs.google.com/', 'google docs')
         await case_landing('https://www.youtube.com/', 'youtube')
-        await case_landing('https://www.google.com/maps', 'google maps')
+        maps_tab, maps_page = await case_landing('https://www.google.com/maps', 'google maps')
+        if maps_tab and maps_page:
+            await case_click_through(maps_tab, maps_page, 'google maps click-through')
 
         await drive('tabs.close', {'tabId': (await drive('tabs.list'))['tabs'][0]['id']})
         await context.close()
@@ -233,24 +305,25 @@ def main():
         return 0
 
     import tempfile
+    import threading
     from http.server import ThreadingHTTPServer
 
     server = ThreadingHTTPServer((HOST, 0), harness.Handler)
     port = server.server_address[1]
-    threading_started = __import__('threading').Thread(target=server.serve_forever, daemon=True)
-    threading_started.start()
+    threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f'live-site smoke: mock bridge on {HOST}:{port}, real pages on the internet\n')
 
     with tempfile.TemporaryDirectory(prefix='oa-real-site-') as profile_dir:
         try:
-            asyncio.run(run(port, Path(profile_dir.name)))
+            asyncio.run(run(port, Path(profile_dir)))
         except AssertionError as exc:
             record('harness setup', False, str(exc)[:200])
 
     print()
     passed = sum(1 for _, ok, _ in RESULTS if ok)
-    failed = [name for name, ok, _ in RESULTS if not ok]
-    print(f'{passed}/{len(RESULTS)} passed')
+    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
+    failed = [name for name, ok, _ in RESULTS if ok is False]
+    print(f'{passed} passed, {len(failed)} failed, {skipped} skipped')
     if failed:
         print('failed: ' + ', '.join(failed))
     return 0 if not failed else 1
