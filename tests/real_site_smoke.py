@@ -33,6 +33,7 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -511,11 +512,16 @@ async def case_primitive_sweep():
         }))['tab']
         tid = tab['id']
 
+        timings = []
+
         async def step(label, method, params=None, check=None):
+            started = time.perf_counter()
             try:
                 result = await drive(method, params)
+                elapsed = (time.perf_counter() - started) * 1000
+                timings.append((label, elapsed))
                 detail = check(result) if check else ''
-                record(f'sweep {label}', detail is not False, detail)
+                record(f'sweep {label}', detail is not False, f'{elapsed:.0f}ms {detail}'.strip())
                 return result
             except Exception as exc:
                 body = getattr(exc, 'body', None)
@@ -641,6 +647,18 @@ async def case_primitive_sweep():
                    all('ok' in s for s in burst.get('results', [])),
                    f'{len(burst.get("results", []))} step(s)')
 
+            # The mission counts round trips, so measure the thing itself: the same
+            # three actions as one burst against the same three as separate calls.
+            separate_started = time.perf_counter()
+            await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 300})
+            await drive('page.find', {'tabId': tid, 'text': 'Home', 'limit': 3})
+            await drive('page.scroll', {'tabId': tid, 'y': 200})
+            separate_ms = (time.perf_counter() - separate_started) * 1000
+            burst_ms = next(ms for label, ms in timings if label == 'browser.burst')
+            record('sweep one burst beats three round trips', burst_ms < separate_ms,
+                   f'burst {burst_ms:.0f}ms in 1 call vs separate {separate_ms:.0f}ms '
+                   f'in 3 calls, {separate_ms / max(burst_ms, 1):.1f}x')
+
         await step('tabs.navigate', 'tabs.navigate',
                    {'tabId': tid, 'url': 'https://www.youtube.com/feed/trending'},
                    lambda r: f'-> {r["tab"]["url"][:56]}')
@@ -651,6 +669,15 @@ async def case_primitive_sweep():
 
         await step('tabs.close', 'tabs.close', {'tabId': tid},
                    lambda r: 'closed the sweep tab')
+
+        # Round-trip cost on a real site, which no fixture can tell you. Sorted
+        # slowest first, because that is the list worth acting on.
+        ranked = sorted(timings, key=lambda row: -row[1])
+        slow = ranked[:5]
+        record('sweep slowest round trips', True,
+               ' | '.join(f'{label} {ms:.0f}ms' for label, ms in slow)
+               + f' | median {sorted(m for _, m in timings)[len(timings) // 2]:.0f}ms'
+               f' over {len(timings)} calls')
     except Exception as exc:
         record('sweep', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 

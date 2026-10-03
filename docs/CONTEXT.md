@@ -54,6 +54,20 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 - A file must not claim more than it delivers.
 - If a test cannot see a case, say so in the test file.
 
+## Measurements taken on a real site
+
+- `tests/real_site_smoke.py` drives the extension through a **local mock bridge**, so
+  it measures the extension's own cost and not a network round trip. A speed claim
+  about the production path cannot come from it.
+- Measured on YouTube, 22 primitives, median 84ms per call. One burst of read, find
+  and scroll took 226ms in a single call against 257ms for the same three as separate
+  calls, about 1.1x. Batching looked far cheaper because the mock bridge is loopback
+  and the work dominates; against a real network the round trip is the cost and the
+  ratio inverts. Do not quote either number as the production figure.
+- The slowest non-navigation primitive is `page.scroll` at about 186ms, because it
+  waits for lazy DOM changes to settle. That is the first place to look for a real
+  latency win, not the round trip count.
+
 ## Deployment and platform
 
 | Trap | Consequence |
