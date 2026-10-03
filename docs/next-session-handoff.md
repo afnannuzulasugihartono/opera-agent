@@ -8,6 +8,8 @@
 
 - `main` = `origin/main` = **`fc181ac`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
+  Context commits on top (docs-only): `a3f2450` (relokasi ai-doc),
+  `62e2870` (relokasi detail + cap locks).
 - **Anti-bloat package** (owner: preseden + cap): rantai preseden tunggal
   (`ai-codebase-context.md` 251 baris direlokasi ke arsip; `tools/` kosong,
   tooling mati), test kunci cap 150/120, handoff + context dipangkas via
