@@ -1,0 +1,160 @@
+name: CI
+
+# Port of .circleci/config.yml (2026-10-03): CircleCI free-plan credits are
+# exhausted, so every workflow there fails blocked without starting. Same
+# eight gates, same commands, same pins -- only the runner changes.
+# Runs on the self-hosted Windows runner (D:\actions-runner); Git Bash
+# provides the bash steps below. The browser gate runs headless because
+# Windows has no xvfb; OA_BROWSER_EXECUTABLE points at the installed Brave.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unit:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify runtime versions
+        run: |
+          node --version
+          python --version
+          node -e "if (Number(process.versions.node.split('.')[0]) !== 22) process.exit(1)"
+          python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 1)"
+      - name: Unit and static tests
+        run: |
+          npm test
+          npm run check
+
+  secret-scan:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secret scan (gitleaks)
+        run: |
+          GITLEAKS_VERSION="8.24.0"
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_windows_x64.tar.gz" -o /tmp/gitleaks.tar.gz || {
+            GITLEAKS_VERSION="$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/^v//')"
+            echo "pinned gitleaks missing; falling back to latest v8: ${GITLEAKS_VERSION}"
+            curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_windows_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          }
+          mkdir -p /tmp/gitleaks-bin
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin gitleaks.exe
+          /tmp/gitleaks-bin/gitleaks.exe detect --source . --verbose
+
+  audit:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Dependency audit
+        run: |
+          # Zero-dependency today: npm audit requires a lockfile (ENOLOCK
+          # without one), so generate it ephemerally. The threshold is
+          # unchanged: any high-or-worse advisory still fails the gate.
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm audit --audit-level=high
+
+  deno-install:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Deno
+        run: |
+          DENO_VERSION="v2.9.6"
+          curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-pc-windows-msvc.zip" -o /tmp/deno.zip
+          mkdir -p "$HOME/.deno/bin"
+          python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version
+
+  deno-lint:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Deno
+        run: |
+          DENO_VERSION="v2.9.6"
+          curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-pc-windows-msvc.zip" -o /tmp/deno.zip
+          mkdir -p "$HOME/.deno/bin"
+          python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version
+      - name: Lint edge functions
+        run: |
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno lint supabase/functions/
+
+  deno-check:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Deno
+        run: |
+          DENO_VERSION="v2.9.6"
+          curl -fsSL "https://dl.deno.land/release/${DENO_VERSION}/deno-x86_64-pc-windows-msvc.zip" -o /tmp/deno.zip
+          mkdir -p "$HOME/.deno/bin"
+          python -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version
+      - name: Typecheck edge functions
+        run: |
+          # Root deno.lock is machine-local (gitignored); the tracked
+          # per-function lockfile is the reproducible surface, hence --no-lock.
+          # Deno discovers deno.json/import maps from the working directory,
+          # so each function must be checked from its own directory: a
+          # root-CWD loop ignores the per-function import maps and fails
+          # every bare-specifier import with a bogus "not prefixed" error.
+          export PATH="$HOME/.deno/bin:$PATH"
+          for d in supabase/functions/opera-agent-*/; do (cd "$d" && deno check --no-lock index.ts); done
+
+  sbom:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: SBOM artifact (CycloneDX, informational)
+        run: |
+          npx --yes @cyclonedx/cdxgen@11 --output-file bom.json --fail-on-error .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: bom.json
+
+  browser:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Playwright (package only; browser is installed Brave)
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+      - name: Brave extension regression (headless; no xvfb on Windows)
+        env:
+          OA_BROWSER_HEADLESS: '1'
+          OA_BROWSER_EXECUTABLE: 'C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe'
+        run: python tests/browser_extension_test.py
