@@ -45,6 +45,22 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 7. The largest unknown: how many model round trips a real task costs. Every latency
    figure here models the server and extension path, not the model loop.
 
+## Blocked, needs the owner at the machine
+
+- **A Python 3.12 installer has been hung since 06:08**, PID 248 and its child 11752,
+  `InstallAllUsers=1` targeting `D:\actions-runner\_work\_tool\Python\3.12.10\x64`.
+  It has used 0.3s of CPU in 25 minutes, so it is waiting on a UI prompt nobody
+  answered. Started by the self-hosted Actions runner, and `ci.yml` pins
+  `python-version: '3.12'`, so a stuck run there blocks CI.
+  It was left running on purpose: it belongs to the runner, and killing another
+  owner's installer mid-write is not a call to make unattended. To clear it:
+  `Stop-Process -Id 248,11752 -Force`, then let CI retry.
+- The stale `HKCU\Software\Python\PythonCore\3.12` registration, which pointed at the
+  runner's tool cache, has been removed and backed up to `%TEMP%\opencode\pythoncore-backup.reg`.
+  The runner re-registers it on its next install; that is expected, not a fault.
+- Python 3.13.15 is installed, is first on the user PATH, and has playwright.
+  `py` resolves to it. Use `py`, not `python`, which hits the Microsoft Store shim.
+
 ## Do not touch
 
 - `stash@{0}` — "preserve accidental 8E files before completing checkpoint 8D". Do not
