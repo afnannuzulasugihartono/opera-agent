@@ -6,16 +6,14 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`5e8d2a2`** pre-edit, tree clean,
+- `main` = `origin/main` = **`f5e2ef0`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **`## Claims and evidence`** (audit anti-halusinasi): audit menemukan aturan
-  anti-halusi tersebar, dan "a claim in a test comment is not evidence" ikut
-  ter-archive saat handoff dipangkas — tidak ada aturan pengutipan di AGENTS.md.
-  4 baris baru: klaim state WAJIB `path:line` atau output command; komentar/
-  commit/doc lama = lead (verifikasi dulu); unverified itu jawaban sah; "not
-  found" dilaporkan sebagai not found. `tests/claims-evidence.test.mjs`
-  red-first 0/5. AGENTS.md 90→97 baris (cap 64 makin jauh; section ini
-  konsekuensinya). **799/799 green, check ok (26 primitives, 91 files, 1.6.15).**
+- **Mission-first** (owner: AI fokus runtime, bukan kamus): `## Mission` di
+  atas — runtime code adalah produk, docs/tests support bukan task, sesi tanpa
+  perubahan runtime wajib justifikasi. Codeblock commands dilipat jadi bullet
+  (net −1). `tests/mission-first.test.mjs` red-first 0/3. Latar: 16 commit
+  terakhir docs/test/governance, runtime tak tersentuh.
+  **803/803 green, check ok. AGENTS.md 96 baris.**
 - Stale tak-tersentuh: root README CI/acceptance CircleCI, supabase/README voice "Planned".
 - Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
   tinggalkan jejak; gating milestone hanya di handoff + commit.

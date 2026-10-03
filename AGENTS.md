@@ -3,14 +3,13 @@
 MV3 browser extension + Supabase backend. Read before changing anything.
 Precedence: user > this file > `SECURITY.md` (secrets, auth, transport), then handoff > project-context > checkpoint records > archive (historical, always loses).
 
+## Mission
+
+**The runtime code is the product**: `extension/`, `lib/`, `supabase/functions/`. Docs and tests support them — never the task. A session that ships no runtime change must say so and justify it.
+
 ## Commands
 
-```bash
-npm test                                # fast suite: tests/*.test.mjs, non-recursive
-npm run check                           # runtime discovery + version pins
-py tests/browser_extension_test.py      # browser harness on Windows (py, not python)
-```
-
+- `npm test` — fast suite (`tests/*.test.mjs`, non-recursive); `npm run check` — runtime discovery + version pins; `py tests/browser_extension_test.py` — browser harness (Windows: `py`, not `python`).
 - Deno gates run only on CI; order: focused, full suite, required gates. Green local is not acceptance.
 
 ## Repository structure
