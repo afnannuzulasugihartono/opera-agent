@@ -538,7 +538,11 @@ test('MCP defaults to background tabs and requires explicit automation targets',
   assert.doesNotMatch(source, /"auto"/);
   assert.match(source, /executionMode: executionMode \?\? "background"/);
   assert.match(source, /value, trusted: true, executionMode/);
-  assert.match(source, /Background mode is invisible and does not activate the tab/);
+  // The four coordinate tools always pass showCursor: true, and background.js honours
+  // it in either mode, so describing background as invisible was false and would have
+  // told the model it could not watch a run it is not present for.
+  assert.match(source, /A visible cursor marker is drawn in both modes/);
+  assert.doesNotMatch(source, /Background mode is invisible/);
 });
 
 test('MCP preserves structured command failures for foreground permission handling', () => {

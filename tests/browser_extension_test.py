@@ -2431,6 +2431,19 @@ async def run(port, profile):
         # default stays off and only an explicit request turns it on.
         assert background_input_burst['results'][2]['result']['visiblePointer'] is True
         assert background_input_burst['results'][2]['result']['focusEmulated'] is True
+        # The marker must survive the run going idle, dimmed rather than removed, so
+        # an owner coming back to the tab can still see where the work stopped.
+        # Queried in the page, because that is where the marker lives.
+        cursor_sel = '#__opera_agent_pointer_cursor'
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': cursor_sel
+        })
+        assert assert_completed_ok(body).get('item'), 'the cursor marker was not drawn'
+        await asyncio.sleep(3.0)
+        body = await audited_background_command(worker, focus_audit, 'page.query', {
+            'tabId': tab_id, 'selector': cursor_sel
+        })
+        assert assert_completed_ok(body).get('item'), 'the cursor marker vanished while idle'
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#canvas-status'
         })

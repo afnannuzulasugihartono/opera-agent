@@ -683,21 +683,21 @@ function createServer() {
 
   server.registerTool("move_pointer", {
     title: "Move pointer",
-    description: "Move CDP pointer coordinates on an explicit target. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user.",
+    description: "Move CDP pointer coordinates on an explicit target. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user.",
     inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "move", x, y, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("click_at", {
     title: "Click at coordinates",
-    description: "Click CDP viewport coordinates. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user. Prefer click_element and verify page state.",
+    description: "Click CDP viewport coordinates. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user. Prefer click_element and verify page state.",
     inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "click", x, y, showCursor: true, executionMode: executionMode ?? "background" }));
 
   server.registerTool("drag_pointer", {
     title: "Drag at coordinates",
-    description: "Drag between CDP viewport coordinates. Background mode is invisible and does not activate the tab. Foreground mode shows the pointer and requires an already active/focused target explicitly permitted by the user.",
+    description: "Drag between CDP viewport coordinates. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().nonnegative(), y: z.number().nonnegative(),
@@ -709,7 +709,7 @@ function createServer() {
 
   server.registerTool("wheel_at", {
     title: "Wheel at coordinates",
-    description: "Wheel at viewport coordinates and report the actual scroll container, before/after metrics, movement, lazy DOM changes, settling, and reachedBoundary. Background mode is invisible and does not activate the tab; it uses a deterministic DOM fallback only when the debugger event cannot move an available scroll container. Foreground mode requires an already active/focused target explicitly permitted by the user.",
+    description: "Wheel at viewport coordinates and report the actual scroll container, before/after metrics, movement, lazy DOM changes, settling, and reachedBoundary. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab and uses a deterministic DOM fallback only when the debugger event cannot move an available scroll container. Foreground mode requires an already active/focused target explicitly permitted by the user.",
     inputSchema: {
       tabId: tabIdSchema,
       x: z.number().nonnegative(), y: z.number().nonnegative(),
