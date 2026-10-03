@@ -442,11 +442,25 @@ async def case_youtube_search_and_open():
                                            'value': 'kucing chipset', 'trusted': True})
         keyed = await drive('page.key', {'tabId': tab['id'], 'key': 'Enter', 'trusted': True})
         # valueLength is the only proof the text actually went in. Assert it rather
-        # than the ok flag: a caller that misspells the parameter gets ok:true and a
-        # zero-length fill, which is how this case silently did nothing for two runs.
+        # than the ok flag: a caller that misspells the parameter used to get ok:true
+        # and a zero-length fill, which is how this case silently did nothing.
         record('youtube typed a query', filled.get('valueLength') == len('kucing chipset'),
                f'focus={focused.get("ok")} fillLen={filled.get("valueLength")} '
                f'fillMethod={filled.get("method")} keyOk={keyed.get("ok")}')
+
+        # A misspelled parameter is now refused instead of clearing the field, which
+        # is what it used to do silently.
+        try:
+            await drive('page.fill', {'tabId': tab['id'], 'ref': box['ref'],
+                                      'text': 'typo', 'trusted': True})
+            record('page.fill rejects a missing value', False,
+                   'a fill with no value was accepted')
+        except Exception as exc:
+            body = getattr(exc, 'body', None)
+            err = body.get('error') if isinstance(body, dict) else None
+            record('page.fill rejects a missing value',
+                   isinstance(err, dict) and 'value' in str(err.get('message', '')),
+                   f'{(err or {}).get("code")} {(err or {}).get("message")}')
         await asyncio.sleep(3.5)
 
         results = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1500}))['page']

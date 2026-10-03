@@ -63,6 +63,15 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, crop: { x: 0, y: 0, width: 320, height: 240 }, previousHash: 'a'.repeat(64) } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { quality: 90 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { crop: { x: 0, y: 0, width: -1, height: 2 } } }).ok, false);
+  // A fill with no value used to be dispatched as an empty string, which pressed
+  // Backspace in the field and still answered ok:true. Found by misspelling the
+  // parameter in the live suite. An explicit "" stays legal: clearing is an intent.
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', text: 'typo' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: null } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: '' } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: 'kucing' } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: 'x'.repeat(20001) } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { previousHash: 'not-a-hash' } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { fullPage: true } }).ok, false);
 });
