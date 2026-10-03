@@ -39,8 +39,17 @@ Local green is not acceptance — see the acceptance rule in `AGENTS.md`.
 
 ## Where to start
 
-- Working on this repo: `AGENTS.md`, then `docs/next-session-handoff.md`
-- Operations and manual steps: `docs/runbook.md`
-- API surface: `docs/api.md`
-- Session-to-session detail: `docs/next-session-handoff.md`, `docs/project-context.md`
-- Spent history: `docs/context-archive.md`
+Start at `AGENTS.md`. Its Triggers table says what to do; this table says which file answers which question.
+
+| Question | File |
+|---|---|
+| What am I allowed to do, and in what order | [`AGENTS.md`](AGENTS.md) |
+| What shipped last session | [`docs/HANDOFF.md`](docs/HANDOFF.md) |
+| What is still open, and what is still undecided | [`ROADMAP.md`](ROADMAP.md) |
+| Commands, pairing, manual steps | [`docs/runbook.md`](docs/runbook.md) |
+| Command and response contract | [`docs/api.md`](docs/api.md) |
+| Latency baselines and locked ceilings | [`docs/benchmarks.md`](docs/benchmarks.md) |
+| Traps that caused a false claim | [`docs/CONTEXT.md`](docs/CONTEXT.md) |
+| What changed in each release | [`CHANGELOG.md`](CHANGELOG.md) |
+
+Spent detail is recoverable from git history. There is no archive file.

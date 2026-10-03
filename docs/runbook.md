@@ -1,5 +1,7 @@
 # Operator runbook
 
+Related: [AGENTS.md](../AGENTS.md) - [api.md](api.md) - [SECURITY.md](../SECURITY.md)
+
 For whoever holds the pager. Assumes no chat history.
 
 - Every claim here was checked against the repository when written.

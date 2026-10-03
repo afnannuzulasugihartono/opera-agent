@@ -1,9 +1,11 @@
 # Changelog
 
+Related: [AGENTS.md](AGENTS.md) rules - [HANDOFF.md](docs/HANDOFF.md) - [api.md](docs/api.md)
+
 Notable changes. Semantic versioning.
 
 - Per-checkpoint release history is in git history for versions below this line.
-- `docs/api.md` is the contract reference; `docs/next-session-handoff.md` holds
+- `docs/api.md` is the contract reference; `docs/HANDOFF.md` holds
   what shipped and when.
 
 ## [1.6.15] - 2026-10-03

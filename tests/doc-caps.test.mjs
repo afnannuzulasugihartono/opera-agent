@@ -14,7 +14,7 @@ function lines(url) {
 }
 
 test('handoff stays at or under its cap', () => {
-  const n = lines(new URL('../docs/next-session-handoff.md', import.meta.url));
+  const n = lines(new URL('../docs/HANDOFF.md', import.meta.url));
   assert.ok(
     n <= 151,
     `handoff is ${n} lines, cap is 150 - spent detail belongs in git history, not in docs/`
@@ -22,7 +22,7 @@ test('handoff stays at or under its cap', () => {
 });
 
 test('project-context stays at or under its cap', () => {
-  const n = lines(new URL('../docs/project-context.md', import.meta.url));
+  const n = lines(new URL('../docs/CONTEXT.md', import.meta.url));
   assert.ok(
     n <= 121,
     `project-context is ${n} lines, cap is 120 - spent detail belongs in git history, not in docs/`

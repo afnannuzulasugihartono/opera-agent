@@ -1,5 +1,7 @@
 # Tests
 
+Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](../docs/runbook.md)
+
 `npm test` runs `tests/*.test.mjs` (non-recursive, 772 tests). Node's built-in
 runner, no framework.
 

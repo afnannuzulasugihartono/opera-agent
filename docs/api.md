@@ -1,5 +1,7 @@
 # Gateway API
 
+Related: [AGENTS.md](../AGENTS.md) - [runbook.md](runbook.md)
+
 The machine source of truth for this gateway is the live
 `GET /openapi.json` served by the gateway itself. This file is the narrative
 reference for operators and integrators. It is drift-pinned by

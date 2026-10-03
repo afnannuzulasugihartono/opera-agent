@@ -1,7 +1,9 @@
-# Opera Agent durable context
+# CONTEXT
+
+Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session - [runbook.md](runbook.md)
 
 > Facts that must survive because they cannot be recovered by reading the code.
-> Session logs: `docs/context-archive.md`. Next action: `docs/next-session-handoff.md`.
+> Next action: [HANDOFF.md](HANDOFF.md). Session logs: git history.
 
 ## Toolchain
 
@@ -47,7 +49,10 @@
 
 ## What makes a claim acceptable here
 
-Three review rounds produced claims stronger than the code, so: a lock is not accepted until it has been made to fail on a realistic violation; a harness must test both directions, since rejection-only testing hid inverted logic; a file must not claim more than it delivers — if a test cannot see a case, say so in the test file.
+- A lock is not accepted until it fails on a realistic violation.
+- A harness must test both directions; rejection-only testing hid inverted logic.
+- A file must not claim more than it delivers.
+- If a test cannot see a case, say so in the test file.
 
 ## Deployment and platform
 

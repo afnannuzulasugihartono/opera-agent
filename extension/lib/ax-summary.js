@@ -86,7 +86,7 @@ export function buildAxSummary(nodes, options = {}) {
 
   return {
     source: 'cdp-ax',
-    note: 'Read-only accessibility snapshot for a semantically poor surface. Entries are not element refs and cannot be clicked directly.',
+    note: 'Read-only accessibility snapshot for a semantically poor surface. Entries are not element refs and cannot be clicked directly. This page has almost no named controls, so use page.capture and act with page.pointer coordinates instead of looking for refs.',
     items
   };
 }

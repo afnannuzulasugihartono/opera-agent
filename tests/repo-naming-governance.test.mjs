@@ -91,7 +91,7 @@ test('tracked filenames never carry process-lifecycle tokens', () => {
 test('markdown documents use lowercase kebab-case names', () => {
   // Enterprise Phase 1 (2026-09-30): SUPPORT.md follows the same
   // conventional-uppercase-doc exemption as README/SECURITY.
-  const conventional = /^(README|AGENTS|SECURITY|CONTRIBUTING|CHANGELOG|ROADMAP|CODE_OF_CONDUCT|LICENSE|SUPPORT)\.md$|^SKILL\.md$/;
+  const conventional = /^(README|AGENTS|SECURITY|CONTRIBUTING|CHANGELOG|ROADMAP|CODE_OF_CONDUCT|LICENSE|SUPPORT|HANDOFF|CONTEXT)\.md$|^SKILL\.md$/;
   const exemptPrefixes = ['.specify/', '.agents/', 'tools/repowise/'];
   const offenders = trackedFiles().filter((file) => {
     if (!file.endsWith('.md')) return false;

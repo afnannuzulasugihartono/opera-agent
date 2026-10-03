@@ -1,5 +1,7 @@
 # Contributing
 
+Related: [AGENTS.md](AGENTS.md) rules - [tests/README.md](tests/README.md)
+
 ## Development workflow
 
 Use short-lived branches for changes, following the binding naming rules in

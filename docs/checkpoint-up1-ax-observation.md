@@ -1,5 +1,7 @@
 # Checkpoint U-P1 — AX-Tree Observation (2026-09-24)
 
+Related: [AGENTS.md](../AGENTS.md) - [delta-first-performance-plan.md](delta-first-performance-plan.md)
+
 Implements the flagship P-class method from the 2026-09-20 research matrix
 (`docs/research/perception-identity-verification-2026-09-20.md`, method P1),
 under the user's 2026-09-24 "faster and easier for AI (ChatGPT web)" request.

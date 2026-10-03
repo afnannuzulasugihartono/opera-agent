@@ -1,5 +1,7 @@
 # Performance Track P — Delta-First Runtime
 
+Related: [AGENTS.md](../AGENTS.md) - [benchmarks.md](benchmarks.md)
+
 Status: **P0–P6 ACCEPTED / CLOSED.**
 
 Date frozen: 2026-09-17

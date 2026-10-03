@@ -1,4 +1,8 @@
 # Extension
+   boundary is enforced in code, not in the manifest.
+
+Related: [AGENTS.md](../AGENTS.md) rules - [extension/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
+# Extension
 
 Browser-local Opera Agent code lives here.
 
@@ -212,9 +216,9 @@ project. `SECURITY.md` records the same principle.
   (`extension/options.html`, reachable from `opera://extensions` → this
   extension → Options). It sets the bridge URL override and the log level, and
   it never displays the device token, a pairing code, or any other secret.
-- [Operator runbook](../docs/runbook.md) — incidents, retention, proposed SLOs.
-- [Install, pairing, and smoke test](../docs/install.md).
+- [Operator runbook](../docs/runbook.md) — pairing, incidents, retention.
 - [Gateway API reference](../docs/api.md).
+- [Agent rules and triggers](../AGENTS.md).
 
 ### Summary of reviewer-facing notes
 

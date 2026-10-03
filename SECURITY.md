@@ -1,5 +1,7 @@
 # Security
 
+Related: [AGENTS.md](AGENTS.md) rules - [runbook.md](docs/runbook.md) - [api.md](docs/api.md)
+
 Opera Agent can interact with a local browser and therefore uses a strict allowlisted command model.
 
 ## Security principles

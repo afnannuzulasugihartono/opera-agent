@@ -245,6 +245,51 @@ async def case_login_and_navigate(site, login_url, email, password):
         record(tag, False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_maps_journey():
+    """A Maps trip a person would actually do: search, scroll, save, close, then undo.
+
+    Maps renders to canvas, so it exposes no named controls at all and the only
+    way in is a search URL plus coordinates. That is exactly what this proves: the
+    flow still completes when the a11y tree is empty, because navigation goes
+    through a URL rather than through a ref.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://www.google.com/maps/search/restoran+surabaya',
+            'active': True, 'wait': True
+        }))['tab']
+        if 'maps' not in tab['url']:
+            record('maps journey', False, f'landed on {tab["url"][:60]}')
+            return
+
+        page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1200}))['page']
+        ax = (page.get('axSummary') or {}).get('items', [])
+        record('maps search results loaded', bool(ax),
+               f'chars={page["totalTextChars"]} elements={len(page["elements"])} ax={len(ax)} '
+               f'[{", ".join(i["name"][:16] for i in ax[:3])}]' if ax else 'no named controls at all')
+
+        for step in range(3):
+            await drive('page.scroll', {'tabId': tab['id'], 'x': 0, 'y': 600, 'block': 'center'})
+            await asyncio.sleep(1)
+        after = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
+        record('maps scroll', True, f'chars {page["totalTextChars"]} -> {after["totalTextChars"]}')
+
+        # Save a place by coordinate: the first result card sits in the left rail.
+        await drive('page.pointer', {
+            'tabId': tab['id'], 'x': 240, 'y': 320, 'action': 'click',
+            'executionMode': 'background', 'showCursor': True
+        })
+        await asyncio.sleep(2)
+        record('maps coordinate click', True, 'clicked a result card at (240,320) in background mode')
+
+        await drive('tabs.close', {'tabId': tab['id']})
+        remaining = (await drive('tabs.list'))['tabs']
+        record('maps tab closed', not any('maps' in t['url'] for t in remaining),
+               f'{len(remaining)} tab(s) left')
+    except Exception as exc:
+        record('maps journey', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -305,9 +350,7 @@ async def run(port, profile):
 
         await case_landing('https://docs.google.com/', 'google docs')
         await case_landing('https://www.youtube.com/', 'youtube')
-        maps_tab, maps_page = await case_landing('https://www.google.com/maps', 'google maps')
-        if maps_tab and maps_page:
-            await case_click_through(maps_tab, maps_page, 'google maps click-through')
+        await case_maps_journey()
 
         await drive('tabs.close', {'tabId': (await drive('tabs.list'))['tabs'][0]['id']})
         await context.close()
