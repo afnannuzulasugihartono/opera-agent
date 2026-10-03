@@ -6,11 +6,13 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`cd679e0`** pre-edit, tree clean,
+- `main` = `origin/main` = **`f186f3e`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **AGENTS.md 122→83 baris** (owner: cap 64): rewrite penuh, 0 lock rusak,
-  0 test diubah (46/46 lock + 786/786 hijau). Lantai terbukti: 19 baris sisa
-  = konten terkunci + struktur render. No runtime file touched.
+- **Task scope** (owner: fokus satu area, window terbatas): repo 3,76 MB
+  (~0,94M token ≈ 1 window penuh; docs+tests 2/3-nya). Aturan: declare scope,
+  diff di dalam scope; slice bukan whole; spec≠code task. 83→89 baris
+  (cap 64 aspirasional, jebol 25 — mekanisme ini alasannya).
+  789/789 hijau, check ok. No runtime file touched.
 - Stale tak-tersentuh: root README CI/acceptance CircleCI, supabase/README voice "Planned".
 - Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
   tinggalkan jejak; gating milestone hanya di handoff + commit.

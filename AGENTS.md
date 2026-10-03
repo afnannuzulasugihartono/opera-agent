@@ -45,6 +45,12 @@ Skill: `karpathy-guidelines` (`.agents/skills/karpathy-guidelines/SKILL.md`) —
 
 - Area `AGENTS.md`, new or edited: ≤15 lines, pointers only, opens with the root-binds line, must not contradict the root; register new ones in the Bootstrap table and refresh stale paths the same commit.
 
+## Task scope
+
+- One task, one area: declare scope (area + files) before editing; the diff stays inside it.
+- Read slices, never wholes: grep first, offset/limit always; files over 500 lines are never read fully.
+- Spec work touches spec and docs only; code changes get their own task.
+
 ## Coding standards
 
 - Failing test first, then the smallest generic mechanism; locks fail on realistic violations, both directions.
