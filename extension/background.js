@@ -1219,6 +1219,23 @@ async function dispatch(method, params = {}, context = {}) {
           }
         }
       }
+      // Report the user's current state with the observation. Without it the model
+      // cannot tell whether the person is watching this tab or working elsewhere,
+      // and so cannot choose foreground or background sensibly. It is the same
+      // sample the focus gate already takes, and it fails open: a missing
+      // userState is a gap in the report, not a failure of the read.
+      if (result?.page) {
+        try {
+          const { tabActive, windowFocused } = await sampleTabFocus(tabId);
+          result.page.userState = {
+            tabActive,
+            windowFocused,
+            watching: tabActive === true && windowFocused === true
+          };
+        } catch (error) {
+          log.warn('USER_STATE_PROBE_FAILED', error?.message || String(error));
+        }
+      }
       return { ...result, tabId };
     }
     case 'page.query':

@@ -1900,6 +1900,23 @@ async def run(port, profile):
         r5_focus_baseline = await browser_focus_state(worker)
         assert r5_focus_baseline['activeTabId'] != r5_tab_id, r5_focus_baseline
 
+        # userState: the observation has to say whether the person is looking at
+        # this tab, because that is what decides foreground versus background.
+        # Asserted in both directions against the browser's own focus state, using
+        # the tab this run already made active and the one it made inactive, so the
+        # check cannot pass by always reporting one value.
+        cid = STATE.push('page.read', {'tabId': r5_tab_id, 'offset': 0, 'limit': 120})
+        r5_away = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert 'userState' in r5_away, sorted(r5_away)
+        assert r5_away['userState']['tabActive'] is False, r5_away['userState']
+        assert r5_away['userState']['watching'] is False, r5_away['userState']
+
+        cid = STATE.push('page.read', {'tabId': r5_focus_baseline['activeTabId'], 'offset': 0, 'limit': 120})
+        r5_here = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        expected = r5_here['userState']['tabActive'] and r5_here['userState']['windowFocused']
+        assert r5_here['userState']['tabActive'] is True, r5_here['userState']
+        assert r5_here['userState']['watching'] is expected, r5_here['userState']
+
         r5_media = None
         r5_ready_deadline = time.time() + 5.0
         while time.time() < r5_ready_deadline:
