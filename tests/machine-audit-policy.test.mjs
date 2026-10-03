@@ -70,34 +70,15 @@ test('the four-way distinction survives the change', () => {
   }
 });
 
-test('the verdict vocabulary and the promotion gate survive', () => {
-  for (const verdict of ['`PASS`', '`CONDITIONAL PASS`', '`FAIL`']) {
-    assert.ok(policy.includes(verdict), `verdict vocabulary must include ${verdict}`);
-  }
-  assert.match(policy, /only `PASS` permits the next\s+milestone/);
-});
-
-test('a waiver must be recorded as an accepted risk, not look like a pass', () => {
-  // This one is not hypothetical. On 2026-10-03 the owner waived an audit, and
-  // nothing in the repository at that moment forced the waiver to leave a trace.
-  // A reader of the next handoff could not have told a skipped audit from a
-  // completed one. That is the specific failure this assertion exists to stop.
-  assert.match(policy, /Where the\s+user waives the audit instead, record the waiver/);
-  assert.match(policy, /the residual risk, and who\s+accepted it/);
-  assert.match(policy, /a missing audit and an accepted risk must\s+never be readable as the same thing/);
-});
-
-test('the policy states what a machine auditor cannot do', () => {
-  // Without this the rule reads as a clean swap, and the residual loss is
-  // invisible to every future session.
-  assert.match(policy, /shares its author'?s? blind spots/);
-  assert.match(policy, /category of threat nobody thought to\s+check for/);
-  assert.match(policy, /instead of letting a `PASS` stand in for human\s+judgement that never happened/);
-});
-
-test('rerunning the author\'s own checks is explicitly not an audit', () => {
-  assert.match(policy, /only reruns what the author already ran has not audited\s+anything/);
-  assert.match(policy, /if that is all it managed, it must say so in the\s+verdict/);
+test('the audit signature survives the slimming', () => {
+  // 2026-10-03, owner-ordered slimming: the verdict vocabulary, the milestone
+  // promotion gate, the waiver trio, the auditor-limitation paragraph, and
+  // the rerun rule were deleted from the policy. Only the audit interface
+  // remains pinned. Residual, recorded here because the deleted waiver rule
+  // no longer forces it anywhere: a skipped audit now leaves no required
+  // trace, and nothing in AGENTS.md says what a verdict permits — milestone
+  // gating rests on handoff and commit records alone.
+  assert.match(policy, /audit\(head, range, question\)/);
 });
 
 test('the addition did not restructure the section around it', () => {

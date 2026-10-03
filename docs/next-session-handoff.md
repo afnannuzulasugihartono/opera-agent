@@ -6,12 +6,13 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`7ede9cc`** pre-edit, tree clean,
+- `main` = `origin/main` = **`352fb81`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **Clarify pass** (owner: skills ambigu, urutan kurang jelas): hapus kalimat
-  catches + contoh trigger (eksplisit, tak terkunci test); skills sebut call
-  exact + kapan; bootstrap operasional (only files named, never grep).
-  35/35 + 807/807 hijau. No runtime file touched.
+- **Audit slim, owner accepts residual** (pilih B: hapus 3+4): verdict, gate
+  PASS, trio waiver, blind spots, rerun rule keluar dari policy. Lock test
+  yang dilanggar diperbarui dengan alasan + residual di komen test.
+  Tanpa waiver rule, audit yang dilewati tak wajib tinggalkan jejak —
+  gating milestone kini hanya di handoff + commit. No runtime file touched.
 - **Local gates only:** `npm test` **800/800**, `npm run check` ok (26
   primitives, 94 safety files, **1.6.14**). **CI on `9afa7c1` was not read** — the
   repo is private and no check-run tool is wired here, so acceptance is not

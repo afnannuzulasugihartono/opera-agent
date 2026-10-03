@@ -78,9 +78,7 @@ Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<
 
 `audit(head, range, question) -> PASS | CONDITIONAL PASS | FAIL`. One writer per milestone branch. Audit is by machine: a separate agent session, or Codex. A machine audit is the required default. The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority. Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope. Request before production mutation, dark-probe promotion, repeat failure, or contract deviation.
 
-At a milestone boundary the auditor reviews the full diff and reruns proportionate tests first. The audit must distinguish code present, automated tests passing, live acceptance passing, and production promotion. Its verdict is `PASS`, `CONDITIONAL PASS`, or `FAIL`; only `PASS` permits the next milestone unless the user explicitly accepts documented residual risk. Where the user waives the audit instead, record the waiver, the residual risk, and who accepted it — a missing audit and an accepted risk must never be readable as the same thing.
-
-It does not bring a category of threat nobody thought to check for, and it shares its author's blind spots. State the residual risk instead of letting a `PASS` stand in for human judgement that never happened. An auditor that only reruns what the author already ran has not audited anything; if that is all it managed, it must say so in the verdict. Prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
+At a milestone boundary the auditor reviews the full diff and reruns proportionate tests first. The audit must distinguish code present, automated tests passing, live acceptance passing, and production promotion. Prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
 
 ## Evidence-first bug repair loop
 
