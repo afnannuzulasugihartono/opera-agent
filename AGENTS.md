@@ -33,11 +33,11 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 |---|---|---|
 | `karpathy-guidelines` | `.agents/skills/karpathy-guidelines/SKILL.md` | Writing, reviewing, refactoring |
 
-Skill loading is binding for the task it covers: every runtime commit carries a `Karpathy:` trailer (e.g. `Karpathy: surgical-3`). Non-code turns use judgment.
+Before a writing, reviewing, or refactoring task, load the skill first: `skill({ name: "karpathy-guidelines" })`, or read `.agents/skills/karpathy-guidelines/SKILL.md` directly. Every runtime commit carries a `Karpathy:` trailer (e.g. `Karpathy: surgical-3`). Non-code turns use judgment.
 
 ## Bootstrap order
 
-This file, then `docs/next-session-handoff.md`, then `docs/project-context.md`. Then follow pointers — do not grep the whole repo first.
+Read this file, then `docs/next-session-handoff.md`, then `docs/project-context.md` — in that order, before anything else. Afterwards open only files those three name (area files in the table below; code and tests as the task needs). Never grep the repo for guidance.
 
 | Area | Read first |
 |---|---|
@@ -76,11 +76,11 @@ Kebab-case, no lifecycle tokens (`tmp`, `draft`, `wip`, `backup`, `old`, `final<
 
 ## Audit policy
 
-`audit(head, range, question) -> PASS | CONDITIONAL PASS | FAIL`. One writer per milestone branch. Audit is by machine: a separate agent session, or Codex. A machine audit is the required default. The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority. Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope. Request before production mutation, dark-probe promotion, repeat failure, or contract deviation (e.g. auth, signing, MCP schemas, CRX, irreversible, DB shape).
+`audit(head, range, question) -> PASS | CONDITIONAL PASS | FAIL`. One writer per milestone branch. Audit is by machine: a separate agent session, or Codex. A machine audit is the required default. The auditor must be a session that did not write the code under review, must start from fresh task context, and must be read-only: no edit, commit, push, deployment, or production authority. Give it the exact head, the diff range, and the question. Do not hand it a summary of your own reasoning and call that a scope. Request before production mutation, dark-probe promotion, repeat failure, or contract deviation.
 
 At a milestone boundary the auditor reviews the full diff and reruns proportionate tests first. The audit must distinguish code present, automated tests passing, live acceptance passing, and production promotion. Its verdict is `PASS`, `CONDITIONAL PASS`, or `FAIL`; only `PASS` permits the next milestone unless the user explicitly accepts documented residual risk. Where the user waives the audit instead, record the waiver, the residual risk, and who accepted it — a missing audit and an accepted risk must never be readable as the same thing.
 
-A machine auditor catches anchoring, sunk cost, stale recall, self-confirming tests, and document/code drift. It does not bring a category of threat nobody thought to check for, and it shares its author's blind spots. State the residual risk instead of letting a `PASS` stand in for human judgement that never happened. An auditor that only reruns what the author already ran has not audited anything; if that is all it managed, it must say so in the verdict. Prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
+It does not bring a category of threat nobody thought to check for, and it shares its author's blind spots. State the residual risk instead of letting a `PASS` stand in for human judgement that never happened. An auditor that only reruns what the author already ran has not audited anything; if that is all it managed, it must say so in the verdict. Prompt: `docs/prompts/chatgpt-web-checkpoint.md`.
 
 ## Evidence-first bug repair loop
 
