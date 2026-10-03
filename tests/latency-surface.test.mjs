@@ -20,37 +20,16 @@ import {
   RECORDED_BRIDGE_CADENCE
 } from './helpers/pull-cadence-sim.mjs';
 
-// Latency surface, consolidated 2026-10-03.
+// Latency surface, consolidated 2026-10-03 from five files into one, sections in
+// the order the design happened: A pg_sleep inventory, B client-side cadence,
+// C server-side discovery, D claim-budget repair, E burst ceiling. Test count
+// was the invariant then (59 before, 59 after) and is again (59).
 //
-// Five files described one design -- how long a command waits to be noticed,
-// and what that wait costs -- from five angles, all sharing this helper and
-// two migrations, and all cross-referencing each other in comments. They are
-// now one file with the sections in the order the design actually happened:
+// Every figure is a clock-injected model of the server + extension path, not an
+// observation of a model loop. Real round-trip cost per task is unmeasured.
 //
-//   A  the pg_sleep inventory and what each wait loop costs
-//   B  the client-side cadence the server-side wait replaced
-//   C  server-side discovery (opera_claim_next_wait)
-//   D  the claim-budget and watch-ramp repair
-//   E  the burst ceiling
-//
-//   tests/latency-sql-ramps.test.mjs        10 tests  251 lines
-//   tests/latency-bridge-cadence.test.mjs  11 tests  156 lines
-//   tests/latency-claim-wait.test.mjs      13 tests  198 lines
-//   tests/latency-sql-waits.test.mjs       17 tests  217 lines
-//   tests/latency-burst-budget.test.mjs     8 tests  141 lines
-//   -> tests/latency-surface.test.mjs      59 tests
-//
-// Test count is the invariant: 59 before, 59 after, none weakened or dropped.
-// One computation is now shared rather than duplicated: sections B and C both
-// derived the client-side baseline from the same recorded constant at the same
-// assumed RPC cost, so it is defined once as `clientSideBaseline`. It is the
-// identical deterministic model, not a widened bound. Per-test comments keep
-// their original re-freeze reasons, because those reasons are the audit trail
-// for why each measurement exists.
-//
-// Every figure here is a clock-injected model of the server + extension path,
-// not an observation of a model loop. How many round trips a real task costs
-// remains unmeasured.
+// WHY the sections keep their original re-freeze comments: they are the audit
+// trail for why each measurement exists, and why it was allowed to be re-timed.
 
 // --- shared reads ------------------------------------------------------------
 
@@ -86,19 +65,16 @@ const restoreRunFastUrl = new URL(
   import.meta.url
 );
 
-// The bridge delegated this wait to Postgres on 2026-10-02, so the client-side
-// cadence is measured from the recorded baseline rather than from live source.
-// The constants are pinned in tests/helpers/pull-cadence-sim.mjs so these
-// "before" figures remain reproducible; section C is the measurement that
-// replaced them.
+// The bridge delegated this wait to Postgres on 2026-10-02, so "before" is
+// measured from a recorded baseline, not live source. Pinned in
+// tests/helpers/pull-cadence-sim.mjs to stay reproducible.
 const recordedCadence = RECORDED_BRIDGE_CADENCE;
-// Assumed cost of one `opera_claim_next` round trip (PostgREST + Postgres).
-// The model is reported at three values in section B because the real figure is
-// not measured here; the latency conclusions there hold across all three.
+// Assumed cost of one `opera_claim_next` round trip. Reported at three values
+// because the real figure is unmeasured; section B's conclusions hold across all.
 const RPC_COSTS_MS = [10, 20, 50];
 
-// One definition, two consumers: section B (what the old cadence cost) and
-// section C (what replaced it).
+// Shared by B (what the old cadence cost) and C (what replaced it): identical
+// deterministic model, defined once so the two cannot drift apart.
 const clientSideBaseline = measureCadence(recordedCadence, { rpcMs: 20 });
 const claimWaitRamp = claimWaitSql ? readSqlRamp(claimWaitSql) : null;
 const serverSideCadence = claimWaitRamp

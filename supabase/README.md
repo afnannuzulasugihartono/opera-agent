@@ -1,17 +1,13 @@
 # Supabase
 
-Backend components for Opera Agent live here.
+Edge functions and migrations. `supabase/AGENTS.md` binds; read it first.
 
-Planned responsibilities include:
+- `functions/opera-agent-mcp` — MCP server, the 22-tool client surface
+- `functions/opera-agent-bridge` — command queue; owns the wait loops the client polls
+- `functions/opera-agent-gateway` — auth and request shaping
+- `functions/opera-agent-runner` — workflow step execution
+- `functions/_shared` — modules shared across functions
+- `migrations/` — timestamp order, never rewritten
 
-- device registry
-- command queue
-- results and events
-- command/workflow registry
-- audit logging
-- Edge gateway
-- migrations
-- cross-chat helpers
-- workflow versioning and rollback
-
-The rebuild should use new clean schema names rather than extending the legacy `loa_v3_*` schema indefinitely.
+Order before a deploy: the migration first, then the function that calls it. CI
+never applies migrations.

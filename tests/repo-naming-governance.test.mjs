@@ -12,10 +12,10 @@ const ALLOWED_ROOT_ENTRIES = new Set([
   // 2026-10-03: '.specify' and 'tools' removed with the dead tooling they
   // existed for (repowise + spec-kit); re-adding either needs a conscious
   // allowlist entry with justification, per the rule below.
-  '.agents', '.circleci', '.github', 'docs', 'extension', 'lib',
+  '.agents', '.github', 'docs', 'extension', 'lib',
   'oauth-consent', 'release-trigger', 'scripts', 'specs', 'supabase', 'tests',
   '.gitignore', 'AGENTS.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
-  'README.md', 'ROADMAP.md', 'SECURITY.md', 'package.json',
+  'README.md', 'ROADMAP.md', 'SECURITY.md', 'opencode.json', 'package.json',
   // Enterprise Phase 1 (2026-09-30): OSI license file at root.
   'LICENSE',
   // Enterprise Phase 1 (2026-09-30): user support entry point at root.
