@@ -89,6 +89,14 @@ test('all four original principles survive the edit', () => {
   assert.match(skill, /bias toward caution over speed/);
 });
 
+test('the karpathy core is inline in AGENTS.md, not skill-gated', () => {
+  // The skill tool is on-demand: nothing forces an agent to call it. The only
+  // channel guaranteed read is harness-injected context, i.e. AGENTS.md
+  // itself — so the non-overlapping core lives there in compressed form.
+  assert.match(agents, /## Principles \(karpathy, compressed/);
+  assert.match(agents, /cheap reversible commit/);
+});
+
 test('the skill references a rule that AGENTS.md actually contains', () => {
   // If AGENTS.md is edited and the rule moves, this file must not go stale into
   // pointing at something that no longer says what it claims.

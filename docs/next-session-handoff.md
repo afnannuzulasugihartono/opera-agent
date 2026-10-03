@@ -6,14 +6,14 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`90d0cfe`** pre-edit, tree clean,
+- `main` = `origin/main` = **`589ef0a`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **Scoped-instructions rules** (owner: aturan AGENTS.md baru/edit):
-  `## Scoped instructions` (cap 15, pointer-only, root-binds, daftar di tabel)
-  + 2 lock test (section + konsistensi tabel, merah-dulu). Inventaris:
-  4 AGENTS.md, 6 README.md. Stale disebut, tak disentuh: root README tabel CI
-  + acceptance CircleCI, `supabase/README.md` voice "Planned".
-  785/785 hijau, check ok. No runtime file touched.
+- **Trim + karpathy-inline** (owner: aturan komen/file/discipline, skill dibaca):
+  komen 1 baris, scoped 1 bullet, disiplin 2→1 bullet, inti karpathy 3 baris
+  inline di AGENTS.md (satu-satunya kanal terjamin-baca) + lock test
+  merah-dulu. Fix: regex lock salah tulis `\)` — bukan file yang salah.
+  786/786 hijau, check ok. No runtime file touched.
+- Stale tak-tersentuh: root README CI/acceptance CircleCI, supabase/README voice "Planned".
 - Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
   tinggalkan jejak; gating milestone hanya di handoff + commit.
 - **Local gates only:** `npm test` **800/800**, `npm run check` ok (26

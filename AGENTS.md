@@ -39,6 +39,12 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 - Every runtime commit carries a `Karpathy:` trailer (e.g. `Karpathy: surgical-3`).
 - Non-code turns use judgment.
 
+## Principles (karpathy, compressed — full text in the skill)
+
+- State assumptions and tradeoffs before coding; ask when unclear.
+- Report an inaccessible prerequisite instead of working around it.
+- Prefer a cheap reversible commit over an irreversible one.
+
 ## Bootstrap order
 
 - Read this file, then `docs/next-session-handoff.md`, then `docs/project-context.md` — in that order, before anything else.
@@ -53,8 +59,7 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 
 ## Scoped instructions
 
-- New area `AGENTS.md`: ≤15 lines, pointers only, opens with the root-binds line, must not contradict the root. Register it in the Bootstrap table the same commit.
-- Editing one: keep the cap and the root pointer; update stale paths the same commit.
+- Area `AGENTS.md`, new or edited: ≤15 lines, pointers only, opens with the root-binds line, must not contradict the root; register new ones in the Bootstrap table and refresh stale paths the same commit.
 
 ## Coding standards
 
@@ -63,7 +68,7 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 - Regression tests verify behavior or parsed artifacts. Source-text regex only for
   intentionally frozen literals, with the test stating why.
 - `npm run check` auto-discovers runtime files. No hand-picked safety lists.
-- Comments answer WHY, never WHAT. One line per trap, incident, or frozen-contract reason; self-explanatory code carries none.
+- Comments answer WHY, never WHAT — one line per trap, incident, or frozen-contract reason.
 - Match existing style. Touch only what the task requires. Never improve adjacent code, comments, or formatting it did not require.
 
 ## Boundaries
@@ -74,8 +79,7 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 
 ## Repository discipline
 
-- **One writer, clean close.** Dirty/unknown tree: STOP, preserve to `archive/<topic>`, record, align. Never end dirty or diverged.
-- **`main` is the truth, branches die on close.** `--ff-only` at green checkpoints; merge or archive-tag closed work, tag before deleting; divergent lines get a decision (merge, cherry-pick, or archive-tag-and-delete with reason).
+- **One writer, clean close, main is truth.** Dirty/unknown tree: STOP, preserve to `archive/<topic>`, record, align; never end dirty or diverged. `--ff-only` at green checkpoints; merge or archive-tag closed work, tag before deleting; divergent lines get a decision.
 - 6. **Preserve before overwrite.** Never discard work you did not create without archiving first.
   - **Mention, do not delete, pre-existing code this work did not create** — report to the owner in the same session instead of tidying-up.
   - Removing it *is* allowed when the removal is **required** by the change being made. Say which of the two it is, in the commit message.
