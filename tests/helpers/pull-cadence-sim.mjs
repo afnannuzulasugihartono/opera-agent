@@ -154,8 +154,8 @@ export function readSqlRamp(migrationSource) {
   return [...cases, { upto: Infinity, seconds: Number(tail[1]) }];
 }
 
-/** Sleep length, in ms, for the poll with 1-based index `poll`. */
-export function sqlSleepMs(ramp, poll) {
+/** Sleep length, in ms, for the poll with 1-based index `poll`. Not exported: the only consumer is measureSqlCadence below, so an export would be unreachable surface. */
+function sqlSleepMs(ramp, poll) {
   const step = ramp.find((s) => poll <= s.upto) || ramp[ramp.length - 1];
   return step.seconds * 1000;
 }
