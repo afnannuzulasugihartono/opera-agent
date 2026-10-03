@@ -247,6 +247,19 @@ export function validateCommand(command) {
       return { ok: false, error: 'Capture previousHash must be a SHA-256 hex digest.' };
     }
   }
+  if (command.method === 'page.fill') {
+    // WHY required: trustedFill treats a non-string value as an empty string and
+    // dispatches a Backspace, then reports ok:true. A caller that misspelled the
+    // parameter therefore got a success and a destructive edit. An explicit ""
+    // stays legal because clearing a field is a real intent.
+    const value = (command.params || {}).value;
+    if (typeof value !== 'string') {
+      return { ok: false, error: 'page.fill requires a string value. Use "" to clear the field.' };
+    }
+    if (value.length > 20000) {
+      return { ok: false, error: 'page.fill value must be at most 20000 characters.' };
+    }
+  }
   if (command.params?.executionMode != null && !EXECUTION_MODES.includes(command.params.executionMode)) {
     return { ok: false, error: 'Invalid executionMode.' };
   }
