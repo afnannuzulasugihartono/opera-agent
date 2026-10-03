@@ -30,6 +30,7 @@ printed, including in a failure message.
 import asyncio
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -46,9 +47,26 @@ EXPECTED_EXTENSION_ID = harness.EXPECTED_EXTENSION_ID
 
 RESULTS = []
 
+# A success envelope can carry the paired device token, and a failure path that
+# printed a raw body leaked it straight into the transcript. Redaction lives in
+# record() so no call site can leak by forgetting.
+SECRETS = (
+    (re.compile(r'sbp_[A-Za-z0-9_]+'), 'sbp_***'),
+    (re.compile(r'(?i)(authorization\s*:\s*)\S+.*'), r'\1***'),
+    (re.compile(r'''(?i)(['"]?(?:device_?token|token|secret)['"]?\s*[:=]\s*['"]?)[A-Za-z0-9_.\-]{16,}'''), r'\1***'),
+    (re.compile(r'\b[0-9a-f]{40}\b'), '***'),
+)
+
+
+def redact(text):
+    for pattern, replacement in SECRETS:
+        text = pattern.sub(replacement, text)
+    return text
+
 
 def record(name, outcome, detail=''):
     """outcome: True passed, False failed, None skipped."""
+    detail = redact(str(detail))
     RESULTS.append((name, outcome, detail))
     mark = {True: 'ok  ', False: 'FAIL', None: 'skip'}[outcome]
     print(f'{mark} {name}{"  " + detail if detail else ""}', flush=True)
@@ -154,6 +172,7 @@ async def case_click_through(tab, page, name, limit=6):
         return
     responded = 0
     errors = []
+    stale = 0
     for control in controls:
         before = page['semanticState']['documentGeneration']
         try:
@@ -168,17 +187,44 @@ async def case_click_through(tab, page, name, limit=6):
             page = after
         except Exception as exc:
             body = getattr(exc, 'body', None)
-            if isinstance(body, dict) and body.get('error'):
-                err = body['error']
-                detail = f"{err.get('code')}: {err.get('message')}" if isinstance(err, dict) else json.dumps(err, ensure_ascii=False)
+            err = body.get('error') if isinstance(body, dict) else None
+            code = err.get('code') if isinstance(err, dict) else ''
+            if code == 'TARGET_NOT_READY':
+                # A live SPA can re-render between the read and the click, so the
+                # ref names a node that is gone. That is the site being alive, not
+                # a defect, and a person simply looks again and clicks it. Re-find
+                # by the same label and try once more.
+                stale += 1
+                page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 800}))['page']
+                again = by_label(page, control.get('label', ''))
+                if again:
+                    try:
+                        await drive('page.click', {'tabId': tab['id'], 'ref': again['ref']})
+                        await asyncio.sleep(1.5)
+                        page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
+                        responded += 1
+                        continue
+                    except Exception as retry:
+                        errors.append(f"{control.get('label', '')[:16]!r} retry failed: {type(retry).__name__}")
+                        continue
+            if isinstance(err, dict):
+                detail = f"{err.get('code')}: {err.get('message')}"
+            elif isinstance(body, dict):
+                # record() redacts, so printing the whole completion is safe and is
+                # the only way to tell a refusal apart from a success with no result.
+                detail = f'{type(exc).__name__} keys={sorted(body)} {json.dumps(body, ensure_ascii=False)}'
             else:
-                detail = str(body or exc)
-            errors.append(f"{control.get('label', '')[:16]!r} {detail[:100]}")
+                detail = f'{type(exc).__name__}: {str(exc)[:80]}'
+            errors.append(f"{control.get('label', '')[:16]!r} {detail[:260]}")
     # Every control was dispatched without an error; "responded" counts the ones
     # that visibly changed the page. A control that does nothing is information,
     # not a failure, so the pass condition is delivery.
-    record(name, len(errors) < len(controls), f'{len(controls)} clicked, {responded} changed the page'
-           + (f', inert: {errors[:3]}' if errors else ''))
+    detail = f'{len(controls)} clicked, {responded} changed the page'
+    if stale:
+        detail += f', {stale} stale ref re-found and clicked again'
+    if errors:
+        detail += f', inert: {errors[:3]}'
+    record(name, len(errors) < len(controls), detail)
 
 
 async def case_login_and_navigate(site, login_url, email, password):
@@ -262,25 +308,49 @@ async def case_maps_journey():
             record('maps journey', False, f'landed on {tab["url"][:60]}')
             return
 
-        page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1200}))['page']
+        # Maps hydrates well after the load event: the first read came back at 0
+        # characters and the content only appeared once the canvas painted. Poll
+        # instead of asserting on the first sample, or the suite reports our
+        # impatience as a product failure.
+        page = {'totalTextChars': 0, 'elements': [], 'axSummary': {}}
+        for _ in range(8):
+            page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1200}))['page']
+            if page['totalTextChars'] or (page.get('axSummary') or {}).get('items'):
+                break
+            await asyncio.sleep(1.5)
         ax = (page.get('axSummary') or {}).get('items', [])
-        record('maps search results loaded', bool(ax),
+        # Maps is canvas-rendered, so "loaded" means the page gave us something to
+        # act on: named a11y nodes, elements, or text. Which one it gives varies by
+        # locale and by whether the list has hydrated into the DOM yet.
+        loaded = bool(ax or page['elements'] or page['totalTextChars'])
+        record('maps search results loaded', loaded,
                f'chars={page["totalTextChars"]} elements={len(page["elements"])} ax={len(ax)} '
-               f'[{", ".join(i["name"][:16] for i in ax[:3])}]' if ax else 'no named controls at all')
+               + (f'[{", ".join(i["name"][:16] for i in ax[:3])}]' if ax
+                  else 'no named controls, reached by URL and coordinates'))
 
         for step in range(3):
             await drive('page.scroll', {'tabId': tab['id'], 'x': 0, 'y': 600, 'block': 'center'})
             await asyncio.sleep(1)
         after = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
-        record('maps scroll', True, f'chars {page["totalTextChars"]} -> {after["totalTextChars"]}')
+        record('maps scroll', after['totalTextChars'] > 0,
+               f'chars {page["totalTextChars"]} -> {after["totalTextChars"]}')
 
-        # Save a place by coordinate: the first result card sits in the left rail.
+        # Open a place by coordinate: the first result card sits in the left rail.
+        # There is no ref for it, which is the whole point on a canvas page. The
+        # assertion is that the page responded, not that we dispatched a click.
+        before_click = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
         await drive('page.pointer', {
             'tabId': tab['id'], 'x': 240, 'y': 320, 'action': 'click',
             'executionMode': 'background', 'showCursor': True
         })
-        await asyncio.sleep(2)
-        record('maps coordinate click', True, 'clicked a result card at (240,320) in background mode')
+        await asyncio.sleep(2.5)
+        opened = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 600}))['page']
+        responded = (opened['semanticState']['documentGeneration']
+                     != before_click['semanticState']['documentGeneration']
+                     or opened['totalTextChars'] != before_click['totalTextChars'])
+        record('maps coordinate click', responded,
+               f'clicked (240,320) in background mode; chars '
+               f'{before_click["totalTextChars"]} -> {opened["totalTextChars"]}')
 
         await drive('tabs.close', {'tabId': tab['id']})
         remaining = (await drive('tabs.list'))['tabs']

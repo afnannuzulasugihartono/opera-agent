@@ -296,8 +296,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def assert_completed_ok(body):
-    assert body['ok'] is True, body
-    assert body.get('result') is not None, body
+    # The body rides on the exception as an attribute, not only as the message.
+    # A caller that reports a failure can then read error.code and error.message
+    # instead of guessing from a stringified dict.
+    if body.get('ok') is not True or body.get('result') is None:
+        failure = AssertionError(body)
+        failure.body = body
+        raise failure
     return body['result']
 
 async def browser_focus_state(worker):
