@@ -1,22 +1,16 @@
-// R9-A focus gate (2026-09-30): pure policy for when a foreground input may be
-// dispatched. NO chrome dependency and NO DOM, so the decision is deterministic
-// and testable in Node (pattern of lib/action-pipeline.js, lib/watch.js).
+// Pure focus policy — no chrome, no DOM, so the decision is deterministic and
+// testable in Node.
 //
-// Why this exists: the foreground path used to sample `tab.active` and
+// WHY re-sample at dispatch: the foreground path used to read `tab.active` and
 // `window.focused` once, before a content-script round trip and a debugger
-// attach, and never re-checked. A window that lost focus in that window failed
-// with FOREGROUND_REQUIRED even though the user had just activated the tab. This
-// module owns the re-sampling decision so that re-check happens AT dispatch
-// time, inside the debugger session.
+// attach, then never re-checked, so a window that lost focus in that gap failed
+// with FOREGROUND_REQUIRED right after the user activated the tab.
 //
-// Semantics locked by tests/r9-focus-and-keyboard.test.mjs:
-// - background mode always dispatches on the first attempt, whatever the sample
-// - a satisfied foreground sample dispatches immediately (no added latency)
-// - a lost-then-restored sample dispatches with recovered: true
-// - a sample that never satisfies refuses on the final attempt, carrying the
-//   last observed state so the failure is diagnosable
-// - the gate NEVER decides to activate a tab or focus a window; that authority
-//   stays with the explicit tabs.activate primitive and nothing here
+// Locked by tests/r9-focus-and-keyboard.test.mjs: background always dispatches
+// first try; a satisfied foreground sample adds no latency; lost-then-restored
+// dispatches with recovered; an unsatisfied sample refuses on the final attempt
+// carrying the last state. The gate NEVER activates a tab or focuses a window —
+// that authority stays with the tabs.activate primitive.
 
 export const FOCUS_GATE_ATTEMPTS = 3;
 export const FOCUS_GATE_SETTLE_MS = 100;

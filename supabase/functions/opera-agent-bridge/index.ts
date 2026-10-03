@@ -15,22 +15,12 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-// Poll cadence history, kept because it explains why the wait moved server-side.
-//
-// 2026-09-24 (egress budget): idle claim-polling dominated platform traffic. A
-// 12s long-poll minted ~52 `opera_claim_next` calls on a 6x50ms + 250ms loop,
-// ~13k claims/hour/device, 95%+ of all edge traffic. The cadence was ramped to
-// 8x50ms then 2s, which cut claim calls to 14 per window (4200/hour/device) but
-// left a new command waiting up to 2000ms. Phase A measured that queue wait at
-// p50 830ms / p95 1910ms and showed the fast window is only 400ms of 12000ms,
-// so ~97% of waits were paid at the idle rate.
-//
-// 2026-10-02: the client-side cadence constants are gone. `pull` now makes one
-// `opera_claim_next_wait` call per window and the database owns the wait, so
-// the cost is one HTTP round trip per window instead of fourteen, and the
-// detection ramp stays fine where follow-up commands actually arrive.
-// See `tests/latency-surface.test.mjs` sections B and C for the recorded
-// figures.
+// WHY the wait lives in Postgres: client-side polling minted ~52
+// `opera_claim_next` calls per 12s window (~13k/hour/device, 95% of all edge
+// traffic) and a new command waited p50 830ms / p95 1910ms, of which ~97% was
+// spent at the idle rate. One `opera_claim_next_wait` per window cut that to a
+// single round trip while the DB owns the wait. Recorded figures and the
+// rejected ramp live in `tests/latency-surface.test.mjs` sections B and C.
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {

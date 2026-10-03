@@ -1,21 +1,17 @@
-// U-T Event-Triggered Workflows (2026-09-22): pure watch-rule policy engine.
-// A model compiles intent into rules ONCE; the device evaluates them locally
-// against page facts so reaction speed follows the page, not the model round
-// trip. This module owns validation, arming, firing, debounce, deadlines and
-// retirement. It has NO DOM and NO chrome dependency: the caller supplies
-// fact snapshots, which keeps the engine deterministic and testable in Node.
+// Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact
+// snapshots, so it stays deterministic and testable in Node.
 //
-// Semantics locked by tests/etw-watch-engine.test.mjs:
-// - already-true-at-arm fires immediately (the T041 lesson: an ad already on
-//   screen when the watcher is installed must be acted on, not swallowed);
-// - repeat rules re-fire on every matching evaluation, throttled by debounce;
-// - selectorGone fires only on a真 presence->absent transition (a rule armed
-//   while the element is absent never fires until presence was observed);
-// - urlChange/navigation arm a baseline URL on first sight and fire on change;
-// - mediaTime fires when playback crosses atSeconds (or has already crossed
-//   at arm time);
-// - once rules retire after their first fire; every rule retires past its
-//   deadline or its maxEvents budget.
+// WHY local evaluation: the model compiles intent into rules ONCE and the device
+// evaluates them against page facts, so reaction speed follows the page instead
+// of the model round trip.
+//
+// Locked by tests/etw-watch-engine.test.mjs: already-true-at-arm fires
+// immediately (an ad on screen when the watcher installs must be acted on, not
+// swallowed); repeat rules re-fire on every match, throttled by debounce;
+// selectorGone needs a real presence->absent transition; urlChange and
+// navigation fire against a first-sight baseline; mediaTime fires on crossing
+// atSeconds; once rules retire after their first fire, and every rule retires
+// past its deadline or maxEvents budget.
 
 export const TRIGGER_KINDS = new Set([
   'selectorPresence',

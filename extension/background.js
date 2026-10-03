@@ -72,6 +72,29 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// WHY retry: Chrome refuses every tab mutation while a tab drag is in flight
+// ("Tabs cannot be edited right now"). The drag lasts well under a second, but
+// the refusal reached the caller as a hard EXECUTION_ERROR, so an unattended run
+// that overlapped one died on a transient browser state. Linear backoff because
+// the drag is already underway. Any other error propagates on the first attempt.
+const TAB_DRAG_ATTEMPTS = 6;
+const TAB_DRAG_BACKOFF_MS = 250;
+
+function isTabDragRefusal(error) {
+  return /tabs cannot be edited right now/i.test(String((error && error.message) || error));
+}
+
+async function mutateTabs(run) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await run();
+    } catch (error) {
+      if (!isTabDragRefusal(error) || attempt >= TAB_DRAG_ATTEMPTS) throw error;
+      await sleep(TAB_DRAG_BACKOFF_MS * attempt);
+    }
+  }
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -1098,7 +1121,7 @@ async function dispatch(method, params = {}, context = {}) {
     case 'tabs.open': {
       const url = safeUrl(params.url || 'https://www.google.com/');
       if (!url) throw new Error('Only http/https URLs are allowed.');
-      const tab = await chrome.tabs.create({ url, active: params.active !== false });
+      const tab = await mutateTabs(() => chrome.tabs.create({ url, active: params.active !== false }));
       const ready = params.wait === false ? publicTab(tab) : await waitTabReady(tab.id, params.waitTimeoutMs);
       return { ok: true, tab: ready };
     }
@@ -1107,7 +1130,7 @@ async function dispatch(method, params = {}, context = {}) {
       let tab = await chrome.tabs.get(tabId);
       let reused = !!tab.active;
       if (!tab.active) {
-        tab = await chrome.tabs.update(tabId, { active: true });
+        tab = await mutateTabs(() => chrome.tabs.update(tabId, { active: true }));
         reused = false;
       }
       if (params.focusWindow !== false) {
@@ -1121,7 +1144,7 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'tabs.close': {
       const tabId = requireTabId(params.tabId);
-      await chrome.tabs.remove(tabId);
+      await mutateTabs(() => chrome.tabs.remove(tabId));
       return { ok: true, tabId };
     }
     case 'tabs.navigate': {
@@ -1133,7 +1156,7 @@ async function dispatch(method, params = {}, context = {}) {
         const ready = params.wait === false ? publicTab(current) : await waitTabReady(tabId, params.waitTimeoutMs);
         return { ok: true, tab: ready, reused: true };
       }
-      const tab = await chrome.tabs.update(tabId, { url });
+      const tab = await mutateTabs(() => chrome.tabs.update(tabId, { url }));
       const ready = params.wait === false ? publicTab(tab) : await waitTabReady(tabId, params.waitTimeoutMs);
       return { ok: true, tab: ready, reused: false };
     }

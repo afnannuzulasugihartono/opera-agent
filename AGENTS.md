@@ -45,6 +45,15 @@ Precedence: user > this file > `SECURITY.md` > handoff > project-context > archi
 - Any claim about repository state cites `path:line` or a command you ran.
 - Unverified is a valid answer — say it is unverified and stop.
 
+## When something does not work
+
+- A bug or a feature that does not work is a research task first, not a fix task.
+- Reproduce it and read the real evidence before changing anything.
+- Find the cause before writing the fix — source, tests, git history, and for a
+  browser, OS or protocol quirk, the primary source that documents it.
+- State a falsifiable hypothesis, then name the evidence that would confirm it.
+- Three failures with no new evidence means blocked: stop editing and report.
+
 ## Boundaries
 
 - Ask first: deleting foreign code, merge, promote, deploy, new top-level
