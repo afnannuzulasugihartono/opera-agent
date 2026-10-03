@@ -379,6 +379,82 @@ async def case_maps_journey():
         record('maps journey', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_youtube_search_and_open():
+    """What a person does on YouTube: type a search, read the results, open one.
+
+    No credentials, and it exercises the whole core loop on the hardest real page
+    here: find the search box, fill it, submit, then click a result and confirm a
+    watch page loaded rather than assuming the click landed.
+    """
+    try:
+        # Reuse the YouTube tab the landing case already opened. A person does not
+        # open the same page twice, and a second cold load of YouTube is slow enough
+        # to look like a failure of ours.
+        found = await drive('tabs.find', {'urlContains': 'youtube.com', 'limit': 1})
+        tabs = found.get('tabs') or []
+        if tabs:
+            tab = tabs[0]
+        else:
+            tab = (await drive('tabs.open', {
+                'url': 'https://www.youtube.com/', 'active': True, 'wait': True
+            }))['tab']
+
+        page = {'totalTextChars': 0, 'elements': [], 'axSummary': {}}
+        for _ in range(8):
+            page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1500}))['page']
+            if page['elements']:
+                break
+            await asyncio.sleep(1.5)
+
+        # YouTube labels its search field a combobox, not a searchbox. The
+        # extension reported it correctly and the selector was wrong, so accept
+        # every role a search field legitimately carries, preferring a labelled one.
+        box = (by_role(page, 'searchbox')
+               or by_role(page, 'combobox', 'search')
+               or by_role(page, 'textbox', 'search')
+               or by_role(page, 'combobox'))
+        if not box:
+            roles = [str(i.get('role', '?')) for i in page['elements'][:12]]
+            record('youtube search', False,
+                   f'no searchbox; chars={page["totalTextChars"]} '
+                   f'elements={len(page["elements"])} roles seen: {roles}')
+            return
+        record('youtube search box found', True,
+               f'role={box.get("role")!r} label={str(box.get("label", ""))[:24]!r}')
+
+        # The order matters and is the whole point: a trusted fill refuses to insert
+        # text unless the field already holds document focus, so focus first. An
+        # untrusted fill leaves focus where it was, and the Enter then lands on the
+        # body and the site ignores it. This is the sequence a person performs.
+        await drive('page.focus', {'tabId': tab['id'], 'ref': box['ref']})
+        await drive('page.fill', {'tabId': tab['id'], 'ref': box['ref'],
+                                  'text': 'kucing chipset', 'trusted': True})
+        await drive('page.key', {'tabId': tab['id'], 'key': 'Enter', 'trusted': True})
+        await asyncio.sleep(3.5)
+
+        results = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1500}))['page']
+        after_enter = (await drive('tabs.get', {'tabId': tab['id']}))['tab']
+        links = [i for i in results['elements']
+                 if str(i.get('role', '')).lower() == 'link' and i.get('label')]
+        record('youtube results listed', bool(links) and '/results' in after_enter['url'],
+               f'chars={results["totalTextChars"]} links={len(links)} '
+               f'url={after_enter["url"][:70]} '
+               f'[{", ".join(str(i["label"])[:22] for i in links[:3])}]')
+
+        if not links:
+            return
+        target = next((i for i in links if 'watch' in str(i.get('href', ''))), links[0])
+        await drive('page.click', {'tabId': tab['id'], 'ref': target['ref']})
+        await asyncio.sleep(4)
+
+        landed = (await drive('tabs.get', {'tabId': tab['id']}))['tab']
+        watch = 'watch' in landed['url']
+        record('youtube opened a video', watch,
+               f'{str(target.get("label", ""))[:28]!r} -> {landed["url"][:64]}')
+    except Exception as exc:
+        record('youtube search', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -439,6 +515,7 @@ async def run(port, profile):
 
         await case_landing('https://docs.google.com/', 'google docs')
         await case_landing('https://www.youtube.com/', 'youtube')
+        await case_youtube_search_and_open()
         await case_maps_journey()
 
         await drive('tabs.close', {'tabId': (await drive('tabs.list'))['tabs'][0]['id']})

@@ -32,6 +32,7 @@ The mission, in order. Later items only matter once the earlier ones hold.
 | "lanjutkan" | read `AGENTS.md`, `docs/HANDOFF.md`, `docs/CONTEXT.md`, then act |
 | **"autonomously" / "lanjutkan sendiri" / "sampai mission tercapai"** | keep going on your own until the mission is reached. Do not ask permission, do not stop to confirm, do not hand back a partial result with a question at the end. Choose, act, verify, then report |
 | **"upgrade terus" / "keep upgrading" / the owner leaves** | keep improving until the wall clock time the owner named. Work unattended: commit each verified step, keep the tree clean, and leave a short note in `docs/HANDOFF.md` so the next session resumes without re-deriving anything |
+| **a verified step passes** | push it. Every positive, verified increment goes to `origin/main` at once, so the owner's machine and any CI run see the same working state. Never leave a verified win sitting in a local commit |
 | "apa langkah selanjutnya" | do not start work; say in plain language what is broken or undecided, and the choice the owner must make |
 | "merelakan" / "hapus aja" | the owner has decided; stop relitigating and do it |
 | something is broken | fix it first, before any feature or speed work |
