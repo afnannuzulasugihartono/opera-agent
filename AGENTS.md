@@ -1,7 +1,7 @@
 # Opera Agent agent instructions
 
 MV3 browser extension + Supabase backend. Read before changing anything.
-Precedence: user > this file > `SECURITY.md` (secrets, auth, transport).
+Precedence: user > this file > `SECURITY.md` (secrets, auth, transport), then handoff > project-context > checkpoint records > archive (historical, always loses).
 
 ## Commands
 
@@ -32,6 +32,22 @@ Load by ID before the task it covers: `skill({ name: "<skill-name>" })`, or read
 | Skill | Path | Use when |
 |---|---|---|
 | `karpathy-guidelines` | `.agents/skills/karpathy-guidelines/SKILL.md` | Writing, reviewing, refactoring |
+
+Skill loading is binding for the task it covers. Every commit touching runtime files carries a `Karpathy:` trailer naming the principle applied (e.g. `Karpathy: surgical-3`); trivial non-code turns use judgment instead.
+
+## Bootstrap order
+
+Read in this order, then follow pointers — do not grep the whole repo first.
+
+1. This file (already in context).
+2. `docs/next-session-handoff.md` (current task).
+3. `docs/project-context.md` (durable traps).
+
+| Area | Read first |
+|---|---|
+| `extension/` | `extension/AGENTS.md` |
+| `lib/` | `lib/AGENTS.md` |
+| `supabase/` | `supabase/AGENTS.md` |
 
 ## Coding standards
 

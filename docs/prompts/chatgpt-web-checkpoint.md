@@ -33,6 +33,7 @@ At the start, report:
 
 Rules:
 - Follow AGENTS.md and the frozen milestone plan exactly.
+- Check skill use and surgical scope: state whether the session loaded the skill covering the work, whether every commit touching runtime carries a `Karpathy:` trailer, and whether the diff touches only what the task required.
 - Remain inside <CHECKPOINT>; do not start a later checkpoint or milestone.
 - Preserve one normal SemVer product line, signing identity, pairing, protocol,
   capability inventory, public MCP contract, and background-focus guarantees

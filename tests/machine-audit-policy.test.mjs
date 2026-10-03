@@ -141,3 +141,27 @@ test('the file has no encoding damage', () => {
   assert.equal((text.match(/\r/g) || []).length, 0, 'no CRLF');
   assert.doesNotMatch(text, /�/, 'no U+FFFD replacement characters');
 });
+
+const promptPath = new URL('../docs/prompts/chatgpt-web-checkpoint.md', import.meta.url);
+const prompt = fs.readFileSync(promptPath, 'utf8');
+
+test('AGENTS.md declares a doc precedence chain with the archive last', () => {
+  // Stale docs (CircleCI-era records, old checkpoints) must lose to live files,
+  // or grep-first agents drift. The chain names the loser explicitly.
+  assert.match(agents, /archive \(historical, always loses\)/);
+});
+
+test('AGENTS.md declares a bootstrap order with an area pointer table', () => {
+  assert.match(agents, /## Bootstrap order/);
+  assert.match(agents, /\| Area \| Read first \|/);
+});
+
+test('skill loading is binding and recorded via a Karpathy trailer', () => {
+  assert.match(agents, /carries a `Karpathy:` trailer/);
+});
+
+test('the audit checks skill use and surgical scope', () => {
+  // The auditor reviews the diff, so surgical scope is checkable there even
+  // though the loading act itself is not observable.
+  assert.match(prompt, /state whether the session loaded the skill/);
+});
