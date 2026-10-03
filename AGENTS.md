@@ -52,6 +52,13 @@ Skill: `karpathy-guidelines` (`.agents/skills/karpathy-guidelines/SKILL.md`) —
 - Read slices, never wholes: grep first, offset/limit always; files over 500 lines are never read fully.
 - Spec work touches spec and docs only; code changes get their own task.
 
+## Claims and evidence
+
+- Any claim about repository state cites `path:line` or a command you ran; never assert from memory, and never call it green without reading it.
+- A comment, commit message, or older doc is a lead: verify against the code before repeating it.
+- Unverified is a valid answer — say it is unverified and stop, instead of filling the gap.
+- "not found" is reported as not found: an empty search is a finding, never proof it does not exist.
+
 ## Coding standards
 
 - Failing test first, then the smallest generic mechanism; locks fail on realistic violations, both directions.

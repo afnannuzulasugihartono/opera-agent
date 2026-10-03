@@ -6,16 +6,16 @@
 
 ## Current state (2026-10-03)
 
-- `main` = `origin/main` = **`a25af6c`** pre-edit, tree clean,
+- `main` = `origin/main` = **`5e8d2a2`** pre-edit, tree clean,
   `origin/main` is the only remote branch, every merge `--ff-only`.
-- **`npm run scope -- "<task>"` = preflight scope, mechanism (not just a rule).**
-  Repo 940K token: runtime source only 60K (6%); docs+tests ~94%. Script ranks
-  the read set, caps it, flags >500-line files as slice-only, prints the cost
-  against reading everything. Example: "burst navigate" = 7 files / 29.7K token
-  (3.2%). `tests/scope-preflight.test.mjs` red-first 0/5. Rules that made it
-  reachable: Task scope section, Bootstrap order, `## Principles` inline.
-  **794/794 green, check ok. AGENTS.md 90 lines (cap-64 goal unreachable without
-  deleting locked incident-derived sections).**
+- **`## Claims and evidence`** (audit anti-halusinasi): audit menemukan aturan
+  anti-halusi tersebar, dan "a claim in a test comment is not evidence" ikut
+  ter-archive saat handoff dipangkas — tidak ada aturan pengutipan di AGENTS.md.
+  4 baris baru: klaim state WAJIB `path:line` atau output command; komentar/
+  commit/doc lama = lead (verifikasi dulu); unverified itu jawaban sah; "not
+  found" dilaporkan sebagai not found. `tests/claims-evidence.test.mjs`
+  red-first 0/5. AGENTS.md 90→97 baris (cap 64 makin jauh; section ini
+  konsekuensinya). **799/799 green, check ok (26 primitives, 91 files, 1.6.15).**
 - Stale tak-tersentuh: root README CI/acceptance CircleCI, supabase/README voice "Planned".
 - Residual aktif: tanpa waiver rule, audit yang dilewati tak wajib
   tinggalkan jejak; gating milestone hanya di handoff + commit.
