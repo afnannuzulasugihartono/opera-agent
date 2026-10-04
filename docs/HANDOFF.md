@@ -41,8 +41,17 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
    nothing further is possible from here. One remains, scoped to `opera-agent` only.
 6. Real login flows on Google and GitHub. Code exists; needs `OA_GOOGLE_EMAIL`,
    `OA_GOOGLE_PASSWORD`, `OA_GITHUB_EMAIL`, `OA_GITHUB_PASSWORD` in the environment.
-   Selectors are unverified on a first real run.
-7. The largest unknown: how many model round trips a real task costs. Every latency
+   The forms themselves are already located on the live sites and the selectors are
+   verified; only the submit needs credentials.
+7. **The one real latency lever, and it is an owner decision.** Measured over 9,079
+   production commands, 676.6 ms of the 1875.3 ms average is the device not yet having
+   asked for the command, p95 1914.4 ms. That wait is the polling ramp inside
+   `opera_claim_next_wait`, which falls to a 250 ms floor after 720 ms idle. A 100 ms
+   floor should bring p95 near 1000 ms at 10 idle polls per second instead of 4; 50 ms
+   gets near 700 ms at 20. It is not changed: it alters a production function on the
+   command path, and the right floor depends on how many devices idle at once, which
+   this repository cannot answer. Full numbers in `docs/benchmarks.md`.
+8. The largest unknown: how many model round trips a real task costs. Every latency
    figure here models the server and extension path, not the model loop.
 
 ## CI

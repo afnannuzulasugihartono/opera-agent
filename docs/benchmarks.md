@@ -78,15 +78,48 @@ From `pg_stat_statements` on the live project. Read the sample size before the n
 | `opera_verify_device` | 1 | 3.3 ms | 3.3 ms |
 | `opera_enqueue` in a single statement | 1 | 73.2 ms | 73.2 ms |
 
-What this says, and it is the useful part:
+## Where a command's time actually goes
 
-- The server's own polling cost is about **7 ms**. A command that waits on the device
-  averages **1076 ms**. So roughly 99% of a command's latency is the browser and the
-  network to it, not Postgres and not the gateway.
-- Optimising the database path or the gateway can win at most single-digit
-  milliseconds. Do not spend a release on it.
-- 64 calls is a small sample and the browser was the owner's own machine. Treat the
-  order of magnitude as real and the digits as indicative.
+9,079 completed commands in production, split at the two timestamps the queue records.
+
+| Stage | Avg | p50 | p95 |
+|---|---:|---:|---:|
+| enqueue to claim, the device noticing the command | **676.6 ms** | **184.0 ms** | 1914.4 ms |
+| claim to complete, the browser doing the work | 1198.7 ms | 532.2 ms | — |
+| end to end | 1875.3 ms | — | — |
+
+So about 36% of a command is spent waiting for the device to ask for it, and that
+waiting is pure idle, not work.
+
+### The lever, and its price
+
+The device long-polls with a 5s window and the wait lives in Postgres, inside
+`opera_claim_next_wait`, so pickup latency is that function's polling ramp:
+
+| Polls | Sleep each | Cumulative |
+|---:|---:|---:|
+| 1–8 | 5 ms | 40 ms |
+| 9–16 | 10 ms | 120 ms |
+| 17–24 | 25 ms | 320 ms |
+| 25–32 | 50 ms | 720 ms |
+| 33+ | **250 ms** | +250 ms each |
+
+The measured p50 of 184 ms sits in the 120–320 ms band and the p95 of 1914 ms sits deep
+in the 250 ms tail. That is the shape of a ramp that degrades after 720 ms of idleness:
+a device that has been quiet for a couple of seconds is asking every 250 ms.
+
+Lowering the tail floor is the single available win, and it is a production database
+change with a real cost:
+
+| Floor | p95 pickup | Idle polls per second |
+|---:|---:|---:|
+| 250 ms (now) | about 1914 ms | 4 |
+| 100 ms | roughly 1000 ms | 10 |
+| 50 ms | roughly 700 ms | 20 |
+
+It is not changed here. It alters a production function on the command path, and the
+right floor depends on how many devices are idle at once, which this repository cannot
+answer.
 
 ## Contract digests
 

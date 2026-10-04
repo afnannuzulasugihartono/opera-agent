@@ -68,10 +68,16 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 - The slowest non-navigation primitive is `page.scroll` at about 186ms, because it
   waits for lazy DOM changes to settle. That is the first place to look for a real
   latency win, not the round trip count.
-- Production, from `pg_stat_statements`: a command that waits on the device averages
-  **1076 ms**, and the server's own polling costs about **7 ms**. So the round trip is
-  the browser, not Postgres and not the gateway, and work on the database path or the
-  gateway cannot win more than single-digit milliseconds. 64 calls is a small sample.
+- Production, 9,079 completed commands: enqueue-to-claim averages **676.6 ms**, p50
+  184.0 ms, p95 1914.4 ms. That is 36% of a command spent waiting for the device to ask
+  for it, and it is governed by the polling ramp inside `opera_claim_next_wait`, which
+  drops to a 250 ms floor after 720 ms of idleness. Lowering that floor is the one real
+  latency lever left, it costs idle polls per second, and it is an owner decision
+  because it changes a production function on the command path. Numbers and trade-off
+  in `docs/benchmarks.md`.
+- `opera_claim_next` has no `pg_sleep` at all and returns immediately. The wait is in
+  `opera_claim_next_wait`, called by the bridge. Measuring the wrong one of two
+  similarly named functions is an easy mistake here.
 - Local mock-bridge timings and production timings disagree about what matters, so a
   latency claim needs to say which one it is measuring.
 
