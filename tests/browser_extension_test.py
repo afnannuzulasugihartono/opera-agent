@@ -1585,6 +1585,7 @@ async def run(port, profile):
         assert uv_xdoc.get('ok') is False and uv_xdoc.get('error', {}).get('code') == 'TARGET_NOT_READY', uv_xdoc
         assert uv_xdoc['error']['refState'] == 'expired', uv_xdoc
         assert uv_xdoc['error']['waitedMs'] < 1000, uv_xdoc
+        print(f'expired-ref refusal returned after {uv_xdoc["error"]["waitedMs"]}ms')
 
         cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))

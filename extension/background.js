@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 19:08 UTC+7.
+// @last-edited: 2026-10-04 20:31 UTC+7.
 // @title: background — MV3 runtime.
 // @context: MV3 browser runtime.
 // @state: the observation says when the person last touched the page.
-// @updated: TARGET_NOT_READY refusals name the ref state; one builder for all three sites.
+// @updated: an expired ref ends the wait instead of spending the deadline.
 // @dependencies: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints, role-reconcile, agent-log, ax-summary, popup-events, deadline-race.
 
 import {
@@ -685,6 +685,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 // spends another full deadline on the same dead ref. Each case names the
 // recovery that works instead of a wait that does not.
 function notFoundHint(refState) {
+  if (refState === 'expired') {
+    return 'The page navigated or reset, so this ref was minted for another document or route and can never act again. Re-find on the current page; the ref is dead, not late.';
+  }
   if (refState === 'detached') {
     return 'The target left the DOM (page re-render or removal), so this ref can never resolve. Re-find and act in ONE round trip: browser.burst with a find step, then a click step carrying refFromStep. A separate re-find round trip is stale on the same page.';
   }
@@ -736,7 +739,12 @@ async function runActionPipeline(tabId, method, params, context, exec) {
   };
   let verdict = hasRef ? await resolveState() : 'ready';
   const delays = pollDelays(deadline - started, 0);
-  for (let di = 0; hasRef && verdict !== 'ready' && verdict !== 'ambiguous' && di < delays.length; di += 1) {
+  // WHY stop on 'expired': the content script proved this ref can never act on this
+  // document or route again (no descriptor, or one minted elsewhere, and refCounter
+  // never re-mints a key). Polling a ref that cannot recover only spends the deadline
+  // the caller was trying to protect.
+  const isExpired = () => state?.refState === 'expired';
+  for (let di = 0; hasRef && verdict !== 'ready' && verdict !== 'ambiguous' && !isExpired() && di < delays.length; di += 1) {
     if (Date.now() + delays[di] > deadline - UV_WAIT_FLOOR_MS) break;
     await new Promise((r) => setTimeout(r, delays[di]));
     waitedMs += delays[di];
