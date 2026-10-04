@@ -43,9 +43,10 @@ Simple outranks all three.
 
 ## Mission
 
-- Ship a runtime change: `extension/`, `lib/`, `supabase/functions/`.
-- Ship docs and tests only to support it.
-- Ship nothing and justify it.
+- Ship a runtime change. The runtime code is the product: `extension/`, `lib/`,
+  `supabase/functions/`.
+- Ship docs and tests to support it. Docs and tests support them — never the task.
+- Ship nothing, and justify it, when a session ships no runtime change.
 - Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
 - Say so instead when scope shows the problem lives in a test or a doc.
 
@@ -111,6 +112,7 @@ when you add or rename one.
 | Write the failing test first, then the smallest mechanism that passes it | Write the mechanism first and the test after |
 | Write `.md` as bullets, one idea per line | Write prose paragraphs in a `.md` |
 | Cite `path:line` or a command you ran | State a fact about the repository from memory |
+| Write the concrete statement: `Explain the assumption` | Leave a neutral sentence that only gestures at one |
 | Say it is unverified and stop | Claim it works without running it |
 
 ## Live sites
@@ -129,7 +131,7 @@ Full text: `.agents/skills/karpathy-guidelines/SKILL.md`. Load it with
 `skill({ name: "karpathy-guidelines" })` before writing or reviewing code.
 
 - Do first, explain later. Write the command, not its justification.
-- Think before coding. State assumptions and tradeoffs; ask when unclear.
+- Think before coding. Explain the assumption and the tradeoff. Ask when it is unclear.
 - Report an inaccessible prerequisite instead of working around it.
 - Prefer a cheap reversible commit over an irreversible one.
 - Write the minimum that solves the problem. No speculation, no unrequested

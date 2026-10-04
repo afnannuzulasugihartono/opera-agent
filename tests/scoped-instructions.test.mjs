@@ -26,7 +26,10 @@ for (const area of areas) {
 
 test('root AGENTS.md states the scoped-file rules', () => {
   assert.match(root, /## Scoped instructions/);
-  assert.match(root, /must not contradict/);
+  // Both halves: the rule and the forbidden opposite, so a rewrite that drops
+  // either one fails here instead of passing on a section header alone.
+  assert.match(root, /consistent with the root/);
+  assert.match(root, /contradict the root/);
 });
 
 test('every scoped file is registered in the root area table', () => {
