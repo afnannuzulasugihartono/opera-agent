@@ -62,8 +62,12 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 ## CI
 
-- `10aedd8` concluded **success on all three gates**: unit, secret-scan, browser. Three
-  earlier commits are green on the same gates.
+- `1facc42` concluded **success on all three gates**: unit, secret-scan, browser. It is the
+  head that carries the `media.play` change, so it is the acceptance evidence for the
+  runtime. Three earlier commits are green on the same gates.
+- The concurrency group cancels an in-flight run when a newer one queues, so a push made
+  while CI is running destroys the evidence for the head that was being tested. Push, then
+  wait. Two runs were lost to this during this session.
 - One browser failure came out of this session and was a defect in the harness, not the
   product: the focus audit called a window losing OS focus a stolen focus. It now reports
   five states and only fails when focus lands on a different window or a different tab,
