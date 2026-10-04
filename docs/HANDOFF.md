@@ -45,28 +45,34 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 7. The largest unknown: how many model round trips a real task costs. Every latency
    figure here models the server and extension path, not the model loop.
 
+## CI
+
+- `3c5b201` concluded **success on all three gates**: unit, secret-scan, browser. That
+  is the first real CI evidence in this session, and it took three machine faults to
+  get there, none of them in the code:
+  - `actions/setup-python` spawned a python.org installer that never finished, at zero
+    CPU for over two hours. On a single runner that also blocked the two jobs needing
+    no Python. The step is gone; the browser job uses the machine's Python 3.13 with
+    playwright and prints the version it used. **The 3.12 pin is not restored.**
+  - `shell: bash` resolved to the WSL launcher and the runner has no WSL distribution,
+    so every job died in under a second without running a command. The shell is now
+    `pwsh`, which is installed and translates no paths.
+  - The gitleaks asset name was `.tar.gz`; gitleaks publishes `windows_x64.zip`, so the
+    step 404'd. It had never run before, because the shell was broken first.
+- Every job also has a timeout and the workflow has a concurrency group, so a hang
+  becomes a visible failure and superseded runs do not queue behind each other.
+
 ## Blocked, needs the owner at the machine
 
-- **CI acceptance is not obtainable right now, and that is a machine fault, not a code
-  fault.** `actions/setup-python@v5` removes the tool-cache Python, then its installer
-  never finishes: zero CPU for over two hours, waiting on a UI prompt nobody answers.
-  The five runs before that failed with `setup.ps1` unable to remove registry keys,
-  "Requested registry access is not allowed", then "Error happened during Python
-  installation". One hung job held the single self-hosted runner, so ten pushes queued
-  with no result. Do not call any head green until a run concludes.
-- The installer processes were killed twice so the runner could advance, and it hangs
-  again on the next job. `.github/workflows/ci.yml` now gives every job a timeout and a
-  concurrency group, so the block becomes a visible failure instead of a silent one.
-  That does not fix the installer.
+- The python.org installer cannot complete on this host at all, per-user or all-users.
+  That is the underlying fault and it is still there; the workflow now avoids it rather
+  than fixing it. Antivirus, a half-finished uninstall, or the earlier crash and freeze
+  are the usual suspects.
 - The stale `HKCU\Software\Python\PythonCore\3.12` registration, which pointed at the
   runner's tool cache, has been removed and backed up to
-  `%TEMP%\opencode\pythoncore-backup.reg`. The runner re-registers it on its next
-  install; that is expected.
-- Python 3.13.15 is installed, is first on the user PATH, and has playwright. `py`
-  resolves to it. Use `py`, not `python`, which hits the Microsoft Store shim.
-- Likely cause worth checking when the owner is at the machine: the python.org
-  installer cannot complete on this host at all, per-user or all-users. Antivirus, a
-  half-finished uninstall, or the earlier crash and freeze are the usual suspects.
+  `%TEMP%\opencode\pythoncore-backup.reg`.
+- Use `py`, not `python`, which hits the Microsoft Store shim. `py` is 3.13.15 with
+  playwright.
 
 ## Do not touch
 
