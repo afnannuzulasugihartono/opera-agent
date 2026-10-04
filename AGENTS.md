@@ -27,29 +27,21 @@ Simple outranks all three.
 
 Bind every session, in every area. Nothing below overrides them.
 
-**Do**
+**Code — read, write, comment, test**
 
-- Open every file and every function with a comment naming it and what it does.
-- Put WHY in the body comments. The header already carries WHAT.
-- Write current state. Git keeps the past.
-- Write the failing test first, then the smallest mechanism that passes it.
-- Prove a lock fails on a realistic violation before accepting it.
-- Drive the thing before saying it works.
-- Push every verified increment to `origin/main`.
-- Cite `path:line` or the command you ran.
-- Say it is unverified and stop.
+- Read the target first: scope before editing, open only named files, read slices.
+- Write the failing test first, then the smallest mechanism. Change only what the request needs.
+- Comment header WHAT, body WHY. Name every file and function.
+- Test by driving it. Prove the lock fails. Cite the evidence. Say unverified and stop.
+- Never: mechanism first, claim without running, facts from memory, a test that validates a claim, a lock that asserts a sentence, a weakened test.
 
-**Don't**
+**Documents — read, write, comment, test**
 
-- Write a history book, a change narrative, or a migration story.
-- Write prose in a `.md`. Bullets, one idea per line.
-- Write a test to make a claim valid.
-- Accept a lock that only asserts a sentence exists.
-- Write the mechanism first and the test after.
-- Claim it works without running it.
-- Leave a verified win in a local commit.
-- End dirty or diverged.
-- Commit a secret or print one.
+- Read through the map below. Never guess, never grep.
+- Write bullets, current state, full-path links.
+- Comment every `.md` with a `Related:` line naming the hub and its relatives, plus the map row in the same commit.
+- Test with doc-graph green: links resolve, no orphans, hub-mutual.
+- Never: prose, history narratives, a `.md` without `Related:` plus row, a `Related:` without the hub, a red doc-graph dismissed as "only docs".
 
 ## Triggers
 
@@ -87,9 +79,7 @@ Bind every session, in every area. Nothing below overrides them.
 ## Bootstrap order
 
 - Read this file, [`docs/HANDOFF.md`](docs/HANDOFF.md), [`docs/CONTEXT.md`](docs/CONTEXT.md).
-- Open only files those three name. Never grep the repo for guidance.
-- Run `npm run scope -- "<task>"` before any edit.
-- Read slices. Never read a file over 500 lines whole.
+- Open only files those three name.
 
 | Area | Read first |
 |---|---|
@@ -154,7 +144,6 @@ Load it with `skill({ name: "karpathy-guidelines" })` before writing code.
 - Report an inaccessible prerequisite instead of working around it.
 - Prefer a cheap reversible commit over an irreversible one.
 - Write the minimum that solves the problem.
-- Change only what the request needs.
 - Mention unrelated dead code. Never delete it.
 - Define success as something verifiable, then loop until it runs.
 

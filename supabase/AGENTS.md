@@ -9,4 +9,4 @@ Edge functions in Deno, and migrations in timestamp order.
   without one fails at call time.
 - Never rewrite an applied migration. Add a new one.
 - Deploy and release promotion are owner decisions.
-- Related: [supabase/README.md](README.md) - [docs/runbook.md](../docs/runbook.md)
+- Related: [AGENTS.md](../AGENTS.md) - [README.md](README.md) - [docs/runbook.md](../docs/runbook.md)

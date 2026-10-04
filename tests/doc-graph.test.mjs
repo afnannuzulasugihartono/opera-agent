@@ -75,3 +75,41 @@ test('no document is an orphan: another document points at it', () => {
     assert.ok(linkedFromSomewhere, `${file} is not linked from any other document`);
   }
 });
+
+test('every document is mutual with the hub, not just reachable through it', () => {
+  // Reachability alone lets a document drift: it is pointed at but points at
+  // nothing in return, so a reader who lands on it has no way back to the map.
+  // The hub is AGENTS.md, the one file an agent is guaranteed to read. Mutual
+  // means both directions: the hub names every document, and every document
+  // names the hub in its Related: line. A full mesh would bloat every header;
+  // the hub keeps it one hop each way.
+  const hub = 'AGENTS.md';
+  const hubLinks = new Set(
+    [...text.get(hub).matchAll(/\]\(([^)#][^)]*)\)/g)]
+      .map((match) => match[1].trim())
+      .filter((target) => !/^[a-z]+:/i.test(target))
+      .map((target) =>
+        path.relative(root, path.resolve(root, target)).split(path.sep).join('/')
+      )
+  );
+  for (const file of tracked) {
+    if (file === hub) continue;
+    assert.ok(
+      hubLinks.has(file),
+      `${file} is not named by the hub ${hub}`
+    );
+    const related = text.get(file).match(/^(?:-\s*)?Related:(.*)$/m);
+    assert.ok(related, `${file} has no Related: line naming the hub`);
+    const namesHub = [...related[1].matchAll(/\(([^)#][^)]*)\)/g)]
+      .map((match) => match[1].trim())
+      .filter((target) => !/^[a-z]+:/i.test(target))
+      .map((target) =>
+        path
+          .relative(root, path.resolve(path.dirname(path.join(root, file)), target))
+          .split(path.sep)
+          .join('/')
+      )
+      .includes(hub);
+    assert.ok(namesHub, `${file} does not name the hub ${hub} in its Related: line`);
+  }
+});

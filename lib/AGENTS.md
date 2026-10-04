@@ -8,4 +8,4 @@ Shared pure modules the server and the extension both read.
 - Keep it pure: no DOM, no chrome, no network.
 - Make a lock fail on a realistic violation before accepting it.
 - Re-freeze the digests in `tests/helpers/boundary-locks.mjs` in the same commit.
-- Related: [docs/api.md](../docs/api.md)
+- Related: [AGENTS.md](../AGENTS.md) - [docs/api.md](../docs/api.md)
