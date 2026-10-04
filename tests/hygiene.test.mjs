@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 23:32 UTC+7.
+// @last-edited: 2026-10-05 00:47 UTC+7.
 // @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
-// @state: The memoized read path, the comment-spacing rule, live allowlist paths and the .md logic gates are locked.
+// @state: The memoized read path, the comment-spacing rule over untracked files too, live allowlist paths and the .md logic gates are locked.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
 
 // Properties that keep the runtime code correct as it grows, and that the code
@@ -44,9 +44,22 @@ const background = await readFile(new URL('../extension/background.js', import.m
 
 test('every comment block has a blank line before and after it', async () => {
   const root = new URL('..', import.meta.url);
-  const files = execFileSync('git', ['ls-files'], { cwd: fileURLToPath(root), encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean)
+  // WHY the filesystem and not git ls-files: a file written minutes ago is not
+  // tracked yet, and that is exactly when the rule is easiest to break. CI proved
+  // it -- lib/goal-plan.js shipped with two unspaced blocks because the lock never
+  // saw an untracked file.
+  const skip = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build']);
+  const walk = async (dir, prefix = '') => {
+    const out = [];
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (skip.has(entry.name)) continue;
+      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) out.push(...await walk(new URL(`${entry.name}/`, dir), relative));
+      else out.push(relative);
+    }
+    return out;
+  };
+  const files = (await walk(root))
     // Migrations are applied artifacts and must never be rewritten; JSON has no
     // comments, and the lockfiles beside them are generated.
     .filter((f) => !f.startsWith('supabase/migrations/'))
