@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 21:44 UTC+7.
+@last-edited: 2026-10-04 22:58 UTC+7.
 
 # HANDOFF
 
@@ -89,36 +89,36 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - `1facc42` concluded **success on all three gates**: unit, secret-scan, browser. It is the
   head that carries the `media.play` change, so it is the acceptance evidence for the
   runtime. Three earlier commits are green on the same gates.
-- `d7fab9f` is **green on unit and secret-scan** on GitHub's Linux runner: 772 tests and
-  `npm run check` there, and gitleaks clean. Only `browser` is queued, on the runner the
-  owner has to start. This is the first CI evidence of the session.
+- `62fdc72` is **green on all three gates** — unit, secret-scan and browser — on GitHub's own
+  Linux runners. The browser gate runs the same harness headed under `xvfb-run` on
+  playwright's chromium. This is the acceptance evidence for the whole session: earlier
+  commits only ever had local green.
+- Three dead ends got there and each one is a trap worth keeping:
+  - Headless Chromium does not start this extension's MV3 service worker.
+  - The image's branded Chrome does not load an unpacked MV3 extension through playwright
+    at all, headless or headed. Playwright's own chromium does.
+  - `xvfb-run` stops draining the child's stdout, so the harness finishes the suite and
+    then dies writing its summary. Redirect stdout to a file.
 - The secret-scan gate had **never executed** before 2026-10-04. Its first run failed on its
   own configuration: the jwt allowlist still pointed at `tests/transaction-cloud-8d.test.mjs`,
   a name that stopped existing when milestone labels left the file names. Fixed by
-  re-pointing paths, never by editing the fixture.
-- `unit` and `secret-scan` moved to `ubuntu-latest`; `browser` stays on
-  `[self-hosted, Windows, X64]`. The Windows-only `GIT_CONFIG_GLOBAL=/dev/null` moved to that
-  job alone, because on Linux every `git config` call fails against it.
+  re-pointing paths, never by editing the fixture, and locked locally by
+  `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`.
+- All three jobs run on `ubuntu-latest`; the self-hosted Windows runner is no longer needed
+  by CI. The Python 3.12 pin is restored, because the reason it was dropped was a fault of
+  this machine's installer rather than of the pin.
+- The browser gate proves the extension end to end on Linux, but the focus audit cannot see
+  what a headless display hides, so the local gates still run Brave headed on this machine.
 - The concurrency group cancels an in-flight run when a newer one queues, so a push made
-  while CI is running destroys the evidence for the head that was being tested. Push, then
-  wait. Two runs were lost to this during this session.
+  while CI is running destroys the evidence for the head being tested. Push, then wait.
 - One browser failure came out of this session and was a defect in the harness, not the
   product: the focus audit called a window losing OS focus a stolen focus. It now reports
   five states and only fails when focus lands on a different window or a different tab,
   which is what a steal physically is. The classifier is checked on all five at the start
   of every run, and both steal branches were proved red by disabling them.
-- Reaching the first green run took three machine faults, none of them in the code:
-  - `actions/setup-python` spawned a python.org installer that never finished, at zero
-    CPU for over two hours. On a single runner that also blocked the two jobs needing
-    no Python. The step is gone; the browser job uses the machine's Python 3.13 with
-    playwright and prints the version it used. **The 3.12 pin is not restored.**
-  - `shell: bash` resolved to the WSL launcher and the runner has no WSL distribution,
-    so every job died in under a second without running a command. The shell is now
-    `pwsh`, which is installed and translates no paths.
-  - The gitleaks asset name was `.tar.gz`; gitleaks publishes `windows_x64.zip`, so the
-    step 404'd. It had never run before, because the shell was broken first.
-- Every job also has a timeout and the workflow has a concurrency group, so a hang
-  becomes a visible failure and superseded runs do not queue behind each other.
+- Every job has a timeout and the workflow has a concurrency group, so a hang becomes a
+  visible failure and superseded runs do not queue behind each other. A push made while a
+  run is in flight cancels it, so push and then wait.
 
 ## Blocked, needs the owner at the machine
 
