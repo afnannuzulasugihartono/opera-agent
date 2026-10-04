@@ -1690,8 +1690,23 @@
   async function mediaAction(method, args) {
     const el = mediaElement(args.index);
     if (!el) throw new Error('No media element found.');
-    if (method === 'media.play') await el.play();
-    else if (method === 'media.pause') el.pause();
+    if (method === 'media.play') {
+      try {
+        await el.play();
+      } catch (error) {
+        // Chrome refuses to start unmuted playback without a user gesture, and its
+        // own wording names a browser concept the caller cannot act on. Observed on a
+        // real video: the refusal is the autoplay policy, and foreground mode is the
+        // path that works, because it clicks the player.
+        if (error && error.name === 'NotAllowedError') {
+          throw new Error(
+            'The browser blocked playback because the document has no user gesture. '
+            + "Retry media.play with executionMode 'foreground', which clicks the player."
+          );
+        }
+        throw error;
+      }
+    } else if (method === 'media.pause') el.pause();
     else if (method === 'media.seek') {
       const seconds = Number(args.seconds);
       if (!Number.isFinite(seconds)) throw new Error('Invalid seek time.');

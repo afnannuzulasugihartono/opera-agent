@@ -732,7 +732,13 @@ async def case_primitive_sweep():
         record('sweep', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
-AUTOPLAY_REFUSED = "didn't interact with the document"
+# Chrome's own wording, and the product's replacement for it. The extension now
+# catches NotAllowedError and names the autoplay refusal itself, because Chrome's
+# message describes a browser concept the caller cannot act on. Keying on the
+# browser's English alone turned that improvement into a failed case, which is the
+# wrong lesson to teach a suite. What makes this a real classifier rather than a
+# sentence check is the step after it: the trusted click has to move the playhead.
+AUTOPLAY_REFUSED = ("didn't interact with the document", 'no user gesture')
 
 
 async def case_media_on_real_video():
@@ -756,7 +762,7 @@ async def case_media_on_real_video():
                 last_error.clear()
                 last_error.update(err if isinstance(err, dict) else {'message': str(exc)})
                 message = str(last_error.get('message', ''))
-                if tolerate and tolerate in message:
+                if tolerate and any(marker in message for marker in tolerate):
                     record(f'media {label}', None,
                            f'refused by the browser: {message[:90]}')
                 else:
@@ -770,9 +776,9 @@ async def case_media_on_real_video():
                                       f'readyState={r["media"].get("readyState")} '
                                       f'duration={r["media"].get("duration")}'))
         # Chrome's autoplay policy refuses play() on a document the user never
-        # interacted with and says so in its own message. That is the browser, not
-        # us, so it is reported rather than failed; the next step proves the
-        # capability with the gesture the policy asks for.
+        # interacted with, and the extension reports that refusal in its own words.
+        # That is the browser's policy, not us, so it is reported rather than failed;
+        # the next step proves the capability with the gesture the policy asks for.
         played = await step('play', 'media.play', {'tabId': tid, 'index': 0},
                             lambda r: 'play dispatched', tolerate=AUTOPLAY_REFUSED)
         if played is None:
