@@ -15,37 +15,31 @@ Highest wins, written out in full so there is nothing to guess.
 
 ## Priority order
 
-The mission, in order. Later items only matter once the earlier ones hold.
+1. **Fungsi** — it works, proven by driving it.
+2. **Fitur** — justified by a real case. No case, no feature.
+3. **Kecepatan** — short round trips. Measure before claiming a gain.
 
-1. **Fungsi** — make opera agent actually work. Verified by driving it, not by a green suite.
-2. **Fitur** — a feature is justified by a real case: a problem observed on a real site, a
-   real failure, or a real owner need. No case, no feature.
-3. **Kecepatan** — short round trips. One burst beats several calls. Measure before
-   claiming a gain.
-
-- Simplicity outranks all three: simple and working beats clever and broken.
+Simple outranks all three.
 
 ## Triggers
 
 | Trigger | Action |
 |---|---|
 | "lanjutkan" | read `AGENTS.md`, `docs/HANDOFF.md`, `docs/CONTEXT.md`, then act |
-| **"autonomously" / "lanjutkan sendiri" / "sampai mission tercapai"** | keep going on your own until the mission is reached. Do not ask permission, do not stop to confirm, do not hand back a partial result with a question at the end. Choose, act, verify, then report |
-| **"upgrade terus" / "keep upgrading" / the owner leaves** | keep improving until the wall clock time the owner named. Work unattended: commit each verified step, keep the tree clean, and leave a short note in `docs/HANDOFF.md` so the next session resumes without re-deriving anything |
-| **a verified step passes** | push it. Every positive, verified increment goes to `origin/main` at once, so the owner's machine and any CI run see the same working state. Never leave a verified win sitting in a local commit |
-| "apa langkah selanjutnya" | do not start work; say in plain language what is broken or undecided, and the choice the owner must make |
-| "merelakan" / "hapus aja" | the owner has decided; stop relitigating and do it |
-| something is broken | fix it first, before any feature or speed work |
-| a bug or feature does not work | research before fixing; research again until it is solved |
+| "autonomously", "sampai mission tercapai" | keep going until the mission is reached. Do not ask, do not hand back a partial result with a question at the end |
+| "upgrade terus", owner leaves | keep improving until the time named. Commit each verified step, keep the tree clean, leave a note in `docs/HANDOFF.md` |
+| a verified step passes | push it to `origin/main` at once. Never leave a verified win in a local commit |
+| "apa langkah selanjutnya" | do not start work. Say what is broken or undecided, and the choice the owner must make |
+| "merelakan", "hapus aja" | decided. Stop relitigating and do it |
+| something is broken | fix it first, and research before fixing |
 | a lock, comment or doc is too long | cut it, or split it into baby steps |
-| using a language or library | read its official docs or manual first, so `print` means what it really means |
-| about to claim it works | drive it yourself; a green suite and a skip are not proof |
-| adding a test to lock a removal | never — a preference is not irreversible |
-| three failures with no new evidence | blocked: stop editing and report |
-| the mission is not reached | do not stop; keep going |
+| using a language or library | read its official docs first, so `print` means what it really means |
+| about to claim it works | drive it yourself. A green suite and a skip are not proof |
+| adding a test to lock a removal | never. A preference is not irreversible |
+| three failures, no new evidence | blocked: stop editing and report |
+| a real site shows a problem | ours until proven otherwise. Record it in `docs/CONTEXT.md` |
+| adding or renaming a `.md` | give it a `Related:` header and check every link resolves |
 | you need a document | use the map below, never a guess or a repo-wide grep |
-| adding or renaming a `.md` | give it a one-line `Related:` header and check every link resolves. No document is an island |
-| a real site shows a new problem | treat it as ours until proven otherwise, and record it in `docs/CONTEXT.md` if it can bite again |
 
 ## Mission
 
