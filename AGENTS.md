@@ -47,11 +47,8 @@ Simple outranks all three.
 - Docs and tests support them — never the task.
 - A task ships a runtime change or it ships nothing.
 - A document or a test in place of the work asked is a failed task.
-- A session that ships no runtime change must say so and justify it.
-- No named file? Pick the target with `npm run scope -- "<task>"`, then edit it.
-- Do not add docs or tests unless asked.
+- No named file? `npm run scope -- "<task>"`, then edit it.
 - If scope shows the problem lives in a test or doc, say that instead.
-- Round trips are the cost that matters: one burst beats several calls.
 
 ## Verify by driving it
 
@@ -109,21 +106,16 @@ no document is an island. Adding or renaming one means updating both.
 - A test's job is to test, not to make a claim valid.
 - A lock that only asserts a sentence exists proves nothing — do not add one.
 - Failing test first, then the smallest generic mechanism.
-- Comments answer WHY, never WHAT. One line per lock entry.
-- Every file and every function carries a comment naming what it is and what it does,
-  in one or two lines, at the top. That is WHAT and it is required. WHY belongs in the
-  comments inside the body. A function nobody can name from its signature is a function
-  nobody can find later.
-- Write current state, never history. Say what is true now and why; git keeps the
-  past. No change narrative, incident timeline, or migration story.
+- Every file and every function opens with a comment naming what it is and what it
+  does. Comments inside the body answer WHY.
+- Write current state, never history. Git keeps the past.
 - `.md` files are bullets, not prose. One idea per line, a table for a list of facts.
-  A shorter file that says only what matters beats a longer one that records all.
 - Any claim about repository state cites `path:line` or a command you ran.
 - Unverified is a valid answer — say it is unverified and stop.
 
 ## Live sites
 
-- Real-site cases must act like a person: search, scroll, save, close, then undo.
+- Real-site cases act like a person: search, scroll, save, close, then undo.
 - Google account is the primary login, GitHub the secondary.
 - Credentials come from env vars only, never committed and never printed.
 - A flaky third-party page is never a product regression — hence opt-in.
