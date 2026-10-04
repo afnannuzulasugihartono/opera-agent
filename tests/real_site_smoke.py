@@ -1111,6 +1111,64 @@ async def case_foreground_mode():
         record('foreground mode', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_burst_hover_menu():
+    """The pattern the MCP instructions prescribe for menus, on a real page.
+
+    Hover, then find the entry the hover revealed, then click it, all inside one
+    burst. Every step is milliseconds from the last, which is the whole point: a
+    header that re-renders refuses a ref read in an earlier round trip.
+    """
+    try:
+        found = await drive('tabs.find', {'urlContains': 'youtube.com', 'limit': 1})
+        tabs = found.get('tabs') or []
+        if tabs:
+            tid = tabs[0]['id']
+        else:
+            tid = (await drive('tabs.open', {
+                'url': 'https://www.youtube.com/', 'active': True, 'wait': True
+            }))['tab']['id']
+
+        # Wait until the header is actually there. Bursting into a page that has not
+        # hydrated yet finds an element the actionability gate then refuses, which is
+        # our impatience rather than the site's behaviour.
+        for _ in range(10):
+            probe = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 900}))['page']
+            labels = [str(i.get('label', '')).lower() for i in probe['elements']]
+            if any('home' in x for x in labels):
+                break
+            await asyncio.sleep(1.2)
+
+        # Every ref is minted inside the burst. Taking one from an earlier read is
+        # exactly what fails on this page: the header re-renders and the ref is stale
+        # before the burst starts.
+        result = await drive('browser.burst', {
+            'tabId': tid,
+            'steps': [
+                {'action': 'find', 'text': 'Home', 'limit': 1},
+                {'action': 'hover', 'refFromStep': 0, 'text': 'Shorts'},
+                {'action': 'find', 'text': 'Shorts', 'limit': 1},
+                {'action': 'click', 'refFromStep': 2}
+            ],
+            'executionMode': 'background'
+        })
+        steps = result.get('results', [])
+        ok = bool(steps) and all(s.get('ok') for s in steps)
+        detail = ', '.join(
+            f"{(s.get('result') or {}).get('action') or s.get('action') or 'step'}:"
+            f"{'ok' if s.get('ok') else (s.get('error') or {}).get('code')}"
+            for s in steps)
+        record('burst hover, find, click in one call', ok,
+               detail or json.dumps(result, ensure_ascii=False)[:220])
+
+        await asyncio.sleep(2.5)
+        landed = (await drive('tabs.get', {'tabId': tid}))['tab']
+        record('the burst click navigated', 'shorts' in landed['url'],
+               f'{landed["url"][:64]}')
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('burst hover pattern', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -1178,6 +1236,7 @@ async def run(port, profile):
         await maybe(lambda: case_youtube_search_and_open(), 'youtube-search')
         await maybe(lambda: case_stale_ref_recovery(), 'stale-ref')
         await maybe(lambda: case_foreground_mode(), 'foreground')
+        await maybe(lambda: case_burst_hover_menu(), 'burst-hover')
         await maybe(lambda: case_primitive_sweep(), 'sweep')
         await maybe(lambda: case_media_on_real_video(), 'media')
         await maybe(lambda: case_click_every_control('https://opencode.ai/', 'opencode'),
