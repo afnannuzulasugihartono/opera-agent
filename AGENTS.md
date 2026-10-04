@@ -1,15 +1,25 @@
 # Opera Agent agent instructions
 
+Simplification above everything. Current state, never a history book.
+
 MV3 browser extension + Supabase backend. Read before changing anything.
 
 Related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
+
+## Mission
+
+- Ship a runtime change. The runtime code is the product: [`extension/`](extension/README.md), [`lib/`](lib/AGENTS.md), [`supabase/functions/`](supabase/README.md).
+- Ship docs and tests to support it. Docs and tests support them — never the task.
+- Ship nothing, and justify it, when a session ships no runtime change.
+- Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
+- Say so instead when scope shows the problem lives in a test or a doc.
 
 ## Precedence
 
 Highest wins.
 
 1. The owner, in this conversation.
-2. `AGENTS.md` — this file. Area scopes: [`extension/AGENTS.md`](extension/AGENTS.md), [`lib/AGENTS.md`](lib/AGENTS.md), [`supabase/AGENTS.md`](supabase/AGENTS.md).
+2. [`AGENTS.md`](AGENTS.md) — this file. Area scopes: [`extension/AGENTS.md`](extension/AGENTS.md), [`lib/AGENTS.md`](lib/AGENTS.md), [`supabase/AGENTS.md`](supabase/AGENTS.md).
 3. [`SECURITY.md`](SECURITY.md).
 4. [`docs/CONTEXT.md`](docs/CONTEXT.md) — durable traps.
 5. [`docs/HANDOFF.md`](docs/HANDOFF.md) — what shipped last session.
@@ -17,9 +27,9 @@ Highest wins.
 
 ## Priority order
 
-1. **Fungsi** — it works, proven by driving it.
-2. **Fitur** — justified by a real case. No case, no feature.
-3. **Kecepatan** — short round trips. Measure before claiming a gain.
+1. **Function** — it works, proven by driving it.
+2. **Feature** — justified by a real case. No case, no feature.
+3. **Speed** — short round trips. Measure before claiming a gain.
 
 Simple outranks all three.
 
@@ -31,17 +41,27 @@ Bind every session, in every area. Nothing below overrides them.
 
 - Read the target first: scope before editing, open only named files, read slices.
 - Write the failing test first, then the smallest mechanism. Change only what the request needs.
-- Comment header WHAT, body WHY. Name every file and function.
+- Comment header WHAT, body WHY. Name every file and function. Write current state in comments too, never a change narrative.
 - Test by driving it. Prove the lock fails. Cite the evidence. Say unverified and stop.
 - Never: mechanism first, claim without running, facts from memory, a test that validates a claim, a lock that asserts a sentence, a weakened test.
 
-**Documents — read, write, comment, test**
+**Documents — read, write**
+
+**Do**
 
 - Read through the map below. Never guess, never grep.
-- Write bullets, current state, full-path links.
-- Comment every `.md` with a `Related:` line naming the hub and its relatives, plus the map row in the same commit.
-- Test with doc-graph green: links resolve, no orphans, hub-mutual.
-- Never: prose, history narratives, a `.md` without `Related:` plus row, a `Related:` without the hub, a red doc-graph dismissed as "only docs".
+- Write bullets: one idea per line, current state, full-path links.
+- Write a `Related:` line on every `.md`, naming the hub and its relatives, plus the map row in the same commit.
+- Write for the gate: keep doc-graph green — links resolve, no orphans, hub-mutual.
+- Write instructions (do, don't) in [`AGENTS.md`](AGENTS.md). Write explanations (what files do, where docs live) in [`README.md`](README.md).
+
+**Don't**
+
+- Write prose paragraphs in a `.md`.
+- Write history in place of state: no change narrative, no incident timeline, no migration story.
+- Write a `.md` without its `Related:` line and map row, or a `Related:` line without the hub.
+- Dismiss a red doc-graph as "only docs".
+- Explain in [`AGENTS.md`](AGENTS.md). Instruct in [`README.md`](README.md).
 
 ## Triggers
 
@@ -51,7 +71,11 @@ Bind every session, in every area. Nothing below overrides them.
 | "autonomously", "sampai mission tercapai" | keep going until the mission is reached. Do not ask, do not hand back a partial result with a question at the end |
 | "upgrade terus", owner leaves | keep improving until the time named. Commit each verified step, keep the tree clean, leave a note in [`docs/HANDOFF.md`](docs/HANDOFF.md) |
 | a verified step passes | push it to `origin/main` at once |
-| "apa langkah selanjutnya" | do not start work. Say what is broken or undecided, and the choice the owner must make |
+| "apa langkah selanjutnya" | do not start work. Read [`ROADMAP.md`](ROADMAP.md), then say what is broken or undecided, and the choice the owner must make |
+| a question about latency or a number | read [`docs/benchmarks.md`](docs/benchmarks.md) first. Never quote a figure from memory |
+| pairing, deploy, or an incident | read [`docs/runbook.md`](docs/runbook.md) first, then act |
+| about to commit | re-read Strict rules and Session close above, then commit |
+| each turn, before acting | re-read Mission, Priority order, and Strict rules above, then act |
 | "merelakan", "hapus aja" | decided. Stop relitigating and do it |
 | something is broken | fix it first, and research before fixing |
 | a lock, comment or doc is too long | cut it, or split it into baby steps |
@@ -61,14 +85,10 @@ Bind every session, in every area. Nothing below overrides them.
 | three failures, no new evidence | blocked: stop editing and report |
 | a real site shows a problem | ours until proven otherwise. Record it in [`docs/CONTEXT.md`](docs/CONTEXT.md) |
 | you need a document | use the map below, never a guess or a repo-wide grep |
-
-## Mission
-
-- Ship a runtime change. The runtime code is the product: [`extension/`](extension/README.md), [`lib/`](lib/AGENTS.md), [`supabase/functions/`](supabase/README.md).
-- Ship docs and tests to support it. Docs and tests support them — never the task.
-- Ship nothing, and justify it, when a session ships no runtime change.
-- Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
-- Say so instead when scope shows the problem lives in a test or a doc.
+| writing or editing [`AGENTS.md`](AGENTS.md) | instructions only: do and don't. Explain nothing |
+| writing or editing [`README.md`](README.md) | explanation only: what files do, where docs live. Instruct nothing |
+| about to edit code | apply Code rules: read, write, comment, test |
+| about to edit a `.md` | apply Document rules: read, write |
 
 ## Verify by driving it
 
@@ -115,8 +135,8 @@ you add or rename one.
 
 - `npm test` — fast suite (`tests/*.test.mjs`).
 - `npm run check` — runtime discovery + version pins.
-- `py tests/browser_extension_test.py` — browser harness.
-- `OA_REAL_SITE=1 py tests/real_site_smoke.py` — live internet, opt-in.
+- `py [`tests/browser_extension_test.py`](tests/browser_extension_test.py)` — browser harness.
+- `OA_REAL_SITE=1 py [`tests/real_site_smoke.py`](tests/real_site_smoke.py)` — live internet, opt-in.
 - Run the Deno gates on CI only. Accept on CI evidence, never on local green.
 
 ## Live sites
@@ -211,7 +231,7 @@ Load it with `skill({ name: "karpathy-guidelines" })` before writing code.
 **Do**
 
 - Name files in kebab-case.
-- Keep the conventional root documents uppercase: [`README.md`](README.md), [`AGENTS.md`](AGENTS.md), [`SECURITY.md`](SECURITY.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CHANGELOG.md`](CHANGELOG.md), [`ROADMAP.md`](ROADMAP.md), [`SUPPORT.md`](SUPPORT.md), `CODE_OF_CONDUCT.md`, `LICENSE`.
+- Keep the conventional root documents uppercase: [`README.md`](README.md), [`AGENTS.md`](AGENTS.md), [`SECURITY.md`](SECURITY.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CHANGELOG.md`](CHANGELOG.md), [`ROADMAP.md`](ROADMAP.md), [`SUPPORT.md`](SUPPORT.md), `CODE_OF_CONDUCT.md`, [`LICENSE`](LICENSE).
 - Leave lifecycle tokens out of every name.
 - Name a thing for what it is.
 - Extend the root allowlist in [`tests/repo-naming-governance.test.mjs`](tests/repo-naming-governance.test.mjs) with a reason in the same commit.

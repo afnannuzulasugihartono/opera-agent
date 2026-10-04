@@ -1,5 +1,7 @@
 # AX-tree observation
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) - [delta-first-performance-plan.md](delta-first-performance-plan.md) - [extension/README.md](../extension/README.md)
 
 Lets the model see and act on state plain DOM text never carried: shadow-DOM controls,

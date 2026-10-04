@@ -1,5 +1,7 @@
 # Gateway API
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) - [runbook.md](runbook.md)
 
 - Machine source of truth: the live `GET /openapi.json` the gateway serves itself.

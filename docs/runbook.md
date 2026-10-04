@@ -1,5 +1,7 @@
 # Operator runbook
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) - [api.md](api.md) - [SECURITY.md](../SECURITY.md)
 
 For whoever holds the pager. Assumes no chat history.

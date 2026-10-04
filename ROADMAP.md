@@ -1,5 +1,7 @@
 # Roadmap
 
+Simplification above everything. Current state, never a history book.
+
 Current version: `1.6.15` (`extension/manifest.json` is the source of truth).
 
 Related: [`AGENTS.md`](AGENTS.md) - [`CHANGELOG.md`](CHANGELOG.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md)

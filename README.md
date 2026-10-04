@@ -1,5 +1,7 @@
 # Opera Agent
 
+Simplification above everything. Current state, never a history book.
+
 A private, local-browser control bridge.
 
 Related: [`AGENTS.md`](AGENTS.md) - [`SECURITY.md`](SECURITY.md) - [`docs/api.md`](docs/api.md)

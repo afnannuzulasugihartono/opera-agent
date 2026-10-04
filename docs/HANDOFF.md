@@ -1,5 +1,7 @@
 # HANDOFF
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 > What is true now and what to do next. Cap 150 lines. Spent detail: git history.

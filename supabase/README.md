@@ -1,5 +1,7 @@
 # Supabase
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) rules - [supabase/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
 
 Edge functions and migrations. `supabase/AGENTS.md` binds; read it first.

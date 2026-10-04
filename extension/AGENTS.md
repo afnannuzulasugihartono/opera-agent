@@ -1,5 +1,7 @@
 # extension/ scope
 
+Simplification above everything. Current state, never a history book.
+
 Root `AGENTS.md` binds; read it first.
 
 MV3 runtime: background worker, content scripts, popup, options.

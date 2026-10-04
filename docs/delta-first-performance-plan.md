@@ -1,5 +1,7 @@
 # Delta-First Runtime
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) - [benchmarks.md](benchmarks.md) - [ax-observation.md](ax-observation.md)
 
 Status: **ACCEPTED / CLOSED.** Not reopened. The per-phase commits, CI runs, and

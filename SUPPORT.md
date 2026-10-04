@@ -1,5 +1,7 @@
 # Support
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](AGENTS.md) rules - [runbook.md](docs/runbook.md) - [tests/README.md](tests/README.md)
 
 ## Supported versions

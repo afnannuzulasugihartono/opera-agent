@@ -11,6 +11,8 @@ metadata:
 
 # Karpathy Guidelines
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../../../AGENTS.md) rules
 
 Behavioral guidelines that reduce common LLM coding mistakes, derived from

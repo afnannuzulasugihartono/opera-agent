@@ -1,5 +1,7 @@
 # Tests
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](../docs/runbook.md)
 
 `npm test` runs `tests/*.test.mjs`, non-recursive. Node's built-in runner, no framework.

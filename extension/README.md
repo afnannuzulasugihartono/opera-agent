@@ -1,5 +1,7 @@
 # Extension
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) - [extension/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
 
 Browser-local Opera Agent code. A thin bridge: receive a validated command, run one

@@ -1,5 +1,7 @@
 # Contributing
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](AGENTS.md) rules - [tests/README.md](tests/README.md)
 
 ## Development workflow

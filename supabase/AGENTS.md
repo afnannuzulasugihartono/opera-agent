@@ -1,5 +1,7 @@
 # supabase/ scope
 
+Simplification above everything. Current state, never a history book.
+
 Root `AGENTS.md` binds; read it first.
 
 Edge functions in Deno, and migrations in timestamp order.

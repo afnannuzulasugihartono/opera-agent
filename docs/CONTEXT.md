@@ -1,5 +1,7 @@
 # CONTEXT
 
+Simplification above everything. Current state, never a history book.
+
 Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session - [runbook.md](runbook.md)
 
 > Facts that must survive because they cannot be recovered by reading the code.

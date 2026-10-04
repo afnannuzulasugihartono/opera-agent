@@ -1,5 +1,7 @@
 # lib/ scope
 
+Simplification above everything. Current state, never a history book.
+
 Root `AGENTS.md` binds; read it first.
 
 Shared pure modules the server and the extension both read.
