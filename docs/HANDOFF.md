@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 20:52 UTC+7.
+@last-edited: 2026-10-04 21:16 UTC+7.
 
 # HANDOFF
 
@@ -89,9 +89,11 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - `1facc42` concluded **success on all three gates**: unit, secret-scan, browser. It is the
   head that carries the `media.play` change, so it is the acceptance evidence for the
   runtime. Three earlier commits are green on the same gates.
-- The self-hosted runner `laptop-d-runner` is offline, so CI jobs queue and never
-  start. Starting it is an owner action on that machine. Pushes made while it is
-  offline only replace one dead queued run with another.
+- The `unit` gate now runs on `ubuntu-latest` and passes there: `npm test` 772 and
+  `npm run check` are platform-neutral, which is the first proof of it on anything but
+  this Windows machine. `secret-scan` and `browser` still need the self-hosted runner.
+- The self-hosted runner `laptop-d-runner` is offline, so `secret-scan` and `browser` queue
+  and never start. Starting it is an owner action on that machine.
 - The concurrency group cancels an in-flight run when a newer one queues, so a push made
   while CI is running destroys the evidence for the head that was being tested. Push, then
   wait. Two runs were lost to this during this session.
