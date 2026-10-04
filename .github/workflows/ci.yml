@@ -1,6 +1,6 @@
-# @last-edited: 2026-10-04 22:22 UTC+7.
+# @last-edited: 2026-10-04 22:44 UTC+7.
 # @title: ci — three jobs, all on GitHub Linux runners.
-# @state: no self-hosted runner; the harness runs headed under xvfb on the image Chrome.
+# @state: no self-hosted runner; the harness runs headed under xvfb on playwright chromium.
 # @dependencies: none stated.
 
 name: CI
@@ -123,26 +123,26 @@ jobs:
       # own cache in seconds, so 3.12 is pinned again and CI runs the interpreter
       # the repo asks for.
 
-      - name: Install playwright
-        run: python -m pip install --quiet playwright
+      - name: Install playwright and its chromium
+        run: |
+          python -m pip install --quiet playwright
+          python -m playwright install --with-deps chromium
       - name: Show the interpreter the harness will use
         run: |
           python -c "import sys, playwright; print(sys.version.split()[0], 'playwright ok')"
-      - name: Browser harness (Chromium under xvfb)
+      - name: Browser harness (playwright chromium under xvfb)
         env:
 
-          # WHY headed under xvfb and not headless. Headless Chromium does not start
-          # an MV3 service worker: the first attempt died in 19 seconds on
-          # "extension service worker did not start". xvfb-run with a real display
-          # is what this same file ran under when CI accepted it, so the display is
-          # the only thing that changes and the harness is the same one.
-          #
-          # WHY the image's Chrome and no browser download: playwright can launch an
-          # executable it did not fetch, and the ubuntu image already ships Chrome.
-          # Downloading a browser per run costs minutes and adds a failure mode that
-          # has nothing to do with this repository.
+          # WHY headed under xvfb, and playwright's chromium rather than the image's
+          # Chrome. Two measured dead ends, both the same 20-second failure, "extension
+          # service worker did not start": headless on the image's Chrome, and headed
+          # under xvfb on the image's Chrome. The branded Chrome build is what
+          # playwright drives with an executable override, and it does not load an
+          # unpacked MV3 extension here. Playwright's own chromium is the build its
+          # --load-extension support is written against, so it is the one left to try;
+          # xvfb-run with OA_BROWSER_HEADLESS=0 is the invocation this same file ran
+          # under when CI last accepted it.
 
-          OA_BROWSER_EXECUTABLE: /usr/bin/google-chrome
           OA_BROWSER_HEADLESS: '0'
 
         run: xvfb-run -a python tests/browser_extension_test.py
