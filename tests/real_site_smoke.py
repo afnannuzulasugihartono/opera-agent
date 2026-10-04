@@ -866,6 +866,12 @@ async def case_click_every_control(url, name, limit=14):
                         in ('button', 'link', 'menuitem', 'tab', 'switch', 'checkbox', 'option')
                         and str(i.get('label', '')).strip()
                         and is_safe_label(i.get('label'))
+                        # An element the listing reports as not visible is a hidden
+                        # duplicate, and clicking it is a guaranteed refusal, so the
+                        # budget is better spent on controls a person could click.
+                        # Only an explicit False is skipped, because the projection
+                        # drops absent fields rather than reporting them false.
+                        and i.get('visible') is not False
                         and str(i.get('label', '')).strip().lower() not in seen]
             if not controls:
                 skipped = [str(i.get('label', ''))[:16] for i in page['elements'][:4]
@@ -911,9 +917,21 @@ async def case_click_every_control(url, name, limit=14):
                 code = err.get('code') if isinstance(err, dict) else type(exc).__name__
                 message = str(err.get('message', ''))[:90] if isinstance(err, dict) else ''
                 refusals.append(f'{label!r} {code}')
+                # What page.read claimed about the refused element decides whether the
+                # refusal is the product refusing to guess or a contradiction: a hidden
+                # duplicate under the same accessible name is correct behaviour, and an
+                # element the listing called visible and actionable is a real bug.
+                claimed = next(
+                    (i for i in page['elements'] if i.get('ref') == control.get('ref')), None
+                )
+                gates = '' if claimed is None else (
+                    f' listed visible={claimed.get("visible")} '
+                    f'inViewport={claimed.get("inViewport")} '
+                    f'actionable={claimed.get("actionable")}'
+                )
                 # Reported, not failed: the burst below is the recovery and it carries
                 # the verdict for this control.
-                record(f'{name} click {label!r}', None, f'{code} {message}'.strip())
+                record(f'{name} click {label!r}', None, f'{code} {message}{gates}'.strip())
                 # A ref read in one round trip is already stale on a header that
                 # re-renders constantly, and re-finding in another round trip is
                 # just as stale. The product's own answer is to find and click inside
