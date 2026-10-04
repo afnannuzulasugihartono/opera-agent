@@ -20,16 +20,10 @@ import {
   RECORDED_BRIDGE_CADENCE
 } from './helpers/pull-cadence-sim.mjs';
 
-// Latency surface, consolidated 2026-10-03 from five files into one, sections in
-// the order the design happened: A pg_sleep inventory, B client-side cadence,
-// C server-side discovery, D claim-budget repair, E burst ceiling. Test count
-// was the invariant then (59 before, 59 after) and is again (59).
-//
-// Every figure is a clock-injected model of the server + extension path, not an
-// observation of a model loop. Real round-trip cost per task is unmeasured.
-//
-// WHY the sections keep their original re-freeze comments: they are the audit
-// trail for why each measurement exists, and why it was allowed to be re-timed.
+// Latency surface: every figure is a clock-injected model of the server +
+// extension path, never an observation of a model loop. Real round-trip cost
+// per task is unmeasured. Sections: A pg_sleep inventory, B client-side
+// cadence, C server-side discovery, D claim-budget repair, E burst ceiling.
 
 // --- shared reads ------------------------------------------------------------
 
@@ -65,8 +59,8 @@ const restoreRunFastUrl = new URL(
   import.meta.url
 );
 
-// The bridge delegated this wait to Postgres on 2026-10-02, so "before" is
-// measured from a recorded baseline, not live source. Pinned in
+// The bridge delegates this wait to Postgres, so "before" is measured from a
+// recorded baseline, not live source. Pinned in
 // tests/helpers/pull-cadence-sim.mjs to stay reproducible.
 const recordedCadence = RECORDED_BRIDGE_CADENCE;
 // Assumed cost of one `opera_claim_next` round trip. Reported at three values
@@ -205,8 +199,8 @@ test('all nine pg_sleep loops in the migrations are accounted for', () => {
       '20260922000000:79',
       '20260922000000:104',
       '20261002090000:61',
-      // 2026-10-03: the claim wait repeated here after the budget fix, and the
-      // watch wait replaced its flat 5ms spin with a ramp.
+      // The claim wait repeats here after the budget fix, and the watch wait
+      // replaced its flat 5ms spin with a ramp.
       '20261003110000:112',
       '20261003110000:156'
     ]
@@ -238,9 +232,9 @@ test('MEASURED: opera_await burns 1100 iterations for a 55s wait at a flat 50ms'
 });
 
 test('MEASURED: opera_watch_events_wait dropped from 6400 iterations to 648', () => {
-  // Superseded on 2026-10-03. The flat 5ms figure is kept as the recorded
-  // baseline so the comparison stays reproducible; section D holds the repair
-  // and its own measurement of the same transition.
+  // The flat 5ms figure is the recorded baseline the comparison reproduces
+  // against; section D holds the repair and its own measurement of the same
+  // transition.
   assert.equal(
     iterationsFor([{ upto: Infinity, seconds: 0.005 }], BUDGETS_MS.opera_watch_events_wait),
     6400,
@@ -283,8 +277,8 @@ test('MEASURED: adaptive and flat waits cost the same iterations but differ 10x 
 });
 
 test('the watch wait now costs about the same as a 32s command wait', () => {
-  // It used to be ~10x, because a flat 5ms is 10x finer than the command
-  // wait's flat 50ms. Both now ramp, so they cost about the same.
+  // A flat 5ms is 10x finer than the command wait's flat 50ms. Both now ramp,
+  // so they cost about the same.
   const watch = iterationsFor(schedules.get('opera_watch_events_wait').schedule, 32000);
   const command = iterationsFor(schedules.get('opera_await').schedule, 32000);
   assert.ok(watch / command < 1.2, `watch=${watch} command=${command}, expected them close`);
@@ -292,11 +286,10 @@ test('the watch wait now costs about the same as a 32s command wait', () => {
 });
 
 test('the AI-facing MCP path uses the adaptive ramp, not the flat 50ms wait', () => {
-  // Superseded 2026-10-02 (Phase C). The MCP server waited on `opera_await`,
-  // whose flat 50ms sleep was the coarser of the two available waits, while the
-  // gateway already used the ramp. The two share a signature and a response
-  // envelope, so the swap is latency-only; see tests/mcp-surface.test.mjs for
-  // the contract-neutrality proof.
+  // The flat 50ms `opera_await` is the coarser of the two available waits. The
+  // two share a signature and a response envelope, so the swap is
+  // latency-only; see tests/mcp-surface.test.mjs for the contract-neutrality
+  // proof.
   const mcp = fs.readFileSync(
     new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url),
     'utf8'
@@ -341,7 +334,7 @@ test('the full migration history was read, not a partial subset', () => {
 // no real timers -- these are reproducible figures, not timing flakes. This is
 // a model of the cadence, not a measurement against Supabase.
 
-test('the recorded baseline matches the constants the bridge used to declare', () => {
+test('the recorded baseline matches the retired client-side constants', () => {
   assert.deepEqual(recordedCadence, {
     fastPolls: 8,
     fastIntervalMs: 50,
@@ -400,7 +393,7 @@ test('the latency floor is insensitive to RPC cost: idle interval dominates', ()
   }
 });
 
-test('the documented egress figure refers to the pre-2026-09-24 cadence, not today', () => {
+test('the documented egress figure describes the old 250ms loop, not today', () => {
   // The bridge comment records "~52 opera_claim_next calls (6x50ms + 250ms
   // loop), ~13k claims/hour/device" as the state that motivated the ramp.
   // It is a changelog entry describing the old 250ms loop, not a claim about
@@ -558,9 +551,8 @@ test('the ramp stays fine through the interactive burst window', () => {
   ]);
   assert.ok(serverSideCadence, 'ramp must be measurable');
 
-  // The 2026-09-24 note records that follow-up commands arrive right behind the
-  // previous HTTP round trip, so the fine stages must cover at least the first
-  // 700ms of an idle window.
+  // Follow-up commands arrive right behind the previous HTTP round trip, so the
+  // fine stages must cover at least the first 700ms of an idle window.
   assert.ok(
     serverSideCadence.fineWindowMs >= 700,
     `fine stages cover only ${serverSideCadence.fineWindowMs}ms of the window`
@@ -631,8 +623,8 @@ test('opera_claim_next itself is untouched and still available', () => {
 
 // --- D. the claim-budget and watch-ramp repair --------------------------------
 //
-// Phase B Task 3 (2026-10-02): SQL-side corrections found during Phase B.
-// Four items, all in one migration, none of which changes a response contract:
+// Four SQL-side corrections, all in one migration, none of which changes a
+// response contract:
 //
 // 1. `expires_at` is computed at enqueue, so the time a command spends queued is
 //    charged against its own execution budget. `opera_claim_next` sweeps any
@@ -759,8 +751,6 @@ test('the queue index still serves the claim ordering', () => {
   assert.match(core, /opera_commands_queue_idx on public\.opera_commands\(device_id,status,created_at\)/);
 });
 
-// Item 4 above was resolved differently than the original note says. Corrected
-// 2026-10-03 after an owner review of what Phase B actually removed.
 // opera_run_fast was dropped on the reasoning that a dead, service_role-granted
 // function is a trap. It was not a caller and nothing broke either way, so the
 // drop was a preference rather than a requirement -- and removing pre-existing
@@ -830,9 +820,9 @@ const burstable = primitives.filter((m) => burstTargets.has(m));
 const notBurstable = primitives.filter((m) => !burstTargets.has(m));
 
 test('MEASURED: only 9 of 26 primitives can be expressed inside a burst', () => {
-  // Re-measured 2026-10-03: navigate joined the burst vocabulary (maps to the
-  // existing tabs.navigate primitive, so the count stays 26). Computed from the
-  // live module above, so the numbers cannot drift from the code.
+  // Computed from the live module above, so the numbers cannot drift from the
+  // code: navigate joined the burst vocabulary (maps to the existing
+  // tabs.navigate primitive, so the count stays 26).
   assert.equal(primitives.length, 26, 'primitive count changed; re-measure the burst ceiling');
   assert.equal(burstable.length, 9);
   assert.deepEqual(burstable.sort(), [
@@ -850,8 +840,8 @@ test('MEASURED: only 9 of 26 primitives can be expressed inside a burst', () => 
 });
 
 test('MEASURED: every media.* operation is un-burstable; tabs.* all but navigate are', () => {
-  // Re-measured 2026-10-03: tabs.navigate is reachable from a burst now. The
-  // rest of tabs.* still is not, and media.* is untouched.
+  // tabs.navigate is reachable from a burst now. The rest of tabs.* is not,
+  // and media.* is untouched.
   const tabs = primitives.filter((m) => m.startsWith('tabs.'));
   const media = primitives.filter((m) => m.startsWith('media.'));
   assert.equal(tabs.length, 8, 'all 8 tabs.* primitives exist');
