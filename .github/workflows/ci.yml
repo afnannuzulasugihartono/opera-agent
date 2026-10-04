@@ -36,13 +36,13 @@ env:
 
 defaults:
   run:
-    # WHY Git Bash and not `bash`. The bare name resolves to
-    # C:\Windows\System32\bash.exe, which is the WSL launcher, and this runner has no
-    # WSL distribution installed. Every job failed in under a second with
-    # "Windows Subsystem for Linux has no installed distributions" before running a
-    # single command. Git Bash ships with Git, which is installed, and understands the
-    # same /tmp and curl usage the steps already have.
-    shell: 'C:\Program Files\Git\bin\bash.exe'
+    # WHY pwsh. The bare name `bash` resolves to C:\Windows\System32\bash.exe, the WSL
+    # launcher, and this runner has no WSL distribution: every job died in under a
+    # second with "Windows Subsystem for Linux has no installed distributions" without
+    # running a command. Pointing at Git Bash instead failed differently, on MSYS path
+    # mangling of the runner's own arguments. PowerShell 7 is installed and needs no
+    # path translation, so the steps are written for it.
+    shell: pwsh
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -69,11 +69,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Secret scan (gitleaks)
         run: |
-          GITLEAKS_VERSION="8.24.0"
-          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_windows_x64.tar.gz" -o /tmp/gitleaks.tar.gz
-          mkdir -p /tmp/gitleaks-bin
-          tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin gitleaks.exe
-          /tmp/gitleaks-bin/gitleaks.exe detect --source . --verbose
+          $ErrorActionPreference = 'Stop'
+          $version = '8.24.0'
+          $bin = Join-Path $env:RUNNER_TEMP 'gitleaks-bin'
+          New-Item -ItemType Directory -Force -Path $bin | Out-Null
+          $archive = Join-Path $env:RUNNER_TEMP 'gitleaks.tar.gz'
+          Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v$version/gitleaks_${version}_windows_x64.tar.gz" -OutFile $archive
+          tar -xzf $archive -C $bin gitleaks.exe
+          & (Join-Path $bin 'gitleaks.exe') detect --source . --verbose
 
   browser:
     runs-on: [self-hosted, Windows, X64]
