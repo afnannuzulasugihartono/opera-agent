@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 19:26 UTC+7.
+@last-edited: 2026-10-04 20:26 UTC+7.
 
 # CONTEXT
 
@@ -71,20 +71,20 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
   harness can establish no ordering. Local and production timings disagree about what
   matters; a latency claim has to say which one it measured.
 - `opera_claim_next` has no `pg_sleep` and returns immediately. The wait is in
-  `opera_claim_next_wait`, called by the bridge. Measuring the wrong one of two similarly
-  named functions answers nothing.
-- The slowest non-navigation primitive is `page.scroll`, which waits for lazy DOM
-  changes to settle. First place to look for a win on the extension side.
+  `opera_claim_next_wait`, called by the bridge. Measuring the wrong one of two functions
+  with similar names answers nothing.
+- The slowest non-navigation primitive is `page.scroll`, which waits for lazy DOM changes
+  to settle. First place to look for a win on the extension side.
 
 ## Real sites, measured
 
-- Google sign-in is **two steps**: the first screen has only "Email or phone" and a
-  Next button, and the password field appears afterwards. A login case that asserts a
-  password box on the first read fails on Google's own flow, not on a defect.
-- GitHub's sign-in screen lists "Sign in with a passkey" before the password submit, so
-  a first-match label lookup picks the passkey button. Match on the exact label.
+- Google sign-in is **two steps**: the first screen has only "Email or phone" and a Next
+  button, and the password appears after. GitHub lists "Sign in with a passkey" first.
 - YouTube's search field carries role `combobox`, not `searchbox`. Anything that filters
   on role must accept both or it will not see the one field on the page.
+- A link picked by position on a results page is a coin flip: the first five links on a
+  YouTube results page were channel and avatar chrome, so five clicks landed on one
+  channel. `page.collect_links` returns URLs; filter by shape (`/watch?v=`, `/shorts/`).
 - `media.play` on a document the user never interacted with is refused by Chrome's
   autoplay policy, in Chrome's own words. A trusted click on the player starts the video.
 - On a page whose header re-renders continuously, a ref read in one round trip is stale

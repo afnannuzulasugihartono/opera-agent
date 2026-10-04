@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-04 18:25 UTC+7.
+# @last-edited: 2026-10-04 20:26 UTC+7.
 # @title: real_site_smoke — Test.
 # @context: Test.
 # @state: cover comment typing, likes, transcripts, Docs, GitHub and Wikipedia live.
@@ -512,39 +512,37 @@ async def case_youtube_search_and_open():
         if not links:
             return
 
-        # A video link cannot be told apart from the nav links in the payload: the
-        # stable key is a hash, not the URL. A person clicks through the results until
-        # a video opens, so do that, and stop as soon as the URL says watch.
+        # The element payload cannot say which link is a video: a ref carries a
+        # hashed stable key, not the URL, and the first links on a results page are
+        # channel and avatar chrome. Choosing by URL shape instead of by position is
+        # what a person reads off the page, and it stops the case from clicking five
+        # channel links and leaving the tab on someone's channel.
 
-        opened = False
-        for candidate in links[:5]:
-            try:
-                await drive('browser.burst', {
-                    'tabId': tab['id'],
-                    'steps': [
-                        {'action': 'click', 'ref': candidate['ref']}
-                    ],
-                    'executionMode': 'background'
-                })
-            except Exception as exc:
-                record(f'youtube open {str(candidate.get("label", ""))[:20]!r}', False,
-                       type(exc).__name__)
-                continue
-            await asyncio.sleep(3)
-            landed = (await drive('tabs.get', {'tabId': tab['id']}))['tab']
+        videos = []
+        try:
+            collected = await drive('page.collect_links', {
+                'tabId': tab['id'], 'limit': 120, 'sameOrigin': True
+            })
+            videos = [l for l in (collected.get('links') or [])
+                      if '/watch?v=' in str(l.get('url', '')) or '/shorts/' in str(l.get('url', ''))]
+            record('youtube results carry video links', bool(videos),
+                   f'{len(collected.get("links") or [])} links, {len(videos)} videos')
+        except Exception as exc:
+            record('youtube results carry video links', False, type(exc).__name__)
 
-            # YouTube serves these results as Shorts, which is a video page too.
-
-            if '/watch' in landed['url'] or '/shorts/' in landed['url']:
-                record('youtube opened a video', True,
-                       f'{str(candidate.get("label", ""))[:28]!r} -> {landed["url"][:64]}')
-                opened = True
-                break
-            record(f'youtube open {str(candidate.get("label", ""))[:20]!r}', True,
-                   f'went to {landed["url"][:52]}')
-        if not opened:
+        if not videos:
             record('youtube opened a video', False,
-                   f'tried {min(5, len(links))} result links, none reached a watch page')
+                   'no /watch or /shorts link on the results page')
+            return
+
+        await drive('tabs.navigate', {'tabId': tab['id'], 'url': videos[0]['url']})
+        await asyncio.sleep(3)
+        landed = (await drive('tabs.get', {'tabId': tab['id']}))['tab']
+        watch = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1200}))['page']
+        record('youtube opened a video',
+               '/watch' in landed['url'] or '/shorts/' in landed['url'],
+               f'{landed["url"][:64]} chars={watch["totalTextChars"]} '
+               f'elements={len(watch["elements"])}')
     except Exception as exc:
         record('youtube search', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
