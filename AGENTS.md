@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 19:29 UTC+7.
+@last-edited: 2026-10-04 20:04 UTC+7.
 
 # Opera Agent agent instructions
 
@@ -21,6 +21,27 @@ Related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`doc
   read-only and test-only sessions, never a session that only simplified docs and tests.
 - Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
 - Say so instead when scope shows the problem lives in a test or a doc.
+
+## Goals
+
+Three goals. A session serves the first one the change can serve.
+
+- **Everyone can reach it, so it has to be in production.** The product is the
+  deployed edge functions, the applied migrations and a signed CRX — `main` with a
+  green suite is not it. Release, signing key, Supabase PATs and the CI runner are
+  owner actions; they are listed in [`ROADMAP.md`](ROADMAP.md) and
+  [`docs/HANDOFF.md`](docs/HANDOFF.md).
+- **Every site, Google first.** Maps, YouTube and Docs are the main hold; GitHub and
+  Wikipedia are the sites that teach new functions. Cover every button on every site,
+  not one happy path per site. What the extension may do is
+  [`extension/README.md`](extension/README.md).
+- **A companion with an AI behind it.** The person talks to an assistant, the
+  assistant drives Opera Agent, and the work lands as a real artefact: ask for a Word
+  document in a chat and the document exists. It ships as server-side workflows over
+  the generic primitives in [`docs/api.md`](docs/api.md), never as site-specific code
+  inside the extension.
+- Do serve the goals in the Priority order below: a goal is met by working function
+  first, feature second, speed third.
 
 ## Precedence
 
