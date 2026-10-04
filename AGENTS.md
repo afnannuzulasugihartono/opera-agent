@@ -21,6 +21,39 @@ Highest wins.
 
 Simple outranks all three.
 
+## Strict rules
+
+These bind every session, in every area. Nothing below overrides them.
+
+**Do**
+
+- Open every file and every function with a comment naming it and what it does.
+- Put WHY in the comments inside the body. The header already carries WHAT.
+- Write current state. Say what is true now and why.
+- Write the failing test first, then the smallest generic mechanism that passes it.
+- Drive the thing yourself before saying it works.
+- Push every verified increment to `origin/main` at once.
+- Keep one writer per checkout, and end with a clean tree.
+- Cite `path:line` or the command you ran.
+- Write the concrete statement: `Explain the assumption`, not a gesture at one.
+- Say it is unverified and stop.
+
+**Don't**
+
+- Write a history book, a change narrative, an incident timeline, or a migration story.
+- Leave a function whose name says nothing about what it does.
+- Put WHAT in the body comments.
+- Write prose paragraphs in a `.md`. Bullets, one idea per line.
+- Write a test to make a claim valid.
+- Accept a lock that only asserts a sentence exists. Prove it fails on a realistic violation.
+- Write the mechanism first and the test after.
+- Claim it works without running it.
+- Leave a verified win in a local commit.
+- End dirty or diverged.
+- State a fact about the repository from memory.
+- Leave a neutral sentence that only gestures at what it means.
+- Commit a secret or print one.
+
 ## Triggers
 
 | Trigger | Action |
@@ -69,28 +102,11 @@ Simple outranks all three.
 | `lib/` | `lib/AGENTS.md` |
 | `supabase/` | `supabase/AGENTS.md` |
 
-| Need | Read |
-|---|---|
-| pairing, incidents, manual steps | `docs/runbook.md` |
-| command and response contract | `docs/api.md` |
-| latency baselines and locked ceilings | `docs/benchmarks.md` |
-| traps that caused a false claim | `docs/CONTEXT.md` |
-| what shipped last session | `docs/HANDOFF.md` |
-| what is still open | `ROADMAP.md` |
-| what changed in a release | `CHANGELOG.md` |
-| security boundary and token transport | `SECURITY.md` |
-| the overview, for a person | [`README.md`](README.md) |
-| how to propose a change | `CONTRIBUTING.md` |
-| where to ask for help | `SUPPORT.md` |
-| what the extension may do | `extension/README.md` |
-| what the scripts folder is for | `scripts/README.md` |
-| what the edge functions and migrations are | `supabase/README.md` |
-| what the suites cover | `tests/README.md` |
-| the delta-first runtime plan | `docs/delta-first-performance-plan.md` |
-| the accessibility-tree checkpoint | `docs/checkpoint-up1-ax-observation.md` |
+Read `README.md` for the map of which document answers which question. Never guess,
+never grep the repo for guidance.
 
-Keep every `.md` reachable: a one-line `Related:` header plus this table. Update both
-when you add or rename one.
+Keep every `.md` reachable: a one-line `Related:` header plus the map in `README.md`.
+Update both when you add or rename one.
 
 ## Commands
 
@@ -100,30 +116,23 @@ when you add or rename one.
 - `OA_REAL_SITE=1 py tests/real_site_smoke.py` — live internet, opt-in.
 - Run the Deno gates on CI only. Accept on CI evidence, never on local green.
 
-## Standards
-
-| Do | Don't |
-|---|---|
-| Write current state | Write a history book, a change narrative, an incident timeline, or a migration story |
-| Start every file and function with a comment naming it and what it does | Leave a function whose name says nothing about what it does |
-| Put WHY in the comments inside the body | Put WHAT in the body comments; the header already carries it |
-| Write a test to test | Write a test to make a claim valid |
-| Prove a lock fails on a realistic violation before accepting it | Accept a lock that only asserts a sentence exists |
-| Write the failing test first, then the smallest mechanism that passes it | Write the mechanism first and the test after |
-| Write `.md` as bullets, one idea per line | Write prose paragraphs in a `.md` |
-| Cite `path:line` or a command you ran | State a fact about the repository from memory |
-| Write the concrete statement: `Explain the assumption` | Leave a neutral sentence that only gestures at one |
-| Say it is unverified and stop | Claim it works without running it |
-
 ## Live sites
 
-| Do | Don't |
-|---|---|
-| Act like a person: search, scroll, save, close, then undo | Click a fixed list of coordinates and call it covered |
-| Use the Google account first, GitHub second | Reverse the order |
-| Take credentials from env vars only | Commit a credential, or print one into a transcript |
-| Treat a flaky third-party page as the site, not a regression | Fail the suite on a third party's outage |
-| Keep the live suite opt-in behind `OA_REAL_SITE=1` | Put it in `npm test` |
+**Do**
+
+- Act like a person: search, scroll, save, close, then undo.
+- Use the Google account first, GitHub second.
+- Take credentials from env vars only.
+- Treat a flaky third-party page as the site, not a regression.
+- Keep the live suite opt-in behind `OA_REAL_SITE=1`.
+
+**Don't**
+
+- Click a fixed list of coordinates and call it covered.
+- Reverse the account order.
+- Commit a credential, or print one into a transcript.
+- Fail the suite on a third party's outage.
+- Put the live suite in `npm test`.
 
 ## Principles
 
@@ -152,60 +161,114 @@ Full text: `.agents/skills/karpathy-guidelines/SKILL.md`. Load it with
 
 ## Boundaries
 
-| Do | Don't |
-|---|---|
-| Ask first: deleting foreign code, merge, promote, deploy, new top-level entries, production DB shape | Assume any of those is covered by "work autonomously" |
-| Decline unclear work | Guess |
-| Keep one checkout per writer | Share a checkout |
-| Leave a test that fails | Weaken a test to admit a violation |
-| Keep a secret out of the tree and the transcript | Commit a secret or print one |
+**Do**
+
+- Ask first: deleting foreign code, merge, promote, deploy, new top-level entries,
+  production DB shape.
+- Decline unclear work.
+- Keep one checkout per writer.
+- Leave a test that fails.
+- Keep a secret out of the tree and the transcript.
+
+**Don't**
+
+- Assume any of those is covered by "work autonomously".
+- Guess.
+- Share a checkout.
+- Weaken a test to admit a violation.
+- Commit a secret or print one.
 
 ## Scoped instructions
 
-| Do | Don't |
-|---|---|
-| Keep an area `AGENTS.md` at 15 lines or fewer, pointers only | Let it grow into a second manual |
-| Open it with the root-binds line | Open it with anything else |
-| Keep it consistent with the root | Let it contradict the root |
-| Register a new one in the Bootstrap table in the same commit | Add one that nothing points at |
+**Do**
+
+- Keep an area `AGENTS.md` at 15 lines or fewer, pointers only.
+- Open it with the root-binds line.
+- Keep it consistent with the root.
+- Register a new one in the Bootstrap table in the same commit.
+
+**Don't**
+
+- Let it grow into a second manual.
+- Open it with anything else.
+- Let it contradict the root.
+- Add one that nothing points at.
 
 ## Repository discipline
 
-| Do | Don't |
-|---|---|
-| Keep one writer per checkout | Write from two sessions at once |
-| Stop on a dirty tree | End dirty or diverged |
-| Preserve work you did not create | Discard it |
-| Mention pre-existing code this work did not create, in the same session | Delete it silently |
-| Remove it only when the change requires it, and say which in the commit message | Remove it as tidying |
-| Park work you must not lose on a branch or a stash | Park it in a directory nothing reads |
-| Accept on CI evidence: GitHub Actions and Vercel SUCCESS on the exact head | Accept on local green |
-| Ask the owner to deploy and to promote a release | Deploy or promote on your own |
+**Do**
+
+- Keep one writer per checkout.
+- Stop on a dirty tree.
+- Preserve work you did not create.
+- Mention pre-existing code this work did not create, in the same session.
+- Remove it only when the change requires it, and say which in the commit message.
+- Park work you must not lose on a branch or a stash.
+- Accept on CI evidence: GitHub Actions and Vercel SUCCESS on the exact head.
+- Ask the owner to deploy and to promote a release.
+
+**Don't**
+
+- Write from two sessions at once.
+- End dirty or diverged.
+- Discard work you did not create.
+- Delete pre-existing code silently.
+- Remove it as tidying.
+- Park work in a directory nothing reads.
+- Accept on local green.
+- Deploy or promote on your own.
 
 ## Naming
 
-| Do | Don't |
-|---|---|
-| Name files in kebab-case | Use spaces, dots, or capitals in a filename |
-| Keep the conventional root documents uppercase: `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `ROADMAP.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, `LICENSE` | Rename one of them to kebab-case |
-| Leave lifecycle tokens out: `tmp`, `temp`, `draft`, `wip`, `untitled`, `backup`, `copy`, `old`, `final<n>` | Put one in a name |
-| Name a thing for what it is | Name it for where it sits in a workflow |
-| Extend the root allowlist in `tests/repo-naming-governance.test.mjs` with a reason in the same commit | Add a root entry without a reason |
-| Branch `main`, `release/<semver>`, or `feat\|fix\|chore\|docs\|test\|perf\|refactor/<kebab>` | Use any other branch name |
-| Name tests `tests/<name>.test.mjs` | Put `tests/cloud`, `tests/postgres`, or `tests/deno` in `npm test` |
+**Do**
+
+- Name files in kebab-case.
+- Keep the conventional root documents uppercase: `README.md`, `AGENTS.md`,
+  `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `ROADMAP.md`, `SUPPORT.md`,
+  `CODE_OF_CONDUCT.md`, `LICENSE`.
+- Leave lifecycle tokens out: `tmp`, `temp`, `draft`, `wip`, `untitled`, `backup`,
+  `copy`, `old`, `final<n>`.
+- Name a thing for what it is.
+- Extend the root allowlist in `tests/repo-naming-governance.test.mjs` with a reason in
+  the same commit.
+- Branch `main`, `release/<semver>`, or
+  `feat|fix|chore|docs|test|perf|refactor/<kebab>`.
+- Name tests `tests/<name>.test.mjs`.
+
+**Don't**
+
+- Use spaces, dots, or capitals in a filename.
+- Rename a conventional root document to kebab-case.
+- Put a lifecycle token in a name.
+- Name a thing for where it sits in a workflow.
+- Add a root entry without a reason.
+- Use any other branch name.
+- Put `tests/cloud`, `tests/postgres`, or `tests/deno` in `npm test`.
 
 ## Model
 
-| Do | Don't |
-|---|---|
-| Keep the model at `opencode/space-bunny-free`, pinned in `opencode.json` | Drift the model silently |
-| State which model ran in the closeout | Leave the reader to guess |
+**Do**
+
+- Keep the model at `opencode/space-bunny-free`, pinned in `opencode.json`.
+- State which model ran in the closeout.
+
+**Don't**
+
+- Drift the model silently.
+- Leave the reader to guess.
 
 ## Session close
 
-| Do | Don't |
-|---|---|
-| Touch `docs/` only when the session changed code or released state | Rewrite `docs/` on a read-only session |
-| Leave both context files alone on a read-only or test-only session | Update them anyway |
-| Verify by running the thing | Verify by reading it and asserting it would work |
-| State which model ran, and push every verified increment | Leave a verified win in a local commit |
+**Do**
+
+- Touch `docs/` only when the session changed code or released state.
+- Leave both context files alone on a read-only or test-only session.
+- Verify by running the thing.
+- State which model ran, and push every verified increment.
+
+**Don't**
+
+- Rewrite `docs/` on a read-only session.
+- Update them anyway.
+- Verify by reading it and asserting it would work.
+- Leave a verified win in a local commit.
