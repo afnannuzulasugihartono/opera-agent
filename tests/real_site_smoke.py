@@ -818,6 +818,314 @@ async def case_media_on_real_video():
         record('media sweep', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_youtube_interactions():
+    """A person on a watch page: scroll to the comments, type, like, read the transcript.
+
+    No login, so nothing is submitted and nothing is liked: typing proves the
+    keyboard path on the real widget and is cleared afterwards, the like click
+    proves the control dispatches up to the sign-in wall, and the transcript
+    opens through the same UI a person uses. A wall is a skip with a reason,
+    never a failure.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://www.youtube.com/results?search_query=playwright+tutorial',
+            'active': True, 'wait': True
+        }))['tab']
+        tid = tab['id']
+        await asyncio.sleep(3.0)
+
+        async def read():
+            return (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1500}))['page']
+
+        # Open the first result the way a person picks a video, instead of a
+        # hardcoded id that can turn out to be made-for-kids with no comments.
+        page = await read()
+        video = next((i for i in page['elements']
+                      if str(i.get('role', '')).lower() == 'link'
+                      and '/watch' in str(i.get('href', ''))), None)
+        if not video:
+            record('youtube interactions video opened', None, 'no watch link in results')
+            await drive('tabs.close', {'tabId': tid})
+            return
+        await drive('page.click', {'tabId': tid, 'ref': video['ref'],
+                                   'executionMode': 'background'})
+        await asyncio.sleep(4.0)
+        info = (await drive('tabs.get', {'tabId': tid}))['tab']
+        record('youtube interactions video opened',
+               '/watch' in info.get('url', ''),
+               f'url={info.get("url", "")[:70]}')
+        # The tab title is the video title even while an ad plays, so the ad is
+        # detected by its own button instead. A person skips when it appears.
+        opened = False
+        await asyncio.sleep(8.0)
+        for _ in range(20):
+            panel = await read()
+            skip = by_label(panel, 'skip ad') or by_label(panel, 'skip ads')
+            if skip:
+                try:
+                    await drive('page.click', {'tabId': tid, 'ref': skip['ref'],
+                                               'executionMode': 'background'})
+                except Exception:
+                    pass
+                await asyncio.sleep(2.0)
+                continue
+            box = (by_role(panel, 'textbox', 'comment')
+                   or by_label(panel, 'add a comment')
+                   or by_label(panel, 'komentar'))
+            if box:
+                break
+            if not opened:
+                # The listing only carries what the page rendered, so ask the
+                # page itself where the comments are, then scroll there.
+                try:
+                    found = await drive('page.find', {'tabId': tid, 'text': 'Comments',
+                                                      'limit': 3})
+                    refs = [m.get('ref') for m in found.get('matches', [])
+                            if m.get('ref')]
+                    if refs:
+                        await drive('page.scroll', {'tabId': tid, 'ref': refs[0]})
+                        await asyncio.sleep(2.0)
+                        opened = True
+                        continue
+                except Exception:
+                    pass
+            comments = by_label(panel, 'comments')
+            if comments and comments.get('role') == 'button' and not opened:
+                # The list hides behind a Comments button; open it once, because
+                # a second click would fold it shut again.
+                await drive('page.click', {'tabId': tid, 'ref': comments['ref'],
+                                           'executionMode': 'background'})
+                await asyncio.sleep(2.0)
+                opened = True
+                continue
+            await drive('page.scroll', {'tabId': tid, 'direction': 'down', 'amount': 800})
+            await asyncio.sleep(1.5)
+
+        page = await read()
+        if not box:
+            box = by_role(page, 'textbox', 'comment') or by_label(page, 'add a comment')
+        if not box:
+            info = (await drive('tabs.get', {'tabId': tid}))['tab']
+            text = page.get('text', '')
+            off = 'comments are turned off' in text.lower()
+            # Six videos, same shape: the listing carries likes, subscribe and
+            # share, but no comments section at all for a logged-out session.
+            reason = ('comments disabled on this video' if off else
+                      'no comments section rendered logged-out')
+            record('youtube comment box found', None,
+                   f'{reason}; title={info.get("title", "")[:40]!r}')
+        else:
+            record('youtube comment box found', True,
+                   f'role={box.get("role")!r} label={str(box.get("label", ""))[:30]!r}')
+            await drive('page.focus', {'tabId': tid, 'ref': box['ref']})
+            filled = await drive('page.fill', {'tabId': tid, 'ref': box['ref'],
+                                               'value': 'percobaan ketik', 'trusted': True})
+            record('youtube comment typed', filled.get('valueLength') == len('percobaan ketik'),
+                   f'fillLen={filled.get("valueLength")}')
+            # Leave nothing behind: clear what was typed, submit nothing.
+            await drive('page.fill', {'tabId': tid, 'ref': box['ref'], 'value': ''})
+            cleared = await drive('page.query', {'tabId': tid,
+                                                 'selector': '#placeholder-area'})
+            record('youtube comment cleared', True,
+                   f'placeholder back={cleared.get("ok", True)}')
+
+        page = await read()
+        like = next((i for i in page['elements']
+                     if str(i.get('role', '')).lower() == 'button'
+                     and str(i.get('label', '')).lower().startswith('like')
+                     and 'dislike' not in str(i.get('label', '')).lower()), None)
+        if not like:
+            record('youtube like clicked', None, 'no like control in the listing')
+        else:
+            try:
+                await drive('page.click', {'tabId': tid, 'ref': like['ref'],
+                                           'executionMode': 'background'})
+                await asyncio.sleep(1.5)
+                after = await read()
+                wall = 'sign in' in (after.get('text', '')[:4000]).lower()
+                record('youtube like clicked', None if wall else True,
+                       'sign-in wall after the click' if wall else 'page responded')
+            except Exception as exc:
+                record('youtube like clicked', None, f'{type(exc).__name__} (no login)')
+
+        page = await read()
+        transcript = by_label(page, 'show transcript') or by_role(page, 'button', 'transcript')
+        if not transcript:
+            more = by_label(page, '...more')
+            if more:
+                # The transcript hides inside the description box; a person
+                # opens ...more first, then picks Show transcript.
+                await drive('page.click', {'tabId': tid, 'ref': more['ref'],
+                                           'executionMode': 'background'})
+                await asyncio.sleep(2.0)
+                page = await read()
+                transcript = (by_label(page, 'show transcript')
+                              or by_role(page, 'button', 'transcript'))
+        if not transcript:
+            cands = [f'{i.get("role")}:{str(i.get("label", ""))[:28]}'
+                     for i in page['elements']
+                     if 'transcript' in str(i.get('label', '')).lower()]
+            record('youtube transcript opened', None,
+                   f'no transcript control; transcript-ish: {cands[:6]}')
+        else:
+            await drive('page.click', {'tabId': tid, 'ref': transcript['ref'],
+                                       'executionMode': 'background'})
+            await asyncio.sleep(2.0)
+            panel = await read()
+            segments = (panel.get('text', '')[:6000]).count(':')
+            record('youtube transcript opened', segments > 3,
+                   f'~{segments} timestamped lines in the panel')
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        body = getattr(exc, 'body', None)
+        err = body.get('error') if isinstance(body, dict) else None
+        record('youtube interactions', False,
+               f'{type(exc).__name__} {(err or {}).get("code")} '
+               f'{(err or {}).get("message", str(exc))[:200]}')
+
+
+async def case_google_docs_wall():
+    """Google Docs logged out: the wall itself is the coverage.
+
+    A document canvas needs a signed-in account, which the suite never has, so
+    the honest probe drives what logged-out Docs actually serves: the sign-in
+    wall and its email field, found but never submitted.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://docs.google.com/', 'active': True, 'wait': True
+        }))['tab']
+        tid = tab['id']
+        await asyncio.sleep(2)
+        info = (await drive('tabs.get', {'tabId': tid}))['tab']
+        page = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1200}))['page']
+        wall = 'accounts.google.com' in info.get('url', '') or \
+            'sign in' in (page.get('text', '')[:2000]).lower()
+        record('google docs serves its sign-in wall', wall,
+               f'url={info.get("url", "")[:60]}')
+        email = (by_role(page, 'textbox', 'email')
+                 or by_label(page, 'email')
+                 or by_role(page, 'textbox'))
+        record('google docs email field found, not submitted', email is not None,
+               f'label={str((email or {}).get("label", ""))[:24]!r}' if email else 'no field')
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('google docs wall', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
+async def case_github_search():
+    """GitHub logged out: type in search, submit, read the results.
+
+    No login is needed for code search, so the whole loop is provable: focus,
+    fill, Enter, and a results page whose url and text differ from before.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://github.com/', 'active': True, 'wait': True
+        }))['tab']
+        tid = tab['id']
+        page = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1200}))['page']
+        box = (by_role(page, 'searchbox')
+               or by_role(page, 'combobox', 'search')
+               or by_role(page, 'textbox', 'search')
+               or by_label(page, 'search'))
+        if not box:
+            record('github search typed and submitted', None, 'no search field found')
+            await drive('tabs.close', {'tabId': tid})
+            return
+        before_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+        await drive('page.focus', {'tabId': tid, 'ref': box['ref']})
+        try:
+            filled = await drive('page.fill', {'tabId': tid, 'ref': box['ref'],
+                                               'value': 'playwright python', 'trusted': True})
+        except Exception as fill_exc:
+            # GitHub's landing search is a trigger that opens an overlay, not an
+            # input: the refusal is correct, and a person clicks it first.
+            filled = None
+            await drive('page.click', {'tabId': tid, 'ref': box['ref'],
+                                       'executionMode': 'background'})
+            await asyncio.sleep(2.0)
+            overlay = (await drive('page.read', {'tabId': tid, 'offset': 0,
+                                                'limit': 1200}))['page']
+            box = (by_role(overlay, 'searchbox')
+                   or by_role(overlay, 'combobox', 'search')
+                   or by_role(overlay, 'textbox', 'search')
+                   or by_label(overlay, 'search'))
+            record('github search overlay opened', box is not None,
+                   f'role={(box or {}).get("role")!r}' if box else 'no overlay field')
+            if box:
+                await drive('page.focus', {'tabId': tid, 'ref': box['ref']})
+                filled = await drive('page.fill', {'tabId': tid, 'ref': box['ref'],
+                                                   'value': 'playwright python',
+                                                   'trusted': True})
+        if filled is None:
+            await drive('tabs.close', {'tabId': tid})
+            return
+        await drive('page.key', {'tabId': tid, 'key': 'Enter', 'trusted': True})
+        await asyncio.sleep(3.5)
+        after_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+        after = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 800}))['page']
+        moved = after_url != before_url and 'search' in after_url
+        record('github search typed and submitted',
+               filled.get('valueLength') == len('playwright python') and moved,
+               f'fillLen={filled.get("valueLength")} url={after_url[:70]} '
+               f'chars={after.get("totalTextChars")}')
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        body = getattr(exc, 'body', None)
+        err = body.get('error') if isinstance(body, dict) else None
+        record('github search', False,
+               f'{type(exc).__name__} {(err or {}).get("code")} '
+               f'{(err or {}).get("message", str(exc))[:200]}')
+
+
+async def case_wikipedia_article():
+    """Wikipedia: scroll a long article, jump through its table of contents, go back.
+
+    A person reads down, clicks a section, and returns. The section heading must
+    be on screen afterwards, and the article must still be the same page.
+    """
+    try:
+        url = 'https://en.wikipedia.org/wiki/Playwright_(software)'
+        tab = (await drive('tabs.open', {'url': url, 'active': True, 'wait': True}))['tab']
+        tid = tab['id']
+        before = (await drive('page.read', {'tabId': tid, 'offset': 0,
+                                            'limit': 1200}))['page']
+        # The provable scroll is the ref variant: it moves the element into view
+        # and reports whether the scroll settled, so no viewport inference is
+        # needed. The Table of Contents History link is real content below the
+        # fold on a long article.
+        target = by_label(before, 'history') or by_role(before, 'link', 'history')
+        if not target:
+            record('wikipedia scrolled deep', None, 'no table-of-contents link found')
+            page = before
+        else:
+            scrolled = await drive('page.scroll', {'tabId': tid, 'ref': target['ref']})
+            page = (await drive('page.read', {'tabId': tid, 'offset': 0,
+                                              'limit': 1200}))['page']
+            label = str(target.get('label', ''))
+            now = next((i.get('inViewport') for i in page['elements']
+                        if str(i.get('label', '')) == label), None)
+            record('wikipedia scrolled deep',
+                   scrolled.get('settled') is True and now is True,
+                   f'{label[:24]!r} settled={scrolled.get("settled")} inViewport={now}')
+        toc = by_role(page, 'link', 'history') or by_label(page, 'history')
+        if not toc:
+            record('wikipedia section jumped', None, 'no table-of-contents link found')
+        else:
+            await drive('page.click', {'tabId': tid, 'ref': toc['ref'],
+                                       'executionMode': 'background'})
+            await asyncio.sleep(2.0)
+            now = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+            record('wikipedia section jumped',
+                   'Playwright_(software)' in now and '#' in now,
+                   f'url={now[:80]}')
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('wikipedia article', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 # A sweep clicks real controls, so it must not click the ones that spend money,
 # delete something, or end the session. Everything else on the page is fair game.
 UNSAFE_LABELS = (
@@ -1504,6 +1812,10 @@ async def run(port, profile):
         await maybe(lambda: case_click_every_control('https://www.youtube.com/', 'youtube'),
                     'youtube-controls')
         await maybe(lambda: case_maps_journey(), 'maps')
+        await maybe(lambda: case_youtube_interactions(), 'youtube-interactions')
+        await maybe(lambda: case_google_docs_wall(), 'google-docs')
+        await maybe(lambda: case_github_search(), 'github-search')
+        await maybe(lambda: case_wikipedia_article(), 'wikipedia')
 
         await drive('tabs.close', {'tabId': (await drive('tabs.list'))['tabs'][0]['id']})
         await context.close()

@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 MV3 browser extension + Supabase backend. Read before changing anything.
 
 Related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)

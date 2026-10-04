@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](../AGENTS.md) - [benchmarks.md](benchmarks.md) - [ax-observation.md](ax-observation.md)
 
 Status: **ACCEPTED / CLOSED.** Not reopened. The per-phase commits, CI runs, and

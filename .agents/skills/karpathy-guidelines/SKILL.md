@@ -13,6 +13,8 @@ metadata:
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](../../../AGENTS.md) rules
 
 Behavioral guidelines that reduce common LLM coding mistakes, derived from

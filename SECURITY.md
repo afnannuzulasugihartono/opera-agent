@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](AGENTS.md) rules - [runbook.md](docs/runbook.md) - [api.md](docs/api.md)
 
 Opera Agent can interact with a local browser and therefore uses a strict allowlisted command model.

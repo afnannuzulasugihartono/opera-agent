@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Root `[AGENTS.md](AGENTS.md)` binds; read it first.
 
 MV3 runtime: background worker, content scripts, popup, options.

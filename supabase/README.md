@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](../AGENTS.md) rules - [supabase/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
 
 Edge functions and migrations. `[supabase/AGENTS.md](AGENTS.md)` binds; read it first.

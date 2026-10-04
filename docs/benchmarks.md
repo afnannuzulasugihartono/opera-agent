@@ -1,6 +1,8 @@
 # Performance Benchmarks
 
 Simplify first. State what is true now, never its history.
+
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
 Do not turn one machine's timings into test assertions.
 
 Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](runbook.md) reproduce commands - [api.md](api.md)

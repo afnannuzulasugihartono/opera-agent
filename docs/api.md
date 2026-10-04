@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](../AGENTS.md) - [runbook.md](runbook.md)
 
 - Machine source of truth: the live `GET /openapi.json` the gateway serves itself.

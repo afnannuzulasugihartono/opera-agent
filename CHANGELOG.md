@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](AGENTS.md) rules - [HANDOFF.md](docs/HANDOFF.md) - [api.md](docs/api.md)
 
 Notable changes. Semantic versioning.

@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 > What is true now and what to do next. Cap 150 lines. Spent detail: git history.
@@ -67,6 +69,9 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - `1facc42` concluded **success on all three gates**: unit, secret-scan, browser. It is the
   head that carries the `media.play` change, so it is the acceptance evidence for the
   runtime. Three earlier commits are green on the same gates.
+- The self-hosted runner `laptop-d-runner` is offline, so CI jobs queue and never
+  start. Starting it is an owner action on that machine. Pushes made while it is
+  offline only replace one dead queued run with another.
 - The concurrency group cancels an in-flight run when a newer one queues, so a push made
   while CI is running destroys the evidence for the head that was being tested. Push, then
   wait. Two runs were lost to this during this session.

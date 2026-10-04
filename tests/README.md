@@ -2,6 +2,8 @@
 
 Simplify first. State what is true now, never its history.
 
+Cover every button on every site. After the main sites hold, add sites that teach new functions.
+
 Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](../docs/runbook.md)
 
 `npm test` runs `tests/*.test.mjs`, non-recursive. Node's built-in runner, no framework.
