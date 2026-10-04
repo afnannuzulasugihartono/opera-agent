@@ -1,6 +1,6 @@
-# Performance Track P — Delta-First Runtime
+# Delta-First Runtime
 
-Related: [AGENTS.md](../AGENTS.md) - [benchmarks.md](benchmarks.md) - [checkpoint-up1-ax-observation.md](checkpoint-up1-ax-observation.md)
+Related: [AGENTS.md](../AGENTS.md) - [benchmarks.md](benchmarks.md) - [ax-observation.md](ax-observation.md)
 
 Status: **ACCEPTED / CLOSED.** Not reopened. The per-phase commits, CI runs, and
 acceptance records live in git history.
@@ -8,8 +8,7 @@ acceptance records live in git history.
 - Keep canonical browser and semantic state inside the bounded runtime.
 - Process changes incrementally and wake reasoning only when a change needs a decision.
 - **Full snapshot is a recovery primitive**, not the desired steady-state path.
-- This track sits after accepted Checkpoint 8D. **8E remains paused** and needs an
-  explicit start instruction.
+- A follow-up track remains paused and needs an explicit start instruction.
 
 ## Frozen invariants
 
@@ -85,38 +84,38 @@ state, or foreground takeover to look faster.
 
 ## What each phase delivered
 
-- **P0 — plan freeze and baseline.** Froze the invariants, the workload matrix, and the
+- **Plan freeze and baseline.** Froze the invariants, the workload matrix, and the
   measurement contract.
-- **P1 — persistent semantic working state.** Bounded ephemeral canonical state with
+- **Persistent semantic working state.** Bounded ephemeral canonical state with
   exact revision continuity, identity isolation, replay idempotency, bounded retention,
   and fail-closed reset.
-- **P2 — delta-first observation pipeline.** Compact changed-fact and view patches for
+- **Delta-first observation pipeline.** Compact changed-fact and view patches for
   proven contiguous updates, with canonical state retained internally. Bootstrap,
   recovery, and fresh-verification paths still take full snapshots. Controlled paired
   evidence: 93.80% median payload reduction with zero stale continuation, false
   completion, foreground takeover, or relevant semantic loss.
-- **P3 — multi-signal coalescer and relevance gate.** Emits exactly `IGNORE_FOR_TASK`,
+- **Multi-signal coalescer and relevance gate.** Emits exactly `IGNORE_FOR_TASK`,
   `APPLY_AND_CONTINUE`, or `REASON_REQUIRED`. Only accepted goal and constraint
   dependency context grants relevance authority; missing or invalid context forces
   conservative reasoning.
-- **P4 — event-driven local reactive execution.** Composes accepted P3 output with
-  Reactive VM 7D. Controlled evidence: 88.89% fewer model-mediated round trips with all
+- **Event-driven local reactive execution.** Composes the accepted relevance output with
+  the Reactive VM. Controlled evidence: 88.89% fewer model-mediated round trips with all
   eight read effects exposed and zero false `PROVED` or foreground takeover.
-- **P5 — real-Opera performance acceptance.** Acceptance only, no runtime, extension,
+- **Real-Opera performance acceptance.** Acceptance only, no runtime, extension,
   public MCP, schema, signing, or OAuth change. Maps lazy growth and stable completion,
   GitHub SPA-route reset, YouTube semantic no-change filtering, 80% steady-state
   full-snapshot reduction, zero safety regressions. The 8.724x long-task figure is a
   mediation-elision transport proxy, not integrated host speed evidence.
-- **P6 — durable runtime cutover, maximal safe subset.** Wires Track state and relevance
-  reconciliation into the DB-backed 7E VM effect loop after `opera_await`, preserving the
+- **Durable runtime cutover, maximal safe subset.** Wires track state and relevance
+  reconciliation into the DB-backed VM effect loop after `opera_await`, preserving the
   database lease, checkpoint, effect-reservation and idempotency, host-token, and
   low-level command-queue authority.
 
-### P6 does not trust the caller
+### The cutover does not trust the caller
 
-P6 ignores caller-supplied `taskDependencies`. Until a server-authoritative dependency
-source exists, live P3 task context is missing and normal observation updates resolve
-conservatively to `REASON_REQUIRED`. That is the maximal safe subset: the full P3/P4 live
+It ignores caller-supplied `taskDependencies`. Until a server-authoritative dependency
+source exists, live task context is missing and normal observation updates resolve
+conservatively to `REASON_REQUIRED`. That is the maximal safe subset: the full live
 speedup is **not** claimed to be enabled.
 
 With a `performanceCutover` result present, local VM continuation is an explicit allowlist:
@@ -126,7 +125,7 @@ With a `performanceCutover` result present, local VM continuation is an explicit
 | valid accepted `APPLY_AND_CONTINUE`, no reasoning wake | may bind and continue |
 | reset required | suspend `STALE_TARGET` |
 | `REASON_REQUIRED`, `IGNORE_FOR_TASK`, unknown or missing decision, malformed context | suspend, fail closed |
-| no P6 metadata | keep the pre-P6 low-level VM path |
+| no cutover metadata | keep the low-level VM path used before the cutover |
 
 ## Stop conditions
 

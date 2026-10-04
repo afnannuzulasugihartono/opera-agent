@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures/delta-performance-baseline-p0-v1.json', import.meta.url), 'utf8'));
 const plan = fs.readFileSync(new URL('../docs/delta-first-performance-plan.md', import.meta.url), 'utf8');
 
-test('P0 baseline is pinned to the accepted post-8D head and keeps runtime boundaries frozen', () => {
+test('baseline is pinned to the accepted head and keeps runtime boundaries frozen', () => {
   assert.equal(fixture.schemaVersion, 1);
   assert.equal(fixture.track, 'DELTA_FIRST_PERFORMANCE');
   assert.equal(fixture.checkpoint, 'P0');
@@ -17,7 +17,7 @@ test('P0 baseline is pinned to the accepted post-8D head and keeps runtime bound
   assert.equal(fixture.transactionAuthorityMutationAllowed, false);
 });
 
-test('P0 freezes the complete synthetic and real-site workload matrix', () => {
+test('the freeze keeps the complete synthetic and real-site workload matrix', () => {
   const ids = fixture.workloads.map((item) => item.id);
   assert.deepEqual(ids, [
     'static-content',
@@ -36,7 +36,7 @@ test('P0 freezes the complete synthetic and real-site workload matrix', () => {
   assert.equal(fixture.workloads.filter((item) => item.kind === 'REAL_SITE').length, 3);
 });
 
-test('P0 freezes end-to-end measurements rather than DOM-only microbenchmarks', () => {
+test('the freeze keeps end-to-end measurements rather than DOM-only microbenchmarks', () => {
   const required = [
     'wallClockMs',
     'reasoningRoundTrips',
@@ -57,7 +57,7 @@ test('P0 freezes end-to-end measurements rather than DOM-only microbenchmarks', 
   assert.deepEqual(fixture.metrics, required);
 });
 
-test('P0 records inherited accepted 1.6.0 measurements without fabricating exact-head live results', () => {
+test('the freeze records inherited accepted 1.6.0 measurements without fabricating exact-head live results', () => {
   assert.equal(fixture.inheritedAcceptedMeasurements.source, 'docs/benchmarks.md');
   assert.equal(fixture.inheritedAcceptedMeasurements.richReadMedianMs, 19.83);
   assert.equal(fixture.inheritedAcceptedMeasurements.richSnapshotMedianBytes, 50953);
@@ -67,7 +67,7 @@ test('P0 records inherited accepted 1.6.0 measurements without fabricating exact
   assert.match(fixture.exactHeadLiveMeasurements.reason, /P0 is contract\/baseline freeze only/);
 });
 
-test('P0 freezes conservative P5 target gates without claiming they are already achieved', () => {
+test('the freeze keeps conservative target gates without claiming they are already achieved', () => {
   assert.equal(fixture.targetGates.maximumFalseCompletionCount, 0);
   assert.equal(fixture.targetGates.maximumForegroundTakeoverCount, 0);
   assert.equal(fixture.targetGates.maximumStaleStateActionCount, 0);
@@ -80,16 +80,15 @@ test('P0 freezes conservative P5 target gates without claiming they are already 
   assert.equal(fixture.targetGates.status, 'TARGET_NOT_ACHIEVEMENT');
 });
 
-test('plan preserves Milestone 8 and makes full snapshots recovery primitives rather than deleting them', () => {
+test('plan makes full snapshots recovery primitives rather than deleting them', () => {
   for (const marker of [
-    'Performance Track P',
-    'P0 — plan freeze and baseline',
-    'P1 — persistent semantic working state',
-    'P2 — delta-first observation pipeline',
-    'P3 — multi-signal coalescer and relevance gate',
-    'P4 — event-driven local reactive execution',
-    'P5 — real-Opera performance acceptance',
-    '8E remains paused',
+    'Plan freeze and baseline',
+    'Persistent semantic working state',
+    'Delta-first observation pipeline',
+    'Multi-signal coalescer and relevance gate',
+    'Event-driven local reactive execution',
+    'Real-Opera performance acceptance',
+    'follow-up track remains paused',
     'Full snapshot is a recovery primitive',
     'RESET',
     'revision gap',

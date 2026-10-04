@@ -108,7 +108,7 @@ The map. Each row is a condition and a target, so it belongs here and not in
 | command and response contract | [`docs/api.md`](docs/api.md) |
 | latency baselines and locked ceilings | [`docs/benchmarks.md`](docs/benchmarks.md) |
 | the delta-first runtime plan | [`docs/delta-first-performance-plan.md`](docs/delta-first-performance-plan.md) |
-| the accessibility-tree checkpoint | [`docs/checkpoint-up1-ax-observation.md`](docs/checkpoint-up1-ax-observation.md) |
+| the accessibility-tree observation | [`docs/ax-observation.md`](docs/ax-observation.md) |
 | what is still open | [`ROADMAP.md`](ROADMAP.md) |
 | what changed in a release | [`CHANGELOG.md`](CHANGELOG.md) |
 | how to propose a change | [`CONTRIBUTING.md`](CONTRIBUTING.md) |

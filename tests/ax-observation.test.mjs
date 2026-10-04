@@ -3,13 +3,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAxSummary, AX_SUMMARY_LIMITS } from '../extension/lib/ax-summary.js';
 
-// U-P1 (research P1, 2026-09-20 method matrix): the observation path gains
-// (A) an always-on pure-DOM accessibility layer in content.js (shadow-piercing
-// collection + computed accessible names) and (B) a poverty-triggered CDP
-// accessibility-tree snapshot attached to page.read results as a read-only
-// axSummary. The pure filter below is exercised against probe-recorded CDP
-// Accessibility.getFullAXTree node shapes (Edge/Chromium probe, 2026-09-24;
-// full probe evidence in docs/checkpoint-up1-ax-observation.md).
+// The observation path gains (A) an always-on pure-DOM accessibility layer in
+// content.js (shadow-piercing collection + computed accessible names) and (B) a
+// poverty-triggered CDP accessibility-tree snapshot attached to page.read results
+// as a read-only axSummary. The pure filter below is exercised against
+// probe-recorded CDP Accessibility.getFullAXTree node shapes (full probe evidence
+// in docs/ax-observation.md).
 
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 const content = read('../extension/content.js');

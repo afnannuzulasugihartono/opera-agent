@@ -4,7 +4,7 @@ Related: [AGENTS.md](AGENTS.md) rules - [HANDOFF.md](docs/HANDOFF.md) - [api.md]
 
 Notable changes. Semantic versioning.
 
-- Per-checkpoint release history is in git history for versions below this line.
+- Release history for versions below this line is in git history.
 - `docs/api.md` is the contract reference; `docs/HANDOFF.md` holds
   what shipped and when.
 
