@@ -1,20 +1,28 @@
-# @last-edited: 2026-10-04 18:25 UTC+7.
+# @last-edited: 2026-10-04 21:12 UTC+7.
 # @title: ci — Three jobs, all on one self-hosted Windows runner.
 # @context: CI.
-# @state: the gitleaks download name was wrong and had never been exercised.
+# @state: the Node gate runs on ubuntu-latest; the other two need this machine.
 # @updated: every file carries Last edited, Title, Purpose and Now
 # @dependencies: none stated.
 
 name: CI
 
-# Three jobs, all on one self-hosted Windows runner.
-#  - unit:        npm test + npm run check
+# Three jobs. The Node gate runs on GitHub's own Linux runner; the two that need
+# this machine stay on it.
+#  - unit:        npm test + npm run check, on ubuntu-latest
 #  - secret-scan: gitleaks, the one gate that cannot run locally
 #  - browser:     Brave harness, the only job that needs Python
 #
-# WHY every job has a timeout. There is a single runner, so one hung job blocks
-# every other gate. Measured: actions/setup-python removed the tool-cache Python and
-# then its installer sat at zero CPU for two hours, holding the runner, and ten
+# WHY unit moved off the self-hosted runner. It needs Node and nothing else, and
+# while the laptop is offline it queued for hours with no result at all, so every
+# commit in the session had zero CI evidence. On Linux it also proves something the
+# repo never has: that the Node suite is platform-neutral rather than only ever
+# correct on one Windows machine. secret-scan and browser stay put because gitleaks
+# is downloaded as a windows zip and the harness needs this machine's browsers.
+#
+# WHY every job has a timeout. There is a single runner for two of them, so one hung
+# job blocks the other. Measured: actions/setup-python removed the tool-cache Python
+# and then its installer sat at zero CPU for two hours, holding the runner, and ten
 # pushes queued behind it with no result at all. A timeout turns that silent block
 # into a failure and frees the machine.
 #
@@ -59,7 +67,7 @@ concurrency:
 
 jobs:
   unit:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
