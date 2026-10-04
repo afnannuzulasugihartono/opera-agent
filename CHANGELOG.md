@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 19:26 UTC+7.
+@last-edited: 2026-10-04 20:34 UTC+7.
 
 # Changelog
 
@@ -37,10 +37,15 @@ never implied by CI green.
   conclude it could not watch a run it is not present for.
 - **A `not-found` refusal says why the ref died.** It claimed the target never
   appeared, which is false on any page that re-renders: the target appeared and its
-  node left the DOM. The refusal now carries `refState` (`detached` or
-  `unresolvable`) and names the recovery that works — find then click with
+  node left the DOM. The refusal now carries `refState` — `expired`, `detached` or
+  `unresolvable` — and names the recovery that works: find then click with
   `refFromStep` inside one `browser.burst`. A caller that believed the old text
   spent a second 7.5s deadline on the same dead ref.
+- **A ref that cannot act is refused at once.** An `expired` ref — no action
+  descriptor, or one minted for another document or route — can never resolve on this
+  page: ref counters are monotonic and never re-mint a key. Waiting on it spent the
+  whole deadline on nothing. Measured 7575ms → 0ms on the same case. A `detached` ref
+  still waits, because the rebind path can still find a successor.
 - **All three refusal sites build their error once.** They hand-copied the same field
   list, so a new field reached one caller and was dropped by the others; the burst
   path also dropped `candidates` from its message. Wait time and error codes are

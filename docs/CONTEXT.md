@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 20:26 UTC+7.
+@last-edited: 2026-10-04 20:34 UTC+7.
 
 # CONTEXT
 
@@ -63,7 +63,6 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 ## Measurements
 
 - All latency numbers live in [`benchmarks.md`](benchmarks.md), local and production.
-  This file records only the traps around taking them.
 - `tests/real_site_smoke.py` drives the extension through a **local mock bridge**, so it
   measures the extension's own cost, not a network round trip. A production speed claim
   cannot come from it.
@@ -91,11 +90,12 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
   by the time the click runs, and re-finding in a second round trip is equally stale.
   `find` plus `click` with `refFromStep` inside one `browser.burst` is what works, and
   it succeeded on every control that failed the other way.
-- A refused `not-found` ref costs the full deadline, about 7.5s: the same ref retried
-  five times over 38 seconds never resolved. The refusal now names its case (`refState:
-  detached` or `unresolvable`) and the one-round-trip recovery, so believing "never
-  appeared" costs a second deadline. Fail-fast is still an owner decision (`waitedMs >=
-  3000` is tested), so avoid the refusal with one burst.
+- A refused `not-found` ref costs the full deadline, about 7.5s, unless the ref is
+  provably dead: an `expired` ref (no descriptor, or one from another document or route)
+  returns at once, measured 7575ms -> 0ms. A `detached` ref still waits, because the
+  rebind path can still find a successor, and that wait is the tested `waitedMs >= 3000`.
+  The refusal names its case and the one-round-trip recovery, so believing "never
+  appeared" costs a second deadline.
 
 ## Deployment and platform
 

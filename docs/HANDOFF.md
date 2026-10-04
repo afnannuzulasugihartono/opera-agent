@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 19:26 UTC+7.
+@last-edited: 2026-10-04 20:34 UTC+7.
 
 # HANDOFF
 
@@ -38,10 +38,12 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the
   model can tell whether the person is looking at the tab before choosing foreground or
   background. Fails open: a missing `userState` is a gap in the report, not a failure.
-- A `TARGET_NOT_READY` refusal carries `refState`: `detached` when the node left the
-  DOM, `unresolvable` when the ref cannot resolve on this document or route. The hint
-  names the recovery — `find` then `click` with `refFromStep` in one `browser.burst`.
-  All three refusal sites build the error once, in `notReadyError`.
+- A `TARGET_NOT_READY` refusal carries `refState`: `expired` when the ref can never act
+  on this page again, `detached` when the node left the DOM, `unresolvable` when the
+  node is connected but stopped matching. `expired` is refused at once, measured
+  7575ms → 0ms; `detached` still waits the tested `waitedMs >= 3000`. The hint names
+  the recovery — `find` then `click` with `refFromStep` in one `browser.burst`. All
+  three refusal sites build the error once, in `notReadyError`.
 - The blank-line comment rule is a lock, not a habit:
   `[tests/helpers/comment-spacing.mjs](../tests/helpers/comment-spacing.mjs)` classifies
   each line per dialect and `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)` asserts
