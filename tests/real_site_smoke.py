@@ -895,9 +895,19 @@ async def case_click_every_control(url, name, limit=14):
             label = key[:20]
             before_generation = page['semanticState']['documentGeneration']
             before_chars = page['totalTextChars']
-            before_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+
+            async def window_tabs():
+                # tabs.list answers both questions at once: where this tab is now, and
+                # how many tabs the window holds. A link with target=_blank changes
+                # neither the document nor the url, and a person watching sees a tab
+                # appear, so the count is part of what counts as a response.
+                tabs = (await drive('tabs.list', {'currentWindow': True}))['tabs']
+                mine = next((t for t in tabs if t.get('id') == tid), None)
+                return (mine or {}).get('url'), len(tabs)
+
+            before_url, before_tab_count = await window_tabs()
             # Read after the click, and only on the path that actually clicked: a
-            # refused click left the url alone, and the burst below may have moved it.
+            # refused click left the state alone, and the burst below may have moved it.
             now_url = None
             try:
                 await drive('page.click', {'tabId': tid, 'ref': control['ref'],
@@ -905,14 +915,11 @@ async def case_click_every_control(url, name, limit=14):
                 clicked += 1
                 await asyncio.sleep(1.2)
                 page = await refresh()
-                # A navigation inside the same host changes neither the document
-                # generation nor the text length, so without the url a control that
-                # plainly responded is reported as unchanged. The url is read once
-                # here and reused for the go-back check below.
-                now_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+                now_url, now_tab_count = await window_tabs()
                 changed = (page['semanticState']['documentGeneration'] != before_generation
                            or page['totalTextChars'] != before_chars
-                           or now_url != before_url)
+                           or now_url != before_url
+                           or now_tab_count != before_tab_count)
                 if changed:
                     responded += 1
                 record(f'{name} click {label!r}', True,
@@ -966,8 +973,7 @@ async def case_click_every_control(url, name, limit=14):
                     refusals.append(f'{label!r} burst {bmsg}')
                     record(f'{name} click {label!r} inside one burst', False, bmsg)
 
-            now = now_url if now_url is not None else \
-                (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+            now = now_url if now_url is not None else (await window_tabs())[0]
             if host_of(now) != host_of(before_url):
                 # The click navigated off the host. A person goes back and keeps
                 # exploring. A same-host navigation is left in place, because the
