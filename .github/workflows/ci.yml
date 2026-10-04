@@ -1,7 +1,7 @@
-# @last-edited: 2026-10-04 22:16 UTC+7.
+# @last-edited: 2026-10-04 22:22 UTC+7.
 # @title: ci — three jobs, all on GitHub Linux runners.
 # @context: CI.
-# @state: no self-hosted runner; the harness runs headless on the image Chrome.
+# @state: no self-hosted runner; the harness runs headed under xvfb on the image Chrome.
 # @updated: browser job moved to ubuntu-latest; the Python 3.12 pin is restored.
 # @dependencies: none stated.
 
@@ -130,16 +130,21 @@ jobs:
       - name: Show the interpreter the harness will use
         run: |
           python -c "import sys, playwright; print(sys.version.split()[0], 'playwright ok')"
-      - name: Browser harness (Chromium, headless)
+      - name: Browser harness (Chromium under xvfb)
         env:
 
+          # WHY headed under xvfb and not headless. Headless Chromium does not start
+          # an MV3 service worker: the first attempt died in 19 seconds on
+          # "extension service worker did not start". xvfb-run with a real display
+          # is what this same file ran under when CI accepted it, so the display is
+          # the only thing that changes and the harness is the same one.
+          #
           # WHY the image's Chrome and no browser download: playwright can launch an
           # executable it did not fetch, and the ubuntu image already ships Chrome.
           # Downloading a browser per run costs minutes and adds a failure mode that
           # has nothing to do with this repository.
 
           OA_BROWSER_EXECUTABLE: /usr/bin/google-chrome
-          OA_BROWSER_HEADLESS: '1'
+          OA_BROWSER_HEADLESS: '0'
 
-        run: |
-          python tests/browser_extension_test.py
+        run: xvfb-run -a python tests/browser_extension_test.py
