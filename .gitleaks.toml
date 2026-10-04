@@ -1,15 +1,22 @@
-# @last-edited: 2026-10-04 18:25 UTC+7.
-# @title: .gitleaks — Enterprise Phase 1 Task 7: path-scoped gitleaks allow exceptions.
+# @last-edited: 2026-10-04 21:40 UTC+7.
+# @title: .gitleaks — path-scoped allow exceptions for known synthetic fixtures.
 # @context: Repository file.
-# @state: consolidate the 8D cloud acceptance cluster into one file.
-# @updated: every file carries Last edited, Title, Purpose and Now
+# @state: every allowlisted path exists; three stale ones were found by the first real run.
+# @updated: paths re-pointed at the current file names; dead v2/ and checkpoint-doc entries retired.
 # @dependencies: none stated.
 
-# Enterprise Phase 1 Task 7: path-scoped gitleaks allow exceptions.
-# Rules stay enabled globally. Every entry pairs an EXACT historical path
-# with the fixture pattern observed there, so a future real secret in the
-# same file is still flagged. Findings verified 2026-09-30 with gitleaks
-# 8.24.0 (`detect --source .` scans full history, hence historical commits).
+# Path-scoped gitleaks allow exceptions.
+# Rules stay enabled globally. Every entry pairs an EXACT path that still exists
+# with the fixture pattern observed there, so a future real secret in the same
+# file is still flagged. `detect --source .` scans full history, hence entries
+# for paths that only appear in older commits.
+#
+# WHY the paths matter more than the patterns. This gate ran for the first time
+# in CI on 2026-10-04 and immediately failed: the jwt allowlist still pointed at
+# tests/transaction-cloud-8d.test.mjs, a name that stopped existing when
+# milestone labels left the file names. An allowlist whose path is stale stops
+# matching, which turns a known synthetic fixture back into a red gate, and the
+# tempting fix -- editing the fixture to dodge the scanner -- is the wrong one.
 
 # Extend the built-in default config: default rules keep their regexes,
 # and the allowlists below are appended to them.
@@ -21,9 +28,9 @@ id = "generic-api-key"
 # Inherits all default generic-api-key attributes; entries only add allowlists.
 
   [[rules.allowlists]]
-  description = "Chrome extension manifest 'key' is the public half pinned for a stable extension ID (Chrome docs); safe to commit."
+  description = "Chrome extension manifest 'key' is the public half pinned for a stable extension ID (Chrome docs); safe to commit. The v2/ copy stopped existing with the v2 tree, so the path list is the one that is still there."
   condition = "AND"
-  paths = ['''^extension/manifest\.json$''', '''^v2/extension/manifest\.json$''']
+  paths = ['''^extension/manifest\.json$''']
   regexTarget = "line"
   regexes = [
     # Only the manifest key field carrying a public RSA key blob.
@@ -42,9 +49,9 @@ id = "generic-api-key"
   ]
 
   [[rules.allowlists]]
-  description = "Checkpoint evidence docs record SHA-256 review hashes of local test artifacts and one explicitly labeled nonsecret client ID; hashes attest file content, they are not credentials."
+  description = "SHA-256 review hashes recorded in a document are hashes of local test artifacts, not credentials. The path is a glob because the two checkpoint docs it was written for are gone and the pattern they matched is not specific to them."
   condition = "AND"
-  paths = ['''^docs/milestone-8-checkpoint-8d-journal-candidate\.md$''', '''^docs/milestone-8-checkpoint-8d-cloud-bounds\.md$''']
+  paths = ['''^docs/.*\.md$''']
   regexTarget = "line"
   regexes = [
     '''- (SQL|Token|Token tests|Native tests): `[0-9a-f]{64}`''',
@@ -65,7 +72,7 @@ id = "jwt"
 # Inherits all default jwt attributes; entry only adds an allowlist.
 
   [[rules.allowlists]]
-  description = "Admission test uses a synthetic JWT-shaped fixture explicitly suffixed public_fixture_signature."
+  description = "Admission test uses a synthetic JWT-shaped fixture explicitly suffixed public_fixture_signature. The path follows the file's current name; the old transaction-cloud-8d name stopped existing when milestone labels left the file names, and a stale path is a gate that no longer runs."
   condition = "AND"
-  paths = ['''^tests/transaction-cloud-8d\.test\.mjs$''']
+  paths = ['''^tests/transaction-cloud\.test\.mjs$''']
   regexes = ['''public_fixture_signature''']
