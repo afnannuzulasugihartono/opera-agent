@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-04 20:10 UTC+7.
 
 # Roadmap
 
@@ -18,6 +18,11 @@ only what is still open.
 - [ ] Live production workflow benchmarks with an active paired browser session.
 - [ ] Fresh pairing acceptance for the replacement signing key, kept outside the repo.
 - [ ] The legacy signed identity stays installed and is never routed to the new CRX.
+- [ ] A landing page for Opera Agent and its downloads. New top-level entry, so it needs
+      the owner's call on host and path first; the extension store listing is the other
+      place it has to appear.
+- [ ] An end-to-end artefact run: ask an assistant for a Word document, the document
+      exists. Blocked on Google credentials in the live suite, not on the runtime.
 
 ## Standing rules
 
