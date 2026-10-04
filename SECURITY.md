@@ -39,18 +39,11 @@ Only the latest patch of the current minor line receives security fixes.
 ## Token transport
 
 The gateway accepts device tokens via header (`x-opera-agent-token`,
-`Authorization: Bearer`) or `body.apiKey` because GPT Actions cannot
-set custom headers (platform limitation, not a choice). Query tokens
-are confined to the read-only `/openapi.json` and `/health` surfaces.
-Tokens are verified then dropped: regression tests pin that they never
-appear in logs, error payloads, or persisted records.
-
-> **Correction (2026-10-02).** The "query tokens are confined to the read-only
-> surfaces" sentence above is wrong and is preserved only as history. No gateway
-> route reads the query string: `extractToken` checks the two headers and then
-> `body.apiKey`, and there is no `searchParams` read anywhere in the function. So
-> `?apiKey=` is **not** a token carrier on any route, and the carriers are exactly
-> the three listed. `tests/api-docs.test.mjs` pins the carrier set inside
-> `extractToken`, so a query-string carrier added there fails CI. It does not see
-> a carrier reached through a helper function or read by a route handler outside
-> `extractToken`; those remain covered by review, not by the test.
+`Authorization: Bearer`) or `body.apiKey`, because GPT Actions cannot set
+custom headers. No gateway route reads the query string, so `?apiKey=` is not a
+token carrier anywhere. Tokens are verified then
+dropped: regression tests pin that they never appear in logs, error payloads,
+or persisted records, and pin the carrier set inside `extractToken`. Enforced by
+[`tests/api-docs.test.mjs`](tests/api-docs.test.mjs). A carrier
+reached through a helper function, or read by a route handler outside
+`extractToken`, stays covered by review rather than by that test.

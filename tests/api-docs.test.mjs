@@ -120,20 +120,22 @@ test('extractToken accepts exactly the three documented carriers', async () => {
   );
 });
 
-test('the security policy states the corrected carrier set', async () => {
-  // SECURITY.md carried the same false premise and is the most-read statement of
-  // the topic, so it is pinned here rather than left to rot. The patterns allow a
-  // markdown blockquote continuation (`\n> `) inside a sentence.
+test('the security policy states the true carrier set and nothing else', async () => {
+  // SECURITY.md is the most-read statement of the topic. An earlier version of
+  // this test required it to keep the original false sentence as history; that
+  // pinned a history book inside the policy, against the rule that documents
+  // state what is true now. What is pinned instead: the true carriers, and the
+  // absence of the false one.
   const security = await readFile(new URL('../SECURITY.md', import.meta.url), 'utf8');
-  assert.match(
+  assert.doesNotMatch(
     security,
     /Query tokens[\s>]+are confined to the read-only/,
-    'SECURITY.md keeps the original sentence as history'
+    'SECURITY.md must not keep the false sentence it once carried'
   );
   assert.match(
     security,
     /No gateway[\s>]+route reads the query string/,
-    'SECURITY.md must carry the correction'
+    'SECURITY.md must state that no gateway route reads the query string'
   );
   assert.match(
     security,

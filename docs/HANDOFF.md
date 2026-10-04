@@ -10,7 +10,7 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.15` in `extension/manifest.json` is the source of truth.
-- Local gates: `npm test` 767 pass, `npm run check` ok — 26 primitives, 91 safety files.
+- Local gates: `npm test` 769 pass, `npm run check` ok — 26 primitives, 91 safety files.
 - Browser harness exits 0 against Brave, headless and headed. `ci-browser` runs the
   same file under `xvfb`.
 - Live suite: 100 passed, 0 failed, 10 skipped against a real YouTube video, opencode.ai
