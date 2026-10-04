@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: api-docs.test — Frozen contract: docs/api.md is the narrative API reference and must cover Now: SECURITY.md states the true carriers, and the test forbids the false one.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: focus-gate — Pure focus policy — no chrome, no DOM, so the decision is deterministic and Now: retry Chrome's transient tab-drag refusal on all tab mutations.
+
 // Pure focus policy — no chrome, no DOM, so the decision is deterministic and
 // testable in Node.
 //

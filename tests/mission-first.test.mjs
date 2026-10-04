@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: mission-first.test — The failure this exists for is real and recent: sixteen consecutive commits Now: mission-first AGENTS.md (owner-ordered).
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

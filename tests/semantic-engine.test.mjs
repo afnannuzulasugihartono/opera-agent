@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: semantic-engine.test — Semantic engine surface, consolidated 2026-10-03. Now: consolidate the semantic engine cluster into one file.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

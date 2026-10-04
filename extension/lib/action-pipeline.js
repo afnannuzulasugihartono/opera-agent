@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: action-pipeline — Action pipeline: pure policy engine for Resolve -> Wait -> Heal -> Verify. NO DOM and NO chrome dependency: the host supplies resolve Now: module headers say what a module is, not which task added it.
+
 // Action pipeline: pure policy engine for Resolve -> Wait -> Heal -> Verify. NO DOM and NO chrome dependency: the host supplies resolve
 // snapshots and executes decisions, so the engine stays deterministic and
 // testable in Node (pattern of lib/watch.js).

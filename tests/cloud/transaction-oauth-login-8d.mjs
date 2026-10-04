@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-oauth-login-8d — Explicit opt-in manual login. This is not hosted transaction acceptance. Now: add independently reviewed bounded manual OAuth probe for 8D.
+
 // Explicit opt-in manual login. This is not hosted transaction acceptance.
 import { createOAuthProbe } from '../helpers/transaction-oauth-8d.mjs';
 import { startOAuthListener } from '../helpers/transaction-oauth-listener-8d.mjs';

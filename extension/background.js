@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: background — MV3 runtime. Now: the observation says when the person last touched the page.
+
 import {
   PRODUCT_VERSION,
   PROTOCOL_VERSION,

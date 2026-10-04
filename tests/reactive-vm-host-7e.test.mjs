@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: reactive-vm-host-7e.test — Test. Now: consolidate the 7E host boundary into its own surface file.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

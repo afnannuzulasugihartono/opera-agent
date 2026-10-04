@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: error-messages — User-facing error mapping for the popup and options page (page lang `en`). Now: lock store error strings against mapper drift.
+
 // User-facing error mapping for the popup and options page (page lang `en`).
 //
 // Background-supplied strings can carry raw internals (fetch TypeErrors,

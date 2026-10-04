@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: action-pipeline.test — U-V Action Pipeline : pure policy engine for Resolve -> Wait -> Now: feat(uv): runActionPipeline host wiring across fill/click/pointer/key + ETW click; TARGET_NOT_READY mapped verbatim.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {

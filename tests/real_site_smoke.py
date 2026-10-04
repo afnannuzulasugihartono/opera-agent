@@ -1,3 +1,5 @@
+# Last edited: 2026-10-04 17:52. Title: real_site_smoke — Test. Now: cover comment typing, likes, transcripts, Docs, GitHub and Wikipedia live.
+
 """Real-site smoke: opera-agent against live pages, opt-in.
 
 WHY separate from browser_extension_test.py: that suite is deterministic and

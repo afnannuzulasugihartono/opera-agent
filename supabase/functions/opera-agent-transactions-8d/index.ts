@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: index — Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit. Now: clear deno require-await and no-unused-vars in edge functions.
+
 // Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit.
 // The environment flag is only a static deployment/master kill switch. Per-run
 // DARK admission is controlled by the service-only database operator fence.

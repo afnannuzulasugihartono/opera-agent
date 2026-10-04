@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: check — Script. Now: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';

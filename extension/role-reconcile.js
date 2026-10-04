@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: role-reconcile — R9-C : role reconciliation, as a classic content script. Now: fix(r9): hygiene pass on the R9 code itself.
+
 // R9-C (2026-09-30): role reconciliation, as a classic content script.
 //
 // This file is loaded by the manifest BEFORE content.js and publishes its pure

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-operator-release-8d.test — Repository file. Now: install reviewed 8D fence OFF and pin deployed Edge.
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFileSync, spawn } from 'node:child_process';

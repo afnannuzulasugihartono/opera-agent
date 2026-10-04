@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: cors — Repository file. Now: drop unknown-rule lint-ignore in cors helper (2.9.6 gate).
+
 const FALLBACK_ORIGINS = Object.freeze([
   'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
   'https://oauth-consent-three.vercel.app'

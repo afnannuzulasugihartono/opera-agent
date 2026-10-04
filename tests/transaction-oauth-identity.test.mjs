@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-oauth-identity.test — Test. Now: drop the milestone suffix from transaction test files and titles.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verifyOAuthHostStatus } from './helpers/transaction-oauth-identity-8d.mjs';

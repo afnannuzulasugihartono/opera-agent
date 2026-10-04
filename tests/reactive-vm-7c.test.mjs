@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: reactive-vm-7c.test — Test. Now: fix(perf): make the 7C transition regression gate measure regression, not scheduler noise.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { performance } from 'node:perf_hooks';

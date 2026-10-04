@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: performance-runtime-cutover-p6.test — Test. Now: test(p6): lock fail-closed cutover continuation gate.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

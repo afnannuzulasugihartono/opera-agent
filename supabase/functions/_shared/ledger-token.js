@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: ledger-token — Repository file. Now: resolve deno check type errors in gateway/ledger/vm/runner.
+
 import { LEDGER_LIMITS, validateLedger } from './goal-ledger.js';
 
 const TOKEN_PREFIX = 'oal1';

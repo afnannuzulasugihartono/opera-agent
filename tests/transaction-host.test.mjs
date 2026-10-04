@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-host.test — Boundary unit doubles only; native/host/live gates must be tracked separately. Now: drop the milestone suffix from transaction test files and titles.
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createTransactionDarkHost } from '../lib/transaction-host-8d.js';

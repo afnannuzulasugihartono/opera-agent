@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: keyboard-vocabulary-parity.test — Keyboard vocabulary parity. Now: drop the milestone prefix from the interaction test family.
+
 // Keyboard vocabulary parity.
 //
 // The public MCP surface and the extension runtime keep two copies of the key

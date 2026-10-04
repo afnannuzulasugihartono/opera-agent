@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: workflow-dsl.test — Why source-text pins, stated per AGENTS.md: the deliverable here is a Now: state why the source-text pins are the deliverable in seven files.
+
 // Why source-text pins, stated per AGENTS.md: the deliverable here is a
 // migration DSL boundary, and the hazards are all about what the SQL must NOT
 // do -- no legacy table modification, no generic escape hatch in the registry,

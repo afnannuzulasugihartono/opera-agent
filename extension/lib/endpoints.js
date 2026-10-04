@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: endpoints — Single source of deployment endpoint truth for the extension deploy Now: single endpoint source per deploy unit.
+
 // Single source of deployment endpoint truth for the extension deploy
 // unit. oauth-consent/ deploys separately and keeps its own literal,
 // locked equal by tests/endpoint-source.test.mjs. manifest.json

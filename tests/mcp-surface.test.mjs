@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: mcp-surface.test — Test. Now: three more places claimed the background pointer was invisible.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

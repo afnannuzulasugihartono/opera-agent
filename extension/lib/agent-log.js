@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: agent-log — Ring buffer of the last 200 log entries, published on globalThis as Now: the MCP instructions named a field the error envelope does not have.
+
 // Ring buffer of the last 200 log entries, published on globalThis as
 // OperaAgentLog for the popup's log view.
 //

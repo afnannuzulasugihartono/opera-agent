@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: error-messages.test — Test. Now: lock store error strings against mapper drift.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

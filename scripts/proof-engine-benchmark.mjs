@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: proof-engine-benchmark — Script. Now: implement milestone 6C scoped proof engine.
+
 import fs from 'node:fs';
 import { performance } from 'node:perf_hooks';
 

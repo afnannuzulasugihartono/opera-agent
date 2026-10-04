@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-host-install-8d — Explicit opt-in, read-only HTTP probe. No prepare/cancel/approval/browser calls. Now: install audited OFF 8D backend and record bounded cloud probes.
+
 // Explicit opt-in, read-only HTTP probe. No prepare/cancel/approval/browser calls.
 import assert from 'node:assert/strict';
 const mode=process.argv[2];

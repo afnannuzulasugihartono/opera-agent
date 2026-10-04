@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: protocol.test — Test. Now: lock the page.fill value rule on the real site and in the protocol test.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';

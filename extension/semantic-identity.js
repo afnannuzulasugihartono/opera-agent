@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: semantic-identity — MV3 runtime. Now: log previously silent catches in background/popup/protocol/identity.
+
 (() => {
   'use strict';
   if (globalThis.OperaAgentSemanticIdentity) return;

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: proof-engine — Repository file. Now: remove unwired modules, dead exports; WHY-only comments (owner-ordered).
+
 import {
   LEDGER_LIMITS,
   LedgerError,

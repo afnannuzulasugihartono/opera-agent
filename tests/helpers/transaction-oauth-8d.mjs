@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-oauth-8d — Acceptance helper only. Not imported by extension/MCP/Edge runtime. Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+
 // Acceptance helper only. Not imported by extension/MCP/Edge runtime.
 // No storage, logging, token export, refresh, browser dispatch or approval authority.
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';

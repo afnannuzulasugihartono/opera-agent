@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: reactive-vm-contract.test — Test. Now: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';

@@ -1,3 +1,5 @@
+-- Last edited: 2026-10-04 17:52. Title: transaction-journal-8d — LOCAL REVIEW CANDIDATE ONLY. Not a migration; never apply to production. Now: integrate audited local 8D dark host and bound journal candidate.
+
 -- LOCAL REVIEW CANDIDATE ONLY. Not a migration; never apply to production.
 -- Native PostgreSQL journal/CAS primitives. No browser/agent dispatch authority.
 -- Authenticated admission, actual ledger/source adapters and token verification

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: source-scan — Source-text scanning helpers for drift locks. Now: docs and test: correct the final review's overclaims and audit-request errors.
+
 // Source-text scanning helpers for drift locks.
 //
 // WHY THIS EXISTS: several locks assert something about code that comments and

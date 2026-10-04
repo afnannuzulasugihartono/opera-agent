@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: doc-graph.test — Every .md must be reachable from another .md, must carry a Related: line, and Now: every document gets a Need row, and each turn passes the map.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

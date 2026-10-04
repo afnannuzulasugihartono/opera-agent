@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: vm-token — The VM contract bounds the raw canonical payload at 128 KiB. The encrypted Now: remove unwired modules, dead exports; WHY-only comments (owner-ordered).
+
 const TOKEN_PREFIX = 'oavm1';
 const KINDS = new Set(['PROGRAM', 'CHECKPOINT', 'RESULT']);
 // The VM contract bounds the raw canonical payload at 128 KiB. The encrypted

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: pre-8e-usability-r5.test — Why source-text pins, stated per AGENTS.md: R5 adds an internal workflow, so Now: state why the source-text pins are the deliverable in seven files.
+
 // Why source-text pins, stated per AGENTS.md: R5 adds an internal workflow, so
 // the lockable claim is where it is reachable and where it is not. These
 // assertions read the migration to prove media.sample_at is registered with

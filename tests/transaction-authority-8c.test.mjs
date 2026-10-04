@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-authority-8c.test — Test. Now: add transaction authority verifier.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

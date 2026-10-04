@@ -1,3 +1,5 @@
+# Last edited: 2026-10-04 17:52. Title: run-8d-edge-concurrency — Script. Now: publishable key defaults read env first.
+
 param(
   [switch]$ResetCredential,
   [string]$RecoverNamespace,

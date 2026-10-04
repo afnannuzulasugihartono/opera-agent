@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: goal-ledger-contract.test — Why source-text and fixture pins, stated per AGENTS.md: this checkpoint is Now: state why the source-text pins are the deliverable in seven files.
+
 // Why source-text and fixture pins, stated per AGENTS.md: this checkpoint is
 // contract-only. There is no runtime ledger implementation to execute, so the
 // deliverable IS the frozen contract: the schema shape, the canonical digest

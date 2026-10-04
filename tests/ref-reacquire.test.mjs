@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: ref-reacquire.test — Bounded ref re-acquisition contracts. Now: drop the milestone prefix from the interaction test family.
+
 // Bounded ref re-acquisition contracts.
 //
 // The design decision this file locks is a NEGATIVE one, and it is the point of

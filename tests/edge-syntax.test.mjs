@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: edge-syntax.test — Frozen contract: every edge-function entrypoint must parse under Deno. Now: escape quotes in mcp instructions literal, add parse regression test.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: experimental-v2.test — Test. Now: add adaptive screenshots.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

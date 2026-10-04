@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: goal-ledger.test — Test. Now: complete milestone 6E secure ledger integration.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

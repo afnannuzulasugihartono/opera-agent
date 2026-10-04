@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: goal-ledger — Repository file. Now: clear deno require-await and no-unused-vars in edge functions.
+
 const SCHEMA_VERSION = 1;
 const DIGEST_PREFIX = 'sha256:';
 const SHA256_HEX = /^sha256:[0-9a-f]{64}$/;

@@ -1,3 +1,5 @@
+Last edited: 2026-10-04 17:52.
+
 # Opera Agent agent instructions
 
 Simplify first. State what is true now, never its history.
@@ -15,7 +17,8 @@ Related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`doc
 - Do progress the runtime code every session. Simplify governs `.md` and tests; simplified docs and tests never substitute for runtime progress.
 - Don't end a session with only simplified docs and tests and call it progress.
 - `.md` files are the brain: memory, rules, current state. Every other file is the body: it acts.
-- Ship nothing, and justify it, when a session ships no runtime change.
+- Ship nothing, and justify it, when a session ships no runtime change. That covers
+  read-only and test-only sessions, never a session that only simplified docs and tests.
 - Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
 - Say so instead when scope shows the problem lives in a test or a doc.
 
@@ -48,12 +51,15 @@ Bind every session, in every area. Nothing below overrides them.
 
 - Do read the target first: scope before editing, open only named files, read slices.
 - Do write the failing test first, then the smallest mechanism. Do change only what the request needs.
+- Do keep the file count down: one function that solves it beats two that do. Do reuse the simplest existing function that covers the case.
+- Do update the file header on every edit: Last edited timestamp, Title, Purpose, and what is now updated.
+- Don't leave a stale header behind.
 - Do comment header WHAT, body WHY. Do name every file and function. Do write current state in comments too, never a change narrative.
 - Do test by driving it. Do prove the lock fails. Do cite the evidence. Do say unverified and stop.
 
 **Don't**
 
-- Don't write the mechanism first. Don't claim without running. Don't state facts from memory. Don't write a test that validates a claim. Don't accept a lock that asserts a sentence. Don't weaken a test.
+- Don't write the mechanism first. Don't claim without running. Don't state facts from memory. Don't write a test that validates a claim. Don't accept a lock that asserts a sentence. Don't weaken a test. Don't add a file or a function that duplicates one.
 
 **Documents — read, write**
 
@@ -63,6 +69,7 @@ Bind every session, in every area. Nothing below overrides them.
 - Don't guess, don't grep.
 - Do write bullets: one idea per line, current state, full-path links.
 - Do write a `Related:` line on every `.md`, naming the hub and its relatives, plus the map row in the same commit.
+- Do update the Last edited line on every `.md` edit. A `.md` carries Last edited only.
 - Do write for the gate: keep doc-graph green — links resolve, no orphans, hub-mutual.
 - Do write instructions (do, don't) in [`AGENTS.md`](AGENTS.md). Do write explanations (what files do, where docs live) in [`README.md`](README.md).
 
@@ -86,7 +93,7 @@ Bind every session, in every area. Nothing below overrides them.
 | a question about latency or a number | read [`docs/benchmarks.md`](docs/benchmarks.md) first. Never quote a figure from memory |
 | pairing, deploy, or an incident | read [`docs/runbook.md`](docs/runbook.md) first, then act |
 | about to commit | re-read Strict rules and Session close above, then commit |
-| each turn, before acting | re-read Mission, Priority order, Strict rules, and the map above, then act |
+| each turn, before acting | re-read Mission, Priority order, Strict rules, and the map above (short sections, not the whole file), then act |
 | "merelakan", "hapus aja" | decided. Stop relitigating and do it |
 | something is broken | fix it first, and research before fixing |
 | a lock, comment or doc is too long | cut it, or split it into baby steps |
@@ -100,6 +107,7 @@ Bind every session, in every area. Nothing below overrides them.
 | writing or editing [`README.md`](README.md) | explanation only: what files do, where docs live. Instruct nothing |
 | about to edit code | apply Code rules: read, write, comment, test |
 | about to edit a `.md` | apply Document rules: read, write |
+| about to add a file or a function | prove no existing function solves it first |
 
 ## Verify by driving it
 

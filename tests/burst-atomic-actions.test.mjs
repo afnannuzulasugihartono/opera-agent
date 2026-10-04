@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: burst-atomic-actions.test — U-S burst atomic actions : find->click->verify in one burst via Now: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';

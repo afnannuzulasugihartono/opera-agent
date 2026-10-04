@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: source-scan.test — Committed tests for the comment stripper. The stripper protects a security lock, Now: docs and test: correct the final review's overclaims and audit-request errors.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stripComments } from './helpers/source-scan.mjs';

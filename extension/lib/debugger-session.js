@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: debugger-session — Shared debugger session bookkeeping. Now: module headers say what a module is, not which task added it.
+
 // Shared debugger session bookkeeping.
 //
 // A "shared session" is the `{ tabId, attached }` object a caller puts on its

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: endpoint-source.test — Test. Now: activate the options tab before waiting on its async prefill.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

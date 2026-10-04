@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: scope-preflight.test — The problem this exists for: the repository is roughly 0.94M tokens against a Now: scope preflight that bounds the read set (owner-ordered).
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

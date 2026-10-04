@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: edge-runtime imports via deno.json import maps, restore SBOM gate.
+
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import {

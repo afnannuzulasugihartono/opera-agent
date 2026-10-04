@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: content — R9-C: published by role-reconcile.js, which the manifest loads before this Now: media.play names the foreground path when the autoplay policy refuses.
+
 (() => {
   'use strict';
   if (globalThis.__operaAgentContentV1) return;

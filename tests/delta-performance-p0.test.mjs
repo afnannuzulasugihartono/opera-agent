@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: delta-performance-p0.test — Test. Now: remove milestone labels from prose, and rename the ax-observation doc.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

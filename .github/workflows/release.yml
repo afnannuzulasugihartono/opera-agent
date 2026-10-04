@@ -1,3 +1,5 @@
+# Last edited: 2026-10-04 17:52. Title: release — Repository file. Now: verify current signed release identity (#14).
+
 name: Release
 
 on:

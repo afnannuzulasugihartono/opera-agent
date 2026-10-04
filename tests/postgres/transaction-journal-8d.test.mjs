@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-journal-8d.test — Repository file. Now: chore(sync): align migration file IDs with production ledger, record applied skip_ads/ETW migrations, update test paths and sync docs.
+
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: single endpoint source per deploy unit.
+
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";

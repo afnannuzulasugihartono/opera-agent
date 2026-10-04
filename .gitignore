@@ -1,3 +1,5 @@
+# Last edited: 2026-10-04 17:52. Title: .gitignore — Repository file. Now: chore(governance): judge tracked root entries, not raw disk listings.
+
 # Dependencies
 node_modules/
 /deno.lock

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: options-store.test — Test. Now: close the Phase 5 review follow-ups.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadOptions, saveBridgeUrl, saveLogLevel } from '../extension/lib/options-store.js';

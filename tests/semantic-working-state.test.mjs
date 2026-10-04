@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: semantic-working-state.test — P1 semantic working state, consolidated 2026-10-03. Now: consolidate the P1 working-state cluster into one file.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {

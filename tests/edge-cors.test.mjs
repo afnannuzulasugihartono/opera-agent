@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: edge-cors.test — Test. Now: shared CORS origin resolver with fail-closed defaults.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';

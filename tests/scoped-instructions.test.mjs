@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: scoped-instructions.test — Scoped first-read files . Now: every file mention carries its full address, and contradictions fixed.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

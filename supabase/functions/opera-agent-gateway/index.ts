@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: index — U-T universal fastpath gateway: ONE HTTP round trip from any AI platform Now: fold the gateway offline check into the auth call.
+
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";

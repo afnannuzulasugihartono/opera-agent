@@ -1,3 +1,5 @@
+# Last edited: 2026-10-04 17:52. Title: config — Supabase backend. Now: add authenticated Opera Agent MCP (#11).
+
 project_id = "opera-agent"
 
 [auth]

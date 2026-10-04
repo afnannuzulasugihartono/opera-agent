@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: focus-and-keyboard.test — Focus stability + keyboard chord/text contracts. Now: drop the milestone prefix from the interaction test family.
+
 // Focus stability + keyboard chord/text contracts.
 //
 // Two halves:

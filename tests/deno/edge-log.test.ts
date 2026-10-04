@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: edge-log.test — Repository file. Now: structured edge log helper, convert 3 ad-hoc sites.
+
 import {createEdgeLog, MAX_LOG_MESSAGE} from "../../supabase/functions/_shared/edge-log.js";
 const assert=(value:unknown,message="ASSERTION_FAILED")=>{if(!value)throw new Error(message);};
 function mutedConsole(){

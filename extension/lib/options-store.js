@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: options-store — Validation and persistence for the Options page: the bridge URL override and the Now: the MCP instructions named a field the error envelope does not have.
+
 // Validation and persistence for the Options page: the bridge URL override and the
 // log level, stored in chrome.storage.local.
 //

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-cloud-management-backend-8d — Test-only fixed production operator backend for Checkpoint 8D acceptance. Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+
 // Test-only fixed production operator backend for Checkpoint 8D acceptance.
 // This module intentionally exposes no arbitrary SQL, URL, secret name or project
 // selector. The fenced Edge bundle is pinned to the independently reviewed deploy;

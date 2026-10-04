@@ -1,3 +1,5 @@
+-- Last edited: 2026-10-04 17:52. Title: transaction-cloud-install-8d — Bounded synthetic cloud primitive probe; not hosted OAuth/approval acceptance. Now: fix(quality): resolve Sonar new-code reliability sweep - code-unit sort comparators, honest throw-free finally, identical-ternary collapse, .
+
 -- Bounded synthetic cloud primitive probe; not hosted OAuth/approval acceptance.
 -- Run only after explicit installation authority. No auth/session/browser writes.
 -- All changes, including DARK policy, roll back in this same short transaction.

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: repo-naming-governance.test — AGENTS.md "Naming conventions (binding)" enforcement. A failure here is a Now: no orphan document, no prose blocks, simpler rules.
+
 import { execSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';

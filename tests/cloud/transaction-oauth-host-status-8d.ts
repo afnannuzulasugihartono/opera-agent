@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-oauth-host-status-8d — Opt-in actual pinned SDK; no enrollment/private RPC/prepare/cancel/logout. Now: add reviewed in-process SDK identity and status-only 8D probe.
+
 // Opt-in actual pinned SDK; no enrollment/private RPC/prepare/cancel/logout.
 import {createClient} from '@supabase/supabase-js';
 import {createOAuthProbe,ISSUER} from '../helpers/transaction-oauth-8d.mjs';

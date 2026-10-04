@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-cloud-operator-8d — Repository file. Now: fix(quality): keep helper exact()/CLI-config lines byte-unchanged (default sort already code-unit on ASCII keys) - resolves new-code duplica.
+
 import { lstat, mkdir, readFile, readdir, rename, rm, rmdir, writeFile } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';

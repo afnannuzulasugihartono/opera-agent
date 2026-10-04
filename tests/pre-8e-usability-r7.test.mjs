@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: pre-8e-usability-r7.test — Pre-8E repair R7 (T034-T037): youtube.get_transcript v5 — transcript-scoped Now: feat(r7): transcript-scoped youtube.get_transcript v5 with bounded fallback.
+
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';

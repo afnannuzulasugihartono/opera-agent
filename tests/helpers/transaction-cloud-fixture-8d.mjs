@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-cloud-fixture-8d — Test-only DATA builder, not authentication, enrollment, SQL or a cloud runner. Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+
 // Test-only DATA builder, not authentication, enrollment, SQL or a cloud runner.
 // userId must come from independently verified OAuth in the future operator
 // harness. This module does not establish that trust or grant browser authority.

@@ -1,2 +1,4 @@
+# Last edited: 2026-10-04 17:52. Title: .gitignore — Repository file. Now: reject anonymous OAuth consent sessions (#12).
+
 .vercel
 .env*

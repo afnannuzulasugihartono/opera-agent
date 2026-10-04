@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: three more places claimed the background pointer was invisible.
+
 import "@supabase/edge-runtime";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";

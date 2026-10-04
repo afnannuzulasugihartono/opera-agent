@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: popup-events — Popup and redirect follow-through: pure policy helpers for the Now: module headers say what a module is, not which task added it.
+
 // Popup and redirect follow-through: pure policy helpers for the
 // background popup log. NO DOM and NO chrome dependency: the host supplies
 // tab-creation facts, so the engine stays deterministic and testable in Node

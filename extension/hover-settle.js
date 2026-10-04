@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: hover-settle — R9-E : hover settle policy, as a classic content script. Now: fix(r9): hygiene pass on the R9 code itself.
+
 // R9-E (2026-09-30): hover settle policy, as a classic content script.
 //
 // Loaded by the manifest BEFORE content.js and published on globalThis, the same

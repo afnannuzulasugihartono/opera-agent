@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: popup — MV3 runtime. Now: mapped user-facing errors, no raw internals in popup/consent.
+
 import './lib/agent-log.js';
 import { userErrorMessage } from './lib/error-messages.js';
 const log = globalThis.OperaAgentLog || {};

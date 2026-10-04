@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: retry Chrome's transient tab-drag refusal on all tab mutations.
+
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: keyboard — Keyboard chords and bounded text entry: pure resolution Now: module headers say what a module is, not which task added it.
+
 // Keyboard chords and bounded text entry: pure resolution
 // from a declarative { key, modifiers } or { text } request to the exact CDP
 // event payload. NO chrome dependency, so it is deterministic and testable in

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: logger.test — Enterprise Quality Phase 2 Task 5: shared extension logger contracts. Now: log previously silent catches in content script.
+
 // Enterprise Quality Phase 2 Task 5: shared extension logger contracts.
 //
 // extension/lib/agent-log.js is a classic content script with no import/export

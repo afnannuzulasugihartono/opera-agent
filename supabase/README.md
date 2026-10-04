@@ -1,3 +1,5 @@
+Last edited: 2026-10-04 17:52.
+
 # Supabase
 
 Simplify first. State what is true now, never its history.

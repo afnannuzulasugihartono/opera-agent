@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-cloud-acceptance-8d — Explicit opt-in Checkpoint 8D live acceptance/recovery runner. Now: fix(quality): keep helper exact()/CLI-config lines byte-unchanged (default sort already code-unit on ASCII keys) - resolves new-code duplica.
+
 // Explicit opt-in Checkpoint 8D live acceptance/recovery runner.
 // Run only after the exact candidate has an independent PASS. This file is test
 // infrastructure, not extension/MCP/Edge runtime. It never stores or prints the

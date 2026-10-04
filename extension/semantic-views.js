@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: semantic-views — MV3 runtime. Now: add causal semantic proof metadata.
+
 (() => {
   'use strict';
   if (globalThis.OperaAgentSemanticViews) return;

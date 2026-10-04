@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: debugger-session-lifecycle.test — Phase B Task 2 : debugger and timer lifecycle in the service Now: let a burst step target its own tab.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

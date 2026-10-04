@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: pull-cadence-sim — Phase A latency measurement : a deterministic, clock-injected Now: eliminate two unused artifacts in tests/.
+
 // Phase A latency measurement (2026-10-02): a deterministic, clock-injected
 // model of the bridge claim-polling cadence in
 // supabase/functions/opera-agent-bridge/index.ts.

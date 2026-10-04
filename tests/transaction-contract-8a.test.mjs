@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-contract-8a.test — Why source-text and fixture pins, stated per AGENTS.md: milestone 8A is Now: state why the source-text pins are the deliverable in seven files.
+
 // Why source-text and fixture pins, stated per AGENTS.md: milestone 8A is
 // contract-only, with runtimeChanges and productionChanges recorded as empty
 // in the fixture itself. The deliverable is the closed V1 contract, so these

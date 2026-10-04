@@ -1,3 +1,5 @@
+Last edited: 2026-10-04 17:52.
+
 # CONTEXT
 
 Simplify first. State what is true now, never its history.
@@ -90,12 +92,10 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
   stale by the time the click runs, and re-finding in a second round trip is equally
   stale. `find` plus `click` with `refFromStep` inside one `browser.burst` is what
   works, and it succeeded on every control that failed the other way.
-- A refused `not-found` ref costs the full deadline, about 7.5s. Measured: the same
-  ref retried five times over 38 seconds never resolved, so on a real header the wait
-  buys nothing. The blocker is that `tests/browser_extension_test.py` deliberately
-  asserts `waitedMs >= 3000` for a not-found click, so making it fail fast is a
-  contract change and not a bug fix. It is an owner decision. The cheaper path today
-  is to avoid the refusal entirely with a single-call burst.
+- A refused `not-found` ref costs the full deadline, about 7.5s: the same ref
+  retried five times over 38 seconds never resolved. Fail-fast is an owner
+  decision (`waitedMs >= 3000` is a deliberate tested contract), so avoid the
+  refusal with a single-call burst.
 
 ## Deployment and platform
 

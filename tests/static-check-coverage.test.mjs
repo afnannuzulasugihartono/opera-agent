@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: static-check-coverage.test — Test. Now: require dynamic runtime safety scan.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

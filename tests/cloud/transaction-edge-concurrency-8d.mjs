@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-edge-concurrency-8d — Explicit opt-in Checkpoint 8D real Edge concurrency acceptance probe. Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+
 // Explicit opt-in Checkpoint 8D real Edge concurrency acceptance probe.
 // Acceptance/test infrastructure only: no browser primitive, MCP/runtime change,
 // public schema change, arbitrary SQL, or secret output is introduced here.

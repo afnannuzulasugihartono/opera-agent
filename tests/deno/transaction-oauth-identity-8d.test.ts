@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-oauth-identity-8d.test — Repository file. Now: add reviewed in-process SDK identity and status-only 8D probe.
+
 import {createClient} from '@supabase/supabase-js';
 import {verifyOAuthHostStatus} from '../helpers/transaction-oauth-identity-8d.mjs';
 const assert=(value:unknown)=>{if(!value)throw new Error('ASSERTION_FAILED');};

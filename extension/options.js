@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: options — MV3 runtime. Now: options page with bridge URL and log level settings.
+
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
 import { loadOptions, saveBridgeUrl, saveLogLevel } from './lib/options-store.js';
 import { userErrorMessage } from './lib/error-messages.js';

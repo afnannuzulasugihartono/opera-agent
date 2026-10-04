@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: hygiene.test — Properties that keep the runtime code correct as it grows, and that the code Now: drop the milestone prefix from the interaction test family.
+
 // Properties that keep the runtime code correct as it grows, and that the code
 // itself violated when first written.
 //

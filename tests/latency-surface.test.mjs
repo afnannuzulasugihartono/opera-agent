@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: latency-surface.test — Test. Now: latency-surface comments state what is true now.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

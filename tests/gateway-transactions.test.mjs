@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: gateway-transactions.test — Test. Now: fold the gateway offline check into the auth call.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

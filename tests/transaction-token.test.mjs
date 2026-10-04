@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-token.test — Test. Now: drop the milestone suffix from transaction test files and titles.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

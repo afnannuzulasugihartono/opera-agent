@@ -1,3 +1,5 @@
+# Last edited: 2026-10-04 17:52. Title: browser_extension_test — Test. Now: a steal must end with something focused, which is what CI proved.
+
 import asyncio
 import io
 import json

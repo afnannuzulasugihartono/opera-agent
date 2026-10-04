@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: ledger-server.test — Test. Now: chore(sync): align migration file IDs with production ledger, record applied skip_ads/ETW migrations, update test paths and sync docs.
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';

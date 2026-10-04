@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: reactive-vm-7d.test — Test. Now: align 7D proof fixture provenance.
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

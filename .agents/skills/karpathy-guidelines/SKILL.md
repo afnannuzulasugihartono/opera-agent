@@ -9,6 +9,8 @@ metadata:
   note: "Not authored by Andrej Karpathy. A community file derived from his public observations."
 ---
 
+Last edited: 2026-10-04 17:52.
+
 # Karpathy Guidelines
 
 Simplify first. State what is true now, never its history.

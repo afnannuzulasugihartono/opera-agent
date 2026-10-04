@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: canonical-source-hash — Repository file. Now: canonicalize source hash line endings.
+
 import crypto from 'node:crypto';
 
 export function canonicalizeLfBytes(input) {

@@ -1,3 +1,4 @@
+Last edited: 2026-10-04 17:52.
 # lib/ scope
 Simplify first. State what is true now, never its history.
 Cover every button on every site. After the main sites hold, add sites that teach new functions.

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: edge-log — Repository file. Now: structured edge log helper, convert 3 ad-hoc sites.
+
 const MAX_LOG_MESSAGE = 1000;
 export { MAX_LOG_MESSAGE };
 export function createEdgeLog(context) {

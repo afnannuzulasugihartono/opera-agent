@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: semantic-baseline — Script. Now: add causal semantic proof metadata.
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

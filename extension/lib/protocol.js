@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: protocol — The wire contract: the allowlist of browser primitives, their parameter schemas, Now: module headers say what a module is, not which task added it.
+
 // The wire contract: the allowlist of browser primitives, their parameter schemas,
 // and the burst step vocabulary. This file is what `npm run check` reads to report the
 // primitive count, and it is frozen by tests/fixtures and the boundary locks.

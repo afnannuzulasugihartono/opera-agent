@@ -1,3 +1,5 @@
+REM Last edited: 2026-10-04 17:52. Title: RUN_8D_ACCEPTANCE — Repository file. Now: chore(naming): tidy repository names and enforce binding naming rules.
+
 @echo off
 setlocal
 cd /d "%~dp0"

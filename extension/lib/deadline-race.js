@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: deadline-race — Deadline race for command execution. Now: module headers say what a module is, not which task added it.
+
 // Deadline race for command execution.
 //
 // `executeCommand` used to race its dispatch against a `setTimeout` rejection

@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-worker-8d — Synthetic native journal worker only, NEVER a production runner. Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+
 // Synthetic native journal worker only, NEVER a production runner.
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';

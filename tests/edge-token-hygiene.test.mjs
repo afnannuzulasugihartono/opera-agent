@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: edge-token-hygiene.test — Frozen contract (deliberate source-form lock): device/user tokens must Now: token-hygiene proofs plus documented transport risk.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

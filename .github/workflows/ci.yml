@@ -1,3 +1,5 @@
+# Last edited: 2026-10-04 17:52. Title: ci — Three jobs, all on one self-hosted Windows runner. Now: the gitleaks download name was wrong and had never been exercised.
+
 name: CI
 
 # Three jobs, all on one self-hosted Windows runner.

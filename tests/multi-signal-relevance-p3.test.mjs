@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: multi-signal-relevance-p3.test — Test. Now: refactor(tests): single-source boundary locks in tests/helpers/boundary-locks.mjs - removes the duplicated authorization comment/Map blocks .
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';

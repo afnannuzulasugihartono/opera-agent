@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: pre-8e-usability-r0.test — Why source-text pins, stated per AGENTS.md: R0 is an evidence record, not a Now: state why the source-text pins are the deliverable in seven files.
+
 // Why source-text pins, stated per AGENTS.md: R0 is an evidence record, not a
 // behavior change. Its job is to fix the measured baseline so a later phase
 // cannot quietly claim an improvement, and to demonstrate on this tree that the

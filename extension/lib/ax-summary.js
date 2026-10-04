@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: ax-summary — Bounded, value-free accessibility Now: module headers say what a module is, not which task added it.
+
 // Bounded, value-free accessibility
 // tree summary for semantically poor surfaces (canvas applications, hidden
 // DOM mirrors). The raw CDP Accessibility.getFullAXTree output is filtered by

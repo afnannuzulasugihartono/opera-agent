@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: goal-ledger-benchmark — Script. Now: implement milestone 6B goal ledger core.
+
 import fs from 'node:fs';
 import { performance } from 'node:perf_hooks';
 

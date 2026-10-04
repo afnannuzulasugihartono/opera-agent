@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: mcp-connection-diagnostics — Read-only diagnostics, not a host reconnect manager. Never reads stored OAuth Now: ops scripts read SUPABASE_PROJECT_REF / MCP base URL from env.
+
 import { pathToFileURL } from 'node:url';
 
 const BASE = process.env.OPERA_AGENT_MCP_BASE_URL || 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp';

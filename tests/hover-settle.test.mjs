@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: hover-settle.test — Hover-as-a-first-class-step contracts. Now: drop the milestone prefix from the interaction test family.
+
 // Hover-as-a-first-class-step contracts.
 //
 // Root cause under test: multi-level menus needed a hand-built

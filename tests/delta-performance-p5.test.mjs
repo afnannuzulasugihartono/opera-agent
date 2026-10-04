@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: delta-performance-p5.test — Lock constants are git blob hashes of the committed LF bytes; strip Now: refactor(tests): single-source boundary locks in tests/helpers/boundary-locks.mjs - removes the duplicated authorization comment/Map blocks .
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';

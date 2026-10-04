@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: ax-observation.test — The observation path gains (A) an always-on pure-DOM accessibility layer in Now: remove milestone labels from prose, and rename the ax-observation doc.
+
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';

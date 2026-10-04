@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: role-reconcile.test — Role reconciliation contracts. Now: drop the milestone prefix from the interaction test family.
+
 // Role reconciliation contracts.
 //
 // Root cause under test: `serialize()` reported `role: clean(el.getAttribute

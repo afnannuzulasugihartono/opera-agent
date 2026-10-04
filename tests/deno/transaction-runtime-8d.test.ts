@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: transaction-runtime-8d.test — Actual pinned SDK/runtime, but invalid synthetic credentials only. Now: integrate audited local 8D dark host and bound journal candidate.
+
 import {createClient} from "@supabase/supabase-js";
 import {createSupabaseTransactionIdentity} from "../../lib/transaction-identity-8d.js";
 import {createTransactionDarkHost} from "../../lib/transaction-host-8d.js";

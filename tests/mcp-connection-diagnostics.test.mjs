@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: mcp-connection-diagnostics.test — Test. Now: investigate persistent MCP availability without runtime changes.
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { diagnoseMcpConnection } from '../scripts/mcp-connection-diagnostics.mjs';

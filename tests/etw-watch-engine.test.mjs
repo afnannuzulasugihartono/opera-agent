@@ -1,3 +1,5 @@
+// Last edited: 2026-10-04 17:52. Title: etw-watch-engine.test — U-T Event-Triggered Workflows : the watch engine compiles a Now: feat(uv): commit adopted adSelectors start_watch schema + its contract tests and mcp contract fixture digest.
+
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
