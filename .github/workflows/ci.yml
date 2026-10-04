@@ -36,7 +36,13 @@ env:
 
 defaults:
   run:
-    shell: bash
+    # WHY Git Bash and not `bash`. The bare name resolves to
+    # C:\Windows\System32\bash.exe, which is the WSL launcher, and this runner has no
+    # WSL distribution installed. Every job failed in under a second with
+    # "Windows Subsystem for Linux has no installed distributions" before running a
+    # single command. Git Bash ships with Git, which is installed, and understands the
+    # same /tmp and curl usage the steps already have.
+    shell: 'C:\Program Files\Git\bin\bash.exe'
 
 concurrency:
   group: ci-${{ github.ref }}
