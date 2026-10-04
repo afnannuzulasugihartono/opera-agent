@@ -136,17 +136,17 @@ BLANK_PAGE = '''<!doctype html><html><head><title>Opera Agent Blank Test</title>
 IFRAME_PAGE = '''<!doctype html><html><head><title>Opera Agent Iframe Privacy Test</title></head>
 <body><h1>Safe-looking parent</h1><iframe src="/page?embedded-sensitive=1" width="500" height="300"></iframe></body></html>'''
 
-R0_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r0.html').read_text(encoding='utf-8')
-R1_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r1.html').read_text(encoding='utf-8')
-R2_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r2.html').read_text(encoding='utf-8')
-R3_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r3.html').read_text(encoding='utf-8')
-R4_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r4.html').read_text(encoding='utf-8')
-R5_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r5.html').read_text(encoding='utf-8')
-UI_IDENTITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ui-identity.html').read_text(encoding='utf-8')
-AX_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ax.html').read_text(encoding='utf-8')
-UV_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-uv.html').read_text(encoding='utf-8')
-UR_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-ur.html').read_text(encoding='utf-8')
-R9_PAGE = (ROOT / 'tests' / 'fixtures' / 'pre-8e-usability-r9.html').read_text(encoding='utf-8')
+ACTIONABILITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-actionability.html').read_text(encoding='utf-8')
+ACTIONABILITY_ACCEPTANCE_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-actionability-acceptance.html').read_text(encoding='utf-8')
+REVALIDATION_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-revalidation.html').read_text(encoding='utf-8')
+ACT_VERIFY_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-act-verify.html').read_text(encoding='utf-8')
+COMPACT_OBSERVATION_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-compact-observation.html').read_text(encoding='utf-8')
+MEDIA_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-media.html').read_text(encoding='utf-8')
+IDENTITY_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-identity.html').read_text(encoding='utf-8')
+AX_OBSERVATION_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-ax-observation.html').read_text(encoding='utf-8')
+ACTION_PIPELINE_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-action-pipeline.html').read_text(encoding='utf-8')
+RETRY_POPUP_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-retry-popup.html').read_text(encoding='utf-8')
+INTERACTION_CONTROLS_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-interaction-controls.html').read_text(encoding='utf-8')
 
 def build_r5_wav():
     buffer = io.BytesIO()
@@ -234,27 +234,27 @@ class Handler(BaseHTTPRequestHandler):
 
         if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax'):
             if self.path.startswith('/pre8e-uv'):
-                document = UV_PAGE
+                document = ACTION_PIPELINE_PAGE
             elif self.path.startswith('/pre8e-ur'):
-                document = UR_PAGE
+                document = RETRY_POPUP_PAGE
             elif self.path.startswith('/pre8e-ax'):
-                document = AX_PAGE
+                document = AX_OBSERVATION_PAGE
             elif self.path.startswith('/pre8e-r5'):
-                document = R5_PAGE
+                document = MEDIA_PAGE
             elif self.path.startswith('/pre8e-r4'):
-                document = R4_PAGE
+                document = COMPACT_OBSERVATION_PAGE
             elif self.path.startswith('/pre8e-r3'):
-                document = R3_PAGE
+                document = ACT_VERIFY_PAGE
             elif self.path.startswith('/pre8e-r2'):
-                document = R2_PAGE
+                document = REVALIDATION_PAGE
             elif self.path.startswith('/pre8e-ui-identity'):
-                document = UI_IDENTITY_PAGE
+                document = IDENTITY_PAGE
             elif self.path.startswith('/pre8e-r9'):
-                document = R9_PAGE
+                document = INTERACTION_CONTROLS_PAGE
             elif self.path.startswith('/pre8e-r1'):
-                document = R1_PAGE
+                document = ACTIONABILITY_ACCEPTANCE_PAGE
             elif self.path.startswith('/pre8e-r0'):
-                document = R0_PAGE
+                document = ACTIONABILITY_PAGE
             elif self.path.startswith('/visual'):
                 document = VISUAL_PAGE
             elif self.path.startswith('/blank'):

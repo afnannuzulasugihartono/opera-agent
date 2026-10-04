@@ -1,15 +1,16 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: pre-8e-usability-r0.test — Test..
+// @last-edited: 2026-10-04 18:50 UTC+7.
+// @title: usability-actionability — actionability acceptance on a controlled fixture.
 // @context: Test.
-// @state: Test..
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: The controlled fixture holds the frozen finding surfaces; the legacy Skip ordering still fails acceptance.
+// @updated: milestone labels out of file, fixture and fixture-title names.
 // @dependencies: node:test, strict, promises.
 
-// Why source-text pins, stated per AGENTS.md: R0 is an evidence record, not a
-// behavior change. Its job is to fix the measured baseline so a later phase
-// cannot quietly claim an improvement, and to demonstrate on this tree that the
-// two defects R1 targets are still present -- the legacy Skip ordering and the
-// stale ref after a benign same-document rerender. Each is a single controlled
+// Why source-text pins, stated per AGENTS.md: this file is an evidence record,
+// not a behavior change. Its job is to fix the measured baseline so a later
+// phase cannot quietly claim an improvement, and to demonstrate on this tree
+// that the two targeted defects are still present -- the legacy Skip ordering
+// and the stale ref after a benign same-document rerender. Each is a single
+// controlled
 // run against a frozen fixture, so the numbers are single-run and
 // non-distributional. Nothing here authorizes a public-surface change, and the
 // measurements are model-facing payload sizes from a deterministic fixture, not
@@ -19,8 +20,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const baselineUrl = new URL('./fixtures/pre-8e-usability-baseline-r0-v1.json', import.meta.url);
-const fixtureUrl = new URL('./fixtures/pre-8e-usability-r0.html', import.meta.url);
+const baselineUrl = new URL('./fixtures/usability-actionability-baseline-v1.json', import.meta.url);
+const fixtureUrl = new URL('./fixtures/usability-actionability.html', import.meta.url);
 const baseline = JSON.parse(await readFile(baselineUrl, 'utf8'));
 const fixtureHtml = await readFile(fixtureUrl, 'utf8');
 
@@ -72,7 +73,7 @@ function payloadBytes(value) {
   return Buffer.byteLength(JSON.stringify(value));
 }
 
-test('R0 locks the live measurements as single-run, non-distributional evidence', () => {
+test('locks the live measurements as single-run, non-distributional evidence', () => {
   assert.equal(baseline.schemaVersion, 1);
   assert.equal(baseline.checkpoint, 'R0');
   assert.equal(baseline.distributional, false);
@@ -92,7 +93,7 @@ test('R0 locks the live measurements as single-run, non-distributional evidence'
   });
 });
 
-test('R0 controlled fixture contains the six frozen finding surfaces without site-specific selectors', () => {
+test('controlled fixture contains the six frozen finding surfaces without site-specific selectors', () => {
   for (const marker of [
     'id="skip-navigation"',
     'top: -1000px',
@@ -106,7 +107,7 @@ test('R0 controlled fixture contains the six frozen finding surfaces without sit
   assert.doesNotMatch(fixtureHtml, /youtube\\.com|ytp-|ytd-/i);
 });
 
-test('R0 proves the legacy Skip ordering fails the R1 actionability acceptance', () => {
+test('proves the legacy Skip ordering fails the actionability acceptance', () => {
   const [legacyFirst, realSkip] = baseline.targetAmbiguity.targets;
   assert.equal(baseline.targetAmbiguity.legacyOrder[0], legacyFirst.id);
   assert.equal(legacyFirst.label, 'Skip navigation');
@@ -120,7 +121,7 @@ test('R0 proves the legacy Skip ordering fails the R1 actionability acceptance',
   assert.equal(legacyFirstIsPreferredAction, false);
 });
 
-test('R0 proves a benign same-document rerender currently leaves the old action ref stale', () => {
+test('proves a benign same-document rerender currently leaves the old action ref stale', () => {
   const dynamic = baseline.dynamicRef;
   assert.notEqual(dynamic.oldRef, dynamic.freshRef);
   assert.equal(dynamic.legacyOldRefClick.ok, false);
@@ -128,7 +129,7 @@ test('R0 proves a benign same-document rerender currently leaves the old action 
   assert.equal(dynamic.r2AcceptanceSatisfiedByLegacyBehavior, false);
 });
 
-test('R0 measures deterministic legacy model-facing page.read-equivalent payload amplification', () => {
+test('measures deterministic legacy model-facing page.read-equivalent payload amplification', () => {
   const home = makeLegacyReadPayload({ ...baseline.modelFacingReads.home, page: 'home' });
   const watch = makeLegacyReadPayload({ ...baseline.modelFacingReads.watch, page: 'watch' });
   const homeBytes = payloadBytes(home);
@@ -149,7 +150,7 @@ test('R0 measures deterministic legacy model-facing page.read-equivalent payload
   }));
 });
 
-test('R0 locks media and transcript workflow baselines without authorizing public-surface changes', () => {
+test('locks media and transcript workflow baselines without authorizing public-surface changes', () => {
   assert.equal(baseline.media.baselinePrimitive, 'media.state');
   assert.equal(baseline.media.publicMcpExpansionAuthorized, false);
   assert.equal(baseline.timingsMs['media.state'].total, 514);

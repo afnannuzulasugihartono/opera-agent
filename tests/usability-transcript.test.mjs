@@ -1,15 +1,15 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: pre-8e-usability-r7.test — Test..
+// @last-edited: 2026-10-04 18:50 UTC+7.
+// @title: usability-transcript — transcript workflow with bounded fallback.
 // @context: Test.
-// @state: Test..
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: youtube.get_transcript v5 collects transcript-scoped output with the v4 chunked reader as fallback.
+// @updated: milestone labels out of file and fixture names.
 // @dependencies: node:fs, node:test, strict.
 
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// Pre-8E repair R7 (T034-T037): youtube.get_transcript v5 — transcript-scoped
+// youtube.get_transcript v5 — transcript-scoped
 // primary collection with the v4 chunked reader preserved as a bounded fallback.
 
 const migrationDir = new URL('../supabase/migrations/', import.meta.url);
@@ -32,7 +32,7 @@ const walk = (steps, visit, parents = []) => {
   }
 };
 
-test('R7 v5 registers a parseable youtube.get_transcript workflow with clean output shape (T034)', () => {
+test('v5 registers a parseable youtube.get_transcript workflow with clean output shape (T034)', () => {
   assert.ok(r7MigrationName, 'R7 transcript cleanup migration must exist');
   assert.equal(workflow.steps[0].id, 'yt');
   assert.deepEqual(
@@ -43,7 +43,7 @@ test('R7 v5 registers a parseable youtube.get_transcript workflow with clean out
   assert.deepEqual(workflow.output.segmentCount, { $ref: 'steps.segments.result.count' });
 });
 
-test('R7 primary collection is transcript-scoped, bounded, and includes hidden segments (T036)', () => {
+test('primary collection is transcript-scoped, bounded, and includes hidden segments (T036)', () => {
   const [segments] = (() => {
     const found = [];
     walk(workflow.steps, (step) => { if (step.id === 'segments') found.push(step); });
@@ -56,12 +56,12 @@ test('R7 primary collection is transcript-scoped, bounded, and includes hidden s
   assert.ok(segments.continueOnError, 'segment query must not abort the workflow on DOM variants');
 });
 
-test('R7 primary model-facing output carries no full-page text fields (T036)', () => {
+test('primary model-facing output carries no full-page text fields (T036)', () => {
   const outputJson = JSON.stringify(workflow.output);
   assert.doesNotMatch(outputJson, /"text"|hasMore|nextOffset|totalTextChars/);
 });
 
-test('R7 removes the unconditional previousActive read; activation branch owns it (T035)', () => {
+test('removes the unconditional previousActive read; activation branch owns it (T035)', () => {
   const topLevel = workflow.steps.map((step) => step.id);
   assert.ok(!topLevel.includes('previousActive'), 'previousActive must not run unconditionally');
   const prevActive = [];
@@ -79,7 +79,7 @@ test('R7 removes the unconditional previousActive read; activation branch owns i
   assert.deepEqual(restore[0].params.tabId, { $ref: 'vars.prevActiveId' });
 });
 
-test('R7 keeps exactly one chunked reader, only as the segment-query fallback (compatibility)', () => {
+test('keeps exactly one chunked reader, only as the segment-query fallback (compatibility)', () => {
   const chunks = [];
   walk(workflow.steps, (step, parents) => {
     if (step.id === 'chunks') chunks.push({ step, parents });
@@ -90,7 +90,7 @@ test('R7 keeps exactly one chunked reader, only as the segment-query fallback (c
   assert.equal(segGuard.via, 'else', 'chunked reader must be the fallback branch, not the primary path');
 });
 
-test('R7 structural cost reduction is deterministic: commands and payload (T037)', () => {
+test('structural cost reduction is deterministic: commands and payload (T037)', () => {
   // Scenario: cold open, panel closed, description expand needed, segments
   // render in background (no activation), segment query succeeds (primary path).
   // The activation if and the fallback else contribute zero commands.
@@ -125,7 +125,7 @@ test('R7 structural cost reduction is deterministic: commands and payload (T037)
   assert.ok(reduction >= 0.7, `payload reduction ${(reduction * 100).toFixed(0)}% must be >= 70%`);
 });
 
-test('R7 records the honest T037 boundary: single-run baseline is non-distributional', () => {
+test('records the honest T037 boundary: single-run baseline is non-distributional', () => {
   // The frozen 20.514s baseline is ONE completed v4 run. Production history
   // (opera_workflow_runs, read 2026-09-20) shows v3 at 4.622s p50 (n=2,
   // max 13.368s) against v4 at 20.514s (n=1) with a one-parameter definition

@@ -1,11 +1,11 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: pre-8e-usability-r5.test — Test..
+// @last-edited: 2026-10-04 18:50 UTC+7.
+// @title: usability-media-sampling — internal media sampling with local seek.
 // @context: Test.
-// @state: Test..
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: media.sample_at is registered with versioned local seek semantics, off the public surface.
+// @updated: milestone labels out of file and fixture names.
 // @dependencies: node:fs, node:test, strict.
 
-// Why source-text pins, stated per AGENTS.md: R5 adds an internal workflow, so
+// Why source-text pins, stated per AGENTS.md: an internal workflow is added here, so
 // the lockable claim is where it is reachable and where it is not. These
 // assertions read the migration to prove media.sample_at is registered with
 // versioned local seek semantics, never seeks by navigation or reload, and
@@ -28,7 +28,7 @@ const mcpSource = fs.readFileSync(
   'utf8'
 );
 
-test('R5 adds a versioned internal media.sample_at workflow with local seek semantics', () => {
+test('adds a versioned internal media.sample_at workflow with local seek semantics', () => {
   assert.equal(
     migrationExists,
     true,
@@ -43,13 +43,13 @@ test('R5 adds a versioned internal media.sample_at workflow with local seek sema
   assert.match(migration, /input\.seconds/);
 });
 
-test('R5 media sampling does not seek by navigation or reload', () => {
+test('media sampling does not seek by navigation or reload', () => {
   assert.equal(migrationExists, true);
   assert.doesNotMatch(migration, /"method"\s*:\s*"tabs\.(?:navigate|reload)"/);
   assert.doesNotMatch(migration, /(?:[?&#](?:t|start)=|time_continue)/i);
 });
 
-test('R5 keeps media controls internal and preserves the 19-tool public MCP surface', () => {
+test('keeps media controls internal and preserves the 19-tool public MCP surface', () => {
   const registered = [
     ...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)
   ].map((match) => match[1]);
