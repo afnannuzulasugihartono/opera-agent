@@ -8,6 +8,31 @@ Notable changes. Semantic versioning.
 - `docs/api.md` is the contract reference; `docs/HANDOFF.md` holds
   what shipped and when.
 
+## [Unreleased]
+
+Shipped to `main` after 1.6.15. Source only — cutting a release is an owner decision,
+never implied by CI green.
+
+- **The observation reports the user's current state.** `page.read` carries
+  `userState`: `tabActive`, `windowFocused`, `watching`, and `lastInputMs`. An agent
+  cannot choose foreground over background, or decide whether it may interrupt,
+  without knowing whether the person is there.
+- **The pointer cursor stays visible.** It dims to 0.3 after 2.5s idle instead of
+  disappearing, so an owner returning to the tab can see where an unattended run
+  stopped. Solid means working, faint means stopped.
+- **`page.fill` requires a string `value`.** A misspelled parameter used to dispatch an
+  empty fill, which pressed Backspace in the field and still answered `ok: true`. An
+  explicit `""` remains legal, because clearing a field is a real intent.
+- **Named `generic` accessibility nodes are kept.** Maps and YouTube label their
+  controls `generic`, and the summary discarded the role outright. Maps went from 89
+  characters with no named controls to 60 named nodes.
+- **The MCP text stopped claiming a background pointer is invisible.** Three places
+  said so, and it is false: the cursor is drawn in both modes. A model reading it would
+  conclude it could not watch a run it is not present for.
+- **CI can no longer be blocked forever by one hung job.** Every job has a timeout and
+  superseded runs are cancelled. CI acceptance is still unobtainable on this machine
+  because the python.org installer hangs; see `docs/HANDOFF.md`.
+
 ## [1.6.15] - 2026-10-03
 
 Latency and capability work on the 1.6.14 line. **Source only** — activation is
