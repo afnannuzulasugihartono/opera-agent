@@ -113,3 +113,26 @@ test('every document is mutual with the hub, not just reachable through it', () 
     assert.ok(namesHub, `${file} does not name the hub ${hub} in its Related: line`);
   }
 });
+
+test('every document has a Need row, so the map can route to it', () => {
+  // A document with no Need row is opened only by accident: nothing tells the
+  // agent in which situation to read it, so it is never read. The area table
+  // routes the three area scopes; the Need table routes the rest. Every tracked
+  // document except the hub itself must be a target in one of them.
+  const hub = 'AGENTS.md';
+  const body = text.get(hub);
+  const mapSection = body.split('## Which document answers what')[1].split('## Commands')[0];
+  const bootstrapSection = body.split('## Bootstrap order')[1].split('## Which')[0];
+  const targets = new Set(
+    [...(mapSection + bootstrapSection).matchAll(/\]\(([^)#][^)]*)\)/g)]
+      .map((match) => match[1].trim())
+      .filter((target) => !/^[a-z]+:/i.test(target))
+      .map((target) =>
+        path.relative(root, path.resolve(root, target)).split(path.sep).join('/')
+      )
+  );
+  for (const file of tracked) {
+    if (file === hub) continue;
+    assert.ok(targets.has(file), `${file} has no Need row routing to it`);
+  }
+});

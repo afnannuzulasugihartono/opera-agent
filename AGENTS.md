@@ -76,7 +76,7 @@ Bind every session, in every area. Nothing below overrides them.
 | a question about latency or a number | read [`docs/benchmarks.md`](docs/benchmarks.md) first. Never quote a figure from memory |
 | pairing, deploy, or an incident | read [`docs/runbook.md`](docs/runbook.md) first, then act |
 | about to commit | re-read Strict rules and Session close above, then commit |
-| each turn, before acting | re-read Mission, Priority order, and Strict rules above, then act |
+| each turn, before acting | re-read Mission, Priority order, Strict rules, and the map above, then act |
 | "merelakan", "hapus aja" | decided. Stop relitigating and do it |
 | something is broken | fix it first, and research before fixing |
 | a lock, comment or doc is too long | cut it, or split it into baby steps |
@@ -128,6 +128,10 @@ The map. Each row is a condition and a target, so it belongs here and not in
 | what the edge functions and migrations are | [`supabase/README.md`](supabase/README.md) |
 | what the scripts folder is for | [`scripts/README.md`](scripts/README.md) |
 | what the suites cover | [`tests/README.md`](tests/README.md) |
+| security boundary and token transport | [`SECURITY.md`](SECURITY.md) |
+| traps that caused a false claim | [`docs/CONTEXT.md`](docs/CONTEXT.md) |
+| what shipped last session | [`docs/HANDOFF.md`](docs/HANDOFF.md) |
+| behavioral guidelines before writing code | [`.agents/skills/karpathy-guidelines/SKILL.md`](.agents/skills/karpathy-guidelines/SKILL.md) |
 
 Keep every `.md` reachable: a `Related:` header plus a row above. Update both when
 you add or rename one.
