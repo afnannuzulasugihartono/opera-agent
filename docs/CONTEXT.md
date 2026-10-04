@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-04 19:26 UTC+7.
 
 # CONTEXT
 
@@ -71,8 +71,8 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
   harness can establish no ordering. Local and production timings disagree about what
   matters; a latency claim has to say which one it measured.
 - `opera_claim_next` has no `pg_sleep` and returns immediately. The wait is in
-  `opera_claim_next_wait`, called by the bridge. Measuring the wrong one of two
-  similarly named functions answers nothing.
+  `opera_claim_next_wait`, called by the bridge. Measuring the wrong one of two similarly
+  named functions answers nothing.
 - The slowest non-navigation primitive is `page.scroll`, which waits for lazy DOM
   changes to settle. First place to look for a win on the extension side.
 
@@ -81,21 +81,21 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 - Google sign-in is **two steps**: the first screen has only "Email or phone" and a
   Next button, and the password field appears afterwards. A login case that asserts a
   password box on the first read fails on Google's own flow, not on a defect.
-- GitHub's sign-in screen lists "Sign in with a passkey" before the password submit,
-  so a first-match label lookup picks the passkey button. Match on the exact label.
-- YouTube's search field carries role `combobox`, not `searchbox`. Anything that
-  filters on role must accept both or it will not see the one field on the page.
+- GitHub's sign-in screen lists "Sign in with a passkey" before the password submit, so
+  a first-match label lookup picks the passkey button. Match on the exact label.
+- YouTube's search field carries role `combobox`, not `searchbox`. Anything that filters
+  on role must accept both or it will not see the one field on the page.
 - `media.play` on a document the user never interacted with is refused by Chrome's
-  autoplay policy, in Chrome's own words. A trusted click on the player is the gesture
-  it wants, and it starts the video.
-- On a page whose header re-renders continuously, a ref read in one round trip is
-  stale by the time the click runs, and re-finding in a second round trip is equally
-  stale. `find` plus `click` with `refFromStep` inside one `browser.burst` is what
-  works, and it succeeded on every control that failed the other way.
-- A refused `not-found` ref costs the full deadline, about 7.5s: the same ref
-  retried five times over 38 seconds never resolved. Fail-fast is an owner
-  decision (`waitedMs >= 3000` is a deliberate tested contract), so avoid the
-  refusal with a single-call burst.
+  autoplay policy, in Chrome's own words. A trusted click on the player starts the video.
+- On a page whose header re-renders continuously, a ref read in one round trip is stale
+  by the time the click runs, and re-finding in a second round trip is equally stale.
+  `find` plus `click` with `refFromStep` inside one `browser.burst` is what works, and
+  it succeeded on every control that failed the other way.
+- A refused `not-found` ref costs the full deadline, about 7.5s: the same ref retried
+  five times over 38 seconds never resolved. The refusal now names its case (`refState:
+  detached` or `unresolvable`) and the one-round-trip recovery, so believing "never
+  appeared" costs a second deadline. Fail-fast is still an owner decision (`waitedMs >=
+  3000` is tested), so avoid the refusal with one burst.
 
 ## Deployment and platform
 

@@ -18,6 +18,7 @@ const MARKERS = {
 // (`--bg`) reads as a comment; `#` is a comment in Python and YAML but an id
 // selector in CSS and a json operator in SQL. A dialect that never carries a
 // comment is skipped, so no data file is judged by this rule.
+
 function classifyJs(text) {
   const lines = text.split('\n');
   const out = [];
@@ -117,6 +118,7 @@ function isCommentLine(lines, classes, i) {
 
 // WHY blocks and not lines: the rule is about the gap around a block, so only a
 // block's first and last line are judged. Returns one message per violation.
+
 export function spacingViolations(file, text, ext) {
   const classes = commentClasses(text, ext);
   if (!classes) return [];

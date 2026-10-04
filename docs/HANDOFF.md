@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-04 19:26 UTC+7.
 
 # HANDOFF
 
@@ -14,7 +14,7 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.15` in `[extension/manifest.json](../extension/manifest.json)` is the source of truth.
-- Local gates: `npm test` 769 pass, `npm run check` ok — 26 primitives, 91 safety files.
+- Local gates: `npm test` 772 pass, `npm run check` ok — 26 primitives, 91 safety files.
 - Browser harness exits 0 against Brave, headless and headed. `ci-browser` runs the
   same file under `xvfb`.
 - Live suite: 106 passed, 0 failed, 12 skipped against real YouTube videos, opencode.ai,
@@ -38,6 +38,14 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the
   model can tell whether the person is looking at the tab before choosing foreground or
   background. Fails open: a missing `userState` is a gap in the report, not a failure.
+- A `TARGET_NOT_READY` refusal carries `refState`: `detached` when the node left the
+  DOM, `unresolvable` when the ref cannot resolve on this document or route. The hint
+  names the recovery — `find` then `click` with `refFromStep` in one `browser.burst`.
+  All three refusal sites build the error once, in `notReadyError`.
+- The blank-line comment rule is a lock, not a habit:
+  `[tests/helpers/comment-spacing.mjs](../tests/helpers/comment-spacing.mjs)` classifies
+  each line per dialect and `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)` asserts
+  the gap. Applied migrations and JSON are excluded.
 
 ## Known, not started
 
@@ -53,7 +61,7 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 ## Still open
 
 1. Release so the shipped CRX contains the Options page. Needs the private signing key.
-2. Remove the unused `activeTab` permission. Verified unused; touches the declared surface.
+2. ~~Remove the unused `activeTab` permission.~~ Removed; 5 permissions remain.
 3. Publishable-key rotation — a production secret, untouched.
 4. SonarCloud project access — the pre-existing New Code wall.
 5. Three Supabase PATs need owner action. There is no Management API for PATs, so

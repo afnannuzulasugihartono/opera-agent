@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 19:10 UTC+7.
+@last-edited: 2026-10-04 19:26 UTC+7.
 
 # Changelog
 
@@ -45,6 +45,11 @@ never implied by CI green.
   list, so a new field reached one caller and was dropped by the others; the burst
   path also dropped `candidates` from its message. Wait time and error codes are
   unchanged.
+- **The blank-line comment rule is now enforced, not just written.** 347 existing
+  comment blocks were glued to code; `tests/hygiene.test.mjs` asserts a blank line
+  before and after every block across every tracked file. The classifier skips string
+  and template contents, `--` needs whitespace (a CSS `--custom-property` is not a
+  comment), and applied migrations are excluded because they are applied artifacts.
 - **CI can no longer be blocked forever by one hung job.** Every job has a timeout and
   superseded runs are cancelled. CI acceptance is still unobtainable on this machine
   because the python.org installer hangs; see `[docs/HANDOFF.md](docs/HANDOFF.md)`.
