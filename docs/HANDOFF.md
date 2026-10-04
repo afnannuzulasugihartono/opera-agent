@@ -47,19 +47,26 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 ## Blocked, needs the owner at the machine
 
-- **A Python 3.12 installer has been hung since 06:08**, PID 248 and its child 11752,
-  `InstallAllUsers=1` targeting `D:\actions-runner\_work\_tool\Python\3.12.10\x64`.
-  It has used 0.3s of CPU in 25 minutes, so it is waiting on a UI prompt nobody
-  answered. Started by the self-hosted Actions runner, and `ci.yml` pins
-  `python-version: '3.12'`, so a stuck run there blocks CI.
-  It was left running on purpose: it belongs to the runner, and killing another
-  owner's installer mid-write is not a call to make unattended. To clear it:
-  `Stop-Process -Id 248,11752 -Force`, then let CI retry.
+- **CI acceptance is not obtainable right now, and that is a machine fault, not a code
+  fault.** `actions/setup-python@v5` removes the tool-cache Python, then its installer
+  never finishes: zero CPU for over two hours, waiting on a UI prompt nobody answers.
+  The five runs before that failed with `setup.ps1` unable to remove registry keys,
+  "Requested registry access is not allowed", then "Error happened during Python
+  installation". One hung job held the single self-hosted runner, so ten pushes queued
+  with no result. Do not call any head green until a run concludes.
+- The installer processes were killed twice so the runner could advance, and it hangs
+  again on the next job. `.github/workflows/ci.yml` now gives every job a timeout and a
+  concurrency group, so the block becomes a visible failure instead of a silent one.
+  That does not fix the installer.
 - The stale `HKCU\Software\Python\PythonCore\3.12` registration, which pointed at the
-  runner's tool cache, has been removed and backed up to `%TEMP%\opencode\pythoncore-backup.reg`.
-  The runner re-registers it on its next install; that is expected, not a fault.
-- Python 3.13.15 is installed, is first on the user PATH, and has playwright.
-  `py` resolves to it. Use `py`, not `python`, which hits the Microsoft Store shim.
+  runner's tool cache, has been removed and backed up to
+  `%TEMP%\opencode\pythoncore-backup.reg`. The runner re-registers it on its next
+  install; that is expected.
+- Python 3.13.15 is installed, is first on the user PATH, and has playwright. `py`
+  resolves to it. Use `py`, not `python`, which hits the Microsoft Store shim.
+- Likely cause worth checking when the owner is at the machine: the python.org
+  installer cannot complete on this host at all, per-user or all-users. Antivirus, a
+  half-finished uninstall, or the earlier crash and freeze are the usual suspects.
 
 ## Do not touch
 
