@@ -13,7 +13,7 @@
 // why the current pin exists; git keeps the history of what it used to be.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'e3184d87e3afbb5f9e301b9e57c8c64dd2d4054d'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses
+  ['../extension/content.js', '0ab3f2717a62d8171f5a722717690cc8e703b474'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses
   ['../extension/background.js', '88aa026828010c36f77c056b00f40757bebb2a87'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs
   ['../extension/manifest.json', 'a0781f778c694b308944770cd85fbe3d538f0d46'], // entry points, permissions, version
   ['../supabase/functions/opera-agent-mcp/index.ts', '579d9d5d8ef908105d8467aee5c728789f1112f0'], // MCP tool surface and schemas

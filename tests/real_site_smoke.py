@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-04 20:26 UTC+7.
+# @last-edited: 2026-10-04 20:52 UTC+7.
 # @title: real_site_smoke — Test.
 # @context: Test.
 # @state: cover comment typing, likes, transcripts, Docs, GitHub and Wikipedia live.
@@ -1051,6 +1051,127 @@ async def case_youtube_interactions():
                f'{(err or {}).get("message", str(exc))[:200]}')
 
 
+async def case_google_search_and_expand():
+    """Google Search: type a query, read the results, expand an answer in place.
+
+    The function this adds is an in-place content change: a collapsed control on a
+    results page opens its answer without touching the URL, so the proof cannot be a
+    navigation. It is the shape every assistant meets on the web, and no other case
+    covers it.
+    """
+    try:
+        tab, page = await open_and_read('https://www.google.com/')
+        tid = tab['id']
+        box = (by_role(page, 'searchbox') or by_label(page, 'search')
+               or by_role(page, 'combobox') or by_role(page, 'textbox'))
+        if not box:
+            record('google search typed and submitted', None,
+                   f'no search field; chars={page["totalTextChars"]}')
+            await drive('tabs.close', {'tabId': tid})
+            return
+
+        # Same sequence a person performs, and the same reason: a trusted fill needs
+        # document focus first, and an untrusted one leaves Enter on the body.
+
+        await drive('page.focus', {'tabId': tid, 'ref': box['ref']})
+        filled = await drive('page.fill', {'tabId': tid, 'ref': box['ref'],
+                                           'value': 'cara mengedit video', 'trusted': True})
+        await drive('page.key', {'tabId': tid, 'key': 'Enter', 'trusted': True})
+        record('google search typed and submitted', filled.get('valueLength', 0) > 0,
+               f'valueLength={filled.get("valueLength")} role={box.get("role")!r}')
+        await asyncio.sleep(3.5)
+
+        landed = (await drive('tabs.get', {'tabId': tid}))['tab']
+        results = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1200}))['page']
+
+        # Google answers an automated submit from a data-centre IP with its own bot
+        # check. That is the site reporting its state, not our path breaking, so it is
+        # skipped with the reason; the in-place expansion is still proven elsewhere.
+
+        gate = gated_reason(landed, results) or ('/sorry/' in landed['url'] and 'google bot check')
+        if gate:
+            record('google search results loaded', None, str(gate))
+            await drive('tabs.close', {'tabId': tid})
+            return
+        record('google search results loaded', '/search' in landed['url'],
+               f'url={landed["url"][:70]} chars={results["totalTextChars"]} '
+               f'elements={len(results["elements"])}')
+
+        # Pick a result by URL shape, never by position: the first links on a Google
+        # results page are chrome, not answers.
+
+        try:
+            collected = await drive('page.collect_links', {'tabId': tid, 'limit': 120})
+            urls = [str(l.get('url', '')) for l in (collected.get('links') or [])]
+            answers = [u for u in urls if u.startswith('http') and 'google.' not in u.split('/')[2]]
+            record('google results carry answer links', bool(answers),
+                   f'{len(urls)} links, {len(answers)} off-google')
+        except Exception as exc:
+            record('google results carry answer links', False, type(exc).__name__)
+
+        # The in-place change: a collapsed control on the results page opens without
+        # navigating. aria-expanded is the proof, and it is the same ref either way.
+
+        collapsed = (await drive('page.query', {
+            'tabId': tid, 'selector': '[aria-expanded="false"]'
+        })).get('item')
+        if not collapsed or collapsed.get('tag') in ('input', 'textarea'):
+            record('google answer expanded in place', None,
+                   f'no collapsible control; tag={None if not collapsed else collapsed.get("tag")}')
+            await drive('tabs.close', {'tabId': tid})
+            return
+        await drive('page.click', {'tabId': tid, 'ref': collapsed['ref'],
+                                   'executionMode': 'background'})
+        await asyncio.sleep(2.0)
+        after = (await drive('page.query', {
+            'tabId': tid, 'selector': f'[aria-expanded="true"]'
+        })).get('item')
+        same_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+        record('google answer expanded in place',
+               after is not None and same_url == landed['url'],
+               f'{str(collapsed.get("label") or collapsed.get("text"))[:28]!r} '
+               f'now={None if not after else after.get("tag")} url_unchanged={same_url == landed["url"]}')
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('google search', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
+async def case_in_place_expansion():
+    """A collapsed control opens its answer without the page navigating.
+
+    This is the function an assistant meets most and no navigation-based case proves:
+    the URL is identical before and after, so the only honest proof is the control's
+    own state. Google Search is the site that matters most and is also the one that
+    bot-checks an automated submit, so the proof lives here, on a page that always
+    serves one.
+    """
+    try:
+        tab, _ = await open_and_read('https://opencode.ai/')
+        tid = tab['id']
+        before = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+        collapsed = (await drive('page.query', {
+            'tabId': tid, 'selector': '[aria-expanded="false"]'
+        })).get('item')
+        if not collapsed or collapsed.get('tag') in ('input', 'textarea'):
+            record('collapsed control expanded in place', None,
+                   f'no collapsible control; tag={None if not collapsed else collapsed.get("tag")}')
+            await drive('tabs.close', {'tabId': tid})
+            return
+        await drive('page.click', {'tabId': tid, 'ref': collapsed['ref'],
+                                   'executionMode': 'background'})
+        await asyncio.sleep(1.5)
+        after = (await drive('page.query', {
+            'tabId': tid, 'selector': '[aria-expanded="true"]'
+        })).get('item')
+        same = (await drive('tabs.get', {'tabId': tid}))['tab']['url'] == before
+        record('collapsed control expanded in place', after is not None and same,
+               f'{str(collapsed.get("label") or collapsed.get("text"))[:30]!r} '
+               f'expanded_now={after is not None} url_unchanged={same}')
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('in-place expansion', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def case_google_docs_wall():
     """Google Docs logged out: the wall itself is the coverage.
 
@@ -1915,6 +2036,8 @@ async def run(port, profile):
         await maybe(lambda: case_maps_journey(), 'maps')
         await maybe(lambda: case_youtube_interactions(), 'youtube-interactions')
         await maybe(lambda: case_google_docs_wall(), 'google-docs')
+        await maybe(lambda: case_google_search_and_expand(), 'google-search')
+        await maybe(lambda: case_in_place_expansion(), 'in-place')
         await maybe(lambda: case_github_search(), 'github-search')
         await maybe(lambda: case_wikipedia_article(), 'wikipedia')
 

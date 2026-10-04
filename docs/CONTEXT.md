@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 20:34 UTC+7.
+@last-edited: 2026-10-04 20:52 UTC+7.
 
 # CONTEXT
 
@@ -92,10 +92,10 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
   it succeeded on every control that failed the other way.
 - A refused `not-found` ref costs the full deadline, about 7.5s, unless the ref is
   provably dead: an `expired` ref (no descriptor, or one from another document or route)
-  returns at once, measured 7575ms -> 0ms. A `detached` ref still waits, because the
-  rebind path can still find a successor, and that wait is the tested `waitedMs >= 3000`.
-  The refusal names its case and the one-round-trip recovery, so believing "never
-  appeared" costs a second deadline.
+  returns at once, measured 7575ms -> 0ms, and live runs show that 0ms on a real
+  navigation. A `detached` ref still waits: the rebind path can find a successor, and a
+  connected node whose label or role reverts can come back, so that wait is the tested
+  `waitedMs >= 3000`. The refusal names its case and the one-round-trip recovery.
 
 ## Deployment and platform
 

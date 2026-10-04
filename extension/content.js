@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 20:31 UTC+7.
+// @last-edited: 2026-10-04 20:52 UTC+7.
 // @title: content — MV3 browser runtime..
 // @context: MV3 browser runtime.
 // @state: page.action_state reports expired, detached or unresolvable for a ref that cannot act.
@@ -235,9 +235,11 @@
   // minted for another document or route. refCounter is monotonic and resetActionRefs
   // never lowers it, so such a key is never minted twice, and resolveActionRef already
   // refuses it on the first call: waiting cannot recover it. 'detached' means the node
-  // left the DOM while the ref is still good, so a successor may still appear and the
-  // caller must keep waiting. 'unresolvable' means the node is connected but stopped
-  // matching its descriptor, which the rebind machinery may still reconcile.
+  // left the DOM while the ref is still good, so the rebind path may still find a
+  // successor and the caller must keep waiting. 'unresolvable' means the node is
+  // connected but no longer matches its descriptor: resolveActionRef refuses that
+  // immediately and without rebinding, yet the label, role and name it compares can
+  // revert when a framework re-renders, so this one can still come back.
   function refStateFor(ref) {
     const key = String(ref || '');
     const descriptor = actionRefDescriptors.get(key);

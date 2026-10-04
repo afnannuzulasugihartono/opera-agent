@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 20:34 UTC+7.
+@last-edited: 2026-10-04 20:52 UTC+7.
 
 # HANDOFF
 
@@ -17,9 +17,10 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - Local gates: `npm test` 772 pass, `npm run check` ok — 26 primitives, 91 safety files.
 - Browser harness exits 0 against Brave, headless and headed. `ci-browser` runs the
   same file under `xvfb`.
-- Live suite: 106 passed, 0 failed, 12 skipped against real YouTube videos, opencode.ai,
+- Live suite: 109 passed, 0 failed, 13 skipped against real YouTube videos, opencode.ai,
   Google Maps, GitHub, Wikipedia and Google Docs. `OA_ONLY=<substring>` runs one
-  case group.
+  case group. Google Search skips as a bot check from this IP (`/sorry/`), which is the
+  site reporting its state; its type-and-submit step still passes.
 - Google coverage is Maps, YouTube and Docs. YouTube additionally proves the
   transcript panel through `...more` when the video carries captions, the Like
   button dispatching up to the sign-in wall, and the comments section missing
