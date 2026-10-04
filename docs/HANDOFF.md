@@ -15,8 +15,15 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - Local gates: `npm test` 769 pass, `npm run check` ok — 26 primitives, 91 safety files.
 - Browser harness exits 0 against Brave, headless and headed. `ci-browser` runs the
   same file under `xvfb`.
-- Live suite: 100 passed, 0 failed, 10 skipped against a real YouTube video, opencode.ai
-  and Google Maps. `OA_ONLY=<substring>` runs one case group.
+- Live suite: 106 passed, 0 failed, 12 skipped against real YouTube videos, opencode.ai,
+  Google Maps, GitHub, Wikipedia and Google Docs. `OA_ONLY=<substring>` runs one
+  case group.
+- Google coverage is Maps, YouTube and Docs. YouTube additionally proves the
+  transcript panel through `...more` when the video carries captions, the Like
+  button dispatching up to the sign-in wall, and the comments section missing
+  for logged-out sessions. New sites that teach new functions: GitHub search
+  (overlay trigger, type, submit, results) and Wikipedia (ref-scroll, section
+  jump).
 - All 26 allowlisted primitives are driven by both suites. `media.play` was the last one
   the deterministic harness never called.
 - `media.play` in background mode is refused on a real video by Chrome's autoplay policy.
