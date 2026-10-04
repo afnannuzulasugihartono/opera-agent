@@ -10,6 +10,8 @@ Related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`doc
 
 - Ship a runtime change. The runtime code is the product: [`extension/`](extension/README.md), [`lib/`](lib/AGENTS.md), [`supabase/functions/`](supabase/README.md).
 - Ship docs and tests to support it. Docs and tests support them — never the task.
+- Do progress the runtime code every session. Simplify governs `.md` and tests; simplified docs and tests never substitute for runtime progress.
+- Don't end a session with only simplified docs and tests and call it progress.
 - `.md` files are the brain: memory, rules, current state. Every other file is the body: it acts.
 - Ship nothing, and justify it, when a session ships no runtime change.
 - Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
@@ -40,10 +42,15 @@ Bind every session, in every area. Nothing below overrides them.
 
 **Code — read, write, comment, test**
 
+**Do**
+
 - Do read the target first: scope before editing, open only named files, read slices.
 - Do write the failing test first, then the smallest mechanism. Do change only what the request needs.
 - Do comment header WHAT, body WHY. Do name every file and function. Do write current state in comments too, never a change narrative.
 - Do test by driving it. Do prove the lock fails. Do cite the evidence. Do say unverified and stop.
+
+**Don't**
+
 - Don't write the mechanism first. Don't claim without running. Don't state facts from memory. Don't write a test that validates a claim. Don't accept a lock that asserts a sentence. Don't weaken a test.
 
 **Documents — read, write**
