@@ -104,6 +104,7 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 | The Chrome debugger banner persists for the whole attachment and cannot be hidden | Caching an attach across commands is a regression, not an optimisation; the only lever is batching more work per attach |
 | Edge functions run on Supavisor transaction mode, which has no `LISTEN/NOTIFY` | Every wakeup is server-side `pg_sleep` polling |
 | OpenAI reportedly rejects `.` in MCP tool names (`^[a-zA-Z0-9_-]+$`, a developer report, not official) | Treat dotted names as unverified against OpenAI until actually tested |
+| A headed browser on Windows reports no focused window whenever the OS moves focus elsewhere | Comparing two focus reads then reports a steal that never happened. Read `windowIds` too: no baseline, window closed, and window alive but unfocused are three different states, and only the last is a steal |
 
 ## Blind alleys
 

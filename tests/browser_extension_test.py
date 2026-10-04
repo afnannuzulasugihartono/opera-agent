@@ -315,9 +315,40 @@ async def browser_focus_state(worker):
         return {
             focusedWindowId: focusedWindow ? focusedWindow.id : null,
             activeTabId: activeTab ? activeTab.id : null,
-            activeUrl: activeTab ? activeTab.url : null
+            activeUrl: activeTab ? activeTab.url : null,
+            windowIds: windows.map((item) => item.id)
         };
     }''')
+
+def focus_audit_verdict(before, after):
+    # Why four verdicts instead of one bool: a headed browser on Windows reports no
+    # focused window whenever the OS moves focus elsewhere, and that is not the agent
+    # taking focus. Comparing two focus reads alone cannot tell that apart from a
+    # command un-focusing a window that is still open, so the window ids decide it.
+    if before['focusedWindowId'] is None:
+        return 'no-baseline'
+    if before['focusedWindowId'] not in after['windowIds']:
+        return 'window-closed'
+    if before['focusedWindowId'] == after['focusedWindowId'] and \
+            before['activeTabId'] == after['activeTabId']:
+        return 'preserved'
+    return 'stole'
+
+
+def check_focus_audit_verdicts():
+    # Proves the classifier on the four states it exists to separate, so a run that
+    # never loses focus still exercises it. Without this the branches below would be
+    # accepted on the strength of a green run that never reached them.
+    def state(window_id, tab_id, window_ids):
+        return {'focusedWindowId': window_id, 'activeTabId': tab_id,
+                'activeUrl': 'http://127.0.0.1/page', 'windowIds': window_ids}
+
+    assert focus_audit_verdict(state(7, 9, [7]), state(7, 9, [7])) == 'preserved'
+    assert focus_audit_verdict(state(7, 9, [7]), state(None, None, [7])) == 'stole'
+    assert focus_audit_verdict(state(7, 9, [7]), state(None, None, [])) == 'window-closed'
+    assert focus_audit_verdict(state(None, None, [7]), state(None, None, [7])) == 'no-baseline'
+    assert focus_audit_verdict(state(7, 9, [7]), state(7, 11, [7])) == 'stole'
+
 
 async def audited_background_command(worker, audit, method, params=None, timeout=20, command_timeout=12000):
     command_params = params or {}
@@ -325,19 +356,26 @@ async def audited_background_command(worker, audit, method, params=None, timeout
     cid = STATE.push(method, command_params, timeout=command_timeout)
     body = await asyncio.to_thread(STATE.wait, cid, timeout)
     after = await browser_focus_state(worker)
-    preserved = (
-        before['focusedWindowId'] == after['focusedWindowId']
-        and before['activeTabId'] == after['activeTabId']
-    )
+    verdict = focus_audit_verdict(before, after)
     audit.append({
         'method': method,
         'targetTabId': command_params.get('tabId'),
         'commandOk': body.get('ok') is True,
         'before': before,
         'after': after,
-        'focusPreserved': preserved
+        'verdict': verdict,
+        # A command with no baseline, or one whose window closed underneath it, did
+        # not take focus. Only the 'stole' verdict is a failure, so the aggregate
+        # assertion at the end of the run keeps failing on a real steal.
+        'focusPreserved': verdict != 'stole'
     })
-    assert preserved, f'{method} stole browser focus: before={before}, after={after}'
+    if verdict == 'no-baseline':
+        print(f'[focus-audit] {method}: no baseline, the browser was already unfocused')
+        return body
+    if verdict == 'window-closed':
+        print(f'[focus-audit] {method}: window {before["focusedWindowId"]} closed during the command')
+        return body
+    assert verdict == 'preserved', f'{method} stole browser focus: before={before}, after={after}'
     return body
 
 async def wait_worker(context, timeout_ms=10000):
@@ -410,6 +448,7 @@ def managed_browser_resources(func):
 
 @managed_browser_resources
 async def run(port, profile):
+    check_focus_audit_verdicts()
     async with async_playwright() as p:
         import os
         default_headless = '0' if os.name == 'nt' else '1'
