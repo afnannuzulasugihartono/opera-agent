@@ -10,6 +10,7 @@ Related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`doc
 
 - Ship a runtime change. The runtime code is the product: [`extension/`](extension/README.md), [`lib/`](lib/AGENTS.md), [`supabase/functions/`](supabase/README.md).
 - Ship docs and tests to support it. Docs and tests support them — never the task.
+- `.md` files are the brain: memory, rules, current state. Every other file is the body: it acts.
 - Ship nothing, and justify it, when a session ships no runtime change.
 - Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
 - Say so instead when scope shows the problem lives in a test or a doc.
