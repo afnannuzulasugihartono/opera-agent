@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: background — MV3 runtime.
 // @context: MV3 browser runtime.
 // @state: the observation says when the person last touched the page.

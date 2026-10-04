@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: options-page.test — page.test — Test.
 // @context: Test.
 // @state: map options validation errors to actionable messages.

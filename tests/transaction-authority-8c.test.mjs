@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-authority-8c.test — authority-8c.test — Test.
 // @context: Test.
 // @state: add transaction authority verifier.

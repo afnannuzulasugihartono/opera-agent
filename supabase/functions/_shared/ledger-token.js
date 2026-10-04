@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: ledger-token — token — Repository file.
 // @context: Deno edge function.
 // @state: resolve deno check type errors in gateway/ledger/vm/runner.

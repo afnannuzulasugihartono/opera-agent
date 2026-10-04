@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: mcp-surface.test — surface.test — Test.
 // @context: Test.
 // @state: three more places claimed the background pointer was invisible.

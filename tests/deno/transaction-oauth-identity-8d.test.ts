@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-identity-8d.test — oauth-identity-8d.test — Repository file.
 // @context: Test.
 // @state: add reviewed in-process SDK identity and status-only 8D probe.

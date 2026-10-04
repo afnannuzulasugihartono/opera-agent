@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: goal-ledger.test — ledger.test — Test.
 // @context: Test.
 // @state: complete milestone 6E secure ledger integration.

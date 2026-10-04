@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: burst-tab-switching.test — tab-switching.test — Phase D : a burst may address more than one tab.
 // @context: Test.
 // @state: consolidate the latency cluster into one file.

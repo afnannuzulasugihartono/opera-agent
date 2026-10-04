@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: reactive-vm-7d.test — vm-7d.test — Test.
 // @context: Test.
 // @state: align 7D proof fixture provenance.

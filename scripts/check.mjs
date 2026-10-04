@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: check — Script.
 // @context: Script.
 // @state: version 1.6.15 sweep for the navigate/optimistic-call candidate.

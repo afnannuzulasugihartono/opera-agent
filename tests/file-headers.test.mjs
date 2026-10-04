@@ -1,8 +1,9 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: file-headers — every file carries its header in the @tag shape.
 // @context: Test.
 // @state: Headers carry @last-edited with UTC time, then @title, @context, @state, @updated.
 // @updated: file headers rewritten one @tag per line with UTC time.
+// @dependencies: test, assert, fs, path, child_process, url.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -22,7 +23,7 @@ const SKIP_EXACT = new Set([
   'supabase/functions/opera-agent-mcp/deno.lock',
 ]);
 const SKIP_EXT = new Set(['.json', '.lock']);
-const STAMP = /^@last-edited: \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\.$/;
+const STAMP = /^@last-edited: \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\+7\.$/;
 
 const allFiles = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
   .split('\n')

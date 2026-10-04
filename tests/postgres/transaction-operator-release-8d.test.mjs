@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-operator-release-8d.test — operator-release-8d.test — Repository file.
 // @context: Test.
 // @state: install reviewed 8D fence OFF and pin deployed Edge.

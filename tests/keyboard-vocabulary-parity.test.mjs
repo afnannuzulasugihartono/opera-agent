@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: keyboard-vocabulary-parity.test — vocabulary-parity.test — Keyboard vocabulary parity.
 // @context: Test.
 // @state: drop the milestone prefix from the interaction test family.

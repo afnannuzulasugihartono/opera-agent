@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-identity.test — identity.test — Protocol unit doubles, NOT evidence of real Supabase OAuth acceptance.
 // @context: Test.
 // @state: drop the milestone suffix from transaction test files and titles.

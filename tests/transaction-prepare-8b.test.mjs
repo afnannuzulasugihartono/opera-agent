@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-prepare-8b.test — prepare-8b.test — Test.
 // @context: Test.
 // @state: feat(ut): event-triggered workflows + universal one-hop gateway (1.6.6).

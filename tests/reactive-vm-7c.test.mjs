@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: reactive-vm-7c.test — vm-7c.test — Test.
 // @context: Test.
 // @state: fix(perf): make the 7C transition regression gate measure regression, not scheduler noise.

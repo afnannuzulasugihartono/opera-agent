@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 11:10 UTC.
+@last-edited: 2026-10-04 18:25 UTC+7.
 
 # Opera Agent agent instructions
 
@@ -52,7 +52,7 @@ Bind every session, in every area. Nothing below overrides them.
 - Do read the target first: scope before editing, open only named files, read slices.
 - Do write the failing test first, then the smallest mechanism. Do change only what the request needs.
 - Do keep the file count down: one function that solves it beats two that do. Do reuse the simplest existing function that covers the case.
-- Do update the file header on every edit, one `@` tag per line: `@last-edited` with UTC time, `@title`, `@context`, `@state`, `@updated`, `@dependencies`.
+- Do update the file header on every edit, one `@` tag per line: `@last-edited` in Jakarta time (UTC+7), `@title`, `@context`, `@state`, `@updated`, `@dependencies`.
 - Don't leave a stale header behind.
 - Don't header what cannot carry one: applied migrations, JSON, lockfiles, LICENSE.
 - Do comment header WHAT, body WHY. Do name every file and function. Do write current state in comments too, never a change narrative.
@@ -71,7 +71,7 @@ Bind every session, in every area. Nothing below overrides them.
 - Don't guess, don't grep.
 - Do write bullets: one idea per line, current state, full-path links.
 - Do write a `Related:` line on every `.md`, naming the hub and its relatives, plus the map row in the same commit.
-- Do update the `@last-edited` line on every `.md` edit. A `.md` carries `@last-edited` only, with UTC time.
+- Do update the `@last-edited` line on every `.md` edit. A `.md` carries `@last-edited` only, in Jakarta time (UTC+7).
 - Do write for the gate: keep doc-graph green — links resolve, no orphans, hub-mutual.
 - Do write instructions (do, don't) in [`AGENTS.md`](AGENTS.md). Do write explanations (what files do, where docs live) in [`README.md`](README.md).
 

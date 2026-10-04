@@ -1,4 +1,4 @@
-REM @last-edited: 2026-10-04 11:10 UTC.
+REM @last-edited: 2026-10-04 18:25 UTC+7.
 REM @title: RUN_8D_ACCEPTANCE — Repository file.
 REM @context: Script.
 REM @state: chore(naming): tidy repository names and enforce binding naming rules.

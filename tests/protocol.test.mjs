@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: protocol.test — Test.
 // @context: Test.
 // @state: lock the page.fill value rule on the real site and in the protocol test.

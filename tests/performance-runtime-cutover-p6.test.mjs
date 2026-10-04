@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: performance-runtime-cutover-p6.test — runtime-cutover-p6.test — Test.
 // @context: Test.
 // @state: test(p6): lock fail-closed cutover continuation gate.

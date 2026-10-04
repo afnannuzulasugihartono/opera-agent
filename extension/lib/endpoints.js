@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: endpoints — MV3 runtime library, shared with the Node suite..
 // @context: MV3 runtime library, shared with the Node suite.
 // @state: MV3 runtime library, shared with the Node suite..

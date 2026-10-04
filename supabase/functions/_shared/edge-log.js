@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: edge-log — log — Repository file.
 // @context: Deno edge function.
 // @state: structured edge log helper, convert 3 ad-hoc sites.

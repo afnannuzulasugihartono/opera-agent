@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: reactive-vm-host-7e.test — vm-host-7e.test — Test.
 // @context: Test.
 // @state: consolidate the 7E host boundary into its own surface file.

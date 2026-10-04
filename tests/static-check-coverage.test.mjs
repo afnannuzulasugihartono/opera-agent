@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: static-check-coverage.test — check-coverage.test — Test.
 // @context: Test.
 // @state: require dynamic runtime safety scan.

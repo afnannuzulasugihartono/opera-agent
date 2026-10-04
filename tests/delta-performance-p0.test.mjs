@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: delta-performance-p0.test — performance-p0.test — Test.
 // @context: Test.
 // @state: remove milestone labels from prose, and rename the ax-observation doc.

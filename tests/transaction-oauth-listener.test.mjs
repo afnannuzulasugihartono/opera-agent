@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-listener.test — oauth-listener.test — Node fetch does not preserve the test's explicit physical/logical Ho.
 // @context: Test.
 // @state: drop the milestone suffix from transaction test files and titles.

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: delta-first-observation-p2.test — first-observation-p2.test — Test.
 // @context: Test.
 // @state: refactor(tests): single-source boundary locks in tests/helpers/boundary-locks.mjs - removes the duplicated authorization comment/Map blocks.

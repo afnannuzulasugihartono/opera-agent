@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: reactive-vm-core.test — vm-core.test — Test.
 // @context: Test.
 // @state: fix 7B focused test syntax.

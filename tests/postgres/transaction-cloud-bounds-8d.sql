@@ -1,4 +1,4 @@
--- @last-edited: 2026-10-04 11:10 UTC.
+-- @last-edited: 2026-10-04 18:25 UTC+7.
 -- @title: transaction-cloud-bounds-8d — cloud-bounds-8d — Opt-in authorized synthetic database boundary probe; no OAuth/browser cl.
 -- @context: Test.
 -- @state: verify bounded 8D cloud limits and record OAuth prerequisites.

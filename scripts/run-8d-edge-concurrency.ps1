@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-04 11:10 UTC.
+# @last-edited: 2026-10-04 18:25 UTC+7.
 # @title: run-8d-edge-concurrency — 8d-edge-concurrency — Script.
 # @context: Script.
 # @state: publishable key defaults read env first.

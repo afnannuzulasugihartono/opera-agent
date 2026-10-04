@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: hover-settle.test — settle.test — Hover-as-a-first-class-step contracts.
 // @context: Test.
 // @state: drop the milestone prefix from the interaction test family.

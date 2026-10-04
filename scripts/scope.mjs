@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: scope — Scope preflight: bound the read set before reading it.
 // @context: Script.
 // @state: scope preflight that bounds the read set (owner-ordered).

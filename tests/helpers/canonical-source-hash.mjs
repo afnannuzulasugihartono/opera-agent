@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: canonical-source-hash — source-hash — Repository file.
 // @context: Test helper.
 // @state: canonicalize source hash line endings.

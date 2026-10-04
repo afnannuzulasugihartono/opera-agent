@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: focus-and-keyboard.test — and-keyboard.test — Focus stability + keyboard chord/text contracts.
 // @context: Test.
 // @state: drop the milestone prefix from the interaction test family.

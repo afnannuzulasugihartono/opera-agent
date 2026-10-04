@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: vm-token — Deno edge function..
 // @context: Deno edge function.
 // @state: Deno edge function..

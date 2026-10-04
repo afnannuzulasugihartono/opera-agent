@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-host-status-8d — oauth-host-status-8d — Opt-in actual pinned SDK; no enrollment/private RPC/prepare/cancel/.
 // @context: Test.
 // @state: add reviewed in-process SDK identity and status-only 8D probe.

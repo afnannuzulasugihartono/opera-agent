@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-runtime-8d.test — runtime-8d.test — Actual pinned SDK/runtime, but invalid synthetic credentials only.
 // @context: Test.
 // @state: integrate audited local 8D dark host and bound journal candidate.

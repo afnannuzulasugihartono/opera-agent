@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-cloud-acceptance-8d — cloud-acceptance-8d — Explicit opt-in Checkpoint 8D live acceptance/recovery runner.
 // @context: Test.
 // @state: fix(quality): keep helper exact()/CLI-config lines byte-unchanged (default sort already code-unit on ASCII keys) - resolves new-code duplica.

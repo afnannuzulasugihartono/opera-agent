@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: ui-surface.test — surface.test — Extension UI surface, consolidated 2026-10-03.
 // @context: Test.
 // @state: consolidate the extension UI cluster into one file.

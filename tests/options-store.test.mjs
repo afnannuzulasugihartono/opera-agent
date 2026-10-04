@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: options-store.test — store.test — Test.
 // @context: Test.
 // @state: close the Phase 5 review follow-ups.

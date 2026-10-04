@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: index — Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit.
 // @context: Deno edge function.
 // @state: clear deno require-await and no-unused-vars in edge functions.

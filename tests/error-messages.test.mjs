@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: error-messages.test — messages.test — Test.
 // @context: Test.
 // @state: lock store error strings against mapper drift.

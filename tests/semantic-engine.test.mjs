@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: semantic-engine.test — engine.test — Semantic engine surface, consolidated 2026-10-03.
 // @context: Test.
 // @state: consolidate the semantic engine cluster into one file.

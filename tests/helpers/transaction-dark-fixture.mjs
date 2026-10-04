@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 11:10 UTC.
+// @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-dark-fixture — dark-fixture — Repository file.
 // @context: Test helper.
 // @state: isolate 8D hosted acceptance fixture data.
