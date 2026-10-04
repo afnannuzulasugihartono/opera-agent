@@ -1995,6 +1995,27 @@ async def run(port, profile):
         cid = STATE.push('media.pause', {'tabId': r5_tab_id, 'index': 0})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
+        # media.play was the one allowlisted primitive this file never drove, so a
+        # regression in it could reach main without CI noticing. Seek to a position
+        # with room left, prove currentTime advances rather than only that paused
+        # flipped, then pause again so the seek loop below stays independent.
+        cid = STATE.push('media.seek', {'tabId': r5_tab_id, 'index': 0, 'seconds': 0.2})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('media.play', {'tabId': r5_tab_id, 'index': 0})
+        r5_played = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['media']
+        assert r5_played['paused'] is False, r5_played
+        await asyncio.sleep(0.4)
+        cid = STATE.push('media.state', {'tabId': r5_tab_id, 'index': 0})
+        r5_advanced = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['media']
+        assert r5_advanced['paused'] is False, r5_advanced
+        assert r5_advanced['currentTime'] > r5_played['currentTime'], {
+            'atPlay': r5_played['currentTime'],
+            'afterWait': r5_advanced['currentTime']
+        }
+        cid = STATE.push('media.pause', {'tabId': r5_tab_id, 'index': 0})
+        r5_paused = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['media']
+        assert r5_paused['paused'] is True, r5_paused
+
         r5_metric_start = len(STATE.metrics)
         r5_seek_targets = [0.10, 0.25, 0.40, 0.55, 0.70, 0.85, 1.00, 1.20, 1.40]
         r5_seek_results = []
