@@ -54,32 +54,21 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 - A file must not claim more than it delivers.
 - If a test cannot see a case, say so in the test file.
 
-## Measurements taken on a real site
+## Measurements
 
-- `tests/real_site_smoke.py` drives the extension through a **local mock bridge**, so
-  it measures the extension's own cost and not a network round trip. A speed claim
-  about the production path cannot come from it.
-- Measured on YouTube, 22 primitives, median 84ms per call. One burst of read, find
-  and scroll against the same three as separate calls came out at 226ms versus 257ms
-  on one run, and 684ms versus 371ms on the next, so the ratio moves above and below 1
-  and no ordering can be claimed from this harness. The mock bridge is loopback and the
-  page work dominates; against a real network the round trip is the cost and the ratio
-  should invert. Neither number is the production figure.
-- The slowest non-navigation primitive is `page.scroll` at about 186ms, because it
-  waits for lazy DOM changes to settle. That is the first place to look for a real
-  latency win, not the round trip count.
-- Production, 9,079 completed commands: enqueue-to-claim averages **676.6 ms**, p50
-  184.0 ms, p95 1914.4 ms. That is 36% of a command spent waiting for the device to ask
-  for it, and it is governed by the polling ramp inside `opera_claim_next_wait`, which
-  drops to a 250 ms floor after 720 ms of idleness. Lowering that floor is the one real
-  latency lever left, it costs idle polls per second, and it is an owner decision
-  because it changes a production function on the command path. Numbers and trade-off
-  in `docs/benchmarks.md`.
-- `opera_claim_next` has no `pg_sleep` at all and returns immediately. The wait is in
+- All latency numbers live in [`benchmarks.md`](benchmarks.md), local and production.
+  This file records only the traps around taking them.
+- `tests/real_site_smoke.py` drives the extension through a **local mock bridge**, so it
+  measures the extension's own cost, not a network round trip. A production speed claim
+  cannot come from it.
+- The burst-versus-separate-calls ratio moved above and below 1 between runs, so this
+  harness can establish no ordering. Local and production timings disagree about what
+  matters; a latency claim has to say which one it measured.
+- `opera_claim_next` has no `pg_sleep` and returns immediately. The wait is in
   `opera_claim_next_wait`, called by the bridge. Measuring the wrong one of two
-  similarly named functions is an easy mistake here.
-- Local mock-bridge timings and production timings disagree about what matters, so a
-  latency claim needs to say which one it is measuring.
+  similarly named functions answers nothing.
+- The slowest non-navigation primitive is `page.scroll`, which waits for lazy DOM
+  changes to settle. First place to look for a win on the extension side.
 
 ## Real sites, measured
 
