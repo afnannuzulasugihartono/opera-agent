@@ -70,12 +70,14 @@ jobs:
       - name: Secret scan (gitleaks)
         run: |
           $ErrorActionPreference = 'Stop'
+          # WHY zip and not tar.gz: gitleaks publishes windows_x64 as a zip. The
+          # tar.gz name 404s, and the step had never run before because the shell
+          # itself was broken, so the wrong name went unnoticed.
           $version = '8.24.0'
+          $zip = Join-Path $env:RUNNER_TEMP 'gitleaks.zip'
           $bin = Join-Path $env:RUNNER_TEMP 'gitleaks-bin'
-          New-Item -ItemType Directory -Force -Path $bin | Out-Null
-          $archive = Join-Path $env:RUNNER_TEMP 'gitleaks.tar.gz'
-          Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v$version/gitleaks_${version}_windows_x64.tar.gz" -OutFile $archive
-          tar -xzf $archive -C $bin gitleaks.exe
+          Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v$version/gitleaks_${version}_windows_x64.zip" -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $bin -Force
           & (Join-Path $bin 'gitleaks.exe') detect --source . --verbose
 
   browser:
