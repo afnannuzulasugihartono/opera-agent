@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 23:20 UTC+7.
+@last-edited: 2026-10-05 01:05 UTC+7.
 @related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 # Opera Agent agent instructions
@@ -210,11 +210,13 @@ Keep every `.md` reachable: a `Related:` header plus a row above. Update both wh
 
 - Do ask first: deleting foreign code, merge, promote, deploy, new top-level entries, production DB shape.
 - Do decline unclear work, and do leave a test that fails.
+- Do take the model endpoint, key and model name from the user's own configuration, kept on their device, and fail closed when they are absent.
 
 **Don't**
 
 - Don't assume any of those is covered by "work autonomously".
 - Don't guess, and don't weaken a test to admit a violation.
+- Don't ship a shared or embedded model key. One key inside N distributed packages is a public key, and it turns every user's model call into someone else's bill.
 
 ## Scoped instructions
 

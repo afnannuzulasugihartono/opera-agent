@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 00:56 UTC+7.
+@last-edited: 2026-10-05 01:05 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -87,11 +87,11 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 6. The largest unknown: how many model round trips a real task costs. Every latency
    figure here models the server and extension path, not the model loop. The plan path
    is the answer being built for it; see item 9.
-7. **The plan path needs two owner inputs before it can run.** A model endpoint and key
-   (an OpenAI-compatible URL covers a local model for development and a hosted one for
-   production), and a decision on [`SECURITY.md`](../SECURITY.md) because page content
-   would leave the device. After that the remaining work is the VM host: handing a
-   compiled program to `opera_start_workflow` needs a new RPC, which is production shape.
+7. **The plan path needs two owner inputs before it can run.** The endpoint, key and model
+   name come from the user's own configuration on their device — no shared key, ever, since
+   the product ships at scale — and [`SECURITY.md`](../SECURITY.md) has to say plainly what
+   leaves the device. After that the remaining work is the VM host: handing a compiled
+   program to `opera_start_workflow` needs a new RPC, which is production shape.
 
 ## CI
 
