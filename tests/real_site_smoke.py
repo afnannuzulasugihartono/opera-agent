@@ -1169,6 +1169,61 @@ async def case_burst_hover_menu():
         record('burst hover pattern', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_lazy_list():
+    """Scroll a list that only exists once you reach it, the way the instructions say.
+
+    The MCP instructions tell the model to use wheel_at inside lazy result lists and
+    to repeat only with an explicit bound until the boundary is reached and no new
+    stable keys appear. This runs that: collect the stable keys, wheel, collect again,
+    and stop when a pass adds nothing new.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://www.youtube.com/results?search_query=kucing',
+            'active': True, 'wait': True
+        }))['tab']
+        tid = tab['id']
+        await asyncio.sleep(3)
+
+        async def keys():
+            page = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 2500}))['page']
+            found = {i.get('stableKey') for i in page['elements'] if i.get('stableKey')}
+            return found, page
+
+        seen, page = await keys()
+        start = len(seen)
+        passes = 0
+        for _ in range(6):
+            wheel = await drive('page.pointer', {
+                'tabId': tid, 'x': 400, 'y': 500, 'action': 'wheel', 'deltaY': 900,
+                'executionMode': 'background'
+            })
+            passes += 1
+            await asyncio.sleep(1.6)
+            grown, page = await keys()
+            if len(grown) <= len(seen):
+                seen = grown
+                break
+            seen = grown
+
+        record('lazy list grows as it is scrolled', len(seen) > start,
+               f'{start} stable keys -> {len(seen)} over {passes} wheel pass(es), '
+               f'chars={page["totalTextChars"]}')
+        record('the boundary is reached rather than scrolled forever', passes <= 6,
+               f'stopped after {passes} pass(es)')
+
+        bottom = await drive('page.pointer', {
+            'tabId': tid, 'x': 400, 'y': 500, 'action': 'wheel', 'deltaY': 3000,
+            'executionMode': 'background'
+        })
+        record('wheel reports what actually moved', isinstance(bottom.get('scroll'), dict),
+               f'scroll={json.dumps(bottom.get("scroll"), ensure_ascii=False)[:150]}')
+
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('lazy list', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -1237,6 +1292,7 @@ async def run(port, profile):
         await maybe(lambda: case_stale_ref_recovery(), 'stale-ref')
         await maybe(lambda: case_foreground_mode(), 'foreground')
         await maybe(lambda: case_burst_hover_menu(), 'burst-hover')
+        await maybe(lambda: case_lazy_list(), 'lazy-list')
         await maybe(lambda: case_primitive_sweep(), 'sweep')
         await maybe(lambda: case_media_on_real_video(), 'media')
         await maybe(lambda: case_click_every_control('https://opencode.ai/', 'opencode'),
