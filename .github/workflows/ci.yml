@@ -1,41 +1,42 @@
-# @last-edited: 2026-10-04 21:34 UTC+7.
-# @title: ci — three jobs; two on GitHub Linux, the browser one on this machine.
+# @last-edited: 2026-10-04 22:16 UTC+7.
+# @title: ci — three jobs, all on GitHub Linux runners.
 # @context: CI.
-# @state: unit and secret-scan run on ubuntu-latest; browser needs this machine.
-# @updated: every file carries Last edited, Title, Purpose and Now
+# @state: no self-hosted runner; the harness runs headless on the image Chrome.
+# @updated: browser job moved to ubuntu-latest; the Python 3.12 pin is restored.
 # @dependencies: none stated.
 
 name: CI
 
-# Three jobs. Two run on GitHub's own Linux runner; the one that needs this machine
-# stays on it.
-#  - unit:        npm test + npm run check, on ubuntu-latest
-#  - secret-scan: gitleaks, the one gate that cannot run locally, on ubuntu-latest
-#  - browser:     Brave harness, the only job that needs Python and this machine
+# Three jobs, all on GitHub's own Linux runner.
+#  - unit:        npm test + npm run check
+#  - secret-scan: gitleaks, the one gate that cannot run locally
+#  - browser:     the playwright harness, headless, on the image's Chrome
 #
-# WHY unit and secret-scan moved off the self-hosted runner. Neither needs anything
-# this laptop has: unit needs Node, and the secret scan needs the tree. While the
-# runner was offline they queued for hours with no result at all, so every commit in
-# the session had zero CI evidence. On Linux they also prove something the repo never
-# has: that the Node suite is platform-neutral rather than only ever correct on one
-# Windows machine. Only browser stays, because it drives this machine's browsers.
+# WHY no self-hosted runner. Every job used to need the one Windows laptop, so while
+# it was offline every push queued with no result at all and CI acceptance was
+# unobtainable. Nothing here needs that machine: the Node suite needs Node, the
+# secret scan needs the tree, and the harness already carries a headless path with
+# an executable override for exactly this case. The harness was last run on a Linux
+# runner before the jobs moved onto this laptop, so this is a return, not a first
+# attempt. Local gates still run against Brave headed on this machine, which is
+# where the focus behaviour a headless runner cannot see is caught.
 #
-# WHY every job has a timeout. There is a single runner for two of them, so one hung
-# job blocks the other. Measured: actions/setup-python removed the tool-cache Python
-# and then its installer sat at zero CPU for two hours, holding the runner, and ten
-# pushes queued behind it with no result at all. A timeout turns that silent block
-# into a failure and frees the machine.
+# WHY every job has a timeout. Measured on the laptop this repo used to run on:
+# actions/setup-python removed the tool-cache Python and then its installer sat at
+# zero CPU for two hours, and because it was the single runner it blocked the two
+# jobs that need no Python at all, with ten pushes queued behind them and no result.
+# A timeout turns that silent block into a failure.
 #
 # WHY the concurrency group. Ten commits pushed in a session is ten runs of the same
 # gates. Only the newest head can be the acceptance evidence, so superseded runs are
 # cancelled rather than queued behind each other.
 #
-# WHY the env var lives on the browser job: this machine's global git config
-# rewrites every https://github.com URL to SSH
-# (url.ssh://git@github.com.insteadOf), so checkout died with "Host key
-# verification failed". Bypassing the global config keeps the fetch on HTTPS;
-# checkout embeds the job token, so no credential helper is needed. It is not
-# workflow-wide because /dev/null is a Windows idiom that breaks git on Linux.
+# WHY there is no GIT_CONFIG_GLOBAL here any more. It existed because this machine's
+# global git config rewrites every https://github.com URL to SSH
+# (url.ssh://git@github.com.insteadOf), so checkout died with "Host key verification
+# failed". It was a Windows workaround pointing at /dev/null, and on Linux every git
+# config call fails against that path, so it has no place in a workflow whose jobs all
+# run on GitHub's own Linux images.
 
 on:
   push:
@@ -107,32 +108,38 @@ jobs:
           "${RUNNER_TEMP}/gitleaks" detect --source . --verbose
 
   browser:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-
-      # WHY here and not workflow-wide. This machine's global git config rewrites
-      # https://github.com to SSH, so checkout needs the global config out of the
-      # way. Pointing it at /dev/null is a Windows idiom: on Linux every git config
-      # call then fails with "could not lock config file /dev/null", so the Linux
-      # jobs must not inherit it.
-
-      GIT_CONFIG_GLOBAL: /dev/null
-
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      # WHY no setup-python: on this host the python.org installer never completes.
-      # It has sat at zero CPU for over two hours holding the only runner, and
-      # because there is a single runner that also blocked the unit and secret-scan
-      # jobs, which need no Python at all. The machine already provides Python 3.13
-      # with playwright on the user PATH, and `py` resolves to it, so the harness
-      # runs the same code against the same interpreter the local gates use.
-      # Restore the pin once the installer works on this machine.
+      # WHY the Python pin is restored here. It was dropped because the python.org
+      # installer never completes on this Windows machine, which is a fault of that
+      # host and not of the pin. On a GitHub runner setup-python installs from its
+      # own cache in seconds, so 3.12 is pinned again and CI runs the interpreter
+      # the repo asks for.
 
+      - name: Install playwright
+        run: python -m pip install --quiet playwright
       - name: Show the interpreter the harness will use
         run: |
-          py -c "import sys, playwright; print(sys.version.split()[0], 'playwright ok')"
-      - name: Browser harness (Brave, headed)
+          python -c "import sys, playwright; print(sys.version.split()[0], 'playwright ok')"
+      - name: Browser harness (Chromium, headless)
+        env:
+
+          # WHY the image's Chrome and no browser download: playwright can launch an
+          # executable it did not fetch, and the ubuntu image already ships Chrome.
+          # Downloading a browser per run costs minutes and adds a failure mode that
+          # has nothing to do with this repository.
+
+          OA_BROWSER_EXECUTABLE: /usr/bin/google-chrome
+          OA_BROWSER_HEADLESS: '1'
+
         run: |
-          py tests/browser_extension_test.py
+          python tests/browser_extension_test.py
