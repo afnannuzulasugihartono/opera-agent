@@ -40,29 +40,30 @@ Bind every session, in every area. Nothing below overrides them.
 
 **Code — read, write, comment, test**
 
-- Read the target first: scope before editing, open only named files, read slices.
-- Write the failing test first, then the smallest mechanism. Change only what the request needs.
-- Comment header WHAT, body WHY. Name every file and function. Write current state in comments too, never a change narrative.
-- Test by driving it. Prove the lock fails. Cite the evidence. Say unverified and stop.
-- Never: mechanism first, claim without running, facts from memory, a test that validates a claim, a lock that asserts a sentence, a weakened test.
+- Do read the target first: scope before editing, open only named files, read slices.
+- Do write the failing test first, then the smallest mechanism. Do change only what the request needs.
+- Do comment header WHAT, body WHY. Do name every file and function. Do write current state in comments too, never a change narrative.
+- Do test by driving it. Do prove the lock fails. Do cite the evidence. Do say unverified and stop.
+- Don't write the mechanism first. Don't claim without running. Don't state facts from memory. Don't write a test that validates a claim. Don't accept a lock that asserts a sentence. Don't weaken a test.
 
 **Documents — read, write**
 
 **Do**
 
-- Read through the map below. Never guess, never grep.
-- Write bullets: one idea per line, current state, full-path links.
-- Write a `Related:` line on every `.md`, naming the hub and its relatives, plus the map row in the same commit.
-- Write for the gate: keep doc-graph green — links resolve, no orphans, hub-mutual.
-- Write instructions (do, don't) in [`AGENTS.md`](AGENTS.md). Write explanations (what files do, where docs live) in [`README.md`](README.md).
+- Do read through the map below.
+- Don't guess, don't grep.
+- Do write bullets: one idea per line, current state, full-path links.
+- Do write a `Related:` line on every `.md`, naming the hub and its relatives, plus the map row in the same commit.
+- Do write for the gate: keep doc-graph green — links resolve, no orphans, hub-mutual.
+- Do write instructions (do, don't) in [`AGENTS.md`](AGENTS.md). Do write explanations (what files do, where docs live) in [`README.md`](README.md).
 
 **Don't**
 
-- Write prose paragraphs in a `.md`.
-- Write history in place of state: no change narrative, no incident timeline, no migration story.
-- Write a `.md` without its `Related:` line and map row, or a `Related:` line without the hub.
-- Dismiss a red doc-graph as "only docs".
-- Explain in [`AGENTS.md`](AGENTS.md). Instruct in [`README.md`](README.md).
+- Don't write prose paragraphs in a `.md`.
+- Don't write history in place of state: no change narrative, no incident timeline, no migration story.
+- Don't write a `.md` without its `Related:` line and map row, or a `Related:` line without the hub.
+- Don't dismiss a red doc-graph as "only docs".
+- Don't explain in [`AGENTS.md`](AGENTS.md). Don't instruct in [`README.md`](README.md).
 
 ## Triggers
 
@@ -148,16 +149,16 @@ you add or rename one.
 
 **Do**
 
-- Act like a person: search, scroll, save, close, then undo.
-- Use the Google account first, GitHub second.
-- Take credentials from env vars only.
-- Keep the live suite opt-in behind `OA_REAL_SITE=1`.
+- Do act like a person: search, scroll, save, close, then undo.
+- Do use the Google account first, GitHub second.
+- Do take credentials from env vars only.
+- Do keep the live suite opt-in behind `OA_REAL_SITE=1`.
 
 **Don't**
 
-- Click a fixed list of coordinates and call it covered.
-- Commit a credential, or print one.
-- Fail the suite on a third party's outage.
+- Don't click a fixed list of coordinates and call it covered.
+- Don't commit a credential, or print one.
+- Don't fail the suite on a third party's outage.
 
 ## Principles
 
@@ -185,97 +186,97 @@ Load it with `skill({ name: "karpathy-guidelines" })` before writing code.
 
 **Do**
 
-- Ask first: deleting foreign code, merge, promote, deploy, new top-level entries, production DB shape.
-- Decline unclear work.
-- Leave a test that fails.
+- Do ask first: deleting foreign code, merge, promote, deploy, new top-level entries, production DB shape.
+- Do decline unclear work.
+- Do leave a test that fails.
 
 **Don't**
 
-- Assume any of those is covered by "work autonomously".
-- Guess.
-- Weaken a test to admit a violation.
+- Don't assume any of those is covered by "work autonomously".
+- Don't guess.
+- Don't weaken a test to admit a violation.
 
 ## Scoped instructions
 
 **Do**
 
-- Keep an area [`AGENTS.md`](AGENTS.md) at 15 lines or fewer, pointers only.
-- Open it with the root-binds line.
-- Keep it consistent with the root.
-- Register a new one in the Bootstrap table in the same commit.
+- Do keep an area [`AGENTS.md`](AGENTS.md) at 15 lines or fewer, pointers only.
+- Do open it with the root-binds line.
+- Do keep it consistent with the root.
+- Do register a new one in the Bootstrap table in the same commit.
 
 **Don't**
 
-- Let it grow into a second manual.
-- Let it contradict the root.
-- Add one that nothing points at.
+- Don't let it grow into a second manual.
+- Don't let it contradict the root.
+- Don't add one that nothing points at.
 
 ## Repository discipline
 
 **Do**
 
-- Keep one writer per checkout.
-- Stop on a dirty tree.
-- Preserve work you did not create.
-- Mention pre-existing code this work did not create, in the same session.
-- Say in the commit message whether you removed it and why.
-- Park work you must not lose on a branch or a stash.
-- Accept on CI evidence: GitHub Actions and Vercel SUCCESS on the exact head.
-- Ask the owner to deploy and to promote a release.
+- Do keep one writer per checkout.
+- Do stop on a dirty tree.
+- Do preserve work you did not create.
+- Do mention pre-existing code this work did not create, in the same session.
+- Do say in the commit message whether you removed it and why.
+- Do park work you must not lose on a branch or a stash.
+- Do accept on CI evidence: GitHub Actions and Vercel SUCCESS on the exact head.
+- Do ask the owner to deploy and to promote a release.
 
 **Don't**
 
-- Write from two sessions at once.
-- End dirty or diverged.
-- Delete pre-existing code silently, or remove it as tidying.
-- Accept on local green.
-- Deploy or promote on your own.
+- Don't write from two sessions at once.
+- Don't end dirty or diverged.
+- Don't delete pre-existing code silently, or remove it as tidying.
+- Don't accept on local green.
+- Don't deploy or promote on your own.
 
 ## Naming
 
 **Do**
 
-- Name files in kebab-case.
-- Keep the conventional root documents uppercase: [`README.md`](README.md), [`AGENTS.md`](AGENTS.md), [`SECURITY.md`](SECURITY.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CHANGELOG.md`](CHANGELOG.md), [`ROADMAP.md`](ROADMAP.md), [`SUPPORT.md`](SUPPORT.md), `CODE_OF_CONDUCT.md`, [`LICENSE`](LICENSE).
-- Leave lifecycle tokens out of every name.
-- Name a thing for what it is.
-- Extend the root allowlist in [`tests/repo-naming-governance.test.mjs`](tests/repo-naming-governance.test.mjs) with a reason in the same commit.
-- Branch `main`, `release/<semver>`, or `feat|fix|chore|docs|test|perf|refactor/<kebab>`.
-- Name tests `tests/<name>.test.mjs`.
+- Do name files in kebab-case.
+- Do keep the conventional root documents uppercase: [`README.md`](README.md), [`AGENTS.md`](AGENTS.md), [`SECURITY.md`](SECURITY.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CHANGELOG.md`](CHANGELOG.md), [`ROADMAP.md`](ROADMAP.md), [`SUPPORT.md`](SUPPORT.md), `CODE_OF_CONDUCT.md`, [`LICENSE`](LICENSE).
+- Do leave lifecycle tokens out of every name.
+- Do name a thing for what it is.
+- Do extend the root allowlist in [`tests/repo-naming-governance.test.mjs`](tests/repo-naming-governance.test.mjs) with a reason in the same commit.
+- Do branch `main`, `release/<semver>`, or `feat|fix|chore|docs|test|perf|refactor/<kebab>`.
+- Do name tests `tests/<name>.test.mjs`.
 
 **Don't**
 
-- Use spaces, dots, or capitals in a filename.
-- Rename a conventional root document to kebab-case.
-- Put `tmp`, `temp`, `draft`, `wip`, `untitled`, `backup`, `copy`, `old`, `final<n>` in a name.
-- Name a thing for where it sits in a workflow.
-- Add a root entry without a reason.
-- Use any other branch name.
-- Put `tests/cloud`, `tests/postgres`, or `tests/deno` in `npm test`.
+- Don't use spaces, dots, or capitals in a filename.
+- Don't rename a conventional root document to kebab-case.
+- Don't put `tmp`, `temp`, `draft`, `wip`, `untitled`, `backup`, `copy`, `old`, `final<n>` in a name.
+- Don't name a thing for where it sits in a workflow.
+- Don't add a root entry without a reason.
+- Don't use any other branch name.
+- Don't put `tests/cloud`, `tests/postgres`, or `tests/deno` in `npm test`.
 
 ## Model
 
 **Do**
 
-- Keep the model at `opencode/space-bunny-free`, pinned in [`opencode.json`](opencode.json).
-- State which model ran in the closeout.
+- Do keep the model at `opencode/space-bunny-free`, pinned in [`opencode.json`](opencode.json).
+- Do state which model ran in the closeout.
 
 **Don't**
 
-- Drift the model silently.
-- Leave the reader to guess.
+- Don't drift the model silently.
+- Don't leave the reader to guess.
 
 ## Session close
 
 **Do**
 
-- Touch `docs/` only when the session changed code or released state.
-- Leave both context files alone on a read-only or test-only session.
-- Verify by running the thing.
-- State which model ran, and push every verified increment.
+- Do touch `docs/` only when the session changed code or released state.
+- Do leave both context files alone on a read-only or test-only session.
+- Do verify by running the thing.
+- Do state which model ran, and push every verified increment.
 
 **Don't**
 
-- Rewrite `docs/` on a read-only session.
-- Verify by reading it and asserting it would work.
-- Leave a verified win in a local commit.
+- Don't rewrite `docs/` on a read-only session.
+- Don't verify by reading it and asserting it would work.
+- Don't leave a verified win in a local commit.
