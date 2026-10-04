@@ -102,13 +102,15 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 ## Blocked, needs the owner at the machine
 
-- The python.org installer cannot complete on this host at all, per-user or all-users.
-  That is the underlying fault and it is still there; the workflow now avoids it rather
-  than fixing it. Antivirus, a half-finished uninstall, or the earlier crash and freeze
-  are the usual suspects.
-- The stale `HKCU\Software\Python\PythonCore\3.12` registration, which pointed at the
-  runner's tool cache, has been removed and backed up to
-  `%TEMP%\opencode\pythoncore-backup.reg`.
+- Python 3.12.10 installs and runs per-user (`py -3.12`, pip 25.0.1). 3.13.15 stays
+  the default and is untouched.
+- The per-machine install is still broken: its `dev_AllUsers` MSI crashes with a
+  stack overflow (`0xC00000FD`) during file costing, which rolls back the whole
+  bundle. Per-user packages were always fine; the earlier failure was a stale
+  partial install making the bundle skip `core`. Uninstall, delete the leftover
+  directory, reinstall per-user.
+- `%TEMP%\opencode\pythoncore-backup.reg` still holds the removed 3.12 registry
+  registration.
 - Use `py`, not `python`, which hits the Microsoft Store shim. `py` is 3.13.15 with
   playwright.
 
