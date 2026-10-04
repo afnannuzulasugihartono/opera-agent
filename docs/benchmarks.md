@@ -67,6 +67,27 @@ and no output file is written.
 - Evidence arriving without the core's in-memory validation marker is still canonicalized and
   digest-verified. The fast path cannot be supplied through serialized input.
 
+## Production round-trip cost
+
+From `pg_stat_statements` on the live project. Read the sample size before the number.
+
+| Call | Calls | Avg | Max |
+|---|---:|---:|---:|
+| `opera_await_adaptive` through PostgREST, waiting on a device | 64 | 1076.1 ms | 5877.4 ms |
+| `opera_await_adaptive` called directly, nothing to wait for | 10 | 6.9 ms | 14.1 ms |
+| `opera_verify_device` | 1 | 3.3 ms | 3.3 ms |
+| `opera_enqueue` in a single statement | 1 | 73.2 ms | 73.2 ms |
+
+What this says, and it is the useful part:
+
+- The server's own polling cost is about **7 ms**. A command that waits on the device
+  averages **1076 ms**. So roughly 99% of a command's latency is the browser and the
+  network to it, not Postgres and not the gateway.
+- Optimising the database path or the gateway can win at most single-digit
+  milliseconds. Do not spend a release on it.
+- 64 calls is a small sample and the browser was the owner's own machine. Treat the
+  order of magnitude as real and the digits as indicative.
+
 ## Contract digests
 
 | Artifact | SHA-256 |

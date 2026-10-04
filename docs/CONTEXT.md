@@ -68,6 +68,12 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 - The slowest non-navigation primitive is `page.scroll` at about 186ms, because it
   waits for lazy DOM changes to settle. That is the first place to look for a real
   latency win, not the round trip count.
+- Production, from `pg_stat_statements`: a command that waits on the device averages
+  **1076 ms**, and the server's own polling costs about **7 ms**. So the round trip is
+  the browser, not Postgres and not the gateway, and work on the database path or the
+  gateway cannot win more than single-digit milliseconds. 64 calls is a small sample.
+- Local mock-bridge timings and production timings disagree about what matters, so a
+  latency claim needs to say which one it is measuring.
 
 ## Real sites, measured
 
