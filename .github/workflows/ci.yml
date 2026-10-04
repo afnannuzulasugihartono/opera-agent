@@ -1,24 +1,24 @@
-# @last-edited: 2026-10-04 21:12 UTC+7.
-# @title: ci — Three jobs, all on one self-hosted Windows runner.
+# @last-edited: 2026-10-04 21:21 UTC+7.
+# @title: ci — three jobs; two on GitHub Linux, the browser one on this machine.
 # @context: CI.
-# @state: the Node gate runs on ubuntu-latest; the other two need this machine.
+# @state: unit and secret-scan run on ubuntu-latest; browser needs this machine.
 # @updated: every file carries Last edited, Title, Purpose and Now
 # @dependencies: none stated.
 
 name: CI
 
-# Three jobs. The Node gate runs on GitHub's own Linux runner; the two that need
-# this machine stay on it.
+# Three jobs. Two run on GitHub's own Linux runner; the one that needs this machine
+# stays on it.
 #  - unit:        npm test + npm run check, on ubuntu-latest
-#  - secret-scan: gitleaks, the one gate that cannot run locally
-#  - browser:     Brave harness, the only job that needs Python
+#  - secret-scan: gitleaks, the one gate that cannot run locally, on ubuntu-latest
+#  - browser:     Brave harness, the only job that needs Python and this machine
 #
-# WHY unit moved off the self-hosted runner. It needs Node and nothing else, and
-# while the laptop is offline it queued for hours with no result at all, so every
-# commit in the session had zero CI evidence. On Linux it also proves something the
-# repo never has: that the Node suite is platform-neutral rather than only ever
-# correct on one Windows machine. secret-scan and browser stay put because gitleaks
-# is downloaded as a windows zip and the harness needs this machine's browsers.
+# WHY unit and secret-scan moved off the self-hosted runner. Neither needs anything
+# this laptop has: unit needs Node, and the secret scan needs the tree. While the
+# runner was offline they queued for hours with no result at all, so every commit in
+# the session had zero CI evidence. On Linux they also prove something the repo never
+# has: that the Node suite is platform-neutral rather than only ever correct on one
+# Windows machine. Only browser stays, because it drives this machine's browsers.
 #
 # WHY every job has a timeout. There is a single runner for two of them, so one hung
 # job blocks the other. Measured: actions/setup-python removed the tool-cache Python
@@ -80,7 +80,7 @@ jobs:
           npm run check
 
   secret-scan:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -88,16 +88,17 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          # WHY zip and not tar.gz: gitleaks publishes windows_x64 as a zip. The
-          # tar.gz name 404s, and the step had never run before because the shell
-          # itself was broken, so the wrong name went unnoticed.
+          # WHY the linux tarball: the gate scans the tree, not the machine, so it
+          # has no reason to need this laptop. gitleaks publishes linux_x64 as a
+          # tar.gz and windows_x64 as a zip, and the name has to match the runner or
+          # the download 404s. PowerShell 7 is preinstalled on the Linux image, so the
+          # workflow default shell still applies.
 
           $version = '8.24.0'
-          $zip = Join-Path $env:RUNNER_TEMP 'gitleaks.zip'
-          $bin = Join-Path $env:RUNNER_TEMP 'gitleaks-bin'
-          Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v$version/gitleaks_${version}_windows_x64.zip" -OutFile $zip
-          Expand-Archive -Path $zip -DestinationPath $bin -Force
-          & (Join-Path $bin 'gitleaks.exe') detect --source . --verbose
+          $tarball = Join-Path $env:RUNNER_TEMP "gitleaks_${version}_linux_x64.tar.gz"
+          Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v$version/gitleaks_${version}_linux_x64.tar.gz" -OutFile $tarball
+          tar -xzf $tarball -C $env:RUNNER_TEMP gitleaks
+          & (Join-Path $env:RUNNER_TEMP 'gitleaks') detect --source . --verbose
 
   browser:
     runs-on: [self-hosted, Windows, X64]
