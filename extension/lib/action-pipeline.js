@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 19:08 UTC+7.
 // @title: action-pipeline — MV3 runtime library, shared with the Node suite..
-// @context: MV3 runtime library, shared with the Node suite.
 // @state: Pure Resolve-Wait-Heal-Verify policy; refusals carry the ref state.
-// @updated: refState on TARGET_NOT_READY.
 // @dependencies: none.
 
 // Action pipeline: pure policy engine for Resolve -> Wait -> Heal -> Verify. NO DOM and NO chrome dependency: the host supplies resolve

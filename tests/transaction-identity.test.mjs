@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-identity.test — identity.test — Protocol unit doubles, NOT evidence of real Supabase OAuth acceptance.
-// @context: Test.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:test, transaction-identity-8d.
 
 import assert from 'node:assert/strict';

@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-cloud-management-backend-8d — cloud-management-backend-8d — Test-only fixed production operator backend for Checkpoint 8.
-// @context: Test helper.
 // @state: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: transaction-oauth-8d, transaction-cloud-operator-8d, ledger-token, node:crypto, canonical-order.
 
 // Test-only fixed production operator backend for Checkpoint 8D acceptance.

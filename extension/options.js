@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: options — MV3 runtime.
-// @context: MV3 browser runtime.
 // @state: options page with bridge URL and log level settings.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: endpoints, options-store, error-messages, protocol.
 
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';

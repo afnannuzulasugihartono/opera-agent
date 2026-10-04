@@ -1,8 +1,6 @@
 # @last-edited: 2026-10-04 22:22 UTC+7.
 # @title: ci — three jobs, all on GitHub Linux runners.
-# @context: CI.
 # @state: no self-hosted runner; the harness runs headed under xvfb on the image Chrome.
-# @updated: browser job moved to ubuntu-latest; the Python 3.12 pin is restored.
 # @dependencies: none stated.
 
 name: CI

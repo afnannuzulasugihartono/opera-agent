@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: semantic-engine.test — engine.test — Semantic engine surface, consolidated 2026-10-03.
-// @context: Test.
 // @state: consolidate the semantic engine cluster into one file.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:fs, node:test, canonical-source-hash.
 
 import assert from 'node:assert/strict';

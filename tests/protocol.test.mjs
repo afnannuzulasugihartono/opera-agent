@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: protocol.test — Test.
-// @context: Test.
 // @state: lock the page.fill value rule on the real site and in the protocol test.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, protocol.
 
 import test from 'node:test';

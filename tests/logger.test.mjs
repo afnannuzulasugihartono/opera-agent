@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: logger.test — Enterprise Quality Phase 2 Task 5: shared extension logger contracts.
-// @context: Test.
 // @state: log previously silent catches in content script.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs.
 
 // Enterprise Quality Phase 2 Task 5: shared extension logger contracts.

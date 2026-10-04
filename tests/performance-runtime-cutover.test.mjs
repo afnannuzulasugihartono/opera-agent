@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: performance-runtime-cutover - fail-closed cutover continuation gate.
-// @context: Test.
 // @state: Local continuation needs accepted task context and never fabricates dependencies.
-// @updated: milestone labels out of file names and titles.
 // @dependencies: node:test, strict, promises, reactive-vm-host-7e, reactive-vm.
 
 import test from 'node:test';

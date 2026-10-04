@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: proof-engine.test — engine.test — Test.
-// @context: Test.
 // @state: complete milestone 6E secure ledger integration.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:fs, node:test, goal-ledger, proof-engine.
 
 import assert from 'node:assert/strict';

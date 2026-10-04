@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 20:31 UTC+7.
 // @title: background — MV3 runtime.
-// @context: MV3 browser runtime.
 // @state: the observation says when the person last touched the page.
-// @updated: an expired ref ends the wait instead of spending the deadline.
 // @dependencies: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints, role-reconcile, agent-log, ax-summary, popup-events, deadline-race.
 
 import {

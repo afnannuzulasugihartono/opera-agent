@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:50 UTC+7.
 // @title: usability-transcript — transcript workflow with bounded fallback.
-// @context: Test.
 // @state: youtube.get_transcript v5 collects transcript-scoped output with the v4 chunked reader as fallback.
-// @updated: milestone labels out of file and fixture names.
 // @dependencies: node:fs, node:test, strict.
 
 import fs from 'node:fs';

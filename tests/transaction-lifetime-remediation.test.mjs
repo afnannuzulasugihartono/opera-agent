@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-lifetime-remediation.test — lifetime-remediation.test — Test.
-// @context: Test.
 // @state: enforce transaction approval lifetime budgets.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:fs, node:test, goal-ledger, transaction-prepare, transaction-authority.
 
 import assert from 'node:assert/strict';

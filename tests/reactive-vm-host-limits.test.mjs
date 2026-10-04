@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:32 UTC+7.
 // @title: reactive-vm-host-limits — bounded host and storage limits.
-// @context: Test.
 // @state: Host effects stay bounded, idempotent and digest-only.
-// @updated: milestone labels out of file names and titles.
 // @dependencies: strict, node:fs, node:test, reactive-vm-host-7e, vm-token.
 
 import assert from 'node:assert/strict';

@@ -1,8 +1,6 @@
 # @last-edited: 2026-10-04 21:40 UTC+7.
 # @title: .gitleaks — path-scoped allow exceptions for known synthetic fixtures.
-# @context: Repository file.
 # @state: every allowlisted path exists; three stale ones were found by the first real run.
-# @updated: paths re-pointed at the current file names; dead v2/ and checkpoint-doc entries retired.
 # @dependencies: none stated.
 
 # Path-scoped gitleaks allow exceptions.

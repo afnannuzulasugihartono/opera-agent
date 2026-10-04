@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-login-8d — oauth-login-8d — Explicit opt-in manual login. This is not hosted transaction acceptance.
-// @context: Test.
 // @state: add independently reviewed bounded manual OAuth probe for 8D.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: transaction-oauth-8d, transaction-oauth-listener-8d.
 
 // Explicit opt-in manual login. This is not hosted transaction acceptance.

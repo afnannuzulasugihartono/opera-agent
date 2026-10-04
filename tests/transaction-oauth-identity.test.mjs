@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-identity.test — oauth-identity.test — Test.
-// @context: Test.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, transaction-oauth-identity-8d, transaction-oauth-8d.
 
 import test from 'node:test';

@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-operator-release-8d.test — operator-release-8d.test — Repository file.
-// @context: Test.
 // @state: install reviewed 8D fence OFF and pin deployed Edge.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:test, node:child_process, promises, node:os, node:path, node:net.
 
 import assert from 'node:assert/strict';

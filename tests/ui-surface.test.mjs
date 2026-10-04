@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: ui-surface.test — surface.test — Extension UI surface, consolidated 2026-10-03.
-// @context: Test.
 // @state: consolidate the extension UI cluster into one file.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs, promises.
 
 import test from 'node:test';

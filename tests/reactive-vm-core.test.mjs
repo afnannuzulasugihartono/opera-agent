@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: reactive-vm-core.test — vm-core.test — Test.
-// @context: Test.
 // @state: fix 7B focused test syntax.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:fs, node:perf_hooks, node:test, goal-ledger, reactive-vm.
 
 import assert from 'node:assert/strict';

@@ -1,8 +1,6 @@
 -- @last-edited: 2026-10-04 18:25 UTC+7.
 -- @title: transaction-journal-8d — journal-8d — LOCAL REVIEW CANDIDATE ONLY. Not a migration; never apply to production.
--- @context: Supabase backend.
 -- @state: integrate audited local 8D dark host and bound journal candidate.
--- @updated: every file carries Last edited, Title, Purpose and Now
 -- @dependencies: none stated.
 
 -- LOCAL REVIEW CANDIDATE ONLY. Not a migration; never apply to production.

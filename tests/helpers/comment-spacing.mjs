@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 19:14 UTC+7.
 // @title: comment-spacing — shared classifier for the blank-line rule.
-// @context: Test helper. Finds comment blocks and the code lines around them.
 // @state: One implementation, used by the lock; string and template contents are never read as comments.
-// @updated: extracted from the one-off retrofit so the lock and the retrofit classify alike.
 // @dependencies: none.
 
 const MARKERS = {

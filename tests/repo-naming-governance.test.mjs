@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: repo-naming-governance.test — Test..
-// @context: Test.
 // @state: Test..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:child_process, node:fs, node:path, node:test, strict.
 
 import { execSync } from 'node:child_process';

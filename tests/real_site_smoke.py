@@ -1,8 +1,6 @@
 # @last-edited: 2026-10-04 20:52 UTC+7.
 # @title: real_site_smoke — Test.
-# @context: Test.
 # @state: cover comment typing, likes, transcripts, Docs, GitHub and Wikipedia live.
-# @updated: every file carries Last edited, Title, Purpose and Now
 # @dependencies: asyncio, hashlib, json, os, re.
 
 """Real-site smoke: opera-agent against live pages, opt-in.

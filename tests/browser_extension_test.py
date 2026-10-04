@@ -1,8 +1,6 @@
 # @last-edited: 2026-10-04 19:35 UTC+7.
 # @title: browser_extension_test — Test.
-# @context: Test.
 # @state: a steal must end with something focused, which is what CI proved.
-# @updated: every file carries Last edited, Title, Purpose and Now
 # @dependencies: asyncio, io, json, queue, tempfile, threading, time, uuid, wave, http.server, pathlib, playwright.async_api.
 
 import asyncio

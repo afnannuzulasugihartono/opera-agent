@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: multi-signal-relevance - coalescer and relevance gate.
-// @context: Test.
 // @state: Irrelevant storms coalesce; only accepted goal context grants relevance.
-// @updated: milestone labels out of file names and titles.
 // @dependencies: node:test, strict, node:crypto, promises, boundary-locks, multi-signal-relevance-p3.
 
 import test from 'node:test';

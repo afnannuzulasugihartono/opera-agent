@@ -1,8 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-04 22:38 UTC+7.
 // @title: file-headers — every file carries its header in the @tag shape.
-// @context: Test.
-// @state: Headers carry @last-edited with UTC time, then @title, @context, @state, @updated.
-// @updated: file headers rewritten one @tag per line with UTC time.
+// @state: Headers are four tags: @last-edited, @title, @state, @dependencies.
 // @dependencies: test, assert, fs, path, child_process, url.
 
 import test from 'node:test';
@@ -13,9 +11,12 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 // File headers, locked in the @tag shape the rules require: @last-edited with a
-// UTC timestamp, then @title, @context, @state, @updated, one tag per line. A
-// .md carries @last-edited only. Migrations, JSON and lockfiles cannot carry
-// one: migrations must never be rewritten, and JSON has no comments.
+// UTC timestamp, then @title, @state and @dependencies, one tag per line. A .md
+// carries @last-edited only. Migrations, JSON and lockfiles cannot carry one:
+// migrations must never be rewritten, and JSON has no comments.
+//
+// Four tags, not six: @context restated @title and @updated restated
+// @last-edited, so two of every six lines carried no fact the others did not.
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const SKIP_EXACT = new Set([
@@ -39,7 +40,7 @@ function headerLines(file) {
       : 0;
     return { lines, start, count: 1 };
   }
-  return { lines, start: 0, count: 5 };
+  return { lines, start: 0, count: 4 };
 }
 
 function strip(line) {
@@ -58,12 +59,12 @@ test('every file carries its header in the @tag shape', () => {
       STAMP.test(strip(lines[start])),
       `${file} line ${start + 1} must be @last-edited with a UTC timestamp`
     );
-    if (count === 5) {
-      const tags = lines.slice(start, start + 6).map((l) => strip(l).split(':')[0]);
+    if (count === 4) {
+      const tags = lines.slice(start, start + 4).map((l) => strip(l).split(':')[0]);
       assert.deepEqual(
         tags,
-        ['@last-edited', '@title', '@context', '@state', '@updated', '@dependencies'],
-        `${file} must carry @last-edited, @title, @context, @state, @updated, @dependencies in order`
+        ['@last-edited', '@title', '@state', '@dependencies'],
+        `${file} must carry @last-edited, @title, @state, @dependencies in order`
       );
     }
     checked++;

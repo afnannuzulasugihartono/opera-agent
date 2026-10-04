@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 20:04 UTC+7.
+@last-edited: 2026-10-04 22:38 UTC+7.
 
 # Opera Agent agent instructions
 
@@ -73,7 +73,8 @@ Bind every session, in every area. Nothing below overrides them.
 - Do read the target first: scope before editing, open only named files, read slices.
 - Do write the failing test first, then the smallest mechanism. Do change only what the request needs.
 - Do keep the file count down: one function that solves it beats two that do. Do reuse the simplest existing function that covers the case.
-- Do update the file header on every edit, one `@` tag per line: `@last-edited` in Jakarta time (UTC+7), `@title`, `@context`, `@state`, `@updated`, `@dependencies`.
+- Do carry a four-tag header on every file that can hold one, one `@` tag per line: `@last-edited` in Jakarta time (UTC+7), `@title`, `@state`, `@dependencies`.
+- Do rewrite a tag only when its own statement would be wrong. A stamp repeated on an edit that changed nothing else is ceremony, and it buries the real change in the diff.
 - Don't leave a stale header behind.
 - Don't header what cannot carry one: applied migrations, JSON, lockfiles, LICENSE.
 - Do comment header WHAT, body WHY. Do name every file and function. Do write current state in comments too, never a change narrative.

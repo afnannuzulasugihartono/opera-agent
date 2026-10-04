@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: pull-cadence-sim — Test helper..
-// @context: Test helper.
 // @state: Test helper..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: none.
 
 // Phase A latency measurement (2026-10-02): a deterministic, clock-injected

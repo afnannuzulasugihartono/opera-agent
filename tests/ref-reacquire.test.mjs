@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: ref-reacquire.test — reacquire.test — Bounded ref re-acquisition contracts.
-// @context: Test.
 // @state: drop the milestone prefix from the interaction test family.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, promises.
 
 // Bounded ref re-acquisition contracts.

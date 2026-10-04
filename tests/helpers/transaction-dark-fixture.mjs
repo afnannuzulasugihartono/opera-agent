@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-dark-fixture — dark-fixture — Repository file.
-// @context: Test helper.
 // @state: isolate 8D hosted acceptance fixture data.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:fs, node:test, goal-ledger, transaction-prepare, transaction-admission-8d.
 
 import assert from 'node:assert/strict';

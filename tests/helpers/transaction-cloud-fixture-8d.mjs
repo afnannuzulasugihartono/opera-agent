@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-cloud-fixture-8d — cloud-fixture-8d — Test-only DATA builder, not authentication, enrollment, SQL or a cloud .
-// @context: Test helper.
 // @state: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: transaction-dark-fixture, goal-ledger, transaction-oauth-8d, canonical-order.
 
 // Test-only DATA builder, not authentication, enrollment, SQL or a cloud runner.

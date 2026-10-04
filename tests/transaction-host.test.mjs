@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-host.test — host.test — Boundary unit doubles only; native/host/live gates must be tracked separately.
-// @context: Test.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:test, transaction-host-8d, transaction-dark-fixture, ledger-token, transaction-token-8d.
 
 import assert from 'node:assert/strict';

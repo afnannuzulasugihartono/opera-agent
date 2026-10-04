@@ -1,8 +1,6 @@
 # @last-edited: 2026-10-04 18:25 UTC+7.
 # @title: run-8d-acceptance — 8d-acceptance — Script.
-# @context: Script.
 # @state: publishable key defaults read env first.
-# @updated: every file carries Last edited, Title, Purpose and Now
 # @dependencies: none stated.
 
 param(

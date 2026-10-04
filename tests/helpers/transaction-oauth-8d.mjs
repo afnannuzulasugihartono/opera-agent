@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-8d — oauth-8d — Acceptance helper only. Not imported by extension/MCP/Edge runtime.
-// @context: Test helper.
 // @state: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:crypto, node:buffer, canonical-order.
 
 // Acceptance helper only. Not imported by extension/MCP/Edge runtime.

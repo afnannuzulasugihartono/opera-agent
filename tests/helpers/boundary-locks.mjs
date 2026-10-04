@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: boundary-locks — locks — Frozen public-boundary locks shared by the checkpoint tests.
-// @context: Test helper.
 // @state: remove the unused activeTab permission from the manifest.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: none.
 
 // Frozen public-boundary locks shared by the checkpoint tests.
@@ -13,19 +11,19 @@
 // why the current pin exists; git keeps the history of what it used to be.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', '7438fb826d9a664d188233b79c99427bd15eb624'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses
-  ['../extension/background.js', '88aa026828010c36f77c056b00f40757bebb2a87'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs
+  ['../extension/content.js', '013022f46a00f85c3ac51fdf71618c52078c404b'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses
+  ['../extension/background.js', '5ce0264c59293dea839bad64f93ea6ed737e7dd7'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs
   ['../extension/manifest.json', 'a0781f778c694b308944770cd85fbe3d538f0d46'], // entry points, permissions, version
-  ['../supabase/functions/opera-agent-mcp/index.ts', '579d9d5d8ef908105d8467aee5c728789f1112f0'], // MCP tool surface and schemas
+  ['../supabase/functions/opera-agent-mcp/index.ts', '2556cf554683d80f33fb1974dd1d1b85993f8c9d'], // MCP tool surface and schemas
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', 'a2d66e363f2266b26584724bcc1d116adeb96d7f'], // reactive VM core
-  ['../lib/reactive-vm-7c.js', '67194b8a1881179d1dbe58c8ae077bec78b40942'], // reactive VM phase C
-  ['../lib/reactive-vm-7d.js', 'f56326f3b4001159138b2da31bf81966f567f324'], // reactive VM phase D
+  ['../lib/reactive-vm.js', 'a27f34103488fe14d38140c31095675fbb17d1ae'], // reactive VM core
+  ['../lib/reactive-vm-7c.js', '033791d34f623aba4816011fc296d501339240bb'], // reactive VM phase C
+  ['../lib/reactive-vm-7d.js', 'eb8565ad6268070c9a072ea8709ed13f9ec0b281'], // reactive VM phase D
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../lib/multi-signal-relevance-p3.js', '24fc1134678fd647634b4a1410b11679f691c792'], // multi-signal relevance
-  ['../lib/delta-first-observation-p2.js', 'bc49348273aed86890b0dddc407cc1e5b15bc980'], // delta first observation
+  ['../lib/multi-signal-relevance-p3.js', '96e7b3fa993ae7fd8801437da1346dab059e9b27'], // multi-signal relevance
+  ['../lib/delta-first-observation-p2.js', 'bb9e82536137a0fbe176234238915bc83671ceff'], // delta first observation
 ]);

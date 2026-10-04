@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: index — Repository file.
-// @context: Deno edge function.
 // @state: three more places claimed the background pointer was invisible.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
 
 import "@supabase/edge-runtime";

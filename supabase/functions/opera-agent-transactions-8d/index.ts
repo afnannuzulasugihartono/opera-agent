@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: index — Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit.
-// @context: Deno edge function.
 // @state: clear deno require-await and no-unused-vars in edge functions.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: supabase-js, transaction-host-8d, transaction-http-8d, ledger-token.
 
 // Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit.

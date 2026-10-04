@@ -1,8 +1,6 @@
 # @last-edited: 2026-10-04 18:25 UTC+7.
 # @title: CODEOWNERS — CI..
-# @context: CI.
 # @state: CI..
-# @updated: every file carries Last edited, Title, Purpose and Now
 # @dependencies: none stated.
 
 # Default owner for everything. Release automation paths get the same

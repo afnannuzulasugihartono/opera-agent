@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-cloud-controller-8d — Test helper..
-// @context: Test helper.
 // @state: Test helper..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:buffer, transaction-cloud-fixture-8d, transaction-oauth-8d, goal-ledger, canonical-order.
 
 // LOCAL acceptance orchestration only. Operator adapters must be installed by

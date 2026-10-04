@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-prepare-8b.test — prepare-8b.test — Test.
-// @context: Test.
 // @state: feat(ut): event-triggered workflows + universal one-hop gateway (1.6.6).
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:fs, node:perf_hooks, node:test, transaction-prepare.
 
 import assert from 'node:assert/strict';

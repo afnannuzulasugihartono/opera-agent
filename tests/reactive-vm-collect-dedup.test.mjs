@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:32 UTC+7.
 // @title: reactive-vm-collect-dedup — COLLECT and DEDUP opcodes.
-// @context: Test.
 // @state: Collection is bounded and deduplicated with stable identity.
-// @updated: milestone labels out of file names and titles.
 // @dependencies: strict, node:fs, node:test, goal-ledger, proof-engine, reactive-vm-7c, reactive-vm-7d.
 
 import assert from 'node:assert/strict';

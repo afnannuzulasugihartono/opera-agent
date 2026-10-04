@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:50 UTC+7.
 // @title: usability-media-sampling — internal media sampling with local seek.
-// @context: Test.
 // @state: media.sample_at is registered with versioned local seek semantics, off the public surface.
-// @updated: milestone labels out of file and fixture names.
 // @dependencies: node:fs, node:test, strict.
 
 // Why source-text pins, stated per AGENTS.md: an internal workflow is added here, so

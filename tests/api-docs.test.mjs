@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: api-docs.test — Test..
-// @context: Test.
 // @state: Test..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, promises, endpoints, source-scan.
 
 import test from 'node:test';

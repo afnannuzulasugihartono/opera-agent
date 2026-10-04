@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 20:52 UTC+7.
 // @title: content — MV3 browser runtime..
-// @context: MV3 browser runtime.
 // @state: page.action_state reports expired, detached or unresolvable for a ref that cannot act.
-// @updated: expired split out; it is the provably terminal case.
 // @dependencies: none.
 
 (() => {

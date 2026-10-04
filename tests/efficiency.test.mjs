@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: efficiency.test — Test.
-// @context: Test.
 // @state: consolidate the latency cluster into one file.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

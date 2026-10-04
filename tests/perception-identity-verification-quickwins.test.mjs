@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: perception-identity-verification-quickwins.test — Test..
-// @context: Test.
 // @state: Test..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:fs, node:test, strict.
 
 import fs from 'node:fs';

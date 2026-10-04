@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-host-install-8d — host-install-8d — Explicit opt-in, read-only HTTP probe. No prepare/cancel/approval/browse.
-// @context: Test.
 // @state: install audited OFF 8D backend and record bounded cloud probes.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict.
 
 // Explicit opt-in, read-only HTTP probe. No prepare/cancel/approval/browser calls.

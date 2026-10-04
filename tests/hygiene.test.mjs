@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 21:52 UTC+7.
 // @title: hygiene — runtime properties and the comment-spacing rule.
-// @context: Test.
 // @state: The memoized read path, the comment-spacing rule and live allowlist paths are locked.
-// @updated: gitleaks allowlist paths must name a tracked file.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
 
 // Properties that keep the runtime code correct as it grows, and that the code

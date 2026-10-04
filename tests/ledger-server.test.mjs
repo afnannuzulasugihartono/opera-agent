@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: ledger-server.test — server.test — Test.
-// @context: Test.
 // @state: chore(sync): align migration file IDs with production ledger, record applied skip_ads/ETW migrations, update test paths and sync docs.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:crypto, node:fs, node:test, goal-ledger, ledger-token, canonical-source-hash.
 
 import assert from 'node:assert/strict';

@@ -1,8 +1,6 @@
 -- @last-edited: 2026-10-04 18:25 UTC+7.
 -- @title: transaction-cloud-install-8d — cloud-install-8d — Bounded synthetic cloud primitive probe; not hosted OAuth/approval acce.
--- @context: Test.
 -- @state: fix(quality): resolve Sonar new-code reliability sweep - code-unit sort comparators, honest throw-free finally, identical-ternary collapse,.
--- @updated: every file carries Last edited, Title, Purpose and Now
 -- @dependencies: none stated.
 
 -- Bounded synthetic cloud primitive probe; not hosted OAuth/approval acceptance.

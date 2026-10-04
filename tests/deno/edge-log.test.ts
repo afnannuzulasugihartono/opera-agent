@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: edge-log.test — log.test — Repository file.
-// @context: Test.
 // @state: structured edge log helper, convert 3 ad-hoc sites.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: edge-log.
 
 import {createEdgeLog, MAX_LOG_MESSAGE} from "../../supabase/functions/_shared/edge-log.js";

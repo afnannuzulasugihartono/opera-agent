@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: options-page.test — page.test — Test.
-// @context: Test.
 // @state: map options validation errors to actionable messages.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, promises.
 
 import test from 'node:test';

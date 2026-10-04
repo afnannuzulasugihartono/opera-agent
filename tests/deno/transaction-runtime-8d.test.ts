@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-runtime-8d.test — runtime-8d.test — Actual pinned SDK/runtime, but invalid synthetic credentials only.
-// @context: Test.
 // @state: integrate audited local 8D dark host and bound journal candidate.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: supabase-js, transaction-identity-8d, transaction-host-8d, transaction-http-8d.
 
 import {createClient} from "@supabase/supabase-js";

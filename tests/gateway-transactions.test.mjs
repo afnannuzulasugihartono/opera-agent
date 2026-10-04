@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: gateway-transactions.test — transactions.test — Test.
-// @context: Test.
 // @state: fold the gateway offline check into the auth call.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs, node:module, node:vm, cors.
 
 import test from 'node:test';

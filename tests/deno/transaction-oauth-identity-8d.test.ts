@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-identity-8d.test — oauth-identity-8d.test — Repository file.
-// @context: Test.
 // @state: add reviewed in-process SDK identity and status-only 8D probe.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: supabase-js, transaction-oauth-identity-8d.
 
 import {createClient} from '@supabase/supabase-js';

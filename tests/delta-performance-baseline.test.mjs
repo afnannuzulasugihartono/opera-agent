@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: delta-performance-baseline - frozen workload matrix and measurement contract.
-// @context: Test.
 // @state: The freeze holds the matrix, metrics and gates without claiming achievement.
-// @updated: milestone labels out of file and fixture names.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: goal-ledger-benchmark — ledger-benchmark — Script.
-// @context: Script.
 // @state: implement milestone 6B goal ledger core.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:fs, node:perf_hooks, goal-ledger.
 
 import fs from 'node:fs';

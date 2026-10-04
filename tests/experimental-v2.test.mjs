@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: experimental-v2.test — v2.test — Test.
-// @context: Test.
 // @state: add adaptive screenshots.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs, protocol.
 
 import test from 'node:test';

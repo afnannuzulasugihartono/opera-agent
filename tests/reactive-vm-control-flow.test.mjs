@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:32 UTC+7.
 // @title: reactive-vm-control-flow — control-flow opcodes LOOP, UNTIL, WAIT_EVENT, RETRY.
-// @context: Test.
 // @state: Control flow executes bounded programs and stays compatible with the older core.
-// @updated: milestone labels out of file names and titles; program IDs renamed.
 // @dependencies: strict, node:fs, node:perf_hooks, node:test, goal-ledger, reactive-vm, reactive-vm-7c.
 
 import assert from 'node:assert/strict';

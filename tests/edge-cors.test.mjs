@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: edge-cors.test — cors.test — Test.
-// @context: Test.
 // @state: shared CORS origin resolver with fail-closed defaults.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, cors.
 
 import test from 'node:test';

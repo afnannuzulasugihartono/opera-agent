@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:50 UTC+7.
 // @title: usability-actionability — actionability acceptance on a controlled fixture.
-// @context: Test.
 // @state: The controlled fixture holds the frozen finding surfaces; the legacy Skip ordering still fails acceptance.
-// @updated: milestone labels out of file, fixture and fixture-title names.
 // @dependencies: node:test, strict, promises.
 
 // Why source-text pins, stated per AGENTS.md: this file is an evidence record,

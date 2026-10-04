@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: cors — Repository file.
-// @context: Deno edge function.
 // @state: drop unknown-rule lint-ignore in cors helper (2.9.6 gate).
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: none.
 
 const FALLBACK_ORIGINS = Object.freeze([

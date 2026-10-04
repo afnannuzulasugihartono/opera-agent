@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: error-messages — messages — User-facing error mapping for the popup and options page (page lang `en`).
-// @context: MV3 runtime library, shared with the Node suite.
 // @state: lock store error strings against mapper drift.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: none.
 
 // User-facing error mapping for the popup and options page (page lang `en`).

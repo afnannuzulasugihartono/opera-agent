@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: vm-token — Deno edge function..
-// @context: Deno edge function.
 // @state: Deno edge function..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: none.
 
 const TOKEN_PREFIX = 'oavm1';

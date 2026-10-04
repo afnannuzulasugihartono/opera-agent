@@ -1,8 +1,6 @@
 # @last-edited: 2026-10-04 18:25 UTC+7.
 # @title: run-8d-worker-loss — 8d-worker-loss — Script.
-# @context: Script.
 # @state: add PowerShell 7 launcher for hosted 8D worker-loss probe.
-# @updated: every file carries Last edited, Title, Purpose and Now
 # @dependencies: none stated.
 
 param(

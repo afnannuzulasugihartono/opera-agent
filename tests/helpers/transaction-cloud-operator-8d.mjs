@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-cloud-operator-8d — cloud-operator-8d — Repository file.
-// @context: Test helper.
 // @state: fix(quality): keep helper exact()/CLI-config lines byte-unchanged (default sort already code-unit on ASCII keys) - resolves new-code duplica.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: promises, node:crypto, node:path, transaction-oauth-8d.
 
 import { lstat, mkdir, readFile, readdir, rename, rm, rmdir, writeFile } from 'node:fs/promises';

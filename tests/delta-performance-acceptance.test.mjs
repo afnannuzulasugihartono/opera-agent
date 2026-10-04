@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: delta-performance-acceptance - acceptance evidence against frozen gates.
-// @context: Test.
 // @state: Real-site evidence meets every frozen threshold.
-// @updated: milestone labels out of file and fixture names.
 // @dependencies: node:test, strict, node:crypto, promises, boundary-locks.
 
 import test from 'node:test';

@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: mcp-surface.test — surface.test — Test.
-// @context: Test.
 // @state: three more places claimed the background pointer was invisible.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs, promises, node:crypto, canonical-source-hash, protocol.
 
 import test from 'node:test';

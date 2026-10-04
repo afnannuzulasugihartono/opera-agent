@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: mcp-connection-diagnostics — Script..
-// @context: Script.
 // @state: Script..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:url.
 
 import { pathToFileURL } from 'node:url';

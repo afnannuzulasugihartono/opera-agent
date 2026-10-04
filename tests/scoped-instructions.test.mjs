@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: scoped-instructions.test — instructions.test — Scoped first-read files.
-// @context: Test.
 // @state: every file mention carries its full address, and contradictions fixed.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

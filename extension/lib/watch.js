@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: watch — MV3 runtime library, shared with the Node suite..
-// @context: MV3 runtime library, shared with the Node suite.
 // @state: MV3 runtime library, shared with the Node suite..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: none.
 
 // Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact

@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: burst-tab-switching.test — tab-switching.test — Phase D : a burst may address more than one tab.
-// @context: Test.
 // @state: consolidate the latency cluster into one file.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, node:fs, protocol.
 
 import test from 'node:test';

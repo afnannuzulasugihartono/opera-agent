@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-journal-8d.test — journal-8d.test — Repository file.
-// @context: Test.
 // @state: chore(sync): align migration file IDs with production ledger, record applied skip_ads/ETW migrations, update test paths and sync docs.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:child_process, node:util, promises, node:path, node:os, node:net, node:crypto, node:url, node:test, transaction-dark-fixture, transaction-cloud-fixture-8d, transaction-host-8d, ledger-tok.
 
 import assert from 'node:assert/strict';

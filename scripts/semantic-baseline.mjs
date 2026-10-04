@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: semantic-baseline — baseline — Script.
-// @context: Script.
 // @state: add causal semantic proof metadata.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:crypto, node:fs, node:path, node:child_process, node:url.
 
 import crypto from 'node:crypto';

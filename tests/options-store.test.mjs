@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: options-store.test — store.test — Test.
-// @context: Test.
 // @state: close the Phase 5 review follow-ups.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: node:test, strict, options-store, endpoints.
 
 import test from 'node:test';

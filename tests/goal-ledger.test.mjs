@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: goal-ledger.test — ledger.test — Test.
-// @context: Test.
 // @state: complete milestone 6E secure ledger integration.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: strict, node:fs, node:test, goal-ledger.
 
 import assert from 'node:assert/strict';

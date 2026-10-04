@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: protocol — MV3 runtime library, shared with the Node suite..
-// @context: MV3 runtime library, shared with the Node suite.
 // @state: MV3 runtime library, shared with the Node suite..
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: keyboard.
 
 // The wire contract: the allowlist of browser primitives, their parameter schemas,

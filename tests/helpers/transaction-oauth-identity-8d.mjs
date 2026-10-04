@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-identity-8d — oauth-identity-8d — Test-only in-process adapter. No enrollment, private RPC, prepare/canc.
-// @context: Test helper.
 // @state: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
-// @updated: every file carries Last edited, Title, Purpose and Now
 // @dependencies: transaction-oauth-8d, node:buffer, canonical-order.
 
 // Test-only in-process adapter. No enrollment, private RPC, prepare/cancel/approval.

@@ -1,8 +1,6 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: delta-first-observation - changed-fact and view patches.
-// @context: Test.
 // @state: Proven contiguous updates emit compact patches with canonical state retained.
-// @updated: milestone labels out of file names and titles.
 // @dependencies: node:test, strict, node:crypto, promises, boundary-locks, delta-first-observation-p2.
 
 import test from 'node:test';
