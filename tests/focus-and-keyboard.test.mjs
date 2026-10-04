@@ -1,4 +1,4 @@
-// R9 (2026-09-30) — focus stability + keyboard chord/text contracts.
+// Focus stability + keyboard chord/text contracts.
 //
 // Two halves:
 // 1. The pure policy modules (lib/focus-gate.js, lib/keyboard.js) are asserted
@@ -32,14 +32,14 @@ const TAB_ONLY = { tabActive: true, windowFocused: false };
 const WINDOW_ONLY = { tabActive: false, windowFocused: true };
 const LOST = { tabActive: false, windowFocused: false };
 
-test('R9-A: a satisfied foreground sample dispatches on the first attempt with no added latency', () => {
+test('a satisfied foreground sample dispatches on the first attempt with no added latency', () => {
   const decision = decideFocusGate({ mode: 'foreground', sample: FOCUSED, attempt: 1 });
   assert.equal(decision.outcome, 'dispatch');
   assert.equal(decision.recovered, false);
   assert.equal(decision.attempt, 1);
 });
 
-test('R9-A: a lost-then-restored focus sample dispatches and reports the recovery', () => {
+test('a lost-then-restored focus sample dispatches and reports the recovery', () => {
   const first = decideFocusGate({ mode: 'foreground', sample: TAB_ONLY, attempt: 1 });
   assert.equal(first.outcome, 'retry');
   const second = decideFocusGate({ mode: 'foreground', sample: FOCUSED, attempt: 2 });
@@ -48,7 +48,7 @@ test('R9-A: a lost-then-restored focus sample dispatches and reports the recover
   assert.equal(second.attempt, 2);
 });
 
-test('R9-A: a focus sample that never satisfies refuses on the final attempt and carries the observed state', () => {
+test('a focus sample that never satisfies refuses on the final attempt and carries the observed state', () => {
   let decision = null;
   for (let attempt = 1; attempt <= FOCUS_GATE_ATTEMPTS; attempt += 1) {
     decision = decideFocusGate({ mode: 'foreground', sample: LOST, attempt });
@@ -58,7 +58,7 @@ test('R9-A: a focus sample that never satisfies refuses on the final attempt and
   assert.deepEqual(decision.sample, LOST);
 });
 
-test('R9-A: the gate never exceeds its attempt budget', () => {
+test('the gate never exceeds its attempt budget', () => {
   const decisions = [];
   for (let attempt = 1; attempt <= 10; attempt += 1) {
     decisions.push(decideFocusGate({ mode: 'foreground', sample: LOST, attempt }).outcome);
@@ -68,7 +68,7 @@ test('R9-A: the gate never exceeds its attempt budget', () => {
   assert.ok(decisions.slice(FOCUS_GATE_ATTEMPTS).every((outcome) => outcome === 'refuse'));
 });
 
-test('R9-A: background mode dispatches immediately regardless of the observed focus sample', () => {
+test('background mode dispatches immediately regardless of the observed focus sample', () => {
   for (const sample of [FOCUSED, LOST, TAB_ONLY, WINDOW_ONLY, null, undefined]) {
     assert.equal(focusSampleSatisfied('background', sample), true);
     const decision = decideFocusGate({ mode: 'background', sample, attempt: 1 });
@@ -77,7 +77,7 @@ test('R9-A: background mode dispatches immediately regardless of the observed fo
   }
 });
 
-test('R9-A: a partially focused state is never treated as satisfied', () => {
+test('a partially focused state is never treated as satisfied', () => {
   assert.equal(focusSampleSatisfied('foreground', FOCUSED), true);
   assert.equal(focusSampleSatisfied('foreground', TAB_ONLY), false);
   assert.equal(focusSampleSatisfied('foreground', WINDOW_ONLY), false);
@@ -86,7 +86,7 @@ test('R9-A: a partially focused state is never treated as satisfied', () => {
   assert.equal(decideFocusGate({ mode: 'foreground', sample: null, attempt: 1 }).outcome, 'retry');
 });
 
-test('R9-B: every previously allowlisted unmodified key resolves to the historical CDP payload', () => {
+test('every previously allowlisted unmodified key resolves to the historical CDP payload', () => {
   const historical = {
     Enter: { key: 'Enter', code: 'Enter', vk: 13 },
     Tab: { key: 'Tab', code: 'Tab', vk: 9 },
@@ -110,7 +110,7 @@ test('R9-B: every previously allowlisted unmodified key resolves to the historic
   }
 });
 
-test('R9-B: modifiers OR into the CDP bitmask and accept their common aliases', () => {
+test('modifiers OR into the CDP bitmask and accept their common aliases', () => {
   assert.equal(resolveChord('a', ['control']).modifiers, MODIFIER_BITS.control);
   assert.equal(resolveChord('a', ['ctrl']).modifiers, MODIFIER_BITS.control);
   assert.equal(resolveChord('v', ['control', 'shift']).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.shift);
@@ -123,7 +123,7 @@ test('R9-B: modifiers OR into the CDP bitmask and accept their common aliases', 
   assert.equal(resolveModifiers(undefined).mask, 0);
 });
 
-test('R9-B: the chords an editor requires now resolve', () => {
+test('the chords an editor requires now resolve', () => {
   for (const [key, modifiers, expected] of [
     ['a', ['control'], 2],
     ['v', ['control'], 2],
@@ -139,7 +139,7 @@ test('R9-B: the chords an editor requires now resolve', () => {
   }
 });
 
-test('R9-B: an uppercase letter carries an implicit Shift so the platform does not drop it', () => {
+test('an uppercase letter carries an implicit Shift so the platform does not drop it', () => {
   const chord = resolveChord('A');
   assert.equal(chord.code, 'KeyA');
   assert.equal(chord.modifiers, MODIFIER_BITS.shift);
@@ -148,7 +148,7 @@ test('R9-B: an uppercase letter carries an implicit Shift so the platform does n
   assert.equal(resolveChord('A', ['shift']).modifiers, MODIFIER_BITS.shift);
 });
 
-test('R9-B: unknown keys and unknown modifiers are rejected, never passed through', () => {
+test('unknown keys and unknown modifiers are rejected, never passed through', () => {
   for (const bad of ['', 'F13', 'Meta+KeyDown', 'kill', '../../etc/passwd', 'a b']) {
     assert.throws(() => resolveChord(bad), /not allowlisted/i, `must reject ${JSON.stringify(bad)}`);
   }
@@ -156,7 +156,7 @@ test('R9-B: unknown keys and unknown modifiers are rejected, never passed throug
   assert.throws(() => resolveChord('a', ['control', 'control', 'control', 'control', 'control']), /at most 4/i);
 });
 
-test('R9-B: text is a bounded, chunked, separate path from a key', () => {
+test('text is a bounded, chunked, separate path from a key', () => {
   const resolved = resolveKeyInput({ text: 'hello world' });
   assert.equal(resolved.kind, 'text');
   assert.equal(resolved.text, 'hello world');
@@ -173,13 +173,13 @@ test('R9-B: text is a bounded, chunked, separate path from a key', () => {
   assert.throws(() => resolveKeyInput({ text: 'y'.repeat(MAX_TEXT_CHARS + 1) }), /at most 20000 characters/);
 });
 
-test('R9-B: chunking never loses or reorders characters', () => {
+test('chunking never loses or reorders characters', () => {
   const value = Array.from({ length: 977 }, (_, index) => String.fromCharCode(33 + (index % 94))).join('');
   assert.equal(chunkText(value, 128).join(''), value);
   assert.deepEqual(chunkText('', 128), []);
 });
 
-test('R9-B: exactly one of key or text may be requested, and modifiers cannot ride along with text', () => {
+test('exactly one of key or text may be requested, and modifiers cannot ride along with text', () => {
   assert.throws(() => resolveKeyInput({ key: 'a', text: 'b' }), /not both/i);
   assert.throws(() => resolveKeyInput({}), /requires a key or text/i);
   // An empty text string means "no text requested", not a conflict.
@@ -206,7 +206,7 @@ test('R9: the shared key allowlist is the single source of truth for bursts and 
   }
 });
 
-test('R9-B: the synthetic path explains its narrower surface instead of a bare rejection', async () => {
+test('the synthetic path explains its narrower surface instead of a bare rejection', async () => {
   // The synthetic key path accepts only 12 unmodified navigation keys while the
   // runtime allowlist has 79. A bare "Key is not allowlisted" reads as a bug for
   // a key the product accepts everywhere else, so the message must name the

@@ -1,4 +1,4 @@
-// R9-D (2026-09-30): bounded ref re-acquisition contracts.
+// Bounded ref re-acquisition contracts.
 //
 // The design decision this file locks is a NEGATIVE one, and it is the point of
 // the checkpoint: the mint-time geometry guard is NOT relaxed. It exists because
@@ -24,7 +24,7 @@ function resolveBlock() {
   return source.slice(start, source.indexOf('\n  function ', start + 10));
 }
 
-test('R9-D: the geometry tolerance is unchanged and still unbroadened', () => {
+test('the geometry tolerance is unchanged and still unbroadened', () => {
   const tolerance = source.match(/const GEOMETRY_DRIFT_TOLERANCE_PX = (\d+)/)?.[1];
   assert.equal(tolerance, '24', 'the guard value must not be widened');
   // The mint-time comparison itself must still be the deciding test.
@@ -38,7 +38,7 @@ test('R9-D: the geometry tolerance is unchanged and still unbroadened', () => {
   assert.match(geometry, /Math\.abs\(rect\.height - mint\.height\) <= GEOMETRY_DRIFT_TOLERANCE_PX/);
 });
 
-test('R9-D: a moved successor is still refused, and the stale ref is never revived', () => {
+test('a moved successor is still refused, and the stale ref is never revived', () => {
   const block = resolveBlock();
   // The refusal must still happen, and it must still throw rather than rebind.
   assert.match(block, /if \(!geometryMatchesMint\(replacement, descriptor\)\) \{[\s\S]*?throw new Error\(/);
@@ -52,7 +52,7 @@ test('R9-D: a moved successor is still refused, and the stale ref is never reviv
   assert.doesNotMatch(block, /skipGeometry|ignoreGeometry|forceRebind/i);
 });
 
-test('R9-D: recovery is bounded and only offers refs that are already safe to act on', () => {
+test('recovery is bounded and only offers refs that are already safe to act on', () => {
   const block = resolveBlock();
   // Only the unique-candidate branch may offer a fresh ref, and it is capped.
   assert.match(block, /const candidates = revalidationCandidates\(descriptor\);\s*if \(candidates\.length !== 1\) return null;/);
@@ -64,7 +64,7 @@ test('R9-D: recovery is bounded and only offers refs that are already safe to ac
   assert.match(block, /if \(candidates\.length !== 1\) return null;/);
 });
 
-test('R9-D: the refusal message is diagnostic and tells the model how to recover', () => {
+test('the refusal message is diagnostic and tells the model how to recover', () => {
   const block = resolveBlock();
   assert.match(block, /refusing automatic rebind of the stale ref/);
   assert.match(block, /may be acted on directly without re-running find/);
@@ -76,7 +76,7 @@ test('R9-D: the refusal message is diagnostic and tells the model how to recover
   assert.doesNotMatch(messageBlock, /value:|includeValue/);
 });
 
-test('R9-D: sensitive targets are never offered a fresh ref', () => {
+test('sensitive targets are never offered a fresh ref', () => {
   const block = resolveBlock();
   // The sensitive descriptor short-circuits before any candidate pool is built,
   // so a re-acquisition can never touch one.
@@ -92,7 +92,7 @@ test('R9-D: sensitive targets are never offered a fresh ref', () => {
   assert.match(revalidation, /state\.actionable && !state\.sensitive/);
 });
 
-test('R9-D: the model is told the fresh refs are directly actionable', async () => {
+test('the model is told the fresh refs are directly actionable', async () => {
   const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   assert.match(mcp, /that stale ref is refused on purpose/);
   // The instructions must name the field the extension actually ships. The envelope

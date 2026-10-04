@@ -1,4 +1,4 @@
-// R9 keyboard vocabulary parity (2026-09-30).
+// Keyboard vocabulary parity.
 //
 // The public MCP surface and the extension runtime keep two copies of the key
 // and modifier vocabularies. That duplication is architecturally forced — the

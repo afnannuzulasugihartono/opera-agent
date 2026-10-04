@@ -1,4 +1,4 @@
-// R9-C (2026-09-30): role reconciliation contracts.
+// Role reconciliation contracts.
 //
 // Root cause under test: `serialize()` reported `role: clean(el.getAttribute
 // ('role'), 80)`, so any control without an explicit role attribute reported
@@ -24,7 +24,7 @@ const {
   reconcileElements
 } = globalThis.OperaAgentRoleReconcile;
 
-test('R9-C: ordinary markup now yields the role the platform reports', () => {
+test('ordinary markup now yields the role the platform reports', () => {
   assert.equal(implicitRole({ tag: 'button' }), 'button');
   assert.equal(implicitRole({ tag: 'textarea' }), 'textbox');
   assert.equal(implicitRole({ tag: 'select' }), 'combobox');
@@ -36,7 +36,7 @@ test('R9-C: ordinary markup now yields the role the platform reports', () => {
   assert.equal(implicitRole({ tag: 'div', contenteditable: true }), 'textbox');
 });
 
-test('R9-C: input types map to their control roles and a missing type is a textbox', () => {
+test('input types map to their control roles and a missing type is a textbox', () => {
   assert.equal(implicitRole({ tag: 'input', type: 'checkbox' }), 'checkbox');
   assert.equal(implicitRole({ tag: 'input', type: 'radio' }), 'radio');
   assert.equal(implicitRole({ tag: 'input', type: 'range' }), 'slider');
@@ -47,7 +47,7 @@ test('R9-C: input types map to their control roles and a missing type is a textb
   assert.equal(implicitRole({ tag: 'input', type: 'hidden' }), 'textbox');
 });
 
-test('R9-C: an anchor without an href is not a link, and unknown tags stay empty', () => {
+test('an anchor without an href is not a link, and unknown tags stay empty', () => {
   assert.equal(implicitRole({ tag: 'a' }), '');
   assert.equal(implicitRole({ tag: 'a', href: '' }), '');
   assert.equal(implicitRole({ tag: 'span' }), '');
@@ -55,7 +55,7 @@ test('R9-C: an anchor without an href is not a link, and unknown tags stay empty
   assert.equal(implicitRole({}), '');
 });
 
-test('R9-C: a custom widget is reconciled from the accessibility role', () => {
+test('a custom widget is reconciled from the accessibility role', () => {
   // The reported case: the Page numbers dialog labels were readable as text,
   // but find_elements never returned them with a radio or checkbox role.
   const index = axRoleIndex([
@@ -73,7 +73,7 @@ test('R9-C: a custom widget is reconciled from the accessibility role', () => {
   assert.equal(reconcileElementRole({ role: '', text: 'Apply' }, index).role, 'button');
 });
 
-test('R9-C: a real DOM role is never downgraded or overwritten by the AX tree', () => {
+test('a real DOM role is never downgraded or overwritten by the AX tree', () => {
   const index = axRoleIndex([{ role: 'CheckBox', name: 'Send' }]);
   const explicit = reconcileElementRole({ role: 'button', label: 'Send', ref: 'oa-1' }, index);
   assert.equal(explicit.role, 'button');
@@ -83,7 +83,7 @@ test('R9-C: a real DOM role is never downgraded or overwritten by the AX tree', 
   assert.equal(reconcileElementRole({ role: 'presentation', label: 'Send' }, index).role, 'checkbox');
 });
 
-test('R9-C: an ambiguous name is never adopted, because that would be a guess', () => {
+test('an ambiguous name is never adopted, because that would be a guess', () => {
   const index = axRoleIndex([
     { role: 'RadioButton', name: 'Header' },
     { role: 'CheckBox', name: 'Header' }
@@ -98,7 +98,7 @@ test('R9-C: an ambiguous name is never adopted, because that would be a guess', 
   assert.equal(reconcileElementRole({ role: '', label: 'Footer' }, agreed).role, 'radiobutton');
 });
 
-test('R9-C: reconciliation is read-only and grants no action authority', () => {
+test('reconciliation is read-only and grants no action authority', () => {
   const index = axRoleIndex([{ role: 'Button', name: 'Apply' }]);
   const before = { ref: 'oa-5', role: '', label: 'Apply', actionable: false, sensitive: false, stableKey: 'k' };
   const after = reconcileElementRole(before, index);
@@ -111,14 +111,14 @@ test('R9-C: reconciliation is read-only and grants no action authority', () => {
   assert.equal(reconcileElements([{ ref: 'oa-5', role: '', label: 'Apply' }], index)[0].ref, 'oa-5');
 });
 
-test('R9-C: a sensitive element is never annotated', () => {
+test('a sensitive element is never annotated', () => {
   const index = axRoleIndex([{ role: 'TextField', name: 'Card number' }]);
   const sensitive = reconcileElementRole({ role: '', label: 'Card number', sensitive: true }, index);
   assert.equal(sensitive.role, '');
   assert.equal(sensitive.roleSource, undefined);
 });
 
-test('R9-C: AX roles normalize to the lowercase ARIA vocabulary', () => {
+test('AX roles normalize to the lowercase ARIA vocabulary', () => {
   assert.equal(normalizeAxRole('RadioButton'), 'radiobutton');
   assert.equal(normalizeAxRole('CheckBox'), 'checkbox');
   assert.equal(normalizeAxRole('MenuItem'), 'menuitem');
@@ -132,7 +132,7 @@ test('R9-C: AX roles normalize to the lowercase ARIA vocabulary', () => {
   assert.ok(GENERIC_ROLES.includes('generic'));
 });
 
-test('R9-C: the join uses the best available name and survives junk input', () => {
+test('the join uses the best available name and survives junk input', () => {
   const index = axRoleIndex([{ role: 'Button', name: 'Apply' }]);
   assert.equal(reconcileElementRole({ role: '', accessibleName: 'Apply' }, index).role, 'button');
   assert.equal(reconcileElementRole({ role: '', text: 'Apply' }, index).role, 'button');
@@ -145,7 +145,7 @@ test('R9-C: the join uses the best available name and survives junk input', () =
   assert.deepEqual(reconcileElements([{ role: '' }], null), [{ role: '' }]);
 });
 
-test('R9-C: a semantic gap justifies the accessibility walk even on a text-rich page', async () => {
+test('a semantic gap justifies the accessibility walk even on a text-rich page', async () => {
   // The root cause of the reported "found the dialog controls by probing
   // coordinates": the AX walk was gated on text poverty alone, so a 70-page
   // Google Docs document never produced an axSummary and the reconciliation
@@ -194,7 +194,7 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
   assert.match(background, /Result exceeds \$\{MAX_RESULT_BYTES\} bytes/);
 });
 
-test('R9-C: serialize derives roles from markup instead of only the role attribute', async () => {
+test('serialize derives roles from markup instead of only the role attribute', async () => {
   const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
   // Content scripts are classic scripts: the shared helpers arrive on
   // globalThis from the manifest-loaded file, never via an ES import.
@@ -212,7 +212,7 @@ test('R9-C: serialize derives roles from markup instead of only the role attribu
   assert.doesNotMatch(block, /^\s*role: clean\(el\.getAttribute/m);
 });
 
-test('R9-C: the role attribute stays authoritative where it defines identity, not action', async () => {
+test('the role attribute stays authoritative where it defines identity, not action', async () => {
   const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
   // stableElementIdentity feeds the stableKey. Deriving an implicit role here
   // would silently change every stableKey in the product, so the raw attribute
@@ -227,7 +227,7 @@ test('R9-C: the role attribute stays authoritative where it defines identity, no
   assert.match(source, /const role = clean\(node\.getAttribute\?\.\('role'\), 80\)/);
 });
 
-test('R9-C: the manifest loads the role runtime before the content script', async () => {
+test('the manifest loads the role runtime before the content script', async () => {
   const manifest = JSON.parse(await readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
   const scripts = manifest.content_scripts[0].js;
   assert.ok(scripts.includes('role-reconcile.js'), 'the role runtime must be injected');
@@ -238,7 +238,7 @@ test('R9-C: the manifest loads the role runtime before the content script', asyn
   assert.equal(manifest.version, '1.6.15');
 });
 
-test('R9-C: background shares the one content-script copy instead of duplicating it', async () => {
+test('background shares the one content-script copy instead of duplicating it', async () => {
   const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
   // A side-effect import of an export-free file publishes the same global, so
   // the role table cannot drift between the two contexts.
@@ -248,7 +248,7 @@ test('R9-C: background shares the one content-script copy instead of duplicating
   assert.doesNotMatch(source, /const TAG_ROLES/);
 });
 
-test('R9-C: background reconciliation runs only on the existing text-poor AX path', async () => {
+test('background reconciliation runs only on the existing text-poor AX path', async () => {
   const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
   const start = source.indexOf("case 'page.read': {");
   const end = source.indexOf("case 'page.query':", start);

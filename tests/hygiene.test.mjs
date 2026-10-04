@@ -1,5 +1,5 @@
-// R9 hygiene (2026-09-30): properties that keep the R9 code correct as it
-// grows, and that the R9 code itself violated when first written.
+// Properties that keep the runtime code correct as it grows, and that the code
+// itself violated when first written.
 //
 // Each case here corresponds to a real defect found by audit, not a style
 // preference. They are cheap and they fail loudly.
