@@ -1,10 +1,8 @@
 # supabase/ scope
-
 Simplify first. State what is true now, never its history.
-
 Cover every button on every site. After the main sites hold, add sites that teach new functions.
 
-Root `[AGENTS.md](AGENTS.md)` binds; read it first.
+Root `[AGENTS.md](../AGENTS.md)` binds; read it first.
 
 Edge functions in Deno, and migrations in timestamp order.
 
