@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-04 21:21 UTC+7.
+# @last-edited: 2026-10-04 21:34 UTC+7.
 # @title: ci — three jobs; two on GitHub Linux, the browser one on this machine.
 # @context: CI.
 # @state: unit and secret-scan run on ubuntu-latest; browser needs this machine.
@@ -30,11 +30,12 @@ name: CI
 # gates. Only the newest head can be the acceptance evidence, so superseded runs are
 # cancelled rather than queued behind each other.
 #
-# WHY the env var: this machine's global git config rewrites every
-# https://github.com URL to SSH (url.ssh://git@github.com.insteadOf), so
-# checkout died with "Host key verification failed". Bypassing the global config
-# keeps the fetch on HTTPS; checkout embeds the job token, so no credential
-# helper is needed.
+# WHY the env var lives on the browser job: this machine's global git config
+# rewrites every https://github.com URL to SSH
+# (url.ssh://git@github.com.insteadOf), so checkout died with "Host key
+# verification failed". Bypassing the global config keeps the fetch on HTTPS;
+# checkout embeds the job token, so no credential helper is needed. It is not
+# workflow-wide because /dev/null is a Windows idiom that breaks git on Linux.
 
 on:
   push:
@@ -46,18 +47,18 @@ on:
 permissions:
   contents: read
 
-env:
-  GIT_CONFIG_GLOBAL: /dev/null
-
 defaults:
   run:
 
     # WHY pwsh. The bare name `bash` resolves to C:\Windows\System32\bash.exe, the WSL
-    # launcher, and this runner has no WSL distribution: every job died in under a
+    # launcher, and the Windows runner has no WSL distribution: every job died in under a
     # second with "Windows Subsystem for Linux has no installed distributions" without
     # running a command. Pointing at Git Bash instead failed differently, on MSYS path
     # mangling of the runner's own arguments. PowerShell 7 is installed and needs no
-    # path translation, so the steps are written for it.
+    # path translation, so the Windows job is written for it. The two Linux jobs
+    # override this back to bash: pwsh exists on the Linux image, but its output came
+    # back as undecodable bytes and its failures were unreadable, which is the worst
+    # way to run a gate.
 
     shell: pwsh
 
@@ -69,6 +70,9 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -82,27 +86,39 @@ jobs:
   secret-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - name: Secret scan (gitleaks)
         run: |
-          $ErrorActionPreference = 'Stop'
+          set -euo pipefail
 
           # WHY the linux tarball: the gate scans the tree, not the machine, so it
           # has no reason to need this laptop. gitleaks publishes linux_x64 as a
-          # tar.gz and windows_x64 as a zip, and the name has to match the runner or
-          # the download 404s. PowerShell 7 is preinstalled on the Linux image, so the
-          # workflow default shell still applies.
+          # tar.gz and windows_x64 as a zip, and the artifact name has to match the
+          # runner or the download 404s.
 
-          $version = '8.24.0'
-          $tarball = Join-Path $env:RUNNER_TEMP "gitleaks_${version}_linux_x64.tar.gz"
-          Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v$version/gitleaks_${version}_linux_x64.tar.gz" -OutFile $tarball
-          tar -xzf $tarball -C $env:RUNNER_TEMP gitleaks
-          & (Join-Path $env:RUNNER_TEMP 'gitleaks') detect --source . --verbose
+          version=8.24.0
+          curl -sSfL -o "${RUNNER_TEMP}/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          tar -xzf "${RUNNER_TEMP}/gitleaks.tar.gz" -C "${RUNNER_TEMP}" gitleaks
+          "${RUNNER_TEMP}/gitleaks" detect --source . --verbose
 
   browser:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 30
+    env:
+
+      # WHY here and not workflow-wide. This machine's global git config rewrites
+      # https://github.com to SSH, so checkout needs the global config out of the
+      # way. Pointing it at /dev/null is a Windows idiom: on Linux every git config
+      # call then fails with "could not lock config file /dev/null", so the Linux
+      # jobs must not inherit it.
+
+      GIT_CONFIG_GLOBAL: /dev/null
+
     steps:
       - uses: actions/checkout@v4
 
