@@ -102,13 +102,15 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 ## Blocked, needs the owner at the machine
 
-- Python 3.12.10 installs and runs per-user (`py -3.12`, pip 25.0.1). 3.13.15 stays
-  the default and is untouched.
+- Python 3.12.10 installs and runs per-user (`py -3.12`, pip 25.0.1), twice proven
+  (install-verify, uninstall-reinstall-verify). 3.13.15 stays the default untouched.
 - The per-machine install is still broken: its `dev_AllUsers` MSI crashes with a
-  stack overflow (`0xC00000FD`) during file costing, which rolls back the whole
-  bundle. Per-user packages were always fine; the earlier failure was a stale
-  partial install making the bundle skip `core`. Uninstall, delete the leftover
-  directory, reinstall per-user.
+  stack overflow (`0xC00000FD`) during file costing, in both scopes, even after
+  re-registering the MSI engine (`msiexec /unregister` + `/regserver`, service
+  running). The dev-symbols package is poisoned on this machine; nobody needs it
+  to run Python. Next steps are OS-level (SFC, servicing) and need the owner.
+- The repo does not need per-machine: the runner runs interactively as ASUS, so
+  per-user installs are visible to it.
 - `%TEMP%\opencode\pythoncore-backup.reg` still holds the removed 3.12 registry
   registration.
 - Use `py`, not `python`, which hits the Microsoft Store shim. `py` is 3.13.15 with
