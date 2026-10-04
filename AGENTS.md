@@ -4,7 +4,7 @@ MV3 browser extension + Supabase backend. Read before changing anything.
 
 ## Precedence
 
-Highest wins, written out in full so there is nothing to guess.
+Highest wins.
 
 1. The owner, in this conversation.
 2. `AGENTS.md` — this file. Area scopes: `extension/AGENTS.md`, `lib/AGENTS.md`, `supabase/AGENTS.md`.
@@ -43,26 +43,24 @@ Simple outranks all three.
 
 ## Mission
 
-- **The runtime code is the product**: `extension/`, `lib/`, `supabase/functions/`.
-- Docs and tests support them — never the task.
-- A task ships a runtime change or it ships nothing.
-- A document or a test in place of the work asked is a failed task.
-- No named file? `npm run scope -- "<task>"`, then edit it.
-- If scope shows the problem lives in a test or doc, say that instead.
+- Ship a runtime change: `extension/`, `lib/`, `supabase/functions/`.
+- Ship docs and tests only to support it.
+- Ship nothing and justify it.
+- Run `npm run scope -- "<task>"` when no file is named, then edit what it picks.
+- Say so instead when scope shows the problem lives in a test or a doc.
 
 ## Verify by driving it
 
-- A green suite is not proof, and a skip is not the absence of a problem.
-- Drive the real thing yourself before saying it works.
-- A skip may be our blind spot: Maps and YouTube expose an unlabeled a11y tree.
-- A page with an empty a11y tree is reachable: navigate by URL, act by coordinates.
+- Drive the real thing before saying it works. A green suite and a skip are not proof.
+- Watch for our own blind spot: Maps and YouTube expose an unlabeled a11y tree.
+- Reach a page with an empty a11y tree by URL, and act by coordinates.
 
 ## Bootstrap order
 
-- Read this file, then `docs/HANDOFF.md`, then `docs/CONTEXT.md`.
-- Afterwards open only files those three name. Never grep the repo for guidance.
-- Before any edit, run `npm run scope -- "<task>"`.
-- Read slices, never wholes — files over 500 lines are never read fully.
+- Read this file, `docs/HANDOFF.md`, `docs/CONTEXT.md`.
+- Open only files those three name. Never grep the repo for guidance.
+- Run `npm run scope -- "<task>"` before any edit.
+- Read slices. Never read a file over 500 lines whole.
 
 | Area | Read first |
 |---|---|
@@ -80,18 +78,18 @@ Simple outranks all three.
 | what is still open | `ROADMAP.md` |
 | what changed in a release | `CHANGELOG.md` |
 | security boundary and token transport | `SECURITY.md` |
-| the overview and the same map for humans | [`README.md`](README.md) |
+| the overview, for a person | [`README.md`](README.md) |
 | how to propose a change | `CONTRIBUTING.md` |
 | where to ask for help | `SUPPORT.md` |
-| what the extension may do, and why it holds those permissions | `extension/README.md` |
+| what the extension may do | `extension/README.md` |
 | what the scripts folder is for | `scripts/README.md` |
 | what the edge functions and migrations are | `supabase/README.md` |
 | what the suites cover | `tests/README.md` |
 | the delta-first runtime plan | `docs/delta-first-performance-plan.md` |
 | the accessibility-tree checkpoint | `docs/checkpoint-up1-ax-observation.md` |
 
-Every `.md` carries a one-line `Related:` header, and this table plus those headers mean
-no document is an island. Adding or renaming one means updating both.
+Keep every `.md` reachable: a one-line `Related:` header plus this table. Update both
+when you add or rename one.
 
 ## Commands
 
@@ -99,99 +97,113 @@ no document is an island. Adding or renaming one means updating both.
 - `npm run check` — runtime discovery + version pins.
 - `py tests/browser_extension_test.py` — browser harness.
 - `OA_REAL_SITE=1 py tests/real_site_smoke.py` — live internet, opt-in.
-- Deno gates run only on CI. Green local is not acceptance.
+- Run the Deno gates on CI only. Accept on CI evidence, never on local green.
 
 ## Standards
 
-- A test's job is to test, not to make a claim valid.
-- A lock that only asserts a sentence exists proves nothing — do not add one.
-- Failing test first, then the smallest generic mechanism.
-- Every file and every function opens with a comment naming what it is and what it
-  does. Comments inside the body answer WHY.
-- Write current state, never history. Git keeps the past.
-- `.md` files are bullets, not prose. One idea per line, a table for a list of facts.
-- Any claim about repository state cites `path:line` or a command you ran.
-- Unverified is a valid answer — say it is unverified and stop.
+| Do | Don't |
+|---|---|
+| Write current state | Write a history book, a change narrative, an incident timeline, or a migration story |
+| Start every file and function with a comment naming it and what it does | Leave a function whose name says nothing about what it does |
+| Put WHY in the comments inside the body | Put WHAT in the body comments; the header already carries it |
+| Write a test to test | Write a test to make a claim valid |
+| Prove a lock fails on a realistic violation before accepting it | Accept a lock that only asserts a sentence exists |
+| Write the failing test first, then the smallest mechanism that passes it | Write the mechanism first and the test after |
+| Write `.md` as bullets, one idea per line | Write prose paragraphs in a `.md` |
+| Cite `path:line` or a command you ran | State a fact about the repository from memory |
+| Say it is unverified and stop | Claim it works without running it |
 
 ## Live sites
 
-- Real-site cases act like a person: search, scroll, save, close, then undo.
-- Google account is the primary login, GitHub the secondary.
-- Credentials come from env vars only, never committed and never printed.
-- A flaky third-party page is never a product regression — hence opt-in.
+| Do | Don't |
+|---|---|
+| Act like a person: search, scroll, save, close, then undo | Click a fixed list of coordinates and call it covered |
+| Use the Google account first, GitHub second | Reverse the order |
+| Take credentials from env vars only | Commit a credential, or print one into a transcript |
+| Treat a flaky third-party page as the site, not a regression | Fail the suite on a third party's outage |
+| Keep the live suite opt-in behind `OA_REAL_SITE=1` | Put it in `npm test` |
 
 ## Principles
 
 Full text: `.agents/skills/karpathy-guidelines/SKILL.md`. Load it with
 `skill({ name: "karpathy-guidelines" })` before writing or reviewing code.
 
+- Do first, explain later. Write the command, not its justification.
 - Think before coding. State assumptions and tradeoffs; ask when unclear.
 - Report an inaccessible prerequisite instead of working around it.
 - Prefer a cheap reversible commit over an irreversible one.
-- Minimum code that solves the problem. Nothing speculative, no unrequested
+- Write the minimum that solves the problem. No speculation, no unrequested
   flexibility, no abstraction for a single use.
-- Surgical changes. Every changed line traces to the request.
-- If you notice unrelated dead code, mention it — do not delete it.
-- Define success as something verifiable, then loop until it actually runs.
+- Change only what the request needs.
+- Mention unrelated dead code. Never delete it.
+- Define success as something verifiable, then loop until it runs.
 
 ## When something does not work
 
-- A bug or a feature that does not work is a research task first, not a fix task.
-- Reproduce it and read the real evidence before changing anything.
-- Find the cause before writing the fix — source, tests, git history, and for a
-  browser, OS or protocol quirk, the primary source that documents it.
+- Research it before fixing it.
+- Reproduce it, then read the evidence.
+- Find the cause in the source, the tests, git history, and the primary source for a
+  browser, OS, or protocol quirk.
 - State a falsifiable hypothesis, then name the evidence that would confirm it.
-- If web search returns nothing, drive the site yourself; first-hand evidence wins.
+- Stop editing and report after three failures with no new evidence.
+- Drive the site yourself when web search returns nothing.
 
 ## Boundaries
 
-- Ask first: deleting foreign code, merge, promote, deploy, new top-level
-  entries, production DB shape.
-- Never: commit secrets, weaken a test to admit a violation, share one checkout.
-- Decline unclear work instead of guessing.
+| Do | Don't |
+|---|---|
+| Ask first: deleting foreign code, merge, promote, deploy, new top-level entries, production DB shape | Assume any of those is covered by "work autonomously" |
+| Decline unclear work | Guess |
+| Keep one checkout per writer | Share a checkout |
+| Leave a test that fails | Weaken a test to admit a violation |
+| Keep a secret out of the tree and the transcript | Commit a secret or print one |
 
 ## Scoped instructions
 
-- Area `AGENTS.md`, new or edited: ≤15 lines, pointers only.
-- Opens with the root-binds line.
-- must not contradict the root.
-- Register new ones in the Bootstrap table the same commit.
+| Do | Don't |
+|---|---|
+| Keep an area `AGENTS.md` at 15 lines or fewer, pointers only | Let it grow into a second manual |
+| Open it with the root-binds line | Open it with anything else |
+| Keep it consistent with the root | Let it contradict the root |
+| Register a new one in the Bootstrap table in the same commit | Add one that nothing points at |
 
 ## Repository discipline
 
-- One writer per checkout. A dirty tree means STOP; never end dirty or diverged.
-- Preserve before overwrite: never discard work you did not create.
-- Mention, do not delete, pre-existing code this work did not create. Report it to the
-  owner in the same session.
-- Remove it only when the change requires it, and say which of the two happened in the
-  commit message.
-- Put work you must not lose on a branch or a stash, never in a directory nothing reads.
-- Acceptance basis is CI evidence: GitHub Actions and Vercel SUCCESS on the exact head.
-- Deployment and release promotion are owner decisions, never granted by CI green alone.
+| Do | Don't |
+|---|---|
+| Keep one writer per checkout | Write from two sessions at once |
+| Stop on a dirty tree | End dirty or diverged |
+| Preserve work you did not create | Discard it |
+| Mention pre-existing code this work did not create, in the same session | Delete it silently |
+| Remove it only when the change requires it, and say which in the commit message | Remove it as tidying |
+| Park work you must not lose on a branch or a stash | Park it in a directory nothing reads |
+| Accept on CI evidence: GitHub Actions and Vercel SUCCESS on the exact head | Accept on local green |
+| Ask the owner to deploy and to promote a release | Deploy or promote on your own |
 
 ## Naming
 
-- Files are kebab-case. The conventional root documents are the exception and stay
-  uppercase: `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`,
-  `ROADMAP.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, `LICENSE`.
-- No lifecycle token in any name: `tmp`, `temp`, `draft`, `wip`, `untitled`, `backup`,
-  `copy`, `old`, `final<n>`.
-- A name says what a thing is, not where it sits in a workflow.
-- Root entries are allowlisted in `tests/repo-naming-governance.test.mjs`. Extend that
-  list with a reason in the same commit, or move the file into its proper directory.
-- Branches: `main`, `release/<semver>`, or
-  `feat|fix|chore|docs|test|perf|refactor/<kebab>`.
-- Tests are `tests/<name>.test.mjs`. `tests/cloud`, `tests/postgres`, and `tests/deno`
-  are live-only and never run in `npm test`.
+| Do | Don't |
+|---|---|
+| Name files in kebab-case | Use spaces, dots, or capitals in a filename |
+| Keep the conventional root documents uppercase: `README.md`, `AGENTS.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `ROADMAP.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, `LICENSE` | Rename one of them to kebab-case |
+| Leave lifecycle tokens out: `tmp`, `temp`, `draft`, `wip`, `untitled`, `backup`, `copy`, `old`, `final<n>` | Put one in a name |
+| Name a thing for what it is | Name it for where it sits in a workflow |
+| Extend the root allowlist in `tests/repo-naming-governance.test.mjs` with a reason in the same commit | Add a root entry without a reason |
+| Branch `main`, `release/<semver>`, or `feat\|fix\|chore\|docs\|test\|perf\|refactor/<kebab>` | Use any other branch name |
+| Name tests `tests/<name>.test.mjs` | Put `tests/cloud`, `tests/postgres`, or `tests/deno` in `npm test` |
 
 ## Model
 
-- opencode.json pins the model to `opencode/space-bunny-free`.
-- The closeout must state which model ran.
-- Silent model drift is invisible until the work is reviewed.
+| Do | Don't |
+|---|---|
+| Keep the model at `opencode/space-bunny-free`, pinned in `opencode.json` | Drift the model silently |
+| State which model ran in the closeout | Leave the reader to guess |
 
 ## Session close
 
-- Touch `docs/` only when the session changed code or released state.
-- A read-only or test-only session leaves both context files alone.
-- Verifying means running the thing, not reading it and asserting it would work.
+| Do | Don't |
+|---|---|
+| Touch `docs/` only when the session changed code or released state | Rewrite `docs/` on a read-only session |
+| Leave both context files alone on a read-only or test-only session | Update them anyway |
+| Verify by running the thing | Verify by reading it and asserting it would work |
+| State which model ran, and push every verified increment | Leave a verified win in a local commit |

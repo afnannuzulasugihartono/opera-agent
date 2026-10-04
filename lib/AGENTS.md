@@ -1,6 +1,11 @@
 # lib/ scope
 
 Root `AGENTS.md` binds; read it first.
-Shared pure modules (`reactive-vm*`, `transaction-*`). Related: `docs/api.md` contract.
-Order: `docs/HANDOFF.md`, then the module and its test.
-A lock is not accepted until made to fail on a realistic violation.
+
+Shared pure modules the server and the extension both read.
+
+- Read `docs/HANDOFF.md`, then the module and its test.
+- Keep it pure: no DOM, no chrome, no network.
+- Make a lock fail on a realistic violation before accepting it.
+- Re-freeze the digests in `tests/helpers/boundary-locks.mjs` in the same commit.
+- Related: [docs/api.md](../docs/api.md)

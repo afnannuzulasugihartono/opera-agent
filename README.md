@@ -9,6 +9,14 @@ A private, local-browser control bridge.
 - Site-specific behavior lives in server-side Supabase workflows, which hot-update
   independently of the installed extension.
 
+## Boundary
+
+- **`README.md` is for a person.** What this is, what the contract is, how to run it.
+- **`AGENTS.md` is for an agent working in the repo.** Rules, triggers, priority, and
+  which document answers which question.
+- Nothing belongs in both. A rule that changes what you may do belongs in `AGENTS.md`
+  and nowhere else.
+
 ## Contract
 
 | | |
@@ -35,32 +43,19 @@ npm test          # fast suite
 npm run check     # runtime discovery + version pins
 ```
 
-Local green is not acceptance — see the acceptance rule in `AGENTS.md`.
+```bash
+OA_REAL_SITE=1 py tests/real_site_smoke.py   # live internet, opt-in
+```
 
-## Where to start
+Local green is not acceptance. The acceptance rule is in [`AGENTS.md`](AGENTS.md).
 
-Start at `AGENTS.md`: its Triggers table says what to do, this table says which file answers which question.
+## Reference
 
-| Question | File |
-|---|---|
-| What am I allowed to do, and in what order | [`AGENTS.md`](AGENTS.md) |
-| What shipped last session | [`docs/HANDOFF.md`](docs/HANDOFF.md) |
-| What is still open, and what is still undecided | [`ROADMAP.md`](ROADMAP.md) |
-| Commands, pairing, manual steps | [`docs/runbook.md`](docs/runbook.md) |
-| Command and response contract | [`docs/api.md`](docs/api.md) |
-| Latency baselines and locked ceilings | [`docs/benchmarks.md`](docs/benchmarks.md) |
-| Traps that caused a false claim | [`docs/CONTEXT.md`](docs/CONTEXT.md) |
-| What changed in each release | [`CHANGELOG.md`](CHANGELOG.md) |
-| Security boundary and token transport | [`SECURITY.md`](SECURITY.md) |
-| How to propose a change | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
-| Where to ask for help | [`SUPPORT.md`](SUPPORT.md) |
-| Extension scope rules | [`extension/AGENTS.md`](extension/AGENTS.md) |
-| What the extension may do | [`extension/README.md`](extension/README.md) |
-| Shared pure modules | [`lib/AGENTS.md`](lib/AGENTS.md) |
-| Edge functions and migrations | [`supabase/README.md`](supabase/README.md) |
-| Scripts | [`scripts/README.md`](scripts/README.md) |
-| Tests | [`tests/README.md`](tests/README.md) |
-| Delta-first runtime plan | [`docs/delta-first-performance-plan.md`](docs/delta-first-performance-plan.md) |
-| Accessibility-tree checkpoint | [`docs/checkpoint-up1-ax-observation.md`](docs/checkpoint-up1-ax-observation.md) |
+- Rules, triggers, priority, and the map of which file answers which question:
+  [`AGENTS.md`](AGENTS.md)
+- Pairing, incidents, manual steps: [`docs/runbook.md`](docs/runbook.md)
+- Command and response contract: [`docs/api.md`](docs/api.md)
+- Latency baselines and locked ceilings: [`docs/benchmarks.md`](docs/benchmarks.md)
+- Security boundary and token transport: [`SECURITY.md`](SECURITY.md)
 
 Spent detail is recoverable from git history. There is no archive file.
