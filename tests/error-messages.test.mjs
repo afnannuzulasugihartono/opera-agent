@@ -41,6 +41,10 @@ test('options settings validation errors map to actionable messages', () => {
     'Choose a log level: debug, warn, or error.',
   );
   assert.equal(
+    userErrorMessage('Enter an https:// URL for the model endpoint, or a loopback http:// address for a local model.'),
+    'Enter an https:// address for the model endpoint, or a loopback http:// address if the model runs on this machine.',
+  );
+  assert.equal(
     userErrorMessage('Enter an http:// URL or leave empty to reset.'),
     GENERIC,
   );

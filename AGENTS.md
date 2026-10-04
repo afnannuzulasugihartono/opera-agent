@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 01:05 UTC+7.
+@last-edited: 2026-10-05 01:26 UTC+7.
 @related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 # Opera Agent agent instructions
@@ -11,6 +11,7 @@ MV3 browser extension + Supabase backend. This file binds every task, in every a
 These ride with every job. Read them before acting, not once per session.
 
 - Code first, comments second. Ship the smallest mechanism that works, then say why in the comments.
+- Think before you act. Read the guidance, name the assumption and the tradeoff, choose against the Priority order, and only then write. Don't start editing while the design is still undecided, and don't act on a task you have not read.
 - Simplify first, in every file and in every `.md` including this one. Fewer files, fewer functions, fewer words; one that solves it beats two that don't.
 - State what is true now, never its history.
 - Cover every button on every site. After the main sites hold, add sites that teach new functions.
@@ -106,7 +107,7 @@ These bind every `.md` in the repository, this set included, and every other fil
 
 | Trigger | Action |
 |---|---|
-| each turn, before acting | re-read Always, Goals, Priority order, Strict rules and the map, then act |
+| each turn, before acting | think first: re-read Always, Goals, Priority order, Strict rules and the map, name the assumption and the tradeoff, then act |
 | every task | the `.md` set rides with it: this file, the area scope, then [`docs/HANDOFF.md`](docs/HANDOFF.md) |
 | "lanjutkan" | read this file, then [`docs/HANDOFF.md`](docs/HANDOFF.md), then [`docs/CONTEXT.md`](docs/CONTEXT.md) |
 | "autonomously", "sampai mission tercapai" | keep going until the mission is reached. Do not ask, do not hand back a partial result with a question at the end |

@@ -27,6 +27,14 @@ const KNOWN = new Map([
     'Log level must be debug, warn, or error.',
     'Choose a log level: debug, warn, or error.',
   ],
+  [
+    'Enter an https:// URL for the model endpoint, or a loopback http:// address for a local model.',
+    'Enter an https:// address for the model endpoint, or a loopback http:// address if the model runs on this machine.',
+  ],
+  [
+    'Enter a model name of 1 to 120 characters.',
+    'Enter the model name your provider uses, up to 120 characters.',
+  ],
 ]);
 
 const GENERIC = 'Something went wrong. Run self-test, then check the connection.';
