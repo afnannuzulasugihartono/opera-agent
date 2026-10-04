@@ -1036,6 +1036,66 @@ async def case_stale_ref_recovery():
         record('stale ref recovery', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_foreground_mode():
+    """Foreground mode on a real page: the focus gate, the refusal, and the cursor.
+
+    Every other case runs in background, so the foreground path and its refusal were
+    only ever exercised against a local fixture. The owner wants to switch to a tab
+    and watch the cursor move, drag and click, which is the foreground experience.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://www.youtube.com/', 'active': True, 'wait': True
+        }))['tab']
+        tid = tab['id']
+        state = (await drive('tabs.get', {'tabId': tid}))['tab']
+
+        # A tab the harness opened but did not activate must refuse a foreground
+        # action. That refusal is the whole point of the gate.
+        other = (await drive('tabs.open', {
+            'url': 'https://opencode.ai/', 'active': False, 'wait': True
+        }))['tab']
+        try:
+            await drive('page.pointer', {
+                'tabId': other['id'], 'x': 300, 'y': 200, 'action': 'click',
+                'executionMode': 'foreground', 'showCursor': True
+            })
+            record('foreground refuses an unfocused tab', False,
+                   'a foreground click on an inactive tab was accepted')
+        except Exception as exc:
+            body = getattr(exc, 'body', None)
+            err = body.get('error') if isinstance(body, dict) else None
+            record('foreground refuses an unfocused tab',
+                   isinstance(err, dict) and err.get('code') == 'FOREGROUND_REQUIRED',
+                   f'{(err or {}).get("code")} {str((err or {}).get("message", ""))[:80]}')
+        await drive('tabs.close', {'tabId': other['id']})
+
+        # Now the tab is active, so a foreground action is allowed and shows the
+        # cursor. Proved the same way as in background: the hash must change.
+        before = (await drive('page.capture', {'tabId': tid}))['screenshot']
+        moved = await drive('page.pointer', {
+            'tabId': tid, 'x': 420, 'y': 240, 'action': 'move',
+            'executionMode': 'foreground', 'showCursor': True
+        })
+        record('foreground shows the cursor', moved.get('visiblePointer') is True,
+               f'visiblePointer={moved.get("visiblePointer")} '
+               f'executionMode={moved.get("executionMode")}')
+        await asyncio.sleep(1.1)
+        after = (await drive('page.capture', {'tabId': tid}))['screenshot']
+        record('the foreground cursor is drawn on screen',
+               bool(before.get('sha256')) and before.get('sha256') != after.get('sha256'),
+               f'{str(before.get("sha256"))[:10]} -> {str(after.get("sha256"))[:10]}')
+
+        # And the observation must say the owner is present.
+        page = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 300}))['page']
+        us = page.get('userState') or {}
+        record('userState reports the tab as watched', us.get('watching') is True, str(us))
+
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('foreground mode', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -1102,6 +1162,7 @@ async def run(port, profile):
                     'github-form')
         await maybe(lambda: case_youtube_search_and_open(), 'youtube-search')
         await maybe(lambda: case_stale_ref_recovery(), 'stale-ref')
+        await maybe(lambda: case_foreground_mode(), 'foreground')
         await maybe(lambda: case_primitive_sweep(), 'sweep')
         await maybe(lambda: case_media_on_real_video(), 'media')
         await maybe(lambda: case_click_every_control('https://opencode.ai/', 'opencode'),
