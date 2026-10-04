@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 19:26 UTC+7.
+@last-edited: 2026-10-04 19:29 UTC+7.
 
 # Opera Agent agent instructions
 
@@ -62,7 +62,13 @@ Bind every session, in every area. Nothing below overrides them.
 **Don't**
 
 - Don't put the blank line after the code a comment documents. The gap belongs around the comment block, not after the statement.
-- Don't write the mechanism first. Don't claim without running. Don't state facts from memory. Don't write a test that validates a claim. Don't accept a lock that asserts a sentence. Don't weaken a test. Don't add a file or a function that duplicates one.
+- Don't write the mechanism first.
+- Don't claim without running.
+- Don't state facts from memory.
+- Don't write a test that validates a claim.
+- Don't accept a lock that asserts a sentence.
+- Don't weaken a test.
+- Don't add a file or a function that duplicates one.
 
 **Documents — read, write**
 
