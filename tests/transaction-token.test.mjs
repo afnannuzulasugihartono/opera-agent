@@ -11,7 +11,7 @@ async function fixture() {
   const prepared = await prepareTransaction(raw);
   return { prepared, context: { kind:'PREPARED',tenantId:prepared.tenantId,transactionId:prepared.transactionId,prepareDigest:prepared.prepareDigest } };
 }
-test('8D authenticated transaction tokens roundtrip bounded prepared metadata', async () => {
+test('authenticated transaction tokens roundtrip bounded prepared metadata', async () => {
   const {prepared,context} = await fixture();
   const token = await sealTransactionToken(prepared,key,context);
   assert.match(token,/^oatx1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]+$/);
@@ -19,7 +19,7 @@ test('8D authenticated transaction tokens roundtrip bounded prepared metadata', 
   assert.deepEqual(await openTransactionToken(token,key,context),prepared);
   assert.notEqual(token,await sealTransactionToken(prepared,key,context));
 });
-test('8D token tamper, wrong key and swapped tenant/transaction/prepare/kind fail', async () => {
+test('token tamper, wrong key and swapped tenant/transaction/prepare/kind fail', async () => {
   const {prepared,context} = await fixture();
   const token = await sealTransactionToken(prepared,key,context);
   for (const replacement of [
@@ -29,7 +29,7 @@ test('8D token tamper, wrong key and swapped tenant/transaction/prepare/kind fai
   await assert.rejects(openTransactionToken(parts.join('.'),key,context));
   await assert.rejects(openTransactionToken(token,new Uint8Array(32).fill(8),context));
 });
-test('8D token context cannot hide credentials, unbound claims or raw browser state', async () => {
+test('token context cannot hide credentials, unbound claims or raw browser state', async () => {
   const {prepared,context} = await fixture();
   await assert.rejects(sealTransactionToken(prepared,key,{...context,approved:true}));
   for (const invalid of [null,[],{...context,tenantId:123},{...context,transactionId:456}])
@@ -39,7 +39,7 @@ test('8D token context cannot hide credentials, unbound claims or raw browser st
   await assert.rejects(sealTransactionToken(prepared,new Uint8Array(31),context));
   await assert.rejects(sealTransactionToken({...prepared,rawPage:'x'.repeat(131073)},key,context),{code:'OVER_LIMIT'});
 });
-test('8D journal payload is a separate closed digest-only token kind', async () => {
+test('journal payload is a separate closed digest-only token kind', async () => {
   const {context} = await fixture(); context.kind='JOURNAL';
   const payload={schemaVersion:'OA_TX_JOURNAL_PAYLOAD_8D_V1',tenantId:context.tenantId,transactionId:context.transactionId,prepareDigest:context.prepareDigest,transitionDigest:`sha256:${'a'.repeat(64)}`};
   const token=await sealTransactionToken(payload,key,context);

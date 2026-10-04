@@ -33,42 +33,13 @@ import { validatePreparedTransaction } from '../lib/transaction-prepare.js';
 import { validateTransactionProvenance } from '../lib/transaction-authority.js';
 import { sealLedgerToken, openLedgerToken } from '../lib/ledger-token.js';
 
-// 8D cloud acceptance surface, consolidated 2026-10-03.
-//
-// Seven files each drove one part of the same in-process acceptance pipeline:
-// fixture data, the internal operator transport over a file ownership store,
-// the server fence under concurrency, the management backend, the acceptance
-// controller, the live CLI runner, and the static fence migration. They shared
-// the same five helpers, the same synthetic tenant UUID, the same user and
-// session ids, and the same OAuth client id, each redeclared locally.
-//
-//   tests/transaction-cloud-fixture-8d.test.mjs             5 tests
-//   tests/transaction-cloud-operator-8d.test.mjs            16 tests
-//   tests/transaction-cloud-ownership-fence-8d.test.mjs      2 tests
-//   tests/transaction-cloud-management-backend-8d.test.mjs 13 tests
-//   tests/transaction-cloud-controller-8d.test.mjs          11 tests
-//   tests/transaction-cloud-live-runner-8d.test.mjs          3 tests
-//   tests/transaction-cloud-server-fence-static-8d.test.mjs  3 tests
-//   -> tests/transaction-cloud-8d.test.mjs                  53 tests
+// In-process acceptance pipeline. Seven sections cover fixture data, the internal
+// operator transport, the server fence under concurrency, the management backend,
+// the acceptance controller, the live runner, and the static fence migration.
 //
 // Sections run in pipeline order: A fixture, B operator transport, C server
 // fence under concurrency, D management backend, E controller, F live runner,
 // G static fence migration.
-//
-// Test count and assertion count are the invariants: 53 tests and 258
-// assertions before, 53 and 258 after, none weakened, dropped or added. Test
-// bodies are otherwise byte-identical; two things changed mechanically, both
-// forced by the merge:
-//
-//   - Five module-scope names collided, so one side of each pair was renamed:
-//     the fixture's `options` -> `fixtureOptions`, the management backend's
-//     `fixture()` -> `cloudFixture()`, the operator's `fixture` object ->
-//     `fixtureInput`, the operator's `ownInstallSeal` -> `ownAndInstallSeal`,
-//     and the fence file's `tempStore` -> `fencedTempStore`.
-//   - `namespace`, `userId`, `sessionId` and `identity` were declared with
-//     byte-identical values in two or three files each. They are declared once
-//     now. `namespaceA` is defined as `namespace` because it was the same
-//     literal.
 //
 // `cleanup` (operator) and `cleanupA` (fence) stay separate on purpose: the
 // actor, goal and transaction ids differ by one letter, and each file's mock
@@ -82,7 +53,7 @@ const identity = { iss: 'https://example.invalid/auth/v1', aud: 'authenticated',
 // --- A. the synthetic cloud fixture ----------------------------------------
 
 const fixtureOptions = { namespace, userId, preparedAt: '2026-09-14T00:00:00.000Z' };
-test('8D cloud fixture binds UUID tenant and complete production goal-head metadata', async () => {
+test('cloud fixture binds UUID tenant and complete production goal-head metadata', async () => {
   const f = await createCloudFixtureData8D(fixtureOptions);
   const ledger = await validateLedger(f.ledger, { now: '2026-09-14T00:01:00.000Z' });
   await validatePreparedTransaction(f.request.prepared);
@@ -94,7 +65,7 @@ test('8D cloud fixture binds UUID tenant and complete production goal-head metad
   assert.equal(f.binding.metadata.preparedDigest, f.request.prepared.prepareDigest);
   assert.equal(f.binding.metadata.mode, 'DARK');
 });
-test('8D cloud fixture uses inert synthetic target with matching provenance and grant', async () => {
+test('cloud fixture uses inert synthetic target with matching provenance and grant', async () => {
   const f = await createCloudFixtureData8D(fixtureOptions), tx = f.request.prepared;
   assert.match(tx.target.deviceId, /^m8d_fixture_/);
   assert.equal(tx.target.tabId, 0);
@@ -108,7 +79,7 @@ test('8D cloud fixture uses inert synthetic target with matching provenance and 
   assert.equal(tx.provenance[1].observedAt, fixtureOptions.preparedAt);
   await validateTransactionProvenance(tx, { evaluatedAt: fixtureOptions.preparedAt });
 });
-test('8D cloud fixture is deterministic, immutable and cleanup ownership is exact', async () => {
+test('cloud fixture is deterministic, immutable and cleanup ownership is exact', async () => {
   const a = await createCloudFixtureData8D(fixtureOptions), b = await createCloudFixtureData8D(fixtureOptions);
   assert.deepEqual(a, b);
   assert.throws(() => { a.request.prepared.target.tabId = 42; }, TypeError);
@@ -118,12 +89,12 @@ test('8D cloud fixture is deterministic, immutable and cleanup ownership is exac
   assert.notEqual(a.request.prepared.target.deviceId, other.request.prepared.target.deviceId);
   assert.deepEqual(a.cleanup, { tenantId: fixtureOptions.namespace, actorId: a.principal.actor_id, goalId: a.goalHead.goal_id, transactionId: a.request.prepared.transactionId });
 });
-test('8D cloud fixture rejects missing/unknown credentials and invalid scope inputs', async () => {
+test('cloud fixture rejects missing/unknown credentials and invalid scope inputs', async () => {
   for (const input of [null, {}, { ...fixtureOptions, namespace: 'tenant_alpha' }, { ...fixtureOptions, userId: 'user_alpha' }, { ...fixtureOptions, preparedAt: 'tomorrow' }, { ...fixtureOptions, accessToken: 'do-not-accept' }, { ...fixtureOptions, target: { deviceId: 'opera', tabId: 42 } }]) {
     await assert.rejects(createCloudFixtureData8D(input), { message: 'INVALID_CLOUD_FIXTURE_CONFIGURATION' });
   }
 });
-test('8D cloud fixture ledger seals locally and leaves existing native fixture unchanged', async () => {
+test('cloud fixture ledger seals locally and leaves existing native fixture unchanged', async () => {
   const before = await transactionFixture(), f = await createCloudFixtureData8D(fixtureOptions), key = new Uint8Array(32).fill(11);
   const token = await sealLedgerToken(f.ledger, key, { requestId: 'synthetic_cloud_fixture', issuedAt: '2026-09-14T00:01:00.000Z' });
   assert.deepEqual((await openLedgerToken(token, key, { now: '2026-09-14T00:01:00.000Z' })).ledger, f.ledger);
@@ -157,7 +128,7 @@ function backend(options = {}) {
 }
 async function tempStore() { const dir = await mkdtemp(join(tmpdir(), 'oa-8d-')); return { dir, store: createFileOwnershipStore8D({ directory: dir, isProcessAlive: pid => pid === process.pid }) }; }
 
-test('8D unfinished lock initialization is BUSY, never permission to delete a peer lock', async () => {
+test('unfinished lock initialization is BUSY, never permission to delete a peer lock', async () => {
   const { dir, store } = await tempStore();
   try {
     await mkdir(join(dir, 'global-control.lock'));
@@ -165,7 +136,7 @@ test('8D unfinished lock initialization is BUSY, never permission to delete a pe
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D parallel acquisition and expired reclaim have exactly one winner', async () => {
+test('parallel acquisition and expired reclaim have exactly one winner', async () => {
   const root = await mkdtemp(join(tmpdir(), 'oa-8d-parallel-'));
   try {
     for (let i = 0; i < 40; i++) {
@@ -188,7 +159,7 @@ async function ownAndInstallSeal(transport) {
   return transport.operator.sealLedger({ tenantId: namespace, goalId: cleanup.goalId }, new AbortController().signal);
 }
 
-test('8D internal operator is pinned to exact project/client/callback before mutation', async () => {
+test('internal operator is pinned to exact project/client/callback before mutation', async () => {
   const { dir, store } = await tempStore(); try {
     const wrong = backend({ projectRef: 'other' }); const t = createInternalOperatorTransport8D({ backend: wrong.backend, store, ownerId: 'writer_owner_01' });
     assert.deepEqual(Object.keys(t.operator).sort(), ['cleanupFixture', 'disableHost', 'enableHost', 'installFixture', 'preflight', 'recordOwnership', 'sealLedger', 'setDark', 'setOff', 'verifyCancelled', 'verifyClean'].sort());
@@ -197,7 +168,7 @@ test('8D internal operator is pinned to exact project/client/callback before mut
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D ownership is durable, exclusive and manifest contains only nonsecret cleanup state', async () => {
+test('ownership is durable, exclusive and manifest contains only nonsecret cleanup state', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
     const a = backend(), b = backend(); const first = createInternalOperatorTransport8D({ backend: a.backend, store, ownerId: 'writer_owner_01', now: () => now, leaseTtlMs: 10000 });
     await first.operator.preflight(namespace, new AbortController().signal); await first.operator.recordOwnership(cleanup, new AbortController().signal);
@@ -207,7 +178,7 @@ test('8D ownership is durable, exclusive and manifest contains only nonsecret cl
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D verifies existing session before insert-only fixture provisioning', async () => {
+test('verifies existing session before insert-only fixture provisioning', async () => {
   const { dir, store } = await tempStore(); try {
     const ok = backend(); const t = createInternalOperatorTransport8D({ backend: ok.backend, store, ownerId: 'writer_owner_01' });
     assert.deepEqual(await ownAndInstall(t), { sessionBound: true }); assert.deepEqual(ok.state.calls.slice(-2), ['verifySession', 'insertFixture']);
@@ -216,7 +187,7 @@ test('8D verifies existing session before insert-only fixture provisioning', asy
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D aborted session check quiesces before provisioning and cannot become a late insert', async () => {
+test('aborted session check quiesces before provisioning and cannot become a late insert', async () => {
   const { dir, store } = await tempStore(); let release; const gate = new Promise(r => release = r); try {
     const b = backend({ verifySession: async input => { await gate; return { exists: true, userId: input.userId, clientId: input.clientId, sessionId: input.sessionId }; } });
     const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await t.operator.preflight(namespace); await t.operator.recordOwnership(cleanup);
@@ -225,7 +196,7 @@ test('8D aborted session check quiesces before provisioning and cannot become a 
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D pending crash manifest blocks a new preflight until explicit recovery', async () => {
+test('pending crash manifest blocks a new preflight until explicit recovery', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
     const b = backend(); const parent = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await parent.operator.preflight(namespace); await parent.operator.recordOwnership(cleanup);
@@ -234,7 +205,7 @@ test('8D pending crash manifest blocks a new preflight until explicit recovery',
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D stale-parent recovery reclaims expired global control and restores OFF/exact cleanup', async () => {
+test('stale-parent recovery reclaims expired global control and restores OFF/exact cleanup', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
     const b = backend(); const parent = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await ownAndInstallSeal(parent); await parent.operator.enableHost(); await parent.operator.setDark(); assert.equal(b.state.installed, true); assert.equal(b.state.mode, 'DARK');
@@ -245,7 +216,7 @@ test('8D stale-parent recovery reclaims expired global control and restores OFF/
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D durable manifest survives real child-process death and is recoverable after lease expiry', async () => {
+test('durable manifest survives real child-process death and is recoverable after lease expiry', async () => {
   const { dir, store } = await tempStore(); try {
     const moduleUrl = new URL('./helpers/transaction-cloud-operator-8d.mjs', import.meta.url).href;
     const script = `import {createFileOwnershipStore8D} from ${JSON.stringify(moduleUrl)};\nconst s=createFileOwnershipStore8D({directory:${JSON.stringify(dir)}});\nconst cleanup=${JSON.stringify(cleanup)};\nawait s.acquire(${JSON.stringify(namespace)},'dead_child_01',1000,10000);\nawait s.writeManifest({version:1,ownerId:'dead_child_01',namespace:${JSON.stringify(namespace)},phase:'DARK',dirty:true,cleanup,updatedAt:1000});`;
@@ -257,7 +228,7 @@ test('8D durable manifest survives real child-process death and is recoverable a
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D lost insert reply leaves durable ownership and later recovery removes partial install', async () => {
+test('lost insert reply leaves durable ownership and later recovery removes partial install', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
     const b = backend({ lostReply: true }); const parent = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await parent.operator.preflight(namespace); await parent.operator.recordOwnership(cleanup); await assert.rejects(parent.operator.installFixture({ fixture: fixtureInput, identity }), /lost reply/); assert.equal(b.state.installed, true); assert.ok(await store.readManifest(namespace));
@@ -265,7 +236,7 @@ test('8D lost insert reply leaves durable ownership and later recovery removes p
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D exact cleanup scope cannot be widened by recovery or caller input', async () => {
+test('exact cleanup scope cannot be widened by recovery or caller input', async () => {
   const { dir, store } = await tempStore(); try {
     const b = backend(); const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await ownAndInstall(t);
     await assert.rejects(t.operator.cleanupFixture({ ...cleanup, transactionId: 'other' }), /8D_CLEANUP_SCOPE_MISMATCH/);
@@ -273,7 +244,7 @@ test('8D exact cleanup scope cannot be widened by recovery or caller input', asy
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D phase machine forbids host mutation without durable ownership or before sealing', async () => {
+test('phase machine forbids host mutation without durable ownership or before sealing', async () => {
   const { dir, store } = await tempStore(); try {
     const b = backend(); const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' });
     await assert.rejects(t.operator.disableHost(), /8D_CONTROL_OWNERSHIP_REQUIRED/); assert.equal(b.state.calls.includes('disableHost'), false);
@@ -282,7 +253,7 @@ test('8D phase machine forbids host mutation without durable ownership or before
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D install and observation scope must match the exact durable ownership manifest', async () => {
+test('install and observation scope must match the exact durable ownership manifest', async () => {
   const { dir, store } = await tempStore(); try {
     const b = backend(); const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await t.operator.preflight(namespace); await t.operator.recordOwnership(cleanup);
     const other = { ...cleanup, transactionId: 'm8d_fixture_tx_other' };
@@ -290,7 +261,7 @@ test('8D install and observation scope must match the exact durable ownership ma
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D failed recovery keeps durable dirty evidence and does not delete rows while host disable fails', async () => {
+test('failed recovery keeps durable dirty evidence and does not delete rows while host disable fails', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
     const seedBackend = backend(); const parent = createInternalOperatorTransport8D({ backend: seedBackend.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await ownAndInstallSeal(parent); await parent.operator.enableHost(); await parent.operator.setDark();
@@ -303,14 +274,14 @@ test('8D failed recovery keeps durable dirty evidence and does not delete rows w
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D expired lease is not reclaimed while the recorded local owner process is still alive', async () => {
+test('expired lease is not reclaimed while the recorded local owner process is still alive', async () => {
   const { dir, store } = await tempStore(); try {
     await store.acquire(namespace, 'writer_owner_01', 1000, 10000, process.pid);
     await assert.rejects(store.acquire(namespace, 'recovery_owner_01', 12000, 10000, process.pid), /8D_GLOBAL_CONTROL_BUSY/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D ownership rechecks durable manifest after lease acquisition and cannot overwrite a crashed peer', async () => {
+test('ownership rechecks durable manifest after lease acquisition and cannot overwrite a crashed peer', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
     const b = backend(); const candidate = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01', now: () => now, leaseTtlMs: 10000 });
     await candidate.operator.preflight(namespace);
@@ -374,7 +345,7 @@ async function ownInstallSeal(transport) {
   await transport.operator.sealLedger({ tenantId: namespaceA, goalId: cleanupA.goalId });
 }
 
-test('8D fresh namespace is blocked by any globally pending dirty manifest', async () => {
+test('fresh namespace is blocked by any globally pending dirty manifest', async () => {
   const { dir, store } = await fencedTempStore(); let now = 1000;
   try {
     await store.acquire(namespaceA, 'dead_owner_01', now, 10000, 987654);
@@ -389,7 +360,7 @@ test('8D fresh namespace is blocked by any globally pending dirty manifest', asy
   }
 });
 
-test('8D recovery server fence rejects a delayed pre-recovery host mutation after clean verification', async () => {
+test('recovery server fence rejects a delayed pre-recovery host mutation after clean verification', async () => {
   const { dir, store } = await fencedTempStore(); let now = 1000;
   try {
     const b = createFencedBackend({ delayEnable: true });
@@ -476,13 +447,13 @@ function harness(options = {}) {
 async function cloudFixture() { return createCloudFixtureData8D({ namespace, userId, preparedAt }); }
 async function acquire(backend) { const { epoch } = await backend.acquireFence({ ownerId, namespace, ttlMs: 180000 }); return { ownerId, namespace, epoch }; }
 
-test('8D management backend exposes only fixed fenced methods and a pinned target', async () => {
+test('management backend exposes only fixed fenced methods and a pinned target', async () => {
   const { backend } = harness();
   assert.deepEqual(Object.keys(backend).sort(), ['acquireFence', 'cleanupFixture', 'describe', 'disableHost', 'enableHost', 'heartbeatFence', 'insertFixture', 'preflight', 'releaseFence', 'sealLedger', 'setDark', 'setOff', 'verifyCancelled', 'verifyClean', 'verifySession'].sort());
   assert.deepEqual(await backend.describe(), { projectRef: PROJECT_REF_8D, clientId: CLIENT_ID, callback: CALLBACK_8D });
 });
 
-test('8D recovery descriptor checks actual bundle integrity before control mutations', async () => {
+test('recovery descriptor checks actual bundle integrity before control mutations', async () => {
   const { backend, state } = harness({ bundle: 'wrong' });
   await assert.rejects(backend.describe(), /8D_HOST_BUNDLE_MISMATCH/);
   assert.equal(state.calls.length, 1);
@@ -490,7 +461,7 @@ test('8D recovery descriptor checks actual bundle integrity before control mutat
   assert.equal(state.db.length, 0);
 });
 
-test('8D management preflight requires fenced pin, real secret digests, idle OFF and initialized Edge', async () => {
+test('management preflight requires fenced pin, real secret digests, idle OFF and initialized Edge', async () => {
   const { backend, state } = harness(); assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA_8D, '96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1');
   assert.deepEqual(await backend.preflight(namespace), { hostFlag: false, mode: 'OFF', ledgerEnabled: true, agentCommitEnabled: false, legacyGated: false, namespaceEmpty: true, locksVerified: true });
   const query = state.db.find(item => item.query.includes('as synthetic_rows')); assert.equal(query.read_only, false); assert.deepEqual(query.parameters, [namespace]);
@@ -501,7 +472,7 @@ test('8D management preflight requires fenced pin, real secret digests, idle OFF
   assert.equal((await harness({ rows: 1 }).backend.preflight(namespace)).namespaceEmpty, false);
 });
 
-test('8D preflight never decodes secret digests and refuses invalid startup or spoofed health', async () => {
+test('preflight never decodes secret digests and refuses invalid startup or spoofed health', async () => {
   for (const healthStatus of [200, 401, 500, 503]) await assert.rejects(harness({ healthStatus }).backend.preflight(namespace), /8D_HOST_CONFIGURATION_UNVERIFIED/);
   for (const healthBody of [{ error: 'METHOD_NOT_ALLOWED', browserDispatchAllowed: true }, { error: 'METHOD_NOT_ALLOWED', browserDispatchAllowed: false, extra: true }, { result: true }])
     await assert.rejects(harness({ healthBody }).backend.preflight(namespace), /8D_HOST_CONFIGURATION_UNVERIFIED/);
@@ -516,7 +487,7 @@ test('8D preflight never decodes secret digests and refuses invalid startup or s
   assert.equal(state.db.every(call => /^with control as/.test(call.query)), true);
 });
 
-test('8D private observational checks retain operator authority without granting client roles', async () => {
+test('private observational checks retain operator authority without granting client roles', async () => {
   const { backend, state } = harness(); await backend.preflight(namespace);
   await backend.verifySession({ userId, clientId: CLIENT_ID, sessionId });
   await backend.sealLedger((await cloudFixture()).ledger);
@@ -525,7 +496,7 @@ test('8D private observational checks retain operator authority without granting
   await assert.rejects(harness({ denyOperator: true }).backend.preflight(namespace), /8D_MANAGEMENT_REQUEST_FAILED/);
 });
 
-test('8D management fence acquire/heartbeat/release is fixed, parameterized and epoch-bound', async () => {
+test('management fence acquire/heartbeat/release is fixed, parameterized and epoch-bound', async () => {
   const { backend, state } = harness(); const fence = await acquire(backend); assert.deepEqual(fence, { ownerId, namespace, epoch: 1 });
   assert.deepEqual(await backend.heartbeatFence({ ...fence, ttlMs: 180000 }), { epoch: 1 });
   assert.deepEqual(await backend.releaseFence(fence), { released: true }); assert.equal(state.serverOwner, null); assert.equal(state.serverHost, false);
@@ -533,37 +504,37 @@ test('8D management fence acquire/heartbeat/release is fixed, parameterized and 
   assert.deepEqual(queries[0].parameters, [ownerId, namespace, 180000]); assert.deepEqual(queries[1].parameters, [ownerId, namespace, 1, 180000]); assert.deepEqual(queries[2].parameters, [ownerId, namespace, 1]);
 });
 
-test('8D management session check is exact and parameterized before provisioning', async () => {
+test('management session check is exact and parameterized before provisioning', async () => {
   const { backend, state } = harness(); const input = { userId, clientId: CLIENT_ID, sessionId }; assert.deepEqual(await backend.verifySession(input), { exists: true, ...input });
   const query = state.db.find(item => item.query.includes('from auth.sessions')); assert.equal(query.query.includes(userId), false); assert.deepEqual(query.parameters, [userId, CLIENT_ID, sessionId]); assert.equal(query.read_only, false);
   assert.equal((await harness({ sessionMatches: 0 }).backend.verifySession(input)).exists, false);
 });
 
-test('8D management provisioning is insert-only and carries exact server fence in the same SQL statement', async () => {
+test('management provisioning is insert-only and carries exact server fence in the same SQL statement', async () => {
   const f = await cloudFixture(); const { backend, state } = harness(); const fence = await acquire(backend); assert.deepEqual(await backend.insertFixture(f, fence), { inserted: true });
   const query = state.db.find(item => item.query.includes('insert into opera_agent_tx_candidate.principals')); assert.ok(query); assert.ok(query.query.includes('opera_tx_operator_assert_8d')); assert.equal(query.query.includes('on conflict'), false); assert.equal(query.query.includes(namespace), false); assert.equal(query.query.includes(f.cleanup.actorId), false);
   assert.equal(query.parameters[0], namespace); assert.equal(query.parameters[11], f.cleanup.transactionId); assert.equal(query.parameters[13], ownerId); assert.equal(query.parameters[14], fence.epoch);
   await assert.rejects(backend.insertFixture({ ...f, cleanup: { ...f.cleanup, transactionId: 'other' } }, fence), /INVALID_8D_FIXTURE/);
 });
 
-test('8D management ledger sealing uses existing crypto only in memory and returns bounded ciphertext', async () => {
+test('management ledger sealing uses existing crypto only in memory and returns bounded ciphertext', async () => {
   const f = await cloudFixture(); const { backend, state } = harness(); const token = await backend.sealLedger(f.ledger);
   assert.match(token, /^oal1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/); assert.equal(token.includes(ledgerKey), false); assert.equal(JSON.stringify(state.calls).includes(ledgerKey), false); assert.equal(JSON.stringify(state.db).includes(ledgerKey), false);
   const query = state.db.find(item => item.query === 'select public.opera_goal_crypto_key() as crypto'); assert.equal(query.read_only, false);
 });
 
-test('8D management host control is DB-fenced and never performs per-run project secret writes', async () => {
+test('management host control is DB-fenced and never performs per-run project secret writes', async () => {
   const { backend, state } = harness(); const fence = await acquire(backend); assert.deepEqual(await backend.enableHost(fence), { hostFlag: true }); assert.equal(state.serverHost, true); assert.deepEqual(await backend.disableHost(fence), { hostFlag: false }); assert.equal(state.serverHost, false);
   assert.deepEqual(state.secretWrites, []); const hostQueries = state.db.filter(item => item.query.includes('opera_tx_operator_set_host_8d')); assert.deepEqual(hostQueries.map(item => item.parameters), [[ownerId, namespace, 1, true], [ownerId, namespace, 1, false]]);
 });
 
-test('8D management DARK/OFF mutations carry the fence and never grant agent commit', async () => {
+test('management DARK/OFF mutations carry the fence and never grant agent commit', async () => {
   const f = await cloudFixture(); const { backend, state } = harness(); const fence = await acquire(backend); await backend.enableHost(fence); assert.deepEqual(await backend.setDark(fence), { mode: 'DARK' }); assert.equal(state.mode, 'DARK');
   assert.deepEqual(await backend.verifyCancelled(f.cleanup), { status: 'CANCELLED', payloadRows: 0 }); assert.deepEqual(await backend.setOff(fence), { mode: 'OFF' }); assert.equal(state.mode, 'OFF');
   for (const call of state.db.filter(item => item.query.includes('set mode='))) { assert.ok(call.query.includes('opera_tx_operator_assert_8d')); assert.equal(call.query.includes('agent_commit_enabled=true'), false); assert.deepEqual(call.parameters, [ownerId, namespace, 1]); }
 });
 
-test('8D management cleanup is one fenced server operation and clean verification is epoch-bound', async () => {
+test('management cleanup is one fenced server operation and clean verification is epoch-bound', async () => {
   const f = await cloudFixture(); const { backend, state } = harness({ rows: 1, goalRows: 1 }); const fence = await acquire(backend); await backend.cleanupFixture(f.cleanup, fence);
   const cleanupQuery = state.db.find(item => item.query.includes('opera_tx_operator_cleanup_fixture_8d')); assert.deepEqual(cleanupQuery.parameters, [ownerId, namespace, 1, f.cleanup.actorId, f.cleanup.goalId, f.cleanup.transactionId]);
   assert.deepEqual(await backend.verifyClean(f.cleanup, fence), { hostFlag: false, mode: 'OFF', ownedRows: 0, payloadRows: 0, agentCommitEnabled: false, legacyGated: false });
@@ -571,7 +542,7 @@ test('8D management cleanup is one fenced server operation and clean verificatio
   await assert.rejects(backend.cleanupFixture({ ...f.cleanup, transactionId: 'bad/slash' }, fence), /INVALID_8D_CLEANUP_SCOPE/);
 });
 
-test('8D management failures redact operator credentials and remote secret text', async () => {
+test('management failures redact operator credentials and remote secret text', async () => {
   const { backend } = harness({ failFetch: true }); let error; try { await backend.preflight(namespace); } catch (e) { error = e; }
   assert.equal(error?.message, '8D_MANAGEMENT_REQUEST_FAILED'); assert.equal(error.message.includes(accessToken), false); assert.equal(error.message.includes(transactionSecret), false); assert.equal(error.message.includes(unrelatedSecret), false);
 });
@@ -620,7 +591,7 @@ function fixture({ fail, badMetadata, badPreflight, badIdentity, responseBytes, 
   const controller = createCloudAcceptanceController8D({ namespace, sdk, operator, publicKey: 'sb_publishable_synthetic', now: () => currentTime, fetchImpl });
   return { controller, calls };
 }
-test('8D controller preflights before OAuth and runs exact prepare/replay/status/cancel then cleanup', async () => {
+test('controller preflights before OAuth and runs exact prepare/replay/status/cancel then cleanup', async () => {
   const f = fixture(); await f.controller.ready;
   assert.deepEqual(f.calls, ['preflight']);
   const result = await f.controller.run('synthetic.test.token', new AbortController().signal);
@@ -628,57 +599,57 @@ test('8D controller preflights before OAuth and runs exact prepare/replay/status
   assert.deepEqual(f.calls, ['preflight', 'recordOwnership', 'installFixture', 'sealLedger', 'enableHost', 'setDark', 'prepare', 'prepare', 'status', 'cancel', 'cancel', 'status', 'verifyCancelled', 'disableHost', 'setOff', 'cleanupFixture', 'verifyClean']);
   await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_CLOSED$/);
 });
-test('8D controller rejects preflight and signed identity failures without installation or enablement', async () => {
+test('controller rejects preflight and signed identity failures without installation or enablement', async () => {
   const f = fixture({ badPreflight: true }); await assert.rejects(f.controller.ready, /CLOUD_PREFLIGHT_FAILED/);
   await assert.rejects(f.controller.run('synthetic.test.token'), /CLOUD_PREFLIGHT_FAILED/);
   assert.deepEqual(f.calls, ['preflight']);
   const g = fixture({ badIdentity: true }); await g.controller.ready; await assert.rejects(g.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_FAILED$/);
   assert.deepEqual(g.calls, ['preflight']);
 });
-test('8D controller partial install and every later failure restore OFF and exact-owned cleanup', async () => {
+test('controller partial install and every later failure restore OFF and exact-owned cleanup', async () => {
   for (const fail of ['installFixture', 'sealLedger', 'enableHost', 'setDark', 'request', 'verifyCancelled']) {
     const f = fixture({ fail }); await f.controller.ready;
     await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_FAILED$/);
     assert.deepEqual(f.calls.slice(-4), ['disableHost', 'setOff', 'cleanupFixture', 'verifyClean']);
   }
 });
-test('8D controller concurrent run attempts cannot install or send a second workflow', async () => {
+test('controller concurrent run attempts cannot install or send a second workflow', async () => {
   const f = fixture(); await f.controller.ready;
   const first = f.controller.run('synthetic.test.token');
   await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_CLOSED$/);
   await first; assert.equal(f.calls.filter(name => name === 'installFixture').length, 1);
   assert.equal(f.calls.filter(name => name === 'prepare').length, 2);
 });
-test('8D controller failed durable ownership recording forbids all mutation', async () => {
+test('controller failed durable ownership recording forbids all mutation', async () => {
   const f = fixture({ fail: 'recordOwnership' }); await f.controller.ready;
   await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_FAILED$/);
   assert.deepEqual(f.calls, ['preflight', 'recordOwnership']);
 });
-test('8D controller rejects forged metadata, never skipping cleanup', async () => {
+test('controller rejects forged metadata, never skipping cleanup', async () => {
   for (const badMetadata of ['transactionId', 'status', 'commitKey', 'browserDispatchAllowed', 'secret']) {
     const f = fixture({ badMetadata }); await f.controller.ready; await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_FAILED$/);
     assert.deepEqual(f.calls.slice(-4), ['disableHost', 'setOff', 'cleanupFixture', 'verifyClean']);
   }
 });
-test('8D controller bounds HTTP bytes and refuses nonzero cleanup verification', async () => {
+test('controller bounds HTTP bytes and refuses nonzero cleanup verification', async () => {
   const f = fixture({ responseBytes: 32769 }); await f.controller.ready; await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_FAILED$/);
   assert.deepEqual(f.calls.slice(-4), ['disableHost', 'setOff', 'cleanupFixture', 'verifyClean']);
   for (const badClean of ['ownedRows', 'payloadRows', 'hostFlag', 'mode', 'agentCommitEnabled', 'legacyGated', 'extra']) {
     const g = fixture({ badClean }); await g.controller.ready; await assert.rejects(g.controller.run('synthetic.test.token'), /^Error: CLOUD_CLEANUP_FAILED$/);
   }
 });
-test('8D controller snapshots claims and rechecks expiry across SDK awaits', async () => {
+test('controller snapshots claims and rechecks expiry across SDK awaits', async () => {
   const f = fixture({ expiredDuringUser: true }); await f.controller.ready; await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_ACCEPTANCE_FAILED$/);
   assert.deepEqual(f.calls, ['preflight']);
 });
-test('8D controller cancellation and failed server session binding preserve independent cleanup', async () => {
+test('controller cancellation and failed server session binding preserve independent cleanup', async () => {
   const abort = new AbortController();
   for (const options of [{ abortAfterInstall: abort }, { badBinding: true }]) {
     const f = fixture(options); await f.controller.ready; await assert.rejects(f.controller.run('synthetic.test.token', options.abortAfterInstall?.signal), /^Error: CLOUD_ACCEPTANCE_FAILED$/);
     assert.equal(f.calls.includes('enableHost'), false); assert.deepEqual(f.calls.slice(-4), ['disableHost', 'setOff', 'cleanupFixture', 'verifyClean']);
   }
 });
-test('8D controller never deletes owned fixture rows when host disable or OFF restoration is unconfirmed', async () => {
+test('controller never deletes owned fixture rows when host disable or OFF restoration is unconfirmed', async () => {
   for (const fail of ['disableHost', 'setOff']) {
     const f = fixture({ fail }); await f.controller.ready;
     await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_CLEANUP_FAILED$/);
@@ -687,7 +658,7 @@ test('8D controller never deletes owned fixture rows when host disable or OFF re
     assert.deepEqual(f.calls.slice(-2), ['disableHost', 'setOff']);
   }
 });
-test('8D controller verifies cleanup after row cleanup attempt and refuses PASS on cleanup uncertainty', async () => {
+test('controller verifies cleanup after row cleanup attempt and refuses PASS on cleanup uncertainty', async () => {
   for (const fail of ['cleanupFixture', 'verifyClean']) {
     const f = fixture({ fail }); await f.controller.ready;
     await assert.rejects(f.controller.run('synthetic.test.token'), /^Error: CLOUD_CLEANUP_FAILED$/);
@@ -699,7 +670,7 @@ test('8D controller verifies cleanup after row cleanup attempt and refuses PASS 
 
 const credential = 'sbp_' + ('a'.repeat(40));
 
-test('8D live runner freezes exact CLI modes, pinned SDK and ownership window', () => {
+test('live runner freezes exact CLI modes, pinned SDK and ownership window', () => {
   assert.deepEqual(parseAcceptanceArgs8D([]), { mode: 'accept' });
   assert.deepEqual(parseAcceptanceArgs8D(['--recover', namespace]), { mode: 'recover', namespace });
   assert.throws(() => parseAcceptanceArgs8D(['--recover']), /INVALID_8D_RUNNER_ARGUMENTS/);
@@ -710,7 +681,7 @@ test('8D live runner freezes exact CLI modes, pinned SDK and ownership window', 
   assert.equal(LEASE_TTL_MS_8D, 180000);
 });
 
-test('8D recovery mode needs no OAuth key, SDK call, browser or network when no dirty manifest exists', async () => {
+test('recovery mode needs no OAuth key, SDK call, browser or network when no dirty manifest exists', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'oa-8d-runner-')); let sdkCalls = 0, fetchCalls = 0; const lines = [];
   try {
     const result = await runAcceptanceCli8D({ args: ['--recover', namespace], createClient: () => { sdkCalls++; throw new Error('sdk must not run'); }, credential, publicKey: null,
@@ -720,7 +691,7 @@ test('8D recovery mode needs no OAuth key, SDK call, browser or network when no 
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('8D acceptance fails preflight before emitting namespace or OAuth URL when deployed bundle is not exact', async () => {
+test('acceptance fails preflight before emitting namespace or OAuth URL when deployed bundle is not exact', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'oa-8d-runner-')); const lines = []; let sdkCalls = 0;
   try {
     const fetchImpl = async url => {
@@ -738,7 +709,7 @@ test('8D acceptance fails preflight before emitting namespace or OAuth URL when 
 const migrationUrl = new URL('../supabase/migrations/20260914043049_transaction_operator_fence_8d.sql', import.meta.url);
 const edgeUrl = new URL('../supabase/functions/opera-agent-transactions-8d/index.ts', import.meta.url);
 
-test('8D release checks all owned tables inside the exclusive barrier before clearing ownership', async () => {
+test('release checks all owned tables inside the exclusive barrier before clearing ownership', async () => {
   const sql = await readFile(migrationUrl, 'utf8');
   const release = sql.slice(sql.indexOf('create function public.opera_tx_operator_release_8d'), sql.indexOf('create function public.opera_tx_operator_state_8d'));
   const check = release.indexOf('if exists(');
@@ -751,7 +722,7 @@ test('8D release checks all owned tables inside the exclusive barrier before cle
   assert.ok(release.includes('from opera_agent_private.goal_heads where tenant_id=p_namespace'));
 });
 
-test('8D server fence migration is singleton, epoch-fenced, service-only and cleanup-safe', async () => {
+test('server fence migration is singleton, epoch-fenced, service-only and cleanup-safe', async () => {
   const sql = await readFile(migrationUrl, 'utf8');
   assert.match(sql, /create table opera_agent_tx_candidate\.operator_control/);
   assert.match(sql, /set epoch=epoch\+1/);
@@ -766,7 +737,7 @@ test('8D server fence migration is singleton, epoch-fenced, service-only and cle
   assert.equal(/grant execute[\s\S]*to (anon|authenticated)/.test(sql), false);
 });
 
-test('8D Edge candidate keeps env as master kill switch and checks DB fence before transaction host', async () => {
+test('Edge candidate keeps env as master kill switch and checks DB fence before transaction host', async () => {
   const source = await readFile(edgeUrl, 'utf8');
   assert.match(source, /OPERA_AGENT_TRANSACTION_DARK_8D/);
   assert.match(source, /client\.rpc\("opera_tx_operator_host_gate_8d"\)/);

@@ -43,7 +43,7 @@ async function fixture() {
   return { admission, request, state, calls };
 }
 
-test('8D admission is default-OFF, local-only, digest-only and deeply immutable', async () => {
+test('admission is default-OFF, local-only, digest-only and deeply immutable', async () => {
   const f = await fixture();
   const result = await f.admission(f.request, 'opaque credential', NOW);
   assert.equal(result.transactionId, f.request.prepared.transactionId);
@@ -56,7 +56,7 @@ test('8D admission is default-OFF, local-only, digest-only and deeply immutable'
   await assert.rejects(f.admission(f.request, '', NOW), { code: 'TRANSACTION_DISABLED' });
 });
 
-test('8D OFF/ENFORCED and ordinary identities cannot enter dark admission', async () => {
+test('OFF/ENFORCED and ordinary identities cannot enter dark admission', async () => {
   for (const mode of ['OFF', 'ENFORCED', 'invalid']) {
     const f = await fixture(); f.state.mode = mode;
     await assert.rejects(f.admission(f.request, '', NOW), { code: 'TRANSACTION_DISABLED' });
@@ -67,7 +67,7 @@ test('8D OFF/ENFORCED and ordinary identities cannot enter dark admission', asyn
   }
 });
 
-test('8D request-supplied identity, mode, grant and executor authority are rejected', async () => {
+test('request-supplied identity, mode, grant and executor authority are rejected', async () => {
   for (const field of ['identity', 'authenticatedContext', 'mode', 'grant', 'internalExecutorAuthority']) {
     const f = await fixture(); f.request[field] = f.state.identity;
     await assert.rejects(f.admission(f.request, '', NOW), { code: 'INVALID_ADMISSION' });
@@ -75,7 +75,7 @@ test('8D request-supplied identity, mode, grant and executor authority are rejec
   }
 });
 
-test('8D current ledger head rejects cancellation, foreign tenant, stale revision and forged source', async () => {
+test('current ledger head rejects cancellation, foreign tenant, stale revision and forged source', async () => {
   for (const change of ['cancel', 'foreign', 'revision', 'source']) {
     const f = await fixture();
     if (change === 'cancel') f.state.ledger = await cancelLedger(f.state.ledger, {
@@ -92,7 +92,7 @@ test('8D current ledger head rejects cancellation, foreign tenant, stale revisio
   }
 });
 
-test('8D exact trusted grant must narrow live ledger permission and bind action/target', async () => {
+test('exact trusted grant must narrow live ledger permission and bind action/target', async () => {
   for (const field of ['authorizationId', 'operationClass', 'scopeId', 'actionDigest', 'targetDigest']) {
     const f = await fixture(); f.state.grant = { ...f.state.grant, [field]: 'wrong' };
     await assert.rejects(f.admission(f.request, '', NOW), { code: 'AUTHORITY_NOT_RESOLVED' });
@@ -101,7 +101,7 @@ test('8D exact trusted grant must narrow live ledger permission and bind action/
   await assert.rejects(f.admission(f.request, '', NOW), { code: 'AUTHORITY_NOT_RESOLVED' });
 });
 
-test('8D actual arguments and recomputed action digest cannot diverge from prepare', async () => {
+test('actual arguments and recomputed action digest cannot diverge from prepare', async () => {
   const f = await fixture(); f.request.arguments.ref = 'changed';
   await assert.rejects(f.admission(f.request, '', NOW), { code: 'ACTION_MISMATCH' });
   const g = await fixture();
@@ -111,7 +111,7 @@ test('8D actual arguments and recomputed action digest cannot diverge from prepa
   await assert.rejects(g.admission(g.request, '', NOW), { code: 'ACTION_MISMATCH' });
 });
 
-test('8D every actual argument must have exact attested operand coverage', async () => {
+test('every actual argument must have exact attested operand coverage', async () => {
   for (const mutation of ['missing', 'extra', 'authority', 'value', 'source', 'attestation']) {
     const f = await fixture();
     if (mutation === 'missing') f.request.operandBindings = {};
@@ -124,7 +124,7 @@ test('8D every actual argument must have exact attested operand coverage', async
   }
 });
 
-test('8D document/target changes and expired prepared windows fail closed', async () => {
+test('document/target changes and expired prepared windows fail closed', async () => {
   for (const field of ['deviceId', 'tabId', 'documentGeneration', 'targetDigest']) {
     const f = await fixture(); f.state.target = { ...f.state.target, [field]: 'wrong' };
     await assert.rejects(f.admission(f.request, '', NOW), { code: 'TARGET_MISMATCH' });
@@ -133,7 +133,7 @@ test('8D document/target changes and expired prepared windows fail closed', asyn
   await assert.rejects(f.admission(f.request, '', f.request.prepared.expiresAt), { code: 'TRANSACTION_EXPIRED' });
 });
 
-test('8D sensitive/nested unsafe arguments are rejected before authenticated adapters run', async () => {
+test('sensitive/nested unsafe arguments are rejected before authenticated adapters run', async () => {
   for (const args of [{ password: 'no' }, { ref: { otp: 'no' } }, { ref: 'x'.repeat(65537) }]) {
     const f = await fixture(); f.request.arguments = args;
     await assert.rejects(f.admission(f.request, '', NOW));
@@ -141,14 +141,14 @@ test('8D sensitive/nested unsafe arguments are rejected before authenticated ada
   }
 });
 
-test('8D admission snapshots mutable request data before asynchronous trust checks', async () => {
+test('admission snapshots mutable request data before asynchronous trust checks', async () => {
   const f = await fixture();
   const pending = f.admission(f.request, '', NOW);
   f.request.arguments.ref = 'changed_after_start';
   assert.equal((await pending).prepareDigest, f.request.prepared.prepareDigest);
 });
 
-test('8D narrower declared count/size budgets are enforced during admission', async () => {
+test('narrower declared count/size budgets are enforced during admission', async () => {
   const f = await fixture();
   const tx = structuredClone(f.request.prepared); delete tx.prepareDigest;
   tx.budgets.provenanceRecords = 1;
@@ -158,7 +158,7 @@ test('8D narrower declared count/size budgets are enforced during admission', as
   await assert.rejects(prepareTransaction(tx), { code: 'OVER_LIMIT' });
 });
 
-test('8D missing trusted adapters and transformed source mismatch fail closed', async () => {
+test('missing trusted adapters and transformed source mismatch fail closed', async () => {
   assert.throws(() => createTransactionAdmission({}), { code: 'INVALID_ADAPTERS' });
   const f = await fixture();
   f.state.resolved = { ...f.state.resolved, transformChain: ['TRIM'] };

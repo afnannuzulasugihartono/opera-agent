@@ -6,7 +6,7 @@ const runnerUrl=new URL('./cloud/transaction-worker-loss-8d.mjs',import.meta.url
 const launcherUrl=new URL('../scripts/run-8d-worker-loss.ps1',import.meta.url);
 const cmdUrl=new URL('../scripts/legacy/RUN_8D_WORKER_LOSS.cmd',import.meta.url);
 
-test('8D hosted child-worker-loss runner is bounded, recoverable, and has no browser/OAuth surface',async()=>{
+test('hosted child-worker-loss runner is bounded, recoverable, and has no browser/OAuth surface',async()=>{
   const source=await readFile(runnerUrl,'utf8');
   assert.match(source,/OPERA_8D_MANAGEMENT_TOKEN/);
   assert.match(source,/api\.supabase\.com/);
@@ -24,7 +24,7 @@ test('8D hosted child-worker-loss runner is bounded, recoverable, and has no bro
   assert.doesNotMatch(source,/click_element|fill_element|open_url|navigate_tab|run_browser_burst/);
 });
 
-test('8D hosted child-worker-loss runner accepts only bounded CLI modes',async()=>{
+test('hosted child-worker-loss runner accepts only bounded CLI modes',async()=>{
   const {parseWorkerLossArgs8D}=await import('./cloud/transaction-worker-loss-8d.mjs');
   assert.deepEqual(parseWorkerLossArgs8D([]),{mode:'run'});
   assert.deepEqual(parseWorkerLossArgs8D(['--child-crash']),{mode:'child-crash'});
@@ -34,7 +34,7 @@ test('8D hosted child-worker-loss runner accepts only bounded CLI modes',async()
   assert.throws(()=>parseWorkerLossArgs8D(['--child-crash','extra']),/INVALID_8D_WORKER_LOSS_ARGUMENTS/);
 });
 
-test('8D worker-loss launcher reuses DPAPI credential, fast-forwards safely, and uses PowerShell 7 entrypoint',async()=>{
+test('worker-loss launcher reuses DPAPI credential, fast-forwards safely, and uses PowerShell 7 entrypoint',async()=>{
   const launcher=await readFile(launcherUrl,'utf8');
   const cmd=await readFile(cmdUrl,'utf8');
   assert.match(launcher,/management-token\.dpapi/);

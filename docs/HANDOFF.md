@@ -21,7 +21,7 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
   `opera_run_fast` both present. 58 `opera_*` functions live, 9 edge functions, each
   with a repo counterpart.
 - No `sbp_` token in the tree or its history. The two matches in
-  `tests/transaction-cloud-8d.test.mjs` are synthetic (`'a'.repeat(40)`).
+  `tests/transaction-cloud.test.mjs` are synthetic (`'a'.repeat(40)`).
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the
   model can tell whether the person is looking at the tab before choosing foreground or
   background. Fails open: a missing `userState` is a gap in the report, not a failure.

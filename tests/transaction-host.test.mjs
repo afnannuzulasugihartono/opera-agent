@@ -11,7 +11,7 @@ function fixture(){
   const client={auth:{getClaims:async()=>({data:{claims:{iss:'https://example.supabase.co/auth/v1',aud:'authenticated',role:'authenticated',sub:'user_a',client_id:'client_a',session_id:'session_a',iat:1,exp:9999999999}}}),getUser:async()=>({data:{user:{id:'user_a'}}})},rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='opera_tx_identity_read'?{tenant_id:'tenant_a',actor_id:'synthetic_a',user_id:'user_a',oauth_client_id:'client_a'}:null};}};
   return {calls,host:createTransactionDarkHost(client,{issuer:'https://example.supabase.co/auth/v1',audience:'authenticated',clock:()=>new Date('2026-09-13T00:00:00Z')})};
 }
-test('8D dark host rejects caller authority, approval and executor fields before storage',async()=>{
+test('dark host rejects caller authority, approval and executor fields before storage',async()=>{
   for(const extra of ['approved','identity','enforcementMode','executor','client_id']){
     const f=fixture();await assert.rejects(f.host({...{operation:'status',transactionId:'tx_a'},[extra]:true},'synthetic-bearer'),{code:'INVALID_REQUEST'});assert.equal(f.calls.length,0);
   }
@@ -33,7 +33,7 @@ async function prepareFixture(options={}){
   const host=createTransactionDarkHost(sdk,{issuer:'https://example.supabase.co/auth/v1',audience:'authenticated',clock:()=>new Date(now),transactionKey:key});
   return {f,key,calls,ledgerToken,host};
 }
-test('8D prepare host decrypts authentic ledger and resolves trusted exact binding before storage',async()=>{
+test('prepare host decrypts authentic ledger and resolves trusted exact binding before storage',async()=>{
   const {f,key,calls,ledgerToken,host}=await prepareFixture();
   const result=await host({operation:'prepare',ledgerToken,...f.request},'synthetic-bearer');
   assert.equal(result.browserDispatchAllowed,false);
@@ -46,19 +46,19 @@ test('8D prepare host decrypts authentic ledger and resolves trusted exact bindi
   f.state.mode='DARK';f.state.ledger={...f.state.ledger,revision:f.state.ledger.revision+1};
   await assert.rejects(host({operation:'prepare',ledgerToken,...f.request},'synthetic-bearer'));
 });
-test('8D synthetic host refuses unknown or unevaluated ledger constraints/non-goals',async()=>{
+test('synthetic host refuses unknown or unevaluated ledger constraints/non-goals',async()=>{
   for(const options of [{constraints:[{constraintId:'score_required',kind:'VALUE_PREDICATE',claimField:'score',operator:'GTE',integerValue:4}]},{nonGoals:['Never send or publish.']}]){
     const {f,calls,ledgerToken,host}=await prepareFixture(options);
     await assert.rejects(host({operation:'prepare',ledgerToken,...f.request},'synthetic-bearer'),{code:'AUTHORITY_NOT_RESOLVED'});
     assert.equal(calls.some(([name])=>name==='opera_tx_prepare_bound'),false);
   }
 });
-test('8D dark host exposes no finalize, approval or browser operation to requests',async()=>{
+test('dark host exposes no finalize, approval or browser operation to requests',async()=>{
   for(const operation of ['finalize','approve','click','burst','open_url']){
     const f=fixture();await assert.rejects(f.host({operation,transactionId:'tx_a'},'synthetic-bearer'),{code:'INVALID_REQUEST'});assert.equal(f.calls.length,0);
   }
 });
-test('8D dark host binds status/cancel to verified private principal and never dispatches',async()=>{
+test('dark host binds status/cancel to verified private principal and never dispatches',async()=>{
   for(const operation of ['status','cancel']){
     const f=fixture(); await f.host({operation,transactionId:'tx_a'},'synthetic-bearer');
     assert.equal(f.calls[1][0],'opera_tx_metadata');

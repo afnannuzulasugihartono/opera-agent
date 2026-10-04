@@ -13,25 +13,25 @@ function fixture(overrides={}) {
     fetchImpl:async(url,init)=>{calls.push({url,init});return new Response(JSON.stringify({error:'TRANSACTION_DISABLED',browserDispatchAllowed:false}),{status:503});}};
   return {client,options,calls};
 }
-test('8D in-process SDK probe checks actual trusted claims and only fixed status request',async()=>{
+test('in-process SDK probe checks actual trusted claims and only fixed status request',async()=>{
   const f=fixture(); const result=await verifyOAuthHostStatus(f.client,'synthetic.test.token',f.options);
   assert.deepEqual(result,{signedClaimsVerified:true,hostStatusHttpStatus:503,hostIdentityAccepted:false,hostDisabled:true,browserDispatchAllowed:false});
   assert.equal(f.calls[0].url,ISSUER+'/functions/v1/opera-agent-transactions-8d');
   assert.deepEqual(JSON.parse(f.calls[0].init.body),{operation:'status',transactionId:'m8d_oauth_identity_probe'});
   assert.equal(f.calls[0].init.redirect,'error');assert.equal(JSON.stringify(result).includes('synthetic.test.token'),false);
 });
-test('8D SDK probe wrong issuer/audience/role/client/session/user/time fail before host',async()=>{
+test('SDK probe wrong issuer/audience/role/client/session/user/time fail before host',async()=>{
   for(const override of [{iss:'https://hostile.invalid/auth/v1'},{aud:'other'},{role:'service_role'},
     {client_id:'other-client'},{session_id:''},{sub:'other-user'},{exp:2},{iat:3}]) {
     const f=fixture(override);await assert.rejects(verifyOAuthHostStatus(f.client,'synthetic.test.token',f.options),/^Error: OAUTH_HOST_PROBE_FAILED$/);assert.equal(f.calls.length,0);
   }
 });
-test('8D SDK probe distinguishes host rejection from positive auth and never dispatches',async()=>{
+test('SDK probe distinguishes host rejection from positive auth and never dispatches',async()=>{
   const f=fixture();f.options.fetchImpl=async()=>new Response(JSON.stringify({error:'AUTHENTICATION_REQUIRED',browserDispatchAllowed:false}),{status:401});
   const result=await verifyOAuthHostStatus(f.client,'synthetic.test.token',f.options);
   assert.equal(result.hostIdentityAccepted,false);assert.equal(result.hostDisabled,false);assert.equal(result.hostStatusHttpStatus,401);
 });
-test('8D SDK/host errors, unbound metadata, raw-result/dispatch and oversize bodies fail redacted',async()=>{
+test('SDK/host errors, unbound metadata, raw-result/dispatch and oversize bodies fail redacted',async()=>{
   for(const fetchImpl of [async()=>{throw new Error('private-token');},async()=>new Response('x'.repeat(32769)),
     async()=>new Response(JSON.stringify({result:{},browserDispatchAllowed:true})),
     async()=>new Response(JSON.stringify({result:{access_token:'private-token'},browserDispatchAllowed:false})),
@@ -40,14 +40,14 @@ test('8D SDK/host errors, unbound metadata, raw-result/dispatch and oversize bod
   }
 });
 
-test('8D theoretical host200null classification is not proof of reachable live positive gate',async()=>{
+test('theoretical host200null classification is not proof of reachable live positive gate',async()=>{
   const f=fixture();f.options.fetchImpl=async()=>new Response(JSON.stringify({result:null,browserDispatchAllowed:false}));
   const result=await verifyOAuthHostStatus(f.client,'synthetic.test.token',f.options);
   assert.equal(result.hostIdentityAccepted,true);assert.equal(result.hostDisabled,false);
   assert.equal(Object.hasOwn(result,'PROVED'),false);
 });
 
-test('8D SDK claims snapshot cannot extend token expiry across asynchronous getUser',async()=>{
+test('SDK claims snapshot cannot extend token expiry across asynchronous getUser',async()=>{
   const f=fixture();const mutable={...claims};let time=2000;
   f.client.auth.getClaims=async()=>({data:{claims:mutable},error:null});
   f.client.auth.getUser=async()=>{mutable.exp=1000;time=100000;return {data:{user:{id:claims.sub,is_anonymous:false}},error:null};};
@@ -56,7 +56,7 @@ test('8D SDK claims snapshot cannot extend token expiry across asynchronous getU
   assert.equal(f.calls.length,0);
 });
 
-test('8D SDK verifier errors and anonymous/mismatched users fail before host',async()=>{
+test('SDK verifier errors and anonymous/mismatched users fail before host',async()=>{
   for(const type of ['claims-error','anonymous','mismatch']) {
     const f=fixture();
     if(type==='claims-error') f.client.auth.getClaims=async()=>({data:{claims},error:new Error('private-data')});

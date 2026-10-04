@@ -7,7 +7,7 @@ const runnerUrl=new URL('./cloud/transaction-edge-concurrency-8d.mjs',import.met
 const launcherUrl=new URL('../scripts/run-8d-edge-concurrency.ps1',import.meta.url);
 const cmdUrl=new URL('../scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd',import.meta.url);
 
-test('8D real Edge concurrency runner is fixed, authenticated, bounded, and browser-dispatch free',async()=>{
+test('real Edge concurrency runner is fixed, authenticated, bounded, and browser-dispatch free',async()=>{
   const source=await readFile(runnerUrl,'utf8');
   assert.match(source,/createCloudAcceptanceController8D/);
   assert.match(source,/createOAuthProbe/);
@@ -27,7 +27,7 @@ test('8D real Edge concurrency runner is fixed, authenticated, bounded, and brow
   assert.doesNotMatch(source,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
 });
 
-test('8D Edge routing evidence accepts distinct allowlisted traces without exposing raw values',()=>{
+test('Edge routing evidence accepts distinct allowlisted traces without exposing raw values',()=>{
   const responses=Array.from({length:8},(_,index)=>({
     headers:new Headers({
       'cf-ray':`trace-${index}`,
@@ -45,13 +45,13 @@ test('8D Edge routing evidence accepts distinct allowlisted traces without expos
   assert.doesNotMatch(serialized,/trace-0|trace-7|ap-southeast-1/);
 });
 
-test('8D Edge routing evidence fails closed when distinct request traces are not evidenced',()=>{
+test('Edge routing evidence fails closed when distinct request traces are not evidenced',()=>{
   const responses=Array.from({length:8},()=>({headers:new Headers({'cf-ray':'same-trace','x-sb-edge-region':'ap-southeast-1'})}));
   assert.throws(()=>collectEdgeRoutingEvidence8D(responses),/8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
   assert.throws(()=>collectEdgeRoutingEvidence8D(Array.from({length:8},()=>({headers:new Headers()}))),/8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
 });
 
-test('8D real Edge concurrency launcher reuses local DPAPI credential, resolves pinned npm imports, and fails closed on dirty worktree',async()=>{
+test('real Edge concurrency launcher reuses local DPAPI credential, resolves pinned npm imports, and fails closed on dirty worktree',async()=>{
   const launcher=await readFile(launcherUrl,'utf8');
   const cmd=await readFile(cmdUrl,'utf8');
   assert.match(launcher,/management-token\.dpapi/);
@@ -66,7 +66,7 @@ test('8D real Edge concurrency launcher reuses local DPAPI credential, resolves 
   assert.doesNotMatch(cmd,/powershell\.exe/i);
 });
 
-test('8D launcher brackets exactly one live probe with a fixed static-master secret and fail-closed restore',async()=>{
+test('launcher brackets exactly one live probe with a fixed static-master secret and fail-closed restore',async()=>{
   const launcher=await readFile(launcherUrl,'utf8');
   assert.match(launcher,/\[switch\]\$RestoreMasterOnly/);
   assert.match(launcher,/\$MasterSecretName\s*=\s*'OPERA_AGENT_TRANSACTION_DARK_8D'/);
