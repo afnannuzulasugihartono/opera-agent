@@ -1504,6 +1504,10 @@ async def run(port, profile):
         assert uv_nr.get('ok') is False and uv_nr.get('error', {}).get('code') == 'TARGET_NOT_READY', uv_nr
         assert uv_nr['error']['reason'] == 'not-found', uv_nr
         assert uv_nr['error']['waitedMs'] >= 3000, uv_nr
+        # The node left the DOM, so the refusal must say so and hand back the
+        # one-round-trip recovery instead of the generic "never appeared".
+        assert uv_nr['error']['refState'] == 'detached', uv_nr
+        assert 'burst' in uv_nr['error']['hint'], uv_nr
 
         cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))

@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-04 19:08 UTC+7.
 // @title: action-pipeline — MV3 runtime library, shared with the Node suite..
 // @context: MV3 runtime library, shared with the Node suite.
-// @state: MV3 runtime library, shared with the Node suite..
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: Pure Resolve-Wait-Heal-Verify policy; refusals carry the ref state.
+// @updated: refState on TARGET_NOT_READY.
 // @dependencies: none.
 
 // Action pipeline: pure policy engine for Resolve -> Wait -> Heal -> Verify. NO DOM and NO chrome dependency: the host supplies resolve
@@ -37,9 +37,13 @@ export function classifyResolve(state) {
   return state.actionable === true ? 'ready' : 'not-actionable';
 }
 
-export function makeNotReady(reason, waitedMs, hint, candidates) {
+export function makeNotReady(reason, waitedMs, hint, candidates, refState) {
   const err = { code: 'TARGET_NOT_READY', reason, waitedMs, hint };
   if (reason === 'ambiguous' && candidates) err.candidates = candidates;
+  // WHY carried: "not-found" alone cannot be acted on. A ref whose node left the
+  // DOM and a ref that cannot resolve on this document need different advice,
+  // and the caller decides the advice from this field rather than guessing.
+  if (refState) err.refState = refState;
   return err;
 }
 

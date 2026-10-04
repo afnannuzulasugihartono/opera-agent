@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-04 19:08 UTC+7.
 // @title: content — MV3 browser runtime..
 // @context: MV3 browser runtime.
-// @state: MV3 browser runtime..
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: page.action_state reports why a ref cannot resolve: detached or unresolvable.
+// @updated: ref state on a not-found action state.
 // @dependencies: none.
 
 (() => {
@@ -228,6 +228,17 @@
     const key = String(ref || '');
     const el = reverseRefs.get(key);
     return el && el.isConnected ? el : null;
+  }
+
+  // WHY two states and not one: both are decidable here and both are terminal
+  // for this ref, but they are not the same fault. A detached node means the
+  // page re-rendered or removed the target, so the caller must re-find inside
+  // the same round trip it acts in. Anything else means the ref was never
+  // minted on this document or route, or the connected node stopped matching
+  // its descriptor, so retrying it can never succeed.
+  function refStateFor(ref) {
+    const minted = reverseRefs.get(String(ref || ''));
+    return minted && !minted.isConnected ? 'detached' : 'unresolvable';
   }
 
   function resolveActionRef(ref) {
@@ -1360,7 +1371,7 @@
       if (before && sensitiveDescriptor(before)) {
         return { present: true, actionable: false, ambiguous: false, masked: true };
       }
-      return { present: false, actionable: false, ambiguous: false };
+      return { present: false, actionable: false, ambiguous: false, refState: refStateFor(key) };
     }
     const state = actionabilityState(el);
     // Pipeline readiness is executor-contract readiness: click_info requires

@@ -46,6 +46,13 @@ test('makeNotReady shape: ambiguous carries candidates, others do not', () => {
   assert.equal('candidates' in nf, false);
 });
 
+test('makeNotReady names the ref state, and omits it when unknown', () => {
+  const detached = makeNotReady('not-found', 3000, 'Re-find in one round trip.', undefined, 'detached');
+  assert.equal(detached.refState, 'detached');
+  assert.equal('refState' in makeNotReady('not-found', 3000, 'Re-find.'), false);
+  assert.equal('refState' in makeNotReady('ambiguous', 0, 'Pick one.', ['x']), false);
+});
+
 test('attachResolution adds resolved and omits absent verified', () => {
   const env = attachResolution({ ok: true, method: 'debugger' }, { attempts: 3, waitedMs: 175, healed: true });
   assert.equal(env.ok, true);

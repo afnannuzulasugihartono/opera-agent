@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-04 19:08 UTC+7.
 // @title: background — MV3 runtime.
 // @context: MV3 browser runtime.
 // @state: the observation says when the person last touched the page.
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @updated: TARGET_NOT_READY refusals name the ref state; one builder for all three sites.
 // @dependencies: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints, role-reconcile, agent-log, ax-summary, popup-events, deadline-race.
 
 import {
@@ -672,6 +672,37 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
+// WHY per-case text: "never appeared" is false whenever the node left the DOM,
+// which is what a page that re-renders produces, and a caller that believes it
+// spends another full deadline on the same dead ref. Each case names the
+// recovery that works instead of a wait that does not.
+function notFoundHint(refState) {
+  if (refState === 'detached') {
+    return 'The target left the DOM (page re-render or removal), so this ref can never resolve. Re-find and act in ONE round trip: browser.burst with a find step, then a click step carrying refFromStep. A separate re-find round trip is stale on the same page.';
+  }
+  if (refState === 'unresolvable') {
+    return 'This ref cannot resolve on the current document or route (never minted here, or minted for another document or route). Re-find on this page; do not retry the ref.';
+  }
+  return 'Target never appeared before the deadline. Arm watch.start for late UI or re-find later.';
+}
+
+// WHY one builder: three refusal sites hand-copied the same field list, so a
+// field added to TARGET_NOT_READY reached one caller and was dropped by the
+// others. It also names the candidates in every message, which the burst path
+// alone used to drop.
+function notReadyError(error) {
+  const out = {
+    code: error.code,
+    reason: error.reason,
+    waitedMs: error.waitedMs,
+    hint: error.hint,
+    message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim()
+  };
+  if (Array.isArray(error.candidates)) out.candidates = error.candidates;
+  if (error.refState) out.refState = error.refState;
+  return out;
+}
+
 async function runActionPipeline(tabId, method, params, context, exec) {
   const started = Date.now();
   const specTimeout = METHOD_SPECS[method]?.timeoutMs ?? 8000;
@@ -715,12 +746,12 @@ async function runActionPipeline(tabId, method, params, context, exec) {
   }
   if (verdict !== 'ready') {
     const hints = {
-      'not-found': 'Target never appeared before the deadline. Arm watch.start for late UI or re-find later.',
+      'not-found': notFoundHint(state?.refState),
       'not-actionable': 'Target is present but not actionable (hidden/offscreen/disabled). Scroll into view or re-find.'
     };
     const gates = state?.gates ? ` [gates: ${JSON.stringify(state.gates)}]` : '';
     const resolver = resolveError ? ` [resolver: ${resolveError}]` : '';
-    throw makeNotReady(verdict, waitedMs, hints[verdict] + gates + resolver);
+    throw makeNotReady(verdict, waitedMs, hints[verdict] + gates + resolver, undefined, state?.refState);
   }
   const result = await exec(params.ref);
   // Verify: only from an actual post-action check (postAction.verified exists
@@ -1021,7 +1052,7 @@ async function runBurst(params, outerContext = {}) {
       } catch (error) {
         let burstError = normalizeError(error);
         if (error && error.code === 'TARGET_NOT_READY') {
-          burstError = { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) };
+          burstError = notReadyError(error);
         }
         return {
           ok: false,
@@ -1561,7 +1592,7 @@ async function executeCommand(raw) {
       return { ok: true, result: boundedResult(result) };
     } catch (error) {
       if (error && error.code === 'TARGET_NOT_READY') {
-        return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
+        return { ok: false, error: notReadyError(error) };
       }
       if (error && error.code === 'COMMAND_TIMEOUT') {
         return { ok: false, error: { code: 'COMMAND_TIMEOUT', outcome: 'unknown', message: error.message } };
@@ -1582,7 +1613,7 @@ async function executeCommand(raw) {
     return { ok: true, result: boundedResult(result) };
   } catch (error) {
     if (error && error.code === 'TARGET_NOT_READY') {
-      return { ok: false, error: { code: error.code, reason: error.reason, waitedMs: error.waitedMs, hint: error.hint, message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim(), ...(Array.isArray(error.candidates) ? { candidates: error.candidates } : {}) } };
+      return { ok: false, error: notReadyError(error) };
     }
     if (error && error.code === 'COMMAND_TIMEOUT') {
       return { ok: false, error: { code: 'COMMAND_TIMEOUT', outcome: 'unknown', message: error.message } };
