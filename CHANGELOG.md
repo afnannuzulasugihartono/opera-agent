@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 23:40 UTC+7.
+@last-edited: 2026-10-05 00:12 UTC+7.
 @related: [AGENTS.md](AGENTS.md) rules - [HANDOFF.md](docs/HANDOFF.md) - [api.md](docs/api.md)
 
 # Changelog
@@ -43,6 +43,14 @@ never implied by CI green.
 - **The MCP text stopped claiming a background pointer is invisible.** Three places
   said so, and it is false: the cursor is drawn in both modes. A model reading it would
   conclude it could not watch a run it is not present for.
+- **A plan is handed over once, and the model cannot drive it.** The chosen architecture
+  for realtime is a plan the model composes once while the device executes it locally, so
+  the model leaves the step loop. `lib/goal-plan.js` is the door between model text and
+  that execution: the caller owns who runs, where, and under which budgets, and a reply
+  that sets any of them, nests a second root, exceeds the command or depth budget, or
+  names a method outside the 26 allowlisted primitives is refused rather than repaired.
+  Pure module, no key required to test it, because the gate must be provable before a
+  model is ever trusted with one.
 - **A `not-found` refusal says why the ref died.** It claimed the target never
   appeared, which is false on any page that re-renders: the target appeared and its
   node left the DOM. The refusal now carries `refState` — `expired`, `detached` or
