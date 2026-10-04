@@ -1,6 +1,6 @@
-# @last-edited: 2026-10-04 22:44 UTC+7.
+# @last-edited: 2026-10-04 22:52 UTC+7.
 # @title: ci — three jobs, all on GitHub Linux runners.
-# @state: no self-hosted runner; the harness runs headed under xvfb on playwright chromium.
+# @state: all three gates on GitHub Linux; the harness runs headed under xvfb on playwright chromium.
 # @dependencies: none stated.
 
 name: CI
@@ -145,4 +145,13 @@ jobs:
 
           OA_BROWSER_HEADLESS: '0'
 
-        run: xvfb-run -a python tests/browser_extension_test.py
+        # WHY stdout goes to a file. xvfb-run reads the child's stdout through a
+        # pipe to watch for the display tearing down, and it stops draining that
+        # pipe: the harness runs the whole suite and then dies writing its summary
+        # with "BlockingIOError: [Errno 11] write could not complete without
+        # blocking". Redirecting stdout gives xvfb-run an empty pipe to read.
+        # stderr still reaches the log, so a real failure is still visible.
+
+        run: |
+          xvfb-run -a python tests/browser_extension_test.py > "${RUNNER_TEMP}/harness.json"
+          cat "${RUNNER_TEMP}/harness.json"
