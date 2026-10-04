@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-05 01:36 UTC+7.
 // @title: options-store.test — store.test — Test.
 // @state: close the Phase 5 review follow-ups.
 // @dependencies: node:test, strict, options-store, endpoints.

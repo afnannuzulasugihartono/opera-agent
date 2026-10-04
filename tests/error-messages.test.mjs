@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-05 01:36 UTC+7.
 // @title: error-messages.test — messages.test — Test.
 // @state: lock store error strings against mapper drift.
 // @dependencies: node:test, strict, promises, error-messages.

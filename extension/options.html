@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-04 18:25 UTC+7. -->
+<!-- @last-edited: 2026-10-05 01:36 UTC+7. -->
 <!-- @title: options — MV3 runtime. -->
 <!-- @state: options page with bridge URL and log level settings. -->
 <!-- @dependencies: none stated. -->
@@ -62,6 +62,22 @@
         </select>
         <button id="saveButton" type="submit" class="primary">Save settings</button>
         <p id="saveStatus" class="hint" role="status" aria-live="polite">&nbsp;</p>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="modelTitle">
+      <div class="section-heading">
+        <h2 id="modelTitle">AI model</h2>
+        <span class="secure-label">Stays on this device</span>
+      </div>
+      <form id="modelForm">
+        <label for="modelEndpoint">Model endpoint</label>
+        <input id="modelEndpoint" type="text" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://your-provider.example/v1, or http://127.0.0.1:11434/v1 for a local model" />
+        <label for="modelName">Model name</label>
+        <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="The name your provider uses" />
+        <button id="modelSaveButton" type="submit" class="primary">Save model</button>
+        <p id="modelStatus" class="hint" role="status" aria-live="polite">&nbsp;</p>
+        <p class="hint">The endpoint and model name stay in this browser and are never sent to the Opera Agent bridge. The key is entered in the popup, next to pairing, because a secret does not belong on this page.</p>
       </form>
     </section>
 

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-05 00:47 UTC+7.
+// @last-edited: 2026-10-05 01:52 UTC+7.
 // @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
-// @state: The memoized read path, the comment-spacing rule over untracked files too, live allowlist paths and the .md logic gates are locked.
+// @state: The memoized read path, the comment-spacing rule over untracked files, allowlist paths and four rule gates are locked.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
 
 // Properties that keep the runtime code correct as it grows, and that the code
@@ -109,6 +109,97 @@ test('no document says Do X and another says Don\'t X', async () => {
     collect(file);
   }
   assert.deepEqual([...commands.keys()], []);
+});
+
+// The six sections an agent is guaranteed to read, in the order it reads them.
+// Asserted rather than described: a rename that breaks the per-turn trigger would
+// leave the trigger pointing at a section that no longer exists, and that is
+// invisible in review.
+const REQUIRED_SECTIONS = ['Always', 'Goals', 'Mission', 'Priority order', 'Precedence', 'Strict rules'];
+
+test('the six sections an agent reads every turn exist, in order, before the triggers', async () => {
+  const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
+  const headings = [...body.matchAll(/^## (.+)$/gm)].map((m) => ({ name: m[1].trim(), at: m.index }));
+  const found = REQUIRED_SECTIONS.map((name) => headings.find((h) => h.name === name));
+  const missing = REQUIRED_SECTIONS.filter((name, i) => !found[i]);
+  assert.deepEqual(missing, [], `AGENTS.md is missing: ${missing.join(', ')}`);
+  for (let i = 1; i < found.length; i += 1) {
+    assert.ok(found[i].at > found[i - 1].at, `${found[i].name} must come after ${found[i - 1].name}`);
+  }
+  const triggers = headings.find((h) => h.name === 'Triggers');
+  assert.ok(triggers && found[5].at < triggers.at, 'the six must all be readable before the triggers table');
+  for (const { name, at } of found) {
+    const section = body.slice(at).split('\n## ')[0];
+    // Every section has to carry instructions, but not in one shape: Always is
+    // standing prose on purpose, so the check is that it says something, and only
+    // the rule section is required to hold explicit Do and Don't commands.
+    // An instruction line is a bullet or a numbered item: Priority order is a
+    // numbered list by design, and forcing it into bullets would be the lock
+    // rewriting the owner's chosen shape instead of checking it.
+    const bullets = (section.match(/^(?:- |\d+\. )/gm) || []).length;
+    assert.ok(bullets >= 3, `${name} carries ${bullets} instruction lines; it must actually instruct`);
+    if (name === 'Strict rules') {
+      assert.match(section, /^- Do\b/m, 'Strict rules must hold Do commands');
+      assert.match(section, /^- Don't\b/m, 'Strict rules must hold Don\'t commands');
+    }
+  }
+});
+
+test('every section the rules point at exists', async () => {
+  const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
+  const headings = new Set([...body.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim()));
+  // The per-turn trigger and the Always block name sections by name. A renamed
+  // section leaves those names pointing at nothing, which reads as a typo.
+  const referenced = new Set(['Always', 'Goals', 'Mission', 'Priority order', 'Precedence', 'Strict rules', 'Triggers']);
+  const dangling = [...referenced].filter((name) => !headings.has(name));
+  assert.deepEqual(dangling, []);
+});
+
+// WHY this threshold and not a tighter one: measured across every .md there are 79
+// rule bullets and no pair above 0.60 token overlap, so the bar sits just under the
+// observed maximum with room to spare. A tighter bar would fire on two rules that
+// merely share vocabulary, which is how a lock trains people to ignore it.
+const DUPLICATE_OVERLAP = 0.6;
+
+test('no rule is stated twice in two forms', async () => {
+  const dir = fileURLToPath(new URL('..', import.meta.url));
+  const rules = [];
+  for (const file of execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8' })
+    .split('\n')
+    .filter((f) => f.endsWith('.md'))) {
+    const body = fsSync.readFileSync(path.join(dir, file), 'utf8');
+    body.split('\n').forEach((line, i) => {
+      const match = line.match(/^\s*[-*]?\s*Do(?:n't)?\s+(.+?)\.?\s*$/);
+      if (!match) return;
+      const tokens = new Set(match[1].toLowerCase()
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/[`*_]/g, '')
+        .replace(/[^a-z0-9\s-]/g, ' ')
+        .split(/\s+/)
+        .filter(Boolean));
+      if (tokens.size >= 4) rules.push({ file, line: i + 1, tokens });
+    });
+  }
+  assert.ok(rules.length > 40, `expected the whole rule set, saw ${rules.length} bullets`);
+  const duplicates = [];
+  for (let i = 0; i < rules.length; i += 1) {
+    for (let j = i + 1; j < rules.length; j += 1) {
+      let shared = 0;
+      for (const token of rules[i].tokens) if (rules[j].tokens.has(token)) shared += 1;
+      const overlap = shared / (rules[i].tokens.size + rules[j].tokens.size - shared);
+      if (overlap >= DUPLICATE_OVERLAP) duplicates.push(`${rules[i].file}:${rules[i].line} and ${rules[j].file}:${rules[j].line}`);
+    }
+  }
+  assert.deepEqual(duplicates, [], duplicates.slice(0, 8).join('\n'));
+});
+
+test('the logic gate actually inspected the rule set', async () => {
+  const dir = fileURLToPath(new URL('..', import.meta.url));
+  const body = fsSync.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  // A gate that silently inspected nothing passes for a clean tree. The count is the
+  // proof that it looked at the rules that bind every task.
+  const commands = (body.match(/^\s*[-*]?\s*Do(?:n't)?\s+/gm) || []).length;
+  assert.ok(commands >= 30, `AGENTS.md carries only ${commands} commands; the gates are reading too little`);
 });
 
 test('every gitleaks allowlist path still names a file in the tree', async () => {

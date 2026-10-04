@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-05 01:36 UTC+7.
 // @title: options-store — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @state: The bridge URL, log level, and the user's own model endpoint, name and key, kept in local storage.
 // @dependencies: endpoints.
 
 // Validation and persistence for the Options page: the bridge URL override and the
