@@ -2,8 +2,10 @@
 
 Current version: `1.6.15` (`extension/manifest.json` is the source of truth).
 
-Shipped work lives in git history and in `CHANGELOG.md`. This file holds only what
-is still open.
+Related: [`AGENTS.md`](AGENTS.md) - [`CHANGELOG.md`](CHANGELOG.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md)
+
+Shipped work lives in git history and in [`CHANGELOG.md`](CHANGELOG.md). This file holds
+only what is still open.
 
 ## Open
 
