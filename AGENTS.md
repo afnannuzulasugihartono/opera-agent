@@ -188,7 +188,7 @@ Load it with `skill({ name: "karpathy-guidelines" })` before writing code.
 - Keep an area [`AGENTS.md`](AGENTS.md) at 15 lines or fewer, pointers only.
 - Open it with the root-binds line.
 - Keep it consistent with the root.
-- Register a new one in the area table in the same commit.
+- Register a new one in the Bootstrap table in the same commit.
 
 **Don't**
 
