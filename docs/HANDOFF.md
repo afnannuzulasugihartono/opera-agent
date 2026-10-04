@@ -8,9 +8,15 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.15` in `extension/manifest.json` is the source of truth.
-- Local gates: `npm test` 763 pass, `npm run check` ok — 26 primitives, 91 safety files.
+- Local gates: `npm test` 767 pass, `npm run check` ok — 26 primitives, 91 safety files.
 - Browser harness exits 0 against Brave, headless and headed. `ci-browser` runs the
   same file under `xvfb`.
+- Live suite: 100 passed, 0 failed, 10 skipped against a real YouTube video, opencode.ai
+  and Google Maps. `OA_ONLY=<substring>` runs one case group.
+- All 26 allowlisted primitives are driven by both suites. `media.play` was the last one
+  the deterministic harness never called.
+- `media.play` in background mode is refused on a real video by Chrome's autoplay policy.
+  The extension names the cause and the recovery, which is foreground mode.
 - Production database: 48 migrations recorded, 0 pending. `opera_claim_next_wait` and
   `opera_run_fast` both present. 58 `opera_*` functions live, 9 edge functions, each
   with a repo counterpart.
@@ -56,9 +62,14 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 
 ## CI
 
-- `3c5b201` concluded **success on all three gates**: unit, secret-scan, browser. That
-  is the first real CI evidence in this session, and it took three machine faults to
-  get there, none of them in the code:
+- `10aedd8` concluded **success on all three gates**: unit, secret-scan, browser. Three
+  earlier commits are green on the same gates.
+- One browser failure came out of this session and was a defect in the harness, not the
+  product: the focus audit called a window losing OS focus a stolen focus. It now reports
+  five states and only fails when focus lands on a different window or a different tab,
+  which is what a steal physically is. The classifier is checked on all five at the start
+  of every run, and both steal branches were proved red by disabling them.
+- Reaching the first green run took three machine faults, none of them in the code:
   - `actions/setup-python` spawned a python.org installer that never finished, at zero
     CPU for over two hours. On a single runner that also blocked the two jobs needing
     no Python. The step is gone; the browser job uses the machine's Python 3.13 with
