@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: reactive-vm-host-7e.test — vm-host-7e.test — Test.
+// @last-edited: 2026-10-04 18:32 UTC+7.
+// @title: reactive-vm-host-limits — bounded host and storage limits.
 // @context: Test.
-// @state: consolidate the 7E host boundary into its own surface file.
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: Host effects stay bounded, idempotent and digest-only.
+// @updated: milestone labels out of file names and titles.
 // @dependencies: strict, node:fs, node:test, reactive-vm-host-7e, vm-token.
 
 import assert from 'node:assert/strict';
@@ -23,30 +23,13 @@ import {
   sealVmHostToken,
 } from '../supabase/functions/_shared/vm-token.js';
 
-// 7E host surface, consolidated 2026-10-03.
+// Host surface: limits, idempotency, persistence, tokens, the SQL migration
+// contract, and the Edge host boundary, fail-closed with authority. Sections:
+// A limits, idempotency, persistence, tokens; B the SQL migration contract;
+// C the Edge host boundary.
 //
-// Two files locked the 7E host: its limits, tokens, persistence and migration
-// contract, and its fail-closed boundary in the Edge function. The second was
-// filed separately as "boundaries", which read as a different subsystem; it is
-// the same host, and the two share both the Edge source and the migration.
-//
-//   tests/reactive-vm-host-7e.test.mjs          9 tests  55 assertions
-//   tests/reactive-vm-host-7e-boundaries.test.mjs 2 tests 17 assertions
-//   -> tests/reactive-vm-host-7e.test.mjs       11 tests, 72 assertions
-//
-//   A  limits, idempotency, persistence, tokens
-//   B  the SQL migration contract
-//   C  the Edge host boundary: fail-closed and authority
-//
-// Test count and assertion count are the invariants: 11 tests and 72
-// assertions before, 11 and 72 after, none dropped, weakened or added. Both
-// numbers were measured before this header was written.
-//
-// The two files read the same two sources -- the Edge function and the
-// migration -- so those reads are declared once and shared. No test body
-// changed. The siblings reactive-vm-7c, 7d, 7f, core and contract stay
-// separate: each is one checkpoint's engine or contract, and folding them
-// together would erase the milestone boundary their names carry.
+// The reads of the Edge function and the migration are declared once and
+// shared. Sibling files stay separate: each covers one engine or contract.
 
 const edgeSource = fs.readFileSync(
   new URL('../supabase/functions/opera-agent-vm/index.ts', import.meta.url),
@@ -65,7 +48,7 @@ async function hostError(code, fn) {
 
 // --- A. limits, idempotency, persistence, tokens -----------------------------
 
-test('7E freezes bounded host/storage limits at or below Milestone 7 budgets', () => {
+test('freezes bounded host/storage limits at or below Milestone 7 budgets', () => {
   assert.equal(REACTIVE_VM_HOST_7E_LIMITS.programBytes, 131072);
   assert.equal(REACTIVE_VM_HOST_7E_LIMITS.checkpointBytes, 131072);
   assert.equal(REACTIVE_VM_HOST_7E_LIMITS.resultBytes, 131072);
@@ -77,7 +60,7 @@ test('7E freezes bounded host/storage limits at or below Milestone 7 budgets', (
   assert.ok(REACTIVE_VM_HOST_7E_LIMITS.opaqueTokenBytes > REACTIVE_VM_HOST_7E_LIMITS.checkpointBytes);
 });
 
-test('7E effect idempotency is deterministic and control-sensitive', async () => {
+test('effect idempotency is deterministic and control-sensitive', async () => {
   const base = {
     tenantId: 'tenant-a', runId: 'run-a', programDigest: digest('1'),
     requestDigest: digest('2'), attemptClass: 'OBSERVATION',
@@ -91,7 +74,7 @@ test('7E effect idempotency is deterministic and control-sensitive', async () =>
   assert.ok(Buffer.byteLength(first) <= 128);
 });
 
-test('7E persisted metadata is digest-only and rejects raw/sensitive browser payload fields', async () => {
+test('persisted metadata is digest-only and rejects raw/sensitive browser payload fields', async () => {
   const safe = {
     tenantId: '11111111-1111-4111-8111-111111111111',
     runId: '22222222-2222-4222-8222-222222222222',
@@ -107,7 +90,7 @@ test('7E persisted metadata is digest-only and rejects raw/sensitive browser pay
   await hostError('SENSITIVE_VALUE', async () => validateVmPersistedMetadata7E({ ...safe, errorCode: 'sk-abcdefghijklmnopqrstuvwxyz0123456789' }));
 });
 
-test('7E persistence classification never upgrades non-terminal work to completion', () => {
+test('persistence classification never upgrades non-terminal work to completion', () => {
   assert.deepEqual(classifyVmPersistence7E({ status: 'RUNNING' }, { kind: 'CONTINUE' }, 1000), {
     status: 'QUEUED', availableAtMs: 1000, terminal: false,
   });
@@ -122,14 +105,14 @@ test('7E persistence classification never upgrades non-terminal work to completi
   });
 });
 
-test('7E retry scheduling is bounded and deterministic', () => {
+test('retry scheduling is bounded and deterministic', () => {
   assert.equal(retryDelayMs7E(0), 250);
   assert.equal(retryDelayMs7E(1), 500);
   assert.equal(retryDelayMs7E(4), 4000);
   assert.equal(retryDelayMs7E(20), 5000);
 });
 
-test('7E opaque tokens authenticate kind and ciphertext while retaining bounded plaintext', async () => {
+test('opaque tokens authenticate kind and ciphertext while retaining bounded plaintext', async () => {
   const key = decodeVmHostKey('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
   const payload = { schemaVersion: 'OA_REACTIVE_VM_STATE_7D_V1', runId: 'run-a', status: 'READY' };
   const token = await sealVmHostToken(payload, key, { kind: 'CHECKPOINT' });
@@ -146,7 +129,7 @@ test('7E opaque tokens authenticate kind and ciphertext while retaining bounded 
 
 // --- B. the SQL migration contract -------------------------------------------
 
-test('7E SQL migration is private, default-off, lease-fenced, queue-bounded, and service-role only', () => {
+test('SQL migration is private, default-off, lease-fenced, queue-bounded, and service-role only', () => {
   assert.match(hostMigration, /milestone7_vm_enabled', 'false'/);
   assert.match(hostMigration, /create table if not exists opera_agent_private\.vm_runs/i);
   assert.match(hostMigration, /create table if not exists opera_agent_private\.vm_effects/i);
@@ -164,7 +147,7 @@ test('7E SQL migration is private, default-off, lease-fenced, queue-bounded, and
   assert.doesNotMatch(hostMigration, /grant\s+(?:select|insert|update|delete|execute)[\s\S]{0,120}\b(?:anon|authenticated)\b/i);
 });
 
-test('7E source keeps public MCP and extension outside the checkpoint', () => {
+test('source keeps public MCP and extension outside the checkpoint', () => {
   assert.doesNotMatch(hostMigration, /opera_methods\s*\(/i);
   assert.doesNotMatch(hostMigration, /opera_devices\s+set/i);
   assert.doesNotMatch(hostMigration, /opera_pairing/i);
@@ -181,7 +164,7 @@ test('7E source keeps public MCP and extension outside the checkpoint', () => {
 // it executes anything, which is exactly what source text can show. Runtime
 // behavior for the same host is exercised by the live suites.
 
-test('7E Edge host authenticates OAuth users, invokes 7D, and reuses opera_enqueue request IDs', () => {
+test('Edge host authenticates OAuth users, invokes 7D, and reuses opera_enqueue request IDs', () => {
   assert.match(edgeSource, /auth\.getUser/);
   assert.match(edgeSource, /validateReactiveProgram7D/);
   assert.match(edgeSource, /createReactiveVm7D/);
@@ -194,7 +177,7 @@ test('7E Edge host authenticates OAuth users, invokes 7D, and reuses opera_enque
   assert.doesNotMatch(edgeSource, /opera-agent-vm[^\n]*fetch\(/i);
 });
 
-test('7E Edge host fails closed on tenant, target, tab, goal, and document generations', () => {
+test('Edge host fails closed on tenant, target, tab, goal, and document generations', () => {
   assert.match(edgeSource, /candidate\.tenantId\s*!==\s*tenantId/);
   assert.match(edgeSource, /HostError\("CROSS_TENANT"/);
   assert.match(edgeSource, /HostError\("GOAL_REVISED"/);
@@ -206,7 +189,7 @@ test('7E Edge host fails closed on tenant, target, tab, goal, and document gener
   assert.match(edgeSource, /\["GOAL_REVISED",\s*"STALE_TARGET",\s*"STALE_DOCUMENT",\s*"MISSING_AUTHORITY",\s*"CROSS_TAB"\]/);
 });
 
-test('7E authority remains OAuth-allowlisted and storage RPCs remain service-role only', () => {
+test('authority remains OAuth-allowlisted and storage RPCs remain service-role only', () => {
   assert.match(edgeSource, /auth\.getUser\(token\)/);
   assert.match(edgeSource, /ALLOWED_USER_IDS\.size\s*===\s*0\s*&&\s*ALLOWED_USER_EMAILS\.size\s*===\s*0/);
   assert.match(edgeSource, /if \(!user\) return response\(\{ ok: false, error: \{ code: "UNAUTHORIZED" \} \}, 401\)/);

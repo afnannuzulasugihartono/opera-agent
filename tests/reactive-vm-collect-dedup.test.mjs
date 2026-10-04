@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: reactive-vm-7d.test — vm-7d.test — Test.
+// @last-edited: 2026-10-04 18:32 UTC+7.
+// @title: reactive-vm-collect-dedup — COLLECT and DEDUP opcodes.
 // @context: Test.
-// @state: align 7D proof fixture provenance.
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: Collection is bounded and deduplicated with stable identity.
+// @updated: milestone labels out of file names and titles.
 // @dependencies: strict, node:fs, node:test, goal-ledger, proof-engine, reactive-vm-7c, reactive-vm-7d.
 
 import assert from 'node:assert/strict';
@@ -84,7 +84,7 @@ async function vmError(code, fn) {
   await assert.rejects(fn, (error) => error instanceof ReactiveVmError && error.code === code);
 }
 
-test('7D executes frozen COLLECT/DEDUP while 7C remains unchanged', async () => {
+test('executes frozen COLLECT/DEDUP while 7C remains unchanged', async () => {
   const value = await program({ type: 'SEQUENCE', children: [
     { type: 'COLLECT', source: { op: 'PATH', path: ['source'] }, projection: ['logicalId', 'name'], destination: 'collected', maxItems: 10 },
     { type: 'DEDUP', source: { op: 'PATH', path: ['collected'] }, keySpec: ['logicalId'], destination: 'unique' },
@@ -99,7 +99,7 @@ test('7D executes frozen COLLECT/DEDUP while 7C remains unchanged', async () => 
   assert.equal(state.bindings.unique.itemCount, 2);
 });
 
-test('7D lazy-list append plus DEDUP collects each stable loaded identity once', () => {
+test('lazy-list append plus DEDUP collects each stable loaded identity once', () => {
   const observation = meta({ boundaryStable: true, scopeKind: 'DECLARED_BOUNDED_FEED', dependencyFingerprint: `sha256:${'2'.repeat(64)}` });
   const first = collectSemanticRecords7D([item('se_a'), item('se_b')], ['logicalId', 'semanticRevision', 'stableKey', 'stableKeySource', 'name', 'inViewport'], {
     destination: 'items', maxItems: 10, collectionBudget: 10, sourceBinding: 'batch', observationMeta: observation,
@@ -113,7 +113,7 @@ test('7D lazy-list append plus DEDUP collects each stable loaded identity once',
   assert.equal(unique.completion.status, 'BOUNDED_COMPLETE');
 });
 
-test('7D detach/reinsert does not duplicate stable identity and weak geometry/name never merge', () => {
+test('detach/reinsert does not duplicate stable identity and weak geometry/name never merge', () => {
   const stable = dedupSemanticRecords7D([
     item('se_same', { name: 'Old', ref: 'old', rect: { x: 0, y: 0 }, inViewport: false }),
     item('se_same', { name: 'New', ref: 'new', rect: { x: 900, y: 700 }, semanticRevision: 2 }),
@@ -125,7 +125,7 @@ test('7D detach/reinsert does not duplicate stable identity and weak geometry/na
   assert.ok(weak.ambiguities.every((entry) => entry.kind === 'MISSING_STRONG_IDENTITY'));
 });
 
-test('7D collisions and missing keys retain records and report ambiguity', () => {
+test('collisions and missing keys retain records and report ambiguity', () => {
   const value = dedupSemanticRecords7D([
     item('se_collision', { stableKey: 'item_a' }), item('se_collision', { stableKey: 'item_b' }),
     { semanticFingerprint: 'fp_only', name: 'fingerprint' }, { name: 'missing' },
@@ -136,7 +136,7 @@ test('7D collisions and missing keys retain records and report ambiguity', () =>
   assert.equal(value.completion.status, 'PARTIAL');
 });
 
-test('7D fingerprint fallback merges only explicit unambiguous fingerprints and preserves stronger conflicts', () => {
+test('fingerprint fallback merges only explicit unambiguous fingerprints and preserves stronger conflicts', () => {
   const value = dedupSemanticRecords7D([
     { semanticFingerprint: 'fp_1', identityAmbiguous: false, name: 'A' },
     { semanticFingerprint: 'fp_1', identityAmbiguous: false, name: 'A moved' },
@@ -148,7 +148,7 @@ test('7D fingerprint fallback merges only explicit unambiguous fingerprints and 
   assert.ok(value.ambiguities.some((entry) => entry.kind === 'IDENTITY_COLLISION'));
 });
 
-test('7D caps may truncate only while explicitly PARTIAL', () => {
+test('caps may truncate only while explicitly PARTIAL', () => {
   const value = collectSemanticRecords7D(Array.from({ length: 5 }, (_, i) => item(`se_${i}`)), ['logicalId'], {
     destination: 'capped', maxItems: 3, collectionBudget: 1000, sourceBinding: 'source',
     observationMeta: meta({ boundaryStable: true, scopeKind: 'DECLARED_BOUNDED_FEED' }),
@@ -161,7 +161,7 @@ test('7D caps may truncate only while explicitly PARTIAL', () => {
   assert.ok(value.completion.unresolved.includes('COLLECTION_CAP_REACHED'));
 });
 
-test('7D viewport/zoom invalidates only dependent visible collection state', () => {
+test('viewport/zoom invalidates only dependent visible collection state', () => {
   const visible = collectSemanticRecords7D([item('se_a')], ['logicalId'], {
     destination: 'visible', maxItems: 10, collectionBudget: 10, sourceBinding: 'source',
     observationMeta: meta({ scopeKind: 'VISIBLE_VIEWPORT', dependencyKinds: ['VIEWPORT', 'ZOOM'] }),
@@ -174,7 +174,7 @@ test('7D viewport/zoom invalidates only dependent visible collection state', () 
   assert.equal(invalidateCollectionForObservationChange7D(loaded, change).invalidated, false);
 });
 
-test('7D binds bounded observation evidence without granting universal proof authority', async () => {
+test('binds bounded observation evidence without granting universal proof authority', async () => {
   const ledgerInput = clone(replay.ledger);
   ledgerInput.tenantId = 'tenant-test';
   const bounded = await createLedger(ledgerInput, { authoritySource: 'USER', now: ledgerInput.createdAt });
@@ -209,7 +209,7 @@ test('7D binds bounded observation evidence without granting universal proof aut
   assert.ok(closedProof.unresolved.includes('EXHAUSTIVE_EVIDENCE_REQUIRED'));
 });
 
-test('7D action receipts and stable screenshots still create zero false PROVED', async () => {
+test('action receipts and stable screenshots still create zero false PROVED', async () => {
   const input = clone(replay.ledger);
   input.scope = { kind: 'CLOSED_WORLD', resourceId: 'resource_fixture_map_001' };
   const ledger = await createLedger(input, { authoritySource: 'USER', now: input.createdAt });
@@ -225,7 +225,7 @@ test('7D action receipts and stable screenshots still create zero false PROVED',
   assert.ok(proof.rejectedEvidenceRefs.some((entry) => entry.reason === 'ACTION_IS_NOT_OUTCOME_EVIDENCE'));
 });
 
-test('7D runtime carries verified effect provenance into collection bindings', async () => {
+test('runtime carries verified effect provenance into collection bindings', async () => {
   const value = await program({ type: 'SEQUENCE', children: [
     { type: 'COMMAND', method: 'page.read', arguments: { tabId: 7 }, resultBinding: 'read1' },
     { type: 'COLLECT', source: { op: 'PATH', path: ['read1', 'items'] }, projection: ['logicalId'], destination: 'items', maxItems: 10 },
@@ -253,7 +253,7 @@ test('7D runtime carries verified effect provenance into collection bindings', a
   }));
 });
 
-test('7D remains bounded/deterministic for 1,000 items and environment-neutral', () => {
+test('remains bounded/deterministic for 1,000 items and environment-neutral', () => {
   const source = Array.from({ length: 1000 }, (_, i) => item(`se_${String(i).padStart(4, '0')}`));
   const make = () => collectSemanticRecords7D(source, ['logicalId', 'semanticRevision', 'stableKey', 'stableKeySource'], {
     destination: 'large', maxItems: 1000, collectionBudget: 1000, sourceBinding: 'source', observationMeta: meta(),
@@ -265,7 +265,7 @@ test('7D remains bounded/deterministic for 1,000 items and environment-neutral',
   assert.doesNotMatch(sourceText, /\bfetch\s*\(|XMLHttpRequest|WebSocket|chrome\.|browser\.|supabase|Date\.now|Math\.random|eval\s*\(|new Function/);
 });
 
-test('7D cancellation wins before collection executes', async () => {
+test('cancellation wins before collection executes', async () => {
   const value = await program({ type: 'COLLECT', source: { op: 'PATH', path: ['source'] }, projection: ['logicalId'], destination: 'items', maxItems: 10 }, 'cancel');
   const state = await createReactiveVm7D(value, opts({ source: [item('se_a')] }, { source: meta() }));
   const cancelled = await advanceReactiveVm7D(value, state, { logicalNowMs: 1001, cancelled: true });

@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: reactive-vm-7f.test — vm-7f.test — Test.
+// @last-edited: 2026-10-04 18:32 UTC+7.
+// @title: reactive-vm-stable-surface — frozen public surface and deterministic replay.
 // @context: Test.
-// @state: three more places claimed the background pointer was invisible.
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: The public surface and read-only effect policy stay unchanged across runs.
+// @updated: milestone labels out of file names and titles.
 // @dependencies: strict, node:fs, node:test, goal-ledger, proof-engine, reactive-vm-7d, reactive-vm-host-7e, canonical-source-hash.
 
 import assert from 'node:assert/strict';
@@ -122,7 +122,7 @@ function collectFeed({ stable = false, maxItems = 10 } = {}) {
   return dedupSemanticRecords7D(second, ['logicalId'], { destination: 'unique', collectionBudget: 1000 });
 }
 
-test('7F keeps the 1.6.15 public surface and frozen read-only VM effect policy unchanged', () => {
+test('keeps the 1.6.15 public surface and frozen read-only VM effect policy unchanged', () => {
   assert.equal(packageJson.version, '1.6.15');
   assert.equal(manifest.version, '1.6.15');
   assert.equal(contract.baselineVersion, '1.6.0');
@@ -149,7 +149,7 @@ test('7F keeps the 1.6.15 public surface and frozen read-only VM effect policy u
   }
 });
 
-test('7F controlled lazy-list completion is bounded, deduplicated, and never universal', () => {
+test('controlled lazy-list completion is bounded, deduplicated, and never universal', () => {
   const partial = collectFeed({ stable: false });
   assert.equal(partial.itemCount, 3);
   assert.equal(partial.dedup.duplicatesRemoved, 1);
@@ -172,13 +172,13 @@ test('7F controlled lazy-list completion is bounded, deduplicated, and never uni
   assert.ok(capped.completion.unresolved.includes('COLLECTION_CAP_REACHED'));
 });
 
-test('7F deterministic bounded collection replay agrees byte-for-byte across 100 runs', () => {
+test('deterministic bounded collection replay agrees byte-for-byte across 100 runs', () => {
   const outputs = [];
   for (let index = 0; index < 100; index += 1) outputs.push(JSON.stringify(collectFeed({ stable: true })));
   assert.equal(new Set(outputs).size, 1);
 });
 
-test('7F bounded browser evidence produces zero false PROVED outcomes', async () => {
+test('bounded browser evidence produces zero false PROVED outcomes', async () => {
   const input = clone(replay.ledger);
   input.tenantId = 'tenant-7f';
   input.scope = { kind: 'CLOSED_WORLD', resourceId: 'resource_fixture_map_001' };
@@ -220,7 +220,7 @@ test('7F bounded browser evidence produces zero false PROVED outcomes', async ()
   assert.ok(proof.unresolved.includes('EXHAUSTIVE_EVIDENCE_REQUIRED'));
 });
 
-test('7F effect idempotency replay is deterministic and request-sensitive', async () => {
+test('effect idempotency replay is deterministic and request-sensitive', async () => {
   const base = {
     tenantId: 'tenant-7f',
     runId: 'run-7f',
@@ -236,7 +236,7 @@ test('7F effect idempotency replay is deterministic and request-sensitive', asyn
   assert.notEqual(changed, keys[0]);
 });
 
-test('7F persisted host state is metadata-only and rejects raw or sensitive browser content', () => {
+test('persisted host state is metadata-only and rejects raw or sensitive browser content', () => {
   const metadata = {
     tenantId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     runId: '11111111-1111-4111-8111-111111111111',

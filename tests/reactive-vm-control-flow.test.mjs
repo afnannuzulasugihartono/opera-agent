@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: reactive-vm-7c.test — vm-7c.test — Test.
+// @last-edited: 2026-10-04 18:32 UTC+7.
+// @title: reactive-vm-control-flow — control-flow opcodes LOOP, UNTIL, WAIT_EVENT, RETRY.
 // @context: Test.
-// @state: fix(perf): make the 7C transition regression gate measure regression, not scheduler noise.
-// @updated: every file carries Last edited, Title, Purpose and Now
+// @state: Control flow executes bounded programs and stays compatible with the older core.
+// @updated: milestone labels out of file names and titles; program IDs renamed.
 // @dependencies: strict, node:fs, node:perf_hooks, node:test, goal-ledger, reactive-vm, reactive-vm-7c.
 
 import assert from 'node:assert/strict';
@@ -45,7 +45,7 @@ const budgets = Object.freeze({
   runDeadlineMs: 300000,
 });
 
-async function makeProgram(root, programId = 'vm-7c-program', overrides = {}) {
+async function makeProgram(root, programId = 'vm-flow-program', overrides = {}) {
   const program = {
     schemaVersion: 'OA_REACTIVE_VM_V1',
     programId,
@@ -63,7 +63,7 @@ async function makeProgram(root, programId = 'vm-7c-program', overrides = {}) {
   return program;
 }
 
-function options(runId = 'run-7c', initialBindings = {}) {
+function options(runId = 'flow-run', initialBindings = {}) {
   return {
     runId,
     tenantId: 'tenant-test',
@@ -107,7 +107,7 @@ async function advanceUntilEffect(program, state, logicalNowMs) {
   throw new Error('effect was not reached within bounded steps');
 }
 
-test('7C LOOP executes exactly its declared bound and 7B programs remain valid', async () => {
+test('LOOP executes exactly its declared bound and older core programs remain valid', async () => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -124,12 +124,12 @@ test('7C LOOP executes exactly its declared bound and 7B programs remain valid',
   assert.equal(state.result, 'done');
   assert.equal(state.counters.totalIterations, 3);
 
-  const legacy = await makeProgram({ type: 'RETURN', valueSpec: { op: 'CONST', value: 7 } }, 'legacy-7b');
-  assert.equal((await create7B(legacy, options('legacy-7b-run'))).status, 'READY');
-  assert.equal((await createReactiveVm7C(legacy, options('legacy-7c-run'))).status, 'READY');
+  const legacy = await makeProgram({ type: 'RETURN', valueSpec: { op: 'CONST', value: 7 } }, 'legacy-core');
+  assert.equal((await create7B(legacy, options('legacy-core-run'))).status, 'READY');
+  assert.equal((await createReactiveVm7C(legacy, options('legacy-flow-run'))).status, 'READY');
 });
 
-test('7C UNTIL re-evaluates typed observation bindings and reports exact exhaustion', async () => {
+test('UNTIL re-evaluates typed observation bindings and reports exact exhaustion', async () => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -176,7 +176,7 @@ test('7C UNTIL re-evaluates typed observation bindings and reports exact exhaust
   assert.equal(limited.suspension.context.conditionMet, false);
 });
 
-test('7C WAIT_EVENT uses bounded polling, ephemeral observation scope, and forced-clock timeout', async () => {
+test('WAIT_EVENT uses bounded polling, ephemeral observation scope, and forced-clock timeout', async () => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -226,7 +226,7 @@ test('7C WAIT_EVENT uses bounded polling, ephemeral observation scope, and force
   assert.equal(timedOut.state.suspension.context.conditionMet, false);
 });
 
-test('7C RETRY retries only structured transient observation failures', async () => {
+test('RETRY retries only structured transient observation failures', async () => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -262,7 +262,7 @@ test('7C RETRY retries only structured transient observation failures', async ()
   assert.equal(state.counters.retryAttempts, 2);
 });
 
-test('7C ambiguous, authorization, stale, invalid, and contradiction failures never retry', async () => {
+test('ambiguous, authorization, stale, invalid, and contradiction failures never retry', async () => {
   const reasons = [
     ['AMBIGUOUS_COMPLETION', 'UNEXPECTED_STATE'],
     ['AUTHORIZATION_FAILED', 'MISSING_AUTHORITY'],
@@ -289,7 +289,7 @@ test('7C ambiguous, authorization, stale, invalid, and contradiction failures ne
   }
 });
 
-test('7C exhausted retry reports exact cap and never exceeds declared attempts', async () => {
+test('exhausted retry reports exact cap and never exceeds declared attempts', async () => {
   const program = await makeProgram({
     type: 'RETRY',
     policy: { attempts: 3, delayMs: 0 },
@@ -313,7 +313,7 @@ test('7C exhausted retry reports exact cap and never exceeds declared attempts',
   assert.equal(state.counters.commandLeaves, 3);
 });
 
-test('7C enforces declared loop/wait/retry budgets, monotonic time, and rejects 7D opcodes', async () => {
+test('enforces declared loop/wait/retry budgets, monotonic time, and rejects COLLECT opcodes', async () => {
   const loop = await makeProgram({
     type: 'LOOP', maxIterations: 2,
     body: { type: 'ASSERT', predicate: { op: 'CONST', value: true }, onFailure: 'FAIL' },
@@ -342,7 +342,7 @@ test('7C enforces declared loop/wait/retry budgets, monotonic time, and rejects 
   await assertVmError('INVALID_SEMANTICS', () => createReactiveVm7C(collect, options('later-collect-run', { items: [] })));
 });
 
-test('7C cancellation wins at pending-effect, wait, and retry-delay boundaries', async () => {
+test('cancellation wins at pending-effect, wait, and retry-delay boundaries', async () => {
   const retryProgram = await makeProgram({
     type: 'RETRY', policy: { attempts: 3, delayMs: 100 },
     body: { type: 'COMMAND', method: 'page.read', arguments: { tabId: 7 }, resultBinding: 'x' },
@@ -371,7 +371,7 @@ test('7C cancellation wins at pending-effect, wait, and retry-delay boundaries',
   assert.equal(cancelledWait.state.status, 'CANCELLED');
 });
 
-test('7C fuzzed bounded loops and forced clock jumps always terminate', async () => {
+test('fuzzed bounded loops and forced clock jumps always terminate', async () => {
   let seed = 0x7c0ffee;
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -408,7 +408,7 @@ test('7C fuzzed bounded loops and forced clock jumps always terminate', async ()
   }
 });
 
-test('7C ordinary 7B-compatible transition p95 regression stays below 15% on the same runner', async (t) => {
+test('ordinary compatible-transition p95 regression stays below 15% on the same runner', async (t) => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -432,7 +432,7 @@ test('7C ordinary 7B-compatible transition p95 regression stays below 15% on the
   //    scheduler and GC noise and its upper tail has nothing to do with the
   //    implementation.
   // The median of paired ratios measures the same thing the gate is for — the
-  //  central regression of 7C against 7B — while cancelling drift between the
+  // central regression of the new control flow against the older core — while
   // two members of each pair. The 15% budget is unchanged; only the estimator
   // is made sound. A genuine 20% regression still moves the median and fails.
   const ratios = [];
@@ -459,14 +459,14 @@ test('7C ordinary 7B-compatible transition p95 regression stays below 15% on the
   ratios.sort((a, b) => a - b);
   const median = ratios[Math.floor(ratios.length * 0.5)];
   t.diagnostic(
-    `Checkpoint 7C transition timing: medianB=${baseline[Math.floor(baseline.length * 0.5)].toFixed(4)} ms `
+    `Control-flow transition timing: medianB=${baseline[Math.floor(baseline.length * 0.5)].toFixed(4)} ms `
     + `medianC=${candidate[Math.floor(candidate.length * 0.5)].toFixed(4)} ms `
     + `pairedMedian=${median.toFixed(3)} (p95B=${p95B.toFixed(4)} p95C=${p95C.toFixed(4)} for reference)`
   );
   assert.ok(median < 1.15, `ordinary transition regression ${(median * 100 - 100).toFixed(2)}% must stay below 15%`);
 });
 
-test('7C latency gate uses the median of paired ratios, not a flaky tail statistic', () => {
+test('latency gate uses the median of paired ratios, not a flaky tail statistic', () => {
   // Regression guard for the gate itself. Two earlier estimators were measured
   // and rejected with real numbers, and this test exists so the repair is not
   // quietly reverted to a form that flakes:
@@ -476,7 +476,7 @@ test('7C latency gate uses the median of paired ratios, not a flaky tail statist
   const source = fs.readFileSync(new URL(import.meta.url), 'utf8');
   // Bound the slice to the timing test only. Slicing to end-of-file would make
   // this test match the regex literals inside its own body.
-  const gateStart = source.indexOf('7C ordinary 7B-compatible transition p95 regression stays below 15%');
+  const gateStart = source.indexOf('ordinary compatible-transition p95 regression stays below 15%');
   const gateEnd = source.indexOf('\ntest(', gateStart + 10);
   const block = source.slice(gateStart, gateEnd > gateStart ? gateEnd : source.length);
   assert.match(block, /const median = ratios\[Math\.floor\(ratios\.length \* 0\.5\)\]/);
@@ -497,7 +497,7 @@ test('7C latency gate uses the median of paired ratios, not a flaky tail statist
   assert.ok(medianOf(healthyWithOutliers) < 1.15, 'isolated outliers must not fail the budget');
 });
 
-test('7C runtime layer remains pure and environment-neutral', () => {
+test('runtime layer remains pure and environment-neutral', () => {
   const source = fs.readFileSync(new URL('../lib/reactive-vm-7c.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /(?:globalThis\.(?:fetch|WebSocket|chrome|browser)|Deno\.serve|process\.env|createClient\s*\()/);
   assert.doesNotMatch(source, /\b(?:eval|Function)\s*\(/);
