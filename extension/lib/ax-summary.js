@@ -32,6 +32,7 @@ export const AX_SUMMARY_LIMITS = Object.freeze({
 // thing such a page exposes. A generic node WITH a name is still information; an
 // unnamed one is noise and is dropped below by the empty-name check, which is
 // also where RootWebArea-only noise ends up.
+
 const SKIP_ROLES = new Set(['RootWebArea', 'InlineTextBox', 'none', 'presentation']);
 const EDITABLE_ROLES = new Set(['textbox', 'searchbox', 'spinbutton', 'combobox', 'entry']);
 

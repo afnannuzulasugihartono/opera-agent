@@ -37,6 +37,7 @@ function axNode(partial = {}) {
 
 // Probe-derived tree: canvas application + visually-hidden mirror text +
 // icon-only toolbar + an editable field whose VALUE must never surface.
+
 function probeTree() {
   return [
     axNode({ nodeId: '1', role: 'RootWebArea', name: 'AX probe' }),

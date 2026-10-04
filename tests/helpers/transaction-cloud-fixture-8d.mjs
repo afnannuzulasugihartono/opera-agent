@@ -8,6 +8,7 @@
 // Test-only DATA builder, not authentication, enrollment, SQL or a cloud runner.
 // userId must come from independently verified OAuth in the future operator
 // harness. This module does not establish that trust or grant browser authority.
+
 import { transactionFixture } from './transaction-dark-fixture.mjs';
 import { digestCanonical } from '../../lib/goal-ledger.js';
 import { CLIENT_ID } from './transaction-oauth-8d.mjs';

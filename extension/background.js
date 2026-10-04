@@ -23,15 +23,19 @@ import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './l
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
+
 // R9-C: the same file the content script loads via the manifest. It declares no
 // export statements, so this is a valid side-effect import that publishes the
 // pure helpers on globalThis — one source of truth for both contexts, and no
 // second, drifting copy of the role table.
+
 import './role-reconcile.js';
 const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRoleReconcile || {};
+
 // Agent log: same no-export pattern as role-reconcile.js — the manifest
 // loads it first for classic content scripts; this side-effect import
 // publishes it for the module service worker.
+
 import './lib/agent-log.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
@@ -47,6 +51,7 @@ import {
 // Without this, a cached `attached: true` outlives the debugger: if the user
 // opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
 // the session and every later CDP call in it fails against a dead debugger.
+
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel'];
@@ -59,9 +64,11 @@ const MAX_SCREENSHOT_BYTES = 220 * 1024;
 const SCREENSHOT_CACHE_MS = 750;
 const SCREENSHOT_CACHE_LIMIT = 8;
 const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
+
 // U-P1 (research P1): canvas-class pages expose almost no DOM text while their
 // accessibility tree still carries state. A read this text-poor attaches a
 // bounded read-only axSummary; rich pages keep the unchanged fast path.
+
 const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 
 let loopPromise = null;
@@ -84,6 +91,7 @@ function sleep(ms) {
 // the refusal reached the caller as a hard EXECUTION_ERROR, so an unattended run
 // that overlapped one died on a transient browser state. Linear backoff because
 // the drag is already underway. Any other error propagates on the first attempt.
+
 const TAB_DRAG_ATTEMPTS = 6;
 const TAB_DRAG_BACKOFF_MS = 250;
 

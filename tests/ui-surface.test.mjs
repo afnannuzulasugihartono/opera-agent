@@ -60,6 +60,7 @@ const surfaces = [
 
 // Matches `<name ...>` allowing quoted attribute values, so a `>` inside an
 // attribute cannot truncate the match.
+
 const tagPattern = (name) => new RegExp(`<${name}\\b(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi');
 
 function tags(src, name) {

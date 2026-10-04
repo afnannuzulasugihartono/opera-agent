@@ -7,6 +7,7 @@
 
 -- Opt-in authorized synthetic database boundary probe; no OAuth/browser claims.
 -- No DDL, auth/session writes, runtime changes or persistent DARK state.
+
 begin;
 set local statement_timeout='10s';
 set local lock_timeout='3s';
@@ -43,7 +44,9 @@ begin
     then raise exception 'PENDING_RELEASE_FAILED'; end if; gates:=gates+1;
 
   p:='m8d_bounds_prepare_rate';
+
   -- Pin each synthetic boundary in its actual database minute; not rollover proof.
+
   for i in 1..20 loop
     insert into opera_agent_tx_candidate.rates values(p,date_trunc('minute',clock_timestamp()),i-1,0)
       on conflict(tenant_id) do update set window_start=excluded.window_start,prepares=excluded.prepares;

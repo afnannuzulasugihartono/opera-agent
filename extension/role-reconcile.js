@@ -40,6 +40,7 @@
 //   and never makes an element clickable; it only annotates a role fact.
 // - An ambiguous name (two different AX roles share it) is never adopted.
 // - A sensitive element is never annotated at all.
+
 (() => {
   'use strict';
   if (globalThis.OperaAgentRoleReconcile) return;

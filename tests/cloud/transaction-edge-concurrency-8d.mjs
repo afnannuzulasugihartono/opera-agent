@@ -8,6 +8,7 @@
 // Explicit opt-in Checkpoint 8D real Edge concurrency acceptance probe.
 // Acceptance/test infrastructure only: no browser primitive, MCP/runtime change,
 // public schema change, arbitrary SQL, or secret output is introduced here.
+
 import { join } from 'node:path';
 import { Buffer } from 'node:buffer';
 import { createCloudAcceptanceController8D } from '../helpers/transaction-cloud-controller-8d.mjs';

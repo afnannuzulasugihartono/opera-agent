@@ -1,9 +1,9 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: hygiene.test — Test..
+// @last-edited: 2026-10-04 19:24 UTC+7.
+// @title: hygiene — runtime properties and the comment-spacing rule.
 // @context: Test.
-// @state: Test..
-// @updated: every file carries Last edited, Title, Purpose and Now
-// @dependencies: node:test, strict, promises, focus-gate.
+// @state: The memoized read path and the blank-line comment rule are both locked.
+// @updated: comment-spacing lock added, shared classifier extracted.
+// @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
 
 // Properties that keep the runtime code correct as it grows, and that the code
 // itself violated when first written.
@@ -13,12 +13,17 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { readFile, readdir } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { FOCUS_GATE_ATTEMPTS } from '../extension/lib/focus-gate.js';
+import { spacingViolations } from './helpers/comment-spacing.mjs';
 
 // Recursively collect the code files under a directory. The dead-export guard
 // below needs every runtime module and every test as a consumer, and it must
 // discover new files rather than carry a list that goes stale.
+
 const collectTests = async (dir) => {
   const out = [];
   for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
@@ -37,6 +42,24 @@ await import('../extension/role-reconcile.js');
 await import('../extension/hover-settle.js');
 
 const background = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+
+test('every comment block has a blank line before and after it', async () => {
+  const root = new URL('..', import.meta.url);
+  const files = execFileSync('git', ['ls-files'], { cwd: fileURLToPath(root), encoding: 'utf8' })
+    .split('\n')
+    .filter(Boolean)
+    // Migrations are applied artifacts and must never be rewritten; JSON has no
+    // comments, and the lockfiles beside them are generated.
+    .filter((f) => !f.startsWith('supabase/migrations/'))
+    .filter((f) => f !== 'LICENSE')
+    .filter((f) => !/\.(?:json|lock)$/.test(f));
+  const violations = [];
+  for (const file of files) {
+    const text = await readFile(new URL(file, root), 'utf8');
+    violations.push(...spacingViolations(file, text, path.extname(file).toLowerCase()));
+  }
+  assert.deepEqual(violations, [], violations.slice(0, 12).join('\n'));
+});
 
 test('a read is serialized once, not once per size check', () => {
   // page.read measures the result against the ceiling and the dispatcher then

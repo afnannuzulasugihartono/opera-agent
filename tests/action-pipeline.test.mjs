@@ -63,6 +63,7 @@ test('attachResolution adds resolved and omits absent verified', () => {
 });
 
 // --- Task 2: content resolver source-contract ---
+
 import fs from 'node:fs';
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 

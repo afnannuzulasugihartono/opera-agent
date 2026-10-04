@@ -24,6 +24,7 @@ import { TRANSACTION_8B_LIMITS,createTransactionPreview } from '../../lib/transa
 import { createApprovalChallenge,createModernApprovalRequest,verifyModernApprovalResponse } from '../../lib/transaction-authority.js';
 
 // Mandatory real native PostgreSQL gate. Missing tooling is a failure, not a skip.
+
 const run = promisify(execFile);
 const bin = process.env.OPERA_PG_BIN;
 if (!bin || !path.isAbsolute(bin)) throw new Error('Set OPERA_PG_BIN to native PostgreSQL bin directory.');

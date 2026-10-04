@@ -6,6 +6,7 @@
 // @dependencies: node:child_process, node:util, node:path, node:crypto, canonical-order.
 
 // Synthetic native journal worker only, NEVER a production runner.
+
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import path from 'node:path';

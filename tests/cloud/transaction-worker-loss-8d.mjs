@@ -8,6 +8,7 @@
 // Explicit opt-in Checkpoint 8D hosted child-worker death/reclaim acceptance probe.
 // Test infrastructure only: fixed project, fixed SQL, synthetic rows, no OAuth,
 // browser dispatch, extension/MCP mutation, or secret printing.
+
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 

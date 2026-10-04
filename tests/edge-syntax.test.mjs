@@ -12,6 +12,7 @@ import { readFile } from 'node:fs/promises';
 // Frozen contract: every edge-function entrypoint must parse under Deno.
 // node --check exits 0 on broken .ts (verified 2026-09-30), so this test
 // scans the string-literal structure instead of executing code.
+
 test('mcp instructions literal has no unescaped quotes', async () => {
   const source = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   const line = source.split('\n').find((l) => l.includes('instructions: "Use Opera Agent'));

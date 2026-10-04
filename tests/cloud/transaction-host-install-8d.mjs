@@ -6,6 +6,7 @@
 // @dependencies: strict.
 
 // Explicit opt-in, read-only HTTP probe. No prepare/cancel/approval/browser calls.
+
 import assert from 'node:assert/strict';
 const mode=process.argv[2];
 assert.ok(mode==='OFF'||mode==='DARK','Specify OFF or DARK for the bounded probe');

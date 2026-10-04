@@ -28,6 +28,7 @@ const DEFAULT_ERROR_MESSAGE = 'Deadline exceeded.';
  * Throwing synchronously from `work()` propagates to the caller exactly as it
  * did before this helper existed, so error semantics are unchanged.
  */
+
 export async function raceWithTimeout(work, timeoutMs, makeError) {
   const build = typeof makeError === 'function' ? makeError : () => new Error(DEFAULT_ERROR_MESSAGE);
   let timer;

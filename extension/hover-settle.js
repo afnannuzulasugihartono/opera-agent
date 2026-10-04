@@ -24,6 +24,7 @@
 // - an `aria-expanded` flip is itself a settle signal
 // - it always terminates: a timeout returns a reason, never an exception
 // - it NEVER clicks; this module has no input capability at all
+
 (() => {
   'use strict';
   if (globalThis.OperaAgentHoverSettle) return;

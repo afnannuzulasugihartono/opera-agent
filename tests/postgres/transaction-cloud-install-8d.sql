@@ -8,6 +8,7 @@
 -- Bounded synthetic cloud primitive probe; not hosted OAuth/approval acceptance.
 -- Run only after explicit installation authority. No auth/session/browser writes.
 -- All changes, including DARK policy, roll back in this same short transaction.
+
 begin;
 set local statement_timeout='10s';
 set local lock_timeout='3s';

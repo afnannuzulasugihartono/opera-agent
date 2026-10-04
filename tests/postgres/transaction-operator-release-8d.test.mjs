@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import net from 'node:net';
 
 // Opt-in real PostgreSQL gate; absence of native tools is a failure, not a skip.
+
 const bin=process.env.OPERA_PG_BIN;
 assert.ok(bin,'OPERA_PG_BIN is required for the native release gate');
 const exe=name=>join(bin,name+(process.platform==='win32'?'.exe':''));

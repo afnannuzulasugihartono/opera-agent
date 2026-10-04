@@ -108,12 +108,17 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
 
 // The only tool whose schema the R9-B keyboard commit changed. Everything else
 // must stay byte-identical, so an unrelated schema edit cannot ride along.
+
 const R9B_CHANGED_TOOL = 'press_key';
+
 // The press_key digest before R9-B, kept so the record of the change is visible
 // and a silent revert cannot be mistaken for "nothing ever changed".
+
 const PRE_R9B_PRESS_KEY_DIGEST = '41a4003cadb60196';
+
 // R9-E then added the hover burst step, which lives inside run_browser_burst's
 // schema rather than in a tool of its own.
+
 const R9E_CHANGED_TOOL = 'run_browser_burst';
 
 function instructions() {

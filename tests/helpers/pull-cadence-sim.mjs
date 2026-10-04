@@ -26,6 +26,7 @@
  * Measured by tests/latency-surface.test.mjs section B when it was recorded:
  * 14 claim calls per 12s window, p50 queue wait 830ms, p95 1910ms.
  */
+
 export const RECORDED_BRIDGE_CADENCE = Object.freeze({
   fastPolls: 8,
   fastIntervalMs: 50,
@@ -37,6 +38,7 @@ export const RECORDED_BRIDGE_CADENCE = Object.freeze({
  *  drift away from the cadence the extension actually experiences. Returns null
  *  when the bridge no longer declares a client-side cadence, which is the state
  *  after 2026-10-02. */
+
 export function readCadenceConstants(bridgeSource) {
   const read = (name) => {
     const match = bridgeSource.match(new RegExp(`const\\s+${name}\\s*=\\s*(\\d+)\\s*;`));

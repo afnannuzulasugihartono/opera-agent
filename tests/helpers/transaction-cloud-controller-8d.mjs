@@ -8,6 +8,7 @@
 // LOCAL acceptance orchestration only. Operator adapters must be installed by
 // trusted test code, NEVER HTTP/MCP/page/model input. No real operator adapter,
 // durable supervisor or production probe is shipped by this module.
+
 import { Buffer } from 'node:buffer';
 import { createCloudFixtureData8D } from './transaction-cloud-fixture-8d.mjs';
 import { ISSUER, CLIENT_ID } from './transaction-oauth-8d.mjs';

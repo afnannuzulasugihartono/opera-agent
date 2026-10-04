@@ -8,6 +8,7 @@
 // Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit.
 // The environment flag is only a static deployment/master kill switch. Per-run
 // DARK admission is controlled by the service-only database operator fence.
+
 import {createClient} from "@supabase/supabase-js";
 import {createTransactionDarkHost} from "../../../lib/transaction-host-8d.js";
 import {createTransactionDarkHttpHandler} from "../../../lib/transaction-http-8d.js";

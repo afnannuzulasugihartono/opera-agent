@@ -13,6 +13,7 @@ import { sealLedgerToken } from '../lib/ledger-token.js';
 import { openTransactionToken } from '../lib/transaction-token-8d.js';
 
 // Boundary unit doubles only; native/host/live gates must be tracked separately.
+
 function fixture(){
   const calls=[];
   const client={auth:{getClaims:async()=>({data:{claims:{iss:'https://example.supabase.co/auth/v1',aud:'authenticated',role:'authenticated',sub:'user_a',client_id:'client_a',session_id:'session_a',iat:1,exp:9999999999}}}),getUser:async()=>({data:{user:{id:'user_a'}}})},rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='opera_tx_identity_read'?{tenant_id:'tenant_a',actor_id:'synthetic_a',user_id:'user_a',oauth_client_id:'client_a'}:null};}};

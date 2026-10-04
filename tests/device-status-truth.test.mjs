@@ -45,6 +45,7 @@ const runbook = await readFile(new URL('docs/runbook.md', repoRoot), 'utf8');
 // lock that tried to follow values would have to model evaluation, and a lock that
 // guessed would fail on correct code. What this DOES catch is the plain and
 // overwhelmingly likely form, which is the form the audit request proposes.
+
 const DISABLE_WRITER = [
   // Raw SQL assignment: status = 'disabled' / status='disabled' / status = "disabled".
   // A read filter (`where status = 'disabled'`) is excluded, because the repository

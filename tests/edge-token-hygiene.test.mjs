@@ -16,6 +16,7 @@ import { readFile } from 'node:fs/promises';
 // loudly instead of leaking silently. The four functions are the
 // token-handling surfaces audited under spec R1
 // (docs/superpowers/specs/2026-10-02-enterprise-security-phase4-design.md).
+
 const FUNCTIONS = [
   'opera-agent-gateway',
   'opera-agent-mcp',
@@ -26,11 +27,13 @@ const FUNCTIONS = [
 // Token-material identifiers that must never appear inside a log call.
 // Case-sensitive on purpose: `code`/`message`/`error` literals stay legal,
 // and `\breq\b` does not match inside `request`.
+
 const TOKEN_MATERIAL = /\b(?:token|apiKey|authorization|body|headers|req)\b/;
 const CONSOLE_CALL = /console\.(?:error|warn|log|debug)\s*\(/g;
 
 // String-aware balanced-delimiter span: returns [start, end] of the
 // bracketed expression beginning at openIdx, or null when unbalanced.
+
 function balanced(source, openIdx, open, close) {
   let quote = null;
   let depth = 0;
@@ -56,6 +59,7 @@ function lineOf(source, offset) {
 }
 
 // Every console.(error|warn|log|debug)(...) call expression in the source.
+
 function consoleCalls(source) {
   const calls = [];
   for (const m of source.matchAll(CONSOLE_CALL)) {

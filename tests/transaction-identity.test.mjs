@@ -10,6 +10,7 @@ import test from 'node:test';
 import { createSupabaseTransactionIdentity } from '../lib/transaction-identity-8d.js';
 
 // Protocol unit doubles, NOT evidence of real Supabase OAuth acceptance.
+
 const NOW='2026-09-13T00:00:00.000Z';
 function fixture() {
   const state={claims:{iss:'https://example.supabase.co/auth/v1',aud:'authenticated',role:'authenticated',sub:'user_a',client_id:'client_a',session_id:'session_a',iat:Date.parse(NOW)/1000-1,exp:Date.parse(NOW)/1000+60},user:{id:'user_a'},principal:{tenant_id:'tenant_a',actor_id:'synthetic_a',user_id:'user_a',oauth_client_id:'client_a'}};

@@ -6,6 +6,7 @@
 // @dependencies: transaction-oauth-8d, node:buffer, canonical-order.
 
 // Test-only in-process adapter. No enrollment, private RPC, prepare/cancel/approval.
+
 import { ISSUER,CLIENT_ID } from './transaction-oauth-8d.mjs';
 import { Buffer } from 'node:buffer';
 import { codeUnitCompare } from '../../lib/canonical-order.js';

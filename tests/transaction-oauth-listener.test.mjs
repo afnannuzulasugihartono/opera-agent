@@ -12,6 +12,7 @@ import { request } from 'node:http';
 import { startOAuthListener } from './helpers/transaction-oauth-listener-8d.mjs';
 
 // Node fetch does not preserve the test's explicit physical/logical Host override.
+
 const localFetch=(url,{headers}={})=>new Promise((resolve,reject)=>{
   const req=request(url,{headers},res=>{
     let body='';res.setEncoding('utf8');res.on('data',chunk=>{body+=chunk;});

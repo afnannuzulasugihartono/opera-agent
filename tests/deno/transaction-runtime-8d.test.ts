@@ -10,8 +10,10 @@ import {createSupabaseTransactionIdentity} from "../../lib/transaction-identity-
 import {createTransactionDarkHost} from "../../lib/transaction-host-8d.js";
 import {createTransactionDarkHttpHandler} from "../../lib/transaction-http-8d.js";
 const assert=(value:unknown)=>{if(!value)throw new Error("ASSERTION_FAILED");};
+
 // Actual pinned SDK/runtime, but invalid synthetic credentials only.
 // Tests run without network permission; not a live OAuth acceptance claim.
+
 Deno.test("8D pinned Supabase SDK rejects malformed signed identity before RPC",async()=>{
   const client=createClient("https://example.supabase.co","synthetic-service-key",{auth:{persistSession:false,autoRefreshToken:false}});
   const result=await client.auth.getClaims("synthetic-invalid-token");

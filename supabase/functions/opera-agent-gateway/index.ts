@@ -32,6 +32,7 @@ const CORS_BASE_HEADERS = {
 // Fail-closed CORS: the allow origin is echoed ONLY for exact allowlist
 // matches (CORS_ALLOWED_ORIGINS env override, else the extension + consent
 // page defaults). A missing or non-allowlisted Origin gets no ACAO header.
+
 function corsHeaders(req: Request): Record<string, string> {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   return origin === null

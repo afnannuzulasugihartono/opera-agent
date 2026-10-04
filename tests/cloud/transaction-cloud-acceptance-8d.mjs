@@ -9,6 +9,7 @@
 // Run only after the exact candidate has an independent PASS. This file is test
 // infrastructure, not extension/MCP/Edge runtime. It never stores or prints the
 // Management credential, PKCE verifier, OAuth bearer, ledger key, or payload token.
+
 import { join } from 'node:path';
 import { createCloudAcceptanceController8D } from '../helpers/transaction-cloud-controller-8d.mjs';
 import { createManagementOperatorBackend8D } from '../helpers/transaction-cloud-management-backend-8d.mjs';

@@ -35,6 +35,7 @@
  * @param {'sql'|'javascript'} kind
  * @returns {string} the source with comments blanked, same length and line count
  */
+
 export function stripComments(src, kind) {
   const out = [];
   let i = 0;
@@ -137,6 +138,7 @@ export function stripComments(src, kind) {
  * @param {string[]} extensions
  * @returns {Promise<Array<{name: string, url: URL, src: string}>>}
  */
+
 export async function collectSources(dir, extensions) {
   const { readdir, readFile } = await import('node:fs/promises');
   const out = [];

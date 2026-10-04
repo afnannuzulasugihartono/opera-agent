@@ -19,6 +19,7 @@ import { BURST_ACTION_METHODS, BURST_STEP_KEYS, validateBurst } from '../extensi
 
 // extension/hover-settle.js is a classic content script with no export
 // statements, so it is imported for its side effect and read off globalThis.
+
 await import('../extension/hover-settle.js');
 const { DEFAULTS, normalize, plan } = globalThis.OperaAgentHoverSettle;
 

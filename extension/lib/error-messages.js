@@ -14,6 +14,7 @@
 // internals never reach the popup label. The two options-page keys below are
 // client-side settings validation literals thrown by `lib/options-store.js`
 // (static, authored here, safe to surface), not backend internals.
+
 const KNOWN = new Map([
   ['Pairing failed.', 'Pairing failed. Check the code and try again.'],
   ['Unable to update tab privacy.', 'Could not update this tab. Try reloading the page.'],

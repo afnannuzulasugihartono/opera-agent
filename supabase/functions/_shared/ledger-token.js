@@ -25,10 +25,12 @@ export class LedgerTokenError extends Error {
     this.code = code;
   }
 }
+
 /**
  * @returns {never} Always throws; annotated so Deno infers that callers
  * never fall through (otherwise token openers look nullable).
  */
+
 function fail(code, message) {
   throw new LedgerTokenError(code, message);
 }

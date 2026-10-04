@@ -43,12 +43,14 @@ env:
 
 defaults:
   run:
+
     # WHY pwsh. The bare name `bash` resolves to C:\Windows\System32\bash.exe, the WSL
     # launcher, and this runner has no WSL distribution: every job died in under a
     # second with "Windows Subsystem for Linux has no installed distributions" without
     # running a command. Pointing at Git Bash instead failed differently, on MSYS path
     # mangling of the runner's own arguments. PowerShell 7 is installed and needs no
     # path translation, so the steps are written for it.
+
     shell: pwsh
 
 concurrency:
@@ -77,9 +79,11 @@ jobs:
       - name: Secret scan (gitleaks)
         run: |
           $ErrorActionPreference = 'Stop'
+
           # WHY zip and not tar.gz: gitleaks publishes windows_x64 as a zip. The
           # tar.gz name 404s, and the step had never run before because the shell
           # itself was broken, so the wrong name went unnoticed.
+
           $version = '8.24.0'
           $zip = Join-Path $env:RUNNER_TEMP 'gitleaks.zip'
           $bin = Join-Path $env:RUNNER_TEMP 'gitleaks-bin'
@@ -92,6 +96,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
       # WHY no setup-python: on this host the python.org installer never completes.
       # It has sat at zero CPU for over two hours holding the only runner, and
       # because there is a single runner that also blocked the unit and secret-scan
@@ -99,6 +104,7 @@ jobs:
       # with playwright on the user PATH, and `py` resolves to it, so the harness
       # runs the same code against the same interpreter the local gates use.
       # Restore the pin once the installer works on this machine.
+
       - name: Show the interpreter the harness will use
         run: |
           py -c "import sys, playwright; print(sys.version.split()[0], 'playwright ok')"

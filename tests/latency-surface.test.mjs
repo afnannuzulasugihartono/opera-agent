@@ -48,6 +48,7 @@ const etw = fs.readFileSync(
 );
 
 // Phase B Task 1: the sleep moved into Postgres, so one HTTP call per window.
+
 const claimWaitUrl = new URL(
   '../supabase/migrations/20261002090000_opera_agent_claim_wait.sql',
   import.meta.url
@@ -55,6 +56,7 @@ const claimWaitUrl = new URL(
 const claimWaitSql = fs.existsSync(claimWaitUrl) ? fs.readFileSync(claimWaitUrl, 'utf8') : null;
 
 // Phase B Task 3: four SQL-side corrections, one migration.
+
 const budgetRampUrl = new URL(
   '../supabase/migrations/20261003110000_opera_agent_claim_budget_and_wait_ramp.sql',
   import.meta.url
@@ -69,13 +71,17 @@ const restoreRunFastUrl = new URL(
 // The bridge delegates this wait to Postgres, so "before" is measured from a
 // recorded baseline, not live source. Pinned in
 // tests/helpers/pull-cadence-sim.mjs to stay reproducible.
+
 const recordedCadence = RECORDED_BRIDGE_CADENCE;
+
 // Assumed cost of one `opera_claim_next` round trip. Reported at three values
 // because the real figure is unmeasured; section B's conclusions hold across all.
+
 const RPC_COSTS_MS = [10, 20, 50];
 
 // Shared by B (what the old cadence cost) and C (what replaced it): identical
 // deterministic model, defined once so the two cannot drift apart.
+
 const clientSideBaseline = measureCadence(recordedCadence, { rpcMs: 20 });
 const claimWaitRamp = claimWaitSql ? readSqlRamp(claimWaitSql) : null;
 const serverSideCadence = claimWaitRamp
@@ -187,6 +193,7 @@ const BUDGETS_MS = {
 // --- A. the SQL wait inventory and what each loop costs ----------------------
 //
 // Every result wait in this system is a Postgres spin loop: `perform
+
 // pg_sleep(...)` inside plpgsql, re-reading the command row until it settles.
 // That design is CPU-cheap but it pins a pooled Postgres backend for the whole
 // wait and re-executes a SELECT once per sleep.

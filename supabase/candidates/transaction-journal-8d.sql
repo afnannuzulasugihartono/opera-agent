@@ -9,6 +9,7 @@
 -- Native PostgreSQL journal/CAS primitives. No browser/agent dispatch authority.
 -- Authenticated admission, actual ledger/source adapters and token verification
 -- must be connected by a separately audited host before production use.
+
 begin;
 create schema opera_agent_tx_candidate;
 revoke all on schema opera_agent_tx_candidate from public, anon, authenticated;
@@ -35,7 +36,9 @@ create table opera_agent_tx_candidate.rates (
   prepares integer not null default 0 check (prepares between 0 and 20),
   commits integer not null default 0 check (commits between 0 and 10)
 );
+
 -- Immutable server-owned synthetic fixtures. Never populated from user requests.
+
 create table opera_agent_tx_candidate.acceptance_bindings (
   tenant_id text not null,
   actor_id text not null,
@@ -89,7 +92,9 @@ create table opera_agent_tx_candidate.runs (
 );
 create index tx_candidate_pending on opera_agent_tx_candidate.runs(tenant_id,status);
 create index tx_candidate_retention on opera_agent_tx_candidate.runs(terminal_at,expires_at);
+
 -- Verified claim metadata only; never persist the OAuth bearer credential.
+
 create table opera_agent_tx_candidate.run_identities (
   tenant_id text not null,
   transaction_id text not null,
@@ -99,8 +104,10 @@ create table opera_agent_tx_candidate.run_identities (
 );
 create trigger immutable_run_identity before update on opera_agent_tx_candidate.run_identities
 for each row execute function opera_agent_tx_candidate.binding_immutable();
+
 -- Host validates the full 8B budget object; durable slices read only their
 -- applicable limits. Primitive-only local probes retain the frozen global caps.
+
 create table opera_agent_tx_candidate.run_limits (
   tenant_id text not null,
   transaction_id text not null,
@@ -120,8 +127,10 @@ begin
     or value::text::integer<1 or value::text::integer>p_global then raise exception 'LIMIT_REACHED'; end if;
   return value::text::integer;
 end $$;
+
 -- Bounded canonical serialization for closed ASCII-ID/digest preview/challenge
 -- schemas; not a general Unicode-normalization or executable-policy facility.
+
 create function opera_agent_tx_candidate.canonical_metadata(value jsonb,depth integer default 0)
 returns text language plpgsql immutable security invoker set search_path=pg_catalog as $$
 declare result text;
@@ -214,8 +223,10 @@ begin
   if not found then raise exception 'DARK_IDENTITY_REQUIRED'; end if;
   perform pg_advisory_xact_lock(hashtextextended(p_tenant,814));
 end $$;
+
 -- Fixed service-only bridge: keep private schema out of exposed Data API schemas.
 -- Read only session metadata columns; never grant token/HMAC/user-agent access.
+
 grant usage on schema auth to service_role;
 grant select(id,user_id,oauth_client_id,not_after) on auth.sessions to service_role;
 create function public.opera_tx_identity_read(p_user_id text,p_client_id text,p_session_id text)
@@ -234,9 +245,11 @@ begin
 end $$;
 revoke execute on function public.opera_tx_identity_read(text,text,text) from public,anon,authenticated;
 grant execute on function public.opera_tx_identity_read(text,text,text) to service_role;
+
 -- Definer solely to lock auth.sessions without granting service-role UPDATE on
 -- any auth column. Fixed SQL, fixed path, service-only execution, no dynamic SQL.
 -- Caller is trusted SDK host: these are verified claim metadata, not credentials.
+
 create function opera_agent_tx_candidate.assert_live_identity(p_tenant text,p_actor text,p_identity jsonb)
 returns void language plpgsql security definer set search_path=pg_catalog as $$
 declare principal opera_agent_tx_candidate.principals; session_found boolean; session_expiry timestamptz; stamp timestamptz;
@@ -252,7 +265,9 @@ begin
   if not found or principal.user_id is distinct from p_identity->>'userId'
     or principal.oauth_client_id is distinct from p_identity->>'oauthClientId' then raise exception 'AUTHENTICATION_REQUIRED'; end if;
   v_session_id:=p_identity->>'sessionId';v_auth_user_id:=principal.user_id;v_auth_client_id:=principal.oauth_client_id;
+
   -- Locks conflict with DELETE and identity/session expiry UPDATE until commit.
+
   select true,not_after into session_found,session_expiry from auth.sessions where id=v_session_id
     and user_id=v_auth_user_id and oauth_client_id=v_auth_client_id
     and (not_after is null or not_after>clock_timestamp()) for share;
@@ -447,9 +462,11 @@ begin
   insert into opera_agent_tx_candidate.journal(tenant_id,transaction_id,transition,material_digest,status) values(p_tenant,p_tx,3,r.fence_digest,r.status);
   return opera_agent_tx_candidate.snapshot(r);
 end $$;
+
 -- Local trusted-host primitive only: supplied approval/fence claims are NOT
 -- authenticated here. Host must verify challenge and current authority first.
 -- One SQL call makes consumption, validation marker and slot atomic; never dispatch.
+
 create function opera_agent_tx_candidate.finalize_dark(p_tenant text,p_actor text,p_tx text,p_epoch integer,p_fence text,p_nonce text,p_approval text,p_consumption text)
 returns jsonb language plpgsql security invoker set search_path=pg_catalog as $$
 begin
@@ -468,7 +485,9 @@ begin
   select * into r from opera_agent_tx_candidate.runs where tenant_id=p_tenant and actor_id=p_actor and transaction_id=p_tx for update;
   if not found then raise exception 'TRANSACTION_NOT_FOUND'; end if;
   if r.terminal_at is not null then return opera_agent_tx_candidate.snapshot(r,true); end if;
+
   -- In 8D no slot can be dispatched. Post-dispatch cancellation is 8E scope.
+
   stamp := clock_timestamp();
   update opera_agent_tx_candidate.runs set status='CANCELLED',terminal_at=stamp,payload_token=null,worker_id=null,lease_until=null,lease_epoch=lease_epoch+1,transition=transition+1
     where tenant_id=p_tenant and transaction_id=p_tx returning * into r;
@@ -495,11 +514,14 @@ begin
   ), removed as (
     delete from opera_agent_tx_candidate.rates rt using victims v where rt.tenant_id=v.tenant_id returning 1
   ) select count(*) into rates_deleted from removed;
+
   -- Bound root deletions; cascaded journal children are separately bounded by schema.
+
   return count_deleted+rates_deleted;
 end $$;
 
 -- Service-only metadata bridge. No prepare, approval or finalize request routing.
+
 create function public.opera_tx_binding_read(p_tenant text,p_actor text,p_tx text)
 returns jsonb language plpgsql security invoker set search_path=pg_catalog as $$
 declare result jsonb;
@@ -527,12 +549,16 @@ begin
     or b.metadata->'target' is distinct from p_prepared->'target' then raise exception 'AUTHORITY_NOT_RESOLVED'; end if;
   select * into r from opera_agent_tx_candidate.runs where tenant_id=p_tenant and transaction_id=tx for update;
   has_run:=found;
+
   -- Binding/head/run lock waits can outlive the verified credential or goal.
+
   perform opera_agent_tx_candidate.assert_live_identity(p_tenant,p_actor,p_identity);
   if h.expires_at<=clock_timestamp() then raise exception 'AUTHORITY_NOT_RESOLVED'; end if;
   if has_run then
+
     -- AES-GCM uses random IVs: authenticated identical prepared material may be
     -- resealed differently. Replay metadata, never replace/extend original payload.
+
     if r.actor_id is distinct from p_actor or r.prepare_digest is distinct from p_prepared->>'prepareDigest'
       or r.fence_digest is distinct from p_fence then raise exception 'IDEMPOTENCY_COLLISION'; end if;
     return opera_agent_tx_candidate.snapshot(r,true);
@@ -553,7 +579,9 @@ begin
   insert into opera_agent_tx_candidate.run_limits values(p_tenant,tx,limits);
   insert into opera_agent_tx_candidate.run_previews values(p_tenant,tx,jsonb_build_object(
     'previewDigest',opera_agent_tx_candidate.preview_digest(p_prepared),'goalRevision',p_prepared->'goalRevision','effectClass',p_prepared->'effectClass'));
+
   -- Validate all applicable durable limits before the transaction can commit.
+
   perform opera_agent_tx_candidate.tx_limit(p_tenant,tx,key,cap) from (values
     ('prepareLifetimeMs',600000),('totalTransactionLifetimeMs',600000),('approvalLifetimeMs',120000),
     ('approvalToDispatchMs',15000),('finalValidationToDispatchMs',5000),('commitCommandTimeoutMs',30000),
@@ -566,8 +594,10 @@ revoke execute on function public.opera_tx_binding_read(text,text,text) from pub
 revoke execute on function public.opera_tx_prepare_bound(text,text,jsonb,jsonb,text,text,text) from public,anon,authenticated;
 grant execute on function public.opera_tx_binding_read(text,text,text) to service_role;
 grant execute on function public.opera_tx_prepare_bound(text,text,jsonb,jsonb,text,text,text) to service_role;
+
 -- Internal challenge issuer; no first-party human transport is implemented in
 -- 8D. Only bounded server-owned synthetic challenges may be installed for probes.
+
 create function public.opera_tx_issue_bound(p_tenant text,p_actor text,p_tx text,p_epoch integer,p_fence text,p_challenge jsonb)
 returns jsonb language plpgsql security invoker set search_path=pg_catalog as $$
 declare r opera_agent_tx_candidate.runs; identity jsonb; preview jsonb; prior jsonb; h record; b opera_agent_tx_candidate.acceptance_bindings;
@@ -625,7 +655,9 @@ begin
 end $$;
 revoke execute on function public.opera_tx_issue_bound(text,text,text,integer,text,jsonb) from public,anon,authenticated;
 grant execute on function public.opera_tx_issue_bound(text,text,text,integer,text,jsonb) to service_role;
+
 -- Internal dark worker bridge only. Never included in HTTP/MCP user routing.
+
 create function public.opera_tx_finalize_bound(p_tenant text,p_actor text,p_tx text,p_epoch integer,p_fence text,p_nonce text,p_approval text,p_consumption text)
 returns jsonb language plpgsql security invoker set search_path=pg_catalog as $$
 declare b opera_agent_tx_candidate.acceptance_bindings; identity jsonb; h record; r opera_agent_tx_candidate.runs; challenge jsonb;
@@ -660,8 +692,10 @@ begin
     return opera_agent_tx_candidate.read_run(p_tenant,p_actor,p_tx);
   end if;
   if p_operation='cancel' then
+
     -- Lock tenant/run first, then check expiry immediately before mutation.
     -- OFF-mode cancellation remains available for safe rollback/cleanup.
+
     perform pg_advisory_xact_lock(hashtextextended(p_tenant,814));
     perform 1 from opera_agent_tx_candidate.runs where tenant_id=p_tenant and actor_id=p_actor and transaction_id=p_tx for update;
     perform opera_agent_tx_candidate.assert_live_identity(p_tenant,p_actor,p_identity);

@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-04 19:10 UTC+7.
 
 # Changelog
 
@@ -35,6 +35,16 @@ never implied by CI green.
 - **The MCP text stopped claiming a background pointer is invisible.** Three places
   said so, and it is false: the cursor is drawn in both modes. A model reading it would
   conclude it could not watch a run it is not present for.
+- **A `not-found` refusal says why the ref died.** It claimed the target never
+  appeared, which is false on any page that re-renders: the target appeared and its
+  node left the DOM. The refusal now carries `refState` (`detached` or
+  `unresolvable`) and names the recovery that works — find then click with
+  `refFromStep` inside one `browser.burst`. A caller that believed the old text
+  spent a second 7.5s deadline on the same dead ref.
+- **All three refusal sites build their error once.** They hand-copied the same field
+  list, so a new field reached one caller and was dropped by the others; the burst
+  path also dropped `candidates` from its message. Wait time and error codes are
+  unchanged.
 - **CI can no longer be blocked forever by one hung job.** Every job has a timeout and
   superseded runs are cancelled. CI acceptance is still unobtainable on this machine
   because the python.org installer hangs; see `[docs/HANDOFF.md](docs/HANDOFF.md)`.

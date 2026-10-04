@@ -6,6 +6,7 @@
 // @dependencies: supabase-js, transaction-oauth-8d, transaction-oauth-listener-8d, transaction-oauth-identity-8d.
 
 // Opt-in actual pinned SDK; no enrollment/private RPC/prepare/cancel/logout.
+
 import {createClient} from '@supabase/supabase-js';
 import {createOAuthProbe,ISSUER} from '../helpers/transaction-oauth-8d.mjs';
 import {startOAuthListener} from '../helpers/transaction-oauth-listener-8d.mjs';

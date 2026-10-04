@@ -15,6 +15,7 @@ import { stripComments } from './helpers/source-scan.mjs';
 // everything the gateway actually serves. The machine source of truth remains
 // the live GET /openapi.json; this test exists so narrative drift fails in CI
 // rather than silently misleading an integrator.
+
 const gatewayPath = new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url);
 const docPath = new URL('../docs/api.md', import.meta.url);
 
@@ -22,6 +23,7 @@ const docPath = new URL('../docs/api.md', import.meta.url);
 // prose sections, so `doc.includes(...)` keeps passing when the table row that
 // actually carries them is deleted. These helpers read the markdown table rows
 // so coverage can be asserted in the form the document is read in.
+
 function tableRows(doc) {
   return doc.split('\n').filter((line) => line.trimStart().startsWith('|'));
 }
@@ -35,6 +37,7 @@ function hasTableRow(doc, firstCell) {
 }
 
 // The gateway section, isolated from the request-body and error-code tables.
+
 function section(doc, heading) {
   const start = doc.indexOf(heading);
   assert.notEqual(start, -1, `docs/api.md has a "${heading}" section`);

@@ -37,6 +37,7 @@ export function popupsSince(log, tabId, sinceMs) {
 // page.fill is in flight, any new tab belongs to the acted-on tab, so attribute
 // it there; otherwise fall back to the real openerTabId. Returns the opener key
 // to record under, or null when the tab is unrelated to automation.
+
 export function resolvePopupOpener(inFlightTabId, tab) {
   if (!tab) return null;
   if (inFlightTabId != null) return Number(inFlightTabId);

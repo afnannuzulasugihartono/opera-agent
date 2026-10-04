@@ -37,6 +37,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 // Fail-closed CORS: the allow origin is echoed ONLY for exact allowlist
 // matches (CORS_ALLOWED_ORIGINS env override, else the extension + consent
 // page defaults). A missing or non-allowlisted Origin gets no ACAO header.
+
 const CORS_BASE_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",

@@ -20,6 +20,7 @@ import { readFile } from 'node:fs/promises';
 // extension/role-reconcile.js is a classic content script with no export
 // statements, so it is imported here for its side effect and read off
 // globalThis — the same pattern the semantic engines use.
+
 await import('../extension/role-reconcile.js');
 const {
   GENERIC_ROLES,

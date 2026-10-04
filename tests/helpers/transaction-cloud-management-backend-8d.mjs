@@ -9,6 +9,7 @@
 // This module intentionally exposes no arbitrary SQL, URL, secret name or project
 // selector. The fenced Edge bundle is pinned to the independently reviewed deploy;
 // any other deployed bundle fails closed before OAuth/live work.
+
 import { CLIENT_ID } from './transaction-oauth-8d.mjs';
 import { CALLBACK_8D, PROJECT_REF_8D } from './transaction-cloud-operator-8d.mjs';
 import { decodeLedgerKey, sealLedgerToken } from '../../lib/ledger-token.js';

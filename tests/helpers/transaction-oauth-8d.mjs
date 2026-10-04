@@ -7,6 +7,7 @@
 
 // Acceptance helper only. Not imported by extension/MCP/Edge runtime.
 // No storage, logging, token export, refresh, browser dispatch or approval authority.
+
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import { codeUnitCompare } from '../../lib/canonical-order.js';
@@ -36,6 +37,7 @@ async function boundedJson(response) {
 }
 
 /** @param {{publicKey?:string, now?:()=>number, fetchImpl?:typeof fetch, verifyAccessToken?:(credential:string,signal:AbortSignal)=>Promise<{signedClaimsVerified:boolean,hostStatusHttpStatus:number,hostIdentityAccepted:boolean,hostDisabled:boolean,browserDispatchAllowed:boolean}>}} options */
+
 export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyAccessToken}={}) {
   if(verifyAccessToken!==undefined&&typeof verifyAccessToken!=='function')throw new Error('INVALID_TRUSTED_VERIFIER');
   if(typeof publicKey!=='string' || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicKey)) throw new Error('PUBLIC_PUBLISHABLE_KEY_REQUIRED');
