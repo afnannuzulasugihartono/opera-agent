@@ -321,33 +321,41 @@ async def browser_focus_state(worker):
     }''')
 
 def focus_audit_verdict(before, after):
-    # Why four verdicts instead of one bool: a headed browser on Windows reports no
-    # focused window whenever the OS moves focus elsewhere, and that is not the agent
-    # taking focus. Comparing two focus reads alone cannot tell that apart from a
-    # command un-focusing a window that is still open, so the window ids decide it.
+    # Why a steal must end with something focused: the runtime can only add focus,
+    # chrome.windows.update({focused: true}) in tabs.activate, and nothing in it can
+    # remove focus. So a command that ends with no focused window did not take focus,
+    # the operating system withdrew it, which a headed runner without an interactive
+    # desktop does on its own. A real steal always lands on a window or a tab, so that
+    # is what fails, and a different tab in the same window is a steal too.
     if before['focusedWindowId'] is None:
         return 'no-baseline'
     if before['focusedWindowId'] not in after['windowIds']:
         return 'window-closed'
-    if before['focusedWindowId'] == after['focusedWindowId'] and \
-            before['activeTabId'] == after['activeTabId']:
-        return 'preserved'
-    return 'stole'
+    if after['focusedWindowId'] is None:
+        return 'unfocused'
+    if before['focusedWindowId'] != after['focusedWindowId']:
+        return 'stole'
+    if before['activeTabId'] != after['activeTabId']:
+        return 'stole'
+    return 'preserved'
 
 
 def check_focus_audit_verdicts():
-    # Proves the classifier on the four states it exists to separate, so a run that
-    # never loses focus still exercises it. Without this the branches below would be
-    # accepted on the strength of a green run that never reached them.
+    # Proves the classifier on every state it exists to separate, so a run that never
+    # loses focus still exercises it. Without this the branches below would be accepted
+    # on the strength of a green run that never reached them.
     def state(window_id, tab_id, window_ids):
         return {'focusedWindowId': window_id, 'activeTabId': tab_id,
                 'activeUrl': 'http://127.0.0.1/page', 'windowIds': window_ids}
 
     assert focus_audit_verdict(state(7, 9, [7]), state(7, 9, [7])) == 'preserved'
-    assert focus_audit_verdict(state(7, 9, [7]), state(None, None, [7])) == 'stole'
+    # Each steal case moves exactly one thing, so disabling either steal branch
+    # turns that case red instead of being masked by the other branch.
+    assert focus_audit_verdict(state(7, 9, [7]), state(8, 9, [7, 8])) == 'stole'
+    assert focus_audit_verdict(state(7, 9, [7]), state(7, 11, [7])) == 'stole'
+    assert focus_audit_verdict(state(7, 9, [7]), state(None, None, [7])) == 'unfocused'
     assert focus_audit_verdict(state(7, 9, [7]), state(None, None, [])) == 'window-closed'
     assert focus_audit_verdict(state(None, None, [7]), state(None, None, [7])) == 'no-baseline'
-    assert focus_audit_verdict(state(7, 9, [7]), state(7, 11, [7])) == 'stole'
 
 
 async def audited_background_command(worker, audit, method, params=None, timeout=20, command_timeout=12000):
@@ -364,9 +372,9 @@ async def audited_background_command(worker, audit, method, params=None, timeout
         'before': before,
         'after': after,
         'verdict': verdict,
-        # A command with no baseline, or one whose window closed underneath it, did
-        # not take focus. Only the 'stole' verdict is a failure, so the aggregate
-        # assertion at the end of the run keeps failing on a real steal.
+        # A command with no baseline, one whose window closed underneath it, or one
+        # that ended with nothing focused did not take focus. Only 'stole' fails, so
+        # the aggregate assertion at the end of the run keeps failing on a real steal.
         'focusPreserved': verdict != 'stole'
     })
     if verdict == 'no-baseline':
@@ -374,6 +382,12 @@ async def audited_background_command(worker, audit, method, params=None, timeout
         return body
     if verdict == 'window-closed':
         print(f'[focus-audit] {method}: window {before["focusedWindowId"]} closed during the command')
+        return body
+    if verdict == 'unfocused':
+        # Reported, not failed: nothing holds focus now, and only the runtime can add
+        # focus, so this is the host withdrawing it rather than the agent taking it.
+        print(f'[focus-audit] {method}: window {before["focusedWindowId"]} still open but '
+              'no longer focused, the host withdrew focus')
         return body
     assert verdict == 'preserved', f'{method} stole browser focus: before={before}, after={after}'
     return body
