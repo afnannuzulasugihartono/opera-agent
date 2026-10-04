@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: goal-ledger — Repository file. Now: clear deno require-await and no-unused-vars in edge functions.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: goal-ledger — ledger — Repository file.
+// @context: Deno edge function.
+// @state: clear deno require-await and no-unused-vars in edge functions.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 const SCHEMA_VERSION = 1;
 const DIGEST_PREFIX = 'sha256:';

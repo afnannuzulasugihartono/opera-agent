@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: hygiene.test — Properties that keep the runtime code correct as it grows, and that the code Now: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: hygiene.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises, focus-gate.
 
 // Properties that keep the runtime code correct as it grows, and that the code
 // itself violated when first written.

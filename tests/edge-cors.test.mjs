@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: edge-cors.test — Test. Now: shared CORS origin resolver with fail-closed defaults.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: edge-cors.test — cors.test — Test.
+// @context: Test.
+// @state: shared CORS origin resolver with fail-closed defaults.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, cors.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

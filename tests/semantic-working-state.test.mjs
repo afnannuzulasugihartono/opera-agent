@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: semantic-working-state.test — P1 semantic working state, consolidated 2026-10-03. Now: consolidate the P1 working-state cluster into one file.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: semantic-working-state.test — working-state.test — P1 semantic working state, consolidated 2026-10-03.
+// @context: Test.
+// @state: consolidate the P1 working-state cluster into one file.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, semantic-working-state-p1.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

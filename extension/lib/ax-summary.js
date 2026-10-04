@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: ax-summary — Bounded, value-free accessibility Now: module headers say what a module is, not which task added it.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: ax-summary — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Bounded, value-free accessibility
 // tree summary for semantically poor surfaces (canvas applications, hidden

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: focus-gate — Pure focus policy — no chrome, no DOM, so the decision is deterministic and Now: retry Chrome's transient tab-drag refusal on all tab mutations.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: focus-gate — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Pure focus policy — no chrome, no DOM, so the decision is deterministic and
 // testable in Node.

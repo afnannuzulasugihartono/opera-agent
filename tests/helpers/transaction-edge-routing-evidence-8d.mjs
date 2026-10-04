@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-edge-routing-evidence-8d — Bounded, non-secret routing-trace evidence for Checkpoint 8D hosted Edge races. Now: add bounded 8D Edge routing evidence helper.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-edge-routing-evidence-8d — edge-routing-evidence-8d — Bounded, non-secret routing-trace evidence for Checkpoint 8D ho.
+// @context: Test helper.
+// @state: add bounded 8D Edge routing evidence helper.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Bounded, non-secret routing-trace evidence for Checkpoint 8D hosted Edge races.
 // Raw header values are inspected in memory only and are never returned or logged.

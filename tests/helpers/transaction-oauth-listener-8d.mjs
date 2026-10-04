@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-oauth-listener-8d — Nondefault physical ports/windows are test injection only; CLI exposes neither. Now: add reviewed in-process SDK identity and status-only 8D probe.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-oauth-listener-8d — oauth-listener-8d — Nondefault physical ports/windows are test injection only; CLI exposes.
+// @context: Test helper.
+// @state: add reviewed in-process SDK identity and status-only 8D probe.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:http, transaction-oauth-8d.
 
 import { createServer } from 'node:http';
 import { parseLocalCallbackRequest } from './transaction-oauth-8d.mjs';

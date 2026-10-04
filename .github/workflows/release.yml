@@ -1,4 +1,9 @@
-# Last edited: 2026-10-04 17:52. Title: release — Repository file. Now: verify current signed release identity (#14).
+# @last-edited: 2026-10-04 11:10 UTC.
+# @title: release — Repository file.
+# @context: CI.
+# @state: verify current signed release identity (#14).
+# @updated: every file carries Last edited, Title, Purpose and Now
+# @dependencies: none stated.
 
 name: Release
 

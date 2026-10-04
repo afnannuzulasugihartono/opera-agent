@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: keyboard — Keyboard chords and bounded text entry: pure resolution Now: module headers say what a module is, not which task added it.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: keyboard — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Keyboard chords and bounded text entry: pure resolution
 // from a declarative { key, modifiers } or { text } request to the exact CDP

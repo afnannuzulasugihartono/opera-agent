@@ -1,4 +1,9 @@
-# Last edited: 2026-10-04 17:52. Title: ci — Three jobs, all on one self-hosted Windows runner. Now: the gitleaks download name was wrong and had never been exercised.
+# @last-edited: 2026-10-04 11:10 UTC.
+# @title: ci — Three jobs, all on one self-hosted Windows runner.
+# @context: CI.
+# @state: the gitleaks download name was wrong and had never been exercised.
+# @updated: every file carries Last edited, Title, Purpose and Now
+# @dependencies: none stated.
 
 name: CI
 

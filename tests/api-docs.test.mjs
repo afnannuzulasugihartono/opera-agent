@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: api-docs.test — Frozen contract: docs/api.md is the narrative API reference and must cover Now: SECURITY.md states the true carriers, and the test forbids the false one.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: api-docs.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises, endpoints, source-scan.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

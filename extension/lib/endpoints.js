@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: endpoints — Single source of deployment endpoint truth for the extension deploy Now: single endpoint source per deploy unit.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: endpoints — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Single source of deployment endpoint truth for the extension deploy
 // unit. oauth-consent/ deploys separately and keeps its own literal,

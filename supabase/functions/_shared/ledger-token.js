@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: ledger-token — Repository file. Now: resolve deno check type errors in gateway/ledger/vm/runner.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: ledger-token — token — Repository file.
+// @context: Deno edge function.
+// @state: resolve deno check type errors in gateway/ledger/vm/runner.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: goal-ledger.
 
 import { LEDGER_LIMITS, validateLedger } from './goal-ledger.js';
 

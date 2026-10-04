@@ -1,4 +1,9 @@
-# Last edited: 2026-10-04 17:52. Title: config — Supabase backend. Now: add authenticated Opera Agent MCP (#11).
+# @last-edited: 2026-10-04 11:10 UTC.
+# @title: config — Supabase backend.
+# @context: Supabase backend.
+# @state: add authenticated Opera Agent MCP (#11).
+# @updated: every file carries Last edited, Title, Purpose and Now
+# @dependencies: none stated.
 
 project_id = "opera-agent"
 

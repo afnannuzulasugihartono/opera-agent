@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: perception-identity-verification-quickwins.test — Research quick-wins : unknown-outcome contract, viewport truth Now: feat(u-v1): self-verifying actions with in-page expect, bounded retry, href fallback, absent waits, and burst partial preservation.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: perception-identity-verification-quickwins.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:fs, node:test, strict.
 
 import fs from 'node:fs';
 import test from 'node:test';

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: edge-token-hygiene.test — Frozen contract (deliberate source-form lock): device/user tokens must Now: token-hygiene proofs plus documented transport risk.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: edge-token-hygiene.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

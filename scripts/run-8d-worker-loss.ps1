@@ -1,4 +1,9 @@
-# Last edited: 2026-10-04 17:52. Title: run-8d-worker-loss — Script. Now: add PowerShell 7 launcher for hosted 8D worker-loss probe.
+# @last-edited: 2026-10-04 11:10 UTC.
+# @title: run-8d-worker-loss — 8d-worker-loss — Script.
+# @context: Script.
+# @state: add PowerShell 7 launcher for hosted 8D worker-loss probe.
+# @updated: every file carries Last edited, Title, Purpose and Now
+# @dependencies: none stated.
 
 param(
   [string]$RecoverNamespace

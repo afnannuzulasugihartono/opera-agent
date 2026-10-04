@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: options-store — Validation and persistence for the Options page: the bridge URL override and the Now: the MCP instructions named a field the error envelope does not have.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: options-store — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: endpoints.
 
 // Validation and persistence for the Options page: the bridge URL override and the
 // log level, stored in chrome.storage.local.

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: error-messages.test — Test. Now: lock store error strings against mapper drift.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: error-messages.test — messages.test — Test.
+// @context: Test.
+// @state: lock store error strings against mapper drift.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises, error-messages.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

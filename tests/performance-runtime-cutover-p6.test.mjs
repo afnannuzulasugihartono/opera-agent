@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: performance-runtime-cutover-p6.test — Test. Now: test(p6): lock fail-closed cutover continuation gate.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: performance-runtime-cutover-p6.test — runtime-cutover-p6.test — Test.
+// @context: Test.
+// @state: test(p6): lock fail-closed cutover continuation gate.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises, reactive-vm-host-7e, reactive-vm.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

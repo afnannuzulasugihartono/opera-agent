@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: popup-events — Popup and redirect follow-through: pure policy helpers for the Now: module headers say what a module is, not which task added it.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: popup-events — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Popup and redirect follow-through: pure policy helpers for the
 // background popup log. NO DOM and NO chrome dependency: the host supplies

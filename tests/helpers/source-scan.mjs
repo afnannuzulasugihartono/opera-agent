@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: source-scan — Source-text scanning helpers for drift locks. Now: docs and test: correct the final review's overclaims and audit-request errors.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: source-scan — scan — Source-text scanning helpers for drift locks.
+// @context: Test helper.
+// @state: docs and test: correct the final review's overclaims and audit-request errors.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Source-text scanning helpers for drift locks.
 //

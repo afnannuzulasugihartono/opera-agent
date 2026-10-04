@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: pre-8e-usability-r0.test — Why source-text pins, stated per AGENTS.md: R0 is an evidence record, not a Now: state why the source-text pins are the deliverable in seven files.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: pre-8e-usability-r0.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises.
 
 // Why source-text pins, stated per AGENTS.md: R0 is an evidence record, not a
 // behavior change. Its job is to fix the measured baseline so a later phase

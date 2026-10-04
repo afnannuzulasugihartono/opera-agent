@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: hover-settle — R9-E : hover settle policy, as a classic content script. Now: fix(r9): hygiene pass on the R9 code itself.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: hover-settle — settle — R9-E : hover settle policy, as a classic content script.
+// @context: MV3 browser runtime.
+// @state: fix(r9): hygiene pass on the R9 code itself.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // R9-E (2026-09-30): hover settle policy, as a classic content script.
 //

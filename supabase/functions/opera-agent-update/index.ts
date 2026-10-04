@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: single endpoint source per deploy unit.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: index — Repository file.
+// @context: Deno edge function.
+// @state: single endpoint source per deploy unit.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: edge-runtime, supabase-js, cors.
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";

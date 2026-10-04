@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: delta-first-observation-p2.test — Test. Now: refactor(tests): single-source boundary locks in tests/helpers/boundary-locks.mjs - removes the duplicated authorization comment/Map blocks .
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: delta-first-observation-p2.test — first-observation-p2.test — Test.
+// @context: Test.
+// @state: refactor(tests): single-source boundary locks in tests/helpers/boundary-locks.mjs - removes the duplicated authorization comment/Map blocks.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:crypto, promises, boundary-locks, delta-first-observation-p2.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

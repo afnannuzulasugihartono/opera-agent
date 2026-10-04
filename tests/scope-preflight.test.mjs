@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: scope-preflight.test — The problem this exists for: the repository is roughly 0.94M tokens against a Now: scope preflight that bounds the read set (owner-ordered).
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: scope-preflight.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:child_process, node:url.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

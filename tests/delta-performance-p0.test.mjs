@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: delta-performance-p0.test — Test. Now: remove milestone labels from prose, and rename the ax-observation doc.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: delta-performance-p0.test — performance-p0.test — Test.
+// @context: Test.
+// @state: remove milestone labels from prose, and rename the ax-observation doc.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

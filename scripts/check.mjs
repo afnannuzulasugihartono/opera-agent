@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: check — Script. Now: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: check — Script.
+// @context: Script.
+// @state: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol.
 
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,4 +1,9 @@
-# Last edited: 2026-10-04 17:52. Title: .gitleaks — Enterprise Phase 1 Task 7: path-scoped gitleaks allow exceptions. Now: consolidate the 8D cloud acceptance cluster into one file.
+# @last-edited: 2026-10-04 11:10 UTC.
+# @title: .gitleaks — Enterprise Phase 1 Task 7: path-scoped gitleaks allow exceptions.
+# @context: Repository file.
+# @state: consolidate the 8D cloud acceptance cluster into one file.
+# @updated: every file carries Last edited, Title, Purpose and Now
+# @dependencies: none stated.
 
 # Enterprise Phase 1 Task 7: path-scoped gitleaks allow exceptions.
 # Rules stay enabled globally. Every entry pairs an EXACT historical path

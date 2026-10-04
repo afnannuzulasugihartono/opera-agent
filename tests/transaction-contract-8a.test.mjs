@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-contract-8a.test — Why source-text and fixture pins, stated per AGENTS.md: milestone 8A is Now: state why the source-text pins are the deliverable in seven files.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-contract-8a.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:crypto, node:fs, node:test.
 
 // Why source-text and fixture pins, stated per AGENTS.md: milestone 8A is
 // contract-only, with runtimeChanges and productionChanges recorded as empty

@@ -8,7 +8,7 @@ metadata:
   derived_from: "https://x.com/karpathy/status/2015883857489522876"
   note: "Not authored by Andrej Karpathy. A community file derived from his public observations."
 ---
-
+@last-edited: 2026-10-04 11:10 UTC.
 Last edited: 2026-10-04 17:52.
 
 # Karpathy Guidelines

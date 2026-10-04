@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-edge-concurrency-8d — Explicit opt-in Checkpoint 8D real Edge concurrency acceptance probe. Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-edge-concurrency-8d — edge-concurrency-8d — Explicit opt-in Checkpoint 8D real Edge concurrency acceptance probe.
+// @context: Test.
+// @state: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:path, node:buffer, transaction-cloud-controller-8d, transaction-cloud-management-backend-8d, transaction-cloud-operator-8d, transaction-edge-routing-evidence-8d, transaction-oauth-8d, transaction.
 
 // Explicit opt-in Checkpoint 8D real Edge concurrency acceptance probe.
 // Acceptance/test infrastructure only: no browser primitive, MCP/runtime change,

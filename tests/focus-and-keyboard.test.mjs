@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: focus-and-keyboard.test — Focus stability + keyboard chord/text contracts. Now: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: focus-and-keyboard.test — and-keyboard.test — Focus stability + keyboard chord/text contracts.
+// @context: Test.
+// @state: drop the milestone prefix from the interaction test family.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises, focus-gate, keyboard.
 
 // Focus stability + keyboard chord/text contracts.
 //

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: debugger-session-lifecycle.test — Phase B Task 2 : debugger and timer lifecycle in the service Now: let a burst step target its own tab.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: debugger-session-lifecycle.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs, deadline-race.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

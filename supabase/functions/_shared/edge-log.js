@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: edge-log — Repository file. Now: structured edge log helper, convert 3 ad-hoc sites.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: edge-log — log — Repository file.
+// @context: Deno edge function.
+// @state: structured edge log helper, convert 3 ad-hoc sites.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 const MAX_LOG_MESSAGE = 1000;
 export { MAX_LOG_MESSAGE };

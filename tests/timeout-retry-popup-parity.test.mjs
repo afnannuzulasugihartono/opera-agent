@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: timeout-retry-popup-parity.test — U-R timeout/retry/popup parity : the owner's field testing found Now: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: timeout-retry-popup-parity.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, popup-events, protocol.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

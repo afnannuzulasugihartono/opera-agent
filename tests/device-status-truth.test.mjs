@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: device-status-truth.test — Frozen contract: the operator runbook tells the reader that a device row with Now: docs and test: correct the final review's overclaims and audit-request errors.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: device-status-truth.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises, source-scan.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

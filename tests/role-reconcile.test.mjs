@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: role-reconcile.test — Role reconciliation contracts. Now: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: role-reconcile.test — reconcile.test — Role reconciliation contracts.
+// @context: Test.
+// @state: drop the milestone prefix from the interaction test family.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises.
 
 // Role reconciliation contracts.
 //

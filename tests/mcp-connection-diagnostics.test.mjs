@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: mcp-connection-diagnostics.test — Test. Now: investigate persistent MCP availability without runtime changes.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: mcp-connection-diagnostics.test — connection-diagnostics.test — Test.
+// @context: Test.
+// @state: investigate persistent MCP availability without runtime changes.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:test, mcp-connection-diagnostics.
 
 import assert from 'node:assert/strict';
 import test from 'node:test';

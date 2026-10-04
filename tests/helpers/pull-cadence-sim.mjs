@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: pull-cadence-sim — Phase A latency measurement : a deterministic, clock-injected Now: eliminate two unused artifacts in tests/.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: pull-cadence-sim — Test helper..
+// @context: Test helper.
+// @state: Test helper..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Phase A latency measurement (2026-10-02): a deterministic, clock-injected
 // model of the bridge claim-polling cadence in

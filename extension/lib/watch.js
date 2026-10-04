@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: watch — Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact Now: retry Chrome's transient tab-drag refusal on all tab mutations.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: watch — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact
 // snapshots, so it stays deterministic and testable in Node.

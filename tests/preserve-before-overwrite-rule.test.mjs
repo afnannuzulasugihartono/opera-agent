@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: preserve-before-overwrite-rule.test — The "mention, do not delete" rule. AGENTS.md states it in prose; locking that Now: make every .md interconnected, conventional, and current-state.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: preserve-before-overwrite-rule.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

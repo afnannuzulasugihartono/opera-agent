@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-worker-loss-runner.test — Test. Now: drop the milestone suffix from transaction test files and titles.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-worker-loss-runner.test — worker-loss-runner.test — Test.
+// @context: Test.
+// @state: drop the milestone suffix from transaction test files and titles.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

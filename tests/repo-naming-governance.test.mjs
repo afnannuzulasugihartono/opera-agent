@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: repo-naming-governance.test — AGENTS.md "Naming conventions (binding)" enforcement. A failure here is a Now: no orphan document, no prose blocks, simpler rules.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: repo-naming-governance.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:child_process, node:fs, node:path, node:test, strict.
 
 import { execSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';

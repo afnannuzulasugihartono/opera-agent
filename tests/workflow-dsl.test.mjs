@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: workflow-dsl.test — Why source-text pins, stated per AGENTS.md: the deliverable here is a Now: state why the source-text pins are the deliverable in seven files.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: workflow-dsl.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs.
 
 // Why source-text pins, stated per AGENTS.md: the deliverable here is a
 // migration DSL boundary, and the hazards are all about what the SQL must NOT

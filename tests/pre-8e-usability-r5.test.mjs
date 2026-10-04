@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: pre-8e-usability-r5.test — Why source-text pins, stated per AGENTS.md: R5 adds an internal workflow, so Now: state why the source-text pins are the deliverable in seven files.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: pre-8e-usability-r5.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:fs, node:test, strict.
 
 // Why source-text pins, stated per AGENTS.md: R5 adds an internal workflow, so
 // the lockable claim is where it is reachable and where it is not. These

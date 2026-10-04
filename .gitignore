@@ -1,4 +1,9 @@
-# Last edited: 2026-10-04 17:52. Title: .gitignore — Repository file. Now: chore(governance): judge tracked root entries, not raw disk listings.
+# @last-edited: 2026-10-04 11:10 UTC.
+# @title: .gitignore — Repository file.
+# @context: Repository file.
+# @state: chore(governance): judge tracked root entries, not raw disk listings.
+# @updated: every file carries Last edited, Title, Purpose and Now
+# @dependencies: none stated.
 
 # Dependencies
 node_modules/

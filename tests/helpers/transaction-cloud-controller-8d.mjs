@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-cloud-controller-8d — LOCAL acceptance orchestration only. Operator adapters must be installed by Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-cloud-controller-8d — Test helper..
+// @context: Test helper.
+// @state: Test helper..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:buffer, transaction-cloud-fixture-8d, transaction-oauth-8d, goal-ledger, canonical-order.
 
 // LOCAL acceptance orchestration only. Operator adapters must be installed by
 // trusted test code, NEVER HTTP/MCP/page/model input. No real operator adapter,

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: burst-tab-switching.test — Phase D : a burst may address more than one tab. Now: consolidate the latency cluster into one file.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: burst-tab-switching.test — tab-switching.test — Phase D : a burst may address more than one tab.
+// @context: Test.
+// @state: consolidate the latency cluster into one file.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs, protocol.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

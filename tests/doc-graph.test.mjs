@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: doc-graph.test — Every .md must be reachable from another .md, must carry a Related: line, and Now: every document gets a Need row, and each turn passes the map.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: doc-graph.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs, node:path, node:url.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: retry Chrome's transient tab-drag refusal on all tab mutations.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: index — Repository file.
+// @context: Deno edge function.
+// @state: retry Chrome's transient tab-drag refusal on all tab mutations.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: edge-runtime, supabase-js, edge-log.
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";

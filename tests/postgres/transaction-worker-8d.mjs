@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-worker-8d — Synthetic native journal worker only, NEVER a production runner. Now: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-worker-8d — worker-8d — Synthetic native journal worker only, NEVER a production runner.
+// @context: Test.
+// @state: refactor(quality): centralize code-unit comparator in lib/canonical-order.js - removes token-identical inline comparator blocks that tripped.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:child_process, node:util, node:path, node:crypto, canonical-order.
 
 // Synthetic native journal worker only, NEVER a production runner.
 import {execFile} from 'node:child_process';

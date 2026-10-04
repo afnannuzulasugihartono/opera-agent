@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: mcp-connection-diagnostics — Read-only diagnostics, not a host reconnect manager. Never reads stored OAuth Now: ops scripts read SUPABASE_PROJECT_REF / MCP base URL from env.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: mcp-connection-diagnostics — Script..
+// @context: Script.
+// @state: Script..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:url.
 
 import { pathToFileURL } from 'node:url';
 

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: doc-caps.test — Doc caps : live context files stay short or the Now: make every .md interconnected, conventional, and current-state.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: doc-caps.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

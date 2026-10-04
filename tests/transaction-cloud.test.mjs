@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-cloud.test — Test. Now: drop the milestone suffix from transaction test files and titles.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-cloud.test — cloud.test — Test.
+// @context: Test.
+// @state: drop the milestone suffix from transaction test files and titles.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:test, node:buffer, node:crypto, promises, node:os, node:path, node:child_process, transaction-cloud-controller-8d, transaction-cloud-fixture-8d, transaction-cloud-management-backend-8d, t.
 
 import assert from 'node:assert/strict';
 import test from 'node:test';

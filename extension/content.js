@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: content — R9-C: published by role-reconcile.js, which the manifest loads before this Now: media.play names the foreground path when the autoplay policy refuses.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: content — MV3 browser runtime..
+// @context: MV3 browser runtime.
+// @state: MV3 browser runtime..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 (() => {
   'use strict';

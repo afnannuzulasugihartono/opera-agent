@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: proof-engine-benchmark — Script. Now: implement milestone 6C scoped proof engine.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: proof-engine-benchmark — engine-benchmark — Script.
+// @context: Script.
+// @state: implement milestone 6C scoped proof engine.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:fs, node:perf_hooks, goal-ledger, proof-engine.
 
 import fs from 'node:fs';
 import { performance } from 'node:perf_hooks';

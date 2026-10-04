@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: semantic-baseline — Script. Now: add causal semantic proof metadata.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: semantic-baseline — baseline — Script.
+// @context: Script.
+// @state: add causal semantic proof metadata.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:crypto, node:fs, node:path, node:child_process, node:url.
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';

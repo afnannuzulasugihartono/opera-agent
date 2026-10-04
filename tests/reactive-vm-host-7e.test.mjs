@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: reactive-vm-host-7e.test — Test. Now: consolidate the 7E host boundary into its own surface file.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: reactive-vm-host-7e.test — vm-host-7e.test — Test.
+// @context: Test.
+// @state: consolidate the 7E host boundary into its own surface file.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:fs, node:test, reactive-vm-host-7e, vm-token.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

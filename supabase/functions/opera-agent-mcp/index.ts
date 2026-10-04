@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: three more places claimed the background pointer was invisible.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: index — Repository file.
+// @context: Deno edge function.
+// @state: three more places claimed the background pointer was invisible.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
 
 import "@supabase/edge-runtime";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

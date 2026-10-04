@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: reactive-vm-contract.test — Test. Now: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: reactive-vm-contract.test — vm-contract.test — Test.
+// @context: Test.
+// @state: version 1.6.15 sweep for the navigate/optimistic-call candidate.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:crypto, node:fs, node:test.
 
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';

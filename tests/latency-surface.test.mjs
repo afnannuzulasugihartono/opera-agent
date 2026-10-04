@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: latency-surface.test — Test. Now: latency-surface comments state what is true now.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: latency-surface.test — surface.test — Test.
+// @context: Test.
+// @state: latency-surface comments state what is true now.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs, protocol, pull-cadence-sim.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: role-reconcile — R9-C : role reconciliation, as a classic content script. Now: fix(r9): hygiene pass on the R9 code itself.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: role-reconcile — reconcile — R9-C : role reconciliation, as a classic content script.
+// @context: MV3 browser runtime.
+// @state: fix(r9): hygiene pass on the R9 code itself.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // R9-C (2026-09-30): role reconciliation, as a classic content script.
 //

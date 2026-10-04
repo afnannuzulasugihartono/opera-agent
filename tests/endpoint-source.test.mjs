@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: endpoint-source.test — Test. Now: activate the options tab before waiting on its async prefill.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: endpoint-source.test — source.test — Test.
+// @context: Test.
+// @state: activate the options tab before waiting on its async prefill.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, promises, endpoints.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

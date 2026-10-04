@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: popup — MV3 runtime. Now: mapped user-facing errors, no raw internals in popup/consent.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: popup — MV3 runtime.
+// @context: MV3 browser runtime.
+// @state: mapped user-facing errors, no raw internals in popup/consent.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: agent-log, error-messages.
 
 import './lib/agent-log.js';
 import { userErrorMessage } from './lib/error-messages.js';

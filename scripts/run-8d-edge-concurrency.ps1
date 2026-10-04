@@ -1,4 +1,9 @@
-# Last edited: 2026-10-04 17:52. Title: run-8d-edge-concurrency — Script. Now: publishable key defaults read env first.
+# @last-edited: 2026-10-04 11:10 UTC.
+# @title: run-8d-edge-concurrency — 8d-edge-concurrency — Script.
+# @context: Script.
+# @state: publishable key defaults read env first.
+# @updated: every file carries Last edited, Title, Purpose and Now
+# @dependencies: none stated.
 
 param(
   [switch]$ResetCredential,

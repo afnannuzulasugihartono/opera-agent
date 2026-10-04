@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: scope — Scope preflight: bound the read set before reading it. Now: scope preflight that bounds the read set (owner-ordered).
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: scope — Scope preflight: bound the read set before reading it.
+// @context: Script.
+// @state: scope preflight that bounds the read set (owner-ordered).
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:fs, node:path, node:child_process, node:url.
 
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: scoped-instructions.test — Scoped first-read files . Now: every file mention carries its full address, and contradictions fixed.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: scoped-instructions.test — instructions.test — Scoped first-read files.
+// @context: Test.
+// @state: every file mention carries its full address, and contradictions fixed.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

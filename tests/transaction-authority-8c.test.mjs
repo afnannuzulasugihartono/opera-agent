@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-authority-8c.test — Test. Now: add transaction authority verifier.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-authority-8c.test — authority-8c.test — Test.
+// @context: Test.
+// @state: add transaction authority verifier.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:fs, node:test, transaction-authority, transaction-prepare.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: proof-engine — Repository file. Now: remove unwired modules, dead exports; WHY-only comments (owner-ordered).
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: proof-engine — engine — Repository file.
+// @context: Deno edge function.
+// @state: remove unwired modules, dead exports; WHY-only comments (owner-ordered).
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: goal-ledger, canonical-order.
 
 import {
   LEDGER_LIMITS,

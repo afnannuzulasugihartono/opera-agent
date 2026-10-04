@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: index — U-T universal fastpath gateway: ONE HTTP round trip from any AI platform Now: fold the gateway offline check into the auth call.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: index — Deno edge function..
+// @context: Deno edge function.
+// @state: Deno edge function..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: edge-runtime, supabase-js, cors.
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";

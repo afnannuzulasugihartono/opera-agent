@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-cloud-acceptance-8d — Explicit opt-in Checkpoint 8D live acceptance/recovery runner. Now: fix(quality): keep helper exact()/CLI-config lines byte-unchanged (default sort already code-unit on ASCII keys) - resolves new-code duplica.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-cloud-acceptance-8d — cloud-acceptance-8d — Explicit opt-in Checkpoint 8D live acceptance/recovery runner.
+// @context: Test.
+// @state: fix(quality): keep helper exact()/CLI-config lines byte-unchanged (default sort already code-unit on ASCII keys) - resolves new-code duplica.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:path, transaction-cloud-controller-8d, transaction-cloud-management-backend-8d, transaction-cloud-operator-8d, transaction-oauth-8d, transaction-oauth-listener-8d.
 
 // Explicit opt-in Checkpoint 8D live acceptance/recovery runner.
 // Run only after the exact candidate has an independent PASS. This file is test

@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: pre-8e-usability-r7.test — Pre-8E repair R7 (T034-T037): youtube.get_transcript v5 — transcript-scoped Now: feat(r7): transcript-scoped youtube.get_transcript v5 with bounded fallback.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: pre-8e-usability-r7.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:fs, node:test, strict.
 
 import fs from 'node:fs';
 import test from 'node:test';

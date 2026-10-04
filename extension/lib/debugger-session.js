@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: debugger-session — Shared debugger session bookkeeping. Now: module headers say what a module is, not which task added it.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: debugger-session — session — Shared debugger session bookkeeping.
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: module headers say what a module is, not which task added it.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 // Shared debugger session bookkeeping.
 //

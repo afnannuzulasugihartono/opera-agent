@@ -1,4 +1,4 @@
-Last edited: 2026-10-04 17:52.
+@last-edited: 2026-10-04 11:10 UTC.
 
 # Supabase
 

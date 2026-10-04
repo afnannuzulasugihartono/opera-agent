@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: transaction-worker-loss-8d — Explicit opt-in Checkpoint 8D hosted child-worker death/reclaim acceptance probe. Now: add bounded hosted child-worker-loss 8D probe.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: transaction-worker-loss-8d — worker-loss-8d — Explicit opt-in Checkpoint 8D hosted child-worker death/reclaim acceptanc.
+// @context: Test.
+// @state: add bounded hosted child-worker-loss 8D probe.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:crypto, node:url.
 
 // Explicit opt-in Checkpoint 8D hosted child-worker death/reclaim acceptance probe.
 // Test infrastructure only: fixed project, fixed SQL, synthetic rows, no OAuth,

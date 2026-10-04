@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: reactive-vm-7c.test — Test. Now: fix(perf): make the 7C transition regression gate measure regression, not scheduler noise.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: reactive-vm-7c.test — vm-7c.test — Test.
+// @context: Test.
+// @state: fix(perf): make the 7C transition regression gate measure regression, not scheduler noise.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:fs, node:perf_hooks, node:test, goal-ledger, reactive-vm, reactive-vm-7c.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

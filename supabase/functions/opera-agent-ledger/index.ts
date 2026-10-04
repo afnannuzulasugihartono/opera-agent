@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: index — Repository file. Now: edge-runtime imports via deno.json import maps, restore SBOM gate.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: index — Repository file.
+// @context: Deno edge function.
+// @state: edge-runtime imports via deno.json import maps, restore SBOM gate.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: edge-runtime, supabase-js, goal-ledger, ledger-token.
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";

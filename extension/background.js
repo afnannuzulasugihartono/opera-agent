@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: background — MV3 runtime. Now: the observation says when the person last touched the page.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: background — MV3 runtime.
+// @context: MV3 browser runtime.
+// @state: the observation says when the person last touched the page.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints, role-reconcile, agent-log, ax-summary, popup-events, deadline-race.
 
 import {
   PRODUCT_VERSION,

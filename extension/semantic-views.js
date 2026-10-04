@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: semantic-views — MV3 runtime. Now: add causal semantic proof metadata.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: semantic-views — views — MV3 runtime.
+// @context: MV3 browser runtime.
+// @state: add causal semantic proof metadata.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 (() => {
   'use strict';

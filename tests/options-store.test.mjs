@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: options-store.test — Test. Now: close the Phase 5 review follow-ups.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: options-store.test — store.test — Test.
+// @context: Test.
+// @state: close the Phase 5 review follow-ups.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, options-store, endpoints.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

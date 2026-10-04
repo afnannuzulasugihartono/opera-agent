@@ -1,4 +1,9 @@
-REM Last edited: 2026-10-04 17:52. Title: RUN_8D_EDGE_CONCURRENCY — Repository file. Now: chore(naming): tidy repository names and enforce binding naming rules.
+REM @last-edited: 2026-10-04 11:10 UTC.
+REM @title: RUN_8D_EDGE_CONCURRENCY — Repository file.
+REM @context: Script.
+REM @state: chore(naming): tidy repository names and enforce binding naming rules.
+REM @updated: every file carries Last edited, Title, Purpose and Now
+REM @dependencies: none stated.
 
 @echo off
 setlocal

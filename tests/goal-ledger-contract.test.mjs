@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: goal-ledger-contract.test — Why source-text and fixture pins, stated per AGENTS.md: this checkpoint is Now: state why the source-text pins are the deliverable in seven files.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: goal-ledger-contract.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: strict, node:crypto, node:fs, node:test.
 
 // Why source-text and fixture pins, stated per AGENTS.md: this checkpoint is
 // contract-only. There is no runtime ledger implementation to execute, so the

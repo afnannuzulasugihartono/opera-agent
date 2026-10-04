@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: delta-performance-p5.test — Lock constants are git blob hashes of the committed LF bytes; strip Now: refactor(tests): single-source boundary locks in tests/helpers/boundary-locks.mjs - removes the duplicated authorization comment/Map blocks .
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: delta-performance-p5.test — Test..
+// @context: Test.
+// @state: Test..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:test, strict, node:crypto, promises, boundary-locks.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

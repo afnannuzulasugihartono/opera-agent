@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: protocol — The wire contract: the allowlist of browser primitives, their parameter schemas, Now: module headers say what a module is, not which task added it.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: protocol — MV3 runtime library, shared with the Node suite..
+// @context: MV3 runtime library, shared with the Node suite.
+// @state: MV3 runtime library, shared with the Node suite..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: keyboard.
 
 // The wire contract: the allowlist of browser primitives, their parameter schemas,
 // and the burst step vocabulary. This file is what `npm run check` reads to report the

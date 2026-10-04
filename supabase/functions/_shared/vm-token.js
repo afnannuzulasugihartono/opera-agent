@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: vm-token — The VM contract bounds the raw canonical payload at 128 KiB. The encrypted Now: remove unwired modules, dead exports; WHY-only comments (owner-ordered).
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: vm-token — Deno edge function..
+// @context: Deno edge function.
+// @state: Deno edge function..
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: none.
 
 const TOKEN_PREFIX = 'oavm1';
 const KINDS = new Set(['PROGRAM', 'CHECKPOINT', 'RESULT']);

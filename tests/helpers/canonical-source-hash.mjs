@@ -1,4 +1,9 @@
-// Last edited: 2026-10-04 17:52. Title: canonical-source-hash — Repository file. Now: canonicalize source hash line endings.
+// @last-edited: 2026-10-04 11:10 UTC.
+// @title: canonical-source-hash — source-hash — Repository file.
+// @context: Test helper.
+// @state: canonicalize source hash line endings.
+// @updated: every file carries Last edited, Title, Purpose and Now
+// @dependencies: node:crypto.
 
 import crypto from 'node:crypto';
 
