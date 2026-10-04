@@ -49,7 +49,7 @@ wire contract, and `lib/protocol.js` is where that contract is defined on this s
 
 ## Permissions
 
-Six declared. Each row says what would break without it, which is the only question a
+Five declared. Each row says what would break without it, which is the only question a
 reviewer needs answered.
 
 | Permission | Needed for | Function |
@@ -59,7 +59,6 @@ reviewer needs answered.
 | `storage` | Pairing flag, device name, device token, bridge URL override, log level, private-tab list, and the pending completion record that survives a service-worker restart | `chrome.storage.local` |
 | `alarms` | Keeping the long-poll loop alive. MV3 tears the worker down when idle, and the gateway treats 90 seconds of silence as offline | `opera-agent-wake` alarm |
 | `debugger` | Trusted input, screenshots, accessibility tree, focus emulation | see below |
-| `activeTab` | Nothing found in the code | — |
 
 ## `debugger` is four separate uses
 
@@ -117,7 +116,6 @@ code, or any other secret.
 
 ## For a reviewer
 
-- `activeTab` appears unused. Consider removing it.
 - `tabs` is a convenience given the host permissions already in place. Removing it
   costs blank URLs on non-web tabs.
 - `debugger` is load-bearing for trusted input and is the only screenshot path, but

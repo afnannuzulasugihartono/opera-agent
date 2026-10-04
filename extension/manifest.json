@@ -8,7 +8,6 @@
     "scripting",
     "storage",
     "alarms",
-    "activeTab",
     "debugger"
   ],
   "host_permissions": [
