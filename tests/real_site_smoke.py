@@ -1091,6 +1091,21 @@ async def case_foreground_mode():
         us = page.get('userState') or {}
         record('userState reports the tab as watched', us.get('watching') is True, str(us))
 
+        # A trusted click of ours is a real gesture as far as the page is concerned, so
+        # lastInputMs must become a small number. It is null before any interaction,
+        # because "never" is not the same claim as "long ago".
+        record('userState reports no input before any interaction',
+               'lastInputMs' in us, f'lastInputMs={us.get("lastInputMs")}')
+        await drive('page.pointer', {
+            'tabId': tid, 'x': 200, 'y': 520, 'action': 'click',
+            'executionMode': 'background'
+        })
+        await asyncio.sleep(0.4)
+        touched = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 300}))['page']
+        ms = (touched.get('userState') or {}).get('lastInputMs')
+        record('userState sees a real interaction', isinstance(ms, (int, float)) and ms < 10000,
+               f'lastInputMs={ms}')
+
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('foreground mode', False, f'{type(exc).__name__}: {str(exc)[:140]}')

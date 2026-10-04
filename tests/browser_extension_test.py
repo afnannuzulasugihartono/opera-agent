@@ -1910,12 +1910,27 @@ async def run(port, profile):
         assert 'userState' in r5_away, sorted(r5_away)
         assert r5_away['userState']['tabActive'] is False, r5_away['userState']
         assert r5_away['userState']['watching'] is False, r5_away['userState']
+        # A page nobody has touched reports null, not a number. "never" and "long ago"
+        # are different claims and the model must be able to tell them apart.
+        assert r5_away['userState']['lastInputMs'] is None, r5_away['userState']
 
         cid = STATE.push('page.read', {'tabId': r5_focus_baseline['activeTabId'], 'offset': 0, 'limit': 120})
         r5_here = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         expected = r5_here['userState']['tabActive'] and r5_here['userState']['windowFocused']
         assert r5_here['userState']['tabActive'] is True, r5_here['userState']
         assert r5_here['userState']['watching'] is expected, r5_here['userState']
+
+        # After a real interaction in that tab the same field becomes a small number,
+        # so the two cases together prove the field tracks the page and not the clock.
+        cid = STATE.push('page.pointer', {'tabId': r5_tab_id, 'x': 30, 'y': 30,
+                                          'action': 'click', 'trusted': True})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        await asyncio.sleep(0.3)
+        cid = STATE.push('page.read', {'tabId': r5_tab_id, 'offset': 0, 'limit': 120})
+        r5_touched = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        touched_ms = r5_touched['userState']['lastInputMs']
+        assert isinstance(touched_ms, (int, float)), r5_touched['userState']
+        assert 0 <= touched_ms < 10000, r5_touched['userState']
 
         r5_media = None
         r5_ready_deadline = time.time() + 5.0

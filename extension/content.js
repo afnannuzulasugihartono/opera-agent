@@ -505,6 +505,23 @@
     };
   }
 
+  // When did the person last touch this page? Focus alone cannot answer that: a tab
+  // can be focused while they read it, and left focused while they work somewhere
+  // else. This is the signal an agent needs to decide whether it may interrupt, and
+  // it is free because the page only receives these events when the user is really
+  // here. Capture phase so a page that stops propagation cannot hide a real click.
+  let lastUserInputAt = 0;
+  for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input']) {
+    addEventListener(type, () => { lastUserInputAt = Date.now(); }, { capture: true, passive: true });
+  }
+
+  function userInputState() {
+    return {
+      // null before any interaction: "never" is not the same claim as "long ago".
+      lastInputMs: lastUserInputAt ? Date.now() - lastUserInputAt : null
+    };
+  }
+
   function sensitiveDescriptor(el) {
     const type = clean(el.getAttribute?.('type'), 50).toLowerCase();
     const autocomplete = clean(el.getAttribute?.('autocomplete'), 120).toLowerCase();
@@ -881,6 +898,7 @@
     };
     page.viewport = viewportState();
     page.mutationVersion = mutationVersion;
+    page.userInput = userInputState();
     const compactView = args.view === 'compact';
     if (compactView) page.compactView = true;
     if (args.includeElements !== false) {
