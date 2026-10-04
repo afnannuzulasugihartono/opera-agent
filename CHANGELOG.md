@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 21:14 UTC+7.
+@last-edited: 2026-10-04 21:44 UTC+7.
 
 # Changelog
 
@@ -60,8 +60,12 @@ never implied by CI green.
   and template contents, `--` needs whitespace (a CSS `--custom-property` is not a
   comment), and applied migrations are excluded because they are applied artifacts.
 - **CI can no longer be blocked forever by one hung job.** Every job has a timeout and
-  superseded runs are cancelled. CI acceptance is still unobtainable on this machine
-  because the python.org installer hangs; see `[docs/HANDOFF.md](docs/HANDOFF.md)`.
+  superseded runs are cancelled. The Node gate and the secret scan now run on GitHub's own
+  Linux runner, so they report while this laptop is offline; only the browser job needs it.
+- **The secret scan runs for the first time, and passes.** It had never executed, because
+  the step's shell was broken. Its first run failed on its own allowlist, which still named
+  a test file that no longer exists. Paths were re-pointed at the files that are there; no
+  fixture was edited to dodge the scanner.
 
 ## [1.6.15] - 2026-10-03
 

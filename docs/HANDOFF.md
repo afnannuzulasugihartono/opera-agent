@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 21:16 UTC+7.
+@last-edited: 2026-10-04 21:44 UTC+7.
 
 # HANDOFF
 
@@ -89,11 +89,16 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 - `1facc42` concluded **success on all three gates**: unit, secret-scan, browser. It is the
   head that carries the `media.play` change, so it is the acceptance evidence for the
   runtime. Three earlier commits are green on the same gates.
-- The `unit` gate now runs on `ubuntu-latest` and passes there: `npm test` 772 and
-  `npm run check` are platform-neutral, which is the first proof of it on anything but
-  this Windows machine. `secret-scan` and `browser` still need the self-hosted runner.
-- The self-hosted runner `laptop-d-runner` is offline, so `secret-scan` and `browser` queue
-  and never start. Starting it is an owner action on that machine.
+- `d7fab9f` is **green on unit and secret-scan** on GitHub's Linux runner: 772 tests and
+  `npm run check` there, and gitleaks clean. Only `browser` is queued, on the runner the
+  owner has to start. This is the first CI evidence of the session.
+- The secret-scan gate had **never executed** before 2026-10-04. Its first run failed on its
+  own configuration: the jwt allowlist still pointed at `tests/transaction-cloud-8d.test.mjs`,
+  a name that stopped existing when milestone labels left the file names. Fixed by
+  re-pointing paths, never by editing the fixture.
+- `unit` and `secret-scan` moved to `ubuntu-latest`; `browser` stays on
+  `[self-hosted, Windows, X64]`. The Windows-only `GIT_CONFIG_GLOBAL=/dev/null` moved to that
+  job alone, because on Linux every `git config` call fails against it.
 - The concurrency group cancels an in-flight run when a newer one queues, so a push made
   while CI is running destroys the evidence for the head that was being tested. Push, then
   wait. Two runs were lost to this during this session.
