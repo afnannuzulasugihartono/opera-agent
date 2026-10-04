@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 23:40 UTC+7.
+@last-edited: 2026-10-05 00:56 UTC+7.
 @related: [`AGENTS.md`](AGENTS.md) - [`CHANGELOG.md`](CHANGELOG.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md)
 
 # Roadmap
@@ -23,6 +23,10 @@ only what is still open.
       place it has to appear.
 - [ ] An end-to-end artefact run: ask an assistant for a Word document, the document
       exists. Blocked on Google credentials in the live suite, not on the runtime.
+- [ ] Hand a compiled plan to the device. `lib/goal-plan.js` is the gate and
+      `buildPlanRequest` is the prompt; both proven, neither wired. Needs a model endpoint
+      and key, a `SECURITY.md` decision on page content leaving the device, and a new RPC
+      so the VM host can execute a program rather than a named workflow.
 
 ## Standing rules
 

@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 23:40 UTC+7.
+@last-edited: 2026-10-05 00:56 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -39,7 +39,15 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the
   model can tell whether the person is looking at the tab before choosing foreground or
   background. Fails open: a missing `userState` is a gap in the report, not a failure.
-- A `TARGET_NOT_READY` refusal carries `refState`: `expired` when the ref can never act
+- **The plan path exists; the model call does not.** Owner decision: the model composes a
+  plan once, the device executes it locally, so a task costs one round trip instead of one
+  per step. [`lib/goal-plan.js`](../lib/goal-plan.js) is the gate between model text and
+  that execution, and `buildPlanRequest` is the prompt that asks for one, sharing the same
+  allowlist so the two cannot drift. Both are pure and proven: 15 tests, no key needed.
+- `b436843` is **green on all three gates** on GitHub's Linux runners, and Linux found a
+  defect Windows could not: the comment-spacing lock read `git ls-files`, so a brand-new
+  file was never checked. It walks the filesystem now.
+- `TARGET_NOT_READY` refusal carries `refState`: `expired` when the ref can never act
   on this page again, `detached` when the node left the DOM, `unresolvable` when the
   node is connected but stopped matching. `expired` is refused at once, measured
   7575ms → 0ms; `detached` still waits the tested `waitedMs >= 3000`. The hint names
@@ -64,16 +72,11 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 ## Still open
 
 1. Release so the shipped CRX contains the Options page. Needs the private signing key.
-2. ~~Remove the unused `activeTab` permission.~~ Removed; 5 permissions remain.
-3. Publishable-key rotation — a production secret, untouched.
-4. SonarCloud project access — the pre-existing New Code wall.
-5. Three Supabase PATs need owner action. There is no Management API for PATs, so
-   nothing further is possible from here. One remains, scoped to `opera-agent` only.
-6. Real login flows on Google and GitHub. Code exists; needs `OA_GOOGLE_EMAIL`,
-   `OA_GOOGLE_PASSWORD`, `OA_GITHUB_EMAIL`, `OA_GITHUB_PASSWORD` in the environment.
-   The forms themselves are already located on the live sites and the selectors are
-   verified; only the submit needs credentials.
-7. **The one real latency lever, and it is an owner decision.** Measured over 9,079
+2. Publishable-key rotation — a production secret, untouched.
+3. SonarCloud project access — the pre-existing New Code wall.
+4. Supabase PATs and the login credentials for Google and GitHub need owner action; there
+   is no Management API for PATs, and the live login cases only lack the submit.
+5. **The one real latency lever, and it is an owner decision.** Measured over 9,079
    production commands, 676.6 ms of the 1875.3 ms average is the device not yet having
    asked for the command, p95 1914.4 ms. That wait is the polling ramp inside
    `opera_claim_next_wait`, which falls to a 250 ms floor after 720 ms idle. A 100 ms
@@ -81,8 +84,14 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
    gets near 700 ms at 20. It is not changed: it alters a production function on the
    command path, and the right floor depends on how many devices idle at once, which
    this repository cannot answer. Full numbers in `[docs/benchmarks.md](benchmarks.md)`.
-8. The largest unknown: how many model round trips a real task costs. Every latency
-   figure here models the server and extension path, not the model loop.
+6. The largest unknown: how many model round trips a real task costs. Every latency
+   figure here models the server and extension path, not the model loop. The plan path
+   is the answer being built for it; see item 9.
+7. **The plan path needs two owner inputs before it can run.** A model endpoint and key
+   (an OpenAI-compatible URL covers a local model for development and a hosted one for
+   production), and a decision on [`SECURITY.md`](../SECURITY.md) because page content
+   would leave the device. After that the remaining work is the VM host: handing a
+   compiled program to `opera_start_workflow` needs a new RPC, which is production shape.
 
 ## CI
 
@@ -93,17 +102,14 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   Linux runners. The browser gate runs the same harness headed under `xvfb-run` on
   playwright's chromium. This is the acceptance evidence for the whole session: earlier
   commits only ever had local green.
-- Three dead ends got there and each one is a trap worth keeping:
-  - Headless Chromium does not start this extension's MV3 service worker.
-  - The image's branded Chrome does not load an unpacked MV3 extension through playwright
-    at all, headless or headed. Playwright's own chromium does.
-  - `xvfb-run` stops draining the child's stdout, so the harness finishes the suite and
-    then dies writing its summary. Redirect stdout to a file.
+- Three dead ends got there, each a trap worth keeping: headless Chromium starts no MV3
+  service worker; the image's branded Chrome loads no unpacked MV3 extension through
+  playwright at all, while playwright's own chromium does; and `xvfb-run` stops draining the
+  child's stdout, so the harness finishes the suite then dies writing its summary.
 - The secret-scan gate had **never executed** before 2026-10-04. Its first run failed on its
   own configuration: the jwt allowlist still pointed at `tests/transaction-cloud-8d.test.mjs`,
-  a name that stopped existing when milestone labels left the file names. Fixed by
-  re-pointing paths, never by editing the fixture, and locked locally by
-  `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`.
+  a name that stopped existing. Fixed by re-pointing paths, never by editing the fixture,
+  and locked locally by `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`.
 - All three jobs run on `ubuntu-latest`; the self-hosted Windows runner is no longer needed
   by CI. The Python 3.12 pin is restored, because the reason it was dropped was a fault of
   this machine's installer rather than of the pin.
