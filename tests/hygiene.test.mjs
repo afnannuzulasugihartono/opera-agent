@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 21:52 UTC+7.
-// @title: hygiene — runtime properties and the comment-spacing rule.
-// @state: The memoized read path, the comment-spacing rule and live allowlist paths are locked.
+// @last-edited: 2026-10-04 23:32 UTC+7.
+// @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
+// @state: The memoized read path, the comment-spacing rule, live allowlist paths and the .md logic gates are locked.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
 
 // Properties that keep the runtime code correct as it grows, and that the code
@@ -11,6 +11,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import { readFile, readdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
@@ -57,6 +58,44 @@ test('every comment block has a blank line before and after it', async () => {
     violations.push(...spacingViolations(file, text, path.extname(file).toLowerCase()));
   }
   assert.deepEqual(violations, [], violations.slice(0, 12).join('\n'));
+});
+
+test('no document says Do X and another says Don\'t X', async () => {
+  const root = new URL('..', import.meta.url);
+  const docs = (await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8'))
+    .split('\n').length;
+  assert.ok(docs > 100, 'sanity: the hub is the file that carries the commands');
+
+  // WHY this shape: a rule stated as "Do X" in one file and "Don't X" in another
+  // is a contradiction an agent cannot resolve by reading harder, and the two
+  // files each look correct in review. Precedence settles it by hand; this fails
+  // it in a second.
+  const dir = fileURLToPath(root);
+  const commands = new Map();
+  const collect = (file) => {
+    const body = fsSync.readFileSync(path.join(dir, file), 'utf8');
+    const dos = new Set();
+    const donts = new Map();
+    body.split('\n').forEach((line, i) => {
+      const key = line
+        .replace(/^\s*[-*]?\s*/, '')
+        .replace(/^(?:Do|Don't)\s+/, '')
+        .replace(/\s+/g, ' ')
+        .replace(/[.;:]$/, '')
+        .toLowerCase();
+      if (/^\s*[-*]?\s*Do\s+/.test(line)) dos.add(key);
+      if (/^\s*[-*]?\s*Don't\s+/.test(line)) {
+        if (!donts.has(key)) donts.set(key, i + 1);
+      }
+    });
+    for (const [key, line] of donts) if (dos.has(key)) commands.set(`${file}:${line}`, key);
+  };
+  for (const file of execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8' })
+    .split('\n')
+    .filter((f) => f.endsWith('.md'))) {
+    collect(file);
+  }
+  assert.deepEqual([...commands.keys()], []);
 });
 
 test('every gitleaks allowlist path still names a file in the tree', async () => {

@@ -1,12 +1,12 @@
 @last-edited: 2026-10-04 18:25 UTC+7.
+@related: [AGENTS.md](../AGENTS.md) - [extension/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
 
 # Extension
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
-Related: [AGENTS.md](../AGENTS.md) - [extension/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
 
 Browser-local Opera Agent code. A thin bridge: receive a validated command, run one
 allowlisted browser primitive, return the result. Site-specific workflows belong in

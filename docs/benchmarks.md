@@ -1,13 +1,13 @@
 @last-edited: 2026-10-04 18:25 UTC+7.
+@related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](runbook.md) reproduce commands - [api.md](api.md)
 
 # Performance Benchmarks
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 One machine's timings never become test assertions.
 
-Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](runbook.md) reproduce commands - [api.md](api.md)
 # Performance Benchmarks
 
 Observations, never latency assertions. One machine's timings are not a threshold.
@@ -37,7 +37,7 @@ Observations, never latency assertions. One machine's timings are not a threshol
 
 A machine that cannot produce a paired comparison must record why, not a number.
 
-## Accepted rich-read baseline — 1.6.0
+## Accepted rich-read baseline â€” 1.6.0
 
 Paired consecutive runs on one Windows machine, isolated profile, three runs each.
 
@@ -91,8 +91,8 @@ From `pg_stat_statements` on the live project. Read the sample size before the n
 | Stage | Avg | p50 | p95 |
 |---|---:|---:|---:|
 | enqueue to claim, the device noticing the command | **676.6 ms** | **184.0 ms** | 1914.4 ms |
-| claim to complete, the browser doing the work | 1198.7 ms | 532.2 ms | — |
-| end to end | 1875.3 ms | — | — |
+| claim to complete, the browser doing the work | 1198.7 ms | 532.2 ms | â€” |
+| end to end | 1875.3 ms | â€” | â€” |
 
 So about 36% of a command is spent waiting for the device to ask for it, and that
 waiting is pure idle, not work.
@@ -104,13 +104,13 @@ The device long-polls with a 5s window and the wait lives in Postgres, inside
 
 | Polls | Sleep each | Cumulative |
 |---:|---:|---:|
-| 1–8 | 5 ms | 40 ms |
-| 9–16 | 10 ms | 120 ms |
-| 17–24 | 25 ms | 320 ms |
-| 25–32 | 50 ms | 720 ms |
+| 1â€“8 | 5 ms | 40 ms |
+| 9â€“16 | 10 ms | 120 ms |
+| 17â€“24 | 25 ms | 320 ms |
+| 25â€“32 | 50 ms | 720 ms |
 | 33+ | **250 ms** | +250 ms each |
 
-The measured p50 of 184 ms sits in the 120–320 ms band and the p95 of 1914 ms sits deep
+The measured p50 of 184 ms sits in the 120â€“320 ms band and the p95 of 1914 ms sits deep
 in the 250 ms tail. That is the shape of a ramp that degrades after 720 ms of idleness:
 a device that has been quiet for a couple of seconds is asking every 250 ms.
 

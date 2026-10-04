@@ -1,14 +1,14 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-04 23:40 UTC+7.
+@related: [`AGENTS.md`](AGENTS.md) - [`SECURITY.md`](SECURITY.md) - [`docs/api.md`](docs/api.md)
 
 # Opera Agent
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](AGENTS.md) name.
 
 A private, local-browser control bridge.
 
-Related: [`AGENTS.md`](AGENTS.md) - [`SECURITY.md`](SECURITY.md) - [`docs/api.md`](docs/api.md)
 
 - Lets MCP clients drive the user's own browser session through a strict allowlist of
   generic browser primitives.

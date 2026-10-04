@@ -1,12 +1,12 @@
 @last-edited: 2026-10-04 18:25 UTC+7.
+@related: [AGENTS.md](../AGENTS.md) - [runbook.md](runbook.md)
 
 # Gateway API
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
-Related: [AGENTS.md](../AGENTS.md) - [runbook.md](runbook.md)
 
 - Machine source of truth: the live `GET /openapi.json` the gateway serves itself.
 - This file is the narrative reference for operators and integrators.
@@ -81,7 +81,7 @@ The gateway accepts the token in three carriers, checked in this order:
 | --- | --- | --- | --- |
 | `method` | string | Yes | The browser action to run, e.g. `tabs.list`, `page.find`, `browser.burst`. Must match `/^[a-z][a-z0-9_.]{1,48}$/` or the request is rejected with `INVALID_METHOD`. |
 | `params` | object | No | Method-specific arguments. A missing or non-object value is treated as an empty object. |
-| `waitMs` | integer | No | How long to wait for the device to report back. Clamped to 500–32000 ms; default 12000 ms when absent, non-numeric, or zero. |
+| `waitMs` | integer | No | How long to wait for the device to report back. Clamped to 500â€“32000 ms; default 12000 ms when absent, non-numeric, or zero. |
 | `requestId` | string | No | Idempotency key. Must match `/^[A-Za-z0-9_-]{1,100}$/`. A value that does not match is ignored rather than rejected, so a malformed key silently gives up replay protection. |
 | `apiKey` | string | No | Device token carrier, for clients that cannot set headers. |
 
@@ -104,7 +104,7 @@ Every code the gateway emits, with the HTTP status it is returned with:
 | `INVALID_JSON` | 400 | The request body could not be parsed as JSON. |
 | `UNAUTHORIZED` | 401 | No token was supplied, or the token is not valid for device `opera`. |
 | `INVALID_METHOD` | 400 | `method` is missing or does not match the method pattern. |
-| `DEVICE_NOT_PAIRED` | 401 | The device row named `opera` was absent, or had become `disabled`, at the moment of the device lookup that follows token verification. An **already-disabled** device never reaches this code — `opera_verify_device` excludes `status = 'disabled'`, so it is rejected earlier with `UNAUTHORIZED`. This code is therefore a missing device row or a narrow race in the window between verification and enqueue, not the ordinary disabled-device case. |
+| `DEVICE_NOT_PAIRED` | 401 | The device row named `opera` was absent, or had become `disabled`, at the moment of the device lookup that follows token verification. An **already-disabled** device never reaches this code â€” `opera_verify_device` excludes `status = 'disabled'`, so it is rejected earlier with `UNAUTHORIZED`. This code is therefore a missing device row or a narrow race in the window between verification and enqueue, not the ordinary disabled-device case. |
 | `AWAIT_TIMEOUT` | 504 | The device did not report back before `waitMs`. The action may still have succeeded; verify page state before repeating it. |
 | `GATEWAY_ERROR` | 502; also 200 on the empty-result path | The gateway could not complete the round trip: a database failure, an empty result, or a lost wait response after the command was enqueued. The action may still have succeeded; verify page state before repeating it. |
 | `METHOD_NOT_ALLOWED` | 405 | The route does not accept this HTTP method. `/command` accepts `POST` only. |

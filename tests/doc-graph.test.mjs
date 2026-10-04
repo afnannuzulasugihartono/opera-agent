@@ -9,9 +9,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Every .md must be reachable from another .md, must carry a Related: line, and
-// every relative link in it must resolve. The owner's rule is that the documents are
-// related to each other, and a lock only counts when it can fail: each check below
+// Every .md must be reachable from another .md, must carry an @related: header tag,
+// and every relative link in it must resolve. The owner's rule is that the documents
+// are related to each other, and the tag sits next to @last-edited so the binding and
+// the stamp are read together. A lock only counts when it can fail: each check below
 // names a violation that would otherwise pass review silently. The file list comes
 // from the filesystem, not from git, because a document that has been written but
 // not yet added is exactly the orphan this has to catch.
@@ -57,9 +58,10 @@ test('every relative link in a document resolves to a file that exists', () => {
   }
 });
 
-test('every document names its relatives', () => {
+test('every document names its relatives in the header', () => {
   for (const [file, body] of text) {
-    assert.match(body, /Related:/, `${file} has no Related: line`);
+    assert.match(body, /^@related: /m, `${file} has no @related: tag`);
+    assert.doesNotMatch(body, /^Related:/m, `${file} keeps a body Related: line beside the tag`);
   }
 });
 
@@ -86,7 +88,7 @@ test('every document is mutual with the hub, not just reachable through it', () 
   // nothing in return, so a reader who lands on it has no way back to the map.
   // The hub is AGENTS.md, the one file an agent is guaranteed to read. Mutual
   // means both directions: the hub names every document, and every document
-  // names the hub in its Related: line. A full mesh would bloat every header;
+  // names the hub in its @related tag. A full mesh would bloat every header;
   // the hub keeps it one hop each way.
   const hub = 'AGENTS.md';
   const hubLinks = new Set(
@@ -103,8 +105,8 @@ test('every document is mutual with the hub, not just reachable through it', () 
       hubLinks.has(file),
       `${file} is not named by the hub ${hub}`
     );
-    const related = text.get(file).match(/^(?:-\s*)?Related:(.*)$/m);
-    assert.ok(related, `${file} has no Related: line naming the hub`);
+    const related = text.get(file).match(/^@related:(.*)$/m);
+    assert.ok(related, `${file} has no @related tag naming the hub`);
     const namesHub = [...related[1].matchAll(/\(([^)#][^)]*)\)/g)]
       .map((match) => match[1].trim())
       .filter((target) => !/^[a-z]+:/i.test(target))
@@ -115,7 +117,7 @@ test('every document is mutual with the hub, not just reachable through it', () 
           .join('/')
       )
       .includes(hub);
-    assert.ok(namesHub, `${file} does not name the hub ${hub} in its Related: line`);
+    assert.ok(namesHub, `${file} does not name the hub ${hub} in its @related tag`);
   }
 });
 

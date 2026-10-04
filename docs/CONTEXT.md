@@ -1,12 +1,12 @@
 @last-edited: 2026-10-04 20:52 UTC+7.
+@related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session - [runbook.md](runbook.md)
 
 # CONTEXT
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
-Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session - [runbook.md](runbook.md)
 
 > Facts that must survive because they cannot be recovered by reading the code.
 > Next action: [HANDOFF.md](HANDOFF.md). Session logs: git history.

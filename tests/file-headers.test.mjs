@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 22:38 UTC+7.
+// @last-edited: 2026-10-04 23:32 UTC+7.
 // @title: file-headers — every file carries its header in the @tag shape.
-// @state: Headers are four tags: @last-edited, @title, @state, @dependencies.
+// @state: Code carries four tags; a .md carries @last-edited then @related.
 // @dependencies: test, assert, fs, path, child_process, url.
 
 import test from 'node:test';
@@ -38,7 +38,7 @@ function headerLines(file) {
     const start = lines[0] === '---'
       ? lines.findIndex((l, i) => i > 0 && l === '---') + 1
       : 0;
-    return { lines, start, count: 1 };
+    return { lines, start, count: 2 };
   }
   return { lines, start: 0, count: 4 };
 }
@@ -66,6 +66,11 @@ test('every file carries its header in the @tag shape', () => {
         ['@last-edited', '@title', '@state', '@dependencies'],
         `${file} must carry @last-edited, @title, @state, @dependencies in order`
       );
+    } else {
+      // A .md carries two tags and no body header: the stamp and the graph edge
+      // that says which documents belong with it.
+      const tags = lines.slice(start, start + 2).map((l) => strip(l).split(':')[0]);
+      assert.deepEqual(tags, ['@last-edited', '@related'], `${file} must carry @last-edited then @related`);
     }
     checked++;
   }

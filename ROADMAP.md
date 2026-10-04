@@ -1,14 +1,14 @@
-@last-edited: 2026-10-04 20:10 UTC+7.
+@last-edited: 2026-10-04 23:40 UTC+7.
+@related: [`AGENTS.md`](AGENTS.md) - [`CHANGELOG.md`](CHANGELOG.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md)
 
 # Roadmap
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](AGENTS.md) name.
 
 Current version: `1.6.15` (`[extension/manifest.json](extension/manifest.json)` is the source of truth).
 
-Related: [`AGENTS.md`](AGENTS.md) - [`CHANGELOG.md`](CHANGELOG.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md)
 
 Shipped work lives in git history and in [`CHANGELOG.md`](CHANGELOG.md). This file holds
 only what is still open.

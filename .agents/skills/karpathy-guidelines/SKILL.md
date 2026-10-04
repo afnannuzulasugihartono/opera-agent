@@ -9,15 +9,15 @@ metadata:
   note: "Not authored by Andrej Karpathy. A community file derived from his public observations."
 ---
 @last-edited: 2026-10-04 18:25 UTC+7.
+@related: [AGENTS.md](../../../AGENTS.md) rules
 Last edited: 2026-10-04 17:52.
 
 # Karpathy Guidelines
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../../../AGENTS.md) name.
 
-Related: [AGENTS.md](../../../AGENTS.md) rules
 
 Behavioral guidelines that reduce common LLM coding mistakes, derived from
 [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876)

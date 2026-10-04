@@ -1,12 +1,12 @@
-@last-edited: 2026-10-04 22:58 UTC+7.
+@last-edited: 2026-10-04 23:40 UTC+7.
+@related: [AGENTS.md](AGENTS.md) rules - [HANDOFF.md](docs/HANDOFF.md) - [api.md](docs/api.md)
 
 # Changelog
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](AGENTS.md) name.
 
-Related: [AGENTS.md](AGENTS.md) rules - [HANDOFF.md](docs/HANDOFF.md) - [api.md](docs/api.md)
 
 Notable changes. Semantic versioning.
 
@@ -19,6 +19,14 @@ Notable changes. Semantic versioning.
 Shipped to `main` after 1.6.15. Source only — cutting a release is an owner decision,
 never implied by CI green.
 
+- **The rules are goal-driven and read in order.** `AGENTS.md` opens with standing
+  instructions that ride with every task, then Goals, then Mission, then Priority order,
+  then Precedence. Code first, comments second. Every change raises Function, Feature or
+  Speed toward a Goal, and the logic gates forbid a `Do X` in one document beside a
+  `Don't X` in another.
+- **`Related:` became `@related`.** The document graph moved into the header, directly
+  after `@last-edited`, so the stamp and the edges are read together. Locked in
+  `tests/doc-graph.test.mjs` and `tests/file-headers.test.mjs`.
 - **The observation reports the user's current state.** `page.read` carries
   `userState`: `tabActive`, `windowFocused`, `watching`, and `lastInputMs`. An agent
   cannot choose foreground over background, or decide whether it may interrupt,

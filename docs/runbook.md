@@ -1,19 +1,19 @@
 @last-edited: 2026-10-04 18:25 UTC+7.
+@related: [AGENTS.md](../AGENTS.md) - [api.md](api.md) - [SECURITY.md](../SECURITY.md)
 
 # Operator runbook
 
-Simplify first. State what is true now, never its history.
+Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site. After the main sites hold, add sites that teach new functions.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
-Related: [AGENTS.md](../AGENTS.md) - [api.md](api.md) - [SECURITY.md](../SECURITY.md)
 
 For whoever holds the pager. Assumes no chat history.
 
 - Every claim here was checked against the repository when written.
 - If a step contradicts what you observe, **trust what you observe** and treat
   this document as the bug.
-- SQL blocks run in the Supabase SQL editor, not PostgREST — the four
+- SQL blocks run in the Supabase SQL editor, not PostgREST â€” the four
   operator-facing RPCs are revoked from `public`/`anon`/`authenticated`, so a
   PostgREST call fails on permissions.
 
@@ -31,7 +31,7 @@ UPDATE="$SUPABASE_URL/functions/v1/opera-agent-update"
 | `[docs/api.md](api.md)` | Gateway request/response contract, error codes |
 | `[SECURITY.md](../SECURITY.md)` | Security principles, token transport |
 
-## Disabled devices — one rule for every incident
+## Disabled devices â€” one rule for every incident
 
 - A row in `public.opera_devices` with `status = 'disabled'` was set by a human
   with direct database access: **nothing in this repository writes `disabled`**.
