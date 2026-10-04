@@ -9,7 +9,7 @@ icon-only controls, and canvas-class surfaces. No new public tool.
 
 ## Layer A: pure DOM, always on
 
-In `extension/content.js`. No debugger, bounded, runs on every read.
+In `[extension/content.js](../extension/content.js)`. No debugger, bounded, runs on every read.
 
 - `collectInteractiveNodes()` replaces the flat `querySelectorAll` scans in the region
   observation, `pageFind`, `findVisibleTextCandidate`, and `page.wait_for` polling.
@@ -26,7 +26,7 @@ In `extension/content.js`. No debugger, bounded, runs on every read.
 
 ## Layer B: poverty-triggered CDP snapshot, read-only
 
-`extension/lib/ax-summary.js`, called from `background.js`.
+`[extension/lib/ax-summary.js](../extension/lib/ax-summary.js)`, called from `[extension/background.js](../extension/background.js)`.
 
 - Fires only when `page.read` sees `totalTextChars <= 400`, or the elements carry no
   real role. A text-rich page never pays the debugger round trip.
@@ -63,7 +63,7 @@ tools.
 
 ## Evidence
 
-- `tests/ax-observation.test.mjs` locks the invariants above: 9/9, executable
+- `[tests/ax-observation.test.mjs](../tests/ax-observation.test.mjs)` locks the invariants above: 9/9, executable
   assertions rather than regex.
 - Browser regression exercises a shadow control found by label and clicked through its
   ref, an icon-only control found by `accessibleName`, a poor-page read carrying an

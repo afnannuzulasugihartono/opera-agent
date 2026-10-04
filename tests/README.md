@@ -19,7 +19,7 @@ Two kinds of test live here, and they are not equally load-bearing:
 - **Behavior tests** import a runtime module and assert on what it does. These
   are the evidence; a change that breaks one broke the product.
 - **Contract locks** pin a frozen digest (`tests/fixtures/*.json`,
-  `tests/helpers/boundary-locks.mjs`). They exist so a deliberate edit to a
+  `[tests/helpers/boundary-locks.mjs](helpers/boundary-locks.mjs)`). They exist so a deliberate edit to a
   runtime file has to say out loud why it is safe. Editing a pinned file without
   re-freezing is a red build, not a silent regression.
 

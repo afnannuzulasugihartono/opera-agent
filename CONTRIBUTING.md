@@ -7,7 +7,7 @@ Related: [AGENTS.md](AGENTS.md) rules - [tests/README.md](tests/README.md)
 ## Development workflow
 
 Use short-lived branches for changes, following the binding naming rules in
-`AGENTS.md`:
+[`AGENTS.md`](AGENTS.md):
 
 ```text
 feat/*      fix/*      chore/*      docs/*      test/*      perf/*      refactor/*
@@ -20,7 +20,7 @@ Before merging:
 2. Verify extension syntax and manifest validity.
 3. Run browser regression tests where applicable.
 4. Update documentation for user-visible behavior.
-5. Update `CHANGELOG.md` for notable changes.
+5. Update `[CHANGELOG.md](CHANGELOG.md)` for notable changes.
 
 ## Project rules
 

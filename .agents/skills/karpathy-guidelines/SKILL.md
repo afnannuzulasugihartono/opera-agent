@@ -20,7 +20,7 @@ Behavioral guidelines that reduce common LLM coding mistakes, derived from
 on LLM coding pitfalls.
 
 - Tradeoff: these bias toward caution over speed. For trivial tasks, use judgment.
-- `AGENTS.md` is binding and stricter. Where the two disagree, `AGENTS.md` wins.
+- `[AGENTS.md](../../../AGENTS.md)` is binding and stricter. Where the two disagree, `[AGENTS.md](../../../AGENTS.md)` wins.
 - Nothing here relaxes a repo rule.
 - Simplicity applies to the mechanism, not to the evidence: a test that pins a contract
   is the deliverable, not speculative flexibility.

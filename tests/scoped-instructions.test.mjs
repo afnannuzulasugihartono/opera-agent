@@ -20,7 +20,7 @@ for (const area of areas) {
       text.split('\n').length <= 15,
       `${area}/AGENTS.md must stay a pointer list (cap 15 lines)`
     );
-    assert.match(text, /Root `AGENTS\.md` binds/);
+    assert.match(text, /\[AGENTS\.md\]\(\.\.\/AGENTS\.md\)/, `${area}/AGENTS.md must name and address the root`);
   });
 }
 

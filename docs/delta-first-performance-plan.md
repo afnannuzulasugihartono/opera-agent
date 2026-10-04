@@ -75,7 +75,7 @@ Reset rather than continue stale state on any of:
 
 ## Measurement contract
 
-`tests/fixtures/delta-performance-baseline-p0-v1.json` freezes:
+`[tests/fixtures/delta-performance-baseline-p0-v1.json](../tests/fixtures/delta-performance-baseline-p0-v1.json)` freezes:
 
 - the workload matrix
 - the metrics

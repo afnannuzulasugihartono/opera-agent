@@ -2,7 +2,7 @@
 
 Simplify first. State what is true now, never its history.
 
-Current version: `1.6.15` (`extension/manifest.json` is the source of truth).
+Current version: `1.6.15` (`[extension/manifest.json](extension/manifest.json)` is the source of truth).
 
 Related: [`AGENTS.md`](AGENTS.md) - [`CHANGELOG.md`](CHANGELOG.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md)
 

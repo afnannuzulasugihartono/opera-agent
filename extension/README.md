@@ -24,30 +24,30 @@ stale the moment the file is edited.
 
 | File | What it is |
 |---|---|
-| `background.js` | The worker. Command dispatch, the pull loop, pairing, and every primitive's host-side half |
-| `content.js` | The top-document script. Element refs, semantic reads, hit-testing, pointer input |
-| `lib/protocol.js` | The wire contract: the 26 allowlisted primitives and the burst vocabulary |
-| `lib/action-pipeline.js` | Pure policy for resolve, wait, heal, verify. No DOM, no chrome |
-| `lib/focus-gate.js` | Pure policy for whether a foreground action may proceed |
-| `lib/keyboard.js` | Resolves a key or chord request to exact CDP key events |
-| `lib/watch.js` | Pure policy for `watch.*` rules |
-| `lib/ax-summary.js` | Bounded, value-free accessibility summary for semantically poor surfaces |
-| `lib/debugger-session.js` | Lazy, shared CDP attach bookkeeping |
-| `lib/deadline-race.js` | Decides a command's deadline against work already in flight |
-| `lib/error-messages.js` | Maps error codes to text for the popup and options page |
-| `lib/popup-events.js` | Pure policy for popup and redirect follow-through |
-| `lib/endpoints.js` | The single source of deployment endpoint truth |
-| `lib/options-store.js` | Validates and persists the Options page settings |
-| `lib/agent-log.js` | Ring buffer of log entries, published for the popup. Classic script |
-| `lib/role-reconcile.js` | Fills roles from the accessibility tree. Classic script |
-| `semantic-identity.js` | Stable identity for elements across re-renders |
-| `semantic-views.js` | Bounded materialized views over a region |
-| `hover-settle.js` | Pointer settle timing before a hover or click is trusted |
-| `popup.html`, `options.html` | The only two UI surfaces. Neither shows a secret |
+| `[background.js](background.js)` | The worker. Command dispatch, the pull loop, pairing, and every primitive's host-side half |
+| `[content.js](content.js)` | The top-document script. Element refs, semantic reads, hit-testing, pointer input |
+| `[lib/protocol.js](lib/protocol.js)` | The wire contract: the 26 allowlisted primitives and the burst vocabulary |
+| `[lib/action-pipeline.js](lib/action-pipeline.js)` | Pure policy for resolve, wait, heal, verify. No DOM, no chrome |
+| `[lib/focus-gate.js](lib/focus-gate.js)` | Pure policy for whether a foreground action may proceed |
+| `[lib/keyboard.js](lib/keyboard.js)` | Resolves a key or chord request to exact CDP key events |
+| `[lib/watch.js](lib/watch.js)` | Pure policy for `watch.*` rules |
+| `[lib/ax-summary.js](lib/ax-summary.js)` | Bounded, value-free accessibility summary for semantically poor surfaces |
+| `[lib/debugger-session.js](lib/debugger-session.js)` | Lazy, shared CDP attach bookkeeping |
+| `[lib/deadline-race.js](lib/deadline-race.js)` | Decides a command's deadline against work already in flight |
+| `[lib/error-messages.js](lib/error-messages.js)` | Maps error codes to text for the popup and options page |
+| `[lib/popup-events.js](lib/popup-events.js)` | Pure policy for popup and redirect follow-through |
+| `[lib/endpoints.js](lib/endpoints.js)` | The single source of deployment endpoint truth |
+| `[lib/options-store.js](lib/options-store.js)` | Validates and persists the Options page settings |
+| `[lib/agent-log.js](lib/agent-log.js)` | Ring buffer of log entries, published for the popup. Classic script |
+| `[role-reconcile.js](role-reconcile.js)` | Fills roles from the accessibility tree. Classic script |
+| `[semantic-identity.js](semantic-identity.js)` | Stable identity for elements across re-renders |
+| `[semantic-views.js](semantic-views.js)` | Bounded materialized views over a region |
+| `[hover-settle.js](hover-settle.js)` | Pointer settle timing before a hover or click is trusted |
+| `[popup.html](popup.html)`, `[options.html](options.html)` | The only two UI surfaces. Neither shows a secret |
 
 Pure modules under `lib/` have no DOM and no chrome dependency, so the Node suite tests
 the same source the browser runs. The MCP server does not import them: it speaks the
-wire contract, and `lib/protocol.js` is where that contract is defined on this side.
+wire contract, and `[lib/protocol.js](lib/protocol.js)` is where that contract is defined on this side.
 
 ## Permissions
 
@@ -88,7 +88,7 @@ enforced in code instead.
 
 ## Content scripts
 
-- `document_start` so the `MutationObserver` in `content.js` sees the document from the
+- `document_start` so the `MutationObserver` in `[content.js](content.js)` sees the document from the
   beginning. A late injection misses the initial DOM and races first paint.
 - `all_frames: false`. Refs resolve against the top document, so a ref means "this
   element in the page the user is looking at". Injecting everywhere would multiply
@@ -98,7 +98,7 @@ enforced in code instead.
 ## Service worker
 
 `type: "module"`, so the worker and the Node-based tests share the same source in
-`extension/lib/` instead of duplicating it. `agent-log.js` and `role-reconcile.js` are
+`extension/lib/` instead of duplicating it. `[lib/agent-log.js](lib/agent-log.js)` and `[role-reconcile.js](role-reconcile.js)` are
 side-effect imports that publish on `globalThis`, because the manifest loads the same
 files as classic content scripts which cannot import.
 
@@ -112,7 +112,7 @@ No remote code, no inline script, egress limited to loopback and the Supabase pr
 
 ## Settings
 
-The only UI is the Options page (`options.html`, from `opera://extensions`). It sets the
+The only UI is the Options page (`[options.html](options.html)`, from `opera://extensions`). It sets the
 bridge URL override and the log level, and never displays the device token, a pairing
 code, or any other secret.
 

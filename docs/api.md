@@ -6,7 +6,7 @@ Related: [AGENTS.md](../AGENTS.md) - [runbook.md](runbook.md)
 
 - Machine source of truth: the live `GET /openapi.json` the gateway serves itself.
 - This file is the narrative reference for operators and integrators.
-- Drift-pinned by `tests/api-docs.test.mjs`, which reads routed paths and error
+- Drift-pinned by `[tests/api-docs.test.mjs](../tests/api-docs.test.mjs)`, which reads routed paths and error
   codes out of the gateway source and fails when this document stops covering them.
 - If this document and the live spec disagree, the live spec wins and the discrepancy
   is a bug worth reporting.
@@ -146,6 +146,6 @@ curl "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway/
 ## If this document disagrees with the gateway
 
 - Fetch `GET /openapi.json` and trust it.
-- Report the drift instead of trusting this file. `tests/api-docs.test.mjs` pins only
+- Report the drift instead of trusting this file. `[tests/api-docs.test.mjs](../tests/api-docs.test.mjs)` pins only
   routed paths, error codes, and the base URL, so it cannot catch a changed field
   constraint or a changed response shape.

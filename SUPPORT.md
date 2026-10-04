@@ -6,12 +6,11 @@ Related: [AGENTS.md](AGENTS.md) rules - [runbook.md](docs/runbook.md) - [tests/R
 
 ## Supported versions
 
-Security fixes: latest patch of `1.6.x` (see `SECURITY.md`).
+Security fixes: latest patch of `1.6.x` (see [`SECURITY.md`](SECURITY.md)).
 
 ## Where to get help
 
-1. `docs/install.md` — installation, pairing, smoke test.
-2. `docs/testing.md` — test suite and browser regression.
-3. `docs/troubleshooting.md` if present, otherwise open a private
-   discussion with the maintainer for deployment questions.
-4. Security issues: follow `SECURITY.md`, never a public thread.
+1. [`docs/runbook.md`](docs/runbook.md) — pairing, incidents, manual steps.
+2. [`tests/README.md`](tests/README.md) — test suite and browser regression.
+3. [`AGENTS.md`](AGENTS.md) — the map of which document answers which question.
+4. Security issues: follow [`SECURITY.md`](SECURITY.md), never a public thread.

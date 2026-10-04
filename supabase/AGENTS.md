@@ -2,11 +2,11 @@
 
 Simplify first. State what is true now, never its history.
 
-Root `AGENTS.md` binds; read it first.
+Root `[AGENTS.md](AGENTS.md)` binds; read it first.
 
 Edge functions in Deno, and migrations in timestamp order.
 
-- Read `docs/HANDOFF.md`, then the function, then the migration.
+- Read `[docs/HANDOFF.md](../docs/HANDOFF.md)`, then the function, then the migration.
 - Write the migration before the deploy. CI never applies migrations, so an RPC
   without one fails at call time.
 - Never rewrite an applied migration. Add a new one.

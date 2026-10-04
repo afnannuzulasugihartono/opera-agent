@@ -7,7 +7,7 @@ Related: [AGENTS.md](AGENTS.md) rules - [HANDOFF.md](docs/HANDOFF.md) - [api.md]
 Notable changes. Semantic versioning.
 
 - Release history for versions below this line is in git history.
-- `docs/api.md` is the contract reference; `docs/HANDOFF.md` holds
+- `[docs/api.md](docs/api.md)` is the contract reference; `[docs/HANDOFF.md](docs/HANDOFF.md)` holds
   what shipped and when.
 
 ## [Unreleased]
@@ -33,7 +33,7 @@ never implied by CI green.
   conclude it could not watch a run it is not present for.
 - **CI can no longer be blocked forever by one hung job.** Every job has a timeout and
   superseded runs are cancelled. CI acceptance is still unobtainable on this machine
-  because the python.org installer hangs; see `docs/HANDOFF.md`.
+  because the python.org installer hangs; see `[docs/HANDOFF.md](docs/HANDOFF.md)`.
 
 ## [1.6.15] - 2026-10-03
 

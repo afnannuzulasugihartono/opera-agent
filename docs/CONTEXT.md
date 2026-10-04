@@ -38,7 +38,7 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 | Fact | Consequence |
 |---|---|
 | No gateway route reads the query string — `extractToken` checks `x-opera-agent-token`, `Authorization`, then `body.apiKey` | `?apiKey=` is not a token carrier anywhere |
-| Nothing ever writes `status = 'disabled'` to `opera_devices`; only `'online'` is written | Re-enabling a device is owner-only, direct SQL; `tests/device-status-truth.test.mjs` fails on purpose if a write path appears |
+| Nothing ever writes `status = 'disabled'` to `opera_devices`; only `'online'` is written | Re-enabling a device is owner-only, direct SQL; `[tests/device-status-truth.test.mjs](../tests/device-status-truth.test.mjs)` fails on purpose if a write path appears |
 | There is no scheduler — no `pg_cron`, no `cron.schedule`, no caller of the cleanup functions | No data class is purged automatically |
 
 ## Gate signals
@@ -102,7 +102,7 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 | CI never applies migrations | Migration first, then deploy, or an edge function calling a new RPC fails outright |
 | The Supabase migration API ignores the filename version, stamps one from apply time, and puts the whole filename in `name` | Apply, then `update` the row, or every migration reads unapplied forever and `db push` re-runs them all |
 | Supabase has no API for personal access tokens; `/v1/oauth/revoke` is OAuth-only | An agent holding a PAT cannot rotate or revoke it; plan for owner action |
-| Renaming `opera_*` is a production migration — 58 functions in `public`, the prefix load-bearing in every RPC | Plus the freeze cost: `tests/fixtures/*.json` pin `sourceSha256`, `tests/helpers/boundary-locks.mjs` pins runtime files by blob SHA |
+| Renaming `opera_*` is a production migration — 58 functions in `public`, the prefix load-bearing in every RPC | Plus the freeze cost: `tests/fixtures/*.json` pin `sourceSha256`, `[tests/helpers/boundary-locks.mjs](../tests/helpers/boundary-locks.mjs)` pins runtime files by blob SHA |
 | The Chrome debugger banner persists for the whole attachment and cannot be hidden | Caching an attach across commands is a regression, not an optimisation; the only lever is batching more work per attach |
 | Edge functions run on Supavisor transaction mode, which has no `LISTEN/NOTIFY` | Every wakeup is server-side `pg_sleep` polling |
 | OpenAI reportedly rejects `.` in MCP tool names (`^[a-zA-Z0-9_-]+$`, a developer report, not official) | Treat dotted names as unverified against OpenAI until actually tested |

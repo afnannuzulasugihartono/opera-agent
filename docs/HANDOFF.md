@@ -9,7 +9,7 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
 ## State
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
-- Version `1.6.15` in `extension/manifest.json` is the source of truth.
+- Version `1.6.15` in `[extension/manifest.json](../extension/manifest.json)` is the source of truth.
 - Local gates: `npm test` 769 pass, `npm run check` ok — 26 primitives, 91 safety files.
 - Browser harness exits 0 against Brave, headless and headed. `ci-browser` runs the
   same file under `xvfb`.
@@ -23,7 +23,7 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
   `opera_run_fast` both present. 58 `opera_*` functions live, 9 edge functions, each
   with a repo counterpart.
 - No `sbp_` token in the tree or its history. The two matches in
-  `tests/transaction-cloud.test.mjs` are synthetic (`'a'.repeat(40)`).
+  `[tests/transaction-cloud.test.mjs](../tests/transaction-cloud.test.mjs)` are synthetic (`'a'.repeat(40)`).
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the
   model can tell whether the person is looking at the tab before choosing foreground or
   background. Fails open: a missing `userState` is a gap in the report, not a failure.
@@ -34,8 +34,8 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
   prefix is load-bearing in the database: 58 functions, plus tables and every RPC name
   the bridge and MCP call. Repo surface is ~256 files and ~1982 `opera_*` identifiers.
 - **A digest freeze blocks the first edit.** `tests/fixtures/*.json` pin `sourceSha256`
-  for `opera-agent-mcp/index.ts` and `extension/background.js`, and
-  `tests/helpers/boundary-locks.mjs` pins them by blob SHA.
+  for [`supabase/functions/opera-agent-mcp/index.ts`](../supabase/functions/opera-agent-mcp/index.ts) and `[extension/background.js](../extension/background.js)`, and
+  `[tests/helpers/boundary-locks.mjs](../tests/helpers/boundary-locks.mjs)` pins them by blob SHA.
 - Sequence: verify on Brave, then rename, then re-freeze. Otherwise a Brave regression
   is indistinguishable from a rename regression.
 
@@ -58,7 +58,7 @@ Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../
    floor should bring p95 near 1000 ms at 10 idle polls per second instead of 4; 50 ms
    gets near 700 ms at 20. It is not changed: it alters a production function on the
    command path, and the right floor depends on how many devices idle at once, which
-   this repository cannot answer. Full numbers in `docs/benchmarks.md`.
+   this repository cannot answer. Full numbers in `[docs/benchmarks.md](benchmarks.md)`.
 8. The largest unknown: how many model round trips a real task costs. Every latency
    figure here models the server and extension path, not the model loop.
 

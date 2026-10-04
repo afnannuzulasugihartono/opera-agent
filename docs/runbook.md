@@ -24,8 +24,8 @@ UPDATE="$SUPABASE_URL/functions/v1/opera-agent-update"
 
 | Document | Covers |
 |---|---|
-| `docs/api.md` | Gateway request/response contract, error codes |
-| `SECURITY.md` | Security principles, token transport |
+| `[docs/api.md](api.md)` | Gateway request/response contract, error codes |
+| `[SECURITY.md](../SECURITY.md)` | Security principles, token transport |
 
 ## Disabled devices — one rule for every incident
 

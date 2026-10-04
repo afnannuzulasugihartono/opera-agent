@@ -17,8 +17,8 @@ Related: [`AGENTS.md`](AGENTS.md) - [`SECURITY.md`](SECURITY.md) - [`docs/api.md
 
 - [`AGENTS.md`](AGENTS.md) holds instructions: rules, guidelines, requirements, triggers,
   and the map of which document answers which question.
-- `README.md` holds the explanation: what this is, what each directory does, how to run it.
-- A rule that changes what you may do lives in `AGENTS.md` and nowhere else.
+- `[README.md](README.md)` holds the explanation: what this is, what each directory does, how to run it.
+- A rule that changes what you may do lives in `[AGENTS.md](AGENTS.md)` and nowhere else.
 
 ## Contract
 
