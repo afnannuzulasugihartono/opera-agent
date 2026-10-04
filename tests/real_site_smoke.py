@@ -1329,6 +1329,55 @@ async def case_sensitive_surface():
         record('sensitive surface', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
 
+async def case_stale_document_ref():
+    """A ref minted before a navigation must not act on the page that replaced it.
+
+    This is the failure that would be worst: the agent asks for "the search button",
+    the page navigates underneath it, and the click lands somewhere else entirely on a
+    page nobody looked at. Run on a real site, where the navigation is real.
+    """
+    try:
+        tab = (await drive('tabs.open', {
+            'url': 'https://www.youtube.com/', 'active': True, 'wait': True
+        }))['tab']
+        tid = tab['id']
+        page = {'totalTextChars': 0, 'elements': [], 'axSummary': {}}
+        for _ in range(8):
+            page = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1200}))['page']
+            stale = next((i for i in page['elements'] if i.get('ref')), None)
+            if stale:
+                break
+            await asyncio.sleep(1.2)
+        if not stale:
+            record('a ref from before a navigation is refused', None,
+                   'no link to mint a ref from')
+            await drive('tabs.close', {'tabId': tid})
+            return
+
+        await drive('tabs.navigate', {'tabId': tid, 'url': 'https://www.youtube.com/feed/trending'})
+        await asyncio.sleep(3)
+
+        try:
+            await drive('page.click', {'tabId': tid, 'ref': stale['ref'],
+                                       'executionMode': 'background'})
+            record('a ref from before a navigation is refused', False,
+                   f'the click on {str(stale.get("label"))[:20]!r} was accepted on a new document')
+        except Exception as exc:
+            body = getattr(exc, 'body', None)
+            err = body.get('error') if isinstance(body, dict) else None
+            code = (err or {}).get('code')
+            reason = (err or {}).get('reason')
+            message = str((err or {}).get('message', ''))
+            refused = (code == 'STALE_DOCUMENT'
+                       or (code == 'TARGET_NOT_READY' and reason == 'not-found'))
+            record('a ref from before a navigation is refused', refused,
+                   f'{code} reason={reason} {message[:60]}')
+
+        await drive('tabs.close', {'tabId': tid})
+    except Exception as exc:
+        record('stale document ref', False, f'{type(exc).__name__}: {str(exc)[:140]}')
+
+
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -1399,6 +1448,7 @@ async def run(port, profile):
         await maybe(lambda: case_burst_hover_menu(), 'burst-hover')
         await maybe(lambda: case_lazy_list(), 'lazy-list')
         await maybe(lambda: case_sensitive_surface(), 'sensitive')
+        await maybe(lambda: case_stale_document_ref(), 'stale-doc')
         await maybe(lambda: case_primitive_sweep(), 'sweep')
         await maybe(lambda: case_media_on_real_video(), 'media')
         await maybe(lambda: case_click_every_control('https://opencode.ai/', 'opencode'),
