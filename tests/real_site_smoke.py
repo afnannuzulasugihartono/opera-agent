@@ -644,9 +644,33 @@ async def case_primitive_sweep():
                    {'tabId': tid, 'x': 0, 'y': -500, 'block': 'center'},
                    lambda r: 'scrolled up')
 
-        await step('page.wait_for', 'page.wait_for',
-                   {'tabId': tid, 'text': 'YouTube', 'timeoutMs': 5000},
-                   lambda r: f'result={json.dumps(r, ensure_ascii=False)[:120]}')
+        # page.wait_for turns a timeout into a command error rather than a result with
+        # ok:false, so a caller that only inspects the error envelope catches it. The
+        # content script's own {ok:false, error:'wait_for timeout'} is what the
+        # dispatcher converts.
+        found = await step('page.wait_for finds text', 'page.wait_for',
+                           {'tabId': tid, 'text': 'youtube', 'timeoutMs': 6000},
+                           lambda r: f'item={str((r.get("item") or {}).get("label"))[:24]!r}')
+        if found:
+            record('sweep wait_for resolves to the element it found',
+                   bool(found.get('item')), f'{str(found.get("item"))[:80]}')
+
+        try:
+            await drive('page.wait_for', {'tabId': tid, 'text': 'zzz-not-on-this-page-zzz',
+                                          'timeoutMs': 1200})
+            record('sweep a wait_for timeout is a command error', False,
+                   'the timeout came back as a success')
+        except Exception as exc:
+            body = getattr(exc, 'body', None)
+            err = body.get('error') if isinstance(body, dict) else None
+            record('sweep a wait_for timeout is a command error',
+                   isinstance(err, dict) and err.get('message') == 'wait_for timeout',
+                   f'{(err or {}).get("code")} {(err or {}).get("message")}')
+
+        gone = await step('page.wait_for absent', 'page.wait_for',
+                          {'tabId': tid, 'text': 'zzz-not-on-this-page-zzz',
+                           'absent': True, 'timeoutMs': 1200},
+                          lambda r: f'absent={r.get("absent")} ok={r.get("ok")}')
 
         burst = await step('browser.burst', 'browser.burst', {
             'tabId': tid,
