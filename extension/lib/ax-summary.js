@@ -1,4 +1,4 @@
-// U-P1 Layer B (research P1, 2026-09-20): bounded, value-free accessibility
+// Bounded, value-free accessibility
 // tree summary for semantically poor surfaces (canvas applications, hidden
 // DOM mirrors). The raw CDP Accessibility.getFullAXTree output is filtered by
 // this pure module before it is attached to a page.read result as

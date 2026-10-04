@@ -1,4 +1,4 @@
-// Deadline race for command execution (2026-10-02).
+// Deadline race for command execution.
 //
 // `executeCommand` used to race its dispatch against a `setTimeout` rejection
 // and never cleared that timer, so every command left a live timer behind that

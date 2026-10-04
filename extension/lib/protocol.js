@@ -109,7 +109,7 @@ function validateBurstStep(step) {
     return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
   }
   if (action === 'key') {
-    // R9-B: a key step is either a chord or bounded text. The shared resolver
+    // A key step is either a chord or bounded text. The shared resolver
     // is the single source of truth, so a key can never be accepted here and
     // rejected later by the executor.
     try {
@@ -122,7 +122,7 @@ function validateBurstStep(step) {
   if (action === 'wait' && !validRef(step.ref) && !(typeof step.selector === 'string' && step.selector.length >= 1 && step.selector.length <= 500) && !(typeof step.text === 'string' && step.text.length >= 1 && step.text.length <= 300)) {
     return 'Burst wait requires a ref, selector, or text target.';
   }
-  // R9-E: a hover needs a ref to hover; `text` is the optional submenu name to
+  // A hover needs a ref to hover; `text` is the optional submenu name to
   // wait for, never the hover target itself, so a hover can never be guessed
   // from a loose text match.
   if (action === 'hover' && !validRef(step.ref) && step.refFromStep === undefined) {

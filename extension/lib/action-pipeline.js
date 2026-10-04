@@ -1,5 +1,4 @@
-// U-V Action Pipeline (2026-09-23): pure policy engine for Resolve -> Wait ->
-// Heal -> Verify. NO DOM and NO chrome dependency: the host supplies resolve
+// Action pipeline: pure policy engine for Resolve -> Wait -> Heal -> Verify. NO DOM and NO chrome dependency: the host supplies resolve
 // snapshots and executes decisions, so the engine stays deterministic and
 // testable in Node (pattern of lib/watch.js).
 //

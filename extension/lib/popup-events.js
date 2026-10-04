@@ -1,4 +1,4 @@
-// U-R popup/redirect follow-through (2026-09-28): pure policy helpers for the
+// Popup and redirect follow-through: pure policy helpers for the
 // background popup log. NO DOM and NO chrome dependency: the host supplies
 // tab-creation facts, so the engine stays deterministic and testable in Node
 // (pattern of lib/action-pipeline.js).
@@ -24,9 +24,9 @@ export function popupsSince(log, tabId, sinceMs) {
   return list.filter((e) => Number.isFinite(Number(e.at)) && Number(e.at) >= Number(sinceMs));
 }
 
-// U-R: when a page action runs on a BACKGROUND tab, Chromium attributes a
+// When a page action runs on a BACKGROUND tab, Chromium attributes a
 // window.open popup to the window's *active* tab, not the acted-on tab, so
-// openerTabId alone misses it (verified live 2026-09-28). While a page.click /
+// openerTabId alone misses it. While a page.click /
 // page.fill is in flight, any new tab belongs to the acted-on tab, so attribute
 // it there; otherwise fall back to the real openerTabId. Returns the opener key
 // to record under, or null when the tab is unrelated to automation.

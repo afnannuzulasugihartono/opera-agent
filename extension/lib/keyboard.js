@@ -1,4 +1,4 @@
-// R9-B keyboard chords and bounded text entry (2026-09-30): pure resolution
+// Keyboard chords and bounded text entry: pure resolution
 // from a declarative { key, modifiers } or { text } request to the exact CDP
 // event payload. NO chrome dependency, so it is deterministic and testable in
 // Node (pattern of lib/action-pipeline.js).

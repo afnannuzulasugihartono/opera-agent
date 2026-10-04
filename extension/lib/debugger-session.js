@@ -1,4 +1,4 @@
-// Shared debugger session bookkeeping (2026-10-02).
+// Shared debugger session bookkeeping.
 //
 // A "shared session" is the `{ tabId, attached }` object a caller puts on its
 // context so that several CDP operations inside one logical operation reuse a
