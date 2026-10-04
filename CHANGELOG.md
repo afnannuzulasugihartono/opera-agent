@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 20:34 UTC+7.
+@last-edited: 2026-10-04 21:14 UTC+7.
 
 # Changelog
 
@@ -41,6 +41,10 @@ never implied by CI green.
   `unresolvable` — and names the recovery that works: find then click with
   `refFromStep` inside one `browser.burst`. A caller that believed the old text
   spent a second 7.5s deadline on the same dead ref.
+- **`page.wait_for` reports how long it waited.** Every branch now carries
+  `waitedMs`, on success and on timeout. A bounded wait that returns only `ok:true`
+  or the string `wait_for timeout` cannot be told apart from one that burned its
+  whole window, and that difference is the diagnosis.
 - **A ref that cannot act is refused at once.** An `expired` ref — no action
   descriptor, or one minted for another document or route — can never resolve on this
   page: ref counters are monotonic and never re-mint a key. Waiting on it spent the

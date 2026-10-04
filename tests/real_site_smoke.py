@@ -1122,15 +1122,15 @@ async def case_google_search_and_expand():
             return
         await drive('page.click', {'tabId': tid, 'ref': collapsed['ref'],
                                    'executionMode': 'background'})
-        await asyncio.sleep(2.0)
-        after = (await drive('page.query', {
-            'tabId': tid, 'selector': f'[aria-expanded="true"]'
-        })).get('item')
+        opened = await drive('page.wait_for', {
+            'tabId': tid, 'ref': collapsed['ref'],
+            'state': {'ariaExpanded': 'true'}, 'timeoutMs': 4000
+        })
         same_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
         record('google answer expanded in place',
-               after is not None and same_url == landed['url'],
+               opened.get('ok') is True and same_url == landed['url'],
                f'{str(collapsed.get("label") or collapsed.get("text"))[:28]!r} '
-               f'now={None if not after else after.get("tag")} url_unchanged={same_url == landed["url"]}')
+               f'waitedMs={opened.get("waitedMs")} url_unchanged={same_url == landed["url"]}')
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('google search', False, f'{type(exc).__name__}: {str(exc)[:140]}')
@@ -1159,14 +1159,19 @@ async def case_in_place_expansion():
             return
         await drive('page.click', {'tabId': tid, 'ref': collapsed['ref'],
                                    'executionMode': 'background'})
-        await asyncio.sleep(1.5)
-        after = (await drive('page.query', {
-            'tabId': tid, 'selector': '[aria-expanded="true"]'
-        })).get('item')
+
+        # Wait for that same control to report itself expanded, rather than sleeping
+        # and hoping: page.wait_for takes the ref and the state, so the proof is that
+        # the element we clicked is the element that opened.
+
+        opened = await drive('page.wait_for', {
+            'tabId': tid, 'ref': collapsed['ref'],
+            'state': {'ariaExpanded': 'true'}, 'timeoutMs': 4000
+        })
         same = (await drive('tabs.get', {'tabId': tid}))['tab']['url'] == before
-        record('collapsed control expanded in place', after is not None and same,
+        record('collapsed control expanded in place', opened.get('ok') is True and same,
                f'{str(collapsed.get("label") or collapsed.get("text"))[:30]!r} '
-               f'expanded_now={after is not None} url_unchanged={same}')
+               f'waitedMs={opened.get("waitedMs")} url_unchanged={same}')
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('in-place expansion', False, f'{type(exc).__name__}: {str(exc)[:140]}')

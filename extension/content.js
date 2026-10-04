@@ -1656,7 +1656,13 @@
     if (absent && !args.ref && !args.selector && !args.text) {
       throw new Error('absent wait requires ref, selector, or text.');
     }
-    const deadline = Date.now() + timeoutMs;
+    const startedAt = Date.now();
+    const deadline = startedAt + timeoutMs;
+
+    // WHY waitedMs on every branch: a bounded wait that reports only ok:true or a
+    // timeout string cannot be diagnosed. "Timed out at 200ms" and "timed out at
+    // 8000ms" are different pages and different bugs, and the caller cannot tell
+    // them apart without timing it from the outside.
     const text = clean(args.text, 300).toLowerCase();
     while (Date.now() <= deadline) {
       let candidates = [];
@@ -1678,15 +1684,20 @@
         return stateMatches(el, args.state);
       });
       if (absent) {
-        if (!found) return { ok: true, absent: true };
+        if (!found) return { ok: true, waitedMs: Date.now() - startedAt, absent: true };
       } else if (found) {
-        return { ok: true, item: serialize(found, { includeValue: !!args.includeValue }) };
+        return {
+          ok: true,
+          waitedMs: Date.now() - startedAt,
+          item: serialize(found, { includeValue: !!args.includeValue })
+        };
       }
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
+    const waitedMs = Date.now() - startedAt;
     return absent
-      ? { ok: false, error: 'wait_for timeout', stillPresent: true }
-      : { ok: false, error: 'wait_for timeout' };
+      ? { ok: false, waitedMs, error: 'wait_for timeout', stillPresent: true }
+      : { ok: false, waitedMs, error: 'wait_for timeout' };
   }
 
   function mediaElement(index = 0) {
