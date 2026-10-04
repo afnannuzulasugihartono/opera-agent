@@ -873,19 +873,34 @@ async def case_click_every_control(url, name, limit=14):
                 break
 
             control = controls[0]
-            label = str(control.get('label', ''))[:20]
-            seen.add(label.strip().lower())
+            # The dedupe key must be the same value the filter above compares, or the
+            # sweep clicks one control for the whole budget: a 20-character display
+            # label was stored while the filter tested the full label, so 'Search with
+            # your voi' never matched 'Search with your voice' and YouTube's voice
+            # button was clicked eleven times instead of eleven controls once.
+            key = str(control.get('label', '')).strip().lower()
+            seen.add(key)
+            label = key[:20]
             before_generation = page['semanticState']['documentGeneration']
             before_chars = page['totalTextChars']
             before_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+            # Read after the click, and only on the path that actually clicked: a
+            # refused click left the url alone, and the burst below may have moved it.
+            now_url = None
             try:
                 await drive('page.click', {'tabId': tid, 'ref': control['ref'],
                                             'executionMode': 'background'})
                 clicked += 1
                 await asyncio.sleep(1.2)
                 page = await refresh()
+                # A navigation inside the same host changes neither the document
+                # generation nor the text length, so without the url a control that
+                # plainly responded is reported as unchanged. The url is read once
+                # here and reused for the go-back check below.
+                now_url = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
                 changed = (page['semanticState']['documentGeneration'] != before_generation
-                           or page['totalTextChars'] != before_chars)
+                           or page['totalTextChars'] != before_chars
+                           or now_url != before_url)
                 if changed:
                     responded += 1
                 record(f'{name} click {label!r}', True,
@@ -927,9 +942,12 @@ async def case_click_every_control(url, name, limit=14):
                     refusals.append(f'{label!r} burst {bmsg}')
                     record(f'{name} click {label!r} inside one burst', False, bmsg)
 
-            now = (await drive('tabs.get', {'tabId': tid}))['tab']['url']
+            now = now_url if now_url is not None else \
+                (await drive('tabs.get', {'tabId': tid}))['tab']['url']
             if host_of(now) != host_of(before_url):
-                # The click navigated. A person goes back and keeps exploring.
+                # The click navigated off the host. A person goes back and keeps
+                # exploring. A same-host navigation is left in place, because the
+                # next iteration reads the page it produced.
                 await drive('tabs.navigate', {'tabId': tid, 'url': before_url})
                 await asyncio.sleep(2)
                 page = await refresh()
