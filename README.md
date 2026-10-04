@@ -1,6 +1,6 @@
 # Opera Agent
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 A private, local-browser control bridge.
 

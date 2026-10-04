@@ -1,6 +1,6 @@
 # Delta-First Runtime
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 Related: [AGENTS.md](../AGENTS.md) - [benchmarks.md](benchmarks.md) - [ax-observation.md](ax-observation.md)
 

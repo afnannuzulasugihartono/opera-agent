@@ -1,6 +1,6 @@
 # Performance Benchmarks
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 Do not turn one machine's timings into test assertions.
 
 Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](runbook.md) reproduce commands - [api.md](api.md)

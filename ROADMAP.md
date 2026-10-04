@@ -1,6 +1,6 @@
 # Roadmap
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 Current version: `1.6.15` (`extension/manifest.json` is the source of truth).
 

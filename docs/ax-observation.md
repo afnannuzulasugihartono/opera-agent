@@ -1,6 +1,6 @@
 # AX-tree observation
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 Related: [AGENTS.md](../AGENTS.md) - [delta-first-performance-plan.md](delta-first-performance-plan.md) - [extension/README.md](../extension/README.md)
 

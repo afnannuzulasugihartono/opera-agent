@@ -1,6 +1,6 @@
 # extension/ scope
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 Root `AGENTS.md` binds; read it first.
 

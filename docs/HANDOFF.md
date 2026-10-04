@@ -1,6 +1,6 @@
 # HANDOFF
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 Related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 

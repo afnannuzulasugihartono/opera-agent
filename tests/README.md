@@ -1,6 +1,6 @@
 # Tests
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](../docs/runbook.md)
 

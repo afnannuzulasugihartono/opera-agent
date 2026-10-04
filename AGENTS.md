@@ -1,6 +1,6 @@
 # Opera Agent agent instructions
 
-Simplification above everything. Current state, never a history book.
+Simplify first. State what is true now, never its history.
 
 MV3 browser extension + Supabase backend. Read before changing anything.
 
