@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-04 18:25 UTC+7.
+# @last-edited: 2026-10-04 19:35 UTC+7.
 # @title: browser_extension_test — Test.
 # @context: Test.
 # @state: a steal must end with something focused, which is what CI proved.
@@ -1572,6 +1572,18 @@ async def run(port, profile):
 
         assert uv_nr['error']['refState'] == 'detached', uv_nr
         assert 'burst' in uv_nr['error']['hint'], uv_nr
+
+        # (e) A ref from a document that no longer exists is the other case: the
+        # node never detached, the ref simply cannot resolve here. The refusal
+        # must say that instead of blaming a re-render.
+
+        cid = await uv_push('tabs.navigate', {'tabId': uv_tab_id, 'url': f'http://{HOST}:{port}/pre8e-r0'}, benchmark='uv.tabs.navigate.other')
+        assert_completed_ok(await uv_wait(cid, 'uv.tabs.navigate.other'))
+        cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_tog_ref, 'trusted': True})
+        uv_xdoc = await asyncio.to_thread(STATE.wait, cid)
+        assert uv_xdoc.get('ok') is False and uv_xdoc.get('error', {}).get('code') == 'TARGET_NOT_READY', uv_xdoc
+        assert uv_xdoc['error']['refState'] == 'unresolvable', uv_xdoc
+        assert 'burst' not in uv_xdoc['error']['hint'], uv_xdoc
 
         cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
