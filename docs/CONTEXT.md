@@ -117,4 +117,4 @@ Related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session
 |---|---|
 | `npm audit` and SBOM quarantines | Investigated and exonerated |
 | Renaming the 22 MCP tools to dotted form | Declined — they deliberately differ from primitives, and three tests extract names with `/registerTool\("([a-z_]+)"/g`, which would silently truncate instead of failing |
-| The bridge pull-cadence comment as stale | I was wrong; it fairly approximated the pre-2026-09-24 cadence, and both cadences are now pinned in tests |
+| The bridge pull-cadence comment as stale | It fairly approximated the earlier cadence, and both cadences are now pinned in tests |

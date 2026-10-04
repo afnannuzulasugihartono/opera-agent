@@ -3,7 +3,7 @@
 Simplify first. State what is true now, never its history.
 
 Cover every button on every site. After the main sites hold, add sites that teach new functions.
-Do not turn one machine's timings into test assertions.
+One machine's timings never become test assertions.
 
 Related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](runbook.md) reproduce commands - [api.md](api.md)
 # Performance Benchmarks
@@ -139,4 +139,4 @@ answer.
 - command count and browser timing
 - returned bytes, retries, fixed waits
 
-Do not turn one machine's timings into test assertions.
+One machine's timings never become test assertions.

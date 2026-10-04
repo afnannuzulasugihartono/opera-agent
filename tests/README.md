@@ -25,6 +25,6 @@ Two kinds of test live here, and they are not equally load-bearing:
   runtime file has to say out loud why it is safe. Editing a pinned file without
   re-freezing is a red build, not a silent regression.
 
-A lock is not a preference. Do not weaken a test to make a build pass, and do
-not lock a removal — a test that requires an artifact to stay deleted turns one
+A lock is not a preference. A test weakened to make a build pass hides the breakage
+it was written to catch, and a test that requires an artifact to stay deleted turns one
 opinion into an irreversible decision.
