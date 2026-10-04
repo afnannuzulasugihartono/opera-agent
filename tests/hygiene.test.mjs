@@ -1,8 +1,8 @@
-// @last-edited: 2026-10-04 19:24 UTC+7.
+// @last-edited: 2026-10-04 21:52 UTC+7.
 // @title: hygiene — runtime properties and the comment-spacing rule.
 // @context: Test.
-// @state: The memoized read path and the blank-line comment rule are both locked.
-// @updated: comment-spacing lock added, shared classifier extracted.
+// @state: The memoized read path, the comment-spacing rule and live allowlist paths are locked.
+// @updated: gitleaks allowlist paths must name a tracked file.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
 
 // Properties that keep the runtime code correct as it grows, and that the code
@@ -59,6 +59,35 @@ test('every comment block has a blank line before and after it', async () => {
     violations.push(...spacingViolations(file, text, path.extname(file).toLowerCase()));
   }
   assert.deepEqual(violations, [], violations.slice(0, 12).join('\n'));
+});
+
+test('every gitleaks allowlist path still names a file in the tree', async () => {
+  const root = new URL('..', import.meta.url);
+  const tracked = new Set(execFileSync('git', ['ls-files'], { cwd: fileURLToPath(root), encoding: 'utf8' })
+    .split('\n')
+    .filter(Boolean));
+  const config = await readFile(new URL('../.gitleaks.toml', import.meta.url), 'utf8');
+  // Only the path lists, never the regexes: a regex is content, not a location.
+  const patterns = [...config.matchAll(/paths\s*=\s*\[([^\]]*)\]/g)]
+    .flatMap((m) => [...m[1].matchAll(/'''([^']+)'''/g)].map((n) => n[1]));
+  const stale = [];
+  for (const pattern of patterns) {
+    // An allowlist entry is a regex over paths. Strip the anchors and treat the
+    // remainder as a glob, so a history-only entry can widen to a shape that still
+    // exists (docs/*.md) instead of naming a file that was renamed away.
+    const glob = pattern
+      .replace(/^\^/, '')
+      .replace(/\$$/, '')
+      .replace(/\\\./g, '.')
+      .replace(/\.\*/g, '*');
+    if (glob.includes('*')) {
+      const re = new RegExp(`^${glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
+      if (![...tracked].some((f) => re.test(f))) stale.push(`${pattern} matches no tracked file`);
+      continue;
+    }
+    if (!tracked.has(glob)) stale.push(`${pattern} names no tracked file`);
+  }
+  assert.deepEqual(stale, [], stale.join('\n'));
 });
 
 test('a read is serialized once, not once per size check', () => {
