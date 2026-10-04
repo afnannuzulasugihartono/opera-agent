@@ -473,7 +473,7 @@ test('the pre-existing instruction fragments all survive', () => {
     /Supabase is internal transport and should not be mentioned/,
     /that stale ref is refused on purpose/,
     /refFromStep/,
-    /Coordinate actions default to invisible background CDP input/,
+    /Coordinate actions default to background CDP input and draw a visible cursor marker/,
     /Never use activate_tab as an implicit recovery step/
   ]) {
     assert.match(text, fragment, `instructions must still contain ${fragment}`);
@@ -509,7 +509,7 @@ test('MCP instructions make browser usage discoverable without mentioning Supaba
   assert.match(source, /open_url defaults to an inactive tab, retain its returned tabId/);
   assert.match(source, /Never substitute the user's active tab during a multi-step task/);
   assert.match(source, /Never use activate_tab as an implicit recovery step/);
-  assert.match(source, /Coordinate actions default to invisible background CDP input/);
+  assert.match(source, /Coordinate actions default to background CDP input and draw a visible cursor marker/);
   assert.match(source, /Use capture_page adaptively only/);
   assert.match(source, /For lazy result lists, call wheel_at/);
   assert.match(source, /stableKey\/href values/);
@@ -540,9 +540,12 @@ test('MCP defaults to background tabs and requires explicit automation targets',
   assert.match(source, /value, trusted: true, executionMode/);
   // The four coordinate tools always pass showCursor: true, and background.js honours
   // it in either mode, so describing background as invisible was false and would have
-  // told the model it could not watch a run it is not present for.
+  // told the model it could not watch a run it is not present for. The server
+  // instructions and the burst description carried the same false claim.
   assert.match(source, /A visible cursor marker is drawn in both modes/);
+  assert.match(source, /coordinate steps draw a visible cursor marker/);
   assert.doesNotMatch(source, /Background mode is invisible/);
+  assert.doesNotMatch(source, /default to invisible background CDP input/);
 });
 
 test('MCP preserves structured command failures for foreground permission handling', () => {
