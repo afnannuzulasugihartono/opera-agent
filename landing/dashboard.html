@@ -182,18 +182,20 @@
     const relativeTime = (() => {
       try {
         const format = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
+        // WHY the English unit keys and not Indonesian words: format() takes CLDR
+        // unit identifiers and localises them through the locale itself. Passing
+        // "menit" throws "Invalid unit argument" at call time, and because the throw
+        // happened while building the device list, the live dashboard rendered zero
+        // device cards while its status line still said one was paired.
+        const steps = [[60, 1, 'second'], [3600, 60, 'minute'], [86400, 3600, 'hour'], [2592000, 86400, 'day'], [31536000, 604800, 'week']];
         return (iso) => {
           const then = new Date(iso).getTime();
           if (Number.isNaN(then)) return 'belum pernah';
           const seconds = Math.round((then - Date.now()) / 1000);
-          const cuts = [[60, 'detik'], [3600, 'menit'], [86400, 'jam'], [2592000, 'hari'], [31536000, 'minggu']];
-          for (const [limit, unit] of cuts) {
-            if (Math.abs(seconds) < limit) {
-              const div = unit === 'detik' ? 1 : unit === 'menit' ? 60 : unit === 'jam' ? 3600 : unit === 'hari' ? 86400 : 604800;
-              return format.format(Math.round(seconds / div), unit);
-            }
+          for (const [limit, divisor, unit] of steps) {
+            if (Math.abs(seconds) < limit) return format.format(Math.round(seconds / divisor), unit);
           }
-          return format.format(Math.round(seconds / 31536000), 'tahun');
+          return format.format(Math.round(seconds / 31536000), 'year');
         };
       } catch (error) {
         return (iso) => String(iso || 'belum pernah');
