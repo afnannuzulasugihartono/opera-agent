@@ -106,6 +106,19 @@ test('pairing issuance is rate limited per issuing account', () => {
   assert.match(sql, /revoke execute on function public\.opera_create_pairing_code\(text, integer, uuid\) from public, anon/, 'anon still cannot issue');
 });
 
+test('the pairing issuer has exactly one signature, or PostgREST refuses it', () => {
+  const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
+  const drop = fs.readFileSync(new URL('supabase/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');
+  // WHY this lock: the binding migration added a three-argument issuer while the
+  // core migration left a two-argument one. PostgREST then answered PGRST203
+  // "function is not unique" and the dashboard pairing button could never work.
+  assert.match(binding, /create or replace function public\.opera_create_pairing_code\(p_device_name text default 'opera', p_ttl_minutes integer default 10, p_issued_by uuid default null\)/, 'the three-argument issuer is declared once');
+  assert.match(drop, /drop function if exists public\.opera_create_pairing_code\(text, integer\)/, 'the ambiguous two-argument form is dropped');
+  const signatures = [...binding.matchAll(/create or replace function public\.opera_create_pairing_code\(/g)].length
+    + [...drop.matchAll(/create or replace function public\.opera_create_pairing_code\(/g)].length;
+  assert.equal(signatures, 1, 'exactly one creator and one dropper, never two overloads');
+});
+
 test('the v2 migration only adds: revoke, counts, and self-issuing codes', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261005130000_opera_agent_dashboard_actions.sql', root), 'utf8');
   assert.match(sql, /opera_revoke_my_device/, 'revocation is a new function');
