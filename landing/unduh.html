@@ -121,15 +121,35 @@
   </header>
 
   <main class="wrap">
-    <h1>Unduh Opera Agent 1.6.15</h1>
-    <p>Berkas arsip berisi <strong>seluruh extension</strong>, dimuat <strong>unpacked</strong>
-    sampai listing Chrome Web Store tersedia. Berjalan di Brave dan Chrome.</p>
+    <h1>Pasang Opera Agent 1.6.15</h1>
+    <p>Jalankan pemasang, pilih browser, selesai. Tidak ada Chrome Web Store, tidak ada
+    <em>load unpacked</em>, dan pembaruan berikutnya dipasang sendiri oleh browser.</p>
+    <p><a class="btn" href="./OperaAgent-Installer.exe" download>Unduh OperaAgent-Installer.exe</a></p>
+    <p class="hash">sha256 0becf60b7640b3b0ff946ac2299041ac8a33c5f88b259b1bf5abf7f2191a603e</p>
+
+    <h2>Tiga langkah memasang</h2>
+    <ol>
+      <li>Klik berkas di atas, lalu jalankan. Windows meminta izin administratif sekali;
+        itu perlu karena browser hanya membaca kebijakan pemasangan dari lokasi yang
+        dilindungi.</li>
+      <li>Centang browser yang Anda pakai, lalu tekan <strong>Pasang</strong>.</li>
+      <li>Tutup semua jendela browser, lalu buka lagi. Opera Agent terpasang saat
+        browser mulai.</li>
+    </ol>
+
+    <h2>Kalau tidak muncul setelah dibuka</h2>
+    <p>Buka <code>chrome://policy</code> di browser itu dan cari Opera Agent. Kalau
+    halaman itu kosong, periksa juga <code>chrome://extensions</code> dan pastikan
+    Mode Pengembang tidak perlu diaktifkan — pemasangan ini tidak memakainya.</p>
+
+    <h2>Pasang manual</h2>
+    <p>Kalau polityvek ditolak, unduh arsip dan muat sendiri. Berjalan di Brave dan Chrome.</p>
     <p><a class="btn" href="./opera-agent-1.6.15.zip" download>Unduh opera-agent-1.6.15.zip</a></p>
     <p class="hash">sha256 2276c2ab138029f95b9ef4d56d57ac5cdca455fec7586eb269d84d099b0f83c7</p>
 
     <h2>Verifikasi berkas</h2>
     <p>Bandingkan sidik jari di atas dengan berkas Anda. Di PowerShell:
-    <code>Get-FileHash .\opera-agent-1.6.15.zip -Algorithm SHA256</code></p>
+    <code>Get-FileHash .\OperaAgent-Installer.exe -Algorithm SHA256</code></p>
 
     <h2>Tiga langkah memasang</h2>
     <ol class="steps">
