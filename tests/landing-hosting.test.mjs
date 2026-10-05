@@ -53,15 +53,32 @@ test('every _headers rule restates a vercel.json entry verbatim', () => {
     const original = bySource[source];
     assert.ok(original, `vercel.json has an entry for ${source}`);
     for (const [key, value] of Object.entries(rule.headers)) {
-      // WHY the one exception: Cloudflare Pages does not infer a media type from the
-      // extension, and a browser handed a .zip without one saves it under the wrong
-      // name. Vercel did infer it, so the two hosts genuinely differ here.
-      if (key === 'Content-Type') continue;
+      // WHY the two exceptions: Cloudflare Pages does not infer a media type from the
+      // extension, and Vercel's own edge header means nothing to the other host. Both
+      // files still have to say the same thing about everything else.
+      if (key === 'Content-Type' || key === 'Vercel-CDN-Cache-Control') continue;
       const match = original.find((h) => h.key === key);
       assert.ok(match, `${rule.paths[0]} sets ${key}, which ${source} also sets`);
       assert.equal(value, match.value, `${rule.paths[0]} sends the same ${key} as ${source}`);
     }
   }
+});
+
+test('the edge is told not to hold a page, on both hosts', () => {
+  // WHY it has to be on both: measured on the live site, every page answered 200 with
+  // `Cache-Control: no-store` and was still served from Vercel's edge with an age of about
+  // thirty minutes, and the cached copy survived a deployment. A shipped fix was invisible
+  // for half an hour and a live verification read the previous build. `Cache-Control`
+  // governs the browser; the edge obeys its own header.
+  for (const entry of vercel.headers) {
+    const cdn = entry.headers.find((h) => h.key === 'Vercel-CDN-Cache-Control');
+    assert.ok(cdn, `${entry.source} tells the edge what to do`);
+    const isArchive = entry.source.includes('.zip');
+    assert.equal(cdn.value, isArchive ? 'public, max-age=31536000, immutable' : 'no-store', `${entry.source} holds or releases as intended`);
+  }
+  const blocks = headers.split(/\n\n/).filter((b) => /^ {2}Cache-Control:/m.test(b));
+  const edgeRules = headers.split('\n').filter((l) => /^ {2}Vercel-CDN-Cache-Control:/.test(l));
+  assert.equal(edgeRules.length, blocks.length, 'every _headers rule carries the edge instruction too');
 });
 
 test('every path of the site is covered, so no rule can be reached by inheritance', () => {

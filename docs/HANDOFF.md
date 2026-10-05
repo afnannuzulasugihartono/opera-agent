@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 18:50 UTC+7.
+@last-edited: 2026-10-05 20:15 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -32,10 +32,8 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Measured, not assumed
 
-- The account page and the device page are separate files, the way the references this
-  site follows separate them: Supabase separates profile from resources, opencode
-  separates settings from projects. Locked in
-  `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`.
+- The account and device pages are separate files, and the provider identity is read from
+  `app_metadata.providers` rather than `provider`. Both locked where the reason is.
 - `Intl.RelativeTimeFormat.prototype.format()` takes CLDR unit identifiers, not localised
   names. Passing "menit" throws at call time, inside the loop that builds the device cards,
   so the live dashboard showed "1 device ter-pairing" above an empty list. Both signed-in
@@ -78,8 +76,16 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 - OAuth client redirect URIs do not support wildcards in Supabase, and OpenCode picks a
   new random localhost port each run. The registration is a comma-separated list, not a
   space-separated one; that mistake cost one failed fix.
-- Vercel Hobby allows 100 deployments a day and 1 concurrent build, and a connected
-  project deploys on every push whether or not the CLI was used.
+- **Deploys are deliberate, and the budget is why.** Vercel Hobby allows 100 deployments a
+  day, and a connected project deploys on every push whether or not the CLI was used, so
+  fifteen pushes is most of a day. Automatic deployment is off in
+  `[landing/vercel.json](../landing/vercel.json)`; the budget is spent only on purpose.
+- The working invocation is `npx vercel deploy landing --prod` **from the repository root**.
+  The project Root Directory is `landing`, so running the CLI from inside `landing/`
+  resolves `landing/landing` and Vercel refuses. Measured on this project.
+- A push that does not deploy fails silently: the commit is on main, CI is green, and
+  production keeps serving the previous build. Check the live content, not the push status.
+- A commit can be correct and unpushed-to-production at the same time. Read the live page
 - Cloudflare Pages is prepared as the second host: 500 builds a month, unlimited bandwidth,
   no credit card, and a `pages.dev` subdomain. `landing/_headers` restates the vercel.json
   policy per path, every path enumerated so no rule overlaps another and no rule-ordering
@@ -113,9 +119,6 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
    gets near 700 ms at 20. It is not changed: it alters a production function on the
    command path, and the right floor depends on how many devices idle at once, which
    this repository cannot answer. Full numbers in `[docs/benchmarks.md](benchmarks.md)`.
-6. The largest unknown: how many model round trips a real task costs. Every latency
-   figure here models the server and extension path, not the model loop. The plan path
-   is the answer being built for it; see item 9.
 7. **The plan path needs two owner inputs before it can run.** The endpoint, key and model
    name come from the user's own configuration on their device — no shared key, ever, since
    the product ships at scale — and [`SECURITY.md`](../SECURITY.md) has to say plainly what
@@ -124,16 +127,12 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## CI
 
-- The three gates run on `ubuntu-latest`: unit, secret-scan, browser. The browser gate runs
-  the same harness headed under `xvfb-run` on playwright's chromium, because the branded
-  Chrome in the image loads no unpacked MV3 extension and headless Chromium starts no MV3
-  service worker.
-- The secret-scan gate runs in CI only, and `[.gitleaks.toml](../.gitleaks.toml)` names paths
-  and symbols that must exist. Re-point the allowlist when a file is renamed; never edit the
-  fixture to dodge the scanner. `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)` locks
-  that every allowlist path names a tracked file.
-- The concurrency group cancels an in-flight run when a newer one queues, so a push made
-  while CI is running destroys the evidence for the head being tested. Push, then wait.
+- Three gates on `ubuntu-latest`: unit, secret-scan, browser. The browser gate runs the same
+  harness headed under `xvfb-run`, because the branded Chrome in the image loads no unpacked
+  MV3 extension and headless Chromium starts no MV3 service worker.
+- `[.gitleaks.toml](../.gitleaks.toml)` names paths and symbols that must exist. Re-point the
+  allowlist when a file is renamed; never edit the fixture to dodge the scanner.
+- The concurrency group cancels an in-flight run when a newer one queues, so push, then wait.
 
 ## Blocked, needs the owner at the machine
 
