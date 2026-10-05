@@ -33,8 +33,13 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
   assert.match(html, /completedCommands/, 'usage counts give billing-per-result its meter');
   assert.match(html, /opera_revoke_my_device/, 'revocation keeps the terms honest');
   assert.match(html, /opera_create_pairing_code/, 'pairing codes are issued bound to the caller');
+  assert.match(html, /opera_run_on_my_device/, 'the account can run one action on its own device');
   assert.match(html, /Buat kode pairing/, 'issuance has a visible control');
   assert.match(html, /Cabut device ini/, 'revocation has a visible control');
+  assert.match(html, /Jalankan/, 'running has a visible control');
+  // WHY the narrow patterns: the run payload may carry page content, so the page
+  // may read status but never a payload field. result.status is the safe read.
+  assert.doesNotMatch(html, /result\s*\.\s*(result|params|value|content|text)\b/i, 'the run payload is never rendered');
 });
 
 test('the home page notices sign-in without breaking its no-network promise', () => {

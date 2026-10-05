@@ -122,6 +122,16 @@
     <p class="sub" id="whoami">Memeriksa sesi…</p>
     <div id="devices"></div>
     <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+    <div class="card" id="runCard">
+      <h2>Jalankan satu aksi</h2>
+      <p class="meta">Aksi dikirim ke device Anda sendiri. Device menolak halaman yang menampilkan password, kode sekali pakai, atau pembayaran. Isi halaman tidak pernah tampil di sini.</p>
+      <label for="runMethod" style="display:block;margin:0 0 6px;font-size:13px;color:var(--muted);">Primitive</label>
+      <input id="runMethod" type="text" autocomplete="off" spellcheck="false" maxlength="64" value="tabs.list" style="width:100%;margin:0 0 14px;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font:inherit;font-size:14px;" />
+      <div class="row" style="margin-top:0;">
+        <button class="btn" id="runButton" type="button">Jalankan</button>
+      </div>
+      <p class="status" id="runStatus" role="status" aria-live="polite">&nbsp;</p>
+    </div>
     <div class="card" id="pairCard">
       <h2>Pairing device baru</h2>
       <p class="meta">Kode sekali pakai, kedaluwarsa 10 menit, terikat ke akun ini.</p>
@@ -242,6 +252,34 @@
         });
       }
     }
+
+    $('runButton').addEventListener('click', async () => {
+      const token = localStorage.getItem('opera-agent-access-token');
+      if (!token) {
+        globalThis.location.replace('./auth.html');
+        return;
+      }
+      const method = $('runMethod').value.trim();
+      $('runStatus').textContent = 'Mengirim…';
+      $('runStatus').className = 'status';
+      try {
+        const response = await fetch(`${REST}/rpc/opera_run_on_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_method: method }) });
+        const result = await response.json();
+        if (!result?.ok) {
+          $('runStatus').textContent = `Gagal: ${result?.error || response.status}.`;
+          $('runStatus').className = 'status warn';
+          return;
+        }
+        // WHY the status only: the payload may carry page content, and this page
+        // has no business showing it. The method and outcome are the useful parts.
+        $('runStatus').textContent = `${method} — ${result.status}.`;
+        $('runStatus').className = 'status ok';
+        load();
+      } catch (error) {
+        $('runStatus').textContent = `Gagal (${error?.message || 'jaringan'}).`;
+        $('runStatus').className = 'status warn';
+      }
+    });
 
     $('pairButton').addEventListener('click', async () => {
       const token = localStorage.getItem('opera-agent-access-token');
