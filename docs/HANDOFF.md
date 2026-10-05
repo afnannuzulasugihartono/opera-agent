@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 03:34 UTC+7.
+@last-edited: 2026-10-05 12:03 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -58,6 +58,18 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   each line per dialect and `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)` asserts
   the gap. Applied migrations and JSON are excluded.
 
+## Measured, not assumed
+
+- The account-scoped run path is proven end to end in production: `opera_run_on_my_device`
+  resolved the device by `user_id`, validated `tabs.list` against the enabled allowlist,
+  enqueued command `61ae9432`, and the device completed it 377 ms after claiming it.
+- The device claimed that command **12.07 s** after it was enqueued, just past the run
+  function's wait window. A single primitive from a person therefore waits on the poll
+  ramp, not on the work. This is the same ramp `docs/benchmarks.md` measures as 676.6 ms
+  of the 1875.3 ms average, seen from its worst angle: one action, no pipeline.
+- Consequence for the product: the dashboard reports a queued run as pending and reloads
+  the history, because a timeout there means "not yet", not "did not happen".
+
 ## Known, not started
 
 - **The Opera-to-Brave rename is a production migration, not a rename.** The `opera_`
@@ -95,37 +107,22 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## CI
 
-- `1facc42` concluded **success on all three gates**: unit, secret-scan, browser. It is the
-  head that carries the `media.play` change, so it is the acceptance evidence for the
-  runtime. Three earlier commits are green on the same gates.
-- `62fdc72` is **green on all three gates** — unit, secret-scan and browser — on GitHub's own
-  Linux runners. The browser gate runs the same harness headed under `xvfb-run` on
-  playwright's chromium. This is the acceptance evidence for the whole session: earlier
-  commits only ever had local green.
-- Three dead ends got there, each a trap worth keeping: headless Chromium starts no MV3
-  service worker; the image's branded Chrome loads no unpacked MV3 extension through
-  playwright at all, while playwright's own chromium does; and `xvfb-run` stops draining the
-  child's stdout, so the harness finishes the suite then dies writing its summary.
+- The three gates run on `ubuntu-latest`: unit, secret-scan, browser. The browser gate runs
+  the same harness headed under `xvfb-run` on playwright's chromium; the branded Chrome in
+  the image loads no unpacked MV3 extension at all, and headless Chromium starts no MV3
+  service worker.
 - The secret-scan gate runs in CI only, and `[.gitleaks.toml](../.gitleaks.toml)` names paths
   and symbols that must exist: a renamed file or variable that the allowlist still calls by
   its old name turns a known synthetic fixture back into a red gate. Re-point the allowlist;
   never edit the fixture to dodge the scanner. `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`
   locks that every allowlist path names a tracked file.
-- All three jobs run on `ubuntu-latest`; the self-hosted Windows runner is no longer needed
-  by CI. The Python 3.12 pin is restored, because the reason it was dropped was a fault of
-  this machine's installer rather than of the pin.
-- The browser gate proves the extension end to end on Linux, but the focus audit cannot see
-  what a headless display hides, so the local gates still run Brave headed on this machine.
 - The concurrency group cancels an in-flight run when a newer one queues, so a push made
   while CI is running destroys the evidence for the head being tested. Push, then wait.
-- One browser failure came out of this session and was a defect in the harness, not the
-  product: the focus audit called a window losing OS focus a stolen focus. It now reports
-  five states and only fails when focus lands on a different window or a different tab,
-  which is what a steal physically is. The classifier is checked on all five at the start
-  of every run, and both steal branches were proved red by disabling them.
-- Every job has a timeout and the workflow has a concurrency group, so a hang becomes a
-  visible failure and superseded runs do not queue behind each other. A push made while a
-  run is in flight cancels it, so push and then wait.
+- The browser gate proves the extension end to end on Linux, but the focus audit cannot see
+  what a headless display hides, so the local gates still run Brave headed on this machine.
+- The focus audit reports five states and fails only when focus lands on a different window
+  or a different tab, which is what a steal physically is. Both steal branches were proved
+  red by disabling them.
 
 ## Blocked, needs the owner at the machine
 
