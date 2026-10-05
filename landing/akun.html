@@ -1,0 +1,206 @@
+<!-- @last-edited: 2026-10-05 08:41 UTC+7. -->
+<!-- @title: akun — your devices and their recent work, nothing else's. -->
+<!-- @state: reads only through opera_my_devices; strangers are sent to sign-in. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Opera Agent</title>
+  <meta name="description" content="Dashboard Opera Agent: device Anda yang ter-pairing dan perintah terakhirnya." />
+  <style>
+    /* WHY the same single-file shape as the rest of the site: no build step, and
+       the only network the CSP allows is the project Auth plus its REST. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --surface-soft: #1b2026;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+
+    main { padding: 56px 0; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      margin: 0 0 14px;
+    }
+
+    .card h2 { margin: 0 0 4px; font-size: 17px; }
+    .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+    .online { color: var(--accent); }
+    .offline { color: var(--warn); }
+
+    ul.commands { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
+    ul.commands li { margin: 0 0 4px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 5px;
+    }
+
+    .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; color: var(--muted); }
+    .status.warn { color: var(--warn); }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./auth.html">Akun</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Dashboard</h1>
+    <p class="sub" id="whoami">Memeriksa sesi…</p>
+    <div id="devices"></div>
+    <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+    <div class="row">
+      <a class="btn" href="./index.html#install">Pasang di device lain</a>
+      <button class="btn" id="signOutButton" type="button">Keluar</button>
+    </div>
+    <p class="status">Hanya method dan status perintah yang tampil di sini; isi halaman tidak pernah keluar dari relay.</p>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Akun</a>
+      </span>
+    </div>
+  </footer>
+
+  <script type="module">
+    // WHY one RPC and no table reads: opera_my_devices returns the caller's devices
+    // with their ten latest commands, method and status only. A page that queries
+    // raw tables would need grants the project deliberately never hands out.
+    const REST = 'https://nenmkmtvjremqphfqnfw.supabase.co/rest/v1';
+    const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
+    const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
+
+    const $ = (id) => document.getElementById(id);
+    const headersFor = (token) => ({ apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    async function load() {
+      const token = localStorage.getItem('opera-agent-access-token');
+      // No token, no dashboard: a stranger gets the sign-in page, never an
+      // empty state that looks like a broken product.
+      if (!token) {
+        globalThis.location.replace('./auth.html');
+        return;
+      }
+      let user;
+      try {
+        const response = await fetch(`${AUTH_HOST}/user`, { headers: headersFor(token) });
+        if (!response.ok) throw new Error(`auth ${response.status}`);
+        user = await response.json();
+      } catch (error) {
+        localStorage.removeItem('opera-agent-access-token');
+        globalThis.location.replace('./auth.html');
+        return;
+      }
+      $('whoami').textContent = `Masuk sebagai ${user.email}.`;
+      let data;
+      try {
+        const response = await fetch(`${REST}/rpc/opera_my_devices`, { method: 'POST', headers: headersFor(token), body: '{}' });
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
+      if (!data?.ok) {
+        $('status').textContent = 'Belum bisa memuat device. Fungsi dashboard menyusul setelah migrasi pengikatan di-apply.';
+        $('status').className = 'status warn';
+        return;
+      }
+      if (!data.devices.length) {
+        $('status').textContent = 'Belum ada device terikat ke akun ini. Ikuti Instalasi untuk pairing pertama.';
+        return;
+      }
+      $('devices').innerHTML = data.devices.map((device) => `
+        <div class="card">
+          <h2>${esc(device.name)}</h2>
+          <p class="meta"><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span> &middot; terakhir terlihat ${esc(device.lastSeenAt || 'belum pernah')} &middot; extension ${esc(device.extensionVersion || '-')}</p>
+          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code> — ${esc(command.status)}</li>`).join('')}</ul>
+        </div>`).join('');
+    }
+
+    $('signOutButton').addEventListener('click', async () => {
+      const token = localStorage.getItem('opera-agent-access-token') || '';
+      try {
+        await fetch(`${AUTH_HOST}/logout`, { method: 'POST', headers: headersFor(token) });
+      } catch (error) {
+        // Logout is best-effort against the network; forgetting locally is certain.
+      }
+      localStorage.removeItem('opera-agent-access-token');
+      globalThis.location.replace('./auth.html');
+    });
+
+    load();
+  </script>
+</body>
+</html>

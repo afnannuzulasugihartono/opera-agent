@@ -36,8 +36,8 @@ test('the landing page itself stays network-free while auth may reach only Supab
   // winning, so the catch-all must come first or it buries the auth policy.
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
-    ['/(.*)', '/auth', '/auth/:path*', '/auth.html'],
-    'the catch-all stays first and the auth entries follow'
+    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html'],
+    'the catch-all stays first and the page entries follow'
   );
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
   const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
