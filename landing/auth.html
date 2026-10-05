@@ -229,8 +229,38 @@
       });
       if (!response.ok) return { error: response.status };
       const user = await response.json();
+      // WHY a refresh token is kept: a Supabase access token lasts about an hour, and this
+      // site holds no SDK to renew it, so storing only the access token signed the reader
+      // out roughly every hour with no warning. Renewal is one POST against the Auth host,
+      // which the page's CSP already allows and no other origin would need.
+      const refreshed = user.session?.refresh_token;
+      if (refreshed) localStorage.setItem('opera-agent-refresh-token', refreshed);
       if (!user?.email) return { error: 'tanpa-email' };
       return { user };
+    }
+
+    // WHY a plain POST and not a client library: the site loads nothing from another origin,
+// so renewing the session is written out here rather than pulled from a CDN.
+    async function renewAccessToken() {
+      const refreshToken = localStorage.getItem('opera-agent-refresh-token');
+      if (!refreshToken) return null;
+      try {
+        const response = await fetch(`${AUTH_HOST}/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken })
+        });
+        if (!response.ok) return null;
+        const renewed = await response.json();
+        if (!renewed.access_token) return null;
+        localStorage.setItem('opera-agent-access-token', renewed.access_token);
+        if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
+        return renewed.access_token;
+      } catch (error) {
+        // A renewal that cannot reach Auth is not proof the reader is signed out; the
+        // stored token is left alone so a network blip does not end their session.
+        return null;
+      }
     }
 
     function showSignedIn(email) {
@@ -264,13 +294,19 @@
         return;
       }
       localStorage.setItem('opera-agent-access-token', accessToken);
+      // WHY the refresh token is kept: a Supabase access token lasts about an hour and
+      // this site holds no SDK to renew it. Storing only the access token meant the
+      // reader was silently signed out roughly every hour, which is what "sering keluar
+      // sendiri" was. The refresh token is what turns that into a session that lasts.
+      const refreshToken = fragment.get('refresh_token');
+      if (refreshToken) localStorage.setItem('opera-agent-refresh-token', refreshToken);
       globalThis.location.replace(returnTo());
     }
 
     // A signed-in visitor who opens this page again sees their state, not a stranger's
     // login form: the remembered token is proven again before anything is shown.
     async function proveStoredSession() {
-      const accessToken = localStorage.getItem('opera-agent-access-token');
+      let accessToken = localStorage.getItem('opera-agent-access-token');
       if (!accessToken) return;
       let proof = null;
       try {
@@ -278,8 +314,25 @@
       } catch (error) {
         proof = null;
       }
+      // WHY renew rather than sign out: an expired access token says nothing about the
+      // reader's account. Signing them out on the first 401 is what made this feel like
+      // the product forgot them, so the refresh token is tried before anything is cleared.
+      if (!proof?.user && localStorage.getItem('opera-agent-refresh-token')) {
+        const renewed = await renewAccessToken();
+        if (renewed) {
+          accessToken = renewed;
+          try {
+            proof = await proveSession(accessToken);
+          } catch (error) {
+            proof = null;
+          }
+        }
+      }
       if (proof?.user) showSignedIn(proof.user.email);
-      else localStorage.removeItem('opera-agent-access-token');
+      else {
+        localStorage.removeItem('opera-agent-access-token');
+        localStorage.removeItem('opera-agent-refresh-token');
+      }
       // WHY the extra card: a person who arrived here from the OAuth consent page has a
       // pending request. Telling them "you are signed in" and dropping them on the home
       // page loses the request; offering the return path keeps it.
@@ -297,6 +350,7 @@
         setSessionStatus('Tidak bisa mencapai layanan auth, tapi tab ini dilupakan.', 'warn');
       }
       localStorage.removeItem('opera-agent-access-token');
+      localStorage.removeItem('opera-agent-refresh-token');
       $('signedIn').hidden = true;
       $('signedOut').hidden = false;
     });

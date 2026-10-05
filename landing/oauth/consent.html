@@ -193,6 +193,55 @@
 
     const headersFor = (token) => ({ apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
 
+    // WHY the session renews itself: a Supabase access token lasts about an hour and this
+    // page holds no SDK to renew it, so an expired token used to read as "signed out" and
+    // the stored copy was deleted. A person pressing a permission toggle after an hour was
+    // therefore asked to sign in again with no explanation, which is what made this look
+    // like the site forgetting them. The refresh token is the same one the sign-in page
+    // stored, and renewing it is one POST to the Auth host this page already reaches.
+    const forget = () => {
+      localStorage.removeItem('opera-agent-access-token');
+      localStorage.removeItem('opera-agent-refresh-token');
+    };
+
+    async function renewAccessToken() {
+      const refreshToken = localStorage.getItem('opera-agent-refresh-token');
+      if (!refreshToken) return null;
+      try {
+        const response = await fetch(`${AUTH_HOST}/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken })
+        });
+        if (!response.ok) return null;
+        const renewed = await response.json();
+        if (!renewed.access_token) return null;
+        localStorage.setItem('opera-agent-access-token', renewed.access_token);
+        if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
+        return renewed.access_token;
+      } catch (error) {
+        // A renewal that cannot reach Auth is not proof the reader is signed out.
+        return null;
+      }
+    }
+
+    // WHY the token is proven before it is used, and renewed once if it has aged: this
+    // page is the one place where an expired session silently became a fresh sign-in
+    // request, so the retry lives here rather than only on the sign-in page.
+    async function usableToken() {
+      const token = localStorage.getItem('opera-agent-access-token');
+      if (!token) return null;
+      const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
+      if (probe && probe.ok) return token;
+      if (!probe) return token;
+      const renewed = await renewAccessToken();
+      if (!renewed) {
+        forget();
+        return null;
+      }
+      return renewed;
+    }
+
     // WHY the return path carries the id: the sign-in page drops the query string when it
     // swaps a token out of the URL fragment, so the request must be carried in ?next.
     $('signInButton').href = `../auth.html?next=${encodeURIComponent(`./oauth/consent.html?authorization_id=${authorizationId || ''}`)}`;
@@ -218,7 +267,7 @@
         $('signedOutCard').querySelectorAll('a')[1].hidden = true;
         return;
       }
-      const token = localStorage.getItem('opera-agent-access-token');
+      const token = await usableToken();
       if (!token) {
         setStatus('Masuk dulu untuk memberi izin ini.', 'warn');
         $('signedOutCard').hidden = false;
@@ -231,10 +280,10 @@
         if (!response.ok) throw Object.assign(new Error('refused'), { message: (await response.json().catch(() => ({}))).msg || `http ${response.status}` });
         details = await response.json();
       } catch (error) {
-        // WHY an expired token signs the reader out rather than looping: this page has no
-        // password field, so the only recovery is a fresh sign-in, and a stale token in
-        // localStorage would otherwise make every retry fail the same way.
-        if (/jwt|bad_jwt|expired/i.test(String(error.message))) localStorage.removeItem('opera-agent-access-token');
+        // WHY the token is cleared only when renewal also failed: usableToken already
+        // renewed once, so reaching here means the session really is gone rather than
+        // merely old.
+        if (/jwt|bad_jwt|expired/i.test(String(error.message))) forget();
         setStatus(say(error), 'warn');
         $('signedOutCard').hidden = /jwt|expired/i.test(String(error.message)) ? false : true;
         return;
@@ -258,9 +307,9 @@
     }
 
     async function decide(action) {
-      const token = localStorage.getItem('opera-agent-access-token');
+      const token = await usableToken();
       if (!token) {
-        $('signInButton').click();
+        globalThis.location.assign($('signInButton').href);
         return;
       }
       const button = action === 'approve' ? $('approveButton') : $('denyButton');

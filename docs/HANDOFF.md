@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 16:55 UTC+7.
+@last-edited: 2026-10-05 18:50 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -32,18 +32,26 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Measured, not assumed
 
-- The site is split the way the two references the site follows split: Supabase separates
-  profile from resources, opencode separates settings from projects. `/akun` is who you
-  are and `/dashboard` is your devices. The nav once pointed "Akun" at the sign-in page
-  and "Dashboard" at a file called akun.html.
-- The provider identity is read from `app_metadata.providers`, not `provider`: measured on
-  this project, an account that signed in with Google reports provider "email" with
-  providers ["email","google"], because a magic link created the row first.
+- The account page and the device page are separate files, the way the references this
+  site follows separate them: Supabase separates profile from resources, opencode
+  separates settings from projects. Locked in
+  `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`.
 - `Intl.RelativeTimeFormat.prototype.format()` takes CLDR unit identifiers, not localised
   names. Passing "menit" throws at call time, inside the loop that builds the device cards,
   so the live dashboard showed "1 device ter-pairing" above an empty list. Both signed-in
   pages now pass CLDR units. Locked by tests/landing-render.test.mjs, which executes each
   page's own module against a stub DOM and asserts the rendered output.
+- A Supabase access token lasts about an hour and the site holds no SDK to renew it, so an
+  aged token read as signed out and was deleted: the reader was signed out roughly hourly
+  with no explanation. All four signed-in pages now store the refresh token and renew it,
+  and forget both halves only when renewal is also refused. Locked by
+  `[tests/landing-session.test.mjs](../tests/landing-session.test.mjs)`, which executes the
+  renewal against a stub Auth because the failure mode is a silent deletion.
+- The MCP OAuth client is registered dynamically by OpenCode, which picks a new random
+  localhost port each run and reuses its cached registration. Supabase does not support
+  wildcards for OAuth client redirect URIs, so the port is appended by hand each time, as a
+  comma-separated list. `OPERA_AGENT_MCP_TOKEN` is already configured on the edge function,
+  and using it as a bearer header in the MCP config removes the dance entirely.
 - Account isolation has two measured layers: `authenticated` holds no grant on the tables,
   only EXECUTE on the RPCs, and RLS filters by ownership for the day a grant appears. A
   foreign account read zero devices and was refused a revoke; anon got 401 on all four.
@@ -51,34 +59,44 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`: a fresh GRANT
   lands on PUBLIC so anon could call every RPC, and two overloads of the pairing issuer
   made PostgREST answer PGRST203.
-- **The site was down for every visitor and the cause was hosting, not code.** The repo
-  is connected to Vercel, so each push auto-deploys, and the project Root Directory was
-  unset, so the auto-deployment built the repository root, which has no `index.html`.
-  Every path answered 404 the moment the last push replaced a good CLI deployment.
-  Root Directory is now `landing`, so a push builds the site again.
-- Vercel Hobby allows 100 deployments a day and 1 concurrent build; that budget is spent.
-  Deploying from `landing/` by CLI never triggered the limit, but a git push did, because
-  a connected project deploys on every push whether or not the CLI was used.
+- The site is live at `opera-agent.vercel.app` and every page serves the fixed content:
+  the account and device pages split, the device list renders, and the OAuth permission
+  screen is at `/oauth/consent`. Measured on the live site, not on the repository.
+- **The outage cause, so it cannot repeat silently:** the repo is connected to Vercel, so
+  every push auto-deploys, and the project Root Directory was unset, so each push built
+  the repository root, which has no `index.html`. Every path answered 404 the moment a
+  push replaced a good CLI deployment. Root Directory is now `landing`.
+- The OAuth permission screen is a page of the site at `/oauth/consent`, not a separate
+  deployment. GoTrue builds that URL as SiteURL + `authorization_path` and validates the
+  origin of every consent call against its Site URL, so a screen on another host renders
+  but can never approve anything. Locked by
+  `[tests/landing-consent.test.mjs](../tests/landing-consent.test.mjs)`.
+- **Two production settings remain the owner`s, and the order matters.** The site URL must
+  move to the site origin, and only after that the superseded `oauth-consent/` directory
+  can be deleted. Changing it while the site was down would have left no consent screen
+  at all.
+- OAuth client redirect URIs do not support wildcards in Supabase, and OpenCode picks a
+  new random localhost port each run. The registration is a comma-separated list, not a
+  space-separated one; that mistake cost one failed fix.
+- Vercel Hobby allows 100 deployments a day and 1 concurrent build, and a connected
+  project deploys on every push whether or not the CLI was used.
 - Cloudflare Pages is prepared as the second host: 500 builds a month, unlimited bandwidth,
   no credit card, and a `pages.dev` subdomain. `landing/_headers` restates the vercel.json
   policy per path, every path enumerated so no rule overlaps another and no rule-ordering
   trap exists. Locked by `[tests/landing-hosting.test.mjs](../tests/landing-hosting.test.mjs)`.
   No `_redirects` file is needed: Pages resolves an extensionless URL to the matching
   `.html` and serves `404.html` for anything unmatched.
-- Moving hosts costs one Supabase setting, not a code change. The Google OAuth callback is
-  the project Auth host, which does not move; only the site origin must be added to the
-  Supabase redirect allowlist. Measured: the authorize endpoint accepts any `redirect_to`
-  and defers the check to the callback, so the allowlist cannot be probed from outside.
+
 ## Known, not started
 
-- **The Opera-to-Brave rename is a production migration, not a rename.** The `opera_`
-  prefix is load-bearing in the database: 58 functions, plus tables and every RPC name
-  the bridge and MCP call. Repo surface is ~256 files and ~1982 `opera_*` identifiers.
-- **A digest freeze blocks the first edit.** `tests/fixtures/*.json` pin `sourceSha256`
-  for [`supabase/functions/opera-agent-mcp/index.ts`](../supabase/functions/opera-agent-mcp/index.ts) and `[extension/background.js](../extension/background.js)`, and
-  `[tests/helpers/boundary-locks.mjs](../tests/helpers/boundary-locks.mjs)` pins them by blob SHA.
-- Sequence: verify on Brave, then rename, then re-freeze. Otherwise a Brave regression
-  is indistinguishable from a rename regression.
+- The rename sweep is done: 42 files, 47 exported identifiers, 69 assertion codes. Production
+  names stay where a deployed object carries them, and the digest freezes were re-cut in
+  the same commit.
+- `tests/fixtures/*.json` still pin `sourceSha256` for
+  `[supabase/functions/opera-agent-mcp/index.ts](../supabase/functions/opera-agent-mcp/index.ts)` and
+  `[extension/background.js](../extension/background.js)`, and
+  `[tests/helpers/boundary-locks.mjs](../tests/helpers/boundary-locks.mjs)` pins them by blob
+  SHA. Any edit to either file re-cuts those in the same commit, or the suite fails.
 
 ## Still open
 
@@ -107,37 +125,23 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 ## CI
 
 - The three gates run on `ubuntu-latest`: unit, secret-scan, browser. The browser gate runs
-  the same harness headed under `xvfb-run` on playwright's chromium; the branded Chrome in
-  the image loads no unpacked MV3 extension at all, and headless Chromium starts no MV3
+  the same harness headed under `xvfb-run` on playwright's chromium, because the branded
+  Chrome in the image loads no unpacked MV3 extension and headless Chromium starts no MV3
   service worker.
 - The secret-scan gate runs in CI only, and `[.gitleaks.toml](../.gitleaks.toml)` names paths
-  and symbols that must exist: a renamed file or variable that the allowlist still calls by
-  its old name turns a known synthetic fixture back into a red gate. Re-point the allowlist;
-  never edit the fixture to dodge the scanner. `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`
-  locks that every allowlist path names a tracked file.
+  and symbols that must exist. Re-point the allowlist when a file is renamed; never edit the
+  fixture to dodge the scanner. `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)` locks
+  that every allowlist path names a tracked file.
 - The concurrency group cancels an in-flight run when a newer one queues, so a push made
   while CI is running destroys the evidence for the head being tested. Push, then wait.
-- The browser gate proves the extension end to end on Linux, but the focus audit cannot see
-  what a headless display hides, so the local gates still run Brave headed on this machine.
-- The focus audit reports five states and fails only when focus lands on a different window
-  or a different tab, which is what a steal physically is. Both steal branches were proved
-  red by disabling them.
 
 ## Blocked, needs the owner at the machine
 
-- Python 3.12.10 installs and runs per-user (`py -3.12`, pip 25.0.1), twice proven
-  (install-verify, uninstall-reinstall-verify). 3.13.15 stays the default untouched.
-- The per-machine install is still broken: its `dev_AllUsers` MSI crashes with a
-  stack overflow (`0xC00000FD`) during file costing, in both scopes, even after
-  re-registering the MSI engine (`msiexec /unregister` + `/regserver`, service
-  running). The dev-symbols package is poisoned on this machine; nobody needs it
-  to run Python. Next steps are OS-level (SFC, servicing) and need the owner.
-- The repo does not need per-machine: the runner runs interactively as ASUS, so
-  per-user installs are visible to it.
-- `%TEMP%\opencode\pythoncore-backup.reg` still holds the removed 3.12 registry
-  registration.
 - Use `py`, not `python`, which hits the Microsoft Store shim. `py` is 3.13.15 with
-  playwright.
+  playwright, and 3.12.10 installs per-user if a harness needs it.
+- The per-machine Python install is broken on this machine: its `dev_AllUsers` MSI crashes
+  with a stack overflow during file costing in both scopes. Repairing it is OS-level and
+  needs the owner. Nothing in the repo depends on it.
 
 ## Do not touch
 
