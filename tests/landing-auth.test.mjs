@@ -36,16 +36,16 @@ test('the landing page itself stays network-free while auth may reach only Supab
   // winning, so the catch-all must come first or it buries the auth policy.
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
-    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html'],
+    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/consent', '/consent/:path*', '/consent.html'],
     'the catch-all stays first and the page entries follow'
   );
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
   const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
-  // WHY three auth entries: neither "/auth" nor "/auth/:path*" alone matched the
+  // WHY three entries per page: neither "/auth" nor "/auth/:path*" alone matched the
   // served path on Vercel, so the auth page received the root CSP and its Supabase
   // fetch died in the browser. All three carry the same single-origin policy.
-  const authSources = ['/auth', '/auth/:path*', '/auth.html'];
+  const authSources = ['/auth', '/auth/:path*', '/auth.html', '/consent', '/consent/:path*', '/consent.html'];
   for (const source of authSources) {
     const entry = bySource[source];
     assert.ok(entry, `vercel.json must define a header entry for ${source}`);
@@ -54,6 +54,22 @@ test('the landing page itself stays network-free while auth may reach only Supab
     assert.doesNotMatch(csp, /connect-src[^;]*https?:\/\/(?!\*\.supabase\.co)/, 'no second origin rides along');
   }
   assert.doesNotMatch(html, /src="https?:/, 'even the auth page loads no external script');
+});
+
+test('the sign-in page can return a person to where they came from, and nowhere else', () => {
+  // WHY this lock: the OAuth consent screen lives on the site, so a person who follows
+  // a permission request and is not signed in has to come back to that screen with its
+  // authorization_id intact. But this is the one page an attacker can send a stranger to
+  // with a query string, so ?next must never become an open redirect.
+  assert.match(html, /const RETURNABLE = \/\^\\\.\\\//, 'only a same-site relative path is accepted');
+  assert.match(html, /returnTo\(\) !== '\.\/index\.html'/, 'the return path changes what the page offers');
+  assert.match(html, /redirect_to.*encodeURIComponent\(target\)/, 'the provider buttons carry the return path to Supabase');
+  assert.match(html, /id="continueButton"/, 'a signed-in visitor is offered the return path explicitly');
+  // WHY the provider buttons matter most: they leave the site entirely and come back
+  // through Supabase, so a hardcoded redirect_to loses the request on that hop.
+  for (const id of ['googleButton', 'githubButton']) {
+    assert.ok(html.includes(`'${id}'`), `${id} is rewired to carry the return path`);
+  }
 });
 
 test('the two pages navigate both ways as one site', () => {
@@ -77,7 +93,7 @@ test('a returning login completes on the page instead of stranding the visitor',
   assert.ok(html.includes('https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1'), 'the session is proven against the project Auth host');
   assert.match(html, /\$\{AUTH_HOST\}\/user/, 'the page proves the session through the user endpoint');
   assert.match(html, /Keluar/, 'a signed-in visitor can sign out again');
-  assert.match(html, /location\.replace\('\.\/index\.html'\)/, 'a fresh login hands the visitor back to the home page');
+  assert.match(html, /location\.replace\(returnTo\(\)\)/, 'a fresh login hands the visitor back to wherever they came from');
   assert.match(html, /proveStoredSession/, 'a returning visitor sees their own state, not a stranger login form');
   assert.match(html, /localStorage/, 'the session survives across tabs like every other site');
   assert.doesNotMatch(html, /sessionStorage/, 'no tab-only storage remains to force a second login');

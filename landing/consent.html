@@ -1,0 +1,289 @@
+<!-- @last-edited: 2026-10-05 17:45 UTC+7. -->
+<!-- @title: consent — the OAuth permission screen, on the same origin as the rest of the site. -->
+<!-- @state: reads one authorization_id; no password, no external origin, no invented app name. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Izin OAuth — Opera Agent</title>
+  <meta name="description" content="Layar izin OAuth Opera Agent: aplikasi mana yang meminta akses, lalu izinkan atau tolak." />
+  <style>
+    /* WHY the site palette and not the old consent screen's: this page is part of the
+       site now, and a reader who was on the home page must not land somewhere that
+       looks like a different product asking for browser control. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --surface-soft: #1b2026;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+      --warn: #f59e0b;
+      --danger: #9f2942;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+    nav a[aria-current="page"] { color: var(--text); }
+
+    main { padding: 56px 0; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      margin: 0 0 14px;
+    }
+
+    .card h2 { margin: 0 0 4px; font-size: 17px; }
+    .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+
+    /* WHY a definition list and not prose: the three things a person must judge before
+       granting browser control are who is asking, where the code goes, and how much.
+       Naming them in a column makes each one impossible to skim past. */
+    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
+    dl.facts dt { color: var(--muted); }
+    dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 5px;
+    }
+
+    .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #06231f; font-weight: 600; }
+    .btn.danger { border-color: var(--danger); color: #ffb4bf; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; color: var(--muted); }
+    .status.ok { color: var(--accent); }
+    .status.warn { color: var(--warn); }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./unduh.html">Unduh</a>
+        <a href="./index.html#model">Model Anda</a>
+        <a href="./akun.html">Akun</a>
+        <a href="./dashboard.html">Dashboard</a>
+        <a href="./privasi.html">Privasi</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Izin aplikasi</h1>
+    <p class="sub" id="status" role="status" aria-live="polite">Memuat permintaan…</p>
+
+    <div class="card" id="factsCard" hidden>
+      <h2 id="clientName">Aplikasi tidak dikenal</h2>
+      <p class="meta">Tinjau tiga hal ini sebelum memberi izin.</p>
+      <dl class="facts">
+        <dt>Aplikasi</dt><dd id="factClient">&mdash;</dd>
+        <dt>Kode dikirim ke</dt><dd id="factRedirect">&mdash;</dd>
+        <dt>Diminta</dt><dd id="factScope">&mdash;</dd>
+        <dt>Akun Anda</dt><dd id="factUser">&mdash;</dd>
+      </dl>
+      <p class="meta">Opera Agent tetap memblokir password, kode sekali pakai, data pembayaran, tab private, dan upload file. Izin ini hanya mengizinkan aplikasi itu meminta tindakan lewat Opera Agent.</p>
+      <div class="row">
+        <button class="btn primary" id="approveButton" type="button">Izinkan</button>
+        <button class="btn danger" id="denyButton" type="button">Tolak</button>
+      </div>
+    </div>
+
+    <div class="card" id="signedOutCard" hidden>
+      <h2>Masuk dulu</h2>
+      <p class="meta">Layar izin hanya bekerja untuk akun yang sudah masuk, karena persetujuan ini terikat pada akun Anda.</p>
+      <div class="row">
+        <a class="btn primary" id="signInButton" href="./auth.html">Masuk</a>
+        <a class="btn" href="./auth.html">Lanjut dengan Google atau GitHub</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a>
+      </span>
+    </div>
+  </footer>
+
+  <script type="module">
+    // WHY plain fetch and not the Supabase SDK from a CDN: every page here may reach one
+    // origin, pinned in vercel.json and _headers. The old consent screen imported
+    // supabase-js from esm.sh, which added a second origin and a third party to a page
+    // whose entire job is asking for browser control. The two REST calls it needed are
+    // written out here instead, so the page reaches Supabase and nothing else.
+    const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
+    const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
+
+    const $ = (id) => document.getElementById(id);
+    const authorizationId = new URLSearchParams(globalThis.location.search).get('authorization_id');
+    const setStatus = (text, kind) => {
+      $('status').textContent = text;
+      $('status').className = `sub${kind ? ` ${kind}` : ''}`;
+    };
+    const say = (raw) => {
+      const message = String(raw?.message || raw || '');
+      if (/authorization not found|no longer pending|invalid/i.test(message)) return 'Permintaan izin ini sudah tidak berlaku. Mulai lagi dari aplikasi yang meminta.';
+      if (/bad_jwt|authentication required|jwt/i.test(message)) return 'Sesi tidak berlaku. Masuk lagi lalu ulangi.';
+      if (/Failed to fetch|NetworkError/i.test(message)) return 'Tidak bisa mencapai layanan auth. Periksa koneksi Anda.';
+      return 'Terjadi kesalahan. Coba lagi atau tolak permintaan ini.';
+    };
+
+    const headersFor = (token) => ({ apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
+
+    // WHY the return path carries the id: the sign-in page drops the query string when it
+    // swaps a token out of the URL fragment, so the request must be carried in ?next.
+    $('signInButton').href = `./auth.html?next=${encodeURIComponent(`./consent.html?authorization_id=${authorizationId || ''}`)}`;
+
+    function renderDetails(details, user) {
+      const name = details.client?.name?.trim() || '';
+      // WHY no invented name: the separate screen hardcoded "ChatGPT", so a person
+      // granting browser control was told the wrong application was asking. If the name
+      // is missing, say so plainly rather than guessing.
+      $('clientName').textContent = name || 'Nama aplikasi tidak diberikan';
+      $('factClient').textContent = name || '—';
+      $('factRedirect').textContent = details.redirect_uri || '—';
+      $('factScope').textContent = details.scope || '—';
+      $('factUser').textContent = user?.email || '—';
+      $('factsCard').hidden = false;
+    }
+
+    async function load() {
+      if (!authorizationId) {
+        setStatus('Tidak ada permintaan izin di alamat ini. Mulai dari aplikasi yang meminta akses.', 'warn');
+        $('signedOutCard').hidden = false;
+        $('signInButton').hidden = true;
+        $('signedOutCard').querySelectorAll('a')[1].hidden = true;
+        return;
+      }
+      const token = localStorage.getItem('opera-agent-access-token');
+      if (!token) {
+        setStatus('Masuk dulu untuk memberi izin ini.', 'warn');
+        $('signedOutCard').hidden = false;
+        return;
+      }
+      setStatus('Memeriksa permintaan…');
+      let details;
+      try {
+        const response = await fetch(`${AUTH_HOST}/oauth/authorizations/${encodeURIComponent(authorizationId)}`, { headers: headersFor(token) });
+        if (!response.ok) throw Object.assign(new Error('refused'), { message: (await response.json().catch(() => ({}))).msg || `http ${response.status}` });
+        details = await response.json();
+      } catch (error) {
+        // WHY an expired token signs the reader out rather than looping: this page has no
+        // password field, so the only recovery is a fresh sign-in, and a stale token in
+        // localStorage would otherwise make every retry fail the same way.
+        if (/jwt|bad_jwt|expired/i.test(String(error.message))) localStorage.removeItem('opera-agent-access-token');
+        setStatus(say(error), 'warn');
+        $('signedOutCard').hidden = /jwt|expired/i.test(String(error.message)) ? false : true;
+        return;
+      }
+      // An authorization that is already decided comes back with a redirect to follow,
+      // which is how a repeat consent request resolves without asking again.
+      if (details.redirect_url) {
+        globalThis.location.assign(details.redirect_url);
+        return;
+      }
+      let user = null;
+      try {
+        const response = await fetch(`${AUTH_HOST}/user`, { headers: headersFor(token) });
+        if (response.ok) user = await response.json();
+      } catch (error) {
+        // WHY tolerate this: the account line is a comfort, not the decision. Refusing to
+        // show the screen because an optional field could not be read would be worse.
+      }
+      renderDetails(details, user);
+      setStatus('Tinjau dan pilih izin.');
+    }
+
+    async function decide(action) {
+      const token = localStorage.getItem('opera-agent-access-token');
+      if (!token) {
+        $('signInButton').click();
+        return;
+      }
+      const button = action === 'approve' ? $('approveButton') : $('denyButton');
+      button.disabled = true;
+      setStatus(action === 'approve' ? 'Memberi izin…' : 'Menolak…');
+      try {
+        const response = await fetch(`${AUTH_HOST}/oauth/authorizations/${encodeURIComponent(authorizationId)}/consent`, {
+          method: 'POST',
+          headers: headersFor(token),
+          body: JSON.stringify({ action })
+        });
+        const data = await response.json();
+        if (!response.ok || data.error) throw Object.assign(new Error('refused'), { message: data.msg || data.error_description || `http ${response.status}` });
+        globalThis.location.assign(data.redirect_url);
+      } catch (error) {
+        button.disabled = false;
+        setStatus(say(error), 'warn');
+      }
+    }
+
+    $('approveButton').addEventListener('click', () => decide('approve'));
+    $('denyButton').addEventListener('click', () => decide('deny'));
+
+    load();
+  </script>
+</body>
+</html>

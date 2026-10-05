@@ -9,10 +9,12 @@ import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/function
 
 const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'origin' ? origin : null) } });
 
-test('default origins are exactly the extension and consent page', () => {
+test('default origins are exactly the extension and the site', () => {
+  // WHY the site and not a separate consent deployment: the consent screen is a page of
+  // the site now, so the origin that may call the backend is the site's own origin.
   assert.deepEqual(CORS_DEFAULT_ORIGINS, [
     'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
-    'https://oauth-consent-three.vercel.app'
+    'https://opera-agent.vercel.app'
   ]);
 });
 
@@ -21,7 +23,7 @@ test('exact allowlisted origin is echoed', () => {
 });
 
 test('lookalike evil origin is rejected', () => {
-  assert.equal(resolveAllowedOrigin(req('https://oauth-consent-three.vercel.app.evil.com')), null);
+  assert.equal(resolveAllowedOrigin(req('https://opera-agent.vercel.app.evil.com')), null);
   assert.equal(resolveAllowedOrigin(req('https://evil.com')), null);
 });
 

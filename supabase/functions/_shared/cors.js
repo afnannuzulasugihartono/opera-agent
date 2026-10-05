@@ -5,7 +5,7 @@
 
 const FALLBACK_ORIGINS = Object.freeze([
   'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
-  'https://oauth-consent-three.vercel.app'
+  'https://opera-agent.vercel.app'
 ]);
 
 export const CORS_DEFAULT_ORIGINS = FALLBACK_ORIGINS;

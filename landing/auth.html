@@ -153,6 +153,13 @@
         pairing, dan halaman ini tidak pernah meminta password Anda.
       </p>
     </div>
+    <div class="card" id="returning" hidden>
+      <p class="sub">Selesai masuk, Anda kembali ke halaman izin OAuth.</p>
+      <div class="row">
+        <a class="btn primary" id="continueButton" href="./index.html">Lanjut ke izin</a>
+        <a class="btn" href="./index.html">Beranda</a>
+      </div>
+    </div>
     <div class="card" id="signedIn" hidden>
       <p class="sub" id="whoami">Masuk sebagai …</p>
       <div class="row">
@@ -189,6 +196,33 @@
       $('sessionStatus').className = `status${kind ? ` ${kind}` : ''}`;
     };
 
+    // WHY a same-site relative path and nothing else: the sign-in page is the one page
+    // an attacker can send a stranger to with a query string, so ?next must not become
+    // an open redirect. A value that does not start with "./" is discarded, which leaves
+    // "./index.html" as the only reachable destination.
+    const RETURNABLE = /^\.\/[A-Za-z0-9._~/?=&%-]*$/;
+    const returnTo = () => {
+      const asked = new URLSearchParams(globalThis.location.search).get('next') || '';
+      return RETURNABLE.test(asked) ? asked : './index.html';
+    };
+
+    // WHY the provider buttons carry next in redirect_to: Supabase sends the browser
+    // back to that exact URL, so without it a person who followed an OAuth request would
+    // land on the home page with their authorization_id dropped on the floor.
+    function wireReturnPath() {
+      const target = returnTo();
+      for (const id of ['googleButton', 'githubButton']) {
+        const link = $(id);
+        if (!link) continue;
+        const url = new URL(link.href);
+        url.searchParams.set('redirect_to', `${globalThis.location.origin}/auth?next=${encodeURIComponent(target)}`);
+        link.href = url.toString();
+      }
+      $('continueButton').href = target;
+    }
+
+    wireReturnPath();
+
     async function proveSession(accessToken) {
       const response = await fetch(`${AUTH_HOST}/user`, {
         headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${accessToken}` }
@@ -206,6 +240,7 @@
       $('pageSub').textContent = 'Akun Anda untuk website dan device.';
       $('signedOut').hidden = true;
       $('signedIn').hidden = false;
+      if (returnTo() !== './index.html') $('returning').hidden = false;
       $('whoami').textContent = `Masuk sebagai ${email}.`;
     }
 
@@ -229,7 +264,7 @@
         return;
       }
       localStorage.setItem('opera-agent-access-token', accessToken);
-      globalThis.location.replace('./index.html');
+      globalThis.location.replace(returnTo());
     }
 
     // A signed-in visitor who opens this page again sees their state, not a stranger's
@@ -245,6 +280,10 @@
       }
       if (proof?.user) showSignedIn(proof.user.email);
       else localStorage.removeItem('opera-agent-access-token');
+      // WHY the extra card: a person who arrived here from the OAuth consent page has a
+      // pending request. Telling them "you are signed in" and dropping them on the home
+      // page loses the request; offering the return path keeps it.
+      if (proof?.user && returnTo() !== './index.html') $('returning').hidden = false;
     }
 
     $('signOutButton').addEventListener('click', async () => {

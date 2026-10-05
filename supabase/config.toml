@@ -1,12 +1,15 @@
-# @last-edited: 2026-10-04 18:25 UTC+7.
+# @last-edited: 2026-10-05 18:00 UTC+7.
 # @title: config — Supabase backend.
-# @state: add authenticated Opera Agent MCP (#11).
+# @state: the consent screen lives on the site, at /oauth/consent.
 # @dependencies: none stated.
 
 project_id = "opera-agent"
 
 [auth]
-site_url = "https://oauth-consent-three.vercel.app"
+# WHY the site and not a separate deployment: GoTrue validates the origin of every
+# consent API call against this value, so a consent screen on another host can never
+# approve an authorization. Pointing it at the site is what lets one origin serve it.
+site_url = "https://opera-agent.vercel.app"
 
 [auth.oauth_server]
 enabled = true

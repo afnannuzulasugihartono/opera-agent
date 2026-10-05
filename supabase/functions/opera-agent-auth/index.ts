@@ -31,6 +31,6 @@ Deno.serve((req: Request) => {
   return new Response(JSON.stringify({
     ok: true,
     service: "opera-agent-auth-config",
-    consentUrl: "https://oauth-consent-three.vercel.app/oauth/consent"
+    consentUrl: "https://opera-agent.vercel.app/oauth/consent"
   }), { headers: { ...headers, "Cache-Control": "no-store" } });
 });
