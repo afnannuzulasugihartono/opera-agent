@@ -130,8 +130,8 @@
   </header>
 
   <main class="wrap">
-    <h1>Masuk</h1>
-    <p class="sub">Satu akun untuk website dan device Anda. Akses awal lewat undangan sampai sign-up terbuka.</p>
+    <h1 id="pageTitle">Masuk</h1>
+    <p class="sub" id="pageSub">Satu akun untuk website dan device Anda. Akses awal lewat undangan sampai sign-up terbuka.</p>
     <div class="card" id="signedOut">
       <a class="provider" id="googleButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://opera-agent.vercel.app/auth">Masuk dengan Google</a>
       <a class="provider" id="githubButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=github&redirect_to=https://opera-agent.vercel.app/auth">Masuk dengan GitHub</a>
@@ -189,6 +189,10 @@
     }
 
     function showSignedIn(email) {
+      // WHY the heading changes too: a signed-in visitor opening the account page
+      // must see an account page, not a login page wearing a status line.
+      $('pageTitle').textContent = 'Akun';
+      $('pageSub').textContent = 'Akun Anda untuk website dan device.';
       $('signedOut').hidden = true;
       $('signedIn').hidden = false;
       $('whoami').textContent = `Masuk sebagai ${email}.`;
