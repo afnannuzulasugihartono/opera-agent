@@ -30,12 +30,13 @@ test('the terms state the invite-only reality and the key rule', () => {
 });
 
 test('every site page shares one navigation and one footer', () => {
-  for (const name of ['index.html', 'auth.html', 'privasi.html', 'syarat.html']) {
+  for (const name of ['index.html', 'auth.html', 'privasi.html', 'syarat.html', 'akun.html']) {
     const html = read(name);
     assert.match(html, /class="brand"[^>]*>Opera Agent</, `${name} carries the brand`);
     assert.match(html, /privasi\.html/, `${name} links the privacy policy`);
     assert.match(html, /syarat\.html/, `${name} links the terms`);
     assert.match(html, /auth\.html/, `${name} links the account page`);
+    assert.match(html, /akun\.html/, `${name} links the dashboard`);
   }
 });
 
