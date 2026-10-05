@@ -1,0 +1,6 @@
+# The deployed site is static files served as-is. No framework may be detected:
+# an auto-detected framework replaces the root document, which is how a 200 on a
+# deployment URL became a 404 on the alias.
+.vercel
+.env*
+AGENTS.md

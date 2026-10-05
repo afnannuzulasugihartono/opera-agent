@@ -45,7 +45,19 @@ test('every site page shares one navigation and one footer', () => {
   }
 });
 
-test('every page survives a reader with no JavaScript and no screen reader vision', () => {
+test('the site is deployed as static files, never as a detected framework', () => {
+  const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
+  // WHY this lock: an auto-detected framework replaced the root document. The
+  // deployment URL answered 200 with a dashboard while the alias answered 404,
+  // and only these two fields prevent that from happening again.
+  assert.equal(vercel.framework, null, 'no framework may be detected');
+  assert.equal(vercel.buildCommand, null, 'there is no build step to run');
+  assert.equal(vercel.outputDirectory, '.', 'the served directory is the site itself');
+  const ignore = fs.readFileSync(new URL('landing/.vercelignore', root), 'utf8');
+  assert.match(ignore, /AGENTS\.md/, 'the scope file never reaches the deployment');
+});
+
+test('every site page survives a reader with no JavaScript and no screen reader vision', () => {
   for (const name of ['index.html', 'auth.html', 'akun.html', 'privasi.html', 'syarat.html']) {
     const html = read(name);
     assert.match(html, /<html lang="id"/, `${name} declares its language`);
