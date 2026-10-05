@@ -182,8 +182,10 @@
       const response = await fetch(`${AUTH_HOST}/user`, {
         headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${accessToken}` }
       });
-      if (!response.ok) return null;
-      return response.json();
+      if (!response.ok) return { error: response.status };
+      const user = await response.json();
+      if (!user?.email) return { error: 'tanpa-email' };
+      return { user };
     }
 
     function showSignedIn(email) {
@@ -200,18 +202,18 @@
       const accessToken = fragment.get('access_token');
       if (!accessToken) return;
       globalThis.history.replaceState(null, '', globalThis.location.pathname);
-      let user = null;
+      let proof = null;
       try {
-        user = await proveSession(accessToken);
+        proof = await proveSession(accessToken);
       } catch (error) {
-        user = null;
+        proof = { error: 'jaringan' };
       }
-      if (!user?.email) {
-        setStatus('Sesi tidak terbukti. Coba masuk lagi.', 'warn');
+      if (!proof?.user) {
+        setStatus(`Sesi tidak terbukti (${proof?.error || 'unknown'}). Coba masuk lagi.`, 'warn');
         return;
       }
       sessionStorage.setItem('opera-agent-access-token', accessToken);
-      showSignedIn(user.email);
+      showSignedIn(proof.user.email);
     }
 
     $('signOutButton').addEventListener('click', async () => {
