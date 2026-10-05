@@ -118,13 +118,13 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./index.html">Opera Agent</a>
-        <a href="./index.html#install">Instalasi</a>
-        <a href="./unduh.html">Unduh</a>
-        <a href="./index.html#model">Model Anda</a>
-        <a href="./akun.html">Akun</a>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html">Privasi</a>
+        <a class="brand" href="/index.html">Opera Agent</a>
+        <a href="/index.html#install">Instalasi</a>
+        <a href="/unduh.html">Unduh</a>
+        <a href="/index.html#model">Model Anda</a>
+        <a href="/akun.html">Akun</a>
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="/privasi.html">Privasi</a>
       </nav>
     </div>
   </header>
@@ -153,8 +153,8 @@
       <h2>Masuk dulu</h2>
       <p class="meta">Layar izin hanya bekerja untuk akun yang sudah masuk, karena persetujuan ini terikat pada akun Anda.</p>
       <div class="row">
-        <a class="btn primary" id="signInButton" href="./auth.html">Masuk</a>
-        <a class="btn" href="./auth.html">Lanjut dengan Google atau GitHub</a>
+        <a class="btn primary" id="signInButton" href="/auth.html">Masuk</a>
+        <a class="btn" href="/auth.html">Lanjut dengan Google atau GitHub</a>
       </div>
     </div>
   </main>
@@ -163,7 +163,7 @@
     <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span>
-        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a>
+        <a href="/index.html">Beranda</a><a href="/privasi.html">Privasi</a><a href="/syarat.html">Syarat</a><a href="/auth.html">Masuk</a><a href="/akun.html">Akun</a><a href="/dashboard.html">Dashboard</a>
       </span>
     </div>
   </footer>
@@ -262,7 +262,7 @@
 
     // WHY the return path carries the id: the sign-in page drops the query string when it
     // swaps a token out of the URL fragment, so the request must be carried in ?next.
-    $('signInButton').href = `../auth.html?next=${encodeURIComponent(`./oauth/consent.html?authorization_id=${authorizationId || ''}`)}`;
+    $('signInButton').href = `/auth.html?next=${encodeURIComponent(`./oauth/consent.html?authorization_id=${authorizationId || ''}`)}`;
 
     function renderDetails(details, user) {
       const name = details.client?.name?.trim() || '';

@@ -42,11 +42,17 @@ test('every site page shares one navigation and one footer', () => {
     for (const entry of ['Instalasi', 'Unduh', 'Model Anda', 'Akun', 'Dashboard', 'Privasi']) {
       assert.ok(nav.includes(entry), `${name} nav offers ${entry}`);
     }
-    // WHY the three targets are pinned: the nav once pointed "Akun" at the sign-in
-    // page and "Dashboard" at a file called akun.html, so the reader had to know the
-    // filenames to know where they were going.
-    assert.match(nav, /<a href="\.\/akun\.html"[^>]*>Akun</, 'nav Akun points at the account page');
-    assert.match(nav, /<a href="\.\/dashboard\.html"[^>]*>Dashboard</, 'nav Dashboard points at the device page');
+    // WHY the two targets and not the spelling of the path: the nav once pointed "Akun" at
+    // the sign-in page and "Dashboard" at a file called akun.html, so the reader had to know
+    // the filenames to know where they were going. The consent screen lives one directory
+    // down and must therefore spell its paths root-relative; what both must agree on is the
+    // page each entry leads to.
+    const targetOf = (label) => {
+      const entry = new RegExp(`<a[^>]*href="([^"]+)"[^>]*>${label}</a>`).exec(nav);
+      return entry ? entry[1].replace(/^\.\//, '').replace(/^\//, '') : null;
+    };
+    assert.equal(targetOf('Akun'), 'akun.html', `nav Akun points at the account page`);
+    assert.equal(targetOf('Dashboard'), 'dashboard.html', `nav Dashboard points at the device page`);
     assert.match(nav, /<a class="brand"[^>]*>Opera Agent</, `${name} nav brand is a link home`);
   }
 });

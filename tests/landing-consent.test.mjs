@@ -19,6 +19,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
@@ -48,7 +49,7 @@ test('the consent screen loads nothing from another origin', () => {
 test('the consent screen asks for no password, like every other page here', () => {
   assert.doesNotMatch(html, /type="password"/i, 'there is no password field');
   assert.doesNotMatch(code, /signInWithPassword/, 'and no password grant');
-  assert.match(html, /\.\/auth\.html\?next=/, 'it sends the person to the provider sign-in page');
+  assert.match(html, /`\/auth\.html\?next=/, 'it sends the person to the provider sign-in page');
 });
 
 test('a person who is not signed in keeps their request', () => {
@@ -93,7 +94,52 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
   assert.doesNotMatch(sources.join(' '), /^\/consent$/m, 'no stale entry for the path nothing requested');
   const headers = read('landing/_headers');
   assert.match(headers, /^\/oauth\/consent, \/oauth\/consent\.html$/m, 'and on Cloudflare');
-  assert.match(html, /\.\.\/auth\.html\?next=/, 'the sign-in return path resolves from the new directory');
+  assert.match(html, /`\/auth\.html\?next=/, 'the sign-in return path is root-relative, so it survives the subdirectory');
+});
+
+test('every page link resolves, including on the page that lives in a subdirectory', () => {
+  // WHY this lock is about resolution and not about the file names: the consent screen sits
+  // in /oauth/, so the shared "./x.html" links it inherited resolved to /oauth/x.html and
+  // answered 404 — measured on the live site, all seven of them, on the page where a person
+  // has just granted an application control of their browser. A link that looks right in
+  // the source is not a link that works.
+  const pages = ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html'];
+  const exists = (path) => {
+    try {
+      return fs.statSync(new URL(`landing/${path}`, root)).isFile();
+    } catch {
+      return false;
+    }
+  };
+  for (const page of pages) {
+    const dir = page.includes('/') ? page.slice(0, page.lastIndexOf('/') + 1) : '';
+    const html = read(`landing/${page}`);
+    const links = [...html.matchAll(/(?:href|src)="([^"#][^"]*)"/g)].map((m) => m[1]);
+    assert.ok(links.length > 0, `${page} has links to resolve`);
+    for (const link of links) {
+      if (/^(https?:|mailto:|tel:|data:)/.test(link)) continue;
+      // WHY resolve rather than demand a leading slash: a relative link is correct on a
+      // root page and wrong one directory down, so the rule that matters is the resolved
+      // target. A nested page is additionally required to be root-relative, because the
+      // shared strings it inherited are the ones that broke.
+      const clean = link.split(/[?#]/)[0];
+      const target = clean.startsWith('/')
+        ? clean.slice(1)
+        : path.posix.normalize(dir + clean);
+      if (dir) assert.ok(clean.startsWith('/'), `${page} links to ${link}, which resolves against ${dir}`);
+      assert.ok(exists(target), `${page} links to ${link}, which resolves to ${target} and does not exist`);
+    }
+  }
+});
+
+test('the consent screen carries the same navigation as every other page', () => {
+  // WHY entries and not hrefs: the screen has to link the same places, and it cannot do it
+  // with the same relative strings, because it is one directory down.
+  const entries = (page) => [...read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0].matchAll(/>([^<>]+)<\/a>/g)].map((m) => m[1].trim());
+  const shared = entries('index.html');
+  for (const page of ['akun.html', 'dashboard.html', 'auth.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html']) {
+    assert.deepEqual(entries(page), shared, `${page} offers the same nav entries`);
+  }
 });
 
 test('nothing the runtime reads still points at the separate consent deployment', () => {
