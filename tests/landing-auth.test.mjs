@@ -21,6 +21,7 @@ test('the auth page offers Google and GitHub through the project Auth, not throu
   assert.match(html, /provider=google/, 'a Masuk dengan Google button must point at the provider');
   assert.match(html, /provider=github/, 'a Masuk dengan GitHub button must point at the provider');
   assert.ok(html.includes(AUTH_HOST), 'both buttons must go to the project Auth host, never a middleman');
+  assert.match(html, /redirect_to=https:\/\/opera-agent\.vercel\.app\/auth/, 'both buttons must carry the way home, or login strands the visitor on the old site URL');
 });
 
 test('the auth page takes no password, only a magic link', () => {
