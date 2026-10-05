@@ -1,0 +1,124 @@
+<!-- @last-edited: 2026-10-05 12:10 UTC+7. -->
+<!-- @title: 404 — a lost visitor gets the four ways out, not a host error. -->
+<!-- @state: served by the catch-all rewrite in vercel.json. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Halaman tidak ditemukan — Opera Agent</title>
+  <meta name="description" content="Halaman ini tidak ada. Links ke beranda, unduhan, akun, dan dashboard Opera Agent." />
+  <meta name="robots" content="noindex" />
+  <style>
+    /* WHY the same single-file shape as the rest of the site: a 404 that looks
+       like someone else's error page loses the reader before they read it. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.7 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+
+    main { padding: 64px 0 40px; }
+    h1 { margin: 0 0 10px; font-size: 28px; letter-spacing: -.01em; }
+    p { color: var(--muted); }
+
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: 22px; }
+
+    .tile {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      text-decoration: none;
+    }
+
+    .tile:hover { border-color: var(--accent); }
+    .tile h2 { margin: 0 0 4px; font-size: 15px; color: var(--text); }
+    .tile p { margin: 0; font-size: 13px; }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./unduh.html">Unduh</a>
+        <a href="./auth.html">Akun</a>
+        <a href="./akun.html">Dashboard</a>
+        <a href="./privasi.html">Privasi</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Halaman ini tidak ada</h1>
+    <p>Alamatnya mungkin salah ketik, atau halaman itu sudah dipindahkan. Empat jalan keluar:</p>
+    <div class="grid">
+      <a class="tile" href="./index.html">
+        <h2>Beranda</h2>
+        <p>Cara kerjanya dan semua jawaban umum.</p>
+      </a>
+      <a class="tile" href="./unduh.html">
+        <h2>Unduh</h2>
+        <p>Arsip extension dan sidik jarinya.</p>
+      </a>
+      <a class="tile" href="./auth.html">
+        <h2>Masuk</h2>
+        <p>Akun Anda, lewat Google, GitHub, atau magic link.</p>
+      </a>
+      <a class="tile" href="./akun.html">
+        <h2>Dashboard</h2>
+        <p>Device ter-pairing dan Riwayatnya.</p>
+      </a>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Akun</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>
