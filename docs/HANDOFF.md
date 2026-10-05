@@ -43,7 +43,7 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   aged token read as signed out and was deleted: the reader was signed out roughly hourly
   with no explanation. All four signed-in pages now store the refresh token and renew it,
   and forget both halves only when renewal is also refused. Locked by
-  `[tests/landing-session.test.mjs](../tests/landing-session.test.mjs)`, which executes the
+  `[tests/landing-session.test.mjs](../tests/landing-execution.test.mjs)`, which executes the
   renewal against a stub Auth because the failure mode is a silent deletion.
 - The MCP OAuth client is registered dynamically by OpenCode, which picks a new random
   localhost port each run and reuses its cached registration. Supabase does not support
@@ -68,7 +68,7 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   deployment. GoTrue builds that URL as SiteURL + `authorization_path` and validates the
   origin of every consent call against its Site URL, so a screen on another host renders
   but can never approve anything. Locked by
-  `[tests/landing-consent.test.mjs](../tests/landing-consent.test.mjs)`.
+  `[tests/landing-consent.test.mjs](../tests/landing-execution.test.mjs)`.
 - **Two production settings remain the owner`s, and the order matters.** The site URL must
   move to the site origin, and only after that the superseded `oauth-consent/` directory
   can be deleted. Changing it while the site was down would have left no consent screen
