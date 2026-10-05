@@ -37,6 +37,11 @@ test('every site page shares one navigation and one footer', () => {
     assert.match(html, /syarat\.html/, `${name} links the terms`);
     assert.match(html, /auth\.html/, `${name} links the account page`);
     assert.match(html, /akun\.html/, `${name} links the dashboard`);
+    const nav = html.match(/<nav>[\s\S]*?<\/nav>/)[0];
+    for (const entry of ['Instalasi', 'Model Anda', 'Akun', 'Dashboard', 'Privasi']) {
+      assert.ok(nav.includes(entry), `${name} nav offers ${entry}`);
+    }
+    assert.match(nav, /<a class="brand"[^>]*>Opera Agent</, `${name} nav brand is a link home`);
   }
 });
 
