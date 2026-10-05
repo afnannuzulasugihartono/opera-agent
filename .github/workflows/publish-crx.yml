@@ -200,6 +200,11 @@ jobs:
 
       # WHY read the served bytes: an insert can succeed while the endpoint keeps
       # answering from an earlier row, and only the response tells the two apart.
+      # WHY a stale body is not fatal: the edge and Supabase both cache the CRX, so
+      # the bytes arriving seconds after an insert may still be the previous
+      # release. That is expected, and Chrome handles it. The ETag is the digest of
+      # the row the endpoint resolved, so when it already equals the digest just
+      # published, the publish is confirmed and a stale body is the cache working.
 
       - name: Confirm the endpoint serves this CRX
         shell: bash
@@ -214,12 +219,6 @@ jobs:
             | grep -o 'codebase="[^"]*"' | head -1 | sed 's/codebase="//;s/"//')"
           echo "advertised: ${CODEBASE}"
           test -n "$CODEBASE" || { echo "::error::the endpoint advertised no CRX for ${EXTENSION_ID}"; exit 1; }
-          # WHY the ETag is the thing compared, and why a failing read is not fatal: the
-      # edge and Supabase both cache the CRX, so the bytes arriving seconds after
-      # an insert may still be the previous release. That is expected, and Chrome
-      # handles it. The ETag is the digest of the row the endpoint resolved, so
-      # when it already equals the digest just published, the publish is confirmed
-      # and a stale body is the cache doing its job.
 
           SERVED="$(curl --fail --silent --show-error --location \
             --dump-header "${RUNNER_TEMP}/served.headers" \
