@@ -65,11 +65,26 @@ jobs:
           printf '%s\n' "$CRX_SIGNING_KEY" > "${RUNNER_TEMP}/signing.pem"
           chmod 600 "${RUNNER_TEMP}/signing.pem"
 
+      # WHY the absolute path and the assertion in the same step: Chrome resolves
+      # --pack-extension against its own working directory, and a relative path
+      # that it cannot resolve exits zero having written nothing. Asserting the
+      # artifact here means a silent pack fails as a pack, not later as a
+      # "not a CRX" from whichever step happened to read the missing file.
+
       - name: Pack and sign
         shell: bash
         run: |
-          google-chrome --no-sandbox --disable-gpu --pack-extension=extension \
+          google-chrome --no-sandbox --disable-gpu --no-message-box \
+            --pack-extension="${GITHUB_WORKSPACE}/extension" \
             --pack-extension-key="${RUNNER_TEMP}/signing.pem"
+          CRX="${GITHUB_WORKSPACE}/extension.crx"
+          if [ ! -f "$CRX" ]; then
+            echo "::error::chrome wrote no CRX; listing what it did write:"
+            ls -la "${GITHUB_WORKSPACE}" | head -20
+            exit 1
+          fi
+          echo "packed $(wc -c < "$CRX") bytes"
+          head -c 4 "$CRX" | grep -q 'Cr24' || { echo "::error::not a CRX"; exit 1; }
 
       # WHY compare the signature against the manifest rather than against a
       # written-down id: the manifest key is what Chrome derives the id from, and
@@ -80,8 +95,9 @@ jobs:
         id: identity
         shell: bash
         run: |
-          CRX="extension.crx"
-          test -f "$CRX" || { echo "::error::chrome produced no $CRX"; exit 1; }
+          CRX="${GITHUB_WORKSPACE}/extension.crx"
+          node -e "process.exit(require('node:fs').readFileSync(process.argv[1]).subarray(0, 4).toString('latin1') === 'Cr24' ? 0 : 1)" "$CRX" \
+            || { echo "::error::not a CRX"; exit 1; }
 
           EXPECTED="$(node -e "
             const crypto = require('node:crypto');
@@ -96,8 +112,11 @@ jobs:
           SIGNED="$(node -e "
             const crypto = require('node:crypto');
             const fs = require('node:fs');
-            const buf = fs.readFileSync('extension.crx');
-            if (buf.readUInt32BE(0) !== 0x43523234) { console.error('not a CRX'); process.exit(1); }
+            const buf = fs.readFileSync(process.argv[1]);
+            if (buf.subarray(0, 4).toString('latin1') !== 'Cr24') { console.error('not a CRX'); process.exit(1); }
+            // WHY no fallback to the stored .pem: a CRX is self-describing, and
+            // reading the header is the only check that cannot be satisfied by a
+            // file that merely looks right next to it.
             const headerLen = buf.readUInt32LE(8);
             const header = buf.subarray(12, 12 + headerLen);
             // CrxFileHeader field 1 or 2 is an AsymmetricKeyProof whose field 1 is
@@ -139,23 +158,15 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           EXTENSION_ID: ${{ steps.identity.outputs.extension-id }}
           VERSION: ${{ inputs.version }}
+          CRX_PATH: ${{ github.workspace }}/extension.crx
         run: |
           if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
             echo "::error::SUPABASE_ACCESS_TOKEN is unset; the CRX is packed but cannot be published"
             exit 1
           fi
 
-          CRX_B64="$(base64 -w0 extension.crx)"
-          SHA256="$(sha256sum extension.crx | cut -d' ' -f1)"
-          ROW="$(node -e "
-            process.stdout.write(JSON.stringify({
-              extension_id: process.env.EXTENSION_ID,
-              version: process.env.VERSION,
-              crx_base64: process.env.CRX_B64,
-              sha256: process.env.SHA256,
-              active: true
-            }));
-          ")""
+          CRX_B64="$(base64 -w0 "${CRX_PATH}")"
+          SHA256="$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)""
 
           PROJECT_REF="nenmkmtvjremqphfqnfw"
           query () {
@@ -190,6 +201,7 @@ jobs:
         env:
           EXTENSION_ID: ${{ steps.identity.outputs.extension-id }}
           VERSION: ${{ inputs.version }}
+          CRX_PATH: ${{ github.workspace }}/extension.crx
         run: |
           BASE="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update"
           X="id%3D${EXTENSION_ID}%26v%3D${VERSION}%26uc%26nocache%3D1"
@@ -199,7 +211,7 @@ jobs:
           test -n "$CODEBASE" || { echo "::error::the endpoint advertised no CRX for ${EXTENSION_ID}"; exit 1; }
           curl --fail --silent --show-error --location \
             --output "${RUNNER_TEMP}/served.crx" --write-out 'served %{http_code}\n' "$CODEBASE"
-          test "$(sha256sum "${RUNNER_TEMP}/served.crx" | cut -d' ' -f1)" = "$(sha256sum extension.crx | cut -d' ' -f1)" \
+          test "$(sha256sum "${RUNNER_TEMP}/served.crx" | cut -d' ' -f1)" = "$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)" \
             || { echo "::error::the served bytes are not the bytes just published"; exit 1; }
 
       - uses: actions/upload-artifact@v4
