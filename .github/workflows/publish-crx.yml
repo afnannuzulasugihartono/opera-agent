@@ -185,16 +185,12 @@ jobs:
               -o /dev/null -w "%{http_code}"
           }
 
-          # WHY deactivate first, then insert: uniqueness is per extension_id, so
-          # two active rows for one id is allowed, and an install whose check lands
-          # on the wrong row gets a CRX signed by a key it did not ask for. One
-          # active row per id.
-
-          for OLD_ID in ohbbpamcljckmjhcpkcmefdobkoeaick ofgemipoobcnbjkfanmofjbdonjapmgl; do
-            [ "$OLD_ID" = "$EXTENSION_ID" ] && continue
-            printf 'deactivate %s -> %s\n' "$OLD_ID" \
-              "$(query "update opera_releases set active = false where extension_id = '$OLD_ID' and active")"
-          done
+          # WHY no row is deactivated here: an install that asks under an old id must keep
+          # getting a release it can actually install. 1.6.14 under the old id is
+          # self-consistent, so it still serves those installs correctly, and
+          # deactivating it would strand every browser that has never updated. The
+          # unique index is per extension_id, so two ids may each hold one active
+          # row at the same time without either one's check reaching the other.
 
           printf 'publish %s -> %s\n' "$VERSION" "$(query "insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('$EXTENSION_ID', '$VERSION', '$CRX_B64', '$SHA256', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active")"
 
