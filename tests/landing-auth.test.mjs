@@ -77,6 +77,8 @@ test('a returning login completes on the page instead of stranding the visitor',
   assert.ok(html.includes('https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1'), 'the session is proven against the project Auth host');
   assert.match(html, /\$\{AUTH_HOST\}\/user/, 'the page proves the session through the user endpoint');
   assert.match(html, /Keluar/, 'a signed-in visitor can sign out again');
+  assert.match(html, /location\.replace\('\.\/index\.html'\)/, 'a fresh login hands the visitor back to the home page');
+  assert.match(html, /proveStoredSession/, 'a returning visitor sees their own state, not a stranger login form');
 });
 
 test('every auth control has an accessible name', () => {
