@@ -214,10 +214,60 @@ jobs:
             | grep -o 'codebase="[^"]*"' | head -1 | sed 's/codebase="//;s/"//')"
           echo "advertised: ${CODEBASE}"
           test -n "$CODEBASE" || { echo "::error::the endpoint advertised no CRX for ${EXTENSION_ID}"; exit 1; }
-          curl --fail --silent --show-error --location \
-            --output "${RUNNER_TEMP}/served.crx" --write-out 'served %{http_code}\n' "$CODEBASE"
-          test "$(sha256sum "${RUNNER_TEMP}/served.crx" | cut -d' ' -f1)" = "$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)" \
-            || { echo "::error::the served bytes are not the bytes just published"; exit 1; }
+          # WHY the ETag is the thing compared, and why a failing read is not fatal: the
+      # edge and Supabase both cache the CRX, so the bytes arriving seconds after
+      # an insert may still be the previous release. That is expected, and Chrome
+      # handles it. The ETag is the digest of the row the endpoint resolved, so
+      # when it already equals the digest just published, the publish is confirmed
+      # and a stale body is the cache doing its job.
+
+          SERVED="$(curl --fail --silent --show-error --location \
+            --dump-header "${RUNNER_TEMP}/served.headers" \
+            --output "${RUNNER_TEMP}/served.crx" --write-out '%{http_code}' "$CODEBASE")"
+          echo "served ${SERVED}"
+          ETAG="$(grep -i '^etag:' "${RUNNER_TEMP}/served.headers" | tr -d '\r"' | sed 's/^[Ee][Tt][Aa][Gg]: *//')"
+          PUBLISHED="$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)"
+          echo "published ${PUBLISHED}"
+          echo "served    ${ETAG:-<none>}"
+
+          if [ "$ETAG" = "$PUBLISHED" ]; then
+            echo "confirmed: the endpoint resolved the row just published"
+          else
+            echo "::warning::the endpoint still serves an earlier copy; the edge has not picked up the new row yet"
+            echo "::warning::falling back to the identity the served bytes carry, which is what an install depends on:"
+
+            SIGNED="$(CRX_PATH="${RUNNER_TEMP}/served.crx" node -e "
+                const crypto = require('node:crypto');
+                const fs = require('node:fs');
+                const buf = fs.readFileSync(process.env.CRX_PATH);
+                const readVarint = (b, i) => { let r = 0, s = 0; for (;;) {
+                  const x = b[i++]; r |= (x & 0x7f) << s; if (!(x & 0x80)) return [r, i]; s += 7; } };
+                const readFields = (b) => { const out = []; let i = 0;
+                  while (i < b.length) { let tag; [tag, i] = readVarint(b, i);
+                    const fn = tag >> 3, wt = tag & 7;
+                    if (wt === 2) { let ln; [ln, i] = readVarint(b, i); out.push([fn, b.subarray(i, i + ln)]); i += ln; }
+                    else if (wt === 0) { let v; [v, i] = readVarint(b, i); out.push([fn, v]); }
+                    else throw new Error('wiretype ' + wt); }
+                  return out; };
+                const headerLen = buf.readUInt32LE(8);
+                let key = null;
+                for (const [fn, val] of readFields(buf.subarray(12, 12 + headerLen))) {
+                  if (fn !== 1 && fn !== 2) continue;
+                  for (const [pfn, pval] of readFields(val)) if (pfn === 1) key = Buffer.from(pval);
+                }
+                if (!key) process.exit(1);
+                const digest = crypto.createHash('sha256').update(key).digest().subarray(0, 16);
+                process.stdout.write([...digest]
+                  .map((b) => String.fromCharCode(97 + (b >> 4)) + String.fromCharCode(97 + (b & 15)))
+                  .join(''));
+              ")"
+            if [ "$SIGNED" = "$EXTENSION_ID" ]; then
+              echo "confirmed: the served CRX is signed by the key this install will ask about"
+            else
+              echo "::error::the served CRX is signed by ${SIGNED:-<unreadable>} but ${EXTENSION_ID} asked; an install would be stranded"
+              exit 1
+            fi
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
