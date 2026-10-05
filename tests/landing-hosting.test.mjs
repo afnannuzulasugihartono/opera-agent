@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 02:41 UTC+7.
+// @last-edited: 2026-10-06 03:52 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
@@ -148,15 +148,17 @@ test('the static-hosting pins survive that change', () => {
 });
 
 test('the deploy invocation is written down where it will be found', () => {
-  // WHY this assertion changed: the project's Root Directory is `landing`, so the CLI resolves
-  // `landing/landing` from the repository root and refuses, and from inside `landing/` it
-  // refuses the same way. Measured on this project. The invocation that works is the REST
-  // endpoint, so a lock that kept naming the CLI would have preserved a claim that stopped
-  // being true the moment anyone ran it.
+  // WHY this assertion changed twice: the project's Root Directory is `landing`, so the
+  // Vercel CLI resolves `landing/landing` from the repository root and refuses, and from
+  // inside `landing/` it refuses the same way. Measured on this project. Cloudflare then
+  // became the front door and the Vercel CLI stopped being the way to publish at all, so
+  // the lock now names the host that serves the site and the workflow that publishes it.
+  // A lock naming a retired invocation would preserve a claim that stopped being true.
   const handoff = read('docs/HANDOFF.md');
-  assert.match(handoff, /api\.vercel\.com\/v13\/deployments/, 'the working invocation is recorded');
-  assert.match(handoff, /CLI cannot deploy/i, 'and says plainly that the CLI is not the way');
-  assert.match(read('AGENTS.md'), /v13\/deployments/, 'the call shape sits with the rules that bind a deploy');
+  assert.match(handoff, /wrangler pages deploy|Cloudflare Pages/i, 'the host that serves the site is named');
+  assert.match(handoff, /publish-crx\.yml|deploy-site\.yml/, 'and the workflow that publishes it');
+  assert.match(handoff, /CLI cannot deploy/i, 'and says plainly that the Vercel CLI is not the way');
+  assert.match(read('AGENTS.md'), /wrangler pages deploy|deploy-site\.yml/, 'the invocation sits with the rules that bind a deploy');
 });
 
 test('the edge is told not to hold a page, because Cache-Control alone does not', () => {

@@ -1,4 +1,4 @@
-@last-edited: 2026-10-06 00:35 UTC+7.
+@last-edited: 2026-10-06 03:44 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -61,10 +61,28 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`: a fresh GRANT
   lands on PUBLIC so anon could call every RPC, and two overloads of the pairing issuer
   made PostgREST answer PGRST203.
-- The site is live at `opera-agent.vercel.app` and every page serves the current build: the
-  account and device pages split, the device list renders, and the OAuth permission screen is
-  at `/oauth/consent` with nine root-relative links. Measured on the live site at
-  `x-vercel-cache: MISS` and `age=0` on all eight pages, and all seven nav links resolve.
+- **The site is served from Cloudflare Pages at `opera-agent.pages.dev`, and Vercel is the
+  backup host.** Measured live: the home page, `/auth` and `/oauth/consent` all answer 200,
+  and the installer downloads at 18,432 bytes, byte-identical to
+  `[landing/OperaAgent-Installer.exe](../landing/OperaAgent-Installer.exe)`. `opera-agent.vercel.app`
+  still answers 200 and is kept as the second host.
+- **Cloudflare is the front door because Vercel's budget was exhausted**, and the site's
+  origin moved with it: `[extension/lib/endpoints.js](../extension/lib/endpoints.js)` `SITE_ORIGIN`,
+  `[supabase/config.toml](../supabase/config.toml)` `site_url`, and the production GoTrue
+  `site_url` are all `https://opera-agent.pages.dev`. `vercel.app` stays in the CORS allowlist
+  in `[supabase/functions/_shared/cors.js](../supabase/functions/_shared/cors.js)` and in the
+  Supabase redirect list, so a login or an install that still names the old host keeps working.
+  Measured: the Google authorize endpoint accepts `redirect_to` on both hosts.
+- **A deploy is a dispatch, not a push.** `[.github/workflows/deploy-site.yml](../.github/workflows/deploy-site.yml)`
+  publishes `landing/` with `wrangler pages deploy` and runs the unit and syntax gates first.
+  CI still runs on every push; a deploy happens when someone asks for one. It cannot be a
+  Git integration because an existing Direct Upload project cannot be switched to one.
+- **Packing a CRX and publishing it is now a workflow.**
+  `[.github/workflows/publish-crx.yml](../.github/workflows/publish-crx.yml)` packs with the
+  `CRX_SIGNING_KEY` secret, refuses to publish unless the signature resolves to the same id
+  the manifest declares, inserts the `opera_releases` row, and then confirms the served
+  bytes. It activates nothing else: 1.6.14 under the old id is self-consistent and must
+  keep serving installs that never updated.
 - **The outage cause, so it cannot repeat silently:** the repo is connected to Vercel, so
   every push auto-deploys, and the project Root Directory was unset, so each push built
   the repository root, which has no `index.html`. Every path answered 404 the moment a
@@ -74,24 +92,16 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   origin of every consent call against its Site URL, so a screen on another host renders
   but can never approve anything. Locked by
   `[tests/landing-consent.test.mjs](../tests/landing-consent.test.mjs)`.
-- **The site URL is the site origin and the superseded `oauth-consent/` directory is gone.**
-  Measured: the authorize endpoint 302s to `https://opera-agent.vercel.app/oauth/consent`.
-- **Deploys are deliberate, and the budget is why.** Vercel Hobby allows 100 deployments a
-  day, and a connected project deploys on every push whether or not the CLI was used, so
-  fifteen pushes is most of a day. Automatic deployment is off in
-  `[landing/vercel.json](../landing/vercel.json)`; the budget is spent only on purpose.
-- The Vercel CLI cannot deploy this project at all: Root Directory is `landing`, so it resolves
-  `landing/landing` from the repository root and refuses, and from inside `landing/` it refuses
-  the same way. Deploy through `POST https://api.vercel.com/v13/deployments`; the call shape and
-  the recursive walk it needs are in `## Deploy` in [`AGENTS.md`](../AGENTS.md).
 - A push that does not deploy fails silently: the commit is on main, CI is green, and
   production keeps serving the previous build. Check the live content, not the push status.
-- Cloudflare Pages is prepared as the second host: 500 builds a month, unlimited bandwidth,
-  no credit card, and a `pages.dev` subdomain. `landing/_headers` restates the vercel.json
-  policy per path, every path enumerated so no rule overlaps another and no rule-ordering
-  trap exists. Locked by `[tests/landing-hosting.test.mjs](../tests/landing-hosting.test.mjs)`.
-  No `_redirects` file is needed: Pages resolves an extensionless URL to the matching
-  `.html` and serves `404.html` for anything unmatched.
+  The Vercel project stays as the backup host with its automatic deployment off in
+  `[landing/vercel.json](../landing/vercel.json)`; its CLI cannot deploy this project at all,
+  because Root Directory is `landing`, so it resolves `landing/landing` and refuses.
+- `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every path
+  enumerated so no rule overlaps another and no rule-ordering trap exists. Locked by
+  `[tests/landing-hosting.test.mjs](../tests/landing-hosting.test.mjs)`. No `_redirects` file is
+  needed: Pages resolves an extensionless URL to the matching `.html` and serves `404.html`
+  for anything unmatched, redirecting with a 308 that a client following redirects resolves.
 
 ## Known, not started
 
@@ -106,13 +116,39 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Still open
 
-1. Release 1.6.15 to `opera_releases`. The active release is 1.6.14, so
-   `release.yml` fetches a `1.6.15` CRX that returns 404. The signing key exists as the
-   `CRX_SIGNING_KEY` repository secret and signs correctly; what is missing is the CI step that
-   packs and signs, plus the insert into `opera_releases`, which has never been automated.
-2. Publishable-key rotation — a production secret, untouched.
-3. SonarCloud project access — the pre-existing New Code wall.
-4. Supabase PATs and the login credentials for Google and GitHub need owner action; there
+1. **The signing key and the manifest key disagreed, and 1.6.15 shipped with it.** Chrome derives
+   an installed extension's id from the key in `[extension/manifest.json](../extension/manifest.json)`,
+   and the update endpoint serves a CRX under a path named after that id. The manifest still
+   carried the old public key while 1.6.15 had been packed and signed with the rotated one, so
+   an install landed on the old id, which the endpoint answered with 1.6.14, and could never
+   move forward. Measured on the served bytes: the 1.6.15 CRX declared one id and was signed
+   with another; 1.6.14, whose two agree, is the only prior CRX that was self-consistent.
+   The manifest key is now the signing public key, and the digest lock in
+   `[tests/helpers/boundary-locks.mjs](../tests/helpers/boundary-locks.mjs)` is re-cut with it.
+   Measured after republishing: the served 1.6.15 CRX resolves to
+   `ofgemipoobcnbjkfanmofjbdonjapmgl` from both its manifest key and its signature, and the
+   new id is offered 1.6.15 while the old id is still offered 1.6.14.
+2. **`release.yml` could not have verified a CRX.** It fetched a hardcoded id path, which 404s
+   now that the id is derived, and checked the download against a `docs/releases` digest file
+   deleted in `23f63d2`. Both are fixed: the id is derived from the manifest key, and the
+   digest compared is the ETag the update function already publishes, so the check needs no
+   file in the tree.
+3. **The Cloudflare API token pasted into a chat is still live** and carries
+   `Account API Tokens Write`, which can mint further tokens. It must be revoked at
+   dashboard.cloudflare.com and replaced with an account-scoped Pages token held as
+   `CF_TOKEN`. It is set as a repository secret, and `CF_ACCOUNT_ID` beside it.
+4. **OAuth sign-in has never been driven end to end by a human click.** GoTrue matches
+   `redirect_uri` exactly and the port is pinned to `19876` in the OpenCode config for that
+   reason; the authorize endpoint accepts a `redirect_to` on both hosts. What is unverified is
+   the consent approval and the token exchange in the client.
+5. **The installer GUI has never been run.** `[scripts/OperaAgentInstaller.cs](../scripts/OperaAgentInstaller.cs)`
+   compiles to a real PE with a branded header, select-all and per-browser checkboxes, and a
+   three-step progress bar, and `requireAdministrator` is set because `HKCU\Software\Policies`
+   is `ReadKey` for this account. Unverified: the form itself, and whether Chrome reads the
+   policy it writes. `chrome://policy` is where to look.
+6. Publishable-key rotation — a production secret, untouched.
+7. SonarCloud project access — the pre-existing New Code wall.
+8. Supabase PATs and the login credentials for Google and GitHub need owner action; there
    is no Management API for PATs, and the live login cases only lack the submit.
 5. **The one real latency lever, and it is an owner decision.** Measured over 9,079
    production commands, 676.6 ms of the 1875.3 ms average is the device not yet having
@@ -140,6 +176,14 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   one commit, so `gitleaks detect --log-opts=-1` is what it sees; a full-history scan reports
   eight findings in files that were renamed or deleted long ago, which is why the allowlist
   names only paths the tree still has.
+- **The unit gate is red on `main`, and has been for several commits.** One failure, in
+  `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`: `reactive-vm.js`,
+  `reactive-vm-collect.js` and `reactive-vm-host.js` export symbols nothing reaches, and
+  `opera-agent-vm`, which does consume them, is itself called from nowhere. It is a real
+  finding about a subsystem with no entry point, not a flake, and it is not this work's
+  business to settle: either wire `opera-agent-vm` into the runtime or delete the phase.
+- `publish-crx.yml` may sit `queued` for many minutes with a runner already assigned and no
+  job started. Cancelling and re-dispatching clears it; the run itself is sound.
 
 ## Blocked, needs the owner at the machine
 

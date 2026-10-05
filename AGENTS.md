@@ -1,4 +1,4 @@
-@last-edited: 2026-10-06 00:35 UTC+7.
+@last-edited: 2026-10-06 03:52 UTC+7.
 @related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 # Opera Agent agent instructions
@@ -106,16 +106,20 @@ These bind every `.md` in the repository, this set included, and every other fil
 
 ## Deploy
 
-- Do deploy through `POST https://api.vercel.com/v13/deployments`: the CLI refuses this project
-  from either directory because Root Directory is `landing`, so it resolves `landing/landing`.
-  In that call `file` carries the path, `data` the bytes, and `forceNew=1` bypasses deduplication
-  against the copy already cached.
-- Do prefix every uploaded path with `landing/` and walk the tree recursively. A top-level read
-  drops every directory, and one deploy published the site without `landing/oauth/consent.html`.
-- Do read `x-vercel-cache` and `age` before believing a live page: the edge obeys only
-  `Vercel-CDN-Cache-Control`, and a copy an hour old survived a deploy.
-- Don't expect a green push to deploy anything: [`landing/vercel.json`](landing/vercel.json)
-  disables it, because the Hobby allowance is 100 deployments a day.
+- Do publish through `.github/workflows/deploy-site.yml`, dispatched by hand: `wrangler pages
+  deploy landing --project-name=opera-agent --branch=main`. Vercel Hobby allows a hundred
+  deployments a day and a busy `main` spends that on its own, so a deploy is a decision.
+- Don't expect a green push to deploy anything. [`landing/vercel.json`](landing/vercel.json)
+  disables the Vercel project's automatic deployment, and Pages cannot be a Git integration
+  because an existing Direct Upload project cannot be switched to one.
+- Do publish a signed CRX through `.github/workflows/publish-crx.yml`, and read its identity
+  gate as binding: Chrome derives an installed extension's id from the manifest key while the
+  endpoint serves the CRX under a path named after that id, so a key that disagrees with the
+  signature ships an install that can never update.
+- Don't activate another identity's release while publishing one. Two ids may each hold one
+  active row, and an install still on an old id needs the release it can still install.
+- Do read `age` and `x-vercel-cache` before believing a live page on the Vercel host: that edge
+  obeys only `Vercel-CDN-Cache-Control`, and a copy an hour old survived a deploy.
 
 ## Naming
 
