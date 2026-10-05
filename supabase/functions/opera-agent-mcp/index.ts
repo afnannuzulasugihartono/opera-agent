@@ -196,14 +196,26 @@ function bearerToken(req: Request) {
   return match?.[1]?.trim() || "";
 }
 
+// WHY an empty allowlist admits every confirmed account rather than nobody: the
+// allowlist exists to narrow access, and "unset" means the operator has not
+// chosen to narrow it. Rejecting everyone instead would make a fresh project
+// unreachable and turn "remove the restriction" into "lock every user out".
+
 async function authenticate(req: Request): Promise<AuthContext | null> {
   const token = bearerToken(req);
   if (!token) return null;
   if (STATIC_TOKEN && secureEqual(token, STATIC_TOKEN)) return { type: "static" };
-  if (ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) return null;
+  if (!STATIC_TOKEN && ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) return null;
   const { data, error } = await supabase.auth.getUser(token);
-  const email = data.user?.email?.toLowerCase() || "";
-  if (error || !data.user || (!ALLOWED_USER_IDS.has(data.user.id) && !ALLOWED_USER_EMAILS.has(email))) return null;
+  if (error || !data.user) return null;
+  // A confirmed email is the only proof of identity here: Supabase verifies the
+  // signature and the expiry, and anonymous accounts carry no confirmed email.
+  if (!data.user.email) return null;
+  const unrestricted = ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0;
+  if (!unrestricted) {
+    const email = data.user.email.toLowerCase();
+    if (!ALLOWED_USER_IDS.has(data.user.id) && !ALLOWED_USER_EMAILS.has(email)) return null;
+  }
   return { type: "user", userId: data.user.id };
 }
 
@@ -747,7 +759,9 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method !== "POST") return json(req, { error: "method_not_allowed", error_description: "Use POST for stateless Streamable HTTP MCP." }, 405);
-  if (!STATIC_TOKEN && ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) {
+  // Only unreachable when GoTrue itself is unconfigured, which no secret here
+  // controls. An unset allowlist is a supported open-signup mode, not a fault.
+  if (!SUPABASE_URL) {
     return json(req, { error: "server_misconfigured", error_description: "MCP authentication is not configured." }, 503);
   }
   if (!await authenticate(req)) return unauthorized(req);

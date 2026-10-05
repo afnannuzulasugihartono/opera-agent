@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 22:41 UTC+7.
+@last-edited: 2026-10-06 00:35 UTC+7.
 @related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 # Opera Agent agent instructions
@@ -22,7 +22,7 @@ These ride with every job. Read them before acting, not once per session.
 
 ## Goals
 
-- **Reach everyone, so ship it to production.** The product is the deployed edge functions, the applied migrations and a signed CRX; a green `main` is not it. Do the deploy work that is yours. Ask the owner for release, signing key and Supabase PATs, and say which one you need. See [`ROADMAP.md`](ROADMAP.md) and [`docs/HANDOFF.md`](docs/HANDOFF.md).
+- **Reach everyone, so ship it to production.** The product is the deployed edge functions, the applied migrations and a signed CRX; a green `main` is not it. Do the deploy work that is yours. A CRX signing key is generated locally and held in the `CRX_SIGNING_KEY` repository secret, so never ask the owner for one; ask only for release, Vercel and Supabase PATs, and say which one you need. See [`ROADMAP.md`](ROADMAP.md) and [`docs/HANDOFF.md`](docs/HANDOFF.md).
 - **Cover every site, Google first.** Maps, YouTube and Docs are the main hold; GitHub and Wikipedia teach the new functions. Do push past one happy path per site. What the extension may do: [`extension/README.md`](extension/README.md).
 - **Be a companion with an AI behind it.** The person talks to an assistant, the assistant drives Opera Agent, and the work lands as a real artefact: ask for a Word document in a chat and the document exists. Do build it as server-side workflows over the generic primitives in [`docs/api.md`](docs/api.md). Don't put site-specific code in the extension.
 - Do serve the goals in the Priority order below: working function first, feature second, speed third.

@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 22:41 UTC+7.
+@last-edited: 2026-10-06 00:35 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -106,7 +106,10 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Still open
 
-1. Release so the shipped CRX contains the Options page. Needs the private signing key.
+1. Release 1.6.15 to `opera_releases`. The active release is 1.6.14, so
+   `release.yml` fetches a `1.6.15` CRX that returns 404. The signing key exists as the
+   `CRX_SIGNING_KEY` repository secret and signs correctly; what is missing is the CI step that
+   packs and signs, plus the insert into `opera_releases`, which has never been automated.
 2. Publishable-key rotation — a production secret, untouched.
 3. SonarCloud project access — the pre-existing New Code wall.
 4. Supabase PATs and the login credentials for Google and GitHub need owner action; there
