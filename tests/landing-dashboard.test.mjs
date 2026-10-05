@@ -54,6 +54,25 @@ test('the home page notices sign-in without breaking its no-network promise', ()
   assert.doesNotMatch(html, /fetch\s*\(/, 'noticing never calls anyone');
 });
 
+test('every server refusal the dashboard can meet is written in Indonesian', () => {
+  const html = read('akun.html');
+  // WHY this lock: the server speaks English and the page speaks Indonesian. A raw
+  // server string to an operator reads as a broken product, and the rate-limit
+  // refusal is the message a real person will actually meet.
+  const refusals = [
+    'Too many pairing codes this hour. Try again later.',
+    'No paired device on this account.',
+    'Device is offline. Open the extension so it can check in.',
+    'Unknown or disabled method.',
+    'Not signed in.'
+  ];
+  const block = html.slice(html.indexOf('const TRANSLATED'), html.indexOf('};', html.indexOf('const TRANSLATED')));
+  for (const refusal of refusals) {
+    assert.ok(block.includes(refusal), `the page must carry a translation for: ${refusal}`);
+  }
+  assert.doesNotMatch(html, /Gagal: \$\{result\?\.error \|\| response\.status\}/, 'no raw server string reaches the reader');
+});
+
 test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
   const html = read('akun.html');
   assert.match(html, /location\.replace\('\.\/auth\.html'\)/, 'no token means the sign-in page, not an empty state');

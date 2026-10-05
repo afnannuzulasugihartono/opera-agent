@@ -277,7 +277,7 @@
             setTimeout(load, 4000);
             return;
           }
-          $('runStatus').textContent = `Gagal: ${result?.error?.message || result?.error || response.status}.`;
+          $('runStatus').textContent = `Gagal: ${say(result?.error?.message || result?.error)}.`;
           $('runStatus').className = 'status warn';
           return;
         }
@@ -292,7 +292,23 @@
       }
     });
 
-    $('pairButton').addEventListener('click', async () => {
+    const TRANSLATED = {
+  'Too many pairing codes this hour. Try again later.': 'Terlalu banyak kode pairing dalam satu jam. Coba lagi nanti.',
+  'Invalid device name.': 'Nama device tidak valid.',
+  'No such device on this account.': 'Device itu tidak ada di akun ini.',
+  'No paired device on this account.': 'Belum ada device ter-pairing di akun ini.',
+  'Device is offline. Open the extension so it can check in.': 'Device sedang offline. Buka extension agar ia terhubung.',
+  'Unknown or disabled method.': 'Primitive itu tidak dikenal atau dinonaktifkan.',
+  'Not signed in.': 'Sesi tidak ada. Masuk lagi.',
+  'Timed out waiting for command result.': 'Device belum menjawab dalam batas waktu.'
+};
+
+// WHY the map: the server speaks English and the page speaks Indonesian. Showing a
+// raw server string to an operator reads as a broken product, and the rate-limit
+// refusal is the one message they will actually meet.
+const say = (raw) => TRANSLATED[String(raw)] || String(raw);
+
+$('pairButton').addEventListener('click', async () => {
       const token = localStorage.getItem('opera-agent-access-token');
       if (!token) {
         globalThis.location.replace('./auth.html');
@@ -308,7 +324,7 @@
         $('pairStatus').textContent = `Kode untuk ${result.deviceName}: ${result.code}. Berlaku 10 menit, tempel di popup extension.`;
         $('pairStatus').className = 'status ok';
       } catch (error) {
-        $('pairStatus').textContent = `Gagal membuat kode (${error?.message || 'jaringan'}).`;
+        $('pairStatus').textContent = 'Gagal membuat kode. Periksa koneksi Anda.';
         $('pairStatus').className = 'status warn';
       }
     });
