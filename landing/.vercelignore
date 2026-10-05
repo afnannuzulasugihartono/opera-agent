@@ -1,6 +1,12 @@
-# The deployed site is static files served as-is. No framework may be detected:
-# an auto-detected framework replaces the root document, which is how a 200 on a
-# deployment URL became a 404 on the alias.
+# @last-edited: 2026-10-05 11:50 UTC+7.
+# @title: .vercelignore — keep deploy-only files out of the upload.
+# @state: the site is served as static files; AGENTS.md is repo governance, not a page.
+# @dependencies: none stated.
+
+# WHY this file exists: an auto-detected framework replaced the root document, so
+# the alias served 404 while the deployment URL served a dashboard. These three
+# lines, plus framework null in vercel.json, keep the site static.
+
 .vercel
 .env*
 AGENTS.md
