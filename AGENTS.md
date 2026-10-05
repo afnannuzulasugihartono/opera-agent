@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 01:26 UTC+7.
+@last-edited: 2026-10-05 10:57 UTC+7.
 @related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 # Opera Agent agent instructions
@@ -47,7 +47,7 @@ Choose in this order. Simple outranks all three.
 Highest wins.
 
 1. The owner, in this conversation.
-2. [`AGENTS.md`](AGENTS.md) — this file. Area scopes: [`extension/AGENTS.md`](extension/AGENTS.md), [`lib/AGENTS.md`](lib/AGENTS.md), [`supabase/AGENTS.md`](supabase/AGENTS.md).
+2. [`AGENTS.md`](AGENTS.md) — this file. Area scopes: [`extension/AGENTS.md`](extension/AGENTS.md), [`landing/AGENTS.md`](landing/AGENTS.md), [`lib/AGENTS.md`](lib/AGENTS.md), [`supabase/AGENTS.md`](supabase/AGENTS.md).
 3. [`SECURITY.md`](SECURITY.md).
 4. [`docs/CONTEXT.md`](docs/CONTEXT.md) — durable traps.
 5. [`docs/HANDOFF.md`](docs/HANDOFF.md) — current state and open items.
@@ -144,6 +144,7 @@ These bind every `.md` in the repository, this set included, and every other fil
 | Area | Read first |
 |---|---|
 | `extension/` | [`extension/AGENTS.md`](extension/AGENTS.md) |
+| `landing/` | [`landing/AGENTS.md`](landing/AGENTS.md) |
 | `lib/` | [`lib/AGENTS.md`](lib/AGENTS.md) |
 | `supabase/` | [`supabase/AGENTS.md`](supabase/AGENTS.md) |
 

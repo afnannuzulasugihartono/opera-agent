@@ -341,6 +341,20 @@
         setStatus(block, 'warn');
       }
     });
+  <script type="module">
+    // WHY localStorage and zero network here: the home page keeps its no-network
+    // promise, so it may notice a signed-in visitor but never call anyone to say so.
+    try {
+      if (globalThis.localStorage?.getItem('opera-agent-access-token')) {
+        const account = document.querySelector('a[href="./auth.html"]');
+        if (account) {
+          account.textContent = 'Akun ●';
+          account.title = 'Masuk';
+        }
+      }
+    } catch (error) {
+      // Private mode without storage still gets the full page, minus the dot.
+    }
   </script>
 </body>
 </html>

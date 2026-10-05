@@ -19,10 +19,28 @@ const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.heade
 
 test('the dashboard reads through one owner-scoped RPC', () => {
   const html = read('akun.html');
-  assert.match(html, /rpc\/opera_my_devices/, 'the only data call is the owner-scoped RPC');
+  assert.match(html, /rpc\/opera_my_devices/, 'the only device list call is the owner-scoped RPC');
   assert.doesNotMatch(html, /\/rest\/v1\/opera_commands/, 'the page never queries the raw commands table');
   assert.doesNotMatch(html, /\/rest\/v1\/opera_devices/, 'the page never queries the raw devices table');
-  assert.doesNotMatch(html, /result[^a-z]/i, 'command payloads stay on the server; only method and status render');
+  // WHY this one is narrow: "result" appears in DOM ids, so the lock targets the
+  // field the dashboard must never render, not the word itself.
+  assert.doesNotMatch(html, /\.result\b|\['result'\]|"result"\s*:/, 'command payloads stay on the server; only method and status render');
+});
+
+test('the dashboard reads human time, counts work, and acts on devices', () => {
+  const html = read('akun.html');
+  assert.match(html, /RelativeTimeFormat\('id'/, 'timestamps render as relative Indonesian time');
+  assert.match(html, /completedCommands/, 'usage counts give billing-per-result its meter');
+  assert.match(html, /opera_revoke_my_device/, 'revocation keeps the terms honest');
+  assert.match(html, /opera_create_pairing_code/, 'pairing codes are issued bound to the caller');
+  assert.match(html, /Buat kode pairing/, 'issuance has a visible control');
+  assert.match(html, /Cabut device ini/, 'revocation has a visible control');
+});
+
+test('the home page notices sign-in without breaking its no-network promise', () => {
+  const html = read('index.html');
+  assert.match(html, /localStorage/, 'the home page may notice a session');
+  assert.doesNotMatch(html, /fetch\s*\(/, 'noticing never calls anyone');
 });
 
 test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
@@ -45,6 +63,16 @@ test('the dashboard may reach only Supabase like the auth page', () => {
     const csp = entry.find((h) => h.key === 'Content-Security-Policy').value;
     assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${source} may reach only Supabase`);
   }
+});
+
+test('the v2 migration only adds: revoke, counts, and self-issuing codes', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261005130000_opera_agent_dashboard_actions.sql', root), 'utf8');
+  assert.match(sql, /opera_revoke_my_device/, 'revocation is a new function');
+  assert.match(sql, /completedCommands/, 'counts ride the existing reader');
+  assert.match(sql, /coalesce\(p_issued_by, auth\.uid\(\)\)/, 'issuance defaults to the caller');
+  assert.doesNotMatch(sql, /revoke all|revoke .* from/i, 'no grant is touched');
+  assert.doesNotMatch(sql, /drop /i, 'nothing is dropped');
+  assert.doesNotMatch(sql, /alter table/i, 'no table shape changes in v2');
 });
 
 test('the migration binds devices without touching existing grants', () => {
