@@ -78,6 +78,11 @@
       border: 1px solid var(--line);
       border-radius: 6px;
       padding: 1px 5px;
+      /* WHY the wrap: a device id, an account id and a localhost callback are the
+         three unbreakable strings on these pages, and a token with no spaces scrolls a
+         phone sideways. This is the page an operator opens when something is wrong. */
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }

@@ -77,6 +77,14 @@
     dl.facts dt { color: var(--muted); }
     dl.facts dd { margin: 0; overflow-wrap: anywhere; }
 
+    /* WHY stacked under 420px: the label column is max-content and never shrinks, so on a
+       phone the value is left in a sliver. Every settings page a reader already knows puts
+       the value under its label at this width. */
+    @media (max-width: 420px) {
+      dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
+      dl.facts dd { margin: 0 0 10px; }
+    }
+
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12.5px;
@@ -84,6 +92,11 @@
       border: 1px solid var(--line);
       border-radius: 6px;
       padding: 1px 5px;
+      /* WHY the wrap: a device id, an account id and a localhost callback are the
+         three unbreakable strings on these pages, and a token with no spaces scrolls a
+         phone sideways. This is the page an operator opens when something is wrong. */
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }

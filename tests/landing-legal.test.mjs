@@ -66,6 +66,28 @@ test('the two signed-in pages each mark themselves as the current nav entry', ()
   }
 });
 
+test('no page can scroll sideways on a 320px phone', () => {
+  // WHY this is checked by rule and not by screenshot: a device id, an account id and a
+  // localhost callback are unbreakable tokens with no spaces, and landing/AGENTS.md requires
+  // every page to be readable at 320px. The device id sits in <code> on the page an operator
+  // opens when something is already wrong.
+  for (const name of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'oauth/consent.html', 'unduh.html']) {
+    const html = read(name);
+    const style = (html.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1];
+    if (/<code[\s>]/.test(style) || /<code[\s>]/.test(html)) {
+      // WHY the selector is matched loosely: the home page styles `code, .mono` together,
+      // and a pattern that only matched a bare `code` would read that page as unstyled.
+      const rule = new RegExp(`(?:^|[}\\n])\\s*([^{}\\n]*\\bcode\\b[^{}\\n]*)\\{([^}]*)\\}`).exec(style);
+      assert.ok(rule, `${name}: code has a rule this check can read`);
+      assert.match(rule[2], /overflow-wrap\s*:\s*(anywhere|break-word)/, `${name}: code must be able to wrap`);
+    }
+    if (/grid-template-columns\s*:[^;]*max-content/.test(style)) {
+      assert.match(style, /@media \(max-width: \d+px\)/, `${name}: a max-content column must stack under a breakpoint`);
+    }
+    assert.doesNotMatch(style, /white-space\s*:\s*nowrap/, `${name}: nothing may refuse to wrap`);
+  }
+});
+
 test('the site is deployed as static files, never as a detected framework', () => {
   const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
   // WHY this lock: an auto-detected framework replaced the root document. The
