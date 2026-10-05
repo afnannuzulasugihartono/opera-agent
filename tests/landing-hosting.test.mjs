@@ -148,12 +148,15 @@ test('the static-hosting pins survive that change', () => {
 });
 
 test('the deploy invocation is written down where it will be found', () => {
-  // WHY this matters now: the project's Root Directory is `landing`, so running the CLI
-  // from inside `landing/` resolves `landing/landing` and Vercel refuses with "the
-  // specified Root Directory does not exist". The working invocation is from the repo root.
+  // WHY this assertion changed: the project's Root Directory is `landing`, so the CLI resolves
+  // `landing/landing` from the repository root and refuses, and from inside `landing/` it
+  // refuses the same way. Measured on this project. The invocation that works is the REST
+  // endpoint, so a lock that kept naming the CLI would have preserved a claim that stopped
+  // being true the moment anyone ran it.
   const handoff = read('docs/HANDOFF.md');
-  assert.match(handoff, /vercel deploy landing/, 'the working invocation is recorded');
-  assert.match(handoff, /repo root|repository root|from the root/i, 'and says where to run it from');
+  assert.match(handoff, /api\.vercel\.com\/v13\/deployments/, 'the working invocation is recorded');
+  assert.match(handoff, /CLI cannot deploy/i, 'and says plainly that the CLI is not the way');
+  assert.match(read('AGENTS.md'), /v13\/deployments/, 'the call shape sits with the rules that bind a deploy');
 });
 
 test('the edge is told not to hold a page, because Cache-Control alone does not', () => {

@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 20:15 UTC+7.
+@last-edited: 2026-10-05 19:45 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -37,19 +37,21 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 - `Intl.RelativeTimeFormat.prototype.format()` takes CLDR unit identifiers, not localised
   names. Passing "menit" throws at call time, inside the loop that builds the device cards,
   so the live dashboard showed "1 device ter-pairing" above an empty list. Both signed-in
-  pages now pass CLDR units. Locked by tests/landing-render.test.mjs, which executes each
+  pages now pass CLDR units. Locked by tests/landing-execution.test.mjs, which executes each
   page's own module against a stub DOM and asserts the rendered output.
 - A Supabase access token lasts about an hour and the site holds no SDK to renew it, so an
   aged token read as signed out and was deleted: the reader was signed out roughly hourly
   with no explanation. All four signed-in pages now store the refresh token and renew it,
   and forget both halves only when renewal is also refused. Locked by
-  `[tests/landing-session.test.mjs](../tests/landing-execution.test.mjs)`, which executes the
+  `[tests/landing-execution.test.mjs](../tests/landing-execution.test.mjs)`, which executes the
   renewal against a stub Auth because the failure mode is a silent deletion.
 - The MCP OAuth client is registered dynamically by OpenCode, which picks a new random
-  localhost port each run and reuses its cached registration. Supabase does not support
-  wildcards for OAuth client redirect URIs, so the port is appended by hand each time, as a
-  comma-separated list. `OPERA_AGENT_MCP_TOKEN` is already configured on the edge function,
-  and using it as a bearer header in the MCP config removes the dance entirely.
+  localhost port each run and reuses its cached registration. Deleting the client row to force
+  a re-registration therefore makes it worse: GoTrue answers `oauth_client_not_found`. Restoring
+  the row by hand needs a non-null `client_secret_hash`, or a public client answers
+  `error validating client`. Redirect URIs are a comma-separated list with no wildcards.
+  `OPERA_AGENT_MCP_TOKEN` is already configured on the edge function, and using it as a bearer
+  header in the MCP config removes the dance entirely.
 - Account isolation has two measured layers: `authenticated` holds no grant on the tables,
   only EXECUTE on the RPCs, and RLS filters by ownership for the day a grant appears. A
   foreign account read zero devices and was refused a revoke; anon got 401 on all four.
@@ -57,9 +59,10 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`: a fresh GRANT
   lands on PUBLIC so anon could call every RPC, and two overloads of the pairing issuer
   made PostgREST answer PGRST203.
-- The site is live at `opera-agent.vercel.app` and every page serves the fixed content:
-  the account and device pages split, the device list renders, and the OAuth permission
-  screen is at `/oauth/consent`. Measured on the live site, not on the repository.
+- The site is live at `opera-agent.vercel.app` and every page serves the current build: the
+  account and device pages split, the device list renders, and the OAuth permission screen is
+  at `/oauth/consent` with nine root-relative links. Measured on the live site at
+  `x-vercel-cache: MISS` and `age=0` on all eight pages, and all seven nav links resolve.
 - **The outage cause, so it cannot repeat silently:** the repo is connected to Vercel, so
   every push auto-deploys, and the project Root Directory was unset, so each push built
   the repository root, which has no `index.html`. Every path answered 404 the moment a
@@ -68,24 +71,19 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   deployment. GoTrue builds that URL as SiteURL + `authorization_path` and validates the
   origin of every consent call against its Site URL, so a screen on another host renders
   but can never approve anything. Locked by
-  `[tests/landing-consent.test.mjs](../tests/landing-execution.test.mjs)`.
-- **Two production settings remain the owner`s, and the order matters.** The site URL must
-  move to the site origin, and only after that the superseded `oauth-consent/` directory
-  can be deleted. Changing it while the site was down would have left no consent screen
-  at all.
-- OAuth client redirect URIs do not support wildcards in Supabase, and OpenCode picks a
-  new random localhost port each run. The registration is a comma-separated list, not a
-  space-separated one; that mistake cost one failed fix.
+  `[tests/landing-consent.test.mjs](../tests/landing-consent.test.mjs)`.
+- **The site URL is the site origin and the superseded `oauth-consent/` directory is gone.**
+  Measured: the authorize endpoint 302s to `https://opera-agent.vercel.app/oauth/consent`.
 - **Deploys are deliberate, and the budget is why.** Vercel Hobby allows 100 deployments a
   day, and a connected project deploys on every push whether or not the CLI was used, so
   fifteen pushes is most of a day. Automatic deployment is off in
   `[landing/vercel.json](../landing/vercel.json)`; the budget is spent only on purpose.
-- The working invocation is `npx vercel deploy landing --prod` **from the repository root**.
-  The project Root Directory is `landing`, so running the CLI from inside `landing/`
-  resolves `landing/landing` and Vercel refuses. Measured on this project.
+- The Vercel CLI cannot deploy this project at all: Root Directory is `landing`, so it resolves
+  `landing/landing` from the repository root and refuses, and from inside `landing/` it refuses
+  the same way. Deploy through `POST https://api.vercel.com/v13/deployments`; the call shape and
+  the recursive walk it needs are in `## The live site` in [`AGENTS.md`](../AGENTS.md).
 - A push that does not deploy fails silently: the commit is on main, CI is green, and
   production keeps serving the previous build. Check the live content, not the push status.
-- A commit can be correct and unpushed-to-production at the same time. Read the live page
 - Cloudflare Pages is prepared as the second host: 500 builds a month, unlimited bandwidth,
   no credit card, and a `pages.dev` subdomain. `landing/_headers` restates the vercel.json
   policy per path, every path enumerated so no rule overlaps another and no rule-ordering
@@ -95,9 +93,6 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Known, not started
 
-- The rename sweep is done: 42 files, 47 exported identifiers, 69 assertion codes. Production
-  names stay where a deployed object carries them, and the digest freezes were re-cut in
-  the same commit.
 - `tests/fixtures/*.json` still pin `sourceSha256` for
   `[supabase/functions/opera-agent-mcp/index.ts](../supabase/functions/opera-agent-mcp/index.ts)` and
   `[extension/background.js](../extension/background.js)`, and
