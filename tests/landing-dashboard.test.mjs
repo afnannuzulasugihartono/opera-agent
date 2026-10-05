@@ -104,7 +104,13 @@ test('the account page shows the connected provider identity, like any profile p
   // identity next to the thing they are managing.
   assert.match(html, /id="profileCard"/, 'the page has a profile card');
   assert.match(html, /user_metadata/, 'the name comes from the identity the provider issued');
-  assert.match(html, /app_metadata\?\.provider/, 'the provider comes from the session, not from a guess');
+  // WHY the providers array and not app_metadata.provider: measured on this project,
+  // an account that signed in with Google still carries provider "email" with
+  // providers ["email","google"], because a magic link created it first. Reading
+  // provider alone would tell the operator they signed in by email when they did not.
+  assert.match(html, /app_metadata\?\.providers/, 'the provider comes from the session, not from a guess');
+  assert.match(html, /\['google', 'github'\]\.find\(\(name\) => list\.includes\(name\)\)/, 'a named provider wins over the email entry');
+  assert.match(html, /providerOf\(user\)/, 'the card renders the resolved provider');
   assert.match(html, /Masuk lewat/, 'the provider is named in Indonesian');
   assert.match(html, /google: 'Google'/, 'Google is spelled the way Google spells it');
   assert.match(html, /github: 'GitHub'/, 'and so is GitHub');

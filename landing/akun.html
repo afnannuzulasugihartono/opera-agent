@@ -234,7 +234,18 @@
     // are what every other site shows, and the reader needs to see which Google or
     // GitHub identity this device is bound to before pairing anything else. The
     // fields are read from the session the provider issued, never from a table.
+    // WHY the providers array, not app_metadata.provider: measured on this project,
+    // an account that signed in with Google still carries provider "email" with
+    // providers ["email","google"], because a magic link created it first. Reading
+    // provider alone would tell the operator they signed in by email when they did
+    // not, so the array is the honest source and the named provider wins.
     const PROVIDER_LABEL = { google: 'Google', github: 'GitHub', email: 'Tautan email' };
+    const providerOf = (user) => {
+      const listed = user.app_metadata?.providers;
+      const list = Array.isArray(listed) ? listed : [];
+      const named = ['google', 'github'].find((name) => list.includes(name));
+      return named || user.app_metadata?.provider || 'email';
+    };
     const initialsOf = (name, email) => {
       const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
       if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -244,11 +255,12 @@
     const renderProfile = (user) => {
       const metadata = user.user_metadata || {};
       const name = metadata.full_name || metadata.name || metadata.user_name || user.email;
-      const provider = user.app_metadata?.provider || 'email';
+      const provider = providerOf(user);
       $('avatar').textContent = initialsOf(name, user.email);
       $('profileName').textContent = name;
       $('profileMeta').textContent = user.email;
       $('profileProvider').textContent = `Masuk lewat ${PROVIDER_LABEL[provider] || provider}`;
+      $('profileCard').title = provider;
     };
 
     async function load() {
