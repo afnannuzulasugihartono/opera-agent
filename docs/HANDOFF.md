@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 16:05 UTC+7.
+@last-edited: 2026-10-05 16:55 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -51,10 +51,24 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`: a fresh GRANT
   lands on PUBLIC so anon could call every RPC, and two overloads of the pairing issuer
   made PostgREST answer PGRST203.
-- The free Vercel tier allows 100 deployments a day and that budget is now spent, so
-  `vercel deploy` answers `api-deployments-free-per-day`. Everything after that limit
-  is committed and pushed but not live; deploy when the window resets.
-
+- **The site was down for every visitor and the cause was hosting, not code.** The repo
+  is connected to Vercel, so each push auto-deploys, and the project Root Directory was
+  unset, so the auto-deployment built the repository root, which has no `index.html`.
+  Every path answered 404 the moment the last push replaced a good CLI deployment.
+  Root Directory is now `landing`, so a push builds the site again.
+- Vercel Hobby allows 100 deployments a day and 1 concurrent build; that budget is spent.
+  Deploying from `landing/` by CLI never triggered the limit, but a git push did, because
+  a connected project deploys on every push whether or not the CLI was used.
+- Cloudflare Pages is prepared as the second host: 500 builds a month, unlimited bandwidth,
+  no credit card, and a `pages.dev` subdomain. `landing/_headers` restates the vercel.json
+  policy per path, every path enumerated so no rule overlaps another and no rule-ordering
+  trap exists. Locked by `[tests/landing-hosting.test.mjs](../tests/landing-hosting.test.mjs)`.
+  No `_redirects` file is needed: Pages resolves an extensionless URL to the matching
+  `.html` and serves `404.html` for anything unmatched.
+- Moving hosts costs one Supabase setting, not a code change. The Google OAuth callback is
+  the project Auth host, which does not move; only the site origin must be added to the
+  Supabase redirect allowlist. Measured: the authorize endpoint accepts any `redirect_to`
+  and defers the check to the callback, so the allowlist cannot be probed from outside.
 ## Known, not started
 
 - **The Opera-to-Brave rename is a production migration, not a rename.** The `opera_`

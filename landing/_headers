@@ -1,0 +1,40 @@
+# WHY this file exists: the site is served by Cloudflare Pages as well as Vercel, and
+# Pages configures headers with this file instead of vercel.json. Every path is listed
+# explicitly and no rule overlaps another, so there is no rule-ordering trap to fall
+# into. The first block is the locked-down policy; the pages that talk to Supabase
+# name that host and nothing else. tests/landing-hosting.test.mjs fails on any drift.
+/, /index.html, /privasi.html, /syarat.html, /unduh.html, /404.html
+# from vercel.json /(.*)
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
+/auth, /auth.html
+# from vercel.json /auth
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
+/akun, /akun.html
+# from vercel.json /akun
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
+/dashboard, /dashboard.html
+# from vercel.json /dashboard
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
+/opera-agent-1.6.15.zip
+# from vercel.json /(.*)
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Content-Type: application/zip
