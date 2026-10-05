@@ -45,6 +45,22 @@ test('every site page shares one navigation and one footer', () => {
   }
 });
 
+test('every page survives a reader with no JavaScript and no screen reader vision', () => {
+  for (const name of ['index.html', 'auth.html', 'akun.html', 'privasi.html', 'syarat.html']) {
+    const html = read(name);
+    assert.match(html, /<html lang="id"/, `${name} declares its language`);
+    assert.match(html, /<main/, `${name} has a main landmark`);
+    assert.match(html, /<header/, `${name} has a banner landmark`);
+    assert.match(html, /<footer/, `${name} has a contentinfo landmark`);
+    assert.match(html, /<h1/, `${name} has exactly one kind of top heading`);
+    assert.match(html, /<title>[^<]+<\/title>/, `${name} names itself in the tab`);
+    assert.match(html, /name="viewport"/, `${name} is readable on a phone`);
+    // Without JavaScript the page must still say what it is and offer a next step.
+    const noScript = html.replace(/<script[\s\S]*?<\/script>/g, '');
+    assert.match(noScript, /(Masuk|Dashboard|Privasi|Syarat|Kebijakan|Operasi)/, `${name} reads without script`);
+  }
+});
+
 test('the home page answers objections before they become support tickets', () => {
   const html = read('index.html');
   for (const question of ['Berapa biayanya', 'Model apa', 'Data saya', 'Tanpa internet', 'Berhenti']) {
