@@ -1,0 +1,137 @@
+<!-- @last-edited: 2026-10-05 11:05 UTC+7. -->
+<!-- @title: unduh — one archive, one checksum, three steps. -->
+<!-- @state: archive built from extension/ at version 1.6.15, sha256 pinned here. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unduh — Opera Agent</title>
+  <meta name="description" content="Unduh Opera Agent 1.6.15 untuk Brave dan Chrome, dimuat unpacked sampai listing store tersedia." />
+  <style>
+    /* WHY the same single-file shape as the rest of the site: no build step and
+       no external origin, so the archive link is the only way out of this page. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --surface-soft: #1b2026;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.7 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+
+    main { padding: 56px 0; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    h2 { margin: 30px 0 8px; font-size: 19px; }
+    p, li { color: var(--muted); }
+    p strong, li strong { color: var(--text); }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #04211d;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 600;
+      margin: 8px 0 4px;
+    }
+
+    code, .hash {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 2px 6px;
+      word-break: break-all;
+    }
+
+    ol.steps { margin: 0; padding-left: 20px; }
+    ol.steps li { margin: 0 0 12px; }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./index.html#model">Model Anda</a>
+        <a href="./auth.html">Akun</a>
+        <a href="./akun.html">Dashboard</a>
+        <a href="./privasi.html">Privasi</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Unduh Opera Agent 1.6.15</h1>
+    <p>Berkas arsip berisi <strong>seluruh extension</strong>, dimuat <strong>unpacked</strong>
+    sampai listing Chrome Web Store tersedia. Berjalan di Brave dan Chrome.</p>
+    <p><a class="btn" href="./opera-agent-1.6.15.zip" download>Unduh opera-agent-1.6.15.zip</a></p>
+    <p class="hash">sha256 2276c2ab138029f95b9ef4d56d57ac5cdca455fec7586eb269d84d099b0f83c7</p>
+
+    <h2>Verifikasi berkas</h2>
+    <p>Bandingkan sidik jari di atas dengan berkas Anda. Di PowerShell:
+    <code>Get-FileHash .\opera-agent-1.6.15.zip -Algorithm SHA256</code></p>
+
+    <h2>Tiga langkah memasang</h2>
+    <ol class="steps">
+      <li><strong>Buka halaman extension.</strong> Ketik <code>opera://extensions</code> di bilah alamat, atau <code>chrome://extensions</code> di Chrome.</li>
+      <li><strong>Aktifkan mode pengembang.</strong> Toggle di pojok atas, lalu klik <strong>Load unpacked</strong> dan pilih folder hasil ekstrak arsip.</li>
+      <li><strong>Pasangkan device.</strong> Masuk ke <a href="./akun.html">Dashboard</a>, buat kode pairing sekali pakai, lalu tempel di popup extension.</li>
+    </ol>
+
+    <h2>Kenapa belum ada tombol pasang sekali klik</h2>
+    <p>Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store.
+    Sementara itu pengguna pertama memuat sendiri, dan listing menyusul setelah review.</p>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Akun</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>
