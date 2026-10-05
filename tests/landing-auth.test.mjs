@@ -79,6 +79,8 @@ test('a returning login completes on the page instead of stranding the visitor',
   assert.match(html, /Keluar/, 'a signed-in visitor can sign out again');
   assert.match(html, /location\.replace\('\.\/index\.html'\)/, 'a fresh login hands the visitor back to the home page');
   assert.match(html, /proveStoredSession/, 'a returning visitor sees their own state, not a stranger login form');
+  assert.match(html, /localStorage/, 'the session survives across tabs like every other site');
+  assert.doesNotMatch(html, /sessionStorage/, 'no tab-only storage remains to force a second login');
   assert.match(html, /pageTitle'\)\.textContent = 'Akun'/, 'the signed-in view is titled account, not login');
 });
 

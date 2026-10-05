@@ -115,6 +115,9 @@
 
     .note { font-size: 12.5px; color: var(--muted); margin: 16px 0 0; }
     footer { padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
   </style>
 </head>
 <body>
@@ -155,9 +158,11 @@
   </main>
 
   <footer>
-    <div class="wrap">
+    <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span><a href="./index.html">Beranda</a></span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Akun</a>
+      </span>
     </div>
   </footer>
 
@@ -199,9 +204,9 @@
     }
 
     // A provider or magic-link login returns here with the session in the URL
-    // fragment. Read it, prove it against Auth, keep it in this tab, and hand the
-    // visitor back to the home page like every other site on the internet: nobody
-    // lives on a login page after logging in.
+    // fragment. Read it, prove it against Auth, remember it across this browser's
+    // tabs like every other site, and hand the visitor back to the home page.
+    // Keluar forgets it. The token never leaves this browser except toward Auth.
     async function completeReturningLogin() {
       const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ''));
       const accessToken = fragment.get('access_token');
@@ -217,14 +222,14 @@
         setStatus(`Sesi tidak terbukti (${proof?.error || 'unknown'}). Coba masuk lagi.`, 'warn');
         return;
       }
-      sessionStorage.setItem('opera-agent-access-token', accessToken);
+      localStorage.setItem('opera-agent-access-token', accessToken);
       globalThis.location.replace('./index.html');
     }
 
     // A signed-in visitor who opens this page again sees their state, not a stranger's
-    // login form: the tab-held token is proven again before anything is shown.
+    // login form: the remembered token is proven again before anything is shown.
     async function proveStoredSession() {
-      const accessToken = sessionStorage.getItem('opera-agent-access-token');
+      const accessToken = localStorage.getItem('opera-agent-access-token');
       if (!accessToken) return;
       let proof = null;
       try {
@@ -233,11 +238,11 @@
         proof = null;
       }
       if (proof?.user) showSignedIn(proof.user.email);
-      else sessionStorage.removeItem('opera-agent-access-token');
+      else localStorage.removeItem('opera-agent-access-token');
     }
 
     $('signOutButton').addEventListener('click', async () => {
-      const accessToken = sessionStorage.getItem('opera-agent-access-token') || '';
+      const accessToken = localStorage.getItem('opera-agent-access-token') || '';
       try {
         await fetch(`${AUTH_HOST}/logout`, {
           method: 'POST',
@@ -246,7 +251,7 @@
       } catch (error) {
         setSessionStatus('Tidak bisa mencapai layanan auth, tapi tab ini dilupakan.', 'warn');
       }
-      sessionStorage.removeItem('opera-agent-access-token');
+      localStorage.removeItem('opera-agent-access-token');
       $('signedIn').hidden = true;
       $('signedOut').hidden = false;
     });

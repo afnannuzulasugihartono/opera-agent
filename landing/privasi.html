@@ -1,0 +1,115 @@
+<!-- @last-edited: 2026-10-05 08:41 UTC+7. -->
+<!-- @title: privasi — the data boundary in full sentences. -->
+<!-- @state: sentence A plus queue-history disclosure, contact, and retention. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kebijakan Privasi — Opera Agent</title>
+  <meta name="description" content="Kebijakan privasi Opera Agent: konten halaman hanya pergi ke endpoint model milik Anda, tidak pernah dibagikan ke pihak ketiga." />
+  <style>
+    /* WHY the same single-file shape as the rest of the site: no build step and
+       no external origin. This page makes no network call at all. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.7 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+
+    main { padding: 56px 0; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    h2 { margin: 32px 0 8px; font-size: 19px; }
+    p, li { color: var(--muted); }
+    p strong, li strong { color: var(--text); }
+    .updated { font-size: 13px; }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./auth.html">Akun</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Kebijakan Privasi</h1>
+    <p class="updated">Terakhir diperbarui: 5 Oktober 2026.</p>
+    <p><strong>Hanya pergi ke endpoint model milik Anda.</strong> Konten dari halaman yang
+    Anda setujui untuk dibaca asisten hanya dikirim ke endpoint model yang Anda konfigurasi
+    sendiri. Kami tidak memilihkan model untuk Anda dan tidak menerima konten itu untuk
+    dibaca manusia.</p>
+
+    <h2>Relay perintah</h2>
+    <p>Agar asisten bisa bertindak di device Anda, perintah browser beserta hasilnya transit
+    melalui relay project dan <strong>disimpan sebagai riwayat antrean di database
+    project</strong>. Tidak ada data yang dihapus otomatis; riwayat ada selama akun ada.</p>
+
+    <h2>Tidak pernah dibagikan ke pihak ketiga</h2>
+    <p>Konten halaman, hasil perintah, dan kunci API Anda tidak pernah dibagikan, dijual,
+    atau diberikan ke pihak ketiga mana pun untuk tujuan apa pun.</p>
+
+    <h2>Kunci Anda</h2>
+    <p>Kunci API model dan token device tersimpan di browser Anda masing-masing dan tidak
+    pernah ditampilkan kembali ke halaman web mana pun, termasuk halaman situs ini.</p>
+
+    <h2>Yang selalu ditolak</h2>
+    <p>Screenshot dan pembacaan halaman ditolak di halaman yang menampilkan password, kode
+    sekali pakai, atau kolom pembayaran, serta di tab private dan incognito.</p>
+
+    <h2>Kontak</h2>
+    <p>Pertanyaan tentang data Anda: balas dari akun yang terdaftar, dan kami menjawab dari
+    manusia, bukan template.</p>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Akun</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>

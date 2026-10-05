@@ -143,6 +143,8 @@
 
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
   </style>
 </head>
 <body>
@@ -248,12 +250,22 @@
 
     <section id="privacy">
       <h2>Apa yang meninggalkan mesin Anda</h2>
-      <p class="sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya.</p>
+      <p class="sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya. Selengkapnya di <a href="./privasi.html">kebijakan privasi</a>.</p>
       <dl class="facts">
         <dt>Konten halaman</dt><dd>Konten dari halaman yang Anda setujui hanya pergi ke endpoint model milik Anda. Ia transit melalui relay perintah, dan perintah beserta hasilnya disimpan sebagai riwayat antrean di database project. Ia tidak pernah dibagikan ke pihak ketiga mana pun.</dd>
         <dt>Kunci API</dt><dd>Tersimpan di browser ini. Tidak pernah diunggah, tidak pernah ditampilkan kembali ke halaman ini, tidak pernah dicatat.</dd>
         <dt>Perintah</dt><dd>Antrean dan hasil transit melalui bridge project, agar asisten bisa bertindak di device Anda.</dd>
         <dt>Screenshot</dt><dd>Ditolak di halaman yang menampilkan password, kode sekali pakai, atau kolom pembayaran, dan ditolak di tab private dan incognito.</dd>
+      </dl>
+    <section id="faq">
+      <h2>Pertanyaan yang sering masuk</h2>
+      <p class="sub">Jawaban pendek sebelum Anda bertanya ke dukungan.</p>
+      <dl class="facts">
+        <dt>Berapa biayanya</dt><dd>Masa akses undangan gratis terbatas. Setelahnya bayar per hasil, bukan per bulan: Anda hanya membayar pekerjaan yang selesai.</dd>
+        <dt>Model apa</dt><dd>Model apa pun yang punya endpoint API: cloud milik penyedia Anda atau lokal seperti Ollama. Kuncinya milik Anda dan di tangan Anda.</dd>
+        <dt>Data saya</dt><dd>Konten halaman hanya pergi ke endpoint model Anda; perintah dan hasilnya transit sebagai riwayat antrean dan tidak pernah dibagikan ke pihak ketiga.</dd>
+        <dt>Tanpa internet</dt><dd>Model lokal di mesin ini bekerja tanpa internet. Relay perintah butuh koneksi, karena asisten Anda ada di cloud.</dd>
+        <dt>Berhenti</dt><dd>Tombol Keluar melupakan sesi di browser ini. Cabut pairing untuk menghentikan device. Penghapusan riwayat lewat kontak di kebijakan privasi.</dd>
       </dl>
     </section>
   </main>
@@ -261,7 +273,9 @@
   <footer>
     <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span>Eksekusi lokal &middot; Bawa model sendiri &middot; Tanpa telemetri</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Akun</a>
+      </span>
     </div>
   </footer>
 

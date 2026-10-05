@@ -1,0 +1,113 @@
+<!-- @last-edited: 2026-10-05 08:41 UTC+7. -->
+<!-- @title: syarat — the rules of an invite-only product. -->
+<!-- @state: invite-only access, bring-your-own-model, no warranty, revocable pairing. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Syarat Layanan — Opera Agent</title>
+  <meta name="description" content="Syarat layanan Opera Agent: akses undangan, bawa model sendiri, dan pairing yang dapat dicabut." />
+  <style>
+    /* WHY the same single-file shape as the rest of the site: no build step and
+       no external origin. This page makes no network call at all. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.7 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+
+    main { padding: 56px 0; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    h2 { margin: 32px 0 8px; font-size: 19px; }
+    p, li { color: var(--muted); }
+    p strong, li strong { color: var(--text); }
+    .updated { font-size: 13px; }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./auth.html">Akun</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Syarat Layanan</h1>
+    <p class="updated">Terakhir diperbarui: 5 Oktober 2026.</p>
+
+    <h2>Akses undangan</h2>
+    <p>Akses awal lewat <strong>undangan</strong> sampai sign-up terbuka. Kami dapat menutup
+    pendaftaran kapan pun tanpa kehilangan hak Anda atas data yang sudah ada.</p>
+
+    <h2>Bawa model sendiri</h2>
+    <p>Anda membawa <strong>model sendiri</strong>: endpoint, nama model, dan kunci API dari
+    penyedia pilihan Anda. Biaya pemakaian model adalah urusan Anda dengan penyedia itu,
+    bukan dengan kami. Kami tidak pernah menerbitkan kunci bersama.</p>
+
+    <h2>Satu device, pairing yang dapat dicabut</h2>
+    <p>Satu akun memasangkan satu device dalam satu waktu. Pairing dapat dicabut, dan
+    pencabutan menghentikan perintah baru seketika; riwayat antrean yang sudah tersimpan
+    mengikuti kebijakan privasi.</p>
+
+    <h2>Penggunaan yang wajar</h2>
+    <p>Jangan memakai jembatan ini untuk mengambil alih akun orang lain, mengelabui
+    verifikasi manusia, atau melanggar syarat situs yang Anda kunjungi. Pelanggaran
+    menghentikan akses tanpa pengembalian untuk periode berjalan.</p>
+
+    <h2>Tanpa garansi</h2>
+    <p>Layanan diberikan apa adanya. Asisten bisa salah klik seperti manusia bisa salah
+    klik; awasi tab Anda untuk tindakan penting.</p>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Akun</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>
