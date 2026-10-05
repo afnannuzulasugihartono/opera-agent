@@ -1,5 +1,5 @@
-<!-- @last-edited: 2026-10-05 08:41 UTC+7. -->
-<!-- @title: akun — your devices and their recent work, nothing else's. -->
+<!-- @last-edited: 2026-10-05 14:25 UTC+7. -->
+<!-- @title: akun — your provider identity, your devices and their recent work, nothing else's. -->
 <!-- @state: reads only through opera_my_devices; strangers are sent to sign-in. -->
 <!-- @dependencies: none. -->
 
@@ -81,6 +81,32 @@
 
     .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 
+    /* WHY the id reads as code and is clickable: support asks for it first, and an
+       operator should never retype a UUID to report which browser is misbehaving. */
+    .deviceId { cursor: pointer; }
+    .deviceId:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* WHY initials instead of the provider's avatar image: every page may reach one
+       network origin, pinned in vercel.json. An <img> from the provider's CDN would
+       be a second origin, a second CSP entry, and a third party receiving a request
+       on every page view. The name and provider name carry the same information. */
+    .profile { display: flex; gap: 14px; align-items: center; }
+    .avatar {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #06231f;
+      font-weight: 700;
+      font-size: 17px;
+      display: grid;
+      place-items: center;
+    }
+    .identity { display: grid; gap: 1px; min-width: 0; }
+    .identity .name { font-weight: 600; }
+    .identity .meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+
     .btn {
       display: inline-block;
       padding: 10px 18px;
@@ -121,6 +147,16 @@
   <main class="wrap">
     <h1>Dashboard</h1>
     <p class="sub" id="whoami">Memeriksa sesi…</p>
+    <div class="card" id="profileCard">
+      <div class="profile">
+        <span class="avatar" id="avatar" aria-hidden="true"></span>
+        <span class="identity">
+          <span class="name" id="profileName">&nbsp;</span>
+          <span class="meta" id="profileMeta">&nbsp;</span>
+          <span class="meta" id="profileProvider">&nbsp;</span>
+        </span>
+      </div>
+    </div>
     <div id="devices"></div>
     <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
     <div class="card" id="runCard">
@@ -194,6 +230,27 @@
       }
     })();
 
+    // WHY render the account the provider already told us: name, email and provider
+    // are what every other site shows, and the reader needs to see which Google or
+    // GitHub identity this device is bound to before pairing anything else. The
+    // fields are read from the session the provider issued, never from a table.
+    const PROVIDER_LABEL = { google: 'Google', github: 'GitHub', email: 'Tautan email' };
+    const initialsOf = (name, email) => {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      const fromEmail = String(email || '').split('@')[0];
+      return (fromEmail.slice(0, 2) || 'OA').toUpperCase();
+    };
+    const renderProfile = (user) => {
+      const metadata = user.user_metadata || {};
+      const name = metadata.full_name || metadata.name || metadata.user_name || user.email;
+      const provider = user.app_metadata?.provider || 'email';
+      $('avatar').textContent = initialsOf(name, user.email);
+      $('profileName').textContent = name;
+      $('profileMeta').textContent = user.email;
+      $('profileProvider').textContent = `Masuk lewat ${PROVIDER_LABEL[provider] || provider}`;
+    };
+
     async function load() {
       const token = localStorage.getItem('opera-agent-access-token');
       // No token, no dashboard: a stranger gets the sign-in page, never an
@@ -213,6 +270,7 @@
         return;
       }
       $('whoami').textContent = `Masuk sebagai ${user.email}.`;
+      renderProfile(user);
       let data;
       try {
         const response = await fetch(`${REST}/rpc/opera_my_devices`, { method: 'POST', headers: headersFor(token), body: '{}' });
@@ -233,11 +291,31 @@
         <div class="card">
           <h2>${esc(device.name)}</h2>
           <p class="meta"><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span> &middot; terakhir terlihat ${esc(relativeTime(device.lastSeenAt))} &middot; extension ${esc(device.extensionVersion || '-')} &middot; ${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} perintah selesai</p>
+          <p class="meta">ID device <code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></p>
           <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code> — ${esc(command.status)}</li>`).join('')}</ul>
           <div class="row">
+            <button class="btn" type="button" data-copy="${esc(device.id)}">Salin ID</button>
             <button class="btn" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
           </div>
         </div>`).join('');
+      // WHY one delegated listener: the device list is re-rendered on every load, so
+      // per-button listeners would be re-bound each time and the copy affordance is
+      // the one thing a stranger reaches for before writing a support message.
+      $('devices').onclick = async (event) => {
+        const target = event.target.closest('[data-copy]');
+        if (!target) return;
+        const id = target.dataset.copy;
+        try {
+          await navigator.clipboard.writeText(id);
+          $('status').textContent = `ID device disalin: ${id}`;
+          $('status').className = 'status ok';
+        } catch (error) {
+          // Clipboard is blocked without a user gesture or a secure context, and the
+          // id is on screen anyway, so saying so beats a silent failure.
+          $('status').textContent = `Salin manual: ${id}`;
+          $('status').className = 'status warn';
+        }
+      };
       for (const button of document.querySelectorAll('[data-revoke]')) {
         button.addEventListener('click', async () => {
           if (!globalThis.confirm(`Cabut ${button.dataset.name}? Perintah baru berhenti seketika; pairing ulang menghidupkannya lagi.`)) return;

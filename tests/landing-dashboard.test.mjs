@@ -54,6 +54,30 @@ test('the home page notices sign-in without breaking its no-network promise', ()
   assert.doesNotMatch(html, /fetch\s*\(/, 'noticing never calls anyone');
 });
 
+test('every inline module on a page is balanced, or the browser discards it whole', () => {
+  for (const page of ['index.html', 'auth.html', 'akun.html']) {
+    const html = read(page);
+    const opened = (html.match(/<script type="module">/g) || []).length;
+    const closed = (html.match(/<\/script>/g) || []).length;
+    // WHY this lock is not pedantry: an unclosed tag makes the browser swallow
+    // everything up to the last close as one script, hit the literal "<script" of
+    // the next tag, and discard the whole module. Measured on the live home page:
+    // one script element instead of two, and clicking "Salin" did nothing at all,
+    // because not one listener was ever attached.
+    assert.equal(opened, closed, `${page} opens ${opened} module scripts but closes ${closed}`);
+  }
+});
+
+test('the home page model form has a listener that answers a click', () => {
+  const html = read('index.html');
+  // WHY: the form is the only path a stranger has to hand their key to their own
+  // browser without typing it into a popup. A dead form is a dead onboarding path.
+  assert.match(html, /\$\('modelForm'\)\.addEventListener\('submit'/, 'the form submits');
+  assert.match(html, /\$\('copyButton'\)\.addEventListener\('click'/, 'the copy button answers');
+  assert.match(html, /\$\('preset'\)\.addEventListener\('change'/, 'the preset fills the endpoint');
+  assert.match(html, /EXTENSION_ID = '([a-p]{32})'/, 'the extension is named by id');
+});
+
 test('every server refusal the dashboard can meet is written in Indonesian', () => {
   const html = read('akun.html');
   // WHY this lock: the server speaks English and the page speaks Indonesian. A raw
@@ -71,6 +95,41 @@ test('every server refusal the dashboard can meet is written in Indonesian', () 
     assert.ok(block.includes(refusal), `the page must carry a translation for: ${refusal}`);
   }
   assert.doesNotMatch(html, /Gagal: \$\{result\?\.error \|\| response\.status\}/, 'no raw server string reaches the reader');
+});
+
+test('the account page shows the connected provider identity, like any profile page', () => {
+  const html = read('akun.html');
+  // WHY this lock: a reader must see which Google or GitHub identity their device is
+  // bound to before pairing anything else, and every other site they know shows that
+  // identity next to the thing they are managing.
+  assert.match(html, /id="profileCard"/, 'the page has a profile card');
+  assert.match(html, /user_metadata/, 'the name comes from the identity the provider issued');
+  assert.match(html, /app_metadata\?\.provider/, 'the provider comes from the session, not from a guess');
+  assert.match(html, /Masuk lewat/, 'the provider is named in Indonesian');
+  assert.match(html, /google: 'Google'/, 'Google is spelled the way Google spells it');
+  assert.match(html, /github: 'GitHub'/, 'and so is GitHub');
+  assert.match(html, /full_name/, 'the full name is preferred over a handle');
+  assert.match(html, /user\.email/, 'the address is shown too');
+  // WHY initials and not the provider's avatar image: every page may reach one
+  // network origin, pinned in vercel.json. An <img> from a provider CDN would be a
+  // second origin and would send a third party a request on every page view.
+  assert.doesNotMatch(html, /<img[^>]+src=.*(googleusercontent|githubusercontent)/i, 'no provider image is fetched');
+  assert.doesNotMatch(html, /avatar_url/, 'not even the URL is read');
+  assert.match(html, /class="avatar"/, 'the avatar is drawn locally from initials');
+});
+
+test('the page shows each connected device id and can copy it', () => {
+  const html = read('akun.html');
+  // WHY this lock: support asks which browser is misbehaving before anything else,
+  // and an operator should not have to re-type a UUID to answer. The id already
+  // travels in the RPC payload, so no new query is needed.
+  assert.match(html, /data-copy="\$\{esc\(device\.id\)\}"/, 'the id is rendered and marked copyable');
+  assert.match(html, /Salin ID/, 'copying has a visible control');
+  assert.match(html, /navigator\.clipboard\.writeText/, 'copying actually copies');
+  assert.match(html, /ID device disalin/, 'copying answers with a status line');
+  // WHY delegated: the device list is re-rendered on every load, so a per-button
+  // listener would be rebound each time and the affordance would die on refresh.
+  assert.match(html, /\$\('devices'\)\.onclick/, 'the copy listener survives re-renders');
 });
 
 test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
