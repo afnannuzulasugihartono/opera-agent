@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 11:05 UTC+7.
+// @last-edited: 2026-10-06 04:22 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -11,6 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import zlib from 'node:zlib';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
@@ -48,6 +49,46 @@ function zipEntryNames(buffer) {
   return names.map((n) => n.replace(/\\/g, '/'));
 }
 
+// WHY the deflate path is handled: the archive is built by the release pack step, which
+// compresses, and by hand on a machine with no zip, which does not. Reading only stored
+// entries would make this lock depend on which machine built it.
+function zipEntryText(buffer, wanted) {
+  const EOCD = 0x06054b50;
+  let eocd = -1;
+  for (let at = buffer.length - 22; at >= 0; at -= 1) {
+    if (buffer.readUInt32LE(at) === EOCD) {
+      eocd = at;
+      break;
+    }
+  }
+  assert.notEqual(eocd, -1, 'the archive has an end-of-central-directory record');
+  const count = buffer.readUInt16LE(eocd + 10);
+  let at = buffer.readUInt32LE(eocd + 16);
+  for (let i = 0; i < count; i += 1) {
+    const method = buffer.readUInt16LE(at + 10);
+    const compressedSize = buffer.readUInt32LE(at + 20);
+    const nameLength = buffer.readUInt16LE(at + 28);
+    const extraLength = buffer.readUInt16LE(at + 30);
+    const commentLength = buffer.readUInt16LE(at + 32);
+    const localOffset = buffer.readUInt32LE(at + 42);
+    const name = buffer.toString('utf8', at + 46, at + 46 + nameLength).replace(/\\/g, '/');
+    if (name === wanted) {
+      const localNameLength = buffer.readUInt16LE(localOffset + 26);
+      const localExtraLength = buffer.readUInt16LE(localOffset + 28);
+      const start = localOffset + 30 + localNameLength + localExtraLength;
+      const raw = buffer.subarray(start, start + compressedSize);
+      // WHY zlib and not DecompressionStream: the suite runs on Node and on Deno with
+      // no dependencies, and node:zlib is the one inflate both accept.
+      const bytes = method === 0
+        ? raw
+        : zlib.inflateRawSync(raw);
+      return Buffer.from(bytes).toString('utf8');
+    }
+    at += 46 + nameLength + extraLength + commentLength;
+  }
+  throw new Error(`${wanted} is not in the archive`);
+}
+
 test('the download page names the exact version the repo ships', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   const html = read('unduh.html');
@@ -74,6 +115,21 @@ test('the advertised checksum is the checksum of the shipped archive', () => {
   const html = read('unduh.html');
   assert.match(html, new RegExp(digest), 'the page prints the real sha256 of the real archive');
   assert.ok(zip.length > 1024, 'the archive is not an empty placeholder');
+});
+
+test('the archive carries the manifest key, so an unpacked install can update', () => {
+  // WHY this lock: the zip is a hand-built artefact in the tree, not something any
+  // workflow rebuilds, so it survives a key rotation and keeps handing strangers a
+  // manifest that names the old identity. An install from that archive asks the
+  // update endpoint under the old id and is offered a release it already has.
+  // Measured: the shipped 1.6.15 zip resolved to the old id while the tree and the
+  // signed CRX both resolved to the new one.
+  const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+  const archive = fs.readFileSync(new URL('landing/opera-agent-1.6.15.zip', root));
+  assert.ok(zipEntryNames(archive).includes('manifest.json'), 'the archive has a manifest to read');
+  const inner = JSON.parse(zipEntryText(archive, 'manifest.json'));
+  assert.equal(inner.key, manifest.key, 'the archive carries the tree’s signing key');
+  assert.equal(inner.version, manifest.version, 'and the tree’s version');
 });
 
 test('the archive contains every file the manifest names', () => {
