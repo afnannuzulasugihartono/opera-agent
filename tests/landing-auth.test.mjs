@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 08:41 UTC+7.
+// @last-edited: 2026-10-06 02:41 UTC+7.
 // @title: landing-auth — the sign-in page must offer providers, never a password.
 // @state: failing first: the auth page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -21,7 +21,11 @@ test('the auth page offers Google and GitHub through the project Auth, not throu
   assert.match(html, /provider=google/, 'a Masuk dengan Google button must point at the provider');
   assert.match(html, /provider=github/, 'a Masuk dengan GitHub button must point at the provider');
   assert.ok(html.includes(AUTH_HOST), 'both buttons must go to the project Auth host, never a middleman');
-  assert.match(html, /redirect_to=https:\/\/opera-agent\.vercel\.app\/auth/, 'both buttons must carry the way home, or login strands the visitor on the old site URL');
+  // WHY this origin: the page rewrites redirect_to from its own location at runtime, so
+  // the value baked into the markup is only the fallback for a browser with no script.
+  // It still has to name the host the site is served from, or that fallback strands the
+  // visitor on the old site URL.
+  assert.match(html, /redirect_to=https:\/\/opera-agent\.pages\.dev\/auth/, 'both buttons must carry the way home, or login strands the visitor on the old site URL');
 });
 
 test('the auth page takes no password, only a magic link', () => {

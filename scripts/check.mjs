@@ -26,7 +26,11 @@ assert.match(manifest.update_url, /^https:\/\/.*\.supabase\.co\//);
 assert.ok(typeof manifest.key === 'string' && manifest.key.length > 100);
 const identityDigest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
 const extensionId = [...identityDigest].map((byte) => `${String.fromCharCode(97 + (byte >> 4))}${String.fromCharCode(97 + (byte & 15))}`).join('');
-assert.equal(extensionId, 'ohbbpamcljckmjhcpkcmefdobkoeaick');
+// WHY this id is asserted and not just derived: Chrome derives an installed
+// extension's id from this key, so the id decides which release row answers its
+// update check. A key that does not match the signing key publishes a CRX no
+// browser will install, and the check is the only place that can catch it.
+assert.equal(extensionId, 'ofgemipoobcnbjkfanmofjbdonjapmgl');
 
 function collectRuntimeFiles(relativeDir, extensions) {
   const absoluteDir = path.join(root, relativeDir);

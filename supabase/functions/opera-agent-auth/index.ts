@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 02:41 UTC+7.
 // @title: index — Repository file.
 // @state: edge-runtime imports via deno.json import maps, restore SBOM gate.
 // @dependencies: edge-runtime.
@@ -31,6 +31,6 @@ Deno.serve((req: Request) => {
   return new Response(JSON.stringify({
     ok: true,
     service: "opera-agent-auth-config",
-    consentUrl: "https://opera-agent.vercel.app/oauth/consent"
+    consentUrl: "https://opera-agent.pages.dev/oauth/consent"
   }), { headers: { ...headers, "Cache-Control": "no-store" } });
 });

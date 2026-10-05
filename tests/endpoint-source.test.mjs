@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 02:41 UTC+7.
 // @title: endpoint-source.test — source.test — Test.
 // @state: activate the options tab before waiting on its async prefill.
 // @dependencies: node:test, strict, promises, endpoints.
@@ -35,7 +35,7 @@ test('the consent screen is a page of the site, not a deployment of its own', as
   // WHY the origin matters: GoTrue validates the origin of every consent call against
   // its configured site URL, so a screen on any other host can never approve anything.
   const config = await readFile(new URL('../supabase/config.toml', import.meta.url), 'utf8');
-  assert.match(config, /site_url = "https:\/\/opera-agent\.vercel\.app"/, 'the site URL is the origin that serves consent');
+  assert.match(config, /site_url = "https:\/\/opera-agent\.pages\.dev"/, 'the site URL is the origin that serves consent');
   assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the consent path matches the page the site serves');
   assert.doesNotMatch(config, /oauth-consent-three/, 'the separate deployment is no longer referenced');
 });

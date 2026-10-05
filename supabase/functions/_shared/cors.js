@@ -1,10 +1,18 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 02:41 UTC+7.
 // @title: cors — Repository file.
-// @state: drop unknown-rule lint-ignore in cors helper (2.9.6 gate).
+// @state: allowlists both extension ids and both site origins during the host move.
 // @dependencies: none.
 
+// WHY both extension ids: the CRX signing key produced a new one, so an install
+// that has not been replaced yet still presents the old id and would be refused
+// if only the new one were listed. WHY both site origins: the Cloudflare host
+// is the product's front door and the Vercel one stays while installs in the
+// wild still point at it, so neither origin is refused mid-migration.
+
 const FALLBACK_ORIGINS = Object.freeze([
+  'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
   'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
+  'https://opera-agent.pages.dev',
   'https://opera-agent.vercel.app'
 ]);
 

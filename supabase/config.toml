@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-05 18:00 UTC+7.
+# @last-edited: 2026-10-06 02:41 UTC+7.
 # @title: config — Supabase backend.
 # @state: the consent screen lives on the site, at /oauth/consent.
 # @dependencies: none stated.
@@ -9,7 +9,15 @@ project_id = "opera-agent"
 # WHY the site and not a separate deployment: GoTrue validates the origin of every
 # consent API call against this value, so a consent screen on another host can never
 # approve an authorization. Pointing it at the site is what lets one origin serve it.
-site_url = "https://opera-agent.vercel.app"
+#
+# WHY Cloudflare: the site moved to Pages because Vercel Hobby's hundred deploys
+# a day went on ordinary pushes. The Vercel origin stays in the redirect list
+# below so a login that started there is not thrown away mid-migration.
+site_url = "https://opera-agent.pages.dev"
+
+[auth.emailRedirect]
+# The old host stays allowed while installs in the wild still point at it.
+redirect_urls = ["https://opera-agent.pages.dev", "https://opera-agent.vercel.app"]
 
 [auth.oauth_server]
 enabled = true

@@ -120,7 +120,7 @@ const report = {
   invariants: {
     focusChanges: runResults.reduce((count, run) => count + run.backgroundFocusAudit.filter((item) => !item.focusPreserved).length, 0),
     sensitiveValuesPersisted: 0,
-    pairedExtensionIdAgreement: runResults.every((run) => run.extensionId === 'ohbbpamcljckmjhcpkcmefdobkoeaick'),
+    pairedExtensionIdAgreement: runResults.every((run) => run.extensionId === 'ofgemipoobcnbjkfanmofjbdonjapmgl'),
     browserRunsPassed: runResults.every((run) => run.ok === true),
   },
   payloads: {

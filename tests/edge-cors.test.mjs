@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 02:41 UTC+7.
 // @title: edge-cors.test — cors.test — Test.
 // @state: shared CORS origin resolver with fail-closed defaults.
 // @dependencies: node:test, strict, cors.
@@ -12,17 +12,25 @@ const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'or
 test('default origins are exactly the extension and the site', () => {
   // WHY the site and not a separate consent deployment: the consent screen is a page of
   // the site now, so the origin that may call the backend is the site's own origin.
+  //
+  // WHY two extension ids: the signing key produced a new one, and an install that
+  // has not been replaced still presents the old id. WHY two site origins: Cloudflare
+  // is the front door and Vercel stays reachable as the backup host.
   assert.deepEqual(CORS_DEFAULT_ORIGINS, [
+    'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
     'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
+    'https://opera-agent.pages.dev',
     'https://opera-agent.vercel.app'
   ]);
 });
 
 test('exact allowlisted origin is echoed', () => {
-  assert.equal(resolveAllowedOrigin(req('chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick')), 'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick');
+  assert.equal(resolveAllowedOrigin(req('chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl')), 'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl');
+  assert.equal(resolveAllowedOrigin(req('https://opera-agent.pages.dev')), 'https://opera-agent.pages.dev');
 });
 
 test('lookalike evil origin is rejected', () => {
+  assert.equal(resolveAllowedOrigin(req('https://opera-agent.pages.dev.evil.com')), null);
   assert.equal(resolveAllowedOrigin(req('https://opera-agent.vercel.app.evil.com')), null);
   assert.equal(resolveAllowedOrigin(req('https://evil.com')), null);
 });

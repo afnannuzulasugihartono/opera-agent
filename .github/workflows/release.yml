@@ -49,14 +49,40 @@ jobs:
           (cd extension && zip -r "../Opera-Agent-${VERSION}-extension.zip" .)
           git archive --format=zip --output="Opera-Agent-${VERSION}-source.zip" HEAD
 
+      # WHY the id is derived here and not written down: the CRX lives under the
+      # path named after the extension id, and Chrome derives that id from the
+      # manifest key. Hardcoding it is how the 1.6.15 release ended up fetching a
+      # 404 while the CRX itself was published correctly.
+
       - name: Fetch and verify signed CRX
         shell: bash
         run: |
+          EXTENSION_ID="$(node -e "
+            const crypto = require('node:crypto');
+            const manifest = require('./extension/manifest.json');
+            const digest = crypto.createHash('sha256')
+              .update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
+            process.stdout.write([...digest]
+              .map((b) => String.fromCharCode(97 + (b >> 4)) + String.fromCharCode(97 + (b & 15)))
+              .join(''));
+          ")"
+          echo "extension id: ${EXTENSION_ID}"
           curl --fail --silent --show-error --location \
-            "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-ohbbpamcljckmjhcpkcmefdobkoeaick-${VERSION}.crx" \
+            --dump-header "${RUNNER_TEMP}/crx.headers" \
+            "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-${EXTENSION_ID}-${VERSION}.crx" \
             --output "Opera-Agent-${VERSION}.crx"
-          test -f "docs/releases/${VERSION}.crx.sha256"
-          sha256sum -c "docs/releases/${VERSION}.crx.sha256"
+
+          # WHY compare against the served ETag and not a file in the tree: the
+          # update function already publishes the digest it stored, so the bytes
+          # just downloaded can be checked against the same value the browser will
+          # cache. docs/releases/ held these digests once and was deleted, which is
+          # what left this step asserting a file that no longer existed.
+
+          EXPECTED="$(grep -i '^etag:' "${RUNNER_TEMP}/crx.headers" | tr -d '\r"' | sed 's/^[Ee][Tt][Aa][Gg]: *//')"
+          ACTUAL="$(sha256sum "Opera-Agent-${VERSION}.crx" | cut -d' ' -f1)"
+          echo "expected ${EXPECTED}"
+          echo "actual   ${ACTUAL}"
+          test -n "$EXPECTED" && test "$EXPECTED" = "$ACTUAL"
 
       - name: Generate checksums
         shell: bash

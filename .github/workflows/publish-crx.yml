@@ -1,0 +1,208 @@
+# @last-edited: 2026-10-06 03:12 UTC+7.
+# @title: publish-crx — packs, signs and publishes a release row, on dispatch.
+# @state: the step that was missing; a release row used to be inserted by hand.
+# @dependencies: Chrome, CRX_SIGNING_KEY, and SUPABASE_ACCESS_TOKEN secrets.
+
+name: Publish CRX
+
+# WHY this exists as its own workflow: the release workflow downloads a CRX that
+# something else has to have published, and nothing published it. Packing here and
+# inserting the row in the same place closes that gap, so the release workflow can
+# fetch what this one put there.
+#
+# WHY the self-check is fatal: Chrome derives an installed extension's id from the
+# key in the manifest, and the update endpoint serves the CRX under a path named
+# after that id. If the packed CRX does not agree with the manifest key, a browser
+# installs it under an id the endpoint never offers a release for, and the install
+# can never update. That shipped once, so it is now a gate rather than a comment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, matching extension/manifest.json.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-crx
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Pack, sign and insert the release row
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+
+      - name: Check the version matches the manifest
+        shell: bash
+        run: |
+          MANIFEST_VERSION="$(node -p "require('./extension/manifest.json').version")"
+          if [ "$MANIFEST_VERSION" != "${{ inputs.version }}" ]; then
+            echo "::error::dispatched ${${{ inputs.version }}} but the manifest says ${MANIFEST_VERSION}"
+            exit 1
+          fi
+
+      - name: Write the signing key
+        shell: bash
+        env:
+          CRX_SIGNING_KEY: ${{ secrets.CRX_SIGNING_KEY }}
+        run: |
+          if [ -z "$CRX_SIGNING_KEY" ]; then
+            echo "::error::CRX_SIGNING_KEY is unset; refusing to publish an unsigned or wrongly signed CRX"
+            exit 1
+          fi
+          printf '%s\n' "$CRX_SIGNING_KEY" > "${RUNNER_TEMP}/signing.pem"
+          chmod 600 "${RUNNER_TEMP}/signing.pem"
+
+      - name: Pack and sign
+        shell: bash
+        run: |
+          google-chrome --no-sandbox --disable-gpu --pack-extension=extension \
+            --pack-extension-key="${RUNNER_TEMP}/signing.pem"
+
+      # WHY compare the signature against the manifest rather than against a
+      # written-down id: the manifest key is what Chrome derives the id from, and
+      # the CRX header key is what the CRX is signed by. When those two disagree
+      # the install is a dead end, and nothing else in the tree can see it.
+
+      - name: Prove the packed CRX carries the manifest identity
+        id: identity
+        shell: bash
+        run: |
+          CRX="extension.crx"
+          test -f "$CRX" || { echo "::error::chrome produced no $CRX"; exit 1; }
+
+          EXPECTED="$(node -e "
+            const crypto = require('node:crypto');
+            const manifest = require('./extension/manifest.json');
+            const digest = crypto.createHash('sha256')
+              .update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
+            process.stdout.write([...digest]
+              .map((b) => String.fromCharCode(97 + (b >> 4)) + String.fromCharCode(97 + (b & 15)))
+              .join(''));
+          ")"
+
+          SIGNED="$(node -e "
+            const crypto = require('node:crypto');
+            const fs = require('node:fs');
+            const buf = fs.readFileSync('extension.crx');
+            if (buf.readUInt32BE(0) !== 0x43523234) { console.error('not a CRX'); process.exit(1); }
+            const headerLen = buf.readUInt32LE(8);
+            const header = buf.subarray(12, 12 + headerLen);
+            // CrxFileHeader field 1 or 2 is an AsymmetricKeyProof whose field 1 is
+            // the DER public key; both are read because Chrome may sign with either.
+            const readVarint = (b, i) => { let r = 0, s = 0; for (;;) {
+              const x = b[i++]; r |= (x & 0x7f) << s; if (!(x & 0x80)) return [r, i]; s += 7; } };
+            const readFields = (b) => { const out = []; let i = 0;
+              while (i < b.length) { let tag; [tag, i] = readVarint(b, i);
+                const fn = tag >> 3, wt = tag & 7;
+                if (wt === 2) { let ln; [ln, i] = readVarint(b, i); out.push([fn, b.subarray(i, i + ln)]); i += ln; }
+                else if (wt === 0) { let v; [v, i] = readVarint(b, i); out.push([fn, v]); }
+                else throw new Error('wiretype ' + wt); }
+              return out; };
+            let key = null;
+            for (const [fn, val] of readFields(header)) {
+              if (fn !== 1 && fn !== 2) continue;
+              for (const [pfn, pval] of readFields(val)) {
+                if (pfn === 1) key = Buffer.from(pval);
+              }
+            }
+            if (!key) { console.error('no public key in the CRX header'); process.exit(1); }
+            const digest = crypto.createHash('sha256').update(key).digest().subarray(0, 16);
+            process.stdout.write([...digest]
+              .map((b) => String.fromCharCode(97 + (b >> 4)) + String.fromCharCode(97 + (b & 15)))
+              .join(''));
+          ")"
+
+          echo "manifest key id : ${EXPECTED}"
+          echo "signature key id: ${SIGNED}"
+          if [ "$EXPECTED" != "$SIGNED" ]; then
+            echo "::error::the packed CRX is signed by a different key than the manifest declares; a browser would install it under an id the update endpoint never serves"
+            exit 1
+          fi
+          echo "extension id: ${EXPECTED}" >> "$GITHUB_OUTPUT"
+
+      - name: Insert the release row
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          EXTENSION_ID: ${{ steps.identity.outputs.extension-id }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN is unset; the CRX is packed but cannot be published"
+            exit 1
+          fi
+
+          CRX_B64="$(base64 -w0 extension.crx)"
+          SHA256="$(sha256sum extension.crx | cut -d' ' -f1)"
+          ROW="$(node -e "
+            process.stdout.write(JSON.stringify({
+              extension_id: process.env.EXTENSION_ID,
+              version: process.env.VERSION,
+              crx_base64: process.env.CRX_B64,
+              sha256: process.env.SHA256,
+              active: true
+            }));
+          ")""
+
+          PROJECT_REF="nenmkmtvjremqphfqnfw"
+          query () {
+            curl --fail --silent --show-error -X POST \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$(node -e "
+                process.stdout.write(JSON.stringify({ query: process.argv[1] }));
+              " "$1")" \
+              "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -o /dev/null -w "%{http_code}"
+          }
+
+          # WHY deactivate first, then insert: uniqueness is per extension_id, so
+          # two active rows for one id is allowed, and an install whose check lands
+          # on the wrong row gets a CRX signed by a key it did not ask for. One
+          # active row per id.
+
+          for OLD_ID in ohbbpamcljckmjhcpkcmefdobkoeaick ofgemipoobcnbjkfanmofjbdonjapmgl; do
+            [ "$OLD_ID" = "$EXTENSION_ID" ] && continue
+            printf 'deactivate %s -> %s\n' "$OLD_ID" \
+              "$(query "update opera_releases set active = false where extension_id = '$OLD_ID' and active")"
+          done
+
+          printf 'publish %s -> %s\n' "$VERSION" "$(query "insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('$EXTENSION_ID', '$VERSION', '$CRX_B64', '$SHA256', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active")"
+
+      # WHY read the served bytes: an insert can succeed while the endpoint keeps
+      # answering from an earlier row, and only the response tells the two apart.
+
+      - name: Confirm the endpoint serves this CRX
+        shell: bash
+        env:
+          EXTENSION_ID: ${{ steps.identity.outputs.extension-id }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          BASE="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update"
+          X="id%3D${EXTENSION_ID}%26v%3D${VERSION}%26uc%26nocache%3D1"
+          CODEBASE="$(curl --fail --silent --show-error --location "$BASE/update.xml?x=$X" \
+            | grep -o 'codebase="[^"]*"' | head -1 | sed 's/codebase="//;s/"//')"
+          echo "advertised: ${CODEBASE}"
+          test -n "$CODEBASE" || { echo "::error::the endpoint advertised no CRX for ${EXTENSION_ID}"; exit 1; }
+          curl --fail --silent --show-error --location \
+            --output "${RUNNER_TEMP}/served.crx" --write-out 'served %{http_code}\n' "$CODEBASE"
+          test "$(sha256sum "${RUNNER_TEMP}/served.crx" | cut -d' ' -f1)" = "$(sha256sum extension.crx | cut -d' ' -f1)" \
+            || { echo "::error::the served bytes are not the bytes just published"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opera-agent-${{ inputs.version }}-crx
+          path: extension.crx

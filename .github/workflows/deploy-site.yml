@@ -1,22 +1,35 @@
-# @last-edited: 2026-10-06 01:58 UTC+7.
-# @title: deploy-site — publishes landing/ to Cloudflare Pages on a push to main.
-# @state: the project's second host; Vercel is off by budget, Pages carries the site.
+# @last-edited: 2026-10-06 02:34 UTC+7.
+# @title: deploy-site — publishes landing/ to Cloudflare Pages when dispatched.
+# @state: manual only; CI runs on every push and this decides when the site moves.
 # @dependencies: wrangler, the landing directory, CF_TOKEN and CF_ACCOUNT_ID secrets.
 
 name: Deploy site
 
-# WHY this exists rather than a Git integration: Cloudflare cannot move an
-# existing Direct Upload project to Git integration, and Vercel Hobby allows a
-# hundred deployments a day, which a busy main spends on its own. This workflow
-# is the documented "Direct Upload with continuous integration" path, so the
-# repo keeps ownership of when a deploy happens.
+# WHY this exists rather than a Cloudflare Git integration: a Direct Upload
+# project cannot be switched to Git integration later, and Vercel Hobby allows a
+# hundred deployments a day, which a busy main spends on its own. This is the
+# documented "Direct Upload with continuous integration" path, so the repo owns
+# the decision rather than a provider's build pipeline.
+#
+# WHY manual and not on every push: a deploy is a publication, and publishing a
+# one-word copy change to a stranger-facing site is not worth a build. CI still
+# runs on every push; this only decides when the site itself moves. The reason
+# input is free text for the deployment log, because the log is where the next
+# reader asks what shipped.
+
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      reason:
+        description: What changed, for the deployment log.
+        required: false
+        type: string
 
 concurrency:
-  # A newer push must not interleave with a deployment in flight.
+
+  # WHY one at a time: a newer dispatch must not interleave with a deployment
+  # already in flight, or the edge ends up serving the older of the two.
+
   group: deploy-site
   cancel-in-progress: true
 
@@ -27,6 +40,7 @@ jobs:
   publish:
     name: Publish landing to Cloudflare Pages
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -35,14 +49,15 @@ jobs:
         with:
           node-version: 22.20.0
 
-      # The suite gates the deploy: publishing a tree whose unit tests fail would
-      # put broken copy in front of a stranger, and the browser gate is the one
-      # CI job that cannot be reproduced locally.
       - name: Unit gate
         run: npm test
 
       - name: Syntax gate
         run: npm run check
+
+      # WHY the gates run here and not as a dependency: this workflow may be
+      # dispatched on a head whose CI run has not finished, and the tree it is
+      # about to publish is the one that has to hold.
 
       - name: Publish
         env:
@@ -50,17 +65,18 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::CF_TOKEN and CF_ACCOUNT_ID are not set; skipping the deploy rather than publishing from a guess"
+            echo "::error::CF_TOKEN and CF_ACCOUNT_ID are unset; not publishing from a guess"
             exit 1
           fi
           npx --yes wrangler@latest pages deploy landing \
             --project-name=opera-agent \
             --branch=main \
             --commit-hash="$GITHUB_SHA" \
-            --commit-message="$(git log -1 --pretty=%s)"
+            --commit-message="${{ inputs.reason || format('deploy {0}', github.sha) }}"
 
-      # WHY read the served bytes: a deploy can succeed while the edge serves an
-      # earlier copy, and only the response tells the two apart.
+      # WHY read the served bytes: a deploy can report success while the edge still
+      # answers with an earlier copy, and only the response tells the two apart.
+
       - name: Confirm the site answers
         run: |
           curl --fail --silent --show-error --location --retry 5 --retry-delay 5 \

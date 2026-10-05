@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 16:45 UTC+7.
+// @last-edited: 2026-10-06 02:41 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
@@ -187,7 +187,7 @@ test('the site is reachable at the path GoTrue asks for, from the site root dire
   // WHY the two belong in one lock: the consent screen only works because it is served
   // from the same origin GoTrue validates, and it only works at that path because the
   // file sits in the directory the URL names.
-  assert.match(read('supabase/config.toml'), /site_url = "https:\/\/opera-agent\.vercel\.app"/);
+  assert.match(read('supabase/config.toml'), /site_url = "https:\/\/opera-agent\.pages\.dev"/);
   assert.match(read('supabase/config.toml'), /authorization_path = "\/oauth\/consent"/);
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path');
   const sources = vercel.headers.map((h) => h.source);
