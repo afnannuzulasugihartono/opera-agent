@@ -155,7 +155,7 @@ jobs:
             echo "::error::the packed CRX is signed by a different key than the manifest declares; a browser would install it under an id the update endpoint never serves"
             exit 1
           fi
-          echo "extension id: ${EXPECTED}" >> "$GITHUB_OUTPUT"
+          echo "extension-id=${EXPECTED}" >> "$GITHUB_OUTPUT"
 
       - name: Insert the release row
         shell: bash
