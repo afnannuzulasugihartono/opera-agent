@@ -174,15 +174,33 @@ jobs:
           SHA256="$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)"
 
           PROJECT_REF="nenmkmtvjremqphfqnfw"
+
+          # WHY the body is written to a file rather than discarded: a failed
+          # insert that reports only a status code is a statement that cannot be
+          # acted on. The response names which part of the statement the database
+          # refused, which is the whole diagnosis.
+
           query () {
-            curl --fail --silent --show-error -X POST \
+            local body_file="${RUNNER_TEMP}/query.out"
+            local code
+            code="$(curl --silent --show-error -X POST \
               -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
               -H "Content-Type: application/json" \
-              -d "$(QUERY="$1" node -e "
-                process.stdout.write(JSON.stringify({ query: process.env.QUERY }));
-              ")" \
+              --data-binary "@${body_file}" \
               "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-              -o /dev/null -w "%{http_code}"
+              -o "${body_file}.resp" -w "%{http_code}")"
+            if [ "$code" -ge 400 ]; then
+              echo "query failed ${code}: $(head -c 500 "${body_file}.resp")" >&2
+            fi
+            printf '%s' "$code"
+          }
+
+          post () {
+            QUERY="$1" node -e "
+              const fs = require('node:fs');
+              fs.writeFileSync(process.argv[1], JSON.stringify({ query: process.env.QUERY }));
+            " "${RUNNER_TEMP}/query.out"
+            query
           }
 
           # WHY no row is deactivated here: an install that asks under an old id must keep
@@ -192,7 +210,12 @@ jobs:
           # unique index is per extension_id, so two ids may each hold one active
           # row at the same time without either one's check reaching the other.
 
-          printf 'publish %s -> %s\n' "$VERSION" "$(query "insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('$EXTENSION_ID', '$VERSION', '$CRX_B64', '$SHA256', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active")"
+          PUBLISH_CODE="$(post "insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('$EXTENSION_ID', '$VERSION', '$CRX_B64', '$SHA256', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active")"
+          printf 'publish %s -> %s\n' "$VERSION" "$PUBLISH_CODE"
+          if [ "$PUBLISH_CODE" -ge 400 ]; then
+            echo "::error::the release row was not written; the confirmation below can only read what was already there"
+            exit 1
+          fi
 
       # WHY read the served bytes: an insert can succeed while the endpoint keeps
       # answering from an earlier row, and only the response tells the two apart.
