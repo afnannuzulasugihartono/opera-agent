@@ -35,12 +35,15 @@ test('the landing page itself stays network-free while auth may reach only Supab
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
   const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
-  // WHY two auth entries: a bare "/auth" source never matched the served path, so the
-  // auth page received the root CSP and its Supabase fetch died in the browser.
-  const authCsp = bySource['/auth'].find((h) => h.key === 'Content-Security-Policy').value;
-  const authSubCsp = bySource['/auth/:path*'].find((h) => h.key === 'Content-Security-Policy').value;
-  for (const csp of [authCsp, authSubCsp]) {
-    assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, 'every auth path may reach only Supabase');
+  // WHY three auth entries: neither "/auth" nor "/auth/:path*" alone matched the
+  // served path on Vercel, so the auth page received the root CSP and its Supabase
+  // fetch died in the browser. All three carry the same single-origin policy.
+  const authSources = ['/auth', '/auth/:path*', '/auth.html'];
+  for (const source of authSources) {
+    const entry = bySource[source];
+    assert.ok(entry, `vercel.json must define a header entry for ${source}`);
+    const csp = entry.find((h) => h.key === 'Content-Security-Policy').value;
+    assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${source} may reach only Supabase`);
     assert.doesNotMatch(csp, /connect-src[^;]*https?:\/\/(?!\*\.supabase\.co)/, 'no second origin rides along');
   }
   assert.doesNotMatch(html, /src="https?:/, 'even the auth page loads no external script');
