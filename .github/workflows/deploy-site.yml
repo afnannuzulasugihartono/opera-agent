@@ -1,0 +1,68 @@
+# @last-edited: 2026-10-06 01:58 UTC+7.
+# @title: deploy-site — publishes landing/ to Cloudflare Pages on a push to main.
+# @state: the project's second host; Vercel is off by budget, Pages carries the site.
+# @dependencies: wrangler, the landing directory, CF_TOKEN and CF_ACCOUNT_ID secrets.
+
+name: Deploy site
+
+# WHY this exists rather than a Git integration: Cloudflare cannot move an
+# existing Direct Upload project to Git integration, and Vercel Hobby allows a
+# hundred deployments a day, which a busy main spends on its own. This workflow
+# is the documented "Direct Upload with continuous integration" path, so the
+# repo keeps ownership of when a deploy happens.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # A newer push must not interleave with a deployment in flight.
+  group: deploy-site
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish landing to Cloudflare Pages
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+
+      # The suite gates the deploy: publishing a tree whose unit tests fail would
+      # put broken copy in front of a stranger, and the browser gate is the one
+      # CI job that cannot be reproduced locally.
+      - name: Unit gate
+        run: npm test
+
+      - name: Syntax gate
+        run: npm run check
+
+      - name: Publish
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CF_TOKEN and CF_ACCOUNT_ID are not set; skipping the deploy rather than publishing from a guess"
+            exit 1
+          fi
+          npx --yes wrangler@latest pages deploy landing \
+            --project-name=opera-agent \
+            --branch=main \
+            --commit-hash="$GITHUB_SHA" \
+            --commit-message="$(git log -1 --pretty=%s)"
+
+      # WHY read the served bytes: a deploy can succeed while the edge serves an
+      # earlier copy, and only the response tells the two apart.
+      - name: Confirm the site answers
+        run: |
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 5 \
+            --output /dev/null --write-out 'status %{http_code}\n' \
+            https://opera-agent.pages.dev/
