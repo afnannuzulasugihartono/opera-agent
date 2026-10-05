@@ -10,6 +10,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
@@ -32,6 +34,35 @@ test('the install section links the download page instead of dead-ending', () =>
   const html = read('index.html');
   assert.match(html, /href="\.\/unduh\.html"/, 'install reaches the download page');
   assert.match(html, /unduh\.html/, 'the link exists in the copy too');
+});
+
+test('the advertised checksum is the checksum of the shipped archive', () => {
+  const zip = fs.readFileSync(new URL('landing/opera-agent-1.6.15.zip', root));
+  const digest = crypto.createHash('sha256').update(zip).digest('hex');
+  const html = read('unduh.html');
+  assert.match(html, new RegExp(digest), 'the page prints the real sha256 of the real archive');
+  assert.ok(zip.length > 1024, 'the archive is not an empty placeholder');
+});
+
+test('the archive contains every file the manifest names', () => {
+  const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+  // WHY this lock: a download page whose archive is missing background.js or a
+  // content script fails only after a stranger installs it and clicks around.
+  const listing = execFileSync('powershell', ['-NoProfile', '-Command', 'Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::OpenRead(\'D:\\GitHub\\opera-agent\\landing\\opera-agent-1.6.15.zip\').Entries.FullName'], { encoding: 'utf8', maxBuffer: 4e7 });
+  const names = listing.split('\n').map((n) => n.trim()).filter(Boolean).map((n) => n.replace(/\\/g, '/'));
+  const needed = [
+    'manifest.json',
+    manifest.background.service_worker,
+    manifest.action.default_popup,
+    manifest.options_page,
+    'styles.css',
+    'lib/protocol.js',
+    'lib/options-store.js',
+    ...manifest.content_scripts.flatMap((cs) => cs.js)
+  ];
+  for (const file of needed) {
+    assert.ok(names.includes(file), `the archive must contain ${file}`);
+  }
 });
 
 test('the download page shares the site navigation and floor', () => {

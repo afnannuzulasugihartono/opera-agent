@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 // File headers, locked in the @tag shape the rules require: @last-edited with a
 // UTC timestamp, then @title, @state and @dependencies, one tag per line. A .md
 // carries @last-edited only. Migrations, JSON and lockfiles cannot carry one:
-// migrations must never be rewritten, and JSON has no comments.
+// migrations must never be rewritten, and JSON has no comments. An archive cannot
+// either: a zip is bytes, and the download page carries its checksum and version.
 //
 // Four tags, not six: @context restated @title and @updated restated
 // @last-edited, so two of every six lines carried no fact the others did not.
@@ -24,7 +25,7 @@ const SKIP_EXACT = new Set([
   'release-trigger/v1.0.1',
   'supabase/functions/opera-agent-mcp/deno.lock',
 ]);
-const SKIP_EXT = new Set(['.json', '.lock']);
+const SKIP_EXT = new Set(['.json', '.lock', '.zip']);
 const STAMP = /^@last-edited: \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\+7\.$/;
 
 const allFiles = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
