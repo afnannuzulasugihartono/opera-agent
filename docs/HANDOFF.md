@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 13:20 UTC+7.
+@last-edited: 2026-10-05 13:45 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -60,13 +60,18 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Measured, not assumed
 
-- The account run path is proven in production. `opera_run_on_my_device` resolved the
-  device by `user_id`, refused an unknown method against the enabled allowlist, and
-  completed `tabs.list`: pickup 12072 ms then 377 ms of work on one run, pickup 8260 ms
-  then 326 ms on the next. Pickup waits on the device long-poll, not on the work.
-- The dashboard waits 45 s by default, so it reports these as completed. An earlier
-  reading of "12 s timeout" was a test that passed 12 s as the wait window, not a
-  product limit; do not repeat that measurement.
+- The account run path is proven in production: device resolved by `user_id`, unknown
+  method refused against the allowlist, `tabs.list` completed with pickup 12072 ms then
+  377 ms of work on one run and 8260 ms then 326 ms on the next. Pickup waits on the
+  device long-poll, not on the work.
+- Account isolation has two measured layers: `authenticated` holds no grant on the tables,
+  only EXECUTE on the RPCs, and RLS filters by ownership for the day a grant appears. A
+  foreign account read zero devices and was refused a revoke; anon got 401 on all four.
+- Two live-endpoint defects found and fixed, both locked in
+  `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`: a fresh GRANT
+  lands on PUBLIC so anon could call every RPC, and two overloads of the pairing issuer
+  made PostgREST answer PGRST203.
+
 ## Known, not started
 
 - **The Opera-to-Brave rename is a production migration, not a rename.** The `opera_`

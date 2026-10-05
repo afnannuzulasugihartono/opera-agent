@@ -117,6 +117,24 @@ test('the pairing issuer has exactly one signature, or PostgREST refuses it', ()
   const signatures = [...binding.matchAll(/create or replace function public\.opera_create_pairing_code\(/g)].length
     + [...drop.matchAll(/create or replace function public\.opera_create_pairing_code\(/g)].length;
   assert.equal(signatures, 1, 'exactly one creator and one dropper, never two overloads');
+  // WHY the RLS policies are still load-bearing even though nothing grants SELECT:
+  // measured on this project, an authenticated role reaching opera_devices asks for
+  // a grant it does not have. The isolation therefore rests on the missing grant
+  // today, and the policies are what keep it true the day someone adds one.
+  assert.match(binding, /for select to authenticated using \(user_id = auth\.uid\(\)\)/, 'a future grant is filtered by ownership');
+});
+
+test('account isolation rests on two layers, and both are asserted', () => {
+  const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
+  // WHY this test names the architecture: an authenticated role has no grant at all
+  // on the tables, only EXECUTE on the RPCs, so the missing grant is layer one and
+  // RLS is layer two for the day a grant appears. Proved on this project by
+  // SET LOCAL ROLE authenticated against public.opera_devices: permission denied.
+  assert.doesNotMatch(binding, /grant select/i, 'no SELECT is granted to any role');
+  assert.match(binding, /create policy opera_devices_owner_read/, 'ownership filtering exists for devices');
+  assert.match(binding, /create policy opera_commands_owner_read/, 'commands filter through their device');
+  assert.match(binding, /create policy opera_pairing_codes_owner_read/, 'issued codes filter through their issuer');
+  assert.match(binding, /not signed in/i, 'every RPC refuses without a session');
 });
 
 test('the v2 migration only adds: revoke, counts, and self-issuing codes', () => {
