@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 01:10 UTC+7.
+@last-edited: 2026-10-05 08:41 UTC+7.
 @related: [`AGENTS.md`](AGENTS.md) - [`CHANGELOG.md`](CHANGELOG.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md)
 
 # Roadmap
@@ -18,10 +18,11 @@ only what is still open.
 - [ ] Live production workflow benchmarks with an active paired browser session.
 - [ ] Fresh pairing acceptance for the replacement signing key, kept outside the repo.
 - [ ] The legacy signed identity stays installed and is never routed to the new CRX.
-- [ ] A landing page for Opera Agent: OAuth sign-in for MCP, a model provider picker, and
-      the device pairing code. It is never a place where a shared model key is issued; the
-      key is entered on the user's own device. New top-level entry, so it needs the owner's
-      call on host and path, and it is also where the store listing link lives.
+- [ ] A landing page for Opera Agent, live at `https://opera-agent.vercel.app` on the free
+      tier: OAuth provider buttons plus magic link on `/auth`, a custom model endpoint
+      form instead of a provider picker, and the device pairing code. It is never a place
+      where a shared model key is issued; the key is entered on the user's own device.
+      The store listing link lives here once the listing exists.
 - [ ] An end-to-end artefact run: ask an assistant for a Word document, the document
       exists. Blocked on Google credentials in the live suite, not on the runtime.
 - [ ] Hand a compiled plan to the device. `lib/goal-plan.js` is the gate and
