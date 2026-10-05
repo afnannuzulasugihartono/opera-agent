@@ -21,8 +21,16 @@ import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './l
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
+import { saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
 
-// R9-C: the same file the content script loads via the manifest. It declares no
+// WHY localhost only for now: externally_connectable is a grant, and a grant to
+// an origin nobody has chosen yet is a grant nobody reviewed. The production
+// origin is added when the domain is decided, and the landing page degrades to a
+// copy block until then, so nothing is silently broken in the meantime.
+
+const EXTERNAL_CONFIG_ORIGINS = ['http://localhost:', 'https://localhost:'];
+
+// The same file the content script loads via the manifest. It declares no
 // export statements, so this is a valid side-effect import that publishes the
 // pure helpers on globalThis — one source of truth for both contexts, and no
 // second, drifting copy of the role table.
@@ -63,7 +71,7 @@ const SCREENSHOT_CACHE_MS = 750;
 const SCREENSHOT_CACHE_LIMIT = 8;
 const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
 
-// U-P1 (research P1): canvas-class pages expose almost no DOM text while their
+// Canvas-class pages expose almost no DOM text while their
 // accessibility tree still carries state. A read this text-poor attaches a
 // bounded read-only axSummary; rich pages keep the unchanged fast path.
 
@@ -351,7 +359,7 @@ function codedError(code, message, details = {}) {
   return error;
 }
 
-// U-P1 Layer B (research P1): semantically poor surfaces (canvas apps, hidden
+// Layer B: semantically poor surfaces (canvas apps, hidden
 // DOM mirrors) keep their accessibility tree even when DOM text is empty. The
 // snapshot runs once per poor read through the bounded debugger session and is
 // filtered by the pure value-free builder; every failure mode fails open (no
@@ -562,7 +570,7 @@ async function withInputFocusEmulation(target, mode, work) {
   }
 }
 
-// R9-A (2026-09-30): the at-dispatch foreground focus gate.
+// The at-dispatch foreground focus gate.
 //
 // The historical check sampled `tab.active` / `window.focused` ONCE, before a
 // content-script round trip and a debugger attach, and never re-checked. A
@@ -615,17 +623,17 @@ async function withForegroundFocusGate(tabId, mode, work) {
   }
 }
 
-// U-V Action Pipeline (2026-09-23): Resolve -> Wait -> Heal -> Verify around
+// Action Pipeline: Resolve -> Wait -> Heal -> Verify around
 // the shared trusted executors. Every action path (MCP page.*, burst steps,
 // gateway /command, workflow steps, ETW local actions) reaches the dispatch
 // action cases or the ETW click site below, so this one host gives all of
 // them the same guarantee: never return `stale`, wait out dynamic targets via
-// the adaptive ramp, rebind through the U-I machinery, and report final
+// the adaptive ramp, rebind through the machinery, and report final
 // outcome telemetry. Pointers are coordinate-based (no ref), so their wait
 // phase is a pass-through; their own guards and scroll verification apply.
 const UV_WAIT_FLOOR_MS = 250; // keep the wait strictly inside the command race
 
-// U-R popup/redirect follow-through: clicks and fills on OAuth/login controls
+// Popup/redirect follow-through: clicks and fills on OAuth/login controls
 // open popup tabs (window.open / target=_blank) whose creation the original
 // tab's DOM never shows. A bounded per-opener log records them so the action
 // result can carry openedTabs and the model can continue in the popup by
@@ -749,7 +757,7 @@ async function runActionPipeline(tabId, method, params, context, exec) {
     verdict = await resolveState();
   }
   // Synthetic actions historically act on present-but-not-actionable targets
-  // (their content paths own disabled/hidden gates — regression R0 proves the
+  // (their content paths own disabled/hidden gates — regression proves the
   // revalidate-then-click contract), so only TRUSTED actions wait for full
   // actionability; synthetic waits resolve on presence.
   if (verdict === 'not-actionable' && params?.trusted !== true) verdict = 'ready';
@@ -821,7 +829,7 @@ async function trustedFill(tabId, ref, value, context, mode = 'background', opti
       await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...key });
       action = { ok: true, ref, valueLength: 0, method: 'debugger' };
     }
-    // U-R: verify the fill in-page (expect parity with trustedClick); verified
+    // Verify the fill in-page (expect parity with trustedClick); verified
     // exists only when an expect spec was evaluated - never invented.
     const postAction = await contentCall(tabId, 'page.post_action', {
       ref,
@@ -887,7 +895,7 @@ async function trustedPointer(tabId, params, context) {
   })));
 }
 
-// R9-B (2026-09-30): the trusted key path resolves a declarative chord or a
+// The trusted key path resolves a declarative chord or a
 // bounded text request through lib/keyboard.js instead of a flat 12-entry table
 // with no modifier support at all. The sensitive-field guard is unchanged and
 // still runs before anything is dispatched.
@@ -1224,7 +1232,7 @@ async function dispatch(method, params = {}, context = {}) {
     case 'page.read': {
       const tabId = await resolveTabId(params);
       let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
-      // R9 read degradation: an oversized result used to fail the whole call at
+      // Read degradation: an oversized result used to fail the whole call at
       // the 512KB ceiling, which on a large application is a hard failure the
       // caller can only guess its way out of. Degrade instead: keep the text and
       // the observation, drop the element list, and say so. The caller can then
@@ -1244,15 +1252,14 @@ async function dispatch(method, params = {}, context = {}) {
       if (result?.page?.viewport) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
       }
-      // U-P1: text-poor surfaces pay the debugger round trip; collection
+      // Text-poor surfaces pay the debugger round trip; collection
       // failures fail open and leave the observation unchanged.
       //
-      // R9-C follow-up: text poverty alone was the wrong trigger. A 70-page
-      // Google Docs document is NOT text-poor, so its accessibility tree was
-      // never collected and the role reconciliation below never ran — the exact
-      // app that motivated R9-C. A page whose elements still carry no real role
-      // is a semantic gap regardless of how much text it has, and it is worth
-      // the same one bounded walk.
+      // Follow-up: text poverty alone is the wrong trigger. A 70-page
+      // Google Docs document is NOT text-poor, so its accessibility tree is
+      // never collected and the role reconciliation below never runs. A page
+      // whose elements still carry no real role is a semantic gap regardless of
+      // how much text it has, and it is worth the same one bounded walk.
       const r9SemanticGap = hasRoleGap(result?.page?.elements);
       const shouldCollectAx = result?.ok !== false && result?.page
         && (Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS || r9SemanticGap);
@@ -1260,7 +1267,7 @@ async function dispatch(method, params = {}, context = {}) {
         const summary = await collectAxSummary(tabId, context);
         if (summary) {
           result.page.axSummary = summary;
-          // R9-C: reuse the SAME bounded AX round trip to fill in roles the
+          // Reuse the SAME bounded AX round trip to fill in roles the
           // markup does not carry, so a custom control that the platform
           // reports as a radio is finally discoverable by role. This is
           // read-only annotation: no ref is minted, moved, or invalidated, and
@@ -1374,7 +1381,7 @@ function serializeResult(value) {
   return text;
 }
 
-// ---- U-T Event-Triggered Workflows: watch registry ----
+// ---- Event-Triggered Workflows: watch registry ----
 // Rules are validated by the pure engine in lib/watch.js. content.js stays
 // dumb: it reports FACTS (presence/url/adState/mediaTime/text) on mutations;
 // background evaluates rules with the engine and executes actions through the
@@ -1554,7 +1561,7 @@ async function handleWatchFire(entry, fire, facts) {
   return actionResult;
 }
 
-// U-R: a command timeout is an unknown outcome, not a definite failure — the
+// A command timeout is an unknown outcome, not a definite failure — the
 // action may have taken effect (parity with the BURST_TIMEOUT / GATEWAY_ERROR
 // unknown-outcome contract family), so the model must verify page state
 // before repeating it.
@@ -1562,7 +1569,7 @@ function commandTimeoutError() {
   return codedError('COMMAND_TIMEOUT', 'Command timed out: the browser action may have taken effect. Verify page state before repeating it.');
 }
 
-// R9-E (2026-09-30): hover a resolved target and settle on the reveal.
+// Hover a resolved target and settle on the reveal.
 //
 // Multi-level menus previously needed a hand-built hover -> wait -> hover -> wait
 // burst. This makes one level a single step: move the trusted pointer onto the
@@ -1593,7 +1600,7 @@ async function executeCommand(raw) {
   // Drop any memoized result serialization from the previous command so a large
   // page.read result is not pinned for the worker's lifetime.
   serializedResult = { value: null, text: '' };
-  // U-T: watch.* is an internal extension-side family (protocol primitive
+  // Watch.* is an internal extension-side family (protocol primitive
   // count stays frozen at 26); its validation lives in lib/watch.js.
   if (raw && typeof raw.method === 'string' && raw.method.startsWith('watch.')) {
     const deadlineW = Date.now() + 10000;
@@ -1825,6 +1832,29 @@ async function localSelfTest() {
     methods: Object.keys(METHOD_SPECS).length
   };
 }
+
+// WHY an external listener at all: the landing page configures the user's own model
+// by sending one message to this extension. externally_connectable decides which
+// pages may send it, and it needs no content script and no host permission, so the
+// page cannot read anything from here and this side still validates every value
+// with the same store the Options page uses.
+chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) => {
+  if (!message || message.type !== 'applyModelConfig') return false;
+  const from = String(sender?.origin || sender?.url || '');
+  if (!EXTERNAL_CONFIG_ORIGINS.some((origin) => from.startsWith(origin))) {
+    sendResponse({ ok: false, message: 'That page may not configure this extension.' });
+    return true;
+  }
+  Promise.resolve(async () => {
+    await saveModelEndpoint(chrome.storage.local, message.modelEndpoint);
+    await saveModelName(chrome.storage.local, message.modelName);
+    await saveModelKey(chrome.storage.local, message.modelKey);
+    return { ok: true };
+  })()
+    .then((reply) => sendResponse(reply))
+    .catch((error) => sendResponse({ ok: false, message: String(error?.message || error).slice(0, 200) }));
+  return true;
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {

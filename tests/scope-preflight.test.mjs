@@ -8,10 +8,10 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// Scope preflight (2026-10-04, owner-ordered).
+// Scope preflight.
 //
-// The problem this exists for: the repository is roughly 0.94M tokens against a
-// 1M window, and docs+tests are two thirds of it. Reading broadly drains the
+// The problem this exists for: the repository is roughly 0. tokens against a
+//  window, and docs+tests are two thirds of it. Reading broadly drains the
 // window before any code is touched, which is where hallucination starts. An
 // agent that reads everything is the failure mode; this makes the cheap,
 // bounded alternative the mechanical one.
@@ -49,7 +49,7 @@ test('the whole repository is never the recommended read set', () => {
     result.totalTokens < result.wholeRepoTokens / 10,
     `scoped set ${result.totalTokens} tokens must stay under 10% of ${result.wholeRepoTokens}`
   );
-  // Measured: runtime source alone is ~60K tokens, ~6% of the repository. The
+  // Measured: runtime source alone is ~ tokens, ~6% of the repository. The
   // 94% that is docs, tests and records is the part an agent must never sweep in.
   assert.ok(
     result.runtimeTokens < result.wholeRepoTokens / 5,

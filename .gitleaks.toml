@@ -10,11 +10,12 @@
 # for paths that only appear in older commits.
 #
 # WHY the paths matter more than the patterns. This gate ran for the first time
-# in CI on 2026-10-04 and immediately failed: the jwt allowlist still pointed at
-# tests/transaction-cloud-8d.test.mjs, a name that stopped existing when
-# milestone labels left the file names. An allowlist whose path is stale stops
+# in CI on 2026-10-04 and immediately failed: the jwt allowlist pointed at a test
+# file name that has since changed. An allowlist whose path is stale stops
 # matching, which turns a known synthetic fixture back into a red gate, and the
 # tempting fix -- editing the fixture to dodge the scanner -- is the wrong one.
+# The same applies to every pattern below: renaming a symbol without renaming it
+# here leaves the scanner blind to a real leak.
 
 # Extend the built-in default config: default rules keep their regexes,
 # and the allowlists below are appended to them.
@@ -36,13 +37,13 @@ id = "generic-api-key"
   ]
 
   [[rules.allowlists]]
-  description = "8D edge scripts reference key names (not values): --allow-env lists, $env: assignments from runtime vars/null, and a publishable-key param default. Publishable keys are public-by-design; the management token is read from env/local credential file at runtime (Get-ManagementToken)."
+  description = "The transaction edge scripts reference key names (not values): --allow-env lists, $env: assignments from runtime vars/null, and a publishable-key param default. Publishable keys are public-by-design; the management token is read from env/local credential file at runtime (Get-ManagementToken)."
   condition = "AND"
-  paths = ['''^scripts/run-8d-edge-concurrency\.ps1$''', '''^scripts/run-8d-acceptance\.ps1$''']
+  paths = ['''^scripts/run-transaction-edge-concurrency\.ps1$''', '''^scripts/run-transaction-acceptance\.ps1$''']
   regexTarget = "line"
   regexes = [
-    '''--allow-env=OPERA_8D_MANAGEMENT_TOKEN,OPERA_8D_PUBLISHABLE_KEY''',
-    '''\$env:OPERA_8D_(MANAGEMENT_TOKEN|PUBLISHABLE_KEY) = \$(token|PublishableKey|null)''',
+    '''--allow-env=OPERA_MANAGEMENT_TOKEN,OPERA_PUBLISHABLE_KEY''',
+    '''\$env:OPERA_(MANAGEMENT_TOKEN|PUBLISHABLE_KEY) = \$(token|PublishableKey|null)''',
     '''\$PublishableKey = .sb_publishable_''',
   ]
 

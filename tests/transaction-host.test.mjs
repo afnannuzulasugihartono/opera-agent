@@ -1,14 +1,14 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-host.test — host.test — Boundary unit doubles only; native/host/live gates must be tracked separately.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @dependencies: strict, node:test, transaction-host-8d, transaction-dark-fixture, ledger-token, transaction-token-8d.
+// @dependencies: strict, node:test, transaction-host, transaction-dark-fixture, ledger-token, transaction-token.
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createTransactionDarkHost } from '../lib/transaction-host-8d.js';
+import { createTransactionDarkHost } from '../lib/transaction-host.js';
 import { transactionFixture } from './helpers/transaction-dark-fixture.mjs';
 import { sealLedgerToken } from '../lib/ledger-token.js';
-import { openTransactionToken } from '../lib/transaction-token-8d.js';
+import { openTransactionToken } from '../lib/transaction-token.js';
 
 // Boundary unit doubles only; native/host/live gates must be tracked separately.
 

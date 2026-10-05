@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: performance-runtime-cutover - fail-closed cutover continuation gate.
 // @state: Local continuation needs accepted task context and never fabricates dependencies.
-// @dependencies: node:test, strict, promises, reactive-vm-host-7e, reactive-vm.
+// @dependencies: node:test, strict, promises, reactive-vm-host, reactive-vm.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { reconcileVmEffectObservation7E } from '../lib/reactive-vm-host-7e.js';
+import { reconcileVmEffectObservation } from '../lib/reactive-vm-host.js';
 import { advanceReactiveVm, createReactiveVm } from '../lib/reactive-vm.js';
 
 function baseIdentity(overrides = {}) {
@@ -81,18 +81,18 @@ function acceptedProgramContext(overrides = {}) {
   };
 }
 
-test('Live VM host imports and uses reconcileVmEffectObservation7E from lib/reactive-vm-host-7e.js', async () => {
+test('Live VM host imports and uses reconcileVmEffectObservation from lib/reactive-vm-host.js', async () => {
   const vmSource = await readFile(new URL('../supabase/functions/opera-agent-vm/index.ts', import.meta.url), 'utf8');
-  assert.match(vmSource, /import\s*\{[^}]*reconcileVmEffectObservation7E[^}]*\}\s*from\s*"[\.\/]*lib\/reactive-vm-host-7e\.js"/);
-  assert.match(vmSource, /reconcileVmEffectObservation7E\(/);
+  assert.match(vmSource, /import\s*\{[^}]*reconcileVmEffectObservation[^}]*\}\s*from\s*"[\.\/]*lib\/reactive-vm-host\.js"/);
+  assert.match(vmSource, /reconcileVmEffectObservation\(/);
 });
 
-test('reconcileVmEffectObservation7E fails closed to RESET_REQUIRED and FULL_SNAPSHOT on cold start / missing continuity', () => {
+test('reconcileVmEffectObservation fails closed to RESET_REQUIRED and FULL_SNAPSHOT on cold start / missing continuity', () => {
   const identity = baseIdentity({ runId: 'cold_start_run_999' });
   const obs = baseObservation({ semanticDelta: { sourceRevision: 5, resultingRevision: 6, classification: 'UPDATE' } });
   const programCtx = acceptedProgramContext();
 
-  const reconciled = reconcileVmEffectObservation7E(identity, obs, programCtx);
+  const reconciled = reconcileVmEffectObservation(identity, obs, programCtx);
   assert.equal(reconciled.relevance.decision, 'REASON_REQUIRED');
   assert.equal(reconciled.relevance.reasoningObservation.kind, 'FULL_SNAPSHOT');
   assert.equal(reconciled.relevance.reasoningObservation.resetRequired, true);
@@ -101,21 +101,21 @@ test('reconcileVmEffectObservation7E fails closed to RESET_REQUIRED and FULL_SNA
   assert.equal(reconciled.observation.page.text, 'Full document text preserved for VM evaluation and snapshot recovery.');
 });
 
-test('reconcileVmEffectObservation7E enforces accepted task context and never fabricates dependencies', () => {
+test('reconcileVmEffectObservation enforces accepted task context and never fabricates dependencies', () => {
   const identity = baseIdentity({ runId: 'run_p6_context_test' });
 
   // Bootstrap first
   const obs1 = baseObservation({ elementRevision: 1, semanticDelta: { sourceRevision: 0, resultingRevision: 1, classification: 'RESET', completeSnapshotRequired: true, changes: [] } });
-  reconcileVmEffectObservation7E(identity, obs1, acceptedProgramContext());
+  reconcileVmEffectObservation(identity, obs1, acceptedProgramContext());
 
   // Unaccepted or missing task context forces REASON_REQUIRED and MISSING contextStatus
   const obs2 = baseObservation({ elementRevision: 2, semanticDelta: { sourceRevision: 1, resultingRevision: 2, changes: [{ type: 'UPDATE', logicalId: 'elem_1', revision: 2 }] } });
 
-  const resMissing = reconcileVmEffectObservation7E(identity, obs2, { goalId: 'g1', goalRevision: 1 });
+  const resMissing = reconcileVmEffectObservation(identity, obs2, { goalId: 'g1', goalRevision: 1 });
   assert.equal(resMissing.relevance.decision, 'REASON_REQUIRED');
   assert.equal(resMissing.relevance.relevance.contextStatus, 'MISSING');
 
-  const resFabricated = reconcileVmEffectObservation7E(identity, obs2, { goalId: 'g1', goalRevision: 1, taskDependencies: { source: 'FABRICATED' } });
+  const resFabricated = reconcileVmEffectObservation(identity, obs2, { goalId: 'g1', goalRevision: 1, taskDependencies: { source: 'FABRICATED' } });
   assert.equal(resFabricated.relevance.decision, 'REASON_REQUIRED');
   assert.equal(resFabricated.relevance.relevance.contextStatus, 'MISSING');
 });
@@ -138,7 +138,7 @@ test('Adversarial: caller-crafted program with self-consistent programDigest and
     elementRevision: 1,
     semanticDelta: { sourceRevision: 0, resultingRevision: 1, classification: 'RESET', completeSnapshotRequired: true, resetReason: 'INITIAL_LOAD', changes: [] },
   });
-  reconcileVmEffectObservation7E(identity, obs1, programCtx);
+  reconcileVmEffectObservation(identity, obs1, programCtx);
 
   // 2. Caller attempts to obtain APPLY_AND_CONTINUE using caller-supplied taskDependencies
   const obs2 = baseObservation({
@@ -146,7 +146,7 @@ test('Adversarial: caller-crafted program with self-consistent programDigest and
     semanticDelta: { sourceRevision: 1, resultingRevision: 2, classification: 'UPDATE', changes: [{ type: 'UPDATE', logicalId: 'elem_1', revision: 2 }] },
   });
 
-  const res2 = reconcileVmEffectObservation7E(identity, obs2, programCtx);
+  const res2 = reconcileVmEffectObservation(identity, obs2, programCtx);
   // Must reject caller-asserted taskDependencies as unauthoritative (MISSING server context) and return REASON_REQUIRED
   assert.equal(res2.relevance.decision, 'REASON_REQUIRED');
   assert.equal(res2.relevance.relevance.contextStatus, 'MISSING');

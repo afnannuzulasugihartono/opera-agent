@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// U-S burst atomic actions (2026-09-21): find->click->verify in one burst via
+// Burst atomic actions: find->click->verify in one burst via
 // refFromStep passthrough, plus run_workflow as the normal path for versioned
 // site workflows. Burst validation is tested directly by importing the real
 // protocol module; the chrome-api and edge-runtime surfaces are locked with

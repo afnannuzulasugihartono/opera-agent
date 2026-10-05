@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: delta-first-observation - changed-fact and view patches.
 // @state: Proven contiguous updates emit compact patches with canonical state retained.
-// @dependencies: node:test, strict, node:crypto, promises, boundary-locks, delta-first-observation-p2.
+// @dependencies: node:test, strict, node:crypto, promises, boundary-locks, delta-first-observation.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ import { PUBLIC_SURFACE_LOCKS } from './helpers/boundary-locks.mjs';
 import {
   createDeltaFirstObservationPipeline,
   reasoningPayloadBytes,
-} from '../lib/delta-first-observation-p2.js';
+} from '../lib/delta-first-observation.js';
 
 const identity = (overrides = {}) => ({
   tenantId: 'tenant-a',
@@ -380,7 +380,7 @@ test('ambiguity and working-state overflow fail closed without stale continuatio
   assert.equal(overflow.canonicalState, null);
 });
 
-test('expired and evicted P1 state requires reset/full snapshot before continuity can resume', () => {
+test('expired and evicted persisted state requires reset/full snapshot before continuity can resume', () => {
   let now = 1000;
   const expiring = createDeltaFirstObservationPipeline({ now: () => now, maxAgeMs: 10 });
   const first = observation();
@@ -554,7 +554,7 @@ test('does not synthesize completion or foreground/browser authority', () => {
 });
 
 test('keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
-  // P2 lock set: the public MCP surface stays byte-identical (see helper for the authorization history).
+  // Lock set: the public MCP surface stays byte-identical (see helper for the authorization history).
   const files = new Map(PUBLIC_SURFACE_LOCKS);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
@@ -564,7 +564,7 @@ test('keeps the R4-authorized read_page projection inside the frozen public MCP 
   assert.match(mcp, /server\.registerTool\("read_page"/);
   assert.match(mcp, /execute\("page\.read", \{ \.\.\.args, view: "compact" \}\)\);/);
   assert.doesNotMatch(mcp, /view:\s*z\./);
-  assert.doesNotMatch(mcp, /delta-first-observation-p2/);
+  assert.doesNotMatch(mcp, /delta-first-observation/);
 });
 
 test('paired controlled small-change benchmark reduces median reasoning payload >= 75% with exact state agreement and zero safety regressions', () => {

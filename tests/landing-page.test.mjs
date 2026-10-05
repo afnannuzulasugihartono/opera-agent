@@ -1,0 +1,80 @@
+// @last-edited: 2026-10-05 02:16 UTC+7.
+// @title: landing — the public site must stay honest about where a key goes.
+// @state: locked on the extension id, the no-network promise, the install steps and the copyright.
+// @dependencies: test, assert, crypto, fs.
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+
+const root = new URL('..', import.meta.url);
+const html = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
+const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+
+// The landing page is where a user types their API key, so its promises are
+// load-bearing rather than marketing copy. Each one below is asserted instead of
+// trusted: a page that says the key never leaves will eventually grow a fetch.
+
+test('the page names the extension it configures, and it is the pinned one', () => {
+  const digest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
+  const expected = [...digest].map((byte) => `${String.fromCharCode(97 + (byte >> 4))}${String.fromCharCode(97 + (byte & 15))}`).join('');
+  const named = html.match(/EXTENSION_ID\s*=\s*'([a-p]{32})'/);
+  assert.ok(named, 'the page must name the extension id it sends to');
+  assert.equal(named[1], expected, 'the page and the manifest key must resolve to the same extension id');
+});
+
+test('the key is never sent to a network origin', () => {
+  // WHY the whole promise in one assertion: the only allowed recipient is the
+  // extension. Any fetch, XHR or form post in this file would make the copy a lie.
+  assert.doesNotMatch(html, /\bfetch\s*\(/, 'the landing page must not fetch anything');
+  assert.doesNotMatch(html, /XMLHttpRequest/, 'the landing page must not open an XHR');
+  assert.doesNotMatch(html, /<form[^>]+action=/i, 'the form must not post anywhere');
+  assert.doesNotMatch(html, /navigator\.sendBeacon/, 'the landing page must not beacon');
+});
+
+test('the page sends the model config to the extension and nowhere else', () => {
+  assert.match(html, /chrome\.runtime\.sendMessage\(EXTENSION_ID/, 'the handoff must be one message to the extension');
+  for (const field of ['modelEndpoint', 'modelName', 'modelKey']) {
+    assert.ok(html.includes(field), `${field} must be part of the handoff`);
+  }
+  assert.match(html, /type:\s*'applyModelConfig'/, 'the message type must match what the extension listens for');
+});
+
+test('the extension only accepts the handoff from an origin it was granted', () => {
+  const external = manifest.externally_connectable;
+  assert.ok(external?.matches?.length, 'externally_connectable must list the pages allowed to configure');
+  for (const pattern of external.matches) {
+    assert.doesNotMatch(pattern, /\*:\/\/\*\//, 'a match-all origin would be a grant to every site on the internet');
+    assert.match(pattern, /localhost/, 'until a domain is chosen, only the local page is granted');
+  }
+  assert.ok(!external.ids || !external.ids.includes('*'), 'extensions must not all be able to configure this one');
+});
+
+test('the page tells a person how to install, sign in, and where data goes', () => {
+  assert.match(html, /<h1[^>]*>[\s\S]{10,}<\/h1>/, 'the page needs a real headline');
+  assert.match(html, /id="install"/, 'installation instructions must be on the page');
+  assert.match(html, /opera:\/\/extensions/, 'the install steps must name the real browser surface');
+  assert.match(html, /id="signin"/, 'sign-in must be on the page');
+  assert.match(html, /id="privacy"/, 'the page must state what leaves the machine');
+  assert.match(html, /©|&copy;/, 'the copyright line must be present');
+  assert.match(html, /All rights reserved/i, 'the copyright must be a real notice, not a symbol alone');
+});
+
+test('every form control on the page has an accessible name', () => {
+  const controls = [...html.matchAll(/<(input|select)\b[^>]*>/gi)].map((m) => m[0]);
+  assert.ok(controls.length >= 4, `expected the model form, found ${controls.length} controls`);
+  for (const control of controls) {
+    const id = control.match(/\bid="([^"]+)"/);
+    const labelled = id && new RegExp(`<label[^>]*for="${id[1]}"`).test(html);
+    assert.ok(labelled, `control has a label: ${control.slice(0, 60)}`);
+  }
+});
+
+test('the site has no build step and no external origin', () => {
+  const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
+  const csp = vercel.headers[0].headers.find((h) => h.key === 'Content-Security-Policy').value;
+  assert.match(csp, /connect-src 'none'/, 'the page must be forbidden from connecting anywhere');
+  assert.doesNotMatch(html, /src="https?:/, 'no external script or stylesheet');
+  assert.doesNotMatch(html, /<link[^>]+href="https?:/, 'no external stylesheet');
+});

@@ -40,7 +40,7 @@ function bytesFromBase64(value: string) {
 
 function requestedExtensionId(url: URL) {
   // Chromium update clients send their app metadata inside the `x` query
-  // parameter (for example: ?x=id%3D...%26v%3D1.1.0). Supporting `id` too
+  // parameter (for example: ?x=id%...%26v%3D1.1.0). Supporting `id` too
   // keeps the endpoint easy to diagnose without weakening the ID boundary.
   const nested = new URLSearchParams(url.searchParams.get("x") ?? "");
   const candidate = nested.get("id") ?? url.searchParams.get("id");

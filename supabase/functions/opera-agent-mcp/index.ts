@@ -307,7 +307,7 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
       ? (detail as { details: Record<string, unknown> }).details
       : undefined;
     if (code === "AWAIT_TIMEOUT") {
-      // U-R: the await deadline cancels the server-side wait, not the
+      // The await deadline cancels the server-side wait, not the
       // browser action — the outcome is unknown (parity with the
       // statement-timeout envelope), so the model must verify page state
       // before repeating the action instead of treating it as a failure.

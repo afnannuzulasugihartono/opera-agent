@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: proof-engine-benchmark — engine-benchmark — Script.
-// @state: implement milestone 6C scoped proof engine.
+// @state: implement scoped proof engine.
 // @dependencies: node:fs, node:perf_hooks, goal-ledger, proof-engine.
 
 import fs from 'node:fs';

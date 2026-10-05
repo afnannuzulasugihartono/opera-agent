@@ -1,0 +1,327 @@
+<!-- @last-edited: 2026-10-05 02:10 UTC+7. -->
+<!-- @title: landing — the public site: install, sign-in, and your own model. -->
+<!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opera Agent</title>
+  <meta name="description" content="Opera Agent drives your own browser from an AI assistant you already use. You bring the model; nothing is uploaded." />
+  <style>
+    /* WHY inline and single file: this site has no build step, no framework and no
+       external origin. A marketing page that needs a bundler is a page that breaks
+       when the bundler changes. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --surface-soft: #1b2026;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+      --accent-soft: rgba(20, 184, 166, .16);
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 940px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+
+    .hero { padding: 76px 0 56px; }
+    .hero h1 {
+      margin: 0 0 14px;
+      font-size: clamp(30px, 5vw, 46px);
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      max-width: 20ch;
+    }
+
+    .hero p { margin: 0 0 24px; color: var(--muted); font-size: 17px; max-width: 62ch; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #04211d; font-weight: 600; }
+
+    section { padding: 44px 0; border-top: 1px solid var(--line); }
+    h2 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.01em; }
+    .sub { color: var(--muted); margin: 0 0 20px; max-width: 70ch; }
+
+    ol.steps { margin: 0; padding-left: 20px; color: var(--muted); }
+    ol.steps li { margin: 0 0 10px; }
+    ol.steps strong { color: var(--text); font-weight: 600; }
+
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 2px 6px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      max-width: 620px;
+    }
+
+    label { display: block; margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+
+    input, select {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; }
+    .status.ok { color: var(--accent); }
+    .status.warn { color: var(--warn); }
+
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+    .tile {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .tile h3 { margin: 0 0 6px; font-size: 15px; }
+    .tile p { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13.5px; }
+    dl.facts dt { color: var(--muted); }
+    dl.facts dd { margin: 0; }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <span class="brand">Opera Agent</span>
+        <a href="#install">Install</a>
+        <a href="#model">Your model</a>
+        <a href="#signin">Sign in</a>
+        <a href="#privacy">Privacy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Your assistant drives your browser.</h1>
+      <p>
+        Opera Agent gives the AI assistant you already use a controlled bridge to your own
+        browser: 26 allowlisted actions, no arbitrary script execution, and every action
+        you can watch. You bring the model. Nothing is uploaded.
+      </p>
+      <div class="row">
+        <a class="btn primary" href="#install">Install</a>
+        <a class="btn" href="#model">Connect a model</a>
+      </div>
+    </section>
+
+    <section id="install">
+      <h2>Install</h2>
+      <p class="sub">The extension is the whole product on your machine. The server only carries commands to it.</p>
+      <ol class="steps">
+        <li><strong>Load the extension.</strong> Open <code>opera://extensions</code>, turn on developer mode, and load the unpacked extension folder. A published build appears in the Chrome Web Store when the listing is approved.</li>
+        <li><strong>Pair it.</strong> Generate a one-time pairing value from the connected project, then paste it in the popup. Pairing is revocable one device at a time.</li>
+        <li><strong>Connect an assistant.</strong> Point your assistant at the MCP endpoint for the <code>browser_*</code> and <code>read_page</code> tools, or sign in on this page first.</li>
+        <li><strong>Check what it can see.</strong> The popup reports whether the tab is active and whether you are present, so an assistant can tell foreground from background before it acts.</li>
+      </ol>
+    </section>
+
+    <section id="model">
+      <h2>Bring your own model</h2>
+      <p class="sub">
+        Paste the endpoint, model name and API key your provider gave you. This form talks
+        to your installed extension and to nothing else: there is no server here to send it
+        to. The key is stored in your browser and is never shown back to this page.
+      </p>
+      <div class="card">
+        <form id="modelForm">
+          <label for="preset">Provider</label>
+          <select id="preset">
+            <option value="">Custom endpoint</option>
+            <option value="http://127.0.0.1:11434/v1">Ollama on this machine</option>
+            <option value="http://127.0.0.1:1234/v1">LM Studio on this machine</option>
+          </select>
+
+          <label for="modelEndpoint">API endpoint</label>
+          <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://your-provider.example/v1" />
+
+          <label for="modelName">Model name</label>
+          <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="The name your provider uses" />
+
+          <label for="modelKey">API key</label>
+          <input id="modelKey" type="text" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Your provider's key" />
+
+          <div class="row">
+            <button class="btn primary" type="submit">Save to extension</button>
+            <button class="btn" type="button" id="copyButton">Copy instead</button>
+          </div>
+          <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+          <p class="note">
+            The extension accepts an https endpoint, or plain http on 127.0.0.1 for a model
+            that runs on this machine. If the extension is not installed, use
+            <em>Copy instead</em> and paste the values into the extension popup.
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <section id="signin">
+      <h2>Sign in and let an assistant drive</h2>
+      <p class="sub">Opera Agent speaks MCP, so any assistant that speaks MCP can drive it. Sign-in is handled by the project you connect to.</p>
+      <div class="grid">
+        <div class="tile">
+          <h3>OAuth consent</h3>
+          <p>Approving an assistant is one page and one scope. Nothing is granted until you press the button on it.</p>
+        </div>
+        <div class="tile">
+          <h3>Tools</h3>
+          <p>22 tools: burst actions, page reads, tabs, media, watch and wait. The 26 browser primitives underneath stay unchanged.</p>
+        </div>
+        <div class="tile">
+          <h3>Human in the loop</h3>
+          <p>Foreground mode needs permission every time. Passwords, one-time codes and payment fields are refused.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <h2>What leaves your machine</h2>
+      <p class="sub">Stated plainly, because an assistant with browser access is worth trusting only if you know the answer.</p>
+      <dl class="facts">
+        <dt>Page content</dt><dd>Goes only to the model endpoint you configured above. Never to the Opera Agent bridge.</dd>
+        <dt>API key</dt><dd>Stored in this browser. Never uploaded, never rendered back into this page, never logged.</dd>
+        <dt>Commands</dt><dd>Enqueue and result travel through the project bridge, so an assistant can act on your device.</dd>
+        <dt>Screenshots</dt><dd>Refused on a page showing a password, one-time code or payment field, and refused in private and incognito tabs.</dd>
+      </dl>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. All rights reserved.</span>
+      <span>Local execution &middot; Bring your own model &middot; No telemetry</span>
+    </div>
+  </footer>
+
+  <script type="module">
+    // WHY the extension id is written here and pinned by a test: the page must be able
+    // to name the extension it configures. The id is derived from the manifest key and
+    // is already asserted in scripts/check.mjs, so the two cannot drift apart silently.
+    const EXTENSION_ID = 'ohbbpamcljckmjhcpkcmefdobkoeaick';
+
+    const $ = (id) => document.getElementById(id);
+    const setStatus = (text, kind) => {
+      $('status').textContent = text;
+      $('status').className = `status${kind ? ` ${kind}` : ''}`;
+    };
+
+    $('preset').addEventListener('change', (event) => {
+      if (event.target.value) $('modelEndpoint').value = event.target.value;
+    });
+
+    function collect() {
+      return {
+        modelEndpoint: $('modelEndpoint').value.trim(),
+        modelName: $('modelName').value.trim(),
+        modelKey: $('modelKey').value.trim()
+      };
+    }
+
+    $('modelForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const config = collect();
+      if (!config.modelEndpoint || !config.modelName || !config.modelKey) {
+        setStatus('Fill in the endpoint, the model name and the key.', 'warn');
+        return;
+      }
+      if (!globalThis.chrome?.runtime?.sendMessage) {
+        setStatus('This browser cannot talk to extensions. Use Copy instead.', 'warn');
+        return;
+      }
+      // One message, one destination: the installed extension. There is no fetch here
+      // on purpose, because a fetch is where a key would leak.
+      globalThis.chrome.runtime.sendMessage(EXTENSION_ID, { type: 'applyModelConfig', ...config }, (response) => {
+        const error = globalThis.chrome.runtime.lastError;
+        if (error || !response?.ok) {
+          setStatus(`The extension did not accept it${response?.message ? `: ${response.message}` : ''}. Use Copy instead.`, 'warn');
+          return;
+        }
+        $('modelKey').value = '';
+        setStatus('Saved on this device. The key is not shown here again.', 'ok');
+      });
+    });
+
+    $('copyButton').addEventListener('click', async () => {
+      const config = collect();
+      const block = [
+        `Model endpoint: ${config.modelEndpoint || '(empty)'}`,
+        `Model name: ${config.modelName || '(empty)'}`,
+        `API key: ${config.modelKey || '(empty)'}`
+      ].join('\n');
+      try {
+        await navigator.clipboard.writeText(block);
+        setStatus('Copied. Paste it into the extension popup.', 'ok');
+      } catch (error) {
+        setStatus(block, 'warn');
+      }
+    });
+  </script>
+</body>
+</html>

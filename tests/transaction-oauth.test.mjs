@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { createOAuthProbe, parseLocalCallbackRequest, REDIRECT_URI, ISSUER, CLIENT_ID } from './helpers/transaction-oauth-8d.mjs';
+import { createOAuthProbe, parseLocalCallbackRequest, REDIRECT_URI, ISSUER, CLIENT_ID } from './helpers/transaction-oauth.mjs';
 
 function fixture(options={}) {
   let time=1000; const calls=[];

@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// Research quick-wins (2026-09-20): unknown-outcome contract, viewport truth
+// Research quick-wins: unknown-outcome contract, viewport truth
 // flags, label normalization, and agent guidance. Source-contract style: the
 // runtime behavior for these paths is exercised by the controlled browser
 // regression; these assertions lock the contract in source.

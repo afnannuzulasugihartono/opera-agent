@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:58 UTC+7.
 // @title: multi-signal-relevance - coalescer and relevance gate.
 // @state: Irrelevant storms coalesce; only accepted goal context grants relevance.
-// @dependencies: node:test, strict, node:crypto, promises, boundary-locks, multi-signal-relevance-p3.
+// @dependencies: node:test, strict, node:crypto, promises, boundary-locks, multi-signal-relevance.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ import {
   P3_DECISIONS,
   P3_SIGNAL_TYPES,
   createMultiSignalRelevancePipeline,
-} from '../lib/multi-signal-relevance-p3.js';
+} from '../lib/multi-signal-relevance.js';
 
 const ACCEPTED_DIGEST = `sha256:${'a'.repeat(64)}`;
 
@@ -530,7 +530,7 @@ test('does not synthesize completion, action authority, foreground control, or V
 });
 
 test('frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
-  // P3 lock set: public surface plus the observation stack (see helper for the authorization history).
+  // Lock set: public surface plus the observation stack (see helper for the authorization history).
   const files = new Map([...PUBLIC_SURFACE_LOCKS, ...OBSERVATION_STACK_LOCKS]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
@@ -540,8 +540,8 @@ test('frozen boundary remains locked except the P6-authorized Reactive VM cutove
   assert.match(mcp, /server\.registerTool\("read_page"/);
   assert.match(mcp, /execute\("page\.read", \{ \.\.\.args, view: "compact" \}\)\);/);
   assert.doesNotMatch(mcp, /view:\s*z\./);
-  assert.doesNotMatch(mcp, /multi-signal-relevance-p3/);
-  const p3Source = await readFile(new URL('../lib/multi-signal-relevance-p3.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(mcp, /multi-signal-relevance/);
+  const p3Source = await readFile(new URL('../lib/multi-signal-relevance.js', import.meta.url), 'utf8');
   assert.doesNotMatch(p3Source, /reactive-vm|vm\.run|executeVm|resumeVm/);
   assert.doesNotMatch(p3Source, /extension\/|opera-agent-mcp/);
 });

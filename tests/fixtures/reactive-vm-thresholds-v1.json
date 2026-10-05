@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "checkpoint": "7A",
   "baselineVersion": "1.6.0",
-  "inventoryDigest": "sha256:d0bb47a796144e5994cb380080b3afd901ff8fea063e06165a77d8a611cba1f6",
+  "inventoryDigest": "sha256:0496b076b380c08ff999b05bc80730bce6437c40959406488252f98a189f07ea",
   "invariants": {
     "canonicalReplayRuns": 100,
     "canonicalReplayAgreement": 1,

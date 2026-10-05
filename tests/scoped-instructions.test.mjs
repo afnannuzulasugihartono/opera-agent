@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-// Scoped first-read files (2026-10-03, owner-ordered).
+// Scoped first-read files.
 //
 // The root AGENTS.md is harness-injected; these are the only other files an
 // agent must read before touching an area. Each stays a pointer list, not a

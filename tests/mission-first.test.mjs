@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-// Mission-first (2026-10-04, owner-ordered).
+// Mission-first.
 //
 // The failure this exists for is real and recent: sixteen consecutive commits
 // shipped docs, tests and governance while the runtime code — the actual

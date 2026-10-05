@@ -534,7 +534,7 @@ async def run(port, profile):
         assert len(small_page['elements']) == 1
         assert small_page['viewport']['width'] > 0
 
-        # U-P1: text-rich pages keep the unchanged fast path — no CDP
+        # Text-rich pages keep the unchanged fast path — no CDP
         # accessibility snapshot is attached.
 
         assert 'axSummary' not in small_page, small_page.keys()
@@ -554,7 +554,7 @@ async def run(port, profile):
         assert page['semanticState']['documentGeneration'] == 1
         assert page['semanticState']['ambiguityCount'] >= 2
 
-        # R1 ranks non-sensitive usable controls before the bounded element cap.
+        #  ranks non-sensitive usable controls before the bounded element cap.
         # This page has >50 non-sensitive controls, so sensitive fields should no
         # longer consume the first 50 model-facing observation slots.
 
@@ -563,7 +563,7 @@ async def run(port, profile):
         identified = page['elements']
         assert all(item['logicalId'].startswith('se_') for item in identified)
 
-        # R1 actionability ranking is viewport-sensitive. Settle the viewport on
+        #  actionability ranking is viewport-sensitive. Settle the viewport on
         # the rerender target before taking the identity baseline so this legacy
         # rerender test measures DOM replacement continuity, not bounded-window
         # membership changes caused by clickSynthetic scrolling the target.
@@ -581,7 +581,7 @@ async def run(port, profile):
         settled_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
 
         # Semantic identity intentionally uses removalGraceObservations=1. After
-        # the viewport-sensitive R1 ranking changes bounded top-50 membership,
+        # the viewport-sensitive ranking changes bounded top-50 membership,
         # one additional observation may emit ABSENT_AFTER_GRACE removals for
         # entities that left the observation window. Drain that grace transition
         # before asserting a stable no-change baseline.
@@ -619,10 +619,10 @@ async def run(port, profile):
         revalidated = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert revalidated['ref'] == rerender_before['ref'], revalidated
 
-        # Reuse the R0 fixture as a cross-check that the R1 actionability repair
+        # Reuse the fixture as a cross-check that the actionability repair
         # ranks the on-screen Skip ahead of the CSS-visible offscreen navigation
-        # target and the R2 same-document revalidation repair recovers its stale
-        # pre-rerender ref without changing the frozen historical R0 evidence file.
+        # target and the same-document revalidation repair recovers its stale
+        # pre-rerender ref without changing the frozen historical evidence file.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r0',
@@ -722,7 +722,7 @@ async def run(port, profile):
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
 
-        # R1 acceptance: generic actionability ranking must hold before
+        # Acceptance: generic actionability ranking must hold before
         # bounded model-facing truncation.
 
         cid = STATE.push('tabs.open', {
@@ -762,7 +762,7 @@ async def run(port, profile):
         assert r1_sensitive['actionable'] is False, r1_sensitive
         assert all(item['label'] != 'Skip hidden' for item in r1_items), r1_items
 
-        # R8 acceptance: the normal omitted-limit find path projects a unique
+        # Acceptance: the normal omitted-limit find path projects a unique
         # exact actionable match without hiding genuine actionable ambiguity.
 
         cid = STATE.push('page.find', {
@@ -824,7 +824,7 @@ async def run(port, profile):
         assert r8_combined_exact['count'] == 1, r8_combined_exact
         assert r8_combined_exact['item']['label'] == 'Alpha', r8_combined_exact
 
-        # R8 repair: callers may request a diagnostic list explicitly. Keep the
+        # Repair: callers may request a diagnostic list explicitly. Keep the
         # list intact, but expose the one exact actionable match as `item`.
 
         cid = STATE.push('page.find', {
@@ -898,7 +898,7 @@ async def run(port, profile):
         assert r1_read['elements'][0]['label'] == 'Skip', r1_read['elements']
         assert r1_read['elements'][0]['actionable'] is True, r1_read['elements'][0]
 
-        # U-I: ranked candidates expose disambiguation hints (I2).
+        # Ranked candidates expose disambiguation hints.
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
@@ -913,8 +913,8 @@ async def run(port, profile):
         assert 'chose:1' in ui_hints['items'][0]['hint'], ui_hints
         assert 'chose:2' in ui_hints['items'][1]['hint'], ui_hints
 
-        # U-I: when no exact-field match exists, one bounded fuzzy projection
-        # is returned with an explicit hint instead of a bare zero (I2).
+        # When no exact-field match exists, one bounded fuzzy projection
+        # is returned with an explicit hint instead of a bare zero.
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
@@ -930,8 +930,8 @@ async def run(port, profile):
         assert ui_fuzzy['item']['actionable'] is False, ui_fuzzy
         assert 'exact-match' in ui_fuzzy['hint'], ui_fuzzy
 
-        # U-I: a ref minted before a geometric relocation refuses rebind and
-        # names the plausible current candidate with fresh geometry (I1).
+        # A ref minted before a geometric relocation refuses rebind and
+        # names the plausible current candidate with fresh geometry.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-ui-identity',
@@ -971,9 +971,9 @@ async def run(port, profile):
         assert str(int(ui_zoom_x) + 600) in ui_reject_msg, ui_reject
 
         # ------------------------------------------------------------------
-        # R9 live acceptance. The unit suite covers the pure policy and the
+        #  live acceptance. The unit suite covers the pure policy and the
         # structural wiring, but nothing in it runs the extension in a browser.
-        # These cases exercise the four R9 capabilities against a real page.
+        # These cases exercise the four capabilities against a real page.
         # ------------------------------------------------------------------
         # Later cases assert on the ALREADY-active tab, so remember which tab
         # was active and put it back when this block finishes.
@@ -998,7 +998,7 @@ async def run(port, profile):
         cid = STATE.push('tabs.activate', {'tabId': r9_tab_id}, benchmark='r9.tabs.activate')
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # R9-C: an unannotated <button> has no role attribute. Before R9-C it
+        # An unannotated <button> has no role attribute. Before it
         # serialized as role: '' and a role-filtered find returned nothing.
 
         cid = STATE.push('page.find', {
@@ -1014,7 +1014,7 @@ async def run(port, profile):
         assert r9_role['item']['tag'] == 'button', r9_role
         r9_unannotated_ref = r9_role['item']['ref']
 
-        # R9-B: a trusted chord must reach a real surface. Click the editor,
+        # A trusted chord must reach a real surface. Click the editor,
         # select all with Ctrl+A, then replace the contents with typed text.
 
         cid = STATE.push('page.click', {
@@ -1047,20 +1047,20 @@ async def run(port, profile):
 
         cid = STATE.push('page.key', {
             'tabId': r9_tab_id,
-            'text': 'R9 keyboard acceptance',
+            'text': 'keyboard acceptance',
             'trusted': True
         }, benchmark='r9.page.key.text')
-        r9_text = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        assert r9_text['input'] == 'text', r9_text
-        assert r9_text['valueLength'] == len('R9 keyboard acceptance'), r9_text
+        keyboard_text = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert keyboard_text['input'] == 'text', keyboard_text
+        assert keyboard_text['valueLength'] == len('keyboard acceptance'), keyboard_text
 
         # The keystrokes must have actually landed in the editor.
 
-        r9_editor_text = await r9_evaluate(
+        keyboard_editor_text = await r9_evaluate(
             'document.getElementById("editor").textContent', 'r9.editor.text')
-        assert 'R9 keyboard acceptance' in r9_editor_text, r9_editor_text
+        assert 'keyboard acceptance' in keyboard_editor_text, keyboard_editor_text
 
-        # R9-B: a chord and text must be mutually exclusive at the boundary.
+        # A chord and text must be mutually exclusive at the boundary.
 
         cid = STATE.push('page.key', {
             'tabId': r9_tab_id,
@@ -1071,21 +1071,21 @@ async def run(port, profile):
         r9_conflict = await asyncio.to_thread(STATE.wait, cid)
         assert r9_conflict['ok'] is False, r9_conflict
 
-        # R9-B: the sensitive-field guard must survive the new key path.
+        # The sensitive-field guard must survive the new key path.
 
         cid = STATE.push('page.query', {'tabId': r9_tab_id, 'selector': '#otp'}, benchmark='r9.page.query.otp')
         r9_otp = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
         assert r9_otp['sensitive'] is True, r9_otp
 
         # A sensitive field is not actionable, so it cannot even be clicked.
-        # That is the first line of defence and it is unchanged by R9.
+        # That is the first line of defence and it is unchanged by.
 
         cid = STATE.push('page.click', {'tabId': r9_tab_id, 'ref': r9_otp['ref']}, benchmark='r9.page.click.otp-refused')
         r9_otp_click = await asyncio.to_thread(STATE.wait, cid)
         assert r9_otp_click['ok'] is False, r9_otp_click
 
         # Focus it directly instead, so the KEY guard is genuinely exercised:
-        # R9-B added a text path, and it must not become a way to type secrets.
+        #  added a text path, and it must not become a way to type secrets.
 
         cid = STATE.push('page.focus', {'tabId': r9_tab_id, 'ref': r9_otp['ref']}, benchmark='r9.page.focus.otp')
         await asyncio.to_thread(STATE.wait, cid)
@@ -1116,7 +1116,7 @@ async def run(port, profile):
         r9_otp_chord = await asyncio.to_thread(STATE.wait, cid)
         assert r9_otp_chord['ok'] is False, r9_otp_chord
 
-        # R9-E: hover must reveal a submenu and settle, in one burst, without
+        # Hover must reveal a submenu and settle, in one burst, without
         # the caller hand-building hover/wait chains or touching coordinates.
 
         cid = STATE.push('browser.burst', {
@@ -1142,7 +1142,7 @@ async def run(port, profile):
         r9_sink = await r9_evaluate('document.getElementById("sink").textContent', 'r9.sink')
         assert r9_sink == 'page-numbers-clicked', r9_sink
 
-        # R9-D: after a legitimate relocation the stale ref is refused on
+        # After a legitimate relocation the stale ref is refused on
         # purpose, and the refusal carries a fresh ref that is safe to act on.
 
         cid = STATE.push('page.find', {
@@ -1198,7 +1198,7 @@ async def run(port, profile):
         r9_fresh = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert r9_fresh['ok'] is True, r9_fresh
 
-        # R9-A: foreground mode must still be refused without a real focused
+        # Foreground mode must still be refused without a real focused
         # window, and must never auto-activate anything to work around it.
 
         cid = STATE.push('page.pointer', {
@@ -1222,8 +1222,8 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r9_tab_id}, benchmark='r9.tabs.close')
         await asyncio.to_thread(STATE.wait, cid)
 
-        # U-I: visible text without an interactive element surfaces a nearby
-        # actionable candidate in one round trip (I3).
+        # Visible text without an interactive element surfaces a nearby
+        # actionable candidate in one round trip.
 
         cid = STATE.push('page.find', {
             'tabId': ui_tab_id,
@@ -1236,7 +1236,7 @@ async def run(port, profile):
         assert ui_fallback['item']['label'] == 'Save', ui_fallback
         assert ui_fallback['item']['ref'] is not None, ui_fallback
 
-        # U-I (I4): a keyed ref survives a same-place successor recreated
+        # A keyed ref survives a same-place successor recreated
         # WITHOUT its id (YouTube-style control re-render) via the unique
         # intrinsic-signature rebind fallback.
 
@@ -1276,7 +1276,7 @@ async def run(port, profile):
         ui_after_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'Skipped' in (ui_after_skip.get('text') or ''), ui_after_skip
 
-        # U-P1 Layer A (research P1): controls inside open shadow roots join
+        # Controls inside open shadow roots join
         # the model-facing observation. Flat document scans never saw them;
         # the fixture hosts a shadow button that must be findable and
         # clickable through its normal ref.
@@ -1306,7 +1306,7 @@ async def run(port, profile):
         ax_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'SavedByShadow' in (ax_after.get('text') or ''), ax_after
 
-        # U-P1 Layer A: icon-only controls match through the computed
+        # Icon-only controls match through the computed
         # accessible name (field data: Maps transport buttons read as glyph
         # labels like " 3 min" while their icon vocabulary is an img alt).
 
@@ -1319,7 +1319,7 @@ async def run(port, profile):
         assert ax_icon['count'] == 1, ax_icon
         assert ax_icon['item']['accessibleName'] == 'Motorcycle, 3 minutes', ax_icon
 
-        # U-P1 Layer B (research P1): the text-poor canvas-class fixture
+        # The text-poor canvas-class fixture
         # attaches a read-only CDP accessibility snapshot so the model can
         # read canvas-app state. Editable field values must never surface
         # anywhere in the result.
@@ -1342,7 +1342,7 @@ async def run(port, profile):
         assert 'typed secret text' not in ax_serialized, 'field values must never surface through axSummary'
         assert 'hunter2' not in ax_serialized, 'password content must never surface'
 
-        # U-P3 (research P3): dismissed panels go stale in the model-facing
+        # Dismissed panels go stale in the model-facing
         # view and drop out of compact observations, so dismissed FAQ/cookie
         # controls stop reaching the model. Canonical state keeps them.
 
@@ -1371,12 +1371,12 @@ async def run(port, profile):
         dropped_panel = [item for item in stale_dropped['elements'] if item.get('label') == 'Dismiss panel']
         assert len(dropped_panel) == 0, dropped_panel
 
-        # U-S (P1): burst ref passthrough — find and click in ONE command so the
+        # Burst ref passthrough — find and click in ONE command so the
         # ref is minted and consumed within milliseconds, immune to the model
-        # round-trip staleness observed live (find 15:29:36.329Z -> click
-        # 15:29:50.434Z on YouTube). find result feeds click via refFromStep,
+        # round-trip staleness observed live (find 15:29:36. -> click
+        # 15:29:50. on YouTube). find result feeds click via refFromStep,
         # and a trailing wait acts as the in-burst post-condition check.
-        # Reuses the already-verified U-I fixture tab.
+        # Reuses the already-verified fixture tab.
 
         us_tab_id = ui_tab_id
 
@@ -1403,7 +1403,7 @@ async def run(port, profile):
         assert us_clicked.get('resolvedFrom') == 'step:0', us_burst
         assert (us_steps[2].get('result') or {}).get('ok') is True, us_burst
 
-        # U-S negative: a burst click may only reference an EARLIER step.
+        # Negative: a burst click may only reference an EARLIER step.
 
         cid = STATE.push('browser.burst', {
             'tabId': us_tab_id,
@@ -1413,7 +1413,7 @@ async def run(port, profile):
         assert us_forward.get('ok') is False, us_forward
         assert 'refFromStep' in str(us_forward.get('error')), us_forward
 
-        # U-S control: the same find-then-click split across two model round
+        # Control: the same find-then-click split across two model round
         # trips (the shape that went stale live) still resolves on this fixture
         # through the established rebind path, because the Save control is
         # never destroyed here — the contrast is timing, not selection.
@@ -1435,7 +1435,7 @@ async def run(port, profile):
                 'body': us_separate
             })
 
-        # U-T (ETW): a device-local watcher must click a control that appears
+        # A device-local watcher must click a control that appears
         # AFTER arming, with zero model round trips between trigger and action.
 
         cid = STATE.push('watch.start', {
@@ -1482,8 +1482,8 @@ async def run(port, profile):
         us_watch_list = await asyncio.to_thread(STATE.wait, cid)
         assert us_watch_list.get('ok') is True, us_watch_list
 
-        # U-V (action pipeline): instant-by-default actions. One command waits
-        # out a late-actionable target, heals a stale ref via the U-I rebind
+        # Action pipeline: instant-by-default actions. One command waits
+        # out a late-actionable target, heals a stale ref via the rebind
         # machinery, verifies via the expect machinery, and reports a final
         # structured outcome for a never-ready target.
 
@@ -1588,7 +1588,7 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # R2 tests-first acceptance. Current R1 runtime is expected to fail the
+        #  tests-first acceptance. Current runtime is expected to fail the
         # unique same-document recovery assertion until bounded revalidation is
         # implemented. The negative cases must already remain fail-closed.
 
@@ -1624,19 +1624,19 @@ async def run(port, profile):
         }, benchmark='r2.tabs.open.ambiguous')
         r2_ambiguous_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
         cid = STATE.push('page.read', {'tabId': r2_ambiguous_tab, 'offset': 0, 'limit': 1200, 'maxElements': 40})
-        r2_ambiguous_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
-        r2_ambiguous_before = next(item for item in r2_ambiguous_page['elements'] if item['label'] == 'R2 ambiguous target')
+        ambiguous_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        ambiguous_before = next(item for item in ambiguous_page['elements'] if item['label'] == 'R2 ambiguous target')
         cid = STATE.push('page.query', {'tabId': r2_ambiguous_tab, 'selector': '#make-ambiguous'})
         r2_ambiguous_trigger = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
         cid = STATE.push('page.click', {'tabId': r2_ambiguous_tab, 'ref': r2_ambiguous_trigger['ref'], 'trusted': False})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.click', {
             'tabId': r2_ambiguous_tab,
-            'ref': r2_ambiguous_before['ref'],
+            'ref': ambiguous_before['ref'],
             'trusted': False,
-            'logicalId': r2_ambiguous_before['logicalId'],
-            'x': r2_ambiguous_before['rect']['centerX'],
-            'y': r2_ambiguous_before['rect']['centerY']
+            'logicalId': ambiguous_before['logicalId'],
+            'x': ambiguous_before['rect']['centerX'],
+            'y': ambiguous_before['rect']['centerY']
         }, benchmark='r2.ambiguous.fail-closed')
         r2_ambiguous_click = await asyncio.to_thread(STATE.wait, cid)
         cid = STATE.push('page.read', {'tabId': r2_ambiguous_tab, 'offset': 0, 'limit': 1200, 'includeElements': False})
@@ -1717,9 +1717,9 @@ async def run(port, profile):
         }
         assert all(r2_acceptance.values()), r2_acceptance
 
-        # R3 tests-first acceptance: page.click must return fresh bounded
+        # Tests-first acceptance: page.click must return fresh bounded
         # post-action evidence directly, without a mandatory model-mediated
-        # page.read. Current R2 runtime is expected to fail because page.click
+        # page.read. Current runtime is expected to fail because page.click
         # still returns only action acknowledgement.
 
         cid = STATE.push('tabs.open', {
@@ -1792,7 +1792,7 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r3_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # --- Pre-8E R4: compact model-facing observation (tests-first) ---
+        # Compact model-facing observation (tests-first) ---
 
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r4', 'active': False, 'wait': True})
         r4_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
@@ -1835,19 +1835,19 @@ async def run(port, profile):
         cid = STATE.push('page.click', {'tabId': r4_tab_id, 'ref': r4_skip['ref']})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 600, 'maxElements': 120, 'view': 'compact'})
-        r4_after_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
-        r4_toggle = next(item for item in r4_after_click['elements'] if item.get('text', '').startswith('R4 toggle'))
-        cid = STATE.push('page.click', {'tabId': r4_tab_id, 'ref': r4_toggle['ref']})
+        after_click_elements = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        toggle_target = next(item for item in after_click_elements['elements'] if item.get('text', '').startswith('R4 toggle'))
+        cid = STATE.push('page.click', {'tabId': r4_tab_id, 'ref': toggle_target['ref']})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 600, 'maxElements': 120, 'view': 'compact'})
-        r4_after_toggle = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
-        r4_changes = r4_after_toggle['semanticDelta']['changes']
+        after_toggle_elements = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        r4_changes = after_toggle_elements['semanticDelta']['changes']
         assert r4_changes, 'compact read must expose the fresh change after an action'
-        assert any(change.get('logicalId') == r4_toggle.get('logicalId') or change.get('logicalId') == r4_toggle.get('stableKey') for change in r4_changes), (
+        assert any(change.get('logicalId') == toggle_target.get('logicalId') or change.get('logicalId') == toggle_target.get('stableKey') for change in r4_changes), (
             'the changed target must be identifiable in the compact change evidence'
         )
-        r4_toggle_fresh = next((item for item in r4_after_toggle['elements'] if item.get('text') == 'R4 toggle target pressed'), None)
-        assert r4_toggle_fresh is not None, 'the changed target must survive the compact projection with fresh state'
+        toggle_target_fresh = next((item for item in after_toggle_elements['elements'] if item.get('text') == 'R4 toggle target pressed'), None)
+        assert toggle_target_fresh is not None, 'the changed target must survive the compact projection with fresh state'
 
         cid = STATE.push('page.read', {'tabId': r4_tab_id, 'offset': 0, 'limit': 300, 'maxElements': 40, 'view': 'full'})
         r4_full_escape = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
@@ -1876,7 +1876,7 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # --- U-V1 quick-win: self-verifying actions, absent wait, burst timeout partials ---
+        # --- V1 quick-win: self-verifying actions, absent wait, burst timeout partials ---
 
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r3', 'active': False, 'wait': True})
         uv1_r3_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
@@ -1942,7 +1942,7 @@ async def run(port, profile):
         }
         print(json.dumps({'uv1Acceptance': uv1_acceptance}, indent=2))
 
-        # --- U-R: timeout/retry/popup parity (owner field-testing) ---
+        # Timeout/retry/popup parity (owner field-testing) ---
         # (1) SPA-slow redirect: the URL only changes 1200ms after the click,
         # well past the 400ms settle. A single early evaluation used to report
         # verified:false and drive a harmful re-click. The bounded expect window
@@ -2043,7 +2043,7 @@ async def run(port, profile):
         assert all(ur_acceptance.values()), ur_acceptance
         print(json.dumps({'urAcceptance': ur_acceptance}, indent=2))
 
-        # --- Pre-8E R5: ready-media local seek benchmark ---
+        # Ready-media local seek benchmark ---
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r5',
@@ -2091,23 +2091,23 @@ async def run(port, profile):
         assert isinstance(touched_ms, (int, float)), r5_touched['userState']
         assert 0 <= touched_ms < 10000, r5_touched['userState']
 
-        r5_media = None
+        media_state = None
         r5_ready_deadline = time.time() + 5.0
         while time.time() < r5_ready_deadline:
             cid = STATE.push('media.state', {'tabId': r5_tab_id, 'index': 0})
-            r5_media = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['media']
+            media_state = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['media']
             if (
-                r5_media.get('present') is True
-                and isinstance(r5_media.get('duration'), (int, float))
-                and r5_media['duration'] >= 1.5
-                and r5_media.get('readyState', 0) >= 2
+                media_state.get('present') is True
+                and isinstance(media_state.get('duration'), (int, float))
+                and media_state['duration'] >= 1.5
+                and media_state.get('readyState', 0) >= 2
             ):
                 break
             await asyncio.sleep(0.05)
-        assert r5_media is not None, 'R5 media state was never observed'
-        assert r5_media['present'] is True, r5_media
-        assert r5_media['duration'] >= 1.5, r5_media
-        assert r5_media['readyState'] >= 2, r5_media
+        assert media_state is not None, 'media state was never observed'
+        assert media_state['present'] is True, media_state
+        assert media_state['duration'] >= 1.5, media_state
+        assert media_state['readyState'] >= 2, media_state
 
         # Keep the controlled media paused so each measured seek is independent
         # of playback progress. The production workflow preserves prior playback
@@ -2171,7 +2171,7 @@ async def run(port, profile):
         assert 'tabs.reload' not in r5_measured_methods
 
         r5_acceptance = {
-            'readyMedia': r5_media['readyState'] >= 2 and r5_media['duration'] >= 1.5,
+            'readyMedia': media_state['readyState'] >= 2 and media_state['duration'] >= 1.5,
             'seekRuns': len(r5_seek_latencies),
             'seekP50Ms': r5_seek_p50_ms,
             'seekLatenciesMs': r5_seek_latencies,
@@ -2429,7 +2429,7 @@ async def run(port, profile):
         assert result['count'] == 1
         assert result['links'][0]['url'].startswith(f'http://{HOST}:{port}/page')
 
-        # Checkpoint 2A: keep a user tab active while every background-capable
+        # Keep a user tab active while every background-capable
         # primitive targets the original, now-inactive automation tab.
 
         cid = STATE.push('tabs.open', {

@@ -25,8 +25,8 @@ coverage/
 .supabase/
 supabase/.temp/
 
-# Checkpoint 8D local crash-recovery state (nonsecret, never commit)
-.opera-agent-8d-state/
+# Local crash-recovery state for the transaction launchers (nonsecret, never commit)
+.opera-agent-state/
 
 # Repowise local codebase intelligence (cache + isolated Python environment)
 .repowise/

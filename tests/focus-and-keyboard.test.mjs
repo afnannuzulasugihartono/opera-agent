@@ -227,7 +227,7 @@ test('the synthetic path explains its narrower surface instead of a bare rejecti
   assert.match(source, /Key chords and text entry require the trusted path\./);
 });
 
-test('R9: trusted input executors never activate a tab or focus a window', async () => {
+test('trusted input executors never activate a tab or focus a window', async () => {
   const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
   const start = source.indexOf('async function trustedClick');
   const end = source.indexOf('// Burst ref passthrough');
@@ -242,7 +242,7 @@ test('R9: trusted input executors never activate a tab or focus a window', async
   // (unverifiable state, and refusal) live in the gate, so no executor can
   // re-introduce a racing pre-flight check of its own.
   const gateStart = source.indexOf('async function sampleTabFocus');
-  const gateEnd = source.indexOf('// U-V Action Pipeline');
+  const gateEnd = source.indexOf('// Action Pipeline');
   assert.ok(gateStart > 0 && gateEnd > gateStart, 'the shared gate must be locatable');
   const gate = source.slice(gateStart, gateEnd);
   assert.equal((gate.match(/foregroundRequired\(/g) || []).length, 2);

@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { request } from 'node:http';
-import { startOAuthListener } from './helpers/transaction-oauth-listener-8d.mjs';
+import { startOAuthListener } from './helpers/transaction-oauth-listener.mjs';
 
 // Node fetch does not preserve the test's explicit physical/logical Host override.
 

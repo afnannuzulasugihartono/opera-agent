@@ -105,7 +105,7 @@ test('structural cost reduction is deterministic: commands and payload (T037)', 
   for (const rounds of [1, 5, 10, 12]) {
     const v4 = v5 - 1 /* segments */ + 1 /* previousActive */ + rounds;
     if (rounds === 1) {
-      // typical watch page (page text fits one 12k chunk, R0 recorded ~3.3k):
+      // typical watch page (page text fits one 12k chunk, recorded ~3.3k):
       // structural saving is one round trip; the loop was never the dominant cost.
       assert.ok(v4 === v5 + 1);
     } else if (rounds >= 12) {
@@ -127,12 +127,12 @@ test('records the honest T037 boundary: single-run baseline is non-distributiona
   // The frozen 20.514s baseline is ONE completed v4 run. Production history
   // (opera_workflow_runs, read 2026-09-20) shows v3 at 4.622s p50 (n=2,
   // max 13.368s) against v4 at 20.514s (n=1) with a one-parameter definition
-  // diff — runtime variance is scenario-driven, not definition-driven. T037 is
+  // diff — runtime variance is scenario-driven, not definition-driven. is
   // therefore closed via its evidence-backed residual-bottleneck clause: the
   // dominant residual is the panel-open/render wait path (waittranscript 5s,
   // segmentFast 1.2s + activation + segmentReady 6s budgets), which needs
-  // production distribution data (R8 real-Opera runs) or a redesign beyond the
-  // bounded R7 scope. The structural reductions asserted above are the
+  // production distribution data ( real-Opera runs) or a redesign beyond the
+  // bounded scope. The structural reductions asserted above are the
   // deliverable this checkpoint authorizes.
   const migrationSql = fs.readFileSync(
     new URL(`../supabase/migrations/${r7MigrationName}`, import.meta.url), 'utf8'

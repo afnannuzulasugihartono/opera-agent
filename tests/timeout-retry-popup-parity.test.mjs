@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { recordPopup, popupsSince, resolvePopupOpener } from '../extension/lib/popup-events.js';
 import { PRODUCT_VERSION } from '../extension/lib/protocol.js';
 
-// U-R timeout/retry/popup parity (2026-09-28): the owner's field testing found
+//  timeout/retry/popup parity: the owner's field testing found
 // three weaknesses — (1) no automatic retry on timeout and unknown outcomes
 // reported without parity, (2) SPA-slow redirects verified too early and then
 // re-clicked, (3) OAuth/login popups invisible to the model. Locked here:
@@ -45,7 +45,7 @@ test('popupsSince filters by timestamp', () => {
   assert.deepEqual(popupsSince(log, 5, 6_000), []);
 });
 
-// U-R background-tab attribution: live diagnosis (2026-09-28) confirmed that
+// Background-tab attribution: live diagnosis confirmed that
 // when a page action runs on a NON-active tab, Chromium attributes the popup
 // from window.open to the window's ACTIVE tab, so a raw openerTabId lookup
 // misses the popup. The host must claim tabs opened during a page action for

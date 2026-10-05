@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 01:05 UTC+7.
+@last-edited: 2026-10-05 03:34 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -106,10 +106,11 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   service worker; the image's branded Chrome loads no unpacked MV3 extension through
   playwright at all, while playwright's own chromium does; and `xvfb-run` stops draining the
   child's stdout, so the harness finishes the suite then dies writing its summary.
-- The secret-scan gate had **never executed** before 2026-10-04. Its first run failed on its
-  own configuration: the jwt allowlist still pointed at `tests/transaction-cloud-8d.test.mjs`,
-  a name that stopped existing. Fixed by re-pointing paths, never by editing the fixture,
-  and locked locally by `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`.
+- The secret-scan gate runs in CI only, and `[.gitleaks.toml](../.gitleaks.toml)` names paths
+  and symbols that must exist: a renamed file or variable that the allowlist still calls by
+  its old name turns a known synthetic fixture back into a red gate. Re-point the allowlist;
+  never edit the fixture to dodge the scanner. `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`
+  locks that every allowlist path names a tracked file.
 - All three jobs run on `ubuntu-latest`; the self-hosted Windows runner is no longer needed
   by CI. The Python 3.12 pin is restored, because the reason it was dropped was a fault of
   this machine's installer rather than of the pin.
@@ -144,6 +145,6 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Do not touch
 
-- `stash@{0}` — "preserve accidental 8E files before completing checkpoint 8D". Do not
-  pop, apply, delete, or build from it. 8E is paused and must not start implicitly.
+- `stash@{0}` — a paused pre-cutover state kept under an old milestone name. Do not
+  pop, apply, delete, or build from it, and do not start its work implicitly.
 - `archive/*` tags are historical; never rewrite them.

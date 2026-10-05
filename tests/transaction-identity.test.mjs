@@ -1,11 +1,11 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-identity.test — identity.test — Protocol unit doubles, NOT evidence of real Supabase OAuth acceptance.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @dependencies: strict, node:test, transaction-identity-8d.
+// @dependencies: strict, node:test, transaction-identity.
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSupabaseTransactionIdentity } from '../lib/transaction-identity-8d.js';
+import { createSupabaseTransactionIdentity } from '../lib/transaction-identity.js';
 
 // Protocol unit doubles, NOT evidence of real Supabase OAuth acceptance.
 

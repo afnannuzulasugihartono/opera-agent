@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-oauth-identity.test — oauth-identity.test — Test.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @dependencies: node:test, strict, transaction-oauth-identity-8d, transaction-oauth-8d.
+// @dependencies: node:test, strict, transaction-oauth-identity, transaction-oauth-8d.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyOAuthHostStatus } from './helpers/transaction-oauth-identity-8d.mjs';
-import { ISSUER,CLIENT_ID } from './helpers/transaction-oauth-8d.mjs';
+import { verifyOAuthHostStatus } from './helpers/transaction-oauth-identity.mjs';
+import { ISSUER,CLIENT_ID } from './helpers/transaction-oauth.mjs';
 
 const claims={iss:ISSUER+'/auth/v1',aud:'authenticated',role:'authenticated',sub:'00000000-0000-4000-8000-000000000001',
   client_id:CLIENT_ID,session_id:'00000000-0000-4000-8000-000000000002',iat:1,exp:100};

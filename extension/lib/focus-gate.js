@@ -11,7 +11,7 @@
 // attach, then never re-checked, so a window that lost focus in that gap failed
 // with FOREGROUND_REQUIRED right after the user activated the tab.
 //
-// Locked by tests/r9-focus-and-keyboard.test.mjs: background always dispatches
+// Locked by tests/focus-and-keyboard.test.mjs: background always dispatches
 // first try; a satisfied foreground sample adds no latency; lost-then-restored
 // dispatches with recovered; an unsatisfied sample refuses on the final attempt
 // carrying the last state. The gate NEVER activates a tab or focuses a window —

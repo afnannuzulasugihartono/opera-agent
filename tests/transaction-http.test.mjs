@@ -1,11 +1,11 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-http.test — http.test — Test.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @dependencies: strict, node:test, transaction-http-8d.
+// @dependencies: strict, node:test, transaction-http.
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {createTransactionDarkHttpHandler} from '../lib/transaction-http-8d.js';
+import {createTransactionDarkHttpHandler} from '../lib/transaction-http.js';
 const request=(body,headers={})=>new Request('https://example.invalid/transactions',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer synthetic-bearer',...headers},body:JSON.stringify(body)});
 test('HTTP defaults OFF and performs no host/auth/storage work',async()=>{
   let calls=0;

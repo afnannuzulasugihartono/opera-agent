@@ -34,7 +34,7 @@ test('bounded browser burst accepts only linear page actions', () => {
   assert.equal(validateBurst({ executionMode: 'auto', steps: [{ action: 'read' }] }).ok, false);
   assert.equal(validateBurst({ steps: [] }).ok, false);
   assert.equal(validateBurst({ steps: Array.from({ length: 9 }, () => ({ action: 'read' })) }).ok, false);
-  // Phase D (2026-10-02): a step may now name its own tab. This line previously
+  // Phase D: a step may now name its own tab. This line previously
   // asserted the opposite and was the same-tab guarantee at the schema layer;
   // it is superseded by the per-step tabId, which stays optional so a step
   // without one still resolves to the burst tab.

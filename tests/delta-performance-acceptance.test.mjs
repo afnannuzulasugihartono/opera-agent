@@ -124,7 +124,7 @@ test('P5 safety and cleanup records zero foreground authority and no leftover te
 });
 
 test('P5 frozen boundary remains locked except the P6-authorized Reactive VM cutover', async () => {
-  // P5 lock set: same frozen stack re-checked through the performance lens (see helper for the authorization history).
+  // Lock set: same frozen stack re-checked through the performance lens (see helper for the authorization history).
   const files = new Map([...RELEVANCE_STACK_LOCKS, ...PUBLIC_SURFACE_LOCKS, ...OBSERVATION_STACK_LOCKS]);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));

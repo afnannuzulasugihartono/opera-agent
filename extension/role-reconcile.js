@@ -1,9 +1,9 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: role-reconcile — reconcile — R9-C : role reconciliation, as a classic content script.
-// @state: fix(r9): hygiene pass on the R9 code itself.
+// @title: role-reconcile — reconcile —: role reconciliation, as a classic content script.
+// @state: hygiene pass over this file.
 // @dependencies: none.
 
-// R9-C (2026-09-30): role reconciliation, as a classic content script.
+// Role reconciliation, as a classic content script.
 //
 // This file is loaded by the manifest BEFORE content.js and publishes its pure
 // helpers on globalThis, exactly like semantic-identity.js and
@@ -31,7 +31,7 @@
 //      name with an AX entry. This handles custom widgets whose semantics live
 //      in the AX tree rather than in attributes.
 //
-// Safety invariants (regression-locked in tests/r9-role-reconcile.test.mjs):
+// Safety invariants (regression-locked in tests/role-reconcile.test.mjs):
 // - A real, explicit DOM role is never downgraded or overwritten. AX only ever
 //   fills a gap.
 // - Reconciliation is read-only. It never creates, moves, or invalidates a ref
@@ -147,11 +147,11 @@
     return { ...item, role, roleSource: 'ax-reconciled' };
   }
 
-  // R9-C follow-up: whether a read left a semantic gap worth paying a bounded
+  // Follow-up: whether a read left a semantic gap worth paying a bounded
   // accessibility walk for.
   //
   // The accessibility walk used to be gated on text poverty alone, which meant
-  // it never ran on the app that motivated R9-C: a Google Docs document with 70
+  // it never ran on the app that motivated: a Google Docs document with 70
   // pages is NOT text-poor, so its axSummary was never collected and the role
   // reconciliation below never fired. The Page numbers dialog radios and
   // checkboxes therefore stayed undiscoverable by role, which is why they had to

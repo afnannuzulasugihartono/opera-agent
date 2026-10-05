@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-// Doc caps (2026-10-03, owner-ordered): live context files stay short or the
+// Doc caps: live context files stay short or the
 // haystack regrows. Counts are lines including the trailing-newline artifact,
 // so a 150-line file reads as 151 here — caps carry 1 line of slack.
 // WHY no archive destination: docs/context-archive.md was removed 2026-10-04

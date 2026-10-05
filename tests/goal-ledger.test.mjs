@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: goal-ledger.test — ledger.test — Test.
-// @state: complete milestone 6E secure ledger integration.
+// @state: complete secure ledger integration.
 // @dependencies: strict, node:fs, node:test, goal-ledger.
 
 import assert from 'node:assert/strict';
@@ -35,7 +35,7 @@ async function assertLedgerError(promise, code) {
   });
 }
 
-test('6B creates the frozen fixture deterministically without mutating input', async () => {
+test('creates the frozen fixture deterministically without mutating input', async () => {
   const input = clone(replay.ledger);
   const before = JSON.stringify(input);
   const ledger = await createLedger(input, { authoritySource: 'USER', now: CREATED_AT });
@@ -50,14 +50,14 @@ test('6B creates the frozen fixture deterministically without mutating input', a
   assert.deepEqual(await validateLedger(ledger, { authoritySource: 'USER', now: CREATED_AT }), ledger);
 });
 
-test('6B canonicalization normalizes strings and rejects unsupported values', () => {
+test('canonicalization normalizes strings and rejects unsupported values', () => {
   assert.equal(canonicalJson({ z: 'e\u0301', a: true }), '{"a":true,"z":"é"}');
   assert.throws(() => canonicalJson({ unsafe: 1.5 }), (error) => error.code === 'UNSUPPORTED_CANONICAL_VALUE');
   assert.throws(() => canonicalJson({ unsafe: undefined }), (error) => error.code === 'UNSUPPORTED_CANONICAL_VALUE');
   assert.throws(() => canonicalJson({ 'é': true }), (error) => error.code === 'INVALID_CANONICAL_KEY');
 });
 
-test('6B enforces strict schemas, bounds, and credential-like rejection', async () => {
+test('enforces strict schemas, bounds, and credential-like rejection', async () => {
   const unknown = clone(replay.ledger);
   unknown.unexpected = true;
   await assertLedgerError(createLedger(unknown, { authoritySource: 'USER', now: CREATED_AT }), 'UNKNOWN_FIELD');
@@ -86,7 +86,7 @@ test('6B enforces strict schemas, bounds, and credential-like rejection', async 
   );
 });
 
-test('6B revisions preserve identity, form a digest lineage, and reject stale or forked heads', async () => {
+test('revisions preserve identity, form a digest lineage, and reject stale or forked heads', async () => {
   const first = await createLedger(replay.ledger, { authoritySource: 'USER', now: CREATED_AT });
   const second = await reviseLedger(first, {
     expectedRevision: 1,
@@ -120,7 +120,7 @@ test('6B revisions preserve identity, form a digest lineage, and reject stale or
   }, { authoritySource: 'USER', now: '2026-09-11T00:02:00Z' }), 'FORKED_REVISION');
 });
 
-test('6B never broadens authorization without a fresh user authorization', async () => {
+test('never broadens authorization without a fresh user authorization', async () => {
   const first = await createLedger(replay.ledger, { authoritySource: 'USER', now: CREATED_AT });
   const broadened = clone(first.authorizations);
   broadened.push({
@@ -152,7 +152,7 @@ test('6B never broadens authorization without a fresh user authorization', async
   assert.equal(accepted.authorizations.length, 2);
 });
 
-test('6B cancel and expire are explicit terminal revisions', async () => {
+test('cancel and expire are explicit terminal revisions', async () => {
   const first = await createLedger(replay.ledger, { authoritySource: 'USER', now: CREATED_AT });
   const cancelled = await cancelLedger(first, {
     expectedRevision: 1,
@@ -180,7 +180,7 @@ test('6B cancel and expire are explicit terminal revisions', async () => {
   assert.equal(expired.revision, 2);
 });
 
-test('6B safe inspection exposes bounded metadata rather than goal contents', async () => {
+test('safe inspection exposes bounded metadata rather than goal contents', async () => {
   const ledger = await createLedger(replay.ledger, { authoritySource: 'USER', now: CREATED_AT });
   const inspected = inspectLedger(ledger);
   assert.deepEqual(Object.keys(inspected).sort(), [
@@ -192,7 +192,7 @@ test('6B safe inspection exposes bounded metadata rather than goal contents', as
   assert.equal(inspected.constraintCount, ledger.constraints.length);
 });
 
-test('6B 10,000-step deterministic revision sequence remains bounded and linear', { timeout: 30000 }, async () => {
+test('10,000-step deterministic revision sequence remains bounded and linear', { timeout: 30000 }, async () => {
   let ledger = await createLedger(replay.ledger, { authoritySource: 'USER', now: CREATED_AT });
   const firstGoalId = ledger.goalId;
   for (let index = 0; index < 10_000; index += 1) {
@@ -209,12 +209,12 @@ test('6B 10,000-step deterministic revision sequence remains bounded and linear'
   assert.equal(ledger.revision, 10_001);
 });
 
-test('6B ledger core stays environment-neutral and side-effect free', () => {
+test('ledger core stays environment-neutral and side-effect free', () => {
   assert.doesNotMatch(source, /chrome\.|browser\.|fetch\s*\(|XMLHttpRequest|WebSocket|EventSource|supabase|process\.env|Deno\.|node:/);
   assert.doesNotMatch(source, /localStorage|sessionStorage|indexedDB|writeFile|appendFile/);
 });
 
-test('6B rejects duplicate IDs, missing requirements, and immutable-field smuggling', async () => {
+test('rejects duplicate IDs, missing requirements, and immutable-field smuggling', async () => {
   const duplicate = clone(replay.ledger);
   duplicate.claims.push(clone(duplicate.claims[0]));
   await assertLedgerError(createLedger(duplicate, { authoritySource: 'USER', now: CREATED_AT }), 'DUPLICATE_ID');

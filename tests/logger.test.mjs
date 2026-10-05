@@ -7,7 +7,7 @@
 //
 // extension/lib/agent-log.js is a classic content script with no import/export
 // statements, so it is imported here for its side effect and read off
-// globalThis — the same R9-C pattern as role-reconcile.js.
+// globalThis — the same pattern as role-reconcile.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

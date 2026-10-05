@@ -1,26 +1,26 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-edge-concurrency-runner.test — edge-concurrency-runner.test — Test.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @dependencies: node:test, strict, promises, transaction-edge-routing-evidence-8d.
+// @dependencies: node:test, strict, promises, transaction-edge-routing-evidence.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { collectEdgeRoutingEvidence8D } from './helpers/transaction-edge-routing-evidence-8d.mjs';
+import { collectEdgeRoutingEvidence } from './helpers/transaction-edge-routing-evidence.mjs';
 
-const runnerUrl=new URL('./cloud/transaction-edge-concurrency-8d.mjs',import.meta.url);
-const launcherUrl=new URL('../scripts/run-8d-edge-concurrency.ps1',import.meta.url);
-const cmdUrl=new URL('../scripts/legacy/RUN_8D_EDGE_CONCURRENCY.cmd',import.meta.url);
+const runnerUrl=new URL('./cloud/transaction-edge-concurrency.mjs',import.meta.url);
+const launcherUrl=new URL('../scripts/run-transaction-edge-concurrency.ps1',import.meta.url);
+const cmdUrl=new URL('../scripts/legacy/run-transaction-edge-concurrency.cmd',import.meta.url);
 
 test('real Edge concurrency runner is fixed, authenticated, bounded, and browser-dispatch free',async()=>{
   const source=await readFile(runnerUrl,'utf8');
-  assert.match(source,/createCloudAcceptanceController8D/);
+  assert.match(source,/createCloudAcceptanceController/);
   assert.match(source,/createOAuthProbe/);
-  assert.match(source,/CONCURRENCY_8D\s*=\s*8/);
+  assert.match(source,/CONCURRENCY\s*=\s*8/);
   assert.match(source,/Promise\.all/);
   assert.match(source,/operation\s*===\s*['"]prepare['"]/);
   assert.match(source,/operation\s*===\s*['"]cancel['"]/);
-  assert.match(source,/collectEdgeRoutingEvidence8D/);
+  assert.match(source,/collectEdgeRoutingEvidence/);
   assert.match(source,/distinctRoutingTraces/);
   assert.match(source,/traceHeader/);
   assert.match(source,/prepareWinners/);
@@ -40,7 +40,7 @@ test('Edge routing evidence accepts distinct allowlisted traces without exposing
       'server-timing':`edge;dur=${index+1}`
     })
   }));
-  const evidence=collectEdgeRoutingEvidence8D(responses);
+  const evidence=collectEdgeRoutingEvidence(responses);
   assert.equal(evidence.traceHeader,'cf-ray');
   assert.equal(evidence.distinctRoutingTraces,8);
   assert.equal(evidence.samples,8);
@@ -52,8 +52,8 @@ test('Edge routing evidence accepts distinct allowlisted traces without exposing
 
 test('Edge routing evidence fails closed when distinct request traces are not evidenced',()=>{
   const responses=Array.from({length:8},()=>({headers:new Headers({'cf-ray':'same-trace','x-sb-edge-region':'ap-southeast-1'})}));
-  assert.throws(()=>collectEdgeRoutingEvidence8D(responses),/8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
-  assert.throws(()=>collectEdgeRoutingEvidence8D(Array.from({length:8},()=>({headers:new Headers()}))),/8D_EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
+  assert.throws(()=>collectEdgeRoutingEvidence(responses),/EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
+  assert.throws(()=>collectEdgeRoutingEvidence(Array.from({length:8},()=>({headers:new Headers()}))),/EDGE_WORKER_TRACE_EVIDENCE_MISSING/);
 });
 
 test('real Edge concurrency launcher reuses local DPAPI credential, resolves pinned npm imports, and fails closed on dirty worktree',async()=>{
@@ -62,11 +62,11 @@ test('real Edge concurrency launcher reuses local DPAPI credential, resolves pin
   assert.match(launcher,/management-token\.dpapi/);
   assert.match(launcher,/git status --porcelain/);
   assert.match(launcher,/git merge --ff-only/);
-  assert.match(launcher,/transaction-edge-concurrency-8d\.mjs/);
+  assert.match(launcher,/transaction-edge-concurrency\.mjs/);
   assert.match(launcher,/--node-modules-dir=auto/);
   assert.doesNotMatch(launcher,/\b(?:deno|npm|pnpm|yarn)\s+install\b/i);
-  assert.match(launcher,/OPERA_8D_MANAGEMENT_TOKEN = \$null/);
-  assert.match(launcher,/OPERA_8D_PUBLISHABLE_KEY = \$null/);
+  assert.match(launcher,/OPERA_MANAGEMENT_TOKEN = \$null/);
+  assert.match(launcher,/OPERA_PUBLISHABLE_KEY = \$null/);
   assert.match(cmd,/pwsh\.exe/i);
   assert.doesNotMatch(cmd,/powershell\.exe/i);
 });

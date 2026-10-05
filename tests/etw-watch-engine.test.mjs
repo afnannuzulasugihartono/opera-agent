@@ -7,12 +7,12 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// U-T Event-Triggered Workflows (2026-09-22): the watch engine compiles a
+//  Event-Triggered Workflows: the watch engine compiles a
 // model's intent into device-local trigger rules so reaction speed follows the
 // page, not the model round trip. The pure policy engine is exercised for real
 // in Node (trigger kinds, any/all composition, debounce, deadline, once/repeat,
 // maxEvents, already-true-at-arm); migration and gateway are source-contract
-// locked like the U-S suite.
+// locked like the suite.
 
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const { validateRule, evaluateRules, TRIGGER_KINDS } = await import('../extension/lib/watch.js');
@@ -152,7 +152,7 @@ test('migration seeds watch methods into the opera_methods enqueue allowlist', (
   // Exact seed text is the frozen contract: MCP start_watch/stop_watch enqueue
   // through opera_enqueue, whose allowlist is the opera_methods table. The ETW
   // migration shipped the engine and MCP tools without these rows, so arming
-  // failed live with "Method is not allowlisted." (2026-09-23). The watch
+  // failed live with "Method is not allowlisted.". The watch
   // family stays out of the 26 browser primitives (internal), but the three
   // methods the MCP surface needs must be seeded and enabled.
   const src = read('supabase/migrations/20260923010000_opera_agent_watch_methods.sql');

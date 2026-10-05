@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: reactive-vm-core.test — vm-core.test — Test.
-// @state: fix 7B focused test syntax.
+// @state: fix focused test syntax.
 // @dependencies: strict, node:fs, node:perf_hooks, node:test, goal-ledger, reactive-vm.
 
 import assert from 'node:assert/strict';
@@ -95,7 +95,7 @@ function assertVmError(code, fn) {
   return assert.rejects(fn, (error) => error instanceof ReactiveVmError && error.code === code);
 }
 
-test('7B deterministic SEQUENCE/IF/ASSERT/RETURN replay is byte-identical', async () => {
+test('deterministic SEQUENCE/IF/ASSERT/RETURN replay is byte-identical', async () => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -119,7 +119,7 @@ test('7B deterministic SEQUENCE/IF/ASSERT/RETURN replay is byte-identical', asyn
   assert.equal(canonicalJson(first.state), canonicalJson(second.state));
 });
 
-test('7B expression grammar is closed, typed, and prototype-safe', () => {
+test('expression grammar is closed, typed, and prototype-safe', () => {
   const bindings = {
     n: 3,
     label: 'ready',
@@ -138,7 +138,7 @@ test('7B expression grammar is closed, typed, and prototype-safe', () => {
   );
 });
 
-test('7B command leaves only yield read-only effects and bind verified results', async () => {
+test('command leaves only yield read-only effects and bind verified results', async () => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -177,7 +177,7 @@ test('7B command leaves only yield read-only effects and bind verified results',
   assert.equal(state.result, 7);
 });
 
-test('7B forged or stale effect results fail closed before binding', async () => {
+test('forged or stale effect results fail closed before binding', async () => {
   const program = await makeProgram({ type: 'COMMAND', method: 'page.read', arguments: { tabId: 7 }, resultBinding: 'read1' }, 'forged-effect');
 
   for (const [code, mutate] of [
@@ -206,7 +206,7 @@ test('7B forged or stale effect results fail closed before binding', async () =>
   }
 });
 
-test('7B cancellation and deadline gates run at every instruction boundary including yielded effects', async () => {
+test('cancellation and deadline gates run at every instruction boundary including yielded effects', async () => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -239,7 +239,7 @@ test('7B cancellation and deadline gates run at every instruction boundary inclu
   assert.equal(expired.state.status, 'EXPIRED');
 });
 
-test('7B malformed state, sensitive values, disallowed commands, and 7C opcodes are rejected', async () => {
+test('malformed state, sensitive values, disallowed commands, and 7C opcodes are rejected', async () => {
   const base = await makeProgram({ type: 'RETURN', valueSpec: { op: 'CONST', value: 1 } }, 'malformed-state');
   const state = await createReactiveVm(base, options('state-run'));
 
@@ -265,7 +265,7 @@ test('7B malformed state, sensitive values, disallowed commands, and 7C opcodes 
   await assertVmError('INVALID_SEMANTICS', () => createReactiveVm(loop, options('later-loop-run')));
 });
 
-test('7B runtime counters stop at declared node, command, binding, and result budgets', async () => {
+test('runtime counters stop at declared node, command, binding, and result budgets', async () => {
   const nodeProgram = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -316,7 +316,7 @@ test('7B runtime counters stop at declared node, command, binding, and result bu
   await assertVmError('OUTPUT_TOO_LARGE', () => advanceReactiveVm(outputProgram, outputState, { logicalNowMs: 1001 }));
 });
 
-test('7B validates 10,000 generated bounded programs without budget escape', async () => {
+test('validates 10,000 generated bounded programs without budget escape', async () => {
   let seed = 0x7b1f00d;
   const next = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -344,7 +344,7 @@ test('7B validates 10,000 generated bounded programs without budget escape', asy
   }
 });
 
-test('7B 1,000 non-I/O transitions stay below the 10 ms p95 target', async (t) => {
+test('1,000 non-I/O transitions stay below the 10 ms p95 target', async (t) => {
   const program = await makeProgram({
     type: 'SEQUENCE',
     children: [
@@ -367,7 +367,7 @@ test('7B 1,000 non-I/O transitions stay below the 10 ms p95 target', async (t) =
   assert.ok(p95 < 10, `p95 ${p95.toFixed(4)} ms must remain below 10 ms`);
 });
 
-test('7B core is environment-neutral and performs no browser/network/database work', () => {
+test('core is environment-neutral and performs no browser/network/database work', () => {
   const source = fs.readFileSync(new URL('../lib/reactive-vm.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /(?:globalThis\.(?:fetch|WebSocket|chrome|browser)|Deno\.serve|process\.env|createClient\s*\()/);
   assert.doesNotMatch(source, /\b(?:eval|Function)\s*\(/);

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: proof-engine.test — engine.test — Test.
-// @state: complete milestone 6E secure ledger integration.
+// @state: complete secure ledger integration.
 // @dependencies: strict, node:fs, node:test, goal-ledger, proof-engine.
 
 import assert from 'node:assert/strict';
@@ -51,7 +51,7 @@ async function makeEvidence(ledger, overrides = {}) {
   return createEvidence(evidenceInput(ledger, overrides));
 }
 
-test('6C creates and validates immutable canonical evidence', async () => {
+test('creates and validates immutable canonical evidence', async () => {
   const ledger = await fixtureLedger();
   const input = evidenceInput(ledger);
   const before = JSON.stringify(input);
@@ -71,7 +71,7 @@ test('6C creates and validates immutable canonical evidence', async () => {
   assert.deepEqual(tamperedProof.rejectedEvidenceRefs, [{ evidenceId: evidence.evidenceId, reason: 'INVALID_DIGEST' }]);
 });
 
-test('6C rejects malformed evidence and trust-category mismatches', async () => {
+test('rejects malformed evidence and trust-category mismatches', async () => {
   const ledger = await fixtureLedger();
   await assert.rejects(createEvidence(evidenceInput(ledger, { unexpected: true })), (error) => error instanceof ProofError && error.code === 'UNKNOWN_FIELD');
   await assert.rejects(createEvidence(evidenceInput(ledger, { trust: 'AUTHENTICATED_USER' })), (error) => error.code === 'UNTRUSTED_EVIDENCE');
@@ -79,7 +79,7 @@ test('6C rejects malformed evidence and trust-category mismatches', async () => 
   await assert.rejects(createEvidence(evidenceInput(ledger, { predicate: syntheticSecretMarker })), (error) => error.code === 'SECRET_LIKE_VALUE');
 });
 
-test('6C process and authorization evidence never prove an outcome', async () => {
+test('process and authorization evidence never prove an outcome', async () => {
   const ledger = await fixtureLedger();
   const action = await makeEvidence(ledger, { category: 'ACTION_RECEIPT', trust: 'BROWSER_SENSOR', exhaustive: true });
   const authorization = await makeEvidence(ledger, { evidenceId: 'evidence_auth', category: 'USER_AUTHORIZATION', trust: 'AUTHENTICATED_USER', exhaustive: true });
@@ -112,7 +112,7 @@ test('6C process and authorization evidence never prove an outcome', async () =>
   }]);
 });
 
-test('6C rejects stale, cross-tenant, cross-lineage, scope, expiry, and dependency evidence explicitly', async () => {
+test('rejects stale, cross-tenant, cross-lineage, scope, expiry, and dependency evidence explicitly', async () => {
   const ledger = await fixtureLedger();
   const dependency = await makeEvidence(ledger, { evidenceId: 'dependency_001' });
   const cases = [
@@ -134,7 +134,7 @@ test('6C rejects stale, cross-tenant, cross-lineage, scope, expiry, and dependen
   assert.deepEqual(proof.rejectedEvidenceRefs.map((item) => item.reason), cases.map((item) => item[2]));
 });
 
-test('6C contradictions remain visible and block positive completion', async () => {
+test('contradictions remain visible and block positive completion', async () => {
   const ledger = await fixtureLedger();
   const yes = await makeEvidence(ledger, { evidenceId: 'evidence_yes' });
   const no = await makeEvidence(ledger, { evidenceId: 'evidence_no', supports: false });
@@ -145,7 +145,7 @@ test('6C contradictions remain visible and block positive completion', async () 
   assert.ok(proof.rejectedEvidenceRefs.some((item) => item.reason === 'CONTRADICTION_UNRESOLVED'));
 });
 
-test('6C bounded evidence can be BOUNDED_COMPLETE but never universal PROVED', async () => {
+test('bounded evidence can be BOUNDED_COMPLETE but never universal PROVED', async () => {
   const ledger = await fixtureLedger();
   const first = await makeEvidence(ledger, {
     evidenceId: 'boundary_001', category: 'BOUNDARY_OBSERVATION', claimId: 'claim_feed_scanned',
@@ -165,7 +165,7 @@ test('6C bounded evidence can be BOUNDED_COMPLETE but never universal PROVED', a
   assert.ok(duplicated.rejectedEvidenceRefs.some((item) => item.reason === 'DUPLICATE_ID'));
 });
 
-test('6C closed-world proof requires sufficient exhaustive outcome evidence', async () => {
+test('closed-world proof requires sufficient exhaustive outcome evidence', async () => {
   const ledger = await fixtureLedger({ scope: { kind: 'CLOSED_WORLD', resourceId: 'resource_fixture_map_001' } });
   const ordinary = await makeEvidence(ledger);
   const partial = await evaluateProof(ledger, 'claim_candidates_match', [ordinary], { now: NOW });
@@ -177,7 +177,7 @@ test('6C closed-world proof requires sufficient exhaustive outcome evidence', as
   assert.equal(proved.status, 'PROVED');
 });
 
-test('6C receipts are canonical, bounded, immutable, and tamper evident', async () => {
+test('receipts are canonical, bounded, immutable, and tamper evident', async () => {
   const ledger = await fixtureLedger();
   const evidence = await makeEvidence(ledger);
   const proof = await evaluateProof(ledger, 'claim_candidates_match', [evidence], { now: NOW });
@@ -190,7 +190,7 @@ test('6C receipts are canonical, bounded, immutable, and tamper evident', async 
   await assert.rejects(validateProof(tampered), (error) => error.code === 'INVALID_DIGEST');
 });
 
-test('6C has zero false PROVED results across the adversarial corpus', async () => {
+test('has zero false PROVED results across the adversarial corpus', async () => {
   const base = await fixtureLedger();
   for (const scenario of proofReplay.scenarios) {
     const ledger = scenario.scopeKind ? await fixtureLedger({ scope: { ...base.scope, kind: scenario.scopeKind } }) : base;
@@ -233,7 +233,7 @@ test('6C has zero false PROVED results across the adversarial corpus', async () 
   }
 });
 
-test('6C evaluates 500 bounded items without environment side effects', { timeout: 30000 }, async () => {
+test('evaluates 500 bounded items without environment side effects', { timeout: 30000 }, async () => {
   const ledger = await fixtureLedger();
   const evidence = await Promise.all(Array.from({ length: 500 }, (_, index) => makeEvidence(ledger, { evidenceId: `evidence_${String(index).padStart(3, '0')}` })));
   const started = performance.now();

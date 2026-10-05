@@ -1,26 +1,26 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: semantic-working-state.test — working-state.test — P1 semantic working state, consolidated 2026-10-03.
-// @state: consolidate the P1 working-state cluster into one file.
-// @dependencies: node:test, strict, semantic-working-state-p1.
+// @title: semantic-working-state.test — working-state.test — semantic working state, consolidated 2026-10-03.
+// @state: consolidate the working-state cluster into one file.
+// @dependencies: node:test, strict, semantic-working-state.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SemanticWorkingStateError,
   createSemanticWorkingStateStore,
-} from '../lib/semantic-working-state-p1.js';
+} from '../lib/semantic-working-state.js';
 
-// P1 semantic working state, consolidated 2026-10-03.
+//  semantic working state, consolidated 2026-10-03.
 //
-// Two files drove lib/semantic-working-state-p1.js: the store's own contract,
+// Two files drove lib/semantic-working-state.js: the store's own contract,
 // and an adversarial corpus that feeds it observations which lie -- a rich
 // observation that changed semantically with no matching delta, a changed view
 // that changedRegionIds did not authorize, a state that blows the byte cap.
 // Splitting those apart meant the fail-closed cases lived in a file titled
 // "adversarial", so a reader of the happy path never saw them.
 //
-//   tests/semantic-working-state-p1.test.mjs             9 tests
-//   tests/semantic-working-state-p1-adversarial.test.mjs 4 tests
+//   tests/semantic-working-state.test.mjs             9 tests
+//   tests/semantic-working-state-adversarial.test.mjs 4 tests
 //   -> tests/semantic-working-state.test.mjs            13 tests
 //
 //   A  the store contract: bootstrap, continuity, scope, bounds, privacy

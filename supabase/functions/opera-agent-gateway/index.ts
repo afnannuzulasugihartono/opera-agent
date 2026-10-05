@@ -7,7 +7,7 @@ import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
-// U-T universal fastpath gateway: ONE HTTP round trip from any AI platform
+// Universal fastpath gateway: ONE HTTP round trip from any AI platform
 // (ChatGPT GPTs/Actions, Claude/MCP, n8n, plain curl) to a completed browser
 // action. GPT Actions cannot set custom headers, so the token may arrive via
 // the x-opera-agent-token header, an Authorization header (whose "Bearer "

@@ -132,7 +132,7 @@ async function complete(body: Record<string, unknown>) {
   return json(result || { ok: false }, result?.ok ? 200 : 400);
 }
 
-// U-T Event-Triggered Workflows: device pushes a fired watcher event. The
+// Event-Triggered Workflows: device pushes a fired watcher event. The
 // envelope is device-supplied but capped; the watcher identity is carried in
 // the envelope itself (the relay does not resolve watcher rows).
 async function watchEvent(body: Record<string, unknown>) {

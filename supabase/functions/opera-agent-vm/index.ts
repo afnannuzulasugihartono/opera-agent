@@ -1,23 +1,23 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: index — Repository file.
 // @state: edge-runtime imports via deno.json import maps, restore SBOM gate.
-// @dependencies: edge-runtime, supabase-js, goal-ledger, reactive-vm-7d, reactive-vm-host-7e, vm-token.
+// @dependencies: edge-runtime, supabase-js, goal-ledger, reactive-vm-collect, reactive-vm-host, vm-token.
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 
 import { canonicalJson, digestCanonical } from "../../../lib/goal-ledger.js";
 import {
-  advanceReactiveVm7D,
-  createReactiveVm7D,
-  validateReactiveProgram7D,
-} from "../../../lib/reactive-vm-7d.js";
+  advanceCollectVm,
+  createCollectVm,
+  validateCollectProgram,
+} from "../../../lib/reactive-vm-collect.js";
 import {
-  REACTIVE_VM_HOST_7E_LIMITS,
-  classifyVmPersistence7E,
-  deriveVmEffectIdempotencyKey7E,
-  reconcileVmEffectObservation7E,
-} from "../../../lib/reactive-vm-host-7e.js";
+  REACTIVE_VM_HOST_LIMITS,
+  classifyVmPersistence,
+  deriveVmEffectIdempotencyKey,
+  reconcileVmEffectObservation,
+} from "../../../lib/reactive-vm-host.js";
 import {
   decodeVmHostKey,
   openVmHostToken,
@@ -147,9 +147,9 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
 
 async function readBody(req: Request) {
   const declared = Number(req.headers.get("content-length") || 0);
-  if (declared > REACTIVE_VM_HOST_7E_LIMITS.requestBytes) throw new HostError("OVER_LIMIT", "Request payload is too large.", 413);
+  if (declared > REACTIVE_VM_HOST_LIMITS.requestBytes) throw new HostError("OVER_LIMIT", "Request payload is too large.", 413);
   const bytes = new Uint8Array(await req.arrayBuffer());
-  if (bytes.byteLength > REACTIVE_VM_HOST_7E_LIMITS.requestBytes) throw new HostError("OVER_LIMIT", "Request payload is too large.", 413);
+  if (bytes.byteLength > REACTIVE_VM_HOST_LIMITS.requestBytes) throw new HostError("OVER_LIMIT", "Request payload is too large.", 413);
   try {
     const value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error();
@@ -257,12 +257,12 @@ async function authoritativeProgram(programInput: unknown, tenantId: string) {
   if (candidate.tenantId !== tenantId) throw new HostError("CROSS_TENANT", "Program tenant differs from authenticated tenant.", 403);
   let program;
   try {
-    program = await validateReactiveProgram7D(candidate);
+    program = await validateCollectProgram(candidate);
   } catch (error) {
     const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
     throw new HostError(boundedErrorCode(failure.code, "INVALID_PROGRAM"), "Reactive VM program validation failed.");
   }
-  if (canonicalBytes(program) > REACTIVE_VM_HOST_7E_LIMITS.programBytes) throw new HostError("OVER_LIMIT", "Program exceeds the frozen byte budget.", 413);
+  if (canonicalBytes(program) > REACTIVE_VM_HOST_LIMITS.programBytes) throw new HostError("OVER_LIMIT", "Program exceeds the frozen byte budget.", 413);
   await assertGoalCurrent(tenantId, program.goalId, program.goalRevision);
   await resolveDevice(String(program.target.deviceId));
   const targetDigest = await digestCanonical(program.target);
@@ -277,12 +277,12 @@ async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
   const logicalNowMs = Date.now();
   let state;
   try {
-    state = await createReactiveVm7D(program, {
+    state = await createCollectVm(program, {
       runId,
       tenantId,
       goalRevision: program.goalRevision,
       logicalNowMs,
-      deadlineAtMs: logicalNowMs + Math.min(program.budgets.runDeadlineMs, REACTIVE_VM_HOST_7E_LIMITS.runDeadlineMs),
+      deadlineAtMs: logicalNowMs + Math.min(program.budgets.runDeadlineMs, REACTIVE_VM_HOST_LIMITS.runDeadlineMs),
     });
   } catch (error) {
     const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
@@ -293,7 +293,7 @@ async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
   const checkpointDigest = await digestCanonical(state);
   const programToken = await sealVmHostToken(program, key, { kind: "PROGRAM" });
   const checkpointToken = await sealVmHostToken(state, key, { kind: "CHECKPOINT" });
-  const expiresAt = new Date(logicalNowMs + Math.min(program.budgets.runDeadlineMs, REACTIVE_VM_HOST_7E_LIMITS.runDeadlineMs)).toISOString();
+  const expiresAt = new Date(logicalNowMs + Math.min(program.budgets.runDeadlineMs, REACTIVE_VM_HOST_LIMITS.runDeadlineMs)).toISOString();
   const stored = await rpc("opera_vm_enqueue", {
     p_tenant_id: tenantId,
     p_run_id: runId,
@@ -327,7 +327,7 @@ async function executeEffect(program: VmProgram, state: VmState, claim: VmClaim,
     throw new HostError("CROSS_TAB", "Effect arguments target another tab.", 409);
   }
 
-  const idempotencyKey = await deriveVmEffectIdempotencyKey7E({
+  const idempotencyKey = await deriveVmEffectIdempotencyKey({
     tenantId,
     runId: claim.runId,
     programDigest: claim.programDigest,
@@ -409,7 +409,7 @@ async function executeEffect(program: VmProgram, state: VmState, claim: VmClaim,
       goalRevision: program.goalRevision,
       taskDependencies: program.taskDependencies ?? null,
     };
-    const reconciled = reconcileVmEffectObservation7E(observationIdentity, awaited.result, programContext);
+    const reconciled = reconcileVmEffectObservation(observationIdentity, awaited.result, programContext);
     effectValue = {
       ...awaited.result,
       performanceCutover: {
@@ -470,9 +470,9 @@ async function checkpointOriginal(claim: VmClaim, workerId: string, tenantId: st
 
 async function persistSlice(_program: VmProgram, state: VmState, transition: VmTransition, claim: VmClaim, workerId: string, tenantId: string, key: Uint8Array) {
   const logicalNowMs = nowMsAtLeast(state.lastLogicalNowMs);
-  const classification = classifyVmPersistence7E(state, transition, logicalNowMs);
+  const classification = classifyVmPersistence(state, transition, logicalNowMs);
   const checkpointBytes = canonicalBytes(state);
-  if (checkpointBytes > REACTIVE_VM_HOST_7E_LIMITS.checkpointBytes) throw new HostError("OVER_LIMIT", "Checkpoint exceeds the frozen byte budget.");
+  if (checkpointBytes > REACTIVE_VM_HOST_LIMITS.checkpointBytes) throw new HostError("OVER_LIMIT", "Checkpoint exceeds the frozen byte budget.");
   const checkpointDigest = await digestCanonical(state);
   const checkpointToken = await sealVmHostToken(state, key, { kind: "CHECKPOINT" });
 
@@ -481,7 +481,7 @@ async function persistSlice(_program: VmProgram, state: VmState, transition: VmT
   let resultBytes: number | null = null;
   if (classification.terminal && state.result !== null && state.result !== undefined) {
     resultBytes = canonicalBytes(state.result);
-    if (resultBytes > REACTIVE_VM_HOST_7E_LIMITS.resultBytes) throw new HostError("OVER_LIMIT", "VM result exceeds the frozen byte budget.");
+    if (resultBytes > REACTIVE_VM_HOST_LIMITS.resultBytes) throw new HostError("OVER_LIMIT", "VM result exceeds the frozen byte budget.");
     resultDigest = await digestCanonical(state.result);
     resultToken = await sealVmHostToken(state.result, key, { kind: "RESULT" });
   }
@@ -524,7 +524,7 @@ async function processSlice(runId: string, tenantId: string) {
     p_tenant_id: tenantId,
     p_run_id: runId,
     p_worker_id: workerId,
-    p_lease_ms: REACTIVE_VM_HOST_7E_LIMITS.leaseMsDefault,
+    p_lease_ms: REACTIVE_VM_HOST_LIMITS.leaseMsDefault,
   });
   if (!claim?.ok) {
     if (claim?.code === "NO_WORK") return safePublicRun(await rpc("opera_vm_get", { p_tenant_id: tenantId, p_run_id: runId }));
@@ -534,7 +534,7 @@ async function processSlice(runId: string, tenantId: string) {
   try {
     const program = await openVmHostToken(String(claim.programToken), key, { kind: "PROGRAM" });
     let state = await openVmHostToken(String(claim.checkpointToken), key, { kind: "CHECKPOINT" });
-    const validatedProgram = await validateReactiveProgram7D(program);
+    const validatedProgram = await validateCollectProgram(program);
     if (validatedProgram.programDigest !== claim.programDigest || await digestCanonical(validatedProgram.target) !== claim.targetDigest) {
       throw new HostError("STALE_RUN", "Encrypted program no longer matches durable metadata.", 409);
     }
@@ -544,7 +544,7 @@ async function processSlice(runId: string, tenantId: string) {
     await assertGoalCurrent(tenantId, String(claim.goalId), Number(claim.goalRevision));
     const device = await resolveDevice(String(validatedProgram.target.deviceId));
 
-    const sliceDeadline = performance.now() + REACTIVE_VM_HOST_7E_LIMITS.executionSliceMs - REACTIVE_VM_HOST_7E_LIMITS.sliceSafetyMarginMs;
+    const sliceDeadline = performance.now() + REACTIVE_VM_HOST_LIMITS.executionSliceMs - REACTIVE_VM_HOST_LIMITS.sliceSafetyMarginMs;
     let transition: VmTransition = { kind: "CONTINUE" };
     let steps = 0;
     while (!TERMINAL.has(String(state.status)) && performance.now() < sliceDeadline && steps < 1000) {
@@ -557,7 +557,7 @@ async function processSlice(runId: string, tenantId: string) {
       if (!lease?.ok || lease.leaseValid !== true) throw new HostError("STALE_LEASE", "VM lease expired before the slice completed.", 409);
       const logicalNowMs = nowMsAtLeast(state.lastLogicalNowMs);
       if (lease.cancelRequested === true) {
-        const advanced = await advanceReactiveVm7D(validatedProgram, state, { logicalNowMs, cancelled: true });
+        const advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs, cancelled: true });
         state = advanced.state;
         transition = advanced.transition;
         break;
@@ -566,9 +566,9 @@ async function processSlice(runId: string, tenantId: string) {
       let advanced;
       if (state.pendingEffect) {
         const effectResult = await executeEffect(validatedProgram, state, claim, workerId, tenantId, device, sliceDeadline);
-        advanced = await advanceReactiveVm7D(validatedProgram, state, { logicalNowMs, effectResult });
+        advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs, effectResult });
       } else {
-        advanced = await advanceReactiveVm7D(validatedProgram, state, { logicalNowMs });
+        advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs });
       }
       state = advanced.state;
       transition = advanced.transition;

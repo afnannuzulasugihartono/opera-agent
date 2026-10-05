@@ -3,7 +3,7 @@
 // @state: Test helper..
 // @dependencies: none.
 
-// Phase A latency measurement (2026-10-02): a deterministic, clock-injected
+// Phase A latency measurement: a deterministic, clock-injected
 // model of the bridge claim-polling cadence in
 // supabase/functions/opera-agent-bridge/index.ts.
 //

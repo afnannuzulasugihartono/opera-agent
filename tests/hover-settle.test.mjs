@@ -81,7 +81,7 @@ test('settle bounds are clamped so a caller cannot ask for an unbounded wait', (
 
 test('the hover burst step exists and requires a ref target', () => {
   assert.equal(BURST_ACTION_METHODS.hover, 'page.hover');
-  // tabId was appended by Phase D (2026-10-02) so a step can target its own tab.
+  // tabId was appended by Phase D so a step can target its own tab.
   // The hover target rules are otherwise unchanged.
   assert.deepEqual(BURST_STEP_KEYS.hover, ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId']);
   // A hover needs a concrete target: text is the submenu to WAIT for, never the

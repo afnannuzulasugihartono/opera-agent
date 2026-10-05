@@ -1,20 +1,20 @@
 // @last-edited: 2026-10-04 18:32 UTC+7.
 // @title: reactive-vm-host-limits — bounded host and storage limits.
 // @state: Host effects stay bounded, idempotent and digest-only.
-// @dependencies: strict, node:fs, node:test, reactive-vm-host-7e, vm-token.
+// @dependencies: strict, node:fs, node:test, reactive-vm-host, vm-token.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
 import {
-  REACTIVE_VM_HOST_7E_LIMITS,
+  REACTIVE_VM_HOST_LIMITS,
   ReactiveVmHostError,
-  classifyVmPersistence7E,
-  deriveVmEffectIdempotencyKey7E,
-  retryDelayMs7E,
-  validateVmPersistedMetadata7E,
-} from '../lib/reactive-vm-host-7e.js';
+  classifyVmPersistence,
+  deriveVmEffectIdempotencyKey,
+  retryDelayMs,
+  validateVmPersistedMetadata,
+} from '../lib/reactive-vm-host.js';
 import {
   decodeVmHostKey,
   openVmHostToken,
@@ -47,15 +47,15 @@ async function hostError(code, fn) {
 // --- A. limits, idempotency, persistence, tokens -----------------------------
 
 test('freezes bounded host/storage limits at or below Milestone 7 budgets', () => {
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.programBytes, 131072);
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.checkpointBytes, 131072);
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.resultBytes, 131072);
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.executionSliceMs, 20000);
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.runDeadlineMs, 300000);
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.tenantRunningRuns, 4);
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.tenantOutstandingRuns, 32);
-  assert.equal(REACTIVE_VM_HOST_7E_LIMITS.enqueuePerMinute, 20);
-  assert.ok(REACTIVE_VM_HOST_7E_LIMITS.opaqueTokenBytes > REACTIVE_VM_HOST_7E_LIMITS.checkpointBytes);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.programBytes, 131072);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.checkpointBytes, 131072);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.resultBytes, 131072);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.executionSliceMs, 20000);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.runDeadlineMs, 300000);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.tenantRunningRuns, 4);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.tenantOutstandingRuns, 32);
+  assert.equal(REACTIVE_VM_HOST_LIMITS.enqueuePerMinute, 20);
+  assert.ok(REACTIVE_VM_HOST_LIMITS.opaqueTokenBytes > REACTIVE_VM_HOST_LIMITS.checkpointBytes);
 });
 
 test('effect idempotency is deterministic and control-sensitive', async () => {
@@ -63,9 +63,9 @@ test('effect idempotency is deterministic and control-sensitive', async () => {
     tenantId: 'tenant-a', runId: 'run-a', programDigest: digest('1'),
     requestDigest: digest('2'), attemptClass: 'OBSERVATION',
   };
-  const first = await deriveVmEffectIdempotencyKey7E(base);
-  const replay = await deriveVmEffectIdempotencyKey7E({ ...base });
-  const changed = await deriveVmEffectIdempotencyKey7E({ ...base, requestDigest: digest('3') });
+  const first = await deriveVmEffectIdempotencyKey(base);
+  const replay = await deriveVmEffectIdempotencyKey({ ...base });
+  const changed = await deriveVmEffectIdempotencyKey({ ...base, requestDigest: digest('3') });
   assert.match(first, /^vm1:[0-9a-f]{64}$/);
   assert.equal(first, replay);
   assert.notEqual(first, changed);
@@ -81,38 +81,38 @@ test('persisted metadata is digest-only and rejects raw/sensitive browser payloa
     resultDigest: null, resultBytes: null, logicalTransition: 4, leaseEpoch: 2,
     expiresAt: '2026-09-12T06:00:00.000Z', availableAt: '2026-09-12T05:56:00.000Z', errorCode: null,
   };
-  assert.deepEqual(validateVmPersistedMetadata7E(safe), safe);
+  assert.deepEqual(validateVmPersistedMetadata(safe), safe);
   for (const field of ['program', 'checkpoint', 'result', 'params', 'pageText', 'screenshot', 'privateUrl', 'token']) {
-    await hostError('PROHIBITED_PERSISTENCE', async () => validateVmPersistedMetadata7E({ ...safe, [field]: 'raw-value' }));
+    await hostError('PROHIBITED_PERSISTENCE', async () => validateVmPersistedMetadata({ ...safe, [field]: 'raw-value' }));
   }
-  await hostError('SENSITIVE_VALUE', async () => validateVmPersistedMetadata7E({ ...safe, errorCode: 'sk-abcdefghijklmnopqrstuvwxyz0123456789' }));
+  await hostError('SENSITIVE_VALUE', async () => validateVmPersistedMetadata({ ...safe, errorCode: 'sk-abcdefghijklmnopqrstuvwxyz0123456789' }));
 });
 
 test('persistence classification never upgrades non-terminal work to completion', () => {
-  assert.deepEqual(classifyVmPersistence7E({ status: 'RUNNING' }, { kind: 'CONTINUE' }, 1000), {
+  assert.deepEqual(classifyVmPersistence({ status: 'RUNNING' }, { kind: 'CONTINUE' }, 1000), {
     status: 'QUEUED', availableAtMs: 1000, terminal: false,
   });
-  assert.deepEqual(classifyVmPersistence7E({ status: 'RUNNING' }, { kind: 'WAITING_EVENT', nextPollAtMs: 1500 }, 1000), {
+  assert.deepEqual(classifyVmPersistence({ status: 'RUNNING' }, { kind: 'WAITING_EVENT', nextPollAtMs: 1500 }, 1000), {
     status: 'QUEUED', availableAtMs: 1500, terminal: false,
   });
-  assert.deepEqual(classifyVmPersistence7E({ status: 'SUSPENDED' }, { kind: 'TERMINAL', status: 'SUSPENDED' }, 1000), {
+  assert.deepEqual(classifyVmPersistence({ status: 'SUSPENDED' }, { kind: 'TERMINAL', status: 'SUSPENDED' }, 1000), {
     status: 'SUSPENDED', availableAtMs: null, terminal: true,
   });
-  assert.deepEqual(classifyVmPersistence7E({ status: 'RETURNED' }, { kind: 'TERMINAL', status: 'RETURNED' }, 1000), {
+  assert.deepEqual(classifyVmPersistence({ status: 'RETURNED' }, { kind: 'TERMINAL', status: 'RETURNED' }, 1000), {
     status: 'RETURNED', availableAtMs: null, terminal: true,
   });
 });
 
 test('retry scheduling is bounded and deterministic', () => {
-  assert.equal(retryDelayMs7E(0), 250);
-  assert.equal(retryDelayMs7E(1), 500);
-  assert.equal(retryDelayMs7E(4), 4000);
-  assert.equal(retryDelayMs7E(20), 5000);
+  assert.equal(retryDelayMs(0), 250);
+  assert.equal(retryDelayMs(1), 500);
+  assert.equal(retryDelayMs(4), 4000);
+  assert.equal(retryDelayMs(20), 5000);
 });
 
 test('opaque tokens authenticate kind and ciphertext while retaining bounded plaintext', async () => {
   const key = decodeVmHostKey('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-  const payload = { schemaVersion: 'OA_REACTIVE_VM_STATE_7D_V1', runId: 'run-a', status: 'READY' };
+  const payload = { schemaVersion: 'OA_REACTIVE_VM_COLLECT_STATE_V1', runId: 'run-a', status: 'READY' };
   const token = await sealVmHostToken(payload, key, { kind: 'CHECKPOINT' });
   assert.match(token, /^oavm1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   assert.deepEqual(await openVmHostToken(token, key, { kind: 'CHECKPOINT' }), payload);
@@ -153,7 +153,7 @@ test('source keeps public MCP and extension outside the checkpoint', () => {
 
 // --- C. the Edge host boundary -----------------------------------------------
 //
-// Why source-text pins, stated per AGENTS.md: the 7E host is a Deno edge
+// Why source-text pins, stated per AGENTS.md: the host is a Deno edge
 // function that cannot be imported in node, so its boundary is locked in
 // source. The two hazards are fail-closed on every identity input (tenant,
 // target, tab, goal, and document generation must all match) and never
@@ -164,9 +164,9 @@ test('source keeps public MCP and extension outside the checkpoint', () => {
 
 test('Edge host authenticates OAuth users, invokes 7D, and reuses opera_enqueue request IDs', () => {
   assert.match(edgeSource, /auth\.getUser/);
-  assert.match(edgeSource, /validateReactiveProgram7D/);
-  assert.match(edgeSource, /createReactiveVm7D/);
-  assert.match(edgeSource, /advanceReactiveVm7D/);
+  assert.match(edgeSource, /validateCollectProgram/);
+  assert.match(edgeSource, /createCollectVm/);
+  assert.match(edgeSource, /advanceCollectVm/);
   assert.match(edgeSource, /opera_vm_claim/);
   assert.match(edgeSource, /opera_vm_checkpoint/);
   assert.match(edgeSource, /opera_vm_effect_reserve/);

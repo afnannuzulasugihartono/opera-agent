@@ -54,7 +54,7 @@ function keysDeep(value, output = []) {
   return output;
 }
 
-test('6A freezes a bounded goal ledger and proof contract without runtime changes', () => {
+test('freezes a bounded goal ledger and proof contract without runtime changes', () => {
   assert.equal(contract.schemaVersion, 1);
   assert.equal(contract.milestone, '6A');
   assert.equal(contract.baselineVersion, '1.6.0');
@@ -76,7 +76,7 @@ test('6A freezes a bounded goal ledger and proof contract without runtime change
   assert.equal(contract.publicApiDecision.existingMcpToolCount, mcpContract.toolCount);
 });
 
-test('6A canonical digest is deterministic across 100 runs and rejects floats', () => {
+test('canonical digest is deterministic across 100 runs and rejects floats', () => {
   const outputs = Array.from({ length: 100 }, () => digest(replay.ledger));
   assert.equal(new Set(outputs).size, 1);
   assert.equal(outputs[0], replay.expectedLedgerDigest);
@@ -84,7 +84,7 @@ test('6A canonical digest is deterministic across 100 runs and rejects floats', 
   assert.equal(canonicalJson({ z: 'e\u0301', a: true }), '{"a":true,"z":"é"}');
 });
 
-test('6A hostile replay corpus covers false completion, authority, tenancy, and revisions', () => {
+test('hostile replay corpus covers false completion, authority, tenancy, and revisions', () => {
   assert.equal(replay.schemaVersion, 1);
   assert.equal(replay.syntheticOnly, true);
   const byId = new Map(replay.scenarios.map((scenario) => [scenario.id, scenario]));
@@ -118,7 +118,7 @@ test('6A hostile replay corpus covers false completion, authority, tenancy, and 
   assert.equal(byId.get('expanded-goal-invalidates-completion').expectedReuse, 'NO_COMPLETENESS_FOR_NEW_SCOPE');
 });
 
-test('6A persistence contract is metadata-only and forbids raw sensitive state', () => {
+test('persistence contract is metadata-only and forbids raw sensitive state', () => {
   assert.deepEqual(contract.persistentHeadColumns, [
     'tenant_id', 'goal_id', 'head_revision', 'head_digest', 'status', 'created_at', 'updated_at', 'expires_at',
   ]);
@@ -140,7 +140,7 @@ test('6A persistence contract is metadata-only and forbids raw sensitive state',
   assert.doesNotMatch(serialized, /BEGIN (?:RSA )?PRIVATE KEY/i);
 });
 
-test('6A locks quantitative gates to the accepted 1.6.0 baseline', () => {
+test('locks quantitative gates to the accepted 1.6.0 baseline', () => {
   assert.equal(thresholds.schemaVersion, 1);
   assert.equal(thresholds.checkpoint, '6A');
   assert.equal(thresholds.baselineVersion, '1.6.0');

@@ -1,9 +1,9 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: hover-settle — settle — R9-E : hover settle policy, as a classic content script.
-// @state: fix(r9): hygiene pass on the R9 code itself.
+// @title: hover-settle — settle —: hover settle policy, as a classic content script.
+// @state: hygiene pass over this file.
 // @dependencies: none.
 
-// R9-E (2026-09-30): hover settle policy, as a classic content script.
+// Hover settle policy, as a classic content script.
 //
 // Loaded by the manifest BEFORE content.js and published on globalThis, the same
 // pattern as role-reconcile.js: content scripts are classic scripts and cannot
@@ -15,7 +15,7 @@
 // unbounded steps. This module owns the decision of when a hover has "landed",
 // so one hover per level can be a single step.
 //
-// Semantics locked by tests/r9-hover-settle.test.mjs:
+// Semantics locked by tests/hover-settle.test.mjs:
 // - a hover with an expected submenu name settles only when that name is
 //   actually observed
 // - otherwise it settles on DOM mutation stability for the required rounds

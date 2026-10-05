@@ -1,14 +1,14 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-dark-fixture — dark-fixture — Repository file.
-// @state: isolate 8D hosted acceptance fixture data.
-// @dependencies: strict, node:fs, node:test, goal-ledger, transaction-prepare, transaction-admission-8d.
+// @state: isolate hosted acceptance fixture data.
+// @dependencies: strict, node:fs, node:test, goal-ledger, transaction-prepare, transaction-admission.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import { cancelLedger, createLedger, digestCanonical } from '../../lib/goal-ledger.js';
 import { prepareTransaction } from '../../lib/transaction-prepare.js';
-import { createTransactionAdmission } from '../../lib/transaction-admission-8d.js';
+import { createTransactionAdmission } from '../../lib/transaction-admission.js';
 
 const NOW = '2026-09-12T00:01:00.000Z';
 const example = JSON.parse(fs.readFileSync(new URL('../fixtures/transaction-examples-v1.json', import.meta.url))).validTransactions[0];

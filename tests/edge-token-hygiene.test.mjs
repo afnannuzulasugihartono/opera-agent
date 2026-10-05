@@ -12,7 +12,7 @@ import { readFile } from 'node:fs/promises';
 // console call sites and 401/405 body literals, so any new log call naming
 // token material — or any credential echo in an auth-error body — fails
 // loudly instead of leaking silently. The four functions are the
-// token-handling surfaces audited under spec R1
+// token-handling surfaces audited under spec 
 // (docs/superpowers/specs/2026-10-02-enterprise-security-phase4-design.md).
 
 const FUNCTIONS = [

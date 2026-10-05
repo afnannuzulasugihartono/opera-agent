@@ -48,7 +48,7 @@ for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
   assert.doesNotMatch(text, /\beval\s*\(/, `${file} must not use eval`);
   assert.doesNotMatch(text, /new\s+Function\s*\(/, `${file} must not use Function constructor`);
-  // U-R (2026-09-28) recorded reason: a trustedFill parenthesis break in
+  // Recorded reason: a trustedFill parenthesis break in
   // extension/background.js shipped green through npm test (regex source
   // contracts) and npm run check (no parse step); only the live service
   // worker surfaced it. Every runtime .js file must parse standalone.

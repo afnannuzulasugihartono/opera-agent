@@ -56,7 +56,7 @@ const screenshot = fs.readFileSync(
   'utf8'
 );
 
-// T021 — freeze the public compatibility inventory before the R4 compact
+// Freeze the public compatibility inventory before the compact
 // model-facing projection changes any extension output behavior.
 
 const FROZEN_MCP_TOOLS = [
@@ -104,17 +104,17 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   wheel_at: '1bc3d389f2343e4a' // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 fail-closed CORS (last tool block runs to EOF, covering the Deno.serve CORS handler edit; schema bytes unchanged).
 });
 
-// The only tool whose schema the R9-B keyboard commit changed. Everything else
+// The only tool whose schema the keyboard commit changed. Everything else
 // must stay byte-identical, so an unrelated schema edit cannot ride along.
 
 const R9B_CHANGED_TOOL = 'press_key';
 
-// The press_key digest before R9-B, kept so the record of the change is visible
+// The press_key digest before, kept so the record of the change is visible
 // and a silent revert cannot be mistaken for "nothing ever changed".
 
 const PRE_R9B_PRESS_KEY_DIGEST = '41a4003cadb60196';
 
-// R9-E then added the hover burst step, which lives inside run_browser_burst's
+//  then added the hover burst step, which lives inside run_browser_burst's
 // schema rather than in a tool of its own.
 
 const R9E_CHANGED_TOOL = 'run_browser_burst';
@@ -321,12 +321,12 @@ test('the expanded key and modifier vocabularies are bounded', () => {
 
 test('the instructions now teach the chords the schema actually accepts', () => {
   const instructions = source.match(/instructions: "([\s\S]*?)",\n/)[1];
-  // The R9-G placeholder must be gone: the schema moved, so the guidance moves.
+  // The placeholder must be gone: the schema moved, so the guidance moves.
   assert.doesNotMatch(instructions, /are not available on this surface yet/);
   // Re-frozen 2026-10-01: instructions literal escaped (\"), served text unchanged — see 77ec536.
   assert.match(instructions, /select all with key \\"a\\" and modifiers \[\\"control\\"\]/);
   assert.match(instructions, /paste with key \\"v\\" and modifiers \[\\"control\\"\]/);
-  // The menu/dialog habit from R9-G must survive, now expressed with the R9-E
+  // The menu/dialog habit from must survive, now expressed with the 
   // hover step rather than a hand-built wait between levels.
   assert.match(instructions, /The same rule applies to MENUS and DIALOGS/);
   assert.match(instructions, /use a hover burst step with the found ref via refFromStep/);
@@ -348,7 +348,7 @@ test('MCP burst schema is bounded and does not expose arbitrary commands or code
 });
 
 test('every burst step kind accepts an optional per-step tabId', () => {
-  // Audit repair (2026-10-03): the extension executes a per-step tabId, but
+  // Audit repair: the extension executes a per-step tabId, but
   // every burstStepSchema object was .strict() without one, so the public tool
   // rejected cross-tab bursts while appearing to support them. Each of the ten
   // step kinds must carry the optional field; strictness stays so nothing else
@@ -367,7 +367,7 @@ test('every burst step kind accepts an optional per-step tabId', () => {
 
 // --- C. behavior and wiring ---------------------------------------------
 
-// Phase C (2026-10-02): make the AI-facing command path pay what it should.
+// Phase C: make the AI-facing command path pay what it should.
 //
 // Four defects, all on the MCP surface, all in one commit with one digest
 // re-freeze. `tests/mcp-contract-v1.json` freezes the whole-file SHA256, and

@@ -9,7 +9,7 @@ import fs from 'node:fs';
 
 import { raceWithTimeout } from '../extension/lib/deadline-race.js';
 
-// Phase B Task 2 (2026-10-02): debugger and timer lifecycle in the service
+// Phase B Task 2: debugger and timer lifecycle in the service
 // worker.
 //
 // Three defects were confirmed by reading the source:
@@ -185,7 +185,7 @@ test('executeCommand uses the clearing helper instead of a bare race', () => {
 
 test('withDebugger releases the previous session when a burst step switches tabs', () => {
   const fn = sliceBetween('async function withDebugger(', 'function codedError(');
-  // Phase D (2026-10-02) superseded the blanket refusal. Chrome permits one
+  // Phase D superseded the blanket refusal. Chrome permits one
   // debugger attachment per tab but not two at once, so a switch must detach
   // before attaching the next, or the banner stays on the first tab.
   assert.doesNotMatch(fn, /cannot switch tabs/);

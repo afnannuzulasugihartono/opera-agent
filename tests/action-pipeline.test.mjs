@@ -9,7 +9,7 @@ import {
   ACTION_RAMP_MS, pollDelays, classifyResolve, makeNotReady, attachResolution
 } from '../extension/lib/action-pipeline.js';
 
-// U-V Action Pipeline (2026-09-23): pure policy engine for Resolve -> Wait ->
+// Action Pipeline: pure policy engine for Resolve -> Wait ->
 // Heal -> Verify. Locked semantics: ramp shape, deadline clipping, resolve
 // classification, TARGET_NOT_READY shape, resolved telemetry superset.
 

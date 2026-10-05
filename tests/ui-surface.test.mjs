@@ -322,7 +322,7 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
 
 // --- C. identity hardening --------------------------------------------------
 //
-// U-I identity hardening (2026-09-21): geometry-aware action-ref rebind
+// Identity hardening: geometry-aware action-ref rebind
 // rejection, ambiguity-ranked find with disambiguation hints, and a
 // visible-text actionable fallback. Source-contract style: the runtime
 // behavior is exercised by the controlled browser regression; these
@@ -362,7 +362,7 @@ test('I3: visible text without an interactive element surfaces a nearby actionab
 });
 
 test('I4: rebind falls back to a unique intrinsic-signature successor when the keyed node loses its id', () => {
-  // Live T041 (2026-09-21 07:47:45Z): YouTube recreated the Skip control
+  // Live: YouTube recreated the Skip control
   // without its id between find and click; the keyed pool was empty and the
   // ref died as "Element not found or reference is stale." The fallback must
   // scan the interactive pool by intrinsic signature, keep uniqueness, and

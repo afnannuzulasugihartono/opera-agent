@@ -1,15 +1,15 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: index — Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit.
+// @title: index — fenced review candidate. NOT DEPLOYED by this commit.
 // @state: clear deno require-await and no-unused-vars in edge functions.
-// @dependencies: supabase-js, transaction-host-8d, transaction-http-8d, ledger-token.
+// @dependencies: supabase-js, transaction-host, transaction-http, ledger-token.
 
-// Checkpoint 8D fenced review candidate. NOT DEPLOYED by this commit.
+//  fenced review candidate. NOT DEPLOYED by this commit.
 // The environment flag is only a static deployment/master kill switch. Per-run
 // DARK admission is controlled by the service-only database operator fence.
 
 import {createClient} from "@supabase/supabase-js";
-import {createTransactionDarkHost} from "../../../lib/transaction-host-8d.js";
-import {createTransactionDarkHttpHandler} from "../../../lib/transaction-http-8d.js";
+import {createTransactionDarkHost} from "../../../lib/transaction-host.js";
+import {createTransactionDarkHttpHandler} from "../../../lib/transaction-http.js";
 import {decodeLedgerKey} from "../../../lib/ledger-token.js";
 
 const masterEnabled=Deno.env.get("OPERA_AGENT_TRANSACTION_DARK_8D")==="true";

@@ -1,13 +1,13 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: transaction-token.test — token.test — Test.
 // @state: drop the milestone suffix from transaction test files and titles.
-// @dependencies: strict, node:fs, node:test, transaction-prepare, transaction-token-8d.
+// @dependencies: strict, node:fs, node:test, transaction-prepare, transaction-token.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import { prepareTransaction } from '../lib/transaction-prepare.js';
-import { openTransactionToken, sealTransactionToken } from '../lib/transaction-token-8d.js';
+import { openTransactionToken, sealTransactionToken } from '../lib/transaction-token.js';
 
 const candidate = JSON.parse(fs.readFileSync(new URL('./fixtures/transaction-examples-v1.json',import.meta.url))).validTransactions[0];
 const key = new Uint8Array(32).fill(7); // Synthetic, never a production key.
@@ -46,7 +46,7 @@ test('token context cannot hide credentials, unbound claims or raw browser state
 });
 test('journal payload is a separate closed digest-only token kind', async () => {
   const {context} = await fixture(); context.kind='JOURNAL';
-  const payload={schemaVersion:'OA_TX_JOURNAL_PAYLOAD_8D_V1',tenantId:context.tenantId,transactionId:context.transactionId,prepareDigest:context.prepareDigest,transitionDigest:`sha256:${'a'.repeat(64)}`};
+  const payload={schemaVersion:'OA_TX_JOURNAL_PAYLOAD_V1',tenantId:context.tenantId,transactionId:context.transactionId,prepareDigest:context.prepareDigest,transitionDigest:`sha256:${'a'.repeat(64)}`};
   const token=await sealTransactionToken(payload,key,context);
   assert.deepEqual(await openTransactionToken(token,key,context),payload);
   await assert.rejects(sealTransactionToken({...payload,PROVED:true},key,context));

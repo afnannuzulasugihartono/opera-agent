@@ -86,7 +86,7 @@
     const maxDeltaBytes = positiveInteger(options.maxDeltaBytes, DEFAULT_MAX_DELTA_BYTES);
     const removalGraceObservations = Number.isInteger(options.removalGraceObservations) && options.removalGraceObservations >= 0
       ? Math.min(options.removalGraceObservations, 3) : 1;
-    // U-P3 (research P3): an entity observed present-but-invisible for this
+    // An entity observed present-but-invisible for this
     // many consecutive observations is marked stale in the model-facing view.
     // Canonical state keeps stale entities; the marking is advisory only.
     const invisibleGraceObservations = Number.isInteger(options.invisibleGraceObservations) && options.invisibleGraceObservations >= 1
@@ -97,7 +97,7 @@
     const refIndex = new Map();
     const lastObserved = new Map();
     const missingObservations = new Map();
-    // U-P3: entities emitted as REMOVE after grace; a later re-observation
+    // Entities emitted as REMOVE after grace; a later re-observation
     // reports RETURNED_AFTER_ABSENCE instead of NEW_ENTITY so virtualized
     // feeds stop surfacing returning content as new state.
     const returnedAfterGrace = new Set();
@@ -206,7 +206,7 @@
       return record;
     }
 
-    // U-P3 (research P3): track consecutive present-but-invisible observations
+    // Track consecutive present-but-invisible observations
     // per entity. After the grace the entity is marked stale in the
     // model-facing view; canonical state keeps it and the marking is advisory.
     function trackStaleness(record, item) {

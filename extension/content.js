@@ -7,12 +7,12 @@
   'use strict';
   if (globalThis.__operaAgentContentV1) return;
   globalThis.__operaAgentContentV1 = true;
-  // R9-C: published by role-reconcile.js, which the manifest loads before this
+  // Published by role-reconcile.js, which the manifest loads before this
   // file. Content scripts are classic scripts and cannot import, so the same
   // global pattern as the semantic engines is used.
   const { implicitRole } = globalThis.OperaAgentRoleReconcile || {};
   if (typeof implicitRole !== 'function') throw new Error('Role reconcile runtime is unavailable.');
-  // R9-E: hover settle policy, published by hover-settle.js.
+  // Hover settle policy, published by hover-settle.js.
   const hoverSettle = globalThis.OperaAgentHoverSettle;
   if (!hoverSettle || typeof hoverSettle.plan !== 'function') throw new Error('Hover settle runtime is unavailable.');
 
@@ -123,7 +123,7 @@
     );
   }
 
-  // U-I (I1): a ref minted before a geometric relocation must not silently
+  // A ref minted before a geometric relocation must not silently
   // rebind to an element that now sits somewhere else — that produced the
   // production Street-View mis-click. Rebind is allowed only when the current
   // target still sits within the mint-time geometry tolerance. Comparison
@@ -147,7 +147,7 @@
     );
   }
 
-  // U-I (I4, live T041 evidence 2026-09-21 07:47:45Z): the keyed rebind pool
+  // : the keyed rebind pool
   // goes empty when the page recreates a control whose keyed successor is
   // rewritten without its original id (YouTube rebuilt the Skip button during
   // the ad lifecycle between find and click). Match a unique replacement by
@@ -272,7 +272,7 @@
 
     const replacement = candidates[0];
     if (!geometryMatchesMint(replacement, descriptor)) {
-      // R9-D: the mint-time geometry guard still decides this ref, unchanged and
+      // The mint-time geometry guard still decides this ref, unchanged and
       // unbroadened — it exists because a same-place successor can be a
       // DIFFERENT control, and widening it would reintroduce that mis-click.
       // What was genuinely broken is the cost of recovery: the model had to run
@@ -359,7 +359,7 @@
     };
   }
 
-  // U-P1 (research P1): document.elementFromPoint retargets at open shadow
+  // Document.elementFromPoint retargets at open shadow
   // boundaries, so a control inside an open shadow root hit-tests as its
   // host element. Accept a hit when it is the element, a light-DOM
   // descendant, or a host on the element's composed path.
@@ -583,10 +583,10 @@
     const actionability = actionabilityState(el, blocked);
     const text = normalizeObservableText(el.innerText || el.textContent || '', 300);
     const label = normalizeObservableText(getAssociatedLabel(el), 300);
-    // U-P1: attach the computed accessible name only when it adds signal the
+    // Attach the computed accessible name only when it adds signal the
     // label/text fields do not already carry, keeping payloads bounded.
     const accessibleName = computeAccessibleName(el);
-    // R9-C: an explicit author role still wins; otherwise derive the role the
+    // An explicit author role still wins; otherwise derive the role the
     // platform would report from the element's own markup, so an unannotated
     // <button> is no longer serialized as role ''.
     const tag = String(el.tagName || '').toLowerCase();
@@ -638,7 +638,7 @@
     '[role="menuitem"]', '[role="menuitemradio"]', '[role="tab"]', '[contenteditable="true"]'
   ].join(',');
 
-  // U-P1 (research P1): flat document scans miss controls inside open shadow
+  // Flat document scans miss controls inside open shadow
   // roots; collect through open shadow boundaries with a bounded traversal.
   // Closed roots stay invisible (fail closed) and deeper trees stop at the
   // bounds below, so the walk stays proportional to existing observation work.
@@ -669,7 +669,7 @@
     return nodes;
   }
 
-  // U-P1 (research P1): compute a bounded accessible name for icon-only
+  // Compute a bounded accessible name for icon-only
   // controls whose DOM text is glyphs or whitespace. The priority follows the
   // W3C accessible-name subset the serializer already resolves via
   // getAssociatedLabel (aria-label, aria-labelledby, label, title,
@@ -843,7 +843,7 @@
     return selected;
   }
 
-  // R9-E: bounded settle after a hover. A submenu is the common case, so an
+  // Bounded settle after a hover. A submenu is the common case, so an
   // expected name is honoured first; otherwise DOM mutation stability or an
   // aria-expanded flip ends the wait. It only observes — it never clicks, moves
   // the pointer, or mints a ref, so it cannot become an action of its own.
@@ -981,7 +981,7 @@
     };
   }
 
-  // U-I (I2): disambiguation hints make ranked candidate lists actionable
+  // Disambiguation hints make ranked candidate lists actionable
   // without another round trip — the model sees why each rank was produced
   // and how to select a specific candidate explicitly.
   function findDisambiguationHint(el, position) {
@@ -993,7 +993,7 @@
     return `chose:${position + 1} — ${facts.join(', ')}; select explicitly with index:${position} or narrow the query`;
   }
 
-  // U-I (I3): Docs-style surfaces show the target text in the page but attach
+  // Docs-style surfaces show the target text in the page but attach
   // it to no interactive element, so exact field matching returns zero.
   // Surface the closest actionable element near the visible text so the model
   // can act in one round trip instead of a capture/re-read loop.
@@ -1050,7 +1050,7 @@
     let projected = entries;
     if (args.limit == null && args.index == null && dominant.length === 1) projected = dominant;
     const rawItems = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
-    // U-I (I2): ambiguous candidate lists carry rank + disambiguation hints so
+    // Ambiguous candidate lists carry rank + disambiguation hints so
     // the model can pick explicitly instead of guessing or re-reading.
     const items = rawItems.length > 1
       ? rawItems.map((entry, position) => ({
@@ -1063,7 +1063,7 @@
     const item = args.index == null && dominant.length === 1
       ? serialize(dominant[0].el, { includeValue: !!args.includeValue })
       : items[index] ?? null;
-    // U-I (I2): a bare zero forces the model into capture/re-read loops.
+    // A bare zero forces the model into capture/re-read loops.
     // When the exact-field search finds nothing, project one bounded fuzzy
     // candidate with an explicit hint so recovery costs one round trip.
     if (text && entries.length === 0) {
@@ -1134,7 +1134,7 @@
     };
   }
 
-  // U-V1: expected-state checks evaluated in-page right after the settle, so
+  // V1: expected-state checks evaluated in-page right after the settle, so
   // verifying an action costs no extra round trip and no full re-read.
   function normalizeExpectSpec(raw) {
     if (!raw || typeof raw !== 'object') return null;
@@ -1186,7 +1186,7 @@
     };
   }
 
-  // U-R: SPA-slow transitions (OAuth redirects, heavy SPA route changes) do
+  // SPA-slow transitions (OAuth redirects, heavy SPA route changes) do
   // not complete inside the 400 ms settle window; a single early evaluation
   // declares verified:false and drives a harmful re-click. When an expect spec
   // is present, poll the expectations until they pass or the bounded window
@@ -1292,7 +1292,7 @@
     return result;
   }
 
-  // U-R: fill gains the same retry/expect parity as click — re-verify through
+  // Fill gains the same retry/expect parity as click — re-verify through
   // postActionEvidence, re-fill only on verification failure, bounded 1..3.
   async function fill(args) {
     const attempts = Math.max(1, Math.min(3, Number(args.retry?.attempts) || 1));
@@ -1350,8 +1350,8 @@
     return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el), postActionBefore };
   }
 
-  // U-V Action Pipeline (2026-09-23): compact resolve snapshot for the
-  // background host. Reuses resolveActionRef (the U-I rebind machinery) so
+  // Action Pipeline: compact resolve snapshot for the
+  // background host. Reuses resolveActionRef (the rebind machinery) so
   // rebind authority stays in one place; ambiguity is read from the existing
   // geometry-guard refusal, which already carries the candidate list.
   function actionState(args) {
@@ -1752,7 +1752,7 @@
     return mediaState(args);
   }
 
-  // ---- U-T Event-Triggered Workflows: page-side watch facts ----
+  // ---- Event-Triggered Workflows: page-side watch facts ----
   // content.js stays dumb: it only reports FACTS for armed rules (plus a
   // compact text snapshot for textMatch). Evaluation lives in background.
   const watchRules = [];

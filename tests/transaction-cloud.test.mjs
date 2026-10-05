@@ -11,28 +11,28 @@ import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createCloudAcceptanceController8D } from './helpers/transaction-cloud-controller-8d.mjs';
-import { createCloudFixtureData8D } from './helpers/transaction-cloud-fixture-8d.mjs';
+import { createCloudAcceptanceController } from './helpers/transaction-cloud-controller.mjs';
+import { createCloudFixtureData } from './helpers/transaction-cloud-fixture.mjs';
 import {
-  createManagementOperatorBackend8D,
-  EXPECTED_TRANSACTION_BUNDLE_SHA_8D,
-  TRANSACTION_FUNCTION_8D
-} from './helpers/transaction-cloud-management-backend-8d.mjs';
+  createManagementOperatorBackend,
+  EXPECTED_TRANSACTION_BUNDLE_SHA,
+  TRANSACTION_FUNCTION
+} from './helpers/transaction-cloud-management-backend.mjs';
 import {
-  CALLBACK_8D,
-  PROJECT_REF_8D,
-  createFileOwnershipStore8D,
-  createInternalOperatorTransport8D
-} from './helpers/transaction-cloud-operator-8d.mjs';
-import { ISSUER, CLIENT_ID } from './helpers/transaction-oauth-8d.mjs';
+  CALLBACK,
+  PROJECT_REF,
+  createFileOwnershipStore,
+  createInternalOperatorTransport
+} from './helpers/transaction-cloud-operator.mjs';
+import { ISSUER, CLIENT_ID } from './helpers/transaction-oauth.mjs';
 import { transactionFixture } from './helpers/transaction-dark-fixture.mjs';
 import {
-  LEASE_TTL_MS_8D,
-  parseAcceptanceArgs8D,
-  runAcceptanceCli8D,
-  SDK_SPECIFIER_8D,
-  STATE_DIRECTORY_8D
-} from './cloud/transaction-cloud-acceptance-8d.mjs';
+  LEASE_TTL_MS,
+  parseAcceptanceArgs,
+  runAcceptanceCli,
+  SDK_SPECIFIER,
+  STATE_DIRECTORY
+} from './cloud/transaction-cloud-acceptance.mjs';
 import { validateLedger, digestCanonical } from '../lib/goal-ledger.js';
 import { validatePreparedTransaction } from '../lib/transaction-prepare.js';
 import { validateTransactionProvenance } from '../lib/transaction-authority.js';
@@ -59,7 +59,7 @@ const identity = { iss: 'https://example.invalid/auth/v1', aud: 'authenticated',
 
 const fixtureOptions = { namespace, userId, preparedAt: '2026-09-14T00:00:00.000Z' };
 test('cloud fixture binds UUID tenant and complete production goal-head metadata', async () => {
-  const f = await createCloudFixtureData8D(fixtureOptions);
+  const f = await createCloudFixtureData(fixtureOptions);
   const ledger = await validateLedger(f.ledger, { now: '2026-09-14T00:01:00.000Z' });
   await validatePreparedTransaction(f.request.prepared);
   assert.equal(f.principal.tenant_id, fixtureOptions.namespace);
@@ -71,7 +71,7 @@ test('cloud fixture binds UUID tenant and complete production goal-head metadata
   assert.equal(f.binding.metadata.mode, 'DARK');
 });
 test('cloud fixture uses inert synthetic target with matching provenance and grant', async () => {
-  const f = await createCloudFixtureData8D(fixtureOptions), tx = f.request.prepared;
+  const f = await createCloudFixtureData(fixtureOptions), tx = f.request.prepared;
   assert.match(tx.target.deviceId, /^m8d_fixture_/);
   assert.equal(tx.target.tabId, 0);
   assert.equal(tx.target.targetDigest, await digestCanonical({ deviceId: tx.target.deviceId, tabId: 0, documentGeneration: tx.target.documentGeneration }));
@@ -85,10 +85,10 @@ test('cloud fixture uses inert synthetic target with matching provenance and gra
   await validateTransactionProvenance(tx, { evaluatedAt: fixtureOptions.preparedAt });
 });
 test('cloud fixture is deterministic, immutable and cleanup ownership is exact', async () => {
-  const a = await createCloudFixtureData8D(fixtureOptions), b = await createCloudFixtureData8D(fixtureOptions);
+  const a = await createCloudFixtureData(fixtureOptions), b = await createCloudFixtureData(fixtureOptions);
   assert.deepEqual(a, b);
   assert.throws(() => { a.request.prepared.target.tabId = 42; }, TypeError);
-  const other = await createCloudFixtureData8D({ ...fixtureOptions, namespace: '22345678-1234-4234-8234-123456789abc' });
+  const other = await createCloudFixtureData({ ...fixtureOptions, namespace: '22345678-1234-4234-8234-123456789abc' });
   assert.notEqual(a.request.prepared.prepareDigest, other.request.prepared.prepareDigest);
   assert.notEqual(a.goalHead.goal_id, other.goalHead.goal_id);
   assert.notEqual(a.request.prepared.target.deviceId, other.request.prepared.target.deviceId);
@@ -96,11 +96,11 @@ test('cloud fixture is deterministic, immutable and cleanup ownership is exact',
 });
 test('cloud fixture rejects missing/unknown credentials and invalid scope inputs', async () => {
   for (const input of [null, {}, { ...fixtureOptions, namespace: 'tenant_alpha' }, { ...fixtureOptions, userId: 'user_alpha' }, { ...fixtureOptions, preparedAt: 'tomorrow' }, { ...fixtureOptions, accessToken: 'do-not-accept' }, { ...fixtureOptions, target: { deviceId: 'opera', tabId: 42 } }]) {
-    await assert.rejects(createCloudFixtureData8D(input), { message: 'INVALID_CLOUD_FIXTURE_CONFIGURATION' });
+    await assert.rejects(createCloudFixtureData(input), { message: 'INVALID_CLOUD_FIXTURE_CONFIGURATION' });
   }
 });
 test('cloud fixture ledger seals locally and leaves existing native fixture unchanged', async () => {
-  const before = await transactionFixture(), f = await createCloudFixtureData8D(fixtureOptions), key = new Uint8Array(32).fill(11);
+  const before = await transactionFixture(), f = await createCloudFixtureData(fixtureOptions), key = new Uint8Array(32).fill(11);
   const token = await sealLedgerToken(f.ledger, key, { requestId: 'synthetic_cloud_fixture', issuedAt: '2026-09-14T00:01:00.000Z' });
   assert.deepEqual((await openLedgerToken(token, key, { now: '2026-09-14T00:01:00.000Z' })).ledger, f.ledger);
   assert.deepEqual((await transactionFixture()).request, before.request);
@@ -112,13 +112,13 @@ const cleanup = { tenantId: namespace, actorId: 'm8d_fixture_actor_x', goalId: '
 const fixtureInput = { cleanup };
 function backend(options = {}) {
   const state = { installed: false, host: false, mode: 'OFF', calls: [], fenceEpoch: 0, fence: null };
-  const assertFence = input => { if (!input || !state.fence || input.epoch !== state.fence.epoch || input.ownerId !== state.fence.ownerId || input.namespace !== state.fence.namespace) throw new Error('8D_SERVER_FENCE_LOST'); };
+  const assertFence = input => { if (!input || !state.fence || input.epoch !== state.fence.epoch || input.ownerId !== state.fence.ownerId || input.namespace !== state.fence.namespace) throw new Error('IN_MEMORY_FENCE_LOST'); };
   const b = {
-    async describe() { state.calls.push('describe'); return { projectRef: options.projectRef ?? PROJECT_REF_8D, clientId: CLIENT_ID, callback: CALLBACK_8D }; },
+    async describe() { state.calls.push('describe'); return { projectRef: options.projectRef ?? PROJECT_REF, clientId: CLIENT_ID, callback: CALLBACK }; },
     async preflight() { state.calls.push('preflight'); return { hostFlag: false, mode: 'OFF', ledgerEnabled: true, agentCommitEnabled: false, legacyGated: false, namespaceEmpty: true, locksVerified: true }; },
     async acquireFence(input) { state.fenceEpoch += 1; state.fence = { ownerId: input.ownerId, namespace: input.namespace, epoch: state.fenceEpoch }; return { epoch: state.fenceEpoch }; },
     async heartbeatFence(input) { assertFence(input); return { epoch: input.epoch }; },
-    async releaseFence(input) { assertFence(input); if (state.host || state.mode !== 'OFF') throw new Error('8D_SERVER_FENCE_NOT_CLEAN'); state.fence = null; return { released: true }; },
+    async releaseFence(input) { assertFence(input); if (state.host || state.mode !== 'OFF') throw new Error('IN_MEMORY_FENCE_NOT_CLEAN'); state.fence = null; return { released: true }; },
     async verifySession(input) { state.calls.push('verifySession'); if (options.verifySession) return options.verifySession(input); return { exists: true, userId: input.userId, clientId: input.clientId, sessionId: input.sessionId }; },
     async insertFixture() { state.calls.push('insertFixture'); if (state.installed) throw new Error('duplicate'); state.installed = true; if (options.lostReply) throw new Error('lost reply'); return { inserted: true }; },
     async sealLedger() { state.calls.push('sealLedger'); return 'oal1.synthetic.cipher'; },
@@ -131,25 +131,25 @@ function backend(options = {}) {
     async verifyClean() { state.calls.push('verifyClean'); if (options.failVerify) throw new Error('verify failed'); return { hostFlag: state.host, mode: state.mode, ownedRows: state.installed ? 1 : 0, payloadRows: 0, agentCommitEnabled: false, legacyGated: false }; },
   }; return { backend: b, state };
 }
-async function tempStore() { const dir = await mkdtemp(join(tmpdir(), 'oa-8d-')); return { dir, store: createFileOwnershipStore8D({ directory: dir, isProcessAlive: pid => pid === process.pid }) }; }
+async function tempStore() { const dir = await mkdtemp(join(tmpdir(), 'oa-8d-')); return { dir, store: createFileOwnershipStore({ directory: dir, isProcessAlive: pid => pid === process.pid }) }; }
 
 test('unfinished lock initialization is BUSY, never permission to delete a peer lock', async () => {
   const { dir, store } = await tempStore();
   try {
     await mkdir(join(dir, 'global-control.lock'));
-    await assert.rejects(store.acquire(namespace, 'contender_owner_01', 1000, 10000), /8D_GLOBAL_CONTROL_BUSY/);
+    await assert.rejects(store.acquire(namespace, 'contender_owner_01', 1000, 10000), /GLOBAL_CONTROL_BUSY/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('parallel acquisition and expired reclaim have exactly one winner', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'oa-8d-parallel-'));
+  const root = await mkdtemp(join(tmpdir(), 'oa-parallel-'));
   try {
     for (let i = 0; i < 40; i++) {
-      const store = createFileOwnershipStore8D({ directory: join(root, String(i)), isProcessAlive: pid => pid === process.pid });
+      const store = createFileOwnershipStore({ directory: join(root, String(i)), isProcessAlive: pid => pid === process.pid });
       if (i % 2) await store.acquire(namespace, 'dead_original_01', 0, 1000, 987654);
       const results = await Promise.allSettled(Array.from({ length: 8 }, (_, j) => store.acquire(namespace, 'contender_owner_' + j, 2000, 10000)));
       assert.equal(results.filter(r => r.status === 'fulfilled').length, 1, 'exactly one owner for trial ' + i);
-      for (const result of results) if (result.status === 'rejected') assert.equal(result.reason.message, '8D_GLOBAL_CONTROL_BUSY');
+      for (const result of results) if (result.status === 'rejected') assert.equal(result.reason.message, 'GLOBAL_CONTROL_BUSY');
     }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
@@ -166,56 +166,56 @@ async function ownAndInstallSeal(transport) {
 
 test('internal operator is pinned to exact project/client/callback before mutation', async () => {
   const { dir, store } = await tempStore(); try {
-    const wrong = backend({ projectRef: 'other' }); const t = createInternalOperatorTransport8D({ backend: wrong.backend, store, ownerId: 'writer_owner_01' });
+    const wrong = backend({ projectRef: 'other' }); const t = createInternalOperatorTransport({ backend: wrong.backend, store, ownerId: 'writer_owner_01' });
     assert.deepEqual(Object.keys(t.operator).sort(), ['cleanupFixture', 'disableHost', 'enableHost', 'installFixture', 'preflight', 'recordOwnership', 'sealLedger', 'setDark', 'setOff', 'verifyCancelled', 'verifyClean'].sort());
-    await assert.rejects(t.operator.preflight(namespace, new AbortController().signal), /8D_OPERATOR_TARGET_MISMATCH/);
+    await assert.rejects(t.operator.preflight(namespace, new AbortController().signal), /OPERATOR_TARGET_MISMATCH/);
     assert.deepEqual(wrong.state.calls, ['describe']);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('ownership is durable, exclusive and manifest contains only nonsecret cleanup state', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
-    const a = backend(), b = backend(); const first = createInternalOperatorTransport8D({ backend: a.backend, store, ownerId: 'writer_owner_01', now: () => now, leaseTtlMs: 10000 });
+    const a = backend(), b = backend(); const first = createInternalOperatorTransport({ backend: a.backend, store, ownerId: 'writer_owner_01', now: () => now, leaseTtlMs: 10000 });
     await first.operator.preflight(namespace, new AbortController().signal); await first.operator.recordOwnership(cleanup, new AbortController().signal);
     const raw = await readFile(join(dir, `manifest-${namespace}.json`), 'utf8');
     assert.equal(raw.includes('Bearer'), false); assert.equal(raw.includes(userId), false); assert.equal(raw.includes(sessionId), false); assert.equal(raw.includes(CLIENT_ID), false);
-    await assert.rejects(store.acquire(namespace, 'writer_owner_02', now, 10000), /8D_GLOBAL_CONTROL_BUSY/);
+    await assert.rejects(store.acquire(namespace, 'writer_owner_02', now, 10000), /GLOBAL_CONTROL_BUSY/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('verifies existing session before insert-only fixture provisioning', async () => {
   const { dir, store } = await tempStore(); try {
-    const ok = backend(); const t = createInternalOperatorTransport8D({ backend: ok.backend, store, ownerId: 'writer_owner_01' });
+    const ok = backend(); const t = createInternalOperatorTransport({ backend: ok.backend, store, ownerId: 'writer_owner_01' });
     assert.deepEqual(await ownAndInstall(t), { sessionBound: true }); assert.deepEqual(ok.state.calls.slice(-2), ['verifySession', 'insertFixture']);
     const bad = backend({ verifySession: input => ({ exists: false, userId: input.userId, clientId: input.clientId, sessionId: input.sessionId }) });
-    const otherDir = await mkdtemp(join(tmpdir(), 'oa-8d-')); try { const u = createInternalOperatorTransport8D({ backend: bad.backend, store: createFileOwnershipStore8D({ directory: otherDir }), ownerId: 'writer_owner_02' }); await u.operator.preflight(namespace); await u.operator.recordOwnership(cleanup); await assert.rejects(u.operator.installFixture({ fixture: fixtureInput, identity }), /8D_SESSION_BINDING_FAILED/); assert.equal(bad.state.calls.includes('insertFixture'), false); } finally { await rm(otherDir, { recursive: true, force: true }); }
+    const otherDir = await mkdtemp(join(tmpdir(), 'oa-8d-')); try { const u = createInternalOperatorTransport({ backend: bad.backend, store: createFileOwnershipStore({ directory: otherDir }), ownerId: 'writer_owner_02' }); await u.operator.preflight(namespace); await u.operator.recordOwnership(cleanup); await assert.rejects(u.operator.installFixture({ fixture: fixtureInput, identity }), /SESSION_BINDING_FAILED/); assert.equal(bad.state.calls.includes('insertFixture'), false); } finally { await rm(otherDir, { recursive: true, force: true }); }
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('aborted session check quiesces before provisioning and cannot become a late insert', async () => {
   const { dir, store } = await tempStore(); let release; const gate = new Promise(r => release = r); try {
     const b = backend({ verifySession: async input => { await gate; return { exists: true, userId: input.userId, clientId: input.clientId, sessionId: input.sessionId }; } });
-    const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await t.operator.preflight(namespace); await t.operator.recordOwnership(cleanup);
+    const t = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await t.operator.preflight(namespace); await t.operator.recordOwnership(cleanup);
     const abort = new AbortController(); const pending = t.operator.installFixture({ fixture: fixtureInput, identity }, abort.signal); abort.abort(); release();
-    await assert.rejects(pending, /8D_OPERATOR_ABORTED/); assert.equal(b.state.calls.includes('insertFixture'), false);
+    await assert.rejects(pending, /OPERATOR_ABORTED/); assert.equal(b.state.calls.includes('insertFixture'), false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('pending crash manifest blocks a new preflight until explicit recovery', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
-    const b = backend(); const parent = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
+    const b = backend(); const parent = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await parent.operator.preflight(namespace); await parent.operator.recordOwnership(cleanup);
-    const next = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_02', now: () => now, leaseTtlMs: 10000 });
-    await assert.rejects(next.operator.preflight(namespace), /8D_RECOVERY_REQUIRED/);
+    const next = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'writer_owner_02', now: () => now, leaseTtlMs: 10000 });
+    await assert.rejects(next.operator.preflight(namespace), /RECOVERY_REQUIRED/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('stale-parent recovery reclaims expired global control and restores OFF/exact cleanup', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
-    const b = backend(); const parent = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
+    const b = backend(); const parent = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await ownAndInstallSeal(parent); await parent.operator.enableHost(); await parent.operator.setDark(); assert.equal(b.state.installed, true); assert.equal(b.state.mode, 'DARK');
     now = 12000;
-    const recovery = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 });
+    const recovery = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 });
     assert.deepEqual(await recovery.recover(namespace, new AbortController().signal), { recovered: true });
     assert.equal(b.state.installed, false); assert.equal(b.state.host, false); assert.equal(b.state.mode, 'OFF'); assert.equal(await store.readManifest(namespace), null);
   } finally { await rm(dir, { recursive: true, force: true }); }
@@ -223,57 +223,57 @@ test('stale-parent recovery reclaims expired global control and restores OFF/exa
 
 test('durable manifest survives real child-process death and is recoverable after lease expiry', async () => {
   const { dir, store } = await tempStore(); try {
-    const moduleUrl = new URL('./helpers/transaction-cloud-operator-8d.mjs', import.meta.url).href;
-    const script = `import {createFileOwnershipStore8D} from ${JSON.stringify(moduleUrl)};\nconst s=createFileOwnershipStore8D({directory:${JSON.stringify(dir)}});\nconst cleanup=${JSON.stringify(cleanup)};\nawait s.acquire(${JSON.stringify(namespace)},'dead_child_01',1000,10000);\nawait s.writeManifest({version:1,ownerId:'dead_child_01',namespace:${JSON.stringify(namespace)},phase:'DARK',dirty:true,cleanup,updatedAt:1000});`;
+    const moduleUrl = new URL('./helpers/transaction-cloud-operator.mjs', import.meta.url).href;
+    const script = `import {createFileOwnershipStore} from ${JSON.stringify(moduleUrl)};\nconst s=createFileOwnershipStore({directory:${JSON.stringify(dir)}});\nconst cleanup=${JSON.stringify(cleanup)};\nawait s.acquire(${JSON.stringify(namespace)},'dead_child_01',1000,10000);\nawait s.writeManifest({version:1,ownerId:'dead_child_01',namespace:${JSON.stringify(namespace)},phase:'DARK',dirty:true,cleanup,updatedAt:1000});`;
     const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' });
     assert.equal(child.status, 0, child.stderr); assert.ok(await store.readManifest(namespace));
     const b = backend(); b.state.installed = true; b.state.host = true; b.state.mode = 'DARK';
-    const recovery = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => 12000, leaseTtlMs: 10000 });
+    const recovery = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => 12000, leaseTtlMs: 10000 });
     assert.deepEqual(await recovery.recover(namespace), { recovered: true }); assert.equal(b.state.installed, false); assert.equal(b.state.mode, 'OFF'); assert.equal(await store.readManifest(namespace), null);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('lost insert reply leaves durable ownership and later recovery removes partial install', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
-    const b = backend({ lostReply: true }); const parent = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
+    const b = backend({ lostReply: true }); const parent = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await parent.operator.preflight(namespace); await parent.operator.recordOwnership(cleanup); await assert.rejects(parent.operator.installFixture({ fixture: fixtureInput, identity }), /lost reply/); assert.equal(b.state.installed, true); assert.ok(await store.readManifest(namespace));
-    now = 12000; const recovery = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 }); await recovery.recover(namespace); assert.equal(b.state.installed, false); assert.equal(await store.readManifest(namespace), null);
+    now = 12000; const recovery = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 }); await recovery.recover(namespace); assert.equal(b.state.installed, false); assert.equal(await store.readManifest(namespace), null);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('exact cleanup scope cannot be widened by recovery or caller input', async () => {
   const { dir, store } = await tempStore(); try {
-    const b = backend(); const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await ownAndInstall(t);
-    await assert.rejects(t.operator.cleanupFixture({ ...cleanup, transactionId: 'other' }), /8D_CLEANUP_SCOPE_MISMATCH/);
+    const b = backend(); const t = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await ownAndInstall(t);
+    await assert.rejects(t.operator.cleanupFixture({ ...cleanup, transactionId: 'other' }), /CLEANUP_SCOPE_MISMATCH/);
     assert.equal(b.state.installed, true);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('phase machine forbids host mutation without durable ownership or before sealing', async () => {
   const { dir, store } = await tempStore(); try {
-    const b = backend(); const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' });
-    await assert.rejects(t.operator.disableHost(), /8D_CONTROL_OWNERSHIP_REQUIRED/); assert.equal(b.state.calls.includes('disableHost'), false);
+    const b = backend(); const t = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'writer_owner_01' });
+    await assert.rejects(t.operator.disableHost(), /CONTROL_OWNERSHIP_REQUIRED/); assert.equal(b.state.calls.includes('disableHost'), false);
     await t.operator.preflight(namespace); await t.operator.recordOwnership(cleanup); await t.operator.installFixture({ fixture: fixtureInput, identity });
-    await assert.rejects(t.operator.enableHost(), /8D_OPERATOR_PHASE_MISMATCH/); assert.equal(b.state.calls.includes('enableHost'), false);
+    await assert.rejects(t.operator.enableHost(), /OPERATOR_PHASE_MISMATCH/); assert.equal(b.state.calls.includes('enableHost'), false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('install and observation scope must match the exact durable ownership manifest', async () => {
   const { dir, store } = await tempStore(); try {
-    const b = backend(); const t = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await t.operator.preflight(namespace); await t.operator.recordOwnership(cleanup);
+    const b = backend(); const t = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'writer_owner_01' }); await t.operator.preflight(namespace); await t.operator.recordOwnership(cleanup);
     const other = { ...cleanup, transactionId: 'm8d_fixture_tx_other' };
-    await assert.rejects(t.operator.installFixture({ fixture: { cleanup: other }, identity }), /8D_CLEANUP_SCOPE_MISMATCH/); assert.equal(b.state.calls.includes('insertFixture'), false);
+    await assert.rejects(t.operator.installFixture({ fixture: { cleanup: other }, identity }), /CLEANUP_SCOPE_MISMATCH/); assert.equal(b.state.calls.includes('insertFixture'), false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('failed recovery keeps durable dirty evidence and does not delete rows while host disable fails', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
-    const seedBackend = backend(); const parent = createInternalOperatorTransport8D({ backend: seedBackend.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
+    const seedBackend = backend(); const parent = createInternalOperatorTransport({ backend: seedBackend.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await ownAndInstallSeal(parent); await parent.operator.enableHost(); await parent.operator.setDark();
     const manifestBefore = await store.readManifest(namespace); assert.ok(manifestBefore);
     now = 12000; const broken = backend({ failDisable: true }); broken.state.installed = true; broken.state.host = true; broken.state.mode = 'DARK';
-    const recovery = createInternalOperatorTransport8D({ backend: broken.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 });
-    await assert.rejects(recovery.recover(namespace), /8D_RECOVERY_FAILED/);
+    const recovery = createInternalOperatorTransport({ backend: broken.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 });
+    await assert.rejects(recovery.recover(namespace), /RECOVERY_FAILED/);
     assert.equal(broken.state.calls.includes('setOff'), true); assert.equal(broken.state.calls.includes('cleanupFixture'), false);
     const manifestAfter = await store.readManifest(namespace); assert.equal(manifestAfter?.phase, 'CLEANING'); assert.equal(manifestAfter?.ownerId, 'recovery_owner_01');
   } finally { await rm(dir, { recursive: true, force: true }); }
@@ -282,18 +282,18 @@ test('failed recovery keeps durable dirty evidence and does not delete rows whil
 test('expired lease is not reclaimed while the recorded local owner process is still alive', async () => {
   const { dir, store } = await tempStore(); try {
     await store.acquire(namespace, 'writer_owner_01', 1000, 10000, process.pid);
-    await assert.rejects(store.acquire(namespace, 'recovery_owner_01', 12000, 10000, process.pid), /8D_GLOBAL_CONTROL_BUSY/);
+    await assert.rejects(store.acquire(namespace, 'recovery_owner_01', 12000, 10000, process.pid), /GLOBAL_CONTROL_BUSY/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('ownership rechecks durable manifest after lease acquisition and cannot overwrite a crashed peer', async () => {
   const { dir, store } = await tempStore(); let now = 1000; try {
-    const b = backend(); const candidate = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_01', now: () => now, leaseTtlMs: 10000 });
+    const b = backend(); const candidate = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'writer_owner_01', now: () => now, leaseTtlMs: 10000 });
     await candidate.operator.preflight(namespace);
     await store.acquire(namespace, 'dead_peer_01', 1000, 10000, 987654);
     await store.writeManifest({ version: 1, ownerId: 'dead_peer_01', namespace, phase: 'DARK', dirty: true, cleanup, updatedAt: 1000 });
     now = 12000;
-    await assert.rejects(candidate.operator.recordOwnership(cleanup), /8D_RECOVERY_REQUIRED/);
+    await assert.rejects(candidate.operator.recordOwnership(cleanup), /RECOVERY_REQUIRED/);
     const manifest = await store.readManifest(namespace); assert.equal(manifest?.ownerId, 'dead_peer_01'); assert.equal(manifest?.phase, 'DARK');
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
@@ -315,15 +315,15 @@ function createFencedBackend({ delayEnable = false } = {}) {
   const enableStarted = delayEnable ? new Promise(resolve => { markEnableStarted = resolve; }) : Promise.resolve();
   const isFence = value => value && typeof value === 'object' && Number.isSafeInteger(value.epoch) && typeof value.ownerId === 'string' && typeof value.namespace === 'string';
   const assertFence = value => {
-    if (!isFence(value) || !state.fence || value.epoch !== state.fence.epoch || value.ownerId !== state.fence.ownerId || value.namespace !== state.fence.namespace) throw new Error('8D_SERVER_FENCE_LOST');
+    if (!isFence(value) || !state.fence || value.epoch !== state.fence.epoch || value.ownerId !== state.fence.ownerId || value.namespace !== state.fence.namespace) throw new Error('IN_MEMORY_FENCE_LOST');
   };
   const optionalFence = value => { if (isFence(value)) assertFence(value); };
   const backend = {
-    async describe() { state.calls.push('describe'); return { projectRef: PROJECT_REF_8D, clientId: CLIENT_ID, callback: CALLBACK_8D }; },
+    async describe() { state.calls.push('describe'); return { projectRef: PROJECT_REF, clientId: CLIENT_ID, callback: CALLBACK }; },
     async preflight() { state.calls.push('preflight'); return { hostFlag: false, mode: 'OFF', ledgerEnabled: true, agentCommitEnabled: false, legacyGated: false, namespaceEmpty: true, locksVerified: true }; },
     async acquireFence(input) { state.calls.push('acquireFence'); state.epoch += 1; state.fence = { ownerId: input.ownerId, namespace: input.namespace, epoch: state.epoch }; state.host = false; return { epoch: state.epoch }; },
     async heartbeatFence(input) { state.calls.push('heartbeatFence'); assertFence(input); return { epoch: input.epoch }; },
-    async releaseFence(input) { state.calls.push('releaseFence'); assertFence(input); if (state.host || state.mode !== 'OFF') throw new Error('8D_SERVER_FENCE_NOT_CLEAN'); state.fence = null; return { released: true }; },
+    async releaseFence(input) { state.calls.push('releaseFence'); assertFence(input); if (state.host || state.mode !== 'OFF') throw new Error('IN_MEMORY_FENCE_NOT_CLEAN'); state.fence = null; return { released: true }; },
     async verifySession(input) { state.calls.push('verifySession'); return { exists: true, userId: input.userId, clientId: input.clientId, sessionId: input.sessionId }; },
     async insertFixture(_fixture, maybeFence) { state.calls.push('insertFixture'); optionalFence(maybeFence); state.installed = true; return { inserted: true }; },
     async sealLedger() { state.calls.push('sealLedger'); return 'oal1.synthetic.cipher'; },
@@ -339,8 +339,8 @@ function createFencedBackend({ delayEnable = false } = {}) {
 }
 
 async function fencedTempStore() {
-  const dir = await mkdtemp(join(tmpdir(), 'oa-8d-fence-'));
-  return { dir, store: createFileOwnershipStore8D({ directory: dir, isProcessAlive: pid => pid === process.pid }) };
+  const dir = await mkdtemp(join(tmpdir(), 'oa-fence-'));
+  return { dir, store: createFileOwnershipStore({ directory: dir, isProcessAlive: pid => pid === process.pid }) };
 }
 
 async function ownInstallSeal(transport) {
@@ -357,8 +357,8 @@ test('fresh namespace is blocked by any globally pending dirty manifest', async 
     await store.writeManifest({ version: 1, ownerId: 'dead_owner_01', namespace: namespaceA, phase: 'DARK', dirty: true, cleanup: cleanupA, updatedAt: now });
     now = 12000;
     const b = createFencedBackend();
-    const next = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'writer_owner_02', now: () => now, leaseTtlMs: 10000 });
-    await assert.rejects(next.operator.preflight(namespaceB), /8D_RECOVERY_REQUIRED/);
+    const next = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'writer_owner_02', now: () => now, leaseTtlMs: 10000 });
+    await assert.rejects(next.operator.preflight(namespaceB), /RECOVERY_REQUIRED/);
     assert.equal(b.state.calls.includes('preflight'), false);
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -369,21 +369,21 @@ test('recovery server fence rejects a delayed pre-recovery host mutation after c
   const { dir, store } = await fencedTempStore(); let now = 1000;
   try {
     const b = createFencedBackend({ delayEnable: true });
-    const parent = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
+    const parent = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'dead_parent_01', now: () => now, leaseTtlMs: 10000, processId: 987654 });
     await ownInstallSeal(parent);
     const delayed = parent.operator.enableHost();
     await b.enableStarted;
     assert.equal(b.state.calls.includes('enableHost:start'), true);
 
     now = 12000;
-    const recovery = createInternalOperatorTransport8D({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 });
+    const recovery = createInternalOperatorTransport({ backend: b.backend, store, ownerId: 'recovery_owner_01', now: () => now, leaseTtlMs: 10000 });
     assert.deepEqual(await recovery.recover(namespaceA), { recovered: true });
     assert.equal(await store.readManifest(namespaceA), null);
     assert.equal(b.state.host, false);
     assert.equal(b.state.mode, 'OFF');
 
     b.releaseEnable();
-    await assert.rejects(delayed, /8D_SERVER_FENCE_LOST|8D_CONTROL_OWNERSHIP_LOST|ENOENT/);
+    await assert.rejects(delayed, /IN_MEMORY_FENCE_LOST|CONTROL_OWNERSHIP_LOST|ENOENT/);
     assert.equal(b.state.host, false);
     assert.equal(b.state.calls.includes('enableHost:commit'), false);
   } finally {
@@ -409,17 +409,17 @@ function harness(options = {}) {
   const assertFence = parameters => { if (parameters[0] !== state.serverOwner || parameters[1] !== state.serverNamespace || Number(parameters[2]) !== state.epoch) throw new Error('stale fence'); };
   const fetchImpl = async (url, init = {}) => {
     const parsed = new URL(url); state.calls.push({ url, method: init.method ?? 'GET' });
-    if (parsed.origin === `https://${PROJECT_REF_8D}.supabase.co`) {
-      assert.equal(parsed.pathname, `/functions/v1/${TRANSACTION_FUNCTION_8D}`);
+    if (parsed.origin === `https://${PROJECT_REF}.supabase.co`) {
+      assert.equal(parsed.pathname, `/functions/v1/${TRANSACTION_FUNCTION}`);
       assert.equal(init.method, 'GET'); assert.equal(init.redirect, 'error');
       assert.equal(init.headers.Authorization, `Bearer ${publicAnon}`); assert.equal(init.headers.apikey, publicAnon);
       assert.equal(init.body, undefined); assert.ok(init.signal);
       return json(options.healthBody ?? { error: 'METHOD_NOT_ALLOWED', browserDispatchAllowed: false }, options.healthStatus ?? 405);
     }
-    assert.equal(parsed.origin, 'https://api.supabase.com'); assert.ok(parsed.pathname.startsWith(`/v1/projects/${PROJECT_REF_8D}/`));
+    assert.equal(parsed.origin, 'https://api.supabase.com'); assert.ok(parsed.pathname.startsWith(`/v1/projects/${PROJECT_REF}/`));
     assert.equal(init.headers?.Authorization, `Bearer ${accessToken}`); assert.equal(String(init.headers?.Authorization).includes(transactionSecret), false);
     if (options.failFetch) throw new Error(`network ${transactionKey} ${unrelatedSecret} ${accessToken}`);
-    if (parsed.pathname.endsWith('/functions')) return json([{ slug: TRANSACTION_FUNCTION_8D, status: 'ACTIVE', verify_jwt: true, ezbr_sha256: options.bundle ?? EXPECTED_TRANSACTION_BUNDLE_SHA_8D, version: 7 }]);
+    if (parsed.pathname.endsWith('/functions')) return json([{ slug: TRANSACTION_FUNCTION, status: 'ACTIVE', verify_jwt: true, ezbr_sha256: options.bundle ?? EXPECTED_TRANSACTION_BUNDLE_SHA, version: 7 }]);
     if (parsed.pathname.endsWith('/secrets') && (init.method ?? 'GET') === 'GET') return json([{ name: 'UNRELATED_SECRET', value: digest(unrelatedSecret) }, { name: 'OPERA_AGENT_TRANSACTION_DARK_8D', value: options.masterDigest ?? digest(state.master) }, { name: 'OPERA_AGENT_TRANSACTION_KEY_8D', value: options.keyDigest ?? digest(transactionKey) }]);
     if (parsed.pathname.endsWith('/api-keys')) return json(options.apiKeys ?? [{ name: 'anon', api_key: publicAnon }, { name: 'service_role', api_key: 'private_fixture_never_select' }]);
     if (parsed.pathname.endsWith('/secrets') && init.method === 'POST') { state.secretWrites.push(JSON.parse(init.body)); throw new Error('per-run secret writes forbidden'); }
@@ -445,48 +445,48 @@ function harness(options = {}) {
     }
     throw new Error('unexpected route');
   };
-  const backend = createManagementOperatorBackend8D({ credentialProvider: async () => accessToken, fetchImpl, now: () => Date.parse(preparedAt) + 1000 });
+  const backend = createManagementOperatorBackend({ credentialProvider: async () => accessToken, fetchImpl, now: () => Date.parse(preparedAt) + 1000 });
   return { backend, state };
 }
 
-async function cloudFixture() { return createCloudFixtureData8D({ namespace, userId, preparedAt }); }
+async function cloudFixture() { return createCloudFixtureData({ namespace, userId, preparedAt }); }
 async function acquire(backend) { const { epoch } = await backend.acquireFence({ ownerId, namespace, ttlMs: 180000 }); return { ownerId, namespace, epoch }; }
 
 test('management backend exposes only fixed fenced methods and a pinned target', async () => {
   const { backend } = harness();
   assert.deepEqual(Object.keys(backend).sort(), ['acquireFence', 'cleanupFixture', 'describe', 'disableHost', 'enableHost', 'heartbeatFence', 'insertFixture', 'preflight', 'releaseFence', 'sealLedger', 'setDark', 'setOff', 'verifyCancelled', 'verifyClean', 'verifySession'].sort());
-  assert.deepEqual(await backend.describe(), { projectRef: PROJECT_REF_8D, clientId: CLIENT_ID, callback: CALLBACK_8D });
+  assert.deepEqual(await backend.describe(), { projectRef: PROJECT_REF, clientId: CLIENT_ID, callback: CALLBACK });
 });
 
 test('recovery descriptor checks actual bundle integrity before control mutations', async () => {
   const { backend, state } = harness({ bundle: 'wrong' });
-  await assert.rejects(backend.describe(), /8D_HOST_BUNDLE_MISMATCH/);
+  await assert.rejects(backend.describe(), /HOST_BUNDLE_MISMATCH/);
   assert.equal(state.calls.length, 1);
   assert.equal(state.calls[0].url.endsWith('/functions'), true);
   assert.equal(state.db.length, 0);
 });
 
 test('management preflight requires fenced pin, real secret digests, idle OFF and initialized Edge', async () => {
-  const { backend, state } = harness(); assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA_8D, '96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1');
+  const { backend, state } = harness(); assert.equal(EXPECTED_TRANSACTION_BUNDLE_SHA, '96485822bdebdcb2c474b2f7879a63b20f26d4741d6a90d4c51679c5b57a42f1');
   assert.deepEqual(await backend.preflight(namespace), { hostFlag: false, mode: 'OFF', ledgerEnabled: true, agentCommitEnabled: false, legacyGated: false, namespaceEmpty: true, locksVerified: true });
   const query = state.db.find(item => item.query.includes('as synthetic_rows')); assert.equal(query.read_only, false); assert.deepEqual(query.parameters, [namespace]);
-  await assert.rejects(harness({ bundle: 'wrong' }).backend.preflight(namespace), /8D_HOST_BUNDLE_MISMATCH/);
-  await assert.rejects(harness({ master: 'false' }).backend.preflight(namespace), /8D_HOST_MASTER_NOT_ENABLED/);
-  await assert.rejects(harness({ keyDigest: 'not-a-digest' }).backend.preflight(namespace), /8D_SECRET_DIGEST_INVALID/);
-  const occupied = harness(); occupied.state.serverOwner = 'other_owner_01'; await assert.rejects(occupied.backend.preflight(namespace), /8D_PREFLIGHT_STATE_INVALID/);
+  await assert.rejects(harness({ bundle: 'wrong' }).backend.preflight(namespace), /HOST_BUNDLE_MISMATCH/);
+  await assert.rejects(harness({ master: 'false' }).backend.preflight(namespace), /HOST_MASTER_NOT_ENABLED/);
+  await assert.rejects(harness({ keyDigest: 'not-a-digest' }).backend.preflight(namespace), /SECRET_DIGEST_INVALID/);
+  const occupied = harness(); occupied.state.serverOwner = 'other_owner_01'; await assert.rejects(occupied.backend.preflight(namespace), /PREFLIGHT_STATE_INVALID/);
   assert.equal((await harness({ rows: 1 }).backend.preflight(namespace)).namespaceEmpty, false);
 });
 
 test('preflight never decodes secret digests and refuses invalid startup or spoofed health', async () => {
-  for (const healthStatus of [200, 401, 500, 503]) await assert.rejects(harness({ healthStatus }).backend.preflight(namespace), /8D_HOST_CONFIGURATION_UNVERIFIED/);
+  for (const healthStatus of [200, 401, 500, 503]) await assert.rejects(harness({ healthStatus }).backend.preflight(namespace), /HOST_CONFIGURATION_UNVERIFIED/);
   for (const healthBody of [{ error: 'METHOD_NOT_ALLOWED', browserDispatchAllowed: true }, { error: 'METHOD_NOT_ALLOWED', browserDispatchAllowed: false, extra: true }, { result: true }])
-    await assert.rejects(harness({ healthBody }).backend.preflight(namespace), /8D_HOST_CONFIGURATION_UNVERIFIED/);
-  await assert.rejects(harness({ masterDigest: 'true' }).backend.preflight(namespace), /8D_SECRET_DIGEST_INVALID/);
-  await assert.rejects(harness({ apiKeys: [] }).backend.preflight(namespace), /8D_PUBLIC_ANON_KEY_UNAVAILABLE/);
-  await assert.rejects(harness({ apiKeys: [{ name: 'anon', api_key: publicAnon }, { name: 'anon', api_key: publicAnon }] }).backend.preflight(namespace), /8D_PUBLIC_ANON_KEY_UNAVAILABLE/);
-  await assert.rejects(harness({ apiKeys: [{ name: 'anon', api_key: 'not-a-jwt' }] }).backend.preflight(namespace), /8D_PUBLIC_ANON_KEY_UNAVAILABLE/);
+    await assert.rejects(harness({ healthBody }).backend.preflight(namespace), /HOST_CONFIGURATION_UNVERIFIED/);
+  await assert.rejects(harness({ masterDigest: 'true' }).backend.preflight(namespace), /SECRET_DIGEST_INVALID/);
+  await assert.rejects(harness({ apiKeys: [] }).backend.preflight(namespace), /PUBLIC_ANON_KEY_UNAVAILABLE/);
+  await assert.rejects(harness({ apiKeys: [{ name: 'anon', api_key: publicAnon }, { name: 'anon', api_key: publicAnon }] }).backend.preflight(namespace), /PUBLIC_ANON_KEY_UNAVAILABLE/);
+  await assert.rejects(harness({ apiKeys: [{ name: 'anon', api_key: 'not-a-jwt' }] }).backend.preflight(namespace), /PUBLIC_ANON_KEY_UNAVAILABLE/);
   const { backend, state } = harness(); await backend.preflight(namespace);
-  assert.equal(state.calls.filter(call => new URL(call.url).hostname === `${PROJECT_REF_8D}.supabase.co`).length, 1);
+  assert.equal(state.calls.filter(call => new URL(call.url).hostname === `${PROJECT_REF}.supabase.co`).length, 1);
   assert.equal(state.calls.some(call => call.method === 'POST' && !call.url.endsWith('/database/query')), false);
   assert.equal(state.db.every(call => call.read_only === false), true);
   assert.equal(state.db.every(call => /^with control as/.test(call.query)), true);
@@ -498,7 +498,7 @@ test('private observational checks retain operator authority without granting cl
   await backend.sealLedger((await cloudFixture()).ledger);
   assert.equal(state.db.every(call => call.read_only === false), true);
   assert.equal(state.db.some(call => /\bgrant\b|\balter\b|\bcreate\b/i.test(call.query)), false);
-  await assert.rejects(harness({ denyOperator: true }).backend.preflight(namespace), /8D_MANAGEMENT_REQUEST_FAILED/);
+  await assert.rejects(harness({ denyOperator: true }).backend.preflight(namespace), /MANAGEMENT_REQUEST_FAILED/);
 });
 
 test('management fence acquire/heartbeat/release is fixed, parameterized and epoch-bound', async () => {
@@ -549,7 +549,7 @@ test('management cleanup is one fenced server operation and clean verification i
 
 test('management failures redact operator credentials and remote secret text', async () => {
   const { backend } = harness({ failFetch: true }); let error; try { await backend.preflight(namespace); } catch (e) { error = e; }
-  assert.equal(error?.message, '8D_MANAGEMENT_REQUEST_FAILED'); assert.equal(error.message.includes(accessToken), false); assert.equal(error.message.includes(transactionSecret), false); assert.equal(error.message.includes(unrelatedSecret), false);
+  assert.equal(error?.message, 'MANAGEMENT_REQUEST_FAILED'); assert.equal(error.message.includes(accessToken), false); assert.equal(error.message.includes(transactionSecret), false); assert.equal(error.message.includes(unrelatedSecret), false);
 });
 
 // --- E. the acceptance controller -------------------------------------------
@@ -593,7 +593,7 @@ function fixture({ fail, badMetadata, badPreflight, badIdentity, responseBytes, 
     if (badMetadata) result[badMetadata] = badMetadata === 'browserDispatchAllowed' ? true : 'private-value';
     return new Response(JSON.stringify({ result, browserDispatchAllowed: false }), { status: 200 });
   };
-  const controller = createCloudAcceptanceController8D({ namespace, sdk, operator, publicKey: 'sb_publishable_synthetic', now: () => currentTime, fetchImpl });
+  const controller = createCloudAcceptanceController({ namespace, sdk, operator, publicKey: 'sb_publishable_synthetic', now: () => currentTime, fetchImpl });
   return { controller, calls };
 }
 test('controller preflights before OAuth and runs exact prepare/replay/status/cancel then cleanup', async () => {
@@ -676,20 +676,20 @@ test('controller verifies cleanup after row cleanup attempt and refuses PASS on 
 const credential = 'sbp_' + ('a'.repeat(40));
 
 test('live runner freezes exact CLI modes, pinned SDK and ownership window', () => {
-  assert.deepEqual(parseAcceptanceArgs8D([]), { mode: 'accept' });
-  assert.deepEqual(parseAcceptanceArgs8D(['--recover', namespace]), { mode: 'recover', namespace });
-  assert.throws(() => parseAcceptanceArgs8D(['--recover']), /INVALID_8D_RUNNER_ARGUMENTS/);
-  assert.throws(() => parseAcceptanceArgs8D(['--recover', 'not-a-uuid']), /INVALID_8D_RUNNER_ARGUMENTS/);
-  assert.throws(() => parseAcceptanceArgs8D(['--sql', 'select 1']), /INVALID_8D_RUNNER_ARGUMENTS/);
-  assert.equal(SDK_SPECIFIER_8D, 'npm:@supabase/supabase-js@2.57.4');
-  assert.equal(STATE_DIRECTORY_8D, '.opera-agent-8d-state');
-  assert.equal(LEASE_TTL_MS_8D, 180000);
+  assert.deepEqual(parseAcceptanceArgs([]), { mode: 'accept' });
+  assert.deepEqual(parseAcceptanceArgs(['--recover', namespace]), { mode: 'recover', namespace });
+  assert.throws(() => parseAcceptanceArgs(['--recover']), /INVALID_8D_RUNNER_ARGUMENTS/);
+  assert.throws(() => parseAcceptanceArgs(['--recover', 'not-a-uuid']), /INVALID_8D_RUNNER_ARGUMENTS/);
+  assert.throws(() => parseAcceptanceArgs(['--sql', 'select 1']), /INVALID_8D_RUNNER_ARGUMENTS/);
+  assert.equal(SDK_SPECIFIER, 'npm:@supabase/supabase-js@2.57.4');
+  assert.equal(STATE_DIRECTORY, '.opera-agent-state');
+  assert.equal(LEASE_TTL_MS, 180000);
 });
 
 test('recovery mode needs no OAuth key, SDK call, browser or network when no dirty manifest exists', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'oa-8d-runner-')); let sdkCalls = 0, fetchCalls = 0; const lines = [];
+  const dir = await mkdtemp(join(tmpdir(), 'oa-runner-')); let sdkCalls = 0, fetchCalls = 0; const lines = [];
   try {
-    const result = await runAcceptanceCli8D({ args: ['--recover', namespace], createClient: () => { sdkCalls++; throw new Error('sdk must not run'); }, credential, publicKey: null,
+    const result = await runAcceptanceCli({ args: ['--recover', namespace], createClient: () => { sdkCalls++; throw new Error('sdk must not run'); }, credential, publicKey: null,
       fetchImpl: async () => { fetchCalls++; throw new Error('network must not run'); }, now: () => 1000, randomUUID: () => 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', stateDirectory: dir, write: value => lines.push(value) });
     assert.deepEqual(result, { mode: 'recover', namespace, recovered: false }); assert.equal(sdkCalls, 0); assert.equal(fetchCalls, 0);
     assert.equal(lines.length, 1); assert.equal(lines[0].includes(credential), false);
@@ -697,14 +697,14 @@ test('recovery mode needs no OAuth key, SDK call, browser or network when no dir
 });
 
 test('acceptance fails preflight before emitting namespace or OAuth URL when deployed bundle is not exact', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'oa-8d-runner-')); const lines = []; let sdkCalls = 0;
+  const dir = await mkdtemp(join(tmpdir(), 'oa-runner-')); const lines = []; let sdkCalls = 0;
   try {
     const fetchImpl = async url => {
       if (String(url).endsWith('/functions')) return new Response(JSON.stringify([{ slug: 'opera-agent-transactions-8d', status: 'ACTIVE', verify_jwt: true, ezbr_sha256: 'wrong' }]), { status: 200, headers: { 'Content-Type': 'application/json' } });
       throw new Error('unexpected request');
     };
     const sdk = { auth: { getClaims: async () => ({ data: {}, error: null }), getUser: async () => ({ data: {}, error: null }) } };
-    await assert.rejects(runAcceptanceCli8D({ args: [], createClient: () => { sdkCalls++; return sdk; }, credential, publicKey: 'sb_publishable_' + ('x'.repeat(24)), fetchImpl, now: () => Date.parse('2026-09-14T00:00:00.000Z'), randomUUID: () => namespace, stateDirectory: dir, write: value => lines.push(value) }), /CLOUD_PREFLIGHT_FAILED/);
+    await assert.rejects(runAcceptanceCli({ args: [], createClient: () => { sdkCalls++; return sdk; }, credential, publicKey: 'sb_publishable_' + ('x'.repeat(24)), fetchImpl, now: () => Date.parse('2026-09-14T00:00:00.000Z'), randomUUID: () => namespace, stateDirectory: dir, write: value => lines.push(value) }), /CLOUD_PREFLIGHT_FAILED/);
     assert.equal(sdkCalls, 1); assert.deepEqual(lines, []);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

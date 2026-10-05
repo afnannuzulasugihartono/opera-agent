@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:32 UTC+7.
 // @title: reactive-vm-stable-surface — frozen public surface and deterministic replay.
 // @state: The public surface and read-only effect policy stay unchanged across runs.
-// @dependencies: strict, node:fs, node:test, goal-ledger, proof-engine, reactive-vm-7d, reactive-vm-host-7e, canonical-source-hash.
+// @dependencies: strict, node:fs, node:test, goal-ledger, proof-engine, reactive-vm-collect, reactive-vm-host, canonical-source-hash.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,15 +10,15 @@ import test from 'node:test';
 import { createLedger } from '../lib/goal-ledger.js';
 import { evaluateProof } from '../lib/proof-engine.js';
 import {
-  bindCollectionEvidence7D,
-  collectSemanticRecords7D,
-  dedupSemanticRecords7D,
-} from '../lib/reactive-vm-7d.js';
+  bindCollectionEvidence,
+  collectSemanticRecords,
+  dedupSemanticRecords,
+} from '../lib/reactive-vm-collect.js';
 import {
   ReactiveVmHostError,
-  deriveVmEffectIdempotencyKey7E,
-  validateVmPersistedMetadata7E,
-} from '../lib/reactive-vm-host-7e.js';
+  deriveVmEffectIdempotencyKey,
+  validateVmPersistedMetadata,
+} from '../lib/reactive-vm-host.js';
 import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/reactive-vm-contract-v1.json', import.meta.url), 'utf8'));
@@ -27,12 +27,12 @@ const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import
 const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url));
 
-// R9-G rebaseline (2026-09-30): an INSTRUCTIONS-ONLY MCP edit, authorized and
+// Rebaseline: an INSTRUCTIONS-ONLY MCP edit, authorized and
 // recorded. Menu/dialog work is batched into one burst via refFromStep, and the
 // model is told to click an editor surface before sending a key. No tool was
 // added, removed, or renamed, and all 22 per-tool inputSchemas are byte-
 // identical — proved by tests/mcp-surface.test.mjs section B. The chords
-// and bounded text from R9-B stay runtime-only because press_key still
+// and bounded text from stay runtime-only because press_key still
 // validates against the 12-key navigationKeySchema and the burst key step is
 // still .strict(); the instructions say so rather than promising calls the
 // schema would reject. This constant tracks the accepted public-surface digest
@@ -43,7 +43,7 @@ const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp
 // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 wires fail-closed CORS (per-request ACAO via the shared resolver; Allow-Headers/Methods/Expose-Headers/Cache-Control unchanged), served MCP contract unchanged.
 // Re-frozen 2026-10-02 (Phase C): the MCP command path moved onto opera_await_adaptive, wait_events began honouring the timeoutMs it declares and now declares the envelope opera_watch_events_wait actually returns, and the instructions named start_watch / wait_events / run_workflow. Tool inventory unchanged at 22.
 
-const EXPECTED_MCP_SHA256 = '8b689301ac5be25bbc0be34da874d2a546d9abcfbb50f8c06567f69d837f942d'; // Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; see boundary-locks.mjs. Re-frozen 2026-10-03 (navigate step): burstStepSchema gains the navigate kind; see boundary-locks.mjs.
+const EXPECTED_MCP_SHA256 = '9d3f3115644204c871dbb762b24013ac8393eda58881221ebbfeca2c502ddaf8'; // Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; see boundary-locks.mjs. Re-frozen 2026-10-03 (navigate step): burstStepSchema gains the navigate kind; see boundary-locks.mjs.
 const EXPECTED_ALLOWED_EFFECTS = [
   'browser.burst',
   'browser.ping',
@@ -82,7 +82,7 @@ function observationMeta(extra = {}) {
       tenantId: 'tenant-7f',
       deviceId: 'device-7f',
       tabId: 7,
-      documentGeneration: 'doc-7f-1',
+      documentGeneration: 'doc-generation-1',
     },
     observationKind: 'DIRECT_OBSERVATION',
     scopeKind: 'DECLARED_BOUNDED_FEED',
@@ -95,7 +95,7 @@ function observationMeta(extra = {}) {
 
 function collectFeed({ stable = false, maxItems = 10 } = {}) {
   const meta = observationMeta({ boundaryStable: stable });
-  const first = collectSemanticRecords7D(
+  const first = collectSemanticRecords(
     [item('se_a'), item('se_b')],
     ['logicalId', 'semanticRevision', 'stableKey', 'stableKeySource', 'name', 'inViewport'],
     {
@@ -106,7 +106,7 @@ function collectFeed({ stable = false, maxItems = 10 } = {}) {
       observationMeta: meta,
     },
   );
-  const second = collectSemanticRecords7D(
+  const second = collectSemanticRecords(
     [item('se_b', { semanticRevision: 2, inViewport: false }), item('se_c')],
     ['logicalId', 'semanticRevision', 'stableKey', 'stableKeySource', 'name', 'inViewport'],
     {
@@ -118,7 +118,7 @@ function collectFeed({ stable = false, maxItems = 10 } = {}) {
       observationMeta: meta,
     },
   );
-  return dedupSemanticRecords7D(second, ['logicalId'], { destination: 'unique', collectionBudget: 1000 });
+  return dedupSemanticRecords(second, ['logicalId'], { destination: 'unique', collectionBudget: 1000 });
 }
 
 test('keeps the 1.6.15 public surface and frozen read-only VM effect policy unchanged', () => {
@@ -128,7 +128,7 @@ test('keeps the 1.6.15 public surface and frozen read-only VM effect policy unch
   assert.equal(contract.inventory.value.protocolVersion, 1);
   assert.equal(contract.inventory.value.capabilityCount, 26);
   assert.equal(contract.inventory.value.mcpToolCount, 22); // U-T rebaseline
-  assert.equal(contract.inventory.digest, 'sha256:d0bb47a796144e5994cb380080b3afd901ff8fea063e06165a77d8a611cba1f6'); // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 fail-closed CORS (derived from EXPECTED_MCP_SHA256 above), served contract unchanged. Re-frozen 2026-10-02 (Phase C): recomputed from the new EXPECTED_MCP_SHA256; the inventory digest folds the MCP whole-file SHA, so it moves with it. Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; recomputed from the new EXPECTED_MCP_SHA256 above. Re-frozen 2026-10-03 (navigate step): recomputed from the new EXPECTED_MCP_SHA256 above.
+  assert.equal(contract.inventory.digest, 'sha256:0496b076b380c08ff999b05bc80730bce6437c40959406488252f98a189f07ea'); // Re-frozen 2026-10-02: Enterprise Phase 4 Task 2 fail-closed CORS (derived from EXPECTED_MCP_SHA256 above), served contract unchanged. Re-frozen 2026-10-02 (Phase C): recomputed from the new EXPECTED_MCP_SHA256; the inventory digest folds the MCP whole-file SHA, so it moves with it. Re-frozen 2026-10-03 (audit repair): burstStepSchema gains optional per-step tabId; recomputed from the new EXPECTED_MCP_SHA256 above. Re-frozen 2026-10-03 (navigate step): recomputed from the new EXPECTED_MCP_SHA256 above.
   assert.equal(sha256CanonicalLf(mcpSource), EXPECTED_MCP_SHA256);
   const simulatedWindowsCheckout = Buffer.from(mcpSource.toString('utf8').replace(/\r?\n/g, '\r\n'), 'utf8');
   assert.equal(sha256CanonicalLf(simulatedWindowsCheckout), EXPECTED_MCP_SHA256);
@@ -189,17 +189,17 @@ test('bounded browser evidence produces zero false PROVED outcomes', async () =>
       tenantId: ledger.tenantId,
       deviceId: 'device-7f',
       tabId: 7,
-      documentGeneration: 'doc-7f-1',
+      documentGeneration: 'doc-generation-1',
     },
   });
-  const collection = collectSemanticRecords7D([item('se_a')], ['logicalId'], {
+  const collection = collectSemanticRecords([item('se_a')], ['logicalId'], {
     destination: 'feed',
     maxItems: 10,
     collectionBudget: 10,
     sourceBinding: 'source',
     observationMeta: meta,
   });
-  const evidence = await bindCollectionEvidence7D(collection, {
+  const evidence = await bindCollectionEvidence(collection, {
     evidenceId: 'm7_7f_bounded_observation',
     tenantId: ledger.tenantId,
     goalId: ledger.goalId,
@@ -228,10 +228,10 @@ test('effect idempotency replay is deterministic and request-sensitive', async (
     attemptClass: 'READ_ONLY',
   };
   const keys = [];
-  for (let index = 0; index < 100; index += 1) keys.push(await deriveVmEffectIdempotencyKey7E(base));
+  for (let index = 0; index < 100; index += 1) keys.push(await deriveVmEffectIdempotencyKey(base));
   assert.equal(new Set(keys).size, 1);
   assert.match(keys[0], /^vm1:[0-9a-f]{64}$/);
-  const changed = await deriveVmEffectIdempotencyKey7E({ ...base, requestDigest: `sha256:${'3'.repeat(64)}` });
+  const changed = await deriveVmEffectIdempotencyKey({ ...base, requestDigest: `sha256:${'3'.repeat(64)}` });
   assert.notEqual(changed, keys[0]);
 });
 
@@ -239,7 +239,7 @@ test('persisted host state is metadata-only and rejects raw or sensitive browser
   const metadata = {
     tenantId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     runId: '11111111-1111-4111-8111-111111111111',
-    requestId: 'm7-7f-metadata',
+    requestId: 'vm-metadata-request',
     programDigest: `sha256:${'1'.repeat(64)}`,
     goalId: 'goal-7f',
     goalRevision: 1,
@@ -255,14 +255,14 @@ test('persisted host state is metadata-only and rejects raw or sensitive browser
     availableAt: '2026-09-12T07:00:00.000Z',
     errorCode: null,
   };
-  assert.deepEqual(validateVmPersistedMetadata7E(metadata), metadata);
+  assert.deepEqual(validateVmPersistedMetadata(metadata), metadata);
 
   assert.throws(
-    () => validateVmPersistedMetadata7E({ ...metadata, page_text: 'raw browser content' }),
+    () => validateVmPersistedMetadata({ ...metadata, page_text: 'raw browser content' }),
     (error) => error instanceof ReactiveVmHostError && error.code === 'PROHIBITED_PERSISTENCE',
   );
   assert.throws(
-    () => validateVmPersistedMetadata7E({ ...metadata, accessToken: 'secret-value' }),
+    () => validateVmPersistedMetadata({ ...metadata, accessToken: 'secret-value' }),
     (error) => error instanceof ReactiveVmHostError && error.code === 'PROHIBITED_PERSISTENCE',
   );
 });

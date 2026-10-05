@@ -85,7 +85,7 @@ test('6E endpoint binds every operation to OAuth user identity and exposes no pr
   assert.match(endpoint, /if \(operation === "inspect"\) \{[\s\S]*await assertCurrentHead\(opened\.ledger\)/);
 });
 
-test('6E leaves the existing MCP inventory byte-for-byte unchanged', () => {
+test('the existing MCP inventory byte-for-byte unchanged', () => {
   const hash = sha256CanonicalLf(mcpSource);
   assert.equal(contract.toolCount, 22);
   assert.equal(hash, contract.sourceSha256);

@@ -39,7 +39,7 @@ import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 // No factory body changed. Renaming is a merge necessity, not a cleanup, and
 // the body of each is byte-identical to its source.
 //
-// The P1 working-state store is NOT here: it is a separate module with its own
+// The working-state store is NOT here: it is a separate module with its own
 // two files, in tests/semantic-working-state.test.mjs.
 
 await import('../extension/semantic-identity.js');
@@ -489,7 +489,7 @@ test('a one-item delta is materially smaller than a 100-item snapshot', () => {
 
 // --- E. stale pruning -------------------------------------------------------
 //
-// U-P3 (research P3, 2026-09-20 method matrix): stale semantic pruning.
+// Stale semantic pruning: an
 // (A) entities observed present-but-invisible for N consecutive observations
 // are marked stale in the model-facing view while canonical state keeps them;
 // (B) compact observations drop stale items so dismissed panels (Miro

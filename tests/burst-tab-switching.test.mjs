@@ -9,7 +9,7 @@ import fs from 'node:fs';
 
 import { validateBurst, burstCrossTabRef, burstStaleRef, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
 
-// Phase D (2026-10-02): a burst may address more than one tab.
+// Phase D: a burst may address more than one tab.
 //
 // The measured reason: only 8 of 26 primitives were burstable, and all 8
 // `tabs.*` operations were excluded, so a real browsing task needed a separate
@@ -211,7 +211,7 @@ test('the burst still refuses to run JavaScript or loop or branch', () => {
 });
 
 test('a ref consumed on a different tab than its source is refused, even without a switch', () => {
-  // Audit repair (2026-10-03): the executor used to refuse only when the
+  // Audit repair: the executor used to refuse only when the
   // consuming step itself switched tabs (`switched && refFromStep`). A step
   // that stays on the already-active tab could consume a ref minted on another
   // tab, and nothing tested even the switch case. The check must compare the
