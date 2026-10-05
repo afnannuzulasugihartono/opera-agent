@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-05 18:15 UTC+7.
 // @title: landing-consent — the OAuth permission screen, and the two defects it removes.
-// @state: 7 locks, green; the separate deployment it replaced is gone from the tree.
+// @state: 8 locks green; the separate deployment it replaced is still on disk until the production site URL moves.
 // @dependencies: node:test, node:assert, node:fs.
 
 // The consent screen is the page where a person decides whether an application may drive
@@ -22,7 +22,7 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
-const html = read('landing/consent.html');
+const html = read('landing/oauth/consent.html');
 const code = html
   .split('\n')
   .filter((line) => !/^\s*(\/\/|\/\*|\*|<!--)/.test(line))
@@ -76,6 +76,24 @@ test('an authorization that is already decided is followed, not re-asked', () =>
   // again would show a person a decision that was already made for them.
   assert.match(html, /if \(details\.redirect_url\) \{[\s\S]*location\.assign\(details\.redirect_url\)/, 'a decided request is followed');
   assert.match(html, /data\.redirect_url/, 'and so is the redirect after approve or deny');
+});
+
+test('the consent page is served at the path GoTrue actually asks for', () => {
+  // WHY this lock is the one that matters most: GoTrue builds the consent URL as
+  // SiteURL + authorization_path, so it requests /oauth/consent. The separate deployment
+  // rewrote that path to its own root, which is why the merged page was first written at
+  // /consent — a page nothing would ever load. The file lives at landing/oauth/consent.html
+  // so cleanUrls serves that path on both hosts with no rewrite and no rule to order.
+  const config = read('supabase/config.toml');
+  assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the path GoTrue uses');
+  assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path on disk');
+  const vercel = JSON.parse(read('landing/vercel.json'));
+  const sources = vercel.headers.map((h) => h.source);
+  assert.ok(sources.includes('/oauth/consent'), 'and the CSP covers it on Vercel');
+  assert.doesNotMatch(sources.join(' '), /^\/consent$/m, 'no stale entry for the path nothing requested');
+  const headers = read('landing/_headers');
+  assert.match(headers, /^\/oauth\/consent, \/oauth\/consent\.html$/m, 'and on Cloudflare');
+  assert.match(html, /\.\.\/auth\.html\?next=/, 'the sign-in return path resolves from the new directory');
 });
 
 test('nothing the runtime reads still points at the separate consent deployment', () => {

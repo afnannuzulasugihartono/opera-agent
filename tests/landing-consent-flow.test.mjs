@@ -1,7 +1,6 @@
 // @last-edited: 2026-10-05 18:30 UTC+7.
 // @title: landing-consent-flow — the consent page's own module, executed against five flows.
-// @state: 15 assertions, green against a pending request, no session, an already-decided
-//   request, an unnamed client, and an expired session.
+// @state: 5 flows green — pending, no session, already-decided, unnamed client, expired session.
 // @dependencies: node:test, node:assert, node:fs, node:vm.
 
 // The other consent locks read the file. This one runs it, because the defects that
@@ -16,7 +15,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const root = new URL('..', import.meta.url);
-const html = fs.readFileSync(new URL('landing/consent.html', root), 'utf8');
+const html = fs.readFileSync(new URL('landing/oauth/consent.html', root), 'utf8');
 const source = /<script type="module">([\s\S]*?)<\/script>/.exec(html)[1];
 
 const TOKEN = 'test-access-token';

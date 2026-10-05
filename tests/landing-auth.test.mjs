@@ -36,7 +36,7 @@ test('the landing page itself stays network-free while auth may reach only Supab
   // winning, so the catch-all must come first or it buries the auth policy.
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
-    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/consent', '/consent/:path*', '/consent.html'],
+    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html'],
     'the catch-all stays first and the page entries follow'
   );
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
@@ -45,7 +45,7 @@ test('the landing page itself stays network-free while auth may reach only Supab
   // WHY three entries per page: neither "/auth" nor "/auth/:path*" alone matched the
   // served path on Vercel, so the auth page received the root CSP and its Supabase
   // fetch died in the browser. All three carry the same single-origin policy.
-  const authSources = ['/auth', '/auth/:path*', '/auth.html', '/consent', '/consent/:path*', '/consent.html'];
+  const authSources = ['/auth', '/auth/:path*', '/auth.html', '/oauth/consent', '/oauth/consent.html'];
   for (const source of authSources) {
     const entry = bySource[source];
     assert.ok(entry, `vercel.json must define a header entry for ${source}`);

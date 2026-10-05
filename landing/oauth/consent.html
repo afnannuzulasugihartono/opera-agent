@@ -10,6 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Izin OAuth — Opera Agent</title>
   <meta name="description" content="Layar izin OAuth Opera Agent: aplikasi mana yang meminta akses, lalu izinkan atau tolak." />
+  <meta name="robots" content="noindex" />
   <style>
     /* WHY the site palette and not the old consent screen's: this page is part of the
        site now, and a reader who was on the home page must not land somewhere that
@@ -194,7 +195,7 @@
 
     // WHY the return path carries the id: the sign-in page drops the query string when it
     // swaps a token out of the URL fragment, so the request must be carried in ?next.
-    $('signInButton').href = `./auth.html?next=${encodeURIComponent(`./consent.html?authorization_id=${authorizationId || ''}`)}`;
+    $('signInButton').href = `../auth.html?next=${encodeURIComponent(`./oauth/consent.html?authorization_id=${authorizationId || ''}`)}`;
 
     function renderDetails(details, user) {
       const name = details.client?.name?.trim() || '';

@@ -30,7 +30,7 @@ test('the terms state the invite-only reality and the key rule', () => {
 });
 
 test('every site page shares one navigation and one footer', () => {
-  for (const name of ['index.html', 'auth.html', 'privasi.html', 'syarat.html', 'akun.html', 'dashboard.html', 'consent.html', 'unduh.html', '404.html']) {
+  for (const name of ['index.html', 'auth.html', 'privasi.html', 'syarat.html', 'akun.html', 'dashboard.html', 'oauth/consent.html', 'unduh.html', '404.html']) {
     const html = read(name);
     assert.match(html, /class="brand"[^>]*>Opera Agent</, `${name} carries the brand`);
     assert.match(html, /privasi\.html/, `${name} links the privacy policy`);
@@ -73,7 +73,7 @@ test('the site is deployed as static files, never as a detected framework', () =
 });
 
 test('every site page survives a reader with no JavaScript and no screen reader vision', () => {
-  for (const name of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'consent.html', 'privasi.html', 'syarat.html', 'unduh.html']) {
+  for (const name of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'oauth/consent.html', 'privasi.html', 'syarat.html', 'unduh.html']) {
     const html = read(name);
     assert.match(html, /<html lang="id"/, `${name} declares its language`);
     assert.match(html, /<main/, `${name} has a main landmark`);
