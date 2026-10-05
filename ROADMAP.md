@@ -36,9 +36,11 @@ only what is still open.
       both the user-configured model endpoint and any host permission the landing page
       takes.
 - [ ] Bind a device to an account. The MCP server already authenticates with Supabase Auth
-      and an allowlist of user ids or emails; pairing is still a bare code. Mass production
-      wants "this device belongs to this account", which is a schema change and therefore
-      production DB shape. The allowlist also has to become a policy: open sign-up, or a
+      and an allowlist of user ids or emails; pairing is still a bare code. The binding
+      migration exists (`supabase/migrations/20261005120000_opera_agent_account_device_binding.sql`)
+      and the dashboard reads through `opera_my_devices`, but the migration is unapplied,
+      so pairing still creates orphans. Apply it from the dashboard SQL editor: CI never
+      applies migrations. The allowlist also has to become a policy: open sign-up, or a
       plan.
 
 ## Standing rules
