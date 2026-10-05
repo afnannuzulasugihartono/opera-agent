@@ -15,9 +15,9 @@ import assert from 'node:assert/strict';
 
 const ALLOWED_ROOT_ENTRIES = new Set([
   '.agents', '.github', 'docs', 'extension', 'lib',
-  // landing/ and oauth-consent/ are the two static sites: the public page and the
-  // consent page. Both are allowlisted with their reason, per AGENTS.md naming rules.
-  'landing', 'oauth-consent', 'release-trigger', 'scripts', 'supabase', 'tests',
+  // landing/ is the one static site: the public pages and the OAuth consent screen,
+  // which moved there so GoTrue would serve it from the site origin it validates.
+  'landing', 'release-trigger', 'scripts', 'supabase', 'tests',
   '.gitignore', '.env.example', '.gitleaks.toml',
   'AGENTS.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE', 'README.md',
   'ROADMAP.md', 'SECURITY.md', 'SUPPORT.md', 'opencode.json', 'package.json',

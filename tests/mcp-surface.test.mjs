@@ -31,14 +31,14 @@ import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 const sourceUrl = new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url);
 const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', import.meta.url);
 const authUrl = new URL('../supabase/functions/opera-agent-mcp/../opera-agent-auth/index.ts', import.meta.url);
-const consentUrl = new URL('../oauth-consent/index.html', import.meta.url);
-const vercelConfigUrl = new URL('../oauth-consent/vercel.json', import.meta.url);
+const consentUrl = new URL('../landing/oauth/consent.html', import.meta.url);
 const supabaseConfigUrl = new URL('../supabase/config.toml', import.meta.url);
+const siteVercelConfigUrl = new URL('../landing/vercel.json', import.meta.url);
 const source = await readFile(sourceUrl, 'utf8');
 const config = JSON.parse(await readFile(configUrl, 'utf8'));
 const authSource = await readFile(authUrl, 'utf8');
 const consentSource = await readFile(consentUrl, 'utf8');
-const vercelConfig = JSON.parse(await readFile(vercelConfigUrl, 'utf8'));
+const siteVercelConfig = JSON.parse(await readFile(siteVercelConfigUrl, 'utf8'));
 const supabaseConfig = await readFile(supabaseConfigUrl, 'utf8');
 const contract = JSON.parse(
   fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8')
@@ -573,18 +573,17 @@ test('OAuth config endpoint exposes only public client configuration', () => {
 });
 
 test('hosted OAuth consent artifact has no embedded privileged secret', () => {
-  assert.match(consentSource, /@supabase\/supabase-js@2\.116\.0/);
-  assert.match(consentSource, /opera-agent-auth\/config/);
-  assert.match(consentSource, /getAuthorizationDetails/);
-  assert.match(consentSource, /approveAuthorization/);
-  assert.match(consentSource, /denyAuthorization/);
-  assert.match(consentSource, /session\?\.user\?\.is_anonymous/);
-  assert.match(consentSource, /data\.user\?\.is_anonymous/);
-  assert.match(consentSource, /signOut\(\{ scope: 'local' \}\)/);
+  // WHY the SDK calls are gone: the screen now lives on the site and calls the Auth host
+  // directly, so it loads no library from a CDN. The contract it must keep is the one that
+  // matters — no privileged secret in a page anyone can load.
+  assert.match(consentSource, /\/oauth\/authorizations\/\$\{encodeURIComponent\(authorizationId\)\}/);
+  assert.match(consentSource, /\/oauth\/authorizations\/\$\{encodeURIComponent\(authorizationId\)\}\/consent/);
+  assert.match(consentSource, /JSON\.stringify\(\{ action \}\)/);
   assert.doesNotMatch(consentSource, /service_role|OPERA_AGENT_MCP_TOKEN|eyJhbGci/);
-  assert.equal(vercelConfig.rewrites[0].source, '/oauth/consent');
-  assert.equal(vercelConfig.rewrites[0].destination, '/');
-  assert.ok(vercelConfig.headers[0].headers.some((header) => header.key === 'Content-Security-Policy'));
+  assert.doesNotMatch(consentSource, /type="password"/i, 'the screen asks for no password of ours');
+  assert.ok(siteVercelConfig.headers.some((entry) => entry.source === '/oauth/consent'), 'and the site serves it under the policy that permits only Supabase');
+  const policy = siteVercelConfig.headers.find((entry) => entry.source === '/oauth/consent').headers.find((h) => h.key === 'Content-Security-Policy').value;
+  assert.match(policy, /connect-src https:\/\/\*\.supabase\.co/, 'the consent page reaches Supabase and nothing else');
 });
 
 test('hosted OAuth consent module has valid JavaScript syntax', () => {

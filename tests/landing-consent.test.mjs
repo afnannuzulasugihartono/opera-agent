@@ -100,11 +100,9 @@ test('nothing the runtime reads still points at the separate consent deployment'
   for (const file of ['supabase/config.toml', 'supabase/functions/opera-agent-auth/index.ts', 'supabase/functions/_shared/cors.js', 'tests/edge-cors.test.mjs', 'extension/lib/endpoints.js']) {
     assert.doesNotMatch(read(file), /oauth-consent-three/, `${file} no longer names the separate deployment`);
   }
-  // WHY the old directory still exists: Supabase's site URL is a production setting, and
-  // it still points at the separate deployment. Deleting the files before that setting
-  // changes would leave the permission screen with nowhere to load, which is a worse
-  // state than two copies of one page. It goes in the same commit that moves the
-  // production site URL, and this assertion changes to its absence on that day.
-  assert.ok(fs.existsSync(new URL('oauth-consent/index.html', root)), 'the superseded screen is still present until the production switch');
-  assert.match(read('oauth-consent/index.html'), /memberi ChatGPT akses/, 'and the superseded screen still carries the wrong name, which is why it is not served');
+  // The superseded screen is gone, and it is gone because the production switch happened
+  // first: measured on this project, an authorize request is now redirected to
+  // https://opera-agent.vercel.app/oauth/consent and the page served there is this site's.
+  // Deleting it earlier would have left the permission screen with nowhere to load.
+  assert.ok(!fs.existsSync(new URL('oauth-consent/', root)), 'the separate consent deployment is gone from the tree');
 });

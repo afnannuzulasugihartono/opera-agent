@@ -1,7 +1,0 @@
-# @last-edited: 2026-10-04 18:25 UTC+7.
-# @title: .gitignore — Repository file.
-# @state: reject anonymous OAuth consent sessions (#12).
-# @dependencies: none stated.
-
-.vercel
-.env*
