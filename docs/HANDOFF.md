@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 12:03 UTC+7.
+@last-edited: 2026-10-05 13:20 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -60,16 +60,13 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Measured, not assumed
 
-- The account-scoped run path is proven end to end in production: `opera_run_on_my_device`
-  resolved the device by `user_id`, validated `tabs.list` against the enabled allowlist,
-  enqueued command `61ae9432`, and the device completed it 377 ms after claiming it.
-- The device claimed that command **12.07 s** after it was enqueued, just past the run
-  function's wait window. A single primitive from a person therefore waits on the poll
-  ramp, not on the work. This is the same ramp `docs/benchmarks.md` measures as 676.6 ms
-  of the 1875.3 ms average, seen from its worst angle: one action, no pipeline.
-- Consequence for the product: the dashboard reports a queued run as pending and reloads
-  the history, because a timeout there means "not yet", not "did not happen".
-
+- The account run path is proven in production. `opera_run_on_my_device` resolved the
+  device by `user_id`, refused an unknown method against the enabled allowlist, and
+  completed `tabs.list`: pickup 12072 ms then 377 ms of work on one run, pickup 8260 ms
+  then 326 ms on the next. Pickup waits on the device long-poll, not on the work.
+- The dashboard waits 45 s by default, so it reports these as completed. An earlier
+  reading of "12 s timeout" was a test that passed 12 s as the wait window, not a
+  product limit; do not repeat that measurement.
 ## Known, not started
 
 - **The Opera-to-Brave rename is a production migration, not a rename.** The `opera_`
