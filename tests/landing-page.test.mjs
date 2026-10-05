@@ -58,7 +58,7 @@ test('the page tells a person how to install, sign in, and where data goes', () 
   assert.match(html, /id="signin"/, 'sign-in must be on the page');
   assert.match(html, /id="privacy"/, 'the page must state what leaves the machine');
   assert.match(html, /©|&copy;/, 'the copyright line must be present');
-  assert.match(html, /All rights reserved/i, 'the copyright must be a real notice, not a symbol alone');
+  assert.match(html, /Hak cipta dilindungi/, 'the copyright must be a real notice, not a symbol alone');
 });
 
 test('every form control on the page has an accessible name', () => {
@@ -71,9 +71,20 @@ test('every form control on the page has an accessible name', () => {
   }
 });
 
+test('the privacy section discloses the relay instead of denying it', () => {
+  // WHY this lock exists: the page once claimed page content never touches the
+  // bridge, while command results are stored as queue history in the project
+  // database. A privacy section that denies the relay is a lie the lock must catch.
+  assert.doesNotMatch(html, /Nothing is uploaded/, 'the page must not claim nothing leaves the machine');
+  assert.doesNotMatch(html, /Never to the .*bridge/, 'the page must not deny the relay');
+  assert.match(html, /riwayat antrean/, 'the page must disclose queue-history storage');
+  assert.match(html, /tidak pernah dibagikan ke pihak ketiga/, 'the page must state the third-party boundary');
+});
+
 test('the site has no build step and no external origin', () => {
   const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
-  const csp = vercel.headers[0].headers.find((h) => h.key === 'Content-Security-Policy').value;
+  const rootEntry = vercel.headers.find((h) => h.source === '/(.*)');
+  const csp = rootEntry.headers.find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(csp, /connect-src 'none'/, 'the page must be forbidden from connecting anywhere');
   assert.doesNotMatch(html, /src="https?:/, 'no external script or stylesheet');
   assert.doesNotMatch(html, /<link[^>]+href="https?:/, 'no external stylesheet');

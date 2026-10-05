@@ -1,15 +1,15 @@
-<!-- @last-edited: 2026-10-05 02:10 UTC+7. -->
+<!-- @last-edited: 2026-10-05 08:41 UTC+7. -->
 <!-- @title: landing — the public site: install, sign-in, and your own model. -->
 <!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
 <!-- @dependencies: none. -->
 
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Opera Agent</title>
-  <meta name="description" content="Opera Agent drives your own browser from an AI assistant you already use. You bring the model; nothing is uploaded." />
+  <meta name="description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
   <style>
     /* WHY inline and single file: this site has no build step, no framework and no
        external origin. A marketing page that needs a bundler is a page that breaks
@@ -150,113 +150,118 @@
     <div class="wrap">
       <nav>
         <span class="brand">Opera Agent</span>
-        <a href="#install">Install</a>
-        <a href="#model">Your model</a>
-        <a href="#signin">Sign in</a>
-        <a href="#privacy">Privacy</a>
+        <a href="#install">Instalasi</a>
+        <a href="#model">Model Anda</a>
+        <a href="#signin">Masuk</a>
+        <a href="#privacy">Privasi</a>
+        <a href="./auth.html">Akun</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
     <section class="hero">
-      <h1>Your assistant drives your browser.</h1>
+      <h1>Asisten Anda mengemudikan browser Anda.</h1>
       <p>
-        Opera Agent gives the AI assistant you already use a controlled bridge to your own
-        browser: 26 allowlisted actions, no arbitrary script execution, and every action
-        you can watch. You bring the model. Nothing is uploaded.
+        Opera Agent memberi asisten AI yang sudah Anda pakai sebuah jembatan terkendali ke
+        browser Anda sendiri: 26 aksi yang diizinkan, tanpa eksekusi skrip sembarangan, dan
+        setiap aksi bisa Anda awasi. Anda membawa model sendiri. Konten halaman hanya
+        pergi ke endpoint model Anda.
       </p>
       <div class="row">
-        <a class="btn primary" href="#install">Install</a>
-        <a class="btn" href="#model">Connect a model</a>
+        <a class="btn primary" href="#install">Instalasi</a>
+        <a class="btn" href="#model">Sambungkan model</a>
       </div>
     </section>
 
     <section id="install">
-      <h2>Install</h2>
-      <p class="sub">The extension is the whole product on your machine. The server only carries commands to it.</p>
+      <h2>Instalasi</h2>
+      <p class="sub">Extension adalah seluruh produk di mesin Anda. Server hanya mengantar perintah ke sana.</p>
       <ol class="steps">
-        <li><strong>Load the extension.</strong> Open <code>opera://extensions</code>, turn on developer mode, and load the unpacked extension folder. A published build appears in the Chrome Web Store when the listing is approved.</li>
-        <li><strong>Pair it.</strong> Generate a one-time pairing value from the connected project, then paste it in the popup. Pairing is revocable one device at a time.</li>
-        <li><strong>Connect an assistant.</strong> Point your assistant at the MCP endpoint for the <code>browser_*</code> and <code>read_page</code> tools, or sign in on this page first.</li>
-        <li><strong>Check what it can see.</strong> The popup reports whether the tab is active and whether you are present, so an assistant can tell foreground from background before it acts.</li>
+        <li><strong>Muat extension.</strong> Buka <code>opera://extensions</code>, aktifkan developer mode, dan muat folder extension yang belum dipaket. Build tayang muncul di Chrome Web Store setelah listing disetujui.</li>
+        <li><strong>Pairing.</strong> Buat nilai pairing sekali pakai dari project yang tersambung, lalu tempel di popup. Satu device ter-pairing dalam satu waktu.</li>
+        <li><strong>Sambungkan asisten.</strong> Arahkan asisten Anda ke endpoint MCP untuk tools <code>browser_*</code> dan <code>read_page</code>.</li>
+        <li><strong>Periksa apa yang bisa dilihatnya.</strong> Popup melaporkan apakah tab aktif dan apakah Anda ada, sehingga asisten tahu beda foreground dan background sebelum bertindak.</li>
       </ol>
     </section>
 
     <section id="model">
-      <h2>Bring your own model</h2>
+      <h2>Bawa model sendiri</h2>
       <p class="sub">
-        Paste the endpoint, model name and API key your provider gave you. This form talks
-        to your installed extension and to nothing else: there is no server here to send it
-        to. The key is stored in your browser and is never shown back to this page.
+        Tempel endpoint, nama model, dan kunci API dari penyedia Anda. Formulir ini hanya
+        bicara ke extension yang terpasang: tidak ada server di sini yang bisa dikirimi.
+        Kunci tersimpan di browser Anda dan tidak pernah ditampilkan kembali ke halaman ini.
       </p>
       <div class="card">
         <form id="modelForm">
-          <label for="preset">Provider</label>
+          <label for="preset">Penyedia</label>
           <select id="preset">
-            <option value="">Custom endpoint</option>
-            <option value="http://127.0.0.1:11434/v1">Ollama on this machine</option>
-            <option value="http://127.0.0.1:1234/v1">LM Studio on this machine</option>
+            <option value="">Endpoint kustom</option>
+            <option value="http://127.0.0.1:11434/v1">Ollama di mesin ini</option>
+            <option value="http://127.0.0.1:1234/v1">LM Studio di mesin ini</option>
           </select>
 
-          <label for="modelEndpoint">API endpoint</label>
-          <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://your-provider.example/v1" />
+          <label for="modelEndpoint">Endpoint API</label>
+          <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1" />
 
-          <label for="modelName">Model name</label>
-          <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="The name your provider uses" />
+          <label for="modelName">Nama model</label>
+          <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="Nama yang dipakai penyedia Anda" />
 
-          <label for="modelKey">API key</label>
-          <input id="modelKey" type="text" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Your provider's key" />
+          <label for="modelKey">Kunci API</label>
+          <input id="modelKey" type="text" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Kunci dari penyedia Anda" />
 
           <div class="row">
-            <button class="btn primary" type="submit">Save to extension</button>
-            <button class="btn" type="button" id="copyButton">Copy instead</button>
+            <button class="btn primary" type="submit">Simpan ke extension</button>
+            <button class="btn" type="button" id="copyButton">Salin saja</button>
           </div>
           <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
           <p class="note">
-            The extension accepts an https endpoint, or plain http on 127.0.0.1 for a model
-            that runs on this machine. If the extension is not installed, use
-            <em>Copy instead</em> and paste the values into the extension popup.
+            Extension menerima endpoint https, atau http polos di 127.0.0.1 untuk model
+            yang berjalan di mesin ini. Bila extension belum terpasang, gunakan
+            <em>Salin saja</em> lalu tempel nilainya di popup extension.
           </p>
         </form>
       </div>
     </section>
 
     <section id="signin">
-      <h2>Sign in and let an assistant drive</h2>
-      <p class="sub">Opera Agent speaks MCP, so any assistant that speaks MCP can drive it. Sign-in is handled by the project you connect to.</p>
+      <h2>Masuk dan biarkan asisten bekerja</h2>
+      <p class="sub">Opera Agent bicara MCP, sehingga asisten apa pun yang bicara MCP bisa mengemudikannya. Sign-in diurus oleh project yang Anda sambungkan.</p>
+      <div class="row" style="margin-bottom: 18px;">
+        <a class="btn primary" href="./auth.html">Masuk / Daftar</a>
+      </div>
       <div class="grid">
         <div class="tile">
-          <h3>OAuth consent</h3>
-          <p>Approving an assistant is one page and one scope. Nothing is granted until you press the button on it.</p>
+          <h3>Persetujuan OAuth</h3>
+          <p>Menyetujui asisten hanya satu halaman dan satu scope. Tidak ada yang diberikan sebelum Anda menekan tombol di sana.</p>
         </div>
         <div class="tile">
           <h3>Tools</h3>
-          <p>22 tools: burst actions, page reads, tabs, media, watch and wait. The 26 browser primitives underneath stay unchanged.</p>
+          <p>22 tools: aksi burst, baca halaman, tab, media, watch dan wait. 26 primitive browser di bawahnya tidak berubah.</p>
         </div>
         <div class="tile">
-          <h3>Human in the loop</h3>
-          <p>Foreground mode needs permission every time. Passwords, one-time codes and payment fields are refused.</p>
+          <h3>Manusia di loop</h3>
+          <p>Mode foreground butuh izin setiap kali. Password, kode sekali pakai, dan kolom pembayaran ditolak.</p>
         </div>
       </div>
     </section>
 
     <section id="privacy">
-      <h2>What leaves your machine</h2>
-      <p class="sub">Stated plainly, because an assistant with browser access is worth trusting only if you know the answer.</p>
+      <h2>Apa yang meninggalkan mesin Anda</h2>
+      <p class="sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya.</p>
       <dl class="facts">
-        <dt>Page content</dt><dd>Goes only to the model endpoint you configured above. Never to the Opera Agent bridge.</dd>
-        <dt>API key</dt><dd>Stored in this browser. Never uploaded, never rendered back into this page, never logged.</dd>
-        <dt>Commands</dt><dd>Enqueue and result travel through the project bridge, so an assistant can act on your device.</dd>
-        <dt>Screenshots</dt><dd>Refused on a page showing a password, one-time code or payment field, and refused in private and incognito tabs.</dd>
+        <dt>Konten halaman</dt><dd>Konten dari halaman yang Anda setujui hanya pergi ke endpoint model milik Anda. Ia transit melalui relay perintah, dan perintah beserta hasilnya disimpan sebagai riwayat antrean di database project. Ia tidak pernah dibagikan ke pihak ketiga mana pun.</dd>
+        <dt>Kunci API</dt><dd>Tersimpan di browser ini. Tidak pernah diunggah, tidak pernah ditampilkan kembali ke halaman ini, tidak pernah dicatat.</dd>
+        <dt>Perintah</dt><dd>Antrean dan hasil transit melalui bridge project, agar asisten bisa bertindak di device Anda.</dd>
+        <dt>Screenshot</dt><dd>Ditolak di halaman yang menampilkan password, kode sekali pakai, atau kolom pembayaran, dan ditolak di tab private dan incognito.</dd>
       </dl>
     </section>
   </main>
 
   <footer>
     <div class="wrap cols">
-      <span>&copy; 2026 Opera Agent. All rights reserved.</span>
-      <span>Local execution &middot; Bring your own model &middot; No telemetry</span>
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>Eksekusi lokal &middot; Bawa model sendiri &middot; Tanpa telemetri</span>
     </div>
   </footer>
 
@@ -288,11 +293,11 @@
       event.preventDefault();
       const config = collect();
       if (!config.modelEndpoint || !config.modelName || !config.modelKey) {
-        setStatus('Fill in the endpoint, the model name and the key.', 'warn');
+        setStatus('Isi endpoint, nama model, dan kuncinya.', 'warn');
         return;
       }
       if (!globalThis.chrome?.runtime?.sendMessage) {
-        setStatus('This browser cannot talk to extensions. Use Copy instead.', 'warn');
+        setStatus('Browser ini tidak bisa bicara ke extension. Gunakan Salin saja.', 'warn');
         return;
       }
       // One message, one destination: the installed extension. There is no fetch here
@@ -300,11 +305,11 @@
       globalThis.chrome.runtime.sendMessage(EXTENSION_ID, { type: 'applyModelConfig', ...config }, (response) => {
         const error = globalThis.chrome.runtime.lastError;
         if (error || !response?.ok) {
-          setStatus(`The extension did not accept it${response?.message ? `: ${response.message}` : ''}. Use Copy instead.`, 'warn');
+          setStatus(`Extension tidak menerimanya${response?.message ? `: ${response.message}` : ''}. Gunakan Salin saja.`, 'warn');
           return;
         }
         $('modelKey').value = '';
-        setStatus('Saved on this device. The key is not shown here again.', 'ok');
+        setStatus('Tersimpan di device ini. Kunci tidak ditampilkan lagi di sini.', 'ok');
       });
     });
 
@@ -317,7 +322,7 @@
       ].join('\n');
       try {
         await navigator.clipboard.writeText(block);
-        setStatus('Copied. Paste it into the extension popup.', 'ok');
+        setStatus('Tersalin. Tempel ke popup extension.', 'ok');
       } catch (error) {
         setStatus(block, 'warn');
       }

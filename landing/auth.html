@@ -1,0 +1,261 @@
+<!-- @last-edited: 2026-10-05 08:41 UTC+7. -->
+<!-- @title: auth — sign in with a provider or a magic link, never a password of ours. -->
+<!-- @state: initiates project Auth login; device-to-account binding arrives with pairing. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Masuk — Opera Agent</title>
+  <meta name="description" content="Masuk ke Opera Agent dengan Google, GitHub, atau magic link email. Tanpa password milik kami." />
+  <style>
+    /* WHY the same single-file shape as the landing page: no build step, no
+       external origin, and the only network the CSP allows is the project Auth. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --surface-soft: #1b2026;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+      --accent-soft: rgba(20, 184, 166, .16);
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 560px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+
+    main { padding: 72px 0 56px; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .provider {
+      display: block;
+      text-align: center;
+      padding: 11px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      margin: 0 0 10px;
+    }
+
+    .provider:hover { border-color: var(--accent); }
+
+    .or { text-align: center; color: var(--muted); font-size: 13px; margin: 16px 0; }
+
+    label { display: block; margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+
+    input {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+    }
+
+    input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    button {
+      width: 100%;
+      padding: 11px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #04211d;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; }
+    .status.ok { color: var(--accent); }
+    .status.warn { color: var(--warn); }
+
+    .note { font-size: 12.5px; color: var(--muted); margin: 16px 0 0; }
+    footer { padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./index.html#model">Model Anda</a>
+        <a href="./index.html#privacy">Privasi</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Masuk</h1>
+    <p class="sub">Satu akun untuk website dan device Anda. Akses awal lewat undangan sampai sign-up terbuka.</p>
+    <div class="card" id="signedOut">
+      <a class="provider" id="googleButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=google">Masuk dengan Google</a>
+      <a class="provider" id="githubButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=github">Masuk dengan GitHub</a>
+      <p class="or">atau magic link email</p>
+      <form id="magicForm">
+        <label for="magicEmail">Email</label>
+        <input id="magicEmail" type="email" autocomplete="email" spellcheck="false" maxlength="254" placeholder="anda@example.com" />
+        <button type="submit">Kirim magic link</button>
+        <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+      </form>
+      <p class="note">
+        Masuk menghubungkan akun Anda. Pengikatan device ke akun menyusul bersama
+        pairing, dan halaman ini tidak pernah meminta password Anda.
+      </p>
+    </div>
+    <div class="card" id="signedIn" hidden>
+      <p class="sub" id="whoami">Masuk sebagai …</p>
+      <button id="signOutButton" type="button">Keluar</button>
+      <p class="status" id="sessionStatus" role="status" aria-live="polite">&nbsp;</p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span><a href="./index.html">Beranda</a></span>
+    </div>
+  </footer>
+
+  <script type="module">
+    // WHY fetch is allowed exactly one destination here: the project Auth host. The
+    // page CSP forbids every other origin, and the lock test pins that split, so a
+    // second destination cannot be added without turning the suite red.
+    const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
+    const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
+
+    const $ = (id) => document.getElementById(id);
+    const setStatus = (text, kind) => {
+      $('status').textContent = text;
+      $('status').className = `status${kind ? ` ${kind}` : ''}`;
+    };
+    const setSessionStatus = (text, kind) => {
+      $('sessionStatus').textContent = text;
+      $('sessionStatus').className = `status${kind ? ` ${kind}` : ''}`;
+    };
+
+    async function proveSession(accessToken) {
+      const response = await fetch(`${AUTH_HOST}/user`, {
+        headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${accessToken}` }
+      });
+      if (!response.ok) return null;
+      return response.json();
+    }
+
+    function showSignedIn(email) {
+      $('signedOut').hidden = true;
+      $('signedIn').hidden = false;
+      $('whoami').textContent = `Masuk sebagai ${email}.`;
+    }
+
+    // A provider or magic-link login returns here with the session in the URL
+    // fragment. Read it, prove it against Auth, and keep it in this tab only:
+    // there is no storage here on purpose, so closing the tab signs the device out.
+    async function completeReturningLogin() {
+      const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ''));
+      const accessToken = fragment.get('access_token');
+      if (!accessToken) return;
+      globalThis.history.replaceState(null, '', globalThis.location.pathname);
+      let user = null;
+      try {
+        user = await proveSession(accessToken);
+      } catch (error) {
+        user = null;
+      }
+      if (!user?.email) {
+        setStatus('Sesi tidak terbukti. Coba masuk lagi.', 'warn');
+        return;
+      }
+      sessionStorage.setItem('opera-agent-access-token', accessToken);
+      showSignedIn(user.email);
+    }
+
+    $('signOutButton').addEventListener('click', async () => {
+      const accessToken = sessionStorage.getItem('opera-agent-access-token') || '';
+      try {
+        await fetch(`${AUTH_HOST}/logout`, {
+          method: 'POST',
+          headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${accessToken}` }
+        });
+      } catch (error) {
+        setSessionStatus('Tidak bisa mencapai layanan auth, tapi tab ini dilupakan.', 'warn');
+      }
+      sessionStorage.removeItem('opera-agent-access-token');
+      $('signedIn').hidden = true;
+      $('signedOut').hidden = false;
+    });
+
+    completeReturningLogin();
+
+    $('magicForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = $('magicEmail').value.trim();
+      if (!email) {
+        setStatus('Isi alamat email dulu.', 'warn');
+        return;
+      }
+      let response;
+      try {
+        response = await fetch(`${AUTH_HOST}/otp`, {
+          method: 'POST',
+          headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+      } catch (error) {
+        setStatus('Tidak bisa mencapai layanan auth. Periksa koneksi Anda.', 'warn');
+        return;
+      }
+      if (!response.ok) {
+        setStatus('Email tidak terkirim. Coba lagi atau pakai tombol penyedia.', 'warn');
+        return;
+      }
+      $('magicEmail').value = '';
+      setStatus('Terkirim. Klik link di email Anda untuk masuk.', 'ok');
+    });
+  </script>
+</body>
+</html>
