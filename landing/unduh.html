@@ -82,6 +82,10 @@
     ol.steps { margin: 0; padding-left: 20px; }
     ol.steps li { margin: 0 0 12px; }
 
+    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
+    dl.facts dt { color: var(--text); font-weight: 600; }
+    dl.facts dd { margin: 0; }
+
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
     footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
@@ -120,6 +124,17 @@
       <li><strong>Aktifkan mode pengembang.</strong> Toggle di pojok atas, lalu klik <strong>Load unpacked</strong> dan pilih folder hasil ekstrak arsip.</li>
       <li><strong>Pasangkan device.</strong> Masuk ke <a href="./akun.html">Dashboard</a>, buat kode pairing sekali pakai, lalu tempel di popup extension.</li>
     </ol>
+
+    <h2>Izin yang diminta, dan kenapa</h2>
+    <p>Lima izin, satu per satu. Tidak ada izin yang tidak dijelaskan.</p>
+    <dl class="facts">
+      <dt><code>tabs</code></dt><dd>URL dan judul tab, untuk membuka dan navigasi tab yang kamu beri perintah.</dd>
+      <dt><code>scripting</code></dt><dd>Menyuntikkan ulang content script setelah worker berhenti, dan memeriksa frame tersembunyi sebelum screenshot.</dd>
+      <dt><code>storage</code></dt><dd>Menyimpan device token, kode pairing, dan setelanmu di browser ini.</dd>
+      <dt><code>alarms</code></dt><dd>Menjaga loop polling hidup; MV3 mematikan worker saat idle.</dd>
+      <dt><code>debugger</code></dt><dd>Input Klik-terpercaya, screenshot, pohon aksesibilitas, dan simulasi fokus. Tanpa ini, halaman bisa menolak klik.</dd>
+    </dl>
+    <p>Host permission <code>http://*/*</code> dan <code>https://*/*</code> karena kamu yang menentukan halaman tujuan saat runtime, jadi daftar asal tidak bisa diketahui lebih dulu. Batas sesungguhnya ditegakkan di kode: setiap primitive menolak tab non-http(s), screenshot ditolak di tab private, dan field password, OTP, PIN, kartu, serta CVV diblokir.</p>
 
     <h2>Kenapa belum ada tombol pasang sekali klik</h2>
     <p>Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store.

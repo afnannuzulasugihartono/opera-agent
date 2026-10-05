@@ -65,6 +65,19 @@ test('the archive contains every file the manifest names', () => {
   }
 });
 
+test('the download page explains every permission the manifest requests', () => {
+  const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+  const html = read('unduh.html');
+  // WHY this lock: Chrome Web Store review asks what each permission is for, and a
+  // stranger deciding to install deserves the same answer before, not after.
+  for (const permission of manifest.permissions) {
+    assert.ok(html.includes(permission), `the page must name the ${permission} permission`);
+  }
+  assert.match(html, /debugger/, 'the debugger permission is named and justified');
+  assert.match(html, /host permission/i, 'host permissions are named too');
+  assert.match(html, /ditolak di tab private/, 'the private-tab refusal is stated');
+});
+
 test('the download page shares the site navigation and floor', () => {
   const html = read('unduh.html');
   assert.match(html, /<html lang="id"/, 'the language is declared');
