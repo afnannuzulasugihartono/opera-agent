@@ -98,6 +98,34 @@ test('the archive is served as a zip so the browser saves it under its real name
   assert.equal(rule.headers['Content-Type'], 'application/zip');
 });
 
+test('both hosts upload the same file set, so no page exists on only one of them', () => {
+  // WHY this lock: Vercel reads .vercelignore, Cloudflare Pages reads .assetsignore, and
+  // a page published on one host and missing on the other is the hardest kind of 404 to
+  // notice. The two lists must therefore name the same things.
+  const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'));
+  const vercelIgnore = read('.vercelignore');
+  const assetsIgnore = read('.assetsignore');
+  for (const entry of vercelIgnore) {
+    assert.ok(assetsIgnore.includes(entry), `.assetsignore must also exclude ${entry}`);
+  }
+  // WHY these four are excluded on Cloudflare and not on Vercel: they are deployment
+  // plumbing, not pages. Publishing them would make the two hosts differ, which is the
+  // thing this lock exists to prevent, and a reader gains nothing from them.
+  for (const entry of ['.gitignore', '.vercelignore', 'vercel.json', '.assetsignore']) {
+    assert.ok(assetsIgnore.includes(entry), `.assetsignore must exclude ${entry}`);
+  }
+  // WHY every page must survive the exclusion list: an ignore pattern is a glob, and a
+  // pattern too broad would silently take a page with it.
+  const pages = fs.readdirSync(new URL('landing/', root)).filter((f) => f.endsWith('.html'));
+  assert.ok(pages.length >= 7, `the site still has its pages, found ${pages.length}`);
+  for (const page of pages) {
+    assert.ok(!assetsIgnore.includes(page), `${page} must not be excluded from the upload`);
+  }
+});
+
 function escapeRe(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

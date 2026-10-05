@@ -1,3 +1,8 @@
+# @last-edited: 2026-10-05 17:10 UTC+7.
+# @title: _headers — the CSP and cache policy every path of the site answers with.
+# @state: restates vercel.json per path; tests/landing-hosting.test.mjs fails on drift.
+# @dependencies: none.
+
 # WHY this file exists: the site is served by Cloudflare Pages as well as Vercel, and
 # Pages configures headers with this file instead of vercel.json. Every path is listed
 # explicitly and no rule overlaps another, so there is no rule-ordering trap to fall
