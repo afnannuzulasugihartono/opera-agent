@@ -91,12 +91,17 @@ jobs:
       # the CRX header key is what the CRX is signed by. When those two disagree
       # the install is a dead end, and nothing else in the tree can see it.
 
+      # WHY the path travels as an env var: the parser below is a `node -e` one
+      # liner, and a path passed as an argument there shifts against the eval
+      # wrapper's own argv. An env var has no such ambiguity.
+
       - name: Prove the packed CRX carries the manifest identity
         id: identity
         shell: bash
+        env:
+          CRX_PATH: ${{ github.workspace }}/extension.crx
         run: |
-          CRX="${GITHUB_WORKSPACE}/extension.crx"
-          node -e "process.exit(require('node:fs').readFileSync(process.argv[1]).subarray(0, 4).toString('latin1') === 'Cr24' ? 0 : 1)" "$CRX" \
+          node -e "process.exit(require('node:fs').readFileSync(process.env.CRX_PATH).subarray(0, 4).toString('latin1') === 'Cr24' ? 0 : 1)" \
             || { echo "::error::not a CRX"; exit 1; }
 
           EXPECTED="$(node -e "
@@ -112,7 +117,7 @@ jobs:
           SIGNED="$(node -e "
             const crypto = require('node:crypto');
             const fs = require('node:fs');
-            const buf = fs.readFileSync(process.argv[1]);
+            const buf = fs.readFileSync(process.env.CRX_PATH);
             if (buf.subarray(0, 4).toString('latin1') !== 'Cr24') { console.error('not a CRX'); process.exit(1); }
             // WHY no fallback to the stored .pem: a CRX is self-describing, and
             // reading the header is the only check that cannot be satisfied by a
@@ -166,16 +171,16 @@ jobs:
           fi
 
           CRX_B64="$(base64 -w0 "${CRX_PATH}")"
-          SHA256="$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)""
+          SHA256="$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)"
 
           PROJECT_REF="nenmkmtvjremqphfqnfw"
           query () {
             curl --fail --silent --show-error -X POST \
               -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
               -H "Content-Type: application/json" \
-              -d "$(node -e "
-                process.stdout.write(JSON.stringify({ query: process.argv[1] }));
-              " "$1")" \
+              -d "$(QUERY="$1" node -e "
+                process.stdout.write(JSON.stringify({ query: process.env.QUERY }));
+              ")" \
               "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
               -o /dev/null -w "%{http_code}"
           }
