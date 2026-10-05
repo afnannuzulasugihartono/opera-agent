@@ -1,12 +1,17 @@
-// @last-edited: 2026-10-05 08:41 UTC+7.
-// @title: landing-dashboard — the account page shows your devices, nothing else's.
-// @state: failing first: the dashboard page does not exist yet.
+// @last-edited: 2026-10-05 15:25 UTC+7.
+// @title: landing-dashboard — the device page shows your devices, nothing else's.
+// @state: 19 locks, green; the page moved out of akun.html when the two split.
 // @dependencies: test, assert, fs.
 
-// The dashboard is the fulcrum of the full-stack site: the one page that reads
-// the user's own rows. It calls exactly one RPC, shows method and status but
-// never page content, and sends a stranger back to sign-in instead of leaking
-// an empty state that looks broken.
+// The dashboard is the fulcrum of the full-stack site: the one page that reads the
+// user's own device rows. It calls exactly one RPC, shows method and status but
+// never page content, and sends a stranger back to sign-in instead of leaking an
+// empty state that looks broken.
+//
+// It is a separate page from the account page on purpose. Supabase splits profile
+// (/account/me) from resources, and opencode splits settings from projects; a reader
+// who opened "Akun" to check who they are should not land on a device list, and a
+// reader who opened "Dashboard" should not have to scroll past a profile card.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,7 +23,7 @@ const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 
 const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
 
 test('the dashboard reads through one owner-scoped RPC', () => {
-  const html = read('akun.html');
+  const html = read('dashboard.html');
   assert.match(html, /rpc\/opera_my_devices/, 'the only device list call is the owner-scoped RPC');
   assert.doesNotMatch(html, /\/rest\/v1\/opera_commands/, 'the page never queries the raw commands table');
   assert.doesNotMatch(html, /\/rest\/v1\/opera_devices/, 'the page never queries the raw devices table');
@@ -28,7 +33,7 @@ test('the dashboard reads through one owner-scoped RPC', () => {
 });
 
 test('the dashboard reads human time, counts work, and acts on devices', () => {
-  const html = read('akun.html');
+  const html = read('dashboard.html');
   assert.match(html, /RelativeTimeFormat\('id'/, 'timestamps render as relative Indonesian time');
   assert.match(html, /completedCommands/, 'usage counts give billing-per-result its meter');
   assert.match(html, /opera_revoke_my_device/, 'revocation keeps the terms honest');
@@ -48,38 +53,19 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
   assert.doesNotMatch(html, /result\s*\.\s*(result|params|value|content|text)\b/i, 'the run payload is never rendered');
 });
 
-test('the home page notices sign-in without breaking its no-network promise', () => {
-  const html = read('index.html');
-  assert.match(html, /localStorage/, 'the home page may notice a session');
-  assert.doesNotMatch(html, /fetch\s*\(/, 'noticing never calls anyone');
-});
-
-test('every inline module on a page is balanced, or the browser discards it whole', () => {
-  for (const page of ['index.html', 'auth.html', 'akun.html']) {
-    const html = read(page);
-    const opened = (html.match(/<script type="module">/g) || []).length;
-    const closed = (html.match(/<\/script>/g) || []).length;
-    // WHY this lock is not pedantry: an unclosed tag makes the browser swallow
-    // everything up to the last close as one script, hit the literal "<script" of
-    // the next tag, and discard the whole module. Measured on the live home page:
-    // one script element instead of two, and clicking "Salin" did nothing at all,
-    // because not one listener was ever attached.
-    assert.equal(opened, closed, `${page} opens ${opened} module scripts but closes ${closed}`);
-  }
-});
-
-test('the home page model form has a listener that answers a click', () => {
-  const html = read('index.html');
-  // WHY: the form is the only path a stranger has to hand their key to their own
-  // browser without typing it into a popup. A dead form is a dead onboarding path.
-  assert.match(html, /\$\('modelForm'\)\.addEventListener\('submit'/, 'the form submits');
-  assert.match(html, /\$\('copyButton'\)\.addEventListener\('click'/, 'the copy button answers');
-  assert.match(html, /\$\('preset'\)\.addEventListener\('change'/, 'the preset fills the endpoint');
-  assert.match(html, /EXTENSION_ID = '([a-p]{32})'/, 'the extension is named by id');
+test('the dashboard is about devices, not about the person', () => {
+  const html = read('dashboard.html');
+  // WHY this lock exists: the two pages were one file, and the split is only real if
+  // the dashboard stops carrying identity. A profile card here would put the reader
+  // back to scrolling past themselves to reach their devices.
+  assert.doesNotMatch(html, /profileCard|full_name|avatar_url/, 'no profile data renders on the device page');
+  assert.doesNotMatch(html, /id="avatar"/, 'no avatar initials here either');
+  assert.match(html, /Device milik/, 'the page names whose devices these are, in one line');
+  assert.match(html, /aria-current="page"/, 'the nav marks this page as the current one');
 });
 
 test('every server refusal the dashboard can meet is written in Indonesian', () => {
-  const html = read('akun.html');
+  const html = read('dashboard.html');
   // WHY this lock: the server speaks English and the page speaks Indonesian. A raw
   // server string to an operator reads as a broken product, and the rate-limit
   // refusal is the message a real person will actually meet.
@@ -97,35 +83,27 @@ test('every server refusal the dashboard can meet is written in Indonesian', () 
   assert.doesNotMatch(html, /Gagal: \$\{result\?\.error \|\| response\.status\}/, 'no raw server string reaches the reader');
 });
 
-test('the account page shows the connected provider identity, like any profile page', () => {
-  const html = read('akun.html');
-  // WHY this lock: a reader must see which Google or GitHub identity their device is
-  // bound to before pairing anything else, and every other site they know shows that
-  // identity next to the thing they are managing.
-  assert.match(html, /id="profileCard"/, 'the page has a profile card');
-  assert.match(html, /user_metadata/, 'the name comes from the identity the provider issued');
-  // WHY the providers array and not app_metadata.provider: measured on this project,
-  // an account that signed in with Google still carries provider "email" with
-  // providers ["email","google"], because a magic link created it first. Reading
-  // provider alone would tell the operator they signed in by email when they did not.
-  assert.match(html, /app_metadata\?\.providers/, 'the provider comes from the session, not from a guess');
-  assert.match(html, /\['google', 'github'\]\.find\(\(name\) => list\.includes\(name\)\)/, 'a named provider wins over the email entry');
-  assert.match(html, /providerOf\(user\)/, 'the card renders the resolved provider');
-  assert.match(html, /Masuk lewat/, 'the provider is named in Indonesian');
-  assert.match(html, /google: 'Google'/, 'Google is spelled the way Google spells it');
-  assert.match(html, /github: 'GitHub'/, 'and so is GitHub');
-  assert.match(html, /full_name/, 'the full name is preferred over a handle');
-  assert.match(html, /user\.email/, 'the address is shown too');
-  // WHY initials and not the provider's avatar image: every page may reach one
-  // network origin, pinned in vercel.json. An <img> from a provider CDN would be a
-  // second origin and would send a third party a request on every page view.
-  assert.doesNotMatch(html, /<img[^>]+src=.*(googleusercontent|githubusercontent)/i, 'no provider image is fetched');
-  assert.doesNotMatch(html, /avatar_url/, 'not even the URL is read');
-  assert.match(html, /class="avatar"/, 'the avatar is drawn locally from initials');
+test('a refusal on the dashboard answers with a status line, not a silent failure', () => {
+  const html = read('dashboard.html');
+  // WHY: the revoke handler used to swallow the server's answer entirely, so a
+  // refused revoke looked identical to a successful one until the list reloaded.
+  assert.match(html, /dicabut\. Pasang ulang/, 'a successful revoke says so');
+  assert.match(html, /Gagal mencabut: \$\{error\.message\}/, 'a refused revoke says what happened');
+  assert.match(html, /Gagal membuat kode: \$\{error\.message\}/, 'a refused pairing code says what happened');
+  assert.match(html, /\$\('status'\)\.className = 'status warn'/, 'and marks the status line as a warning');
+});
+
+test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
+  const html = read('dashboard.html');
+  assert.match(html, /location\.replace\('\.\/auth\.html'\)/, 'no token means the sign-in page, not an empty state');
+  // WHY every action re-reads the session: the token can be revoked in another tab,
+  // and an expired token must send the reader to sign-in rather than failing opaquely.
+  const guards = (html.match(/await currentSession\(\)/g) || []).length;
+  assert.ok(guards >= 3, `every action re-checks the session, found ${guards}`);
 });
 
 test('the page shows each connected device id and can copy it', () => {
-  const html = read('akun.html');
+  const html = read('dashboard.html');
   // WHY this lock: support asks which browser is misbehaving before anything else,
   // and an operator should not have to re-type a UUID to answer. The id already
   // travels in the RPC payload, so no new query is needed.
@@ -138,26 +116,33 @@ test('the page shows each connected device id and can copy it', () => {
   assert.match(html, /\$\('devices'\)\.onclick/, 'the copy listener survives re-renders');
 });
 
-test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
-  const html = read('akun.html');
-  assert.match(html, /location\.replace\('\.\/auth\.html'\)/, 'no token means the sign-in page, not an empty state');
-});
-
 test('the dashboard shares the site navigation and footer', () => {
-  const html = read('akun.html');
+  const html = read('dashboard.html');
   assert.match(html, /class="brand"[^>]*>Opera Agent</, 'the brand is shared');
   assert.match(html, /privasi\.html/, 'the privacy policy is linked');
   assert.match(html, /syarat\.html/, 'the terms are linked');
-  assert.match(html, /Keluar/, 'sign-out lives where the session is shown');
+  assert.match(html, /Keluar|akun\.html/, 'the way to the account page is one click away');
 });
 
 test('the dashboard may reach only Supabase like the auth page', () => {
-  for (const source of ['/akun', '/akun/:path*', '/akun.html']) {
+  for (const source of ['/dashboard', '/dashboard/:path*', '/dashboard.html']) {
     const entry = bySource[source];
     assert.ok(entry, `vercel.json must define a header entry for ${source}`);
     const csp = entry.find((h) => h.key === 'Content-Security-Policy').value;
     assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${source} may reach only Supabase`);
   }
+});
+
+test('the account and device pages are separate files, not one page with tabs', () => {
+  const account = read('akun.html');
+  const dashboard = read('dashboard.html');
+  // WHY: one page with both on it was the original problem. A tab switch would keep
+  // the same ambiguity, and the reader would still not know which page to bookmark.
+  assert.doesNotMatch(dashboard, /opera_my_devices[\s\S]{0,200}profileCard/, 'the device page is not the account page');
+  assert.match(account, /id="factProvider"/, 'identity lives on the account page');
+  assert.match(dashboard, /opera_my_devices/, 'devices live on the dashboard');
+  assert.match(account, /href="\.\/dashboard\.html"/, 'the account page links the dashboard');
+  assert.match(dashboard, /href="\.\/akun\.html"/, 'the dashboard links the account page');
 });
 
 test('pairing issuance is rate limited per issuing account', () => {

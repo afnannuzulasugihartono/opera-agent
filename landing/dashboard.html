@@ -1,0 +1,372 @@
+<!-- @last-edited: 2026-10-05 15:10 UTC+7. -->
+<!-- @title: dashboard — the devices bound to your account and their recent work. -->
+<!-- @state: reads only through opera_my_devices; strangers are sent to sign-in. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Opera Agent</title>
+  <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, dan kendali atasnya." />
+  <style>
+    /* WHY the same single-file shape as the rest of the site: no build step, and
+       the only network the CSP allows is the project Auth plus its REST. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #14181d;
+      --surface-soft: #1b2026;
+      --line: #262c34;
+      --text: #e8eaed;
+      --muted: #9aa4b2;
+      --accent: #14b8a6;
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 13, 16, .92);
+      backdrop-filter: blur(8px);
+      z-index: 2;
+    }
+
+    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
+    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a:hover { color: var(--text); }
+    nav a[aria-current="page"] { color: var(--text); }
+
+    main { padding: 56px 0; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      margin: 0 0 14px;
+    }
+
+    .card h2 { margin: 0 0 4px; font-size: 17px; }
+    .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+    .online { color: var(--accent); }
+    .offline { color: var(--warn); }
+
+    ul.commands { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
+    ul.commands li { margin: 0 0 4px; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 5px;
+    }
+
+    .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+
+    /* WHY the id reads as code and is clickable: support asks for it first, and an
+       operator should never retype a UUID to report which browser is misbehaving. */
+    .deviceId { cursor: pointer; }
+    .deviceId:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; color: var(--muted); }
+    .status.ok { color: var(--accent); }
+    .status.warn { color: var(--warn); }
+
+    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./unduh.html">Unduh</a>
+        <a href="./index.html#model">Model Anda</a>
+        <a href="./akun.html">Akun</a>
+        <a href="./dashboard.html" aria-current="page">Dashboard</a>
+        <a href="./privasi.html">Privasi</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Dashboard</h1>
+    <p class="sub" id="whoami">Memeriksa sesi…</p>
+    <div id="devices"></div>
+    <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+    <div class="card" id="runCard">
+      <h2>Jalankan satu aksi</h2>
+      <p class="meta">Aksi dikirim ke device Anda sendiri. Device menolak halaman yang menampilkan password, kode sekali pakai, atau pembayaran. Isi halaman tidak pernah tampil di sini.</p>
+      <label for="runMethod" style="display:block;margin:0 0 6px;font-size:13px;color:var(--muted);">Primitive</label>
+      <input id="runMethod" type="text" autocomplete="off" spellcheck="false" maxlength="64" value="tabs.list" style="width:100%;margin:0 0 14px;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font:inherit;font-size:14px;" />
+      <div class="row" style="margin-top:0;">
+        <button class="btn" id="runButton" type="button">Jalankan</button>
+      </div>
+      <p class="status" id="runStatus" role="status" aria-live="polite">&nbsp;</p>
+    </div>
+    <div class="card" id="pairCard">
+      <h2>Pairing device baru</h2>
+      <p class="meta">Kode sekali pakai, kedaluwarsa 10 menit, terikat ke akun ini.</p>
+      <label for="pairName" style="display:block;margin:0 0 6px;font-size:13px;color:var(--muted);">Nama device</label>
+      <input id="pairName" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="opera" style="width:100%;margin:0 0 14px;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font:inherit;font-size:14px;" />
+      <div class="row" style="margin-top:0;">
+        <button class="btn" id="pairButton" type="button">Buat kode pairing</button>
+      </div>
+      <p class="status" id="pairStatus" role="status" aria-live="polite">&nbsp;</p>
+    </div>
+    <div class="row">
+      <a class="btn" href="./index.html#install">Pasang di device lain</a>
+      <a class="btn" href="./akun.html">Akun saya</a>
+    </div>
+    <p class="status">Hanya method dan status perintah yang tampil di sini; isi halaman tidak pernah keluar dari relay.</p>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span>
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a>
+      </span>
+    </div>
+  </footer>
+
+  <script type="module">
+    // WHY one RPC and no table reads: opera_my_devices returns the caller's devices
+    // with their ten latest commands, method and status only. A page that queries
+    // raw tables would need grants the project deliberately never hands out.
+    const REST = 'https://nenmkmtvjremqphfqnfw.supabase.co/rest/v1';
+    const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
+    const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
+
+    const $ = (id) => document.getElementById(id);
+    const headersFor = (token) => ({ apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // WHY relative time: a raw 2026-10-05T03:51:03 timestamp is a database leak
+    // into the UI. People read "2 jam lalu", not ISO strings.
+    const relativeTime = (() => {
+      try {
+        const format = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
+        return (iso) => {
+          const then = new Date(iso).getTime();
+          if (Number.isNaN(then)) return 'belum pernah';
+          const seconds = Math.round((then - Date.now()) / 1000);
+          const cuts = [[60, 'detik'], [3600, 'menit'], [86400, 'jam'], [2592000, 'hari'], [31536000, 'minggu']];
+          for (const [limit, unit] of cuts) {
+            if (Math.abs(seconds) < limit) {
+              const div = unit === 'detik' ? 1 : unit === 'menit' ? 60 : unit === 'jam' ? 3600 : unit === 'hari' ? 86400 : 604800;
+              return format.format(Math.round(seconds / div), unit);
+            }
+          }
+          return format.format(Math.round(seconds / 31536000), 'tahun');
+        };
+      } catch (error) {
+        return (iso) => String(iso || 'belum pernah');
+      }
+    })();
+
+    // WHY the session is read here and not shown: this page is about devices, and
+    // the account itself lives on its own page. Only the address is echoed, so the
+    // reader can tell which account's devices they are looking at.
+    async function currentSession() {
+      const token = localStorage.getItem('opera-agent-access-token');
+      // No token, no dashboard: a stranger gets the sign-in page, never an empty
+      // state that looks like a broken product.
+      if (!token) {
+        globalThis.location.replace('./auth.html');
+        return null;
+      }
+      try {
+        const response = await fetch(`${AUTH_HOST}/user`, { headers: headersFor(token) });
+        if (!response.ok) throw new Error(`auth ${response.status}`);
+        return { token, user: await response.json() };
+      } catch (error) {
+        localStorage.removeItem('opera-agent-access-token');
+        globalThis.location.replace('./auth.html');
+        return null;
+      }
+    }
+
+    const TRANSLATED = {
+      'Too many pairing codes this hour. Try again later.': 'Terlalu banyak kode pairing dalam satu jam. Coba lagi nanti.',
+      'Invalid device name.': 'Nama device tidak valid.',
+      'No such device on this account.': 'Device itu tidak ada di akun ini.',
+      'No paired device on this account.': 'Belum ada device ter-pairing di akun ini.',
+      'Device is offline. Open the extension so it can check in.': 'Device sedang offline. Buka extension agar ia terhubung.',
+      'Unknown or disabled method.': 'Primitive itu tidak dikenal atau dinonaktifkan.',
+      'Not signed in.': 'Sesi tidak ada. Masuk lagi.',
+      'Timed out waiting for command result.': 'Device belum menjawab dalam batas waktu.'
+    };
+
+    // WHY the map: the server speaks English and the page speaks Indonesian. Showing a
+    // raw server string to an operator reads as a broken product, and the rate-limit
+    // refusal is the one message they will actually meet.
+    const say = (raw) => TRANSLATED[String(raw)] || String(raw);
+
+    async function load() {
+      const session = await currentSession();
+      if (!session) return;
+      const { token, user } = session;
+      $('whoami').textContent = `Device milik ${user.email}.`;
+      let data;
+      try {
+        const response = await fetch(`${REST}/rpc/opera_my_devices`, { method: 'POST', headers: headersFor(token), body: '{}' });
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
+      if (!data?.ok) {
+        $('status').textContent = 'Belum bisa memuat device. Coba lagi sebentar.';
+        $('status').className = 'status warn';
+        return;
+      }
+      if (!data.devices.length) {
+        $('status').textContent = 'Belum ada device terikat ke akun ini. Ikuti Instalasi untuk pairing pertama.';
+        return;
+      }
+      $('status').textContent = `${data.devices.length} device ter-pairing.`;
+      $('status').className = 'status ok';
+      $('devices').innerHTML = data.devices.map((device) => `
+        <div class="card">
+          <h2>${esc(device.name)}</h2>
+          <p class="meta"><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span> &middot; terakhir terlihat ${esc(relativeTime(device.lastSeenAt))} &middot; extension ${esc(device.extensionVersion || '-')} &middot; ${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} perintah selesai</p>
+          <p class="meta">ID device <code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></p>
+          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code> — ${esc(command.status)}</li>`).join('')}</ul>
+          <div class="row">
+            <button class="btn" type="button" data-copy="${esc(device.id)}">Salin ID</button>
+            <button class="btn" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
+          </div>
+        </div>`).join('');
+      // WHY one delegated listener: the device list is re-rendered on every load, so
+      // per-button listeners would be re-bound each time and the copy affordance is
+      // the one thing a stranger reaches for before writing a support message.
+      $('devices').onclick = async (event) => {
+        const target = event.target.closest('[data-copy]');
+        if (!target) return;
+        const id = target.dataset.copy;
+        try {
+          await navigator.clipboard.writeText(id);
+          $('status').textContent = `ID device disalin: ${id}`;
+          $('status').className = 'status ok';
+        } catch (error) {
+          // Clipboard is blocked without a user gesture or a secure context, and the
+          // id is on screen anyway, so saying so beats a silent failure.
+          $('status').textContent = `Salin manual: ${id}`;
+          $('status').className = 'status warn';
+        }
+      };
+      for (const button of document.querySelectorAll('[data-revoke]')) {
+        button.addEventListener('click', async () => {
+          if (!globalThis.confirm(`Cabut ${button.dataset.name}? Perintah baru berhenti seketika; pairing ulang menghidupkannya lagi.`)) return;
+          button.disabled = true;
+          try {
+            const response = await fetch(`${REST}/rpc/opera_revoke_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_device_id: button.dataset.revoke }) });
+            const result = await response.json();
+            if (!result?.ok) throw new Error(say(result?.error || response.status));
+            $('status').textContent = `${button.dataset.name} dicabut. Pasang ulang untuk menghidupkannya.`;
+            $('status').className = 'status ok';
+          } catch (error) {
+            button.disabled = false;
+            $('status').textContent = `Gagal mencabut: ${error.message}.`;
+            $('status').className = 'status warn';
+            return;
+          }
+          load();
+        });
+      }
+    }
+
+    $('runButton').addEventListener('click', async () => {
+      const session = await currentSession();
+      if (!session) return;
+      const { token } = session;
+      const method = $('runMethod').value.trim();
+      $('runStatus').textContent = 'Mengirim…';
+      $('runStatus').className = 'status';
+      try {
+        const response = await fetch(`${REST}/rpc/opera_run_on_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_method: method }) });
+        const result = await response.json();
+        // WHY the pending branch: the device polls on a ramp, so a command can sit
+        // queued a few seconds past the wait window and still complete. Reporting
+        // that as a failure teaches the reader that the button is broken.
+        if (!result?.ok) {
+          const code = result?.error?.code || result?.status;
+          if (code === 'AWAIT_TIMEOUT' || code === 'queued') {
+            $('runStatus').textContent = `${method} masuk antrean; device mengambilnya dalam hitungan detik. Riwayat di bawah akan memperbarui sendiri.`;
+            $('runStatus').className = 'status ok';
+            setTimeout(load, 4000);
+            return;
+          }
+          $('runStatus').textContent = `Gagal: ${say(result?.error?.message || result?.error)}.`;
+          $('runStatus').className = 'status warn';
+          return;
+        }
+        // WHY the status only: the payload may carry page content, and this page
+        // has no business showing it. The method and outcome are the useful parts.
+        $('runStatus').textContent = `${method} — ${result.status}.`;
+        $('runStatus').className = 'status ok';
+        load();
+      } catch (error) {
+        $('runStatus').textContent = `Gagal (${error?.message || 'jaringan'}).`;
+        $('runStatus').className = 'status warn';
+      }
+    });
+
+    $('pairButton').addEventListener('click', async () => {
+      const session = await currentSession();
+      if (!session) return;
+      const { token } = session;
+      const name = ($('pairName').value.trim() || 'opera').slice(0, 64);
+      $('pairStatus').textContent = 'Membuat kode…';
+      $('pairStatus').className = 'status';
+      try {
+        const response = await fetch(`${REST}/rpc/opera_create_pairing_code`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_device_name: name }) });
+        const result = await response.json();
+        if (!result?.ok) throw new Error(say(result?.error || response.status));
+        $('pairStatus').textContent = `Kode untuk ${result.deviceName}: ${result.code}. Berlaku 10 menit, tempel di popup extension.`;
+        $('pairStatus').className = 'status ok';
+      } catch (error) {
+        $('pairStatus').textContent = `Gagal membuat kode: ${error.message}.`;
+        $('pairStatus').className = 'status warn';
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

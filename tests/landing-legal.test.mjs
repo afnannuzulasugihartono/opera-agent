@@ -30,18 +30,33 @@ test('the terms state the invite-only reality and the key rule', () => {
 });
 
 test('every site page shares one navigation and one footer', () => {
-  for (const name of ['index.html', 'auth.html', 'privasi.html', 'syarat.html', 'akun.html']) {
+  for (const name of ['index.html', 'auth.html', 'privasi.html', 'syarat.html', 'akun.html', 'dashboard.html', 'unduh.html', '404.html']) {
     const html = read(name);
     assert.match(html, /class="brand"[^>]*>Opera Agent</, `${name} carries the brand`);
     assert.match(html, /privasi\.html/, `${name} links the privacy policy`);
     assert.match(html, /syarat\.html/, `${name} links the terms`);
-    assert.match(html, /auth\.html/, `${name} links the account page`);
-    assert.match(html, /akun\.html/, `${name} links the dashboard`);
+    assert.match(html, /auth\.html/, `${name} links sign-in`);
+    assert.match(html, /akun\.html/, `${name} links the account page`);
+    assert.match(html, /dashboard\.html/, `${name} links the device page`);
     const nav = html.match(/<nav>[\s\S]*?<\/nav>/)[0];
     for (const entry of ['Instalasi', 'Unduh', 'Model Anda', 'Akun', 'Dashboard', 'Privasi']) {
       assert.ok(nav.includes(entry), `${name} nav offers ${entry}`);
     }
+    // WHY the three targets are pinned: the nav once pointed "Akun" at the sign-in
+    // page and "Dashboard" at a file called akun.html, so the reader had to know the
+    // filenames to know where they were going.
+    assert.match(nav, /<a href="\.\/akun\.html"[^>]*>Akun</, 'nav Akun points at the account page');
+    assert.match(nav, /<a href="\.\/dashboard\.html"[^>]*>Dashboard</, 'nav Dashboard points at the device page');
     assert.match(nav, /<a class="brand"[^>]*>Opera Agent</, `${name} nav brand is a link home`);
+  }
+});
+
+test('the two signed-in pages each mark themselves as the current nav entry', () => {
+  for (const [name, target] of [['akun.html', 'akun.html'], ['dashboard.html', 'dashboard.html']]) {
+    const nav = read(name).match(/<nav>[\s\S]*?<\/nav>/)[0];
+    const current = nav.match(/aria-current="page"[^>]*>([^<]+)</);
+    assert.ok(current, `${name} marks a current nav entry`);
+    assert.match(nav, new RegExp(`href="\\./${target.replace('.', '\\.')}" aria-current="page"`), `${name} marks its own entry`);
   }
 });
 
@@ -58,7 +73,7 @@ test('the site is deployed as static files, never as a detected framework', () =
 });
 
 test('every site page survives a reader with no JavaScript and no screen reader vision', () => {
-  for (const name of ['index.html', 'auth.html', 'akun.html', 'privasi.html', 'syarat.html', 'unduh.html']) {
+  for (const name of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html']) {
     const html = read(name);
     assert.match(html, /<html lang="id"/, `${name} declares its language`);
     assert.match(html, /<main/, `${name} has a main landmark`);
