@@ -266,8 +266,18 @@
       try {
         const response = await fetch(`${REST}/rpc/opera_run_on_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_method: method }) });
         const result = await response.json();
+        // WHY the pending branch: the device polls on a ramp, so a command can sit
+        // queued a few seconds past the wait window and still complete. Reporting
+        // that as a failure teaches the reader that the button is broken.
         if (!result?.ok) {
-          $('runStatus').textContent = `Gagal: ${result?.error || response.status}.`;
+          const code = result?.error?.code || result?.status;
+          if (code === 'AWAIT_TIMEOUT' || code === 'queued') {
+            $('runStatus').textContent = `${method} masuk antrean; device mengambilnya dalam hitungan detik. Riwayat di bawah akan memperbarui sendiri.`;
+            $('runStatus').className = 'status ok';
+            setTimeout(load, 4000);
+            return;
+          }
+          $('runStatus').textContent = `Gagal: ${result?.error?.message || result?.error || response.status}.`;
           $('runStatus').className = 'status warn';
           return;
         }

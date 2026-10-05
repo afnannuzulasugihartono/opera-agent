@@ -37,6 +37,12 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
   assert.match(html, /Buat kode pairing/, 'issuance has a visible control');
   assert.match(html, /Cabut device ini/, 'revocation has a visible control');
   assert.match(html, /Jalankan/, 'running has a visible control');
+  // WHY this one: measured on this project, the device picks a queued command up
+  // about twelve seconds after it was enqueued, just past the wait window, and
+  // then finishes in under half a second. Reporting that as a failure would teach
+  // the reader the button is broken when the work actually succeeded.
+  assert.match(html, /AWAIT_TIMEOUT/, 'a queued-but-pending run is recognised');
+  assert.match(html, /masuk antrean/, 'pending is reported as pending, not as failure');
   // WHY the narrow patterns: the run payload may carry page content, so the page
   // may read status but never a payload field. result.status is the safe read.
   assert.doesNotMatch(html, /result\s*\.\s*(result|params|value|content|text)\b/i, 'the run payload is never rendered');
