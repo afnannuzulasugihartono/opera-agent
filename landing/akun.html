@@ -227,23 +227,34 @@
 
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
-      if (!refreshToken) return null;
+      // WHY the three outcomes and not a boolean: "the refresh token was refused" and
+      // "we could not reach Auth" look identical to a caller that only sees null, and
+      // treating the second as the first deletes a working session over a dropped packet.
+      // Every other user on a phone loses signal, so this distinction is the difference
+      // between a session that survives a tunnel and one that does not.
+      if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
+      let response;
       try {
-        const response = await fetch(`${AUTH_HOST}/token?grant_type=refresh_token`, {
+        response = await fetch(`${AUTH_HOST}/token?grant_type=refresh_token`, {
           method: 'POST',
           headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
           body: JSON.stringify({ refresh_token: refreshToken })
         });
-        if (!response.ok) return null;
-        const renewed = await response.json();
-        if (!renewed.access_token) return null;
-        localStorage.setItem('opera-agent-access-token', renewed.access_token);
-        if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
-        return renewed.access_token;
       } catch (error) {
-        // A renewal that cannot reach Auth is not proof the reader is signed out.
-        return null;
+        return { ok: false, dead: false, why: 'offline' };
       }
+      if (response.status === 400 || response.status === 401) return { ok: false, dead: true, why: 'refused' };
+      if (!response.ok) return { ok: false, dead: false, why: `http-${response.status}` };
+      let renewed;
+      try {
+        renewed = await response.json();
+      } catch (error) {
+        return { ok: false, dead: false, why: 'no-body' };
+      }
+      if (!renewed.access_token) return { ok: false, dead: false, why: 'no-token' };
+      localStorage.setItem('opera-agent-access-token', renewed.access_token);
+      if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
+      return { ok: true, token: renewed.access_token };
     }
 
     // WHY the providers array, not app_metadata.provider: measured on this project,
@@ -320,11 +331,18 @@
       let token = localStorage.getItem('opera-agent-access-token');
       // WHY the probe before the work: a token that aged out says nothing about the
       // account, and treating it as signed out is what made the session feel temporary.
+      let temporary = null;
       if (token) {
         const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
         if (probe && !probe.ok) {
-          token = await renewAccessToken();
-          if (!token) forgetSession();
+          const renewed = await renewAccessToken();
+          if (renewed.ok) token = renewed.token;
+          // WHY only a refused refresh clears the session: a failure to reach Auth is a
+          // dropped packet, not a signed-out reader, and clearing here would end sessions
+          // on a train. The answer is carried to the call below, which would otherwise
+          // clear the session on the very next line for the same dropped packet.
+          else if (renewed.dead) forgetSession();
+          else temporary = renewed.why;
         }
       }
       // No token, no account page: a stranger gets the sign-in page, never an empty
@@ -339,6 +357,14 @@
         if (!response.ok) throw new Error(`auth ${response.status}`);
         user = await response.json();
       } catch (error) {
+        // WHY the temporary branch comes first: a renewal that could not reach Auth is a
+        // network problem, and answering it with a sign-out is what made every reader look
+        // like the product had forgotten them.
+        if (temporary) {
+          $('status').textContent = 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.';
+          $('status').className = 'status warn';
+          return;
+        }
         forgetSession();
         globalThis.location.replace('./auth.html');
         return;

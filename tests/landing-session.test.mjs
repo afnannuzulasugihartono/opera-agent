@@ -30,7 +30,7 @@ const STORAGE_KEYS = ['opera-agent-access-token', 'opera-agent-refresh-token'];
  * @returns {Promise<{store: object, cleared: string[], rejections: string[]}>}
  */
 
-async function run(page, { accessOk = false, refreshOk = true } = {}) {
+async function run(page, { accessOk = false, refreshOk = true, refreshStatus = 200, refreshFails = false } = {}) {
   const html = read(`landing/${page}`);
   const source = /<script type="module">([\s\S]*?)<\/script>/.exec(html)[1];
   const store = { 'opera-agent-access-token': 'expired-access-token', 'opera-agent-refresh-token': 'a-refresh-token' };
@@ -58,7 +58,15 @@ async function run(page, { accessOk = false, refreshOk = true } = {}) {
     confirm: () => false,
     fetch: async (url) => {
       if (url.includes('/token?grant_type=refresh_token')) {
-        if (!refreshOk) return { ok: false, status: 400, json: async () => ({}) };
+        // WHY three ways to fail: a dropped packet, a refused token and a server having a
+        // bad day are different events, and only the second one means the reader is gone.
+        if (refreshFails) throw new TypeError('Failed to fetch');
+        // WHY a 400 when no status was named: "not ok" means refused, and 400 is what
+        // Supabase answers for a refresh token it will not renew. A named status always
+        // wins, so a test can ask for a 401 or a 503 without also saying refreshOk false.
+        if (!refreshOk || refreshStatus !== 200) {
+          return { ok: false, status: refreshStatus === 200 ? 400 : refreshStatus, json: async () => ({}) };
+        }
         return { ok: true, status: 200, json: async () => ({ access_token: 'renewed-access-token', refresh_token: 'renewed-refresh-token' }) };
       }
       if (url.includes('/auth/v1/user')) {
@@ -111,6 +119,35 @@ test('a valid access token is not renewed at all', async () => {
     const { store, cleared } = await run(page, { accessOk: true });
     assert.equal(store['opera-agent-access-token'], 'expired-access-token', `${page} keeps a token that still works`);
     assert.deepEqual(cleared, [], `${page} forgets nothing`);
+  }
+});
+
+test('a renewal that cannot reach Auth is not a sign-out', async () => {
+  // WHY this is the lock that matters for every other user: the renewal answers null for a
+  // dropped packet and for a refused token alike, and the caller was deleting the session
+  // either way. A phone in a tunnel must not end a session. `refreshFails` throws from the
+  // stub, which is what a network error looks like to fetch.
+  for (const page of RENEWING_PAGES) {
+    const { store, cleared } = await run(page, { accessOk: false, refreshFails: true });
+    assert.deepEqual(cleared, [], `${page} forgets nothing when Auth is unreachable`);
+    assert.equal(store['opera-agent-access-token'], 'expired-access-token', `${page} leaves the stored token alone`);
+    assert.equal(store['opera-agent-refresh-token'], 'a-refresh-token', `${page} keeps the refresh token for the retry`);
+  }
+});
+
+test('a refused refresh token is the only thing that ends a session', async () => {
+  for (const page of RENEWING_PAGES) {
+    const { cleared } = await run(page, { accessOk: false, refreshStatus: 401 });
+    for (const key of STORAGE_KEYS) {
+      assert.ok(cleared.includes(key), `${page} forgets ${key} when the refresh token is refused`);
+    }
+  }
+});
+
+test('a server error from the renewal endpoint is treated as temporary', async () => {
+  for (const page of RENEWING_PAGES) {
+    const { cleared } = await run(page, { accessOk: false, refreshStatus: 503 });
+    assert.deepEqual(cleared, [], `${page} keeps the session when Auth is having a bad day`);
   }
 });
 

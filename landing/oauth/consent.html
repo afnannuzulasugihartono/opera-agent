@@ -206,40 +206,58 @@
 
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
-      if (!refreshToken) return null;
+      // WHY the three outcomes and not a boolean: "the refresh token was refused" and
+      // "we could not reach Auth" look identical to a caller that only sees null, and
+      // treating the second as the first deletes a working session over a dropped packet.
+      // Every other user on a phone loses signal, so this distinction is the difference
+      // between a session that survives a tunnel and one that does not.
+      if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
+      let response;
       try {
-        const response = await fetch(`${AUTH_HOST}/token?grant_type=refresh_token`, {
+        response = await fetch(`${AUTH_HOST}/token?grant_type=refresh_token`, {
           method: 'POST',
           headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
           body: JSON.stringify({ refresh_token: refreshToken })
         });
-        if (!response.ok) return null;
-        const renewed = await response.json();
-        if (!renewed.access_token) return null;
-        localStorage.setItem('opera-agent-access-token', renewed.access_token);
-        if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
-        return renewed.access_token;
       } catch (error) {
-        // A renewal that cannot reach Auth is not proof the reader is signed out.
-        return null;
+        return { ok: false, dead: false, why: 'offline' };
       }
+      if (response.status === 400 || response.status === 401) return { ok: false, dead: true, why: 'refused' };
+      if (!response.ok) return { ok: false, dead: false, why: `http-${response.status}` };
+      let renewed;
+      try {
+        renewed = await response.json();
+      } catch (error) {
+        return { ok: false, dead: false, why: 'no-body' };
+      }
+      if (!renewed.access_token) return { ok: false, dead: false, why: 'no-token' };
+      localStorage.setItem('opera-agent-access-token', renewed.access_token);
+      if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
+      return { ok: true, token: renewed.access_token };
     }
 
     // WHY the token is proven before it is used, and renewed once if it has aged: this
     // page is the one place where an expired session silently became a fresh sign-in
     // request, so the retry lives here rather than only on the sign-in page.
+    // WHY the token is proven before it is used, and renewed once if it has aged. The
+    // result carries whether the session is truly gone, so a network failure shows a
+    // message instead of pretending the reader signed out.
     async function usableToken() {
       const token = localStorage.getItem('opera-agent-access-token');
-      if (!token) return null;
+      if (!token) return { token: null, dead: false };
       const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
-      if (probe && probe.ok) return token;
-      if (!probe) return token;
+      // WHY a failed probe is offline rather than usable: we learned nothing about the
+      // token, and reporting it as working would let the page fail one call later with a
+      // message that looks like a refusal.
+      if (!probe) return { token: null, dead: false, offline: true };
+      if (probe.ok) return { token, dead: false };
       const renewed = await renewAccessToken();
-      if (!renewed) {
+      if (renewed.ok) return { token: renewed.token, dead: false };
+      if (renewed.dead) {
         forget();
-        return null;
+        return { token: null, dead: true };
       }
-      return renewed;
+      return { token: null, dead: false, offline: true };
     }
 
     // WHY the return path carries the id: the sign-in page drops the query string when it
@@ -267,12 +285,18 @@
         $('signedOutCard').querySelectorAll('a')[1].hidden = true;
         return;
       }
-      const token = await usableToken();
-      if (!token) {
-        setStatus('Masuk dulu untuk memberi izin ini.', 'warn');
-        $('signedOutCard').hidden = false;
+      const session = await usableToken();
+      if (!session.token) {
+        // WHY two different answers: telling a reader whose session is intact that they are
+        // signed out is the bug this page had. Offline, the stored session is untouched.
+        setStatus(session.offline ? 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman.' : 'Masuk dulu untuk memberi izin ini.', 'warn');
+        // WHY the card is hidden only when offline: offering a sign-in form to a reader
+        // whose session is intact is the wrong answer, and hiding it from a reader who
+        // genuinely has no session leaves them with nothing to do.
+        $('signedOutCard').hidden = Boolean(session.offline);
         return;
       }
+      const token = session.token;
       setStatus('Memeriksa permintaan…');
       let details;
       try {
@@ -307,11 +331,16 @@
     }
 
     async function decide(action) {
-      const token = await usableToken();
-      if (!token) {
+      const session = await usableToken();
+      if (!session.token) {
+        if (session.offline) {
+          setStatus('Tidak bisa menghubungi layanan auth. Coba lagi sebentar.', 'warn');
+          return;
+        }
         globalThis.location.assign($('signInButton').href);
         return;
       }
+      const token = session.token;
       const button = action === 'approve' ? $('approveButton') : $('denyButton');
       button.disabled = true;
       setStatus(action === 'approve' ? 'Memberi izin…' : 'Menolak…');

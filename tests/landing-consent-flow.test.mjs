@@ -28,7 +28,7 @@ const DETAILS = {
   scope: 'openid email'
 };
 
-async function run({ token = TOKEN, details = DETAILS, redirectUrl = null } = {}) {
+async function run({ token = TOKEN, details = DETAILS, redirectUrl = null, unreachable = false } = {}) {
   const nodes = {};
   const rejections = [];
   const onRejection = (reason) => rejections.push(reason?.message || String(reason));
@@ -43,6 +43,10 @@ async function run({ token = TOKEN, details = DETAILS, redirectUrl = null } = {}
     navigator: {},
     document: { getElementById: (id) => nodes[id], querySelectorAll: () => [] },
     fetch: async (url) => {
+      // WHY unreachable throws on every call: a network failure reaches a page as a
+      // rejected fetch, never as a status code.
+      if (unreachable) throw new TypeError('Failed to fetch');
+      if (url.includes('/token?grant_type=refresh_token')) return { ok: true, status: 200, json: async () => ({ access_token: TOKEN, refresh_token: 'r' }) };
       if (url.includes('/auth/v1/user')) return { ok: true, status: 200, json: async () => ({ email: 'afnan@example.com' }) };
       if (url.endsWith('/consent')) return { ok: true, status: 200, json: async () => ({ redirect_url: 'http://127.0.0.1:53036/callback?code=abc' }) };
       if (url.includes('/oauth/authorizations/')) return { ok: true, status: 200, json: async () => ({ ...details, redirect_url: redirectUrl }) };
@@ -95,4 +99,15 @@ test('a client that sent no name is not replaced with a guess', async () => {
 test('an absent session leads to sign-in rather than a loop of failures', async () => {
   const { nodes } = await run({ token: null });
   assert.equal(nodes.signedOutCard.hidden, false, 'the one available recovery is offered');
+  assert.match(nodes.status.textContent, /Masuk dulu/, 'and the page says why');
+});
+
+test('an unreachable Auth does not offer a sign-in form, and says the session is safe', async () => {
+  // WHY: the reader's session is intact and the network is not. Offering a sign-in form
+  // tells them the opposite, and signing them out over a dropped packet is the defect
+  // this page was measured with.
+  const { nodes, context } = await run({ token: 'expired', unreachable: true });
+  assert.equal(nodes.signedOutCard.hidden, true, 'no sign-in form while the network is down');
+  assert.match(nodes.status.textContent, /Sesi Anda tetap aman/, 'and the page reassures rather than alarms');
+  assert.equal(context.forgot, undefined, 'and nothing is forgotten');
 });
