@@ -80,6 +80,21 @@ test('the v2 migration only adds: revoke, counts, and self-issuing codes', () =>
   assert.doesNotMatch(sql, /alter table/i, 'no table shape changes in v2');
 });
 
+test('every account RPC is unreachable to anon, not merely guarded by an IF', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261005140000_opera_agent_account_run.sql', root), 'utf8');
+  for (const fn of ['opera_run_on_my_device', 'opera_revoke_my_device', 'opera_my_devices', 'opera_create_pairing_code']) {
+    assert.match(sql, new RegExp(`revoke execute on function public\\.${fn}\\([^)]*\\) from public, anon`), `${fn} is revoked from anon`);
+    assert.match(sql, new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to authenticated`), `${fn} is granted to signed-in callers`);
+  }
+});
+
+test('the run RPC resolves the device by the caller, never by a name argument', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261005140000_opera_agent_account_run.sql', root), 'utf8');
+  assert.match(sql, /where user_id = auth\.uid\(\)/, 'the device comes from the session');
+  assert.doesNotMatch(sql, /p_device_name/, 'no device name parameter can name another account browser');
+  assert.match(sql, /opera_methods where method = p_method and enabled/, 'the method is checked against the enabled allowlist');
+});
+
 test('the migration binds devices without touching existing grants', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
   assert.match(sql, /add column if not exists user_id/, 'devices gain an owner column');

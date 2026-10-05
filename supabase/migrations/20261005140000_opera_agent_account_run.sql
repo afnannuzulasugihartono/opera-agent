@@ -39,3 +39,17 @@ begin
 end $$;
 
 grant execute on function public.opera_run_on_my_device(text, jsonb, integer, text) to authenticated;
+
+-- WHY these revokes: a fresh GRANT also lands on PUBLIC, and PostgREST routes
+-- anon through it. Verified on this project: anon could execute all four
+-- dashboard RPCs until these lines ran. The functions refuse without a session
+-- anyway, but a caller that cannot reach them fails at the database rather than
+-- relying on one IF statement.
+revoke execute on function public.opera_run_on_my_device(text, jsonb, integer, text) from public, anon;
+revoke execute on function public.opera_revoke_my_device(uuid) from public, anon;
+revoke execute on function public.opera_my_devices() from public, anon;
+revoke execute on function public.opera_create_pairing_code(text, integer, uuid) from public, anon;
+grant execute on function public.opera_run_on_my_device(text, jsonb, integer, text) to authenticated;
+grant execute on function public.opera_revoke_my_device(uuid) to authenticated;
+grant execute on function public.opera_my_devices() to authenticated;
+grant execute on function public.opera_create_pairing_code(text, integer, uuid) to authenticated;
