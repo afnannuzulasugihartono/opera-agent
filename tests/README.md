@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-05 23:05 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) rules - [runbook.md](../docs/runbook.md)
 
 # Tests
@@ -22,10 +22,11 @@ Two kinds of test live here, and they are not equally load-bearing:
 
 - **Behavior tests** import a runtime module and assert on what it does. These
   are the evidence; a change that breaks one broke the product.
-- **Contract locks** pin a frozen digest (`tests/fixtures/*.json`,
+- **Contract locks** pin a frozen digest (`tests/fixtures/mcp-contract-v1.json`,
   `[tests/helpers/boundary-locks.mjs](helpers/boundary-locks.mjs)`). They exist so a deliberate edit to a
   runtime file has to say out loud why it is safe. Editing a pinned file without
-  re-freezing is a red build, not a silent regression.
+  re-freezing is a red build, not a silent regression. A lock on a whole file is a change tax
+  rather than a defect detector, so prefer a lock scoped to the property that matters.
 
 A lock is not a preference. A test weakened to make a build pass hides the breakage
 it was written to catch, and a test that requires an artifact to stay deleted turns one

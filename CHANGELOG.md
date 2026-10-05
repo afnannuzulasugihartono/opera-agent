@@ -25,8 +25,7 @@ never implied by CI green.
   Speed toward a Goal, and the logic gates forbid a `Do X` in one document beside a
   `Don't X` in another.
 - **`Related:` became `@related`.** The document graph moved into the header, directly
-  after `@last-edited`, so the stamp and the edges are read together. Locked in
-  `tests/doc-graph.test.mjs` and `tests/file-headers.test.mjs`.
+  after `@last-edited`, so the stamp and the edges are read together.
 - **The observation reports the user's current state.** `page.read` carries
   `userState`: `tabActive`, `windowFocused`, `watching`, and `lastInputMs`. An agent
   cannot choose foreground over background, or decide whether it may interrupt,

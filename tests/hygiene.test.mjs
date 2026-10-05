@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 01:52 UTC+7.
+// @last-edited: 2026-10-05 22:34 UTC+7.
 // @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
 // @state: The memoized read path, the comment-spacing rule over untracked files, allowlist paths and four rule gates are locked.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
@@ -117,7 +117,7 @@ test('no document says Do X and another says Don\'t X', async () => {
 // invisible in review.
 const REQUIRED_SECTIONS = ['Always', 'Goals', 'Mission', 'Priority order', 'Precedence', 'Strict rules'];
 
-test('the six sections an agent reads every turn exist, in order, before the triggers', async () => {
+test('the six sections an agent reads every turn exist, in order', async () => {
   const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
   const headings = [...body.matchAll(/^## (.+)$/gm)].map((m) => ({ name: m[1].trim(), at: m.index }));
   const found = REQUIRED_SECTIONS.map((name) => headings.find((h) => h.name === name));
@@ -126,8 +126,6 @@ test('the six sections an agent reads every turn exist, in order, before the tri
   for (let i = 1; i < found.length; i += 1) {
     assert.ok(found[i].at > found[i - 1].at, `${found[i].name} must come after ${found[i - 1].name}`);
   }
-  const triggers = headings.find((h) => h.name === 'Triggers');
-  assert.ok(triggers && found[5].at < triggers.at, 'the six must all be readable before the triggers table');
   for (const { name, at } of found) {
     const section = body.slice(at).split('\n## ')[0];
     // Every section has to carry instructions, but not in one shape: Always is
@@ -148,9 +146,9 @@ test('the six sections an agent reads every turn exist, in order, before the tri
 test('every section the rules point at exists', async () => {
   const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
   const headings = new Set([...body.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim()));
-  // The per-turn trigger and the Always block name sections by name. A renamed
+  // The Always block and the Precedence order name sections by name. A renamed
   // section leaves those names pointing at nothing, which reads as a typo.
-  const referenced = new Set(['Always', 'Goals', 'Mission', 'Priority order', 'Precedence', 'Strict rules', 'Triggers']);
+  const referenced = new Set(['Always', 'Goals', 'Mission', 'Priority order', 'Precedence', 'Strict rules', 'Naming', 'Model', 'Which document answers what']);
   const dangling = [...referenced].filter((name) => !headings.has(name));
   assert.deepEqual(dangling, []);
 });

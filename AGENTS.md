@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 19:45 UTC+7.
+@last-edited: 2026-10-05 22:41 UTC+7.
 @related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 # Opera Agent agent instructions
@@ -96,137 +96,26 @@ These bind every `.md` in the repository, this set included, and every other fil
 
 **Don't**
 
+- Don't let an area [`AGENTS.md`](AGENTS.md) grow into a second manual or contradict the root.
+- Don't add an area file with nothing pointing at it.
 - Don't write prose paragraphs in a `.md`.
 - Don't write history in place of state: no change narrative, no incident timeline, no migration story.
 - Don't write a `.md` without its `@related` tag and map row, or an `@related` tag without the hub.
 - Don't dismiss a red doc-graph as "only docs".
 - Don't explain in [`AGENTS.md`](AGENTS.md). Don't instruct in [`README.md`](README.md).
 
-## Triggers
+## Deploy
 
-| Trigger | Action |
-|---|---|
-| each turn, before acting | think first: re-read Always, Goals, Priority order, Strict rules and the map, name the assumption and the tradeoff, then act |
-| every task | the `.md` set rides with it: this file, the area scope, then [`docs/HANDOFF.md`](docs/HANDOFF.md) |
-| "lanjutkan" | read this file, then [`docs/HANDOFF.md`](docs/HANDOFF.md), then [`docs/CONTEXT.md`](docs/CONTEXT.md) |
-| "autonomously", "sampai mission tercapai" | keep going until the mission is reached. Do not ask, do not hand back a partial result with a question at the end |
-| "upgrade terus", owner leaves | keep improving until the time named. Commit each verified step, keep the tree clean, leave a note in [`docs/HANDOFF.md`](docs/HANDOFF.md) |
-| a verified step passes | push it to `origin/main` at once |
-| "apa langkah selanjutnya" | do not start work. Read [`ROADMAP.md`](ROADMAP.md), then say what is broken or undecided, and the choice the owner must make |
-| a question about latency or a number | read [`docs/benchmarks.md`](docs/benchmarks.md) first. Never quote a figure from memory |
-| pairing, an incident, or the live site | read [`docs/runbook.md`](docs/runbook.md) first, then act |
-| about to commit | re-read Strict rules and Session close, then commit |
-| "merelakan", "hapus aja" | decided. Stop relitigating and do it |
-| something is broken | fix it first, and research before fixing |
-| a lock, comment or doc is too long | cut it, or split it into baby steps |
-| using a language or library | read its official docs first |
-| about to claim it works | drive it yourself |
-| a shell command mangled itself | it is PowerShell. Move the script into a file and run it, as Working here states |
-| the live page disagrees with the repository | read `x-vercel-cache` and `age` before touching code; a stale edge copy is the more common cause |
-| adding a test to lock a removal | never. A preference is not irreversible |
-| three failures, no new evidence | blocked: stop editing and report |
-| a real site shows a problem | ours until proven otherwise. Record it in [`docs/CONTEXT.md`](docs/CONTEXT.md) |
-| you need a document | use the map below, never a guess or a repo-wide grep |
-| writing [`AGENTS.md`](AGENTS.md) | instructions only: do and don't, with the reason in the same line. Explain nothing |
-| writing [`README.md`](README.md) | explanation only. Instruct nothing |
-| about to edit code | apply Code rules: read, write, comment, test |
-| about to edit a `.md` | apply Document rules: read, write |
-| about to add a file or a function | prove no existing function solves it first |
-
-## Working here
-
-The toolchain fails here in ways that look like your own mistake. Read this once, before the first command.
-
-- **The shell is PowerShell**, so `&&`, heredocs and `<<EOF` do not exist. Chain with `;` and put anything multi-line in a file.
-- **Never hand JavaScript to `node -e`.** PowerShell eats `"`, backticks and `$`, and a silently mangled regex answers a different question than the one you asked. Write `C:\Users\ASUS\AppData\Local\Temp\opencode\<name>.mjs` and run `node <path>`.
-- **Code Mode has no filesystem and no timers.** `setTimeout` throws there and `fs` is unavailable, so do file work through the shell tool and long waits with a polling loop.
-- Do run one file while iterating, `node --test tests/<name>.test.mjs`, and the whole suite only to accept. `npm test` globs 91 files and takes minutes.
-- Do remember `npm test` does not recurse, so a test placed in a subdirectory silently never runs.
-- Do use `npm run check` as the syntax gate: `node --check` exits 0 on a broken `.ts`.
-- Do use `py`, never `python`, which hits the Microsoft Store shim.
-
-## The live site
-
-`opera-agent.vercel.app` is the product's front door and a deployment of its own, not a mirror of the working tree.
-
-- Do expect a green push to deploy nothing: [`landing/vercel.json`](landing/vercel.json) sets `git.deploymentEnabled: false` because the Hobby allowance is 100 deployments a day and every push spent one.
-- Do deploy through `POST https://api.vercel.com/v13/deployments`, because the CLI refuses this project from either directory: Root Directory is `landing`, so the CLI resolves `landing/landing` and stops. In that call `file` carries the path, `data` carries the bytes, and `forceNew=1` bypasses deduplication against the copy already cached.
-- Do prefix every uploaded path with `landing/` and walk the tree recursively. A top-level read drops every directory, and the result published the site without `landing/oauth/consent.html` so the consent screen answered 404 while all seven other pages looked perfect.
-- Do read `x-vercel-cache` and `age` before believing a live page: `Cache-Control` governs the browser, the edge obeys only `Vercel-CDN-Cache-Control`, and a copy an hour old survived a deploy.
-- Do compare the served bytes with the repository, because a page once shipped `./index.html` links, which resolve against `/oauth/` and 404 every one of them.
-- Do ask the owner before a deploy, a promote, a migration or a production DB change.
-
-## Verify by driving it
-
-- Drive the real thing before saying it works.
-- Watch for our own blind spot: Maps and YouTube expose an unlabeled a11y tree. Reach such a page by URL, and act by coordinates.
-
-## When something does not work
-
-- Reproduce it before reading the evidence, and research it before fixing it.
-- State a falsifiable hypothesis, then name the evidence that would confirm it.
-- Stop editing and report after three failures with no new evidence.
-- Report an inaccessible prerequisite instead of working around it.
-
-## Live sites
-
-**Do**
-
-- Do act like a person: search, scroll, save, close, then undo.
-- Do use the Google account first, GitHub second.
-- Do take credentials from env vars only.
-- Do keep the live suite opt-in behind `OA_REAL_SITE=1`.
-
-**Don't**
-
-- Don't click a fixed list of coordinates and call it covered.
-- Don't commit a credential, or print one.
-- Don't fail the suite on a third party's outage.
-
-## Boundaries
-
-**Do**
-
-- Do ask first: deleting foreign code, merge, promote, deploy, new top-level entries, production DB shape.
-- Do decline unclear work, and do leave a test that fails.
-- Do take the model endpoint, key and model name from the user's own configuration, kept on their device, and fail closed when they are absent.
-
-**Don't**
-
-- Don't assume any of those is covered by "work autonomously".
-- Don't guess, and don't weaken a test to admit a violation.
-- Don't ship a shared or embedded model key. One key inside N distributed packages is a public key, and it turns every user's model call into someone else's bill.
-
-## Scoped instructions
-
-**Do**
-
-- Do keep an area [`AGENTS.md`](AGENTS.md) at 15 lines or fewer, pointers only.
-- Do open it with the root-binds line, keep it consistent with the root, and register a new one in the Bootstrap table in the same commit.
-
-**Don't**
-
-- Don't let it grow into a second manual.
-- Don't let it contradict the root.
-- Don't add one that nothing points at.
-
-## Repository discipline
-
-**Do**
-
-- Do keep one writer per checkout, and stop on a dirty tree.
-- Do preserve work you did not create, and mention it in the same session.
-- Do say in the commit message whether you removed pre-existing code and why.
-- Do park work you must not lose on a branch or a stash.
-- Do accept on CI evidence: SUCCESS on the exact head.
-- Do ask the owner to deploy and to promote a release.
-
-**Don't**
-
-- Don't write from two sessions at once.
-- Don't end dirty or diverged.
-- Don't delete pre-existing code silently, or remove it as tidying.
-- Don't accept on local green, and don't deploy or promote on your own.
+- Do deploy through `POST https://api.vercel.com/v13/deployments`: the CLI refuses this project
+  from either directory because Root Directory is `landing`, so it resolves `landing/landing`.
+  In that call `file` carries the path, `data` the bytes, and `forceNew=1` bypasses deduplication
+  against the copy already cached.
+- Do prefix every uploaded path with `landing/` and walk the tree recursively. A top-level read
+  drops every directory, and one deploy published the site without `landing/oauth/consent.html`.
+- Do read `x-vercel-cache` and `age` before believing a live page: the edge obeys only
+  `Vercel-CDN-Cache-Control`, and a copy an hour old survived a deploy.
+- Don't expect a green push to deploy anything: [`landing/vercel.json`](landing/vercel.json)
+  disables it, because the Hobby allowance is 100 deployments a day.
 
 ## Naming
 
@@ -234,7 +123,6 @@ The toolchain fails here in ways that look like your own mistake. Read this once
 
 - Do name files in kebab-case, for what they are, with no lifecycle token in the name.
 - Do keep the conventional root documents uppercase: [`README.md`](README.md), [`AGENTS.md`](AGENTS.md), [`SECURITY.md`](SECURITY.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CHANGELOG.md`](CHANGELOG.md), [`ROADMAP.md`](ROADMAP.md), [`SUPPORT.md`](SUPPORT.md), `CODE_OF_CONDUCT.md`, [`LICENSE`](LICENSE).
-- Do extend the root allowlist in [`tests/repo-naming-governance.test.mjs`](tests/repo-naming-governance.test.mjs) with a reason in the same commit.
 - Do branch `main`, `release/<semver>`, or `feat|fix|chore|docs|test|perf|refactor/<kebab>`, and name tests `tests/<name>.test.mjs`.
 
 **Don't**
@@ -255,23 +143,13 @@ The toolchain fails here in ways that look like your own mistake. Read this once
 
 - Don't change the pin silently, and don't leave the reader guessing.
 
-## Bootstrap order
-
-- Read this file, [`docs/HANDOFF.md`](docs/HANDOFF.md), [`docs/CONTEXT.md`](docs/CONTEXT.md). Open only files those three name.
-
-| Area | Read first |
-|---|---|
-| `extension/` | [`extension/AGENTS.md`](extension/AGENTS.md) |
-| `landing/` | [`landing/AGENTS.md`](landing/AGENTS.md) |
-| `lib/` | [`lib/AGENTS.md`](lib/AGENTS.md) |
-| `supabase/` | [`supabase/AGENTS.md`](supabase/AGENTS.md) |
-
 ## Which document answers what
 
 The map. Each row is a condition and a target, so it belongs here and not in [`README.md`](README.md).
 
 | Need | Read |
 |---|---|
+| area scope, first read | [`extension/AGENTS.md`](extension/AGENTS.md), [`landing/AGENTS.md`](landing/AGENTS.md), [`lib/AGENTS.md`](lib/AGENTS.md), [`supabase/AGENTS.md`](supabase/AGENTS.md) |
 | pairing, incidents, manual steps | [`docs/runbook.md`](docs/runbook.md) |
 | command and response contract | [`docs/api.md`](docs/api.md) |
 | latency baselines and locked ceilings | [`docs/benchmarks.md`](docs/benchmarks.md) |
@@ -291,28 +169,3 @@ The map. Each row is a condition and a target, so it belongs here and not in [`R
 | behavioral guidelines before writing code | [`.agents/skills/karpathy-guidelines/SKILL.md`](.agents/skills/karpathy-guidelines/SKILL.md) |
 
 Keep every `.md` reachable: a `Related:` header plus a row above. Update both when you add or rename one.
-
-## Commands
-
-- `npm test` — the fast suite over `tests/*.test.mjs`, 91 files, the acceptance gate.
-- `node --test tests/<name>.test.mjs` — one file, the iteration loop.
-- `npm run check` — runtime discovery and version pins, and the only gate that catches a broken `.ts`.
-- `npm run scope -- "<task>"` — which files a task touches, for when none was named.
-- `py tests/browser_extension_test.py` — the browser harness, headed against Brave on this machine.
-- `$env:OA_REAL_SITE='1'; py tests/real_site_smoke.py` — live internet, opt-in, and it drives a local mock bridge.
-- Deploy the site by the REST API, as `## The live site` states. Ask the owner first, and read the live page afterwards.
-- Run the Deno gates on CI only. Accept on CI evidence, never on local green.
-
-## Session close
-
-**Do**
-
-- Do verify by running the thing.
-- Do touch `docs/` only when the session changed code or released state.
-- Do state which model ran, and push every verified increment.
-
-**Don't**
-
-- Don't verify by reading it and asserting it would work.
-- Don't rewrite `docs/` on a read-only session.
-- Don't leave a verified win in a local commit.

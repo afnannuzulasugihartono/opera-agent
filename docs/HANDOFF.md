@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 19:45 UTC+7.
+@last-edited: 2026-10-05 22:41 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -83,7 +83,7 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 - The Vercel CLI cannot deploy this project at all: Root Directory is `landing`, so it resolves
   `landing/landing` from the repository root and refuses, and from inside `landing/` it refuses
   the same way. Deploy through `POST https://api.vercel.com/v13/deployments`; the call shape and
-  the recursive walk it needs are in `## The live site` in [`AGENTS.md`](../AGENTS.md).
+  the recursive walk it needs are in `## Deploy` in [`AGENTS.md`](../AGENTS.md).
 - A push that does not deploy fails silently: the commit is on main, CI is green, and
   production keeps serving the previous build. Check the live content, not the push status.
 - Cloudflare Pages is prepared as the second host: 500 builds a month, unlimited bandwidth,
@@ -95,11 +95,14 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 ## Known, not started
 
-- `tests/fixtures/*.json` still pin `sourceSha256` for
-  `[supabase/functions/opera-agent-mcp/index.ts](../supabase/functions/opera-agent-mcp/index.ts)` and
-  `[extension/background.js](../extension/background.js)`, and
-  `[tests/helpers/boundary-locks.mjs](../tests/helpers/boundary-locks.mjs)` pins them by blob
-  SHA. Any edit to either file re-cuts those in the same commit, or the suite fails.
+- `[tests/fixtures/mcp-contract-v1.json](../tests/fixtures/mcp-contract-v1.json)` pins `sourceSha256`
+  for `[supabase/functions/opera-agent-mcp/index.ts](../supabase/functions/opera-agent-mcp/index.ts)`,
+  asserted by `[tests/mcp-surface.test.mjs](../tests/mcp-surface.test.mjs)` and
+  `[tests/semantic-engine.test.mjs](../tests/semantic-engine.test.mjs)`, and
+  `[tests/helpers/boundary-locks.mjs](../tests/helpers/boundary-locks.mjs)` pins `lib/` files by blob
+  SHA. An edit to a pinned file re-cuts its digest in the same commit, or the suite fails. That
+  whole-file digest is a change tax, not a defect detector: it approves a semantic change the moment
+  it is re-frozen.
 
 ## Still open
 

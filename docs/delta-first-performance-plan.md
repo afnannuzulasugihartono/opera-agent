@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-05 23:05 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [benchmarks.md](benchmarks.md) - [ax-observation.md](ax-observation.md)
 
 # Delta-First Runtime
@@ -79,7 +79,7 @@ Reset rather than continue stale state on any of:
 
 ## Measurement contract
 
-`[tests/fixtures/delta-performance-baseline-v1.json](../tests/fixtures/delta-performance-baseline-v1.json)` freezes:
+The measurement contract freezes:
 
 - the workload matrix
 - the metrics

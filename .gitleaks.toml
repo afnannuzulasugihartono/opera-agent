@@ -37,17 +37,6 @@ id = "generic-api-key"
   ]
 
   [[rules.allowlists]]
-  description = "The transaction edge scripts reference key names (not values): --allow-env lists, $env: assignments from runtime vars/null, and a publishable-key param default. Publishable keys are public-by-design; the management token is read from env/local credential file at runtime (Get-ManagementToken)."
-  condition = "AND"
-  paths = ['''^scripts/run-transaction-edge-concurrency\.ps1$''', '''^scripts/run-transaction-acceptance\.ps1$''']
-  regexTarget = "line"
-  regexes = [
-    '''--allow-env=OPERA_MANAGEMENT_TOKEN,OPERA_PUBLISHABLE_KEY''',
-    '''\$env:OPERA_(MANAGEMENT_TOKEN|PUBLISHABLE_KEY) = \$(token|PublishableKey|null)''',
-    '''\$PublishableKey = .sb_publishable_''',
-  ]
-
-  [[rules.allowlists]]
   description = "SHA-256 review hashes recorded in a document are hashes of local test artifacts, not credentials. The path is a glob because the two checkpoint docs it was written for are gone and the pattern they matched is not specific to them."
   condition = "AND"
   paths = ['''^docs/.*\.md$''']
@@ -85,10 +74,4 @@ id = "generic-api-key"
 
 [[rules]]
 id = "jwt"
-# Inherits all default jwt attributes; entry only adds an allowlist.
-
-  [[rules.allowlists]]
-  description = "Admission test uses a synthetic JWT-shaped fixture explicitly suffixed public_fixture_signature. The path follows the file's current name; the old transaction-cloud-8d name stopped existing when milestone labels left the file names, and a stale path is a gate that no longer runs."
-  condition = "AND"
-  paths = ['''^tests/transaction-cloud\.test\.mjs$''']
-  regexes = ['''public_fixture_signature''']
+# Inherits all default jwt attributes; no allowlist: the test that needed one is gone.

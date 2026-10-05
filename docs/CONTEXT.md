@@ -1,4 +1,4 @@
-@last-edited: 2026-10-04 20:52 UTC+7.
+@last-edited: 2026-10-05 23:05 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) rules - [HANDOFF.md](HANDOFF.md) last session - [runbook.md](runbook.md)
 
 # CONTEXT
@@ -42,7 +42,7 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 | Fact | Consequence |
 |---|---|
 | No gateway route reads the query string — `extractToken` checks `x-opera-agent-token`, `Authorization`, then `body.apiKey` | `?apiKey=` is not a token carrier anywhere |
-| Nothing ever writes `status = 'disabled'` to `opera_devices`; only `'online'` is written | Re-enabling a device is owner-only, direct SQL; `[tests/device-status-truth.test.mjs](../tests/device-status-truth.test.mjs)` fails on purpose if a write path appears |
+| Nothing ever writes `status = 'disabled'` to `opera_devices`; only `'online'` is written | Re-enabling a device is owner-only, direct SQL |
 | There is no scheduler — no `pg_cron`, no `cron.schedule`, no caller of the cleanup functions | No data class is purged automatically |
 
 ## Gate signals
