@@ -17,7 +17,9 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 - Local gates: `npm test`, `npm run check` ok — 26 primitives, 98 runtime safety files.
 - Production database: 58 `opera_*` functions, 9 edge functions, each with a repo
   counterpart. The account RPCs the dashboard calls are live and reachable by name.
-- No `sbp_` token in the tree or its history.
+- No management token or secret key in the tree. The four signed-in and consent pages carry the
+  Supabase publishable key, which is public by design and allowlisted in
+  [`../.gitleaks.toml`](../.gitleaks.toml).
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the
   model can tell whether the person is looking at the tab before choosing foreground or
   background. Fails open: a missing `userState` is a gap in the report, not a failure.
@@ -128,6 +130,10 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 - `[.gitleaks.toml](../.gitleaks.toml)` names paths and symbols that must exist. Re-point the
   allowlist when a file is renamed; never edit the fixture to dodge the scanner.
 - The concurrency group cancels an in-flight run when a newer one queues, so push, then wait.
+- gitleaks 8.24.0 runs locally and is the gate worth reproducing before a push. CI checks out
+  one commit, so `gitleaks detect --log-opts=-1` is what it sees; a full-history scan reports
+  eight findings in files that were renamed or deleted long ago, which is why the allowlist
+  names only paths the tree still has.
 
 ## Blocked, needs the owner at the machine
 

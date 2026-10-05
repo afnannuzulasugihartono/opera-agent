@@ -11,10 +11,42 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
+
+// Every entry name in a zip, read with nothing but the buffer.
+//
+// WHY this replaced a shell: the listing came from Windows PowerShell with the
+// absolute path of the laptop it was written on, so the gate passed here and failed
+// on the CI runner with `spawnSync powershell ENOENT`. A zip lists its entries in the
+// central directory at the end of the file, in a fixed record layout, so reading it
+// needs no shell and no dependency -- and this repository has no dependencies.
+function zipEntryNames(buffer) {
+  const EOCD = 0x06054b50;
+  const RECORD = 0x02014b50;
+  // WHY the backward scan: the end-of-central-directory record is last, but a zip may
+  // carry a comment of up to 65535 bytes after it, so it is found by signature rather
+  // than by position.
+  let eocd = -1;
+  for (let at = buffer.length - 22; at >= 0; at -= 1) {
+    if (buffer.readUInt32LE(at) === EOCD) {
+      eocd = at;
+      break;
+    }
+  }
+  assert.notEqual(eocd, -1, 'the archive has an end-of-central-directory record');
+  const count = buffer.readUInt16LE(eocd + 10);
+  const names = [];
+  let at = buffer.readUInt32LE(eocd + 16);
+  for (let i = 0; i < count; i += 1) {
+    assert.equal(buffer.readUInt32LE(at), RECORD, `entry ${i} has a central-directory record`);
+    const nameLength = buffer.readUInt16LE(at + 28);
+    names.push(buffer.toString('utf8', at + 46, at + 46 + nameLength));
+    at += 46 + nameLength + buffer.readUInt16LE(at + 30) + buffer.readUInt16LE(at + 32);
+  }
+  return names.map((n) => n.replace(/\\/g, '/'));
+}
 
 test('the download page names the exact version the repo ships', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
@@ -48,8 +80,7 @@ test('the archive contains every file the manifest names', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   // WHY this lock: a download page whose archive is missing background.js or a
   // content script fails only after a stranger installs it and clicks around.
-  const listing = execFileSync('powershell', ['-NoProfile', '-Command', 'Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::OpenRead(\'D:\\GitHub\\opera-agent\\landing\\opera-agent-1.6.15.zip\').Entries.FullName'], { encoding: 'utf8', maxBuffer: 4e7 });
-  const names = listing.split('\n').map((n) => n.trim()).filter(Boolean).map((n) => n.replace(/\\/g, '/'));
+  const names = zipEntryNames(fs.readFileSync(new URL('landing/opera-agent-1.6.15.zip', root)));
   const needed = [
     'manifest.json',
     manifest.background.service_worker,

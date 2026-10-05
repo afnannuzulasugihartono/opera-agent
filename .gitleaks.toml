@@ -1,6 +1,6 @@
-# @last-edited: 2026-10-04 21:40 UTC+7.
+# @last-edited: 2026-10-05 19:45 UTC+7.
 # @title: .gitleaks — path-scoped allow exceptions for known synthetic fixtures.
-# @state: every allowlisted path exists; three stale ones were found by the first real run.
+# @state: every allowlisted path exists; the landing pages carry a publishable key, which is public by design.
 # @dependencies: none stated.
 
 # Path-scoped gitleaks allow exceptions.
@@ -64,6 +64,23 @@ id = "generic-api-key"
   regexTarget = "line"
   regexes = [
     '''key = .milestone[67]_(ledger|vm)_enabled.''',
+  ]
+
+  [[rules.allowlists]]
+  # WHY this one exists: gitleaks ran on this tree on 2026-10-05 and reported four leaks
+  # that are not leaks. A Supabase publishable key is public by design -- it is the
+  # counterpart of a secret key and the whole product is a client-side site whose only
+  # boundary is RLS, so it has to be in the page. The management token is not, and is not
+  # in the tree.
+  #
+  # The regex is the assignment and the publishable prefix together, so a different
+  # credential appearing on any of these pages is still reported.
+  description = "Supabase publishable key, public by design and required in a client-side page; the secret key and the management token are not in the tree."
+  condition = "AND"
+  paths = ['''^landing/.*\.html$''']
+  regexTarget = "line"
+  regexes = [
+    '''PUBLISHABLE_KEY\s*=\s*.sb_publishable_''',
   ]
 
 [[rules]]
