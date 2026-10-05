@@ -76,6 +76,17 @@ test('the dashboard may reach only Supabase like the auth page', () => {
   }
 });
 
+test('pairing issuance is rate limited per issuing account', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261005150000_opera_agent_pairing_rate_limit.sql', root), 'utf8');
+  // WHY this lock: ROADMAP lists a pairing rate limit as a precondition for mass
+  // distribution, and every code invalidates the previous one, so an account that
+  // mints freely can keep cancelling a legitimate user's code.
+  assert.match(sql, /where issued_by = v_issuer and created_at > now\(\) - interval '1 hour'/, 'the window is per issuer over an hour');
+  assert.match(sql, /if v_recent >= 5 then/, 'five an hour is the cap');
+  assert.match(sql, /pairing_code\.rate_limited/, 'the refusal is audited');
+  assert.match(sql, /revoke execute on function public\.opera_create_pairing_code\(text, integer, uuid\) from public, anon/, 'anon still cannot issue');
+});
+
 test('the v2 migration only adds: revoke, counts, and self-issuing codes', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261005130000_opera_agent_dashboard_actions.sql', root), 'utf8');
   assert.match(sql, /opera_revoke_my_device/, 'revocation is a new function');
