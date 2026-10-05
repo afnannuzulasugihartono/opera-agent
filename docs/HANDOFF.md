@@ -1,4 +1,4 @@
-@last-edited: 2026-10-05 13:45 UTC+7.
+@last-edited: 2026-10-05 16:05 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -14,56 +14,36 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.15` in `[extension/manifest.json](../extension/manifest.json)` is the source of truth.
-- Local gates: `npm test` 772 pass, `npm run check` ok — 26 primitives, 91 safety files.
-- Browser harness exits 0 against Brave, headless and headed. `ci-browser` runs the
-  same file under `xvfb`.
-- Live suite: 109 passed, 0 failed, 13 skipped against real YouTube videos, opencode.ai,
-  Google Maps, GitHub, Wikipedia and Google Docs. `OA_ONLY=<substring>` runs one
-  case group. Google Search skips as a bot check from this IP (`/sorry/`), which is the
-  site reporting its state; its type-and-submit step still passes.
-- Google coverage is Maps, YouTube and Docs. YouTube additionally proves the
-  transcript panel through `...more` when the video carries captions, the Like
-  button dispatching up to the sign-in wall, and the comments section missing
-  for logged-out sessions. New sites that teach new functions: GitHub search
-  (overlay trigger, type, submit, results) and Wikipedia (ref-scroll, section
-  jump).
-- All 26 allowlisted primitives are driven by both suites. `media.play` was the last one
-  the deterministic harness never called.
-- `media.play` in background mode is refused on a real video by Chrome's autoplay policy.
-  The extension names the cause and the recovery, which is foreground mode.
-- Production database: 48 migrations recorded, 0 pending. `opera_claim_next_wait` and
-  `opera_run_fast` both present. 58 `opera_*` functions live, 9 edge functions, each
-  with a repo counterpart.
-- No `sbp_` token in the tree or its history. The two matches in
-  `[tests/transaction-cloud.test.mjs](../tests/transaction-cloud.test.mjs)` are synthetic (`'a'.repeat(40)`).
+- Local gates: `npm test`, `npm run check` ok — 26 primitives, 98 runtime safety files.
+- Production database: 58 `opera_*` functions, 9 edge functions, each with a repo
+  counterpart. The account RPCs the dashboard calls are live and reachable by name.
+- No `sbp_` token in the tree or its history.
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the
   model can tell whether the person is looking at the tab before choosing foreground or
   background. Fails open: a missing `userState` is a gap in the report, not a failure.
 - **The plan path exists; the model call does not.** Owner decision: the model composes a
   plan once, the device executes it locally, so a task costs one round trip instead of one
   per step. [`lib/goal-plan.js`](../lib/goal-plan.js) is the gate between model text and
-  that execution, and `buildPlanRequest` is the prompt that asks for one, sharing the same
-  allowlist so the two cannot drift. Both are pure and proven: 15 tests, no key needed.
-- `b436843` is **green on all three gates** on GitHub's Linux runners, and Linux found a
-  defect Windows could not: the comment-spacing lock read `git ls-files`, so a brand-new
-  file was never checked. It walks the filesystem now.
-- `TARGET_NOT_READY` refusal carries `refState`: `expired` when the ref can never act
-  on this page again, `detached` when the node left the DOM, `unresolvable` when the
-  node is connected but stopped matching. `expired` is refused at once, measured
-  7575ms → 0ms; `detached` still waits the tested `waitedMs >= 3000`. The hint names
-  the recovery — `find` then `click` with `refFromStep` in one `browser.burst`. All
-  three refusal sites build the error once, in `notReadyError`.
+  that execution, and it shares the same allowlist so the two cannot drift.
 - The blank-line comment rule is a lock, not a habit:
   `[tests/helpers/comment-spacing.mjs](../tests/helpers/comment-spacing.mjs)` classifies
   each line per dialect and `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)` asserts
-  the gap. Applied migrations and JSON are excluded.
+  the gap. It walks the filesystem, so a file written minutes ago is checked too.
 
 ## Measured, not assumed
 
-- The account run path is proven in production: device resolved by `user_id`, unknown
-  method refused against the allowlist, `tabs.list` completed with pickup 12072 ms then
-  377 ms of work on one run and 8260 ms then 326 ms on the next. Pickup waits on the
-  device long-poll, not on the work.
+- The site is split the way the two references the site follows split: Supabase separates
+  profile from resources, opencode separates settings from projects. `/akun` is who you
+  are and `/dashboard` is your devices. The nav once pointed "Akun" at the sign-in page
+  and "Dashboard" at a file called akun.html.
+- The provider identity is read from `app_metadata.providers`, not `provider`: measured on
+  this project, an account that signed in with Google reports provider "email" with
+  providers ["email","google"], because a magic link created the row first.
+- `Intl.RelativeTimeFormat.prototype.format()` takes CLDR unit identifiers, not localised
+  names. Passing "menit" throws at call time, inside the loop that builds the device cards,
+  so the live dashboard showed "1 device ter-pairing" above an empty list. Both signed-in
+  pages now pass CLDR units. Locked by tests/landing-render.test.mjs, which executes each
+  page's own module against a stub DOM and asserts the rendered output.
 - Account isolation has two measured layers: `authenticated` holds no grant on the tables,
   only EXECUTE on the RPCs, and RLS filters by ownership for the day a grant appears. A
   foreign account read zero devices and was refused a revoke; anon got 401 on all four.
@@ -71,6 +51,9 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   `[tests/landing-dashboard.test.mjs](../tests/landing-dashboard.test.mjs)`: a fresh GRANT
   lands on PUBLIC so anon could call every RPC, and two overloads of the pairing issuer
   made PostgREST answer PGRST203.
+- The free Vercel tier allows 100 deployments a day and that budget is now spent, so
+  `vercel deploy` answers `api-deployments-free-per-day`. Everything after that limit
+  is committed and pushed but not live; deploy when the window resets.
 
 ## Known, not started
 
