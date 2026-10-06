@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 15:25 UTC+7.
+// @last-edited: 2026-10-06 05:12 UTC+7.
 // @title: landing-dashboard — the device page shows your devices, nothing else's.
 // @state: 19 locks, green; the page moved out of akun.html when the two split.
 // @dependencies: test, assert, fs.
@@ -51,6 +51,32 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
   // WHY the narrow patterns: the run payload may carry page content, so the page
   // may read status but never a payload field. result.status is the safe read.
   assert.doesNotMatch(html, /result\s*\.\s*(result|params|value|content|text)\b/i, 'the run payload is never rendered');
+});
+
+test('the dashboard says whether the extension is installed in this browser', () => {
+  const html = read('dashboard.html');
+  // WHY this lock: a signed-in reader whose browser has no extension sees an empty
+  // device list and a status line about pairing, which reads as a broken product
+  // rather than as the one step they have not done. The content script runs on every
+  // page and can leave a marker; the dashboard reads it and names the missing step.
+  assert.match(html, /dataset\.operaAgent/, 'the page reads the marker the content script leaves');
+  assert.match(html, /id="installState"/, 'and reports it on its own status line');
+  // WHY both words are required: "terpasang" alone could describe the account, and
+  // "belum" alone could describe a device that is offline. The copy has to say which.
+  assert.match(html, /Opera Agent belum terpasang di browser ini/, 'the missing case names the extension and the browser');
+  assert.match(html, /Opera Agent terpasang di browser ini/, 'and the present case says so too');
+});
+
+test('the content script leaves the marker the dashboard reads', () => {
+  const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');
+  // WHY the exact name: the dashboard matches a string, so two spellings would leave
+  // the page permanently reporting "not installed" on a browser that has it.
+  assert.match(content, /documentElement\.dataset\.operaAgent\s*=/, 'the marker is written on documentElement');
+  // WHY it must be a dataset attribute and not a JS global: the dashboard is a
+  // separate document context and can only read the DOM, never the content script's
+  // own globals. A global would be invisible to the page for the same reason the page
+  // cannot message the extension.
+  assert.match(read('dashboard.html'), /documentElement\.dataset\.operaAgent/, 'the page reads it from the DOM, not from a global');
 });
 
 test('the dashboard is about devices, not about the person', () => {

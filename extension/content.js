@@ -1,12 +1,21 @@
-// @last-edited: 2026-10-04 20:52 UTC+7.
+// @last-edited: 2026-10-06 05:12 UTC+7.
 // @title: content — MV3 browser runtime..
-// @state: page.action_state reports expired, detached or unresolvable for a ref that cannot act.
+// @state: marks documentElement so a page can detect the extension; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
 // @dependencies: none.
 
 (() => {
   'use strict';
   if (globalThis.__operaAgentContentV1) return;
   globalThis.__operaAgentContentV1 = true;
+
+  // WHY a dataset attribute and not a global: the content script and the page live in
+  // separate JavaScript worlds, so a global here is invisible to the page. The DOM is
+  // the one thing both can see. MV3 forbids the page from messaging the extension
+  // directly, so this marker is the only way a site can answer "is the extension
+  // installed here?" — and the dashboard reads it to stop showing a signed-in reader
+  // an empty device list without saying which step they have not done yet.
+
+  document.documentElement.dataset.operaAgent = 'installed';
   // Published by role-reconcile.js, which the manifest loads before this
   // file. Content scripts are classic scripts and cannot import, so the same
   // global pattern as the semantic engines is used.

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 20:45 UTC+7.
+// @last-edited: 2026-10-06 05:12 UTC+7.
 // @title: landing-execution — every page's own module, run against a stub Auth and a stub DOM.
 // @state: 12 locks, one harness; it replaces the three files that each built their own.
 // @dependencies: node:test, node:assert, node:fs, node:vm.
@@ -60,6 +60,10 @@ async function run(page, shape = {}) {
     refreshStatus = 200,
     refreshFails = false,
     unreachable = false,
+    // WHY the default is false: a harness that claimed the extension was installed
+    // would make every dashboard case pass on the "installed" copy and never exercise
+    // the message a reader who has not installed anything will actually see.
+    extensionInstalled = false,
     devices = [DEVICE],
     authorization = AUTHORIZATION,
     authorizationRedirect = null
@@ -93,6 +97,14 @@ async function run(page, shape = {}) {
     },
     navigator: { clipboard: { writeText: async () => {} } },
     document: {
+      // WHY documentElement exists here: the dashboard reads the install marker the
+      // content script leaves on documentElement, so the harness has to offer the node
+      // the page reads. `extensionInstalled` models the two real cases — a browser with
+      // the extension, where the content script has written the marker, and one
+      // without, where it has not.
+      documentElement: {
+        dataset: extensionInstalled ? { operaAgent: 'installed' } : {}
+      },
       getElementById: (id) => element(id),
       querySelectorAll: () => [],
       querySelector: () => null,
@@ -159,6 +171,24 @@ test('the dashboard renders a device card for a paired device', async () => {
   assert.match(nodes.devices.innerHTML, new RegExp(DEVICE.id), 'the device id is rendered');
   assert.match(nodes.devices.innerHTML, /tabs\.list/, 'the recent commands are rendered');
   assert.match(nodes.devices.innerHTML, /Cabut device ini/, 'the revoke control is rendered');
+});
+
+test('the dashboard names the extension when the browser does not have it', async () => {
+  const { nodes, rejected } = await run('dashboard.html', { extensionInstalled: false });
+  assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
+  // WHY this case matters most: an empty device list and a "not installed" browser look
+  // identical on the page without this line, so a reader who has not installed anything
+  // cannot tell which step is missing.
+  assert.match(nodes.installState.textContent, /Opera Agent belum terpasang di browser ini/,
+    'the missing extension is named, not left for the reader to infer');
+  assert.match(nodes.installState.textContent, /Pasang dulu/, 'and the next step is given');
+});
+
+test('the dashboard confirms the extension once the content script has marked the page', async () => {
+  const { nodes, rejected } = await run('dashboard.html', { extensionInstalled: true });
+  assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
+  assert.match(nodes.installState.textContent, /Opera Agent terpasang di browser ini/,
+    'the installed case is stated, so the line is not a permanent warning');
 });
 
 test('the account page renders the identity facts and the device count', async () => {

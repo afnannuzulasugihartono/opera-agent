@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-05 15:10 UTC+7. -->
+<!-- @last-edited: 2026-10-06 05:12 UTC+7. -->
 <!-- @title: dashboard — the devices bound to your account and their recent work. -->
-<!-- @state: reads only through opera_my_devices; strangers are sent to sign-in. -->
+<!-- @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: none. -->
 
 <!doctype html>
@@ -133,6 +133,7 @@
     <h1>Dashboard</h1>
     <p class="sub" id="whoami">Memeriksa sesi…</p>
     <div id="devices"></div>
+    <p class="status" id="installState" role="status" aria-live="polite">&nbsp;</p>
     <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
     <div class="card" id="runCard">
       <h2>Jalankan satu aksi</h2>
@@ -316,6 +317,15 @@
       const { token, user } = session;
       $('whoami').textContent = `Device milik ${user.email}.`;
       let data;
+      // WHY the marker is read before the device list, not after: the reader who has
+      // not installed anything should learn that first, and the device list alone
+      // cannot say it, because an empty list looks identical whether the extension is
+      // missing or merely not paired yet.
+      const installed = document.documentElement.dataset.operaAgent === 'installed';
+      $('installState').textContent = installed
+        ? 'Opera Agent terpasang di browser ini.'
+        : 'Opera Agent belum terpasang di browser ini. Pasang dulu, lalu pair dengan akun ini.';
+      $('installState').className = installed ? 'status ok' : 'status warn';
       try {
         const response = await fetch(`${REST}/rpc/opera_my_devices`, { method: 'POST', headers: headersFor(token), body: '{}' });
         data = await response.json();
