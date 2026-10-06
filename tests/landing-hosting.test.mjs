@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 03:52 UTC+7.
+// @last-edited: 2026-10-06 09:18 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
@@ -170,7 +170,12 @@ test('the edge is told not to hold a page, because Cache-Control alone does not'
   for (const entry of vercel.headers) {
     const cdn = entry.headers.find((h) => h.key === 'Vercel-CDN-Cache-Control');
     assert.ok(cdn, `${entry.source} tells the edge what to do`);
-    const isArchive = entry.source.includes('.zip');
+    // WHY the CRX is in the immutable group with the zip: both are versioned
+    // artifacts whose bytes never change under a given name, so re-fetching them
+    // on every visit would be waste, and a stale copy is impossible because a
+    // new version is a new filename. The .exe is NOT here: it is rebuilt often
+    // and served from the same name, so holding it would pin an old installer.
+    const isArchive = /\.(zip|crx)$/.test(entry.source);
     assert.equal(cdn.value, isArchive ? 'public, max-age=31536000, immutable' : 'no-store', `${entry.source} holds or releases as intended`);
   }
   const headers = read('landing/_headers');

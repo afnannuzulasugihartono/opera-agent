@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 07:52 UTC+7.
+// @last-edited: 2026-10-06 09:18 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -101,6 +101,29 @@ test('the download page offers one archive with its checksum', () => {
   assert.match(html, /href="\.\/opera-agent-[^"]+\.zip"/, 'one archive link, named after the product');
   assert.match(html, /[a-f0-9]{64}/, 'a sha256 the reader can verify');
   assert.match(html, /Load unpacked|unpacked/i, 'the reader is told what the archive is');
+});
+
+test('the download page names every browser it supports and why one is not', () => {
+  const html = read('unduh.html');
+  // WHY this lock: the page used to say "Brave dan Chrome" and name no others, while
+  // the installer writes a policy for four browsers and the zip loads in any
+  // Chromium one. A reader on Edge was told the product was not for them.
+  for (const browser of ['Chrome', 'Edge', 'Brave', 'Opera', 'Vivaldi']) {
+    assert.match(html, new RegExp(`<td>${browser}</td>`), `${browser} has a row saying what it can do`);
+  }
+  // WHY Firefox is named rather than omitted: it is the one browser a reader will
+  // try that cannot work, because it has no debugger permission. Saying nothing
+  // leaves them to discover it.
+  assert.match(html, /<td>Firefox<\/td>/, 'Firefox is named');
+  assert.match(html, /Firefox tidak punya izin <code>debugger<\/code>/, 'and the reason is the permission it lacks');
+  // WHY every Chromium row must agree: a page that says "berjalan" for one and
+  // "ditolak" for the next is a page nobody can act on.
+  // WHY index 1 for the name: matchAll yields the whole match first, so the
+  // capture groups start at 1.
+  const rows = [...html.matchAll(/<tr><td>(\w+)<\/td><td class="(\w+)">([^<]+)<\/td><td class="(\w+)">([^<]+)<\/td><\/tr>/g)];
+  assert.ok(rows.length >= 6, `the table has a row per browser, found ${rows.length}`);
+  const manual = rows.filter(([, name]) => name !== 'Firefox').map((r) => r[5]);
+  assert.ok(manual.every((v) => v.trim() === 'berjalan'), 'every Chromium browser loads the archive');
 });
 
 test('the install section links the download page instead of dead-ending', () => {

@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-05 17:10 UTC+7.
+# @last-edited: 2026-10-06 09:18 UTC+7.
 # @title: _headers — the CSP and cache policy every path of the site answers with.
 # @state: restates vercel.json per path; tests/landing-hosting.test.mjs fails on drift.
 # @dependencies: none.
@@ -53,4 +53,11 @@
   Cache-Control: public, max-age=31536000, immutable
   Vercel-CDN-Cache-Control: public, max-age=31536000, immutable
   Content-Type: application/zip
+  X-Content-Type-Options: nosniff
+
+/opera-agent-1.6.15.crx
+# from vercel.json /opera-agent-1.6.15.crx
+  Cache-Control: public, max-age=31536000, immutable
+  Vercel-CDN-Cache-Control: public, max-age=31536000, immutable
+  Content-Type: application/x-chrome-extension
   X-Content-Type-Options: nosniff

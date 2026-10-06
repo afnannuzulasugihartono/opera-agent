@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-06 08:52 UTC+7. -->
+<!-- @last-edited: 2026-10-06 09:18 UTC+7. -->
 <!-- @title: unduh — one archive, one checksum, three steps. -->
-<!-- @state: archive built from extension/ at version 1.6.15, sha256 pinned here. -->
+<!-- @state: archive and signed CRX at version 1.6.15, both with their sha256 pinned here; the table says which browser accepts which path. -->
 <!-- @dependencies: none. -->
 
 <!doctype html>
@@ -9,7 +9,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Unduh — Opera Agent</title>
-  <meta name="description" content="Unduh Opera Agent 1.6.15 untuk Brave dan Chrome, dimuat unpacked sampai listing store tersedia." />
+  <meta name="description" content="Unduh Opera Agent 1.6.15. Daftar browser yang didukung dan cara memasang manual di Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <style>
     /* WHY the same single-file shape as the rest of the site: no build step and
        no external origin, so the archive link is the only way out of this page. */
@@ -99,6 +99,17 @@
       dl.facts dd { margin: 0 0 10px; }
     }
 
+    /* WHY a table and not a list: the reader is asking one question per browser, and a
+       table lets each answer sit in the same column so the shape of the answer is
+       visible before any text is read. */
+    table.support { width: 100%; border-collapse: collapse; margin: 14px 0 8px; font-size: 14px; }
+    table.support th, table.support td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+    table.support th { color: var(--muted); font-weight: 600; font-size: 13px; }
+    table.support td.yes { color: var(--accent); }
+    table.support td.no { color: var(--muted); }
+    table.support tr:last-child td { border-bottom: 0; }
+    .meta { color: var(--muted); font-size: 13px; }
+
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
     footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
@@ -142,20 +153,48 @@
     halaman itu kosong, periksa juga <code>chrome://extensions</code> dan pastikan
     Mode Pengembang tidak perlu diaktifkan — pemasangan ini tidak memakainya.</p>
 
-    <h2>Pasang manual</h2>
-    <p>Kalau polityvek ditolak, unduh arsip dan muat sendiri. Berjalan di Brave dan Chrome.</p>
+    <h2>Pasang manual dari arsip</h2>
+    <p>Kalau polityvek ditolak, atau browser kamu tidak ada di daftar di atas, unduh arsip
+    dan muat sendiri. Cara ini berjalan di semua browser Chromium.</p>
     <p><a class="btn" href="./opera-agent-1.6.15.zip" download>Unduh opera-agent-1.6.15.zip</a></p>
     <p class="hash">sha256 b805a59ca22dc107a792af6605435e470d2e96f0aa3113e50df70feb86720fd0</p>
+
+    <h2>Browser mana yang didukung</h2>
+    <p>Opera Agent berjalan di browser berbasis Chromium: Chrome, Edge, Brave, Opera, dan
+    Vivaldi. Firefox tidak didukung — Firefox tidak punya izin <code>debugger</code>, dan
+    izin itu yang membuat produk ini bekerja.</p>
+    <table class="support">
+      <thead>
+        <tr><th>Browser</th><th>Pemasang .exe</th><th>Arsip manual</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Chrome</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Edge</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Brave</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Opera</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Vivaldi</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Firefox</td><td class="no">tidak</td><td class="no">tidak</td></tr>
+      </tbody>
+    </table>
+    <p class="meta">Chrome, Edge, dan Brave menolak pemasangan otomatis dari luar Chrome
+    Web Store kalau komputer tidak terdaftar sebagai komputer perusahaan. Itu batas
+    Chrome, bukan salah installersnya.</p>
 
     <h2>Verifikasi berkas</h2>
     <p>Bandingkan sidik jari di atas dengan berkas Anda. Di PowerShell:
     <code>Get-FileHash .\OperaAgent-Installer.exe -Algorithm SHA256</code></p>
 
-    <h2>Tiga langkah memasang</h2>
+    <h2>Lima langkah memasang dari arsip</h2>
     <ol class="steps">
-      <li><strong>Buka halaman extension.</strong> Ketik <code>opera://extensions</code> di bilah alamat, atau <code>chrome://extensions</code> di Chrome.</li>
-      <li><strong>Aktifkan mode pengembang.</strong> Toggle di pojok atas, lalu klik <strong>Load unpacked</strong> dan pilih folder hasil ekstrak arsip.</li>
-      <li><strong>Pasangkan device.</strong> Masuk ke <a href="./dashboard.html">Dashboard</a>, buat kode pairing sekali pakai, lalu tempel di popup extension.</li>
+      <li><strong>Ekstrak arsip.</strong> Unzip ke folder yang tidak akan kamu rapikan lagi,
+        misalnya <code>C:\OperaAgent\</code>. Jangan ekstrak ke dalam folder zip.</li>
+      <li><strong>Buka halaman extension.</strong> Ketik <code>chrome://extensions</code> di bilah
+        alamat, atau <code>opera://extensions</code> di Opera dan Vivaldi.</li>
+      <li><strong>Aktifkan mode pengembang.</strong> Toggle di pojok atas halaman itu.</li>
+      <li><strong>Muat folder.</strong> Klik <strong>Load unpacked</strong>, lalu pilih folder
+        hasil ekstrak — folder yang berisi <code>manifest.json</code>.</li>
+      <li><strong>Pasangkan device.</strong> Masuk ke <a href="./dashboard.html">Dashboard</a>,
+        buat kode pairing sekali pakai, lalu tempel di popup extension.</li>
     </ol>
 
     <h2>Izin yang diminta, dan kenapa</h2>
