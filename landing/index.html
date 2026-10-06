@@ -221,6 +221,13 @@
     @media (prefers-reduced-motion: reduce) {
       html.js .reveal { opacity: 1; transform: none; transition: none; }
     }
+    /* WHY print deletes the entrance: nothing scrolls a print preview, so every
+       section below the first would print blank, and find-in-page skips text that
+       is transparent. A page that hides itself from being read or printed is not
+       motion worth having. */
+    @media print {
+      html.js .reveal { opacity: 1; transform: none; transition: none; }
+    }
 
     .tile {
       background: var(--surface);
@@ -246,7 +253,12 @@
 
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    /* WHY the gap and not a margin: the six footer doors are written with no
+       whitespace between the tags, so an inline row of anchors has no break
+       opportunity and pushed the footer 32px past a 320px screen. A flex gap
+       breaks between items wherever the line runs out. */
+    footer a { color: var(--muted); text-decoration: none; }
+    footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
   </style>
 </head>
@@ -420,7 +432,7 @@
   <footer>
     <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span>
+      <span class="doors">
         <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a>
       </span>
     </div>

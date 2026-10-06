@@ -144,7 +144,12 @@
     .note { font-size: 12.5px; color: var(--muted); margin: 16px 0 0; }
     footer { padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    /* WHY the gap and not a margin: the six footer doors are written with no
+       whitespace between the tags, so an inline row of anchors has no break
+       opportunity and pushed the footer 32px past a 320px screen. A flex gap
+       breaks between items wherever the line runs out. */
+    footer a { color: var(--muted); text-decoration: none; }
+    footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
   </style>
 </head>
@@ -201,7 +206,7 @@
   <footer>
     <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span>
+      <span class="doors">
         <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a>
       </span>
     </div>

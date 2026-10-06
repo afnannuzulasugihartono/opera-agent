@@ -180,4 +180,27 @@ test('motion is an enhancement, never the content', () => {
   assert.match(html, /html\.js \.reveal/, 'hiding requires that announcement');
   assert.match(html, /prefers-reduced-motion/, 'and the motion bows out when asked');
   assert.match(html, /IntersectionObserver/, 'one observer per page, not per pixel');
+  // WHY this second half: nothing scrolls a print preview, so every section below
+  // the first printed blank, and a page that hides itself from being printed is
+  // not motion worth having. Measured in Chromium with print media emulated:
+  // all five sections read `opacity: 0` until this rule existed.
+  assert.match(html, /@media print\s*{[^}]*\.reveal[^}]*opacity:\s*1/s,
+    'print shows every section, or the motion has hidden the page from being read');
+});
+
+test('nothing spills out of a 320px screen', () => {
+  // WHY 320 and not 390: the area rules promise readable at 320px, and 390 is
+  // where this was last measured. Measured overflow at 320 before these fixes:
+  // the footer ran 32px past the screen on all eight pages, because the six
+  // doors are written with no whitespace between their tags and an inline row
+  // of anchors has no break opportunity; and unduh ran 662px past it, because
+  // `pre` is white-space: pre and outranks the wrap on the code inside it.
+  for (const page of pages) {
+    const html = read(page);
+    assert.match(html, /\.doors\s*{[^}]*flex-wrap:\s*wrap/s, `${page}: the footer row wraps`);
+    assert.doesNotMatch(html, /footer a \{[^}]*margin-right/s, `${page}: no margin, which cannot wrap`);
+  }
+  const unduh = read('unduh.html');
+  assert.match(unduh, /pre\s*{[^}]*white-space:\s*pre-wrap/s,
+    'the checksum command wraps inside its box instead of off the screen');
 });

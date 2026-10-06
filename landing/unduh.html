@@ -110,6 +110,23 @@
       -webkit-box-decoration-break: clone;
     }
 
+    /* WHY pre-wrap and not just the wrap above: `pre` is white-space: pre, and that
+       outranks the overflow-wrap on the code inside it, so the 118-character curl
+       line ran 662px past a 320px screen and the reader could not reach the tail of
+       the command they were told to paste. pre-wrap keeps the author's line breaks
+       and adds one where the screen ends. The box keeps the command's own padding
+       instead of inheriting the inline code pill. */
+    pre {
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    pre code { padding: 0; border: 0; background: none; }
+
     ol.steps { margin: 0; padding-left: 20px; }
     ol.steps li { margin: 0 0 12px; }
 
@@ -138,7 +155,12 @@
 
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
+    /* WHY the gap and not a margin: the six footer doors are written with no
+       whitespace between the tags, so an inline row of anchors has no break
+       opportunity and pushed the footer 32px past a 320px screen. A flex gap
+       breaks between items wherever the line runs out. */
+    footer a { color: var(--muted); text-decoration: none; }
+    footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
   </style>
 </head>
@@ -266,7 +288,7 @@ Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
   <footer>
     <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span>
+      <span class="doors">
         <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a>
       </span>
     </div>
