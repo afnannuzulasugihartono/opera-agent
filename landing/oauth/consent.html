@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
+<!-- @last-edited: 2026-10-06 11:26 UTC+7. -->
 <!-- @title: consent — the OAuth permission screen, on the same origin as the rest of the site. -->
 <!-- @state: reads one authorization_id; no password, no external origin, no invented app name. -->
 <!-- @dependencies: none. -->
@@ -67,7 +67,9 @@
        the brand into two ragged lines. A scrolling row keeps every item on one
        line and the brand intact. */
     @media (max-width: 640px) {
-      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
       nav a { white-space: nowrap; }
       nav .brand { margin-right: 6px; }
     }
@@ -121,7 +123,7 @@
     .btn {
       display: inline-block;
       padding: 10px 18px;
-      border-radius: 10px;
+      border-radius: 980px;
       border: 1px solid var(--line);
       background: var(--surface);
       color: var(--text);

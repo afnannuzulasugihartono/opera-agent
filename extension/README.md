@@ -1,7 +1,9 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-06 11:55 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [extension/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
 
 # Extension
+
+> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
 Simplify first, code first, comments second. State what is true now, never its history.
 
@@ -88,7 +90,7 @@ enforced in code instead.
 - Screenshots are refused for a tab the user marked private, and again by the
   all-frames sensitive-field probe in `assertCaptureFramesSafe()`.
 - Sensitive fields — password, OTP/2FA, PIN, card, CVV — are blocked. See
-  [SECURITY.md](../SECURITY.md).
+  [SECURITY.md](../docs/security.md).
 
 ## Content scripts
 

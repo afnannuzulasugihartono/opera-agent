@@ -8,11 +8,13 @@ metadata:
   derived_from: "https://x.com/karpathy/status/2015883857489522876"
   note: "Not authored by Andrej Karpathy. A community file derived from his public observations."
 ---
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-06 11:55 UTC+7.
 @related: [AGENTS.md](../../../AGENTS.md) rules
 Last edited: 2026-10-04 17:52.
 
 # Karpathy Guidelines
+
+> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
 Simplify first, code first, comments second. State what is true now, never its history.
 

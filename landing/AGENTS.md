@@ -1,6 +1,8 @@
-@last-edited: 2026-10-05 11:00 UTC+7.
+@last-edited: 2026-10-06 11:55 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [extension/AGENTS.md](../extension/AGENTS.md) - [supabase/AGENTS.md](../supabase/AGENTS.md)
 # landing/ scope
+
+> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 Ease of use first, code first, comments second. State what is true now, never its history.
 Root `[AGENTS.md](../AGENTS.md)` binds; read it first. Static site, no build step.
 - UI: one shared palette (`#0b0d10` `#14181d` `#262c34` `#e8eaed` `#9aa4b2` `#14b8a6`), one nav and footer everywhere, readable at 320px.

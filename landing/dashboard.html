@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
+<!-- @last-edited: 2026-10-06 11:26 UTC+7. -->
 <!-- @title: dashboard — the control panel: devices, the account, pairing, and one command. -->
 <!-- @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: none. -->
@@ -48,6 +48,18 @@
 
     .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
 
+    /* WHY the console goes wide while prose stays narrow: device cards stacked
+       full-width in a 720px column on a 1280px screen waste half the monitor.
+       Past ~70ch prose reads worse, so only this app surface breaks out — text
+       pages keep their measure. */
+    .wrap.wide { max-width: 1120px; }
+    #devices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+    #devices .card { margin: 0; }
+    #devices .empty { grid-column: 1 / -1; }
+    @media (max-width: 860px) {
+      #devices { grid-template-columns: 1fr; }
+    }
+
     header {
       border-bottom: 1px solid var(--line);
       position: sticky;
@@ -67,7 +79,9 @@
        the site nav, and seven items never fit 390px without stacking the brand
        into two ragged lines. Scoped to header nav so the rail keeps its own. */
     @media (max-width: 640px) {
-      header nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      header nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
       header nav a { white-space: nowrap; }
       header nav .brand { margin-right: 6px; }
     }
@@ -134,6 +148,79 @@
     dl.facts dt { color: var(--muted); }
     dl.facts dd { margin: 0; min-width: 0; }
 
+    /* WHY the checklist: an empty device list plus three unexplained sections is
+       where a new reader stalls. The page already holds every signal, so progress
+       is computed from loaded data, never claimed. */
+    .checklist { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
+    .checklist li { display: flex; gap: 9px; padding: 5px 0; color: var(--muted); }
+    .checklist li.done { color: var(--text); }
+    .checklist .box {
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .checklist li.done .box { background: var(--accent); border-color: var(--accent); color: #04211d; }
+
+    /* WHY the box: the code arrived as a sentence inside a status line, which a
+       reader had to pick apart and retype. Big, spaced, one click to copy, and a
+       countdown from the expiry the server returns. */
+    .pairCodeBox { margin: 14px 0 0; padding: 14px; border: 1px dashed var(--line); border-radius: 10px; }
+    .pairCodeBox[hidden] { display: none; }
+    .pairCode {
+      display: block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 26px;
+      letter-spacing: .12em;
+      margin: 0 0 10px;
+      overflow-wrap: anywhere;
+    }
+    .pairCodeBox .row { margin-top: 0; align-items: center; }
+    #pairCountdown { margin: 0; }
+
+    /* WHY the summary is numbers: the card once repeated the device list in prose
+       ("2 device ter-pairing, 1 daring") while the list showed the same facts below.
+       Three blocks computed from the same payload answer at a glance. */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 0; padding: 0; }
+    .stats div { margin: 0; }
+    .stats dt { font-size: 12px; color: var(--muted); }
+    .stats dd { margin: 2px 0 0; font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+    @media (max-width: 420px) { .stats dd { font-size: 16px; } }
+
+    /* WHY the dot plus the chip: two stacked cards differed only in their third row,
+       so telling which device is down meant reading both. State, name and build on
+       the first line answer it before any row is read. */
+    .cardHead { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; }
+    .cardHead h3 { margin: 0; font-size: 15.5px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+    .dot.online { background: var(--accent); }
+    .dot.offline { background: var(--warn); }
+    .chip {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 1px 9px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: nowrap;
+    }
+
+    /* WHY the two verbs share a row: two tall, near-empty cards stacked left a full
+       screen of whitespace between input and outcome. They split on desktop and
+       stack on a phone, like every other pair on this site. */
+    .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .duo section { margin-bottom: 14px; }
+    @media (max-width: 640px) {
+      .duo { grid-template-columns: 1fr; }
+    }
+
     .empty {
       border: 1px dashed var(--line);
       border-radius: 14px;
@@ -153,6 +240,11 @@
       border-top: 1px solid var(--line);
     }
     ul.commands li:first-child { border-top: 0; }
+    /* WHY the ink is named per row: every history row once read in the same muted
+       ink, so one failed click sat invisible among completions. The word stays —
+       colour never carries meaning alone. */
+    .commands li .online { color: var(--accent); }
+    .commands li .offline { color: var(--warn); }
 
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -183,7 +275,7 @@
     .btn {
       display: inline-block;
       padding: 10px 18px;
-      border-radius: 10px;
+      border-radius: 980px;
       border: 1px solid var(--line);
       background: var(--surface);
       color: var(--text);
@@ -255,7 +347,7 @@
     </div>
   </header>
 
-  <main class="wrap">
+  <main class="wrap wide">
     <h1>Dashboard</h1>
     <p class="sub" id="whoami">Memeriksa sesi…</p>
 
@@ -277,6 +369,12 @@
           <h2>Ringkasan</h2>
           <div class="card">
             <p class="tone" id="installState" role="status" aria-live="polite">&nbsp;</p>
+            <ol class="checklist" id="checklist"></ol>
+            <dl class="stats">
+              <div><dt>Device</dt><dd id="statDevices">–</dd></div>
+              <div><dt>Daring</dt><dd id="statOnline">–</dd></div>
+              <div><dt>Perintah selesai</dt><dd id="statCommands">–</dd></div>
+            </dl>
             <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
           </div>
         </section>
@@ -287,6 +385,7 @@
           <div id="devices"></div>
         </section>
 
+      <div class="duo">
         <section id="pairing">
           <h2>Pairing manual</h2>
           <div class="card">
@@ -296,6 +395,13 @@
             <input id="pairName" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="opera" />
             <div class="row">
               <button class="btn" id="pairButton" type="button">Buat kode pairing</button>
+            </div>
+            <div class="pairCodeBox" id="pairCodeBox" hidden>
+              <code class="pairCode" id="pairCode"></code>
+              <div class="row">
+                <button class="btn ghost" type="button" id="pairCopy">Salin kode</button>
+                <p class="status" id="pairCountdown" role="status" aria-live="polite"></p>
+              </div>
             </div>
             <p class="status" id="pairStatus" role="status" aria-live="polite">&nbsp;</p>
           </div>
@@ -314,6 +420,7 @@
             <p class="status" id="runStatus" role="status" aria-live="polite">&nbsp;</p>
           </div>
         </section>
+      </div>
 
         <section id="akun">
           <h2>Akun ini</h2>
@@ -515,6 +622,64 @@
       $('accountFacts').innerHTML = facts.map(([term, value]) => `<dt>${esc(term)}</dt><dd>${value}</dd>`).join('');
     }
 
+    // WHY stored and re-rendered: the install marker can land after the device list
+    // has loaded, and step one must flip without refetching. The same payload feeds
+    // the stats, so one object carries all three.
+    let lastSeen = { installed: false, devices: [], total: 0 };
+
+    function renderChecklist() {
+      const { installed, devices, total } = lastSeen;
+      const steps = [
+        { done: installed, text: 'Pasang extension di browser ini' },
+        { done: devices.length > 0, text: 'Pair device' },
+        { done: total > 0, text: 'Jalankan perintah pertama' }
+      ];
+      if (steps.every((step) => step.done)) {
+        $('checklist').innerHTML = '<li class="done"><span class="box">✓</span><span>Semua langkah selesai. Konsol ini memantau device Anda.</span></li>';
+        return;
+      }
+      $('checklist').innerHTML = steps.map((step) =>
+        `<li class="${step.done ? 'done' : ''}"><span class="box">${step.done ? '✓' : ''}</span><span>${esc(step.text)}</span></li>`
+      ).join('');
+    }
+
+    let pairTimer = null;
+
+    function hidePairingCode() {
+      if (pairTimer) { clearInterval(pairTimer); pairTimer = null; }
+      $('pairCodeBox').hidden = true;
+    }
+
+    function showPairingCode(result) {
+      clearInterval(pairTimer);
+      $('pairCodeBox').hidden = false;
+      $('pairCode').textContent = result.code;
+      const expiry = new Date(result.expiresAt).getTime();
+      const tick = () => {
+        const left = expiry - Date.now();
+        if (!Number.isFinite(expiry) || left <= 0) {
+          $('pairCountdown').textContent = Number.isFinite(expiry) ? 'kedaluwarsa — buat kode baru' : 'berlaku 10 menit';
+          if (pairTimer) { clearInterval(pairTimer); pairTimer = null; }
+          return;
+        }
+        const minutes = Math.floor(left / 60000);
+        const seconds = Math.floor((left % 60000) / 1000);
+        $('pairCountdown').textContent = `berlaku ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      };
+      tick();
+      pairTimer = setInterval(tick, 1000);
+      $('pairCopy').onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(result.code);
+          $('pairStatus').textContent = 'Kode disalin. Tempel di popup extension.';
+          $('pairStatus').className = 'status ok';
+        } catch (error) {
+          $('pairStatus').textContent = `Salin manual: ${result.code}`;
+          $('pairStatus').className = 'status warn';
+        }
+      };
+    }
+
     async function load() {
       const session = await currentSession();
       if (!session) return;
@@ -536,6 +701,8 @@
           ? 'Opera Agent terpasang di browser ini.'
           : 'Opera Agent belum terpasang di browser ini. Pasang dulu di bagian Unduh, lalu pair dengan akun ini.';
         $('installState').className = installed ? 'tone good' : 'tone warn';
+        lastSeen.installed = installed;
+        renderChecklist();
       };
       reportInstallState();
       new MutationObserver(reportInstallState).observe(document.documentElement, {
@@ -554,6 +721,20 @@
         return;
       }
       renderAccountFacts(user, data.devices);
+      // WHY the numbers live here and not in a second fetch: they are sums over
+      // the same payload the list renders, so the summary can never disagree
+      // with it. The rail count rides along for the same reason.
+      const total = data.devices.length;
+      const up = data.devices.filter((device) => device.status === 'online').length;
+      const done = data.devices.reduce((n, device) => n + (device.completedCommands ?? 0), 0);
+      const all = data.devices.reduce((n, device) => n + (device.totalCommands ?? 0), 0);
+      $('statDevices').textContent = total;
+      $('statOnline').textContent = up;
+      $('statCommands').textContent = `${done} dari ${all}`;
+      lastSeen.devices = data.devices;
+      lastSeen.total = all;
+      renderChecklist();
+      document.querySelector('.rail a[href="#device"]').textContent = `Device (${total})`;
       if (!data.devices.length) {
         $('status').textContent = 'Belum ada device terikat ke akun ini.';
         $('status').className = 'status warn';
@@ -563,17 +744,24 @@
       const online = data.devices.filter((device) => device.status === 'online').length;
       $('status').textContent = `${data.devices.length} device ter-pairing, ${online} daring.`;
       $('status').className = online ? 'status ok' : 'status warn';
+      // WHY the state rides the first line: two stacked cards once differed only in
+      // a middle row, so the down device hid in plain sight. The build moves up
+      // beside the name for the same reason; the facts below keep the rest.
+      const commandInk = (status) => status === 'completed' ? 'online' : status === 'failed' ? 'offline' : '';
       $('devices').innerHTML = data.devices.map((device) => `
         <div class="card">
-          <h3>${esc(device.name)}</h3>
+          <div class="cardHead">
+            <span class="dot ${device.status === 'online' ? 'online' : 'offline'}" aria-hidden="true"></span>
+            <h3>${esc(device.name)}</h3>
+            <span class="chip">${esc(device.extensionVersion || '-')}</span>
+          </div>
           <dl class="facts">
             <dt>Status</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
             <dt>Terakhir terlihat</dt><dd>${esc(relativeTime(device.lastSeenAt))}</dd>
-            <dt>Extension</dt><dd>${esc(device.extensionVersion || '-')}</dd>
             <dt>Perintah</dt><dd>${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} selesai</dd>
             <dt>ID device</dt><dd><code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></dd>
           </dl>
-          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code><span>${esc(command.status)}</span></li>`).join('')}</ul>
+          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code><span class="${commandInk(command.status)}">${esc(command.status)}</span></li>`).join('')}</ul>
           <div class="row">
             <button class="btn ghost" type="button" data-copy="${esc(device.id)}">Salin ID</button>
             <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
@@ -661,11 +849,13 @@
       const name = ($('pairName').value.trim() || 'opera').slice(0, 64);
       $('pairStatus').textContent = 'Membuat kode…';
       $('pairStatus').className = 'status';
+      hidePairingCode();
       try {
         const response = await fetch(`${REST}/rpc/opera_create_pairing_code`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_device_name: name }) });
         const result = await response.json();
         if (!result?.ok) throw new Error(say(result?.error || response.status));
-        $('pairStatus').textContent = `Kode untuk ${result.deviceName}: ${result.code}. Berlaku 10 menit, tempel di popup extension.`;
+        showPairingCode(result);
+        $('pairStatus').textContent = `Kode untuk ${result.deviceName} siap di atas.`;
         $('pairStatus').className = 'status ok';
       } catch (error) {
         $('pairStatus').textContent = `Gagal membuat kode: ${error.message}.`;

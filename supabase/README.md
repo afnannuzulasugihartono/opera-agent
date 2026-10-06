@@ -1,7 +1,9 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
+@last-edited: 2026-10-06 11:55 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) rules - [supabase/AGENTS.md](AGENTS.md) - [api.md](../docs/api.md) - [runbook.md](../docs/runbook.md)
 
 # Supabase
+
+> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
 Simplify first, code first, comments second. State what is true now, never its history.
 

@@ -1,7 +1,9 @@
-@last-edited: 2026-10-06 08:52 UTC+7.
+@last-edited: 2026-10-06 11:55 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [HANDOFF.md](../docs/HANDOFF.md) - [extension/README.md](../extension/README.md)
 
 # Chrome Web Store
+
+> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
 The listing as the store will show it, and why each field is what it is.
 

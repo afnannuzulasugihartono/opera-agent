@@ -1,7 +1,9 @@
-@last-edited: 2026-10-06 10:30 UTC+7.
-@related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
+@last-edited: 2026-10-06 11:55 UTC+7.
+@related: [AGENTS.md](../AGENTS.md)
 
 # HANDOFF
+
+> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
 Simplify first, code first, comments second. State what is true now, never its history.
 

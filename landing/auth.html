@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
+<!-- @last-edited: 2026-10-06 11:26 UTC+7. -->
 <!-- @title: auth — sign in with a provider or a magic link, never a password of ours. -->
 <!-- @state: initiates project Auth login; device-to-account binding arrives with pairing. -->
 <!-- @dependencies: none. -->
@@ -66,7 +66,9 @@
        the brand into two ragged lines. A scrolling row keeps every item on one
        line and the brand intact. */
     @media (max-width: 640px) {
-      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
       nav a { white-space: nowrap; }
       nav .brand { margin-right: 6px; }
     }
@@ -89,7 +91,7 @@
       gap: 10px;
       text-align: center;
       padding: 11px 18px;
-      border-radius: 10px;
+      border-radius: 980px;
       border: 1px solid var(--line);
       background: var(--surface-soft);
       color: var(--text);
@@ -125,7 +127,7 @@
     button {
       width: 100%;
       padding: 11px 18px;
-      border-radius: 10px;
+      border-radius: 980px;
       border: 1px solid var(--accent);
       background: var(--accent);
       color: #04211d;

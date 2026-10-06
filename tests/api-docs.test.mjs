@@ -134,21 +134,21 @@ test('the security policy states the true carrier set and nothing else', async (
   // pinned a history book inside the policy, against the rule that documents
   // state what is true now. What is pinned instead: the true carriers, and the
   // absence of the false one.
-  const security = await readFile(new URL('../SECURITY.md', import.meta.url), 'utf8');
+  const security = await readFile(new URL('../docs/security.md', import.meta.url), 'utf8');
   assert.doesNotMatch(
     security,
     /Query tokens[\s>]+are confined to the read-only/,
-    'SECURITY.md must not keep the false sentence it once carried'
+    'docs/security.md must not keep the false sentence it once carried'
   );
   assert.match(
     security,
     /No gateway[\s>]+route reads the query string/,
-    'SECURITY.md must state that no gateway route reads the query string'
+    'docs/security.md must state that no gateway route reads the query string'
   );
   assert.match(
     security,
     /tests\/api-docs\.test\.mjs/,
-    'SECURITY.md must point at the test that enforces it'
+    'docs/security.md must point at the test that enforces it'
   );
 });
 

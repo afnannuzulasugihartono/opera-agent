@@ -181,7 +181,7 @@ test('the deploy invocation is written down where it will be found', () => {
   assert.match(handoff, /wrangler pages deploy|Cloudflare Pages/i, 'the host that serves the site is named');
   assert.match(handoff, /publish-crx\.yml|deploy-site\.yml/, 'and the workflow that publishes it');
   assert.match(handoff, /CLI cannot deploy/i, 'and says plainly that the Vercel CLI is not the way');
-  assert.match(read('AGENTS.md'), /wrangler pages deploy|deploy-site\.yml/, 'the invocation sits with the rules that bind a deploy');
+  assert.match(read('docs/runbook.md'), /wrangler pages deploy|deploy-site\.yml/, 'the invocation sits with the operator manual');
 });
 
 test('the edge is told not to hold a page, because Cache-Control alone does not', () => {

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:56 UTC+7.
+// @last-edited: 2026-10-06 11:26 UTC+7.
 // @title: landing-visual — the site looks finished on every screen.
 // @state: red first: gibberish hero copy, nested sections, overflowing nav and code pills.
 // @dependencies: test, assert, fs.
@@ -36,7 +36,7 @@ test('every section closes before the next one opens', () => {
     assert.equal(opens, closes, `${page} balances its sections`);
   }
   const index = read('index.html');
-  assert.match(index, /<\/section>\s*<section id="faq">/, 'the FAQ stands beside privacy, not inside it');
+  assert.match(index, /<\/section>\s*<section id="faq"[^>]*>/, 'the FAQ stands beside privacy, not inside it');
 });
 
 test('the nav survives a 390px phone without wrapping ragged', () => {
@@ -59,6 +59,33 @@ test('the marked nav item is visible, not metadata only', () => {
   for (const page of ['index.html', 'akun.html', 'dashboard.html', 'unduh.html', 'privasi.html', '404.html']) {
     assert.match(read(page), /a\[aria-current="page"\]/, `${page} styles the current item`);
   }
+});
+
+test('the phone nav hints that it scrolls instead of clipping mid-word', () => {
+  // WHY this lock: at 390px the seventh item rendered as a cut-off "I" with no
+  // affordance, so the last door looked broken rather than scrollable. A fade on
+  // the trailing edge says there is more row to the right.
+  for (const page of pages) {
+    const html = read(page);
+    assert.match(html, /mask-image:\s*linear-gradient\(to right/, `${page} fades the nav edge on a phone`);
+  }
+});
+
+test('the hero states each number once', () => {
+  // WHY this lock: the paragraph said "26 aksi yang diizinkan" and the next line
+  // said "26 primitive" — the same number for two nouns, so neither meant
+  // anything. Prose stays qualitative; numbers live in the stats row alone.
+  const hero = read('index.html').match(/<section class="hero">[\s\S]*?<\/section>/)[0];
+  assert.doesNotMatch(hero, /26 aksi/, 'no second 26 with another noun');
+  assert.match(hero, /tanpa eksekusi skrip sembarangan/, 'the prose keeps its promise');
+  assert.match(hero, /22 tool, 26 primitive/, 'and the count lives in one line');
+});
+
+test('no script renames a link that is not there', () => {
+  // WHY this lock: a script retitled the header Masuk link with a dot for signed-in
+  // readers, but the header nav holds no Masuk link — it guards on null and does
+  // nothing. Dead code that describes a behavior is a lie waiting to be believed.
+  assert.doesNotMatch(read('index.html'), /Akun ●/, 'the dead rename is gone');
 });
 
 test('the provider buttons show their marks, not bare text', () => {
@@ -90,4 +117,67 @@ test('the legal pages open with a map, not a wall', () => {
       assert.ok(html.includes(`href="#${id}"`), `${page} links to #${id} from its map`);
     }
   }
+});
+
+test('home after sign-in is a console door, not the sales pitch again', () => {
+  // WHY this lock: a signed-in reader landing on home got the same acquisition
+  // hero — install buttons for an installed product — because the page could not
+  // tell them apart without phoning home, and phoning home is forbidden on the
+  // page where the model key is typed. localStorage presence is enough to swap
+  // the actions; the name is not shown because it is not known without network,
+  // and an invented greeting would be the lie this file exists to prevent.
+  const html = read('index.html');
+  assert.match(html, /id="heroEyebrow"/, 'the eyebrow is addressable');
+  assert.match(html, /id="ctaOut"/, 'the acquisition actions have an element');
+  assert.match(html, /id="ctaIn" hidden/, 'the member actions start hidden');
+  assert.match(html, /id="quickTiles" hidden/, 'and so do the inward tiles');
+  assert.match(html, /href="\.\/dashboard\.html#device"/, 'a tile reaches devices');
+  assert.match(html, /href="\.\/dashboard\.html#pairing"/, 'a tile reaches pairing');
+  assert.match(html, /classList\.add\('signed-in'\)/, 'the swap marks the body');
+  assert.match(html, /localStorage\?\.\getItem\('opera-agent-access-token'\)/, 'decided by a stored session, never a request');
+  assert.doesNotMatch(html, /Halo,|Selamat datang kembali/, 'and no greeting invents an identity');
+});
+
+test('display type sets the page apart from its own dashboard', () => {
+  // WHY this lock: the storefront headline set at the same size as section
+  // titles reads as another settings page. One display scale, used once, says
+  // which page sells and which pages work.
+  const html = read('index.html');
+  assert.match(html, /clamp\(40px, 7vw, 72px\)/, 'the headline spans display sizes');
+  assert.match(html, /h2 \{[^}]*font-size: 28px/, 'sections step down to a clear second rank');
+  assert.match(html, /section \{[^}]*padding: 72px 0/, 'and breathe around each idea');
+});
+
+test('buttons are pills on every surface that has them', () => {
+  // WHY pills and not slightly rounder rectangles: a half-measure reads as an
+  // accident. One radius on every control is the standard; the number is
+  // deliberately larger than any button so the shape never depends on height.
+  for (const page of ['index.html', 'akun.html', 'dashboard.html', 'unduh.html', 'oauth/consent.html']) {
+    const html = read(page);
+    assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
+  }
+  const auth = read('auth.html');
+  assert.match(auth, /\.provider \{[^}]*border-radius: 980px/, 'provider entries match');
+  assert.match(auth, /button \{[^}]*border-radius: 980px/, 'and so does the submit');
+});
+
+test('the hero carries its footnote instead of hiding the catch', () => {
+  // WHY this lock: "Gratis dipakai" in the eyebrow without the model-cost
+  // sentence beside the button reads as free-everything. Apple prints the
+  // asterisk; this prints the one line, in 12.5px muted, where the click is.
+  const html = read('index.html');
+  assert.match(html, /class="footnote"/, 'the line has an element');
+  assert.match(html, /Model ditagih penyedia Anda/, 'stating the only money that moves');
+});
+
+test('motion is an enhancement, never the content', () => {
+  // WHY this lock: hiding sections until scroll means no-JS, slow-JS, and
+  // reduced-motion readers get a blank page that tests still call green. The
+  // gate class goes on <html> first, so every reveal rule requires it, and the
+  // media query deletes the motion for those who asked.
+  const html = read('index.html');
+  assert.match(html, /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
+  assert.match(html, /html\.js \.reveal/, 'hiding requires that announcement');
+  assert.match(html, /prefers-reduced-motion/, 'and the motion bows out when asked');
+  assert.match(html, /IntersectionObserver/, 'one observer per page, not per pixel');
 });

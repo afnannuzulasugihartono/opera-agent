@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:56 UTC+7. -->
+<!-- @last-edited: 2026-10-06 11:26 UTC+7. -->
 <!-- @title: privasi — the data boundary in full sentences. -->
 <!-- @state: sentence A plus queue-history disclosure, contact, and retention. -->
 <!-- @dependencies: none. -->
@@ -63,7 +63,9 @@
        the brand into two ragged lines. A scrolling row keeps every item on one
        line and the brand intact. */
     @media (max-width: 640px) {
-      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
       nav a { white-space: nowrap; }
       nav .brand { margin-right: 6px; }
     }

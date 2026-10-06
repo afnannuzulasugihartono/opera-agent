@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
+<!-- @last-edited: 2026-10-06 11:26 UTC+7. -->
 <!-- @title: unduh — one archive, one checksum, three steps. -->
 <!-- @state: the archive and the signed CRX come from the update endpoint's version-less paths, so a release needs no edit here; the installer is the one binary this site hosts, with its digest pinned. -->
 <!-- @dependencies: none. -->
@@ -64,7 +64,9 @@
        the brand into two ragged lines. A scrolling row keeps every item on one
        line and the brand intact. */
     @media (max-width: 640px) {
-      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
       nav a { white-space: nowrap; }
       nav .brand { margin-right: 6px; }
     }
@@ -78,7 +80,7 @@
     .btn {
       display: inline-block;
       padding: 12px 20px;
-      border-radius: 10px;
+      border-radius: 980px;
       border: 1px solid var(--accent);
       background: var(--accent);
       color: #04211d;

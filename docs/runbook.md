@@ -1,7 +1,9 @@
-@last-edited: 2026-10-04 18:25 UTC+7.
-@related: [AGENTS.md](../AGENTS.md) - [api.md](api.md) - [SECURITY.md](../SECURITY.md)
+@last-edited: 2026-10-06 11:55 UTC+7.
+@related: [AGENTS.md](../AGENTS.md) - [api.md](api.md) - [security.md](security.md)
 
 # Operator runbook
+
+> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
 Simplify first, code first, comments second. State what is true now, never its history.
 
@@ -29,7 +31,12 @@ UPDATE="$SUPABASE_URL/functions/v1/opera-agent-update"
 | Document | Covers |
 |---|---|
 | `[docs/api.md](api.md)` | Gateway request/response contract, error codes |
-| `[SECURITY.md](../SECURITY.md)` | Security principles, token transport |
+| `[security.md](security.md)` | Security principles, token transport |
+
+## Publish
+
+- The site publishes through `.github/workflows/deploy-site.yml`, dispatched by hand: `wrangler pages deploy landing --project-name=opera-agent --branch=main`.
+- A green push publishes nothing; the CRX publishes through `.github/workflows/publish-crx.yml`.
 
 ## Disabled devices â€” one rule for every incident
 

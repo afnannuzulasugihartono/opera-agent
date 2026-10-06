@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:41 UTC+7.
+// @last-edited: 2026-10-06 11:26 UTC+7.
 // @title: landing-execution — every page's own module, run against a stub Auth and a stub DOM.
 // @state: 12 locks, one harness; it replaces the three files that each built their own.
 // @dependencies: node:test, node:assert, node:fs, node:vm.
@@ -45,6 +45,18 @@ const AUTHORIZATION = {
 
 const CONSENT_ELEMENTS = ['status', 'factsCard', 'signedOutCard', 'signInButton', 'clientName', 'factClient', 'factRedirect', 'factScope', 'factUser', 'approveButton', 'denyButton'];
 
+// WHY the home elements start in their markup state and not in the stub's default:
+// the shared stub answers `hidden: true` so an untouched card reads as hidden. The
+// home page shows `ctaOut` in the markup, so a stub that started it hidden would
+// make "acquisition actions hide on a stored session" pass on an empty node —
+// a lock that cannot fail. The truth a run must change is recorded here instead.
+const HOME_ELEMENTS = {
+  heroEyebrow: { textContent: 'Daftar terbuka \u00b7 Gratis dipakai' },
+  ctaOut: { hidden: false },
+  ctaIn: { hidden: true },
+  quickTiles: { hidden: true }
+};
+
 /**
  * Run one landing page's module against stub network and stub DOM.
  *
@@ -76,6 +88,7 @@ async function run(page, shape = {}) {
   process.on('unhandledRejection', onRejection);
 
   const nodes = {};
+  nodes.__bodyClasses = new Set();
   const element = (id) => (nodes[id] ||= {
     id, textContent: '', innerHTML: '', className: '', value: '', hidden: true, href: '',
     disabled: false, dataset: {}, children: { length: 0 }, querySelectorAll: () => [],
@@ -85,6 +98,11 @@ async function run(page, shape = {}) {
   // than absent, which is what the markup's `hidden` attribute means to a person.
   const preCreated = new Set(['status', 'whoami', 'profileCard', 'avatar', 'profileName', 'profileMeta', 'profileProvider', 'factEmail', 'factProvider', 'factLastSignIn', 'factUserId', 'linkedProviders', 'deviceSummary', 'signOutButton', 'runButton', 'runStatus', 'pairButton', 'pairStatus', 'devices', 'sessionStatus', ...CONSENT_ELEMENTS]);
   for (const id of preCreated) element(id);
+
+  // The home page reads these only when a session is stored, so a run with no
+  // session would otherwise answer `undefined` for the very flags it must prove
+  // stayed put. Markup state is the baseline both cases are judged against.
+  for (const [id, state] of Object.entries(HOME_ELEMENTS)) Object.assign(element(id), state);
 
   const context = vm.createContext({
     console, Intl, Date, JSON, Math, Number, String, Array, Object, RegExp, Error,
@@ -109,9 +127,22 @@ async function run(page, shape = {}) {
       // landing after the module has read the document, so the harness has to offer the
       // observer the page constructs. observe() records nothing; the two cases set the
       // marker before load, and a second run sets it later to prove the page reacts.
+      body: {
+        // WHY a recording set: the home page marks the body signed-in from a stored
+        // session, and only an executed module proves the swap instead of its source.
+        classes: new Set(),
+        classList: {
+          add(c) { nodes.__bodyClasses.add(c); },
+          remove(c) { nodes.__bodyClasses.delete(c); },
+          contains(c) { return nodes.__bodyClasses.has(c); }
+        }
+      },
       getElementById: (id) => element(id),
       querySelectorAll: () => [],
-      querySelector: () => null,
+      // WHY a stub element and not null: the dashboard writes the device count
+      // into its rail link, so a null answer turns every device render into a
+      // TypeError. The stub records under its selector, like getElementById does.
+      querySelector: (sel) => element(`qs:${sel}`),
       addEventListener() {}
     },
     MutationObserver: class {
@@ -189,6 +220,12 @@ test('the dashboard renders a device card for a paired device', async () => {
   assert.match(nodes.devices.innerHTML, new RegExp(DEVICE.id), 'the device id is rendered');
   assert.match(nodes.devices.innerHTML, /tabs\.list/, 'the recent commands are rendered');
   assert.match(nodes.devices.innerHTML, /Cabut device ini/, 'the revoke control is rendered');
+  // WHY the summary is asserted from the same run: the stats must be sums over the
+  // payload the cards render, and only an executed module proves the arithmetic.
+  assert.equal(nodes.statDevices.textContent, 1, 'the device count is computed, not written');
+  assert.equal(nodes.statOnline.textContent, 1, 'and so is the online count');
+  assert.match(nodes.statCommands.textContent, /8970 dari 9000/, 'and the command tally');
+  assert.equal(nodes['qs:.rail a[href="#device"]'].textContent, 'Device (1)', 'the rail counts what it links to');
 });
 
 test('the dashboard names the extension when the browser does not have it', async () => {
@@ -232,6 +269,22 @@ test('the account page renders the identity facts and the device count', async (
   assert.equal(nodes.factUserId.textContent, 'u1', 'the account id is rendered');
   assert.match(nodes.factLastSignIn.textContent, /lalu|jam|hari|detik|menit/, 'the last sign-in reads as relative Indonesian time');
   assert.match(nodes.deviceSummary.textContent, /1 device ter-pairing/, 'the device count is rendered');
+});
+
+test('home swaps to member actions on a stored session, and stays put without one', async () => {
+  // WHY executed and not source-read: the swap touches four elements and a body
+  // class from one localStorage read. Only a run proves the hidden flags land
+  // where the stylesheet expects them.
+  const signed = await run('index.html');
+  assert.deepEqual(signed.rejected, [], `the module rejected: ${signed.rejected.join('; ')}`);
+  assert.ok(signed.context.document.body.classList.contains('signed-in'), 'the body is marked');
+  assert.equal(signed.nodes.ctaOut.hidden, true, 'acquisition actions hide');
+  assert.equal(signed.nodes.ctaIn.hidden, false, 'member actions show');
+  assert.equal(signed.nodes.quickTiles.hidden, false, 'and the inward tiles show');
+  assert.equal(signed.nodes.heroEyebrow.textContent, 'Sesi aktif di browser ini', 'the eyebrow says what is true');
+  const stranger = await run('index.html', { stored: {} });
+  assert.ok(!stranger.context.document.body.classList.contains('signed-in'), 'no session, no mark');
+  assert.equal(stranger.nodes.ctaIn.hidden, true, 'member actions stay hidden');
 });
 
 test('a pending permission request shows the real client name and the facts to judge', async () => {

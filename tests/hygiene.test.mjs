@@ -80,9 +80,11 @@ test('every comment block has a blank line before and after it', async () => {
 
 test('no document says Do X and another says Don\'t X', async () => {
   const root = new URL('..', import.meta.url);
-  const docs = (await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8'))
-    .split('\n').length;
-  assert.ok(docs > 100, 'sanity: the hub is the file that carries the commands');
+  // WHY the hub and not a size: the hub was shortened to three sections on purpose,
+  // so a line count would fire on the simplification it was written to survive. What
+  // has to hold is that the file still binds — an empty hub passes a line count.
+  const hub = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
+  assert.match(hub, /^## Always$/m, 'sanity: the hub is the file that carries the commands');
 
   // WHY this shape: a rule stated as "Do X" in one file and "Don't X" in another
   // is a contradiction an agent cannot resolve by reading harder, and the two
@@ -116,52 +118,45 @@ test('no document says Do X and another says Don\'t X', async () => {
   assert.deepEqual([...commands.keys()], []);
 });
 
-// The six sections an agent is guaranteed to read, in the order it reads them.
+// The three sections an agent is guaranteed to read, in the order it reads them.
 // Asserted rather than described: a rename that breaks the per-turn trigger would
 // leave the trigger pointing at a section that no longer exists, and that is
 // invisible in review.
-const REQUIRED_SECTIONS = ['Always', 'Goals', 'Mission', 'Priority order', 'Precedence', 'Strict rules'];
+const REQUIRED_SECTIONS = ['Always', 'Goals', 'Priority order'];
 
-test('the six sections an agent reads every turn exist, in order', async () => {
+test('the three sections an agent reads every turn exist, in order', async () => {
   const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
   const headings = [...body.matchAll(/^## (.+)$/gm)].map((m) => ({ name: m[1].trim(), at: m.index }));
   const found = REQUIRED_SECTIONS.map((name) => headings.find((h) => h.name === name));
   const missing = REQUIRED_SECTIONS.filter((name, i) => !found[i]);
   assert.deepEqual(missing, [], `AGENTS.md is missing: ${missing.join(', ')}`);
+  assert.deepEqual(headings.map((h) => h.name), REQUIRED_SECTIONS, 'nothing rides beside the three');
   for (let i = 1; i < found.length; i += 1) {
     assert.ok(found[i].at > found[i - 1].at, `${found[i].name} must come after ${found[i - 1].name}`);
   }
   for (const { name, at } of found) {
     const section = body.slice(at).split('\n## ')[0];
-    // Every section has to carry instructions, but not in one shape: Always is
-    // standing prose on purpose, so the check is that it says something, and only
-    // the rule section is required to hold explicit Do and Don't commands.
-    // An instruction line is a bullet or a numbered item: Priority order is a
-    // numbered list by design, and forcing it into bullets would be the lock
-    // rewriting the owner's chosen shape instead of checking it.
+    // Every section has to carry instructions: Always and Goals in bullets,
+    // Priority order in its numbered list. The count is the proof it instructs.
     const bullets = (section.match(/^(?:- |\d+\. )/gm) || []).length;
     assert.ok(bullets >= 3, `${name} carries ${bullets} instruction lines; it must actually instruct`);
-    if (name === 'Strict rules') {
-      assert.match(section, /^- Do\b/m, 'Strict rules must hold Do commands');
-      assert.match(section, /^- Don't\b/m, 'Strict rules must hold Don\'t commands');
-    }
   }
 });
 
 test('every section the rules point at exists', async () => {
   const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
   const headings = new Set([...body.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim()));
-  // The Always block and the Precedence order name sections by name. A renamed
-  // section leaves those names pointing at nothing, which reads as a typo.
-  const referenced = new Set(['Always', 'Goals', 'Mission', 'Priority order', 'Precedence', 'Strict rules', 'Naming', 'Model', 'Which document answers what']);
+  // The Always block names the sections it rides with. A renamed section leaves
+  // those names pointing at nothing, which reads as a typo.
+  const referenced = new Set(['Always', 'Goals', 'Priority order']);
   const dangling = [...referenced].filter((name) => !headings.has(name));
   assert.deepEqual(dangling, []);
 });
 
-// WHY this threshold and not a tighter one: measured across every .md there are 79
-// rule bullets and no pair above 0.60 token overlap, so the bar sits just under the
-// observed maximum with room to spare. A tighter bar would fire on two rules that
-// merely share vocabulary, which is how a lock trains people to ignore it.
+// WHY this threshold and not a tighter one: the bar sits just under the observed
+// overlap of rules that merely share vocabulary, which is how a lock trains
+// people to ignore it. Volume is not asserted: the rule set is intentionally
+// small now, and the pairwise check below is what inspects it.
 const DUPLICATE_OVERLAP = 0.6;
 
 test('no rule is stated twice in two forms', async () => {
@@ -183,7 +178,7 @@ test('no rule is stated twice in two forms', async () => {
       if (tokens.size >= 4) rules.push({ file, line: i + 1, tokens });
     });
   }
-  assert.ok(rules.length > 40, `expected the whole rule set, saw ${rules.length} bullets`);
+  assert.ok(rules.length > 0, 'the gate looked at a rule set');
   const duplicates = [];
   for (let i = 0; i < rules.length; i += 1) {
     for (let j = i + 1; j < rules.length; j += 1) {
@@ -199,10 +194,21 @@ test('no rule is stated twice in two forms', async () => {
 test('the logic gate actually inspected the rule set', async () => {
   const dir = fileURLToPath(new URL('..', import.meta.url));
   const body = fsSync.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
-  // A gate that silently inspected nothing passes for a clean tree. The count is the
-  // proof that it looked at the rules that bind every task.
-  const commands = (body.match(/^\s*[-*]?\s*Do(?:n't)?\s+/gm) || []).length;
-  assert.ok(commands >= 30, `AGENTS.md carries only ${commands} commands; the gates are reading too little`);
+  // WHY a word-boundary match and not `^Do`: the goals are one bullet each, so the
+  // command sits mid-sentence after the bold name ("Do the deploy work that is
+  // yours"). A line-anchored regex reads that file as carrying no commands at all,
+  // which is how a gate that inspects nothing comes to pass for a clean tree.
+  const commands = (body.match(/\bDo(?:n't)?\s+\S/g) || []).length;
+  assert.ok(commands >= 4, `AGENTS.md carries only ${commands} commands; the gates are reading too little`);
+  // WHY the location and not just the count: the simplification keeps the command
+  // dialect inside Goals only, so Always and Priority order stay plain binding
+  // prose. A Do creeping back elsewhere means the old manual is regrowing.
+  const goalsAt = body.indexOf('## Goals');
+  const priorityAt = body.indexOf('## Priority order');
+  const goals = body.slice(goalsAt, priorityAt);
+  for (const line of body.split('\n')) {
+    if (/\bDo(?:n't)?\s+\S/.test(line)) assert.ok(goals.includes(line), `command outside Goals: ${line.trim().slice(0, 60)}`);
+  }
 });
 
 test('every gitleaks allowlist path still names a file in the tree', async () => {

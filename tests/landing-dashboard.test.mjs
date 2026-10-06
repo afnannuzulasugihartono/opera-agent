@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:41 UTC+7.
+// @last-edited: 2026-10-06 11:26 UTC+7.
 // @title: landing-dashboard — the device page shows your devices, nothing else's.
 // @state: 19 locks, green; the page moved out of akun.html when the two split.
 // @dependencies: test, assert, fs.
@@ -61,7 +61,10 @@ test('the device card answers "is it reachable" before anything else', () => {
   // definition list puts it in the first row with a label of its own.
   assert.match(html, /<dt>Status<\/dt>/, 'status is a labelled row, not part of a sentence');
   assert.match(html, /<dt>Terakhir terlihat<\/dt>/, 'last seen is its own row');
-  assert.match(html, /<dt>Extension<\/dt>/, 'the extension version is its own row');
+  // WHY the chip and not a row: the build moved beside the name so two stacked
+  // cards differ on their first line. It is still rendered, still escaped, and
+  // still the tree's version — only its seat changed.
+  assert.match(html, /class="chip">\$\{esc\(device\.extensionVersion \|\| '-'\)\}/, 'the build rides the card head');
   assert.match(html, /<dt>Perintah<\/dt>/, 'the command tally is its own row');
   assert.match(html, /<dt>ID device<\/dt>/, 'the id is a row, so it is not lost in a sentence');
   // WHY the colour must not be the only signal: a card that is green or amber and
@@ -327,4 +330,106 @@ test('the migration binds devices without touching existing grants', () => {
   assert.match(sql, /for select to authenticated using/, 'owners read their own rows');
   assert.doesNotMatch(sql, /revoke/i, 'no existing grant is touched');
   assert.doesNotMatch(sql, /drop /i, 'nothing is dropped');
+});
+
+test('the summary answers in numbers, not in a sentence that repeats the list', () => {
+  // WHY this lock: the card said "2 device ter-pairing, 1 daring" in prose while
+  // the device list below showed the same two facts. A console answers how many
+  // of what, at a glance, and the totals are computed from the same payload the
+  // list renders — never a second source that can disagree with it.
+  const html = read('dashboard.html');
+  for (const id of ['statDevices', 'statOnline', 'statCommands']) {
+    assert.ok(html.includes(`id="${id}"`), `the summary carries #${id}`);
+  }
+  assert.match(html, /completedCommands \?\? 0/, 'the command tally sums what the cards show');
+  assert.match(html, /\.device.*\.status === 'online'/, 'the online count filters the same list');
+});
+
+test('a failed command looks failed, not like every other row', () => {
+  // WHY this lock: every history row rendered method plus status in the same muted
+  // ink, so the one failed click in the screenshot sat invisible among green
+  // intentions. Colour pairs with the word, never replaces it.
+  const html = read('dashboard.html');
+  // WHY one helper and not inline ternaries: the ink decision is one rule in one
+  // place, so the next status value changes it once instead of in every row.
+  assert.match(html, /commandInk = \(status\) => status === 'completed' \? 'online' : status === 'failed' \? 'offline' : ''/, 'completed reads green, failed reads amber, anything else stays muted');
+  assert.match(html, /class="\$\{commandInk\(command\.status\)\}"/, 'and every history row uses it');
+  assert.match(html, /\.commands li \.online/, 'the stylesheet defines the completed ink');
+  assert.match(html, /\.commands li \.offline/, 'and the failed ink');
+});
+
+test('a device card leads with its state, not its name alone', () => {
+  // WHY this lock: two stacked cards differed only in their third row, so telling
+  // which device is down meant reading both. A dot plus the name plus the build
+  // answers it from the first line.
+  const html = read('dashboard.html');
+  assert.match(html, /class="dot \$\{device\.status === 'online' \? 'online' : 'offline'\}"/, 'the name carries a state dot');
+  assert.match(html, /class="chip"/, 'and the build rides beside it, not rows down');
+});
+
+test('pairing and run sit side by side on a wide screen', () => {
+  // WHY this lock: two tall, near-empty cards stacked meant a full screen of
+  // whitespace between the input and the next thing. They are the two verbs of
+  // this page, so they share one row on desktop and stack on a phone.
+  const html = read('dashboard.html');
+  assert.match(html, /class="duo"/, 'one wrapper holds both verbs');
+  assert.match(html, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'and the wrapper splits in two');
+  // WHY the order and not a loose pattern: an earlier 640px media query for the
+  // rail precedes every rule below it, so any loose match proves nothing. The
+  // collapse must sit inside its own query, after the split.
+  const splitAt = html.indexOf('.duo {');
+  const queryAt = html.indexOf('@media (max-width: 640px)', splitAt);
+  const collapseAt = html.indexOf('.duo { grid-template-columns: 1fr; }', queryAt);
+  assert.ok(splitAt > -1 && queryAt > splitAt && collapseAt > queryAt, 'collapsing under it');
+});
+
+test('the rail counts what it links to', () => {
+  // WHY this lock: a table of contents that cannot say how many devices wait
+  // behind "Device" sends the reader scrolling to answer a number.
+  const html = read('dashboard.html');
+  assert.match(html, /#device/, 'the device anchor exists');
+  assert.match(html, /Device \(\$|Device \($|`Device \(/, 'the rail names the count');
+});
+
+test('a new account sees three steps, not a blank console', () => {
+  // WHY this lock: an empty device list plus three unexplained sections is where
+  // a new reader stalls. The page already holds every signal — the install
+  // marker, the device list, the command totals — so progress is computed, never
+  // claimed. A finished account sees one confirmation line instead.
+  const html = read('dashboard.html');
+  assert.match(html, /id="checklist"/, 'the steps have an element of their own');
+  assert.match(html, /renderChecklist/, 'and a function that derives them from loaded data');
+  assert.match(html, /Pasang extension di browser ini/, 'step one names the install');
+  assert.match(html, /Pair device/, 'step two names the pairing');
+  assert.match(html, /Jalankan perintah pertama/, 'step three names the first command');
+  assert.match(html, /Semua langkah selesai/, 'and completion reads as one line');
+});
+
+test('the pairing code is shown, not told', () => {
+  // WHY this lock: the code arrived as a sentence inside a status line —
+  // "Kode untuk opera: ABCD…" — which a reader had to pick apart and retype. A
+  // console shows the code big, copies it on click, and counts down the ten
+  // minutes from the expiry the server already returns.
+  const html = read('dashboard.html');
+  assert.match(html, /id="pairCodeBox"/, 'the code has a box, not a sentence');
+  assert.match(html, /id="pairCopy"/, 'with its own copy control');
+  assert.match(html, /id="pairCountdown"/, 'and a countdown');
+  assert.match(html, /result\.expiresAt/, 'counted from the server expiry, never a guess');
+  assert.match(html, /clearInterval\(pairTimer\)/, 'a new code retires the old countdown');
+});
+
+test('the console uses the screen, the prose keeps its measure', () => {
+  // WHY this lock: the console sat in a 720px column on a 1280px screen while
+  // device cards stacked full-width underneath each other. Widening everything
+  // would be the other mistake — prose wider than ~70ch reads worse, so only the
+  // app surface goes wide and the cards pair up beside each other.
+  const html = read('dashboard.html');
+  assert.match(html, /wrap wide/, 'the console breaks out of the prose column');
+  assert.match(html, /\.wrap\.wide \{[^}]*max-width: 1120px/, 'to eleven-twenty, not infinity');
+  assert.match(html, /#devices \{[^}]*grid-template-columns: 1fr 1fr/, 'two cards share a row on desktop');
+  const gridAt = html.indexOf('#devices {');
+  const queryAt = html.indexOf('@media (max-width: 860px)', gridAt);
+  const collapseAt = html.indexOf('#devices { grid-template-columns: 1fr; }', queryAt);
+  assert.ok(gridAt > -1 && queryAt > gridAt && collapseAt > queryAt, 'and one column on a phone');
+  assert.match(html, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'the verbs keep their shared row');
 });
