@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 05:41 UTC+7.
+// @last-edited: 2026-10-06 07:52 UTC+7.
 // @title: OperaAgentInstaller.cs — source for the Opera Agent installer window.
-// @state: detects Chromium browsers, writes ExtensionInstallForcelist as id;update_url, reports what it did.
+// @state: detects Chromium browsers, writes ExtensionInstallForcelist as numbered id;update_url values, reports what it did.
 // @dependencies: WinForms, Drawing. Build with scripts/build-installer.ps1.
 
 using System;
@@ -408,17 +408,34 @@ namespace OperaAgent
                    ?? Registry.CurrentUser.CreateSubKey(t.PolicyKey))
             using (var list = hive.CreateSubKey("ExtensionInstallForcelist"))
             {
-                var existing = list.GetValue("ExtensionInstallForcelist") as string[];
+                // WHY numbered values: Chrome reads a list policy as the values "1",
+                // "2", "3" inside the policy subkey. A value named after the policy,
+                // which is what this once wrote, is not in that sequence, so Chrome saw
+                // an empty list: the key existed, the entry was well formed, and nothing
+                // was installed. Every value name is cleared first, because the numbers
+                // are positional and a leftover "2" from an earlier run would install
+                // whatever entry the operator had removed since.
                 var next = new List<string>();
-                if (existing != null)
+                foreach (var name in list.GetValueNames())
                 {
-                    // Replace our own entry instead of appending a duplicate on
-                    // every run, so the list stays one line long.
-                    foreach (var e in existing.Where(e => e != null && !e.Contains(ExtensionId)))
-                        next.Add(e);
+                    var existing = list.GetValue(name) as string[];
+                    if (existing == null) continue;
+                    foreach (var e in existing)
+                    {
+                        // Replace our own entry instead of appending a duplicate on
+                        // every run, so the list stays one line long.
+                        if (e != null && !e.Contains(ExtensionId)) next.Add(e);
+                    }
                 }
                 next.Add(ForcelistEntry);
-                list.SetValue("ExtensionInstallForcelist", next.ToArray(), RegistryValueKind.MultiString);
+                // WHY one value per number and not one MultiString: a list policy is read
+                // positionally, and a REG_MULTI_SZ under a numbered name still yields a
+                // single entry, so a second run would replace the first rather than add.
+                foreach (var name in list.GetValueNames()) list.DeleteValue(name, false);
+                for (var i = 0; i < next.Count; i++)
+                {
+                    list.SetValue((i + 1).ToString(), next[i], RegistryValueKind.String);
+                }
             }
         }
 
@@ -430,8 +447,15 @@ namespace OperaAgent
                 using (var list = hive.OpenSubKey("ExtensionInstallForcelist"))
                 {
                     if (list == null) return false;
-                    var values = list.GetValue("ExtensionInstallForcelist") as string[];
-                    return values != null && values.Contains(ForcelistEntry);
+                    // WHY the numbered values and not a value named after the policy:
+                    // this has to agree with what WritePolicy wrote, or the check would
+                    // report success for a list Chrome never reads.
+                    foreach (var name in list.GetValueNames())
+                    {
+                        var value = list.GetValue(name) as string;
+                        if (value == ForcelistEntry) return true;
+                    }
+                    return false;
                 }
             }
         }

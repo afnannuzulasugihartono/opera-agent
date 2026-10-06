@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 05:41 UTC+7.
+// @last-edited: 2026-10-06 07:52 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -128,6 +128,15 @@ test('the installer writes the policy entry Chrome can parse', () => {
   // WHY no bare URL: the entry written to the list is the joined form, so a URL alone
   // anywhere in the write path means the bug is back.
   assert.doesNotMatch(src, /next\.Add\(FeedUrl\)/, 'the list never receives the URL without its id');
+  // WHY this second lock: Chrome reads a list policy as the numbered values 1, 2, 3
+  // inside the policy subkey. A value named after the policy is not in that sequence,
+  // so the key existed, the entry was well formed, chrome://policy showed the policy
+  // with an empty value, and nothing was installed. Two installers, two invisible
+  // failures, both of which looked like success from outside.
+  assert.match(src, /SetValue\(\(i \+ 1\)\.ToString\(\)/, 'entries are written as numbered values');
+  assert.match(src, /DeleteValue\(name, false\)/, 'and stale value names are cleared first');
+  assert.doesNotMatch(src, /GetValue\("ExtensionInstallForcelist"\)/,
+    'nothing reads a value named after the policy, which Chrome ignores');
 });
 
 test('the advertised checksum is the checksum of the shipped archive', () => {
