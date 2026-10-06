@@ -1,4 +1,4 @@
-@last-edited: 2026-10-06 12:35 UTC+7.
+@last-edited: 2026-10-06 10:30 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -186,12 +186,23 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   one commit, so `gitleaks detect --log-opts=-1` is what it sees; a full-history scan reports
   eight findings in files that were renamed or deleted long ago, which is why the allowlist
   names only paths the tree still has.
-- **The unit gate is red on `main`, and has been for several commits.** One failure, in
-  `[tests/hygiene.test.mjs](../tests/hygiene.test.mjs)`: `reactive-vm.js`,
-  `reactive-vm-collect.js` and `reactive-vm-host.js` export symbols nothing reaches, and
-  `opera-agent-vm`, which does consume them, is itself called from nowhere. It is a real
-  finding about a subsystem with no entry point, not a flake, and it is not this work's
-  business to settle: either wire `opera-agent-vm` into the runtime or delete the phase.
+- **The unit gate is green for the first time: 505/505.** The dead-export guard
+  was blind to `.ts`, so it flagged eight symbols production edge functions
+  import; it scans them now. The 18 truly dead symbols left with it — ten
+  declarations nothing calls are deleted, eight used only in-file are
+  module-private — zero behavior change, SHAs re-frozen. The red had been
+  blocking every site deploy, since the gate is hard.
+- **Cloudflare applied none of `_headers` until it was one path per block.**
+  Measured live twice: first no CSP anywhere (comma-joined lines match nothing),
+  then CSP on some pages but defaults on the extensionless addresses (blocks
+  named only the `.html` spelling). Both fixed, both locked, verified live on
+  all eight addresses: our CSP plus `no-referrer` everywhere.
+- **The site tells the truth now.** Auth answers `disable_signup:false`, so the
+  invite-only copy, the per-result pricing with no billing behind it, and the
+  privacy contact inventing a reply channel are all replaced with what is real.
+  Plus the company surface: one embedded mark in nine heads, identical
+  six-door footers, robots plus sitemap, share cards, theme color, dashboard out
+  of quirks mode, navs marking the page.
 - `publish-crx.yml` may sit `queued` for many minutes with a runner already assigned and no
   job started. Cancelling and re-dispatching clears it; the run itself is sound.
 
