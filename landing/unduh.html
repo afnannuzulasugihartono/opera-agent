@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:10 UTC+7. -->
+<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
 <!-- @title: unduh — one archive, one checksum, three steps. -->
 <!-- @state: the archive and the signed CRX come from the update endpoint's version-less paths, so a release needs no edit here; the installer is the one binary this site hosts, with its digest pinned. -->
 <!-- @dependencies: none. -->
@@ -58,6 +58,17 @@
     nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
     nav a:hover { color: var(--text); }
 
+    nav a[aria-current="page"] { color: var(--text); }
+
+    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
+       the brand into two ragged lines. A scrolling row keeps every item on one
+       line and the brand intact. */
+    @media (max-width: 640px) {
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      nav a { white-space: nowrap; }
+      nav .brand { margin-right: 6px; }
+    }
+
     main { padding: 56px 0; }
     h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
     h2 { margin: 30px 0 8px; font-size: 19px; }
@@ -89,7 +100,12 @@
       border: 1px solid var(--line);
       border-radius: 7px;
       padding: 2px 6px;
-      word-break: break-all;
+      /* WHY no break-all: it snapped tokens mid-word even when the line had room.
+         anywhere still wraps a 64-hex digest on a phone, but a short token like
+         chrome://policy only breaks when it truly overflows — and both halves
+         stay boxed. */
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
     }
 
     ol.steps { margin: 0; padding-left: 20px; }

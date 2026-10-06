@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:10 UTC+7. -->
+<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
 <!-- @title: dashboard — the control panel: devices, the account, pairing, and one command. -->
 <!-- @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: none. -->
@@ -62,6 +62,15 @@
     nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
     nav a:hover { color: var(--text); }
     nav a[aria-current="page"] { color: var(--text); }
+
+    /* WHY the header row scrolls on a phone: the rail already does, but this is
+       the site nav, and seven items never fit 390px without stacking the brand
+       into two ragged lines. Scoped to header nav so the rail keeps its own. */
+    @media (max-width: 640px) {
+      header nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      header nav a { white-space: nowrap; }
+      header nav .brand { margin-right: 6px; }
+    }
 
     main { padding: 44px 0 56px; }
     h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -.01em; }

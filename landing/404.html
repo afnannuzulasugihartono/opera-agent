@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:10 UTC+7. -->
+<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
 <!-- @title: 404 — a lost visitor gets the four ways out, not a host error. -->
 <!-- @state: served by the catch-all rewrite in vercel.json. -->
 <!-- @dependencies: none. -->
@@ -57,6 +57,17 @@
     nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
     nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
     nav a:hover { color: var(--text); }
+
+    nav a[aria-current="page"] { color: var(--text); }
+
+    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
+       the brand into two ragged lines. A scrolling row keeps every item on one
+       line and the brand intact. */
+    @media (max-width: 640px) {
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin; }
+      nav a { white-space: nowrap; }
+      nav .brand { margin-right: 6px; }
+    }
 
     main { padding: 64px 0 40px; }
     h1 { margin: 0 0 10px; font-size: 28px; letter-spacing: -.01em; }
