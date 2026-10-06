@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:24 UTC+7.
+// @last-edited: 2026-10-06 10:27 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
@@ -69,7 +69,7 @@ test('every path of the site is covered, so no rule can be reached by inheritanc
   // WHY this matters: the first live incident on this site was header precedence. An
   // unlisted path falls back to Cloudflare's default policy, which is not ours.
   const covered = new Set(rules.flatMap((rule) => rule.paths));
-  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/privasi.html', '/syarat.html', '/unduh.html', '/404.html', '/OperaAgent-Installer.exe', '/robots.txt', '/sitemap.xml']) {
+  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/unduh', '/unduh.html', '/404.html', '/OperaAgent-Installer.exe', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
   }
 });

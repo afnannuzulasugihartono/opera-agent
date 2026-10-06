@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-06 10:24 UTC+7.
+# @last-edited: 2026-10-06 10:27 UTC+7.
 # @title: _headers — the CSP and cache policy every path of the site answers with.
 # @state: restates vercel.json per path; tests/landing-hosting.test.mjs fails on drift.
 # @dependencies: none.
@@ -34,6 +34,14 @@
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
 
+/privasi
+# from vercel.json /(.*) — the extensionless address serves the same file
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
 /syarat.html
 # from vercel.json /(.*)
   Cache-Control: no-store
@@ -42,8 +50,24 @@
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
 
+/syarat
+# from vercel.json /(.*) — the extensionless address serves the same file
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
 /unduh.html
 # from vercel.json /(.*)
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
+/unduh
+# from vercel.json /(.*) — the extensionless address serves the same file
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
