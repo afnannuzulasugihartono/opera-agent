@@ -58,7 +58,7 @@
 
     nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
     nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; padding: 3px 0; }
     nav a:hover { color: var(--text); }
 
     nav a[aria-current="page"] { color: var(--text); }
@@ -160,7 +160,7 @@
     ol.steps li { margin: 0 0 10px; }
     ol.steps strong { color: var(--text); font-weight: 600; }
 
-    code, .mono {
+    code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 13px;
       /* WHY the wrap: the extension id and the MCP endpoint are unbreakable strings with no

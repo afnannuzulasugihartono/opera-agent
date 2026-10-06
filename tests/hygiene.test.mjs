@@ -85,6 +85,7 @@ test('no document says Do X and another says Don\'t X', async () => {
   // has to hold is that the file still binds — an empty hub passes a line count.
   const hub = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
   assert.match(hub, /^## Always$/m, 'sanity: the hub is the file that carries the commands');
+  assert.match(hub, /100 percent freedom/, 'the hub still binds the agent');
 
   // WHY this shape: a rule stated as "Do X" in one file and "Don't X" in another
   // is a contradiction an agent cannot resolve by reading harder, and the two

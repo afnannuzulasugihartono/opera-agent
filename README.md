@@ -5,7 +5,7 @@
 
 > Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
-Simplify first, code first, comments second. State what is true now, never its history.
+Simplify first, code second, comment third. State what is true now, never its history.
 
 Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](AGENTS.md) name.
 
@@ -39,11 +39,11 @@ A private, local-browser control bridge.
 
 | Directory | Role |
 |---|---|
-| [`extension/`](extension/README.md) | MV3 runtime — background worker, content scripts, popup, options |
-| [`lib/`](lib/AGENTS.md) | Shared pure modules the server and extension both read |
-| [`supabase/functions/`](supabase/README.md) | Deno edge: MCP server, bridge, gateway, runner, VM |
+| `extension/` | MV3 runtime — background worker, content scripts, popup, options |
+| `lib/` | Shared pure modules the server and extension both read |
+| `supabase/functions/` | Deno edge: MCP server, bridge, gateway, runner, VM |
 | `supabase/migrations/` | SQL in timestamp order, never rewritten |
-| [`tests/`](tests/README.md) | Fast suite is `npm test`; `cloud`, `postgres`, `deno` are live-only |
+| `tests/` | Fast suite is `npm test`; `cloud`, `postgres`, `deno` are live-only |
 
 ## Commands
 

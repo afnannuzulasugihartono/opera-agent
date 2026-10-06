@@ -16,7 +16,7 @@ Last edited: 2026-10-04 17:52.
 
 > Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
 
-Simplify first, code first, comments second. State what is true now, never its history.
+Simplify first, code second, comment third. State what is true now, never its history.
 
 Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../../../AGENTS.md) name.
 

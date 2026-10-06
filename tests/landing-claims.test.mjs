@@ -3,9 +3,9 @@
 // @state: 8 locks, all green; the audit that wrote them found the permission count unstated.
 // @dependencies: node:test, node:assert, node:fs.
 
-// landing/AGENTS.md requires the copy never to claim what the runtime cannot do.
-// The numbers drift silently otherwise: bump the manifest version or the tool count
-// and the site keeps advertising the old figure until a reader notices it.
+// The site's copy must never claim what the runtime cannot do. The numbers drift
+// silently otherwise: bump the manifest version or the tool count and the site keeps
+// advertising the old figure until a reader notices it.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,7 +18,8 @@ const site = ['landing/index.html', 'landing/auth.html', 'landing/akun.html', 'l
 
 const manifest = JSON.parse(read('extension/manifest.json'));
 const mcp = read('supabase/functions/opera-agent-mcp/index.ts');
-const extensionReadme = read('extension/README.md');
+const content = read('extension/content.js');
+const background = read('extension/background.js');
 
 test('no page states a version, because a stated version is a promise nothing keeps', () => {
   // WHY this inverted: every page used to name the build it was written for, so a release
@@ -70,9 +71,20 @@ test('the site does not claim a store listing that does not exist', () => {
 });
 
 test('the refusals the site advertises are the refusals the runtime enforces', () => {
-  for (const [phrase, source] of [['password', 'password'], ['kode sekali pakai', 'OTP'], ['pembayaran', 'card|CVV'], ['private', 'private|incognito']]) {
+  // WHY the runtime source and not a document: prose can promise a refusal the code
+  // never performs, and a README is not what blocks a field. Each phrase the site
+  // advertises now names the guard that carries it out -- the sensitive-field
+  // classifier in content.js and the private-tab gate in background.js -- so the copy
+  // and the behaviour cannot drift apart in review.
+  const guards = [
+    ['password', content, /type === 'password'/],
+    ['kode sekali pakai', content, /one-time-code/],
+    ['pembayaran', content, /cvv|cvc/],
+    ['private', background, /tab\.incognito/],
+  ];
+  for (const [phrase, source, guard] of guards) {
     assert.ok(site.includes(phrase), `the site must state the ${phrase} refusal`);
-    assert.match(extensionReadme, new RegExp(source, 'i'), `the runtime README must document ${phrase}`);
+    assert.match(source, guard, `the runtime must enforce the ${phrase} refusal`);
   }
 });
 
