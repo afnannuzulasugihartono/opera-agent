@@ -1,7 +1,7 @@
-<!-- @last-edited: 2026-10-06 05:12 UTC+7. -->
-<!-- @title: dashboard — the devices bound to your account and their recent work. -->
-<!-- @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
-<!-- @dependencies: none. -->
+# @last-edited: 2026-10-06 10:41 UTC+7.
+# @title: dashboard — the control panel: devices, the account, pairing, and one command.
+# @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here.
+# @dependencies: none.
 
 <!doctype html>
 <html lang="id">
@@ -9,10 +9,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard — Opera Agent</title>
-  <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, dan kendali atasnya." />
+  <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
   <style>
+
     /* WHY the same single-file shape as the rest of the site: no build step, and
        the only network the CSP allows is the project Auth plus its REST. */
+
     :root {
       --bg: #0b0d10;
       --surface: #14181d;
@@ -22,6 +24,7 @@
       --muted: #9aa4b2;
       --accent: #14b8a6;
       --warn: #f59e0b;
+      --danger: #ef4444;
     }
 
     * { box-sizing: border-box; }
@@ -52,9 +55,43 @@
     nav a:hover { color: var(--text); }
     nav a[aria-current="page"] { color: var(--text); }
 
-    main { padding: 56px 0; }
-    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
-    .sub { color: var(--muted); margin: 0 0 24px; }
+    main { padding: 44px 0 56px; }
+    h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -.01em; }
+    .sub { color: var(--muted); margin: 0 0 22px; }
+
+    /* WHY the rail: a page with four unrelated jobs and no divider reads as a form
+
+       someone forgot to finish. The rail is the page's table of contents, so a
+       reader can jump to the one thing they came for and see what else exists.
+       It collapses to a horizontal strip on a phone, because a vertical rail at
+
+       320px would push the first control off the screen. */
+
+    .layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; align-items: start; }
+    .rail { position: sticky; top: 78px; display: grid; gap: 2px; }
+    .rail a {
+      display: block;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 2px solid transparent;
+    }
+    .rail a:hover { color: var(--text); background: var(--surface); }
+    .rail a[aria-current="true"] { color: var(--text); border-left-color: var(--accent); background: var(--surface); }
+    .rail .railNote { color: var(--muted); font-size: 12px; padding: 10px 10px 0; border-top: 1px solid var(--line); margin-top: 8px; }
+
+    @media (max-width: 640px) {
+      .layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+      .rail { position: static; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+      .rail a { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+      .rail a[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
+      .rail .railNote { display: none; }
+    }
+
+    section { scroll-margin-top: 78px; margin: 0 0 26px; }
+    section h2 { margin: 0 0 4px; font-size: 17px; letter-spacing: -.005em; }
 
     .card {
       background: var(--surface);
@@ -63,14 +100,43 @@
       padding: 20px;
       margin: 0 0 14px;
     }
+    .card > h2:first-child, .card > h3:first-child { margin-top: 0; }
+    .card h3 { margin: 0 0 4px; font-size: 15.5px; }
 
-    .card h2 { margin: 0 0 4px; font-size: 17px; }
     .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
     .online { color: var(--accent); }
     .offline { color: var(--warn); }
 
-    ul.commands { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
-    ul.commands li { margin: 0 0 4px; }
+    /* WHY a grid of facts rather than a sentence: an operator comparing two devices
+
+       reads columns, not prose. The definition list keeps label and value paired so
+
+       a narrow screen does not turn "extension 1.6.15" into an orphaned number. */
+
+    dl.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 0 14px; font-size: 13.5px; }
+    dl.facts dt { color: var(--muted); }
+    dl.facts dd { margin: 0; min-width: 0; }
+
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 22px 20px;
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 14px;
+    }
+    .empty strong { color: var(--text); font-weight: 600; }
+
+    ul.commands { margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 13px; }
+    ul.commands li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+    }
+    ul.commands li:first-child { border-top: 0; }
+
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12.5px;
@@ -78,17 +144,22 @@
       border: 1px solid var(--line);
       border-radius: 6px;
       padding: 1px 5px;
+
       /* WHY the wrap: a device id, an account id and a localhost callback are the
+
          three unbreakable strings on these pages, and a token with no spaces scrolls a
+
          phone sideways. This is the page an operator opens when something is wrong. */
+
       overflow-wrap: anywhere;
       word-break: break-word;
     }
 
-    .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
     /* WHY the id reads as code and is clickable: support asks for it first, and an
        operator should never retype a UUID to report which browser is misbehaving. */
+
     .deviceId { cursor: pointer; }
     .deviceId:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -102,11 +173,49 @@
       text-decoration: none;
       font-size: 14px;
       cursor: pointer;
+      font-family: inherit;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.ghost { background: transparent; }
+
+    /* WHY one danger colour, used once: the only irreversible action on this page is
+       revoking a device, and it is the one a reader must not hit by muscle memory. */
+
+    .btn.danger { border-color: var(--danger); color: var(--danger); }
+    .btn.danger:hover { background: var(--danger); color: #0b0d10; }
+
+    label { display: block; margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+    input[type="text"] {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
     }
 
     .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; color: var(--muted); }
     .status.ok { color: var(--accent); }
     .status.warn { color: var(--warn); }
+    .status.bad { color: var(--danger); }
+
+    /* WHY a tone-strip rather than a badge: a badge draws the eye with colour, and the
+
+       one thing a reader opens this page for is whether a device is reachable. The
+       dot carries the state and the words beside it carry the meaning, so the page
+
+       still works when colour does not. */
+
+    .tone { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; }
+    .tone::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+    .tone.good { color: var(--accent); }
+    .tone.good::before { background: var(--accent); }
+    .tone.warn { color: var(--warn); }
+    .tone.warn::before { background: var(--warn); }
 
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
@@ -132,34 +241,75 @@
   <main class="wrap">
     <h1>Dashboard</h1>
     <p class="sub" id="whoami">Memeriksa sesi…</p>
-    <div id="devices"></div>
-    <p class="status" id="installState" role="status" aria-live="polite">&nbsp;</p>
-    <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
-    <div class="card" id="runCard">
-      <h2>Jalankan satu aksi</h2>
-      <p class="meta">Aksi dikirim ke device Anda sendiri. Device menolak halaman yang menampilkan password, kode sekali pakai, atau pembayaran. Isi halaman tidak pernah tampil di sini.</p>
-      <label for="runMethod" style="display:block;margin:0 0 6px;font-size:13px;color:var(--muted);">Primitive</label>
-      <input id="runMethod" type="text" autocomplete="off" spellcheck="false" maxlength="64" value="tabs.list" style="width:100%;margin:0 0 14px;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font:inherit;font-size:14px;" />
-      <div class="row" style="margin-top:0;">
-        <button class="btn" id="runButton" type="button">Jalankan</button>
+
+    <div class="layout">
+
+      <!-- WHY the rail is nav and not a list of links in the footer: this page has four jobs and the reader arrives knowing only which one they want. A rail puts the other three in view without making them read the page to find out they exist. -->
+
+      <nav class="rail" aria-label="Bagian dashboard">
+        <a href="#ringkasan" aria-current="true">Ringkasan</a>
+        <a href="#device">Device</a>
+        <a href="#pairing">Pairing manual</a>
+        <a href="#aksi">Jalankan aksi</a>
+        <a href="#akun">Akun ini</a>
+        <p class="railNote">Isi halaman tidak pernah keluar dari relay. Yang tampil di sini hanya method dan status.</p>
+      </nav>
+
+      <div>
+        <section id="ringkasan">
+          <h2>Ringkasan</h2>
+          <div class="card">
+            <p class="tone" id="installState" role="status" aria-live="polite">&nbsp;</p>
+            <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+          </div>
+        </section>
+
+        <section id="device">
+          <h2>Device</h2>
+          <p class="meta">Device yang ter-pairing ke akun ini, beserta sepuluh perintah terakhirnya.</p>
+          <div id="devices"></div>
+        </section>
+
+        <section id="pairing">
+          <h2>Pairing manual</h2>
+          <div class="card">
+            <p class="meta">Kode sekali pakai, berlaku 10 menit, terikat ke akun ini. Tempel di popup extension
+              pada device yang ingin kamu hubungkan.</p>
+            <label for="pairName">Nama device</label>
+            <input id="pairName" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="opera" />
+            <div class="row">
+              <button class="btn" id="pairButton" type="button">Buat kode pairing</button>
+            </div>
+            <p class="status" id="pairStatus" role="status" aria-live="polite">&nbsp;</p>
+          </div>
+        </section>
+
+        <section id="aksi">
+          <h2>Jalankan aksi</h2>
+          <div class="card">
+            <p class="meta">Perintah dikirim ke device milikmu sendiri. Device menolak halaman yang
+              menampilkan password, kode sekali pakai, atau pembayaran.</p>
+            <label for="runMethod">Primitive</label>
+            <input id="runMethod" type="text" autocomplete="off" spellcheck="false" maxlength="64" value="tabs.list" />
+            <div class="row">
+              <button class="btn" id="runButton" type="button">Jalankan</button>
+            </div>
+            <p class="status" id="runStatus" role="status" aria-live="polite">&nbsp;</p>
+          </div>
+        </section>
+
+        <section id="akun">
+          <h2>Akun ini</h2>
+          <div class="card">
+            <dl class="facts" id="accountFacts"></dl>
+            <div class="row">
+              <a class="btn ghost" href="./akun.html">Kelola akun</a>
+              <a class="btn ghost" href="./unduh.html">Pasang di device lain</a>
+            </div>
+          </div>
+        </section>
       </div>
-      <p class="status" id="runStatus" role="status" aria-live="polite">&nbsp;</p>
     </div>
-    <div class="card" id="pairCard">
-      <h2>Pairing device baru</h2>
-      <p class="meta">Kode sekali pakai, kedaluwarsa 10 menit, terikat ke akun ini.</p>
-      <label for="pairName" style="display:block;margin:0 0 6px;font-size:13px;color:var(--muted);">Nama device</label>
-      <input id="pairName" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="opera" style="width:100%;margin:0 0 14px;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font:inherit;font-size:14px;" />
-      <div class="row" style="margin-top:0;">
-        <button class="btn" id="pairButton" type="button">Buat kode pairing</button>
-      </div>
-      <p class="status" id="pairStatus" role="status" aria-live="polite">&nbsp;</p>
-    </div>
-    <div class="row">
-      <a class="btn" href="./index.html#install">Pasang di device lain</a>
-      <a class="btn" href="./akun.html">Akun saya</a>
-    </div>
-    <p class="status">Hanya method dan status perintah yang tampil di sini; isi halaman tidak pernah keluar dari relay.</p>
   </main>
 
   <footer>
@@ -249,6 +399,27 @@
       }
     })();
 
+    // WHY the rail follows the scroll: a reader who jumped to "Pairing manual" and
+    // then scrolled to the device list should not still be told they are on pairing.
+    // IntersectionObserver rather than a scroll handler because this fires once per
+    // section change instead of once per pixel.
+    function markRail() {
+      const links = [...document.querySelectorAll('.rail a')];
+      const seen = new Map();
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) seen.set(entry.target.id, entry.intersectionRatio);
+        let best = null;
+        let bestRatio = 0;
+        for (const [id, ratio] of seen) if (ratio > bestRatio) { best = id; bestRatio = ratio; }
+        if (!best) return;
+        for (const link of links) {
+          if (link.getAttribute('href') === `#${best}`) link.setAttribute('aria-current', 'true');
+          else link.removeAttribute('aria-current');
+        }
+      }, { rootMargin: '-70px 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] });
+      for (const section of document.querySelectorAll('main section[id]')) observer.observe(section);
+    }
+
     // WHY the session is read here and not shown: this page is about devices, and
     // the account itself lives on its own page. Only the address is echoed, so the
     // reader can tell which account's devices they are looking at.
@@ -311,6 +482,22 @@
     // refusal is the one message they will actually meet.
     const say = (raw) => TRANSLATED[String(raw)] || String(raw);
 
+    // WHY the account facts live here and not only on akun.html: this page is where a
+    // reader lands to answer "is this the right account", and the address is the one
+    // fact that answers it. Nothing here is editable, so it cannot drift from the
+    // account page, which owns every write.
+    function renderAccountFacts(user, devices) {
+      const online = devices.filter((device) => device.status === 'online').length;
+      const facts = [
+        ['Alamat', `<code>${esc(user.email)}</code>`],
+        ['Provider', esc((user.app_metadata?.providers || [user.app_metadata?.provider || 'email']).join(', '))],
+        ['ID akun', `<code>${esc(user.id)}</code>`],
+        ['Device daring', `${online} dari ${devices.length}`],
+        ['Bergabung', user.created_at ? esc(relativeTime(user.created_at)) : '—']
+      ];
+      $('accountFacts').innerHTML = facts.map(([term, value]) => `<dt>${esc(term)}</dt><dd>${value}</dd>`).join('');
+    }
+
     async function load() {
       const session = await currentSession();
       if (!session) return;
@@ -330,8 +517,8 @@
         const installed = document.documentElement.dataset.operaAgent === 'installed';
         $('installState').textContent = installed
           ? 'Opera Agent terpasang di browser ini.'
-          : 'Opera Agent belum terpasang di browser ini. Pasang dulu, lalu pair dengan akun ini.';
-        $('installState').className = installed ? 'status ok' : 'status warn';
+          : 'Opera Agent belum terpasang di browser ini. Pasang dulu di bagian Unduh, lalu pair dengan akun ini.';
+        $('installState').className = installed ? 'tone good' : 'tone warn';
       };
       reportInstallState();
       new MutationObserver(reportInstallState).observe(document.documentElement, {
@@ -349,21 +536,30 @@
         $('status').className = 'status warn';
         return;
       }
+      renderAccountFacts(user, data.devices);
       if (!data.devices.length) {
-        $('status').textContent = 'Belum ada device terikat ke akun ini. Ikuti Instalasi untuk pairing pertama.';
+        $('status').textContent = 'Belum ada device terikat ke akun ini.';
+        $('status').className = 'status warn';
+        $('devices').innerHTML = '<div class="empty"><strong>Belum ada device.</strong> Pasang Opera Agent di browser ini, lalu buat kode pairing di bagian Pairing manual.</div>';
         return;
       }
-      $('status').textContent = `${data.devices.length} device ter-pairing.`;
-      $('status').className = 'status ok';
+      const online = data.devices.filter((device) => device.status === 'online').length;
+      $('status').textContent = `${data.devices.length} device ter-pairing, ${online} daring.`;
+      $('status').className = online ? 'status ok' : 'status warn';
       $('devices').innerHTML = data.devices.map((device) => `
         <div class="card">
-          <h2>${esc(device.name)}</h2>
-          <p class="meta"><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span> &middot; terakhir terlihat ${esc(relativeTime(device.lastSeenAt))} &middot; extension ${esc(device.extensionVersion || '-')} &middot; ${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} perintah selesai</p>
-          <p class="meta">ID device <code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></p>
-          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code> — ${esc(command.status)}</li>`).join('')}</ul>
+          <h3>${esc(device.name)}</h3>
+          <dl class="facts">
+            <dt>Status</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
+            <dt>Terakhir terlihat</dt><dd>${esc(relativeTime(device.lastSeenAt))}</dd>
+            <dt>Extension</dt><dd>${esc(device.extensionVersion || '-')}</dd>
+            <dt>Perintah</dt><dd>${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} selesai</dd>
+            <dt>ID device</dt><dd><code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></dd>
+          </dl>
+          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code><span>${esc(command.status)}</span></li>`).join('')}</ul>
           <div class="row">
-            <button class="btn" type="button" data-copy="${esc(device.id)}">Salin ID</button>
-            <button class="btn" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
+            <button class="btn ghost" type="button" data-copy="${esc(device.id)}">Salin ID</button>
+            <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
           </div>
         </div>`).join('');
       // WHY one delegated listener: the device list is re-rendered on every load, so
@@ -421,7 +617,7 @@
         if (!result?.ok) {
           const code = result?.error?.code || result?.status;
           if (code === 'AWAIT_TIMEOUT' || code === 'queued') {
-            $('runStatus').textContent = `${method} masuk antrean; device mengambilnya dalam hitungan detik. Riwayat di bawah akan memperbarui sendiri.`;
+            $('runStatus').textContent = `${method} masuk antrean; device mengambilnya dalam hitungan detik. Riwayat di Device akan memperbarui sendiri.`;
             $('runStatus').className = 'status ok';
             setTimeout(load, 4000);
             return;
@@ -460,6 +656,7 @@
       }
     });
 
+    markRail();
     load();
   </script>
 </body>

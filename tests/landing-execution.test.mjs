@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 05:12 UTC+7.
+// @last-edited: 2026-10-06 10:41 UTC+7.
 // @title: landing-execution — every page's own module, run against a stub Auth and a stub DOM.
 // @state: 12 locks, one harness; it replaces the three files that each built their own.
 // @dependencies: node:test, node:assert, node:fs, node:vm.
@@ -116,6 +116,14 @@ async function run(page, shape = {}) {
     },
     MutationObserver: class {
       constructor(callback) { this.callback = callback; context.observers.push(this); }
+      observe() {}
+      disconnect() {}
+    },
+    // WHY the rail observer is stubbed too: the dashboard marks which section the
+    // reader is on, and the harness runs the same module. A missing IntersectionObserver
+    // makes every dashboard case fail on a feature no reader would ever notice.
+    IntersectionObserver: class {
+      constructor() { this.cb = () => {}; }
       observe() {}
       disconnect() {}
     },

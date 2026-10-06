@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 09:18 UTC+7.
+// @last-edited: 2026-10-06 09:31 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -119,11 +119,24 @@ test('the download page names every browser it supports and why one is not', () 
   // WHY every Chromium row must agree: a page that says "berjalan" for one and
   // "ditolak" for the next is a page nobody can act on.
   // WHY index 1 for the name: matchAll yields the whole match first, so the
-  // capture groups start at 1.
-  const rows = [...html.matchAll(/<tr><td>(\w+)<\/td><td class="(\w+)">([^<]+)<\/td><td class="(\w+)">([^<]+)<\/td><\/tr>/g)];
+  // capture groups start at 1. The pattern allows a fourth cell because the table
+  // answers one question per install path, and a column added later must not
+  // silently stop being checked.
+  const rows = [...html.matchAll(/<tr><td>(\w+)<\/td>((?:<td class="\w+">[^<]*<\/td>){2,4})<\/tr>/g)];
   assert.ok(rows.length >= 6, `the table has a row per browser, found ${rows.length}`);
-  const manual = rows.filter(([, name]) => name !== 'Firefox').map((r) => r[5]);
-  assert.ok(manual.every((v) => v.trim() === 'berjalan'), 'every Chromium browser loads the archive');
+  const cells = rows.map(([, name, body]) => [
+    name,
+    ...[...body.matchAll(/<td class="(\w+)">([^<]*)<\/td>/g)].map((m) => [m[1], m[2].trim()])
+  ]);
+  for (const [name, ...answers] of cells) {
+    assert.ok(answers.length >= 3, `${name} answers every path the table names`);
+  }
+  const archive = cells.map(([name, ...answers]) => [name, answers[answers.length - 1]]);
+  const chromium = archive.filter(([name]) => name !== 'Firefox');
+  assert.ok(chromium.every(([, [, verdict]]) => verdict === 'berjalan'),
+    'every Chromium browser loads the archive');
+  assert.equal(archive.find(([name]) => name === 'Firefox')?.[1][1], 'tidak',
+    'Firefox cannot load it, and the table says so rather than omitting it');
 });
 
 test('the install section links the download page instead of dead-ending', () => {

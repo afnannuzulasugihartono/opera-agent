@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 09:18 UTC+7. -->
+<!-- @last-edited: 2026-10-06 09:31 UTC+7. -->
 <!-- @title: unduh — one archive, one checksum, three steps. -->
 <!-- @state: archive and signed CRX at version 1.6.15, both with their sha256 pinned here; the table says which browser accepts which path. -->
 <!-- @dependencies: none. -->
@@ -165,15 +165,15 @@
     izin itu yang membuat produk ini bekerja.</p>
     <table class="support">
       <thead>
-        <tr><th>Browser</th><th>Pemasang .exe</th><th>Arsip manual</th></tr>
+        <tr><th>Browser</th><th>Pemasang .exe</th><th>Berkas .crx</th><th>Arsip .zip</th></tr>
       </thead>
       <tbody>
-        <tr><td>Chrome</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Edge</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Brave</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Opera</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Vivaldi</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Firefox</td><td class="no">tidak</td><td class="no">tidak</td></tr>
+        <tr><td>Chrome</td><td class="no">ditolak</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Edge</td><td class="no">ditolak</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Brave</td><td class="no">ditolak</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Opera</td><td class="no">ditolak</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Vivaldi</td><td class="no">ditolak</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
+        <tr><td>Firefox</td><td class="no">tidak</td><td class="no">tidak</td><td class="no">tidak</td></tr>
       </tbody>
     </table>
     <p class="meta">Chrome, Edge, dan Brave menolak pemasangan otomatis dari luar Chrome
@@ -183,6 +183,17 @@
     <h2>Verifikasi berkas</h2>
     <p>Bandingkan sidik jari di atas dengan berkas Anda. Di PowerShell:
     <code>Get-FileHash .\OperaAgent-Installer.exe -Algorithm SHA256</code></p>
+
+    <h2>Pasang dari arsip CRX bertanda tangan</h2>
+    <p>Berkas <code>.crx</code> sudah ditandatangani, jadi id extension-nya tetap sama
+    di setiap komputer dan pembaruan berikutnya bisa dipasangkan browser sendiri.</p>
+    <p><a class="btn" href="./opera-agent-1.6.15.crx" download>Unduh opera-agent-1.6.15.crx</a></p>
+    <p class="hash">sha256 c078b2ddf855b3c5168bc3e41e3cd1bbfac91ce94d5e4cb55e2a19bc59f6ba23</p>
+    <p class="meta">Cara ini hanya untuk browser yang mengizinkan pemasangan berkas
+    <code>.crx</code>. Chrome, Edge, dan Brave menolaknya di komputer yang tidak
+    terdaftar sebagai komputer perusahaan — pakai arsip di bawah. Memuat berkas
+    <code>.crx</code> langsung ke halaman extension akan ditolak dengan
+    <em>Extension not listed in the Web Store</em>; itu bukan kerusakan berkas.</p>
 
     <h2>Lima langkah memasang dari arsip</h2>
     <ol class="steps">

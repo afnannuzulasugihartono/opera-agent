@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 05:12 UTC+7.
+// @last-edited: 2026-10-06 10:41 UTC+7.
 // @title: landing-dashboard — the device page shows your devices, nothing else's.
 // @state: 19 locks, green; the page moved out of akun.html when the two split.
 // @dependencies: test, assert, fs.
@@ -53,6 +53,40 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
   assert.doesNotMatch(html, /result\s*\.\s*(result|params|value|content|text)\b/i, 'the run payload is never rendered');
 });
 
+test('the device card answers "is it reachable" before anything else', () => {
+  const html = read('dashboard.html');
+  // WHY this lock: an operator opening this page at 2am is asking one question about
+  // each device — is it online — and the old card answered it in a sentence of dot
+  // separated fragments where the status was the first thing you had to find. A
+  // definition list puts it in the first row with a label of its own.
+  assert.match(html, /<dt>Status<\/dt>/, 'status is a labelled row, not part of a sentence');
+  assert.match(html, /<dt>Terakhir terlihat<\/dt>/, 'last seen is its own row');
+  assert.match(html, /<dt>Extension<\/dt>/, 'the extension version is its own row');
+  assert.match(html, /<dt>Perintah<\/dt>/, 'the command tally is its own row');
+  assert.match(html, /<dt>ID device<\/dt>/, 'the id is a row, so it is not lost in a sentence');
+  // WHY the colour must not be the only signal: a card that is green or amber and
+  // otherwise silent is unreadable to a reader who cannot distinguish the two.
+  // WHY the class assignment and not a literal: the install state sets its class from
+  // the marker, so a lock on the markup would pass while the rendered class was wrong.
+  assert.match(html, /\$\('installState'\)\.className = installed \? 'tone good' : 'tone warn'/,
+    'the install state pairs a colour with words');
+  assert.doesNotMatch(html, /<span class="online">\$\{esc\(device\.status\)\}<\/span>\s*&middot;/,
+    'the device status is not a fragment of a longer line');
+});
+
+test('the rail marks the section being read', () => {
+  const html = read('dashboard.html');
+  // WHY this lock: the rail is a table of contents, and a table of contents that
+  // always says "Ringkasan" is decoration. A reader who jumps to "Device" and
+  // scrolls on should see the rail follow.
+  assert.match(html, /IntersectionObserver/, 'the rail reads which section is in view');
+  assert.match(html, /link\.setAttribute\('aria-current', 'true'\)/, 'and marks that one');
+  assert.match(html, /link\.removeAttribute\('aria-current'\)/, 'and unmarks the rest');
+  // WHY rootMargin: the header is sticky, so without an offset the section under it
+  // never counts as visible and the rail would stall on the first heading.
+  assert.match(html, /rootMargin: '-70px 0px -55% 0px'/, 'the sticky header is offset from the reading line');
+});
+
 test('the dashboard re-reads the marker instead of reading it once', () => {
   const html = read('dashboard.html');
   // WHY this lock: the content script runs at document_idle, so the marker can land
@@ -88,15 +122,54 @@ test('the content script leaves the marker the dashboard reads', () => {
   assert.match(read('dashboard.html'), /documentElement\.dataset\.operaAgent/, 'the page reads it from the DOM, not from a global');
 });
 
-test('the dashboard is about devices, not about the person', () => {
+test('the dashboard is about devices, not a profile page', () => {
   const html = read('dashboard.html');
-  // WHY this lock exists: the two pages were one file, and the split is only real if
-  // the dashboard stops carrying identity. A profile card here would put the reader
-  // back to scrolling past themselves to reach their devices.
-  assert.doesNotMatch(html, /profileCard|full_name|avatar_url/, 'no profile data renders on the device page');
+  // WHY this lock changed: the page gained a read-only "Akun ini" section so a reader
+  // landing here can tell they are on the right account. That is facts, not a profile
+  // — no avatar, no editable name, nothing to scroll past to reach the device list.
+  assert.doesNotMatch(html, /profileCard|avatar_url/, 'no profile data renders on the device page');
   assert.doesNotMatch(html, /id="avatar"/, 'no avatar initials here either');
   assert.match(html, /Device milik/, 'the page names whose devices these are, in one line');
   assert.match(html, /aria-current="page"/, 'the nav marks this page as the current one');
+  // WHY the account section must stay read-only: every write to the account lives on
+  // akun.html, and two editors for one fact is how the two pages start disagreeing.
+  assert.match(html, /<h2>Akun ini<\/h2>/, 'the account facts have their own section');
+  assert.doesNotMatch(html, /<input[^>]*id="(fullName|accountName|email)"/i, 'and nothing on this page edits the account');
+});
+
+test('the dashboard has a rail, because it has four jobs and no divider', () => {
+  const html = read('dashboard.html');
+  // WHY this lock: the page was a flat stack of cards, so a reader who came to pair a
+  // device had to read past the device list and the command runner to find it, and
+  // had no way to know the other three existed.
+  const sections = ['#ringkasan', '#device', '#pairing', '#aksi', '#akun'];
+  for (const href of sections) {
+    assert.ok(html.includes(`href="${href}"`), `the rail links to ${href}`);
+    assert.ok(html.includes(`id="${href.slice(1)}"`), `and ${href} names a section that exists`);
+  }
+  assert.match(html, /class="rail"/, 'the rail is the element the lock above is about');
+  assert.match(html, /aria-label="Bagian dashboard"/, 'and it is labelled, so a screen reader announces what it is');
+  // WHY a heading per section: a reader who lands on #pairing from a shared link sees
+  // a page with no heading unless each section names itself.
+  for (const heading of ['Ringkasan', 'Device', 'Pairing manual', 'Jalankan aksi', 'Akun ini']) {
+    assert.ok(html.includes(`<h2>${heading}</h2>`), `${heading} has a heading of its own`);
+  }
+  // WHY the rail collapses on a phone: a vertical rail at 320px would push the first
+  // control off the screen, and this page is opened on a phone more than a desktop.
+  assert.match(html, /@media \(max-width: 640px\)/, 'the rail has a narrow-screen form');
+  assert.match(html, /grid-auto-flow: column/, 'and it becomes a horizontal strip');
+});
+
+test('the destructive control looks destructive', () => {
+  const html = read('dashboard.html');
+  // WHY this lock: revoking a device is the only irreversible action on this page, and
+  // it sits next to "Salin ID" which is the button a reader reaches for constantly. Two
+  // identical buttons means the wrong one gets clicked by muscle memory.
+  assert.match(html, /class="btn danger"/, 'the revoke control is marked as the dangerous one');
+  assert.match(html, /\.btn\.danger\s*\{[^}]*var\(--danger\)/, 'and the danger colour is defined for it');
+  // WHY confirm() stays: it is the last stop before a device stops answering, and the
+  // page is the only place the reader can see what they are about to cut.
+  assert.match(html, /globalThis\.confirm\(`Cabut \$\{button\.dataset\.name\}/, 'revoking still asks first');
 });
 
 test('every server refusal the dashboard can meet is written in Indonesian', () => {
