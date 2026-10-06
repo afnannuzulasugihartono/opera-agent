@@ -199,7 +199,7 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
    floor should bring p95 near 1000 ms at 10 idle polls per second instead of 4; 50 ms
    gets near 700 ms at 20. It is not changed: it alters a production function on the
    command path, and the right floor depends on how many devices idle at once, which
-   this repository cannot answer. Full numbers in `[docs/benchmarks.md](benchmarks.md)`.
+   this repository cannot answer. Timings die with the server anyway; the numbers above are the measurement worth keeping.
 7. **The plan path needs two owner inputs before it can run.** The endpoint, key and model
    name come from the user's own configuration on their device — no shared key, ever, since
    the product ships at scale — and `[security.md](security.md)` has to say plainly what

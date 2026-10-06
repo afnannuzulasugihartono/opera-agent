@@ -13,7 +13,7 @@ import { buildAxSummary, AX_SUMMARY_LIMITS } from '../extension/lib/ax-summary.j
 // poverty-triggered CDP accessibility-tree snapshot attached to page.read results
 // as a read-only axSummary. The pure filter below is exercised against
 // probe-recorded CDP Accessibility.getFullAXTree node shapes (full probe evidence
-// in docs/ax-observation.md).
+// is the probe record inside this file).
 
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 const content = read('../extension/content.js');
