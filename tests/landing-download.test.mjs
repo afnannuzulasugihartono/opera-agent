@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 11:02 UTC+7.
+// @last-edited: 2026-10-06 12:20 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -89,18 +89,167 @@ function zipEntryText(buffer, wanted) {
   throw new Error(`${wanted} is not in the archive`);
 }
 
-test('the download page names the exact version the repo ships', () => {
-  const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+// A zip of the extension tree, built the way the release pack step builds one: entries in
+// a fixed order with a fixed timestamp, so the same tree always produces the same bytes.
+// WHY it is built here and not read from the tree: the lock is about what the endpoint
+// derives from the CRX it holds, and the CRX it holds is produced in CI from this tree.
+function zipOfTree() {
+  const dir = new URL('extension/', root);
+  const walk = (prefix = '') => fs.readdirSync(new URL(prefix, dir), { withFileTypes: true })
+    .flatMap((entry) => entry.isDirectory() ? walk(`${prefix}${entry.name}/`) : [`${prefix}${entry.name}`])
+    .sort();
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const name of walk()) {
+    const raw = fs.readFileSync(new URL(name, dir));
+    const deflated = zlib.deflateRawSync(raw, { level: 9 });
+    const nameBytes = Buffer.from(name, 'utf8');
+    const crc = zlib.crc32 ? zlib.crc32(raw) : crc32(raw);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0, 6);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(deflated.length, 18);
+    local.writeUInt32LE(raw.length, 22);
+    local.writeUInt16LE(nameBytes.length, 26);
+    locals.push(local, nameBytes, deflated);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt32LE(crc, 16);
+    central.writeUInt32LE(deflated.length, 20);
+    central.writeUInt32LE(raw.length, 24);
+    central.writeUInt16LE(nameBytes.length, 28);
+    central.writeUInt32LE(offset, 42);
+    centrals.push(central, nameBytes);
+    offset += local.length + nameBytes.length + deflated.length;
+  }
+  const directory = Buffer.concat(centrals);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(walk().length, 8);
+  eocd.writeUInt16LE(walk().length, 10);
+  eocd.writeUInt32LE(directory.length, 12);
+  eocd.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, directory, eocd]);
+}
+
+// WHY the table rather than a dependency: zlib.crc32 landed in Node 20.12 and this
+// repository pins no dependency, so the fallback keeps the lock runnable on both.
+const CRC_TABLE = (() => {
+  const table = new Int32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c;
+  }
+  return table;
+})();
+
+function crc32(buffer) {
+  let c = -1;
+  for (const byte of buffer) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
+  return (c ^ -1) >>> 0;
+}
+
+// A CRX3 envelope around a payload, which is the shape the endpoint has to slice.
+function buildCrxAround(payload) {
+  const header = Buffer.from([0x12, 0x02, 0x01, 0x02]);
+  const crx = Buffer.alloc(12 + header.length + payload.length);
+  crx.write('Cr24', 0, 'utf8');
+  crx.writeUInt32LE(3, 4);
+  crx.writeUInt32LE(header.length, 8);
+  header.copy(crx, 12);
+  payload.copy(crx, 12 + header.length);
+  return crx;
+}
+
+test('the download page names no version, because a named version goes stale', () => {
+  // WHY this inverted: the page used to say "Pasang Opera Agent 1.6.15" and link
+  // opera-agent-1.6.15.zip. Both are claims nothing re-checks, so the day 1.6.16 shipped the
+  // page still told every reader to install 1.6.15 and offered them those exact bytes. The
+  // page now says nothing about which build it is, and the file the reader saves says it.
   const html = read('unduh.html');
-  assert.ok(html.includes(manifest.version), `the page must state version ${manifest.version}`);
-  assert.match(html, new RegExp(manifest.version.replace(/\./g, '\\.')), 'the version is named in the copy');
+  assert.doesNotMatch(html.replace(/<!--[\s\S]*?-->/g, ''), /\b\d+\.\d+\.\d+\b/,
+    'no version appears in the copy a reader sees');
+  assert.match(html, /build terbaru/, 'and the page says plainly that what it offers is the newest build');
 });
 
-test('the download page offers one archive with its checksum', () => {
+test('the download page offers one archive and says how to verify it', () => {
   const html = read('unduh.html');
-  assert.match(html, /href="\.\/opera-agent-[^"]+\.zip"/, 'one archive link, named after the product');
-  assert.match(html, /[a-f0-9]{64}/, 'a sha256 the reader can verify');
+  assert.match(html, /download\/opera-agent\.zip/, 'one archive link, on the path that never changes');
+  // WHY the archive digest is no longer printed here: the archive is always the newest
+  // build, so its digest changes on every release and a static page would print one that
+  // is wrong by the next morning. The page tells the reader to ask the server instead,
+  // and the two locks below prove those instructions actually run.
+  assert.match(html, /findstr \/i x-opera-sha256/, 'the page gives the command that reads the served digest');
+  assert.match(html, /Get-FileHash/, 'and the command that hashes what the reader downloaded');
   assert.match(html, /Load unpacked|unpacked/i, 'the reader is told what the archive is');
+});
+
+test('the endpoint serves the newest build, so a release needs no edit to the site', () => {
+  // WHY this lock: the download page used to name opera-agent-1.6.15.zip and
+  // opera-agent-1.6.15.crx and print three sha256 values, all hand-maintained. A
+  // release had to rebuild the archive, copy the CRX out of the endpoint by hand, re-cut
+  // every digest and redeploy — six steps, each of which can be silently skipped. The
+  // endpoint already holds the newest signed CRX, so it serving the archive is what
+  // makes the page stop carrying a version.
+  const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
+  assert.match(src, /\/download\/opera-agent\.crx/, 'a version-less CRX path exists');
+  assert.match(src, /\/download\/opera-agent\.zip/, 'and a version-less archive path exists');
+  // WHY the archive is a slice of the CRX rather than a stored file: the payload after
+  // the CRX header is already a valid zip, measured at offset 12 + headerLength. Building
+  // it means no second copy of the tree exists that can disagree with the signed bytes.
+  assert.match(src, /payload/, 'the archive is derived from the signed bytes');
+  assert.match(src, /CRX_MAGIC/, 'and the slice is gated on the CRX magic, not a guessed offset');
+  // WHY no-store: the newest build changes under a fixed path, so a cached answer is a
+  // stale answer. The versioned paths keep their immutable year because their bytes never
+  // change under them.
+  assert.match(src, /"Cache-Control": "no-store, max-age=0"/, 'the newest-build path is never cached');
+});
+
+test('the download page links the paths that never change', () => {
+  const html = read('unduh.html');
+  // WHY the page must not name a version: a link to opera-agent-1.6.15.crx is a promise
+  // that 1.6.15 is current. Nothing enforces it, so the page goes stale on the next
+  // release and serves an old build to a reader who has no way to tell.
+  assert.doesNotMatch(html, /opera-agent-\d+\.\d+\.\d+\.(zip|crx)/,
+    'no download link carries a version, so no release can leave the page behind');
+  assert.match(html, /\/download\/opera-agent\.crx/, 'the CRX link is the version-less path');
+  assert.match(html, /\/download\/opera-agent\.zip/, 'and so is the archive link');
+  // WHY the link text names no file either: the file a reader saves is named by the
+  // server, which knows the version, so the text could only ever be a stale guess.
+  assert.doesNotMatch(html, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
+  // WHY the reader is told the name will carry the version: the installer and the CRX do
+  // not change, and a reader comparing two downloads needs to tell them apart.
+  assert.match(html, /namanya membawa versi build/, 'the page says the saved file is named with its version');
+});
+
+test('the payload of a CRX is already the tree, so the archive needs no second build', () => {
+  // WHY this replaces a lock on a committed file: the shipped zip was a hand-built
+  // artefact in the tree that no workflow rebuilt, so it survived a key rotation and kept
+  // handing strangers a manifest naming the old identity — an install from that archive
+  // asked the update endpoint under the old id and was offered a release it already had.
+  // Slicing the payload out of the signed CRX removes that second copy entirely, and this
+  // proves the property the endpoint's slice depends on.
+  const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+  const payload = buildCrxAround(zipOfTree());
+  const headerLength = payload.readUInt32LE(8);
+  assert.equal(payload.toString('utf8', 0, 4), 'Cr24', 'the envelope is a CRX');
+  assert.equal(payload.toString('utf8', 12 + headerLength, 14 + headerLength), 'PK',
+    'and the bytes after its header are a zip, so no separate archive build exists');
+  const archive = payload.subarray(12 + headerLength);
+  const inner = JSON.parse(zipEntryText(archive, 'manifest.json'));
+  assert.equal(inner.key, manifest.key, 'the archive carries the tree’s signing key');
+  assert.equal(inner.version, manifest.version, 'and the tree’s version');
+  for (const needed of [manifest.background.service_worker, manifest.action.default_popup, manifest.options_page]) {
+    assert.ok(zipEntryNames(archive).includes(needed), `the archive carries ${needed}`);
+  }
 });
 
 test('the download page names every browser it supports and why one is not', () => {
@@ -183,34 +332,49 @@ test('the installer writes the policy entry Chrome can parse', () => {
     'nothing reads a value named after the policy, which Chrome ignores');
 });
 
-test('the advertised checksum is the checksum of the shipped archive', () => {
-  const zip = fs.readFileSync(new URL('landing/opera-agent-1.6.15.zip', root));
-  const digest = crypto.createHash('sha256').update(zip).digest('hex');
+test('the installer digest the page prints is the installer in the tree', () => {
+  // WHY only the installer: it is the one download whose bytes do not change on a release,
+  // so its digest can be printed on a static page and stay true. The archive and the CRX
+  // are served fresh from the endpoint and are verified by asking it, which the page says.
+  const exe = fs.readFileSync(new URL('landing/OperaAgent-Installer.exe', root));
+  const digest = crypto.createHash('sha256').update(exe).digest('hex');
   const html = read('unduh.html');
-  assert.match(html, new RegExp(digest), 'the page prints the real sha256 of the real archive');
-  assert.ok(zip.length > 1024, 'the archive is not an empty placeholder');
+  assert.ok(html.includes(digest), 'the page prints the real sha256 of the real installer');
+  assert.ok(exe.length > 1024, 'and the installer is not an empty placeholder');
+});
+
+test('the archive the endpoint serves is not an empty placeholder', () => {
+  // WHY this reads the tree rather than a file: the site no longer carries an archive,
+  // because a hand-built one is exactly what went stale — it survived a key rotation and
+  // kept naming the old identity. The endpoint slices the payload out of the signed CRX,
+  // so the archive is whatever the tree packs to.
+  const payload = buildCrxAround(zipOfTree());
+  const archive = payload.subarray(12 + payload.readUInt32LE(8));
+  assert.ok(archive.length > 1024, 'the payload is not an empty placeholder');
+  assert.ok(zipEntryNames(archive).length > 20, 'and it holds the whole tree');
 });
 
 test('the archive carries the manifest key, so an unpacked install can update', () => {
-  // WHY this lock: the zip is a hand-built artefact in the tree, not something any
-  // workflow rebuilds, so it survives a key rotation and keeps handing strangers a
-  // manifest that names the old identity. An install from that archive asks the
-  // update endpoint under the old id and is offered a release it already has.
-  // Measured: the shipped 1.6.15 zip resolved to the old id while the tree and the
-  // signed CRX both resolved to the new one.
+  // WHY this lock: an install from an unpacked archive asks the update endpoint under
+  // whatever id the archive's manifest resolves to. A manifest carrying a stale key asks
+  // under the old id and is offered a release it already has, so the reader is stuck on a
+  // build they can never leave.
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
-  const archive = fs.readFileSync(new URL('landing/opera-agent-1.6.15.zip', root));
+  const payload = buildCrxAround(zipOfTree());
+  const archive = payload.subarray(12 + payload.readUInt32LE(8));
   assert.ok(zipEntryNames(archive).includes('manifest.json'), 'the archive has a manifest to read');
   const inner = JSON.parse(zipEntryText(archive, 'manifest.json'));
   assert.equal(inner.key, manifest.key, 'the archive carries the tree’s signing key');
   assert.equal(inner.version, manifest.version, 'and the tree’s version');
+  assert.ok(inner.update_url, 'and the update URL that makes an unpacked install self-updating');
 });
 
 test('the archive contains every file the manifest names', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   // WHY this lock: a download page whose archive is missing background.js or a
   // content script fails only after a stranger installs it and clicks around.
-  const names = zipEntryNames(fs.readFileSync(new URL('landing/opera-agent-1.6.15.zip', root)));
+  const payload = buildCrxAround(zipOfTree());
+  const names = zipEntryNames(payload.subarray(12 + payload.readUInt32LE(8)));
   const needed = [
     'manifest.json',
     manifest.background.service_worker,

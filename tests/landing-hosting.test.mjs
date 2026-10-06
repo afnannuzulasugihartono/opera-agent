@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 09:18 UTC+7.
+// @last-edited: 2026-10-06 12:20 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
@@ -93,10 +93,19 @@ test('the pages that talk to Supabase still name only that origin', () => {
   }
 });
 
-test('the archive is served as a zip so the browser saves it under its real name', () => {
-  const rule = rules.find((r) => r.paths.includes('/opera-agent-1.6.15.zip'));
-  assert.ok(rule, 'the archive has its own rule');
-  assert.equal(rule.headers['Content-Type'], 'application/zip');
+test('the site hosts no archive, because the endpoint serves the newest one', () => {
+  // WHY this rule disappeared: the archive and the CRX used to be files in this tree with
+  // their own cache headers, and both carried a version in the path. They are served from
+  // the update endpoint now, under a path that never changes, so a rule here would only
+  // pin a version that nothing refreshes.
+  for (const rule of rules) {
+    assert.doesNotMatch(rule.paths.join(' '), /\.(zip|crx)$/,
+      `no _headers rule names a versioned archive: ${rule.paths.join(', ')}`);
+  }
+  for (const header of vercel.headers) {
+    assert.doesNotMatch(header.source, /\.(zip|crx)$/,
+      `vercel.json names no versioned archive: ${header.source}`);
+  }
 });
 
 test('both hosts upload the same file set, so no page exists on only one of them', () => {
@@ -173,10 +182,10 @@ test('the edge is told not to hold a page, because Cache-Control alone does not'
     // WHY the CRX is in the immutable group with the zip: both are versioned
     // artifacts whose bytes never change under a given name, so re-fetching them
     // on every visit would be waste, and a stale copy is impossible because a
-    // new version is a new filename. The .exe is NOT here: it is rebuilt often
-    // and served from the same name, so holding it would pin an old installer.
-    const isArchive = /\.(zip|crx)$/.test(entry.source);
-    assert.equal(cdn.value, isArchive ? 'public, max-age=31536000, immutable' : 'no-store', `${entry.source} holds or releases as intended`);
+    // new version is a new filename. Nothing on the site qualifies for that any more:
+    // the archive and the CRX are served from the endpoint under a path that never
+    // changes, and the installer is rebuilt often from the same name.
+    assert.equal(cdn.value, 'no-store', `${entry.source} releases rather than holds`);
   }
   const headers = read('landing/_headers');
   const rules = headers.split('\n').filter((l) => /^ {2}Vercel-CDN-Cache-Control:/.test(l));
@@ -184,10 +193,13 @@ test('the edge is told not to hold a page, because Cache-Control alone does not'
   assert.equal(rules.length, blocks.length, 'the other host is told the same thing on every rule');
 });
 
-test('the archive is held, because its name carries the version', () => {
-  const archive = vercel.headers.find((h) => h.source === '/opera-agent-1.6.15.zip');
-  assert.ok(archive, 'the archive has a rule of its own rather than inheriting no-store');
-  assert.match(archive.headers.find((h) => h.key === 'Cache-Control').value, /immutable/, 'and is immutable, which is safe only because the name is versioned');
+test('the installer is served from a stable name and is never held', () => {
+  // WHY the installer is not immutable: its bytes change whenever it is rebuilt, and its
+  // path never changes, so holding it would serve an installer that no longer matches the
+  // digest printed on the download page.
+  const installer = vercel.headers.find((h) => h.source.includes('Installer.exe'));
+  assert.ok(installer, 'the installer has a rule of its own');
+  assert.equal(installer.headers.find((h) => h.key === 'Cache-Control').value, 'no-store');
 });
 
 test('the site is reachable at the path GoTrue asks for, from the site root directory', () => {

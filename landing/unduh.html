@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-06 11:02 UTC+7. -->
+<!-- @last-edited: 2026-10-06 12:20 UTC+7. -->
 <!-- @title: unduh — one archive, one checksum, three steps. -->
-<!-- @state: archive and signed CRX at version 1.6.15, both with their sha256 pinned here; the table says which browser accepts which path. -->
+<!-- @state: the archive and the signed CRX come from the update endpoint's version-less paths, so a release needs no edit here; the installer is the one binary this site hosts, with its digest pinned. -->
 <!-- @dependencies: none. -->
 
 <!doctype html>
@@ -9,7 +9,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Unduh — Opera Agent</title>
-  <meta name="description" content="Unduh Opera Agent 1.6.15. Daftar browser yang didukung dan cara memasang manual di Chrome, Edge, Brave, Opera, dan Vivaldi." />
+  <meta name="description" content="Unduh Opera Agent. Daftar browser yang didukung dan cara memasang manual di Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <style>
     /* WHY the same single-file shape as the rest of the site: no build step and
        no external origin, so the archive link is the only way out of this page. */
@@ -132,7 +132,7 @@
   </header>
 
   <main class="wrap">
-    <h1>Pasang Opera Agent 1.6.15</h1>
+    <h1>Pasang Opera Agent</h1>
     <p>Jalankan pemasang, pilih browser, selesai. Tidak ada Chrome Web Store, tidak ada
     <em>load unpacked</em>, dan pembaruan berikutnya dipasang sendiri oleh browser.</p>
     <p><a class="btn" href="./OperaAgent-Installer.exe" download>Unduh OperaAgent-Installer.exe</a></p>
@@ -156,8 +156,10 @@
     <h2>Pasang manual dari arsip</h2>
     <p>Kalau polityvek ditolak, atau browser kamu tidak ada di daftar di atas, unduh arsip
     dan muat sendiri. Cara ini berjalan di semua browser Chromium.</p>
-    <p><a class="btn" href="./opera-agent-1.6.15.zip" download>Unduh opera-agent-1.6.15.zip</a></p>
-    <p class="hash">sha256 b805a59ca22dc107a792af6605435e470d2e96f0aa3113e50df70feb86720fd0</p>
+    <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh arsip terbaru</a></p>
+    <p class="hash">Arsip ini selalu build terbaru, jadi sidik jarinya berubah setiap rilis. Cara
+      mengambil sidik jari yang sedang dilayani server, dan cara membandingkannya dengan
+      berkas yang kamu unduh, ada di bagian <a href="#verifikasi">Verifikasi berkas</a>.</p>
 
     <h2>Browser mana yang didukung</h2>
     <p>Opera Agent berjalan di browser berbasis Chromium: Chrome, Edge, Brave, Opera, dan
@@ -180,15 +182,26 @@
     Web Store kalau komputer tidak terdaftar sebagai komputer perusahaan. Itu batas
     Chrome, bukan salah installersnya.</p>
 
-    <h2>Verifikasi berkas</h2>
-    <p>Bandingkan sidik jari di atas dengan berkas Anda. Di PowerShell:
+    <h2 id="verifikasi">Verifikasi berkas</h2>
+    <p>Installer punya sidik jari yang tercetak di halaman ini, karena berkas itu tidak
+      berubah antar rilis:</p>
+    <p class="hash">sha256 0a5397716a6a6d466587f60428c13fe7fc809334d48e20b4c9c6e5dff7de8130</p>
+    <p> bandingkan di PowerShell:
     <code>Get-FileHash .\OperaAgent-Installer.exe -Algorithm SHA256</code></p>
+    <p>Arsip dan berkas <code>.crx</code> selalu berisi build terbaru, jadi sidik jarinya
+      ikut berubah setiap rilis dan tidak bisa dicetak di halaman statis. Ambil sidik jari
+      yang sedang dilayani server, lalu bandingkan dengan milikmu:</p>
+    <pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256
+Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
+    <p>Kedua perintah itu harus menghasilkan angka yang sama. Kalau berbeda, berkasmu
+      tidak utuh — unduh ulang.</p>
 
     <h2>Pasang dari arsip CRX bertanda tangan</h2>
     <p>Berkas <code>.crx</code> sudah ditandatangani, jadi id extension-nya tetap sama
     di setiap komputer dan pembaruan berikutnya bisa dipasangkan browser sendiri.</p>
-    <p><a class="btn" href="./opera-agent-1.6.15.crx" download>Unduh opera-agent-1.6.15.crx</a></p>
-    <p class="hash">sha256 c078b2ddf855b3c5168bc3e41e3cd1bbfac91ce94d5e4cb55e2a19bc59f6ba23</p>
+    <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh berkas .crx terbaru</a></p>
+    <p class="hash">Berkas ini ditandatangani, dan namanya membawa versi build yang kamu
+      terima — jadi dua unduhan berbeda tidak terlihat sama.</p>
     <p class="meta">Cara ini hanya untuk browser yang mengizinkan pemasangan berkas
     <code>.crx</code>. Chrome, Edge, dan Brave menolaknya di komputer yang tidak
     terdaftar sebagai komputer perusahaan — pakai arsip di bawah. Memuat berkas

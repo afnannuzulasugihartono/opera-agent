@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 13:55 UTC+7.
+// @last-edited: 2026-10-06 12:20 UTC+7.
 // @title: landing-claims — every number the site states is checked against the code.
 // @state: 8 locks, all green; the audit that wrote them found the permission count unstated.
 // @dependencies: node:test, node:assert, node:fs.
@@ -20,9 +20,23 @@ const manifest = JSON.parse(read('extension/manifest.json'));
 const mcp = read('supabase/functions/opera-agent-mcp/index.ts');
 const extensionReadme = read('extension/README.md');
 
-test('the version the site advertises is the version the manifest ships', () => {
-  assert.ok(site.includes(manifest.version), `the site must state ${manifest.version}`);
-  assert.ok(fs.statSync(new URL(`landing/opera-agent-${manifest.version}.zip`, root)).size > 1024, `an archive of ${manifest.version} exists`);
+test('no page states a version, because a stated version is a promise nothing keeps', () => {
+  // WHY this inverted: every page used to name the build it was written for, so a release
+  // had to edit prose in several places to avoid telling readers to install the build that
+  // shipped last week. The download page names no version now — the file a reader saves is
+  // named by the server, which is the only place that knows — and this lock keeps the other
+  // pages from growing the habit back.
+  // WHY the pattern is anchored on the product and not on any three-part number: the
+  // model settings name 127.0.0.1:11434 and similar, and those are ports, not builds.
+
+  const copy = site.replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/Opera Agent\s*\d+\.\d+\.\d+/g, 'Opera Agent VERSION')
+    .replace(/opera-agent-\d+\.\d+\.\d+/g, 'opera-agent-VERSION');
+  assert.doesNotMatch(copy, /Opera Agent VERSION|opera-agent-VERSION/,
+    'no page names a build next to the product');
+  // WHY the manifest version is still checked somewhere: the tree and the served archive
+  // agreeing is proved in landing-download, which builds the payload the endpoint slices.
+  assert.match(manifest.version, /^\d+\.\d+\.\d+$/, 'and the manifest carries a version to check against');
 });
 
 test('the tool count on the site equals the tools the MCP server registers', () => {

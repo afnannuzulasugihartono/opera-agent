@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 12:20 UTC+7.
 // @title: index — Repository file.
-// @state: single endpoint source per deploy unit.
+// @state: serves update.xml and the signed CRX per extension id, plus the newest build under two version-less download paths for the site.
 // @dependencies: edge-runtime, supabase-js, cors.
 
 import "@supabase/edge-runtime";
@@ -14,7 +14,17 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 });
 
 const LEGACY_EXTENSION_ID = "pagjlnohdemoohcncicjmaejedcmcocm";
+const CURRENT_EXTENSION_ID = "ofgemipoobcnbjkfanmofjbdonjapmgl";
+
 const EXTENSION_ID_PATTERN = /^[a-p]{32}$/;
+
+// A CRX3 is the four magic bytes, a format word, the length of the signed header, that
+// header, and then the extension tree as a plain zip. The header length is read from the
+// file rather than assumed, so a format change fails loudly instead of slicing mid-zip.
+
+const CRX_MAGIC = "Cr24";
+const CRX_PREFIX_BYTES = 12;
+
 
 function response(req: Request, body: BodyInit | null, status: number, headers: Record<string,string>) {
   // Fail-closed CORS: echo the origin ONLY for exact allowlist matches
@@ -31,11 +41,37 @@ function response(req: Request, body: BodyInit | null, status: number, headers: 
   });
 }
 
+async function sha256Hex(bytes: Uint8Array) {
+  const digest = await crypto.subtle.digest("SHA-256", bytes as unknown as ArrayBuffer);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function bytesFromBase64(value: string) {
   const raw = atob(value);
   const out = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
+}
+
+// WHY the payload is sliced rather than repacked: the bytes after the signed header are
+// already a zip holding the same tree, so "load unpacked" needs no second build of the
+// extension and there is no second copy in existence that can disagree with the signed
+// one. The shipped archive used to be a hand-built file in the tree that no workflow
+// rebuilt, and it survived a key rotation still naming the old identity.
+
+function zipPayloadOf(crx: Uint8Array): Uint8Array | null {
+  if (crx.length < CRX_PREFIX_BYTES + 4) return null;
+  const magic = new TextDecoder().decode(crx.subarray(0, 4));
+  if (magic !== CRX_MAGIC) return null;
+  const view = new DataView(crx.buffer, crx.byteOffset, crx.byteLength);
+  const headerLength = view.getUint32(8, true);
+  const start = CRX_PREFIX_BYTES + headerLength;
+  if (start >= crx.length) return null;
+  // WHY the zip is checked here and not at the call site: a payload that does not start
+  // with PK means the layout changed, and serving those bytes as an archive would hand a
+  // reader a file their unzip tool rejects with no explanation.
+  if (crx[start] !== 0x50 || crx[start + 1] !== 0x4b) return null;
+  return crx.subarray(start);
 }
 
 function requestedExtensionId(url: URL) {
@@ -89,6 +125,44 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const path = url.pathname;
     const base = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/opera-agent-update`;
+
+    // WHY these two are answered before the identity is resolved: they carry no version
+    // and no id. A link naming a build is a promise nothing enforces, so the download page
+    // went on serving 1.6.15 after 1.6.16 shipped and no reader could tell. These resolve
+    // to whatever is active now, which is what "the newest build" means to a stranger, and
+    // it costs a release no edit to the page at all.
+    if (path.endsWith("/download/opera-agent.crx") || path.endsWith("/download/opera-agent.zip")) {
+      const wantsZip = path.endsWith("/download/opera-agent.zip");
+      const current = await activeRelease(CURRENT_EXTENSION_ID);
+      if (!current) return response(req, "No active release for extension ID", 404, { "Content-Type": "text/plain; charset=utf-8" });
+      // WHY both log as "crx": the archive is the signed CRX's own payload, served for a
+      // reader rather than an updater. Adding a kind would need a migration to widen a
+      // check constraint, and the path column already tells the two apart.
+      await logUpdateEvent("crx", req, current, url);
+      const bytes = wantsZip
+        ? zipPayloadOf(bytesFromBase64(current.crx_base64))
+        : bytesFromBase64(current.crx_base64);
+      if (!bytes) return response(req, "Release payload is not a zip", 500, { "Content-Type": "text/plain; charset=utf-8" });
+      const filename = `opera-agent-${current.version}${wantsZip ? ".zip" : ".crx"}`;
+      return response(req, req.method === "HEAD" ? null : bytes, 200, {
+        "Content-Type": wantsZip ? "application/zip" : "application/x-chrome-extension",
+        "Content-Length": String(bytes.byteLength),
+        // WHY no-store and not the year the versioned paths carry: the bytes under this
+        // path change on the next release, so a cached answer here is a stale answer the
+        // reader has no way to notice.
+        "Cache-Control": "no-store, max-age=0",
+        // WHY the version rides in the filename: the link cannot change, but the file a
+        // reader saves should still say which build it is, or two downloads are identical.
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "X-Opera-Version": current.version,
+        // WHY this digest is of the bytes in this response and not the release's: the
+        // archive is the CRX payload, so the release sha256 names a different file. A
+        // reader told to compare the two would get two different numbers and conclude
+        // their download was corrupt.
+        "X-Opera-Sha256": await sha256Hex(bytes)
+      });
+    }
+
     // CRX downloads do not carry the updater's `x` metadata. Their canonical
     // path embeds the ID, so resolve that request from the path instead.
     const identityCrxMatch = path.match(/\/opera-agent-([a-p]{32})-([0-9]+\.[0-9]+\.[0-9]+)\.crx$/);

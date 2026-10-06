@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-06 09:18 UTC+7.
+# @last-edited: 2026-10-06 12:20 UTC+7.
 # @title: _headers — the CSP and cache policy every path of the site answers with.
 # @state: restates vercel.json per path; tests/landing-hosting.test.mjs fails on drift.
 # @dependencies: none.
@@ -48,16 +48,10 @@
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
 
-/opera-agent-1.6.15.zip
-# from vercel.json /opera-agent-1.6.15.zip
-  Cache-Control: public, max-age=31536000, immutable
-  Vercel-CDN-Cache-Control: public, max-age=31536000, immutable
-  Content-Type: application/zip
-  X-Content-Type-Options: nosniff
-
-/opera-agent-1.6.15.crx
-# from vercel.json /opera-agent-1.6.15.crx
-  Cache-Control: public, max-age=31536000, immutable
-  Vercel-CDN-Cache-Control: public, max-age=31536000, immutable
-  Content-Type: application/x-chrome-extension
+/OperaAgent-Installer.exe
+# from vercel.json /OperaAgent-Installer.exe — the installer is rebuilt often and its path
+# never changes, so it is released rather than held.
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Type: application/vnd.microsoft.portable-executable
   X-Content-Type-Options: nosniff

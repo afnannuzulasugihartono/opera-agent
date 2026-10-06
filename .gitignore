@@ -20,10 +20,9 @@ coverage/
 *.key
 *.p12
 # A CRX carries a public key and a signature, never the private one, so the
-# artifact is safe to publish. This exception is for the copy the site serves,
-# which has to be in the tree the way the .zip already is.
+# artifact is safe to publish. No copy is committed: the endpoint serves the
+# signed bytes the release workflow uploaded, and the download page asks it.
 *.crx
-!landing/opera-agent-*.crx
 
 # Supabase local state
 .supabase/
