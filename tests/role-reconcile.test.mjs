@@ -84,6 +84,7 @@ test('a real DOM role is never downgraded or overwritten by the AX tree', () => 
   const explicit = reconcileElementRole({ role: 'button', label: 'Send', ref: 'oa-1' }, index);
   assert.equal(explicit.role, 'button');
   assert.equal(explicit.roleSource, undefined);
+
   // A generic DOM role IS a gap, so it may be filled.
   assert.equal(reconcileElementRole({ role: 'generic', label: 'Send' }, index).role, 'checkbox');
   assert.equal(reconcileElementRole({ role: 'presentation', label: 'Send' }, index).role, 'checkbox');
@@ -96,6 +97,7 @@ test('an ambiguous name is never adopted, because that would be a guess', () => 
   ]);
   assert.equal(index.has('header'), false);
   assert.equal(reconcileElementRole({ role: '', label: 'Header' }, index).role, '');
+
   // Agreement among several nodes on one role is still unambiguous.
   const agreed = axRoleIndex([
     { role: 'RadioButton', name: 'Footer' },
@@ -110,6 +112,7 @@ test('reconciliation is read-only and grants no action authority', () => {
   const after = reconcileElementRole(before, index);
   assert.notEqual(after, before, 'must return a new object');
   assert.deepEqual(before, { ref: 'oa-5', role: '', label: 'Apply', actionable: false, sensitive: false, stableKey: 'k' });
+
   // The only fields that may change are the role fact and its provenance.
   assert.equal(after.ref, 'oa-5');
   assert.equal(after.actionable, false);
@@ -131,6 +134,7 @@ test('AX roles normalize to the lowercase ARIA vocabulary', () => {
   assert.equal(normalizeAxRole('StaticText'), 'statictext');
   assert.equal(normalizeAxRole(''), '');
   assert.equal(normalizeAxRole(null), '');
+
   // Unknown platform roles survive rather than being dropped.
   assert.equal(normalizeAxRole('SomeFutureThing'), 'somefuturething');
   assert.equal(isGenericRole('statictext'), true);
@@ -143,6 +147,7 @@ test('the join uses the best available name and survives junk input', () => {
   assert.equal(reconcileElementRole({ role: '', accessibleName: 'Apply' }, index).role, 'button');
   assert.equal(reconcileElementRole({ role: '', text: 'Apply' }, index).role, 'button');
   assert.equal(reconcileElementRole({ role: '', label: '  APPLY  ' }, index).role, 'button');
+
   // No usable name means no join, never a positional guess.
   assert.equal(reconcileElementRole({ role: '', label: '   ' }, index).role, '');
   assert.equal(reconcileElementRole(null, index), null);
@@ -158,15 +163,18 @@ test('a semantic gap justifies the accessibility walk even on a text-rich page',
   // never ran. Text richness must not disable it.
   const { hasRoleGap, ROLE_GAP_SAMPLE_SIZE } = globalThis.OperaAgentRoleReconcile;
   assert.equal(ROLE_GAP_SAMPLE_SIZE, 3);
+
   // Three unlabelled controls are enough to justify one bounded walk.
   const gapped = [
     { role: 'button' }, { role: '' }, { role: 'generic' }, { role: 'presentation' }, { role: 'textbox' }
   ];
   assert.equal(hasRoleGap(gapped), true);
+
   // A healthy page must not pay for it.
   assert.equal(hasRoleGap([{ role: 'button' }, { role: 'link' }, { role: 'textbox' }]), false);
   assert.equal(hasRoleGap([]), false);
   assert.equal(hasRoleGap(null), false);
+
   // One or two stray gaps in a mostly-labelled list are not enough; the sample
   // guards the cost of the walk.
   assert.equal(hasRoleGap([{ role: 'button' }, { role: 'link' }, { role: '' }]), false);
@@ -180,6 +188,7 @@ test('a semantic gap justifies the accessibility walk even on a text-rich page',
   const block = background.slice(start, end);
   assert.match(block, /hasRoleGap\(result\?\.page\?\.elements\)/);
   assert.match(block, /AX_SUMMARY_TEXT_POVERTY_CHARS \|\| r9SemanticGap/);
+
   // Still exactly one accessibility walk, never a second one.
   assert.equal((block.match(/collectAxSummary\(/g) || []).length, 1);
 });
@@ -189,12 +198,14 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
   const start = background.indexOf("case 'page.read': {");
   const end = background.indexOf("case 'page.query':", start);
   const block = background.slice(start, end);
+
   // The text and the observation survive; only the element list is dropped.
   assert.match(block, /if \(result\?\.page && oversized\(result\)\)/);
   assert.match(block, /const \{ elements, \.\.\.withoutElements \} = result\.page/);
   assert.match(block, /truncated: true/);
   assert.match(block, /omittedElementCount/);
   assert.match(block, /includeElements disabled/);
+
   // The generic ceiling still throws for everything else: this is a page.read
   // degradation, not a blanket removal of the bound.
   assert.match(background, /Result exceeds \$\{MAX_RESULT_BYTES\} bytes/);
@@ -202,6 +213,7 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
 
 test('serialize derives roles from markup instead of only the role attribute', async () => {
   const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+
   // Content scripts are classic scripts: the shared helpers arrive on
   // globalThis from the manifest-loaded file, never via an ES import.
   assert.match(source, /const \{ implicitRole \} = globalThis\.OperaAgentRoleReconcile \|\| \{\}/);
@@ -220,6 +232,7 @@ test('serialize derives roles from markup instead of only the role attribute', a
 
 test('the role attribute stays authoritative where it defines identity, not action', async () => {
   const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+
   // stableElementIdentity feeds the stableKey. Deriving an implicit role here
   // would silently change every stableKey in the product, so the raw attribute
   // is deliberate and must stay.
@@ -228,6 +241,7 @@ test('the role attribute stays authoritative where it defines identity, not acti
   const identity = source.slice(identityStart, source.indexOf('\n  function ', identityStart + 10));
   assert.match(identity, /const role = clean\(el\.getAttribute\?\.\('role'\), 80\)/);
   assert.doesNotMatch(identity, /implicitRole/);
+
   // Region classification is structural, and scroll targets are a separate
   // contract; neither is an actionable role surface.
   assert.match(source, /const role = clean\(node\.getAttribute\?\.\('role'\), 80\)/);
@@ -246,6 +260,7 @@ test('the manifest loads the role runtime before the content script', async () =
 
 test('background shares the one content-script copy instead of duplicating it', async () => {
   const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+
   // A side-effect import of an export-free file publishes the same global, so
   // the role table cannot drift between the two contexts.
   assert.match(source, /import '\.\/role-reconcile\.js'/);
@@ -260,11 +275,13 @@ test('background reconciliation runs only on the existing text-poor AX path', as
   const end = source.indexOf("case 'page.query':", start);
   assert.ok(start > 0 && end > start, 'the page.read branch must be locatable');
   const block = source.slice(start, end);
+
   // Reuses the single bounded AX round trip that already exists for text-poor
   // surfaces; it must not add a second walk on every read.
   assert.equal((block.match(/collectAxSummary\(/g) || []).length, 1);
   assert.match(block, /axRoleIndex/);
   assert.match(block, /reconcileElements/);
+
   // It is a pure read path: no ref minting and no trusted input may appear.
   assert.doesNotMatch(block, /trustedKey|trustedClick|trustedFill|trustedPointer|getRef\(/);
 });

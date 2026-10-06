@@ -25,6 +25,7 @@ export async function createCloudFixtureData(options) {
       !Number.isFinite(Date.parse(options.preparedAt)) || new Date(options.preparedAt).toISOString() !== options.preparedAt) {
     throw new Error('INVALID_CLOUD_FIXTURE_CONFIGURATION');
   }
+
   // Snapshot primitive input before any await. No ambient clock/randomness/key.
   const { namespace, userId, preparedAt } = options;
   const tag = namespace.replaceAll('-', '');

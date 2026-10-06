@@ -52,6 +52,7 @@ export async function loadOptions(storage) {
     logLevel,
     modelEndpoint: typeof cfg.modelEndpoint === 'string' ? cfg.modelEndpoint : '',
     modelName: typeof cfg.modelName === 'string' ? cfg.modelName : '',
+
     // The key is reported as present or absent, never as a value.
     modelKeySet: typeof cfg.modelKey === 'string' && cfg.modelKey.length > 0
   };

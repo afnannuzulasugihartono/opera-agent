@@ -128,6 +128,7 @@ function randomToken() {
 
 async function getConfig() {
   const cfg = await chrome.storage.local.get(STORAGE_KEYS);
+
   // Apply the stored log level to the shared logger. Guarded so a corrupt or
   // invalid stored value falls back silently to `warn`, the default level;
   // getConfig never throws.
@@ -745,6 +746,7 @@ async function runActionPipeline(tabId, method, params, context, exec) {
   };
   let verdict = hasRef ? await resolveState() : 'ready';
   const delays = pollDelays(deadline - started, 0);
+
   // WHY stop on 'expired': the content script proved this ref can never act on this
   // document or route again (no descriptor, or one minted elsewhere, and refCounter
   // never re-mints a key). Polling a ref that cannot recover only spends the deadline
@@ -756,6 +758,7 @@ async function runActionPipeline(tabId, method, params, context, exec) {
     waitedMs += delays[di];
     verdict = await resolveState();
   }
+
   // Synthetic actions historically act on present-but-not-actionable targets
   // (their content paths own disabled/hidden gates — regression proves the
   // revalidate-then-click contract), so only TRUSTED actions wait for full

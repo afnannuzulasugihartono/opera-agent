@@ -122,6 +122,7 @@ export function createManagementOperatorBackend(configuration){
     if(signal?.aborted)fail('OPERATOR_ABORTED');if(!response||!response.ok)fail('MANAGEMENT_REQUEST_FAILED');
     try{return await response.json();}catch{fail('MANAGEMENT_RESPONSE_INVALID');}
   }
+
   // All fixed private operations use the existing internal operator realm.
   // Management read_only=true selects a restricted role without these grants;
   // it is not a read-only transaction retaining operator authority. Never grant

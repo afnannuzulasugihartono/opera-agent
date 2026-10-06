@@ -67,6 +67,7 @@ function zipPayloadOf(crx: Uint8Array): Uint8Array | null {
   const headerLength = view.getUint32(8, true);
   const start = CRX_PREFIX_BYTES + headerLength;
   if (start >= crx.length) return null;
+
   // WHY the zip is checked here and not at the call site: a payload that does not start
   // with PK means the layout changed, and serving those bytes as an archive would hand a
   // reader a file their unzip tool rejects with no explanation.

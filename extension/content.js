@@ -16,11 +16,13 @@
   // an empty device list without saying which step they have not done yet.
 
   document.documentElement.dataset.operaAgent = 'installed';
+
   // Published by role-reconcile.js, which the manifest loads before this
   // file. Content scripts are classic scripts and cannot import, so the same
   // global pattern as the semantic engines is used.
   const { implicitRole } = globalThis.OperaAgentRoleReconcile || {};
   if (typeof implicitRole !== 'function') throw new Error('Role reconcile runtime is unavailable.');
+
   // Hover settle policy, published by hover-settle.js.
   const hoverSettle = globalThis.OperaAgentHoverSettle;
   if (!hoverSettle || typeof hoverSettle.plan !== 'function') throw new Error('Hover settle runtime is unavailable.');

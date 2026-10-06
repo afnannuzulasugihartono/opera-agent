@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 14:45 UTC+7.
 // @title: mcp-connection-diagnostics — Script..
 // @state: Script..
 // @dependencies: node:url.
@@ -11,7 +11,7 @@ const MAX_BYTES = 64 * 1024;
 // Read-only diagnostics, not a host reconnect manager. Never reads stored OAuth
 // credentials or prints bearer tokens, user/page data, or raw remote errors.
 
-export async function diagnoseMcpConnection({ fetchImpl = fetch, now = Date.now, bearer = '' } = {}) {
+async function diagnoseMcpConnection({ fetchImpl = fetch, now = Date.now, bearer = '' } = {}) {
   if (typeof fetchImpl !== 'function' || typeof now !== 'function' || typeof bearer !== 'string' || /[\r\n]/.test(bearer)) {
     throw new Error('INVALID_DIAGNOSTIC_CONFIGURATION');
   }

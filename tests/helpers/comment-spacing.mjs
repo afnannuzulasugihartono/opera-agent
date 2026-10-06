@@ -32,7 +32,12 @@ function classifyJs(text) {
         if (c === '/' && d === '*') { rec.comment = true; mode = 'block'; j += 1; continue; }
         if (c === '"' || c === "'") { rec.string = true; mode = c; continue; }
         if (c === '`') { rec.string = true; mode = 'template'; continue; }
-        rec.code = true;
+
+        // WHY whitespace is not code here: the spaces before an indented comment
+        // marked the line as code, so isCommentLine skipped it and every comment
+        // written inside a function was invisible to this rule. The rule read as
+        // enforced while it only ever inspected column zero.
+        if (!/\s/.test(c)) rec.code = true;
       } else if (mode === 'block') {
         rec.comment = true;
         if (c === '*' && d === '/') { mode = 'code'; j += 1; }
@@ -125,10 +130,26 @@ export function spacingViolations(file, text, ext) {
   for (let i = 0; i < lines.length; i += 1) {
     if (!isCommentLine(lines, classes, i)) continue;
     if (i > 0 && isCommentLine(lines, classes, i - 1)) continue;
-    if (i > 0 && lines[i - 1].trim() !== '') violations.push(`${file}:${i + 1} no blank line before the comment block`);
+
+    // WHY a block that opens a scope is exempt from the gap above it: it has no
+    // statement over it to be mistaken for, and forcing a blank line there pushes
+    // a function's own first comment away from the function.
+    const opensScope = i > 0 && /[({[]\s*$/.test(lines[i - 1]);
+    if (i > 0 && !opensScope && lines[i - 1].trim() !== '') {
+      violations.push(`${file}:${i + 1} no blank line before the comment block`);
+    }
     let end = i;
     while (end + 1 < lines.length && isCommentLine(lines, classes, end + 1)) end += 1;
-    if (end + 1 < lines.length && lines[end + 1].trim() !== '') violations.push(`${file}:${end + 2} no blank line after the comment block`);
+    // WHY the gap below is required only at column zero: a module-level block is a
+    // section heading and has to be set off from the code under it, while an
+    // indented block documents the statement directly beneath it, and separating
+    // those two is what makes a comment hard to place. Asserting the gap below
+    // everywhere matched exactly one block in the tree; the module-level rule it
+    // keeps matched every heading.
+    const standalone = lines[i] === lines[i].trimStart();
+    if (standalone && end + 1 < lines.length && lines[end + 1].trim() !== '') {
+      violations.push(`${file}:${end + 2} no blank line after the comment block`);
+    }
     i = end;
   }
   return violations;

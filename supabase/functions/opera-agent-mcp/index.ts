@@ -208,6 +208,7 @@ async function authenticate(req: Request): Promise<AuthContext | null> {
   if (!STATIC_TOKEN && ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) return null;
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return null;
+
   // A confirmed email is the only proof of identity here: Supabase verifies the
   // signature and the expiry, and anonymous accounts carry no confirmed email.
   if (!data.user.email) return null;

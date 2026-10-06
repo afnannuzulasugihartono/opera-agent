@@ -21,6 +21,7 @@ test('the auth page offers Google and GitHub through the project Auth, not throu
   assert.match(html, /provider=google/, 'a Masuk dengan Google button must point at the provider');
   assert.match(html, /provider=github/, 'a Masuk dengan GitHub button must point at the provider');
   assert.ok(html.includes(AUTH_HOST), 'both buttons must go to the project Auth host, never a middleman');
+
   // WHY this origin: the page rewrites redirect_to from its own location at runtime, so
   // the value baked into the markup is only the fallback for a browser with no script.
   // It still has to name the host the site is served from, or that fallback strands the
@@ -46,6 +47,7 @@ test('the landing page itself stays network-free while auth may reach only Supab
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
   const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
+
   // WHY three entries per page: neither "/auth" nor "/auth/:path*" alone matched the
   // served path on Vercel, so the auth page received the root CSP and its Supabase
   // fetch died in the browser. All three carry the same single-origin policy.

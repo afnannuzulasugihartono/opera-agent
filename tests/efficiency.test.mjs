@@ -28,14 +28,17 @@ test('bridge delegates the pull wait to Postgres and issues one claim call per r
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
   assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
   assert.match(bridge, /p_wait_ms:\s*waitMs/);
+
   // The long-poll window is still clamped to the same range the extension
   // relies on: it sends waitMs 5000 and a 10000ms fetch timeout.
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
+
   // The extension keeps its server wait well inside its fetch timeout, with
   // room for a cold start: pullOnce lives in the service worker and cannot be
   // imported in node, so the pairing itself is pinned by source text here.
   assert.match(background, /waitMs:\s*5000/);
   assert.match(background, /\}, 10000\);/);
+
   // One claim call per pull, no client-side retry or pacing.
   const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
   assert.equal((pull.match(/rpc\(/g) || []).length, 1, 'pull must make exactly one RPC call');
@@ -82,10 +85,12 @@ test('contentCall sends first and only re-establishes the bridge on transport fa
   const firstSend = call.indexOf('chrome.tabs.sendMessage');
   const ensure = call.indexOf('ensureContent(');
   assert.ok(firstSend >= 0 && ensure > firstSend, 'the command must go out before any ensure step');
+
   // The fallback path still goes through ensureContent, which keeps the
   // http/https guard message and the inject step byte-for-byte untested here
   // but covered by the unchanged readiness test above.
   assert.match(call, /await ensureContent\(tabId\)/);
+
   // Refusal short-circuits: ok:false throws without touching ensureContent.
   const refusal = call.indexOf('response.ok === false');
   assert.ok(refusal >= 0 && refusal < ensure, 'a refusal must throw before the fallback');

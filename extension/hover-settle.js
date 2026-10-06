@@ -52,6 +52,7 @@
   function plan(state) {
     const input = state || {};
     const wanted = String(input.text == null ? '' : input.text).trim().toLowerCase();
+
     // An explicit expectation is satisfied only by actually observing it.
     if (wanted) {
       const seen = String(input.observedText == null ? '' : input.observedText).toLowerCase();
@@ -63,6 +64,7 @@
       }
       return { done: false, reason: 'awaiting_text' };
     }
+
     // A control that reports its own expansion flipping is a real signal.
     if (input.ariaExpanded != null && input.previousAriaExpanded != null
       && input.ariaExpanded !== input.previousAriaExpanded) {

@@ -172,12 +172,14 @@ for (const surface of surfaces) {
         .map((m) => attr(m[0], 'for'))
         .filter(Boolean)
     );
+
     // The implicit association -- <label>Name <input></label> -- is legal and common,
     // so it counts, including when the label wraps markup such as <br> or a <span>.
     // It does NOT count when the label contains no text, because an empty label
     // names nothing.
     const wrappingLabel = (at) => {
       const before = src.slice(0, at);
+
       // Consider only <label> tags, not the last tag of any kind: a label may
       // legitimately contain <br> or a <span>, and those must not hide the
       // enclosing label.
@@ -273,6 +275,7 @@ for (const surface of surfaces) {
       /(?<![\w-])tabindex\s*=\s*["']?\s*\+?[1-9]/i,
       'no positive tabindex reorders focus'
     );
+
     // Any element that is not natively interactive. Anchors are handled
     // separately because they are focusable only when they carry href.
     const nonInteractive = 'div|span|p|li|section|header|footer|main|nav|article|aside|figure'

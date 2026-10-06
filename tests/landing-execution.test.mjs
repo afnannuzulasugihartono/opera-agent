@@ -123,6 +123,7 @@ async function run(page, shape = {}) {
       documentElement: {
         dataset: extensionInstalled ? { operaAgent: 'installed' } : {}
       },
+
       // WHY MutationObserver exists here: the dashboard watches for the install marker
       // landing after the module has read the document, so the harness has to offer the
       // observer the page constructs. observe() records nothing; the two cases set the
@@ -139,6 +140,7 @@ async function run(page, shape = {}) {
       },
       getElementById: (id) => element(id),
       querySelectorAll: () => [],
+
       // WHY a stub element and not null: the dashboard writes the device count
       // into its rail link, so a null answer turns every device render into a
       // TypeError. The stub records under its selector, like getElementById does.

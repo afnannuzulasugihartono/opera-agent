@@ -31,6 +31,7 @@ export function createCloudAcceptanceController(configuration) {
   const operator=Object.freeze(Object.fromEntries(OPERATIONS.map(name=>[name,configuration.operator[name].bind(configuration.operator)])));
   const getClaims=configuration.sdk.auth.getClaims.bind(configuration.sdk.auth),getUser=configuration.sdk.auth.getUser.bind(configuration.sdk.auth);
   let used=false;
+
   // Must finish BEFORE the future CLI advertises its OAuth authorization URL.
   const ready=(async()=>{
     try {
@@ -61,6 +62,7 @@ export function createCloudAcceptanceController(configuration) {
       fixture=await createCloudFixtureData({namespace,userId:claims.sub,preparedAt:new Date(now()).toISOString()});check();
       const recorded=await operator.recordOwnership(fixture.cleanup,signal);check();
       if(!exact(recorded,'recorded')||recorded.recorded!==true)throw new Error();
+
       // Partial install/unknown control-plane completion still requires cleanup.
       dirty=true;
       const installed=await operator.installFixture(Object.freeze({fixture,identity:claims}),signal);check();

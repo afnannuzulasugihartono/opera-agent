@@ -35,6 +35,7 @@ test('no page states a version, because a stated version is a promise nothing ke
     .replace(/opera-agent-\d+\.\d+\.\d+/g, 'opera-agent-VERSION');
   assert.doesNotMatch(copy, /Opera Agent VERSION|opera-agent-VERSION/,
     'no page names a build next to the product');
+
   // WHY the manifest version is still checked somewhere: the tree and the served archive
   // agreeing is proved in landing-download, which builds the payload the endpoint slices.
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/, 'and the manifest carries a version to check against');

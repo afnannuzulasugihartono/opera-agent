@@ -177,6 +177,7 @@ test('the destructive control looks destructive', () => {
 
 test('every server refusal the dashboard can meet is written in Indonesian', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: the server speaks English and the page speaks Indonesian. A raw
   // server string to an operator reads as a broken product, and the rate-limit
   // refusal is the message a real person will actually meet.

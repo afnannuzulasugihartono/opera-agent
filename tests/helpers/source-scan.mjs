@@ -37,8 +37,10 @@
 export function stripComments(src, kind) {
   const out = [];
   let i = 0;
+
   // 'code' | 'sq' | 'dq' | 'bt' | 'block' | 'line'
   let state = 'code';
+
   // True while nothing but whitespace has been seen on the current line, so a
   // `//` that begins a line is a comment and a `//` after code is not.
   let lineBlank = true;

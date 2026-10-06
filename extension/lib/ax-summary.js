@@ -78,6 +78,7 @@ export function buildAxSummary(nodes, options = {}) {
     if (node.nodeId != null && isExcluded(String(node.nodeId))) continue;
     const role = roleOf(node);
     if (SKIP_ROLES.has(role)) continue;
+
     // Only DOM-backed nodes carry backendDOMNodeId; pseudo-nodes duplicate
     // text already represented by their StaticText parent.
     if (node.backendDOMNodeId == null) continue;

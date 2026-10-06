@@ -17,6 +17,7 @@ async function prefill() {
   $('logLevel').value = options.logLevel;
   $('modelEndpoint').value = options.modelEndpoint;
   $('modelName').value = options.modelName;
+
   // The page is told whether a key exists and never what it is. The key itself is
   // entered in the popup, next to pairing: a secret has no business here.
   $('modelStatus').textContent = options.modelKeySet

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:20 UTC+7.
+// @last-edited: 2026-10-06 14:45 UTC+7.
 // @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
 // @state: The memoized read path, the comment-spacing rule over untracked files, allowlist paths and four rule gates are locked.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
@@ -47,7 +47,7 @@ await import('../extension/hover-settle.js');
 
 const background = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
 
-test('every comment block has a blank line before and after it', async () => {
+test('every comment block is spaced from the code it does not document', async () => {
   const root = new URL('..', import.meta.url);
   // WHY the filesystem and not git ls-files: a file written minutes ago is not
   // tracked yet, and that is exactly when the rule is easiest to break. CI proved
@@ -345,7 +345,7 @@ test('the R9 modules expose no unused surface', async () => {
   assert.equal((protocol.match(/isPlainObject/g) || []).length, 7, 'declared once and used six times');
 });
 
-test('no module under extension/ or lib/ exports a symbol nothing else reaches', async () => {
+test('no module under extension/, lib/, scripts/ or supabase/functions/ exports a symbol nothing reaches', async () => {
   // A general guard, so the next dead export fails here instead of
   // accumulating. A symbol is "reached" if it appears in any other runtime
   // file, any test, any script, or any edge function.
@@ -358,17 +358,47 @@ test('no module under extension/ or lib/ exports a symbol nothing else reaches',
   // silently skipped `export async function` -- where three of the five dead
   // exports were hiding. AGENTS.md requires auto-discovery here for the same
   // reason `npm run check` must not carry a hand-written safety list.
-  const roots = ['../extension', '../lib'];
-  const collect = async (dir) => {
+  //
+  // WHY supabase/functions joined the scan: the roots were extension/ and lib/,
+  // so the six _shared modules every edge function imports were never
+  // inspected, and validateProof sat there with exactly one occurrence of its
+  // own name in the whole tree -- the declaration. The guard had already been
+  // generalised once to stop a dead export accumulating; leaving a whole
+  // directory outside it hid the case that mattered.
+  //
+  // WHY a use inside the exporting file counts as reached, and only where it
+  // weakens nothing: an error class is constructed and caught in the module that
+  // declares it, so ProofError, LedgerTokenError and VmHostTokenError are live
+  // without a second file ever naming them, and an external-only rule here would
+  // delete three classes that run on every call. For extension/ and lib/ the
+  // stricter promise is kept and asserted on its own line: a symbol there still
+  // needs a caller in another file.
+  //
+  // WHY scripts/ is judged, and what "the entry point" means there: a script is a
+  // program, so it is entered by its shebang or by the shell, not imported -- five
+  // of the six .mjs files there export nothing at all, which is exactly what that
+  // looks like. The sixth stamped `export` on the one function its own guarded main
+  // already calls by bare name, and no test, module or script imported it, so the
+  // keyword promised a reusable API no file used. The gate judges the file, not the
+  // directory name, so it finds that without knowing which file is the script; the
+  // repair is to drop the keyword, not to invent a consumer.
+  const runtimeRoots = ['../extension', '../lib'];
+  const collect = async (dir, match) => {
     const out = [];
     for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
       const p = `${dir}/${entry.name}`;
-      if (entry.isDirectory()) out.push(...await collect(p));
-      else if (entry.name.endsWith('.js')) out.push(p);
+      if (entry.isDirectory()) out.push(...await collect(p, match));
+      else if (match.test(entry.name)) out.push(p);
     }
     return out;
   };
-  const modules = (await Promise.all(roots.map(collect))).flat();
+  const jsFiles = /\.js$/;
+  const runtimeModules = (await Promise.all(runtimeRoots.map((d) => collect(d, jsFiles)))).flat();
+  // The _shared modules are .js, so the same collector is the whole edge scan:
+  // nothing under supabase/functions is a .ts that declares an exportable symbol.
+  const edgeModules = (await Promise.all(['../supabase/functions'].map((d) => collect(d, jsFiles)))).flat();
+  const scriptModules = await collect('../scripts', /\.mjs$/);
+  const modules = [...runtimeModules, ...edgeModules, ...scriptModules];
 
   // Consumers: every runtime module, every fast-suite test, every script, and
   // every edge function entry point.
@@ -377,22 +407,32 @@ test('no module under extension/ or lib/ exports a symbol nothing else reaches',
   const scripts = (await readdir(new URL('../scripts', import.meta.url)))
     .filter((n) => n.endsWith('.mjs'))
     .map((n) => `../scripts/${n}`);
+  // A file that is both a scanned module and a consumer (every script is) is read
+  // once; the Set drops the duplicate path, never the file.
   const consumers = await Promise.all(
-    [...modules, ...testDir, ...edgeDir, ...scripts]
+    [...new Set([...modules, ...testDir, ...edgeDir, ...scripts])]
       .map(async (p) => ({ p, text: await readFile(new URL(p, import.meta.url), 'utf8') }))
   );
 
+  const pattern = (name) => `\\b${name.replace(/\$/g, '\\$')}\\b`;
   const dead = [];
-  for (const { p, text } of consumers.filter(({ p }) => p.startsWith('../extension/') || p.startsWith('../lib/'))) {
+  const noCaller = [];
+  for (const { p, text } of consumers.filter(({ p }) => modules.includes(p))) {
     const names = [...text.matchAll(
       /^export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm
     )].map((m) => m[1]);
     for (const name of names) {
       const usedElsewhere = consumers.some(
-        (other) => other.p !== p && new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\b`).test(other.text)
+        (other) => other.p !== p && new RegExp(pattern(name)).test(other.text)
       );
-      if (!usedElsewhere) dead.push(`${p.split('/').pop()} :: ${name}`);
+      // Occurrences in the exporting file. One is the declaration alone, so
+      // nothing there reads the name back; two or more is a real use.
+      const usesHere = (text.match(new RegExp(pattern(name), 'g')) || []).length;
+      const where = `${p.split('/').slice(-2).join('/')} :: ${name}`;
+      if (!usedElsewhere && usesHere <= 1) dead.push(where);
+      if (!usedElsewhere && runtimeModules.includes(p)) noCaller.push(where);
     }
   }
-  assert.deepEqual(dead, [], 'these exports are referenced nowhere else');
+  assert.deepEqual(dead, [], 'these exports are referenced nowhere at all');
+  assert.deepEqual(noCaller, [], 'these extension/ and lib/ exports have no caller in another file');
 });

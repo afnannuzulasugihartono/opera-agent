@@ -20,6 +20,7 @@ export const CORS_DEFAULT_ORIGINS = FALLBACK_ORIGINS;
 
 export function resolveAllowedOrigin(req, defaults) {
   const list = Array.isArray(defaults) && defaults.length > 0 ? defaults : FALLBACK_ORIGINS;
+
   // Dual-runtime guard: Deno edge has no `process`, node tests have no `Deno`.
   // Bare `process` read keeps the zero-import contract (the rule's node:process import hint would add an import).
   const raw = typeof Deno !== 'undefined' && Deno.env

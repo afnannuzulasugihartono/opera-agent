@@ -39,6 +39,7 @@ test('validateBurst rejects refFromStep pointing forward or at itself', () => {
   const badPlans = [
     // forward: click at index 1 referencing index 1
     { tabId: 7, steps: [{ action: 'find', text: 'Skip' }, { action: 'click', refFromStep: 1, refIndex: 0 }] },
+
     // at itself: click at index 0 referencing index 0
     { tabId: 7, steps: [{ action: 'click', refFromStep: 0, refIndex: 0 }] }
   ];

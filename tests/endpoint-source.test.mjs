@@ -17,6 +17,7 @@ test('extension background has exactly one endpoint source', async () => {
 test('the consent screen is a page of the site, not a deployment of its own', async () => {
   const consent = await readFile(new URL('../landing/oauth/consent.html', import.meta.url), 'utf8');
   const endpoints = await import('../extension/lib/endpoints.js');
+
   // WHY the config endpoint check: the page must reach the same function the extension
   // does. It no longer fetches it, so the contract is now that the shared constant is
   // what the consent page would use, asserted against the site's own auth host instead.

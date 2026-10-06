@@ -45,14 +45,18 @@ function probeTree() {
     axNode({ nodeId: '8', role: 'button', name: 'Select tool', parentId: '7' }),
     axNode({ nodeId: '9', role: 'generic', name: '' }),
     axNode({ nodeId: '14', role: 'application', name: 'Figma board' }),
+
     // Visually-hidden (clip trick) mirror text: the canvas-app reading path.
     axNode({ nodeId: '16', role: 'StaticText', name: 'Canvas layer Cat uploaded', parentId: '9' }),
+
     // Editable field: role, name, and VALUE all present in CDP output.
     axNode({ nodeId: '10', role: 'textbox', name: 'Search box', value: 'typed secret text' }),
+
     // StaticText descendants of the editable node repeat the VALUE as text.
     axNode({ nodeId: '17', role: 'StaticText', name: 'typed secret text', parentId: '10' }),
     axNode({ nodeId: '12', role: 'textbox', name: 'Password', value: '••••••••' }),
     axNode({ nodeId: '18', role: 'StaticText', name: '••••••••', parentId: '12' }),
+
     // InlineTextBox pseudo-nodes have no backendDOMNodeId and duplicate text.
     axNode({ nodeId: '-1000000002', role: 'InlineTextBox', name: 'Canvas ', backendDOMNodeId: undefined }),
     axNode({ nodeId: '15', role: 'StaticText', name: 'X', parentId: '6' })

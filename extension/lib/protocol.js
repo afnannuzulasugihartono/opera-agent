@@ -28,6 +28,7 @@ export const BURST_ACTION_METHODS = Object.freeze({
   wait: 'page.wait_for',
   hover: 'page.hover',
   pointer: 'page.pointer',
+
   // Navigation is not new authority: tabs.navigate already exists as a
   // primitive. Composing it into a burst is what is new, and the stale-ref
   // guard below is the safety half of that composition.

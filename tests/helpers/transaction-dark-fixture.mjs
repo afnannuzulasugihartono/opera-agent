@@ -24,6 +24,7 @@ export async function transactionFixture(startAt=example.preparedAt,options={}) 
   const target = options.target??current.target;
   const scopeId = String(target.tabId);
   raw.scope = { kind: 'TAB', resourceId: scopeId };
+
   // Dark journal-only fixture: no real-world predicates are attested by a click.
   // Host rejects nonempty constraints/nonGoals until a trusted evaluator exists.
   raw.constraints = options.constraints??[];
