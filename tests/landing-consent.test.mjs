@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 18:15 UTC+7.
+// @last-edited: 2026-10-06 10:24 UTC+7.
 // @title: landing-consent — the OAuth permission screen, and the two defects it removes.
 // @state: 8 locks green; the separate deployment it replaced is still on disk until the production site URL moves.
 // @dependencies: node:test, node:assert, node:fs.
@@ -93,7 +93,8 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
   assert.ok(sources.includes('/oauth/consent'), 'and the CSP covers it on Vercel');
   assert.doesNotMatch(sources.join(' '), /^\/consent$/m, 'no stale entry for the path nothing requested');
   const headers = read('landing/_headers');
-  assert.match(headers, /^\/oauth\/consent, \/oauth\/consent\.html$/m, 'and on Cloudflare');
+  assert.match(headers, /^\/oauth\/consent$/m, 'and on Cloudflare, one path per block');
+  assert.match(headers, /^\/oauth\/consent\.html$/m, 'both spellings of it');
   assert.match(html, /`\/auth\.html\?next=/, 'the sign-in return path is root-relative, so it survives the subdirectory');
 });
 

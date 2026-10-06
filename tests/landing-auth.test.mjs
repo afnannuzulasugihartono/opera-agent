@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:10 UTC+7.
+// @last-edited: 2026-10-06 10:24 UTC+7.
 // @title: landing-auth — the sign-in page must offer providers, never a password.
 // @state: failing first: the auth page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -40,7 +40,7 @@ test('the landing page itself stays network-free while auth may reach only Supab
   // winning, so the catch-all must come first or it buries the auth policy.
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
-    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/OperaAgent-Installer.exe'],
+    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/OperaAgent-Installer.exe', '/robots.txt', '/sitemap.xml'],
     'the catch-all stays first and the page entries follow'
   );
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));

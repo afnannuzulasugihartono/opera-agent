@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 12:20 UTC+7.
+// @last-edited: 2026-10-06 10:24 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
@@ -69,8 +69,22 @@ test('every path of the site is covered, so no rule can be reached by inheritanc
   // WHY this matters: the first live incident on this site was header precedence. An
   // unlisted path falls back to Cloudflare's default policy, which is not ours.
   const covered = new Set(rules.flatMap((rule) => rule.paths));
-  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/privasi.html', '/syarat.html', '/unduh.html', '/404.html']) {
+  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/privasi.html', '/syarat.html', '/unduh.html', '/404.html', '/OperaAgent-Installer.exe', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
+  }
+});
+
+test('no _headers block joins paths with a comma, because Cloudflare matches it against nothing', () => {
+  // WHY this lock: every block once named several paths on one comma-joined line,
+  // which reads naturally and matches nothing on Cloudflare Pages — one URL per
+  // block is the platform rule. Measured live: no CSP and the wrong referrer
+  // policy on every page while the file looked complete.
+  for (const rule of rules) {
+    assert.equal(rule.paths.length, 1, `one path per block: ${rule.paths.join(', ')}`);
+  }
+  for (const line of headers.split('\n')) {
+    if (!line.trim() || line.startsWith('#') || /^\s/.test(line)) continue;
+    assert.doesNotMatch(line, /,/, `no comma-joined path line: ${line}`);
   }
 });
 
