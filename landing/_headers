@@ -14,7 +14,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -27,7 +27,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -40,7 +40,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -53,7 +53,7 @@
 # from vercel.json /(.*) — the extensionless address serves the same file
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -66,7 +66,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -79,7 +79,7 @@
 # from vercel.json /(.*) — the extensionless address serves the same file
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -92,7 +92,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -105,7 +105,7 @@
 # from vercel.json /(.*) — the extensionless address serves the same file
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -118,7 +118,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -131,7 +131,7 @@
 # from vercel.json /auth
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -144,7 +144,7 @@
 # from vercel.json /auth
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -157,7 +157,7 @@
 # from vercel.json /auth — the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -170,7 +170,7 @@
 # from vercel.json /auth — the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -183,7 +183,7 @@
 # from vercel.json /akun
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -196,7 +196,7 @@
 # from vercel.json /akun
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -209,7 +209,7 @@
 # from vercel.json /dashboard
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -222,7 +222,7 @@
 # from vercel.json /dashboard
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -235,7 +235,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -248,7 +248,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -261,7 +261,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -274,7 +274,7 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-QgmOXJpKOXq7X5e3HbRBG8wd7TeS6PcIzk+wagn+JAY=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

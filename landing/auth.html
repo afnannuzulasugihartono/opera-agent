@@ -339,7 +339,12 @@
       const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ''));
       const accessToken = fragment.get('access_token');
       if (!accessToken) return proveStoredSession();
-      globalThis.history.replaceState(null, '', globalThis.location.pathname);
+      // WHY keep the search string: the OAuth consent sends the browser to this
+      // page with ?next=<the consent URL>, and a replaceState to location.pathname
+      // strips that query, so after a provider login the reader landed on the
+      // home page with their authorization_id on the floor. Strip only the
+      // fragment (the token). The next URL survives into returnTo().
+      globalThis.history.replaceState(null, '', `${globalThis.location.pathname}${globalThis.location.search}`);
       let proof = null;
       try {
         proof = await proveSession(accessToken);
