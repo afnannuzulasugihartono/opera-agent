@@ -16,7 +16,7 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
-const pages = ['index.html', 'akun.html', 'auth.html', 'dashboard.html', 'unduh.html', 'privasi.html', 'syarat.html', '404.html'];
+const pages = ['index.html', 'akun.html', 'auth.html', 'dashboard.html', 'unduh.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'dukungan.html'];
 
 test('every head carries the mark, so no tab looks unfinished', () => {
   for (const page of pages) {
@@ -43,7 +43,7 @@ test('crawlers are told what exists', () => {
   assert.match(robots, /^User-agent: \*/m, 'robots speaks to every crawler');
   assert.match(robots, /Sitemap: https:\/\/opera-agent\.pages\.dev\/sitemap\.xml/, 'and names the map');
   const map = read('landing/sitemap.xml');
-  for (const path of ['', '/akun', '/auth', '/dashboard', '/unduh', '/privasi', '/syarat', '/oauth/consent']) {
+  for (const path of ['', '/akun', '/auth', '/dashboard', '/unduh', '/privasi', '/syarat', '/fitur', '/dukungan', '/oauth/consent']) {
     assert.ok(map.includes(`https://opera-agent.pages.dev${path}`), `the map lists ${path || '/'}`);
   }
   assert.doesNotMatch(map, /404/, 'and not the not-found page');
@@ -94,7 +94,9 @@ test('every nav marks the page being read', () => {
     'dashboard.html': './dashboard.html',
     'unduh.html': './unduh.html',
     'privasi.html': './privasi.html',
-    '404.html': './index.html'
+    '404.html': './index.html',
+    'fitur.html': './fitur.html',
+    'dukungan.html': './dukungan.html'
   };
   for (const [page, self] of Object.entries(marked)) {
     const nav = read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0];

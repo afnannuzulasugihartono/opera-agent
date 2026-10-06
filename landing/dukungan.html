@@ -1,0 +1,170 @@
+<!-- @last-edited: 2026-10-07 00:00 UTC+7. -->
+<!-- @title: dukungan.html — practical reference, real links only. -->
+<!-- @state: Dukungan. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
+  <title>Dukungan — Opera Agent</title>
+  <meta name="description" content="Dukungan Opera Agent: cara mengatasi device yang tidak muncul, ekstensi yang tidak ter-pasang, sesi yang keluar sendiri, dan laporan privasi yang benar." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%2314b8a6'/%3E%3C/svg%3E" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Opera Agent" />
+  <meta property="og:title" content="Dukungan — Opera Agent" />
+  <meta property="og:description" content="Dukungan Opera Agent: cara mengatasi device yang tidak muncul, ekstensi yang tidak ter-pasang, sesi yang keluar sendiri, dan laporan privasi yang benar." />
+  <meta property="og:url" content="https://opera-agent.pages.dev/dukungan" />
+  <meta property="og:locale" content="id_ID" />
+  <style>
+    /* WHY the same single-file shape as the rest of the site: no build step and
+       no external origin. This page makes no network call at all. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #16191e;
+      --surface-soft: #1d2127;
+      --line: rgba(255, 255, 255, .08);
+      --line-strong: rgba(255, 255, 255, .16);
+      --text: #f5f5f7;
+      --muted: #86868b;
+      --accent: #14b8a6;
+      --accent-soft: rgba(20, 184, 166, .16);
+      --warn: #f59e0b;
+      --ease: cubic-bezier(.28, .11, .32, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+
+    ::selection { background: var(--accent-soft); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    /* Apple scrolls anchors; readers who asked for stillness keep the jump. */
+    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(11, 13, 16, .72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
+    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
+    nav a:hover { color: var(--text); }
+
+    nav a[aria-current="page"] { color: var(--text); }
+
+    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
+       the brand into two ragged lines. A scrolling row keeps every item on one
+       line and the brand intact. */
+    @media (max-width: 640px) {
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
+      nav a { white-space: nowrap; }
+      nav .brand { margin-right: 6px; }
+    }
+
+    main { padding: 56px 0; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    h2 { margin: 32px 0 8px; font-size: 19px; }
+    p, li { color: var(--muted); }
+    p strong, li strong { color: var(--text); }
+    .updated { font-size: 13px; }
+
+    /* WHY the map: five sections with no way to jump is a wall of text. One list
+       of anchors, same muted voice as the rest, and a company policy reads
+       navigable instead of endless. */
+    .toc { margin: 0 0 8px; padding: 0; list-style: none; font-size: 13.5px; }
+    .toc li { margin: 0 0 4px; }
+    section[id], h2[id] { scroll-margin-top: 70px; }
+
+    footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    /* WHY the gap and not a margin: the six footer doors are written with no
+       whitespace between the tags, so an inline row of anchors has no break
+       opportunity and pushed the footer 32px past a 320px screen. A flex gap
+       breaks between items wherever the line runs out. */
+    footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
+    footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./index.html">Opera Agent</a>
+        <a href="./index.html#install">Instalasi</a>
+        <a href="./unduh.html">Unduh</a>
+        <a href="./index.html#model">Model Anda</a>
+        <a href="./akun.html">Akun</a>
+        <a href="./dashboard.html">Dashboard</a>
+        <a href="./privasi.html">Privasi</a>
+        <a href="./fitur.html">Fitur</a>
+        <a href="./dukungan.html" aria-current="page">Dukungan</a>
+      </nav>
+    </div>
+  </header>
+
+    <main class="wrap">
+    <h1>Dukungan</h1>
+    <p class="updated">Di mana Anda bisa minta tolong, dan di mana Anda bisa lapor.</p>
+    <p>Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah
+    konkret di bawah.</p>
+
+    <h2>Device tidak muncul di Dashboard</h2>
+    <p>Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
+    offline, pasangkan ulang lewat kode baru di sana. Jangan biarkan device tak dikenal
+    tetap ter-pairing; cabut yang tidak Anda kenal.</p>
+
+    <h2>Ekstensi tidak ter-pasang</h2>
+    <p>Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
+    diblokir, pakai arsip mentah dan aktifkan mode pengembang, lalu centang browser Anda
+    dan tekan <strong>Pasang</strong>. Periksa <em>chrome://extensions</em> dan
+    <em>chrome://policy</em>.</p>
+
+    <h2>Sesi Anda keluar sendiri</h2>
+    <p>Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
+    refresh token yang tersimpan; jika refresh ikut gagal, Anda dipulangkan ke
+    <a href="./auth.html">Masuk</a>. Itu disengaja, bukan kehilangan akun. Riwayat
+    perintah tetap ada.</p>
+
+    <h2>Privasi dan data</h2>
+    <p>Pertanyaan tentang kendali data: semuanya mandiri di halaman
+    <a href="./akun.html">Akun</a> dan <a href="./privasi.html">Privasi</a>.
+    Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat lewat tab
+    Security di repositori.</p>
+
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span class="doors">
+        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>

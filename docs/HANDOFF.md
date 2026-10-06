@@ -125,6 +125,14 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   `localStorage` read and no request, because the model key is typed on that page and a
   no-network promise is load-bearing. Dashboard and home carry `.wrap.wide` (1120px); the
   legal pages keep a 720px prose measure.
+- **The site grew two missing doors and headers a stranger never sees.** `fitur`
+  and `dukungan` are the same single-file, network-free shape as the rest of the
+  site, covered by the same `_headers`/`vercel.json` catch-all, sitemap and footer
+  locks, so the nav can link them from every page. Every response also carries
+  HSTS, a locked-down Permissions-Policy, same-origin COOP and CORP, and
+  `X-Frame-Options: DENY`, in addition to hash-named `script-src` that replaced
+  `unsafe-inline` on inline scripts — injected inline script is refused while the
+  one real inline module per page still runs, verified live in Chromium.
 - **Two layout defects measured at 320px, both invisible in source review.** The six footer
   doors are written with no whitespace between their tags, so an inline row of anchors has no
   break opportunity and the margin spacing had nowhere to break: the footer ran 32px past the

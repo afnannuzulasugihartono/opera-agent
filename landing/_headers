@@ -231,6 +231,58 @@
   Cross-Origin-Resource-Policy: same-origin
   X-Frame-Options: DENY
 
+/fitur
+# from vercel.json /(.*)
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
+
+/fitur.html
+# from vercel.json /(.*)
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
+
+/dukungan
+# from vercel.json /(.*)
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
+
+/dukungan.html
+# from vercel.json /(.*)
+  Cache-Control: no-store
+  Vercel-CDN-Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
+
 /OperaAgent-Installer.exe
 # from vercel.json /OperaAgent-Installer.exe — the installer is rebuilt often and its path
 # never changes, so it is released rather than held.
