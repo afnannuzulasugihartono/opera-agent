@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 11:26 UTC+7.
+// @last-edited: 2026-10-06 16:20 UTC+7.
 // @title: landing-visual — the site looks finished on every screen.
 // @state: red first: gibberish hero copy, nested sections, overflowing nav and code pills.
 // @dependencies: test, assert, fs.
@@ -142,10 +142,17 @@ test('display type sets the page apart from its own dashboard', () => {
   // WHY this lock: the storefront headline set at the same size as section
   // titles reads as another settings page. One display scale, used once, says
   // which page sells and which pages work.
+  // WHY this lock: the storefront headline set at the same size as section
+  // titles reads as another settings page. One display scale, used once, says
+  // which page sells and which pages work. Re-scaled on 2026-10-06 to the
+  // apple.com grade -- 84px ceiling on desktop, sections at a 44px ceiling and
+  // 96px of air -- while the 40px floor stays, because at 320px the longest
+  // word in the headline ("mengemudikan") measures 280px and a taller floor
+  // pushes the page 24px past the screen. Measured in Chromium at 320px.
   const html = read('index.html');
-  assert.match(html, /clamp\(40px, 7vw, 72px\)/, 'the headline spans display sizes');
-  assert.match(html, /h2 \{[^}]*font-size: 28px/, 'sections step down to a clear second rank');
-  assert.match(html, /section \{[^}]*padding: 72px 0/, 'and breathe around each idea');
+  assert.match(html, /clamp\(40px, 7\.5vw, 84px\)/, 'the headline spans display sizes');
+  assert.match(html, /h2 \{[^}]*font-size: clamp\(30px, 4vw, 44px\)/, 'sections step down to a clear second rank');
+  assert.match(html, /section \{[^}]*padding: 96px 0/, 'and breathe around each idea');
 });
 
 test('buttons are pills on every surface that has them', () => {

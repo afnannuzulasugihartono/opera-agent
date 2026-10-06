@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 11:26 UTC+7. -->
+<!-- @last-edited: 2026-10-06 16:35 UTC+7. -->
 <!-- @title: syarat — the rules of an open-signup product. -->
 <!-- @state: invite-only access, bring-your-own-model, no warranty, revocable pairing. -->
 <!-- @dependencies: none. -->
@@ -23,11 +23,16 @@
        no external origin. This page makes no network call at all. */
     :root {
       --bg: #0b0d10;
-      --surface: #14181d;
-      --line: #262c34;
-      --text: #e8eaed;
-      --muted: #9aa4b2;
+      --surface: #16191e;
+      --surface-soft: #1d2127;
+      --line: rgba(255, 255, 255, .08);
+      --line-strong: rgba(255, 255, 255, .16);
+      --text: #f5f5f7;
+      --muted: #86868b;
       --accent: #14b8a6;
+      --accent-soft: rgba(20, 184, 166, .16);
+      --warn: #f59e0b;
+      --ease: cubic-bezier(.28, .11, .32, 1);
     }
 
     * { box-sizing: border-box; }
@@ -36,25 +41,35 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: 15px/1.7 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
     }
+
+    ::selection { background: var(--accent-soft); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    /* Apple scrolls anchors; readers who asked for stillness keep the jump. */
+    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
     a { color: var(--accent); }
 
     .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
 
     header {
-      border-bottom: 1px solid var(--line);
       position: sticky;
       top: 0;
-      background: rgba(11, 13, 16, .92);
-      backdrop-filter: blur(8px);
       z-index: 2;
+      background: rgba(11, 13, 16, .72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
     }
 
-    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
-    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; padding: 3px 0; }
+    nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
+    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
     nav a:hover { color: var(--text); }
 
     nav a[aria-current="page"] { color: var(--text); }
@@ -84,13 +99,13 @@
     .toc li { margin: 0 0 4px; }
     section[id], h2[id] { scroll-margin-top: 70px; }
 
-    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
     /* WHY the gap and not a margin: the six footer doors are written with no
        whitespace between the tags, so an inline row of anchors has no break
        opportunity and pushed the footer 32px past a 320px screen. A flex gap
        breaks between items wherever the line runs out. */
-    footer a { color: var(--muted); text-decoration: none; }
+    footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
   </style>

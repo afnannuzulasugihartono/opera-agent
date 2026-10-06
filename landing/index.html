@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 11:26 UTC+7. -->
+<!-- @last-edited: 2026-10-06 16:35 UTC+7. -->
 <!-- @title: landing — the public site: install, sign-in, and your own model. -->
 <!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
 <!-- @dependencies: none. -->
@@ -24,14 +24,16 @@
        when the bundler changes. */
     :root {
       --bg: #0b0d10;
-      --surface: #14181d;
-      --surface-soft: #1b2026;
-      --line: #262c34;
-      --text: #e8eaed;
-      --muted: #9aa4b2;
+      --surface: #16191e;
+      --surface-soft: #1d2127;
+      --line: rgba(255, 255, 255, .08);
+      --line-strong: rgba(255, 255, 255, .16);
+      --text: #f5f5f7;
+      --muted: #86868b;
       --accent: #14b8a6;
       --accent-soft: rgba(20, 184, 166, .16);
       --warn: #f59e0b;
+      --ease: cubic-bezier(.28, .11, .32, 1);
     }
 
     * { box-sizing: border-box; }
@@ -40,25 +42,35 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
     }
+
+    ::selection { background: var(--accent-soft); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    /* Apple scrolls anchors; readers who asked for stillness keep the jump. */
+    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
     a { color: var(--accent); }
 
-    .wrap { max-width: 940px; margin: 0 auto; padding: 0 20px; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
 
     header {
-      border-bottom: 1px solid var(--line);
       position: sticky;
       top: 0;
-      background: rgba(11, 13, 16, .92);
-      backdrop-filter: blur(8px);
       z-index: 2;
+      background: rgba(11, 13, 16, .72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
     }
 
-    nav { display: flex; gap: 18px; align-items: center; padding: 14px 0; }
-    nav .brand { font-weight: 650; letter-spacing: -.01em; margin-right: auto; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; padding: 3px 0; }
+    nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
+    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
     nav a:hover { color: var(--text); }
 
     nav a[aria-current="page"] { color: var(--text); }
@@ -74,30 +86,29 @@
       nav .brand { margin-right: 6px; }
     }
 
-    .hero { padding: 110px 0 72px; }
+    .hero { padding: 128px 0 96px; background: radial-gradient(760px 360px at 62% -60px, rgba(20, 184, 166, .13), transparent 70%); }
     .hero h1 {
-      margin: 0 0 16px;
-      font-size: clamp(40px, 7vw, 72px);
-      line-height: 1.05;
-      letter-spacing: -.025em;
-      max-width: 18ch;
+      margin: 0 0 18px;
+      font-size: clamp(40px, 7.5vw, 84px);
+      line-height: 1.04;
+      letter-spacing: -.03em;
+      font-weight: 700;
+      max-width: 17ch;
     }
 
-    .hero p { margin: 0 0 24px; color: var(--muted); font-size: 17px; max-width: 62ch; }
+    .hero p { margin: 0 0 26px; color: var(--muted); font-size: 19px; line-height: 1.55; max-width: 58ch; }
 
     /* WHY the eyebrow: a company hero answers "is this alive" before the headline
        is read. No version rides here — a named build goes stale, so this states
        the offer, which does not change per release. */
     .eyebrow {
       display: inline-block;
-      margin: 0 0 16px;
-      padding: 4px 12px;
-      border: 1px solid var(--accent);
-      border-radius: 999px;
+      margin: 0 0 18px;
       color: var(--accent);
       font-size: 12.5px;
       font-weight: 600;
-      letter-spacing: .02em;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
 
     /* WHY the grid: a wall of claims with no artefact reads as a pitch deck. The
@@ -107,10 +118,11 @@
     @media (max-width: 760px) { .heroGrid { grid-template-columns: 1fr; } }
 
     .demo {
-      background: #0e1216;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 18px 18px 14px;
+      background: linear-gradient(180deg, #171b21, #0e1216);
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      padding: 20px 20px 16px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06);
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 13px;
       line-height: 2;
@@ -126,10 +138,10 @@
     .demo .no { color: var(--warn); }
     .demo .no::before { content: "→ "; }
 
-    .heroStats { display: flex; gap: 28px; margin: 26px 0 0; padding: 0; }
+    .heroStats { display: flex; gap: 36px; margin: 30px 0 0; padding: 0; }
     .heroStats div { margin: 0; }
-    .heroStats dt { font-size: 22px; font-weight: 650; letter-spacing: -.01em; }
-    .heroStats dd { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    .heroStats dt { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+    .heroStats dd { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
     .row { display: flex; flex-wrap: wrap; gap: 12px; }
 
     /* WHY this beats .row and .grid: author display:flex/grid outranks the UA
@@ -140,21 +152,25 @@
 
     .btn {
       display: inline-block;
-      padding: 10px 18px;
+      padding: 11px 22px;
       border-radius: 980px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--line-strong);
       background: var(--surface);
       color: var(--text);
       text-decoration: none;
-      font-size: 14px;
+      font-size: 15px;
       cursor: pointer;
+      transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
     }
 
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #04211d; font-weight: 600; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #05231f; font-weight: 600; }
+    .btn.primary:hover { background: #1ac3b0; }
 
-    section { padding: 72px 0; border-top: 1px solid var(--line); }
-    h2 { margin: 0 0 10px; font-size: 28px; letter-spacing: -.015em; }
-    .sub { color: var(--muted); margin: 0 0 20px; max-width: 70ch; }
+    section { padding: 96px 0; border-top: 1px solid var(--line); }
+    h2 { margin: 0 0 12px; font-size: clamp(30px, 4vw, 44px); line-height: 1.1; letter-spacing: -.02em; }
+    .sub { color: var(--muted); margin: 0 auto 28px; max-width: 62ch; font-size: 19px; line-height: 1.55; }
+    /* Apple centers the opening thought and leaves the body flush under it. */
+    section > h2, section > .sub { text-align: center; }
 
     ol.steps { margin: 0; padding-left: 20px; color: var(--muted); }
     ol.steps li { margin: 0 0 10px; }
@@ -180,9 +196,10 @@
     .card {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 14px;
+      border-radius: 18px;
       padding: 20px;
       max-width: 620px;
+      margin: 0 auto;
     }
 
     label { display: block; margin: 0 0 6px; font-size: 13px; color: var(--muted); }
@@ -232,12 +249,14 @@
     .tile {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: 18px;
       padding: 16px;
     }
 
     .tile h3 { margin: 0 0 6px; font-size: 15px; }
     .tile p { margin: 0; color: var(--muted); font-size: 13.5px; }
+    .tile { transition: transform .3s var(--ease), border-color .3s var(--ease); }
+    .tile:hover { transform: translateY(-2px); border-color: var(--line-strong); }
 
     dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13.5px; }
     dl.facts dt { color: var(--muted); }
@@ -251,13 +270,13 @@
       dl.facts dd { margin: 0 0 10px; }
     }
 
-    footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
+    footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
     /* WHY the gap and not a margin: the six footer doors are written with no
        whitespace between the tags, so an inline row of anchors has no break
        opportunity and pushed the footer 32px past a 320px screen. A flex gap
        breaks between items wherever the line runs out. */
-    footer a { color: var(--muted); text-decoration: none; }
+    footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
   </style>
