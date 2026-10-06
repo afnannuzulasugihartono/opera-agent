@@ -192,14 +192,14 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 7. SonarCloud project access — the pre-existing New Code wall.
 8. Supabase PATs and the login credentials for Google and GitHub need owner action; there
    is no Management API for PATs, and the live login cases only lack the submit.
-5. **The one real latency lever, and it is an owner decision.** Measured over 9,079
+5. **The one real latency lever, and it is a measurement we now apply.** Measured over 9,079
    production commands, 676.6 ms of the 1875.3 ms average is the device not yet having
    asked for the command, p95 1914.4 ms. That wait is the polling ramp inside
-   `opera_claim_next_wait`, which falls to a 250 ms floor after 720 ms idle. A 100 ms
-   floor should bring p95 near 1000 ms at 10 idle polls per second instead of 4; 50 ms
-   gets near 700 ms at 20. It is not changed: it alters a production function on the
-   command path, and the right floor depends on how many devices idle at once, which
-   this repository cannot answer. Timings die with the server anyway; the numbers above are the measurement worth keeping.
+   `opera_claim_next_wait`. The owner picked the conservative ladder: ramp under 50 ms
+   through the idle window, tail coarsened to 100 ms instead of 250 ms (migration
+   `20261007000000_opera_agent_claim_wait_fast_tail`), taking p95 near 1000 ms at 10 idle
+   polls per second. It is measured, not assumed: lower it further (50 ms / ~20 polls)
+   only after confirming fleet impact.
 7. **The plan path needs two owner inputs before it can run.** The endpoint, key and model
    name come from the user's own configuration on their device — no shared key, ever, since
    the product ships at scale — and `[security.md](security.md)` has to say plainly what
