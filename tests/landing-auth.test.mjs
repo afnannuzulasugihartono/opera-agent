@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 12:20 UTC+7.
+// @last-edited: 2026-10-06 10:10 UTC+7.
 // @title: landing-auth — the sign-in page must offer providers, never a password.
 // @state: failing first: the auth page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -85,8 +85,13 @@ test('the two pages navigate both ways as one site', () => {
   assert.match(html, /Opera Agent/, 'both pages carry the same brand');
 });
 
-test('the auth page says access is invite-only while sign-up stays closed', () => {
-  assert.match(html, /undangan/i, 'early access is by invitation until revenue pays for open sign-up');
+test('the auth page says sign-up is open, because it is', () => {
+  // WHY this lock replaced the invite-only one: the live Auth settings answer
+  // "disable_signup":false with google and email enabled, so the old copy —
+  // "Akses awal lewat undangan sampai sign-up terbuka" — was a false statement
+  // on the page a stranger reads before creating an account.
+  assert.match(html, /Daftar terbuka/i, 'open sign-up is stated, not rationed');
+  assert.doesNotMatch(html, /undangan/i, 'no invitation wording remains');
 });
 
 test('a returning login completes on the page instead of stranding the visitor', () => {

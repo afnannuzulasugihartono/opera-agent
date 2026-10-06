@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://opera-agent.pages.dev/sitemap.xml

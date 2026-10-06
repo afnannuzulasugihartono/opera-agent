@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-05 08:41 UTC+7. -->
+<!-- @last-edited: 2026-10-06 10:10 UTC+7. -->
 <!-- @title: landing — the public site: install, sign-in, and your own model. -->
 <!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
 <!-- @dependencies: none. -->
@@ -8,8 +8,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
   <title>Opera Agent</title>
   <meta name="description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%2314b8a6'/%3E%3C/svg%3E" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Opera Agent" />
+  <meta property="og:title" content="Opera Agent" />
+  <meta property="og:description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
+  <meta property="og:url" content="https://opera-agent.pages.dev/" />
+  <meta property="og:locale" content="id_ID" />
   <style>
     /* WHY inline and single file: this site has no build step, no framework and no
        external origin. A marketing page that needs a bundler is a page that breaks
@@ -163,7 +171,7 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./index.html">Opera Agent</a>
+        <a class="brand" href="./index.html" aria-current="page">Opera Agent</a>
         <a href="./index.html#install">Instalasi</a>
         <a href="./unduh.html">Unduh</a>
         <a href="./index.html#model">Model Anda</a>
@@ -275,13 +283,13 @@
       </dl>
     <section id="faq">
       <h2>Pertanyaan yang sering masuk</h2>
-      <p class="sub">Jawaban pendek sebelum Anda bertanya ke dukungan.</p>
+      <p class="sub">Jawaban pendek atas yang paling sering ditanyakan.</p>
       <dl class="facts">
-        <dt>Berapa biayanya</dt><dd>Masa akses undangan gratis terbatas. Setelahnya bayar per hasil, bukan per bulan: Anda hanya membayar pekerjaan yang selesai.</dd>
+        <dt>Berapa biayanya</dt><dd>Memakai Opera Agent gratis. Yang berbayar hanya pemakaian model ke penyedia model Anda — endpoint, nama, dan kunci milik Anda, tagihannya pun urusan Anda dengan mereka.</dd>
         <dt>Model apa</dt><dd>Model apa pun yang punya endpoint API: cloud milik penyedia Anda atau lokal seperti Ollama. Kuncinya milik Anda dan di tangan Anda.</dd>
         <dt>Data saya</dt><dd>Konten halaman hanya pergi ke endpoint model Anda; perintah dan hasilnya transit sebagai riwayat antrean dan tidak pernah dibagikan ke pihak ketiga.</dd>
         <dt>Tanpa internet</dt><dd>Model lokal di mesin ini bekerja tanpa internet. Relay perintah butuh koneksi, karena asisten Anda ada di cloud.</dd>
-        <dt>Berhenti</dt><dd>Tombol Keluar melupakan sesi di browser ini. Cabut pairing untuk menghentikan device. Penghapusan riwayat lewat kontak di kebijakan privasi.</dd>
+        <dt>Berhenti</dt><dd>Tombol Keluar melupakan sesi di browser ini. Cabut pairing untuk menghentikan device. Riwayat antrean tersimpan selama akun ada, per kebijakan privasi.</dd>
       </dl>
     </section>
   </main>

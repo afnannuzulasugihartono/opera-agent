@@ -1,15 +1,23 @@
-# @last-edited: 2026-10-06 10:41 UTC+7.
-# @title: dashboard — the control panel: devices, the account, pairing, and one command.
-# @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here.
-# @dependencies: none.
+<!-- @last-edited: 2026-10-06 10:10 UTC+7. -->
+<!-- @title: dashboard — the control panel: devices, the account, pairing, and one command. -->
+<!-- @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
+<!-- @dependencies: none. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
   <title>Dashboard — Opera Agent</title>
   <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%2314b8a6'/%3E%3C/svg%3E" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Opera Agent" />
+  <meta property="og:title" content="Dashboard — Opera Agent" />
+  <meta property="og:description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
+  <meta property="og:url" content="https://opera-agent.pages.dev/dashboard" />
+  <meta property="og:locale" content="id_ID" />
   <style>
 
     /* WHY the same single-file shape as the rest of the site: no build step, and

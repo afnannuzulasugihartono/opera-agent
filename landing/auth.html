@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 02:41 UTC+7. -->
+<!-- @last-edited: 2026-10-06 10:10 UTC+7. -->
 <!-- @title: auth — sign in with a provider or a magic link, never a password of ours. -->
 <!-- @state: initiates project Auth login; device-to-account binding arrives with pairing. -->
 <!-- @dependencies: none. -->
@@ -8,8 +8,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
   <title>Masuk — Opera Agent</title>
   <meta name="description" content="Masuk ke Opera Agent dengan Google, GitHub, atau magic link email. Tanpa password milik kami." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%2314b8a6'/%3E%3C/svg%3E" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Opera Agent" />
+  <meta property="og:title" content="Masuk — Opera Agent" />
+  <meta property="og:description" content="Masuk ke Opera Agent dengan Google, GitHub, atau magic link email. Tanpa password milik kami." />
+  <meta property="og:url" content="https://opera-agent.pages.dev/auth" />
+  <meta property="og:locale" content="id_ID" />
   <style>
     /* WHY the same single-file shape as the landing page: no build step, no
        external origin, and the only network the CSP allows is the project Auth. */
@@ -137,7 +145,7 @@
 
   <main class="wrap">
     <h1 id="pageTitle">Masuk</h1>
-    <p class="sub" id="pageSub">Satu akun untuk website dan device Anda. Akses awal lewat undangan sampai sign-up terbuka.</p>
+    <p class="sub" id="pageSub">Satu akun untuk website dan device Anda. Daftar terbuka — masuk, lalu pasangkan device.</p>
     <div class="card" id="signedOut">
       <a class="provider" id="googleButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://opera-agent.pages.dev/auth">Masuk dengan Google</a>
       <a class="provider" id="githubButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=github&redirect_to=https://opera-agent.pages.dev/auth">Masuk dengan GitHub</a>
