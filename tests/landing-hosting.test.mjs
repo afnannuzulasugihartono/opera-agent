@@ -11,6 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
@@ -104,6 +105,26 @@ test('the pages that talk to Supabase still name only that origin', () => {
   for (const path of ['/', '/privasi.html', '/syarat.html', '/unduh.html']) {
     const rule = rules.find((r) => r.paths.includes(path));
     assert.match(rule.headers['Content-Security-Policy'], /connect-src 'none'/, `${path} connects nowhere`);
+  }
+});
+
+test('every inline module script is named by a hash, and the CSP offers no unsafe-inline', () => {
+  // WHY this lock: the CSP names inline scripts by sha256, so the moment an inline
+  // script changes — even one trailing space — the browser refuses it and the page
+  // goes silent. Tying the lock to the exact extracted body makes a silent page a
+  // red test instead of a red login.
+  const hashOf = (html) => {
+    const body = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
+    return "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
+  };
+  for (const path of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'oauth/consent.html']) {
+    const rule = rules.find((r) => r.paths.includes(`/${path}`) || (path === 'index.html' && r.paths.includes('/')));
+    const csp = rule?.headers['Content-Security-Policy'];
+    const html = read(`landing/${path}`);
+    assert.ok(csp, `${path} has a CSP`);
+    assert.match(csp, /script-src 'self'/, `${path} runs scripts from itself only`);
+    assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/, `${path} has no inline-script loophole`);
+    assert.ok(csp.includes(hashOf(html)), `${path} CSP names its exact inline script`);
   }
 });
 

@@ -14,137 +14,222 @@
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /index.html
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /privasi.html
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /privasi
 # from vercel.json /(.*) — the extensionless address serves the same file
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /syarat.html
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /syarat
 # from vercel.json /(.*) — the extensionless address serves the same file
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /unduh.html
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /unduh
 # from vercel.json /(.*) — the extensionless address serves the same file
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /404.html
 # from vercel.json /(.*)
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /auth
 # from vercel.json /auth
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /auth.html
 # from vercel.json /auth
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /oauth/consent
 # from vercel.json /auth — the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /oauth/consent.html
 # from vercel.json /auth — the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /akun
 # from vercel.json /akun
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /akun.html
 # from vercel.json /akun
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /dashboard
 # from vercel.json /dashboard
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /dashboard.html
 # from vercel.json /dashboard
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-r9AQ8PHgNnJFDj2SAU3gHZaBYAlojt09ngUY/hfZ/GQ=' 'sha256-sNAndWV5ljxlQXhJ7aApU8F7TVqc7vvm9Jt53bEsKfQ=' 'sha256-j3N0kn2b8c+H8BRbZEn2aQJtjbmnJ/xti/QbwxQw4II=' 'sha256-XdCDn3cztCkSJPXkwDXov9J4mPDWNpmhKooQ4bW2Lg0=' 'sha256-phcBBepvtmElRTccuKsO33mzSfL5JgKZCGRsSp+xuqM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /OperaAgent-Installer.exe
 # from vercel.json /OperaAgent-Installer.exe — the installer is rebuilt often and its path
@@ -153,6 +238,11 @@
   Vercel-CDN-Cache-Control: no-store
   Content-Type: application/vnd.microsoft.portable-executable
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /robots.txt
 # from vercel.json /robots.txt
@@ -160,6 +250,11 @@
   Vercel-CDN-Cache-Control: no-store
   Content-Type: text/plain; charset=utf-8
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
 
 /sitemap.xml
 # from vercel.json /sitemap.xml
@@ -167,3 +262,8 @@
   Vercel-CDN-Cache-Control: no-store
   Content-Type: application/xml; charset=utf-8
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-Frame-Options: DENY
