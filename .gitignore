@@ -5,7 +5,6 @@
 
 # Dependencies
 node_modules/
-/deno.lock
 
 # Build output
 dist/
