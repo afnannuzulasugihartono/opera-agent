@@ -79,6 +79,12 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   publishes `landing/` with `wrangler pages deploy` and runs the unit and syntax gates first.
   CI still runs on every push; a deploy happens when someone asks for one. It cannot be a
   Git integration because an existing Direct Upload project cannot be switched to one.
+- **Releases fire on a `v*` tag, and only that.** `release.yml` verifies the
+  signed CRX `publish-crx.yml` inserted, packs the source and extension
+  archives, and publishes the GitHub release. The old `release-trigger/**`
+  path nudge on `main` is gone with its scaffold; the packing workflow stays
+  dispatch-only because it needs `CF_TOKEN`, the signing key and the owner's
+  call.
 - **Packing a CRX and publishing it is now a workflow.**
   `[.github/workflows/publish-crx.yml](../.github/workflows/publish-crx.yml)` packs with the
   `CRX_SIGNING_KEY` secret, refuses to publish unless the signature resolves to the same id
