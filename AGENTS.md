@@ -1,4 +1,4 @@
-@last-edited: 2026-10-06 03:52 UTC+7.
+@last-edited: 2026-10-06 08:52 UTC+7.
 @related: [`README.md`](README.md) - [`docs/HANDOFF.md`](docs/HANDOFF.md) - [`docs/CONTEXT.md`](docs/CONTEXT.md)
 
 # Opera Agent agent instructions
@@ -166,6 +166,7 @@ The map. Each row is a condition and a target, so it belongs here and not in [`R
 | what the extension may do | [`extension/README.md`](extension/README.md) |
 | what the edge functions and migrations are | [`supabase/README.md`](supabase/README.md) |
 | what the scripts folder is for | [`scripts/README.md`](scripts/README.md) |
+| what the Chrome Web Store listing says | [`store/README.md`](store/README.md) |
 | what the suites cover | [`tests/README.md`](tests/README.md) |
 | security boundary and token transport | [`SECURITY.md`](SECURITY.md) |
 | traps that caused a false claim | [`docs/CONTEXT.md`](docs/CONTEXT.md) |
