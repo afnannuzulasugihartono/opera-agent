@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
+<!-- @last-edited: 2026-10-06 10:56 UTC+7. -->
 <!-- @title: syarat — the rules of an open-signup product. -->
 <!-- @state: invite-only access, bring-your-own-model, no warranty, revocable pairing. -->
 <!-- @dependencies: none. -->
@@ -75,6 +75,13 @@
     p strong, li strong { color: var(--text); }
     .updated { font-size: 13px; }
 
+    /* WHY the map: five sections with no way to jump is a wall of text. One list
+       of anchors, same muted voice as the rest, and a company policy reads
+       navigable instead of endless. */
+    .toc { margin: 0 0 8px; padding: 0; list-style: none; font-size: 13.5px; }
+    .toc li { margin: 0 0 4px; }
+    section[id], h2[id] { scroll-margin-top: 70px; }
+
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
     footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
@@ -99,27 +106,34 @@
   <main class="wrap">
     <h1>Syarat Layanan</h1>
     <p class="updated">Terakhir diperbarui: 5 Oktober 2026.</p>
+    <ul class="toc" aria-label="Di halaman ini">
+      <li><a href="#akses">Akses terbuka</a></li>
+      <li><a href="#model">Bawa model sendiri</a></li>
+      <li><a href="#device">Satu device, pairing yang dapat dicabut</a></li>
+      <li><a href="#wajar">Penggunaan yang wajar</a></li>
+      <li><a href="#garansi">Tanpa garansi</a></li>
+    </ul>
 
-    <h2>Akses terbuka</h2>
+    <h2 id="akses">Akses terbuka</h2>
     <p><strong>Pendaftaran terbuka</strong> untuk siapa pun; tidak ada daftar tunggu. Kami dapat menutup
     pendaftaran kapan pun tanpa kehilangan hak Anda atas data yang sudah ada.</p>
 
-    <h2>Bawa model sendiri</h2>
+    <h2 id="model">Bawa model sendiri</h2>
     <p>Anda membawa <strong>model sendiri</strong>: endpoint, nama model, dan kunci API dari
     penyedia pilihan Anda. Biaya pemakaian model adalah urusan Anda dengan penyedia itu,
     bukan dengan kami. Kami tidak pernah menerbitkan kunci bersama.</p>
 
-    <h2>Satu device, pairing yang dapat dicabut</h2>
+    <h2 id="device">Satu device, pairing yang dapat dicabut</h2>
     <p>Satu akun memasangkan satu device dalam satu waktu. Pairing dapat dicabut, dan
     pencabutan menghentikan perintah baru seketika; riwayat antrean yang sudah tersimpan
     mengikuti kebijakan privasi.</p>
 
-    <h2>Penggunaan yang wajar</h2>
+    <h2 id="wajar">Penggunaan yang wajar</h2>
     <p>Jangan memakai jembatan ini untuk mengambil alih akun orang lain, mengelabui
     verifikasi manusia, atau melanggar syarat situs yang Anda kunjungi. Pelanggaran
     menghentikan akses tanpa pengembalian untuk periode berjalan.</p>
 
-    <h2>Tanpa garansi</h2>
+    <h2 id="garansi">Tanpa garansi</h2>
     <p>Layanan diberikan apa adanya. Asisten bisa salah klik seperti manusia bisa salah
     klik; awasi tab Anda untuk tindakan penting.</p>
   </main>

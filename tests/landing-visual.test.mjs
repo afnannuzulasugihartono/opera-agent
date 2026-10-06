@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:42 UTC+7.
+// @last-edited: 2026-10-06 10:56 UTC+7.
 // @title: landing-visual — the site looks finished on every screen.
 // @state: red first: gibberish hero copy, nested sections, overflowing nav and code pills.
 // @dependencies: test, assert, fs.
@@ -65,4 +65,29 @@ test('the provider buttons show their marks, not bare text', () => {
   const html = read('auth.html');
   assert.match(html, /id="googleButton"[^>]*>[\s\S]*?<svg/, 'Google carries its mark inside the button');
   assert.match(html, /id="githubButton"[^>]*>[\s\S]*?<svg/, 'GitHub carries its mark inside the button');
+});
+
+test('the 404 exits are real doors, counted honestly', () => {
+  // WHY this lock: the page promises ways out, and a tile that looks like a card
+  // but goes nowhere is the one lie a lost visitor cannot forgive. Counted too:
+  // the copy said four while five tiles stood under it.
+  const html = read('404.html');
+  const tiles = [...html.matchAll(/<a class="tile" href="([^"]+)">/g)].map((m) => m[1]);
+  assert.ok(tiles.length >= 4, 'the exits exist as links, not divs');
+  const words = { 4: 'Empat', 5: 'Lima', 6: 'Enam' };
+  assert.match(html, new RegExp(`${words[tiles.length]} jalan keluar`), 'the copy counts what stands under it');
+  assert.match(html, /\.tile:hover/, 'a tile answers the hover, so it reads clickable');
+});
+
+test('the legal pages open with a map, not a wall', () => {
+  // WHY this lock: five h2s with no way to jump is a wall of text. A three-line
+  // table of contents costs nothing and a company policy page always has one.
+  for (const page of ['privasi.html', 'syarat.html']) {
+    const html = read(page);
+    const ids = [...html.matchAll(/<h2 id="([^"]+)">/g)].map((m) => m[1]);
+    assert.ok(ids.length >= 4, `${page} names its sections`);
+    for (const id of ids) {
+      assert.ok(html.includes(`href="#${id}"`), `${page} links to #${id} from its map`);
+    }
+  }
 });

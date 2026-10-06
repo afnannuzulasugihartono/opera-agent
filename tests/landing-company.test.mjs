@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:10 UTC+7.
+// @last-edited: 2026-10-06 10:56 UTC+7.
 // @title: landing-company — the site reads as a real company site.
 // @state: red first: no favicon, mismatched footer, no crawler files, stale invite-only copy.
 // @dependencies: test, assert, fs.
@@ -124,7 +124,7 @@ test('no page points at support that does not exist', () => {
   assert.doesNotMatch(index, /bertanya ke dukungan/, 'the FAQ does not promise a help desk');
   assert.doesNotMatch(index, /lewat kontak/, 'and the exit row does not point at one either');
   const privasi = read('landing/privasi.html');
-  assert.match(privasi, /<h2>Kontak<\/h2>/, 'the privacy contact section stays');
+  assert.match(privasi, /<h2[^>]*>Kontak<\/h2>/, 'the privacy contact section stays');
   assert.doesNotMatch(privasi, /balas dari akun/, 'but it no longer invents a reply channel');
   assert.match(privasi, /\.\/akun\.html/, 'it points at the self-service that exists');
 });

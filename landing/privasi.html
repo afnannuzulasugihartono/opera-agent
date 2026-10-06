@@ -1,4 +1,4 @@
-<!-- @last-edited: 2026-10-06 10:42 UTC+7. -->
+<!-- @last-edited: 2026-10-06 10:56 UTC+7. -->
 <!-- @title: privasi — the data boundary in full sentences. -->
 <!-- @state: sentence A plus queue-history disclosure, contact, and retention. -->
 <!-- @dependencies: none. -->
@@ -75,6 +75,13 @@
     p strong, li strong { color: var(--text); }
     .updated { font-size: 13px; }
 
+    /* WHY the map: five sections with no way to jump is a wall of text. One list
+       of anchors, same muted voice as the rest, and a company policy reads
+       navigable instead of endless. */
+    .toc { margin: 0 0 8px; padding: 0; list-style: none; font-size: 13.5px; }
+    .toc li { margin: 0 0 4px; }
+    section[id], h2[id] { scroll-margin-top: 70px; }
+
     footer { border-top: 1px solid var(--line); padding: 26px 0 46px; color: var(--muted); font-size: 13px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
     footer a { color: var(--muted); text-decoration: none; margin-right: 14px; }
@@ -99,29 +106,36 @@
   <main class="wrap">
     <h1>Kebijakan Privasi</h1>
     <p class="updated">Terakhir diperbarui: 5 Oktober 2026.</p>
+    <ul class="toc" aria-label="Di halaman ini">
+      <li><a href="#relay">Relay perintah</a></li>
+      <li><a href="#pihak-ketiga">Tidak pernah dibagikan ke pihak ketiga</a></li>
+      <li><a href="#kunci">Kunci Anda</a></li>
+      <li><a href="#ditolak">Yang selalu ditolak</a></li>
+      <li><a href="#kontak">Kontak</a></li>
+    </ul>
     <p><strong>Hanya pergi ke endpoint model milik Anda.</strong> Konten dari halaman yang
     Anda setujui untuk dibaca asisten hanya dikirim ke endpoint model yang Anda konfigurasi
     sendiri. Kami tidak memilihkan model untuk Anda dan tidak menerima konten itu untuk
     dibaca manusia.</p>
 
-    <h2>Relay perintah</h2>
+    <h2 id="relay">Relay perintah</h2>
     <p>Agar asisten bisa bertindak di device Anda, perintah browser beserta hasilnya transit
     melalui relay project dan <strong>disimpan sebagai riwayat antrean di database
     project</strong>. Tidak ada data yang dihapus otomatis; riwayat ada selama akun ada.</p>
 
-    <h2>Tidak pernah dibagikan ke pihak ketiga</h2>
+    <h2 id="pihak-ketiga">Tidak pernah dibagikan ke pihak ketiga</h2>
     <p>Konten halaman, hasil perintah, dan kunci API Anda tidak pernah dibagikan, dijual,
     atau diberikan ke pihak ketiga mana pun untuk tujuan apa pun.</p>
 
-    <h2>Kunci Anda</h2>
+    <h2 id="kunci">Kunci Anda</h2>
     <p>Kunci API model dan token device tersimpan di browser Anda masing-masing dan tidak
     pernah ditampilkan kembali ke halaman web mana pun, termasuk halaman situs ini.</p>
 
-    <h2>Yang selalu ditolak</h2>
+    <h2 id="ditolak">Yang selalu ditolak</h2>
     <p>Screenshot dan pembacaan halaman ditolak di halaman yang menampilkan password, kode
     sekali pakai, atau kolom pembayaran, serta di tab private dan incognito.</p>
 
-    <h2>Kontak</h2>
+    <h2 id="kontak">Kontak</h2>
     <p>Pertanyaan tentang data Anda: semua kendali mandiri ada di halaman
     <a href="./akun.html">Akun</a> — lihat device yang ter-pairing, cabut yang tidak dikenal,
     keluar dari sesi. Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat
