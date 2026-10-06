@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 09:31 UTC+7.
+// @last-edited: 2026-10-06 11:02 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -164,6 +164,14 @@ test('the installer writes the policy entry Chrome can parse', () => {
   // WHY no bare URL: the entry written to the list is the joined form, so a URL alone
   // anywhere in the write path means the bug is back.
   assert.doesNotMatch(src, /next\.Add\(FeedUrl\)/, 'the list never receives the URL without its id');
+  // WHY the allowlist is a separate assertion: it is the policy that lets a reader
+  // enable an extension they dragged in themselves. Without it Brave installs the
+  // file and leaves the toggle off with "not listed in the Chrome Web Store", which
+  // looks like a broken download and is not.
+  assert.match(src, /CreateSubKey\("ExtensionInstallAllowlist"\)/,
+    'the allowlist key is written');
+  assert.match(src, /HasFeed\(t\) && HasAllowlist\(t\)/,
+    'and the read-back requires both, so a half-written install is not called success');
   // WHY this second lock: Chrome reads a list policy as the numbered values 1, 2, 3
   // inside the policy subkey. A value named after the policy is not in that sequence,
   // so the key existed, the entry was well formed, chrome://policy showed the policy

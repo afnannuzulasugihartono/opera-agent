@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 07:52 UTC+7.
+// @last-edited: 2026-10-06 11:02 UTC+7.
 // @title: OperaAgentInstaller.cs — source for the Opera Agent installer window.
-// @state: detects Chromium browsers, writes ExtensionInstallForcelist as numbered id;update_url values, reports what it did.
+// @state: detects Chromium browsers, writes numbered ExtensionInstallForcelist and ExtensionInstallAllowlist entries, reports what it did.
 // @dependencies: WinForms, Drawing. Build with scripts/build-installer.ps1.
 
 using System;
@@ -332,9 +332,10 @@ namespace OperaAgent
                     try
                     {
                         WritePolicy(t);
+                        WriteAllowlist(t);
                         Ui(delegate
                         {
-                            Write(t.Name + ": kebijakan ditulis.");
+                            Write(t.Name + ": kebijakan dan allowlist ditulis.");
                             done++;
                             _progress.Value = (int)(40 + 50.0 * done / Math.Max(1, chosen.Count));
                         });
@@ -351,7 +352,7 @@ namespace OperaAgent
                 int seen = 0;
                 foreach (var t in chosen)
                 {
-                    if (HasFeed(t)) seen++;
+                    if (HasFeed(t) && HasAllowlist(t)) seen++;
                     else Ui(delegate { Write(t.Name + ": kebijakan tidak terbaca kembali."); });
                 }
 
@@ -402,6 +403,38 @@ namespace OperaAgent
             }
         }
 
+        // WHY the allowlist: a force-installed extension whose update URL is not the
+        // Web Store is refused by every Chromium browser on a machine that is not
+        // domain-joined, AzureAD-joined or MDM-registered, and the entry is shown as
+        // [BLOCKED]. The allowlist is the other policy, and it is the one that lets a
+        // reader enable an extension they dragged in themselves: Brave shows "This
+        // extension is not listed in the Chrome Web Store" and the toggle stays off
+        // until this key names the extension. Both are written, because they answer
+        // different questions: the forcelist installs where it is allowed to, and the
+        // allowlist enables what the reader already has.
+
+        private void WriteAllowlist(BrowserTarget t)
+        {
+            using (var hive = Registry.CurrentUser.OpenSubKey(t.PolicyKey, true)
+                   ?? Registry.CurrentUser.CreateSubKey(t.PolicyKey))
+            using (var list = hive.CreateSubKey("ExtensionInstallAllowlist"))
+            {
+                var next = new List<string>();
+                foreach (var name in list.GetValueNames())
+                {
+                    var existing = list.GetValue(name) as string;
+                    if (existing == ExtensionId) continue;
+                    if (existing != null) next.Add(existing);
+                }
+                next.Add(ExtensionId);
+                foreach (var name in list.GetValueNames()) list.DeleteValue(name, false);
+                for (var i = 0; i < next.Count; i++)
+                {
+                    list.SetValue((i + 1).ToString(), next[i], RegistryValueKind.String);
+                }
+            }
+        }
+
         private void WritePolicy(BrowserTarget t)
         {
             using (var hive = Registry.CurrentUser.OpenSubKey(t.PolicyKey, true)
@@ -435,6 +468,23 @@ namespace OperaAgent
                 for (var i = 0; i < next.Count; i++)
                 {
                     list.SetValue((i + 1).ToString(), next[i], RegistryValueKind.String);
+                }
+            }
+        }
+
+        private bool HasAllowlist(BrowserTarget t)
+        {
+            using (var hive = Registry.CurrentUser.OpenSubKey(t.PolicyKey))
+            {
+                if (hive == null) return false;
+                using (var list = hive.OpenSubKey("ExtensionInstallAllowlist"))
+                {
+                    if (list == null) return false;
+                    foreach (var name in list.GetValueNames())
+                    {
+                        if (list.GetValue(name) as string == ExtensionId) return true;
+                    }
+                    return false;
                 }
             }
         }
