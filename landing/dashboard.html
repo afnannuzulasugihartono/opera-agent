@@ -321,11 +321,23 @@
       // not installed anything should learn that first, and the device list alone
       // cannot say it, because an empty list looks identical whether the extension is
       // missing or merely not paired yet.
-      const installed = document.documentElement.dataset.operaAgent === 'installed';
-      $('installState').textContent = installed
-        ? 'Opera Agent terpasang di browser ini.'
-        : 'Opera Agent belum terpasang di browser ini. Pasang dulu, lalu pair dengan akun ini.';
-      $('installState').className = installed ? 'status ok' : 'status warn';
+      // WHY this is a function and not a single read: the content script runs at
+      // document_idle, so the marker can land after this module has already read the
+      // document. Reading once would show "not installed" on a browser that has it, and
+      // the reader would go and install a second copy. The attribute change is the one
+      // event that means the answer changed.
+      const reportInstallState = () => {
+        const installed = document.documentElement.dataset.operaAgent === 'installed';
+        $('installState').textContent = installed
+          ? 'Opera Agent terpasang di browser ini.'
+          : 'Opera Agent belum terpasang di browser ini. Pasang dulu, lalu pair dengan akun ini.';
+        $('installState').className = installed ? 'status ok' : 'status warn';
+      };
+      reportInstallState();
+      new MutationObserver(reportInstallState).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-opera-agent']
+      });
       try {
         const response = await fetch(`${REST}/rpc/opera_my_devices`, { method: 'POST', headers: headersFor(token), body: '{}' });
         data = await response.json();

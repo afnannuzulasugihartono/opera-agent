@@ -105,11 +105,21 @@ async function run(page, shape = {}) {
       documentElement: {
         dataset: extensionInstalled ? { operaAgent: 'installed' } : {}
       },
+      // WHY MutationObserver exists here: the dashboard watches for the install marker
+      // landing after the module has read the document, so the harness has to offer the
+      // observer the page constructs. observe() records nothing; the two cases set the
+      // marker before load, and a second run sets it later to prove the page reacts.
       getElementById: (id) => element(id),
       querySelectorAll: () => [],
       querySelector: () => null,
       addEventListener() {}
     },
+    MutationObserver: class {
+      constructor(callback) { this.callback = callback; context.observers.push(this); }
+      observe() {}
+      disconnect() {}
+    },
+    observers: [],
     confirm: () => false,
     fetch: async (url) => {
       if (unreachable) throw new TypeError('Failed to fetch');
@@ -189,6 +199,21 @@ test('the dashboard confirms the extension once the content script has marked th
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.match(nodes.installState.textContent, /Opera Agent terpasang di browser ini/,
     'the installed case is stated, so the line is not a permanent warning');
+});
+
+test('the dashboard reacts to the marker landing after it has already read the page', async () => {
+  // WHY this case: the content script runs at document_idle, so on a slow page the
+  // marker arrives after the module has rendered. Reading once would tell a reader who
+  // already has the extension that it is missing, and they would install a second copy.
+  const { nodes, rejected, context } = await run('dashboard.html', { extensionInstalled: false });
+  assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
+  assert.match(nodes.installState.textContent, /belum terpasang/, 'the page starts by reporting it missing');
+  assert.ok(context.observers.length > 0, 'the page watches for the marker instead of reading once');
+
+  context.document.documentElement.dataset.operaAgent = 'installed';
+  for (const observer of context.observers) observer.callback();
+  assert.match(nodes.installState.textContent, /Opera Agent terpasang di browser ini/,
+    'the line corrects itself when the marker arrives, without a reload');
 });
 
 test('the account page renders the identity facts and the device count', async () => {

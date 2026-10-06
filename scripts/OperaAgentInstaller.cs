@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 01:32 UTC+7.
+// @last-edited: 2026-10-06 05:41 UTC+7.
 // @title: OperaAgentInstaller.cs — source for the Opera Agent installer window.
-// @state: detects Chromium browsers, writes ExtensionInstallForcelist, reports what it did.
+// @state: detects Chromium browsers, writes ExtensionInstallForcelist as id;update_url, reports what it did.
 // @dependencies: WinForms, Drawing. Build with scripts/build-installer.ps1.
 
 using System;
@@ -50,9 +50,13 @@ namespace OperaAgent
             "https://" + ProjectRef + ".supabase.co/functions/v1/opera-agent-update/update.xml"
             + "?x=id%3D" + ExtensionId + "%26v%3D0";
 
-        // WHY the x parameter matters: the endpoint reads which extension the
-        // updater is asking about from it, and falls back to a legacy id when it
-        // is absent, which serves a September release instead of this one.
+        // WHY the entry is an id and a URL joined by a semicolon: Chrome's
+        // ExtensionInstallForcelist takes "extension_id;update_url". Writing the URL
+        // alone is not a shorter form of the same thing, it is a different value, and
+        // Chrome ignores an entry it cannot parse. The policy then reads as applied,
+        // the installer reports success, and nothing gets installed.
+
+        private static readonly string ForcelistEntry = ExtensionId + ";" + FeedUrl;
 
         private readonly List<BrowserTarget> _targets = new List<BrowserTarget>();
         private readonly List<CheckBox> _boxes = new List<CheckBox>();
@@ -413,7 +417,7 @@ namespace OperaAgent
                     foreach (var e in existing.Where(e => e != null && !e.Contains(ExtensionId)))
                         next.Add(e);
                 }
-                next.Add(FeedUrl);
+                next.Add(ForcelistEntry);
                 list.SetValue("ExtensionInstallForcelist", next.ToArray(), RegistryValueKind.MultiString);
             }
         }
@@ -427,7 +431,7 @@ namespace OperaAgent
                 {
                     if (list == null) return false;
                     var values = list.GetValue("ExtensionInstallForcelist") as string[];
-                    return values != null && values.Contains(FeedUrl);
+                    return values != null && values.Contains(ForcelistEntry);
                 }
             }
         }

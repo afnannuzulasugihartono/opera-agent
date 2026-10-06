@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 04:22 UTC+7.
+// @last-edited: 2026-10-06 05:41 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -107,6 +107,27 @@ test('the install section links the download page instead of dead-ending', () =>
   const html = read('index.html');
   assert.match(html, /href="\.\/unduh\.html"/, 'install reaches the download page');
   assert.match(html, /unduh\.html/, 'the link exists in the copy too');
+});
+
+test('the installer writes the policy entry Chrome can parse', () => {
+  const src = fs.readFileSync(new URL('scripts/OperaAgentInstaller.cs', root), 'utf8');
+  // WHY this lock: ExtensionInstallForcelist takes "extension_id;update_url". The
+  // installer once wrote the URL alone, which is not a shorter form of the same value
+  // but a different one, and Chrome ignores an entry it cannot parse. The policy then
+  // reads as applied, the installer reports success, and nothing is installed — which
+  // is exactly what an unrun installer looks like from the outside.
+  assert.match(src, /ForcelistEntry\s*=\s*ExtensionId\s*\+\s*";"\s*\+\s*FeedUrl/,
+    'the entry joins the extension id and the update URL with a semicolon');
+  // WHY the id is asserted here and not left to the reader: a key rotation changes the
+  // id, and an entry naming the old one installs an extension that can never update.
+  const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+  const digest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
+  const currentId = [...digest].map((b) => `${String.fromCharCode(97 + (b >> 4))}${String.fromCharCode(97 + (b & 15))}`).join('');
+  assert.match(src, new RegExp(`ExtensionId = "${currentId}"`),
+    'the installer names the id the manifest key resolves to');
+  // WHY no bare URL: the entry written to the list is the joined form, so a URL alone
+  // anywhere in the write path means the bug is back.
+  assert.doesNotMatch(src, /next\.Add\(FeedUrl\)/, 'the list never receives the URL without its id');
 });
 
 test('the advertised checksum is the checksum of the shipped archive', () => {

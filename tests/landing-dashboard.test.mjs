@@ -53,6 +53,15 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
   assert.doesNotMatch(html, /result\s*\.\s*(result|params|value|content|text)\b/i, 'the run payload is never rendered');
 });
 
+test('the dashboard re-reads the marker instead of reading it once', () => {
+  const html = read('dashboard.html');
+  // WHY this lock: the content script runs at document_idle, so the marker can land
+  // after the dashboard has already rendered. A single read tells a reader who has the
+  // extension that it is missing, and the obvious reaction is to install a second copy.
+  assert.match(html, /MutationObserver/, 'the page watches for the marker arriving late');
+  assert.match(html, /attributeFilter:\s*\['data-opera-agent'\]/, 'and only for that attribute');
+});
+
 test('the dashboard says whether the extension is installed in this browser', () => {
   const html = read('dashboard.html');
   // WHY this lock: a signed-in reader whose browser has no extension sees an empty
