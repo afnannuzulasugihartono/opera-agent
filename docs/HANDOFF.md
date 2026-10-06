@@ -1,4 +1,4 @@
-@last-edited: 2026-10-06 03:44 UTC+7.
+@last-edited: 2026-10-06 12:35 UTC+7.
 @related: [AGENTS.md](../AGENTS.md) - [CONTEXT.md](CONTEXT.md) - [ROADMAP.md](../ROADMAP.md)
 
 # HANDOFF
@@ -83,6 +83,16 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   the manifest declares, inserts the `opera_releases` row, and then confirms the served
   bytes. It activates nothing else: 1.6.14 under the old id is self-consistent and must
   keep serving installs that never updated.
+- **A release touches no file on the site.**
+  `[supabase/functions/opera-agent-update/index.ts](../supabase/functions/opera-agent-update/index.ts)`
+  serves `/download/opera-agent.crx` and `/download/opera-agent.zip`, both answering with the
+  active row for the current identity and both naming the version in `Content-Disposition`,
+  so a reader's saved file says which build it is. The archive is the payload sliced out of
+  the signed CRX after its header — those bytes are already a zip — so no second copy of the
+  extension exists to fall out of step. Proved by clearing the row's `active` flag and
+  watching the path answer 404, then restoring it. The two hosted artefacts and the header
+  rules that pinned them for a year are deleted; the installer is the only binary the site
+  still hosts, because its bytes do not change on a release and its digest can stay printed.
 - **The outage cause, so it cannot repeat silently:** the repo is connected to Vercel, so
   every push auto-deploys, and the project Root Directory was unset, so each push built
   the repository root, which has no `index.html`. Every path answered 404 the moment a
