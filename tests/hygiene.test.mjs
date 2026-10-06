@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 22:34 UTC+7.
+// @last-edited: 2026-10-06 10:20 UTC+7.
 // @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
 // @state: The memoized read path, the comment-spacing rule over untracked files, allowlist paths and four rule gates are locked.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
@@ -23,6 +23,11 @@ import { spacingViolations } from './helpers/comment-spacing.mjs';
 // below needs every runtime module and every test as a consumer, and it must
 // discover new files rather than carry a list that goes stale.
 
+// WHY .ts rides along: the edge functions import shared lib/ modules by relative
+// path, so a guard that reads only .mjs calls production imports dead. Measured:
+// eight symbols it flagged are imported by opera-agent-vm and
+// opera-agent-transactions-8d, and deleting any one of them breaks a deploy.
+
 const collectTests = async (dir) => {
   const out = [];
   for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
@@ -30,7 +35,7 @@ const collectTests = async (dir) => {
     if (entry.isDirectory()) {
       if (entry.name === '__pycache__') continue;
       out.push(...await collectTests(p));
-    } else if (/\.(?:test\.)?mjs$/.test(entry.name)) {
+    } else if (/\.(?:test\.)?(mjs|ts)$/.test(entry.name)) {
       out.push(p);
     }
   }

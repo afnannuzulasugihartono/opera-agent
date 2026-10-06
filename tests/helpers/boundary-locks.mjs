@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 05:12 UTC+7.
+// @last-edited: 2026-10-06 10:20 UTC+7.
 // @title: boundary-locks — locks — Frozen public-boundary locks shared by the checkpoint tests.
 // @state: remove the unused activeTab permission from the manifest.
 // @dependencies: none.
@@ -18,12 +18,12 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', '3a36f9b664660b0257f871dd183a53b281fda4a2'], // reactive VM core
+  ['../lib/reactive-vm.js', 'b7b0705156063384561b6184ac816c75a17737c9'], // reactive VM core without its unwired entry points; createReactiveVm and advanceReactiveVm had no importer and left with the dead-surface cleanup that unblocked the deploy gate
   ['../lib/reactive-vm-control-flow.js', 'c5c8933f733c0217e3f0e33513d5efda3893b99d'], // reactive VM phase C
-  ['../lib/reactive-vm-collect.js', 'b9b060b63cff42ae74ec0a6b1a63992e9603e726'], // reactive VM phase D
+  ['../lib/reactive-vm-collect.js', 'd5f748ec74e5af0355d2b638a495765269f3a575'], // reactive VM phase D without bindCollectionEvidence; unexported helpers stay module-private until the phase is wired
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../lib/multi-signal-relevance.js', 'f23ee99c8f647720ff20f1da01c3d529bd2d5b40'], // multi-signal relevance
+  ['../lib/multi-signal-relevance.js', '713cdf15960760d81f16dee9e20b2ed23bb4ff97'], // multi-signal relevance without the unreferenced P3 decision table
   ['../lib/delta-first-observation.js', '534a3bb22b1e661a5799c3798196fcffa4764ae9'], // delta first observation
 ]);
