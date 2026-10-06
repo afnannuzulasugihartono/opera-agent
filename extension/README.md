@@ -90,7 +90,7 @@ enforced in code instead.
 - Screenshots are refused for a tab the user marked private, and again by the
   all-frames sensitive-field probe in `assertCaptureFramesSafe()`.
 - Sensitive fields — password, OTP/2FA, PIN, card, CVV — are blocked. See
-  [SECURITY.md](../docs/security.md).
+  [security.md](../docs/security.md).
 
 ## Content scripts
 

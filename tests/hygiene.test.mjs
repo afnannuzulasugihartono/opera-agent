@@ -211,6 +211,28 @@ test('the logic gate actually inspected the rule set', async () => {
   }
 });
 
+test('every relative link in a document resolves to a file in the tree', async () => {
+  // WHY this gate: moving a document is a mechanical act that leaves its own links
+  // behind, and a link to a file one directory up still reads correctly in the
+  // source. Every such link in the tree was dead when the security policy moved
+  // from the root into docs/, and only a reader following it would have found out.
+  const dir = fileURLToPath(new URL('..', import.meta.url));
+  const tracked = execFileSync('git', ['ls-files', '*.md'], { cwd: dir, encoding: 'utf8' })
+    .split('\n')
+    .filter(Boolean);
+  const dead = [];
+  for (const file of tracked) {
+    const body = fsSync.readFileSync(path.join(dir, file), 'utf8');
+    for (const [, target] of body.matchAll(/\[[^\]]+\]\(([^)\s]+)\)/g)) {
+      if (/^(?:[a-z]+:|#)/i.test(target)) continue;
+      const wanted = target.split('#')[0];
+      if (!wanted) continue;
+      if (!fsSync.existsSync(path.resolve(dir, path.dirname(file), wanted))) dead.push(`${file} -> ${target}`);
+    }
+  }
+  assert.deepEqual(dead, [], `documents point at files that are not there:\n${dead.join('\n')}`);
+});
+
 test('every gitleaks allowlist path still names a file in the tree', async () => {
   const root = new URL('..', import.meta.url);
   const tracked = new Set(execFileSync('git', ['ls-files'], { cwd: fileURLToPath(root), encoding: 'utf8' })

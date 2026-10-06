@@ -7,7 +7,7 @@
 
 Simplify first, code first, comments second. State what is true now, never its history.
 
-Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](AGENTS.md) name.
+Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 
 Opera Agent can interact with a local browser and therefore uses a strict allowlisted command model.
@@ -50,6 +50,6 @@ custom headers. No gateway route reads the query string, so `?apiKey=` is not a
 token carrier anywhere. Tokens are verified then
 dropped: regression tests pin that they never appear in logs, error payloads,
 or persisted records, and pin the carrier set inside `extractToken`. Enforced by
-[`tests/api-docs.test.mjs`](tests/api-docs.test.mjs). A carrier
+[`tests/api-docs.test.mjs`](../tests/api-docs.test.mjs). A carrier
 reached through a helper function, or read by a route handler outside
 `extractToken`, stays covered by review rather than by that test.

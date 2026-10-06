@@ -1,5 +1,5 @@
 @last-edited: 2026-10-06 11:55 UTC+7.
-@related: [`AGENTS.md`](AGENTS.md) - [`SECURITY.md`](SECURITY.md) - [`docs/api.md`](docs/api.md)
+@related: [`AGENTS.md`](AGENTS.md) - [`docs/security.md`](docs/security.md) - [`docs/api.md`](docs/api.md)
 
 # Opera Agent
 

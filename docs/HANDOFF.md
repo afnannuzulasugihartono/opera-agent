@@ -16,7 +16,7 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.15` in `[extension/manifest.json](../extension/manifest.json)` is the source of truth.
-- Local gates: `npm test`, `npm run check` ok — 26 primitives, 98 runtime safety files.
+- Local gates: `npm test`, `npm run check` ok — 26 primitives, 99 runtime safety files, 531 unit tests.
 - Production database: 58 `opera_*` functions, 9 edge functions, each with a repo
   counterpart. The account RPCs the dashboard calls are live and reachable by name.
 - No management token or secret key in the tree. The four signed-in and consent pages carry the
@@ -114,6 +114,22 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   `[tests/landing-hosting.test.mjs](../tests/landing-hosting.test.mjs)`. No `_redirects` file is
   needed: Pages resolves an extensionless URL to the matching `.html` and serves `404.html`
   for anything unmatched, redirecting with a 308 that a client following redirects resolves.
+- **The site was relayout to the Apple standard: display type, pill buttons, wide console,
+  generous space, and a hero that swaps.** Home decides signed-in or not from one
+  `localStorage` read and no request, because the model key is typed on that page and a
+  no-network promise is load-bearing. Dashboard and home carry `.wrap.wide` (1120px); the
+  legal pages keep a 720px prose measure.
+- **Two layout defects measured at 320px, both invisible in source review.** The six footer
+  doors are written with no whitespace between their tags, so an inline row of anchors has no
+  break opportunity and the margin spacing had nowhere to break: the footer ran 32px past the
+  screen on every page. And `pre` is `white-space: pre`, which outranks the `overflow-wrap` on
+  the `code` inside it, so the 118-character curl command on unduh ran 662px past it. Fixed
+  with a flex gap on the footer row and `pre-wrap` on the box; all nine pages measured clean at
+  320, 390, 768, 1280 and 1600.
+- **The reveal motion hid the page from being printed.** Nothing scrolls a print preview, so
+  every section below the first rendered blank, and find-in-page skips transparent text. A
+  print media rule now shows every section. The motion on screen is unchanged, and it still
+  bows out for `prefers-reduced-motion` and for any reader without JS.
 
 ## Known, not started
 
@@ -172,7 +188,7 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
    this repository cannot answer. Full numbers in `[docs/benchmarks.md](benchmarks.md)`.
 7. **The plan path needs two owner inputs before it can run.** The endpoint, key and model
    name come from the user's own configuration on their device — no shared key, ever, since
-   the product ships at scale — and [`SECURITY.md`](../SECURITY.md) has to say plainly what
+   the product ships at scale — and `[security.md](security.md)` has to say plainly what
    leaves the device. After that the remaining work is the VM host: handing a compiled
    program to `opera_start_workflow` needs a new RPC, which is production shape.
 
@@ -188,12 +204,10 @@ Cover every button on every site, and grow the capability the Goals in [`AGENTS.
   one commit, so `gitleaks detect --log-opts=-1` is what it sees; a full-history scan reports
   eight findings in files that were renamed or deleted long ago, which is why the allowlist
   names only paths the tree still has.
-- **The unit gate is green for the first time: 505/505.** The dead-export guard
-  was blind to `.ts`, so it flagged eight symbols production edge functions
-  import; it scans them now. The 18 truly dead symbols left with it — ten
-  declarations nothing calls are deleted, eight used only in-file are
-  module-private — zero behavior change, SHAs re-frozen. The red had been
-  blocking every site deploy, since the gate is hard.
+- **The unit gate is green at 531/531**, and the site relayout ships with it. The
+  dead-export guard now scans `.ts` as well as `.mjs`, so it no longer flags eight
+  symbols production edge functions import; the 18 truly dead symbols went with it,
+  SHAs re-frozen.
 - **Cloudflare applied none of `_headers` until it was one path per block.**
   Measured live twice: first no CSP anywhere (comma-joined lines match nothing),
   then CSP on some pages but defaults on the extensionless addresses (blocks
