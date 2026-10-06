@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 09:58 UTC+7.
 // @title: ui-surface.test — surface.test — Extension UI surface, consolidated 2026-10-03.
 // @state: consolidate the extension UI cluster into one file.
 // @dependencies: node:test, strict, node:fs, promises.
@@ -316,7 +316,7 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
   assert.doesNotMatch(styles, /width:\s*min\(/);
   assert.match(styles, /@media \(max-width: 239px\)/);
   assert.doesNotMatch(styles, /min-width:\s*340px/);
-  assert.match(script, /ready:\s*'Connected'/);
+  assert.match(script, /ready:\s*'Terhubung'/);
   assert.match(script, /currentTabPrivate \? 'blocked' : 'allowed'/);
 });
 

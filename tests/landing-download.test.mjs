@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 12:20 UTC+7.
+// @last-edited: 2026-10-06 09:58 UTC+7.
 // @title: landing-download — a stranger must be able to get the extension.
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -411,4 +411,14 @@ test('the download page shares the site navigation and floor', () => {
   assert.match(html, /akun\.html/, 'the dashboard is reachable');
   const noScript = html.replace(/<script[\s\S]*?<\/script>/g, '');
   assert.match(noScript, /(unduh|Unduh|arsip|archive)/, 'it reads without script');
+});
+
+test('the download page has no typo where a stranger decides to trust it', () => {
+  const html = read('unduh.html');
+
+  // WHY this lock: the manual-install section is read by someone whose automatic
+  // install just failed. A misspelled "kebijakan" there reads as a broken product,
+  // exactly when trust matters most.
+  assert.doesNotMatch(html, /polityvek/, 'kebijakan is spelled correctly');
+  assert.match(html, /Kalau kebijakan ditolak/, 'the sentence reads as written');
 });

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-05 01:36 UTC+7.
+// @last-edited: 2026-10-06 09:58 UTC+7.
 // @title: options — MV3 runtime.
-// @state: options page with bridge URL and log level settings.
+// @state: Indonesian copy; bridge URL, log level, and model settings.
 // @dependencies: endpoints, options-store, error-messages, protocol.
 
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
@@ -20,8 +20,8 @@ async function prefill() {
   // The page is told whether a key exists and never what it is. The key itself is
   // entered in the popup, next to pairing: a secret has no business here.
   $('modelStatus').textContent = options.modelKeySet
-    ? 'Endpoint and model saved here. A key is stored; set it in the popup.'
-    : 'Endpoint and model saved here. No key is stored yet; set one in the popup.';
+    ? 'Endpoint dan model tersimpan di sini. Kunci sudah tersimpan; atur di popup.'
+    : 'Endpoint dan model tersimpan di sini. Belum ada kunci; atur di popup.';
 }
 
 function showStatus(text) {
@@ -41,7 +41,7 @@ function init() {
       const bridgeUrl = await saveBridgeUrl(storage, $('bridgeUrl').value);
       await saveLogLevel(storage, $('logLevel').value);
       $('bridgeUrl').value = bridgeUrl;
-      showStatus(bridgeUrl === DEFAULT_BRIDGE_URL ? 'Saved. Using the default bridge.' : 'Saved.');
+      showStatus(bridgeUrl === DEFAULT_BRIDGE_URL ? 'Tersimpan. Memakai bridge bawaan.' : 'Tersimpan.');
     } catch (error) {
       showStatus(userErrorMessage(error?.message || error));
     }
@@ -54,7 +54,7 @@ function init() {
       await saveModelEndpoint(storage, $('modelEndpoint').value);
       await saveModelName(storage, $('modelName').value);
       await prefill();
-      showModelStatus('Model settings saved on this device.');
+      showModelStatus('Setelan model tersimpan di device ini.');
     } catch (error) {
       showModelStatus(userErrorMessage(error?.message || error));
     }

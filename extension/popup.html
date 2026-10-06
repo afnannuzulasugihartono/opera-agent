@@ -1,10 +1,10 @@
-<!-- @last-edited: 2026-10-04 18:25 UTC+7. -->
+<!-- @last-edited: 2026-10-06 09:58 UTC+7. -->
 <!-- @title: popup — MV3 runtime. -->
-<!-- @state: style(popup): v8 Warm Command redesign + Cursor mark + unprefixed version (1.6.10). -->
+<!-- @state: Indonesian copy; the pairing hint links Dashboard #pairing, set from SITE_ORIGIN at startup. -->
 <!-- @dependencies: none stated. -->
 
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -16,48 +16,48 @@
     <header class="app-header">
       <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#fff" fill-opacity=".96"/></svg></div>
       <div class="brand-copy">
-        <p class="eyebrow">Local browser bridge</p>
+        <p class="eyebrow">Jembatan browser lokal</p>
         <h1>Opera Agent</h1>
         <p id="version">&nbsp;</p>
       </div>
-      <span id="statusBadge" class="badge starting" aria-live="polite">Starting</span>
+      <span id="statusBadge" class="badge starting" aria-live="polite">Memulai</span>
     </header>
 
     <section class="card status-card" aria-labelledby="statusTitle">        <div class="section-heading">
           <h2 id="statusTitle">Status</h2>
-          <span class="secure-label">Local only</span>
+          <span class="secure-label">Lokal saja</span>
         </div>
       <dl class="details">
         <div class="row"><dt>Device</dt><dd id="deviceName">opera</dd></div>
-        <div class="row"><dt>Connection</dt><dd id="connection">&mdash;</dd></div>
-        <div class="row"><dt>Last command</dt><dd id="lastCommand">&mdash;</dd></div>
-        <div class="row"><dt>Vision</dt><dd id="visionPrivacy" class="privacy allowed">Allowed</dd></div>
+        <div class="row"><dt>Koneksi</dt><dd id="connection">&mdash;</dd></div>
+        <div class="row"><dt>Perintah terakhir</dt><dd id="lastCommand">&mdash;</dd></div>
+        <div class="row"><dt>Layar</dt><dd id="visionPrivacy" class="privacy allowed">Diizinkan</dd></div>
       </dl>
       <p id="error" class="error" role="alert" hidden></p>
     </section>
 
     <section id="pairSection" class="card" aria-labelledby="pairTitle">
       <div class="section-heading">
-        <h2 id="pairTitle">Connect device</h2>
+        <h2 id="pairTitle">Sambungkan device</h2>
       </div>
-      <label for="pairCode">One-time pairing code</label>
-      <input id="pairCode" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Enter pairing code" />
-      <button id="pairButton" class="primary">Pair device</button>
-      <p class="hint">Generate the code from Opera Agent, then enter it here once.</p>
+      <label for="pairCode">Kode pairing sekali pakai</label>
+      <input id="pairCode" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Masukkan kode pairing" />
+      <button id="pairButton" class="primary">Sambungkan</button>
+      <p class="hint">Buat kode di <a id="pairHelp" href="https://opera-agent.pages.dev/dashboard.html#pairing" target="_blank" rel="noreferrer">Dashboard → Pairing manual</a>, lalu tempel di sini sekali.</p>
     </section>
 
     <section id="pairedSection" class="card controls-card" aria-labelledby="controlsTitle" hidden>        <div class="section-heading">
-          <h2 id="controlsTitle">Device controls</h2>
+          <h2 id="controlsTitle">Kendali device</h2>
         </div>
       <div class="button-stack">
-        <button id="privateTabButton" class="secondary">Mark current tab private</button>
-        <button id="selfTestButton" class="secondary">Run self-test</button>
-        <button id="unpairButton" class="danger">Unpair device</button>
+        <button id="privateTabButton" class="secondary">Tandai tab ini privat</button>
+        <button id="selfTestButton" class="secondary">Jalankan uji mandiri</button>
+        <button id="unpairButton" class="danger">Lepas pairing</button>
       </div>
       <pre id="selfTestResult" aria-live="polite" hidden></pre>
     </section>
 
-    <footer>Private by design &middot; Background-first &middot; Local execution</footer>
+    <footer>Privasi sejak awal &middot; Berjalan di latar &middot; Eksekusi lokal</footer>
   </main>
   <script type="module" src="popup.js"></script>
 </body>

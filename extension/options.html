@@ -1,14 +1,14 @@
-<!-- @last-edited: 2026-10-05 01:36 UTC+7. -->
+<!-- @last-edited: 2026-10-06 09:58 UTC+7. -->
 <!-- @title: options — MV3 runtime. -->
-<!-- @state: options page with bridge URL and log level settings. -->
+<!-- @state: Indonesian copy; bridge URL, log level, and model settings. -->
 <!-- @dependencies: none stated. -->
 
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Opera Agent Settings</title>
+  <title>Setelan Opera Agent</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
     /* Options opens in a full browser tab; widen the popup's fixed 352px
@@ -40,61 +40,61 @@
     <header class="app-header">
       <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#fff" fill-opacity=".96"/></svg></div>
       <div class="brand-copy">
-        <p class="eyebrow">Local browser bridge</p>
-        <h1>Settings</h1>
+        <p class="eyebrow">Jembatan browser lokal</p>
+        <h1>Setelan</h1>
         <p><span id="version">&nbsp;</span></p>
       </div>
     </header>
 
     <section class="card" aria-labelledby="connectionTitle">
       <div class="section-heading">
-        <h2 id="connectionTitle">Connection</h2>
-        <span class="secure-label">Local only</span>
+        <h2 id="connectionTitle">Koneksi</h2>
+        <span class="secure-label">Lokal saja</span>
       </div>
       <form id="settingsForm">
-        <label for="bridgeUrl">Bridge URL</label>
-        <input id="bridgeUrl" type="text" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="Leave empty to reset to the default bridge" />
-        <label for="logLevel">Log level</label>
+        <label for="bridgeUrl">URL bridge</label>
+        <input id="bridgeUrl" type="text" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="Kosongkan untuk kembali ke bridge bawaan" />
+        <label for="logLevel">Level log</label>
         <select id="logLevel">
           <option value="debug">debug</option>
           <option value="warn">warn</option>
           <option value="error">error</option>
         </select>
-        <button id="saveButton" type="submit" class="primary">Save settings</button>
+        <button id="saveButton" type="submit" class="primary">Simpan setelan</button>
         <p id="saveStatus" class="hint" role="status" aria-live="polite">&nbsp;</p>
       </form>
     </section>
 
     <section class="card" aria-labelledby="modelTitle">
       <div class="section-heading">
-        <h2 id="modelTitle">AI model</h2>
-        <span class="secure-label">Stays on this device</span>
+        <h2 id="modelTitle">Model AI</h2>
+        <span class="secure-label">Tetap di device ini</span>
       </div>
       <form id="modelForm">
-        <label for="modelEndpoint">Model endpoint</label>
-        <input id="modelEndpoint" type="text" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://your-provider.example/v1, or http://127.0.0.1:11434/v1 for a local model" />
-        <label for="modelName">Model name</label>
-        <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="The name your provider uses" />
-        <button id="modelSaveButton" type="submit" class="primary">Save model</button>
+        <label for="modelEndpoint">Endpoint model</label>
+        <input id="modelEndpoint" type="text" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1, atau http://127.0.0.1:11434/v1 untuk model lokal" />
+        <label for="modelName">Nama model</label>
+        <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="Nama yang dipakai penyediamu" />
+        <button id="modelSaveButton" type="submit" class="primary">Simpan model</button>
         <p id="modelStatus" class="hint" role="status" aria-live="polite">&nbsp;</p>
-        <p class="hint">The endpoint and model name stay in this browser and are never sent to the Opera Agent bridge. The key is entered in the popup, next to pairing, because a secret does not belong on this page.</p>
+        <p class="hint">Endpoint dan nama model tetap di browser ini dan tidak pernah dikirim ke bridge Opera Agent. Kunci dimasukkan di popup, di samping pairing, karena secret tidak pantas ada di halaman ini.</p>
       </form>
     </section>
 
     <section class="card" aria-labelledby="troubleshootTitle">
       <div class="section-heading">
-        <h2 id="troubleshootTitle">Troubleshooting</h2>
+        <h2 id="troubleshootTitle">Bantuan</h2>
       </div>
       <ul class="troubleshoot">
-        <li><strong>Install:</strong> load the unpacked extension from <code>opera://extensions</code> and accept the requested permissions, including debugger access for trusted input.</li>
-        <li><strong>Pairing:</strong> pairing rejected? Generate a fresh one-time pairing value from the connected Supabase project, then pair again from the popup.</li>
-        <li><strong>Bridge override:</strong> an https:// address here overrides the default bridge; leave the field empty and save to reset to the default.</li>
-        <li><strong>Log level:</strong> debug, warn, or error &mdash; debug is the most verbose and the default is warn.</li>
-        <li><strong>Self-test:</strong> run self-test from the popup to probe the bridge, then read the connection line.</li>
+        <li><strong>Pasang:</strong> muat extension tanpa paket dari <code>opera://extensions</code> dan terima izin yang diminta, termasuk akses debugger untuk input terpercaya.</li>
+        <li><strong>Pairing:</strong> pairing ditolak? Buat kode pairing sekali pakai yang baru di Dashboard → Pairing manual, lalu pairing lagi dari popup.</li>
+        <li><strong>Bridge:</strong> alamat https:// di sini menimpa bridge bawaan; kosongkan lalu simpan untuk kembali ke bawaan.</li>
+        <li><strong>Level log:</strong> debug, warn, atau error &mdash; debug paling berisik dan bawaannya warn.</li>
+        <li><strong>Uji mandiri:</strong> jalankan uji mandiri dari popup untuk memeriksa bridge, lalu baca baris koneksi.</li>
       </ul>
     </section>
 
-    <footer>Private by design &middot; Background-first &middot; Local execution</footer>
+    <footer>Privasi sejak awal &middot; Berjalan di latar &middot; Eksekusi lokal</footer>
   </main>
   <script type="module" src="options.js"></script>
 </body>

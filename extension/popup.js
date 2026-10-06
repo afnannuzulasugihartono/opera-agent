@@ -1,10 +1,11 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-06 09:58 UTC+7.
 // @title: popup — MV3 runtime.
-// @state: mapped user-facing errors, no raw internals in popup/consent.
-// @dependencies: agent-log, error-messages.
+// @state: Indonesian copy; pairing help follows SITE_ORIGIN, errors mapped to Indonesian.
+// @dependencies: agent-log, error-messages, endpoints.
 
 import './lib/agent-log.js';
 import { userErrorMessage } from './lib/error-messages.js';
+import { SITE_ORIGIN } from './lib/endpoints.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 const $ = (id) => document.getElementById(id);
@@ -30,11 +31,11 @@ function friendlyTime(value) {
 
 function friendlyStatus(status) {
   const labels = {
-    ready: 'Connected',
-    connecting: 'Connecting',
-    reconnecting: 'Reconnecting',
-    starting: 'Starting',
-    unpaired: 'Not paired'
+    ready: 'Terhubung',
+    connecting: 'Menghubungkan',
+    reconnecting: 'Menyambung ulang',
+    starting: 'Memulai',
+    unpaired: 'Belum dipairing'
   };
   return labels[status] || status.replace(/\b\w/g, (character) => character.toUpperCase());
 }
@@ -54,9 +55,9 @@ async function refresh() {
   $('lastCommand').textContent = friendlyTime(state.lastCommandAt);
   currentTabId = data.currentTabId;
   currentTabPrivate = !!data.currentTabPrivate;
-  $('visionPrivacy').textContent = currentTabPrivate ? 'Blocked (private)' : 'Allowed';
+  $('visionPrivacy').textContent = currentTabPrivate ? 'Diblokir (privat)' : 'Diizinkan';
   $('visionPrivacy').className = `privacy ${currentTabPrivate ? 'blocked' : 'allowed'}`;
-  $('privateTabButton').textContent = currentTabPrivate ? 'Allow vision on current tab' : 'Mark current tab private';
+  $('privateTabButton').textContent = currentTabPrivate ? 'Izinkan visi di tab ini' : 'Tandai tab ini privat';
   $('privateTabButton').disabled = currentTabId == null;
   $('statusBadge').textContent = friendlyStatus(status);
   $('statusBadge').className = `badge ${status}`;
@@ -82,7 +83,6 @@ $('pairButton').addEventListener('click', async () => {
     setBusy($('pairButton'), false);
   }
 });
-
 $('unpairButton').addEventListener('click', async () => {
   setBusy($('unpairButton'), true);
   try {
@@ -122,3 +122,13 @@ $('privateTabButton').addEventListener('click', async () => {
 
 refresh();
 setInterval(refresh, 1500);
+
+// WHY set here and not left as the literal in popup.html: the literal is the
+// fallback the markup carries, but SITE_ORIGIN is where the site origin lives
+// after the host moved once already. One assignment keeps the two from drifting.
+
+try {
+  $('pairHelp').href = `${SITE_ORIGIN}/dashboard.html#pairing`;
+} catch (error) {
+  log.debug('PAIR_HELP_LINK_FAILED', error?.message || String(error));
+}
