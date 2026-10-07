@@ -51,6 +51,7 @@ EXT = harness.EXT
 HOST = harness.HOST
 PAIR_CODE = harness.PAIR_CODE
 EXPECTED_EXTENSION_ID = harness.EXPECTED_EXTENSION_ID
+EXPECTED_VERSION = harness.EXPECTED_VERSION
 
 RESULTS = []
 
@@ -1986,7 +1987,7 @@ async def run(port, profile):
         assert harness.STATE.paired
 
         ping = await drive('browser.ping')
-        record('extension paired and responding', ping['version'] == '1.6.15',
+        record('extension paired and responding', ping['version'] == EXPECTED_VERSION,
                f'v{ping["version"]} protocol {ping["protocolVersion"]}')
 
         email = os.environ.get('OA_TEST_EMAIL', '')
