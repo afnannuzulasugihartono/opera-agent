@@ -268,6 +268,23 @@ test('pairing issuance is rate limited per issuing account', () => {
   assert.match(sql, /revoke execute on function public\.opera_create_pairing_code\(text, integer, uuid\) from public, anon/, 'anon still cannot issue');
 });
 
+test('pairing cannot take a device name another account owns, and the issuer is the session', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261007030000_opera_agent_pairing_ownership.sql', root), 'utf8');
+  // WHY this lock: opera_pair_device upserted on device_name and kept the owner with
+  // coalesce(existing, new), so a valid code for an owned name replaced the owner's
+  // token while the owner stayed the owner. Measured in a rolled-back transaction on
+  // the live project before this migration, with two accounts: the token changed and
+  // the row still read as owned. The three guards are asserted separately because the
+  // last is the only one that holds when a pairing races past the first two.
+  assert.match(sql, /v_issuer := case when auth\.uid\(\) is not null then auth\.uid\(\) else p_issued_by end/, 'only a caller with no session may name an issuer');
+  assert.doesNotMatch(sql, /coalesce\(p_issued_by, auth\.uid\(\)\)/, 'a caller-supplied issuer never wins over the session');
+  assert.match(sql, /user_id is not null and user_id is distinct from v_issuer/, 'issuing for an owned name is refused');
+  assert.match(sql, /user_id is not null and user_id is distinct from v_pair\.issued_by/, 'pairing for an owned name is refused');
+  assert.match(sql, /where public\.opera_devices\.user_id is null or public\.opera_devices\.user_id = excluded\.user_id/, 'the upsert itself refuses a foreign owner');
+  assert.match(sql, /issued_by is not distinct from v_issuer and consumed_at is null/, 'a new code cancels only its own issuer\'s earlier codes');
+  assert.match(sql, /if v_recent >= 5 then/, 'the hourly allowance is carried over');
+});
+
 test('the pairing issuer has exactly one signature, or PostgREST refuses it', () => {
   const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
   const drop = fs.readFileSync(new URL('supabase/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');

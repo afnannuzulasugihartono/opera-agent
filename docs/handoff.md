@@ -12,7 +12,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.16` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 26 primitives, 100 runtime safety files, 533 unit tests, green.
+- Gates: `npm test`, `npm run check` — 26 primitives, 101 runtime safety files, 535 unit tests, green.
 - Production: 58 `opera_*` functions, 9 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.16` to extension id
@@ -62,6 +62,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   accepts with 200 still got 401 here because the deployed function (v40, 2026-10-02) rejects every
   non-static token when the allowlist is empty. `OPERA_AGENT_MCP_USER_IDS` now names the owner;
   the repo once carried a rule admitting any confirmed account, undeployed, and a test now bars it.
+- **A device name belongs to the account that paired it.** `opera_pair_device` upserted on
+  `device_name` and kept the owner, so a valid code for an owned name replaced the owner's token
+  while the owner stayed the owner, and `opera_create_pairing_code` never asked who owned the name
+  or whose session issued it. Fixed by `20261007030000_opera_agent_pairing_ownership.sql`, applied
+  and proved with two accounts in rolled-back transactions: 5 of 10 scenarios failed before, all pass
+  after, and the owner's device was untouched.
 - Account isolation has two measured layers: `authenticated` holds no table grant, only EXECUTE on the
   RPCs, and RLS filters by ownership for the day a grant appears. A foreign account read zero devices
   and was refused a revoke; anon got 401 on all four.
@@ -89,17 +95,6 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named
   `script-src` in place of `unsafe-inline`.
-- Home decides signed-in from one `localStorage` read and no request, because the model key is typed
-  there and a no-network promise is load-bearing. `fitur` and `dukungan` are network-free doors under
-  the same header, sitemap and footer locks.
-
-## Known, not started
-
-- [`tests/fixtures/mcp-contract-v1.json`](../tests/fixtures/mcp-contract-v1.json) pins `sourceSha256`
-  for the MCP edge function, and
-  [`tests/helpers/boundary-locks.mjs`](../tests/helpers/boundary-locks.mjs) pins `lib/` files by blob
-  SHA. An edit to a pinned file re-cuts its digest in the same commit. That whole-file digest is a
-  change tax, not a defect detector.
 
 ## Still open
 
@@ -110,21 +105,26 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    `http://127.0.0.1:19876/mcp/oauth/callback`, matched exactly) answers 302 to the consent page,
    the code exchanges for a one-hour token, and GoTrue `/user` answers 200 for it. Unverified:
    OpenCode's own reconnect and a tool call through it, and sign-in by Google.
-3. **The installer GUI has never been run.**
+3. **MCP serves one device, not one per account.** Gateway, VM and MCP name `opera`, so MCP access is
+   the static token or `OPERA_AGENT_MCP_USER_IDS` and nothing wider. Designed, not built: the server
+   names each account's device at pairing (`opera` stays the owner's), a service-only
+   `opera_device_for_user(uuid)` lets MCP resolve the caller's device, then access opens to confirmed
+   accounts. Wants a test with a real second account first. Gateway and VM stay single-device.
+4. **The installer GUI has never been run.**
    [`scripts/OperaAgentInstaller.cs`](../scripts/OperaAgentInstaller.cs) compiles to a real PE with
    `requireAdministrator` set. Unverified: the form itself, and whether Chrome reads the policy it
    writes. `chrome://policy` is where to look.
-4. **The one real latency lever, and it is a measurement we now apply.** Over 9,079 production
+5. **The one real latency lever, and it is a measurement we now apply.** Over 9,079 production
    commands, 676.6 ms of the 1875.3 ms average is the device not yet having asked for the command,
    p95 1914.4 ms: the polling ramp in `opera_claim_next_wait`. The conservative ladder is in place
    (under 50 ms through the idle window, tail 100 ms, migration
    `20261007000000_opera_agent_claim_wait_fast_tail`). Lower it further only after confirming fleet
    impact.
-5. **The plan path needs two owner inputs before it can run.** The endpoint, key and model name come
+6. **The plan path needs two owner inputs before it can run.** The endpoint, key and model name come
    from the user's own configuration on their device, and [`security.md`](security.md) has to say
    plainly what leaves the device. The remaining work is the VM host: handing a compiled program to
    `opera_start_workflow` needs a new RPC.
-6. Publishable-key rotation, SonarCloud project access, and Supabase PATs all need owner action.
+7. Publishable-key rotation, SonarCloud project access, and Supabase PATs all need owner action.
 
 ## CI
 
