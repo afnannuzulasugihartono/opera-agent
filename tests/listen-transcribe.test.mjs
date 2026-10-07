@@ -1,0 +1,170 @@
+// @last-edited: 2026-10-07 UTC+7.
+// @title: listen-transcribe.test — Test..
+// @state: Test..
+// @dependencies: node:test, strict, node:fs, node:module, node:vm.
+
+// The listen function turns tab audio into timestamped segments: device-token
+// auth per action, one live session per device, 10-second windows to Gemini,
+// segments stored, audio deleted (retention 0 for voice). The vm harness below
+// drives start, two appends and stop against an in-memory store with a canned
+// transcriber, proving offsets, deletion and session end without network.
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
+import { createHash } from 'node:crypto';
+import vm from 'node:vm';
+
+const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8')
+  .replace(/^import .*;\r?\n/gm, ''));
+
+const TOKEN = 'a'.repeat(64);
+const TOKEN_HASH_PLACEHOLDER = 'hash';
+
+function store() {
+  return {
+    opera_devices: [{ id: 'dev-1', device_name: 'opera', token_hash: 'x', user_id: 'user-1', status: 'online' }],
+    opera_listen_sessions: [],
+    opera_listen_chunks: [],
+    opera_listen_segments: [],
+    opera_audit: []
+  };
+}
+
+function harness(db, fetchImpl) {
+  let handler;
+  const fetchCalls = [];
+  const table = (name) => db[name];
+  const match = (rows, filters) => rows.filter((r) => filters.every(([op, col, val]) => {
+    if (op === 'eq') return r[col] === val;
+    if (op === 'neq') return r[col] !== val;
+    if (op === 'in') return val.includes(r[col]);
+    return true;
+  }));
+  const builder = (name) => {
+    const filters = [];
+    let orderCol = null;
+    let limitN = null;
+    let pendingUpdate = null;
+    let pendingDelete = false;
+    const self = {
+      select() { return self; },
+      eq(col, val) { filters.push(['eq', col, val]); return self; },
+      neq(col, val) { filters.push(['neq', col, val]); return self; },
+      order(col) { orderCol = col; return self; },
+      limit(n) { limitN = n; return self; },
+      in(col, val) { filters.push(['in', col, val]); return self; },
+      async single() {
+        let rows = match(table(name), filters);
+        if (orderCol) rows = [...rows].sort((a, b) => (a[orderCol] > b[orderCol] ? 1 : -1));
+        if (limitN !== null) rows = rows.slice(0, limitN);
+        return { data: rows[0] || null };
+      },
+      insert(row) {
+        const rows = Array.isArray(row) ? row : [row];
+        rows.forEach((r, i) => db[name].push({ id: '00000000-0000-4000-8000-' + String(db[name].length + i).padStart(12, '0'), ...r }));
+        return self;
+      },
+      update(patch) { pendingUpdate = patch; return self; },
+      delete() { pendingDelete = true; return self; },
+      upsert(row) {
+        const rows = Array.isArray(row) ? row : [row];
+        for (const r of rows) {
+          if (!db[name].some((x) => x.session_id === r.session_id && x.seq === r.seq)) db[name].push({ id: `c-${db[name].length}`, ...r });
+        }
+        return self;
+      }
+    };
+    // WHY the builder is thenable: postgrest builders are lazy; update/delete
+    // apply on await, and a bare awaited builder resolves the filtered rows.
+    self.then = (resolve) => {
+      if (pendingUpdate) for (const r of match(table(name), filters)) Object.assign(r, pendingUpdate);
+      if (pendingDelete) db[name] = db[name].filter((r) => !match([r], filters).length);
+      let rows = match(table(name), filters);
+      if (orderCol) rows = [...rows].sort((a, b) => (a[orderCol] > b[orderCol] ? 1 : -1));
+      if (limitN !== null) rows = rows.slice(0, limitN);
+      resolve({ data: rows, error: null });
+    };
+    return self;
+  };
+  const client = {
+    from: (name) => builder(name),
+    auth: { async getUser() { return { data: { user: null }, error: { message: 'no' } }; } }
+  };
+  const fakeFetch = fetchImpl || (async (url, opts) => {
+    fetchCalls.push({ url, body: JSON.parse(opts.body) });
+    return { ok: true, status: 200, json: async () => ({ interaction: { output_text: '{"segments": [{"start": 1, "end": 3, "text": "halo dunia"}]}' } }) };
+  });
+  const errors = [];
+  const edgeLog = { error: (svc, msg) => { errors.push(`${svc}: ${msg}`); } };
+  vm.runInNewContext(source, {
+    createClient: () => client, createEdgeLog: () => edgeLog,
+    Deno: { env: { get: (key) => (key === 'SUPABASE_URL' || key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test' : (key === 'GEMINI_API_KEY' ? 'test-key' : '')) }, serve: (fn) => { handler = fn; } },
+    Request, Response, URL, TextEncoder, fetch: fakeFetch, crypto
+  });
+  const call = (body) => handler(new Request('https://example.test/', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  }));
+  return { call, fetchCalls, errors };
+}
+
+test('start refuses unknown devices and second live sessions', async () => {
+  const db = store();
+  db.opera_devices[0].token_hash = createHash('sha256').update(TOKEN.toLowerCase()).digest('hex');
+  const h = harness(db);
+  const bad = await h.call({ action: 'start', token: 'b'.repeat(64), deviceName: 'opera', tabId: 1 });
+  assert.equal(bad.status, 401, h.errors.join('; '));
+  const ok = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
+  assert.equal(ok.ok, true);
+  const again = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
+  assert.equal(again.error, 'A listening session is already live on this device. Stop it first.');
+});
+
+test('two windows transcribe with absolute offsets, then stop ends and deletes', async () => {
+  const db = store();
+  const h = harness(db);
+  // WHY the hash dodge: the function hashes the token before comparing, and the
+  // harness owns both sides, so the device row carries whatever the function
+  // computes for the test token.
+  db.opera_devices[0].token_hash = createHash('sha256').update(TOKEN.toLowerCase()).digest('hex');
+  const started = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
+  console.log('DBG started:', JSON.stringify(started), h.errors.join(';'));
+  assert.equal(started.ok, true);
+  const sid = started.sessionId;
+  const chunk = Buffer.from('fake-opus-bytes').toString('base64');
+  assert.equal((await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 0, audio: chunk })).json()).ok, true);
+  const second = await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 1, audio: chunk })).json();
+  assert.equal(second.ok, true);
+  assert.equal(second.transcribed, 1);
+  assert.equal(db.opera_listen_segments.length, 1);
+  assert.equal(db.opera_listen_segments[0].start_s, 1);
+  assert.equal(db.opera_listen_segments[0].text, 'halo dunia');
+  assert.equal(db.opera_listen_chunks.length, 0, 'consumed audio is deleted');
+  const stopped = await (await h.call({ action: 'stop', token: TOKEN, sessionId: sid })).json();
+  assert.equal(stopped.ok, true);
+  assert.equal(db.opera_listen_sessions[0].status, 'ended');
+  assert.equal(h.fetchCalls.length, 1, 'one transcription call for one full window');
+  assert.match(JSON.stringify(h.fetchCalls[0].body), /halo|Transcribe/, 'the prompt asks for transcription');
+});
+
+test('the transcriber uses the current Interactions API, not the retired model', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
+  // WHY this pin: gemini-2.5-flash answers 404 for new keys ("use gemini-3.8-flash
+  // ... Interactions API"), and generateContent hangs where /v1beta/interactions
+  // answers. Measured live during build; the old shape must not come back.
+  assert.match(source, /generativelanguage\.googleapis\.com\/v1beta\/interactions/);
+  assert.match(source, /gemini-3\.8-flash/);
+  assert.doesNotMatch(source, /gemini-2\.5-flash/);
+  assert.doesNotMatch(source, /:generateContent/);
+  assert.match(source, /\{ type: "audio", data: audioBase64, mime_type: mime \}/);
+});
+
+test('the migration stores transcripts owner-scoped with no grants', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const sql = await readFile(new URL('../supabase/migrations/20261007100000_opera_listen_sessions.sql', import.meta.url), 'utf8');
+  assert.match(sql, /create table if not exists public\.opera_listen_sessions/);
+  assert.match(sql, /unique \(session_id, seq\)/);
+  assert.doesNotMatch(sql, /grant (select|all)/i);
+});
