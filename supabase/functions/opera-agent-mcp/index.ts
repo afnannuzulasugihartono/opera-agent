@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-07 UTC+7.
 // @title: index — Repository file.
 // @state: three more places claimed the background pointer was invisible.
 // @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
@@ -196,27 +196,20 @@ function bearerToken(req: Request) {
   return match?.[1]?.trim() || "";
 }
 
-// WHY an empty allowlist admits every confirmed account rather than nobody: the
-// allowlist exists to narrow access, and "unset" means the operator has not
-// chosen to narrow it. Rejecting everyone instead would make a fresh project
-// unreachable and turn "remove the restriction" into "lock every user out".
+// WHY an empty allowlist admits nobody rather than every confirmed account: every
+// caller drives the same device, DEVICE_NAME, and sign-up is open, so admitting
+// whoever Supabase confirms would hand a stranger the owner's browser. Access is the
+// static token or a named account until the device is resolved per account.
 
 async function authenticate(req: Request): Promise<AuthContext | null> {
   const token = bearerToken(req);
   if (!token) return null;
   if (STATIC_TOKEN && secureEqual(token, STATIC_TOKEN)) return { type: "static" };
-  if (!STATIC_TOKEN && ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) return null;
+  if (ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) return null;
   const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return null;
-
-  // A confirmed email is the only proof of identity here: Supabase verifies the
-  // signature and the expiry, and anonymous accounts carry no confirmed email.
-  if (!data.user.email) return null;
-  const unrestricted = ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0;
-  if (!unrestricted) {
-    const email = data.user.email.toLowerCase();
-    if (!ALLOWED_USER_IDS.has(data.user.id) && !ALLOWED_USER_EMAILS.has(email)) return null;
-  }
+  if (error || !data.user?.email) return null;
+  const email = data.user.email.toLowerCase();
+  if (!ALLOWED_USER_IDS.has(data.user.id) && !ALLOWED_USER_EMAILS.has(email)) return null;
   return { type: "user", userId: data.user.id };
 }
 
@@ -761,7 +754,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== "POST") return json(req, { error: "method_not_allowed", error_description: "Use POST for stateless Streamable HTTP MCP." }, 405);
   // Only unreachable when GoTrue itself is unconfigured, which no secret here
-  // controls. An unset allowlist is a supported open-signup mode, not a fault.
+  // controls. An unset allowlist is not a fault: it answers 401 to every caller.
   if (!SUPABASE_URL) {
     return json(req, { error: "server_misconfigured", error_description: "MCP authentication is not configured." }, 503);
   }

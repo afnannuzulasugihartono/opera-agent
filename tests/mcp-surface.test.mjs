@@ -101,7 +101,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   move_pointer: 'b8adb741ad19103a',
   click_at: 'c50c98d5f209134b',
   drag_pointer: '52474fc5dc262439',
-  wheel_at: 'ee7305a324dc9e26' // Re-frozen 2026-10-06: this block runs to EOF, so any later edit to the CORS handler or the auth function moves it. The recorded value had gone stale.
+  wheel_at: 'a490cc12ea683488' // Re-frozen 2026-10-07: this block runs to EOF, so any later edit to the CORS handler or the auth function moves it. The recorded value had gone stale.
 });
 
 // The only tool whose schema the keyboard commit changed. Everything else
@@ -229,6 +229,19 @@ test('the tool count and names are unchanged', () => {
 
 test('no generic escape hatch was introduced', () => {
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
+});
+
+test('an empty allowlist admits nobody, because every caller drives the same device', () => {
+  // WHY this pin: every authenticated caller reaches the one device named by
+  // DEVICE_NAME, and sign-up is open. A rule that admitted "any confirmed account"
+  // when the allowlist was empty would give whoever registers the owner's browser.
+  // That rule was written once and never deployed; this keeps it from coming back
+  // until the device is resolved per account.
+
+  const authenticate = source.match(/async function authenticate\([\s\S]*?\n}\n/)[0];
+  assert.match(authenticate, /if \(ALLOWED_USER_IDS\.size === 0 && ALLOWED_USER_EMAILS\.size === 0\) return null;/);
+  assert.doesNotMatch(authenticate, /unrestricted/);
+  assert.match(authenticate, /!ALLOWED_USER_IDS\.has\(data\.user\.id\) && !ALLOWED_USER_EMAILS\.has\(email\)\) return null/);
 });
 
 // --- B. schemas: per-tool pins, burst vocabulary, keyboard surface --------

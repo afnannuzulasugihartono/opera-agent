@@ -57,6 +57,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   `client_secret_hash`. Redirect URIs are a comma-separated list with no wildcards.
   `OPERA_AGENT_MCP_TOKEN` is configured on the edge function, and using it as a bearer header removes
   the dance.
+- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so the
+  function admits the static token or a named account and nobody else. An OAuth token that GoTrue
+  accepts with 200 still got 401 here because the deployed function (v40, 2026-10-02) rejects every
+  non-static token when the allowlist is empty. `OPERA_AGENT_MCP_USER_IDS` now names the owner;
+  the repo once carried a rule admitting any confirmed account, undeployed, and a test now bars it.
 - Account isolation has two measured layers: `authenticated` holds no table grant, only EXECUTE on the
   RPCs, and RLS filters by ownership for the day a grant appears. A foreign account read zero devices
   and was refused a revoke; anon got 401 on all four.
@@ -87,9 +92,6 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - Home decides signed-in from one `localStorage` read and no request, because the model key is typed
   there and a no-network promise is load-bearing. `fitur` and `dukungan` are network-free doors under
   the same header, sitemap and footer locks.
-- Layout defects measured at 320px, invisible in source review: footer anchors with no whitespace
-  between tags ran 32px past the screen, and `pre` outranks `overflow-wrap`, so a 118-character curl
-  ran 662px past it. All nine pages measure clean at 320, 390, 768, 1280 and 1600.
 
 ## Known, not started
 
@@ -103,13 +105,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.
-2. **OAuth sign-in is measured to work for the OpenCode client; the Google path and a tool call
-   through it are not.** The 401 from the MCP function names a `resource_metadata` that resolves;
+2. **OAuth sign-in reaches a token; the OpenCode reconnect after the allowlist fix is unconfirmed.**
    `/auth/v1/oauth/authorize` for client `Opera Agent` (`bbc5eb76…`, public, redirect
-   `http://127.0.0.1:19876/mcp/oauth/callback`, matched exactly) answers 302 to
-   `/oauth/consent?authorization_id=…`; the database holds one consent for it and one OAuth session
-   refreshed the same morning. Unverified: Google sign-in into the consent screen, and a tool call
-   carrying that token.
+   `http://127.0.0.1:19876/mcp/oauth/callback`, matched exactly) answers 302 to the consent page,
+   the code exchanges for a one-hour token, and GoTrue `/user` answers 200 for it. Unverified:
+   OpenCode's own reconnect and a tool call through it, and sign-in by Google.
 3. **The installer GUI has never been run.**
    [`scripts/OperaAgentInstaller.cs`](../scripts/OperaAgentInstaller.cs) compiles to a real PE with
    `requireAdministrator` set. Unverified: the form itself, and whether Chrome reads the policy it
