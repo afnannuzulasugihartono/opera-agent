@@ -94,7 +94,13 @@ async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime
   const body = await response.json();
   const segments = Array.isArray(body?.segments) ? body.segments : [];
   return segments
-    .filter((s: { text?: unknown }) => typeof s.text === "string" && s.text.trim())
+    // WHY the silence gate: Whisper hallucinates short words ("you") on silence
+    // and noise, stamping them with high no_speech_prob. Measured live: a muted
+    // session produced nothing but "you" rows. Above 0.6 the segment is almost
+    // certainly not speech, so it never reaches the transcript or the bill.
+    .filter((s: { text?: unknown; no_speech_prob?: unknown }) =>
+      typeof s.text === "string" && s.text.trim() &&
+      (typeof s.no_speech_prob !== "number" || s.no_speech_prob <= 0.6))
     .map((s: { start?: unknown; end?: unknown; text: string }) => ({
       start: offsetSeconds + Math.max(0, Number(s.start) || 0),
       end: offsetSeconds + Math.max(0, Number(s.end) || 0),

@@ -95,7 +95,10 @@ function harness(db, fetchImpl) {
   const fakeFetch = fetchImpl || (async (url, opts) => {
     fetchCalls.push({ url });
     assert.match(url, /api\.groq\.com\/openai\/v1\/audio\/transcriptions/);
-    return { ok: true, status: 200, json: async () => ({ text: 'halo dunia', segments: [{ start: 1, end: 3, text: 'halo dunia' }] }) };
+    return { ok: true, status: 200, json: async () => ({ text: 'halo dunia test', segments: [
+      { start: 1, end: 3, text: 'halo dunia', no_speech_prob: 0.1 },
+      { start: 3, end: 4, text: 'you', no_speech_prob: 0.9 }
+    ] }) };
   });
   const errors = [];
   const edgeLog = { error: (svc, msg) => { errors.push(`${svc}: ${msg}`); } };
