@@ -17,6 +17,15 @@ import {
   clamp
 } from './lib/protocol.js';
 import { evaluateRules, validateRule } from './lib/watch.js';
+import {
+  LOOP_SYNTHETIC_DEAD_TICKS,
+  downscaleHash,
+  matchTemplate,
+  pixelDiff,
+  recordTick,
+  startLoopState,
+  validateLoopProgram
+} from './lib/loop.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
@@ -781,6 +790,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     if (withoutPopup.length) popupLog.set(opener, withoutPopup);
     else popupLog.delete(opener);
   }
+  for (const [loopId, session] of loopSessions) {
+    if (session.tabId === tabId) finishLoop(loopId, 'tab-closed');
+  }
 });
 
 // WHY per-case text: "never appeared" is false whenever the node left the DOM,
@@ -1201,6 +1213,287 @@ async function runBurst(params, outerContext = {}) {
   }
 }
 
+// Local sense-act loops. Async by design: loop.start validates and returns a
+// loopId immediately, ticks run on a setTimeout chain against one persistent
+// debugger attach, and loop.read/loop.stop report. No queue round trip
+// happens inside a tick; the bands in the trace say how fast ticks ran.
+
+const LOOP_MAX_ACTIVE = 4;
+const LOOP_SNAPSHOT_WIDTH = 320;
+const LOOP_POLICY_RECHECK_TICKS = 20;
+const loopSessions = new Map();
+const loopResults = new Map();
+
+function loopSummary(session, running, stopReason = null) {
+  return {
+    ok: true,
+    loopId: session.loopId,
+    tabId: session.tabId,
+    running,
+    ...(stopReason ? { stopReason } : {}),
+    tick: session.state.tick,
+    firedTotal: session.state.firedTotal,
+    mode: session.mode,
+    trusted: session.trusted,
+    ...(session.trustedAtTick != null ? { trustedAtTick: session.trustedAtTick } : {}),
+    trace: session.state.trace
+  };
+}
+
+function finishLoop(loopId, stopReason) {
+  const session = loopSessions.get(loopId);
+  if (!session) return loopResults.get(loopId) || null;
+  if (session.timer) clearTimeout(session.timer);
+  session.timer = null;
+  const summary = loopSummary(session, false, stopReason);
+  loopSessions.delete(loopId);
+  loopResults.set(loopId, summary);
+  while (loopResults.size > 20) loopResults.delete(loopResults.keys().next().value);
+  releaseDebuggerSession(session.debuggerSession, log);
+  return summary;
+}
+
+function loopSessionOnTab(tabId) {
+  for (const session of loopSessions.values()) {
+    if (session.tabId === tabId) return session;
+  }
+  return null;
+}
+
+async function loopDecodeTemplate(template) {
+  const raw = atob(String(template));
+  const bytes = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
+  const bitmap = await createImageBitmap(new Blob([bytes]));
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(bitmap, 0, 0);
+  const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height);
+  const out = { data: pixels.data, width: bitmap.width, height: bitmap.height };
+  bitmap.close?.();
+  return out;
+}
+
+async function loopSnapshot(tabId) {
+  const response = await chrome.debugger.sendCommand({ tabId }, 'Page.captureScreenshot', {
+    format: 'jpeg',
+    quality: 40,
+    fromSurface: true
+  });
+  const raw = atob(String(response?.data || ''));
+  const bytes = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
+  const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
+  const scale = Math.min(1, LOOP_SNAPSHOT_WIDTH / bitmap.width);
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = new OffscreenCanvas(width, height);
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(bitmap, 0, 0, width, height);
+  const pixels = context.getImageData(0, 0, width, height);
+  bitmap.close?.();
+  return { data: pixels.data, width, height };
+}
+
+function loopCropRegion(snapshot, region, scale) {
+  const x = Math.max(0, Math.floor(region.x * scale));
+  const y = Math.max(0, Math.floor(region.y * scale));
+  const width = Math.max(1, Math.min(snapshot.width - x, Math.ceil(region.width * scale)));
+  const height = Math.max(1, Math.min(snapshot.height - y, Math.ceil(region.height * scale)));
+  const out = new Uint8ClampedArray(width * height * 4);
+  for (let row = 0; row < height; row += 1) {
+    for (let col = 0; col < width; col += 1) {
+      const from = ((y + row) * snapshot.width + (x + col)) * 4;
+      const to = (row * width + col) * 4;
+      out[to] = snapshot.data[from];
+      out[to + 1] = snapshot.data[from + 1];
+      out[to + 2] = snapshot.data[from + 2];
+      out[to + 3] = snapshot.data[from + 3];
+    }
+  }
+  return { data: out, width, height };
+}
+
+async function loopSyntheticKey(tabId, key) {
+  await contentCall(tabId, 'page.key', { key });
+}
+
+async function loopTrustedKey(tabId, key) {
+  const request = resolveKeyInput({ key });
+  if (request.kind === 'text') {
+    for (const chunk of request.chunks) {
+      await chrome.debugger.sendCommand({ tabId }, 'Input.insertText', { text: chunk });
+    }
+    return;
+  }
+  const spec = {
+    key: request.key,
+    code: request.code,
+    windowsVirtualKeyCode: request.windowsVirtualKeyCode,
+    nativeVirtualKeyCode: request.nativeVirtualKeyCode
+  };
+  const modifiers = request.modifiers ? { modifiers: request.modifiers } : {};
+  await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', { type: 'keyDown', ...modifiers, ...spec });
+  await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchKeyEvent', { type: 'keyUp', ...modifiers, ...spec });
+}
+
+async function loopTrustedPointer(tabId, action) {
+  await withInputFocusEmulation({ tabId }, 'background', async () => {
+    await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: action.x, y: action.y });
+    if (action.pointerAction !== 'click') return;
+    await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: action.x, y: action.y, button: 'left', clickCount: 1 });
+    await chrome.debugger.sendCommand({ tabId }, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x: action.x, y: action.y, button: 'left', clickCount: 1 });
+  });
+}
+
+async function loopActKey(session, key) {
+  if (!session.trusted) {
+    try {
+      await loopSyntheticKey(session.tabId, key);
+      return;
+    } catch (error) {
+      log.debug('LOOP_SYNTHETIC_KEY_FAILED', error?.message || String(error));
+    }
+  }
+  await loopTrustedKey(session.tabId, key);
+}
+
+async function loopAct(session, action) {
+  if (action.action === 'key') {
+    await loopActKey(session, action.key);
+    return;
+  }
+  await loopTrustedPointer(session.tabId, action);
+}
+
+async function loopSense(session, now) {
+  const program = session.program;
+  const pixelSensors = program.sensors.filter((s) => s.kind !== 'timer');
+  let snapshot = null;
+  if (pixelSensors.length > 0) {
+    snapshot = await loopSnapshot(session.tabId);
+    session.scale = snapshot.width / session.viewport.width;
+  }
+  const active = new Map();
+  for (const sensor of program.sensors) {
+    if (sensor.kind === 'timer') {
+      const last = session.timers.get(sensor.id) || 0;
+      if (now - last >= sensor.everyMs) {
+        session.timers.set(sensor.id, now);
+        active.set(sensor.id, { fired: true });
+      }
+      continue;
+    }
+    const crop = loopCropRegion(snapshot, sensor.region, session.scale);
+    if (sensor.kind === 'regionHash') {
+      const hash = downscaleHash(crop.data, crop.width, crop.height);
+      const before = session.frames.get(sensor.id);
+      session.frames.set(sensor.id, hash);
+      if (before != null && before !== hash) active.set(sensor.id, { fired: true });
+      continue;
+    }
+    if (sensor.kind === 'pixelDiff') {
+      const before = session.frames.get(sensor.id);
+      session.frames.set(sensor.id, crop);
+      if (before && before.width === crop.width && before.height === crop.height) {
+        const drift = pixelDiff(before.data, crop.data, 16);
+        if (drift != null && drift > sensor.threshold) active.set(sensor.id, { fired: true, drift });
+      }
+      continue;
+    }
+    const template = session.templates.get(sensor.id);
+    if (!template) continue;
+    const match = matchTemplate(crop.data, crop.width, crop.height, template.data, template.width, template.height, 2);
+    if (match && match.score >= sensor.threshold) active.set(sensor.id, { fired: true, score: match.score, x: match.x, y: match.y });
+  }
+  return { active, frameHash: snapshot ? downscaleHash(snapshot.data, snapshot.width, snapshot.height) : null };
+}
+
+function loopTickLater(session) {
+  session.timer = setTimeout(() => {
+    session.timer = null;
+    loopTick(session.loopId);
+  }, session.program.tickMs);
+}
+
+async function loopTick(loopId) {
+  const session = loopSessions.get(loopId);
+  if (!session) return;
+  const now = Date.now();
+  if (session.lastTickAt && now - session.lastTickAt > 5 * session.program.tickMs) {
+    finishLoop(loopId, 'suspended');
+    return;
+  }
+  session.lastTickAt = now;
+  const workStarted = performance.now();
+  try {
+    if (!session.debuggerSession.attached) {
+      finishLoop(loopId, 'debugger-detached');
+      return;
+    }
+    const tab = await chrome.tabs.get(session.tabId).catch(() => null);
+    if (!tab) {
+      finishLoop(loopId, 'tab-closed');
+      return;
+    }
+    if (session.state.tick % LOOP_POLICY_RECHECK_TICKS === 0) {
+      const policy = await contentCall(session.tabId, 'page.capture_policy', {});
+      if (!policy.allowed) {
+        finishLoop(loopId, 'sensitive-surface');
+        return;
+      }
+    }
+    const { active, frameHash } = await loopSense(session, now);
+    let fired = 0;
+    for (const rule of session.program.rules) {
+      if (!active.has(rule.when.sensor)) continue;
+      await loopAct(session, rule.do);
+      fired += 1;
+    }
+    if (!session.trusted && fired > 0 && frameHash != null) {
+      if (session.lastFrameHash != null && session.lastFrameHash === frameHash) {
+        session.deadStreak += 1;
+      } else {
+        session.deadStreak = 0;
+      }
+      session.lastFrameHash = frameHash;
+      if (session.deadStreak >= LOOP_SYNTHETIC_DEAD_TICKS) {
+        session.trusted = true;
+        session.trustedAtTick = session.state.tick + 1;
+        session.deadStreak = 0;
+      }
+    }
+    const workMs = performance.now() - workStarted;
+    const result = recordTick(session.state, { workMs, fired });
+    session.mode = result.mode;
+    if (result.overrun) {
+      finishLoop(loopId, 'tick-overrun');
+      return;
+    }
+    if (session.state.tick >= session.program.maxTicks) {
+      finishLoop(loopId, 'max-ticks');
+      return;
+    }
+    if (now - session.startedAt >= session.program.maxDurationMs) {
+      finishLoop(loopId, 'max-duration');
+      return;
+    }
+    if (session.program.stopWhen.some((entry) => active.has(entry.sensor))) {
+      finishLoop(loopId, 'stop-condition');
+      return;
+    }
+    loopTickLater(session);
+  } catch (error) {
+    log.warn('LOOP_TICK_FAILED', error?.message || String(error));
+    session.tickErrors += 1;
+    if (session.tickErrors >= 3) {
+      finishLoop(loopId, 'tick-error');
+      return;
+    }
+    loopTickLater(session);
+  }
+}
+
 async function dispatch(method, params = {}, context = {}) {
   switch (method) {
     case 'browser.ping': {
@@ -1218,6 +1511,72 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'browser.burst':
       return runBurst(params, context);
+    case 'loop.start': {
+      const cfg = await getConfig();
+      if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');
+      const validated = validateLoopProgram(params.program);
+      if (!validated.ok) throw new Error(validated.error);
+      const tabId = await resolveTabId(params);
+      if (loopSessionOnTab(tabId)) throw codedError('LOOP_ACTIVE', 'One loop per tab: stop the running loop first.', { tabId });
+      if (loopSessions.size >= LOOP_MAX_ACTIVE) throw codedError('LOOP_ACTIVE', `Loop cap reached (${LOOP_MAX_ACTIVE} active).`, { tabId });
+      const policy = await contentCall(tabId, 'page.capture_policy', {});
+      if (!policy.allowed) {
+        throw codedError('LOOP_BLOCKED', 'Loop refused on a sensitive surface.', { tabId, reason: policy.reason || 'SENSITIVE_SURFACE' });
+      }
+      const program = validated.program;
+      const templates = new Map();
+      for (const sensor of program.sensors) {
+        if (sensor.kind !== 'templateMatch') continue;
+        try {
+          templates.set(sensor.id, await loopDecodeTemplate(sensor.template));
+        } catch (error) {
+          throw new Error(`Loop template for sensor ${sensor.id} could not be decoded: ${error?.message || error}`);
+        }
+      }
+      const debuggerSession = { tabId, attached: false };
+      await chrome.debugger.attach({ tabId }, '1.3');
+      debuggerSession.attached = true;
+      registerDebuggerSession(debuggerSession);
+      const loopId = `lp_${randomToken().slice(0, 16)}`;
+      const session = {
+        loopId,
+        tabId,
+        program,
+        templates,
+        state: startLoopState(),
+        timers: new Map(),
+        frames: new Map(),
+        debuggerSession,
+        viewport: policy.viewport,
+        scale: 1,
+        trusted: program.trusted,
+        trustedAtTick: program.trusted ? 0 : null,
+        deadStreak: 0,
+        lastFrameHash: null,
+        mode: 'full',
+        timer: null,
+        tickErrors: 0,
+        startedAt: Date.now(),
+        lastTickAt: 0
+      };
+      loopSessions.set(loopId, session);
+      loopTickLater(session);
+      return { ok: true, loopId, tabId, tickMs: program.tickMs, trusted: session.trusted };
+    }
+    case 'loop.read': {
+      const loopId = String(params.loopId || '');
+      const session = loopSessions.get(loopId);
+      if (session) return loopSummary(session, true);
+      const finished = loopResults.get(loopId);
+      if (finished) return finished;
+      throw new Error('Unknown loop.');
+    }
+    case 'loop.stop': {
+      const loopId = String(params.loopId || '');
+      const summary = finishLoop(loopId);
+      if (!summary) throw new Error('Unknown loop.');
+      return summary;
+    }
     case 'watch.start': {
       const cfg = await getConfig();
       if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');
@@ -1705,9 +2064,10 @@ async function executeCommand(raw) {
   // Drop any memoized result serialization from the previous command so a large
   // page.read result is not pinned for the worker's lifetime.
   serializedResult = { value: null, text: '' };
-  // Watch.* is an internal extension-side family (protocol primitive
-  // count stays frozen at 26); its validation lives in lib/watch.js.
-  if (raw && typeof raw.method === 'string' && raw.method.startsWith('watch.')) {
+  // Watch.* and loop.* are internal extension-side families (protocol primitive
+  // count stays frozen at 28); their validation lives in lib/watch.js and
+  // lib/loop.js respectively.
+  if (raw && typeof raw.method === 'string' && (raw.method.startsWith('watch.') || raw.method.startsWith('loop.'))) {
     const deadlineW = Date.now() + 10000;
     try {
       const result = await raceWithTimeout(

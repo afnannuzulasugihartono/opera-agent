@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 29,
-  "sourceSha256": "81c7651280fa43eae9d36b907837e6f025349d6509ad4673b15a0332c84fc63f",
+  "toolCount": 32,
+  "sourceSha256": "1ea18130dccad3cbc8440ef91cefcb2419816edd8c98ecdf31e71b421c3d2feb",
   "tools": [
     "browser_status",
     "run_browser_burst",
@@ -10,6 +10,9 @@
     "start_watch",
     "wait_events",
     "stop_watch",
+    "loop_start",
+    "loop_read",
+    "loop_stop",
     "list_tabs",
     "open_url",
     "activate_tab",

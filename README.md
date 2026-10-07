@@ -9,9 +9,13 @@ A private, local-browser control bridge.
 - Lets MCP clients drive the user's own browser session through a strict allowlist of
   generic browser primitives.
 - Returns structured results; the session never moves to a cloud browser.
-- The extension is deliberately thin: receive, validate, execute, collect, return.
+- The extension holds generic primitives only: receive, validate, execute, collect, return.
+  It may grow as rich as task-based work needs — including local real-time loops —
+  as long as every primitive stays generic. Simple means clear boundaries and no
+  dead code, not a small feature count.
 - Site-specific behavior lives in server-side Supabase workflows, which hot-update
-  independently of the installed extension.
+  independently of the installed extension. No per-site logic and no free `eval`
+  ever live in the extension.
 
 ## Boundary
 
@@ -25,8 +29,8 @@ A private, local-browser control bridge.
 | | |
 | --- | --- |
 | Protocol | `1` |
-| Browser primitives | **26** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) |
-| MCP surface | **22** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
+| Browser primitives | **28** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) plus device-local `watch.*`/`loop.*` async methods |
+| MCP surface | **32** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
 | Distribution | Signed CRX3 self-updates from the update service |
 
 ## Layout

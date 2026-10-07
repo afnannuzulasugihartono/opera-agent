@@ -22,7 +22,7 @@ These ride with every job. Read them before acting, not once per session.
 
 - **Reach everyone, so ship it to production.** Deployed edge functions, applied migrations, a signed CRX — a green `main` is not it. Do the deploy work that is yours; ask only for release, Vercel and Supabase PATs. See [`docs/handoff.md`](docs/handoff.md).
 - **Cover every site, Google first.** Google Sheets/Excel, Docs, Maps, and YouTube hold the lead; the rest teach the new functions. Do push past one happy path per site. The site does not ever have to be slow about it: grow server-side primitives, not per-site gadgets, so round trips stay short. What the extension may do: [`extension/lib/protocol.js`](extension/lib/protocol.js) and [`docs/api.md`](docs/api.md).
-- **Be a companion with an AI behind it.** The person talks, the assistant drives, the work lands as a real artefact. Do build it as server-side workflows over the generic primitives in [`docs/api.md`](docs/api.md). Don't put site-specific code in the extension.
+- **Be a companion with an AI behind it.** The person talks, the assistant drives, the work lands as a real artefact. Do build it as server-side workflows over the generic primitives in [`docs/api.md`](docs/api.md). The extension may grow as rich as task-based work needs — including local real-time loops — but every primitive in it stays generic: no per-site code and no free `eval` in the extension, ever.
 - **Keep the tree honest.** A dead file, a dead export, a stale scaffold, a shortcut standing where the real code should be — all of it is trash that compounds. Do sweep for it every session and delete what you find.
 
 ## Priority order
