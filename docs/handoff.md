@@ -11,14 +11,17 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 ## State
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
-- Version `1.6.16` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 26 primitives, 101 runtime safety files, 535 unit tests, green.
+- Version `1.6.17` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
+- Gates: `npm test`, `npm run check` — 28 primitives, 110 runtime safety files, 551 unit tests, green.
 - Production: 58 `opera_*` functions, 9 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
-- **The CRX is published.** The update endpoint offers `1.6.16` to extension id
+- **The CRX is published.** The update endpoint offers `1.6.17` to extension id
   `ofgemipoobcnbjkfanmofjbdonjapmgl`, which is both the manifest key's id and the signature's id.
-  `1.6.15` under that id is inactive; `1.6.14` under the old id `ohbbpamc…` stays active so installs
+  `1.6.16` under that id is inactive; `1.6.14` under the old id `ohbbpamc…` stays active so installs
   that never updated keep working. `opera_releases` allows one active row per id.
+- **Live audio capture works without new permissions.** tabCapture refuses gestureless
+  callers and the worker holds no media APIs, so recording taps the media element
+  through WebAudio in the content script; proven in the headed harness end to end.
 - No management token or secret key in the tree. The four signed-in and consent pages carry the
   Supabase publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
 - `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the model can tell
