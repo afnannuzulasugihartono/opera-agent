@@ -84,7 +84,13 @@ async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime
     headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
     body: form
   });
-  if (!response.ok) throw new Error(`transcribe refused: http ${response.status}`);
+  if (!response.ok) {
+    // WHY the upstream body rides along (truncated, key-free): Groq's 400 names
+    // the actual defect (bad file, bad field), and without it every refusal
+    // looks identical from the outside.
+    const detail = await response.text().then((t) => t.slice(0, 200)).catch(() => "");
+    throw new Error(`transcribe refused: http ${response.status} ${detail}`);
+  }
   const body = await response.json();
   const segments = Array.isArray(body?.segments) ? body.segments : [];
   return segments
