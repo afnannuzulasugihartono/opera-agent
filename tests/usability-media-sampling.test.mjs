@@ -47,11 +47,18 @@ test('media sampling does not seek by navigation or reload', () => {
   assert.doesNotMatch(migration, /(?:[?&#](?:t|start)=|time_continue)/i);
 });
 
-test('keeps media controls internal and preserves the 19-tool public MCP surface', () => {
+test('advertised media capabilities are invocable tools (decision superseded by measurement)', () => {
+  // WHY this changed: this lock kept media controls inside the versioned workflow
+  // only, so browser_status advertised media.play/pause/seek/state that no caller
+  // could invoke. Measured live from ChatGPT on a watch-until-ended task: the model
+  // planned around tools it could never call, scoring the media task 5/10. The
+  // workflow-semantics locks above stand unchanged (local seek, never by
+  // navigation); only the surface grows, because the primitives were already real.
   const registered = [
     ...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)
   ].map((match) => match[1]);
-  assert.equal(registered.length, 22); // U-T rebaseline
-  assert.equal(registered.some((name) => name.startsWith('media_')), false);
-  assert.doesNotMatch(mcpSource, /server\.registerTool\("media_/);
+  assert.equal(registered.length, 26);
+  for (const name of ['media_state', 'media_play', 'media_pause', 'media_seek']) {
+    assert.ok(registered.includes(name), `${name} is exposed`);
+  }
 });

@@ -100,6 +100,7 @@ async function command(req: Request, _url: URL) {
     p_token_hash: tokenHash
   });
   let deviceName = DEVICE_NAME;
+  let tokenClientId = "";
   if (!auth?.ok) {
     // WHY a second path instead of a second token: ChatGPT plugin OAuth (and any
     // future per-user caller) arrives with a Supabase user JWT, not a device
@@ -110,6 +111,10 @@ async function command(req: Request, _url: URL) {
     const { data, error } = await supabase.auth.getUser(token);
     const userId = !error ? data.user?.id : null;
     if (userId) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        if (typeof payload.client_id === "string") tokenClientId = payload.client_id;
+      } catch { /* client lookup below treats it as absent */ }
       const { data: device } = await supabase.from("opera_devices")
         .select("device_name, last_seen_at")
         .eq("user_id", userId).neq("status", "disabled")
@@ -144,10 +149,15 @@ async function command(req: Request, _url: URL) {
     // WHY best-effort and never fatal: the provider is dashboard metadata, and a
     // stamp failure must not fail a command that is already queued and billable.
     // The ChatGPT plugin path carries no custom header, so its callers are
-    // recognized by User-Agent here; header-capable harnesses are stamped by MCP.
+    // recognized by User-Agent first and by their OAuth client name second;
+    // header-capable harnesses are stamped by MCP.
     try {
       const ua = req.headers.get("user-agent") || "";
-      const provider = /chatgpt|openai/i.test(ua) ? "chatgpt" : "";
+      let provider = /chatgpt|openai/i.test(ua) ? "chatgpt" : "";
+      if (!provider && /^[0-9a-f-]{36}$/i.test(tokenClientId)) {
+        const name = await rpc("opera_client_name", { p_client_id: tokenClientId });
+        if (typeof name === "string" && name) provider = name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 32);
+      }
       if (provider) await supabase.from("opera_commands").update({ provider }).eq("id", String(result.commandId));
     } catch { /* dashboard metadata only */ }
   }

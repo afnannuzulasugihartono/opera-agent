@@ -203,11 +203,40 @@ const PROVIDER_PATTERNS: Array<[RegExp, string]> = [
   [/node|undici|deno/i, "script"],
 ];
 
-function resolveProvider(req: Request): string {
+function slugifyProvider(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 32);
+}
+
+// WHY the OAuth client name last: ChatGPT-style connectors cannot send custom
+// headers and their server-side User-Agent carries no product name, but their
+// dynamically registered OAuth client does ("ChatGPT"). The JWT is already
+// verified by authenticate(); only its client_id claim is read here, and the
+// result stays advisory metadata — isolation rests on user_id.
+
+async function resolveProvider(req: Request, auth?: AuthContext | null): Promise<string> {
   const header = req.headers.get("x-opera-provider")?.trim().slice(0, 64) || "";
   if (/^[a-z0-9][a-z0-9_.-]{0,63}$/i.test(header)) return header.toLowerCase();
   const ua = req.headers.get("user-agent") || "";
   for (const [re, name] of PROVIDER_PATTERNS) if (re.test(ua)) return name;
+
+  // WHY the OAuth client name last: ChatGPT-style connectors cannot send custom
+  // headers and their server-side User-Agent carries no product name, but their
+  // dynamically registered OAuth client does ("ChatGPT"). The JWT is already
+  // verified by authenticate(); only its client_id claim is read here, and the
+  // result stays advisory metadata — isolation rests on user_id.
+
+  if (auth?.type === "user") {
+    try {
+      const token = bearerToken(req);
+      const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      const clientId = typeof payload.client_id === "string" ? payload.client_id : "";
+      if (/^[0-9a-f-]{36}$/i.test(clientId)) {
+        const name = await rpc("opera_client_name", { p_client_id: clientId });
+        const slug = typeof name === "string" ? slugifyProvider(name) : "";
+        if (slug) return slug;
+      }
+    } catch { /* dashboard metadata only */ }
+  }
   return "unknown";
 }
 
@@ -793,6 +822,60 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "") {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, x, y, deltaX, deltaY, executionMode }: TargetTab & { x: number; y: number; deltaX?: number; deltaY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
+  // WHY four separate tools and not one "media" tool with an action enum: ChatGPT-style
+  // connectors list one row per tool, and a single media tool hides play behind a
+  // parameter the router never offers. The device already implements all four
+  // primitives; the surface simply never exposed them, so capability discovery
+  // advertised what no caller could invoke.
+
+  server.registerTool("media_state", {
+    title: "Read media playback state",
+    description: "Report the page audio/video elements: presence and count, paused/ended, currentTime, duration, mute and volume. Read-only. Verify playback from this state, never from the wall clock.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ tabId, index, timeoutMs }: TargetTab & { index?: number; timeoutMs?: number }) => execute("media.state", { tabId, index }, timeoutMs, deviceName, provider));
+
+  server.registerTool("media_play", {
+    title: "Start media playback",
+    description: "Start playing the page media element, then report its state. If the browser blocks playback for lack of a user gesture, click the player's Play control with page.click instead.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
+      executionMode: executionModeSchema,
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ tabId, index, executionMode, timeoutMs }: TargetTab & { index?: number; executionMode?: ExecutionMode; timeoutMs?: number }) => execute("media.play", { tabId, index, executionMode: executionMode ?? "background" }, timeoutMs, deviceName, provider));
+
+  server.registerTool("media_pause", {
+    title: "Pause media playback",
+    description: "Pause the page media element, then report its state.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
+      executionMode: executionModeSchema,
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ tabId, index, executionMode, timeoutMs }: TargetTab & { index?: number; executionMode?: ExecutionMode; timeoutMs?: number }) => execute("media.pause", { tabId, index, executionMode: executionMode ?? "background" }, timeoutMs, deviceName, provider));
+
+  server.registerTool("media_seek", {
+    title: "Seek media playback",
+    description: "Jump the page media element to a position in seconds, then report its state. Out-of-range positions clamp to the media duration.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
+      seconds: z.number().min(0).describe("Position in seconds to jump to."),
+      executionMode: executionModeSchema,
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ tabId, index, seconds, executionMode, timeoutMs }: TargetTab & { index?: number; seconds: number; executionMode?: ExecutionMode; timeoutMs?: number }) => execute("media.seek", { tabId, index, seconds, executionMode: executionMode ?? "background" }, timeoutMs, deviceName, provider));
+
   return server;
 }
 
@@ -822,7 +905,7 @@ Deno.serve(async (req: Request) => {
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
   const deviceName = await resolveDeviceName(authContext, req);
-  const provider = resolveProvider(req);
+  const provider = await resolveProvider(req, authContext);
 
   try {
     const server = createServer(deviceName, provider);

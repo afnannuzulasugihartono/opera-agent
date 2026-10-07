@@ -62,12 +62,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   accepts with 200 still got 401 here because the deployed function (v40, 2026-10-02) rejects every
   non-static token when the allowlist is empty. `OPERA_AGENT_MCP_USER_IDS` now names the owner;
   the repo once carried a rule admitting any confirmed account, undeployed, and a test now bars it.
-- **A device name belongs to the account that paired it.** `opera_pair_device` upserted on
-  `device_name` and kept the owner, so a valid code for an owned name replaced the owner's token
-  while the owner stayed the owner, and `opera_create_pairing_code` never asked who owned the name
-  or whose session issued it. Fixed by `20261007030000_opera_agent_pairing_ownership.sql`, applied
-  and proved with two accounts in rolled-back transactions: 5 of 10 scenarios failed before, all pass
-  after, and the owner's device was untouched.
+- **A device name belongs to the account that paired it.** Pairing overwrote the token
+  but kept the owner, so a valid code for an owned name hijacked it. Fixed and proved
+  with two accounts in rolled-back transactions (5 of 10 failed before, all pass after).
+- **Advertised media capabilities are invocable tools.** `browser_status` reported
+  `media.play/pause/seek/state` that no caller could invoke; measured live from ChatGPT.
+  The four tools now exist (26 total); the keep-media-internal decision is superseded.
 - Account isolation has two measured layers: `authenticated` holds no table grant, only EXECUTE on the
   RPCs, and RLS filters by ownership for the day a grant appears. A foreign account read zero devices
   and was refused a revoke; anon got 401 on all four.

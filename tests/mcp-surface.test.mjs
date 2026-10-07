@@ -62,6 +62,7 @@ const screenshot = fs.readFileSync(
 const FROZEN_MCP_TOOLS = [
   'activate_tab', 'browser_status', 'capture_page', 'click_at', 'click_element',
   'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
+  'media_pause', 'media_play', 'media_seek', 'media_state',
   'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page',
   'run_browser_burst', 'run_workflow', 'scroll_page', 'wheel_at'
 ];
@@ -101,7 +102,11 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   move_pointer: 'f470b754ffe36435',
   click_at: '09fd94d6dbce359e',
   drag_pointer: '2508c2ed483615c2',
-  wheel_at: '33496b327b6f868d',
+  wheel_at: 'f8e511ea7274c273',
+  media_state: 'cfcb3d77b0fe2604',
+  media_play: '87dd389b92e41ee9',
+  media_pause: 'f2546ae639ea4063',
+  media_seek: 'cb985af6358fe57a'
 });
 
 // The only tool whose schema the keyboard commit changed. Everything else
@@ -188,7 +193,8 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.deepEqual(tools, [
     'browser_status', 'run_browser_burst', 'run_workflow', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
-    'move_pointer', 'click_at', 'drag_pointer', 'wheel_at'
+    'move_pointer', 'click_at', 'drag_pointer', 'wheel_at',
+    'media_state', 'media_play', 'media_pause', 'media_seek'
   ]);
   assert.equal(new Set(tools).size, tools.length);
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
@@ -200,9 +206,9 @@ test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 22 tools (U-T rebaseline: watch tools added)', async () => {
+test('R4 keeps the public MCP tool inventory frozen at 26 tools (media tools exposed: advertised capabilities are now invocable)', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 22); // U-T rebaseline: watch tools added
+  assert.equal(registered.length, 26); // media tools exposed: advertised capabilities are now invocable
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events'].sort());
 });
 
@@ -222,9 +228,9 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names are unchanged', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 22);
+  assert.equal(registered.length, 26);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 22);
+  assert.equal(contract.toolCount, 26);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -251,21 +257,43 @@ test('each command is stamped with its harness provider, never used for access',
   // metadata only; isolation rests on user_id, so this test also asserts the
   // stamp path cannot refuse a command.
   assert.match(source, /x-opera-provider/);
-  assert.match(source, /function resolveProvider\(req: Request\): string/);
+  assert.match(source, /async function resolveProvider\(req: Request, auth\?: AuthContext \| null\): Promise<string>/);
   assert.match(source, /\[\/chatgpt\|openai-connector\|oai-mcp\/i, "chatgpt"\]/);
   assert.match(source, /\[\/opencode\/i, "opencode"\]/);
   assert.match(source, /return "unknown";/);
-  assert.match(source, /const provider = resolveProvider\(req\);/);
+  assert.match(source, /const provider = await resolveProvider\(req, authContext\);/);
   assert.match(source, /createServer\(deviceName, provider\)/);
   assert.match(source, /await supabase\.from\("opera_commands"\)\.update\(\{ provider \}\)/);
   assert.match(source, /await supabase\.from\("opera_workflow_runs"\)\.update\(\{ provider \}\)/);
+  assert.match(source, /opera_client_name/);
+  assert.match(source, /slugifyProvider/);
+});
+
+test('advertised media capabilities are invocable tools, not just status text', () => {
+  // WHY this pin: browser_status reported media.play/pause/seek/state while the
+  // tool registry exposed none of them, so a model that checked capabilities
+  // first planned around tools it could never call. Measured live from ChatGPT.
+  for (const [tool, method] of [['media_state', 'media.state'], ['media_play', 'media.play'], ['media_pause', 'media.pause'], ['media_seek', 'media.seek']]) {
+    assert.match(source, new RegExp(`server\\.registerTool\\("${tool}"`));
+    assert.match(source, new RegExp(`execute\\("${method.replace('.', '\\.')}"`));
+  }
+  assert.match(source, /seconds: z\.number\(\)\.min\(0\)/, 'seek takes a position in seconds');
+});
+
+test('the OAuth client name resolves the provider when headers cannot', () => {
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20261007090000_opera_client_name.sql', import.meta.url), 'utf8');
+  // WHY this lock: ChatGPT-style connectors send no custom header and no product
+  // User-Agent, but their dynamically registered OAuth client is named ("ChatGPT").
+  // The JWT is already verified before this runs; only the client_id claim is read.
+  assert.match(sql, /select client_name into v_name from auth\.oauth_clients where id = p_client_id/);
+  assert.match(sql, /revoke execute on function public\.opera_client_name\(uuid\) from public, anon/);
 });
 
 // --- B. schemas: per-tool pins, burst vocabulary, keyboard surface --------
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 22, 'the public tool count must not change');
+  assert.equal(blocks.length, 26, 'the public tool count must not change');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
   // Every recorded digest must match the file, so a stale entry cannot mask a
@@ -538,6 +566,7 @@ test('MCP delegates only known Opera Agent methods', () => {
   const allowed = new Set([
     'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
     'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer',
+    'media.state', 'media.play', 'media.pause', 'media.seek',
     'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list'
   ]);
   assert.ok(methods.length >= 16);
