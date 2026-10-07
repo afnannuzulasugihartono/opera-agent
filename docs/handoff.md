@@ -135,8 +135,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   allowlist when a file is renamed; never edit the fixture to dodge the scanner.
 - The concurrency group cancels an in-flight run when a newer one queues, so push, then wait.
 - gitleaks 8.24.0 runs locally and is the gate worth reproducing before a push.
-- `publish-crx.yml` may sit `queued` for many minutes with a runner already assigned and no job
-  started. Cancelling and re-dispatching clears it.
+- `publish-crx.yml` may sit `queued` for many minutes with no job started. Cancelling and re-dispatching clears it.
 
 ## Blocked, needs the owner at the machine
 
