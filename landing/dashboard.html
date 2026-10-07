@@ -531,6 +531,10 @@
         // device cards while its status line still said one was paired.
         const steps = [[60, 1, 'second'], [3600, 60, 'minute'], [86400, 3600, 'hour'], [2592000, 86400, 'day'], [31536000, 604800, 'week']];
         return (iso) => {
+          // WHY the empty check and not just the NaN check below: new Date(null)
+          // is the epoch, not NaN, so a device that never checked in rendered as
+          // "57 tahun yang lalu" instead of never.
+          if (iso === null || iso === undefined || iso === '') return 'belum pernah';
           const then = new Date(iso).getTime();
           if (Number.isNaN(then)) return 'belum pernah';
           const seconds = Math.round((then - Date.now()) / 1000);
@@ -647,6 +651,10 @@
     // has loaded, and step one must flip without refetching. The same payload feeds
     // the stats, so one object carries all three.
     let lastSeen = { installed: false, devices: [], total: 0, browser: '' };
+    let liveToken = null;
+    let liveUser = null;
+    let livePoll = false;
+    let installObserved = false;
 
     function renderChecklist() {
       const { installed, devices, total } = lastSeen;
@@ -705,8 +713,9 @@
       const session = await currentSession();
       if (!session) return;
       const { token, user } = session;
+      liveToken = token;
+      liveUser = user;
       $('whoami').textContent = `Device milik ${user.email}.`;
-      let data;
       // WHY the marker is read before the device list, not after: the reader who has
       // not installed anything should learn that first, and the device list alone
       // cannot say it, because an empty list looks identical whether the extension is
@@ -727,10 +736,32 @@
         renderChecklist();
       };
       reportInstallState();
-      new MutationObserver(reportInstallState).observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-opera-agent', 'data-opera-agent-browser']
-      });
+      if (!installObserved) {
+        installObserved = true;
+        new MutationObserver(reportInstallState).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['data-opera-agent', 'data-opera-agent-browser']
+        });
+      }
+      await refreshDevices();
+      // WHY polling and not a push channel: pairing completes in the extension
+      // popup, a separate context this page cannot hear, so a list read once
+      // stays frozen on "offline" after a successful pairing. Re-reading the
+      // owner-scoped list every 10 seconds (and on every return to the tab) is
+      // what makes the list move on its own. The capability check keeps
+      // environments without timers on the single-load path.
+      if (typeof setInterval !== 'undefined' && !livePoll) {
+        livePoll = true;
+        setInterval(() => { if (!document.hidden) refreshDevices(); }, 10000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDevices(); });
+      }
+    }
+
+    async function refreshDevices() {
+      if (!liveToken) return;
+      const token = liveToken;
+      const user = liveUser;
+      let data;
       try {
         const response = await fetch(`${REST}/rpc/opera_my_devices`, { method: 'POST', headers: headersFor(token), body: '{}' });
         data = await response.json();
@@ -825,7 +856,7 @@
             $('status').className = 'status warn';
             return;
           }
-          load();
+          refreshDevices();
         });
       }
     }
@@ -848,7 +879,7 @@
           if (code === 'AWAIT_TIMEOUT' || code === 'queued') {
             $('runStatus').textContent = `${method} masuk antrean; device mengambilnya dalam hitungan detik. Riwayat di Device akan memperbarui sendiri.`;
             $('runStatus').className = 'status ok';
-            setTimeout(load, 4000);
+            setTimeout(refreshDevices, 4000);
             return;
           }
           $('runStatus').textContent = `Gagal: ${say(result?.error?.message || result?.error)}.`;
@@ -859,7 +890,7 @@
         // has no business showing it. The method and outcome are the useful parts.
         $('runStatus').textContent = `${method} — ${result.status}.`;
         $('runStatus').className = 'status ok';
-        load();
+        refreshDevices();
       } catch (error) {
         $('runStatus').textContent = `Gagal (${error?.message || 'jaringan'}).`;
         $('runStatus').className = 'status warn';

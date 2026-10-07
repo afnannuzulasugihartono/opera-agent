@@ -99,6 +99,17 @@ test('the dashboard re-reads the marker instead of reading it once', () => {
   assert.match(html, /attributeFilter:\s*\['data-opera-agent',\s*'data-opera-agent-browser'\]/, 'and watches the browser marker too');
 });
 
+test('the device list refreshes itself after pairing elsewhere', () => {
+  const html = read('dashboard.html');
+  // WHY this lock: pairing completes in the extension popup, a separate context the
+  // page cannot hear, so a list read once stayed frozen on "offline" after a good
+  // pairing. The list re-reads itself on a timer and on every return to the tab.
+  assert.match(html, /async function refreshDevices\(\)/, 'the list fetch is a repeatable function');
+  assert.match(html, /setInterval\(\(\) => \{ if \(!document\.hidden\) refreshDevices\(\); \}, 10000\)/, 'it polls every 10 seconds while visible');
+  assert.match(html, /visibilitychange/, 'and on every return to the tab');
+  assert.match(html, /if \(iso === null \|\| iso === undefined \|\| iso === ''\) return 'belum pernah'/, 'a device that never checked in says so instead of 1970');
+});
+
 test('the dashboard says whether the extension is installed in this browser', () => {
   const html = read('dashboard.html');
   // WHY this lock: a signed-in reader whose browser has no extension sees an empty
