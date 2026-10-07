@@ -132,7 +132,12 @@ test('two windows transcribe with absolute offsets, then stop ends and deletes',
   const started = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
   assert.equal(started.ok, true);
   const sid = started.sessionId;
-  const chunk = Buffer.from('fake-opus-bytes').toString('base64');
+  // WHY padded audio here: every real window carries its own base64 padding, and
+  // joining the strings put "=" mid-stream, so atob threw "Failed to decode
+  // base64" on every window — an hour of silence measured live. Separate decode
+  // per chunk is what this exercises.
+  const chunk = Buffer.from('fake-opus-byte').toString('base64');
+  assert.match(chunk, /=+$/, 'the fixture audio carries padding like real windows');
   assert.equal((await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 0, audio: chunk })).json()).ok, true);
   const second = await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 1, audio: chunk })).json();
   assert.equal(second.ok, true);

@@ -45,7 +45,7 @@ async function sha256(value: string) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function transcribeWindow(audioBase64: string, mime: string, _language: string, offsetSeconds: number) {
+async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime: string }>, language: string, offsetSeconds: number) {
   if (!GROQ_API_KEY) throw new Error("transcription is not configured");
 
   // WHY Groq Whisper and not Gemini: gemini-2.5-flash answers 404 for new keys,
@@ -54,9 +54,26 @@ async function transcribeWindow(audioBase64: string, mime: string, _language: st
   // Groq's OpenAI-compatible audio endpoint answers with verbose_json segments
   // carrying start/end out of the box. Measured live before this shipped.
 
-  const binary = atob(audioBase64.replace(/\s/g, ""));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  // WHY decode each window separately: every chunk carries its own base64
+  // padding, so joining the strings puts "=" mid-stream and atob throws
+  // "Failed to decode base64" — measured live, an hour of silence for one
+  // character class. Bytes join cleanly; strings do not.
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for (const c of windowChunks) {
+    const binary = atob(c.audio_base64.replace(/\s/g, ""));
+    const u8 = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) u8[i] = binary.charCodeAt(i);
+    parts.push(u8);
+    total += u8.length;
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    bytes.set(part, offset);
+    offset += part.length;
+  }
+  const mime = (windowChunks[0].mime as string) || "audio/webm";
   const form = new FormData();
   form.append("file", new Blob([bytes], { type: mime }), "chunk.webm");
   form.append("model", "whisper-large-v3");
@@ -79,7 +96,7 @@ async function transcribeWindow(audioBase64: string, mime: string, _language: st
     }));
 }
 
-async function transcribeDue(session: { id: string; window_secs: number; language: string }, force = false) {
+async function transcribeDue(session: { id: string; device_id: string; window_secs: number; language: string }, force = false) {
   const needed = Math.max(1, Math.round(session.window_secs / CHUNK_SECONDS));
   const { data: chunks } = await supabase.from("opera_listen_chunks")
     .select("seq, audio_base64, mime").eq("session_id", session.id).order("seq").limit(needed);
@@ -89,10 +106,22 @@ async function transcribeDue(session: { id: string; window_secs: number; languag
   // so the tail is never stranded.
   if (!force && chunks.length < needed) return 0;
   const windowChunks = chunks;
-  const audioBase64 = windowChunks.map((c) => c.audio_base64 as string).join("");
+  let segments: Array<{ start: number; end: number; text: string }>;
+  try {
+    const baseSeq = windowChunks[0].seq as number;
+    segments = await transcribeWindow(windowChunks as Array<{ audio_base64: string; mime: string }>, session.language, baseSeq * CHUNK_SECONDS);
+  } catch (error) {
+    // WHY failures are audited, not just thrown: a stuck session with zero
+    // segments is undebuggable from the outside — the upstream status is the
+    // only thing distinguishing a bad key, a refused file, and no network.
+    // No audio, no token and no key material lands in the audit row.
+    await supabase.from("opera_audit").insert({
+      event_type: "listen.transcribe_failed", device_id: session.device_id,
+      details: { sessionId: session.id, reason: String(error instanceof Error ? error.message : error).slice(0, 200) }
+    });
+    throw error;
+  }
   const baseSeq = windowChunks[0].seq as number;
-  const mime = (windowChunks[0].mime as string) || "audio/webm";
-  const segments = await transcribeWindow(audioBase64, mime, session.language, baseSeq * CHUNK_SECONDS);
   if (segments.length) {
     await supabase.from("opera_listen_segments").upsert(
       segments.map((s: { start: number; end: number; text: string }, i: number) => ({
@@ -181,11 +210,11 @@ Deno.serve(async (req: Request) => {
         { session_id: sessionId, seq, audio_base64: audio, mime },
         { onConflict: "session_id,seq", ignoreDuplicates: true }
       );
-      const transcribed = await transcribeDue(session as { id: string; window_secs: number; language: string });
+      const transcribed = await transcribeDue(session as { id: string; device_id: string; window_secs: number; language: string });
       return json({ ok: true, transcribed });
     }
 
-    await transcribeDue(session as { id: string; window_secs: number; language: string }, true);
+    await transcribeDue(session as { id: string; device_id: string; window_secs: number; language: string }, true);
     await supabase.from("opera_listen_chunks").delete().eq("session_id", sessionId);
     await supabase.from("opera_listen_sessions")
       .update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", sessionId);
