@@ -22,7 +22,10 @@
 
   function markInstalled() {
 
-    if (document.documentElement) document.documentElement.dataset.operaAgent = 'installed';
+    if (!document.documentElement) return;
+    document.documentElement.dataset.operaAgent = 'installed';
+    const browser = globalThis.OperaAgentBrowserId?.browserName || '';
+    if (browser) document.documentElement.dataset.operaAgentBrowser = browser;
   }
 
   markInstalled();

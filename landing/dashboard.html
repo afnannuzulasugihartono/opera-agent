@@ -646,7 +646,7 @@
     // WHY stored and re-rendered: the install marker can land after the device list
     // has loaded, and step one must flip without refetching. The same payload feeds
     // the stats, so one object carries all three.
-    let lastSeen = { installed: false, devices: [], total: 0 };
+    let lastSeen = { installed: false, devices: [], total: 0, browser: '' };
 
     function renderChecklist() {
       const { installed, devices, total } = lastSeen;
@@ -723,12 +723,13 @@
           : 'Opera Agent belum terpasang di browser ini. Pasang dulu di bagian Unduh, lalu pair dengan akun ini.';
         $('installState').className = installed ? 'tone good' : 'tone warn';
         lastSeen.installed = installed;
+        lastSeen.browser = document.documentElement.dataset.operaAgentBrowser || '';
         renderChecklist();
       };
       reportInstallState();
       new MutationObserver(reportInstallState).observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ['data-opera-agent']
+        attributeFilter: ['data-opera-agent', 'data-opera-agent-browser']
       });
       try {
         const response = await fetch(`${REST}/rpc/opera_my_devices`, { method: 'POST', headers: headersFor(token), body: '{}' });
@@ -863,6 +864,18 @@
         $('runStatus').className = 'status warn';
       }
     });
+
+    // Set a suggested device name based on the browser and platform.
+    (function suggestDeviceName() {
+      const browser = lastSeen.browser || document.documentElement.dataset.operaAgentBrowser || '';
+      const os = /Mac/i.test(navigator.platform) ? 'Mac' : /Win/i.test(navigator.platform) ? 'Windows' : /Linux/i.test(navigator.platform) ? 'Linux' : '';
+      if (browser) {
+        const el = document.getElementById('pairName');
+        if (el && !el.value) {
+          el.placeholder = browser + (os ? ' di ' + os : '');
+        }
+      }
+    })();
 
     $('pairButton').addEventListener('click', async () => {
       const session = await currentSession();

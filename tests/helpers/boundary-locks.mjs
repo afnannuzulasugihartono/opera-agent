@@ -25,7 +25,7 @@
 // permissions and entry points are untouched, so the extension id is stable.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'fed16f8b422b4812cf30b6e77590b055b4762fb3'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists
+  ['../extension/content.js', '9138db01ee1a512daa5edff1798001943a512afa'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists
   ['../extension/background.js', 'b3208c138e5ece1e2a5b78416f5c627676013597'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs
   ['../extension/manifest.json', '24af12714260a095f7b79bc8520a21e3f84103fd'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable
   ['../supabase/functions/opera-agent-mcp/index.ts', 'f5a58b229f8ab63d7566722ceafa1969c76bd9c1'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device

@@ -96,7 +96,7 @@ test('the dashboard re-reads the marker instead of reading it once', () => {
   // after the dashboard has already rendered. A single read tells a reader who has the
   // extension that it is missing, and the obvious reaction is to install a second copy.
   assert.match(html, /MutationObserver/, 'the page watches for the marker arriving late');
-  assert.match(html, /attributeFilter:\s*\['data-opera-agent'\]/, 'and only for that attribute');
+  assert.match(html, /attributeFilter:\s*\['data-opera-agent',\s*'data-opera-agent-browser'\]/, 'and watches the browser marker too');
 });
 
 test('the dashboard says whether the extension is installed in this browser', () => {
