@@ -95,10 +95,31 @@ async function command(req: Request, _url: URL) {
   // resolves the device by name only, so the hash check must happen here. The
   // verify answer also carries last_seen_at, so the 90s offline preflight
   // rides the same round trip instead of a second REST read of the same row.
-  const auth = await rpc("opera_verify_device", {
+  let auth = await rpc("opera_verify_device", {
     p_device_name: DEVICE_NAME,
     p_token_hash: tokenHash
   });
+  let deviceName = DEVICE_NAME;
+  if (!auth?.ok) {
+    // WHY a second path instead of a second token: ChatGPT plugin OAuth (and any
+    // future per-user caller) arrives with a Supabase user JWT, not a device
+    // secret. getUser verifies signature + expiry, and the caller's own first
+    // device is resolved by user_id — never the fixed name — so one account
+    // cannot drive another account's browser. The offline preflight below is
+    // shared by both paths.
+    const { data, error } = await supabase.auth.getUser(token);
+    const userId = !error ? data.user?.id : null;
+    if (userId) {
+      const { data: device } = await supabase.from("opera_devices")
+        .select("device_name, last_seen_at")
+        .eq("user_id", userId).neq("status", "disabled")
+        .order("created_at").limit(1).single();
+      if (device?.device_name) {
+        deviceName = device.device_name as string;
+        auth = { ok: true, last_seen_at: (device.last_seen_at as string | null) ?? null };
+      }
+    }
+  }
   if (!auth?.ok) {
     return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
   }
@@ -116,9 +137,20 @@ async function command(req: Request, _url: URL) {
     p_method: method,
     p_params: params,
     p_timeout_ms: timeoutMs,
-    p_device_name: DEVICE_NAME,
+    p_device_name: deviceName,
     p_request_id: requestId
   });
+  if (result?.ok === true && result.commandId) {
+    // WHY best-effort and never fatal: the provider is dashboard metadata, and a
+    // stamp failure must not fail a command that is already queued and billable.
+    // The ChatGPT plugin path carries no custom header, so its callers are
+    // recognized by User-Agent here; header-capable harnesses are stamped by MCP.
+    try {
+      const ua = req.headers.get("user-agent") || "";
+      const provider = /chatgpt|openai/i.test(ua) ? "chatgpt" : "";
+      if (provider) await supabase.from("opera_commands").update({ provider }).eq("id", String(result.commandId));
+    } catch { /* dashboard metadata only */ }
+  }
   if (result?.ok === true) {
     const commandId = result.commandId;
     try {

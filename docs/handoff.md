@@ -106,8 +106,9 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 3. **MCP resolves one device per account and stamps the harness provider.** `X-Opera-Device`
    picks among the caller's devices, `X-Opera-Provider` (else User-Agent: opencode, kilo,
    chatgpt, …) lands on each command and run, and the dashboard shows device / browser /
-   provider per row. Verified live with a stamped `browser.ping`. Gateway and VM stay
-   single-device; a real second account still wants its own test before opening access.
+   provider per row. Verified live with stamped `browser.ping` calls. The gateway accepts
+   a user JWT too (ChatGPT plugin bundle in `landing/chatgpt-plugin/`) and resolves the
+   same way. A real second account still wants its own test before opening access.
 4. **The installer GUI has never been run.**
    [`scripts/OperaAgentInstaller.cs`](../scripts/OperaAgentInstaller.cs) compiles to a real PE with
    `requireAdministrator` set. Unverified: the form itself, and whether Chrome reads the policy it

@@ -14,14 +14,31 @@ const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/
   .replace(/^import .*;\r?\n/gm, ''));
 const commandId = '00000000-0000-4000-8000-000000000001';
 
-function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
+function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, user = null, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
   const calls = [];
   let handler;
   let committed = false;
   const client = {
+    auth: {
+      async getUser() {
+        if (user) return { data: { user }, error: null };
+        return { data: { user: null }, error: { message: 'invalid token' } };
+      }
+    },
     from(table) {
-      // The offline check moved into opera_verify_device, so any REST read is
-      // a regression back to four round trips, not a tolerated fallback.
+      if (user && table === 'opera_devices') {
+        return {
+          select() { return this; },
+          eq() { return this; },
+          neq() { return this; },
+          order() { return this; },
+          limit() { return this; },
+          async single() { return { data: { device_name: user.device, last_seen_at: new Date().toISOString() } }; }
+        };
+      }
+
+      // The offline check moved into opera_verify_device, so any other REST
+      // read is a regression back to four round trips, not a tolerated fallback.
       throw new Error(`REST read removed: gateway must not query ${table}`);
     },
     async rpc(name, args) {
@@ -110,6 +127,18 @@ test('unpaired and offline devices are rejected before enqueue', async () => {
     assert.equal((await response.json()).error, 'Device is offline.');
     assert.equal(h.calls.some((c) => c.name === 'opera_enqueue'), false);
   }
+});
+
+test('a user JWT resolves the caller device, never the fixed name', async () => {
+  // WHY this test: ChatGPT plugin OAuth arrives with a Supabase user JWT, not a
+  // device secret. The gateway must enqueue on the caller's own device, or one
+  // account drives another account's browser.
+  const h = harness({ auth: { ok: false }, user: { id: 'user-1', device: 'opera-brave' } });
+  const response = await h.request();
+  assert.equal(response.status, 200);
+  const enqueue = h.calls.find((c) => c.name === 'opera_enqueue');
+  assert.ok(enqueue, 'the user path reaches enqueue');
+  assert.equal(enqueue.args.p_device_name, 'opera-brave');
 });
 
 test('enqueue rejection is preserved and never followed by await', async () => {
