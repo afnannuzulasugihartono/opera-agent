@@ -777,6 +777,7 @@
             <h3>${esc(device.name)}</h3>
             <span class="chip">${esc(device.extensionVersion || '-')}</span>
             ${device.browserName ? `<span class="chip">${esc(device.browserName)}</span>` : ''}
+            ${!device.browserName && lastSeen.browser ? `<span class="chip">${esc(lastSeen.browser)} di browser ini</span>` : ''}
           </div>
           <dl class="facts">
             <dt>Status</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
@@ -784,7 +785,7 @@
             <dt>Perintah</dt><dd>${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} selesai</dd>
             <dt>ID device</dt><dd><code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></dd>
           </dl>
-          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code><span class="${commandInk(command.status)}">${esc(command.status)}</span></li>`).join('')}</ul>
+          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code>${command.provider ? `<span class="chip">${esc(command.provider)}</span>` : ''}<span class="${commandInk(command.status)}">${esc(command.status)}</span></li>`).join('')}</ul>
           <div class="row">
             <button class="btn ghost" type="button" data-copy="${esc(device.id)}">Salin ID</button>
             <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>

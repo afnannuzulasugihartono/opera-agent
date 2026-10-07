@@ -144,6 +144,34 @@
     dan tekan <strong>Pasang</strong>. Periksa <em>chrome://extensions</em> dan
     <em>chrome://policy</em>.</p>
 
+    <h2>Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</h2>
+    <p>Server MCP: <code>https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code>.
+    Masuk dengan akun Anda (OAuth), lalu pilih device dan provider:</p>
+    <ul>
+      <li><strong>OpenCode / Kilo / Claude Code</strong> — tambah remote MCP plus dua header:
+        <code>X-Opera-Device: nama-device</code> dan <code>X-Opera-Provider: opencode</code>
+        (atau <code>kilo</code>). Contoh untuk OpenCode ada di bawah.</li>
+      <li><strong>ChatGPT / konektor lain tanpa header kustom</strong> — cukup URL dan OAuth.
+        Server memakai device pertama milik akun Anda, dan provider terdeteksi otomatis.
+        Untuk memilih device lain, pasangkan ulang atau hubungi pemilik akun.</li>
+    </ul>
+    <p>Contoh konfigurasi OpenCode (<code>opencode.json</code>):</p>
+    <pre><code>{
+  "mcp": {
+    "opera-agent": {
+      "type": "remote",
+      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+      "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
+      "headers": {
+        "X-Opera-Device": "opera",
+        "X-Opera-Provider": "opencode"
+      }
+    }
+  }
+}</code></pre>
+    <p>Nama device terlihat di <a href="./dashboard.html">Dashboard</a> beserta browser
+    dan provider tiap perintah (misalnya <em>opera / Brave / opencode</em>).</p>
+
     <h2>Sesi Anda keluar sendiri</h2>
     <p>Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
     refresh token yang tersimpan; jika refresh ikut gagal, Anda dipulangkan ke

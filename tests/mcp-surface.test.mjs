@@ -80,28 +80,28 @@ const FROZEN_READ_PAGE_PROPERTIES = [
 ];
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
-  browser_status: '87dcc1809d24ab5e',
-  run_browser_burst: 'df7e6123de357e67',
-  run_workflow: '6ee5a26de49d2778',
-  start_watch: '1a8f4bc0bb0e5486',
+  browser_status: '07fd9d13e0cfa930',
+  run_browser_burst: '9cc28895fa1df26e',
+  run_workflow: '97abc3e06829e4cc',
+  start_watch: '395e579634b5f784',
   wait_events: '711f765e7122133f',
-  stop_watch: '2208034b545d07f0',
-  list_tabs: 'f1d270321bc432aa',
-  open_url: 'c06b0bb087e15ea4',
-  activate_tab: '3f1b47fe5ff7351b',
-  navigate_tab: '68b73b85772c8049',
-  close_tab: '75e8a8c7f9de6a59',
-  read_page: 'f000aa998f062c29',
-  capture_page: '9b7f47af69c78b3c',
-  find_elements: '195578d2193ad28f',
-  click_element: '1f4c5c9e90a2d282',
-  fill_element: 'f514a6f9f66a8649',
-  press_key: 'd9395997544b11e9',
-  scroll_page: 'b897c833bc057a16',
-  move_pointer: '6cd5b9fb56ff550c',
-  click_at: '5a5cf510f8ec196d',
-  drag_pointer: '00d0eb67eafb741f',
-  wheel_at: '3b1d671e6b306942',
+  stop_watch: '5192744559385f99',
+  list_tabs: 'eb4fdda0376c5588',
+  open_url: '268a9ac307859cc3',
+  activate_tab: 'd0f95b64fd039eaf',
+  navigate_tab: 'ed55ce62e4c4f97b',
+  close_tab: '93d3d6716da6bed4',
+  read_page: 'e8d070d67b65343c',
+  capture_page: 'c882f8243ee2f423',
+  find_elements: '1df13d647f6a2a86',
+  click_element: '9b84980f69974580',
+  fill_element: 'a2e498170b24fcd9',
+  press_key: '090e5db35dfbb416',
+  scroll_page: 'd2d5b9a490f68789',
+  move_pointer: 'f470b754ffe36435',
+  click_at: '09fd94d6dbce359e',
+  drag_pointer: '2508c2ed483615c2',
+  wheel_at: '33496b327b6f868d',
 });
 
 // The only tool whose schema the keyboard commit changed. Everything else
@@ -242,6 +242,23 @@ test('an empty allowlist admits nobody, because every caller drives the same dev
   assert.match(authenticate, /if \(ALLOWED_USER_IDS\.size === 0 && ALLOWED_USER_EMAILS\.size === 0\) return null;/);
   assert.doesNotMatch(authenticate, /unrestricted/);
   assert.match(authenticate, /!ALLOWED_USER_IDS\.has\(data\.user\.id\) && !ALLOWED_USER_EMAILS\.has\(email\)\) return null/);
+});
+
+test('each command is stamped with its harness provider, never used for access', () => {
+  // WHY this pin: the dashboard shows device + browser + provider per row (e.g.
+  // opera / Brave / opencode), and harnesses that cannot send headers (ChatGPT,
+  // Claude.ai connectors) are detected by User-Agent. The provider is advisory
+  // metadata only; isolation rests on user_id, so this test also asserts the
+  // stamp path cannot refuse a command.
+  assert.match(source, /x-opera-provider/);
+  assert.match(source, /function resolveProvider\(req: Request\): string/);
+  assert.match(source, /\[\/chatgpt\|openai-connector\|oai-mcp\/i, "chatgpt"\]/);
+  assert.match(source, /\[\/opencode\/i, "opencode"\]/);
+  assert.match(source, /return "unknown";/);
+  assert.match(source, /const provider = resolveProvider\(req\);/);
+  assert.match(source, /createServer\(deviceName, provider\)/);
+  assert.match(source, /await supabase\.from\("opera_commands"\)\.update\(\{ provider \}\)/);
+  assert.match(source, /await supabase\.from\("opera_workflow_runs"\)\.update\(\{ provider \}\)/);
 });
 
 // --- B. schemas: per-tool pins, burst vocabulary, keyboard surface --------

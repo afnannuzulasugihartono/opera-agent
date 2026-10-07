@@ -285,6 +285,17 @@ test('pairing cannot take a device name another account owns, and the issuer is 
   assert.match(sql, /if v_recent >= 5 then/, 'the hourly allowance is carried over');
 });
 
+test('commands and runs carry their harness provider for the dashboard', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261007070000_opera_commands_provider.sql', root), 'utf8');
+  // WHY this lock: the dashboard shows device + browser + provider per row (e.g.
+  // opera / Brave / opencode). The provider is stamped best-effort by the MCP
+  // server after enqueue, so the column must exist with a safe default and the
+  // owner-scoped reader must return it — otherwise old rows break the render.
+  assert.match(sql, /alter table public\.opera_commands add column if not exists provider text not null default ''/, 'commands carry a provider with a safe default');
+  assert.match(sql, /alter table public\.opera_workflow_runs add column if not exists provider text not null default ''/, 'runs carry one too');
+  assert.match(sql, /'provider', c\.provider/, 'the owner-scoped reader returns it per command');
+});
+
 test('the pairing issuer has exactly one signature, or PostgREST refuses it', () => {
   const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
   const drop = fs.readFileSync(new URL('supabase/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');

@@ -100,16 +100,14 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.
-2. **OAuth sign-in reaches a token; the OpenCode reconnect after the allowlist fix is unconfirmed.**
-   `/auth/v1/oauth/authorize` for client `Opera Agent` (`bbc5eb76…`, public, redirect
-   `http://127.0.0.1:19876/mcp/oauth/callback`, matched exactly) answers 302 to the consent page,
-   the code exchanges for a one-hour token, and GoTrue `/user` answers 200 for it. Unverified:
-   OpenCode's own reconnect and a tool call through it, and sign-in by Google.
-3. **MCP serves one device, not one per account.** Gateway, VM and MCP name `opera`, so MCP access is
-   the static token or `OPERA_AGENT_MCP_USER_IDS` and nothing wider. Designed, not built: the server
-   names each account's device at pairing (`opera` stays the owner's), a service-only
-   `opera_device_for_user(uuid)` lets MCP resolve the caller's device, then access opens to confirmed
-   accounts. Wants a test with a real second account first. Gateway and VM stay single-device.
+2. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page,
+   the code exchanges for a one-hour token, GoTrue `/user` answers 200, and a tool call
+   through it (`browser_status`) completes. Unverified: sign-in by Google.
+3. **MCP resolves one device per account and stamps the harness provider.** `X-Opera-Device`
+   picks among the caller's devices, `X-Opera-Provider` (else User-Agent: opencode, kilo,
+   chatgpt, …) lands on each command and run, and the dashboard shows device / browser /
+   provider per row. Verified live with a stamped `browser.ping`. Gateway and VM stay
+   single-device; a real second account still wants its own test before opening access.
 4. **The installer GUI has never been run.**
    [`scripts/OperaAgentInstaller.cs`](../scripts/OperaAgentInstaller.cs) compiles to a real PE with
    `requireAdministrator` set. Unverified: the form itself, and whether Chrome reads the policy it

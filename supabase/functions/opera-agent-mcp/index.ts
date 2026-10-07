@@ -37,7 +37,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 // page defaults). A missing or non-allowlisted Origin gets no ACAO header.
 
 const CORS_BASE_HEADERS = {
-  "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id, x-opera-device",
+  "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id, x-opera-device, x-opera-provider",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Expose-Headers": "mcp-protocol-version, mcp-session-id",
   "Cache-Control": "no-store"
@@ -177,6 +177,40 @@ async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<stri
   return DEVICE_NAME;
 }
 
+// WHY a header first, User-Agent second: harnesses that can send headers
+// (OpenCode, Kilo, Claude Code) name themselves exactly via X-Opera-Provider,
+// while harnesses that cannot (ChatGPT, Claude.ai connectors) are identified by
+// their server-side User-Agent. Either way the provider is advisory metadata for
+// the dashboard, never an access decision — isolation rests on user_id.
+
+const PROVIDER_PATTERNS: Array<[RegExp, string]> = [
+  [/opencode/i, "opencode"],
+  [/\bkilo/i, "kilo"],
+  [/chatgpt|openai-connector|oai-mcp/i, "chatgpt"],
+  [/claude/i, "claude"],
+  [/\bcursor/i, "cursor"],
+  [/windsurf/i, "windsurf"],
+  [/\bcline\b/i, "cline"],
+  [/roo[ -]?code/i, "roo"],
+  [/\baider\b/i, "aider"],
+  [/\bgoose\b/i, "goose"],
+  [/\bzed\b/i, "zed"],
+  [/vscode|visual studio code/i, "vscode"],
+  [/mcp-inspector/i, "inspector"],
+  [/postman/i, "postman"],
+  [/\bcurl\b/i, "curl"],
+  [/python|httpx|urllib|aiohttp/i, "script"],
+  [/node|undici|deno/i, "script"],
+];
+
+function resolveProvider(req: Request): string {
+  const header = req.headers.get("x-opera-provider")?.trim().slice(0, 64) || "";
+  if (/^[a-z0-9][a-z0-9_.-]{0,63}$/i.test(header)) return header.toLowerCase();
+  const ua = req.headers.get("user-agent") || "";
+  for (const [re, name] of PROVIDER_PATTERNS) if (re.test(ua)) return name;
+  return "unknown";
+}
+
 class CommandFailure extends Error {
   code: string;
   details?: Record<string, unknown>;
@@ -292,7 +326,7 @@ async function rpc(name: string, args: Record<string, unknown>) {
   return data as Record<string, unknown> | null;
 }
 
-async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME) {
+async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "") {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
   const queued = await rpc("opera_enqueue", {
     p_method: method,
@@ -303,6 +337,13 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   });
   if (!queued?.ok || !queued.commandId) {
     throw new Error(String(queued?.error || `Unable to queue ${method}.`));
+  }
+  if (provider) {
+    // WHY best-effort and never fatal: the provider is dashboard metadata, and a
+    // stamp failure must not fail a command that is already queued and billable.
+    try {
+      await supabase.from("opera_commands").update({ provider }).eq("id", String(queued.commandId));
+    } catch { /* dashboard metadata only */ }
   }
   // opera_await_adaptive rather than opera_await: identical signature and
   // response envelope, but its ramp starts at 5ms instead of a flat 50ms, so a
@@ -348,13 +389,13 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   };
 }
 
-function execute(method: string, params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME) {
-  return runCommand(method, params, timeoutMs, deviceName).then(textResult).catch(toolError);
+function execute(method: string, params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
+  return runCommand(method, params, timeoutMs, deviceName, provider).then(textResult).catch(toolError);
 }
 
 // Variant for screenshot captures
-function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME) {
-  return runCommand("page.capture", params, timeoutMs, deviceName).then(screenshotResult).catch(toolError);
+function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
+  return runCommand("page.capture", params, timeoutMs, deviceName, provider).then(screenshotResult).catch(toolError);
 }
 
 function screenshotResult(value: Record<string, unknown>) {
@@ -373,10 +414,6 @@ function screenshotResult(value: Record<string, unknown>) {
   return { content, structuredContent };
 }
 
-function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number) {
-  return runCommand("page.capture", params, timeoutMs).then(screenshotResult).catch(toolError);
-}
-
 function sleepMs(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -386,7 +423,7 @@ function sleepMs(ms: number) {
 // fires the runner itself via pg_net, so a single RPC starts the whole plan.
 // The runner re-queries fresh controls on every retry iteration, which keeps
 // fast-changing UIs (ad overlays) from dying between observation and action.
-async function runWorkflow(name: string, input: Record<string, unknown>, waitTimeoutMs: number, deviceName: string = DEVICE_NAME) {
+async function runWorkflow(name: string, input: Record<string, unknown>, waitTimeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
   const started = await rpc("opera_start_workflow", {
     p_name: name,
     p_input: input,
@@ -404,6 +441,11 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
     throw new CommandFailure(code, message);
   }
   const runId = String(started.runId);
+  if (provider) {
+    try {
+      await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
+    } catch { /* dashboard metadata only */ }
+  }
   const startedAt = Date.now();
   let last: Record<string, unknown> | null = null;
   while (Date.now() - startedAt < waitTimeoutMs + 8000) {
@@ -427,7 +469,7 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
   };
 }
 
-function createServer(deviceName: string = DEVICE_NAME) {
+function createServer(deviceName: string = DEVICE_NAME, provider = "") {
   const server = new McpServer(
     { name: "opera-agent", version: "1.6.0" },
     {
@@ -441,7 +483,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
     description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests.",
     inputSchema: { timeoutMs: timeoutSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ timeoutMs }: { timeoutMs?: number }) => execute("browser.ping", {}, timeoutMs, deviceName));
+  }, ({ timeoutMs }: { timeoutMs?: number }) => execute("browser.ping", {}, timeoutMs, deviceName, provider));
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
@@ -462,7 +504,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, steps, executionMode, timeoutMs }: TargetTab & { steps: Array<Record<string, unknown>>; executionMode?: ExecutionMode; timeoutMs?: number }) => {
     const params = executionMode === "foreground" ? { tabId, steps, executionMode } : { tabId, steps };
-    return execute("browser.burst", params, timeoutMs, deviceName);
+    return execute("browser.burst", params, timeoutMs, deviceName, provider);
   });
 
   server.registerTool("run_workflow", {
@@ -477,7 +519,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ name, input, timeoutMs }: { name: string; input?: Record<string, unknown>; timeoutMs?: number }) =>
-    runWorkflow(name, input || {}, timeoutMs ?? 60000, deviceName).then(textResult).catch(toolError));
+    runWorkflow(name, input || {}, timeoutMs ?? 60000, deviceName, provider).then(textResult).catch(toolError));
 
   server.registerTool("start_watch", {
     title: "Start live watch",
@@ -520,7 +562,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
       timing: z.record(z.string(), z.unknown())
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, rule, timeoutMs }: TargetTab & { rule: Record<string, unknown>; timeoutMs?: number }) => execute("watch.start", { tabId, rule }, timeoutMs, deviceName));
+  }, ({ tabId, rule, timeoutMs }: TargetTab & { rule: Record<string, unknown>; timeoutMs?: number }) => execute("watch.start", { tabId, rule }, timeoutMs, deviceName, provider));
 
   server.registerTool("wait_events", {
     title: "Wait for watch events",
@@ -569,14 +611,14 @@ function createServer(deviceName: string = DEVICE_NAME) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
   }, ({ watcherId, stopAll, timeoutMs }: { watcherId?: string; stopAll?: boolean; timeoutMs?: number }) =>
     stopAll
-      ? execute("watch.stop_all", {}, timeoutMs, deviceName)
-      : execute("watch.stop", { watcherId }, timeoutMs, deviceName));
+      ? execute("watch.stop_all", {}, timeoutMs, deviceName, provider)
+      : execute("watch.stop", { watcherId }, timeoutMs, deviceName, provider));
 
   server.registerTool("list_tabs", {
     description: "List open Opera tabs, including tab IDs, titles, URLs, and active state.",
     inputSchema: { currentWindow: z.boolean().optional().describe("Only return tabs in the current Opera window.") },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ currentWindow }: { currentWindow?: boolean }) => execute("tabs.list", { currentWindow: currentWindow ?? false }, undefined, deviceName));
+  }, ({ currentWindow }: { currentWindow?: boolean }) => execute("tabs.list", { currentWindow: currentWindow ?? false }, undefined, deviceName, provider));
 
   server.registerTool("open_url", {
     title: "Open URL in Opera",
@@ -587,14 +629,14 @@ function createServer(deviceName: string = DEVICE_NAME) {
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ url, active, timeoutMs }: { url: string; active?: boolean; timeoutMs?: number }) => execute("tabs.open", { url, active: active ?? false, wait: true }, timeoutMs, deviceName));
+  }, ({ url, active, timeoutMs }: { url: string; active?: boolean; timeoutMs?: number }) => execute("tabs.open", { url, active: active ?? false, wait: true }, timeoutMs, deviceName, provider));
 
   server.registerTool("activate_tab", {
     title: "Activate Opera tab",
     description: "Explicitly activate an Opera tab and focus its window. Use only when the user asks to see that tab or permits foreground interaction; never use as automatic recovery.",
     inputSchema: { tabId: z.number().int().nonnegative() },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ tabId }: { tabId: number }) => execute("tabs.activate", { tabId, focusWindow: true }, undefined, deviceName));
+  }, ({ tabId }: { tabId: number }) => execute("tabs.activate", { tabId, focusWindow: true }, undefined, deviceName, provider));
 
   server.registerTool("navigate_tab", {
     title: "Navigate Opera tab",
@@ -605,14 +647,14 @@ function createServer(deviceName: string = DEVICE_NAME) {
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, url, timeoutMs }: TargetTab & { url: string; timeoutMs?: number }) => execute("tabs.navigate", { tabId, url, wait: true }, timeoutMs, deviceName));
+  }, ({ tabId, url, timeoutMs }: TargetTab & { url: string; timeoutMs?: number }) => execute("tabs.navigate", { tabId, url, wait: true }, timeoutMs, deviceName, provider));
 
   server.registerTool("close_tab", {
     title: "Close Opera tab",
     description: "Close one Opera tab by ID. Use only when the user asks to close it.",
     inputSchema: { tabId: z.number().int().nonnegative() },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false }
-  }, ({ tabId }: { tabId: number }) => execute("tabs.close", { tabId }, undefined, deviceName));
+  }, ({ tabId }: { tabId: number }) => execute("tabs.close", { tabId }, undefined, deviceName, provider));
 
   server.registerTool("read_page", {
     title: "Read Opera page",
@@ -626,7 +668,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, (args: TargetTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) =>
-    execute("page.read", { ...args, view: "compact" }, undefined, deviceName));
+    execute("page.read", { ...args, view: "compact" }, undefined, deviceName, provider));
 
   server.registerTool("capture_page", {
     title: "Capture Opera page",
@@ -653,7 +695,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
     maxHeight?: number;
     previousHash?: string;
     timeoutMs?: number;
-  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}) }, timeoutMs));
+  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}) }, timeoutMs, deviceName, provider));
 
   server.registerTool("find_elements", {
     title: "Find page elements",
@@ -667,21 +709,21 @@ function createServer(deviceName: string = DEVICE_NAME) {
       limit: z.number().int().min(1).max(100).optional()
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, (args: TargetTab & { text?: string; role?: string; tag?: string; exact?: boolean; limit?: number }) => execute("page.find", args, undefined, deviceName));
+  }, (args: TargetTab & { text?: string; role?: string; tag?: string; exact?: boolean; limit?: number }) => execute("page.find", args, undefined, deviceName, provider));
 
   server.registerTool("click_element", {
     title: "Click page element",
     description: "Click an element ref on an explicit target tab using trusted browser input. Background execution is the default and does not activate the tab.",
     inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, ref, executionMode }: TargetTab & { ref: string; executionMode?: ExecutionMode }) => execute("page.click", { tabId, ref, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, ref, executionMode }: TargetTab & { ref: string; executionMode?: ExecutionMode }) => execute("page.click", { tabId, ref, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("fill_element", {
     title: "Fill page field",
     description: "Fill a non-sensitive editable element by ref. The extension blocks passwords, OTPs, payment fields, and file uploads.",
     inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), value: z.string().max(20000), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, ref, value, executionMode }: TargetTab & { ref: string; value: string; executionMode?: ExecutionMode }) => execute("page.fill", { tabId, ref, value, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, ref, value, executionMode }: TargetTab & { ref: string; value: string; executionMode?: ExecutionMode }) => execute("page.fill", { tabId, ref, value, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("press_key", {
     title: "Press a key chord or type text",
@@ -696,7 +738,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
       executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, key, modifiers, text, executionMode }: TargetTab & { key?: string; modifiers?: string[]; text?: string; executionMode?: ExecutionMode }) => execute("page.key", { tabId, ...(key != null ? { key } : {}), ...(modifiers != null ? { modifiers } : {}), ...(text != null ? { text } : {}), trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, key, modifiers, text, executionMode }: TargetTab & { key?: string; modifiers?: string[]; text?: string; executionMode?: ExecutionMode }) => execute("page.key", { tabId, ...(key != null ? { key } : {}), ...(modifiers != null ? { modifiers } : {}), ...(text != null ? { text } : {}), trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("scroll_page", {
     title: "Scroll page",
@@ -710,21 +752,21 @@ function createServer(deviceName: string = DEVICE_NAME) {
       executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, absolute, smooth, executionMode }: TargetTab & { x?: number; y: number; absolute?: boolean; smooth?: boolean; executionMode?: ExecutionMode }) => execute("page.scroll", { tabId, x: x ?? 0, y, absolute: absolute ?? false, behavior: smooth ? "smooth" : "instant", executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, x, y, absolute, smooth, executionMode }: TargetTab & { x?: number; y: number; absolute?: boolean; smooth?: boolean; executionMode?: ExecutionMode }) => execute("page.scroll", { tabId, x: x ?? 0, y, absolute: absolute ?? false, behavior: smooth ? "smooth" : "instant", executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("move_pointer", {
     title: "Move pointer",
     description: "Move CDP pointer coordinates on an explicit target. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user.",
     inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "move", x, y, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "move", x, y, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("click_at", {
     title: "Click at coordinates",
     description: "Click CDP viewport coordinates. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user. Prefer click_element and verify page state.",
     inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "click", x, y, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "click", x, y, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("drag_pointer", {
     title: "Drag at coordinates",
@@ -736,7 +778,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
       executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, endX, endY, executionMode }: TargetTab & { x: number; y: number; endX: number; endY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "drag", x, y, endX, endY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, x, y, endX, endY, executionMode }: TargetTab & { x: number; y: number; endX: number; endY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "drag", x, y, endX, endY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("wheel_at", {
     title: "Wheel at coordinates",
@@ -749,7 +791,7 @@ function createServer(deviceName: string = DEVICE_NAME) {
       executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, deltaX, deltaY, executionMode }: TargetTab & { x: number; y: number; deltaX?: number; deltaY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName));
+  }, ({ tabId, x, y, deltaX, deltaY, executionMode }: TargetTab & { x: number; y: number; deltaX?: number; deltaY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   return server;
 }
@@ -780,9 +822,10 @@ Deno.serve(async (req: Request) => {
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
   const deviceName = await resolveDeviceName(authContext, req);
+  const provider = resolveProvider(req);
 
   try {
-    const server = createServer(deviceName);
+    const server = createServer(deviceName, provider);
 
     const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
     await server.connect(transport);
