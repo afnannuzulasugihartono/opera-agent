@@ -92,6 +92,35 @@
     p strong, li strong { color: var(--text); }
     .updated { font-size: 13px; }
 
+    /* WHY the copy box: a config that cannot be copied gets retyped, and a
+       retyped client ID or URL fails as a broken connection, not as a typo.
+       One button per block, clipboard first with a selection fallback. */
+    .copybox { position: relative; margin: 12px 0 20px; }
+    .copybox pre {
+      margin: 0;
+      padding: 14px;
+      padding-top: 44px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+    .copybox pre code { color: var(--text); font-size: 13px; }
+    .copybox button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--surface);
+      color: var(--accent);
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      font-size: 12.5px;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+    .copybox button:hover { border-color: var(--accent); }
+    h3 { margin: 24px 0 4px; font-size: 16px; }
+
     /* WHY the map: five sections with no way to jump is a wall of text. One list
        of anchors, same muted voice as the rest, and a company policy reads
        navigable instead of endless. */
@@ -144,19 +173,20 @@
     dan tekan <strong>Pasang</strong>. Periksa <em>chrome://extensions</em> dan
     <em>chrome://policy</em>.</p>
 
-    <h2>Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</h2>
-    <p>Server MCP: <code>https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code>.
-    Masuk dengan akun Anda (OAuth), lalu pilih device dan provider:</p>
-    <ul>
-      <li><strong>OpenCode / Kilo / Claude Code</strong> — tambah remote MCP plus dua header:
-        <code>X-Opera-Device: nama-device</code> dan <code>X-Opera-Provider: opencode</code>
-        (atau <code>kilo</code>). Contoh untuk OpenCode ada di bawah.</li>
-      <li><strong>ChatGPT / konektor lain tanpa header kustom</strong> — cukup URL dan OAuth.
-        Server memakai device pertama milik akun Anda, dan provider terdeteksi otomatis.
-        Untuk memilih device lain, pasangkan ulang atau hubungi pemilik akun.</li>
-    </ul>
-    <p>Contoh konfigurasi OpenCode (<code>opencode.json</code>):</p>
-    <pre><code>{
+    <h2 id="hubungkan">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</h2>
+    <p>Server MCP:</p>
+    <div class="copybox">
+      <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
+      <button type="button" data-copy="mcp-url">Salin</button>
+    </div>
+    <p>Masuk dengan akun Anda (OAuth). Nama device terlihat di
+    <a href="./dashboard.html">Dashboard</a> beserta browser dan provider tiap perintah
+    (misalnya <em>opera / Brave / opencode</em>).</p>
+
+    <h3>OpenCode</h3>
+    <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+    <div class="copybox">
+      <pre><code id="cfg-opencode">{
   "mcp": {
     "opera-agent": {
       "type": "remote",
@@ -169,8 +199,61 @@
     }
   }
 }</code></pre>
-    <p>Nama device terlihat di <a href="./dashboard.html">Dashboard</a> beserta browser
-    dan provider tiap perintah (misalnya <em>opera / Brave / opencode</em>).</p>
+      <button type="button" data-copy="cfg-opencode">Salin</button>
+    </div>
+
+    <h3>Kilo Code</h3>
+    <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
+    <div class="copybox">
+      <pre><code id="cfg-kilo">{
+  "mcpServers": {
+    "opera-agent": {
+      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+      "headers": {
+        "X-Opera-Device": "opera",
+        "X-Opera-Provider": "kilo"
+      }
+    }
+  }
+}</code></pre>
+      <button type="button" data-copy="cfg-kilo">Salin</button>
+    </div>
+
+    <h3>Claude Code</h3>
+    <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
+    <div class="copybox">
+      <pre><code id="cfg-claude">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude"</code></pre>
+      <button type="button" data-copy="cfg-claude">Salin</button>
+    </div>
+
+    <h3>ChatGPT dan konektor lain tanpa header kustom</h3>
+    <p>Cukup URL server di atas plus OAuth. Server memakai device pertama milik akun Anda
+    dan menebak provider secara otomatis. Untuk memilih device lain, pasangkan ulang
+    atau hubungi pemilik akun.</p>
+
+    <script type="module">
+      for (const button of document.querySelectorAll('[data-copy]')) {
+        button.addEventListener('click', async () => {
+          const target = document.getElementById(button.dataset.copy);
+          if (!target) return;
+          const text = target.innerText;
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch {
+            const range = document.createRange();
+            range.selectNodeContents(target);
+            const selection = globalThis.getSelection();
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+            document.execCommand('copy');
+            selection?.removeAllRanges();
+          }
+          const label = button.textContent;
+          button.textContent = 'Tersalin!';
+          setTimeout(() => { button.textContent = label; }, 1500);
+        });
+      }
+    </script>
 
     <h2>Sesi Anda keluar sendiri</h2>
     <p>Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat

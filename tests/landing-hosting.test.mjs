@@ -117,7 +117,7 @@ test('every inline module script is named by a hash, and the CSP offers no unsaf
     const body = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
     return "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
   };
-  for (const path of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'oauth/consent.html']) {
+  for (const path of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'dukungan.html', 'oauth/consent.html']) {
     const rule = rules.find((r) => r.paths.includes(`/${path}`) || (path === 'index.html' && r.paths.includes('/')));
     const csp = rule?.headers['Content-Security-Policy'];
     const html = read(`landing/${path}`);
