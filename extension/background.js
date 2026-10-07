@@ -1221,6 +1221,12 @@ async function runBurst(params, outerContext = {}) {
 const LOOP_MAX_ACTIVE = 4;
 const LOOP_SNAPSHOT_WIDTH = 320;
 const LOOP_POLICY_RECHECK_TICKS = 20;
+
+// A tick slower than five cadences is ordinary slowness (a heavy capture),
+// not suspension: only a gap past both five cadences and this floor means
+// the worker slept through ticks it had already scheduled.
+
+const LOOP_SUSPEND_FLOOR_MS = 15000;
 const loopSessions = new Map();
 const loopResults = new Map();
 
@@ -1274,16 +1280,23 @@ async function loopDecodeTemplate(template) {
   return out;
 }
 
-async function loopSnapshot(tabId) {
-  const response = await chrome.debugger.sendCommand({ tabId }, 'Page.captureScreenshot', {
-    format: 'jpeg',
-    quality: 40,
-    fromSurface: true
-  });
+async function loopSnapshot(tabId, clip) {
+  const request = { format: 'jpeg', quality: 40, fromSurface: true };
+  if (clip) {
+    request.clip = {
+      x: clip.x,
+      y: clip.y,
+      width: Math.max(1, clip.width),
+      height: Math.max(1, clip.height),
+      scale: 1
+    };
+  }
+  const response = await chrome.debugger.sendCommand({ tabId }, 'Page.captureScreenshot', request);
   const raw = atob(String(response?.data || ''));
   const bytes = new Uint8Array(raw.length);
   for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
   const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
+  const fullWidth = clip ? clip.width : bitmap.width;
   const scale = Math.min(1, LOOP_SNAPSHOT_WIDTH / bitmap.width);
   const width = Math.max(1, Math.round(bitmap.width * scale));
   const height = Math.max(1, Math.round(bitmap.height * scale));
@@ -1292,12 +1305,12 @@ async function loopSnapshot(tabId) {
   context.drawImage(bitmap, 0, 0, width, height);
   const pixels = context.getImageData(0, 0, width, height);
   bitmap.close?.();
-  return { data: pixels.data, width, height };
+  return { data: pixels.data, width, height, cssWidth: fullWidth, clipX: clip ? clip.x : 0, clipY: clip ? clip.y : 0 };
 }
 
 function loopCropRegion(snapshot, region, scale) {
-  const x = Math.max(0, Math.floor(region.x * scale));
-  const y = Math.max(0, Math.floor(region.y * scale));
+  const x = Math.max(0, Math.floor((region.x - snapshot.clipX) * scale));
+  const y = Math.max(0, Math.floor((region.y - snapshot.clipY) * scale));
   const width = Math.max(1, Math.min(snapshot.width - x, Math.ceil(region.width * scale)));
   const height = Math.max(1, Math.min(snapshot.height - y, Math.ceil(region.height * scale)));
   const out = new Uint8ClampedArray(width * height * 4);
@@ -1371,8 +1384,24 @@ async function loopSense(session, now) {
   const pixelSensors = program.sensors.filter((s) => s.kind !== 'timer');
   let snapshot = null;
   if (pixelSensors.length > 0) {
-    snapshot = await loopSnapshot(session.tabId);
-    session.scale = snapshot.width / session.viewport.width;
+    // Capture only the union of sensed regions: a full-viewport JPEG encode
+    // per tick measured red (>250ms) in the headed drive, while the game
+    // regions the schema allows are a fraction of that.
+    const union = { x: Infinity, y: Infinity, right: 0, bottom: 0 };
+    for (const sensor of pixelSensors) {
+      union.x = Math.min(union.x, sensor.region.x);
+      union.y = Math.min(union.y, sensor.region.y);
+      union.right = Math.max(union.right, sensor.region.x + sensor.region.width);
+      union.bottom = Math.max(union.bottom, sensor.region.y + sensor.region.height);
+    }
+    const clip = {
+      x: Math.max(0, Math.floor(union.x)),
+      y: Math.max(0, Math.floor(union.y)),
+      width: Math.max(1, Math.ceil(union.right - union.x)),
+      height: Math.max(1, Math.ceil(union.bottom - union.y))
+    };
+    snapshot = await loopSnapshot(session.tabId, clip);
+    session.scale = snapshot.width / snapshot.cssWidth;
   }
   const active = new Map();
   for (const sensor of program.sensors) {
@@ -1420,7 +1449,7 @@ async function loopTick(loopId) {
   const session = loopSessions.get(loopId);
   if (!session) return;
   const now = Date.now();
-  if (session.lastTickAt && now - session.lastTickAt > 5 * session.program.tickMs) {
+  if (session.lastTickAt && now - session.lastTickAt > Math.max(5 * session.program.tickMs, LOOP_SUSPEND_FLOOR_MS)) {
     finishLoop(loopId, 'suspended');
     return;
   }
@@ -1547,7 +1576,6 @@ async function dispatch(method, params = {}, context = {}) {
         timers: new Map(),
         frames: new Map(),
         debuggerSession,
-        viewport: policy.viewport,
         scale: 1,
         trusted: program.trusted,
         trustedAtTick: program.trusted ? 0 : null,

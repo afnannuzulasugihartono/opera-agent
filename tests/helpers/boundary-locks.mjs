@@ -26,7 +26,7 @@
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'a0f86b3acbf19634f4b4650c320905293bc86d47'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists
-  ['../extension/background.js', 'aa0c4575d43812e65ba1fbb67d3034f6b422e59c'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach
+  ['../extension/background.js', '9ae26c54681d8ec6b1967350b7207264678b5ae7'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture and suspend floor
   ['../extension/manifest.json', 'd75bb85c46ea88493db6f1e7084283171123040a'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable; version line 1.6.18 → 1.6.19 for sense-act loops
   ['../supabase/functions/opera-agent-mcp/index.ts', '79961c2a0c8cedd80cd9105685d1d22a17afc709'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device; re-pinned for loop_start/loop_read/loop_stop (sense-act loops)
 ]);
