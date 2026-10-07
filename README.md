@@ -1,13 +1,7 @@
-@last-edited: 2026-10-06 11:55 UTC+7.
+@last-edited: 2026-10-07 UTC+7.
 @related: [`AGENTS.md`](AGENTS.md) - [`docs/security.md`](docs/security.md) - [`docs/api.md`](docs/api.md)
 
 # Opera Agent
-
-> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
-
-Simplify first, code second, comment third. State what is true now, never its history.
-
-Cover every button on every site, and grow the capability the Goals in [`AGENTS.md`](AGENTS.md) name.
 
 A private, local-browser control bridge.
 

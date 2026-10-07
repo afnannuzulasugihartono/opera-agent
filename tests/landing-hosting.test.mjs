@@ -198,11 +198,11 @@ test('the deploy invocation is written down where it will be found', () => {
   // became the front door and the Vercel CLI stopped being the way to publish at all, so
   // the lock now names the host that serves the site and the workflow that publishes it.
   // A lock naming a retired invocation would preserve a claim that stopped being true.
-  const handoff = read('docs/HANDOFF.md');
+  const handoff = read('docs/handoff.md');
   assert.match(handoff, /wrangler pages deploy|Cloudflare Pages/i, 'the host that serves the site is named');
   assert.match(handoff, /publish-crx\.yml|deploy-site\.yml/, 'and the workflow that publishes it');
   assert.match(handoff, /CLI cannot deploy/i, 'and says plainly that the Vercel CLI is not the way');
-  assert.match(read('docs/runbook.md'), /wrangler pages deploy|deploy-site\.yml/, 'the invocation sits with the operator manual');
+  assert.match(read('docs/security.md'), /wrangler pages deploy|deploy-site\.yml/, 'the invocation sits with the operator manual');
 });
 
 test('the edge is told not to hold a page, because Cache-Control alone does not', () => {
