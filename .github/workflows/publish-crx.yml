@@ -34,13 +34,13 @@ concurrency:
 jobs:
   publish:
     name: Pack, sign and insert the release row
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22.20.0
 
@@ -210,7 +210,15 @@ jobs:
           # unique index is per extension_id, so two ids may each hold one active
           # row at the same time without either one's check reaching the other.
 
-          PUBLISH_CODE="$(post "insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('$EXTENSION_ID', '$VERSION', '$CRX_B64', '$SHA256', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active")"
+          # WHY this identity's older rows are deactivated in the same request: the table
+          # allows one active row per extension_id (opera_releases_one_active_per_identity_idx),
+          # so inserting a second active version for the same id is refused by the
+          # database. That held for the first release under this id and stopped
+          # holding on the second. Only rows of THIS id and other versions are touched,
+          # and the update runs before the insert in one batch, so the endpoint never
+          # sees a moment with no active row or two.
+
+          PUBLISH_CODE="$(post "update opera_releases set active = false where extension_id = '$EXTENSION_ID' and version <> '$VERSION' and active; insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('$EXTENSION_ID', '$VERSION', '$CRX_B64', '$SHA256', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active")"
           printf 'publish %s -> %s\n' "$VERSION" "$PUBLISH_CODE"
           if [ "$PUBLISH_CODE" -ge 400 ]; then
             echo "::error::the release row was not written; the confirmation below can only read what was already there"
@@ -287,7 +295,7 @@ jobs:
             fi
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: opera-agent-${{ inputs.version }}-crx
           path: extension.crx

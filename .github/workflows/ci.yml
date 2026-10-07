@@ -29,6 +29,12 @@ name: CI
 # gates. Only the newest head can be the acceptance evidence, so superseded runs are
 # cancelled rather than queued behind each other.
 #
+# WHY the runner image and the action majors are pinned. GitHub announced that
+# `ubuntu-latest` becomes Ubuntu 26 on 2026-10-19, and the browser job depends on the
+# image's Chrome and xvfb, so a moved label would change the gate under a green main.
+# `ubuntu-24.04` is the image these gates were last measured on. The action majors are
+# the node24 ones; the node20 ones logged a deprecation warning on every run.
+#
 # WHY there is no GIT_CONFIG_GLOBAL here any more. It existed because this machine's
 # global git config rewrites every https://github.com URL to SSH
 # (url.ssh://git@github.com.insteadOf), so checkout died with "Host key verification
@@ -67,14 +73,14 @@ concurrency:
 
 jobs:
   unit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22.20.0
       - name: Unit and static tests
@@ -83,13 +89,13 @@ jobs:
           npm run check
 
   secret-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Secret scan (gitleaks)
         run: |
           set -euo pipefail
@@ -106,14 +112,14 @@ jobs:
           "${RUNNER_TEMP}/gitleaks" detect --source . --verbose
 
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
