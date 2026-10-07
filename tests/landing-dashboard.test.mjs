@@ -321,6 +321,19 @@ test('consents can be listed and revoked by their owner only', () => {
   assert.match(sql, /grant execute on function public\.opera_my_consents\(\) to authenticated/, 'signed-in callers can list');
 });
 
+test('listening sessions keep transcripts owner-scoped with no grants', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261007100000_opera_listen_sessions.sql', root), 'utf8');
+  // WHY this lock: a listening session outlives any command, and transcripts are
+  // speech — more sensitive than screenshots. Owners read their own rows through
+  // policies; writers are service_role edge functions. Raw audio is never stored.
+  assert.match(sql, /create table if not exists public\.opera_listen_sessions/);
+  assert.match(sql, /create table if not exists public\.opera_listen_segments/);
+  assert.match(sql, /unique \(session_id, seq\)/, 'segments order by cursor');
+  assert.match(sql, /opera_listen_sessions_owner_read/, 'sessions filter by ownership');
+  assert.match(sql, /opera_listen_segments_owner_read/, 'segments filter through their session');
+  assert.doesNotMatch(sql, /grant (select|all)/i, 'no table grant to any role');
+});
+
 test('the pairing issuer has exactly one signature, or PostgREST refuses it', () => {
   const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
   const drop = fs.readFileSync(new URL('supabase/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');
