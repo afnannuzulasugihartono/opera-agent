@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 05:12 UTC+7.
+// @last-edited: 2026-10-07 02:15 UTC+7.
 // @title: content — MV3 browser runtime..
-// @state: marks documentElement so a page can detect the extension; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
+// @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
 // @dependencies: none.
 
 (() => {
@@ -15,7 +15,19 @@
   // installed here?" — and the dashboard reads it to stop showing a signed-in reader
   // an empty device list without saying which step they have not done yet.
 
-  document.documentElement.dataset.operaAgent = 'installed';
+  // WHY the marker is written before anything else can throw: the manifest runs at
+  // document_start, where documentElement may not exist yet, and every runtime
+  // below throws when its helper is missing. A throw before this line leaves a
+  // browser that has the extension reporting "not installed".
+
+  function markInstalled() {
+
+    if (document.documentElement) document.documentElement.dataset.operaAgent = 'installed';
+  }
+
+  markInstalled();
+
+  if (!document.documentElement) document.addEventListener('DOMContentLoaded', markInstalled, { once: true });
 
   // Published by role-reconcile.js, which the manifest loads before this
   // file. Content scripts are classic scripts and cannot import, so the same

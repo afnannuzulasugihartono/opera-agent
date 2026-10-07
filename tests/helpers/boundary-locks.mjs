@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 10:20 UTC+7.
+// @last-edited: 2026-10-07 02:45 UTC+7.
 // @title: boundary-locks — locks — Frozen public-boundary locks shared by the checkpoint tests.
-// @state: three pins re-taken for blank lines between comment blocks; no code moved.
+// @state: pins re-taken for the 1.6.16 sweep: content.js early-marker fix and manifest version bump; no contract moved.
 // @dependencies: none.
 
 // Frozen public-boundary locks shared by the checkpoint tests.
@@ -17,11 +17,17 @@
 // and no symbol, signature or contract the reasons below describe has changed.
 // The pins are re-taken rather than exempted, so the spacing rule keeps covering
 // the files that matter most instead of skipping them.
+//
+// Re-pinned 2026-10-07 for 1.6.16. content.js moved because the install marker is
+// now written (and re-written on DOMContentLoaded) before any runtime below it can
+// throw — same dataset attribute, same value, earlier and fallback-guarded. The
+// manifest moved on the version line only (1.6.15 → 1.6.16); the signing key,
+// permissions and entry points are untouched, so the extension id is stable.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'c0fd8dc5b04f6e895af2af5b552f0c8620fab9a1'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed
+  ['../extension/content.js', 'fed16f8b422b4812cf30b6e77590b055b4762fb3'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists
   ['../extension/background.js', 'a985093c726dc2ee8b1b201ac05ffb85c6520269'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs
-  ['../extension/manifest.json', '70ee51bc55415f4d8061981c14d3174b8dc75ec6'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable
+  ['../extension/manifest.json', '24af12714260a095f7b79bc8520a21e3f84103fd'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable
   ['../supabase/functions/opera-agent-mcp/index.ts', '62bf353235dd6fbe88cec7185a4ab4c5cb714c2c'], // MCP tool surface and schemas
 ]);
 
