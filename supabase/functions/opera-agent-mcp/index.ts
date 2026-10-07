@@ -37,7 +37,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 // page defaults). A missing or non-allowlisted Origin gets no ACAO header.
 
 const CORS_BASE_HEADERS = {
-  "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id",
+  "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id, x-opera-device",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Expose-Headers": "mcp-protocol-version, mcp-session-id",
   "Cache-Control": "no-store"
@@ -163,10 +163,18 @@ type AuthContext = { type: "static" } | { type: "user"; userId: string };
 type TargetTab = { tabId: number };
 type ExecutionMode = "background" | "foreground";
 
-async function resolveDeviceName(auth: AuthContext): Promise<string> {
+async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<string> {
   if (auth.type === "static") return DEVICE_NAME;
-  const { data } = await supabase.from("opera_devices").select("device_name").eq("user_id", auth.userId).neq("status", "disabled").limit(1).single();
-  return data?.device_name || DEVICE_NAME;
+  const deviceFromHeader = req?.headers.get("x-opera-device")?.trim() || "";
+  let query = supabase.from("opera_devices").select("device_name").eq("user_id", auth.userId).neq("status", "disabled");
+  if (deviceFromHeader) {
+    query = query.eq("device_name", deviceFromHeader);
+  }
+  query = query.limit(1);
+  const { data } = await query.single();
+  if (data?.device_name) return data.device_name;
+  if (deviceFromHeader) return deviceFromHeader;
+  return DEVICE_NAME;
 }
 
 class CommandFailure extends Error {
@@ -771,7 +779,7 @@ Deno.serve(async (req: Request) => {
   }
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
-  const deviceName = await resolveDeviceName(authContext);
+  const deviceName = await resolveDeviceName(authContext, req);
 
   try {
     const server = createServer(deviceName);

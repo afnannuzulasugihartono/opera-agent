@@ -101,7 +101,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   move_pointer: '6cd5b9fb56ff550c',
   click_at: '5a5cf510f8ec196d',
   drag_pointer: '00d0eb67eafb741f',
-  wheel_at: 'de066ebee2d44c72',
+  wheel_at: '3b1d671e6b306942',
 });
 
 // The only tool whose schema the keyboard commit changed. Everything else
