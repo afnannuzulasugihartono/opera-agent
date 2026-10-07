@@ -119,9 +119,16 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 3. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. Revoke it at dashboard.cloudflare.com and replace it with an
    account-scoped Pages token held as `CF_TOKEN`.
-4. **OAuth sign-in has never been driven end to end by a human click.** GoTrue matches
-   `redirect_uri` exactly, so the port is pinned to `19876`. Unverified is the consent approval and
-   the token exchange in the client.
+4. **OAuth sign-in is measured to work for the OpenCode client; the Google path and a tool call
+   through it are not.** Measured 2026-10-07: the 401 from the MCP function names its
+   `resource_metadata`, which resolves; `/auth/v1/oauth/authorize` for client `Opera Agent`
+   (`bbc5eb76…`, public, redirect `http://127.0.0.1:19876/mcp/oauth/callback`, matched exactly)
+   answers 302 to `/oauth/consent?authorization_id=…`; and the database holds one consent for that
+   client (`openid email offline_access`, not revoked) plus one OAuth session refreshed the same
+   morning, so the code exchange and the refresh both ran. Unverified: sign-in by Google into the
+   consent screen, and a tool call carrying that token. Five client rows from 2026-10-05/06
+   (`plain localhost`, `localhost any port`, `chatgpt web`, `loopback 127.0.0.1`, `Opera Agent
+   probe`) look like test registrations; whether anything still uses them is unchecked.
 5. **The installer GUI has never been run.**
    [`scripts/OperaAgentInstaller.cs`](../scripts/OperaAgentInstaller.cs) compiles to a real PE with
    `requireAdministrator` set. Unverified: the form itself, and whether Chrome reads the policy it
