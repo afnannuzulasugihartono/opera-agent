@@ -157,6 +157,14 @@ jobs:
           fi
           echo "extension-id=${EXPECTED}" >> "$GITHUB_OUTPUT"
 
+      # WHY the statement is built in files and never passed as an argument or an
+      # environment variable: the base64 of a CRX is over 131,072 bytes, which is
+      # the kernel's limit for a single argument or environment string on Linux, so
+      # `node` failed with "Argument list too long". That failure was swallowed
+      # (errexit is off inside a command substitution), curl then had no body to
+      # send, and the job still went green having published nothing. Files have no
+      # such limit, and the status is now checked as a number before it is trusted.
+
       - name: Insert the release row
         shell: bash
         env:
@@ -170,60 +178,56 @@ jobs:
             exit 1
           fi
 
-          CRX_B64="$(base64 -w0 "${CRX_PATH}")"
-          SHA256="$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)"
-
           PROJECT_REF="nenmkmtvjremqphfqnfw"
+          SHA256="$(sha256sum "${CRX_PATH}" | cut -d' ' -f1)"
+          SQL_FILE="${RUNNER_TEMP}/publish.sql"
+          BODY_FILE="${RUNNER_TEMP}/publish.json"
 
-          # WHY the body is written to a file rather than discarded: a failed
-          # insert that reports only a status code is a statement that cannot be
-          # acted on. The response names which part of the statement the database
-          # refused, which is the whole diagnosis.
+          # WHY no row of another id is deactivated: an install that asks under an old
+          # id must keep getting a release it can actually install. 1.6.14 under the
+          # old id is self-consistent, so it still serves those installs correctly,
+          # and deactivating it would strand every browser that has never updated.
+          #
+          # WHY this identity's older rows are deactivated in the same request: the
+          # table allows one active row per extension_id
+          # (opera_releases_one_active_per_identity_idx), so a second active version
+          # for the same id is refused by the database. The update runs before the
+          # insert in one batch, so the endpoint never sees a moment with no active
+          # row or two.
 
-          query () {
-            local body_file="${RUNNER_TEMP}/query.out"
-            local code
-            code="$(curl --silent --show-error -X POST \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-              -H "Content-Type: application/json" \
-              --data-binary "@${body_file}" \
-              "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-              -o "${body_file}.resp" -w "%{http_code}")"
-            if [ "$code" -ge 400 ]; then
-              echo "query failed ${code}: $(head -c 500 "${body_file}.resp")" >&2
-            fi
-            printf '%s' "$code"
-          }
+          {
+            printf "update opera_releases set active = false where extension_id = '%s' and version <> '%s' and active; " "$EXTENSION_ID" "$VERSION"
+            printf "insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('%s', '%s', '" "$EXTENSION_ID" "$VERSION"
+            base64 -w0 "${CRX_PATH}"
+            printf "', '%s', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active" "$SHA256"
+          } > "$SQL_FILE"
 
-          post () {
-            QUERY="$1" node -e "
-              const fs = require('node:fs');
-              fs.writeFileSync(process.argv[1], JSON.stringify({ query: process.env.QUERY }));
-            " "${RUNNER_TEMP}/query.out"
-            query
-          }
+          node -e "
+            const fs = require('node:fs');
+            fs.writeFileSync(process.argv[2], JSON.stringify({ query: fs.readFileSync(process.argv[1], 'utf8') }));
+          " "$SQL_FILE" "$BODY_FILE"
 
-          # WHY no row is deactivated here: an install that asks under an old id must keep
-          # getting a release it can actually install. 1.6.14 under the old id is
-          # self-consistent, so it still serves those installs correctly, and
-          # deactivating it would strand every browser that has never updated. The
-          # unique index is per extension_id, so two ids may each hold one active
-          # row at the same time without either one's check reaching the other.
+          echo "statement $(wc -c < "$SQL_FILE") bytes"
 
-          # WHY this identity's older rows are deactivated in the same request: the table
-          # allows one active row per extension_id (opera_releases_one_active_per_identity_idx),
-          # so inserting a second active version for the same id is refused by the
-          # database. That held for the first release under this id and stopped
-          # holding on the second. Only rows of THIS id and other versions are touched,
-          # and the update runs before the insert in one batch, so the endpoint never
-          # sees a moment with no active row or two.
+          # WHY the body is kept: a failed insert that reports only a status code is a
+          # statement that cannot be acted on. The response names which part the
+          # database refused, which is the whole diagnosis.
 
-          PUBLISH_CODE="$(post "update opera_releases set active = false where extension_id = '$EXTENSION_ID' and version <> '$VERSION' and active; insert into opera_releases (extension_id, version, crx_base64, sha256, active) values ('$EXTENSION_ID', '$VERSION', '$CRX_B64', '$SHA256', true) on conflict (extension_id, version) do update set crx_base64 = excluded.crx_base64, sha256 = excluded.sha256, active = excluded.active")"
-          printf 'publish %s -> %s\n' "$VERSION" "$PUBLISH_CODE"
-          if [ "$PUBLISH_CODE" -ge 400 ]; then
-            echo "::error::the release row was not written; the confirmation below can only read what was already there"
-            exit 1
-          fi
+          CODE="$(curl --silent --show-error -X POST \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data-binary "@${BODY_FILE}" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -o "${RUNNER_TEMP}/publish.resp" -w "%{http_code}")" || CODE=""
+
+          printf 'publish %s -> %s\n' "$VERSION" "${CODE:-no response}"
+          case "$CODE" in
+            2??) ;;
+            *)
+              echo "::error::the release row was not written (status '${CODE}'): $(head -c 500 "${RUNNER_TEMP}/publish.resp" 2>/dev/null)"
+              exit 1
+              ;;
+          esac
 
       # WHY read the served bytes: an insert can succeed while the endpoint keeps
       # answering from an earlier row, and only the response tells the two apart.
