@@ -93,15 +93,16 @@ function harness(db, fetchImpl) {
     auth: { async getUser() { return { data: { user: null }, error: { message: 'no' } }; } }
   };
   const fakeFetch = fetchImpl || (async (url, opts) => {
-    fetchCalls.push({ url, body: JSON.parse(opts.body) });
-    return { ok: true, status: 200, json: async () => ({ interaction: { output_text: '{"segments": [{"start": 1, "end": 3, "text": "halo dunia"}]}' } }) };
+    fetchCalls.push({ url });
+    assert.match(url, /api\.groq\.com\/openai\/v1\/audio\/transcriptions/);
+    return { ok: true, status: 200, json: async () => ({ text: 'halo dunia', segments: [{ start: 1, end: 3, text: 'halo dunia' }] }) };
   });
   const errors = [];
   const edgeLog = { error: (svc, msg) => { errors.push(`${svc}: ${msg}`); } };
   vm.runInNewContext(source, {
     createClient: () => client, createEdgeLog: () => edgeLog,
-    Deno: { env: { get: (key) => (key === 'SUPABASE_URL' || key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test' : (key === 'GEMINI_API_KEY' ? 'test-key' : '')) }, serve: (fn) => { handler = fn; } },
-    Request, Response, URL, TextEncoder, fetch: fakeFetch, crypto
+    Deno: { env: { get: (key) => (key === 'SUPABASE_URL' || key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test' : (key === 'GROQ_API_KEY' ? 'test-key' : '')) }, serve: (fn) => { handler = fn; } },
+    Request, Response, URL, TextEncoder, FormData, Blob, atob, fetch: fakeFetch, crypto
   });
   const call = (body) => handler(new Request('https://example.test/', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
@@ -129,7 +130,6 @@ test('two windows transcribe with absolute offsets, then stop ends and deletes',
   // computes for the test token.
   db.opera_devices[0].token_hash = createHash('sha256').update(TOKEN.toLowerCase()).digest('hex');
   const started = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
-  console.log('DBG started:', JSON.stringify(started), h.errors.join(';'));
   assert.equal(started.ok, true);
   const sid = started.sessionId;
   const chunk = Buffer.from('fake-opus-bytes').toString('base64');
@@ -145,20 +145,20 @@ test('two windows transcribe with absolute offsets, then stop ends and deletes',
   assert.equal(stopped.ok, true);
   assert.equal(db.opera_listen_sessions[0].status, 'ended');
   assert.equal(h.fetchCalls.length, 1, 'one transcription call for one full window');
-  assert.match(JSON.stringify(h.fetchCalls[0].body), /halo|Transcribe/, 'the prompt asks for transcription');
 });
 
-test('the transcriber uses the current Interactions API, not the retired model', async () => {
+test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
   const { readFile } = await import('node:fs/promises');
   const source = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
-  // WHY this pin: gemini-2.5-flash answers 404 for new keys ("use gemini-3.8-flash
-  // ... Interactions API"), and generateContent hangs where /v1beta/interactions
-  // answers. Measured live during build; the old shape must not come back.
-  assert.match(source, /generativelanguage\.googleapis\.com\/v1beta\/interactions/);
-  assert.match(source, /gemini-3\.8-flash/);
-  assert.doesNotMatch(source, /gemini-2\.5-flash/);
-  assert.doesNotMatch(source, /:generateContent/);
-  assert.match(source, /\{ type: "audio", data: audioBase64, mime_type: mime \}/);
+  // WHY this pin: gemini-2.5-flash answers 404 for new keys, gemini-3.8-flash was
+  // at capacity for the whole build session, and gemini-3.5-transcribe refuses
+  // every key with "Thinking is not enabled". Groq's endpoint was measured live
+  // before this shipped, returning segments with start/end out of the box.
+  assert.match(source, /api\.groq\.com\/openai\/v1\/audio\/transcriptions/);
+  assert.match(source, /whisper-large-v3/);
+  assert.match(source, /response_format", "verbose_json/);
+  assert.doesNotMatch(source, /generativelanguage\.googleapis\.com/);
+  assert.doesNotMatch(source, /GEMINI_API_KEY/);
 });
 
 test('the migration stores transcripts owner-scoped with no grants', async () => {

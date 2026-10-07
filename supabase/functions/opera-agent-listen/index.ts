@@ -8,7 +8,7 @@ import { createEdgeLog } from "../_shared/edge-log.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") || "";
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
@@ -45,28 +45,31 @@ async function sha256(value: string) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function transcribeWindow(audioBase64: string, mime: string, language: string, offsetSeconds: number) {
-  if (!GEMINI_API_KEY) throw new Error("transcription is not configured");
+async function transcribeWindow(audioBase64: string, mime: string, _language: string, offsetSeconds: number) {
+  if (!GROQ_API_KEY) throw new Error("transcription is not configured");
 
-  // WHY the Interactions API and not the old generate-content shape: the old shape
-  // answers 404 for new keys on current models ("use gemini-3.8-flash ...").
-  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+  // WHY Groq Whisper and not Gemini: gemini-2.5-flash answers 404 for new keys,
+  // gemini-3.8-flash was at capacity for the whole build session, and
+  // gemini-3.5-transcribe refuses every key with "Thinking is not enabled".
+  // Groq's OpenAI-compatible audio endpoint answers with verbose_json segments
+  // carrying start/end out of the box. Measured live before this shipped.
+
+  const binary = atob(audioBase64.replace(/\s/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  const form = new FormData();
+  form.append("file", new Blob([bytes], { type: mime }), "chunk.webm");
+  form.append("model", "whisper-large-v3");
+  form.append("temperature", "0");
+  form.append("response_format", "verbose_json");
+  const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
-    body: JSON.stringify({
-      model: "gemini-3.8-flash",
-      input: [
-        { type: "text", text: `Transcribe the speech in this audio. Language: ${language}, may contain English. Return JSON only: {"segments": [{"start": seconds from clip start, "end": seconds, "text": "..."}]}. If there is no speech, return {"segments": []}.` },
-        { type: "audio", data: audioBase64, mime_type: mime }
-      ],
-      response_format: { type: "object", properties: { segments: { type: "array", items: { type: "object", properties: { start: { type: "number" }, end: { type: "number" }, text: { type: "string" } } } } } }
-    })
+    headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+    body: form
   });
   if (!response.ok) throw new Error(`transcribe refused: http ${response.status}`);
   const body = await response.json();
-  const text = body?.interaction?.output_text || body?.output_text || "";
-  const parsed = JSON.parse(text || '{"segments": []}');
-  const segments = Array.isArray(parsed.segments) ? parsed.segments : [];
+  const segments = Array.isArray(body?.segments) ? body.segments : [];
   return segments
     .filter((s: { text?: unknown }) => typeof s.text === "string" && s.text.trim())
     .map((s: { start?: unknown; end?: unknown; text: string }) => ({
