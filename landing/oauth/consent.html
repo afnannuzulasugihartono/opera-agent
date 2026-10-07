@@ -90,6 +90,8 @@
     main { padding: 56px 0; }
     h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
     .sub { color: var(--muted); margin: 0 0 24px; }
+    .sub.warn { color: var(--warn); }
+    .sub.ok { color: var(--accent); }
 
     .card {
       background: var(--surface);
@@ -102,12 +104,30 @@
     .card h2 { margin: 0 0 4px; font-size: 17px; }
     .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 
-    /* WHY a definition list and not prose: the three things a person must judge before
+    /* WHY a definition list and not prose: the things a person must judge before
        granting browser control are who is asking, where the code goes, and how much.
        Naming them in a column makes each one impossible to skim past. */
     dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
     dl.facts dt { color: var(--muted); }
     dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+    ul.scopes { margin: 0; padding: 0; list-style: none; }
+    ul.scopes li { margin: 0 0 6px; }
+    ul.scopes li:last-child { margin-bottom: 0; }
+    ul.scopes .warn { color: var(--warn); }
+    ul.consents { margin: 0; padding: 0; list-style: none; }
+    ul.consents li {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      align-items: baseline;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+      font-size: 13.5px;
+    }
+    ul.consents li:first-child { border-top: none; padding-top: 0; }
+    ul.consents .who { font-weight: 600; }
+    ul.consents .when { color: var(--muted); font-size: 12.5px; }
+    ul.consents button { margin-left: auto; }
 
     /* WHY stacked under 420px: the label column is max-content and never shrinks, so on a
        phone the value is left in a sliver. Every settings page a reader already knows puts
@@ -189,18 +209,26 @@
 
     <div class="card" id="factsCard" hidden>
       <h2 id="clientName">Aplikasi tidak dikenal</h2>
-      <p class="meta">Tinjau tiga hal ini sebelum memberi izin.</p>
+      <p class="meta">Tinjau hal-hal ini sebelum memberi izin. Nama aplikasi diberikan oleh
+      aplikasi itu sendiri; yang bisa diverifikasi adalah alamat kode dikirim ke.</p>
       <dl class="facts">
         <dt>Aplikasi</dt><dd id="factClient">&mdash;</dd>
         <dt>Kode dikirim ke</dt><dd id="factRedirect">&mdash;</dd>
-        <dt>Diminta</dt><dd id="factScope">&mdash;</dd>
+        <dt>Yang diminta</dt><dd><ul class="scopes" id="scopeList"></ul></dd>
         <dt>Akun Anda</dt><dd id="factUser">&mdash;</dd>
       </dl>
+      <p class="meta" id="redirectNote" hidden></p>
       <p class="meta">Opera Agent tetap memblokir password, kode sekali pakai, data pembayaran, tab private, dan upload file. Izin ini hanya mengizinkan aplikasi itu meminta tindakan lewat Opera Agent.</p>
       <div class="row">
         <button class="btn primary" id="approveButton" type="button">Izinkan</button>
         <button class="btn danger" id="denyButton" type="button">Tolak</button>
       </div>
+    </div>
+
+    <div class="card" id="consentsCard" hidden>
+      <h2>Aplikasi yang sudah Anda izinkan</h2>
+      <p class="meta">Mencabut menghentikan aplikasi itu seketika: sesinya dihapus dan tokennya dimatikan.</p>
+      <ul class="consents" id="consentList"></ul>
     </div>
 
     <div class="card" id="signedOutCard" hidden>
@@ -318,6 +346,24 @@
     // swaps a token out of the URL fragment, so the request must be carried in ?next.
     $('signInButton').href = `/auth.html?next=${encodeURIComponent(`./oauth/consent.html?authorization_id=${authorizationId || ''}`)}`;
 
+    const REST = AUTH_HOST.replace('/auth/v1', '/rest/v1');
+
+    // WHY words instead of the raw string: "openid email offline_access" tells a
+    // person nothing, and offline_access is the one scope that keeps working after
+    // they leave. Each scope is named in plain language, and the lasting one is
+    // marked so the grant is understood, not just clicked through.
+    const SCOPE_TEXT = {
+      openid: 'Identitas dasar — ID akun unik Anda, tanpa data lain.',
+      email: 'Alamat email Anda.',
+      profile: 'Nama dan foto profil Anda.',
+      phone: 'Nomor telepon Anda.',
+      offline_access: 'Akses berkelanjutan — aplikasi tetap bisa bertindak saat Anda offline. Bisa dicabut kapan saja di bawah.'
+    };
+
+    function esc(text) {
+      return String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     function renderDetails(details, user) {
       const name = details.client?.name?.trim() || '';
       // WHY no invented name: the separate screen hardcoded "ChatGPT", so a person
@@ -325,21 +371,86 @@
       // is missing, say so plainly rather than guessing.
       $('clientName').textContent = name || 'Nama aplikasi tidak diberikan';
       $('factClient').textContent = name || '—';
-      $('factRedirect').textContent = details.redirect_uri || '—';
-      $('factScope').textContent = details.scope || '—';
+      const redirect = details.redirect_uri || '';
+      let host = '';
+      try { host = new URL(redirect).host || ''; } catch { host = ''; }
+      $('factRedirect').textContent = redirect || '—';
+      if (host) {
+        $('redirectNote').textContent = `Kode hanya dikirim ke ${host}.`;
+        $('redirectNote').hidden = false;
+      }
+      const scopes = String(details.scope || '').split(/\s+/).filter(Boolean);
+      $('scopeList').innerHTML = scopes.length
+        ? scopes.map((scope) => `<li class="${scope === 'offline_access' ? 'warn' : ''}"><strong>${esc(scope)}</strong> — ${esc(SCOPE_TEXT[scope] || 'Izin tambahan yang diminta aplikasi.')}</li>`).join('')
+        : '<li>Tidak ada izin tambahan yang diminta.</li>';
       $('factUser').textContent = user?.email || '—';
       $('factsCard').hidden = false;
     }
 
+    async function loadConsents(token) {
+      let consents = [];
+      try {
+        const response = await fetch(`${REST}/rpc/opera_my_consents`, { method: 'POST', headers: headersFor(token), body: '{}' });
+        const data = await response.json();
+        if (data?.ok && Array.isArray(data.consents)) consents = data.consents;
+      } catch {
+        return;
+      }
+      if (!consents.length) return;
+      $('consentList').innerHTML = consents.map((consent) =>
+        `<li><span class="who">${esc(consent.clientName || 'Aplikasi tidak dikenal')}</span>` +
+        `<span class="when">${esc(consent.scopes || '')} · sejak ${esc(String(consent.grantedAt || '').slice(0, 10))}</span>` +
+        `<button class="btn danger" type="button" data-revoke="${esc(consent.clientId)}">Cabut</button></li>`
+      ).join('');
+      $('consentsCard').hidden = false;
+    }
+
+    async function revokeConsent(token, clientId, clientName) {
+      if (!globalThis.confirm(`Cabut izin ${clientName}? Aplikasi itu berhenti seketika.`)) return;
+      try {
+        const response = await fetch(`${REST}/rpc/opera_revoke_consent`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_client_id: clientId }) });
+        const data = await response.json();
+        if (!data?.ok) throw new Error(data?.error || response.status);
+      } catch {
+        setStatus('Gagal mencabut. Coba lagi.', 'warn');
+        return;
+      }
+      setStatus(`Izin ${clientName} dicabut.`, 'ok');
+      $('consentList').innerHTML = '';
+      $('consentsCard').hidden = true;
+      loadConsents(token);
+    }
+
+    $('consentList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-revoke]');
+      if (!button) return;
+      const session = await usableToken();
+      if (!session.token) return;
+      const name = button.closest('li')?.querySelector('.who')?.textContent || 'aplikasi ini';
+      button.disabled = true;
+      await revokeConsent(session.token, button.dataset.revoke, name);
+      button.disabled = false;
+    });
+
     async function load() {
+      // WHY consents load before the request check: this page is also where a signed-in
+      // reader comes to see and cut old grants. A missing authorization_id only means
+      // there is nothing new to decide, not that the management section must hide.
+      const early = await usableToken();
+      if (early.token) loadConsents(early.token);
       if (!authorizationId) {
-        setStatus('Tidak ada permintaan izin di alamat ini. Mulai dari aplikasi yang meminta akses.', 'warn');
-        $('signedOutCard').hidden = false;
+        if (early.token) {
+          setStatus('Tidak ada permintaan izin di alamat ini.');
+          $('signedOutCard').hidden = true;
+        } else {
+          setStatus('Tidak ada permintaan izin di alamat ini. Mulai dari aplikasi yang meminta akses.', 'warn');
+          $('signedOutCard').hidden = false;
+        }
         $('signInButton').hidden = true;
         $('signedOutCard').querySelectorAll('a')[1].hidden = true;
         return;
       }
-      const session = await usableToken();
+      const session = early.token ? early : await usableToken();
       if (!session.token) {
         // WHY two different answers: telling a reader whose session is intact that they are
         // signed out is the bug this page had. Offline, the stored session is untouched.

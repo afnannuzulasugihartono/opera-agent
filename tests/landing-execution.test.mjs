@@ -43,7 +43,7 @@ const AUTHORIZATION = {
   scope: 'openid email'
 };
 
-const CONSENT_ELEMENTS = ['status', 'factsCard', 'signedOutCard', 'signInButton', 'clientName', 'factClient', 'factRedirect', 'factScope', 'factUser', 'approveButton', 'denyButton'];
+const CONSENT_ELEMENTS = ['status', 'factsCard', 'signedOutCard', 'signInButton', 'clientName', 'factClient', 'factRedirect', 'redirectNote', 'scopeList', 'factUser', 'approveButton', 'denyButton', 'consentsCard', 'consentList'];
 
 // WHY the home elements start in their markup state and not in the stub's default:
 // the shared stub answers `hidden: true` so an untouched card reads as hidden. The
@@ -296,7 +296,8 @@ test('a pending permission request shows the real client name and the facts to j
   assert.equal(nodes.factClient.textContent, 'opencode', 'the application name is the one the server reported');
   assert.equal(nodes.clientName.textContent, 'opencode', 'and the heading names it too');
   assert.equal(nodes.factRedirect.textContent, AUTHORIZATION.redirect_uri, 'the code destination is shown');
-  assert.equal(nodes.factScope.textContent, AUTHORIZATION.scope, 'the scope is shown');
+  assert.match(nodes.scopeList.innerHTML, /openid/, 'each requested scope is listed');
+  assert.match(nodes.scopeList.innerHTML, /email/, 'with its plain-language meaning, not the raw string alone');
   assert.equal(nodes.factUser.textContent, EMAIL, 'the account granting consent is shown');
   assert.doesNotMatch(JSON.stringify(nodes), /ChatGPT/, 'no other application name appears anywhere');
 });

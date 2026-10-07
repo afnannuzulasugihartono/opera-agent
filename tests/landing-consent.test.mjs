@@ -61,7 +61,7 @@ test('a person who is not signed in keeps their request', () => {
 });
 
 test('the screen shows what a person needs to judge, and answers every action', () => {
-  for (const id of ['factClient', 'factRedirect', 'factScope', 'factUser']) {
+  for (const id of ['factClient', 'factRedirect', 'redirectNote', 'scopeList', 'factUser', 'consentsCard', 'consentList']) {
     assert.ok(html.includes(`id="${id}"`), `the screen names ${id}`);
   }
   assert.match(html, /id="approveButton"/, 'there is a visible approve control');

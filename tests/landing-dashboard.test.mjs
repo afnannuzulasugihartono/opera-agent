@@ -296,6 +296,20 @@ test('commands and runs carry their harness provider for the dashboard', () => {
   assert.match(sql, /'provider', c\.provider/, 'the owner-scoped reader returns it per command');
 });
 
+test('consents can be listed and revoked by their owner only', () => {
+  const sql = fs.readFileSync(new URL('supabase/migrations/20261007080000_opera_my_consents.sql', root), 'utf8');
+  // WHY this lock: approving an app is half the story; a company-grade consent
+  // screen also lets the person cut access off. Revoke must kill sessions and
+  // refresh tokens, not just mark a row, and every step is scoped by auth.uid().
+  assert.match(sql, /join auth\.oauth_clients cl on cl\.id = c\.client_id/, 'the list names the application');
+  assert.match(sql, /where c\.user_id = v_uid and c\.revoked_at is null/, 'only live consents of the caller are listed');
+  assert.match(sql, /update auth\.refresh_tokens set revoked = true/, 'refresh tokens are killed first');
+  assert.match(sql, /delete from auth\.sessions where user_id = v_uid and oauth_client_id = p_client_id/, 'then its sessions are gone');
+  assert.match(sql, /update auth\.oauth_consents set revoked_at = now\(\)/, 'and the consent itself is marked');
+  assert.match(sql, /revoke execute on function public\.opera_revoke_consent\(uuid\) from public, anon/, 'anon cannot revoke');
+  assert.match(sql, /grant execute on function public\.opera_my_consents\(\) to authenticated/, 'signed-in callers can list');
+});
+
 test('the pairing issuer has exactly one signature, or PostgREST refuses it', () => {
   const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
   const drop = fs.readFileSync(new URL('supabase/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');
