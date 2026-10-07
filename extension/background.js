@@ -1658,7 +1658,8 @@ async function pair(code) {
     deviceName: cfg.deviceName || 'opera',
     extensionVersion: PRODUCT_VERSION,
     protocolVersion: PROTOCOL_VERSION,
-    capabilities: Object.keys(METHOD_SPECS)
+    capabilities: Object.keys(METHOD_SPECS),
+    browserName: globalThis.OperaAgentBrowserId?.browserName || 'Unknown'
   }, 15000);
   if (!data.ok) throw new Error(data.error || 'Pairing failed.');
   await chrome.storage.local.set({

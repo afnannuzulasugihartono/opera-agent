@@ -57,7 +57,7 @@ begin
   if v_uid is null then return jsonb_build_object('ok', false, 'error', 'Not signed in.'); end if;
   return jsonb_build_object('ok', true, 'devices', coalesce((
     select jsonb_agg(jsonb_build_object(
-      'id', d.id, 'name', d.device_name, 'status', d.status,
+      'id', d.id, 'name', d.device_name, 'status', d.status, 'browserName', d.browser_name,
       'extensionVersion', d.extension_version, 'lastSeenAt', d.last_seen_at,
       'totalCommands', (select count(*) from public.opera_commands where device_id = d.id),
       'completedCommands', (select count(*) from public.opera_commands where device_id = d.id and status = 'completed'),

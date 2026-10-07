@@ -12,6 +12,18 @@
 
 (() => {
   'use strict';
+
+  if (!globalThis.OperaAgentBrowserId) {
+    const ua = navigator.userAgent || '';
+    let browserName = 'Unknown';
+    if (/Brave/i.test(ua)) browserName = 'Brave';
+    else if (/Edg/i.test(ua)) browserName = 'Edge';
+    else if (/OPR/i.test(ua) || /Opera/i.test(ua)) browserName = 'Opera';
+    else if (/Chrome/i.test(ua)) browserName = 'Chrome';
+    else if (/Firefox/i.test(ua)) browserName = 'Firefox';
+    globalThis.OperaAgentBrowserId = { browserName };
+  }
+
   if (globalThis.OperaAgentLog) return;
   const MAX_ENTRIES = 200;
   const LEVELS = { debug: 10, warn: 30, error: 50 };

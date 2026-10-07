@@ -775,6 +775,7 @@
             <span class="dot ${device.status === 'online' ? 'online' : 'offline'}" aria-hidden="true"></span>
             <h3>${esc(device.name)}</h3>
             <span class="chip">${esc(device.extensionVersion || '-')}</span>
+            ${device.browserName ? `<span class="chip">${esc(device.browserName)}</span>` : ''}
           </div>
           <dl class="facts">
             <dt>Status</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>

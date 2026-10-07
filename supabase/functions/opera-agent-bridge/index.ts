@@ -66,13 +66,15 @@ async function pair(body: Record<string, unknown>) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
     return json({ ok: false, error: "Invalid pairing request." }, 400);
   }
+  const browserName = typeof body.browserName === "string" ? body.browserName.trim().slice(0, 64) : "";
   const result = await rpc("opera_pair_device", {
     p_code: body.code.trim(),
     p_token_hash: await sha256(body.token.toLowerCase()),
     p_device_name: body.deviceName.trim(),
     p_extension_version: String(body.extensionVersion || "").slice(0, 64),
     p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
-    p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : []
+    p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : [],
+    p_browser_name: browserName
   });
   return json(result || { ok: false, error: "Pairing failed." }, result?.ok ? 200 : 401);
 }
