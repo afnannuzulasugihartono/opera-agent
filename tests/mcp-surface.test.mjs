@@ -80,28 +80,28 @@ const FROZEN_READ_PAGE_PROPERTIES = [
 ];
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
-  browser_status: 'e2e1c444ec75f62f',
-  run_browser_burst: 'a195bbb8a3566db7',
-  run_workflow: '352a3d543e9786b0',
-  start_watch: '411495a345c1446c',
-  wait_events: '711f765e7122133f', // Re-frozen 2026-10-02 (Phase C): wait_events stops ignoring its declared timeoutMs and declares the envelope opera_watch_events_wait actually returns. It previously advertised the command envelope {ok, commandId, status, result, timing} while the SQL returned {ok, events, cursor, count}, so a model trusting the schema looked for fields that do not exist. The wait_events outputSchema is now the only schema that changed; every other tool digest is byte-identical above.
-  stop_watch: 'd4a280daed0ec9c7',
-  list_tabs: '2d4798f5650f17b7',
-  open_url: '8512165d9e2ca0f2',
-  activate_tab: '43712c8acd61d4da',
-  navigate_tab: '89d184536dc4e89f',
-  close_tab: '2b18e2ed2dd09475',
-  read_page: '167c8069bd0525b3',
+  browser_status: '87dcc1809d24ab5e',
+  run_browser_burst: 'df7e6123de357e67',
+  run_workflow: '6ee5a26de49d2778',
+  start_watch: '1a8f4bc0bb0e5486',
+  wait_events: '711f765e7122133f',
+  stop_watch: '2208034b545d07f0',
+  list_tabs: 'f1d270321bc432aa',
+  open_url: 'c06b0bb087e15ea4',
+  activate_tab: '3f1b47fe5ff7351b',
+  navigate_tab: '68b73b85772c8049',
+  close_tab: '75e8a8c7f9de6a59',
+  read_page: 'f000aa998f062c29',
   capture_page: '9b7f47af69c78b3c',
-  find_elements: 'ebd97137bf12ee61',
-  click_element: 'e69b352538678f9b',
-  fill_element: 'eb24046e23c127f8',
-  press_key: '7f46f878a52172bb',
-  scroll_page: '964567b192825f66',
-  move_pointer: 'b8adb741ad19103a',
-  click_at: 'c50c98d5f209134b',
-  drag_pointer: '52474fc5dc262439',
-  wheel_at: 'a490cc12ea683488' // Re-frozen 2026-10-07: this block runs to EOF, so any later edit to the CORS handler or the auth function moves it. The recorded value had gone stale.
+  find_elements: '195578d2193ad28f',
+  click_element: '1f4c5c9e90a2d282',
+  fill_element: 'f514a6f9f66a8649',
+  press_key: 'd9395997544b11e9',
+  scroll_page: 'b897c833bc057a16',
+  move_pointer: '6cd5b9fb56ff550c',
+  click_at: '5a5cf510f8ec196d',
+  drag_pointer: '00d0eb67eafb741f',
+  wheel_at: 'de066ebee2d44c72',
 });
 
 // The only tool whose schema the keyboard commit changed. Everything else
@@ -504,7 +504,7 @@ test('the pre-existing instruction fragments all survive', () => {
 });
 
 test('MCP requires bearer auth and never exposes the service role key', () => {
-  assert.match(source, /if \(!await authenticate\(req\)\) return unauthorized\(req\)/);
+  assert.match(source, /const authContext = await authenticate\(req\);\n  if \(!authContext\) return unauthorized\(req\)/);
   assert.match(source, /OPERA_AGENT_MCP_TOKEN/);
   assert.match(source, /OPERA_AGENT_MCP_USER_IDS/);
   assert.match(source, /OPERA_AGENT_MCP_USER_EMAILS/);
