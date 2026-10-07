@@ -1,7 +1,8 @@
-<!-- @last-edited: 2026-10-06 16:35 UTC+7. -->
-<!-- @title: unduh — one archive, one checksum, three steps. -->
-<!-- @state: the archive and the signed CRX come from the update endpoint's version-less paths, so a release needs no edit here; the installer is the one binary this site hosts, with its digest pinned. -->
+<!-- @last-edited: 2026-10-07 UTC+7.
+<!-- @title: unduh — three doors, one per format. -->
+<!-- @state: the hub names the three formats; each format lives on its own page with its own steps, so a reader never scrolls past two installs that are not theirs. -->
 <!-- @dependencies: none. -->
+
 
 <!doctype html>
 <html lang="id">
@@ -10,12 +11,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0d10" />
   <title>Unduh — Opera Agent</title>
-  <meta name="description" content="Unduh Opera Agent. Daftar browser yang didukung dan cara memasang manual di Chrome, Edge, Brave, Opera, dan Vivaldi." />
+  <meta name="description" content="Unduh Opera Agent: pemasang Windows, arsip manual, atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
   <meta property="og:title" content="Unduh — Opera Agent" />
-  <meta property="og:description" content="Unduh Opera Agent. Daftar browser yang didukung dan cara memasang manual di Chrome, Edge, Brave, Opera, dan Vivaldi." />
+  <meta property="og:description" content="Unduh Opera Agent: pemasang Windows, arsip manual, atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh" />
   <meta property="og:locale" content="id_ID" />
   <style>
@@ -167,6 +168,15 @@
     table.support td.no { color: var(--muted); }
     table.support tr:last-child td { border-bottom: 0; }
     .meta { color: var(--muted); font-size: 13px; }
+    /* WHY cards and not a list: three formats answer "which one is mine" before
+       any prose. One line each, then the dedicated page with its own steps. */
+    .formats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 8px; }
+    @media (max-width: 640px) { .formats { grid-template-columns: 1fr; } }
+    .format { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-decoration: none; }
+    .format:hover { border-color: var(--accent); }
+    .format strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
+    .format span { color: var(--muted); font-size: 13.5px; }
+    .format .go { display: block; margin-top: 10px; font-size: 13.5px; }
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
@@ -200,31 +210,14 @@
     <h1>Pasang Opera Agent</h1>
     <p>Jalankan pemasang, pilih browser, selesai. Tidak ada Chrome Web Store, tidak ada
     <em>load unpacked</em>, dan pembaruan berikutnya dipasang sendiri oleh browser.</p>
-    <p><a class="btn" href="./OperaAgent-Installer.exe" download>Unduh OperaAgent-Installer.exe</a></p>
-    <p class="hash">sha256 0a5397716a6a6d466587f60428c13fe7fc809334d48e20b4c9c6e5dff7de8130</p>
 
-    <h2>Tiga langkah memasang</h2>
-    <ol>
-      <li>Klik berkas di atas, lalu jalankan. Windows meminta izin administratif sekali;
-        itu perlu karena browser hanya membaca kebijakan pemasangan dari lokasi yang
-        dilindungi.</li>
-      <li>Centang browser yang Anda pakai, lalu tekan <strong>Pasang</strong>.</li>
-      <li>Tutup semua jendela browser, lalu buka lagi. Opera Agent terpasang saat
-        browser mulai.</li>
-    </ol>
+    <p>Ketiga berkas di bawah selalu build terbaru.</p>
 
-    <h2>Kalau tidak muncul setelah dibuka</h2>
-    <p>Buka <code>chrome://policy</code> di browser itu dan cari Opera Agent. Kalau
-    halaman itu kosong, periksa juga <code>chrome://extensions</code> dan pastikan
-    Mode Pengembang tidak perlu diaktifkan — pemasangan ini tidak memakainya.</p>
-
-    <h2>Pasang manual dari arsip</h2>
-    <p>Kalau kebijakan ditolak, atau browser kamu tidak ada di daftar di atas, unduh arsip
-    dan muat sendiri. Cara ini berjalan di semua browser Chromium.</p>
-    <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh arsip terbaru</a></p>
-    <p class="hash">Arsip ini selalu build terbaru, jadi sidik jarinya berubah setiap rilis. Cara
-      mengambil sidik jari yang sedang dilayani server, dan cara membandingkannya dengan
-      berkas yang kamu unduh, ada di bagian <a href="#verifikasi">Verifikasi berkas</a>.</p>
+    <div class="formats">
+      <a class="format" href="./unduh-exe.html"><strong>Pemasang Windows</strong><span>Berkas .exe: klik, centang browser, selesai.</span><span class="go">Buka panduan &rarr;</span></a>
+      <a class="format" href="./unduh-zip.html"><strong>Arsip manual</strong><span>Berkas .zip: ekstrak dan muat sendiri di semua Chromium.</span><span class="go">Buka panduan &rarr;</span></a>
+      <a class="format" href="./unduh-crx.html"><strong>CRX bertanda tangan</strong><span>Berkas .crx: id stabil dan update sendiri.</span><span class="go">Buka panduan &rarr;</span></a>
+    </div>
 
     <h2>Browser mana yang didukung</h2>
     <p>Opera Agent berjalan di browser berbasis Chromium: Chrome, Edge, Brave, Opera, dan
@@ -246,45 +239,6 @@
     <p class="meta">Chrome, Edge, dan Brave menolak pemasangan otomatis dari luar Chrome
     Web Store kalau komputer tidak terdaftar sebagai komputer perusahaan. Itu batas
     Chrome, bukan salah installernya.</p>
-
-    <h2 id="verifikasi">Verifikasi berkas</h2>
-    <p>Installer punya sidik jari yang tercetak di halaman ini, karena berkas itu tidak
-      berubah antar rilis:</p>
-    <p class="hash">sha256 0a5397716a6a6d466587f60428c13fe7fc809334d48e20b4c9c6e5dff7de8130</p>
-    <p> bandingkan di PowerShell:
-    <code>Get-FileHash .\OperaAgent-Installer.exe -Algorithm SHA256</code></p>
-    <p>Arsip dan berkas <code>.crx</code> selalu berisi build terbaru, jadi sidik jarinya
-      ikut berubah setiap rilis dan tidak bisa dicetak di halaman statis. Ambil sidik jari
-      yang sedang dilayani server, lalu bandingkan dengan milikmu:</p>
-    <pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256
-Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
-    <p>Kedua perintah itu harus menghasilkan angka yang sama. Kalau berbeda, berkasmu
-      tidak utuh — unduh ulang.</p>
-
-    <h2>Pasang dari arsip CRX bertanda tangan</h2>
-    <p>Berkas <code>.crx</code> sudah ditandatangani, jadi id extension-nya tetap sama
-    di setiap komputer dan pembaruan berikutnya bisa dipasangkan browser sendiri.</p>
-    <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh berkas .crx terbaru</a></p>
-    <p class="hash">Berkas ini ditandatangani, dan namanya membawa versi build yang kamu
-      terima — jadi dua unduhan berbeda tidak terlihat sama.</p>
-    <p class="meta">Cara ini hanya untuk browser yang mengizinkan pemasangan berkas
-    <code>.crx</code>. Chrome, Edge, dan Brave menolaknya di komputer yang tidak
-    terdaftar sebagai komputer perusahaan — pakai arsip di bawah. Memuat berkas
-    <code>.crx</code> langsung ke halaman extension akan ditolak dengan
-    <em>Extension not listed in the Web Store</em>; itu bukan kerusakan berkas.</p>
-
-    <h2>Lima langkah memasang dari arsip</h2>
-    <ol class="steps">
-      <li><strong>Ekstrak arsip.</strong> Unzip ke folder yang tidak akan kamu rapikan lagi,
-        misalnya <code>C:\OperaAgent\</code>. Jangan ekstrak ke dalam folder zip.</li>
-      <li><strong>Buka halaman extension.</strong> Ketik <code>chrome://extensions</code> di bilah
-        alamat, atau <code>opera://extensions</code> di Opera dan Vivaldi.</li>
-      <li><strong>Aktifkan mode pengembang.</strong> Toggle di pojok atas halaman itu.</li>
-      <li><strong>Muat folder.</strong> Klik <strong>Load unpacked</strong>, lalu pilih folder
-        hasil ekstrak — folder yang berisi <code>manifest.json</code>.</li>
-      <li><strong>Pasangkan device.</strong> Masuk ke <a href="./dashboard.html">Dashboard</a>,
-        buat kode pairing sekali pakai, lalu tempel di popup extension.</li>
-    </ol>
 
     <h2>Izin yang diminta, dan kenapa</h2>
     <p>Lima izin, satu per satu. Tidak ada izin yang tidak dijelaskan.</p>

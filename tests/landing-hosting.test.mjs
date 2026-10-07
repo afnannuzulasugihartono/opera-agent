@@ -70,7 +70,7 @@ test('every path of the site is covered, so no rule can be reached by inheritanc
   // WHY this matters: the first live incident on this site was header precedence. An
   // unlisted path falls back to Cloudflare's default policy, which is not ours.
   const covered = new Set(rules.flatMap((rule) => rule.paths));
-  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/unduh', '/unduh.html', '/fitur', '/fitur.html', '/dukungan', '/dukungan.html', '/404.html', '/OperaAgent-Installer.exe', '/robots.txt', '/sitemap.xml']) {
+  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-exe', '/unduh-exe.html', '/unduh-zip', '/unduh-zip.html', '/unduh-crx', '/unduh-crx.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/dukungan', '/dukungan.html', '/404.html', '/OperaAgent-Installer.exe', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
   }
 });
