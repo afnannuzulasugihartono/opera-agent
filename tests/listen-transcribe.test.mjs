@@ -122,7 +122,7 @@ test('start refuses unknown devices and second live sessions', async () => {
   assert.equal(again.error, 'A listening session is already live on this device. Stop it first.');
 });
 
-test('two windows transcribe with absolute offsets, then stop ends and deletes', async () => {
+test('one complete window transcribes on arrival, then stop ends and deletes', async () => {
   const db = store();
   const h = harness(db);
   // WHY the hash dodge: the function hashes the token before comparing, and the
@@ -138,10 +138,9 @@ test('two windows transcribe with absolute offsets, then stop ends and deletes',
   // per chunk is what this exercises.
   const chunk = Buffer.from('fake-opus-byte').toString('base64');
   assert.match(chunk, /=+$/, 'the fixture audio carries padding like real windows');
-  assert.equal((await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 0, audio: chunk })).json()).ok, true);
-  const second = await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 1, audio: chunk })).json();
-  assert.equal(second.ok, true);
-  assert.equal(second.transcribed, 1);
+  const first = await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 0, audio: chunk })).json();
+  assert.equal(first.ok, true);
+  assert.equal(first.transcribed, 1);
   assert.equal(db.opera_listen_segments.length, 1);
   assert.equal(db.opera_listen_segments[0].start_s, 1);
   assert.equal(db.opera_listen_segments[0].text, 'halo dunia');

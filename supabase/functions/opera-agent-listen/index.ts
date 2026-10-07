@@ -20,13 +20,13 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-// WHY these bounds: a 5-second opus window is tens of KB; 512KB caps a runaway
+// WHY these bounds: a 10-second opus window is under 200KB; 1MB caps a runaway
 // client without touching any real window. Sessions end themselves at 30 minutes
 // so a forgotten tab cannot transcribe all night on the owner's key.
 
-const MAX_CHUNK_BYTES = 512 * 1024;
+const MAX_CHUNK_BYTES = 1024 * 1024;
 const MAX_SESSION_MINUTES = 30;
-const CHUNK_SECONDS = 5;
+const CHUNK_SECONDS = 10;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -107,9 +107,11 @@ async function transcribeDue(session: { id: string; device_id: string; window_se
   const { data: chunks } = await supabase.from("opera_listen_chunks")
     .select("seq, audio_base64, mime").eq("session_id", session.id).order("seq").limit(needed);
   if (!chunks || !chunks.length) return 0;
-  // WHY no partial windows mid-session: a 3-second fragment transcribes worse
-  // than a full 10-second window and costs the same call. stop() passes force
-  // so the tail is never stranded.
+  // WHY one window per recorder lifetime on the device side: MediaRecorder emits
+  // the container header only in the first chunk of a recording, so joining timed
+  // slices produces a file Groq refuses with invalid_media_file (measured live).
+  // Each staged chunk is therefore already a complete file; transcribing it on
+  // arrival keeps offsets exact (seq * CHUNK_SECONDS) with no reassembly.
   if (!force && chunks.length < needed) return 0;
   const windowChunks = chunks;
   let segments: Array<{ start: number; end: number; text: string }>;

@@ -255,7 +255,7 @@ test('the manifest loads the role runtime before the content script', async () =
     scripts.indexOf('role-reconcile.js') < scripts.indexOf('content.js'),
     'the role runtime must load before content.js reads it'
   );
-  assert.equal(manifest.version, '1.6.17');
+  assert.equal(manifest.version, '1.6.18');
 });
 
 test('background shares the one content-script copy instead of duplicating it', async () => {

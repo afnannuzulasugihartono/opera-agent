@@ -1736,7 +1736,61 @@
   // Cross-origin media without CORS headers records silence instead of failing,
   // so a silent transcript proves nothing by itself.
 
-  const listenCapture = { ctx: null, recorder: null, seq: 0 };
+  // WHY one window per recorder lifetime: MediaRecorder emits the container
+  // header only in the first chunk of a recording, so joining timed slices
+  // produces a file Groq refuses with invalid_media_file (measured live).
+  // Stopping and starting a fresh recorder every window costs ~100ms of audio
+  // and yields self-contained files the transcriber accepts as-is.
+
+  const LISTEN_WINDOW_MS = 10000;
+
+  const listenCapture = { ctx: null, stream: null, recorder: null, seq: 0, active: false, mime: 'audio/webm' };
+
+  function listenArmedRecorder() {
+    const recorder = new MediaRecorder(listenCapture.stream, { mimeType: listenCapture.mime, audioBitsPerSecond: 64000 });
+    recorder.ondataavailable = (event) => {
+      if (!event.data || event.data.size === 0) return;
+      const blob = event.data;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = String(reader.result || '');
+        const base64 = dataUrl.includes(',') ? dataUrl.slice(dataUrl.indexOf(',') + 1) : '';
+        if (!base64) return;
+        listenCapture.seq += 1;
+        try {
+          chrome.runtime.sendMessage({
+            scope: 'opera-agent-listen-chunk',
+            seq: listenCapture.seq,
+            audio: base64,
+            mime: blob.type || 'audio/webm'
+          })?.catch?.(() => {});
+        } catch {}
+      };
+      reader.readAsDataURL(blob);
+    };
+    recorder.onerror = () => {
+      listenStop().catch(() => {});
+    };
+    recorder.onstop = () => {
+      listenCapture.recorder = null;
+      // WHY re-arm here and not on a timer: the next window starts the moment
+      // this one flushed, so the gap is one recorder restart, not a full
+      // polling interval. stop() disarms first, so its flush never restarts.
+      if (listenCapture.active) {
+        try {
+          listenCapture.recorder = listenArmedRecorder();
+          listenCapture.recorder.start();
+          listenCapture.scheduleEnd?.();
+        } catch {
+          listenStop().catch(() => {});
+        }
+      } else if (listenCapture.ctx) {
+        try { listenCapture.ctx.close(); } catch {}
+        listenCapture.ctx = null;
+      }
+    };
+    return recorder;
+  }
 
   async function listenStart(args) {
     if (listenCapture.recorder) throw new Error('A capture is already running on this page.');
@@ -1766,55 +1820,39 @@
     const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))
       ? 'audio/webm;codecs=opus'
       : 'audio/webm';
-    let recorder;
-    try {
-      recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 64000 });
-    } catch (error) {
-      try { ctx.close(); } catch {}
-      throw new Error(`Recording is not supported here: ${error?.message || error}`);
-    }
     listenCapture.ctx = ctx;
     listenCapture.seq = 0;
-    listenCapture.recorder = recorder;
-    recorder.ondataavailable = (event) => {
-      if (!event.data || event.data.size === 0) return;
-      const blob = event.data;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = String(reader.result || '');
-        const base64 = dataUrl.includes(',') ? dataUrl.slice(dataUrl.indexOf(',') + 1) : '';
-        if (!base64) return;
-        listenCapture.seq += 1;
-        try {
-          chrome.runtime.sendMessage({
-            scope: 'opera-agent-listen-chunk',
-            seq: listenCapture.seq,
-            audio: base64,
-            mime: blob.type || 'audio/webm'
-          })?.catch?.(() => {});
-        } catch {}
-      };
-      reader.readAsDataURL(blob);
+    listenCapture.active = true;
+    listenCapture.mime = mimeType;
+    listenCapture.stream = stream;
+    const scheduleEnd = () => {
+      setTimeout(() => {
+        if (!listenCapture.active) return;
+        try { listenCapture.recorder?.stop(); } catch {}
+      }, LISTEN_WINDOW_MS);
     };
-    recorder.onerror = () => {
-      listenStop().catch(() => {});
-    };
-    recorder.onstop = () => {
-      listenCapture.recorder = null;
-      if (listenCapture.ctx) {
-        try { listenCapture.ctx.close(); } catch {}
-        listenCapture.ctx = null;
-      }
-    };
+    listenCapture.scheduleEnd = scheduleEnd;
+    let recorder;
     try {
-      recorder.start(5000);
+      recorder = listenArmedRecorder();
+    } catch (error) {
+      try { ctx.close(); } catch {}
+      listenCapture.ctx = null;
+      listenCapture.active = false;
+      throw new Error(`Recording is not supported here: ${error?.message || error}`);
+    }
+    listenCapture.recorder = recorder;
+    try {
+      recorder.start();
     } catch (error) {
       listenCapture.recorder = null;
+      listenCapture.active = false;
       try { ctx.close(); } catch {}
       listenCapture.ctx = null;
       throw new Error(`Capture did not start: ${error?.message || error}`);
     }
-    return { ok: true, mime: mimeType, chunkMs: 5000, audioState: ctx.state };
+    scheduleEnd();
+    return { ok: true, mime: mimeType, chunkMs: LISTEN_WINDOW_MS, audioState: ctx.state };
   }
 
   async function listenStop() {
