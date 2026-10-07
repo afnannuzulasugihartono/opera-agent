@@ -11,13 +11,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 ## State
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
-- Version `1.6.17` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 110 runtime safety files, 551 unit tests, green.
+- Version `1.6.18` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
+- Gates: `npm test`, `npm run check` — 28 primitives, 112 runtime safety files, 552 unit tests, green.
 - Production: 58 `opera_*` functions, 9 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
-- **The CRX is published.** The update endpoint offers `1.6.17` to extension id
+- **The CRX is published.** The update endpoint offers `1.6.18` to extension id
   `ofgemipoobcnbjkfanmofjbdonjapmgl`, which is both the manifest key's id and the signature's id.
-  `1.6.16` under that id is inactive; `1.6.14` under the old id `ohbbpamc…` stays active so installs
+  `1.6.17` under that id is inactive; `1.6.14` under the old id `ohbbpamc…` stays active so installs
   that never updated keep working. `opera_releases` allows one active row per id.
 - **Live audio is end to end.** Element-tap capture (no new permission) → Groq Whisper
   `verbose_json` → segments in `opera_listen_segments`, audio deleted after use. MCP has
