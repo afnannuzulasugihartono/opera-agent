@@ -20,7 +20,7 @@ import { evaluateRules, validateRule } from './lib/watch.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
-import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
+import { DEFAULT_BRIDGE_URL, LISTEN_BASE_URL } from './lib/endpoints.js';
 import { saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
 
 // WHY localhost only for now: externally_connectable is a grant, and a grant to
@@ -60,7 +60,7 @@ import {
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
-const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel'];
+const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel', 'listenSession'];
 const PRIVATE_TABS_KEY = 'privateTabIds';
 const WAKE_ALARM = 'opera-agent-wake';
 const HTTP_URL_RE = /^https?:\/\//i;
@@ -440,6 +440,102 @@ function rememberScreenshot(tabId, cacheKey, screenshot) {
   screenshotCache.delete(tabId);
   screenshotCache.set(tabId, { cacheKey, savedAt: Date.now(), screenshot });
   while (screenshotCache.size > SCREENSHOT_CACHE_LIMIT) screenshotCache.delete(screenshotCache.keys().next().value);
+}
+
+// WHY element capture and not tab capture: chrome.tabCapture refuses callers
+// without a user gesture ("Extension has not been invoked"), which an
+// autonomous agent never has — measured, not assumed, in headed Chromium 153.
+// Tapping the media element's own output through WebAudio needs no special
+// permission and no gesture. The element keeps playing to the speakers; the
+// recorder only forks a copy. Cross-origin media without CORS headers records
+// silence instead of failing, so a silent transcript proves nothing by itself.
+
+function listenUrlFor(bridgeUrl) {
+  const base = String(bridgeUrl || '');
+  const functionsRoot = base.includes('/functions/v1/')
+    ? base.slice(0, base.indexOf('/functions/v1/') + '/functions/v1'.length)
+    : base.replace(/\/[^/]*\/?$/, '');
+  return `${base ? functionsRoot : LISTEN_BASE_URL}/opera-agent-listen`;
+}
+
+async function readListenSession() {
+  const stored = await chrome.storage.local.get('listenSession');
+  return stored.listenSession || null;
+}
+
+async function listenStart(tabId, params = {}) {
+  const cfg = await getConfig();
+  if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');
+  const tab = await chrome.tabs.get(tabId);
+  if (!HTTP_URL_RE.test(tab.url || '')) throw codedError('LISTEN_BLOCKED', 'Listening supports HTTP/HTTPS tabs only.', { tabId });
+  if (tab.incognito) throw codedError('LISTEN_BLOCKED', 'Listening is blocked in incognito tabs.', { tabId, reason: 'INCOGNITO' });
+  if (await isPrivateTab(tabId)) throw codedError('LISTEN_BLOCKED', 'This tab was marked private in the Opera Agent popup.', { tabId, reason: 'USER_PRIVATE' });
+  const existing = await readListenSession();
+  if (existing?.sessionId) throw codedError('LISTEN_ACTIVE', 'A listening session is already live. Stop it first.', { tabId });
+  const session = await fetchJson(listenUrlFor(cfg.bridgeUrl), {
+    action: 'start', token: cfg.deviceToken, deviceName: cfg.deviceName, tabId, language: 'id'
+  }, 15000);
+  if (!session?.ok || !session.sessionId) throw new Error(session?.error || 'Listening session was refused.');
+  let started;
+  try {
+    started = await contentCall(tabId, 'media.listen_start', { index: params.index ?? 0 });
+  } catch (error) {
+    // WHY end the server session when the recorder fails to start: otherwise a
+    // session with no audio behind it bills empty transcription windows.
+    await fetchJson(listenUrlFor(cfg.bridgeUrl), {
+      action: 'stop', token: cfg.deviceToken, sessionId: session.sessionId
+    }, 15000).catch(() => {});
+    throw error;
+  }
+  if (!started?.ok) {
+    await fetchJson(listenUrlFor(cfg.bridgeUrl), {
+      action: 'stop', token: cfg.deviceToken, sessionId: session.sessionId
+    }, 15000).catch(() => {});
+    throw new Error(started?.error || 'Capture did not start.');
+  }
+  await chrome.storage.local.set({ listenSession: { sessionId: session.sessionId, tabId } });
+  return { ok: true, sessionId: session.sessionId, audioState: started.audioState || 'unknown' };
+}
+
+async function listenStop() {
+  const cfg = await getConfig();
+  const existing = await readListenSession();
+  if (existing?.tabId != null) {
+    await contentCall(existing.tabId, 'media.listen_stop', {}).catch(() => {});
+  }
+  await chrome.storage.local.remove('listenSession');
+  if (!existing?.sessionId || !cfg.deviceToken) return { ok: true, ended: false };
+  try {
+    const answer = await fetchJson(listenUrlFor(cfg.bridgeUrl), {
+      action: 'stop', token: cfg.deviceToken, sessionId: existing.sessionId
+    }, 15000);
+    return { ok: true, ended: true, ...answer };
+  } catch (error) {
+    // WHY still ok: the recorder is stopped and the forgotten state is cleared,
+    // so nothing keeps recording. The server ends orphan sessions by itself.
+    log.warn('LISTEN_STOP_UNCONFIRMED', error?.message || String(error));
+    return { ok: true, ended: false };
+  }
+}
+
+async function postListenChunk(tabId, seq, audio, mime) {
+  const cfg = await getConfig();
+  const existing = await readListenSession();
+  if (!existing?.sessionId || !cfg.deviceToken) return;
+  // WHY drop chunks from any other tab: only the tab the session started on may
+  // feed it. A chunk that names no tab, or the wrong one, is discarded rather
+  // than billed to someone else's session.
+  if (tabId == null || existing.tabId !== tabId) return;
+  try {
+    await fetchJson(listenUrlFor(cfg.bridgeUrl), {
+      action: 'append', token: cfg.deviceToken, sessionId: existing.sessionId, seq, audio, mime
+    }, 15000);
+  } catch (error) {
+    // WHY log and continue: one failed window must not kill a live session;
+    // transcription windows tolerate gaps, and the offsets ride the chunk
+    // sequence numbers rather than wall-clock time.
+    log.warn('LISTEN_CHUNK_FAILED', error?.message || String(error));
+  }
 }
 
 async function capturePage(tabId, params, context) {
@@ -1317,6 +1413,12 @@ async function dispatch(method, params = {}, context = {}) {
       const result = await contentCall(tabId, method, params);
       return { ...result, tabId };
     }
+    case 'media.stream_start': {
+      const tabId = await resolveTabId(params);
+      return listenStart(tabId, params);
+    }
+    case 'media.stream_stop':
+      return listenStop();
     case 'page.fill': {
       const tabId = await resolveTabId(params);
       const fillOptions = { expect: params.expect, attempts: params.retry?.attempts };
@@ -1676,6 +1778,9 @@ async function pair(code) {
 
 async function unpair() {
   loopGeneration += 1;
+  // WHY stop listening first: the device token is removed below, so chunks
+  // would fail auth anyway — but the recorder would keep running silently.
+  await listenStop().catch(() => {});
   await chrome.storage.local.remove(['paired', 'deviceToken', 'deviceId']);
   await setState({ status: 'unpaired', lastError: null });
   return { ok: true };
@@ -1861,6 +1966,13 @@ chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) =>
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message && message.scope === 'opera-agent-listen-chunk') {
+    const tabId = sender?.tab?.id;
+    Promise.resolve(postListenChunk(tabId, message.seq, message.audio, message.mime))
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) }));
+    return true;
+  }
   if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {
     const tabId = sender?.tab?.id;
     if (tabId == null) { sendResponse({ ok: false, error: 'No sender tab.' }); return true; }
@@ -1899,11 +2011,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
+  // WHY stop on install and update: a recorder cannot survive either, so a
+  // stored session would otherwise point at a dead capture while the server
+  // still bills transcription windows against it.
+  await listenStop().catch(() => {});
   ensurePullLoop();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
+  await listenStop().catch(() => {});
   ensurePullLoop();
 });
 
@@ -1931,6 +2048,11 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   screenshotCache.delete(tabId);
+  readListenSession().then((existing) => {
+    // WHY stop when the captured tab closes: the recorder dies with the page, so
+    // keeping the session live would transcribe silence until the 30-minute cap.
+    if (existing?.tabId === tabId) listenStop().catch(() => {});
+  }).catch(() => {});
   privateTabIds().then((ids) => {
     if (!ids.delete(tabId)) return;
     return chrome.storage.local.set({ [PRIVATE_TABS_KEY]: [...ids] });

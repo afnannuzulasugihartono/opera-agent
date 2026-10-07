@@ -69,7 +69,7 @@ const FROZEN_MCP_TOOLS = [
 
 const FROZEN_METHODS = [
   'browser.burst', 'browser.ping', 'media.pause', 'media.play', 'media.seek',
-  'media.state', 'page.capture', 'page.click', 'page.collect_links',
+  'media.state', 'media.stream_start', 'media.stream_stop', 'page.capture', 'page.click', 'page.collect_links',
   'page.fill', 'page.find', 'page.focus', 'page.key', 'page.pointer',
   'page.query', 'page.read', 'page.scroll', 'page.wait_for', 'tabs.activate',
   'tabs.close', 'tabs.find', 'tabs.get', 'tabs.list', 'tabs.navigate',
@@ -200,9 +200,9 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
 });
 
-test('R4 keeps the protocol inventory frozen at 26 allowlisted primitives for release 1.6.16', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.16');
-  assert.equal(ALLOWED_METHODS.length, 26);
+test('R4 keeps the protocol inventory frozen at 28 allowlisted primitives for release 1.6.17 (stream tools added)', () => {
+  assert.equal(PRODUCT_VERSION, '1.6.17');
+  assert.equal(ALLOWED_METHODS.length, 28);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 

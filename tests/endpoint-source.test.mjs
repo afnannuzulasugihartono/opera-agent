@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { CONSENT_CONFIG_URL, DEFAULT_BRIDGE_URL, SUPABASE_PROJECT_REF, UPDATE_BASE_URL } from '../extension/lib/endpoints.js';
+import { CONSENT_CONFIG_URL, DEFAULT_BRIDGE_URL, LISTEN_BASE_URL, SUPABASE_PROJECT_REF, UPDATE_BASE_URL } from '../extension/lib/endpoints.js';
 
 test('extension background has exactly one endpoint source', async () => {
   const bg = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
@@ -59,6 +59,7 @@ test('update function derives base from SUPABASE_URL, no literal ref', async () 
 test('every exported endpoint constant is derived from the project ref', () => {
   const base = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
   assert.equal(DEFAULT_BRIDGE_URL, `${base}/functions/v1/opera-agent-bridge`);
+  assert.equal(LISTEN_BASE_URL, `${base}/functions/v1/opera-agent-listen`);
   assert.equal(UPDATE_BASE_URL, `${base}/functions/v1/opera-agent-update`);
   assert.equal(CONSENT_CONFIG_URL, `${base}/functions/v1/opera-agent-auth/config`);
 });

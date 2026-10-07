@@ -36,6 +36,7 @@ class BridgeState:
         self.cv = threading.Condition()
         self.paired = False
         self.fail_pull_until = 0.0
+        self.listen = []
 
     def push(self, method, params=None, timeout=12000, benchmark=None):
         cid = str(uuid.uuid4())
@@ -279,6 +280,18 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404); self.end_headers()
 
     def do_POST(self):
+        if self.path == '/opera-agent-listen':
+            length = int(self.headers.get('content-length', '0'))
+            body = json.loads(self.rfile.read(length) or b'{}')
+            action = body.get('action')
+            STATE.listen.append({'action': action, 'seq': body.get('seq')})
+            if action == 'start':
+                return self._send_json({'ok': True, 'sessionId': 'mock-session-1'})
+            if action == 'append':
+                return self._send_json({'ok': True, 'transcribed': 0})
+            if action == 'stop':
+                return self._send_json({'ok': True})
+            return self._send_json({'ok': False, 'error': 'unknown action'}, 400)
         if self.path != '/bridge':
             self.send_response(404); self.end_headers(); return
         length = int(self.headers.get('content-length', '0'))
@@ -504,7 +517,14 @@ async def run(port, profile):
                 f'--disable-extensions-except={EXT}',
                 f'--load-extension={EXT}',
                 '--no-sandbox',
-                '--disable-dev-shm-usage'
+                '--disable-dev-shm-usage',
+
+                # WHY no user gesture is required here: a fresh AudioContext
+                # starts suspended without one, and CDP-synthesized input does
+                # not count as activation. Production pages have real gestures
+                # behind them; this flag puts the test browser in that same
+                # state instead of testing a never-touched profile.
+                '--autoplay-policy=no-user-gesture-required'
             ]
         )
         worker = await wait_worker(context)
@@ -2200,6 +2220,53 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r5_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
+        # Listening session lifecycle: start records against the mock listen
+        # endpoint, audio windows flow while live, a second start is refused
+        # without touching audio, and stop ends the session.
+
+        cid = STATE.push('tabs.open', {
+            'url': f'http://{HOST}:{port}/pre8e-r5',
+            'active': False,
+            'wait': True
+        }, benchmark='listen.tabs.open')
+        listen_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        listen_seen = len(STATE.listen)
+        cid = STATE.push('media.stream_start', {'tabId': listen_tab_id})
+        listen_started = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert listen_started.get('sessionId') == 'mock-session-1', listen_started
+        cid = STATE.push('media.stream_start', {'tabId': listen_tab_id})
+        listen_refused = await asyncio.to_thread(STATE.wait, cid)
+        assert listen_refused.get('ok') is False, listen_refused
+        assert 'already live' in str(listen_refused.get('error', '')), listen_refused
+
+        # WHY a real keystroke before waiting for audio: a fresh AudioContext
+        # starts suspended without a user gesture, and a suspended graph renders
+        # nothing for the recorder. A trusted keypress is a gesture, so the
+        # context resumes and windows start flowing — the same physics as a
+        # person pressing play before the model starts listening.
+        cid = STATE.push('page.key', {'tabId': listen_tab_id, 'key': 'k', 'trusted': True})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        listen_deadline = time.time() + 20.0
+        while time.time() < listen_deadline and not any(
+            item.get('action') == 'append' for item in STATE.listen[listen_seen:]
+        ):
+            await asyncio.sleep(0.5)
+        assert any(item.get('action') == 'append' for item in STATE.listen[listen_seen:]), STATE.listen[listen_seen:]
+        cid = STATE.push('media.stream_stop', {})
+        listen_stopped = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert listen_stopped.get('ok') is True, listen_stopped
+        listen_actions = [item.get('action') for item in STATE.listen[listen_seen:]]
+        assert listen_actions[0] == 'start', listen_actions
+        assert listen_actions[-1] == 'stop', listen_actions
+        print(json.dumps({'listenAcceptance': {
+            'sessionId': listen_started.get('sessionId'),
+            'secondStartRefused': True,
+            'appendSeen': True,
+            'stopOrdered': True
+        }}))
+        cid = STATE.push('tabs.close', {'tabId': listen_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
         spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': spa_route['ref']})
         spa_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -2965,7 +3032,8 @@ async def run(port, profile):
                 f'--disable-extensions-except={EXT}',
                 f'--load-extension={EXT}',
                 '--no-sandbox',
-                '--disable-dev-shm-usage'
+                '--disable-dev-shm-usage',
+                '--autoplay-policy=no-user-gesture-required'
             ]
         )
         worker2 = await wait_worker(context, 15000)

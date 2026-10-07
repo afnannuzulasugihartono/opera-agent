@@ -1728,6 +1728,112 @@
     return [...document.querySelectorAll('video,audio')][clamp(index, 0, 50, 0)] || null;
   }
 
+  // WHY element tap and not tab capture: tab capture refuses callers without a
+  // user gesture, which an autonomous agent never has. Forking the element's own
+  // output through WebAudio needs no permission and no gesture, and the element
+  // keeps playing to the speakers — the recorder only takes a copy. One
+  // recorder per page: a second start is refused rather than double-billing.
+  // Cross-origin media without CORS headers records silence instead of failing,
+  // so a silent transcript proves nothing by itself.
+
+  const listenCapture = { ctx: null, recorder: null, seq: 0 };
+
+  async function listenStart(args) {
+    if (listenCapture.recorder) throw new Error('A capture is already running on this page.');
+    const el = mediaElement(args.index);
+    if (!el) throw new Error('No media element found.');
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) throw new Error('WebAudio is not available on this page.');
+    const ctx = new Ctx();
+    let stream;
+    try {
+      const source = ctx.createMediaElementSource(el);
+      const dest = ctx.createMediaStreamDestination();
+      source.connect(ctx.destination);
+      source.connect(dest);
+      stream = dest.stream;
+    } catch (error) {
+      try { ctx.close(); } catch {}
+      throw new Error(`This media cannot be tapped: ${error?.message || error}`);
+    }
+    // WHY no await on resume: the promise only settles after a user gesture, and
+    // an autonomous agent has none — awaiting it hangs the command until the
+    // device-side timeout fires. A suspended context records silence, which the
+    // transcript honestly reports as no speech.
+    try {
+      ctx.resume().catch(() => {});
+    } catch {}
+    const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+    let recorder;
+    try {
+      recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 64000 });
+    } catch (error) {
+      try { ctx.close(); } catch {}
+      throw new Error(`Recording is not supported here: ${error?.message || error}`);
+    }
+    listenCapture.ctx = ctx;
+    listenCapture.seq = 0;
+    listenCapture.recorder = recorder;
+    recorder.ondataavailable = (event) => {
+      if (!event.data || event.data.size === 0) return;
+      const blob = event.data;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = String(reader.result || '');
+        const base64 = dataUrl.includes(',') ? dataUrl.slice(dataUrl.indexOf(',') + 1) : '';
+        if (!base64) return;
+        listenCapture.seq += 1;
+        try {
+          chrome.runtime.sendMessage({
+            scope: 'opera-agent-listen-chunk',
+            seq: listenCapture.seq,
+            audio: base64,
+            mime: blob.type || 'audio/webm'
+          })?.catch?.(() => {});
+        } catch {}
+      };
+      reader.readAsDataURL(blob);
+    };
+    recorder.onerror = () => {
+      listenStop().catch(() => {});
+    };
+    recorder.onstop = () => {
+      listenCapture.recorder = null;
+      if (listenCapture.ctx) {
+        try { listenCapture.ctx.close(); } catch {}
+        listenCapture.ctx = null;
+      }
+    };
+    try {
+      recorder.start(5000);
+    } catch (error) {
+      listenCapture.recorder = null;
+      try { ctx.close(); } catch {}
+      listenCapture.ctx = null;
+      throw new Error(`Capture did not start: ${error?.message || error}`);
+    }
+    return { ok: true, mime: mimeType, chunkMs: 5000, audioState: ctx.state };
+  }
+
+  async function listenStop() {
+    // WHY stop the recorder and not just the tracks: stop() flushes the final
+    // partial window through ondataavailable, so the last seconds are
+    // transcribed instead of dropped. Context closes in onstop right after.
+    const recorder = listenCapture.recorder;
+    if (recorder && recorder.state !== 'inactive') {
+      try { recorder.stop(); } catch {}
+      return { ok: true, flushed: true };
+    }
+    listenCapture.recorder = null;
+    if (listenCapture.ctx) {
+      try { listenCapture.ctx.close(); } catch {}
+      listenCapture.ctx = null;
+    }
+    return { ok: true, flushed: false };
+  }
+
   function mediaState(args) {
     const all = [...document.querySelectorAll('video,audio')];
     const el = all[clamp(args.index, 0, Math.max(0, all.length - 1), 0)] || null;
@@ -1893,6 +1999,8 @@
       case 'media.play':
       case 'media.pause':
       case 'media.seek': return mediaAction(method, args);
+      case 'media.listen_start': return listenStart(args);
+      case 'media.listen_stop': return listenStop();
       default: throw new Error('Unsupported content method.');
     }
   }
