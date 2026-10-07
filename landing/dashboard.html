@@ -374,11 +374,12 @@
 
     <div class="layout">
 
-      <!-- WHY the rail is nav and not a list of links in the footer: this page has four jobs and the reader arrives knowing only which one they want. A rail puts the other three in view without making them read the page to find out they exist. -->
+      <!-- WHY the rail is nav and not a list of links in the footer: this page has five jobs and the reader arrives knowing only which one they want. A rail puts the other four in view without making them read the page to find out they exist. -->
 
       <nav class="rail" aria-label="Bagian dashboard">
         <a href="#ringkasan" aria-current="true">Ringkasan</a>
         <a href="#device">Device</a>
+        <a href="#dengar">Sesi dengar</a>
         <a href="#pairing">Pairing manual</a>
         <a href="#aksi">Jalankan aksi</a>
         <a href="#akun">Akun ini</a>
@@ -404,6 +405,12 @@
           <h2>Device</h2>
           <p class="meta">Device yang ter-pairing ke akun ini, beserta sepuluh perintah terakhirnya.</p>
           <div id="devices"></div>
+        </section>
+
+        <section id="dengar">
+          <h2>Sesi dengar</h2>
+          <p class="meta">Sesi dengar audio ke akun ini: metadata saja, tanpa isi pembicaraan. Isi transkrip hanya ada di hasil tool model.</p>
+          <div id="listens"></div>
         </section>
 
       <div class="duo">
@@ -788,6 +795,29 @@
       lastSeen.total = all;
       renderChecklist();
       document.querySelector('.rail a[href="#device"]').textContent = `Device (${total})`;
+      // WHY metadata only: a screenshot of this page must not leak speech, so the
+      // section names sessions without quoting them. The text travels only in
+      // media_listen_read results to the paired agent.
+      try {
+        const listenResponse = await fetch(`${REST}/rpc/opera_my_listen`, { method: 'POST', headers: headersFor(token), body: '{}' });
+        const listenData = await listenResponse.json();
+        const sessions = listenData?.ok && Array.isArray(listenData.sessions) ? listenData.sessions : [];
+        $('listens').innerHTML = sessions.length ? sessions.map((session) => `
+          <div class="card">
+            <div class="cardHead">
+              <span class="dot ${session.status === 'live' ? 'online' : 'offline'}" aria-hidden="true"></span>
+              <h3>${esc(session.deviceName || session.id)}</h3>
+              <span class="chip">${esc(session.status)}</span>
+            </div>
+            <dl class="facts">
+              <dt>Mulai</dt><dd>${esc(relativeTime(session.startedAt))}</dd>
+              <dt>Segmen</dt><dd>${esc(session.segments ?? 0)} tertranskrip</dd>
+            </dl>
+          </div>`).join('')
+          : '<div class="empty"><strong>Belum ada sesi dengar.</strong> Mulai dari model dengan media_stream_start.</div>';
+      } catch (error) {
+        $('listens').innerHTML = '';
+      }
       if (!data.devices.length) {
         $('status').textContent = 'Belum ada device terikat ke akun ini.';
         $('status').className = 'status warn';

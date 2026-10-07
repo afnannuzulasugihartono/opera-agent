@@ -64,7 +64,8 @@ const FROZEN_MCP_TOOLS = [
   'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
   'media_pause', 'media_play', 'media_seek', 'media_state',
   'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page',
-  'run_browser_burst', 'run_workflow', 'scroll_page', 'wheel_at'
+  'run_browser_burst', 'run_workflow', 'scroll_page', 'wheel_at',
+  'media_stream_start', 'media_stream_stop', 'media_listen_read'
 ];
 
 const FROZEN_METHODS = [
@@ -106,7 +107,10 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_state: 'cfcb3d77b0fe2604',
   media_play: '87dd389b92e41ee9',
   media_pause: 'f2546ae639ea4063',
-  media_seek: 'cb985af6358fe57a'
+  media_seek: '6f1a6205a1d59b1c',
+  media_stream_start: 'd86a2ca61654b20d',
+  media_stream_stop: 'c858c13598bce472',
+  media_listen_read: '52f9fe8fe4144d6f'
 });
 
 // The only tool whose schema the keyboard commit changed. Everything else
@@ -194,7 +198,8 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
     'browser_status', 'run_browser_burst', 'run_workflow', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
     'move_pointer', 'click_at', 'drag_pointer', 'wheel_at',
-    'media_state', 'media_play', 'media_pause', 'media_seek'
+    'media_state', 'media_play', 'media_pause', 'media_seek',
+    'media_stream_start', 'media_stream_stop', 'media_listen_read'
   ]);
   assert.equal(new Set(tools).size, tools.length);
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
@@ -206,9 +211,9 @@ test('R4 keeps the protocol inventory frozen at 28 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 26 tools (media tools exposed: advertised capabilities are now invocable)', async () => {
+test('R4 keeps the public MCP tool inventory frozen at 29 tools (listen tools added: advertised capabilities are now invocable)', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 26); // media tools exposed: advertised capabilities are now invocable
+  assert.equal(registered.length, 29); // listen tools added: stream start/stop/read
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events'].sort());
 });
 
@@ -228,9 +233,9 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names are unchanged', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 26);
+  assert.equal(registered.length, 29);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 26);
+  assert.equal(contract.toolCount, 29);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -269,6 +274,17 @@ test('each command is stamped with its harness provider, never used for access',
   assert.match(source, /slugifyProvider/);
 });
 
+test('listening tools route commands and read transcripts owner-scoped', () => {
+  // WHY this pin: media_stream_start/stop drive the device through the normal
+  // command queue, while media_listen_read serves stored segments. The read
+  // refuses foreign sessions by device name, never by trusting the caller.
+  assert.match(source, /execute\("media\.stream_start"/);
+  assert.match(source, /execute\("media\.stream_stop"/);
+  assert.match(source, /That session belongs to another device\./);
+  assert.match(source, /opera_listen_segments/);
+  assert.match(source, /Transcript text travels only in this tool result, never on the dashboard\./);
+});
+
 test('advertised media capabilities are invocable tools, not just status text', () => {
   // WHY this pin: browser_status reported media.play/pause/seek/state while the
   // tool registry exposed none of them, so a model that checked capabilities
@@ -293,7 +309,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 26, 'the public tool count must not change');
+  assert.equal(blocks.length, 29, 'the public tool count must not change');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
   // Every recorded digest must match the file, so a stale entry cannot mask a

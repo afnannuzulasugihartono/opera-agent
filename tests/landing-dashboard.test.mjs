@@ -151,12 +151,12 @@ test('the dashboard is about devices, not a profile page', () => {
   assert.doesNotMatch(html, /<input[^>]*id="(fullName|accountName|email)"/i, 'and nothing on this page edits the account');
 });
 
-test('the dashboard has a rail, because it has four jobs and no divider', () => {
+test('the dashboard has a rail, because it has five jobs and no divider', () => {
   const html = read('dashboard.html');
   // WHY this lock: the page was a flat stack of cards, so a reader who came to pair a
   // device had to read past the device list and the command runner to find it, and
-  // had no way to know the other three existed.
-  const sections = ['#ringkasan', '#device', '#pairing', '#aksi', '#akun'];
+  // had no way to know the other four existed.
+  const sections = ['#ringkasan', '#device', '#dengar', '#pairing', '#aksi', '#akun'];
   for (const href of sections) {
     assert.ok(html.includes(`href="${href}"`), `the rail links to ${href}`);
     assert.ok(html.includes(`id="${href.slice(1)}"`), `and ${href} names a section that exists`);
@@ -165,7 +165,7 @@ test('the dashboard has a rail, because it has four jobs and no divider', () => 
   assert.match(html, /aria-label="Bagian dashboard"/, 'and it is labelled, so a screen reader announces what it is');
   // WHY a heading per section: a reader who lands on #pairing from a shared link sees
   // a page with no heading unless each section names itself.
-  for (const heading of ['Ringkasan', 'Device', 'Pairing manual', 'Jalankan aksi', 'Akun ini']) {
+  for (const heading of ['Ringkasan', 'Device', 'Sesi dengar', 'Pairing manual', 'Jalankan aksi', 'Akun ini']) {
     assert.ok(html.includes(`<h2>${heading}</h2>`), `${heading} has a heading of its own`);
   }
   // WHY the rail collapses on a phone: a vertical rail at 320px would push the first

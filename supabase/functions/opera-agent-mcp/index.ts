@@ -876,6 +876,65 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "") {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, ({ tabId, index, seconds, executionMode, timeoutMs }: TargetTab & { index?: number; seconds: number; executionMode?: ExecutionMode; timeoutMs?: number }) => execute("media.seek", { tabId, index, seconds, executionMode: executionMode ?? "background" }, timeoutMs, deviceName, provider));
 
+  // WHY three tools and not one: start and stop drive the device through the
+  // normal command queue (audited, budgeted, offline-aware), while read serves
+  // the transcript that already landed. Collapsing them would mix a device
+  // action with a database read, and the two fail in different ways.
+
+  server.registerTool("media_stream_start", {
+    title: "Start listening to tab audio",
+    description: "Start a listening session on a tab: the page media element is tapped and its audio transcribed in windows. Refused on incognito and private tabs. Returns a sessionId; read the transcript with media_listen_read and end with media_stream_stop.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, index, timeoutMs }: TargetTab & { index?: number; timeoutMs?: number }) => execute("media.stream_start", { tabId, index }, timeoutMs, deviceName, provider));
+
+  server.registerTool("media_stream_stop", {
+    title: "Stop the listening session",
+    description: "End the live listening session: the recorder stops, the tail window is transcribed, and no further audio is captured.",
+    inputSchema: {
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ timeoutMs }: { timeoutMs?: number }) => execute("media.stream_stop", {}, timeoutMs, deviceName, provider));
+
+  server.registerTool("media_listen_read", {
+    title: "Read listening transcript",
+    description: "Read transcript segments from a listening session, newest windows first after the given cursor. Without a sessionId, reads the device's most recent session. Transcript text travels only in this tool result, never on the dashboard.",
+    inputSchema: {
+      sessionId: z.string().regex(/^[0-9a-f-]{36}$/i).optional().describe("Listening session id from media_stream_start."),
+      cursor: z.number().int().min(0).optional().describe("Return segments after this sequence number; defaults to 0."),
+      limit: z.number().int().min(1).max(100).optional().describe("Maximum segments; defaults to 50."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, async ({ sessionId, cursor, limit }: { sessionId?: string; cursor?: number; limit?: number }) => {
+    try {
+      let sid = sessionId || "";
+      if (sid) {
+        const { data } = await supabase.from("opera_listen_sessions").select("id, device_id").eq("id", sid).single();
+        if (!data) throw new Error("No such listening session.");
+        const { data: owned } = await supabase.from("opera_devices").select("id").eq("id", (data as { device_id: string }).device_id).eq("device_name", deviceName).single();
+        if (!owned) throw new Error("That session belongs to another device.");
+      } else {
+        const { data: device } = await supabase.from("opera_devices").select("id").eq("device_name", deviceName).single();
+        if (!device) throw new Error("This device is not paired.");
+        const { data: latest } = await supabase.from("opera_listen_sessions").select("id").eq("device_id", (device as { id: string }).id).order("started_at", { ascending: false }).limit(1).single();
+        if (!latest) throw new Error("This device has no listening session yet.");
+        sid = (latest as { id: string }).id;
+      }
+      const { data: segments } = await supabase.from("opera_listen_segments")
+        .select("seq, start_s, end_s, text").eq("session_id", sid)
+        .gt("seq", cursor ?? 0).order("seq").limit(limit ?? 50);
+      return textResult({ ok: true, sessionId: sid, segments: segments || [] });
+    } catch (error) {
+      return toolError(error);
+    }
+  });
+
   return server;
 }
 

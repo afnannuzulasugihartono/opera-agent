@@ -28,7 +28,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '31d01b532dd04bd5f9a1e2c37b29730bd565244c'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists
   ['../extension/background.js', '4656237657f7d1c90fe0d7e345f0a97e906787e2'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs
   ['../extension/manifest.json', 'ed7c273764307fdfd3f8daa66be2b7c769641e6f'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'd6f8f206fc9f45e4749c57f7463c9863a32c579d'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device
+  ['../supabase/functions/opera-agent-mcp/index.ts', '722115559b46062900efbbb5036a64cd967d5144'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

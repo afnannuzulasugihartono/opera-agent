@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 26,
-  "sourceSha256": "fc692949d3902692007f6824fa8f6f42f19d4e0527184b4b52b5ef2eaf0ac8a7",
+  "toolCount": 29,
+  "sourceSha256": "81c7651280fa43eae9d36b907837e6f025349d6509ad4673b15a0332c84fc63f",
   "tools": [
     "browser_status",
     "run_browser_burst",
@@ -29,6 +29,9 @@
     "media_state",
     "media_play",
     "media_pause",
-    "media_seek"
+    "media_seek",
+    "media_stream_start",
+    "media_stream_stop",
+    "media_listen_read"
   ]
 }
