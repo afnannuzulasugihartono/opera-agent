@@ -43,10 +43,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   statement in files, deactivates this id's older row before the insert, and fails unless the status
   is 2xx. Verified in a rolled-back transaction: without the update the one-active index refuses the
   insert, with it the insert lands.
-- CI pins `ubuntu-24.04` and the node24 action majors, because `ubuntu-latest` becomes Ubuntu 26 on
-  2026-10-19 and the browser gate depends on the image's Chrome and xvfb.
-- The browser harness reads the version from the manifest. It had pinned the pre-rotation extension
-  id, `1.6.15`, and an English save label, and failed before exercising any behaviour.
+- CI pins `ubuntu-24.04` and the node24 action majors (the `latest` label moves under the browser gate).
+- The browser harness reads the version from the manifest instead of pinning a stale id and label.
 - The account and device pages are separate files, and the provider identity is read from
   `app_metadata.providers` rather than `provider`. Both locked where the reason is.
 - `Intl.RelativeTimeFormat` takes CLDR unit identifiers, not localised names. Passing "menit" threw
