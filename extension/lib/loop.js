@@ -31,8 +31,11 @@ export const LOOP_SYNTHETIC_DEAD_TICKS = 3;
 
 export const LOOP_TICK_BANDS = Object.freeze({ green: 60, yellow: 150, orange: 250 });
 
-export const LOOP_SENSOR_KINDS = Object.freeze(['regionHash', 'pixelDiff', 'templateMatch', 'timer']);
+export const LOOP_SENSOR_KINDS = Object.freeze(['regionHash', 'pixelDiff', 'templateMatch', 'timer', 'stillness', 'track']);
 export const LOOP_ACTIONS = Object.freeze(['key', 'pointer']);
+export const LOOP_STILL_TICKS_DEFAULT = 10;
+export const LOOP_STILL_TICKS_MIN = 2;
+export const LOOP_STILL_TICKS_MAX = 600;
 export const LOOP_POINTER_ACTIONS = Object.freeze(['click', 'move']);
 
 function isPlainObject(value) {
@@ -67,12 +70,22 @@ function validateSensor(sensor) {
       ? ['id', 'kind', 'region', 'threshold']
       : sensor.kind === 'templateMatch'
         ? ['id', 'kind', 'template', 'region', 'threshold']
-        : ['id', 'kind', 'everyMs'];
+        : sensor.kind === 'stillness'
+          ? ['id', 'kind', 'region', 'threshold', 'stillTicks']
+          : sensor.kind === 'track'
+            ? ['id', 'kind', 'region', 'threshold', 'leadMs', 'pad']
+            : ['id', 'kind', 'everyMs'];
   const unexpectedKey = Object.keys(sensor).find((key) => !allowedKeys.includes(key));
   if (unexpectedKey) return `Sensor ${sensor.kind} does not allow ${unexpectedKey}.`;
   if (sensor.kind !== 'timer' && !validRegion(sensor.region)) return `Sensor ${sensor.kind} requires a valid region.`;
-  if ((sensor.kind === 'pixelDiff' || sensor.kind === 'templateMatch') && !validThreshold(sensor.threshold)) {
+  if (sensor.kind !== 'regionHash' && sensor.kind !== 'timer' && !validThreshold(sensor.threshold)) {
     return `Sensor ${sensor.kind} requires a threshold from 0 to 1.`;
+  }
+  if (sensor.kind === 'track') {
+    const leadMs = sensor.leadMs === undefined ? 500 : Number(sensor.leadMs);
+    if (!Number.isFinite(leadMs) || leadMs < 50 || leadMs > 5000) return 'Sensor track requires leadMs from 50 to 5000.';
+    const pad = sensor.pad === undefined ? 0 : Number(sensor.pad);
+    if (!Number.isFinite(pad) || pad < 0 || pad > 2000) return 'Sensor track requires pad from 0 to 2000.';
   }
   if (sensor.kind === 'templateMatch') {
     if (typeof sensor.template !== 'string' || sensor.template.length < 1 || sensor.template.length > LOOP_TEMPLATE_MAX_BYTES) {
@@ -83,6 +96,11 @@ function validateSensor(sensor) {
     const everyMs = Number(sensor.everyMs);
     if (!Number.isFinite(everyMs) || everyMs < LOOP_TIMER_MIN_MS || everyMs > LOOP_TIMER_MAX_MS) {
       return `Sensor timer requires everyMs from ${LOOP_TIMER_MIN_MS} to ${LOOP_TIMER_MAX_MS}.`;
+    }
+  }
+  if (sensor.kind === 'stillness' && sensor.stillTicks !== undefined) {
+    if (!Number.isInteger(sensor.stillTicks) || sensor.stillTicks < LOOP_STILL_TICKS_MIN || sensor.stillTicks > LOOP_STILL_TICKS_MAX) {
+      return `Sensor stillness requires stillTicks from ${LOOP_STILL_TICKS_MIN} to ${LOOP_STILL_TICKS_MAX}.`;
     }
   }
   return null;
@@ -153,7 +171,19 @@ export function validateLoopProgram(program) {
       tickMs: program.tickMs === undefined ? LOOP_TICK_MS_DEFAULT : clampTick(program.tickMs),
       maxTicks: Number.isInteger(maxTicks) && maxTicks >= 1 ? Math.min(maxTicks, LOOP_MAX_TICKS) : LOOP_MAX_TICKS,
       maxDurationMs: Number.isFinite(maxDurationMs) && maxDurationMs >= 50 ? Math.min(maxDurationMs, LOOP_MAX_DURATION_MS) : LOOP_MAX_DURATION_MS,
-      sensors: program.sensors,
+      sensors: program.sensors.map((sensor) => {
+        if (sensor.kind === 'stillness' && sensor.stillTicks === undefined) {
+          return { ...sensor, stillTicks: LOOP_STILL_TICKS_DEFAULT };
+        }
+        if (sensor.kind === 'track') {
+          return {
+            ...sensor,
+            leadMs: sensor.leadMs === undefined ? 500 : Number(sensor.leadMs),
+            pad: sensor.pad === undefined ? 0 : Number(sensor.pad)
+          };
+        }
+        return sensor;
+      }),
       rules: program.rules,
       stopWhen: program.stopWhen || [],
       trusted: program.trusted === true
@@ -192,11 +222,25 @@ export function loopOverrun(state) {
 export function recordTick(state, reading = {}) {
   const band = classifyTickBand(reading.workMs);
   const fired = Number.isFinite(Number(reading.fired)) && Number(reading.fired) > 0 ? Math.floor(Number(reading.fired)) : 0;
+
+  // Active sensor ids ride the trace so inputs (rules bound to them) can be
+  // matched against outputs (unbound sense-only sensors) after the run.
+  // Compact per-sensor values ride along for the same reason: a sensor that
+  // never fires is indistinguishable from a blind one without its numbers.
+  const active = Array.isArray(reading.active) ? reading.active.filter((id) => typeof id === 'string').slice(0, 8) : [];
+  const values = {};
+  if (reading.values && typeof reading.values === 'object') {
+    for (const [key, value] of Object.entries(reading.values).slice(0, 8)) {
+      if (typeof key === 'string' && (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean')) {
+        values[key] = typeof value === 'number' ? Math.round(value * 1000) / 1000 : String(value).slice(0, 32);
+      }
+    }
+  }
   state.tick += 1;
   state.firedTotal += fired;
   state.bands.push(band);
   if (state.bands.length > LOOP_BAND_WINDOW) state.bands.splice(0, state.bands.length - LOOP_BAND_WINDOW);
-  state.trace.push({ tick: state.tick, band, fired });
+  state.trace.push({ tick: state.tick, band, fired, sensors: active, values });
   if (state.trace.length > LOOP_TRACE_LIMIT) state.trace.splice(0, state.trace.length - LOOP_TRACE_LIMIT);
   return { band, mode: loopMode(state), overrun: loopOverrun(state) };
 }
@@ -255,8 +299,7 @@ export function pixelDiff(a, b, perPixel = 16) {
   return changed / pixels;
 }
 
-export function matchTemplate(region, regionWidth, regionHeight, template, templateWidth, templateHeight, stride = 1) {
-  if (!validRgba(region, regionWidth, regionHeight) || !validRgba(template, templateWidth, templateHeight)) return null;
+export function matchTemplate(region, regionWidth, regionHeight, template, templateWidth, templateHeight, stride = 1) {  if (!validRgba(region, regionWidth, regionHeight) || !validRgba(template, templateWidth, templateHeight)) return null;
   if (templateWidth > regionWidth || templateHeight > regionHeight) return null;
   const step = Number.isInteger(stride) && stride >= 1 ? stride : 1;
   let best = null;
@@ -275,4 +318,48 @@ export function matchTemplate(region, regionWidth, regionHeight, template, templ
     }
   }
   return best;
+}
+
+// Changed-mass centroid: where the motion is, not just whether any exists.
+// Uniform scrolling (ground dots) centres every frame, so its velocity reads
+// ~0 and stays quiet; an entering obstacle shifts the centroid hard.
+
+export function centroidOfChanged(a, b, width, height, perPixel = 16) {
+  if (!a || !b || a.length !== b.length || a.length !== width * height * 4 || a.length === 0) return null;
+  const threshold = Number(perPixel);
+  if (!Number.isFinite(threshold) || threshold < 0) return null;
+  let sumX = 0;
+  let changed = 0;
+  const pixels = a.length / 4;
+  for (let p = 0; p < pixels; p += 1) {
+    const i = p * 4;
+    const drift = Math.max(
+      Math.abs(a[i] - b[i]),
+      Math.abs(a[i + 1] - b[i + 1]),
+      Math.abs(a[i + 2] - b[i + 2])
+    );
+    if (drift > threshold) {
+      sumX += p % width;
+      changed += 1;
+    }
+  }
+  if (changed === 0) return null;
+  return { x: sumX / changed, fraction: changed / pixels };
+}
+
+// Time-to-impact from two centroid sightings. Positions run in crop pixels
+// with x growing rightward, so an approaching obstacle has a falling x.
+// Returns impact milliseconds, or null when there is nothing to time.
+
+export function centroidTrack(prevX, currX, dtMs, padPx, leadMs) {
+  if (prevX == null || currX == null) return null;
+  const dt = Number(dtMs);
+  const pad = Number(padPx);
+  const lead = Number(leadMs);
+  if (!Number.isFinite(dt) || dt <= 0 || !Number.isFinite(pad) || !Number.isFinite(lead)) return null;
+  const velocity = (Number(prevX) - Number(currX)) / dt;
+  if (!(velocity > 0)) return null;
+  const tti = (Number(currX) - pad) / velocity;
+  if (tti <= 0) return 0;
+  return tti <= lead ? tti : null;
 }

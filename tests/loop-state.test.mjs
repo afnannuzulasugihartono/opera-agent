@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LOOP_TRACE_LIMIT, LOOP_BAND_WINDOW, LOOP_OVERRUN_REDS, startLoopState, recordTick, loopMode, loopOverrun } from '../extension/lib/loop.js';
+import { LOOP_TRACE_LIMIT, LOOP_BAND_WINDOW, LOOP_OVERRUN_REDS, startLoopState, recordTick, loopMode, loopOverrun, centroidTrack } from '../extension/lib/loop.js';
 
 test('loop state starts empty', () => {
   const state = startLoopState();
@@ -30,6 +30,41 @@ test('trace ring caps at the limit', () => {
   for (let i = 0; i < LOOP_TRACE_LIMIT + 50; i += 1) recordTick(state, { workMs: 10, fired: 0 });
   assert.equal(state.trace.length, LOOP_TRACE_LIMIT);
   assert.equal(state.tick, LOOP_TRACE_LIMIT + 50);
+});
+
+test('trace records active sensors for input-output matching', () => {
+  const state = startLoopState();
+  const result = recordTick(state, { workMs: 30, fired: 1, active: ['obstacle', 'calm'] });
+  assert.equal(result.band, 'green');
+  assert.deepEqual(state.trace[0].sensors, ['obstacle', 'calm']);
+  recordTick(state, { workMs: 30, fired: 0 });
+  assert.deepEqual(state.trace[1].sensors, []);
+});
+
+test('trace carries compact sensor values', () => {
+  const state = startLoopState();
+  recordTick(state, { workMs: 30, fired: 0, active: [], values: { obstacle: 0.04, calm: 7 } });
+  assert.deepEqual(state.trace[0].values, { obstacle: 0.04, calm: 7 });
+  recordTick(state, { workMs: 30, fired: 0, values: { obstacle: null, calm: { deep: true } } });
+  assert.deepEqual(state.trace[1].values, {});
+});
+
+test('centroid tracker fires on time-to-impact, not on presence', () => {
+
+  // No history, no motion, or receding motion never fires.
+  assert.equal(centroidTrack(null, 300, 200, 90, 500), null);
+  assert.equal(centroidTrack(300, null, 200, 90, 500), null);
+  assert.equal(centroidTrack(300, 300, 200, 90, 500), null);
+  assert.equal(centroidTrack(280, 300, 200, 90, 500), null);
+  assert.equal(centroidTrack(300, 250, 0, 90, 500), null);
+
+  // Approaching at 100px per 200ms (500px/s): 110px past the pad takes
+  // 220ms, inside a 500ms lead, so it fires with the impact estimate.
+  assert.equal(centroidTrack(300, 200, 200, 90, 500), 220);
+  assert.equal(centroidTrack(300, 290, 200, 90, 500), null);
+
+  // Already past the pad fires immediately: late is better than never.
+  assert.equal(centroidTrack(300, 50, 200, 90, 500), 0);
 });
 
 test('mode degrades on yellow and sheds on orange', () => {

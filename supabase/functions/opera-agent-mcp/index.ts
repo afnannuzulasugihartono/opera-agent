@@ -161,11 +161,14 @@ const burstStepSchema = z.discriminatedUnion("action", [
 
 const loopSensorSchema = z.object({
   id: z.string().min(1).max(80),
-  kind: z.enum(["regionHash", "pixelDiff", "templateMatch", "timer"]),
+  kind: z.enum(["regionHash", "pixelDiff", "templateMatch", "timer", "stillness", "track"]),
   region: z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() }).optional(),
   threshold: z.number().min(0).max(1).optional(),
   template: z.string().min(1).max(32768).optional(),
-  everyMs: z.number().int().min(50).max(60000).optional()
+  everyMs: z.number().int().min(50).max(60000).optional(),
+  stillTicks: z.number().int().min(2).max(600).optional(),
+  leadMs: z.number().int().min(50).max(5000).optional(),
+  pad: z.number().min(0).max(2000).optional()
 });
 const loopProgramSchema = z.object({
   tickMs: z.number().int().min(1).max(360000).optional(),

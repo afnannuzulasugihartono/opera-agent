@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LOOP_TICK_MS_MIN, LOOP_TICK_MS_MAX, LOOP_TICK_MS_DEFAULT, LOOP_MAX_TICKS, LOOP_MAX_DURATION_MS, LOOP_MAX_RULES, LOOP_MAX_SENSORS, LOOP_TEMPLATE_MAX_BYTES, LOOP_TIMER_MIN_MS, LOOP_TIMER_MAX_MS, LOOP_TICK_BANDS, LOOP_SENSOR_KINDS, LOOP_ACTIONS, LOOP_POINTER_ACTIONS, LOOP_SYNTHETIC_DEAD_TICKS, validateLoopProgram, classifyTickBand } from '../extension/lib/loop.js';
+import { LOOP_TICK_MS_MIN, LOOP_TICK_MS_MAX, LOOP_TICK_MS_DEFAULT, LOOP_MAX_TICKS, LOOP_MAX_DURATION_MS, LOOP_MAX_RULES, LOOP_MAX_SENSORS, LOOP_TEMPLATE_MAX_BYTES, LOOP_TIMER_MIN_MS, LOOP_TIMER_MAX_MS, LOOP_TICK_BANDS, LOOP_SENSOR_KINDS, LOOP_ACTIONS, LOOP_POINTER_ACTIONS, LOOP_SYNTHETIC_DEAD_TICKS, LOOP_STILL_TICKS_DEFAULT, LOOP_STILL_TICKS_MIN, LOOP_STILL_TICKS_MAX, validateLoopProgram, classifyTickBand } from '../extension/lib/loop.js';
 
 function minimalProgram(overrides = {}) {
   return {
@@ -27,7 +27,7 @@ test('loop constants match the locked plan budgets', () => {
   assert.equal(LOOP_TIMER_MIN_MS, 50);
   assert.equal(LOOP_TIMER_MAX_MS, 60000);
   assert.deepEqual(LOOP_TICK_BANDS, { green: 60, yellow: 150, orange: 250 });
-  assert.deepEqual([...LOOP_SENSOR_KINDS].sort(), ['pixelDiff', 'regionHash', 'templateMatch', 'timer']);
+  assert.deepEqual([...LOOP_SENSOR_KINDS].sort(), ['pixelDiff', 'regionHash', 'stillness', 'templateMatch', 'timer', 'track']);
   assert.deepEqual([...LOOP_ACTIONS].sort(), ['key', 'pointer']);
   assert.deepEqual([...LOOP_POINTER_ACTIONS].sort(), ['click', 'move']);
 });
@@ -104,4 +104,23 @@ test('trusted flag defaults off and stays boolean', () => {
   assert.equal(validateLoopProgram(minimalProgram()).program.trusted, false);
   assert.equal(validateLoopProgram(minimalProgram({ trusted: true })).program.trusted, true);
   assert.equal(validateLoopProgram(minimalProgram({ trusted: 'yes' })).ok, false);
+});
+
+test('stillness sensor needs a bounded quiet streak', () => {
+  assert.equal(LOOP_STILL_TICKS_MIN, 2);
+  assert.equal(LOOP_STILL_TICKS_MAX, 600);
+  assert.equal(LOOP_STILL_TICKS_DEFAULT, 10);
+  const still = (overrides = {}) => ({
+    sensors: [{ id: 'calm', kind: 'stillness', region: { x: 0, y: 0, width: 64, height: 64 }, threshold: 0.05, stillTicks: 10, ...overrides }],
+    rules: [{ when: { sensor: 'calm' }, do: { action: 'key', key: 'ArrowDown' } }]
+  });
+  assert.equal(validateLoopProgram(still()).ok, true);
+  assert.equal(validateLoopProgram(still({ stillTicks: 1 })).ok, false);
+  assert.equal(validateLoopProgram(still({ stillTicks: 601 })).ok, false);
+  const defaulted = validateLoopProgram({
+    sensors: [{ id: 'calm', kind: 'stillness', region: { x: 0, y: 0, width: 64, height: 64 }, threshold: 0.05 }],
+    rules: [{ when: { sensor: 'calm' }, do: { action: 'key', key: 'ArrowDown' } }]
+  });
+  assert.equal(defaulted.ok, true);
+  assert.equal(defaulted.program.sensors[0].stillTicks, 10);
 });

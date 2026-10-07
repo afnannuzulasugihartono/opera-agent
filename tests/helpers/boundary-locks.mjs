@@ -26,9 +26,9 @@
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'a0f86b3acbf19634f4b4650c320905293bc86d47'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists
-  ['../extension/background.js', '9ae26c54681d8ec6b1967350b7207264678b5ae7'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture and suspend floor
+  ['../extension/background.js', '47b82993a5c8a08dbc6b4093f7b4a69b15c3feb9'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture, suspend floor, stillness and track sensors; per-tick sensor activity and values in the trace; native-resolution sense frames
   ['../extension/manifest.json', 'd75bb85c46ea88493db6f1e7084283171123040a'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable; version line 1.6.18 → 1.6.19 for sense-act loops
-  ['../supabase/functions/opera-agent-mcp/index.ts', '79961c2a0c8cedd80cd9105685d1d22a17afc709'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device; re-pinned for loop_start/loop_read/loop_stop (sense-act loops)
+  ['../supabase/functions/opera-agent-mcp/index.ts', '6aa1a541f80f513358000f0b2211ed4fc0b3a9f4'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device; re-pinned for loop_start/loop_read/loop_stop (sense-act loops); loop sensors stillness, track
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

@@ -19,6 +19,8 @@ import {
 import { evaluateRules, validateRule } from './lib/watch.js';
 import {
   LOOP_SYNTHETIC_DEAD_TICKS,
+  centroidOfChanged,
+  centroidTrack,
   downscaleHash,
   matchTemplate,
   pixelDiff,
@@ -1219,7 +1221,6 @@ async function runBurst(params, outerContext = {}) {
 // happens inside a tick; the bands in the trace say how fast ticks ran.
 
 const LOOP_MAX_ACTIVE = 4;
-const LOOP_SNAPSHOT_WIDTH = 320;
 const LOOP_POLICY_RECHECK_TICKS = 20;
 
 // A tick slower than five cadences is ordinary slowness (a heavy capture),
@@ -1242,6 +1243,7 @@ function loopSummary(session, running, stopReason = null) {
     mode: session.mode,
     trusted: session.trusted,
     ...(session.trustedAtTick != null ? { trustedAtTick: session.trustedAtTick } : {}),
+    ...(session.lastError ? { lastError: session.lastError } : {}),
     trace: session.state.trace
   };
 }
@@ -1297,9 +1299,14 @@ async function loopSnapshot(tabId, clip) {
   for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
   const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
   const fullWidth = clip ? clip.width : bitmap.width;
-  const scale = Math.min(1, LOOP_SNAPSHOT_WIDTH / bitmap.width);
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
+
+  // No downscale: this frame never leaves the device, so the transfer-size
+  // budget that forces downscaling elsewhere does not apply. Downscaling to
+  // a 320-wide snapshot averaged sub-pixel motion into invisibility (a
+  // scrolling ground and running legs read exactly 0.000), which is what a
+  // cheap sensor must still see. getImageData on a region union costs ~15ms.
+  const width = bitmap.width;
+  const height = bitmap.height;
   const canvas = new OffscreenCanvas(width, height);
   const context = canvas.getContext('2d', { willReadFrequently: true });
   context.drawImage(bitmap, 0, 0, width, height);
@@ -1404,6 +1411,7 @@ async function loopSense(session, now) {
     session.scale = snapshot.width / snapshot.cssWidth;
   }
   const active = new Map();
+  const values = {};
   for (const sensor of program.sensors) {
     if (sensor.kind === 'timer') {
       const last = session.timers.get(sensor.id) || 0;
@@ -1418,6 +1426,7 @@ async function loopSense(session, now) {
       const hash = downscaleHash(crop.data, crop.width, crop.height);
       const before = session.frames.get(sensor.id);
       session.frames.set(sensor.id, hash);
+      values[sensor.id] = hash ? hash.slice(0, 8) : null;
       if (before != null && before !== hash) active.set(sensor.id, { fired: true });
       continue;
     }
@@ -1426,16 +1435,48 @@ async function loopSense(session, now) {
       session.frames.set(sensor.id, crop);
       if (before && before.width === crop.width && before.height === crop.height) {
         const drift = pixelDiff(before.data, crop.data, 16);
+        values[sensor.id] = drift;
         if (drift != null && drift > sensor.threshold) active.set(sensor.id, { fired: true, drift });
       }
+      continue;
+    }
+    if (sensor.kind === 'track') {
+      const before = session.frames.get(sensor.id);
+      session.frames.set(sensor.id, crop);
+      if (before && before.width === crop.width && before.height === crop.height) {
+        const seen = centroidOfChanged(before.data, crop.data, crop.width, crop.height, 16);
+        const prev = session.track.get(sensor.id) || null;
+        if (seen && seen.fraction >= sensor.threshold) {
+          const tti = prev ? centroidTrack(prev.x, seen.x, now - prev.t, sensor.pad, sensor.leadMs) : null;
+          session.track.set(sensor.id, { x: seen.x, t: now });
+          values[sensor.id] = tti;
+          if (tti != null) active.set(sensor.id, { fired: true, tti });
+        } else {
+          session.track.set(sensor.id, null);
+        }
+      }
+      continue;
+    }
+    if (sensor.kind === 'stillness') {
+      const before = session.frames.get(sensor.id);
+      session.frames.set(sensor.id, crop);
+      let quiet = 0;
+      if (before && before.width === crop.width && before.height === crop.height) {
+        const drift = pixelDiff(before.data, crop.data, 16);
+        quiet = (drift != null && drift <= sensor.threshold) ? (session.quiet.get(sensor.id) || 0) + 1 : 0;
+      }
+      session.quiet.set(sensor.id, quiet);
+      values[sensor.id] = quiet;
+      if (quiet >= sensor.stillTicks) active.set(sensor.id, { fired: true, quiet });
       continue;
     }
     const template = session.templates.get(sensor.id);
     if (!template) continue;
     const match = matchTemplate(crop.data, crop.width, crop.height, template.data, template.width, template.height, 2);
+    if (match) values[sensor.id] = match.score;
     if (match && match.score >= sensor.threshold) active.set(sensor.id, { fired: true, score: match.score, x: match.x, y: match.y });
   }
-  return { active, frameHash: snapshot ? downscaleHash(snapshot.data, snapshot.width, snapshot.height) : null };
+  return { active, values, frameHash: snapshot ? downscaleHash(snapshot.data, snapshot.width, snapshot.height) : null };
 }
 
 function loopTickLater(session) {
@@ -1472,7 +1513,7 @@ async function loopTick(loopId) {
         return;
       }
     }
-    const { active, frameHash } = await loopSense(session, now);
+    const { active, values, frameHash } = await loopSense(session, now);
     let fired = 0;
     for (const rule of session.program.rules) {
       if (!active.has(rule.when.sensor)) continue;
@@ -1493,7 +1534,7 @@ async function loopTick(loopId) {
       }
     }
     const workMs = performance.now() - workStarted;
-    const result = recordTick(session.state, { workMs, fired });
+    const result = recordTick(session.state, { workMs, fired, active: [...active.keys()], values });
     session.mode = result.mode;
     if (result.overrun) {
       finishLoop(loopId, 'tick-overrun');
@@ -1514,6 +1555,7 @@ async function loopTick(loopId) {
     loopTickLater(session);
   } catch (error) {
     log.warn('LOOP_TICK_FAILED', error?.message || String(error));
+    session.lastError = String(error?.message || error).slice(0, 300);
     session.tickErrors += 1;
     if (session.tickErrors >= 3) {
       finishLoop(loopId, 'tick-error');
@@ -1575,6 +1617,8 @@ async function dispatch(method, params = {}, context = {}) {
         state: startLoopState(),
         timers: new Map(),
         frames: new Map(),
+        quiet: new Map(),
+        track: new Map(),
         debuggerSession,
         scale: 1,
         trusted: program.trusted,
