@@ -163,14 +163,27 @@ export function validateLoopProgram(program) {
       if (!isPlainObject(entry) || !ids.has(entry.sensor)) return { ok: false, error: 'Loop stopWhen must reference declared sensors.' };
     }
   }
-  const maxTicks = Number(program.maxTicks);
-  const maxDurationMs = Number(program.maxDurationMs);
+  // Budgets fail closed: an explicit out-of-range maxTicks or maxDurationMs is
+  // rejected, never silently clamped to the max. Only an absent budget (or
+  // null, which JSON callers use for absent) falls back to the max allowance.
+  if (program.maxTicks !== undefined && program.maxTicks !== null) {
+    const maxTicks = Number(program.maxTicks);
+    if (!Number.isInteger(maxTicks) || maxTicks < 1 || maxTicks > LOOP_MAX_TICKS) {
+      return { ok: false, error: `Loop maxTicks must be an integer from 1 to ${LOOP_MAX_TICKS}.` };
+    }
+  }
+  if (program.maxDurationMs !== undefined && program.maxDurationMs !== null) {
+    const maxDurationMs = Number(program.maxDurationMs);
+    if (!Number.isFinite(maxDurationMs) || maxDurationMs < 50 || maxDurationMs > LOOP_MAX_DURATION_MS) {
+      return { ok: false, error: `Loop maxDurationMs must be from 50 to ${LOOP_MAX_DURATION_MS}.` };
+    }
+  }
   return {
     ok: true,
     program: {
       tickMs: program.tickMs === undefined ? LOOP_TICK_MS_DEFAULT : clampTick(program.tickMs),
-      maxTicks: Number.isInteger(maxTicks) && maxTicks >= 1 ? Math.min(maxTicks, LOOP_MAX_TICKS) : LOOP_MAX_TICKS,
-      maxDurationMs: Number.isFinite(maxDurationMs) && maxDurationMs >= 50 ? Math.min(maxDurationMs, LOOP_MAX_DURATION_MS) : LOOP_MAX_DURATION_MS,
+      maxTicks: program.maxTicks === undefined || program.maxTicks === null ? LOOP_MAX_TICKS : Number(program.maxTicks),
+      maxDurationMs: program.maxDurationMs === undefined || program.maxDurationMs === null ? LOOP_MAX_DURATION_MS : Number(program.maxDurationMs),
       sensors: program.sensors.map((sensor) => {
         if (sensor.kind === 'stillness' && sensor.stillTicks === undefined) {
           return { ...sensor, stillTicks: LOOP_STILL_TICKS_DEFAULT };

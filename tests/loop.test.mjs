@@ -40,6 +40,24 @@ test('valid program normalizes defaults', () => {
   assert.equal(result.program.maxDurationMs, 120000);
 });
 
+test('out-of-range budgets are rejected, never silently clamped to the max', () => {
+  for (const maxTicks of [0, -5, 3601, 100000, 2.5, 'many']) {
+    const check = validateLoopProgram(minimalProgram({ maxTicks }));
+    assert.equal(check.ok, false, `maxTicks ${JSON.stringify(maxTicks)} must be rejected`);
+    assert.match(check.error, /maxTicks/);
+  }
+  for (const maxDurationMs of [0, 49, 120001, 1000000, 'long']) {
+    const check = validateLoopProgram(minimalProgram({ maxDurationMs }));
+    assert.equal(check.ok, false, `maxDurationMs ${JSON.stringify(maxDurationMs)} must be rejected`);
+    assert.match(check.error, /maxDurationMs/);
+  }
+  assert.equal(validateLoopProgram(minimalProgram({ maxTicks: 1 })).program.maxTicks, 1);
+  assert.equal(validateLoopProgram(minimalProgram({ maxTicks: 3600 })).program.maxTicks, 3600);
+  assert.equal(validateLoopProgram(minimalProgram({ maxDurationMs: 50 })).program.maxDurationMs, 50);
+  assert.equal(validateLoopProgram(minimalProgram({ maxDurationMs: 120000 })).program.maxDurationMs, 120000);
+  assert.equal(validateLoopProgram(minimalProgram({ maxTicks: null })).program.maxTicks, 3600, 'null stays absent');
+});
+
 test('tickMs is clamped, not rejected', () => {
   assert.equal(validateLoopProgram(minimalProgram({ tickMs: 10 })).program.tickMs, 50);
   assert.equal(validateLoopProgram(minimalProgram({ tickMs: 5000 })).program.tickMs, 500);
