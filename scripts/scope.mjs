@@ -54,8 +54,15 @@ function score(text, words) {
   let total = 0;
   for (const word of words) {
     if (word.includes('.')) {
-      const base = word.split('.')[0];
-      if (base.length > 2 && haystack.includes(word)) total += 3;
+      if (haystack.includes(word)) total += 3;
+      for (const part of word.split('.')) {
+        if (part.length <= 2) continue;
+        let at = haystack.indexOf(part);
+        while (at !== -1) {
+          total += 1;
+          at = haystack.indexOf(part, at + part.length);
+        }
+      }
       continue;
     }
     let at = haystack.indexOf(word);
@@ -69,8 +76,18 @@ function score(text, words) {
 
 function run(argv) {
   const json = argv.includes('--json');
+  const limitIndex = argv.indexOf('--limit');
   const limit = Number(readFlag(argv, '--limit', 12));
-  const task = argv.filter((a) => !a.startsWith('--') && a !== readFlag(argv, '--limit', '')).join(' ');
+  if (!Number.isSafeInteger(limit) || limit < 0) {
+    process.stderr.write('scope: --limit must be a non-negative safe integer.\n');
+    process.exit(1);
+  }
+
+  // Only the token right after --limit is the limit value. Comparing by value
+  // instead ate a task term that happened to equal it.
+  const task = argv
+    .filter((item, index) => !item.startsWith('--') && !(limitIndex >= 0 && index === limitIndex + 1))
+    .join(' ');
   const words = terms(task);
 
   const all = runtimeFiles();
