@@ -43,12 +43,20 @@
 // deadlineMs normalizes to the 60s default at arm, missing deadline prunes
 // as expired, no-entries facts reply carries empty state, boolean loop
 // budgets are rejected in lib/loop.js).
+//
+// Re-pinned 2026-10-08 for the Wave E isolation batch. No tool, schema,
+// primitive, permission or entry point moved: resolveDeviceName no longer
+// echoes an unowned X-Opera-Device header (or the fixed DEVICE_NAME) when the
+// owner query misses — a caller with no owned device gets 401 — and
+// wait_events filters to the caller-owned device. The only digest changes are
+// wait_events (the filter) and media_listen_read (its block runs to EOF, so it
+// observes the serve-level 401).
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '22be5ef8f1798df1327b4ed226748fd5496614c4'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists; forwards MAIN-world state-bridge events to the background, swallowing the worker-sleep rejection via ?.catch
   ['../extension/background.js', 'c3f2c59a18529c77296808a571f5bf90f5bf4a31'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture, suspend floor, stillness and track sensors; per-tick sensor activity, values, and phase timings in the trace; native-resolution sense frames; front-edge tracking immune to ground texture; Wave B hardening only — burst fill value regardless of refFromStep, empty tabId refused, SCREENSHOT_TOO_SMALL split out, finishLoop awaits the debugger release, ensureContent re-injects the full manifest script list, external model-key clear refused; Wave C hardening only — facts reply carries engine state, arm-time deadlineMs default, boolean tabId refused, dead set-bridge-url popup action deleted; Wave C review minors — null deadlineMs normalizes at arm, missing deadline prunes as expired, no-entries reply carries empty state
   ['../extension/manifest.json', '054c2733cc69b0d0e317636554096a948fab5286'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable; version line 1.6.18 → 1.6.19 for sense-act loops; 1.6.19 → 1.6.20 for state loops
-  ['../supabase/functions/opera-agent-mcp/index.ts', '7281599b47c3620136199da5d67dbfba77a6e6cc'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device; re-pinned for loop_start/loop_read/loop_stop (sense-act loops); loop sensors stillness, track; state tools loop_state_start/read/stop; run_adhoc (one-off writes as ephemeral workflows)
+  ['../supabase/functions/opera-agent-mcp/index.ts', '7953a9244cf68856d95d3f535c0c8c45484b07fc'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device; re-pinned for loop_start/loop_read/loop_stop (sense-act loops); loop sensors stillness, track; state tools loop_state_start/read/stop; run_adhoc (one-off writes as ephemeral workflows); Wave E isolation — unowned device names refused with 401, wait_events filtered to the owned device
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

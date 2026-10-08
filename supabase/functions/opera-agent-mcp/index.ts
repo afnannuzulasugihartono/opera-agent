@@ -190,7 +190,7 @@ type TargetTab = { tabId: number };
 type ExecutionMode = "background" | "foreground";
 type VmCaller = { userId: string; token: string };
 
-async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<string> {
+async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<string | null> {
   if (auth.type === "static") return DEVICE_NAME;
   const deviceFromHeader = req?.headers.get("x-opera-device")?.trim() || "";
   let query = supabase.from("opera_devices").select("device_name").eq("user_id", auth.userId).neq("status", "disabled");
@@ -200,8 +200,11 @@ async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<stri
   query = query.limit(1);
   const { data } = await query.single();
   if (data?.device_name) return data.device_name;
-  if (deviceFromHeader) return deviceFromHeader;
-  return DEVICE_NAME;
+  // WHY null instead of echoing the header or falling back to DEVICE_NAME:
+  // device_name is globally unique and opera_enqueue resolves by name alone,
+  // so returning an unowned name would let one allowlisted account drive
+  // another account's browser. The gateway answers the same state with 401.
+  return null;
 }
 
 // WHY a header first, User-Agent second: harnesses that can send headers
@@ -816,12 +819,22 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
       count: z.number().int()
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false }
-  }, ({ watcherId, cursor, waitMs, timeoutMs }: { watcherId?: string; cursor?: number; waitMs?: number; timeoutMs?: number }) =>
-    rpc("opera_watch_events_wait", {
+  }, ({ watcherId, cursor, waitMs, timeoutMs }: { watcherId?: string; cursor?: number; waitMs?: number; timeoutMs?: number }) => {
+    return rpc("opera_watch_events_wait", {
       p_watcher: watcherId ?? null,
       p_after_seq: cursor ?? 0,
       p_timeout_ms: Math.max(500, Math.min(30000, timeoutMs ?? waitMs ?? 25000))
-    }).then(textResult).catch(toolError));
+    }).then((waited) => {
+      // WHY filter here instead of in SQL: the RPC is granted to service_role
+      // and takes no tenant parameter (applied migrations are never rewritten),
+      // while device_name is globally unique and deviceName is always a device
+      // the caller owns — so only this device's events leave the server.
+      const rows = waited && typeof waited === "object" && Array.isArray((waited as { events?: unknown }).events)
+        ? (waited as { events: Array<{ device_name?: unknown }> }).events.filter((event) => event && event.device_name === deviceName)
+        : [];
+      return textResult({ ...waited as object, ok: true, events: rows, count: rows.length });
+    }).catch(toolError);
+  });
 
   server.registerTool("stop_watch", {
     title: "Stop live watch",
@@ -1270,6 +1283,7 @@ Deno.serve(async (req: Request) => {
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
   const deviceName = await resolveDeviceName(authContext, req);
+  if (!deviceName) return unauthorized(req);
   const provider = await resolveProvider(req, authContext);
   const caller: VmCaller | null = authContext.type === "user"
     ? { userId: authContext.userId, token: bearerToken(req) }

@@ -88,7 +88,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   run_program: '34db36eb9242c5ed',
   run_adhoc: 'e1f5a7e6a15991f6',
   start_watch: '395e579634b5f784',
-  wait_events: '711f765e7122133f',
+  wait_events: '781ef3bc51ad82c7',
   stop_watch: '5192744559385f99',
   list_tabs: 'eb4fdda0376c5588',
   open_url: '268a9ac307859cc3',
@@ -112,7 +112,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_seek: '6f1a6205a1d59b1c',
   media_stream_start: 'd86a2ca61654b20d',
   media_stream_stop: 'c858c13598bce472',
-  media_listen_read: 'f70ad7617d46305f',
+  media_listen_read: 'cbd7c953bb62bbf3',
   loop_start: '32b755562b12fd32',
   loop_read: 'b28ca249fe932cb9',
   loop_stop: 'dec3840108c7bba2',
@@ -135,6 +135,11 @@ const PRE_R9B_PRESS_KEY_DIGEST = '41a4003cadb60196';
 // schema rather than in a tool of its own.
 
 const R9E_CHANGED_TOOL = 'run_browser_burst';
+
+// Wave E re-pinned wait_events (its handler now filters to the caller-owned
+// device) and media_listen_read (its block runs to EOF, so it also observes
+// the serve-level 401 for callers with no owned device). Both moves are the
+// tenant-isolation fix, recorded here the way R9B/R9E record theirs.
 
 function instructions() {
   const line = source.split('\n').find((l) => l.includes('instructions:'));
@@ -261,6 +266,27 @@ test('an empty allowlist admits nobody, because every caller drives the same dev
   assert.match(authenticate, /if \(ALLOWED_USER_IDS\.size === 0 && ALLOWED_USER_EMAILS\.size === 0\) return null;/);
   assert.doesNotMatch(authenticate, /unrestricted/);
   assert.match(authenticate, /!ALLOWED_USER_IDS\.has\(data\.user\.id\) && !ALLOWED_USER_EMAILS\.has\(email\)\) return null/);
+});
+
+test('resolveDeviceName never hands out a device the caller does not own', () => {
+  // WHY this pin: device_name is globally unique and opera_enqueue resolves by
+  // name alone, so echoing the X-Opera-Device header (or falling back to the
+  // fixed DEVICE_NAME) when the owner query missed let one allowlisted account
+  // drive another account's browser. A caller with no owned device gets 401,
+  // the same answer the gateway gives the same state.
+  const fn = source.match(/async function resolveDeviceName\([\s\S]*?\n}\n/)[0];
+  assert.doesNotMatch(fn, /return deviceFromHeader/);
+  assert.match(fn, /return null/);
+  assert.match(source, /if \(!deviceName\) return unauthorized\(req\);/);
+});
+
+test('wait_events exposes only the caller-owned device events', () => {
+  // WHY this pin: opera_watch_events_wait is granted to service_role and takes
+  // no tenant parameter, so without a scope the tool returned every tenant's
+  // device-local events. device_name is globally unique and deviceName is
+  // always caller-owned by the pin above, so the edge layer filters to it.
+  const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
+  assert.match(handler, /event\.device_name === deviceName/);
 });
 
 test('each command is stamped with its harness provider, never used for access', () => {
