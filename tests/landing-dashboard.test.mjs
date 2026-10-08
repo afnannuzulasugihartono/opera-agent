@@ -500,3 +500,29 @@ test('the console uses the screen, the prose keeps its measure', () => {
   assert.ok(gridAt > -1 && queryAt > gridAt && collapseAt > queryAt, 'and one column on a phone');
   assert.match(html, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'the verbs keep their shared row');
 });
+
+test('the history section lists every command newest first', () => {
+  const html = read('dashboard.html');
+
+  // WHY this lock: the operator asks "what ran last" across all devices, and ten
+  // per-device lists under device cards cannot answer it. One dense table does.
+
+  for (const head of ['Waktu', 'Status', 'Metode', 'Device', 'Durasi']) {
+    assert.ok(html.includes(`<th>${head}</th>`), `the history table heads ${head}`);
+  }
+  assert.match(html, /<h2>Riwayat<\/h2>/, 'the section names itself');
+  assert.match(html, /href="#riwayat"/, 'and the rail links to it');
+  assert.match(html, /id="historyRows"/, 'the rows have a body of their own');
+  assert.match(html, /renderHistory\(data\.devices\)/, 'and the refresh feeds it the loaded devices');
+  assert.match(html, /\.sort\(/, 'newest first, not device order');
+  assert.match(html, /relativeTime\(row\.createdAt\)/, 'time reads as relative Indonesian');
+  assert.match(html, /formatDuration\(row\.createdAt, row\.completedAt\)/, 'duration spans completed minus created');
+  assert.match(html, /class="dot/, 'status pairs a dot with the word');
+  assert.match(html, /Belum ada riwayat perintah/, 'emptiness reads as one Indonesian line');
+});
+
+test('the history table carries metadata only, like the device cards', () => {
+  const html = read('dashboard.html');
+  assert.doesNotMatch(html, /command\s*\.\s*(params|value|content|text|result)\b/, 'no payload field is read from a command');
+  assert.doesNotMatch(html, /row\s*\.\s*(params|value|content|text|result)\b/, 'neither under its flattened name');
+});

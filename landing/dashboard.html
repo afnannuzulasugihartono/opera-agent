@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-06 16:35 UTC+7. -->
+<!-- @last-edited: 2026-10-08 UTC+7. -->
 <!-- @title: dashboard — the control panel: devices, the account, pairing, and one command. -->
-<!-- @state: reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
+<!-- @state: console shell with a command-history table; reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: none. -->
 
 <!doctype html>
@@ -349,6 +349,61 @@
     footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
+
+    /* WHY the shell overrides by later order: every rule above is pinned, so the
+       console look — icon rail, top tabs, one visible section, dense history —
+       lives here, never by editing a rule a test names. */
+
+    .layout { grid-template-columns: 208px minmax(0, 1fr); }
+    .content { min-width: 0; }
+    .content.tabbed > section:not(.active) { display: none; }
+    .content.tabbed > section.active { display: block; }
+    .content.tabbed .duo > section:not(.active) { display: none; }
+    .content.tabbed .duo > section.active { display: block; }
+    .tabbed .duo { display: grid; grid-template-columns: 1fr; }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+      margin: 0 0 18px;
+      padding-bottom: 2px;
+      scrollbar-width: thin;
+    }
+    .tabs a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      padding: 8px 12px;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+    .tabs a:hover { color: var(--text); }
+    .tabs a[aria-current="true"] { color: var(--text); border-bottom-color: var(--accent); }
+    .rail a::before { display: inline-block; width: 20px; margin-right: 8px; text-align: center; opacity: .8; }
+    .rail a[href="#ringkasan"]::before { content: "◉"; }
+    .rail a[href="#device"]::before { content: "▣"; }
+    .rail a[href="#riwayat"]::before { content: "≣"; }
+    .rail a[href="#dengar"]::before { content: "◍"; }
+    .rail a[href="#pairing"]::before { content: "⧉"; }
+    .rail a[href="#aksi"]::before { content: "▶"; }
+    .rail a[href="#akun"]::before { content: "●"; }
+    .tableCard { padding: 8px; overflow-x: auto; }
+    table.history { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .history th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line-strong);
+      white-space: nowrap;
+    }
+    .history td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .history tr:last-child td { border-bottom: 0; }
+    .history td .dot { display: inline-block; vertical-align: 1px; margin-right: 6px; }
+    .history td .online { color: var(--accent); }
+    .history td .offline { color: var(--warn); }
   </style>
 </head>
 <body>
@@ -374,19 +429,29 @@
 
     <div class="layout">
 
-      <!-- WHY the rail is nav and not a list of links in the footer: this page has five jobs and the reader arrives knowing only which one they want. A rail puts the other four in view without making them read the page to find out they exist. -->
+      <!-- WHY the rail is nav and not a list of links in the footer: this page has seven jobs and the reader arrives knowing only which one they want. A rail puts the other six in view without making them read the page to find out they exist. -->
 
       <nav class="rail" aria-label="Bagian dashboard">
-        <a href="#ringkasan" aria-current="true">Ringkasan</a>
+        <a href="#ringkasan">Ringkasan</a>
         <a href="#device">Device</a>
-        <a href="#dengar">Sesi dengar</a>
-        <a href="#pairing">Pairing manual</a>
-        <a href="#aksi">Jalankan aksi</a>
-        <a href="#akun">Akun ini</a>
+        <a href="#riwayat" aria-current="true">Riwayat</a>
+        <a href="#dengar">Dengar</a>
+        <a href="#pairing">Pairing</a>
+        <a href="#aksi">Aksi</a>
+        <a href="#akun">Akun</a>
         <p class="railNote">Isi halaman tidak pernah keluar dari relay. Yang tampil di sini hanya method dan status.</p>
       </nav>
 
-      <div>
+      <div class="content tabbed">
+        <nav class="tabs" aria-label="Tab dashboard">
+          <a href="#ringkasan">Ringkasan</a>
+          <a href="#device">Device</a>
+          <a href="#riwayat" aria-current="true">Riwayat</a>
+          <a href="#dengar">Dengar</a>
+          <a href="#pairing">Pairing</a>
+          <a href="#aksi">Aksi</a>
+          <a href="#akun">Akun</a>
+        </nav>
         <section id="ringkasan">
           <h2>Ringkasan</h2>
           <div class="card">
@@ -405,6 +470,20 @@
           <h2>Device</h2>
           <p class="meta">Device yang ter-pairing ke akun ini, beserta sepuluh perintah terakhirnya.</p>
           <div id="devices"></div>
+        </section>
+
+        <section id="riwayat" class="active">
+          <h2>Riwayat</h2>
+          <p class="meta">Perintah terbaru di semua device, terbaru dulu. Hanya method dan status — tanpa isi perintah.</p>
+          <div class="card tableCard">
+            <table class="history">
+              <thead>
+                <tr><th>Waktu</th><th>Status</th><th>Metode</th><th>Device</th><th>Durasi</th></tr>
+              </thead>
+              <tbody id="historyRows"></tbody>
+            </table>
+            <div class="empty" id="historyEmpty" hidden><strong>Belum ada riwayat perintah.</strong> Jalankan aksi pertama dari <a href="#aksi">tab Aksi</a>.</div>
+          </div>
         </section>
 
         <section id="dengar">
@@ -764,6 +843,50 @@
       }
     }
 
+    const commandInk = (status) => status === 'completed' ? 'online' : status === 'failed' ? 'offline' : '';
+
+    // WHY a duration and not two timestamps: "2 dtk" answers how long a command
+    // took; two ISO strings make the reader do the subtraction. Pending has no
+    // completed stamp, so it reads as an en dash, never as zero.
+    function formatDuration(createdAt, completedAt) {
+      if (!createdAt || !completedAt) return '–';
+      const ms = new Date(completedAt).getTime() - new Date(createdAt).getTime();
+      if (!Number.isFinite(ms) || ms < 0) return '–';
+      if (ms < 1000) return '< 1 dtk';
+      const seconds = Math.floor(ms / 1000);
+      if (seconds < 60) return `${seconds} dtk`;
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes} mnt ${seconds % 60} dtk`;
+      return `${Math.floor(minutes / 60)} jam ${minutes % 60} mnt`;
+    }
+
+    // WHY the history flattens per-device lists: each device carries its ten
+    // latest, but the operator asks "what ran last" across all devices, newest
+    // first. Method, status and timestamps only — never a payload field.
+    function renderHistory(devices) {
+      const rows = [];
+      for (const device of devices || []) {
+        for (const command of device.commands || []) {
+          rows.push({ device: device.name, method: command.method, status: command.status, createdAt: command.createdAt, completedAt: command.completedAt });
+        }
+      }
+      rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      if (!rows.length) {
+        $('historyRows').innerHTML = '';
+        $('historyEmpty').hidden = false;
+        return;
+      }
+      $('historyEmpty').hidden = true;
+      $('historyRows').innerHTML = rows.map((row) => `
+        <tr>
+          <td>${esc(relativeTime(row.createdAt))}</td>
+          <td><span class="dot ${row.status === 'completed' ? 'online' : row.status === 'failed' ? 'offline' : ''}" aria-hidden="true"></span><span class="${commandInk(row.status)}">${esc(row.status)}</span></td>
+          <td><code>${esc(row.method)}</code></td>
+          <td>${esc(row.device)}</td>
+          <td>${esc(formatDuration(row.createdAt, row.completedAt))}</td>
+        </tr>`).join('');
+    }
+
     async function refreshDevices() {
       if (!liveToken) return;
       const token = liveToken;
@@ -795,6 +918,7 @@
       lastSeen.total = all;
       renderChecklist();
       document.querySelector('.rail a[href="#device"]').textContent = `Device (${total})`;
+      renderHistory(data.devices);
       // WHY metadata only: a screenshot of this page must not leak speech, so the
       // section names sessions without quoting them. The text travels only in
       // media_listen_read results to the paired agent.
@@ -830,7 +954,6 @@
       // WHY the state rides the first line: two stacked cards once differed only in
       // a middle row, so the down device hid in plain sight. The build moves up
       // beside the name for the same reason; the facts below keep the rest.
-      const commandInk = (status) => status === 'completed' ? 'online' : status === 'failed' ? 'offline' : '';
       $('devices').innerHTML = data.devices.map((device) => `
         <div class="card">
           <div class="cardHead">
@@ -960,6 +1083,22 @@
       }
     });
 
+    // WHY one visible section: seven stacked jobs read as a form nobody finished.
+    // Tabs show one at a time, deep-linked by hash so #riwayat is shareable.
+    function showSection() {
+      const sections = [...document.querySelectorAll('main section[id]')];
+      if (!sections.length) return;
+      const wanted = (globalThis.location.hash || '#riwayat').slice(1);
+      const target = sections.some((section) => section.id === wanted) ? wanted : 'riwayat';
+      for (const section of sections) section.className = section.id === target ? 'active' : '';
+      for (const link of document.querySelectorAll('.rail a, .tabs a')) {
+        if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+    }
+    if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);
+
+    showSection();
     markRail();
     load();
   </script>
