@@ -35,9 +35,9 @@ export const MODEL_PROVIDERS = Object.freeze([
     endpoint: 'https://api.groq.com/openai/v1/chat/completions',
     defaultModel: 'llama-3.1-8b-instant',
     models: Object.freeze([
-      Object.freeze({ id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (tercepat, 560 t/s)' }),
-      Object.freeze({ id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (teliti, 280 t/s)' }),
-      Object.freeze({ id: 'qwen/qwen3.8-27b', label: 'Qwen3.8 27B (pratinjau, 450 t/s)' })
+      Object.freeze({ id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (cepat)' }),
+      Object.freeze({ id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (teliti)' }),
+      Object.freeze({ id: 'qwen/qwen3.8-27b', label: 'Qwen3.8 27B (pratinjau)' })
     ])
   }),
   Object.freeze({

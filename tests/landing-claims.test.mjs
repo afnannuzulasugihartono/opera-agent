@@ -67,7 +67,14 @@ test('the site names the permission count it asks the reader to accept', () => {
 test('the site promises no speed the runtime has not measured', () => {
   // WHY: the measured pickup for one primitive is seconds, not milliseconds, and a
   // marketing page that says "instant" is a claim nobody can hold us to.
-  assert.doesNotMatch(site, /dalam (1|2|3) detik|instant|milliseconds|milidetik/i, 'no unsourced speed promise');
+  // WHY the allowlist first: a vendor-assigned model ID is a fact verifiable at the
+  // provider docs (console.groq.com/docs/models), not a marketing claim, so the pin
+  // scans the full source and removes only these exact IDs before matching. A future
+  // ID containing a banned substring trips the pin until it is allowlisted here.
+  const MODEL_IDS = ['llama-3.1-8b-instant'];
+  let text = site;
+  for (const id of MODEL_IDS) text = text.split(id).join('');
+  assert.doesNotMatch(text, /dalam (1|2|3) detik|instant|milliseconds|milidetik/i, 'no unsourced speed promise');
 });
 
 test('the site does not claim a store listing that does not exist', () => {

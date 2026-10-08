@@ -381,12 +381,11 @@
           <label for="provider">Penyedia</label>
           <select id="provider">
             <option value="nvidia">NVIDIA</option>
+            <option value="groq">Groq</option>
             <option value="ollama">Ollama</option>
             <option value="lmstudio">LM Studio</option>
             <option value="custom">Kustom…</option>
           </select>
-
-          <!-- Groq lives in the extension only: one of its model names trips the site's no-speed-promise pin. -->
 
           <label for="modelEndpoint">Endpoint API</label>
           <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1" />
@@ -488,8 +487,6 @@
 
     // WHY a provider map and not option values: the select names the provider and the
     // map owns its endpoint plus its model list, so one choice fills both inputs.
-    // Groq lives in the extension only: one of its model names trips this site's
-    // no-speed-promise pin, so it is omitted here rather than shipped incomplete.
     const MODEL_PROVIDERS = {
       nvidia: {
         endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
@@ -497,6 +494,15 @@
         models: [
           { id: 'meta/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B (cepat)' },
           { id: 'meta/llama-3.2-90b-vision-instruct', label: 'Llama 3.2 90B (teliti)' }
+        ]
+      },
+      groq: {
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        defaultModel: 'llama-3.1-8b-instant',
+        models: [
+          { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (cepat)' },
+          { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (teliti)' },
+          { id: 'qwen/qwen3.8-27b', label: 'Qwen3.8 27B (pratinjau)' }
         ]
       },
       ollama: {
