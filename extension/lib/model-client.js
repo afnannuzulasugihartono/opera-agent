@@ -9,7 +9,7 @@ import { buildPlanRequest, compileGoalPlan } from './goal-plan.js';
 export const MODEL_TIMEOUT_MS = 30000;
 export const MODEL_MAX_TOKENS = 2000;
 
-function endpointOk(value) {
+export function endpointOk(value) {
   try {
     const url = new URL(String(value));
     if (url.protocol === 'https:') return true;

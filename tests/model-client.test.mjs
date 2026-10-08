@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { composeModelPlan, buildProbeRequest, MODEL_TIMEOUT_MS, MODEL_MAX_TOKENS } from '../lib/model-client.js';
+import { composeModelPlan, buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS, MODEL_MAX_TOKENS } from '../lib/model-client.js';
 
 const storageOf = (cfg) => ({ get: async () => cfg });
 const program = { root: { type: 'SEQUENCE', children: [{ type: 'COMMAND', method: 'page.find', arguments: { text: 'Skip' }, resultBinding: 'hit' }] } };
@@ -73,6 +73,13 @@ test('a hung endpoint surfaces MODEL_TIMEOUT, never a hang', async () => {
 test('compiler bounds are pinned', () => {
   assert.equal(MODEL_TIMEOUT_MS, 30000);
   assert.equal(MODEL_MAX_TOKENS, 2000);
+});
+
+test('endpoint allowlist: https or loopback only', () => {
+  assert.equal(endpointOk('https://llm.example.com/v1/chat/completions'), true);
+  assert.equal(endpointOk('http://127.0.0.1:11434/v1/chat/completions'), true);
+  assert.equal(endpointOk('http://evil.example.com/x'), false);
+  assert.equal(endpointOk('not-a-url'), false);
 });
 
 test('background routes the options probe action to the compiler module', async () => {

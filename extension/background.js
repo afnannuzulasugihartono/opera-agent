@@ -34,7 +34,7 @@ import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './li
 import { resolveKeyInput } from './lib/keyboard.js';
 import { DEFAULT_BRIDGE_URL, LISTEN_BASE_URL } from './lib/endpoints.js';
 import { readModelConfig, saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
-import { buildProbeRequest, MODEL_TIMEOUT_MS } from './lib/model-client.js';
+import { buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS } from './lib/model-client.js';
 
 // WHY localhost only for now: externally_connectable is a grant, and a grant to
 // an origin nobody has chosen yet is a grant nobody reviewed. The production
@@ -2533,6 +2533,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     Promise.resolve(async () => {
       const cfg = await readModelConfig(chrome.storage.local);
       if (!cfg.configured) return { ok: false, code: 'MODEL_NOT_CONFIGURED', message: `Belum dikonfigurasi: ${cfg.missing.join(', ')}.` };
+      if (!endpointOk(cfg.endpoint)) return { ok: false, code: 'MODEL_BAD_ENDPOINT', message: 'The model endpoint must be https or loopback http.' };
       const probe = buildProbeRequest({ model: cfg.model });
       const res = await fetch(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', Authorization: `Bearer ${cfg.key}` }, body: JSON.stringify({ ...probe }), signal: AbortSignal.timeout(MODEL_TIMEOUT_MS) });
       if (!res || !res.ok) return { ok: false, code: 'MODEL_HTTP_ERROR', message: `Endpoint menjawab ${res?.status ?? 'nothing'}.` };
