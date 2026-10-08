@@ -55,6 +55,13 @@ strategy (LLM/VLM, seconds) -> tactical (policy, ~100ms) -> motor (Hz)
 - Later: unknown-game protocol (a game the agent has never seen, scored on
   adaptation cost, not just final score), then GameWorld-style breadth.
 
+## Known gaps (from the 18-question audit)
+
+- CAPTCHA/consent policy: stop, report, ask the user. Currently improvised
+  per case; needs one explicit rule.
+- Unknown-site protocol: what to do on a site with no skill, in which
+  order, with what budget. Queued behind Docs/Maps/YouTube leaves.
+
 ## Vetted external direction
 
 Verified against primary sources (arXiv abstracts match the claims):
