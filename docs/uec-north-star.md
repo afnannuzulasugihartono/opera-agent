@@ -77,6 +77,10 @@ Adopted consequences, in priority order:
    are the seed; formalize extraction only when a real task needs it.
 4. OSWorld 2.0-class breadth is a later gate, not a current goal: it needs
    a desktop harness we do not have.
+5. Queued design (not build): execute(graph) — ad-hoc intent graphs with
+   constraints and verification, closing the gap between linear bursts and
+   named workflows. Plus a generic-first grounding cascade (generic text
+   find, site selectors as fallback) as a standing refinement rule.
 
 Non-goals restated: no Fara competitor, no training cluster, no scores table
 of vibes. Measured or it did not happen.
