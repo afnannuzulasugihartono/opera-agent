@@ -12,7 +12,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.20` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 141 runtime safety files, 686 unit tests, green.
+- Gates: `npm test`, `npm run check` — 28 primitives, 141 runtime safety files, 688 unit tests, green.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.20` to extension id
@@ -44,8 +44,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   statement in files, deactivates this id's older row before the insert, and fails unless the status
   is 2xx. Verified in a rolled-back transaction: without the update the one-active index refuses the
   insert, with it the insert lands.
-- CI pins `ubuntu-24.04` and the node24 action majors (the `latest` label moves under the browser gate).
-- The browser harness reads the version from the manifest instead of pinning a stale id and label.
+- CI pins `ubuntu-24.04` and the node24 majors; the harness reads the version from the manifest.
 - The account and device pages are separate files, and the provider identity is read from
   `app_metadata.providers` rather than `provider`. Both locked where the reason is.
 - `Intl.RelativeTimeFormat` takes CLDR unit identifiers, not localised names. Passing "menit" threw
@@ -91,8 +90,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   **CLI cannot deploy** this project, because Root Directory is `landing` and it resolves
   `landing/landing` and refuses. That Root Directory was once unset, so every push built a root with
   no `index.html` and every path answered 404.
-- **Releases fire on a `v*` tag, and only that.** `release.yml` verifies the signed CRX that
-  `publish-crx.yml` inserted, packs the archives, and publishes the release.
+- **Releases fire on a `v*` tag, and only that.** `release.yml` verifies the CRX and publishes.
 - `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every path
   enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named
@@ -122,15 +120,17 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     no new executor or primitive. The compiler stays device-local, one call per task over the owner
     endpoint, key never leaves ([`security.md`](security.md)); the options probe validates endpoint
     plus key with zero page content.
-7. Publishable-key rotation, SonarCloud project access, and Supabase PATs all need owner action.
+7. Publishable-key rotation and SonarCloud project access still need owner action. Edge deploy runs
+   via the logged-in CLI; 10 functions plus 20 migrations are live.
 8. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with total-stop
    CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); novel patterns go to the operator loop,
    3x recurrence becomes a named-workflow candidate.
+9. **Console-style dashboard shipped.** Sidebar plus tabs, command-history table from existing
+   device data with no new RPC; CSP hashes appended. Live via `deploy-site` dispatch.
 
 ## CI
 
-- Three gates on `ubuntu-24.04`: unit, secret-scan, browser. The browser gate runs the harness headed
-  under `xvfb-run`, because the branded Chrome in the image loads no unpacked MV3 extension.
+- Three gates on `ubuntu-24.04`: unit, secret-scan, browser (headed under `xvfb-run`).
 - [`.gitleaks.toml`](../.gitleaks.toml) names paths and symbols that must exist. Re-point the
   allowlist when a file is renamed; never edit the fixture to dodge the scanner.
 - The concurrency group cancels an in-flight run when a newer one queues, so push, then wait.
