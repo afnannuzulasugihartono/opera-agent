@@ -145,7 +145,7 @@ Deno.serve(async (req: Request) => {
         : bytesFromBase64(current.crx_base64);
       if (!bytes) return response(req, "Release payload is not a zip", 500, { "Content-Type": "text/plain; charset=utf-8" });
       const filename = `opera-agent-${current.version}${wantsZip ? ".zip" : ".crx"}`;
-      return response(req, req.method === "HEAD" ? null : bytes, 200, {
+      return response(req, req.method === "HEAD" ? null : new Uint8Array(bytes).buffer, 200, {
         "Content-Type": wantsZip ? "application/zip" : "application/x-chrome-extension",
         "Content-Length": String(bytes.byteLength),
         // WHY no-store and not the year the versioned paths carry: the bytes under this
