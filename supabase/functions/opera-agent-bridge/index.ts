@@ -172,6 +172,33 @@ async function startWorkflow(body: Record<string, unknown>) {
   return json(result || { ok: false }, result?.ok ? 200 : 400);
 }
 
+async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
+  // WHY a bounded reader instead of req.text(): text() buffers the entire
+  // body before the length check, so a huge chunked body exhausts isolate
+  // memory first. This stops at maxBytes + 1 and never holds more.
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try { await reader.cancel(); } catch { /* oversize is the answer */ }
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(out);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required." }, 405);
@@ -179,12 +206,12 @@ Deno.serve(async (req: Request) => {
   if (length > MAX_BODY) return json({ ok: false, error: "Request too large." }, 413);
 
   try {
-    // WHY measure the bytes, not just the header: the gate above reads
+    // WHY the cap rides the stream, not just the header: the gate above reads
     // content-length alone, so a chunked body without one skipped it and the
     // parse buffered an unbounded body before authentication. Pull envelopes
-    // are small, so buffering to exactly MAX_BODY is the whole fix.
-    const raw = await req.text();
-    if (new TextEncoder().encode(raw).length > MAX_BODY) {
+    // are small, so refusing past exactly MAX_BODY is the whole fix.
+    const raw = await readBoundedBody(req, MAX_BODY);
+    if (raw === null) {
       return json({ ok: false, error: "Request too large." }, 413);
     }
     const body = JSON.parse(raw) as Record<string, unknown>;
@@ -197,6 +224,9 @@ Deno.serve(async (req: Request) => {
     if (action === "start_workflow") return await startWorkflow(body);
     return json({ ok: false, error: "Unknown action." }, 400);
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return json({ ok: false, error: "Body must be JSON." }, 400);
+    }
     const message = error instanceof Error ? error.message : String(error);
     createEdgeLog({}).error("opera-agent-bridge error", message);
     return json({ ok: false, error: "Bridge request failed." }, 500);

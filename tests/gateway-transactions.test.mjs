@@ -61,7 +61,7 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
   // The harness strips edge import lines, so runtime dependencies resolved by
   // the edge loader (createClient, the shared CORS resolver) are injected
   // here from the real shared module — the same code the function imports.
-  vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, crypto });
+  vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, TextDecoder, crypto });
   return { calls, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list', ...body })
@@ -235,4 +235,28 @@ test('a declared content-length over 256 KiB is still rejected before parsing', 
   assert.equal(response.status, 413);
   assert.equal((await response.json()).error.code, 'TOO_LARGE');
   assert.equal(h.calls.length, 0);
+});
+
+test('an oversize chunked body aborts at the cap instead of buffering whole', async () => {
+  // WHY pull-counting chunks: req.text() drains every chunk before measuring,
+  // so a reader that aborts early must leave most of the stream unread. 64
+  // chunks of 16 KiB (1 MiB) against the 256 KiB cap must die after ~17 pulls.
+  const TOTAL = 64;
+  const CHUNK = 16 * 1024;
+  let pulled = 0;
+  const stream = new ReadableStream({
+    pull(controller) {
+      pulled += 1;
+      if (pulled > TOTAL) { controller.close(); return; }
+      controller.enqueue(new Uint8Array(CHUNK));
+    }
+  });
+  const h = harness({});
+  const response = await h.raw(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: stream, duplex: 'half'
+  }));
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).error.code, 'TOO_LARGE');
+  assert.equal(h.calls.length, 0, 'an oversized body never reaches authentication or enqueue');
+  assert.ok(pulled < TOTAL, `the reader stopped early after ${pulled} of ${TOTAL} chunks`);
 });

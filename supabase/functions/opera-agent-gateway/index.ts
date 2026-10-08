@@ -71,18 +71,45 @@ async function rpc(name: string, args: Record<string, unknown>) {
   return data as Record<string, unknown> | null;
 }
 
+async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
+  // WHY a bounded reader instead of req.text(): text() buffers the entire
+  // body before the length check, so a huge chunked body exhausts isolate
+  // memory first. This stops at maxBytes + 1 and never holds more.
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try { await reader.cancel(); } catch { /* oversize is the answer */ }
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(out);
+}
+
 async function command(req: Request, _url: URL) {
-  let raw: string;
+  let raw: string | null;
   try {
-    raw = await req.text();
+    raw = await readBoundedBody(req, MAX_BODY);
   } catch {
     return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
   }
-  // WHY measure the bytes, not just the header: the early gate below reads
-  // content-length alone, so a chunked body without one skipped it and the
-  // parse buffered an unbounded body before authentication. Command envelopes
-  // are small, so buffering to exactly MAX_BODY is the whole fix.
-  if (new TextEncoder().encode(raw).length > MAX_BODY) {
+  // WHY the cap rides the stream, not just the header: the early gate below
+  // reads content-length alone, so a chunked body without one skipped it and
+  // the parse buffered an unbounded body before authentication. Command
+  // envelopes are small, so refusing past exactly MAX_BODY is the whole fix.
+  if (raw === null) {
     return json(req, { ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
   }
   let body: Record<string, unknown> | null = null;

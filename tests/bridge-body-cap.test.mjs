@@ -27,7 +27,7 @@ function harness({ claim = { ok: false, error: 'Unauthorized device.' } } = {}) 
     createClient: () => client,
     createEdgeLog: () => ({ error() {} }),
     Deno: { env: { get: () => 'test' }, serve: (fn) => { handler = fn; } },
-    Request, Response, URL, TextEncoder, crypto
+    Request, Response, URL, TextEncoder, TextDecoder, crypto
   });
   const pull = (body, init = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-bridge', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...init.headers }, body, ...init
@@ -41,10 +41,12 @@ function streamBody(payload) {
   return { body: stream, duplex: 'half' };
 }
 
-test('the bridge measures body bytes, not just the content-length header', () => {
+test('the bridge reads through a bounded reader, never a full buffer', () => {
   assert.match(source, /const MAX_BODY = 1024 \* 1024;/);
-  assert.match(source, /await req\.text\(\)/);
-  assert.match(source, /new TextEncoder\(\)\.encode\(raw\)\.length > MAX_BODY/);
+  assert.match(source, /readBoundedBody\(req, MAX_BODY\)/);
+  assert.match(source, /req\.body\.getReader\(\)/);
+  assert.match(source, /await reader\.cancel\(\)/);
+  assert.doesNotMatch(source, /await req\.text\(\)/);
   assert.doesNotMatch(source, /await req\.json\(\)/);
 });
 
@@ -66,4 +68,35 @@ test('a small chunked body still parses and reaches the pull path', async () => 
   const response = await h.pull(body, { headers: { 'Content-Type': 'application/json' }, duplex });
   assert.equal(response.status, 401, 'a well-formed small body parses and is decided by claim, not by size');
   assert.ok(h.calls.some((c) => c.name === 'opera_claim_next_wait'), 'legit chunked traffic is unaffected');
+});
+
+test('an oversize chunked body aborts at the cap instead of buffering whole', async () => {
+  // WHY pull-counting chunks: req.text() drains every chunk before measuring,
+  // so a reader that aborts early must leave most of the stream unread. 128
+  // chunks of 16 KiB (2 MiB) against the 1 MiB cap must die after ~65 pulls.
+  const TOTAL = 128;
+  const CHUNK = 16 * 1024;
+  let pulled = 0;
+  const stream = new ReadableStream({
+    pull(controller) {
+      pulled += 1;
+      if (pulled > TOTAL) { controller.close(); return; }
+      controller.enqueue(new Uint8Array(CHUNK));
+    }
+  });
+  const h = harness({});
+  const response = await h.pull(stream, { headers: { 'Content-Type': 'application/json' }, duplex: 'half' });
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).error, 'Request too large.');
+  assert.equal(h.calls.length, 0, 'an oversized body never reaches authentication or claim');
+  assert.ok(pulled < TOTAL, `the reader stopped early after ${pulled} of ${TOTAL} chunks`);
+});
+
+test('invalid JSON answers 400, not 500', async () => {
+  const h = harness({});
+  const { body, duplex } = streamBody('{not json');
+  const response = await h.pull(body, { headers: { 'Content-Type': 'application/json' }, duplex });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, 'Body must be JSON.');
+  assert.equal(h.calls.length, 0, 'an unparsable body never reaches authentication or claim');
 });
