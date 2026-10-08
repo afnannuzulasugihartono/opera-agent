@@ -75,6 +75,68 @@ function metaEntry(fingerprint) {
   };
 }
 
+async function commandProgram() {
+  const replyCommand = JSON.stringify({
+    root: {
+      type: 'SEQUENCE',
+      children: [
+        { type: 'COMMAND', method: 'page.read', arguments: {}, resultBinding: 'text' }
+      ]
+    }
+  });
+  const compiled = compileGoalPlan(replyCommand, { target: { deviceId: 'opera', tabId: 1 }, budgets: smallBudgets() });
+  assert.equal(compiled.ok, true, JSON.stringify(compiled).slice(0, 300));
+  const program = { ...compiled.program, tenantId: 'caller', budgets: smallBudgets() };
+  program.programDigest = await digestCanonical(program);
+  return program;
+}
+
+async function acceptAtFullTerminal() {
+  const program = await commandProgram();
+  const created = await createCollectVm(program, {
+    runId: 'run-terminal-1',
+    tenantId: 'caller',
+    goalRevision: 1,
+    logicalNowMs: 1,
+    initialBindings: { a: 1, b: 2 }
+  });
+  const first = await advanceCollectVm(program, created, { logicalNowMs: 2 });
+  assert.equal(first.state.status, 'RUNNING');
+  const awaiting = await advanceCollectVm(program, first.state, { logicalNowMs: 3 });
+  assert.equal(awaiting.transition.kind, 'EFFECT_REQUEST');
+  const pending = awaiting.state.pendingEffect;
+  assert.ok(pending && pending.resultBinding === 'text');
+  const accepted = await advanceCollectVm(program, awaiting.state, {
+    logicalNowMs: 4,
+    effectResult: {
+      requestDigest: pending.requestDigest,
+      method: 'page.read',
+      ok: true,
+      provenance: { tenantId: 'caller', deviceId: 'opera', tabId: 1 },
+      value: { text: 'hello' }
+    }
+  });
+  return { program, terminal: accepted.state };
+}
+
+test('a single N+1 terminal artifact from effect-accept-at-full is accepted', async () => {
+  const { program, terminal } = await acceptAtFullTerminal();
+  assert.equal(terminal.status, 'LIMIT_REACHED');
+  const union = new Set([...Object.keys(terminal.bindings), ...Object.keys(terminal.observationMeta)]);
+  assert.equal(union.size, program.budgets.bindings + 1);
+});
+
+test('advancing a terminal checkpoint is refused: no second terminal', async () => {
+  const { program, terminal } = await acceptAtFullTerminal();
+  try {
+    await advanceCollectVm(program, terminal, { logicalNowMs: 5 });
+  } catch (error) {
+    assert.equal(error.code, 'INVALID_SEMANTICS');
+    assert.match(error.message, /cannot advance/);
+    return;
+  }
+  assert.fail('advancing a terminal checkpoint must be refused so a run holds at most one terminal');
+});
 async function collectProgram() {
   const replyCollect = JSON.stringify({
     root: {
