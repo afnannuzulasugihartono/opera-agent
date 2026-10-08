@@ -79,7 +79,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileGoalPlan } from '../extension/lib/goal-plan.js';
 import { validateCollectProgram } from '../lib/reactive-vm-collect.js';
-import { canonicalJson, digestCanonical } from '../lib/goal-ledger.js';
+import { digestCanonical } from '../lib/goal-ledger.js';
 
 const reply = JSON.stringify({
   root: {
@@ -103,7 +103,7 @@ test('a sealed VM-true program passes the VM validator unchanged', async () => {
   const compiled = compileGoalPlan(reply, { target, budgets: fullBudgets() });
   assert.equal(compiled.ok, true, JSON.stringify(compiled).slice(0, 300));
   const program = { ...compiled.program, tenantId: 'caller', budgets: fullBudgets() };
-  program.programDigest = await digestCanonical(canonicalJson(program));
+  program.programDigest = await digestCanonical(program);
   const accepted = await validateCollectProgram(program);
   assert.ok(accepted, 'VM validator must accept sealed VM-true programs as-is');
 });
