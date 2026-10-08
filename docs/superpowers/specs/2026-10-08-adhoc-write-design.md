@@ -35,8 +35,10 @@ methods — fill, key, ordinary clicks; submit, pay, and delete are refused
 unless an explicit confirmation flag is present — and emits a runner-shaped
 definition. (2) Ephemeral registration: RPC `opera_register_ephemeral_workflow`
 (name `adhoc.<uuid>`, `lease_until`, input definition) plus deletion of the
-temporary row; one workflow per requestId, so retries are idempotent, with a
-per-tenant quota and a maximum lease (one hour). (3) Sweeper: a scheduled
+temporary row; per-requestId idempotency plus a global active-ephemeral cap of
+100 — no owner column exists on `opera_workflows` (tenancy rides on runs via
+device/provider), so a per-tenant quota would need a schema the spec did not
+ask for — and a maximum lease (one hour). (3) Sweeper: a scheduled
 database routine deleting only expired `adhoc.*` rows plus their runs, never
 permanent workflows.
 

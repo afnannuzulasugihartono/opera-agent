@@ -120,11 +120,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    (under 50 ms through the idle window, tail 100 ms, migration
    `20261007000000_opera_agent_claim_wait_fast_tail`). Lower it further only after confirming fleet
    impact.
-6. **The compiler is wired device-locally; live proof awaits the owner key.** One call per task
-    over the owner endpoint, key never leaves ([`security.md`](security.md)); CSP `https:` plus
-    code-level single-destination enforcement in [`extension/lib/model-client.js`](../extension/lib/model-client.js);
-    the options probe validates endpoint plus key with zero page content. Remaining: write-action
-    execution for ad-hoc programs (today only registered workflows).
+6. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
+    delete; lease plus sweeper bound every row; consequential actions need recorded confirmation;
+    no new executor or primitive. The compiler stays device-local, one call per task over the owner
+    endpoint, key never leaves ([`security.md`](security.md)); the options probe validates endpoint
+    plus key with zero page content.
 7. Publishable-key rotation, SonarCloud project access, and Supabase PATs all need owner action.
 
 ## CI
