@@ -81,7 +81,7 @@ test('tabId is an accepted optional key on every existing burst step', () => {
 });
 
 test('a per-step tabId must be a non-negative integer', () => {
-  const bad = [-1, 1.5, 'x', null];
+  const bad = [-1, 1.5, 'x', null, true, false];
   for (const tabId of bad) {
     const check = validateBurst({ steps: [burstStep('find', { tabId })] });
     if (tabId === null) {
@@ -92,6 +92,11 @@ test('a per-step tabId must be a non-negative integer', () => {
     assert.equal(check.ok, false, `tabId ${JSON.stringify(tabId)} must be rejected`);
   }
   assert.equal(validateBurst({ steps: [burstStep('find', { tabId: 0 })] }).ok, true);
+});
+
+test('requireTabId refuses booleans instead of coercing false to tab 0', () => {
+  const fn = sliceBetween('function requireTabId(value)', 'async function resolveTabId');
+  assert.match(fn, /typeof value === 'boolean'/);
 });
 
 test('step keys stay strict, so an unknown key cannot ride in', () => {

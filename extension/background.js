@@ -201,6 +201,7 @@ function publicTab(tab) {
 }
 
 function requireTabId(value) {
+  if (typeof value === 'boolean') throw new Error('Invalid tabId.');
   if (typeof value === 'string' && value.trim() === '') throw new Error('Invalid tabId.');
   const id = Number(value);
   if (!Number.isInteger(id) || id < 0) throw new Error('Invalid tabId.');
@@ -1785,6 +1786,12 @@ async function dispatch(method, params = {}, context = {}) {
       const candidate = { ...params.rule, ruleId: params.rule?.ruleId || watchRuleId('w') };
       const v = validateRule(candidate);
       if (!v.ok) throw new Error(v.reason);
+
+      // The validator accepts an absent deadlineMs (defaulting locally to 60s)
+      // but pruneWatchers compares the stored field raw, so a stored rule
+      // without it compares against NaN and never expires. Persist the
+      // documented default at arm time so the stored rule is self-sufficient.
+      if (candidate.deadlineMs === undefined) candidate.deadlineMs = 60000;
       const entry = { id: candidate.ruleId, tabId, rule: candidate, createdAt: Date.now(), runtime: {} };
       w.watchers.push(entry);
       (w.byTab[tabId] ||= []).push(entry.id);
@@ -2127,7 +2134,11 @@ async function handleWatchFacts(tabId, facts) {
     const entry = entries.find((e) => e.rule.ruleId === fire.ruleId);
     if (entry) handleWatchFire(entry, fire, facts).catch((error) => { log.warn('WATCH_FIRE_FAILED', error?.message || String(error)); });
   }
-  return { fired: out.fired.length };
+
+  // The content script echoes `r.state` into the `watchState` it sends back as
+  // `facts.state` on the next check, so the engine state must ride the reply;
+  // without it every evaluation starts from an empty baseline and re-fires.
+  return { fired: out.fired.length, state: out.state };
 }
 
 async function emitWatchEvent(entry, fire, facts, actionResult) {
@@ -2576,13 +2587,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const tabId = requireTabId(message.tabId);
       await chrome.tabs.get(tabId);
       return { ok: true, tabId, private: await setPrivateTab(tabId, !!message.private) };
-    }
-    if (message.action === 'set-bridge-url') {
-      const url = safeUrl(message.url);
-      if (!url) throw new Error('Invalid bridge URL.');
-      await chrome.storage.local.set({ bridgeUrl: url });
-      restartPullLoop();
-      return { ok: true };
     }
     throw new Error('Unknown popup action.');
   }).then(sendResponse).catch((error) => sendResponse({ ok: false, error: String(error?.message || error) }));

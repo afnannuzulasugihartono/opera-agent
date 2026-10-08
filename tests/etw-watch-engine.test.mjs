@@ -96,6 +96,26 @@ test('already-true at arm fires immediately (the T041 lesson); debounce then thr
   assert.equal(dead.state.d1.retired, true);
 });
 
+test('evaluateRules state threads across evaluations (the watch round-trip)', () => {
+  const r = rule({ ruleId: 'rt1', trigger: { kind: 'urlChange' }, mode: 'repeat', maxEvents: 10 });
+  const first = evaluateRules([r], { facts: {}, url: 'https://x/a', adState: false, mediaTime: 0 }, {}, 1000);
+  assert.equal(first.fired.length, 0, 'first sight only arms the baseline');
+  assert.ok(first.state.rt1.baselineUrl, 'engine state carries the baseline');
+  const second = evaluateRules([r], { facts: {}, url: 'https://x/b', adState: false, mediaTime: 0 }, first.state, 1100);
+  assert.equal(second.fired.length, 1, 'the threaded baseline is what the change is detected against');
+});
+
+test('background returns engine state in the facts reply and arms the documented deadline default', () => {
+  const bg = read('extension/background.js');
+  assert.match(bg, /return \{ fired: out\.fired\.length, state: out\.state \}/, 'facts reply must carry engine state for the content echo');
+  assert.match(bg, /candidate\.deadlineMs = 60000/, 'arm path must persist the documented deadline default');
+});
+
+test('dead set-bridge-url popup action is gone (options saves via storage directly)', () => {
+  const bg = read('extension/background.js');
+  assert.doesNotMatch(bg, /set-bridge-url/);
+});
+
 test('background exposes watch primitives and caps; bridge ingests events', () => {
   const bg = read('extension/background.js');
   assert.match(bg, /case 'watch\.start'/);

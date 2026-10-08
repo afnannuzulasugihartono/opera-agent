@@ -100,6 +100,13 @@ test('burst tabId refuses an empty or whitespace-only string instead of coercing
   assert.equal(validateBurst({ tabId: 7, steps: [{ action: 'read' }] }).ok, true);
 });
 
+test('burst tabId refuses booleans instead of coercing false to tab 0', () => {
+  assert.equal(validateBurst({ tabId: false, steps: [{ action: 'read' }] }).ok, false);
+  assert.equal(validateBurst({ tabId: true, steps: [{ action: 'read' }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: false }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: true }] }).ok, false);
+});
+
 test('execution modes are explicit and structured foreground errors survive normalization', () => {
   assert.deepEqual(EXECUTION_MODES, ['background', 'foreground']);
   const error = new Error('Foreground permission is required.');

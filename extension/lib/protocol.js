@@ -108,7 +108,7 @@ function validateBurstStep(step) {
   // boundary: `refFromStep` below still binds only to earlier steps, and the
   // executor refuses a passthrough whose source ran on a different tab.
   if (step.tabId !== undefined && step.tabId !== null) {
-    if (!Number.isInteger(step.tabId) || step.tabId < 0) return 'Invalid burst step tabId.';
+    if (typeof step.tabId === 'boolean' || !Number.isInteger(step.tabId) || step.tabId < 0) return 'Invalid burst step tabId.';
   }
 
   if (action === 'click' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst click requires a valid ref or refFromStep.';
@@ -159,7 +159,7 @@ export function validateBurst(params) {
   if (!isPlainObject(params)) return { ok: false, error: 'Burst params must be an object.' };
   const unexpectedParam = Object.keys(params).find((key) => !['tabId', 'steps', 'executionMode'].includes(key));
   if (unexpectedParam) return { ok: false, error: `Burst params do not allow ${unexpectedParam}.` };
-  if (params.tabId != null && (String(params.tabId).trim() === '' || !Number.isInteger(Number(params.tabId)) || Number(params.tabId) < 0)) {
+  if (params.tabId != null && (typeof params.tabId === 'boolean' || String(params.tabId).trim() === '' || !Number.isInteger(Number(params.tabId)) || Number(params.tabId) < 0)) {
     return { ok: false, error: 'Invalid burst tabId.' };
   }
   if (!Array.isArray(params.steps) || params.steps.length < 1 || params.steps.length > BURST_MAX_STEPS) {
