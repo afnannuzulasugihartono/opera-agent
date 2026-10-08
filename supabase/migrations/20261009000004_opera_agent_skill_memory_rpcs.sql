@@ -11,8 +11,8 @@
 
 create or replace function public.opera_skill_save(
   p_task text,
-  p_site text default '',
   p_lesson text,
+  p_site text default '',
   p_pitfalls text default ''
 )
 returns jsonb
