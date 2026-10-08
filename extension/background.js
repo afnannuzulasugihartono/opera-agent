@@ -2530,7 +2530,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (message && message.scope === 'opera-agent-options' && message.action === 'testModel') {
-    Promise.resolve(async () => {
+    (async () => {
       const cfg = await readModelConfig(chrome.storage.local);
       if (!cfg.configured) return { ok: false, code: 'MODEL_NOT_CONFIGURED', message: `Belum dikonfigurasi: ${cfg.missing.join(', ')}.` };
       if (!endpointOk(cfg.endpoint)) return { ok: false, code: 'MODEL_BAD_ENDPOINT', message: 'The model endpoint must be https or loopback http.' };
