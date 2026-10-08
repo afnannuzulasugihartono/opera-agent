@@ -2511,6 +2511,7 @@ chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) =>
     return true;
   }
   (async () => {
+    if (String(message.modelKey ?? '').trim() === '') throw new Error('A model key is required here; to revoke it, clear it in the options page.');
     await saveModelEndpoint(chrome.storage.local, message.modelEndpoint);
     await saveModelName(chrome.storage.local, message.modelName);
     await saveModelKey(chrome.storage.local, message.modelKey);
