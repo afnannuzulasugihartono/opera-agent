@@ -21,6 +21,7 @@ test('lifecycle columns, functions, and prefix guard exist', () => {
   assert.ok(migration.includes('adhoc.'));
   assert.ok(migration.includes('PERMANENT_DELETE_REFUSED'));
   assert.ok(migration.includes('RATE_LIMITED'));
+  assert.ok(migration.includes('if p_definition is null'));
 });
 
 test('grants are EXECUTE to service_role only', () => {

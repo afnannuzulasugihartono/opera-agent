@@ -23,6 +23,7 @@ declare
   v_attempt integer;
 begin
   perform public.opera_sweep_ephemeral_workflows();
+  if p_definition is null then return jsonb_build_object('ok',false,'error','Workflow definition must contain a steps array.'); end if;
   if p_request_id is null or p_request_id !~ '^[A-Za-z0-9_-]{1,100}$' then
     return jsonb_build_object('ok', false, 'error', 'INVALID_REQUEST');
   end if;
