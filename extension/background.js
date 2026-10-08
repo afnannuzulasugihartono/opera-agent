@@ -1791,7 +1791,7 @@ async function dispatch(method, params = {}, context = {}) {
       // but pruneWatchers compares the stored field raw, so a stored rule
       // without it compares against NaN and never expires. Persist the
       // documented default at arm time so the stored rule is self-sufficient.
-      if (candidate.deadlineMs === undefined) candidate.deadlineMs = 60000;
+      if (candidate.deadlineMs == null) candidate.deadlineMs = 60000;
       const entry = { id: candidate.ruleId, tabId, rule: candidate, createdAt: Date.now(), runtime: {} };
       w.watchers.push(entry);
       (w.byTab[tabId] ||= []).push(entry.id);
@@ -2083,7 +2083,11 @@ async function pruneWatchers() {
   const alive = [];
   let changed = false;
   for (const entry of w.watchers) {
-    const expired = now - entry.createdAt > entry.rule.deadlineMs;
+    // Legacy rows stored before the arm-time default carry no deadlineMs
+    // (undefined) or an explicit null; both compare as NaN and would never
+    // expire, while the engine already retires them locally via ?? 60000.
+    // Treat a missing deadline as expired so storage agrees with the engine.
+    const expired = entry.rule.deadlineMs == null || now - entry.createdAt > entry.rule.deadlineMs;
     const tabGone = entry.tabId != null && !await tabExists(entry.tabId);
     if (expired || tabGone) { changed = true; continue; }
     alive.push(entry);
@@ -2121,7 +2125,7 @@ async function handleWatchFacts(tabId, facts) {
   const entries = watcherIdsForTab(w, tabId)
     .map((id) => w.watchers.find((e) => e.id === id))
     .filter(Boolean);
-  if (!entries.length) return { fired: 0 };
+  if (!entries.length) return { fired: 0, state: {} };
   const rules = entries.map((e) => e.rule);
   const out = evaluateRules(rules, facts, facts.state || {}, facts.now || Date.now());
   // persist engine state per watcher

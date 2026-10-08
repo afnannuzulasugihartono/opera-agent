@@ -33,6 +33,7 @@ test('trigger kinds are the documented set (fail-closed for unknown kinds)', () 
   assert.equal(validateRule(rule({ trigger: { kind: 'mindReading' } })).ok, false);
   assert.equal(validateRule(rule()).ok, true);
   assert.equal(validateRule(rule({ deadlineMs: 10_000_000 })).ok, false, 'deadline is bounded');
+  assert.equal(validateRule(rule({ deadlineMs: null })).ok, true, 'null deadline means the documented default');
   assert.equal(validateRule(rule({ maxEvents: 0 })).ok, false);
 });
 
@@ -109,6 +110,9 @@ test('background returns engine state in the facts reply and arms the documented
   const bg = read('extension/background.js');
   assert.match(bg, /return \{ fired: out\.fired\.length, state: out\.state \}/, 'facts reply must carry engine state for the content echo');
   assert.match(bg, /candidate\.deadlineMs = 60000/, 'arm path must persist the documented deadline default');
+  assert.match(bg, /candidate\.deadlineMs == null/, 'arm default must also cover an explicit null');
+  assert.match(bg, /deadlineMs == null \|\| now - entry\.createdAt/, 'prune must treat a missing deadline as expired');
+  assert.match(bg, /if \(!entries\.length\) return \{ fired: 0, state:/, 'no-entries reply must carry state so content never holds a stale one');
 });
 
 test('dead set-bridge-url popup action is gone (options saves via storage directly)', () => {
