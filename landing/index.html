@@ -381,8 +381,10 @@
           <label for="preset">Penyedia</label>
           <select id="preset">
             <option value="">Endpoint kustom</option>
-            <option value="http://127.0.0.1:11434/v1">Ollama di mesin ini</option>
-            <option value="http://127.0.0.1:1234/v1">LM Studio di mesin ini</option>
+            <option value="https://integrate.api.nvidia.com/v1/chat/completions" data-model="meta/llama-3.2-11b-vision-instruct">NVIDIA Llama 3.2 11B (cepat)</option>
+            <option value="https://integrate.api.nvidia.com/v1/chat/completions" data-model="meta/llama-3.2-90b-vision-instruct">NVIDIA Llama 3.2 90B (teliti)</option>
+            <option value="http://127.0.0.1:11434/v1/chat/completions">Ollama di mesin ini</option>
+            <option value="http://127.0.0.1:1234/v1/chat/completions">LM Studio di mesin ini</option>
           </select>
 
           <label for="modelEndpoint">Endpoint API</label>
@@ -483,7 +485,10 @@
     }
 
     $('preset').addEventListener('change', (event) => {
-      if (event.target.value) $('modelEndpoint').value = event.target.value;
+      if (!event.target.value) return;
+      $('modelEndpoint').value = event.target.value;
+      const model = event.target.selectedOptions[0]?.dataset.model;
+      if (model) $('modelName').value = model;
     });
 
     function collect() {
