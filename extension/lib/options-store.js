@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 01:36 UTC+7.
+// @last-edited: 2026-10-09 UTC+7.
 // @title: options-store — MV3 runtime library, shared with the Node suite..
 // @state: The bridge URL, log level, and the user's own model endpoint, name and key, kept in local storage.
 // @dependencies: endpoints.
@@ -17,6 +17,14 @@
 // exists, not what it is, so opening Options cannot read it out of the DOM.
 
 import { DEFAULT_BRIDGE_URL } from './endpoints.js';
+
+export const MODEL_PRESETS = Object.freeze([
+  { id: 'nvidia-llama-11b', label: 'NVIDIA Llama 3.2 11B (cepat)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-11b-vision-instruct' },
+  { id: 'nvidia-llama-90b', label: 'NVIDIA Llama 3.2 90B (teliti)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-90b-vision-instruct' },
+]);
+export const DEFAULT_MODEL_PRESET_ID = 'nvidia-llama-11b';
+
+const DEFAULT_MODEL_PRESET = MODEL_PRESETS.find((preset) => preset.id === DEFAULT_MODEL_PRESET_ID);
 
 const LEVELS = ['debug', 'warn', 'error'];
 const DEFAULT_LEVEL = 'warn';
@@ -47,11 +55,16 @@ export async function loadOptions(storage) {
   const cfg = await storage.get(['bridgeUrl', 'logLevel', 'modelEndpoint', 'modelName', 'modelKey']);
   const bridgeUrl = typeof cfg.bridgeUrl === 'string' && cfg.bridgeUrl ? cfg.bridgeUrl : DEFAULT_BRIDGE_URL;
   const logLevel = LEVELS.includes(cfg.logLevel) ? cfg.logLevel : DEFAULT_LEVEL;
+  const storedEndpoint = typeof cfg.modelEndpoint === 'string' ? cfg.modelEndpoint : '';
+  const storedModel = typeof cfg.modelName === 'string' ? cfg.modelName : '';
   return {
     bridgeUrl,
     logLevel,
-    modelEndpoint: typeof cfg.modelEndpoint === 'string' ? cfg.modelEndpoint : '',
-    modelName: typeof cfg.modelName === 'string' ? cfg.modelName : '',
+
+    // Read-time defaults only: an empty store reports the default preset without
+    // writing anything, so the preset can move under a user who never chose.
+    modelEndpoint: storedEndpoint ? storedEndpoint : DEFAULT_MODEL_PRESET.endpoint,
+    modelName: storedModel ? storedModel : DEFAULT_MODEL_PRESET.model,
 
     // The key is reported as present or absent, never as a value.
     modelKeySet: typeof cfg.modelKey === 'string' && cfg.modelKey.length > 0
@@ -107,8 +120,10 @@ export async function saveModelKey(storage, value) {
 
 export async function readModelConfig(storage) {
   const cfg = await storage.get(['modelEndpoint', 'modelName', 'modelKey']);
-  const endpoint = typeof cfg.modelEndpoint === 'string' ? cfg.modelEndpoint.trim() : '';
-  const model = typeof cfg.modelName === 'string' ? cfg.modelName.trim() : '';
+  const storedEndpoint = typeof cfg.modelEndpoint === 'string' ? cfg.modelEndpoint.trim() : '';
+  const storedModel = typeof cfg.modelName === 'string' ? cfg.modelName.trim() : '';
+  const endpoint = storedEndpoint ? storedEndpoint : DEFAULT_MODEL_PRESET.endpoint;
+  const model = storedModel ? storedModel : DEFAULT_MODEL_PRESET.model;
   const key = typeof cfg.modelKey === 'string' ? cfg.modelKey.trim() : '';
   const missing = [];
   if (!endpoint) missing.push('endpoint');

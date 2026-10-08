@@ -1,11 +1,11 @@
-// @last-edited: 2026-10-05 01:36 UTC+7.
+// @last-edited: 2026-10-09 UTC+7.
 // @title: options-store.test — store.test — Test.
 // @state: close the Phase 5 review follow-ups.
 // @dependencies: node:test, strict, options-store, endpoints.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelKey, saveModelName, readModelConfig } from '../extension/lib/options-store.js';
+import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelKey, saveModelName, readModelConfig, MODEL_PRESETS, DEFAULT_MODEL_PRESET_ID } from '../extension/lib/options-store.js';
 import { DEFAULT_BRIDGE_URL } from '../extension/lib/endpoints.js';
 
 const fake = (seed = {}) => {
@@ -98,4 +98,45 @@ test('readModelConfig fails closed until all three are set', async () => {
   assert.equal(ready.endpoint, 'https://api.example/v1');
   assert.equal(ready.model, 'm');
   assert.equal(ready.key, 'sk-live-123');
+});
+
+// Presets ship public endpoint URLs and model names only, never keys: the key stays
+// strictly user-supplied, so an empty store still fails closed on the key alone.
+
+test('loadOptions reports the default preset endpoint and model on empty storage', async () => {
+  const s = fake();
+  const loaded = await loadOptions(s);
+  const preset = MODEL_PRESETS.find((entry) => entry.id === DEFAULT_MODEL_PRESET_ID);
+  assert.equal(loaded.modelEndpoint, preset.endpoint);
+  assert.equal(loaded.modelName, preset.model);
+  assert.equal('modelEndpoint' in s.data, false);
+  assert.equal('modelName' in s.data, false);
+});
+
+test('readModelConfig on empty storage misses only the user-supplied key', async () => {
+  const result = await readModelConfig(fake());
+  assert.equal(result.configured, false);
+  assert.equal(result.code, 'MODEL_NOT_CONFIGURED');
+  assert.deepEqual(result.missing, ['key']);
+});
+
+test('MODEL_PRESETS is frozen with two endpoints passing the https rule', async () => {
+  assert.equal(Object.isFrozen(MODEL_PRESETS), true);
+  assert.equal(MODEL_PRESETS.length, 2);
+  const s = fake();
+  for (const preset of MODEL_PRESETS) {
+    await saveModelEndpoint(s, preset.endpoint);
+    assert.ok(preset.model.length >= 1 && preset.model.length <= 120);
+  }
+});
+
+test('stored endpoint and model still override the preset defaults', async () => {
+  const s = fake({ modelEndpoint: 'https://custom.example/v1', modelName: 'custom-model', modelKey: 'sk-live-123' });
+  const loaded = await loadOptions(s);
+  assert.equal(loaded.modelEndpoint, 'https://custom.example/v1');
+  assert.equal(loaded.modelName, 'custom-model');
+  const ready = await readModelConfig(s);
+  assert.equal(ready.configured, true);
+  assert.equal(ready.endpoint, 'https://custom.example/v1');
+  assert.equal(ready.model, 'custom-model');
 });

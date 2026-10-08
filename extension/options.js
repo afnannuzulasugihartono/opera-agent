@@ -1,10 +1,10 @@
-// @last-edited: 2026-10-06 09:58 UTC+7.
+// @last-edited: 2026-10-09 UTC+7.
 // @title: options — MV3 runtime.
 // @state: Indonesian copy; bridge URL, log level, and model settings.
 // @dependencies: endpoints, options-store, error-messages, protocol.
 
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
-import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelName } from './lib/options-store.js';
+import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelName, MODEL_PRESETS } from './lib/options-store.js';
 import { userErrorMessage } from './lib/error-messages.js';
 import { PROTOCOL_VERSION } from './lib/protocol.js';
 
@@ -17,6 +17,8 @@ async function prefill() {
   $('logLevel').value = options.logLevel;
   $('modelEndpoint').value = options.modelEndpoint;
   $('modelName').value = options.modelName;
+  const match = MODEL_PRESETS.find((preset) => preset.endpoint === options.modelEndpoint && preset.model === options.modelName);
+  $('modelPreset').value = match ? match.id : 'custom';
 
   // The page is told whether a key exists and never what it is. The key itself is
   // entered in the popup, next to pairing: a secret has no business here.
@@ -63,6 +65,15 @@ function init() {
     } catch (error) {
       showModelStatus(userErrorMessage(error?.message || error));
     }
+  });
+  // WHY fill without saving: picking a preset stages the values in the inputs and
+  // the existing Simpan button commits them, so one save path stays the only save path.
+  $('modelPreset').addEventListener('change', () => {
+    const preset = MODEL_PRESETS.find((entry) => entry.id === $('modelPreset').value);
+    if (!preset) return;
+    $('modelEndpoint').value = preset.endpoint;
+    $('modelName').value = preset.model;
+    showModelStatus('Preset dipilih — klik Simpan untuk menyimpan.');
   });
   $('modelProbe').addEventListener('click', async () => {
     const probe = $('modelProbe');
