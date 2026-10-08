@@ -19,7 +19,33 @@ test('both skill RPCs exist and reject empty input', () => {
 
 test('recall matches case-insensitively with an escaped LIKE pattern', () => {
   assert.match(migration, /ILIKE/i);
-  assert.match(migration, /ESCAPE/i);
+
+  // Literal escape clause, not mere word presence: both task and lesson ILIKEs bind backslash escape.
+  assert.ok(migration.includes("escape '\\'"), "literal escape '\\' clause missing");
+  const escapeCount = migration.split("escape '\\'").length - 1;
+  assert.ok(escapeCount >= 2, `expected >=2 literal escape clauses, found ${escapeCount}`);
+
+  // Backslash-first replacement order: '\' -> '\\' must run before '%' and '_' escapes.
+  const backslashIdx = migration.indexOf("'\\', '\\\\'");
+  const percentIdx = migration.indexOf("'%', '\\%'");
+  const underscoreIdx = migration.indexOf("'_', '\\_'");
+  assert.ok(backslashIdx !== -1, 'backslash escape replace missing');
+  assert.ok(percentIdx !== -1, 'percent escape replace missing');
+  assert.ok(underscoreIdx !== -1, 'underscore escape replace missing');
+  assert.ok(backslashIdx < percentIdx && percentIdx < underscoreIdx, 'escape replacements must run backslash-first, then %, then _');
+});
+
+test('both RPCs are SECURITY DEFINER with fixed search_path', () => {
+  const definerCount = (migration.match(/security definer/gi) ?? []).length;
+  assert.ok(definerCount >= 2, `expected security definer on both functions, found ${definerCount}`);
+  const searchPathCount = (migration.match(/set search_path\s*=\s*public/gi) ?? []).length;
+  assert.ok(searchPathCount >= 2, `expected set search_path = public on both functions, found ${searchPathCount}`);
+  const blocks = migration.split(/create or replace function/i).slice(1);
+  assert.equal(blocks.length, 2, 'expected exactly two function definitions');
+  for (const b of blocks) {
+    assert.match(b, /security definer/i);
+    assert.match(b, /set search_path\s*=\s*public/i);
+  }
 });
 
 test('RPCs are revoked from clients and granted to service_role only', () => {
