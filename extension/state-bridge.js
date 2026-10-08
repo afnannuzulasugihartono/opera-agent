@@ -22,6 +22,11 @@
     const config = tRex.config || {};
     const dimensions = instance.dimensions || {};
     const canvasH = dimensions.HEIGHT || dimensions.height || 150;
+
+    // currentSpeed is pixels per frame, not per second: without the frame
+    // rate the time-to-impact math inflates by 60x and only contact fires.
+    const msPerFrame = Number(instance.msPerFrame) || 16.6667;
+    const speedPxS = (Number(instance.currentSpeed) || 0) * (1000 / msPerFrame);
     const obstacles = instance.horizon.obstacles.map((o) => ({
       x: Number(o.xPos),
       y: Number(o.yPos),
@@ -31,7 +36,7 @@
     const crashed = !!(instance.crashed || tRex.crashed);
     return {
       ok: true,
-      speed: Number(instance.currentSpeed) || 0,
+      speed: speedPxS,
       dinoX: Number(tRex.xPos) || 0,
       dinoW: Number(config.WIDTH || config.width) || 40,
       dinoH: Number(config.HEIGHT || config.height) || 50,
@@ -112,11 +117,15 @@
       return;
     }
     const decision = decide.decideTrex(reading, session.params);
-    const acted = act(decision.action, session.latch);
+
+    // Airborne guard: the game ignores mid-air jumps, so firing into the air
+    // only pollutes the trace. The reader already reports airborne state.
+    const acted = reading.airborne && decision.action === 'jump' ? 'run' : act(decision.action, session.latch);
     session.ticks += 1;
     if (acted === 'jump') session.jumps += 1;
     if (session.ticks % 60 === 0) {
-      post('heartbeat', { ticks: session.ticks, jumps: session.jumps, speed: reading.speed });
+      const nearest = (reading.obstacles || []).map((o) => Math.round(Number(o.x))).join(',');
+      post('heartbeat', { ticks: session.ticks, jumps: session.jumps, speed: Math.round(reading.speed), obs: reading.obstacles ? reading.obstacles.length : -1, near: nearest.slice(0, 60) });
     }
     session.raf = globalThis.requestAnimationFrame(step);
   }

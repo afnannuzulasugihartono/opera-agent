@@ -26,10 +26,14 @@
     if (!Number.isFinite(dinoFront) || !Number.isFinite(dinoH) || !Number.isFinite(canvasH)) return run;
     const upcoming = (Array.isArray(state.obstacles) ? state.obstacles : [])
       .filter((o) => o && Number(o.x) + Number(o.w) >= dinoFront)
-      .sort((a, b) => Number(a.x) - Number(b.x));
+      .sort((a, b) => (Number(a.x) + Number(a.w) / 2) - (Number(b.x) + Number(b.w) / 2));
     const obstacle = upcoming[0];
     if (!obstacle) return run;
-    const tti = (Number(obstacle.x) - dinoFront) / speed * 1000;
+
+    // Center-based trigger: a wide cluster must be met earlier, because the
+    // jump has to clear its tail, not just its front.
+    const center = Number(obstacle.x) + Number(obstacle.w) / 2;
+    const tti = (center - dinoFront) / speed * 1000;
     if (!Number.isFinite(tti) || tti > leadMs) return { action: 'run', tti: Number.isFinite(tti) ? tti : null, obstacle };
     const yFromBottom = canvasH - Number(obstacle.y) - Number(obstacle.h);
     if (yFromBottom > dinoH) return { action: 'run', tti, obstacle };

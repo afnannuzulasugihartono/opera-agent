@@ -2069,7 +2069,7 @@
     const data = event.data;
     if (!data || data.source !== 'opera-agent-state' || typeof data.type !== 'string') return;
     try {
-      chrome.runtime.sendMessage({ scope: 'opera-agent-state-event', type: data.type, detail: { ticks: data.ticks, jumps: data.jumps, speed: data.speed, reader: data.reader, reason: data.reason } });
+      chrome.runtime.sendMessage({ scope: 'opera-agent-state-event', type: data.type, detail: { ticks: data.ticks, jumps: data.jumps, speed: data.speed, reader: data.reader, reason: data.reason, obs: data.obs, near: data.near } });
     } catch (error) {
       globalThis.OperaAgentLog?.debug?.('STATE_EVENT_FORWARD_FAILED', error?.message || String(error));
     }
