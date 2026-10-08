@@ -37,6 +37,7 @@ test('consequential label without confirm dies, with confirm passes and records 
   const good = compileAdhocGraph({ nodes: [click('Pay now', { confirm: true })] });
   assert.equal(good.ok, true);
   assert.equal(good.definition.steps[0].confirmed, true);
+  assert.equal(good.definition.steps[0].confirmPattern, 'Pay');
 });
 
 test('budgets bound nodes and size', () => {
@@ -44,4 +45,32 @@ test('budgets bound nodes and size', () => {
   assert.equal(compileAdhocGraph(many).ok, false);
   const big = { nodes: [{ id: 'n0', type: 'command', method: 'page.read', params: { pad: 'x'.repeat(40000) } }] };
   assert.equal(compileAdhocGraph(big).code, 'GRAPH_TOO_LARGE');
+});
+
+test('repeat without maxIterations dies', () => {
+  const out = compileAdhocGraph({ nodes: [{ id: 'n0', type: 'repeat', steps: [] }] });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, 'BUDGET_EXCEEDED');
+});
+
+test('foreach maxItems 9999 dies', () => {
+  const out = compileAdhocGraph({ nodes: [{ id: 'n0', type: 'foreach', maxItems: 9999, steps: [] }] });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, 'BUDGET_EXCEEDED');
+});
+
+test('nested bodies count toward the command budget', () => {
+  const reads = (tag, n) => Array.from({ length: n }, (_, i) => ({ id: `${tag}-n${i}`, type: 'command', method: 'page.read', params: {} }));
+  const repeatOf = (tag) => ({ id: tag, type: 'repeat', maxIterations: 2, steps: reads(tag, 5) });
+  const small = compileAdhocGraph({ nodes: [repeatOf('r0')] });
+  assert.equal(small.ok, true);
+  const nested = compileAdhocGraph({ nodes: [repeatOf('r0'), repeatOf('r1'), repeatOf('r2')] });
+  assert.equal(nested.ok, false);
+  assert.equal(nested.code, 'BUDGET_EXCEEDED');
+});
+
+test('wait 1e12 dies', () => {
+  const out = compileAdhocGraph({ nodes: [{ id: 'n0', type: 'wait', ms: 1e12 }] });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, 'BUDGET_EXCEEDED');
 });

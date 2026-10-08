@@ -7,6 +7,9 @@ export const MAX_COMMAND_NODES = 12;
 export const MAX_DEFINITION_BYTES = 32768;
 export const REPEAT_MAX = 6;
 
+const FOREACH_MAX = 100;
+const WAIT_MAX_MS = 120000;
+
 const READ_METHODS = new Set([
   'page.read',
   'page.find',
@@ -100,22 +103,24 @@ function compileIf(node, path, state) {
 function compileLoop(kind, node, path, state) {
   const raw = branchList(node, 'steps', path);
   if (!raw.ok) return raw;
-  if (kind === 'repeat' && node.maxIterations !== undefined) {
+  if (kind === 'repeat') {
     if (!Number.isSafeInteger(node.maxIterations) || node.maxIterations < 1 || node.maxIterations > REPEAT_MAX) {
       return fail('BUDGET_EXCEEDED', `${path}: maxIterations must be an integer from 1 to ${REPEAT_MAX}.`);
     }
+  } else if (!Number.isSafeInteger(node.maxItems) || node.maxItems < 1 || node.maxItems > FOREACH_MAX) {
+    return fail('BUDGET_EXCEEDED', `${path}: maxItems must be an integer from 1 to ${FOREACH_MAX}.`);
   }
   const out = compileList(raw.nodes, `${path}.steps`, state);
   if (!out.ok) return out;
   const step = { type: kind, steps: out.steps };
   if (kind === 'repeat') {
-    if (node.maxIterations !== undefined) step.maxIterations = node.maxIterations;
+    step.maxIterations = node.maxIterations;
     if (node.until !== undefined) step.until = node.until;
     if (node.failOnLimit !== undefined) step.failOnLimit = node.failOnLimit;
   } else {
     if (node.items !== undefined) step.items = node.items;
     if (node.itemVar !== undefined) step.itemVar = node.itemVar;
-    if (node.maxItems !== undefined) step.maxItems = node.maxItems;
+    step.maxItems = node.maxItems;
     if (node.collectVar !== undefined) step.collectVar = node.collectVar;
     if (node.collect !== undefined) step.collect = node.collect;
   }
@@ -136,6 +141,9 @@ function compileNode(node, path, state) {
     return { ok: true, step };
   }
   if (node.type === 'wait') {
+    if (typeof node.ms === 'number' && node.ms > WAIT_MAX_MS) {
+      return fail('BUDGET_EXCEEDED', `${path}: wait ms above ${WAIT_MAX_MS} is refused.`);
+    }
     const step = { type: 'wait' };
     if (node.ms !== undefined) step.ms = node.ms;
     return { ok: true, step };
