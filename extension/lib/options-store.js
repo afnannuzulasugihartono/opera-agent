@@ -19,12 +19,13 @@
 import { DEFAULT_BRIDGE_URL } from './endpoints.js';
 
 export const MODEL_PRESETS = Object.freeze([
-  { id: 'nvidia-llama-11b', label: 'NVIDIA Llama 3.2 11B (cepat)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-11b-vision-instruct' },
-  { id: 'nvidia-llama-90b', label: 'NVIDIA Llama 3.2 90B (teliti)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-90b-vision-instruct' },
+  Object.freeze({ id: 'nvidia-llama-11b', label: 'NVIDIA Llama 3.2 11B (cepat)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-11b-vision-instruct' }),
+  Object.freeze({ id: 'nvidia-llama-90b', label: 'NVIDIA Llama 3.2 90B (teliti)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-90b-vision-instruct' }),
 ]);
 export const DEFAULT_MODEL_PRESET_ID = 'nvidia-llama-11b';
 
 const DEFAULT_MODEL_PRESET = MODEL_PRESETS.find((preset) => preset.id === DEFAULT_MODEL_PRESET_ID);
+if (!DEFAULT_MODEL_PRESET) throw new Error(`DEFAULT_MODEL_PRESET_ID "${DEFAULT_MODEL_PRESET_ID}" names no preset in MODEL_PRESETS.`);
 
 const LEVELS = ['debug', 'warn', 'error'];
 const DEFAULT_LEVEL = 'warn';

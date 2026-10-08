@@ -75,6 +75,12 @@ function init() {
     $('modelName').value = preset.model;
     showModelStatus('Preset dipilih — klik Simpan untuk menyimpan.');
   });
+  const syncPresetSelect = () => {
+    const match = MODEL_PRESETS.find((preset) => preset.endpoint === $('modelEndpoint').value && preset.model === $('modelName').value);
+    $('modelPreset').value = match ? match.id : 'custom';
+  };
+  $('modelEndpoint').addEventListener('input', syncPresetSelect);
+  $('modelName').addEventListener('input', syncPresetSelect);
   $('modelProbe').addEventListener('click', async () => {
     const probe = $('modelProbe');
     probe.disabled = true;
