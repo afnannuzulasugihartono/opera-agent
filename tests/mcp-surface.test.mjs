@@ -242,7 +242,7 @@ test('the tool count and names are unchanged', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
   assert.equal(registered.length, 36);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 35);
+  assert.equal(contract.toolCount, 36);
 });
 
 test('no generic escape hatch was introduced', () => {
