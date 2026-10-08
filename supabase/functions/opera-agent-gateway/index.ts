@@ -195,7 +195,7 @@ async function command(req: Request, _url: URL) {
       const ua = req.headers.get("user-agent") || "";
       let provider = /chatgpt|openai/i.test(ua) ? "chatgpt" : "";
       if (!provider && /^[0-9a-f-]{36}$/i.test(tokenClientId)) {
-        const name = await rpc("opera_client_name", { p_client_id: tokenClientId });
+        const name: unknown = await rpc("opera_client_name", { p_client_id: tokenClientId });
         if (typeof name === "string" && name) provider = name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 32);
       }
       if (provider) await supabase.from("opera_commands").update({ provider }).eq("id", String(result.commandId));
