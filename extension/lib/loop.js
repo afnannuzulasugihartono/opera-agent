@@ -166,13 +166,21 @@ export function validateLoopProgram(program) {
   // Budgets fail closed: an explicit out-of-range maxTicks or maxDurationMs is
   // rejected, never silently clamped to the max. Only an absent budget (or
   // null, which JSON callers use for absent) falls back to the max allowance.
+  // Booleans are rejected explicitly: Number(true) === 1 would otherwise slip
+  // through as a valid budget (same class as the tabId boolean rejection).
   if (program.maxTicks !== undefined && program.maxTicks !== null) {
+    if (typeof program.maxTicks === 'boolean') {
+      return { ok: false, error: `Loop maxTicks must be an integer from 1 to ${LOOP_MAX_TICKS}.` };
+    }
     const maxTicks = Number(program.maxTicks);
     if (!Number.isInteger(maxTicks) || maxTicks < 1 || maxTicks > LOOP_MAX_TICKS) {
       return { ok: false, error: `Loop maxTicks must be an integer from 1 to ${LOOP_MAX_TICKS}.` };
     }
   }
   if (program.maxDurationMs !== undefined && program.maxDurationMs !== null) {
+    if (typeof program.maxDurationMs === 'boolean') {
+      return { ok: false, error: `Loop maxDurationMs must be from 50 to ${LOOP_MAX_DURATION_MS}.` };
+    }
     const maxDurationMs = Number(program.maxDurationMs);
     if (!Number.isFinite(maxDurationMs) || maxDurationMs < 50 || maxDurationMs > LOOP_MAX_DURATION_MS) {
       return { ok: false, error: `Loop maxDurationMs must be from 50 to ${LOOP_MAX_DURATION_MS}.` };

@@ -41,12 +41,12 @@ test('valid program normalizes defaults', () => {
 });
 
 test('out-of-range budgets are rejected, never silently clamped to the max', () => {
-  for (const maxTicks of [0, -5, 3601, 100000, 2.5, 'many']) {
+  for (const maxTicks of [0, -5, 3601, 100000, 2.5, 'many', true, false]) {
     const check = validateLoopProgram(minimalProgram({ maxTicks }));
     assert.equal(check.ok, false, `maxTicks ${JSON.stringify(maxTicks)} must be rejected`);
     assert.match(check.error, /maxTicks/);
   }
-  for (const maxDurationMs of [0, 49, 120001, 1000000, 'long']) {
+  for (const maxDurationMs of [0, 49, 120001, 1000000, 'long', true, false]) {
     const check = validateLoopProgram(minimalProgram({ maxDurationMs }));
     assert.equal(check.ok, false, `maxDurationMs ${JSON.stringify(maxDurationMs)} must be rejected`);
     assert.match(check.error, /maxDurationMs/);
