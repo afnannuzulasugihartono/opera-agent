@@ -21,7 +21,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   that never updated keep working. `opera_releases` allows one active row per id.
 - **Live audio is end to end.** Element-tap capture (no new permission) → Groq Whisper
   `verbose_json` → segments in `opera_listen_segments`, audio deleted after use. MCP has
-  `media_stream_start/stop` + `media_listen_read` (37 tools); the dashboard shows session
+  `media_stream_start/stop` + `media_listen_read` (39 tools); the dashboard shows session
   metadata only, never speech text. Full session proven in the headed harness.
 - No management token or secret key in the tree. The four signed-in and consent pages carry the
   Supabase publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
