@@ -755,6 +755,56 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
   }, async ({ graph, requestId, input, timeoutMs }: { graph: Record<string, unknown>; requestId: string; input?: Record<string, unknown>; timeoutMs?: number }) =>
     runAdhoc(graph, requestId, input, timeoutMs, deviceName, provider).then(textResult).catch(toolError));
 
+  server.registerTool("skill_save", {
+    title: "Save skill lesson",
+    description: "Save a task lesson to the shared skill memory, which is generic experience shared across accounts rather than per-device state.",
+    inputSchema: {
+      task: z.string().min(1).max(500)
+        .describe("What the task was, e.g. \"open transcript panel\"."),
+      site: z.string().max(120).optional()
+        .describe("Site or surface the lesson applies to, e.g. \"youtube\"."),
+      lesson: z.string().min(1).max(4000)
+        .describe("What worked, what failed, and what recovered it."),
+      pitfalls: z.string().max(2000).optional()
+        .describe("What to avoid next time.")
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
+  }, ({ task, site, lesson, pitfalls }: { task: string; site?: string; lesson: string; pitfalls?: string }) => {
+    // WHY a direct RPC and not the device command queue: the skill memory is
+    // shared across accounts, so there is no tab, timeout, or device to address.
+    return rpc("opera_skill_save", { p_task: task, p_site: site ?? "", p_lesson: lesson, p_pitfalls: pitfalls ?? "" }).then((saved) => {
+      if (!saved?.ok) {
+        const parts = rpcErrorParts(saved?.error, "SKILL_SAVE_FAILED");
+        throw new CommandFailure(parts.code, parts.message);
+      }
+      return textResult({ id: saved.id });
+    }).catch(toolError);
+  });
+
+  server.registerTool("skill_recall", {
+    title: "Recall skill lessons",
+    description: "Recall matching lessons from the shared skill memory, which is generic experience shared across accounts rather than per-device state.",
+    inputSchema: {
+      query: z.string().min(1)
+        .describe("Free-text query matched literally against saved tasks and lessons."),
+      site: z.string().max(120).optional()
+        .describe("Restrict matches to this site; empty means all sites."),
+      limit: z.number().int().min(1).max(20).optional()
+        .describe("Maximum lessons to return; defaults to 5.")
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ query, site, limit }: { query: string; site?: string; limit?: number }) => {
+    // WHY a direct RPC and not the device command queue: the skill memory is
+    // shared across accounts, so there is no tab, timeout, or device to address.
+    return rpc("opera_skill_recall", { p_query: query, p_site: site ?? "", p_limit: limit ?? 5 }).then((recalled) => {
+      if (!recalled?.ok) {
+        const parts = rpcErrorParts(recalled?.error, "SKILL_RECALL_FAILED");
+        throw new CommandFailure(parts.code, parts.message);
+      }
+      return textResult({ skills: recalled.skills ?? [] });
+    }).catch(toolError);
+  });
+
   server.registerTool("start_watch", {
     title: "Start live watch",
     description: "Arm a device-local trigger on an Opera tab: when the trigger condition becomes true (already-true-at-arm fires immediately), the device executes the action locally and an event appears in wait_events — no model round trip in between. Prefer this over polling with repeated find/read calls on fast-changing pages (ad overlays, countdowns, dynamic lists). Trigger kinds: selectorPresence, selectorGone, textMatch, urlChange, navigation, adState, mediaTime. Action types: report (default), click, burst, workflow, confirm.",

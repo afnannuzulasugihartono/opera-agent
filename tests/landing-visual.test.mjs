@@ -22,7 +22,7 @@ const pages = ['index.html', 'akun.html', 'auth.html', 'dashboard.html', 'unduh.
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('index.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
-  assert.match(html, /37 tool/, 'the tool count is stated as a number');
+  assert.match(html, /39 tool/, 'the tool count is stated as a number');
   assert.match(html, /class="eyebrow"/, 'an eyebrow names the release above the headline');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
@@ -78,7 +78,7 @@ test('the hero states each number once', () => {
   const hero = read('index.html').match(/<section class="hero">[\s\S]*?<\/section>/)[0];
   assert.doesNotMatch(hero, /26 aksi/, 'no second 26 with another noun');
   assert.match(hero, /tanpa eksekusi skrip sembarangan/, 'the prose keeps its promise');
-  assert.match(hero, /37 tool, 28 primitive/, 'and the count lives in one line');
+  assert.match(hero, /39 tool, 28 primitive/, 'and the count lives in one line');
 });
 
 test('no script renames a link that is not there', () => {

@@ -1,14 +1,16 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 37,
-  "sourceSha256": "69dcdb1a5158472fb4a8afef021ae43e9d52a98700032f78050d2cd79fee0e83",
+  "toolCount": 39,
+  "sourceSha256": "8591b9a6800d38116aedb8b8087d33493735f6dcaeb9f9b56951cb1a00e89e4a",
   "tools": [
     "browser_status",
     "run_browser_burst",
     "run_workflow",
     "run_program",
     "run_adhoc",
+    "skill_save",
+    "skill_recall",
     "start_watch",
     "wait_events",
     "stop_watch",
