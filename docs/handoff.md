@@ -12,7 +12,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.20` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 140 runtime safety files, 679 unit tests, green.
+- Gates: `npm test`, `npm run check` — 28 primitives, 140 runtime safety files, 680 unit tests, green.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.20` to extension id
