@@ -12,7 +12,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.20` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 141 runtime safety files, 692 unit tests, green.
+- Gates: `npm test`, `npm run check` — 28 primitives, 141 runtime safety files, 696 unit tests, green.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.20` to extension id
@@ -34,6 +34,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - The blank-line comment rule is a lock, not a habit:
   [`tests/helpers/comment-spacing.mjs`](../tests/helpers/comment-spacing.mjs) classifies each line
   per dialect and [`tests/hygiene.test.mjs`](../tests/hygiene.test.mjs) asserts the gap.
+- Provider+model pickers shipped on web + extension (NVIDIA duo live-verified, Groq trio from official docs, local + custom free-text, key always user-supplied).
 
 ## Measured, not assumed
 
@@ -42,8 +43,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   substitution where `errexit` is off. curl then had no body, and the run went green having published
   nothing. [`.github/workflows/publish-crx.yml`](../.github/workflows/publish-crx.yml) now builds the
   statement in files, deactivates this id's older row before the insert, and fails unless the status
-  is 2xx. Verified in a rolled-back transaction: without the update the one-active index refuses the
-  insert, with it the insert lands.
+  is 2xx.
 - CI pins `ubuntu-24.04` and the node24 majors; the harness reads the version from the manifest.
 - The account and device pages are separate files, and the provider identity is read from
   `app_metadata.providers` rather than `provider`. Both locked where the reason is.
