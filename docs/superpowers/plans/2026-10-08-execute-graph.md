@@ -32,57 +32,80 @@
 
 ## File structure
 
-- Create `tests/vm-program-intake.test.mjs` — pins the joint between compiler output and VM validator (Task 1).
-- Modify `supabase/functions/opera-agent-mcp/index.ts` — add one `run_program` tool beside `run_workflow` (Task 2).
+- Create `tests/vm-program-intake.test.mjs` — pins the VM-true joint: sealed, `children`, read-only (Task 1b; Task 1 BLOCKED and superseded).
+- Modify `supabase/functions/opera-agent-mcp/index.ts` — add one `run_program` tool beside `run_workflow`, sealing gate output to VM-true shape (Task 2).
 - Modify `tests/mcp-surface.test.mjs` — extend `FROZEN_MCP_TOOLS` and the schema-hash map for the new tool (Task 2).
 - Create `tests/vm-program-rpc.test.mjs` — pins EXECUTE-only grants plus owner RLS on program-run RPCs (Task 3).
 - Create `tests/vm-program-status.test.mjs` — pins honest partial status on the VM host source (Task 4).
 - Modify `docs/handoff.md` — close Still-open item 6 within the 150-line cap (Task 5).
+- Modify `extension/lib/goal-plan.js` plus `tests/goal-plan-request.test.mjs` — prompt teaches `children` (Task 6).
 
-Task 1 produces a passing pin with no production change. Task 2 is the only production-code task. Tasks 3 and 4 are pin tests over existing sources. Task 5 is docs plus the green gates.
+Task 1b produces a passing pin with no production change. Task 2 is the main production-code task, Task 6 a small one. Tasks 3 and 4 are pin tests over existing sources. Task 5 is docs plus the green gates.
 
 ---
 
-### Task 1: Pin the compiler-to-VM joint
+### Task 1: Pin the compiler-to-VM joint — BLOCKED, superseded by T1b
+
+Task 1's probe proved a 4-layer joint mismatch (report: `.superpowers/sdd/task-1-report.md`):
+gate emits no `programDigest`, passes partial budgets, passes `steps` through, and
+allowists write methods the read-only collect VM refuses. Ruling in the ledger:
+Stage 1 narrows to VM-true read-only programs. T1b below replaces this task's
+test with the VM-true pin. No commit was made for Task 1.
+
+### Task 1b: Pin the VM-true joint (test-only, no production change)
 
 **Files:**
-- Create: `tests/vm-program-intake.test.mjs`
-- Modify: none expected
+- Modify: `tests/vm-program-intake.test.mjs` (untracked file Task 1 left behind)
+- Modify: none other
 
 **Interfaces:**
-- Consumes: `compileGoalPlan` from `../extension/lib/goal-plan.js`, `validateCollectProgram` from `../lib/reactive-vm-collect.js` (both already Node-importable; neither touches Deno, DOM, or chrome).
-- Produces: proof that a gate-approved program is accepted by the VM validator unchanged.
+- Consumes: `compileGoalPlan` from `../extension/lib/goal-plan.js`,
+  `validateCollectProgram` from `../lib/reactive-vm-collect.js`,
+  `canonicalJson`/`digestCanonical` from `../lib/goal-ledger.js`,
+  the 17 required budget keys from `validateBudgets` in `lib/reactive-vm.js:179-189`.
+- Produces: proof that a sealed, VM-true, gate-approved program is accepted unchanged.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Rewrite the test to VM-true shape**
+
+Replace the contents of `tests/vm-program-intake.test.mjs` with:
 
 ```js
 // @last-edited: 2026-10-08 UTC+7.
 // @title: vm-program-intake.test — Test.
-// @state: locks that a gate-approved program passes the VM validator unchanged.
+// @state: locks that a sealed VM-true program passes the VM validator unchanged.
 // @dependencies: node:test, strict.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileGoalPlan } from '../extension/lib/goal-plan.js';
 import { validateCollectProgram } from '../lib/reactive-vm-collect.js';
+import { canonicalJson, digestCanonical } from '../lib/goal-ledger.js';
 
 const reply = JSON.stringify({
   root: {
     type: 'SEQUENCE',
-    steps: [
+    children: [
       { type: 'COMMAND', method: 'page.find', arguments: { text: 'Skip' }, resultBinding: 'hit' },
-      { type: 'COMMAND', method: 'page.click', arguments: { refFromStep: 0 }, resultBinding: 'tap' }
+      { type: 'COMMAND', method: 'page.read', arguments: {}, resultBinding: 'text' }
     ]
   }
 });
 
-test('a gate-approved program passes the VM validator unchanged', async () => {
+function fullBudgets() {
+  return {
+    astDepth: 12, browserCommandLeavesPerRun: 12, runDeadlineMs: 60000,
+    serializedProgramBytes: 4096, programBytes: 8192
+  };
+}
+
+test('a sealed VM-true program passes the VM validator unchanged', async () => {
   const target = { deviceId: 'opera', tabId: 1 };
-  const budgets = { astDepth: 12, browserCommandLeavesPerRun: 12 };
-  const compiled = compileGoalPlan(reply, { target, budgets });
+  const compiled = compileGoalPlan(reply, { target, budgets: fullBudgets() });
   assert.equal(compiled.ok, true, JSON.stringify(compiled).slice(0, 300));
-  const accepted = await validateCollectProgram({ ...compiled.program, tenantId: 'caller' });
-  assert.ok(accepted, 'VM validator must accept gate output as-is');
+  const program = { ...compiled.program, tenantId: 'caller', budgets: fullBudgets() };
+  program.programDigest = await digestCanonical(canonicalJson(program));
+  const accepted = await validateCollectProgram(program);
+  assert.ok(accepted, 'VM validator must accept sealed VM-true programs as-is');
 });
 
 test('a non-allowlisted method never reaches the VM validator', () => {
@@ -93,17 +116,26 @@ test('a non-allowlisted method never reaches the VM validator', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails or passes**
+Rules for this rewrite: read `lib/reactive-vm.js:179-189` first and use the exact 17 budget keys the validator requires (the five above are placeholders for the real key set — copy each key name verbatim from source). Read `lib/goal-ledger.js` first and use its real export names for canonical JSON plus digest (if the names differ, use the real ones and note the rename in the report). Keep `children` (never `steps`) and read-only methods only.
+
+- [ ] **Step 2: Run to verify it passes**
 
 Run: `node --test tests/vm-program-intake.test.mjs`
-Expected: either FAIL (joint mismatch — stop and report the exact mismatch to the human; do not invent an adapter) or PASS (joint already holds; the test stays as the pin).
+Expected: PASS, both tests. Any FAIL is a real gap in the assumed producer contract — stop and report BLOCKED with the exact error.
 
-- [ ] **Step 3: Commit the pin**
+- [ ] **Step 3: Run the full suite to verify the tree is green again**
+
+Run: `npm test 2>&1 | tail -n 9`
+Expected: all pass, 0 fail.
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add tests/vm-program-intake.test.mjs
-git commit -m "test: pin gate-approved programs pass the VM validator"
+git commit -m "test: pin sealed VM-true programs pass the VM validator"
 ```
+
+*Old Task 1 body removed — superseded by T1b above.*
 
 ### Task 2: Add the `run_program` MCP tool
 
@@ -113,8 +145,8 @@ git commit -m "test: pin gate-approved programs pass the VM validator"
 - Test: run `node --test tests/mcp-surface.test.mjs`
 
 **Interfaces:**
-- Consumes: existing `rpc`, `execute`, `toolError` helpers and `deviceName` / `provider` stamping in the MCP server; the VM host `enqueue` operation at `.../functions/v1/opera-agent-vm`.
-- Produces: tool `run_program` taking `{ program, requestId }`, returning `{ runId, status }`.
+- Consumes: existing `rpc`, `execute`, `toolError` helpers and `deviceName` / `provider` stamping in the MCP server; the VM host `enqueue` operation at `.../functions/v1/opera-agent-vm`; the sealing contract pinned by T1b (VM-true shape: `children`, read-only methods, full 17-key budgets, `programDigest` over canonical JSON, `tenantId` = caller).
+- Produces: tool `run_program` taking `{ program, requestId }`, returning `{ runId, status }`. The tool seals gate output to VM-true shape before enqueue and refuses anything it cannot seal — it never widens the VM.
 
 - [ ] **Step 1: Write the failing pin update**
 
@@ -132,10 +164,10 @@ Insert after the `run_workflow` registration in `supabase/functions/opera-agent-
 ```ts
 server.registerTool("run_program", {
   title: "Run Opera Agent program",
-  description: "Run a gate-approved OA_REACTIVE_VM_V1 program end to end on the paired Opera device without the model in the loop: the VM host enqueues it, the device executes browser commands, and verification evidence returns in status/result. Use this for ad-hoc multi-step intents instead of hand-driving each click.",
+  description: "Run a gate-approved OA_REACTIVE_VM_V1 read-only program end to end on the paired Opera device without the model in the loop: the VM host enqueues it, the device executes read/verify commands, and verification evidence returns in status/result. Use this for ad-hoc multi-step read intents instead of hand-driving each find. Write actions are refused here; they run as registered workflows via run_workflow.",
   inputSchema: {
     program: z.object({}).passthrough()
-      .describe("A compileGoalPlan-approved program object (schemaVersion OA_REACTIVE_VM_V1)."),
+      .describe("A compileGoalPlan-approved program object (schemaVersion OA_REACTIVE_VM_V1) with children (never steps) and read-only methods. The tool fills full budgets, sets tenantId to the caller, and seals programDigest before enqueue; anything unsealable is refused."),
     requestId: z.string().min(1).max(100).regex(/^[A-Za-z0-9_-]{1,100}$/)
       .describe("Idempotency key; a malformed key is rejected so replay protection is never silent here."),
   },
@@ -300,11 +332,52 @@ git add docs/handoff.md
 git commit -m "docs: plan-path caller gap closed for Stage 1"
 ```
 
+### Task 6: Align the prompt and gate on `children`
+
+**Files:**
+- Modify: `extension/lib/goal-plan.js` (`buildPlanRequest` system prompt)
+- Modify: `tests/goal-plan-request.test.mjs` (prompt pins)
+- Test: `node --test tests/goal-plan-request.test.mjs tests/goal-plan.test.mjs tests/vm-program-intake.test.mjs`
+
+**Interfaces:**
+- Consumes: T1b's proof that the VM demands `children`.
+- Produces: a prompt that teaches the only shape the VM accepts, plus pins.
+
+- [ ] **Step 1: Run the gate tests to record the baseline**
+
+Run: `node --test tests/goal-plan-request.test.mjs tests/goal-plan.test.mjs`
+Expected: PASS. Read the failure output of the next step against this baseline.
+
+- [ ] **Step 2: Name `children` in the prompt**
+
+In `buildPlanRequest`'s `system` array in `extension/lib/goal-plan.js`, extend the shape line:
+
+```js
+'Shape: {"root": <node>} where a node is one of SEQUENCE, COMMAND, LOOP, UNTIL, WAIT_EVENT, RETRY, ASSERT or RETURN. A SEQUENCE node carries its steps in "children" (never "steps"): {"type":"SEQUENCE","children":[<node>, ...]}.',
+```
+
+- [ ] **Step 3: Run to verify, then update the prompt pins**
+
+Run: `node --test tests/goal-plan-request.test.mjs`
+Expected: FAIL naming only the changed prompt text. Update the pinned expectations to the new text verbatim. Re-run until PASS. If any non-prompt assertion fails, stop and report.
+
+- [ ] **Step 4: Run the joint pin to verify nothing drifted**
+
+Run: `node --test tests/vm-program-intake.test.mjs tests/goal-plan.test.mjs`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add extension/lib/goal-plan.js tests/goal-plan-request.test.mjs
+git commit -m "feat: prompt teaches children, the only shape the VM accepts"
+```
+
 ---
 
 ## Self-review
 
-- Spec coverage: intent (one model round trip) is Task 2's tool; no-new-primitive and no-eval constraints need no task because Stage 1 adds no primitive and touches no extension file; schema/constraints/verification are Task 1's joint pin; honest partial status is Task 4; testing is Tasks 1–4 plus Task 5's gates; security paragraph is explicitly Stage 2 and recorded in Task 5's handoff line, not silently dropped.
+- Spec coverage: intent (one model round trip, read-only Stage 1) is Task 2's tool; no-new-primitive and no-eval constraints need no task because Stage 1 adds no primitive and Task 6's gate edit adds no eval; schema/constraints/verification are T1b's joint pin; `children` teaching is Task 6; honest partial status is Task 4; testing is Tasks 1b–4 plus Task 5's gates; security paragraph is explicitly Stage 2 and recorded in Task 5's handoff line, not silently dropped.
 - Placeholder scan: no TBD/TODO; every code step shows exact code, exact commands, exact expected output; Task 3's migration listing is a concrete `ls` command, not a deferral.
 - Type consistency: `run_program` takes `{ program, requestId }` and returns the VM envelope in every task that names it; `tenantId`/`p_tenant_id` naming matches the VM host source in Tasks 2–4.
 - Review Focus: tenant smuggle is Tasks 1 and 4; byte budget and stale generation are Task 4's third test; method smuggle is Task 1's second test; expiry is the `EXPIRED` terminal in Task 4 Step 1.
