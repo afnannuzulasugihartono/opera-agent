@@ -870,21 +870,27 @@
           rows.push({ device: device.name, method: command.method, status: command.status, createdAt: command.createdAt, completedAt: command.completedAt });
         }
       }
-      rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const timeOf = (iso) => { const ms = new Date(iso).getTime(); return Number.isFinite(ms) ? ms : 0; };
+      rows.sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt));
       if (!rows.length) {
         $('historyRows').innerHTML = '';
         $('historyEmpty').hidden = false;
         return;
       }
       $('historyEmpty').hidden = true;
-      $('historyRows').innerHTML = rows.map((row) => `
+      $('historyRows').innerHTML = rows.map((row) => {
+        const dotTone = row.status === 'completed' ? ' online' : row.status === 'failed' ? ' offline' : '';
+        const ink = commandInk(row.status);
+        const status = ink ? `<span class="${ink}">${esc(row.status)}</span>` : `<span>${esc(row.status)}</span>`;
+        return `
         <tr>
           <td>${esc(relativeTime(row.createdAt))}</td>
-          <td><span class="dot ${row.status === 'completed' ? 'online' : row.status === 'failed' ? 'offline' : ''}" aria-hidden="true"></span><span class="${commandInk(row.status)}">${esc(row.status)}</span></td>
+          <td><span class="dot${dotTone}" aria-hidden="true"></span>${status}</td>
           <td><code>${esc(row.method)}</code></td>
           <td>${esc(row.device)}</td>
           <td>${esc(formatDuration(row.createdAt, row.completedAt))}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
 
     async function refreshDevices() {
@@ -1090,7 +1096,7 @@
       if (!sections.length) return;
       const wanted = (globalThis.location.hash || '#riwayat').slice(1);
       const target = sections.some((section) => section.id === wanted) ? wanted : 'riwayat';
-      for (const section of sections) section.className = section.id === target ? 'active' : '';
+      for (const section of sections) section.classList.toggle('active', section.id === target);
       for (const link of document.querySelectorAll('.rail a, .tabs a')) {
         if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');
         else link.removeAttribute('aria-current');
