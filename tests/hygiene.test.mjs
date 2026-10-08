@@ -272,7 +272,7 @@ test('a read is serialized once, not once per size check', () => {
   // to the three functions involved.
   const block = background.slice(
     background.indexOf('function boundedResult'),
-    background.indexOf('// ---- U-T Event-Triggered Workflows')
+    background.indexOf('// ---- Event-Triggered Workflows: watch registry')
   );
   assert.equal((block.match(/JSON\.stringify\(/g) || []).length, 1, 'exactly one stringify in the result-sizing path');
   assert.match(background, /function serializeResult\(value\)/);
