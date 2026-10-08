@@ -78,4 +78,7 @@ which travels only in the `Authorization` header to that endpoint and never to
 our server, queue, database, or logs; page content beyond the capped
 observation; anything from another tab. An unconfigured device refuses with
 `MODEL_NOT_CONFIGURED` before any network call. Live proof with a real key
-awaits the owner and is outside this change.
+awaits the owner and is outside this change. External model config stays
+localhost-only (`externally_connectable` plus origin check): the owner sets the
+key by hand in the options page, and no website can push config into the
+extension.
