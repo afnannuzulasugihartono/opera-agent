@@ -52,6 +52,13 @@ test('high pterodactyl means run, mid means duck', () => {
   assert.equal(mid.action, 'duck');
 });
 
+test('pterodactyl of any low height means duck, cactus means jump', () => {
+  const lowBird = decide(state({ obstacles: [{ x: 150, y: 100, w: 40, h: 30, kind: 'PTERODACTYL' }] }), params);
+  assert.equal(lowBird.action, 'duck');
+  const cactus = decide(state({ obstacles: [{ x: 150, y: 100, w: 30, h: 50, kind: 'CACTUS_SMALL' }] }), params);
+  assert.equal(cactus.action, 'jump');
+});
+
 test('nearest obstacle decides', () => {
   const result = decide(state({ obstacles: [{ x: 500, y: 100, w: 30, h: 50 }, { x: 150, y: 100, w: 30, h: 50 }] }), params);
   assert.equal(result.action, 'jump');

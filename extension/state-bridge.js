@@ -31,7 +31,8 @@
       x: Number(o.xPos),
       y: Number(o.yPos),
       w: Number(o.width),
-      h: Number((o.typeConfig && o.typeConfig.height) || o.height) || 40
+      h: Number((o.typeConfig && o.typeConfig.height) || o.height) || 40,
+      kind: String((o.typeConfig && o.typeConfig.type) || '')
     })).filter((o) => Number.isFinite(o.x) && Number.isFinite(o.y));
     const crashed = !!(instance.crashed || tRex.crashed);
     return {

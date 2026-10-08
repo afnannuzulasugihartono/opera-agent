@@ -37,6 +37,7 @@
     if (!Number.isFinite(tti) || tti > leadMs) return { action: 'run', tti: Number.isFinite(tti) ? tti : null, obstacle };
     const yFromBottom = canvasH - Number(obstacle.y) - Number(obstacle.h);
     if (yFromBottom > dinoH) return { action: 'run', tti, obstacle };
+    if (String(obstacle.kind).indexOf('PTERODACTYL') >= 0) return { action: 'duck', tti, obstacle };
     if (Number(obstacle.y) > canvasH / 2) return { action: 'jump', tti, obstacle };
     return { action: 'duck', tti, obstacle };
   }
