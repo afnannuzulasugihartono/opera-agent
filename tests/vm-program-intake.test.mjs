@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileGoalPlan } from '../extension/lib/goal-plan.js';
-import { validateCollectProgram } from '../lib/reactive-vm-collect.js';
+import { advanceCollectVm, createCollectVm, validateCollectProgram } from '../lib/reactive-vm-collect.js';
 import { digestCanonical } from '../lib/goal-ledger.js';
 
 const reply = JSON.stringify({
@@ -56,4 +56,93 @@ test('a non-allowlisted method never reaches the VM validator', () => {
   const refused = compileGoalPlan(bad, { target: { deviceId: 'opera', tabId: 1 }, budgets: {} });
   assert.equal(refused.ok, false);
   assert.match(refused.code, /METHOD_NOT_ALLOWED/);
+});
+
+function smallBudgets() {
+  return { ...fullBudgets(), collectionItemsPerBinding: 10, bindings: 2 };
+}
+
+function metaEntry(fingerprint) {
+  return {
+    method: 'page.read',
+    logicalNowMs: 1,
+    provenance: { tenantId: 'caller', deviceId: 'opera', tabId: 1 },
+    observationKind: 'DIRECT_OBSERVATION',
+    scopeKind: 'LOADED_DOM',
+    boundaryStable: true,
+    dependencyFingerprint: fingerprint,
+    dependencyKinds: ['ENTITY_SET']
+  };
+}
+
+async function collectProgram() {
+  const replyCollect = JSON.stringify({
+    root: {
+      type: 'SEQUENCE',
+      children: [
+        { type: 'COLLECT', source: { op: 'PATH', path: ['pre'] }, projection: ['a'], destination: 'col', maxItems: 5 }
+      ]
+    }
+  });
+  const compiled = compileGoalPlan(replyCollect, { target: { deviceId: 'opera', tabId: 1 }, budgets: smallBudgets() });
+  assert.equal(compiled.ok, true, JSON.stringify(compiled).slice(0, 300));
+  const program = { ...compiled.program, tenantId: 'caller', budgets: smallBudgets() };
+  program.programDigest = await digestCanonical(program);
+  return program;
+}
+
+test('bindings and observation metadata share one budget: disjoint seeds are refused', async () => {
+  const program = await collectProgram();
+  const fingerprint = `sha256:${'1'.repeat(64)}`;
+  try {
+    await createCollectVm(program, {
+      runId: 'run-1',
+      tenantId: 'caller',
+      goalRevision: 1,
+      logicalNowMs: 1,
+      initialBindings: { k1: 1, k2: 2 },
+      initialObservationMeta: { m1: metaEntry(fingerprint), m2: metaEntry(fingerprint) }
+    });
+  } catch (error) {
+    assert.equal(error.code, 'BINDING_BUDGET_EXCEEDED');
+    return;
+  }
+  assert.fail('disjoint seeds holding 2N entries against a budget of N must be refused');
+});
+
+test('bindings and observation metadata share one budget: overlapping seeds pass', async () => {
+  const program = await collectProgram();
+  const fingerprint = `sha256:${'1'.repeat(64)}`;
+  const state = await createCollectVm(program, {
+    runId: 'run-1',
+    tenantId: 'caller',
+    goalRevision: 1,
+    logicalNowMs: 1,
+    initialBindings: { pre: [{ a: 1 }] },
+    initialObservationMeta: { pre: metaEntry(fingerprint) }
+  });
+  assert.deepEqual(Object.keys(state.observationMeta), ['pre']);
+});
+
+test('a resumed checkpoint with disjoint bindings and metadata is refused', async () => {
+  const program = await collectProgram();
+  const fingerprint = `sha256:${'1'.repeat(64)}`;
+  const state = await createCollectVm(program, {
+    runId: 'run-1',
+    tenantId: 'caller',
+    goalRevision: 1,
+    logicalNowMs: 1,
+    initialBindings: { pre: [{ a: 1 }] },
+    initialObservationMeta: { pre: metaEntry(fingerprint) }
+  });
+  const tampered = JSON.parse(JSON.stringify(state));
+  tampered.bindings.k2 = 2;
+  tampered.observationMeta.extra = metaEntry(fingerprint);
+  try {
+    await advanceCollectVm(program, tampered, { logicalNowMs: 2 });
+  } catch (error) {
+    assert.equal(error.code, 'BINDING_BUDGET_EXCEEDED');
+    return;
+  }
+  assert.fail('a resumed checkpoint holding 2N entries against a budget of N must be refused');
 });
