@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const migration = fs.readFileSync(
-  new URL('../supabase/migrations/20261008100000_opera_agent_youtube_watch_summarize.sql', import.meta.url), 'utf8'
+  new URL('../supabase/migrations/20261008110000_opera_agent_youtube_watch_summarize_v2.sql', import.meta.url), 'utf8'
 );
 
 function definition() {
@@ -26,6 +26,7 @@ test('watch_summarize opens the given url and returns transcript payload', () =>
   assert.equal(open.params.active, false);
   assert.ok(def.output.title && def.output.url, 'output names title and url');
   assert.ok(def.output.segments || def.output.text, 'output carries transcript payload');
+  assert.ok(JSON.stringify(def.steps).includes('watchAgain'), 'tolerates slow first render with a second watch window');
 });
 
 test('watch_summarize uses only known runner step types and methods', () => {
