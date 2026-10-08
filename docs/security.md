@@ -63,3 +63,15 @@ For whoever holds the pager. Assumes no chat history.
 - Publishing the site: `.github/workflows/deploy-site.yml`, dispatched by hand, running
   `wrangler pages deploy landing --project-name=opera-agent --branch=main`. A green push
   publishes nothing; the CRX publishes through `.github/workflows/publish-crx.yml`.
+
+## Model calls
+
+One model call per task, made by the device itself to the owner's configured
+endpoint. What leaves: the goal text plus the capped page observation
+(`buildPlanRequest`: goal under 1200 characters, page text under 1200
+characters, at most 40 elements). What never leaves the device: the model key,
+which travels only in the `Authorization` header to that endpoint and never to
+our server, queue, database, or logs; page content beyond the capped
+observation; anything from another tab. An unconfigured device refuses with
+`MODEL_NOT_CONFIGURED` before any network call. Live proof with a real key
+awaits the owner and is outside this change.
