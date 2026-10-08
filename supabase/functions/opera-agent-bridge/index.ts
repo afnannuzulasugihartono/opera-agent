@@ -27,7 +27,7 @@ const MAX_BODY = 1024 * 1024;
 // traffic) and a new command waited p50 830ms / p95 1910ms, of which ~97% was
 // spent at the idle rate. One `opera_claim_next_wait` per window cut that to a
 // single round trip while the DB owns the wait. Recorded figures and the
-// rejected ramp live in `tests/latency-surface.test.mjs` sections B and C.
+// rejected ramp live in `tests/efficiency.test.mjs`.
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
