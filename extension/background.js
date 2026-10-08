@@ -2493,7 +2493,7 @@ chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) =>
     sendResponse({ ok: false, message: 'That page may not configure this extension.' });
     return true;
   }
-  Promise.resolve(async () => {
+  (async () => {
     await saveModelEndpoint(chrome.storage.local, message.modelEndpoint);
     await saveModelName(chrome.storage.local, message.modelName);
     await saveModelKey(chrome.storage.local, message.modelKey);
