@@ -79,7 +79,10 @@ our server, queue, database, or logs; page content beyond the capped
 observation; anything from another tab. An unconfigured device refuses with
 `MODEL_NOT_CONFIGURED` before any network call. Live proof with a real key
 awaits the owner and is outside this change. Model providers ship endpoint URLs
-and model names only, never keys. External model config stays
-localhost-only (`externally_connectable` plus origin check): the owner sets the
-key by hand in the options page, and no website can push config into the
-extension.
+and model names only, never keys. External model config is accepted only from
+the official site (`https://opera-agent.pages.dev`, granted in
+`externally_connectable` and matched strictly: the bare origin or the origin
+plus `/`, so `https://opera-agent.pages.dev.evil.com` is rejected) and from
+localhost for local development. Every pushed value is still validated with
+the same store the Options page uses, and the page learns nothing back beyond
+ok/error.

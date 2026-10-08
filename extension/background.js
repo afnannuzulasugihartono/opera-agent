@@ -36,12 +36,7 @@ import { DEFAULT_BRIDGE_URL, LISTEN_BASE_URL } from './lib/endpoints.js';
 import { readModelConfig, saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
 import { buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS } from './lib/model-client.js';
 
-// WHY localhost only for now: externally_connectable is a grant, and a grant to
-// an origin nobody has chosen yet is a grant nobody reviewed. The production
-// origin is added when the domain is decided, and the landing page degrades to a
-// copy block until then, so nothing is silently broken in the meantime.
-
-const EXTERNAL_CONFIG_ORIGINS = ['http://localhost:', 'https://localhost:'];
+import { originAllowed } from './lib/external-origins.js';
 
 // The same file the content script loads via the manifest. It declares no
 // export statements, so this is a valid side-effect import that publishes the
@@ -2521,7 +2516,7 @@ async function localSelfTest() {
 chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) => {
   if (!message || message.type !== 'applyModelConfig') return false;
   const from = String(sender?.origin || sender?.url || '');
-  if (!EXTERNAL_CONFIG_ORIGINS.some((origin) => from.startsWith(origin))) {
+  if (!originAllowed(from)) {
     sendResponse({ ok: false, message: 'That page may not configure this extension.' });
     return true;
   }

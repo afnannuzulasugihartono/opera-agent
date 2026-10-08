@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { EXTERNAL_CONFIG_ORIGINS, originAllowed } from '../extension/lib/external-origins.js';
 
 const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
@@ -44,11 +45,31 @@ test('the page sends the model config to the extension and nowhere else', () => 
 test('the extension only accepts the handoff from an origin it was granted', () => {
   const external = manifest.externally_connectable;
   assert.ok(external?.matches?.length, 'externally_connectable must list the pages allowed to configure');
+  assert.deepEqual([...external.matches].sort(), [
+    'http://localhost/*',
+    'https://localhost/*',
+    'https://opera-agent.pages.dev/*'
+  ].sort(), 'only localhost and the official site may configure');
   for (const pattern of external.matches) {
     assert.doesNotMatch(pattern, /\*:\/\/\*\//, 'a match-all origin would be a grant to every site on the internet');
-    assert.match(pattern, /localhost/, 'until a domain is chosen, only the local page is granted');
   }
   assert.ok(!external.ids || !external.ids.includes('*'), 'extensions must not all be able to configure this one');
+});
+
+test('the origin check admits the official site and localhost, and nothing else', () => {
+
+  // WHY these exact cases: sender.origin for an https page is the bare origin,
+  // so a plain prefix match would admit evil subdomains. Each line below is one
+  // row of the contract the background handler enforces.
+
+  assert.deepEqual([...EXTERNAL_CONFIG_ORIGINS], ['http://localhost:', 'https://localhost:', 'https://opera-agent.pages.dev']);
+  assert.equal(originAllowed('https://opera-agent.pages.dev'), true, 'the official site origin is accepted');
+  assert.equal(originAllowed('https://opera-agent.pages.dev/model'), true, 'the sender.url form with a path is accepted');
+  assert.equal(originAllowed('http://localhost:8000'), true, 'localhost over http is accepted');
+  assert.equal(originAllowed('https://localhost:3000/'), true, 'localhost over https is accepted');
+  assert.equal(originAllowed('https://opera-agent.pages.dev.evil.com'), false, 'a subdomain of the site is rejected');
+  assert.equal(originAllowed('https://evil.com'), false, 'a foreign origin is rejected');
+  assert.equal(originAllowed(''), false, 'an empty sender is rejected');
 });
 
 test('the provider picker names the providers, and the NVIDIA pair plus the Groq trio exactly', () => {
