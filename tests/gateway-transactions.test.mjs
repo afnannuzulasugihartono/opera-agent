@@ -65,7 +65,7 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
   return { calls, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list', ...body })
-  })), getOpenApi: () => handler(new Request('https://proxy.test/opera-agent-gateway/openapi.json')) };
+  })), raw: (req) => handler(req), getOpenApi: () => handler(new Request('https://proxy.test/opera-agent-gateway/openapi.json')) };
 }
 
 test('one caller request waits for committed enqueue, then adaptive await with unchanged arguments', async () => {
@@ -201,4 +201,38 @@ test('openapi servers url is the full public base path from SUPABASE_URL, never 
   const spec = await response.json();
   assert.equal(spec.info.version, '1.0.1');
   assert.equal(spec.servers[0].url, 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway');
+});
+
+function streamRequest(payload, { chunked = true } = {}) {
+  // WHY a stream body: undici sets content-length for string bodies, so only a
+  // stream arrives without one — exactly the chunked framing whose bodies used
+  // to skip the size gate and parse unbounded before authentication.
+  const bytes = new TextEncoder().encode(payload);
+  const stream = new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } });
+  return new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: stream, duplex: 'half'
+  });
+}
+
+test('a chunked body without content-length is still capped at 256 KiB', async () => {
+  const h = harness({});
+  const response = await h.raw(streamRequest('x'.repeat(300 * 1024)));
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).error.code, 'TOO_LARGE');
+  assert.equal(h.calls.length, 0, 'an oversized body never reaches authentication or enqueue');
+});
+
+test('a small chunked body still parses and runs the normal path', async () => {
+  const h = harness({});
+  const response = await h.raw(streamRequest(JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list' })));
+  assert.equal(response.status, 200);
+  assert.ok(h.calls.some((c) => c.name === 'opera_enqueue'), 'legit chunked traffic is unaffected');
+});
+
+test('a declared content-length over 256 KiB is still rejected before parsing', async () => {
+  const h = harness({});
+  const response = await h.request({ params: { padding: 'x'.repeat(300 * 1024) } });
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).error.code, 'TOO_LARGE');
+  assert.equal(h.calls.length, 0);
 });

@@ -20,6 +20,8 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
+const MAX_BODY = 1024 * 1024;
+
 // WHY the wait lives in Postgres: client-side polling minted ~52
 // `opera_claim_next` calls per 12s window (~13k/hour/device, 95% of all edge
 // traffic) and a new command waited p50 830ms / p95 1910ms, of which ~97% was
@@ -174,10 +176,18 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required." }, 405);
   const length = Number(req.headers.get("content-length") || 0);
-  if (length > 1024 * 1024) return json({ ok: false, error: "Request too large." }, 413);
+  if (length > MAX_BODY) return json({ ok: false, error: "Request too large." }, 413);
 
   try {
-    const body = await req.json() as Record<string, unknown>;
+    // WHY measure the bytes, not just the header: the gate above reads
+    // content-length alone, so a chunked body without one skipped it and the
+    // parse buffered an unbounded body before authentication. Pull envelopes
+    // are small, so buffering to exactly MAX_BODY is the whole fix.
+    const raw = await req.text();
+    if (new TextEncoder().encode(raw).length > MAX_BODY) {
+      return json({ ok: false, error: "Request too large." }, 413);
+    }
+    const body = JSON.parse(raw) as Record<string, unknown>;
     const action = String(body.action || "");
     if (action === "pair") return await pair(body);
     if (action === "pull") return await pull(body);

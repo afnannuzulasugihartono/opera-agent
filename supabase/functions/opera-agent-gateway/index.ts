@@ -72,9 +72,22 @@ async function rpc(name: string, args: Record<string, unknown>) {
 }
 
 async function command(req: Request, _url: URL) {
+  let raw: string;
+  try {
+    raw = await req.text();
+  } catch {
+    return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
+  }
+  // WHY measure the bytes, not just the header: the early gate below reads
+  // content-length alone, so a chunked body without one skipped it and the
+  // parse buffered an unbounded body before authentication. Command envelopes
+  // are small, so buffering to exactly MAX_BODY is the whole fix.
+  if (new TextEncoder().encode(raw).length > MAX_BODY) {
+    return json(req, { ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
+  }
   let body: Record<string, unknown> | null = null;
   try {
-    body = await req.json() as Record<string, unknown>;
+    body = JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
   }

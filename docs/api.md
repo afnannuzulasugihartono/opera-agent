@@ -68,9 +68,9 @@ The gateway accepts the token in three carriers, checked in this order:
 ## `POST /command` request body
 
 - Body must be JSON.
-- A body over 256 KiB is rejected with `TOO_LARGE`, but only when the client sends a
-  `content-length` header. The gateway reads that header alone, so a chunked body
-  without one is not size-checked.
+- A body over 256 KiB is rejected with `TOO_LARGE`, whatever framing the
+  client used (`content-length` or chunked): the gateway buffers and measures
+  the actual bytes before parsing.
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
@@ -103,7 +103,7 @@ Every code the gateway emits, with the HTTP status it is returned with:
 | `AWAIT_TIMEOUT` | 504 | The device did not report back before `waitMs`. The action may still have succeeded; verify page state before repeating it. |
 | `GATEWAY_ERROR` | 502; also 200 on the empty-result path | The gateway could not complete the round trip: a database failure, an empty result, or a lost wait response after the command was enqueued. The action may still have succeeded; verify page state before repeating it. |
 | `METHOD_NOT_ALLOWED` | 405 | The route does not accept this HTTP method. `/command` accepts `POST` only. |
-| `TOO_LARGE` | 413 | The request body exceeds 256 KiB. Only detected when the client sends a `content-length` header. |
+| `TOO_LARGE` | 413 | The request body exceeds 256 KiB. |
 | `NOT_FOUND` | 404 | The path is not one the gateway routes. Only a `POST` can reach this: any other method on an unrouted path is answered with `METHOD_NOT_ALLOWED` 405 instead. |
 
 - On `504` or `502` the command may already have run. Verify page state rather than
