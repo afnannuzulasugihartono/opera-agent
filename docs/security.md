@@ -46,7 +46,11 @@ dropped: regression tests pin that they never appear in logs, error payloads,
 or persisted records, and pin the carrier set inside `extractToken`. Enforced by
 [`tests/api-docs.test.mjs`](../tests/api-docs.test.mjs). A carrier
 reached through a helper function, or read by a route handler outside
-`extractToken`, stays covered by review rather than by that test.
+`extractToken`, stays covered by review rather than by that test. When
+device-token verification fails, the gateway verifies the value as a
+Supabase user JWT (`supabase.auth.getUser`) and resolves the caller's own
+first non-disabled device by `user_id` — the ChatGPT plugin OAuth path —
+so one account cannot drive another account's browser.
 
 ## Operator rules
 

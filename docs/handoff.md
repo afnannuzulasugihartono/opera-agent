@@ -12,8 +12,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.20` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 138 runtime safety files, 651 unit tests, green.
-- Production: 58 `opera_*` functions, 9 edge functions, each with a repo counterpart. Account RPCs
+- Gates: `npm test`, `npm run check` — 28 primitives, 140 runtime safety files, 679 unit tests, green.
+- Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.20` to extension id
   `ofgemipoobcnbjkfanmofjbdonjapmgl`, which is both the manifest key's id and the signature's id.
@@ -21,7 +21,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   that never updated keep working. `opera_releases` allows one active row per id.
 - **Live audio is end to end.** Element-tap capture (no new permission) → Groq Whisper
   `verbose_json` → segments in `opera_listen_segments`, audio deleted after use. MCP has
-  `media_stream_start/stop` + `media_listen_read` (29 tools); the dashboard shows session
+  `media_stream_start/stop` + `media_listen_read` (37 tools); the dashboard shows session
   metadata only, never speech text. Full session proven in the headed harness.
 - No management token or secret key in the tree. The four signed-in and consent pages carry the
   Supabase publishable key, which is public by design and allowlisted in `.gitleaks.toml`.

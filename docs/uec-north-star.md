@@ -47,7 +47,9 @@ strategy (LLM/VLM, seconds) -> tactical (policy, ~100ms) -> motor (Hz)
 ## Explicitly deferred
 
 - RL training, learned world models, JEPA pretraining, XLand-scale
-  diversity, PvP/opponent modeling, audio/touch/gamepad input.
+  diversity, PvP/opponent modeling, touch/gamepad input, and audio beyond
+  listen/transcribe: element-tap capture to Groq Whisper with segments in
+  `opera_listen_segments` is shipped, extended audio modalities are deferred.
 
 ## Gates
 
@@ -57,10 +59,11 @@ strategy (LLM/VLM, seconds) -> tactical (policy, ~100ms) -> motor (Hz)
 
 ## Known gaps (from the 18-question audit)
 
-- CAPTCHA/consent policy: stop, report, ask the user. Currently improvised
-  per case; needs one explicit rule.
+- CAPTCHA/consent policy: stop, report, ask the user. Shipped as the
+  total-stop rule in [`unknown-site.md`](unknown-site.md).
 - Unknown-site protocol: what to do on a site with no skill, in which
-  order, with what budget. Queued behind Docs/Maps/YouTube leaves.
+  order, with what budget. Shipped as the `browse.recon` workflow, with the
+  readable half in [`unknown-site.md`](unknown-site.md).
 
 ## Vetted external direction
 

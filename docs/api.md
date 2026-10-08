@@ -44,6 +44,14 @@ The gateway accepts the token in three carriers, checked in this order:
 - The body carrier exists because GPT Actions cannot set custom request headers.
 - Prefer header carriers: they keep the token out of request bodies that may be logged.
 
+- A fourth path applies only to per-user callers such as the ChatGPT plugin
+  OAuth bundle in `landing/chatgpt-plugin/`: when device-token verification
+  fails, the gateway verifies the value as a Supabase user JWT with
+  `supabase.auth.getUser` (signature plus expiry) and resolves the caller's
+  own first non-disabled device by `user_id`, ordered by creation time —
+  never by the fixed name — so one account cannot drive another account's
+  browser.
+
 - A `?apiKey=` query parameter is **never** read by the gateway. The three carriers
   above are the complete list; a token sent as a query parameter is ignored on
   every route.
