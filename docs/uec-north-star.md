@@ -54,3 +54,29 @@ strategy (LLM/VLM, seconds) -> tactical (policy, ~100ms) -> motor (Hz)
 - C3 (real-time dino) is the first acceptance test for real-time control.
 - Later: unknown-game protocol (a game the agent has never seen, scored on
   adaptation cost, not just final score), then GameWorld-style breadth.
+
+## Vetted external direction
+
+Verified against primary sources (arXiv abstracts match the claims):
+GameWorld (34 games, state-verifiable, RT track) and OSWorld 2.0 (108
+long-horizon workflows, best 20.6% completion) both say the same thing:
+frontier agents fail on constraints, mid-task information, hidden state,
+and skipped verification — harness problems, not click problems. The rest
+of the cited literature (SIMA 2, Voyager, WebWorld, OpenWebRL, PlugMem,
+CUA-Skill, Agent S3) is accepted as cited, not yet verified here.
+
+Adopted consequences, in priority order:
+
+1. Opera stays the orchestrator and capability router; specialized workers
+   (browser CUA, desktop CUA, coding) plug in underneath. Never the reverse,
+   and never a tool-spaghetti pile without the router first.
+2. Reliability over benchmark scores: observe, act, verify, recover. Our
+   action pipeline and termination sensors already work this way at small
+   scale; grow them before chasing any leaderboard.
+3. Memory as reusable skill/knowledge, not raw history. Traces and workflows
+   are the seed; formalize extraction only when a real task needs it.
+4. OSWorld 2.0-class breadth is a later gate, not a current goal: it needs
+   a desktop harness we do not have.
+
+Non-goals restated: no Fara competitor, no training cluster, no scores table
+of vibes. Measured or it did not happen.
