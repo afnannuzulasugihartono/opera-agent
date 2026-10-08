@@ -417,13 +417,54 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
   const pattern = (name) => `\\b${name.replace(/\$/g, '\\$')}\\b`;
   const dead = [];
   const noCaller = [];
-  for (const { p, text } of consumers.filter(({ p }) => modules.includes(p))) {
+
+  // WHY export lines are stripped from the caller scan: a file that merely
+  // re-exports a name is not its caller. Both lib/reactive-vm-collect.js and
+  // lib/reactive-vm-control-flow.js carry `export { ReactiveVmError }` with
+  // zero importers, and each one's export line made the other's re-export read
+  // as used. The declaration count below still runs on the full text, so a
+  // genuinely local use keeps counting.
+  const callerText = new Map(consumers.map(({ p, text }) => [
+    p,
+    text.split('\n').filter((line) => !/^\s*export\b/.test(line)).join('\n'),
+  ]));
+  const textByPath = new Map(consumers.map(({ p, text }) => [p, text]));
+
+  // WHY one collector for all three export forms: the declaration regex alone
+  // silently skipped `export * from '...'` and `export { A, B as C }`, so the
+  // six lib/*.js star re-exports and the two `export { ReactiveVmError }`
+  // lines were never inspected at all. A star is resolved from the exporting
+  // file and parsed with the same collector, so a new re-export is discovered
+  // rather than carried as a list that goes stale.
+  const collectExports = (p, text, visited) => {
+    if (visited.has(p)) return [];
+    visited.add(p);
     const names = [...text.matchAll(
       /^export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm
     )].map((m) => m[1]);
+    for (const m of text.matchAll(/^export\s*\{([^}]*)\}(\s*from\s*['"][^'"]+['"])?/gm)) {
+      const reexport = Boolean(m[2]);
+      for (const item of m[1].split(',')) {
+        const parts = item.split(/\s+as\s+/).map((s) => s.trim().replace(/^type\s+/, '').split(/\s+/)[0]).filter(Boolean);
+        if (parts.length === 0) continue;
+        const local = reexport ? parts[parts.length - 1] : parts[0];
+        if (/^[A-Za-z_$][\w$]*$/.test(local)) names.push(local);
+      }
+    }
+    for (const m of text.matchAll(/^export\s*\*\s*from\s*['"]([^'"]+)['"]/gm)) {
+      const spec = m[1];
+      const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(p), spec));
+      const target = textByPath.get(resolved);
+      if (target === undefined) throw new Error(`unresolvable star re-export ${p} -> ${spec} (resolved ${resolved})`);
+      names.push(...collectExports(resolved, target, visited));
+    }
+    return [...new Set(names)];
+  };
+  for (const { p, text } of consumers.filter(({ p }) => modules.includes(p))) {
+    const names = collectExports(p, text, new Set());
     for (const name of names) {
       const usedElsewhere = consumers.some(
-        (other) => other.p !== p && new RegExp(pattern(name)).test(other.text)
+        (other) => other.p !== p && new RegExp(pattern(name)).test(callerText.get(other.p))
       );
       // Occurrences in the exporting file. One is the declaration alone, so
       // nothing there reads the name back; two or more is a real use.
