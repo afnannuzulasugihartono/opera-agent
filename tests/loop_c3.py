@@ -9,6 +9,7 @@
 
 import asyncio
 import base64
+import ctypes
 import json
 import os
 import sys
@@ -24,7 +25,10 @@ import browser_extension_test as H
 from playwright.async_api import async_playwright
 
 GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
+NIM_URL = 'https://integrate.api.nvidia.com/v1/chat/completions'
 MODEL = 'qwen/qwen3.8-27b'
+NIM_MODEL = 'meta/llama-3.2-11b-vision-instruct'
+UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
 PASS_SCORE = 100
 ATTEMPTS = 3
 MAX_VISION_CALLS = 10
@@ -35,6 +39,52 @@ def qwen_call(request):
         payload = json.loads(response.read())
     time.sleep(12)
     return json.loads(payload['choices'][0]['message']['content'])
+
+
+def nim_json(image_b64, question):
+    key = os.environ.get('NVIDIA_API_KEY', '')
+    assert key, 'NVIDIA_API_KEY is missing from the environment'
+    body = json.dumps({
+        'model': NIM_MODEL,
+        'max_tokens': 512,
+        'messages': [{
+            'role': 'user',
+            'content': [
+                {'type': 'text', 'text': question + ' Answer as JSON only.'},
+                {'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,' + image_b64}},
+            ],
+        }],
+    }).encode()
+    last = None
+    for wait in (15, 45):
+        request = urllib.request.Request(
+            NIM_URL, data=body,
+            headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'User-Agent': UA},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=120) as response:
+                payload = json.loads(response.read())
+            time.sleep(5)
+            return json.loads(payload['choices'][0]['message']['content'])
+        except Exception as error:
+            last = error
+            print('nim retry in %ds: %s' % (wait, str(error)[:120]))
+            time.sleep(wait)
+    raise last
+
+
+def see_json(image_b64, question):
+
+    # Calibrator failover: NIM 11b-vision first (~3s), Groq qwen on failure.
+    # Whichever answers valid JSON wins; the caller never knows the difference.
+    last = None
+    if os.environ.get('NVIDIA_API_KEY'):
+        try:
+            return nim_json(image_b64, question)
+        except Exception as error:
+            last = error
+            print('nim failed, failing over to groq:', str(error)[:120])
+    return qwen_json(image_b64, question)
 
 
 def qwen_json(image_b64, question):
@@ -79,7 +129,7 @@ async def drive(port, profile):
         shot_dir = Path('tmp/c3shots')
         shot_dir.mkdir(parents=True, exist_ok=True)
         (shot_dir / ('shot-%d.png' % calls[0])).write_bytes(shot)
-        answer = await asyncio.to_thread(qwen_json, base64.b64encode(shot).decode(), question)
+        answer = await asyncio.to_thread(see_json, base64.b64encode(shot).decode(), question)
         print('vision #%d:' % calls[0], json.dumps(answer)[:300])
         return answer
 
@@ -129,13 +179,42 @@ async def drive(port, profile):
         page = [pg for pg in context.pages if 't-rex-runner' in (pg.url or '')][0]
         await asyncio.sleep(5)
 
+        # A throttled renderer reads as sensor blindness (identical frames),
+        # so the game window is kept in the foreground for the whole run.
+        user32 = ctypes.windll.user32
+        front_stop = [False]
+
+        async def keep_front():
+            seen = []
+            while not front_stop[0]:
+                try:
+                    found = []
+
+                    def enum_cb(hwnd, _):
+                        if user32.IsWindowVisible(hwnd):
+                            buf = ctypes.create_unicode_buffer(512)
+                            user32.GetWindowTextW(hwnd, buf, 512)
+                            if buf.value and 't-rex' in buf.value.lower():
+                                found.append(hwnd)
+                        return True
+
+                    cb = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)(enum_cb)
+                    user32.EnumWindows(cb, 0)
+                    for hwnd in found:
+                        user32.SetForegroundWindow(hwnd)
+                except Exception:
+                    pass
+                await asyncio.sleep(5)
+
+        front_task = asyncio.create_task(keep_front())
+
         # Watch snapshots every 5s so a human can follow the run later.
         watching = [True]
 
         async def watcher():
             n = 0
             while watching[0]:
-                await asyncio.sleep(5)
+                await asyncio.sleep(3)
                 try:
                     n += 1
                     await page.screenshot(path='tmp/c3shots/run-%02d.png' % n)
@@ -159,35 +238,38 @@ async def drive(port, profile):
 
         best = 0
         for attempt in range(1, ATTEMPTS + 1):
+
+            # Guard FIRST, verify after: the game kills an unguarded dino in
+            # ~4s while a vision round trip costs 5-15s, so every earlier run
+            # handed the loop a corpse. The loop guards from the first tick;
+            # vision only observes.
             await cmd('page.key', {'tabId': tab_id, 'key': 'Space', 'trusted': True})
-            await asyncio.sleep(2)
-            started_check = await see(page, 'This is the T-Rex runner game. Return {"started": true} if the game is running (ground scrolling or score counting), or {"started": false} if it still shows "Press Space to start" or a GAME OVER screen.')
-            if not started_check.get('started'):
-                print('attempt %d never started, retrying' % attempt)
-                await asyncio.sleep(1)
-                continue
             started = await cmd('loop.start', {'tabId': tab_id, 'program': {
-                'tickMs': 100, 'maxTicks': 300, 'maxDurationMs': 30000, 'trusted': True,
+                'tickMs': 100, 'maxTicks': 300, 'maxDurationMs': 45000, 'trusted': True,
                 'sensors': [
-                    {'id': 'obstacle', 'kind': 'track', 'region': {'x': 100, 'y': 315, 'width': 400, 'height': 90}, 'threshold': 0.02, 'leadMs': 500, 'pad': 40},
-                    {'id': 'calm', 'kind': 'stillness', 'region': {'x': 1070, 'y': 120, 'width': 140, 'height': 60}, 'threshold': 0.05, 'stillTicks': 30},
+                    {'id': 'obstacle', 'kind': 'track', 'region': {'x': 100, 'y': 315, 'width': 380, 'height': 70}, 'threshold': 0.01, 'leadMs': 200, 'pad': 35},
+                    {'id': 'calm', 'kind': 'stillness', 'region': {'x': 1070, 'y': 120, 'width': 140, 'height': 60}, 'threshold': 0.005, 'stillTicks': 30},
+                    {'id': 'flatline', 'kind': 'stillness', 'region': {'x': 950, 'y': 350, 'width': 300, 'height': 55}, 'threshold': 0.003, 'stillTicks': 30},
                     {'id': 'leapt', 'kind': 'pixelDiff', 'region': {'x': 0, 'y': 330, 'width': 70, 'height': 75}, 'threshold': 0.05},
                 ],
                 'rules': [
                     {'when': {'sensor': 'obstacle'}, 'do': {'action': 'key', 'key': 'Space'}},
                 ],
-                'stopWhen': [{'sensor': 'calm'}],
+                'stopWhen': [{'sensor': 'calm'}, {'sensor': 'flatline'}],
             }})
             loop_id = H.assert_completed_ok(started)['loopId']
-
-            # Death stops the loop itself via the stillness sensor (score
-            # digits freeze), so no vision polling is needed mid-run: the
-            # debugger detaches within seconds of death instead of idling.
-            await asyncio.sleep(32)
-            body = await cmd('loop.read', {'loopId': loop_id})
-            final = H.assert_completed_ok(body)
-            if final['running']:
+            await asyncio.sleep(3)
+            started_check = await see(page, 'This is the T-Rex runner game. Return {"started": true} if the game is running (ground scrolling or score counting), or {"started": false} if it still shows "Press Space to start" or a GAME OVER screen.')
+            if not started_check.get('started'):
+                print('attempt %d never started, retrying' % attempt)
                 await cmd('loop.stop', {'loopId': loop_id})
+                await asyncio.sleep(1)
+                continue
+
+            # Death stops the loop itself via the stillness sensors (score
+            # digits and ground texture freeze), so no vision polling is
+            # needed mid-run: the debugger detaches within seconds of death.
+            await asyncio.sleep(35)
             body = await cmd('loop.read', {'loopId': loop_id})
             final = H.assert_completed_ok(body)
             if final['running']:
@@ -215,6 +297,7 @@ async def drive(port, profile):
             await asyncio.sleep(2)
 
         print('best score:', best)
+        front_stop[0] = True
         watching[0] = False
         await asyncio.sleep(0.2)
         assert best >= PASS_SCORE, {'best': best}

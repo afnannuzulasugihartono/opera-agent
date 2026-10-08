@@ -19,9 +19,10 @@ import {
 import { evaluateRules, validateRule } from './lib/watch.js';
 import {
   LOOP_SYNTHETIC_DEAD_TICKS,
-  centroidOfChanged,
+  LOOP_TRACK_MIN_RUN,
   centroidTrack,
   downscaleHash,
+  frontOfChanged,
   matchTemplate,
   pixelDiff,
   recordTick,
@@ -1244,6 +1245,7 @@ function loopSummary(session, running, stopReason = null) {
     trusted: session.trusted,
     ...(session.trustedAtTick != null ? { trustedAtTick: session.trustedAtTick } : {}),
     ...(session.lastError ? { lastError: session.lastError } : {}),
+    ...(session.snapshotInfo ? { snapshot: session.snapshotInfo } : {}),
     trace: session.state.trace
   };
 }
@@ -1390,6 +1392,7 @@ async function loopSense(session, now) {
   const program = session.program;
   const pixelSensors = program.sensors.filter((s) => s.kind !== 'timer');
   let snapshot = null;
+  let captureMs = 0;
   if (pixelSensors.length > 0) {
     // Capture only the union of sensed regions: a full-viewport JPEG encode
     // per tick measured red (>250ms) in the headed drive, while the game
@@ -1407,8 +1410,11 @@ async function loopSense(session, now) {
       width: Math.max(1, Math.ceil(union.right - union.x)),
       height: Math.max(1, Math.ceil(union.bottom - union.y))
     };
+    const capStart = performance.now();
     snapshot = await loopSnapshot(session.tabId, clip);
+    captureMs = performance.now() - capStart;
     session.scale = snapshot.width / snapshot.cssWidth;
+    session.snapshotInfo = { width: snapshot.width, height: snapshot.height, cssWidth: snapshot.cssWidth };
   }
   const active = new Map();
   const values = {};
@@ -1444,11 +1450,11 @@ async function loopSense(session, now) {
       const before = session.frames.get(sensor.id);
       session.frames.set(sensor.id, crop);
       if (before && before.width === crop.width && before.height === crop.height) {
-        const seen = centroidOfChanged(before.data, crop.data, crop.width, crop.height, 16);
+        const seen = frontOfChanged(before.data, crop.data, crop.width, crop.height, 16, LOOP_TRACK_MIN_RUN);
         const prev = session.track.get(sensor.id) || null;
-        if (seen && seen.fraction >= sensor.threshold) {
-          const tti = prev ? centroidTrack(prev.x, seen.x, now - prev.t, sensor.pad, sensor.leadMs) : null;
-          session.track.set(sensor.id, { x: seen.x, t: now });
+        if (seen != null) {
+          const tti = prev ? centroidTrack(prev.x, seen, now - prev.t, sensor.pad, sensor.leadMs) : null;
+          session.track.set(sensor.id, { x: seen, t: now });
           values[sensor.id] = tti;
           if (tti != null) active.set(sensor.id, { fired: true, tti });
         } else {
@@ -1476,7 +1482,7 @@ async function loopSense(session, now) {
     if (match) values[sensor.id] = match.score;
     if (match && match.score >= sensor.threshold) active.set(sensor.id, { fired: true, score: match.score, x: match.x, y: match.y });
   }
-  return { active, values, frameHash: snapshot ? downscaleHash(snapshot.data, snapshot.width, snapshot.height) : null };
+  return { active, values, captureMs, frameHash: snapshot ? downscaleHash(snapshot.data, snapshot.width, snapshot.height) : null };
 }
 
 function loopTickLater(session) {
@@ -1513,13 +1519,15 @@ async function loopTick(loopId) {
         return;
       }
     }
-    const { active, values, frameHash } = await loopSense(session, now);
+    const { active, values, captureMs, frameHash } = await loopSense(session, now);
+    const senseMs = performance.now() - workStarted - captureMs;
     let fired = 0;
     for (const rule of session.program.rules) {
       if (!active.has(rule.when.sensor)) continue;
       await loopAct(session, rule.do);
       fired += 1;
     }
+    const actMs = performance.now() - workStarted - captureMs - senseMs;
     if (!session.trusted && fired > 0 && frameHash != null) {
       if (session.lastFrameHash != null && session.lastFrameHash === frameHash) {
         session.deadStreak += 1;
@@ -1534,7 +1542,7 @@ async function loopTick(loopId) {
       }
     }
     const workMs = performance.now() - workStarted;
-    const result = recordTick(session.state, { workMs, fired, active: [...active.keys()], values });
+    const result = recordTick(session.state, { workMs, fired, active: [...active.keys()], values, timing: { captureMs, senseMs, actMs } });
     session.mode = result.mode;
     if (result.overrun) {
       finishLoop(loopId, 'tick-overrun');

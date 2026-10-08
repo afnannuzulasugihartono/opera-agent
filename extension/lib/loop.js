@@ -241,6 +241,17 @@ export function recordTick(state, reading = {}) {
   state.bands.push(band);
   if (state.bands.length > LOOP_BAND_WINDOW) state.bands.splice(0, state.bands.length - LOOP_BAND_WINDOW);
   state.trace.push({ tick: state.tick, band, fired, sensors: active, values });
+
+  // Phase timings ride along when the caller measured them: capture, sense,
+  // and act have different owners (CDP, pixel math, input), so a slow tick
+  // is only diagnosable when the total is split.
+  if (reading.timing && typeof reading.timing === 'object') {
+    const timing = {};
+    for (const [key, value] of Object.entries(reading.timing).slice(0, 8)) {
+      if (typeof value === 'number' && Number.isFinite(value)) timing[key] = Math.round(value * 10) / 10;
+    }
+    state.trace[state.trace.length - 1].timing = timing;
+  }
   if (state.trace.length > LOOP_TRACE_LIMIT) state.trace.splice(0, state.trace.length - LOOP_TRACE_LIMIT);
   return { band, mode: loopMode(state), overrun: loopOverrun(state) };
 }
@@ -324,32 +335,41 @@ export function matchTemplate(region, regionWidth, regionHeight, template, templ
 // Uniform scrolling (ground dots) centres every frame, so its velocity reads
 // ~0 and stays quiet; an entering obstacle shifts the centroid hard.
 
-export function centroidOfChanged(a, b, width, height, perPixel = 16) {
+export const LOOP_TRACK_MIN_RUN = 12;
+
+// Rightmost solid front: the x of the rightmost column holding a vertical
+// run of changed pixels. Speckle (ground dots, JPEG shimmer) never forms a
+// run, so it cannot pin the front; a cactus column always does. This is what
+// lets a track sensor ignore texture and time the threat itself.
+
+export function frontOfChanged(a, b, width, height, perPixel = 16, minRun = LOOP_TRACK_MIN_RUN) {
   if (!a || !b || a.length !== b.length || a.length !== width * height * 4 || a.length === 0) return null;
   const threshold = Number(perPixel);
-  if (!Number.isFinite(threshold) || threshold < 0) return null;
-  let sumX = 0;
-  let changed = 0;
-  const pixels = a.length / 4;
-  for (let p = 0; p < pixels; p += 1) {
-    const i = p * 4;
-    const drift = Math.max(
-      Math.abs(a[i] - b[i]),
-      Math.abs(a[i + 1] - b[i + 1]),
-      Math.abs(a[i + 2] - b[i + 2])
-    );
-    if (drift > threshold) {
-      sumX += p % width;
-      changed += 1;
+  const run = Number(minRun);
+  if (!Number.isFinite(threshold) || threshold < 0 || !Number.isInteger(run) || run < 1) return null;
+  for (let x = width - 1; x >= 0; x -= 1) {
+    let streak = 0;
+    for (let y = 0; y < height; y += 1) {
+      const i = (y * width + x) * 4;
+      const drift = Math.max(
+        Math.abs(a[i] - b[i]),
+        Math.abs(a[i + 1] - b[i + 1]),
+        Math.abs(a[i + 2] - b[i + 2])
+      );
+      if (drift > threshold) {
+        streak += 1;
+        if (streak >= run) return x;
+      } else {
+        streak = 0;
+      }
     }
   }
-  if (changed === 0) return null;
-  return { x: sumX / changed, fraction: changed / pixels };
+  return null;
 }
 
-// Time-to-impact from two centroid sightings. Positions run in crop pixels
-// with x growing rightward, so an approaching obstacle has a falling x.
-// Returns impact milliseconds, or null when there is nothing to time.
+// Time-to-impact from two front sightings. Positions run in crop pixels with
+// x growing rightward, so an approaching obstacle has a falling x. Returns
+// impact milliseconds, or null when there is nothing to time.
 
 export function centroidTrack(prevX, currX, dtMs, padPx, leadMs) {
   if (prevX == null || currX == null) return null;

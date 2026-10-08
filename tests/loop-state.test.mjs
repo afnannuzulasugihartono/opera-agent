@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LOOP_TRACE_LIMIT, LOOP_BAND_WINDOW, LOOP_OVERRUN_REDS, startLoopState, recordTick, loopMode, loopOverrun, centroidTrack } from '../extension/lib/loop.js';
+import { LOOP_TRACE_LIMIT, LOOP_BAND_WINDOW, LOOP_OVERRUN_REDS, LOOP_TRACK_MIN_RUN, startLoopState, recordTick, loopMode, loopOverrun, centroidTrack, frontOfChanged } from '../extension/lib/loop.js';
 
 test('loop state starts empty', () => {
   const state = startLoopState();
@@ -65,6 +65,36 @@ test('centroid tracker fires on time-to-impact, not on presence', () => {
 
   // Already past the pad fires immediately: late is better than never.
   assert.equal(centroidTrack(300, 50, 200, 90, 500), 0);
+});
+
+test('front detection finds solid masses, not speckle', () => {
+  assert.equal(LOOP_TRACK_MIN_RUN, 12);
+  const blank = (w, h) => new Uint8ClampedArray(w * h * 4);
+  const paint = (buf, w, x, y0, y1) => {
+    for (let y = y0; y < y1; y += 1) {
+      const i = (y * w + x) * 4;
+      buf[i] = 255;
+      buf[i + 1] = 255;
+      buf[i + 2] = 255;
+    }
+  };
+
+  // Identical frames have no front.
+  assert.equal(frontOfChanged(blank(10, 10), blank(10, 10), 10, 10), null);
+
+  // Scattered changed pixels never form the required vertical run.
+  const a = blank(10, 10);
+  const speckled = blank(10, 10);
+  paint(speckled, 10, 8, 0, 2);
+  paint(speckled, 10, 9, 5, 7);
+  assert.equal(frontOfChanged(a, speckled, 10, 10, 16, 3), null);
+
+  // A solid bar reads at its column; the rightmost of two wins.
+  const bar = blank(10, 10);
+  paint(bar, 10, 7, 0, 10);
+  assert.equal(frontOfChanged(a, bar, 10, 10, 16, 3), 7);
+  paint(bar, 10, 4, 0, 10);
+  assert.equal(frontOfChanged(a, bar, 10, 10, 16, 3), 7);
 });
 
 test('mode degrades on yellow and sheds on orange', () => {
