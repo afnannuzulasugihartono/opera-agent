@@ -33,8 +33,9 @@ const condText = (c) => JSON.stringify(c || {});
 
 test('recon runs detect, map, act, verify in order with honest failures', () => {
   const def = definition();
-  const ids = def.steps.map((s) => s.id || s.name);
-  assert.ok(ids.indexOf('read0') < ids.indexOf('collect'), 'read before map');
+  const order = [];
+  walk(def.steps, (s) => { if (s.id) order.push(s.id); });
+  assert.ok(order.indexOf('read0') < order.indexOf('findT'), 'read before map');
   const fails = [];
   walk(def.steps, (s) => { if (s.type === 'fail') fails.push(s.code); });
   assert.deepEqual([...new Set(fails)].sort(), ['CAPTCHA_BLOCKED', 'TARGET_NOT_FOUND', 'VERIFY_FAILED']);
@@ -66,7 +67,7 @@ test('every strong pattern blocks alone, weak patterns block only in pairs', () 
 test('recon uses only known runner step types and methods, within budget', () => {
   const def = definition();
   const types = new Set(['command', 'if', 'set', 'repeat', 'foreach', 'wait', 'fail']);
-  const methods = new Set(['page.read', 'page.find', 'page.collect_links', 'page.click', 'page.fill']);
+  const methods = new Set(['page.read', 'page.find', 'page.click', 'page.fill']);
   let commands = 0;
   walk(def.steps, (s) => {
     assert.ok(types.has(s.type), `unknown step type ${s.type}`);
