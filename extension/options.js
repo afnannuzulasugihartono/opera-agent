@@ -33,6 +33,10 @@ function showModelStatus(text) {
   $('modelStatus').textContent = text;
 }
 
+function showProbeStatus(text) {
+  $('modelProbeStatus').textContent = text;
+}
+
 function init() {
   $('version').textContent = `${chrome.runtime.getManifest().version} \u00b7 Protocol ${PROTOCOL_VERSION}`;
   prefill().catch((error) => showStatus(userErrorMessage(error?.message || error)));
@@ -58,6 +62,18 @@ function init() {
       showModelStatus('Setelan model tersimpan di device ini.');
     } catch (error) {
       showModelStatus(userErrorMessage(error?.message || error));
+    }
+  });
+  $('modelProbe').addEventListener('click', async () => {
+    const probe = $('modelProbe');
+    probe.disabled = true;
+    try {
+      const reply = await chrome.runtime.sendMessage({ scope: 'opera-agent-options', action: 'testModel' });
+      showProbeStatus(reply && reply.ok ? 'Tersambung.' : String(reply?.message || reply?.error || 'Gagal tersambung.'));
+    } catch (error) {
+      showProbeStatus(userErrorMessage(error?.message || error));
+    } finally {
+      probe.disabled = false;
     }
   });
 }

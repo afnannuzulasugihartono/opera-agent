@@ -33,7 +33,8 @@ import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './l
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
 import { DEFAULT_BRIDGE_URL, LISTEN_BASE_URL } from './lib/endpoints.js';
-import { saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
+import { readModelConfig, saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
+import { buildProbeRequest, MODEL_TIMEOUT_MS } from './lib/model-client.js';
 
 // WHY localhost only for now: externally_connectable is a grant, and a grant to
 // an origin nobody has chosen yet is a grant nobody reviewed. The production
@@ -2526,6 +2527,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     Promise.resolve(handleWatchFacts(tabId, message.params || {}))
       .then((r) => sendResponse({ ok: true, ...r }))
       .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 500) }));
+    return true;
+  }
+  if (message && message.scope === 'opera-agent-options' && message.action === 'testModel') {
+    Promise.resolve(async () => {
+      const cfg = await readModelConfig(chrome.storage.local);
+      if (!cfg.configured) return { ok: false, code: 'MODEL_NOT_CONFIGURED', message: `Belum dikonfigurasi: ${cfg.missing.join(', ')}.` };
+      const probe = buildProbeRequest({ model: cfg.model });
+      const res = await fetch(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', Authorization: `Bearer ${cfg.key}` }, body: JSON.stringify({ ...probe }), signal: AbortSignal.timeout(MODEL_TIMEOUT_MS) });
+      if (!res || !res.ok) return { ok: false, code: 'MODEL_HTTP_ERROR', message: `Endpoint menjawab ${res?.status ?? 'nothing'}.` };
+      return { ok: true };
+    })()
+      .then((reply) => sendResponse(reply))
+      .catch((error) => sendResponse({ ok: false, code: 'MODEL_HTTP_ERROR', message: String(error?.message || error).slice(0, 200) }));
     return true;
   }
   if (!message || message.scope !== 'opera-agent-popup') return false;

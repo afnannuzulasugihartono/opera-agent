@@ -1,10 +1,11 @@
 // @last-edited: 2026-10-08 UTC+7.
 // @title: model-client.test — Test.
 // @state: locks the device-local model compiler: config gate, single destination, bounded call, key never leaks.
-// @dependencies: node:test, strict.
+// @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { composeModelPlan, buildProbeRequest, MODEL_TIMEOUT_MS, MODEL_MAX_TOKENS } from '../lib/model-client.js';
 
 const storageOf = (cfg) => ({ get: async () => cfg });
@@ -72,4 +73,11 @@ test('a hung endpoint surfaces MODEL_TIMEOUT, never a hang', async () => {
 test('compiler bounds are pinned', () => {
   assert.equal(MODEL_TIMEOUT_MS, 30000);
   assert.equal(MODEL_MAX_TOKENS, 2000);
+});
+
+test('background routes the options probe action to the compiler module', async () => {
+  const bg = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+  assert.ok(bg.includes(`scope === 'opera-agent-options'`));
+  assert.ok(bg.includes(`action === 'testModel'`));
+  assert.ok(bg.includes('buildProbeRequest'));
 });
