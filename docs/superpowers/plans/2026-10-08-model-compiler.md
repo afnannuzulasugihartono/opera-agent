@@ -71,7 +71,7 @@ Create `tests/model-client.test.mjs`:
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { composeModelPlan, buildProbeRequest } from '../extension/lib/model-client.js';
+import { composeModelPlan, buildProbeRequest, MODEL_TIMEOUT_MS, MODEL_MAX_TOKENS } from '../lib/model-client.js';
 
 const storageOf = (cfg) => ({ get: async () => cfg });
 const program = { root: { type: 'SEQUENCE', children: [{ type: 'COMMAND', method: 'page.find', arguments: { text: 'Skip' }, resultBinding: 'hit' }] } };
@@ -129,6 +129,11 @@ test('probe carries no page content and no goal', () => {
   assert.ok(JSON.stringify(probe).length < 300);
 });
 
+test('compiler bounds are pinned', () => {
+  assert.equal(MODEL_TIMEOUT_MS, 30000);
+  assert.equal(MODEL_MAX_TOKENS, 2000);
+});
+
 test('a hung endpoint surfaces MODEL_TIMEOUT, never a hang', async () => {
   const hanging = () => Promise.reject(Object.assign(new Error('timed out'), { name: 'TimeoutError' }));
   const out = await composeModelPlan({ storage: storageOf(full), fetchImpl: hanging }, { goal: 'x', page: {}, target, budgets });
@@ -184,7 +189,7 @@ export async function composeModelPlan({ storage, fetchImpl }, { goal, page, tar
   const body = { model: cfg.model, messages: [{ role: 'system', content: req.system }, { role: 'user', content: req.user }], temperature: 0, max_tokens: MODEL_MAX_TOKENS };
   let res;
   try {
-    res = await fetchImpl(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${cfg.key}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(MODEL_TIMEOUT_MS) });
+    res = await fetchImpl(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', Authorization: `Bearer ${cfg.key}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(MODEL_TIMEOUT_MS) });
   } catch (error) {
     const timedOut = String(error?.name || '') === 'TimeoutError';
     return { ok: false, code: timedOut ? 'MODEL_TIMEOUT' : 'MODEL_HTTP_ERROR', message: timedOut ? 'The model call timed out.' : 'The model call failed.' };
@@ -216,7 +221,7 @@ export * from '../extension/lib/model-client.js';
 - [ ] **Step 4: Run to verify it passes**
 
 Run: `node --test tests/model-client.test.mjs`
-Expected: PASS all 6. Then `npm test 2>&1 | tail -n 9` — all pass.
+Expected: PASS all 7. Then `npm test 2>&1 | tail -n 9` — all pass.
 
 - [ ] **Step 5: Commit**
 
@@ -342,7 +347,7 @@ if (message && message.scope === 'opera-agent-options' && message.action === 'te
     const cfg = await readModelConfig(chrome.storage.local);
     if (!cfg.configured) return { ok: false, code: 'MODEL_NOT_CONFIGURED', message: `Belum dikonfigurasi: ${cfg.missing.join(', ')}.` };
     const probe = buildProbeRequest({ model: cfg.model });
-    const res = await fetch(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${cfg.key}` }, body: JSON.stringify({ ...probe }), signal: AbortSignal.timeout(MODEL_TIMEOUT_MS) });
+    const res = await fetch(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', Authorization: `Bearer ${cfg.key}` }, body: JSON.stringify({ ...probe }), signal: AbortSignal.timeout(MODEL_TIMEOUT_MS) });
     if (!res || !res.ok) return { ok: false, code: 'MODEL_HTTP_ERROR', message: `Endpoint menjawab ${res?.status ?? 'nothing'}.` };
     return { ok: true };
   })()
