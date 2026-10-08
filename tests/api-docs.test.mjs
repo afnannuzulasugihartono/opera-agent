@@ -128,6 +128,19 @@ test('extractToken accepts exactly the three documented carriers', async () => {
   );
 });
 
+test('command resolves a user JWT to the caller-owned first device, never the fixed name', async () => {
+  // Fourth auth path, past extractToken: a Supabase user JWT (ChatGPT plugin
+  // OAuth, and any future per-user caller) is verified with getUser when the
+  // device-token check fails, and the device is resolved by owner, never by
+  // DEVICE_NAME, so one account cannot drive another account's browser.
+  const gateway = await readFile(gatewayPath, 'utf8');
+  const code = stripComments(gateway, 'javascript');
+  assert.match(code, /supabase\.auth\.getUser\(token\)/, 'the gateway verifies a user JWT when the device token fails');
+  assert.match(code, /\.eq\("user_id", userId\)/, 'the JWT path resolves the device by owner');
+  assert.match(code, /\.neq\("status", "disabled"\)/, 'the JWT path skips disabled devices');
+  assert.match(code, /deviceName = device\.device_name/, 'the JWT path drives the resolved device, not the fixed name');
+});
+
 test('the security policy states the true carrier set and nothing else', async () => {
   // SECURITY.md is the most-read statement of the topic. An earlier version of
   // this test required it to keep the original false sentence as history; that

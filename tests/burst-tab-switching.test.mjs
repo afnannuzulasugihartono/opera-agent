@@ -17,8 +17,9 @@ import { validateBurst, burstCrossTabRef, burstStaleRef, BURST_MAX_STEPS, BURST_
 // collapsing to one LLM call per task at 2x lower latency and 11.8x lower cost,
 // and BrowserArena (arXiv 2510.02418) names direct URL navigation as one of the
 // three dominant failure modes of browser agents. So this is the structural gap.
-// (2026-10-03: navigate joined the vocabulary, re-measured at 9 of 26 in
-// tests/latency-surface.test.mjs section E. The gap this file guards is unchanged:
+// (2026-10-03: navigate joined the vocabulary, re-measured at 9 of 26 then;
+// the vocabulary now lives in BURST_ACTION_METHODS in extension/lib/protocol.js.
+// The gap this file guards is unchanged:
 // addressing a tab is not navigating it.)
 //
 // This is a CAPABILITY change, and the guards around it are the point of the
