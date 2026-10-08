@@ -36,6 +36,9 @@ test('recon runs detect, map, act, verify in order with honest failures', () => 
   const order = [];
   walk(def.steps, (s) => { if (s.id) order.push(s.id); });
   assert.ok(order.indexOf('read0') < order.indexOf('findT'), 'read before map');
+  assert.ok(order.indexOf('clickT') < order.indexOf('read1'), 'act click before re-read');
+  assert.ok(order.indexOf('fillT') < order.indexOf('read1'), 'act fill before re-read');
+  assert.ok(order.indexOf('read1') < order.indexOf('findV'), 're-read before verify find');
   const fails = [];
   walk(def.steps, (s) => { if (s.type === 'fail') fails.push(s.code); });
   assert.deepEqual([...new Set(fails)].sort(), ['CAPTCHA_BLOCKED', 'TARGET_NOT_FOUND', 'VERIFY_FAILED']);
@@ -84,5 +87,5 @@ test('recon uses only known runner step types and methods, within budget', () =>
 
 test('output reports honestly', () => {
   const def = definition();
-  for (const key of ['blocked', 'found', 'title', 'url']) assert.ok(def.output[key] !== undefined, `output misses ${key}`);
+  for (const key of ['blocked', 'found', 'ref', 'label', 'title', 'url', 'blockPattern']) assert.ok(def.output[key] !== undefined, `output misses ${key}`);
 });
