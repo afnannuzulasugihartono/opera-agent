@@ -30,3 +30,15 @@ test('grants are EXECUTE to service_role only', () => {
     assert.ok(migration.includes(`grant execute on function public.${fn}`), fn);
   }
 });
+
+test('request_id reuse with a different definition is refused, not silently shared', () => {
+  // WHY this pin: the first version returned the existing row for any caller
+  // reusing a request_id, so two different adhoc graphs under one key silently
+  // ran the first caller's workflow. Same definition stays idempotent; a
+  // mismatch is an explicit conflict (surfaced by runAdhoc as
+  // REQUEST_ID_CONFLICT) so the caller retries with a fresh key. Both return
+  // paths — the fast select and the unique_violation race Retry — compare.
+  const hits = migration.match(/v_existing\.definition is distinct from p_definition/g) || [];
+  assert.equal(hits.length, 2, 'both the fast path and the race retry must compare definitions');
+  assert.ok(migration.includes('REQUEST_ID_CONFLICT'));
+});

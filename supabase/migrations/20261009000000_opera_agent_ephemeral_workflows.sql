@@ -29,6 +29,13 @@ begin
   end if;
   select * into v_existing from public.opera_workflows where request_id = p_request_id;
   if found then
+    -- A request_id that already names a DIFFERENT definition must not silently
+    -- share the row: the second caller would run the first caller's workflow.
+    -- Same definition stays idempotent; a mismatch is an explicit conflict so
+    -- the caller retries with a fresh key.
+    if v_existing.definition is distinct from p_definition then
+      return jsonb_build_object('ok', false, 'error', 'REQUEST_ID_CONFLICT');
+    end if;
     return jsonb_build_object('ok', true, 'name', v_existing.name, 'version', v_existing.version, 'lease_until', v_existing.lease_until);
   end if;
   select count(*) into v_active from public.opera_workflows where ephemeral = true and lease_until > now();
@@ -52,6 +59,9 @@ begin
     exception when unique_violation then
       select * into v_existing from public.opera_workflows where request_id = p_request_id;
       if found then
+        if v_existing.definition is distinct from p_definition then
+          return jsonb_build_object('ok', false, 'error', 'REQUEST_ID_CONFLICT');
+        end if;
         return jsonb_build_object('ok', true, 'name', v_existing.name, 'version', v_existing.version, 'lease_until', v_existing.lease_until);
       end if;
       if v_attempt = 3 then
