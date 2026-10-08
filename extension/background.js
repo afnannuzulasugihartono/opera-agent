@@ -233,7 +233,7 @@ async function ensureContent(tabId) {
   } catch (error) {
     log.debug('CONTENT_PING_FAILED', error?.message || String(error));
   }
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['semantic-identity.js', 'semantic-views.js', 'content.js'] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content.js'] });
 }
 
 async function contentCall(tabId, method, params = {}) {
@@ -603,6 +603,8 @@ async function capturePage(tabId, params, context) {
       { quality: 40, scale: baseScale * 0.55 }
     ].filter((attempt, index, all) => index === all.findIndex((item) => item.quality === attempt.quality && item.scale === attempt.scale));
     let chosen = null;
+    let sawTooLarge = false;
+    let sawTooSmall = false;
     for (const attempt of attempts) {
       if (context?.deadline && Date.now() >= context.deadline - 100) throw codedError('CAPTURE_TIMEOUT', 'Screenshot capture deadline reached.', { tabId });
       const response = await chrome.debugger.sendCommand(target, 'Page.captureScreenshot', {
@@ -615,12 +617,26 @@ async function capturePage(tabId, params, context) {
       });
       const data = String(response?.data || '');
       const bytes = screenshotBytes(data);
-      if (bytes >= 512 && bytes <= MAX_SCREENSHOT_BYTES) {
-        chosen = { data, bytes, quality: attempt.quality, scale: attempt.scale };
-        break;
+
+      // A frame under 512 bytes carries no image, so it is skipped without
+      // counting as a reduction failure; the refusal below names it exactly.
+
+      if (bytes < 512) {
+        sawTooSmall = true;
+        continue;
       }
+      if (bytes > MAX_SCREENSHOT_BYTES) {
+        sawTooLarge = true;
+        continue;
+      }
+      chosen = { data, bytes, quality: attempt.quality, scale: attempt.scale };
+      break;
     }
-    if (!chosen) throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
+    if (!chosen) {
+      if (sawTooLarge) throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
+      if (sawTooSmall) throw codedError('SCREENSHOT_TOO_SMALL', 'Screenshot capture produced no usable image data; the page may not have rendered yet.', { tabId, minBytes: 512 });
+      throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
+    }
     const blank = await screenshotLooksBlank(chosen.data);
     if (blank.blank) throw codedError('BLANK_SCREENSHOT', 'The captured frame appears blank; wait for the page to render and try again.', { tabId });
     const sha256 = await screenshotHash(chosen.data);
@@ -796,7 +812,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     else popupLog.delete(opener);
   }
   for (const [loopId, session] of loopSessions) {
-    if (session.tabId === tabId) finishLoop(loopId, 'tab-closed');
+    if (session.tabId === tabId) finishLoop(loopId, 'tab-closed').catch((error) => log.debug('LOOP_FINISH_FAILED', error?.message || String(error)));
   }
   for (const [loopId, session] of stateSessions) {
     if (session.tabId === tabId) finishStateLoop(loopId, 'tab-closed');
@@ -1255,7 +1271,7 @@ function loopSummary(session, running, stopReason = null) {
   };
 }
 
-function finishLoop(loopId, stopReason) {
+async function finishLoop(loopId, stopReason) {
   const session = loopSessions.get(loopId);
   if (!session) return loopResults.get(loopId) || null;
   if (session.timer) clearTimeout(session.timer);
@@ -1264,7 +1280,7 @@ function finishLoop(loopId, stopReason) {
   loopSessions.delete(loopId);
   loopResults.set(loopId, summary);
   while (loopResults.size > 20) loopResults.delete(loopResults.keys().next().value);
-  releaseDebuggerSession(session.debuggerSession, log);
+  await releaseDebuggerSession(session.debuggerSession, log);
   return summary;
 }
 
@@ -1556,25 +1572,25 @@ async function loopTick(loopId) {
   if (!session) return;
   const now = Date.now();
   if (session.lastTickAt && now - session.lastTickAt > Math.max(5 * session.program.tickMs, LOOP_SUSPEND_FLOOR_MS)) {
-    finishLoop(loopId, 'suspended');
+    await finishLoop(loopId, 'suspended');
     return;
   }
   session.lastTickAt = now;
   const workStarted = performance.now();
   try {
     if (!session.debuggerSession.attached) {
-      finishLoop(loopId, 'debugger-detached');
+      await finishLoop(loopId, 'debugger-detached');
       return;
     }
     const tab = await chrome.tabs.get(session.tabId).catch(() => null);
     if (!tab) {
-      finishLoop(loopId, 'tab-closed');
+      await finishLoop(loopId, 'tab-closed');
       return;
     }
     if (session.state.tick % LOOP_POLICY_RECHECK_TICKS === 0) {
       const policy = await contentCall(session.tabId, 'page.capture_policy', {});
       if (!policy.allowed) {
-        finishLoop(loopId, 'sensitive-surface');
+        await finishLoop(loopId, 'sensitive-surface');
         return;
       }
     }
@@ -1604,19 +1620,19 @@ async function loopTick(loopId) {
     const result = recordTick(session.state, { workMs, fired, active: [...active.keys()], values, timing: { captureMs, senseMs, actMs } });
     session.mode = result.mode;
     if (result.overrun) {
-      finishLoop(loopId, 'tick-overrun');
+      await finishLoop(loopId, 'tick-overrun');
       return;
     }
     if (session.state.tick >= session.program.maxTicks) {
-      finishLoop(loopId, 'max-ticks');
+      await finishLoop(loopId, 'max-ticks');
       return;
     }
     if (now - session.startedAt >= session.program.maxDurationMs) {
-      finishLoop(loopId, 'max-duration');
+      await finishLoop(loopId, 'max-duration');
       return;
     }
     if (session.program.stopWhen.some((entry) => active.has(entry.sensor))) {
-      finishLoop(loopId, 'stop-condition');
+      await finishLoop(loopId, 'stop-condition');
       return;
     }
     loopTickLater(session);
@@ -1625,7 +1641,7 @@ async function loopTick(loopId) {
     session.lastError = String(error?.message || error).slice(0, 300);
     session.tickErrors += 1;
     if (session.tickErrors >= 3) {
-      finishLoop(loopId, 'tick-error');
+      await finishLoop(loopId, 'tick-error');
       return;
     }
     loopTickLater(session);
@@ -1712,7 +1728,7 @@ async function dispatch(method, params = {}, context = {}) {
     }
     case 'loop.stop': {
       const loopId = String(params.loopId || '');
-      const summary = finishLoop(loopId);
+      const summary = await finishLoop(loopId);
       if (!summary) throw new Error('Unknown loop.');
       return summary;
     }

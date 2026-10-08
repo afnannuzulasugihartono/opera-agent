@@ -45,7 +45,13 @@ function setBusy(button, busy) {
 }
 
 async function refresh() {
-  const data = await call('status');
+  let data;
+  try {
+    data = await call('status');
+  } catch (error) {
+    log.debug('POPUP_REFRESH_FAILED', error?.message || String(error));
+    return;
+  }
   if (!data?.ok) return;
   $('version').textContent = `${data.version} \u00b7 Protocol ${data.protocolVersion}`;
   $('deviceName').textContent = data.config.deviceName || 'opera';

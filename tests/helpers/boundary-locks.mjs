@@ -23,10 +23,17 @@
 // throw — same dataset attribute, same value, earlier and fallback-guarded. The
 // manifest moved on the version line only (1.6.15 → 1.6.16); the signing key,
 // permissions and entry points are untouched, so the extension id is stable.
+//
+// Re-pinned 2026-10-08 for the Wave B bug batch. No public contract moved: the
+// primitives, schemas, permissions and entry points are untouched. content.js
+// moved on one line (the state-event forward now swallows the worker-sleep
+// rejection via ?.catch). background.js moved on the Wave B hardening only
+// (burst fill value, empty tabId, SCREENSHOT_TOO_SMALL, awaited finishLoop,
+// full-list ensureContent, external key-clear refusal).
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', '7e6bb737b0baa01643167fc6515f14110d83ec7c'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists; forwards MAIN-world state-bridge events to the background
-  ['../extension/background.js', '5be3c1261e3d041bbf4a08d6d1eb4d6258a01c40'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture, suspend floor, stillness and track sensors; per-tick sensor activity, values, and phase timings in the trace; native-resolution sense frames; front-edge tracking immune to ground texture
+  ['../extension/content.js', '22be5ef8f1798df1327b4ed226748fd5496614c4'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists; forwards MAIN-world state-bridge events to the background, swallowing the worker-sleep rejection via ?.catch
+  ['../extension/background.js', '7c93ad45960121348babbb5b21a754be9b55c622'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture, suspend floor, stillness and track sensors; per-tick sensor activity, values, and phase timings in the trace; native-resolution sense frames; front-edge tracking immune to ground texture; Wave B hardening only — burst fill value regardless of refFromStep, empty tabId refused, SCREENSHOT_TOO_SMALL split out, finishLoop awaits the debugger release, ensureContent re-injects the full manifest script list, external model-key clear refused
   ['../extension/manifest.json', '054c2733cc69b0d0e317636554096a948fab5286'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable; version line 1.6.18 → 1.6.19 for sense-act loops; 1.6.19 → 1.6.20 for state loops
   ['../supabase/functions/opera-agent-mcp/index.ts', '7281599b47c3620136199da5d67dbfba77a6e6cc'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device; re-pinned for loop_start/loop_read/loop_stop (sense-act loops); loop sensors stillness, track; state tools loop_state_start/read/stop; run_adhoc (one-off writes as ephemeral workflows)
 ]);
