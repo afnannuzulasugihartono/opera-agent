@@ -11,6 +11,7 @@ import * as z from "zod/v4";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
+import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -512,6 +513,104 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
   };
 }
 
+// WHY a helper beside runWorkflow instead of inside it: a one-off write
+// compiles to a runner-shaped definition, registers under adhoc.*, runs, then
+// deletes. The runner itself is untouched, and the temporary row never
+// survives the call — the lease plus sweeper only cover the crash path.
+
+function rpcErrorParts(error: unknown, fallbackCode: string) {
+  if (error && typeof error === "object" && !Array.isArray(error)) {
+    const record = error as { code?: unknown; message?: unknown };
+    const code = typeof record.code === "string" && record.code ? record.code : fallbackCode;
+    const message = typeof record.message === "string" && record.message ? record.message : String(code);
+    return { code, message };
+  }
+  if (typeof error === "string" && error) return { code: error, message: error };
+  return { code: fallbackCode, message: fallbackCode };
+}
+
+async function runAdhoc(
+  graph: unknown,
+  requestId: unknown,
+  input: Record<string, unknown> | undefined,
+  waitTimeoutMs: number | undefined,
+  deviceName: string = DEVICE_NAME,
+  provider = ""
+) {
+  if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(requestId)) {
+    throw new CommandFailure("INVALID_REQUEST", "requestId must match /^[A-Za-z0-9_-]{1,100}$/.");
+  }
+  const compiled = compileAdhocGraph(graph as Record<string, unknown>);
+  if (!compiled.ok) {
+    throw new CommandFailure(compiled.code, compiled.message);
+  }
+  const waitMs = Math.max(1000, Math.min(120000, waitTimeoutMs ?? 60000));
+  try {
+    await rpc("opera_sweep_ephemeral_workflows", {});
+  } catch { /* piggyback GC only; registration sweeps again server-side */ }
+  const registered = await rpc("opera_register_ephemeral_workflow", {
+    p_request_id: requestId,
+    p_definition: compiled.definition,
+    p_description: "run_adhoc one-off write"
+  });
+  if (!registered?.ok || typeof registered.name !== "string") {
+    const parts = rpcErrorParts(registered?.error, "WORKFLOW_REGISTER_FAILED");
+    throw new CommandFailure(parts.code, parts.message);
+  }
+  const name = String(registered.name);
+  const started = await rpc("opera_start_workflow", {
+    p_name: name,
+    p_input: input ?? {},
+    p_timeout_ms: waitMs,
+    p_device_name: deviceName
+  });
+  if (!started?.ok || !started.runId) {
+    const parts = rpcErrorParts(started?.error, "WORKFLOW_START_FAILED");
+    throw new CommandFailure(parts.code, parts.message);
+  }
+  const runId = String(started.runId);
+  if (provider) {
+    try {
+      await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
+    } catch { /* dashboard metadata only */ }
+  }
+  const startedAt = Date.now();
+  let last: Record<string, unknown> | null = null;
+  while (Date.now() - startedAt < waitMs + 10000) {
+    await sleepMs(400);
+    last = await rpc("opera_get_workflow_run", { p_run_id: runId }) as Record<string, unknown> | null;
+    if (last?.ok && !["queued", "running"].includes(String(last.status))) break;
+  }
+  if (!last?.ok) {
+    throw new CommandFailure("WORKFLOW_RUN_LOST", "Workflow run could not be read.");
+  }
+  let deleted = false;
+  let deleteError: { code: string; message: string } | undefined;
+  try {
+    const removed = await rpc("opera_delete_workflow", { p_name: name });
+    if (removed?.ok) {
+      deleted = (removed as { deleted?: unknown }).deleted !== false;
+    } else {
+      deleteError = rpcErrorParts(removed?.error, "WORKFLOW_DELETE_FAILED");
+    }
+  } catch (error) {
+    deleteError = { code: "WORKFLOW_DELETE_FAILED", message: errorMessage(error) };
+  }
+  const status = String(last.status);
+  const timing = last.timing && typeof last.timing === "object" ? last.timing as Record<string, unknown> : {};
+  return {
+    ok: status === "completed",
+    runId,
+    workflow: name,
+    status,
+    result: last.result ?? null,
+    error: last.error ?? null,
+    timing,
+    deleted,
+    ...(deleteError ? { deleteError } : {})
+  };
+}
+
 // The VM host authenticates the same allowlisted user JWT the caller used on
 // this server, so the POST forwards Authorization token-identical (the same
 // bearer token; scheme case and spacing may normalize): minting identity
@@ -635,6 +734,22 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     },
   }, async ({ program, requestId }: { program: Record<string, unknown>; requestId: string }) =>
     callVmHost("enqueue", { program, requestId }, deviceName, provider, caller).then(vmRunResult).catch(toolError));
+
+  server.registerTool("run_adhoc", {
+    title: "Run one-off Opera write task",
+    description: "Run a one-off write task (find, fill, ordinary clicks, verify) as a temporary workflow on the paired Opera device: the definition is compiled, registered under adhoc.*, executed, then deleted. Consequential actions need confirm:true in the graph.",
+    inputSchema: {
+      graph: z.object({}).passthrough()
+        .describe("Ad-hoc task graph: an object with a nodes array of command/if/repeat/foreach/set/wait/fail nodes using only allowlisted read methods plus page.click/page.fill/page.key/page.focus. Every page.click/page.fill needs a declaredLabel, and consequential labels need confirm:true. A compile refusal returns the compiler code and registers nothing."),
+      requestId: z.string().min(1).max(100).regex(/^[A-Za-z0-9_-]{1,100}$/)
+        .describe("Idempotency key; a malformed key is rejected so replay protection is never silent here."),
+      input: z.record(z.string(), z.unknown()).optional()
+        .describe("Workflow input object, shaped by the compiled definition."),
+      timeoutMs: z.number().int().min(1000).max(120000).optional()
+        .describe("Workflow timeout in milliseconds; defaults to 60000.")
+    },
+  }, async ({ graph, requestId, input, timeoutMs }: { graph: Record<string, unknown>; requestId: string; input?: Record<string, unknown>; timeoutMs?: number }) =>
+    runAdhoc(graph, requestId, input, timeoutMs, deviceName, provider).then(textResult).catch(toolError));
 
   server.registerTool("start_watch", {
     title: "Start live watch",
