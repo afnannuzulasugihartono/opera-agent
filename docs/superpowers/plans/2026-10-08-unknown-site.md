@@ -175,7 +175,7 @@ If any requirement cannot be expressed with the proven mechanics above (e.g. a `
 
 ```md
 @last-edited: 2026-10-08 UTC+7.
-@related: [`AGENTS.md`](../AGENTS.md) - [`uec-north-star.md`](uec-north-star.md) - [`superpowers/specs/2026-10-08-unknown-site-design.md`](superpowers/specs/2026-10-08-unknown-site-design.md)
+@related: AGENTS.md, uec-north-star.md, superpowers/specs/2026-10-08-unknown-site-design.md (plain names here; the implementer writes them as resolving links in the real file per the brief)
 
 # Unknown-site protocol
 
