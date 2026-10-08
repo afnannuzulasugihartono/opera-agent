@@ -833,7 +833,10 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
       const rows = waited && typeof waited === "object" && Array.isArray((waited as { events?: unknown }).events)
         ? (waited as { events: Array<{ device_name?: unknown }> }).events.filter((event) => event && event.device_name === deviceName)
         : [];
-      return textResult({ ...waited as object, ok: true, events: rows, count: rows.length });
+      // WHY never force ok: a falsy envelope carries its own error code, and
+      // stamping ok:true over it would report success with empty events.
+      const failed = waited && typeof waited === "object" && (waited as { ok?: unknown }).ok === false;
+      return textResult({ ...waited as object, ...(failed ? {} : { ok: true }), events: rows, count: rows.length });
     }).catch(toolError);
   });
 

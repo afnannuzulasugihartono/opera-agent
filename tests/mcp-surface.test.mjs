@@ -88,7 +88,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   run_program: '34db36eb9242c5ed',
   run_adhoc: 'e1f5a7e6a15991f6',
   start_watch: '395e579634b5f784',
-  wait_events: '781ef3bc51ad82c7',
+  wait_events: '4673d72247e494d2',
   stop_watch: '5192744559385f99',
   list_tabs: 'eb4fdda0376c5588',
   open_url: '268a9ac307859cc3',
@@ -140,6 +140,8 @@ const R9E_CHANGED_TOOL = 'run_browser_burst';
 // device) and media_listen_read (its block runs to EOF, so it also observes
 // the serve-level 401 for callers with no owned device). Both moves are the
 // tenant-isolation fix, recorded here the way R9B/R9E record theirs.
+// Wave E fix round 1 re-pinned wait_events again: the handler preserves a
+// falsy RPC envelope instead of forcing ok:true.
 
 function instructions() {
   const line = source.split('\n').find((l) => l.includes('instructions:'));
@@ -287,6 +289,15 @@ test('wait_events exposes only the caller-owned device events', () => {
   // always caller-owned by the pin above, so the edge layer filters to it.
   const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
   assert.match(handler, /event\.device_name === deviceName/);
+});
+
+test('wait_events preserves a falsy RPC envelope instead of forcing ok:true', () => {
+  // WHY this pin: the handler stamped ok:true over whatever the RPC returned,
+  // so an upstream ok:false arrived as success with empty events and its error
+  // code never reached the caller.
+  const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
+  assert.match(handler, /ok === false/);
+  assert.doesNotMatch(handler, /ok: true, events: rows/);
 });
 
 test('each command is stamped with its harness provider, never used for access', () => {
