@@ -88,3 +88,26 @@ test('background routes the options probe action to the compiler module', async 
   assert.ok(bg.includes(`action === 'testModel'`));
   assert.ok(bg.includes('buildProbeRequest'));
 });
+
+test('malformed endpoint refuses before fetch', async () => {
+  const t = {};
+  const out = await composeModelPlan({ storage: storageOf({ ...full, modelEndpoint: 'notaurl' }), fetchImpl: fetchOk(t) }, { goal: 'x', page: {}, target, budgets });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, 'MODEL_BAD_ENDPOINT');
+  assert.deepEqual(t.calls, []);
+});
+
+test('non-timeout rejection surfaces MODEL_HTTP_ERROR, never MODEL_TIMEOUT', async () => {
+  const boom = async () => { throw new Error('boom'); };
+  const out = await composeModelPlan({ storage: storageOf(full), fetchImpl: boom }, { goal: 'x', page: {}, target, budgets });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, 'MODEL_HTTP_ERROR');
+});
+
+test('non-ok status surfaces MODEL_HTTP_ERROR with the status', async () => {
+  const bad = async () => ({ ok: false, status: 500 });
+  const out = await composeModelPlan({ storage: storageOf(full), fetchImpl: bad }, { goal: 'x', page: {}, target, budgets });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, 'MODEL_HTTP_ERROR');
+  assert.ok(out.message.includes('500'));
+});
