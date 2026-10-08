@@ -78,7 +78,7 @@ def see_json(image_b64, question):
     # Calibrator failover: NIM 11b-vision first (~3s), Groq qwen on failure.
     # Whichever answers valid JSON wins; the caller never knows the difference.
     last = None
-    if os.environ.get('NVIDIA_API_KEY'):
+    if os.environ.get('NVIDIA_API_KEY') and os.environ.get('VISION_PROVIDER', 'nim') == 'nim':
         try:
             return nim_json(image_b64, question)
         except Exception as error:
