@@ -120,11 +120,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    (under 50 ms through the idle window, tail 100 ms, migration
    `20261007000000_opera_agent_claim_wait_fast_tail`). Lower it further only after confirming fleet
    impact.
-6. **The plan path's caller side is done; Stage 2 is owner config plus write actions.** `run_program`
-   runs read-only VM-true programs via VM `enqueue`; static-token callers get fail-closed UNAUTHORIZED
-   (no tenant to scope — user-token callers only until owner user-JWT auth is configured). Remaining:
-   owner model config (endpoint/key/model on device) plus the [`security.md`](security.md) paragraph (what
-   leaves the device) before any live model call, plus write-action execution for ad-hoc programs (today only registered workflows).
+6. **The compiler is wired device-locally; live proof awaits the owner key.** One call per task
+    over the owner endpoint, key never leaves ([`security.md`](security.md)); CSP `https:` plus
+    code-level single-destination enforcement in [`extension/lib/model-client.js`](../extension/lib/model-client.js);
+    the options probe validates endpoint plus key with zero page content. Remaining: write-action
+    execution for ad-hoc programs (today only registered workflows).
 7. Publishable-key rotation, SonarCloud project access, and Supabase PATs all need owner action.
 
 ## CI
