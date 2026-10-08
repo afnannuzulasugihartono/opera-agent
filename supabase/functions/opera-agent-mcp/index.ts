@@ -200,6 +200,7 @@ async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<stri
   query = query.limit(1);
   const { data } = await query.single();
   if (data?.device_name) return data.device_name;
+
   // WHY null instead of echoing the header or falling back to DEVICE_NAME:
   // device_name is globally unique and opera_enqueue resolves by name alone,
   // so returning an unowned name would let one allowlisted account drive
