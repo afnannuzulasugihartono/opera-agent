@@ -16,7 +16,7 @@ const fetchOk = (t, body = program) => {
     return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: JSON.stringify(body) } }] }) };
   };
 };
-const full = { modelEndpoint: 'https://llm.example.com/v1/chat/completions', modelName: 'm', modelKey: 'sk-test-key-abc123' };
+const full = { modelEndpoint: 'https://llm.example.com/v1/chat/completions', modelName: 'm', modelKey: 'fixture-model-key-abc123' };
 const target = { deviceId: 'opera', tabId: 1 };
 const budgets = { astDepth: 12, browserCommandLeavesPerRun: 12 };
 
@@ -44,9 +44,9 @@ test('one bounded POST to the configured endpoint only, key never in body or res
   const sent = JSON.parse(t.calls[0].init.body);
   assert.equal(sent.model, 'm');
   assert.equal(sent.temperature, 0);
-  assert.ok(!JSON.stringify(sent).includes('sk-test-key-abc123'), 'key must not be in the body');
-  assert.equal(t.calls[0].init.headers.Authorization, 'Bearer sk-test-key-abc123');
-  assert.ok(!JSON.stringify(out).includes('sk-test-key-abc123'), 'key must not be in the result');
+  assert.ok(!JSON.stringify(sent).includes('fixture-model-key-abc123'), 'key must not be in the body');
+  assert.equal(t.calls[0].init.headers.Authorization, 'Bearer fixture-model-key-abc123');
+  assert.ok(!JSON.stringify(out).includes('fixture-model-key-abc123'), 'key must not be in the result');
 });
 
 test('non-conforming response is refused, never a program', async () => {
