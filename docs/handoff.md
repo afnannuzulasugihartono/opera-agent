@@ -12,7 +12,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.20` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 141 runtime safety files, 696 unit tests, green.
+- Gates: `npm test`, `npm run check` — 28 primitives, 142 runtime safety files, 697 unit tests, green.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.20` to extension id
@@ -35,6 +35,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   [`tests/helpers/comment-spacing.mjs`](../tests/helpers/comment-spacing.mjs) classifies each line
   per dialect and [`tests/hygiene.test.mjs`](../tests/hygiene.test.mjs) asserts the gap.
 - Provider+model pickers shipped on web + extension (NVIDIA duo live-verified, Groq trio from official docs, local + custom free-text, key always user-supplied).
+- Official site may push model config (strict origin match, localhost kept for dev); live on reload/update, not installed 1.6.20 CRX.
 
 ## Measured, not assumed
 
@@ -88,8 +89,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   with `wrangler pages deploy` after the unit and syntax gates. A push that does not deploy fails
   silently: CI is green and production keeps the previous build, so check the live content. The Vercel
   **CLI cannot deploy** this project, because Root Directory is `landing` and it resolves
-  `landing/landing` and refuses. That Root Directory was once unset, so every push built a root with
-  no `index.html` and every path answered 404.
+  `landing/landing` and refuses.
 - **Releases fire on a `v*` tag, and only that.** `release.yml` verifies the CRX and publishes.
 - `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every path
   enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
