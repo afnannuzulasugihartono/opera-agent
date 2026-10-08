@@ -351,31 +351,59 @@ async function runCommandOnce(
   }
 
   const commandId = String(enqueued.commandId);
-  const remainingMs = Math.max(100, Math.min(55000, workflowDeadline - Date.now()));
-  let awaited: Record<string, unknown> | null;
-  try {
-    awaited = await rpc("opera_await", {
-      p_command_id: commandId,
-      p_timeout_ms: remainingMs
-    });
-  } catch (error) {
-    // A server-side statement timeout cancels the WAIT, not the command: the
-    // browser may still complete it. Report the outcome as unknown instead of
-    // failed so callers verify state instead of blindly retrying.
-    const message = error instanceof Error ? error.message : String(error);
-    if (/statement timeout/i.test(message)) {
-      return {
-        ok: false,
-        commandId,
-        status: "timeout",
-        outcome: "unknown",
-        error: {
-          code: "AWAIT_OUTCOME_UNKNOWN",
-          message: "The server stopped waiting before the browser reported back; the action may still have succeeded. Verify the page state before repeating the action."
-        }
-      };
+
+  // Short polls instead of one long wait: a single await can outlive the
+  // transport (statement timeouts have killed healthy waits), while the
+  // result row persists, so re-awaiting the same command id resumes safely
+  // with no duplicate execution.
+  const budgetMs = Math.max(100, Math.min(55000, workflowDeadline - Date.now()));
+  const pollSliceMs = 8000;
+  const spentAt = Date.now();
+  let awaited: Record<string, unknown> | null = null;
+  let lastError: unknown = null;
+  while (Date.now() - spentAt < budgetMs && Date.now() < workflowDeadline) {
+    const sliceMs = Math.max(100, Math.min(pollSliceMs, budgetMs - (Date.now() - spentAt), workflowDeadline - Date.now()));
+    try {
+      awaited = await rpc("opera_await", {
+        p_command_id: commandId,
+        p_timeout_ms: sliceMs
+      });
+    } catch (error) {
+      // A server-side statement timeout cancels the WAIT, not the command:
+      // the browser may still complete it, so resume polling instead of
+      // reporting. Anything else is a real transport failure.
+      const message = error instanceof Error ? error.message : String(error);
+      if (/statement timeout/i.test(message)) {
+        lastError = error;
+        continue;
+      }
+      throw error;
     }
-    throw error;
+    if (awaited?.ok) break;
+    const failure = awaited?.error && typeof awaited.error === "object" ? awaited.error as { code?: unknown } : {};
+    if (String(failure.code || "").toUpperCase() === "AWAIT_TIMEOUT") {
+      lastError = awaited?.error;
+      awaited = null;
+      continue;
+    }
+    break;
+  }
+  if (!awaited?.ok) {
+    const failure = (awaited?.error || lastError) && typeof (awaited?.error || lastError) === "object"
+      ? (awaited?.error || lastError) as { code?: unknown; message?: unknown }
+      : {};
+    const awaitTimedOut = String(failure.code || "").toUpperCase() === "AWAIT_TIMEOUT" || lastError !== null;
+    return {
+      ok: false,
+      commandId,
+      status: awaitTimedOut ? "timeout" : String((awaited as Record<string, unknown> | null)?.status || "failed"),
+      error: {
+        code: awaitTimedOut ? "AWAIT_OUTCOME_UNKNOWN" : String(failure.code || "COMMAND_FAILED"),
+        message: awaitTimedOut
+          ? "The server stopped waiting before the browser reported back; the action may still have succeeded. Verify the page state before repeating the action."
+          : String(failure.message || `Command ${method} failed.`)
+      }
+    };
   }
 
   if (awaited?.ok) {

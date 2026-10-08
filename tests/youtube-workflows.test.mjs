@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const migration = fs.readFileSync(
-  new URL('../supabase/migrations/20261008150000_opera_agent_youtube_watch_summarize_v6.sql', import.meta.url), 'utf8'
+  new URL('../supabase/migrations/20261008180000_opera_agent_youtube_watch_summarize_v7.sql', import.meta.url), 'utf8'
 );
 
 function definition() {
@@ -30,6 +30,7 @@ test('watch_summarize opens the given url and returns transcript payload', () =>
   assert.ok(JSON.stringify(def.steps).includes('openExpander'), 'scrolls the expander into view before clicking');
   assert.ok(JSON.stringify(def.steps).includes('panelCheck'), 'confirms the panel with a bounded tolerated wait');
   assert.ok(JSON.stringify(def.steps).includes('"id":"chunks"'), 'degrades to page-text chunks when no segments exist');
+  assert.ok(JSON.stringify(def.steps).includes('expandFresh'), 're-queries the expander after scrolling (pre-scroll refs go stale)');
 });
 
 test('watch_summarize uses only known runner step types and methods', () => {
