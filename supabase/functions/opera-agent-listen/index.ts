@@ -188,7 +188,22 @@ Deno.serve(async (req: Request) => {
         user_id: (device as { user_id: string | null }).user_id,
         tab_id: tabId, language, window_secs: 10, status: "live"
       }).select("id").single();
-      if (error || !session) throw new Error("could not start session");
+      if (error || !session) {
+        // WHY the second look instead of trusting the pre-check: two
+        // concurrent starts both pass the live check above, so only the
+        // partial unique index on (device_id) WHERE status = 'live' stops the
+        // double insert. The loser answers the same 409 as a sequential
+        // second start, carrying the live session id instead of a duplicate.
+        const code = (error as { code?: string } | null)?.code;
+        if (code === "23505") {
+          const { data: winner } = await supabase.from("opera_listen_sessions")
+            .select("id").eq("device_id", (device as { id: string }).id).eq("status", "live").limit(1).single();
+          if (winner) {
+            return json({ ok: false, error: "A listening session is already live on this device. Stop it first.", sessionId: (winner as { id: string }).id }, 409);
+          }
+        }
+        throw new Error("could not start session");
+      }
       await supabase.from("opera_audit").insert({
         event_type: "listen.started", device_id: (device as { id: string }).id,
         details: { sessionId: (session as { id: string }).id, tabId }

@@ -48,6 +48,9 @@ function harness(db, fetchImpl) {
     let limitN = null;
     let pendingUpdate = null;
     let pendingDelete = false;
+    let pendingError = null;
+    const liveHidden = () => name === 'opera_listen_sessions' && db.__hideLiveOnce
+      && filters.some(([op, col, val]) => op === 'eq' && col === 'status' && val === 'live');
     const self = {
       select() { return self; },
       eq(col, val) { filters.push(['eq', col, val]); return self; },
@@ -56,14 +59,27 @@ function harness(db, fetchImpl) {
       limit(n) { limitN = n; return self; },
       in(col, val) { filters.push(['in', col, val]); return self; },
       async single() {
+        // WHY the hide flag: the race under test is exactly a live check that
+        // misses a row its own insert then collides with. The flag hides the
+        // live row from one check, and the unique guard below emulates the
+        // partial unique index on the insert, so the test drives the real
+        // 23505 branch instead of asserting on source text.
+        if (liveHidden()) { db.__hideLiveOnce = false; return { data: null, error: null }; }
         let rows = match(table(name), filters);
         if (orderCol) rows = [...rows].sort((a, b) => (a[orderCol] > b[orderCol] ? 1 : -1));
         if (limitN !== null) rows = rows.slice(0, limitN);
-        return { data: rows[0] || null };
+        return { data: rows[0] || null, error: pendingError };
       },
       insert(row) {
         const rows = Array.isArray(row) ? row : [row];
-        rows.forEach((r, i) => db[name].push({ id: '00000000-0000-4000-8000-' + String(db[name].length + i).padStart(12, '0'), ...r }));
+        rows.forEach((r, i) => {
+          if (name === 'opera_listen_sessions' && r.status === 'live'
+            && table(name).some((x) => x.device_id === r.device_id && x.status === 'live')) {
+            pendingError = { code: '23505', message: 'duplicate key value violates unique constraint "opera_listen_sessions_device_live_uniq"' };
+            return;
+          }
+          db[name].push({ id: '00000000-0000-4000-8000-' + String(db[name].length + i).padStart(12, '0'), ...r });
+        });
         return self;
       },
       update(patch) { pendingUpdate = patch; return self; },
@@ -81,10 +97,11 @@ function harness(db, fetchImpl) {
     self.then = (resolve) => {
       if (pendingUpdate) for (const r of match(table(name), filters)) Object.assign(r, pendingUpdate);
       if (pendingDelete) db[name] = db[name].filter((r) => !match([r], filters).length);
+      if (liveHidden()) { db.__hideLiveOnce = false; resolve({ data: [], error: pendingError }); return; }
       let rows = match(table(name), filters);
       if (orderCol) rows = [...rows].sort((a, b) => (a[orderCol] > b[orderCol] ? 1 : -1));
       if (limitN !== null) rows = rows.slice(0, limitN);
-      resolve({ data: rows, error: null });
+      resolve({ data: rows, error: pendingError });
     };
     return self;
   };
@@ -154,6 +171,24 @@ test('one complete window transcribes on arrival, then stop ends and deletes', a
   assert.equal(h.fetchCalls.length, 1, 'one transcription call for one full window');
 });
 
+test('a concurrent second start takes the live session, never a duplicate', async () => {
+  const db = store();
+  db.opera_devices[0].token_hash = createHash('sha256').update(TOKEN.toLowerCase()).digest('hex');
+  const h = harness(db);
+  const first = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
+  assert.equal(first.ok, true);
+  // The race: a second start whose live check misses the row above collides
+  // on insert (unique_violation) and must answer the same 409 as a sequential
+  // second start, carrying the winner's session id instead of a duplicate.
+  db.__hideLiveOnce = true;
+  const raced = await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 8 });
+  assert.equal(raced.status, 409);
+  const body = await raced.json();
+  assert.equal(body.error, 'A listening session is already live on this device. Stop it first.');
+  assert.equal(body.sessionId, first.sessionId);
+  assert.equal(db.opera_listen_sessions.filter((s) => s.status === 'live').length, 1, 'no duplicate live row');
+});
+
 test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
   const { readFile } = await import('node:fs/promises');
   const source = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
@@ -166,6 +201,20 @@ test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
   assert.match(source, /response_format", "verbose_json/);
   assert.doesNotMatch(source, /generativelanguage\.googleapis\.com/);
   assert.doesNotMatch(source, /GEMINI_API_KEY/);
+});
+
+test('the live-session uniqueness is a partial unique index, not application logic', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const sql = await readFile(new URL('../supabase/migrations/20261009000003_opera_agent_listen_live_uniq.sql', import.meta.url), 'utf8');
+  // WHY this pin: check-then-insert let two concurrent starts both pass the
+  // live check and insert duplicates. Only a database constraint closes it;
+  // the start path maps its unique_violation to the existing 409.
+  assert.match(sql, /create unique index if not exists opera_listen_sessions_device_live_uniq/);
+  assert.match(sql, /on public\.opera_listen_sessions\(device_id\) where status = 'live'/);
+  assert.doesNotMatch(sql, /^\s*(grant|revoke)\s/im, 'index-only change carries no grant statement');
+  const fn = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
+  assert.match(fn, /"23505"/, 'the start path maps the unique violation');
+  assert.match(fn, /Stop it first\.", sessionId:/, 'the loser carries the live session id');
 });
 
 test('the migration stores transcripts owner-scoped with no grants', async () => {
