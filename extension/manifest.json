@@ -48,7 +48,7 @@
     ]
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://127.0.0.1:* https://*.supabase.co"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://127.0.0.1:* https://*.supabase.co https:"
   },
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqpg+BAwBR9mnUM4htfKg2an+mLmKMA3EUA/X7pznBD2+nleIDhamnb0Ap+eoq0Z8iUnA+II4cyRTIUw6qCFElelQXVnfC3D24ZSrBDcqpu9RdjsNeer3nzyKKUOoH32is1EHco42W7/Vf3fV6VO7JIx4JwTuSjvDEdBREWEW+8BCb4Y7xvHNyiKmf5sq8/AttSHs7C/7RklLiM5/CpukB9krOEHto4bsrBUdQA5/VrrNaw8vBKEjxZx/CSIfCynAr5cfzMy/VEv9o+L8WaqIk7ywj5yq9wlbyAqpNdUGs5V9qTjgInb75K3y92oDOtb1c7tlxNBeko7eeNfqCY/H1QIDAQAB",
   "update_url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml"
