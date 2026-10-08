@@ -9,6 +9,12 @@ Opera Agent can interact with a local browser and therefore uses a strict allowl
 
 - No arbitrary `eval` or remote code execution.
 - Browser actions must use known, validated primitives.
+- A registered state reader (`extension/state-bridge.js` plus its pure
+  decision module) is pinned, reviewed, bundled code — not remote code. It
+  may run in the page's MAIN world to read whitelisted game fields and drive
+  frame-rate input, because content scripts cannot see page JavaScript. The
+  allowlist of readers lives in that one file; a new reader is a reviewed
+  addition, never a parameter.
 - Passwords, PINs, OTP/2FA codes, CVV/CVC, and security-code fields remain blocked.
 - File uploads remain blocked unless explicitly designed and reviewed later.
 - Private extension signing keys must never be committed to the repository.

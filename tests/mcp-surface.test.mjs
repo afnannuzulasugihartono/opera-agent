@@ -113,7 +113,10 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_listen_read: '52f9fe8fe4144d6f',
   loop_start: '32b755562b12fd32',
   loop_read: 'b28ca249fe932cb9',
-  loop_stop: 'dec3840108c7bba2'
+  loop_stop: 'dec3840108c7bba2',
+  loop_state_start: '0b741baeb28f40f6',
+  loop_state_read: '027b30772359e700',
+  loop_state_stop: '81227e8d8345ccf8'
 });
 
 // The only tool whose schema the keyboard commit changed. Everything else
@@ -198,7 +201,7 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'run_browser_burst', 'run_workflow', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
+    'browser_status', 'run_browser_burst', 'run_workflow', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
     'move_pointer', 'click_at', 'drag_pointer', 'wheel_at',
     'media_state', 'media_play', 'media_pause', 'media_seek',
@@ -214,10 +217,10 @@ test('R4 keeps the protocol inventory frozen at 28 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 32 tools (loop tools added: sense-act loops are now invocable)', async () => {
+test('R4 keeps the public MCP tool inventory frozen at 35 tools (loop tools added: sense-act loops are now invocable; state tools added: frame-rate loops)', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 32); // loop tools added: start/read/stop
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop'].sort());
+  assert.equal(registered.length, 35); // loop tools added: start/read/stop; state tools added: state start/read/stop
+  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop'].sort());
 });
 
 test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
@@ -236,9 +239,9 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names are unchanged', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 32);
+  assert.equal(registered.length, 35);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 32);
+  assert.equal(contract.toolCount, 35);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -312,7 +315,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 32, 'the public tool count grows only by reviewed decision (loop tools added)');
+  assert.equal(blocks.length, 35, 'the public tool count grows only by reviewed decision (loop tools added)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
   // Every recorded digest must match the file, so a stale entry cannot mask a

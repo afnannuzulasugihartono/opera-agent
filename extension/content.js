@@ -2059,6 +2059,22 @@
     mutationObserver.disconnect();
   }
 
+  // MAIN-world state bridge events (extension/state-bridge.js) arrive as
+  // window messages because isolated worlds share only the DOM event system.
+  // Accepted only from this window with the exact source tag, then forwarded
+  // to the background, which owns the loop session the events belong to.
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (!data || data.source !== 'opera-agent-state' || typeof data.type !== 'string') return;
+    try {
+      chrome.runtime.sendMessage({ scope: 'opera-agent-state-event', type: data.type, detail: { ticks: data.ticks, jumps: data.jumps, speed: data.speed, reader: data.reader, reason: data.reason } });
+    } catch (error) {
+      globalThis.OperaAgentLog?.debug?.('STATE_EVENT_FORWARD_FAILED', error?.message || String(error));
+    }
+  });
+
   window.addEventListener('pagehide', () => {
     disposed = true;
     mutationObserver.disconnect();

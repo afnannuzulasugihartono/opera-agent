@@ -719,6 +719,59 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "") {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ loopId, timeoutMs }: { loopId: string; timeoutMs?: number }) => execute("loop.stop", { loopId }, timeoutMs, deviceName, provider));
 
+  server.registerTool("loop_state_start", {
+    title: "Start frame-rate state loop",
+    description: "Start a MAIN-world frame-rate game loop on an Opera tab (currently only the t-rex reader): the device reads exact game state and acts every animation frame locally with no screenshots and no model round trip, returning a loopId immediately. Calibrate leadMs (milliseconds of jump lead time) from observed play; read jumps and game-over events with loop_state_read.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      reader: z.enum(["trex"]),
+      leadMs: z.number().int().min(50).max(2000).optional(),
+      timeoutMs: timeoutSchema
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      commandId: z.string(),
+      status: z.string(),
+      result: z.record(z.string(), z.unknown()),
+      timing: z.record(z.string(), z.unknown())
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, reader, leadMs, timeoutMs }: TargetTab & { reader: string; leadMs?: number; timeoutMs?: number }) => execute("loop.state_start", { tabId, reader, leadMs }, timeoutMs, deviceName, provider));
+
+  server.registerTool("loop_state_read", {
+    title: "Read frame-rate state loop",
+    description: "Read a running or finished state loop: tick and jump counters plus the compact event trail (started, jump, duck-start/end, heartbeat, game-over, stopped). Cheap text; use it to supervise instead of screenshots.",
+    inputSchema: {
+      loopId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+      timeoutMs: timeoutSchema
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      commandId: z.string(),
+      status: z.string(),
+      result: z.record(z.string(), z.unknown()),
+      timing: z.record(z.string(), z.unknown())
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ loopId, timeoutMs }: { loopId: string; timeoutMs?: number }) => execute("loop.state_read", { loopId }, timeoutMs, deviceName, provider));
+
+  server.registerTool("loop_state_stop", {
+    title: "Stop frame-rate state loop",
+    description: "Stop a state loop and return its final counters. Loops also stop on game-over, a closed tab, or a sensitive surface.",
+    inputSchema: {
+      loopId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+      timeoutMs: timeoutSchema
+    },
+    outputSchema: {
+      ok: z.boolean(),
+      commandId: z.string(),
+      status: z.string(),
+      result: z.record(z.string(), z.unknown()),
+      timing: z.record(z.string(), z.unknown())
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ loopId, timeoutMs }: { loopId: string; timeoutMs?: number }) => execute("loop.state_stop", { loopId }, timeoutMs, deviceName, provider));
+
   server.registerTool("list_tabs", {
     description: "List open Opera tabs, including tab IDs, titles, URLs, and active state.",
     inputSchema: { currentWindow: z.boolean().optional().describe("Only return tabs in the current Opera window.") },

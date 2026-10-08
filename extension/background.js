@@ -796,6 +796,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   for (const [loopId, session] of loopSessions) {
     if (session.tabId === tabId) finishLoop(loopId, 'tab-closed');
   }
+  for (const [loopId, session] of stateSessions) {
+    if (session.tabId === tabId) finishStateLoop(loopId, 'tab-closed');
+  }
 });
 
 // WHY per-case text: "never appeared" is false whenever the node left the DOM,
@@ -1267,7 +1270,61 @@ function loopSessionOnTab(tabId) {
   for (const session of loopSessions.values()) {
     if (session.tabId === tabId) return session;
   }
+  for (const session of stateSessions.values()) {
+    if (session.tabId === tabId) return session;
+  }
   return null;
+}
+
+// MAIN-world state loops (extension/state-bridge.js). The reflex loop runs
+// at frame rate inside the page against exact game state; the device only
+// supervises: start it, collect its compact events, stop it. No debugger
+// attach, no screenshots, no per-tick round trips at all.
+
+const STATE_READERS = Object.freeze(['trex']);
+const stateSessions = new Map();
+const stateResults = new Map();
+
+function stateSummary(session, running, stopReason = null) {
+  return {
+    ok: true,
+    loopId: session.loopId,
+    tabId: session.tabId,
+    reader: session.reader,
+    running,
+    ...(stopReason ? { stopReason } : {}),
+    ticks: session.ticks,
+    jumps: session.jumps,
+    events: session.events.slice(-50)
+  };
+}
+
+function finishStateLoop(loopId, stopReason) {
+  const session = stateSessions.get(loopId);
+  if (!session) return stateResults.get(loopId) || null;
+  const summary = stateSummary(session, false, stopReason);
+  stateSessions.delete(loopId);
+  stateResults.set(loopId, summary);
+  while (stateResults.size > 20) stateResults.delete(stateResults.keys().next().value);
+  chrome.scripting.executeScript({
+    target: { tabId: session.tabId },
+    world: 'MAIN',
+    func: () => globalThis.OperaAgentStateBridge?.stop('supervisor-stop')
+  }).catch((error) => log.debug('STATE_BRIDGE_STOP_FAILED', error?.message || String(error)));
+  return summary;
+}
+
+function handleStateEvent(tabId, type, detail = {}) {
+  for (const session of stateSessions.values()) {
+    if (session.tabId !== tabId) continue;
+    session.events.push({ at: Date.now(), type, detail });
+    if (session.events.length > 200) session.events.splice(0, session.events.length - 200);
+    if (Number.isFinite(Number(detail.ticks))) session.ticks = Number(detail.ticks);
+    if (Number.isFinite(Number(detail.jumps))) session.jumps = Number(detail.jumps);
+    if (type === 'game-over') finishStateLoop(session.loopId, 'game-over');
+    return { ok: true, loopId: session.loopId };
+  }
+  return { ok: true, loopId: null };
 }
 
 async function loopDecodeTemplate(template) {
@@ -1654,6 +1711,47 @@ async function dispatch(method, params = {}, context = {}) {
     case 'loop.stop': {
       const loopId = String(params.loopId || '');
       const summary = finishLoop(loopId);
+      if (!summary) throw new Error('Unknown loop.');
+      return summary;
+    }
+    case 'loop.state_start': {
+      const cfg = await getConfig();
+      if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');
+      const reader = String(params.reader || '');
+      if (!STATE_READERS.includes(reader)) throw new Error('Unknown state reader.');
+      const leadMs = Number(params.leadMs);
+      const tabId = await resolveTabId(params);
+      if (loopSessionOnTab(tabId)) throw codedError('LOOP_ACTIVE', 'One loop per tab: stop the running loop first.', { tabId });
+      const policy = await contentCall(tabId, 'page.capture_policy', {});
+      if (!policy.allowed) {
+        throw codedError('LOOP_BLOCKED', 'Loop refused on a sensitive surface.', { tabId, reason: policy.reason || 'SENSITIVE_SURFACE' });
+      }
+      await chrome.scripting.executeScript({ target: { tabId }, world: 'MAIN', files: ['loop-decide.js', 'state-bridge.js'] });
+      const started = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'MAIN',
+        func: (readerName, lead) => globalThis.OperaAgentStateBridge.start(readerName, { leadMs: lead }),
+        args: [reader, Number.isFinite(leadMs) && leadMs > 0 ? leadMs : 500]
+      });
+      const ack = started?.[0]?.result;
+      if (!ack?.ok) throw new Error(ack?.error || 'State bridge refused to start.');
+      const loopId = `st_${randomToken().slice(0, 16)}`;
+      stateSessions.set(loopId, {
+        loopId, tabId, reader, startedAt: Date.now(), ticks: 0, jumps: 0, events: []
+      });
+      return { ok: true, loopId, tabId, reader };
+    }
+    case 'loop.state_read': {
+      const loopId = String(params.loopId || '');
+      const session = stateSessions.get(loopId);
+      if (session) return stateSummary(session, true);
+      const finished = stateResults.get(loopId);
+      if (finished) return finished;
+      throw new Error('Unknown loop.');
+    }
+    case 'loop.state_stop': {
+      const loopId = String(params.loopId || '');
+      const summary = finishStateLoop(loopId);
       if (!summary) throw new Error('Unknown loop.');
       return summary;
     }
@@ -2413,8 +2511,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) }));
     return true;
   }
-  if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {
+  if (message && message.scope === 'opera-agent-state-event') {
     const tabId = sender?.tab?.id;
+    if (tabId == null) { sendResponse({ ok: false, error: 'No sender tab.' }); return true; }
+    try {
+      sendResponse({ ok: true, ...handleStateEvent(tabId, String(message.type || ''), message.detail || {}) });
+    } catch (error) {
+      sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) });
+    }
+    return true;
+  }
+  if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {    const tabId = sender?.tab?.id;
     if (tabId == null) { sendResponse({ ok: false, error: 'No sender tab.' }); return true; }
     Promise.resolve(handleWatchFacts(tabId, message.params || {}))
       .then((r) => sendResponse({ ok: true, ...r }))

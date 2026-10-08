@@ -112,4 +112,5 @@ const burstMigration = fs.readFileSync(path.join(root, 'supabase/migrations/2026
 assert.match(burstMigration, /browser\.burst/);
 for (const marker of ['BURST_MAX_STEPS', 'BURST_MAX_TIMEOUT_MS', 'runBurst', 'MAX_BURST_RESULT_BYTES']) assert.ok(`${fs.readFileSync(path.join(root, 'extension/lib/protocol.js'), 'utf8')}\n${background}`.includes(marker), marker);
 for (const marker of ['loopSessions', 'loopTick', 'tick-overrun', 'LOOP_SYNTHETIC_DEAD_TICKS']) assert.ok(background.includes(marker), marker);
+for (const marker of ['stateSessions', 'OperaAgentStateBridge', 'loop.state_start', 'STATE_READERS']) assert.ok(background.includes(marker), marker);
 console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, ${files.length} runtime safety files, version ${manifest.version}`);

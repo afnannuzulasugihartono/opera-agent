@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 32,
+  "toolCount": 35,
   "sourceSha256": "6c7201ae3e3a2564d1e37c3eed3d0c990067414783f4f3eef2d75b0e0bbd992c",
   "tools": [
     "browser_status",
