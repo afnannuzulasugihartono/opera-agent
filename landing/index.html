@@ -519,8 +519,14 @@
     };
 
     function fillModelList(providerId) {
-      const models = MODEL_PROVIDERS[providerId]?.models ?? [];
-      $('modelList').innerHTML = models.map((entry) => `<option value="${entry.id}">${entry.label}</option>`).join('');
+      const list = $('modelList');
+      list.replaceChildren();
+      for (const entry of MODEL_PROVIDERS[providerId]?.models ?? []) {
+        const option = document.createElement('option');
+        option.value = entry.id;
+        option.textContent = entry.label;
+        list.append(option);
+      }
     }
 
     function matchProvider(endpoint, model) {
@@ -531,8 +537,6 @@
         && (provider.models.length === 0 || provider.models.some((entry) => entry.id === model)));
       return known ? known[0] : 'custom';
     }
-
-    fillModelList($('provider').value);
 
     $('provider').addEventListener('change', () => {
       const provider = MODEL_PROVIDERS[$('provider').value];
@@ -550,6 +554,11 @@
 
     $('modelEndpoint').addEventListener('input', syncProviderSelect);
     $('modelName').addEventListener('input', syncProviderSelect);
+
+    // WHY match on load instead of filling for the default option: the inputs start
+    // empty, which matches no known provider, so the select must say Kustom from the
+    // first paint — showing NVIDIA against empty fields would name a lie.
+    syncProviderSelect();
 
     function collect() {
       return {

@@ -51,13 +51,17 @@ test('the extension only accepts the handoff from an origin it was granted', () 
   assert.ok(!external.ids || !external.ids.includes('*'), 'extensions must not all be able to configure this one');
 });
 
-test('the provider picker names the providers, and both NVIDIA models exactly', () => {
-  for (const id of ['nvidia', 'ollama', 'lmstudio', 'custom']) {
+test('the provider picker names the providers, and the NVIDIA pair plus the Groq trio exactly', () => {
+  for (const id of ['nvidia', 'groq', 'ollama', 'lmstudio', 'custom']) {
     assert.ok(html.includes(`<option value="${id}">`), `the provider picker offers ${id}`);
   }
   assert.ok(html.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'the NVIDIA endpoint is exact');
   assert.ok(html.includes('meta/llama-3.2-11b-vision-instruct'), 'the fast NVIDIA model is exact');
   assert.ok(html.includes('meta/llama-3.2-90b-vision-instruct'), 'the thorough NVIDIA model is exact');
+  assert.ok(html.includes('https://api.groq.com/openai/v1/chat/completions'), 'the Groq endpoint is exact');
+  assert.ok(html.includes('llama-3.1-8b-instant'), 'the fast Groq model is exact');
+  assert.ok(html.includes('llama-3.3-70b-versatile'), 'the thorough Groq model is exact');
+  assert.ok(html.includes('qwen/qwen3.8-27b'), 'the preview Groq model is exact');
   assert.ok(html.includes('http://127.0.0.1:11434/v1/chat/completions'), 'the Ollama endpoint is exact');
   assert.ok(html.includes('http://127.0.0.1:1234/v1/chat/completions'), 'the LM Studio endpoint is exact');
 });

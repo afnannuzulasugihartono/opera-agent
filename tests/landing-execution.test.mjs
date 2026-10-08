@@ -91,8 +91,13 @@ async function run(page, shape = {}) {
   nodes.__bodyClasses = new Set();
   const element = (id) => (nodes[id] ||= {
     id, textContent: '', innerHTML: '', className: '', value: '', hidden: true, href: '',
-    disabled: false, dataset: {}, children: { length: 0 }, querySelectorAll: () => [],
-    addEventListener() {}, querySelector: () => null, closest: () => null
+    disabled: false, dataset: {}, children: [], querySelectorAll: () => [],
+    addEventListener() {}, querySelector: () => null, closest: () => null,
+    // WHY real child bookkeeping and not no-ops: the home page builds its model
+    // datalist with createElement/append, so the stub keeps the appended options
+    // where an assertion can read them instead of swallowing them silently.
+    replaceChildren() { this.children.length = 0; },
+    append(child) { this.children.push(child); return child; }
   });
   // Every element the page could ask for exists, so an untouched card reads as hidden rather
   // than absent, which is what the markup's `hidden` attribute means to a person.
@@ -140,6 +145,7 @@ async function run(page, shape = {}) {
       },
       getElementById: (id) => element(id),
       querySelectorAll: () => [],
+      createElement: (tag) => ({ tagName: String(tag).toUpperCase(), value: '', textContent: '' }),
 
       // WHY a stub element and not null: the dashboard writes the device count
       // into its rail link, so a null answer turns every device render into a
