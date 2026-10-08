@@ -85,6 +85,21 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { fullPage: true } }).ok, false);
 });
 
+test('burst fill checks its value even when the ref comes from refFromStep', () => {
+  assert.equal(validateBurst({ steps: [{ action: 'find', text: 'q' }, { action: 'fill', refFromStep: 0, value: 'kucing' }] }).ok, true);
+  assert.equal(validateBurst({ steps: [{ action: 'find', text: 'q' }, { action: 'fill', refFromStep: 0, value: '' }] }).ok, true);
+  assert.equal(validateBurst({ steps: [{ action: 'find', text: 'q' }, { action: 'fill', refFromStep: 0 }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'find', text: 'q' }, { action: 'fill', refFromStep: 0, value: 42 }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'find', text: 'q' }, { action: 'fill', refFromStep: 0, value: 'x'.repeat(20001) }] }).ok, false);
+});
+
+test('burst tabId refuses an empty or whitespace-only string instead of coercing to tab 0', () => {
+  assert.equal(validateBurst({ tabId: '', steps: [{ action: 'read' }] }).ok, false);
+  assert.equal(validateBurst({ tabId: '   ', steps: [{ action: 'read' }] }).ok, false);
+  assert.equal(validateBurst({ tabId: '7', steps: [{ action: 'read' }] }).ok, true);
+  assert.equal(validateBurst({ tabId: 7, steps: [{ action: 'read' }] }).ok, true);
+});
+
 test('execution modes are explicit and structured foreground errors survive normalization', () => {
   assert.deepEqual(EXECUTION_MODES, ['background', 'foreground']);
   const error = new Error('Foreground permission is required.');

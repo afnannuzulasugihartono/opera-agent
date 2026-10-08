@@ -113,7 +113,13 @@ function validateBurstStep(step) {
 
   if (action === 'click' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst click requires a valid ref or refFromStep.';
   if (action === 'fill' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
-  if (action === 'fill' && step.refFromStep === undefined && (typeof step.value !== 'string' || step.value.length > 20000)) {
+
+  // The value check is unconditional: a passthrough ref supplies only the
+  // target, never the text, so a refFromStep fill without a value would dispatch
+  // an empty clear and report success, the same destructive edit the
+  // single-command page.fill rule refuses.
+
+  if (action === 'fill' && (typeof step.value !== 'string' || step.value.length > 20000)) {
     return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
   }
   if (action === 'key') {
@@ -153,7 +159,7 @@ export function validateBurst(params) {
   if (!isPlainObject(params)) return { ok: false, error: 'Burst params must be an object.' };
   const unexpectedParam = Object.keys(params).find((key) => !['tabId', 'steps', 'executionMode'].includes(key));
   if (unexpectedParam) return { ok: false, error: `Burst params do not allow ${unexpectedParam}.` };
-  if (params.tabId != null && (!Number.isInteger(Number(params.tabId)) || Number(params.tabId) < 0)) {
+  if (params.tabId != null && (String(params.tabId).trim() === '' || !Number.isInteger(Number(params.tabId)) || Number(params.tabId) < 0)) {
     return { ok: false, error: 'Invalid burst tabId.' };
   }
   if (!Array.isArray(params.steps) || params.steps.length < 1 || params.steps.length > BURST_MAX_STEPS) {

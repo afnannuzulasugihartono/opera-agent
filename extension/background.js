@@ -201,6 +201,7 @@ function publicTab(tab) {
 }
 
 function requireTabId(value) {
+  if (typeof value === 'string' && value.trim() === '') throw new Error('Invalid tabId.');
   const id = Number(value);
   if (!Number.isInteger(id) || id < 0) throw new Error('Invalid tabId.');
   return id;
