@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const migration = fs.readFileSync(
-  new URL('../supabase/migrations/20261008110000_opera_agent_youtube_watch_summarize_v2.sql', import.meta.url), 'utf8'
+  new URL('../supabase/migrations/20261008120000_opera_agent_youtube_watch_summarize_v3.sql', import.meta.url), 'utf8'
 );
 
 function definition() {
@@ -27,6 +27,7 @@ test('watch_summarize opens the given url and returns transcript payload', () =>
   assert.ok(def.output.title && def.output.url, 'output names title and url');
   assert.ok(def.output.segments || def.output.text, 'output carries transcript payload');
   assert.ok(JSON.stringify(def.steps).includes('watchAgain'), 'tolerates slow first render with a second watch window');
+  assert.ok(JSON.stringify(def.steps).includes('scrollexpand'), 'scrolls the expander into view before clicking');
 });
 
 test('watch_summarize uses only known runner step types and methods', () => {
@@ -34,7 +35,7 @@ test('watch_summarize uses only known runner step types and methods', () => {
   const types = new Set(['command', 'if', 'set', 'repeat', 'foreach', 'wait', 'fail']);
   const methods = new Set([
     'tabs.open', 'tabs.get', 'tabs.find', 'tabs.activate',
-    'page.wait_for', 'page.query', 'page.find', 'page.click', 'page.read', 'media.state'
+    'page.wait_for', 'page.query', 'page.find', 'page.click', 'page.read', 'page.scroll', 'media.state'
   ]);
   const walk = (steps) => {
     for (const step of steps || []) {
