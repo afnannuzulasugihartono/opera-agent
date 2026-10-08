@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelKey, saveModelName, readModelConfig, MODEL_PRESETS, DEFAULT_MODEL_PRESET_ID } from '../extension/lib/options-store.js';
+import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelKey, saveModelName, readModelConfig, MODEL_PROVIDERS, DEFAULT_PROVIDER_ID } from '../extension/lib/options-store.js';
 import { DEFAULT_BRIDGE_URL } from '../extension/lib/endpoints.js';
 
 const fake = (seed = {}) => {
@@ -100,15 +100,18 @@ test('readModelConfig fails closed until all three are set', async () => {
   assert.equal(ready.key, 'sk-live-123');
 });
 
-// Presets ship public endpoint URLs and model names only, never keys: the key stays
+// Providers ship public endpoint URLs and model names only, never keys: the key stays
 // strictly user-supplied, so an empty store still fails closed on the key alone.
 
-test('loadOptions reports the default preset endpoint and model on empty storage', async () => {
+test('loadOptions reports the default provider endpoint and model on empty storage', async () => {
   const s = fake();
   const loaded = await loadOptions(s);
-  const preset = MODEL_PRESETS.find((entry) => entry.id === DEFAULT_MODEL_PRESET_ID);
-  assert.equal(loaded.modelEndpoint, preset.endpoint);
-  assert.equal(loaded.modelName, preset.model);
+  const provider = MODEL_PROVIDERS.find((entry) => entry.id === DEFAULT_PROVIDER_ID);
+  assert.equal(DEFAULT_PROVIDER_ID, 'nvidia');
+  assert.equal(loaded.modelEndpoint, provider.endpoint);
+  assert.equal(loaded.modelEndpoint, 'https://integrate.api.nvidia.com/v1/chat/completions');
+  assert.equal(loaded.modelName, provider.defaultModel);
+  assert.equal(loaded.modelName, 'meta/llama-3.2-11b-vision-instruct');
   assert.equal('modelEndpoint' in s.data, false);
   assert.equal('modelName' in s.data, false);
 });
@@ -120,17 +123,52 @@ test('readModelConfig on empty storage misses only the user-supplied key', async
   assert.deepEqual(result.missing, ['key']);
 });
 
-test('MODEL_PRESETS is frozen with two endpoints passing the https rule', async () => {
-  assert.equal(Object.isFrozen(MODEL_PRESETS), true);
-  assert.equal(MODEL_PRESETS.length, 2);
+test('MODEL_PROVIDERS is frozen, and every listed endpoint passes its own rule', async () => {
+  assert.equal(Object.isFrozen(MODEL_PROVIDERS), true);
+  assert.deepEqual(MODEL_PROVIDERS.map((entry) => entry.id), ['nvidia', 'groq', 'ollama', 'lmstudio', 'custom']);
   const s = fake();
-  for (const preset of MODEL_PRESETS) {
-    await saveModelEndpoint(s, preset.endpoint);
-    assert.ok(preset.model.length >= 1 && preset.model.length <= 120);
+  for (const provider of MODEL_PROVIDERS) {
+    assert.equal(Object.isFrozen(provider), true, `${provider.id} is frozen`);
+    assert.equal(Object.isFrozen(provider.models), true, `${provider.id} models are frozen`);
+    if (provider.endpoint) await saveModelEndpoint(s, provider.endpoint);
+    for (const model of provider.models) {
+      assert.equal(Object.isFrozen(model), true, `${model.id} is frozen`);
+      assert.ok(model.id.length >= 1 && model.id.length <= 120);
+      assert.ok(model.label.length >= 1);
+    }
   }
 });
 
-test('stored endpoint and model still override the preset defaults', async () => {
+test('the cloud providers name their exact endpoints and models', async () => {
+  const byId = Object.fromEntries(MODEL_PROVIDERS.map((entry) => [entry.id, entry]));
+  assert.equal(byId.nvidia.endpoint, 'https://integrate.api.nvidia.com/v1/chat/completions');
+  assert.deepEqual(byId.nvidia.models.map((entry) => entry.id), [
+    'meta/llama-3.2-11b-vision-instruct',
+    'meta/llama-3.2-90b-vision-instruct'
+  ]);
+  assert.equal(byId.nvidia.defaultModel, 'meta/llama-3.2-11b-vision-instruct');
+  assert.equal(byId.groq.endpoint, 'https://api.groq.com/openai/v1/chat/completions');
+  assert.deepEqual(byId.groq.models.map((entry) => entry.id), [
+    'llama-3.1-8b-instant',
+    'llama-3.3-70b-versatile',
+    'qwen/qwen3.8-27b'
+  ]);
+  assert.equal(byId.groq.defaultModel, 'llama-3.1-8b-instant');
+});
+
+test('the local providers name loopback endpoints and guess no model name', async () => {
+  const byId = Object.fromEntries(MODEL_PROVIDERS.map((entry) => [entry.id, entry]));
+  assert.equal(byId.ollama.endpoint, 'http://127.0.0.1:11434/v1/chat/completions');
+  assert.equal(byId.lmstudio.endpoint, 'http://127.0.0.1:1234/v1/chat/completions');
+  assert.deepEqual(byId.ollama.models, []);
+  assert.deepEqual(byId.lmstudio.models, []);
+  assert.equal(byId.ollama.defaultModel, '');
+  assert.equal(byId.lmstudio.defaultModel, '');
+  assert.equal(byId.custom.endpoint, '');
+  assert.equal(byId.custom.defaultModel, '');
+});
+
+test('stored endpoint and model still override the provider defaults', async () => {
   const s = fake({ modelEndpoint: 'https://custom.example/v1', modelName: 'custom-model', modelKey: 'sk-live-123' });
   const loaded = await loadOptions(s);
   assert.equal(loaded.modelEndpoint, 'https://custom.example/v1');

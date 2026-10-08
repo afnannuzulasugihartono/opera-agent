@@ -51,6 +51,27 @@ test('the extension only accepts the handoff from an origin it was granted', () 
   assert.ok(!external.ids || !external.ids.includes('*'), 'extensions must not all be able to configure this one');
 });
 
+test('the provider picker names the providers, and both NVIDIA models exactly', () => {
+  for (const id of ['nvidia', 'ollama', 'lmstudio', 'custom']) {
+    assert.ok(html.includes(`<option value="${id}">`), `the provider picker offers ${id}`);
+  }
+  assert.ok(html.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'the NVIDIA endpoint is exact');
+  assert.ok(html.includes('meta/llama-3.2-11b-vision-instruct'), 'the fast NVIDIA model is exact');
+  assert.ok(html.includes('meta/llama-3.2-90b-vision-instruct'), 'the thorough NVIDIA model is exact');
+  assert.ok(html.includes('http://127.0.0.1:11434/v1/chat/completions'), 'the Ollama endpoint is exact');
+  assert.ok(html.includes('http://127.0.0.1:1234/v1/chat/completions'), 'the LM Studio endpoint is exact');
+});
+
+test('the key field is only ever cleared, never filled in by the page', () => {
+  // WHY this lock: the key is typed by the person and read by collect(); a page that
+  // writes anything but the post-send reset into it is autofilling a secret.
+  const writes = [...html.matchAll(/\$\('modelKey'\)\.value\s*=\s*([^;]+);/g)].map((m) => m[1].trim());
+  assert.ok(writes.length >= 1, 'the post-send reset exists');
+  for (const written of writes) {
+    assert.equal(written, `''`, 'the only write to the key field is clearing it');
+  }
+});
+
 test('the page tells a person how to install, sign in, and where data goes', () => {
   assert.match(html, /<h1[^>]*>[\s\S]{10,}<\/h1>/, 'the page needs a real headline');
   assert.match(html, /id="install"/, 'installation instructions must be on the page');

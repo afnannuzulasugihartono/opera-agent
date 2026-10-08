@@ -71,16 +71,19 @@
         <span class="secure-label">Tetap di device ini</span>
       </div>
       <form id="modelForm">
-        <label for="modelPreset">Preset model</label>
-        <select id="modelPreset">
-          <option value="nvidia-llama-11b">NVIDIA Llama 3.2 11B (cepat)</option>
-          <option value="nvidia-llama-90b">NVIDIA Llama 3.2 90B (teliti)</option>
+        <label for="modelProvider">Penyedia</label>
+        <select id="modelProvider">
+          <option value="nvidia">NVIDIA</option>
+          <option value="groq">Groq</option>
+          <option value="ollama">Ollama</option>
+          <option value="lmstudio">LM Studio</option>
           <option value="custom">Kustom…</option>
         </select>
         <label for="modelEndpoint">Endpoint model</label>
         <input id="modelEndpoint" type="text" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1, atau http://127.0.0.1:11434/v1 untuk model lokal" />
         <label for="modelName">Nama model</label>
-        <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="Nama yang dipakai penyediamu" />
+        <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" list="modelList" placeholder="Nama yang dipakai penyediamu" />
+        <datalist id="modelList"></datalist>
         <button id="modelSaveButton" type="submit" class="primary">Simpan model</button>
         <button id="modelProbe" type="button">Uji koneksi model</button>
         <p id="modelStatus" class="hint" role="status" aria-live="polite">&nbsp;</p>

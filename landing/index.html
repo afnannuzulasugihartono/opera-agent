@@ -378,20 +378,22 @@
       </p>
       <div class="card">
         <form id="modelForm">
-          <label for="preset">Penyedia</label>
-          <select id="preset">
-            <option value="">Endpoint kustom</option>
-            <option value="https://integrate.api.nvidia.com/v1/chat/completions" data-model="meta/llama-3.2-11b-vision-instruct">NVIDIA Llama 3.2 11B (cepat)</option>
-            <option value="https://integrate.api.nvidia.com/v1/chat/completions" data-model="meta/llama-3.2-90b-vision-instruct">NVIDIA Llama 3.2 90B (teliti)</option>
-            <option value="http://127.0.0.1:11434/v1/chat/completions">Ollama di mesin ini</option>
-            <option value="http://127.0.0.1:1234/v1/chat/completions">LM Studio di mesin ini</option>
+          <label for="provider">Penyedia</label>
+          <select id="provider">
+            <option value="nvidia">NVIDIA</option>
+            <option value="ollama">Ollama</option>
+            <option value="lmstudio">LM Studio</option>
+            <option value="custom">Kustom…</option>
           </select>
+
+          <!-- Groq lives in the extension only: one of its model names trips the site's no-speed-promise pin. -->
 
           <label for="modelEndpoint">Endpoint API</label>
           <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1" />
 
           <label for="modelName">Nama model</label>
-          <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="Nama yang dipakai penyedia Anda" />
+          <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" list="modelList" placeholder="Nama yang dipakai penyedia Anda" />
+          <datalist id="modelList"></datalist>
 
           <label for="modelKey">Kunci API</label>
           <input id="modelKey" type="text" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Kunci dari penyedia Anda" />
@@ -484,12 +486,64 @@
       // Private mode without storage keeps the acquisition hero, which is true.
     }
 
-    $('preset').addEventListener('change', (event) => {
-      if (!event.target.value) return;
-      $('modelEndpoint').value = event.target.value;
-      const model = event.target.selectedOptions[0]?.dataset.model;
-      if (model) $('modelName').value = model;
+    // WHY a provider map and not option values: the select names the provider and the
+    // map owns its endpoint plus its model list, so one choice fills both inputs.
+    // Groq lives in the extension only: one of its model names trips this site's
+    // no-speed-promise pin, so it is omitted here rather than shipped incomplete.
+    const MODEL_PROVIDERS = {
+      nvidia: {
+        endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
+        defaultModel: 'meta/llama-3.2-11b-vision-instruct',
+        models: [
+          { id: 'meta/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B (cepat)' },
+          { id: 'meta/llama-3.2-90b-vision-instruct', label: 'Llama 3.2 90B (teliti)' }
+        ]
+      },
+      ollama: {
+        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+        defaultModel: '',
+        models: []
+      },
+      lmstudio: {
+        endpoint: 'http://127.0.0.1:1234/v1/chat/completions',
+        defaultModel: '',
+        models: []
+      },
+      custom: { endpoint: '', defaultModel: '', models: [] }
+    };
+
+    function fillModelList(providerId) {
+      const models = MODEL_PROVIDERS[providerId]?.models ?? [];
+      $('modelList').innerHTML = models.map((entry) => `<option value="${entry.id}">${entry.label}</option>`).join('');
+    }
+
+    function matchProvider(endpoint, model) {
+      const known = Object.entries(MODEL_PROVIDERS).find(([id, provider]) =>
+        id !== 'custom'
+        && provider.endpoint !== ''
+        && provider.endpoint === endpoint
+        && (provider.models.length === 0 || provider.models.some((entry) => entry.id === model)));
+      return known ? known[0] : 'custom';
+    }
+
+    fillModelList($('provider').value);
+
+    $('provider').addEventListener('change', () => {
+      const provider = MODEL_PROVIDERS[$('provider').value];
+      if (!provider) return;
+      $('modelEndpoint').value = provider.endpoint;
+      $('modelName').value = provider.defaultModel;
+      fillModelList($('provider').value);
     });
+
+    const syncProviderSelect = () => {
+      const providerId = matchProvider($('modelEndpoint').value, $('modelName').value);
+      $('provider').value = providerId;
+      fillModelList(providerId);
+    };
+
+    $('modelEndpoint').addEventListener('input', syncProviderSelect);
+    $('modelName').addEventListener('input', syncProviderSelect);
 
     function collect() {
       return {

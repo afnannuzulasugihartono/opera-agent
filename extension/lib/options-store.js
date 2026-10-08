@@ -18,14 +18,54 @@
 
 import { DEFAULT_BRIDGE_URL } from './endpoints.js';
 
-export const MODEL_PRESETS = Object.freeze([
-  Object.freeze({ id: 'nvidia-llama-11b', label: 'NVIDIA Llama 3.2 11B (cepat)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-11b-vision-instruct' }),
-  Object.freeze({ id: 'nvidia-llama-90b', label: 'NVIDIA Llama 3.2 90B (teliti)', endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions', model: 'meta/llama-3.2-90b-vision-instruct' }),
+export const MODEL_PROVIDERS = Object.freeze([
+  Object.freeze({
+    id: 'nvidia',
+    label: 'NVIDIA',
+    endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
+    defaultModel: 'meta/llama-3.2-11b-vision-instruct',
+    models: Object.freeze([
+      Object.freeze({ id: 'meta/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B (cepat)' }),
+      Object.freeze({ id: 'meta/llama-3.2-90b-vision-instruct', label: 'Llama 3.2 90B (teliti)' })
+    ])
+  }),
+  Object.freeze({
+    id: 'groq',
+    label: 'Groq',
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    defaultModel: 'llama-3.1-8b-instant',
+    models: Object.freeze([
+      Object.freeze({ id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (tercepat, 560 t/s)' }),
+      Object.freeze({ id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (teliti, 280 t/s)' }),
+      Object.freeze({ id: 'qwen/qwen3.8-27b', label: 'Qwen3.8 27B (pratinjau, 450 t/s)' })
+    ])
+  }),
+  Object.freeze({
+    id: 'ollama',
+    label: 'Ollama',
+    endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+    defaultModel: '',
+    models: Object.freeze([])
+  }),
+  Object.freeze({
+    id: 'lmstudio',
+    label: 'LM Studio',
+    endpoint: 'http://127.0.0.1:1234/v1/chat/completions',
+    defaultModel: '',
+    models: Object.freeze([])
+  }),
+  Object.freeze({
+    id: 'custom',
+    label: 'Kustom…',
+    endpoint: '',
+    defaultModel: '',
+    models: Object.freeze([])
+  })
 ]);
-export const DEFAULT_MODEL_PRESET_ID = 'nvidia-llama-11b';
+export const DEFAULT_PROVIDER_ID = 'nvidia';
 
-const DEFAULT_MODEL_PRESET = MODEL_PRESETS.find((preset) => preset.id === DEFAULT_MODEL_PRESET_ID);
-if (!DEFAULT_MODEL_PRESET) throw new Error(`DEFAULT_MODEL_PRESET_ID "${DEFAULT_MODEL_PRESET_ID}" names no preset in MODEL_PRESETS.`);
+const DEFAULT_PROVIDER = MODEL_PROVIDERS.find((provider) => provider.id === DEFAULT_PROVIDER_ID);
+if (!DEFAULT_PROVIDER) throw new Error(`DEFAULT_PROVIDER_ID "${DEFAULT_PROVIDER_ID}" names no provider in MODEL_PROVIDERS.`);
 
 const LEVELS = ['debug', 'warn', 'error'];
 const DEFAULT_LEVEL = 'warn';
@@ -62,10 +102,10 @@ export async function loadOptions(storage) {
     bridgeUrl,
     logLevel,
 
-    // Read-time defaults only: an empty store reports the default preset without
-    // writing anything, so the preset can move under a user who never chose.
-    modelEndpoint: storedEndpoint ? storedEndpoint : DEFAULT_MODEL_PRESET.endpoint,
-    modelName: storedModel ? storedModel : DEFAULT_MODEL_PRESET.model,
+    // Read-time defaults only: an empty store reports the default provider without
+    // writing anything, so the provider can move under a user who never chose.
+    modelEndpoint: storedEndpoint ? storedEndpoint : DEFAULT_PROVIDER.endpoint,
+    modelName: storedModel ? storedModel : DEFAULT_PROVIDER.defaultModel,
 
     // The key is reported as present or absent, never as a value.
     modelKeySet: typeof cfg.modelKey === 'string' && cfg.modelKey.length > 0
@@ -123,8 +163,8 @@ export async function readModelConfig(storage) {
   const cfg = await storage.get(['modelEndpoint', 'modelName', 'modelKey']);
   const storedEndpoint = typeof cfg.modelEndpoint === 'string' ? cfg.modelEndpoint.trim() : '';
   const storedModel = typeof cfg.modelName === 'string' ? cfg.modelName.trim() : '';
-  const endpoint = storedEndpoint ? storedEndpoint : DEFAULT_MODEL_PRESET.endpoint;
-  const model = storedModel ? storedModel : DEFAULT_MODEL_PRESET.model;
+  const endpoint = storedEndpoint ? storedEndpoint : DEFAULT_PROVIDER.endpoint;
+  const model = storedModel ? storedModel : DEFAULT_PROVIDER.defaultModel;
   const key = typeof cfg.modelKey === 'string' ? cfg.modelKey.trim() : '';
   const missing = [];
   if (!endpoint) missing.push('endpoint');

@@ -4,7 +4,7 @@
 // @dependencies: endpoints, options-store, error-messages, protocol.
 
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
-import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelName, MODEL_PRESETS } from './lib/options-store.js';
+import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelName, MODEL_PROVIDERS } from './lib/options-store.js';
 import { userErrorMessage } from './lib/error-messages.js';
 import { PROTOCOL_VERSION } from './lib/protocol.js';
 
@@ -17,8 +17,9 @@ async function prefill() {
   $('logLevel').value = options.logLevel;
   $('modelEndpoint').value = options.modelEndpoint;
   $('modelName').value = options.modelName;
-  const match = MODEL_PRESETS.find((preset) => preset.endpoint === options.modelEndpoint && preset.model === options.modelName);
-  $('modelPreset').value = match ? match.id : 'custom';
+  const providerId = matchProvider(options.modelEndpoint, options.modelName);
+  $('modelProvider').value = providerId;
+  fillModelList(providerId);
 
   // The page is told whether a key exists and never what it is. The key itself is
   // entered in the popup, next to pairing: a secret has no business here.
@@ -37,6 +38,32 @@ function showModelStatus(text) {
 
 function showProbeStatus(text) {
   $('modelProbeStatus').textContent = text;
+}
+
+const providerOf = (id) => MODEL_PROVIDERS.find((provider) => provider.id === id);
+
+// A stored config names its provider only when both halves match a known entry;
+// anything else is custom work, so the select says Kustom. Providers without a
+// model list match on the endpoint alone, because the user types that name.
+
+function matchProvider(endpoint, model) {
+  const known = MODEL_PROVIDERS.find((provider) =>
+    provider.id !== 'custom'
+    && provider.endpoint !== ''
+    && provider.endpoint === endpoint
+    && (provider.models.length === 0 || provider.models.some((entry) => entry.id === model)));
+  return known ? known.id : 'custom';
+}
+
+function fillModelList(providerId) {
+  const list = $('modelList');
+  list.replaceChildren();
+  for (const entry of providerOf(providerId)?.models ?? []) {
+    const option = document.createElement('option');
+    option.value = entry.id;
+    option.textContent = entry.label;
+    list.append(option);
+  }
 }
 
 function init() {
@@ -66,21 +93,25 @@ function init() {
       showModelStatus(userErrorMessage(error?.message || error));
     }
   });
-  // WHY fill without saving: picking a preset stages the values in the inputs and
+  // WHY fill without saving: picking a provider stages the values in the inputs and
   // the existing Simpan button commits them, so one save path stays the only save path.
-  $('modelPreset').addEventListener('change', () => {
-    const preset = MODEL_PRESETS.find((entry) => entry.id === $('modelPreset').value);
-    if (!preset) return;
-    $('modelEndpoint').value = preset.endpoint;
-    $('modelName').value = preset.model;
-    showModelStatus('Preset dipilih — klik Simpan untuk menyimpan.');
+  $('modelProvider').addEventListener('change', () => {
+    const provider = providerOf($('modelProvider').value);
+    if (!provider) return;
+    $('modelEndpoint').value = provider.endpoint;
+    $('modelName').value = provider.defaultModel;
+    fillModelList(provider.id);
+    showModelStatus(provider.id === 'custom'
+      ? 'Kustom dipilih — isi endpoint dan model, lalu Simpan.'
+      : 'Penyedia dipilih — klik Simpan untuk menyimpan.');
   });
-  const syncPresetSelect = () => {
-    const match = MODEL_PRESETS.find((preset) => preset.endpoint === $('modelEndpoint').value && preset.model === $('modelName').value);
-    $('modelPreset').value = match ? match.id : 'custom';
+  const syncProviderSelect = () => {
+    const providerId = matchProvider($('modelEndpoint').value, $('modelName').value);
+    $('modelProvider').value = providerId;
+    fillModelList(providerId);
   };
-  $('modelEndpoint').addEventListener('input', syncPresetSelect);
-  $('modelName').addEventListener('input', syncPresetSelect);
+  $('modelEndpoint').addEventListener('input', syncProviderSelect);
+  $('modelName').addEventListener('input', syncProviderSelect);
   $('modelProbe').addEventListener('click', async () => {
     const probe = $('modelProbe');
     probe.disabled = true;
