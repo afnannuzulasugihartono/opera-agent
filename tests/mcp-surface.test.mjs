@@ -64,7 +64,7 @@ const FROZEN_MCP_TOOLS = [
   'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
   'media_pause', 'media_play', 'media_seek', 'media_state',
   'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page',
-  'run_browser_burst', 'run_workflow', 'scroll_page', 'wheel_at',
+  'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'wheel_at',
   'media_stream_start', 'media_stream_stop', 'media_listen_read'
 ];
 
@@ -85,6 +85,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   browser_status: '07fd9d13e0cfa930',
   run_browser_burst: '9cc28895fa1df26e',
   run_workflow: '97abc3e06829e4cc',
+  run_program: '34db36eb9242c5ed',
   start_watch: '395e579634b5f784',
   wait_events: '711f765e7122133f',
   stop_watch: '5192744559385f99',
@@ -110,7 +111,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_seek: '6f1a6205a1d59b1c',
   media_stream_start: 'd86a2ca61654b20d',
   media_stream_stop: 'c858c13598bce472',
-  media_listen_read: '52f9fe8fe4144d6f',
+  media_listen_read: 'f70ad7617d46305f',
   loop_start: '32b755562b12fd32',
   loop_read: 'b28ca249fe932cb9',
   loop_stop: 'dec3840108c7bba2',
@@ -201,7 +202,7 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'run_browser_burst', 'run_workflow', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
+    'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
     'move_pointer', 'click_at', 'drag_pointer', 'wheel_at',
     'media_state', 'media_play', 'media_pause', 'media_seek',
@@ -217,9 +218,9 @@ test('R4 keeps the protocol inventory frozen at 28 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 35 tools (loop tools added: sense-act loops are now invocable; state tools added: frame-rate loops)', async () => {
+test('R4 keeps the public MCP tool inventory frozen at 36 tools (run_program added: a sealed program now enqueues on the VM host)', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 35); // loop tools added: start/read/stop; state tools added: state start/read/stop
+  assert.equal(registered.length, 36); // run_program added: gate-approved programs enqueue without the model in the loop
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop'].sort());
 });
 
@@ -239,7 +240,7 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names are unchanged', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 35);
+  assert.equal(registered.length, 36);
   assert.deepEqual(registered, contract.tools);
   assert.equal(contract.toolCount, 35);
 });
@@ -273,7 +274,7 @@ test('each command is stamped with its harness provider, never used for access',
   assert.match(source, /\[\/opencode\/i, "opencode"\]/);
   assert.match(source, /return "unknown";/);
   assert.match(source, /const provider = await resolveProvider\(req, authContext\);/);
-  assert.match(source, /createServer\(deviceName, provider\)/);
+  assert.match(source, /createServer\(deviceName, provider, caller\)/);
   assert.match(source, /await supabase\.from\("opera_commands"\)\.update\(\{ provider \}\)/);
   assert.match(source, /await supabase\.from\("opera_workflow_runs"\)\.update\(\{ provider \}\)/);
   assert.match(source, /opera_client_name/);
@@ -315,7 +316,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 35, 'the public tool count grows only by reviewed decision (loop tools added)');
+  assert.equal(blocks.length, 36, 'the public tool count grows only by reviewed decision (run_program added)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
   // Every recorded digest must match the file, so a stale entry cannot mask a
