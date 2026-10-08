@@ -114,18 +114,18 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    [`scripts/OperaAgentInstaller.cs`](../scripts/OperaAgentInstaller.cs) compiles to a real PE with
    `requireAdministrator` set. Unverified: the form itself, and whether Chrome reads the policy it
    writes. `chrome://policy` is where to look.
-5. **The one real latency lever, and it is a measurement we now apply.** Over 9,079 production
-   commands, 676.6 ms of the 1875.3 ms average is the device not yet having asked for the command,
-   p95 1914.4 ms: the polling ramp in `opera_claim_next_wait`. The conservative ladder is in place
-   (under 50 ms through the idle window, tail 100 ms, migration
-   `20261007000000_opera_agent_claim_wait_fast_tail`). Lower it further only after confirming fleet
-   impact.
+5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands is the
+   device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms); conservative ladder in place
+   (migration `20261007000000_opera_agent_claim_wait_fast_tail`). Lower only after fleet impact.
 6. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
     delete; lease plus sweeper bound every row; consequential actions need recorded confirmation;
     no new executor or primitive. The compiler stays device-local, one call per task over the owner
     endpoint, key never leaves ([`security.md`](security.md)); the options probe validates endpoint
     plus key with zero page content.
 7. Publishable-key rotation, SonarCloud project access, and Supabase PATs all need owner action.
+8. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with total-stop
+   CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); novel patterns go to the operator loop,
+   3x recurrence becomes a named-workflow candidate.
 
 ## CI
 
