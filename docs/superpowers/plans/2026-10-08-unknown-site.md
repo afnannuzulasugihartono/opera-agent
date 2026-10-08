@@ -53,9 +53,9 @@ Task 1 is the workflow plus its pins. Task 2 is the policy doc. Task 3 is the ha
 Definition requirements (exact — write the JSON to meet them):
 
 - Header comment: what the flow does plus the no-boundary-changes notice (copy the 5-line form from `20261008220000_opera_agent_browse_find_v3.sql:3-5`), then `select public.opera_register_workflow('browse.recon', $wf$...$wf$, '<description>', true);`.
-- Steps in order: `read0` (`page.read`, params `{"tabId":{"$ref":"input.tabId"},"limit":12000}`); `setBlockedFalse` (`set` `vars.blocked = false`, `vars.blockPattern = ''`); four strong-pattern finds (name each stably, e.g. `findRecaptcha`: `page.find`, `{"tabId":...,"text":"<pattern>","exact":false,"limit":5}` for `recaptcha`, `captcha`, `verify you are human`, `select all images`), each followed by `if truthy steps.<id>.result.count → set blocked=true plus blockPattern=<pattern>`; two weak-pattern finds (`consent`, `privacy notice`) combined as nested pairs only (if w1-count truthy → [if w2-count truthy → set blocked]); `if vars.blocked truthy → fail {code:'CAPTCHA_BLOCKED', message naming the pattern from vars.blockPattern}`; `collect` (`page.collect_links`, `{"tabId":...}`); intent branch `if input.targetText exists` → `findT` (`page.find`, text `$ref input.targetText`, `exact:false`, `limit:10`) → `if findT.count truthy` → act (`page.click` with `ref: {$ref: 'steps.findT.result.item.ref'}` when action is click, `page.fill` with `ref` plus `value: {$ref:'input.value'}` when fill — encode with an `if/else` on `input.action`) → `read1` (`page.read`, same params as read0) → optional expect check (`if input.expectText exists` → `findV` text `$ref input.expectText` → `if count falsy → fail VERIFY_FAILED`) → `else (count falsy) → fail TARGET_NOT_FOUND`; output `{blocked: $ref vars.blocked, found, ref, label, title: $ref steps.read0.result.page.title, url: $ref steps.read0.result.page.url, blockPattern}`.
+- Steps in order: `read0` (`page.read`, params `{"tabId":{"$ref":"input.tabId"},"limit":12000}`); `setBlockedFalse` (`set` `vars.blocked = false`, `vars.blockPattern = ''`); four strong-pattern finds (name each stably, e.g. `findRecaptcha`: `page.find`, `{"tabId":...,"text":"<pattern>","exact":false,"limit":5}` for `recaptcha`, `captcha`, `verify you are human`, `select all images`), each followed by `if truthy steps.<id>.result.count → set blocked=true plus blockPattern=<pattern>`; two weak-pattern finds (`consent`, `privacy notice`) combined as nested pairs only (if w1-count truthy → [if w2-count truthy → set blocked]); `if vars.blocked truthy → fail {code:'CAPTCHA_BLOCKED', message naming the pattern from vars.blockPattern}`; map resolves from `read0` elements (no `collect` step — `page.collect_links` would add only unused hrefs); intent branch `if input.targetText exists` → `findT` (`page.find`, text `$ref input.targetText`, `exact:false`, `limit:10`) → `if findT.count truthy` → act (`page.click` with `ref: {$ref: 'steps.findT.result.item.ref'}` when action is click, `page.fill` with `ref` plus `value: {$ref:'input.value'}` when fill — encode with an `if/else` on `input.action`) → `read1` (`page.read`, same params as read0, keeping the observation fresh) → optional expect check (`if input.expectText exists` → `findV` text `$ref input.expectText` → `if count falsy → fail VERIFY_FAILED`) → `else (count falsy) → fail TARGET_NOT_FOUND`; output `{blocked: $ref vars.blocked, found, ref, label, title: $ref steps.read0.result.page.title, url: $ref steps.read0.result.page.url, blockPattern}`.
 - Budgets: at most 12 `type: command` nodes, zero `repeat` nodes, no `page.scroll` anywhere (nothing may sit between findT and its click).
-- Methods used, and only these: `page.read`, `page.find`, `page.collect_links`, `page.click`, `page.fill`.
+- Methods used, and only these: `page.read`, `page.find`, `page.click`, `page.fill`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -93,7 +93,7 @@ const condText = (c) => JSON.stringify(c || {});
 test('recon runs detect, map, act, verify in order with honest failures', () => {
   const def = definition();
   const ids = def.steps.map((s) => s.id || s.name);
-  assert.ok(ids.indexOf('read0') < ids.indexOf('collect'), 'read before map');
+  assert.ok(ids.indexOf('read0') < ids.indexOf('findT'), 'detect before act');
   const fails = [];
   walk(def.steps, (s) => { if (s.type === 'fail') fails.push(s.code); });
   assert.deepEqual([...new Set(fails)].sort(), ['CAPTCHA_BLOCKED', 'TARGET_NOT_FOUND', 'VERIFY_FAILED']);
@@ -125,7 +125,7 @@ test('every strong pattern blocks alone, weak patterns block only in pairs', () 
 test('recon uses only known runner step types and methods, within budget', () => {
   const def = definition();
   const types = new Set(['command', 'if', 'set', 'repeat', 'foreach', 'wait', 'fail']);
-  const methods = new Set(['page.read', 'page.find', 'page.collect_links', 'page.click', 'page.fill']);
+  const methods = new Set(['page.read', 'page.find', 'page.click', 'page.fill']);
   let commands = 0;
   walk(def.steps, (s) => {
     assert.ok(types.has(s.type), `unknown step type ${s.type}`);
