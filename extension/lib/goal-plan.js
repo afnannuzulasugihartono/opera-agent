@@ -60,7 +60,7 @@ export function buildPlanRequest(goal, { page, methods = ALLOWED_METHODS, maxCom
   const system = [
     'You plan browser work for a paired browser extension. You do not execute anything yourself.',
     'Reply with one JSON object and nothing else: no prose, no markdown fence.',
-    'Shape: {"root": <node>} where a node is one of SEQUENCE, COMMAND, LOOP, UNTIL, WAIT_EVENT, RETRY, ASSERT or RETURN.',
+    'Shape: {"root": <node>} where a node is one of SEQUENCE, COMMAND, LOOP, UNTIL, WAIT_EVENT, RETRY, ASSERT or RETURN. A SEQUENCE node carries its steps in "children" (never "steps"): {"type":"SEQUENCE","children":[<node>, ...]}.',
     `A COMMAND node is {"type":"COMMAND","method":"<primitive>","arguments":{...},"resultBinding":"<name>"}.`,
     `Use only these primitives: ${methods.join(', ')}.`,
     'Never set tenantId, goalId, target or budgets anywhere: the caller owns who runs, where, and under which budgets.',

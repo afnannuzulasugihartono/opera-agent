@@ -23,6 +23,11 @@ test('the prompt lists every primitive the model may use', () => {
   }
 });
 
+test('the prompt names children as the only SEQUENCE child key', () => {
+  const request = buildPlanRequest('click Search', { page: PAGE });
+  assert.ok(request.system.includes('A SEQUENCE node carries its steps in "children" (never "steps"): {"type":"SEQUENCE","children":[<node>, ...]}.'), 'SEQUENCE child key is not pinned to children');
+});
+
 test('the prompt tells the model the fields it may never set', () => {
   const request = buildPlanRequest('click Search', { page: PAGE });
   for (const owned of ['tenantId', 'goalId', 'target', 'budgets']) {
