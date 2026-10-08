@@ -100,8 +100,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 ## Still open
 
-1. **The Cloudflare API token pasted into a chat is still live** and carries
-   `Account API Tokens Write`. The owner has chosen to leave it for now.
+1. **The Cloudflare API token pasted into a chat is still live** and carries `Account API Tokens Write`. The owner has chosen to leave it for now.
 2. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page,
    the code exchanges for a one-hour token, GoTrue `/user` answers 200, and a tool call
    through it (`browser_status`) completes. Unverified: sign-in by Google.
@@ -121,10 +120,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    (under 50 ms through the idle window, tail 100 ms, migration
    `20261007000000_opera_agent_claim_wait_fast_tail`). Lower it further only after confirming fleet
    impact.
-6. **The plan path needs two owner inputs before it can run.** The endpoint, key and model name come
-   from the user's own configuration on their device, and [`security.md`](security.md) has to say
-   plainly what leaves the device. The remaining work is the VM host: handing a compiled program to
-   `opera_start_workflow` needs a new RPC.
+6. **The plan path's caller side is done; Stage 2 is owner config plus write actions.** `run_program`
+   runs read-only VM-true programs via VM `enqueue`; static-token callers get fail-closed UNAUTHORIZED
+   (no tenant to scope — user-token callers only until owner user-JWT auth is configured). Remaining:
+   owner model config (endpoint/key/model on device) plus the [`security.md`](security.md) paragraph (what
+   leaves the device) before any live model call, plus write-action execution for ad-hoc programs (today only registered workflows).
 7. Publishable-key rotation, SonarCloud project access, and Supabase PATs all need owner action.
 
 ## CI
