@@ -286,14 +286,15 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./index.html" aria-current="page">Opera Agent</a>
-        <a href="./index.html#install">Instalasi</a>
-        <a href="./unduh.html">Unduh</a>
-        <a href="./index.html#model">Model Anda</a>
-        <a href="./akun.html">Akun</a>
+        <a href="./index.html#install" data-i18n="nav.install">Instalasi</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="./index.html#model" data-i18n="nav.model">Model Anda</a>
+        <a href="./akun.html" data-i18n="nav.account">Akun</a>
         <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html">Privasi</a>
-        <a href="./fitur.html">Fitur</a>
-        <a href="./dukungan.html">Dukungan</a>
+        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false">EN</button></span>
       </nav>
     </div>
   </header>
@@ -302,9 +303,9 @@
     <section class="hero">
       <div class="heroGrid">
         <div>
-          <p class="eyebrow" id="heroEyebrow">Daftar terbuka · Gratis dipakai</p>
-          <h1>Asisten Anda mengemudikan browser Anda.</h1>
-          <p>
+          <p class="eyebrow" id="heroEyebrow" data-i18n="hero.eyebrow">Daftar terbuka · Gratis dipakai</p>
+          <h1 data-i18n="hero.title">Asisten Anda mengemudikan browser Anda.</h1>
+          <p data-i18n="hero.lede">
             Opera Agent memberi asisten AI yang sudah Anda pakai sebuah jembatan terkendali ke
             browser Anda sendiri — tanpa eksekusi skrip sembarangan; asisten Anda menyuruhnya,
             dan Anda mengawasinya. Terutama Google Sheets/Excel, Docs, Maps, dan YouTube;
@@ -314,26 +315,26 @@
         dijelaskan satu per satu di <a href="./unduh.html">halaman unduh</a>. Round tripnya
         pendek, karena semua aksi tidak perlu keluar dari primitif server yang sudah ada.</p>
           <div class="row" id="ctaOut">
-            <a class="btn primary" href="#install">Instalasi</a>
-            <a class="btn" href="./unduh.html">Unduh</a>
-            <a class="btn" href="#model">Sambungkan model</a>
+            <a class="btn primary" href="#install" data-i18n="cta.install">Instalasi</a>
+            <a class="btn" href="./unduh.html" data-i18n="cta.download">Unduh</a>
+            <a class="btn" href="#model" data-i18n="cta.model">Sambungkan model</a>
           </div>
-          <p class="footnote">Gratis dipakai. Model ditagih penyedia Anda.</p>
+          <p class="footnote" data-i18n="hero.note">Gratis dipakai. Model ditagih penyedia Anda.</p>
           <div class="row" id="ctaIn" hidden>
-            <a class="btn primary" href="./dashboard.html">Buka Dashboard</a>
-            <a class="btn" href="./dashboard.html#pairing">Pair device</a>
+            <a class="btn primary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
+            <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
           </div>
           <div class="grid" id="quickTiles" hidden style="margin-top: 18px;">
             <div class="tile">
-              <h3>Device &amp; perintah</h3>
+              <h3 data-i18n="tiles.devices.title">Device &amp; perintah</h3>
               <p>Status, riwayat, dan kendali tiap device. <a href="./dashboard.html#device">Lihat device</a>.</p>
             </div>
             <div class="tile">
-              <h3>Pairing manual</h3>
+              <h3 data-i18n="tiles.pairing.title">Pairing manual</h3>
               <p>Kode 10 menit untuk device baru. <a href="./dashboard.html#pairing">Buat kode</a>.</p>
             </div>
             <div class="tile">
-              <h3>Model di device ini</h3>
+              <h3 data-i18n="tiles.model.title">Model di device ini</h3>
               <p>Endpoint dan kunci tetap di sini. <a href="#model">Atur model</a>.</p>
             </div>
           </div>
@@ -346,17 +347,17 @@
         <div class="demo" id="demo" role="img" aria-label="Contoh perintah Opera Agent dan jawabannya">
           <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
           <div class="cmd">tabs.list</div>
-          <div class="out">3 tab terbuka</div>
+          <div class="out" data-i18n="demo.tabs">3 tab terbuka</div>
           <div class="cmd">page.read</div>
-          <div class="out">ringkasan + 12 aksi</div>
+          <div class="out" data-i18n="demo.read">ringkasan + 12 aksi</div>
           <div class="cmd">page.click “Bayar”</div>
-          <div class="out no">ditolak: kolom pembayaran</div>
+          <div class="out no" data-i18n="demo.deny">ditolak: kolom pembayaran</div>
         </div>
       </div>
     </section>
 
     <section id="install" class="reveal">
-      <h2>Instalasi</h2>
+      <h2 data-i18n="install.title">Instalasi</h2>
       <p class="sub">Extension adalah seluruh produk di mesin Anda. Langkah layarnya tetap sama: unduh, masuk, lalu pair. Jika Anda butuh daftar arsip atau verifikasi berkas, kedua-duanya ada di <a href="./unduh.html">halaman unduh</a>.</p>
       <ol class="steps">
         <li><strong>Unduh dan pasang.</strong> Klik <em>Mulai instalasi</em> di <a href="./unduh.html">halaman unduh</a> untuk mengambil CRX atau arsip, lalu pasang ekstensi Anda — di <code>opera://extensions</code> aktifkan developer mode dan muat folder hasil ekstrak seperti di <a href="./unduh.html">halaman unduh</a>.</li>
@@ -364,21 +365,21 @@
         <li><strong>Pair dan uji.</strong> Buka <a href="./dashboard.html">Dashboard</a> dan tempel kode pairing di popup ekstensi. Checklist <em>Ringkasan</em> di sana menyala yang pertama-tama dicek, jadi tinggal ikuti satu per satu.</li>
       </ol>
       <div class="row" style="margin-top: 18px;">
-        <a class="btn primary" href="./unduh.html">Mulai instalasi</a>
-        <a class="btn" href="./dashboard.html">Buka checklist</a>
+        <a class="btn primary" href="./unduh.html" data-i18n="install.start">Mulai instalasi</a>
+        <a class="btn" href="./dashboard.html" data-i18n="install.checklist">Buka checklist</a>
       </div>
     </section>
 
     <section id="model" class="reveal">
-      <h2>Bawa model sendiri</h2>
-      <p class="sub">
+      <h2 data-i18n="model.title">Bawa model sendiri</h2>
+      <p class="sub" data-i18n="model.sub">
         Tempel endpoint, nama model, dan kunci API dari penyedia Anda. Formulir ini hanya
         bicara ke extension yang terpasang: tidak ada server di sini yang bisa dikirimi.
         Kunci tersimpan di browser Anda dan tidak pernah ditampilkan kembali ke halaman ini.
       </p>
       <div class="card">
         <form id="modelForm">
-          <label for="provider">Penyedia</label>
+          <label for="provider" data-i18n="model.provider">Penyedia</label>
           <select id="provider">
             <option value="nvidia">NVIDIA</option>
             <option value="groq">Groq</option>
@@ -387,19 +388,19 @@
             <option value="custom">Kustom…</option>
           </select>
 
-          <label for="modelEndpoint">Endpoint API</label>
+          <label for="modelEndpoint" data-i18n="model.endpoint">Endpoint API</label>
           <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1" />
 
-          <label for="modelName">Nama model</label>
+          <label for="modelName" data-i18n="model.name">Nama model</label>
           <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" list="modelList" placeholder="Nama yang dipakai penyedia Anda" />
           <datalist id="modelList"></datalist>
 
-          <label for="modelKey">Kunci API</label>
+          <label for="modelKey" data-i18n="model.key">Kunci API</label>
           <input id="modelKey" type="text" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Kunci dari penyedia Anda" />
 
           <div class="row">
-            <button class="btn primary" type="submit">Simpan ke extension</button>
-            <button class="btn" type="button" id="copyButton">Salin saja</button>
+            <button class="btn primary" type="submit" data-i18n="model.save">Simpan ke extension</button>
+            <button class="btn" type="button" id="copyButton" data-i18n="model.copy">Salin saja</button>
           </div>
           <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
           <p class="note">
@@ -412,51 +413,125 @@
     </section>
 
     <section id="signin" class="reveal">
-      <h2>Masuk dan biarkan asisten bekerja</h2>
-      <p class="sub">Opera Agent bicara MCP, sehingga asisten apa pun yang bicara MCP bisa mengemudikannya. Sign-in diurus oleh project yang Anda sambungkan.</p>
+      <h2 data-i18n="signin.title">Masuk dan biarkan asisten bekerja</h2>
+      <p class="sub" data-i18n="signin.sub">Opera Agent bicara MCP, sehingga asisten apa pun yang bicara MCP bisa mengemudikannya. Sign-in diurus oleh project yang Anda sambungkan.</p>
       <div class="row" style="margin-bottom: 18px;">
-        <a class="btn primary" href="./auth.html">Masuk / Daftar</a>
+        <a class="btn primary" href="./auth.html" data-i18n="signin.cta">Masuk / Daftar</a>
       </div>
       <dl class="facts">
-        <dt>Persetujuan OAuth</dt><dd>Menyetujui asisten hanya satu halaman dan satu scope. Tidak ada yang diberikan sebelum Anda menekan tombol di sana.</dd>
-        <dt>Tools</dt><dd>39 tools: aksi burst, baca halaman, tab, media, watch dan wait. 28 primitive browser di bawahnya tidak berubah.</dd>
-        <dt>Manusia di loop</dt><dd>Mode foreground butuh izin setiap kali. Password, kode sekali pakai, dan kolom pembayaran ditolak.</dd>
+        <dt data-i18n="signin.oauth.dt">Persetujuan OAuth</dt><dd data-i18n="signin.oauth.dd">Menyetujui asisten hanya satu halaman dan satu scope. Tidak ada yang diberikan sebelum Anda menekan tombol di sana.</dd>
+        <dt>Tools</dt><dd data-i18n="signin.tools.dd">39 tools: aksi burst, baca halaman, tab, media, watch dan wait. 28 primitive browser di bawahnya tidak berubah.</dd>
+        <dt data-i18n="signin.human.dt">Manusia di loop</dt><dd data-i18n="signin.human.dd">Mode foreground butuh izin setiap kali. Password, kode sekali pakai, dan kolom pembayaran ditolak.</dd>
       </dl>
     </section>
 
     <section id="privacy" class="reveal">
-      <h2>Apa yang meninggalkan mesin Anda</h2>
+      <h2 data-i18n="privacy.title">Apa yang meninggalkan mesin Anda</h2>
       <p class="sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya. Selengkapnya di <a href="./privasi.html">kebijakan privasi</a>.</p>
       <dl class="facts">
-        <dt>Konten halaman</dt><dd>Konten dari halaman yang Anda setujui hanya pergi ke endpoint model milik Anda. Ia transit melalui relay perintah, dan perintah beserta hasilnya disimpan sebagai riwayat antrean di database project. Ia tidak pernah dibagikan ke pihak ketiga mana pun.</dd>
-        <dt>Kunci API</dt><dd>Tersimpan di browser ini. Tidak pernah diunggah, tidak pernah ditampilkan kembali ke halaman ini, tidak pernah dicatat.</dd>
-        <dt>Perintah</dt><dd>Antrean dan hasil transit melalui bridge project, agar asisten bisa bertindak di device Anda.</dd>
-        <dt>Screenshot</dt><dd>Ditolak di halaman yang menampilkan password, kode sekali pakai, atau kolom pembayaran, dan ditolak di tab private dan incognito.</dd>
+        <dt data-i18n="privacy.content.dt">Konten halaman</dt><dd data-i18n="privacy.content.dd">Konten dari halaman yang Anda setujui hanya pergi ke endpoint model milik Anda. Ia transit melalui relay perintah, dan perintah beserta hasilnya disimpan sebagai riwayat antrean di database project. Ia tidak pernah dibagikan ke pihak ketiga mana pun.</dd>
+        <dt data-i18n="privacy.key.dt">Kunci API</dt><dd data-i18n="privacy.key.dd">Tersimpan di browser ini. Tidak pernah diunggah, tidak pernah ditampilkan kembali ke halaman ini, tidak pernah dicatat.</dd>
+        <dt data-i18n="privacy.commands.dt">Perintah</dt><dd data-i18n="privacy.commands.dd">Antrean dan hasil transit melalui bridge project, agar asisten bisa bertindak di device Anda.</dd>
+        <dt>Screenshot</dt><dd data-i18n="privacy.shot.dd">Ditolak di halaman yang menampilkan password, kode sekali pakai, atau kolom pembayaran, dan ditolak di tab private dan incognito.</dd>
       </dl>
     </section>
 
     <section id="faq" class="reveal">
-      <h2>Pertanyaan yang sering masuk</h2>
-      <p class="sub">Jawaban pendek atas yang paling sering ditanyakan.</p>
+      <h2 data-i18n="faq.title">Pertanyaan yang sering masuk</h2>
+      <p class="sub" data-i18n="faq.sub">Jawaban pendek atas yang paling sering ditanyakan.</p>
       <dl class="facts">
-        <dt>Berapa biayanya</dt><dd>Memakai Opera Agent gratis. Yang berbayar hanya pemakaian model ke penyedia model Anda — endpoint, nama, dan kunci milik Anda, tagihannya pun urusan Anda dengan mereka.</dd>
-        <dt>Model apa</dt><dd>Model apa pun yang punya endpoint API: cloud milik penyedia Anda atau lokal seperti Ollama. Kuncinya milik Anda dan di tangan Anda.</dd>
-        <dt>Data saya</dt><dd>Konten halaman hanya pergi ke endpoint model Anda; perintah dan hasilnya transit sebagai riwayat antrean dan tidak pernah dibagikan ke pihak ketiga.</dd>
-        <dt>Tanpa internet</dt><dd>Model lokal di mesin ini bekerja tanpa internet. Relay perintah butuh koneksi, karena asisten Anda ada di cloud.</dd>
-        <dt>Berhenti</dt><dd>Tombol Keluar melupakan sesi di browser ini. Cabut pairing untuk menghentikan device. Riwayat antrean tersimpan selama akun ada, per kebijakan privasi.</dd>
+        <dt data-i18n="faq.cost.dt">Berapa biayanya</dt><dd data-i18n="faq.cost.dd">Memakai Opera Agent gratis. Yang berbayar hanya pemakaian model ke penyedia model Anda — endpoint, nama, dan kunci milik Anda, tagihannya pun urusan Anda dengan mereka.</dd>
+        <dt data-i18n="faq.model.dt">Model apa</dt><dd data-i18n="faq.model.dd">Model apa pun yang punya endpoint API: cloud milik penyedia Anda atau lokal seperti Ollama. Kuncinya milik Anda dan di tangan Anda.</dd>
+        <dt data-i18n="faq.data.dt">Data saya</dt><dd data-i18n="faq.data.dd">Konten halaman hanya pergi ke endpoint model Anda; perintah dan hasilnya transit sebagai riwayat antrean dan tidak pernah dibagikan ke pihak ketiga.</dd>
+        <dt data-i18n="faq.offline.dt">Tanpa internet</dt><dd data-i18n="faq.offline.dd">Model lokal di mesin ini bekerja tanpa internet. Relay perintah butuh koneksi, karena asisten Anda ada di cloud.</dd>
+        <dt data-i18n="faq.stop.dt">Berhenti</dt><dd data-i18n="faq.stop.dd">Tombol Keluar melupakan sesi di browser ini. Cabut pairing untuk menghentikan device. Riwayat antrean tersimpan selama akun ada, per kebijakan privasi.</dd>
       </dl>
     </section>
   </main>
 
   <footer>
     <div class="wrap cols">
-      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span class="doors">
-        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
+        <a href="./index.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./auth.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
       </span>
     </div>
   </footer>
 
+  <script type="application/json" id="i18n-dict">
+  {"en": {
+    "nav.install": "Install",
+    "nav.download": "Download",
+    "nav.model": "Your model",
+    "nav.account": "Account",
+    "nav.privacy": "Privacy",
+    "nav.features": "Features",
+    "nav.support": "Support",
+    "hero.eyebrow": "Open signup · Free to use",
+    "hero.title": "Your assistant drives your browser.",
+    "hero.lede": "Opera Agent gives the AI assistant you already use a controlled bridge into your own browser — no reckless script execution; your assistant commands it, and you supervise it. Google Sheets/Excel, Docs, Maps, and YouTube first; the rest are taught as they come.",
+    "cta.install": "Install",
+    "cta.download": "Download",
+    "cta.model": "Connect your model",
+    "hero.note": "Free to use. Your provider bills the model.",
+    "cta.dashboard": "Open the dashboard",
+    "cta.pair": "Pair a device",
+    "tiles.devices.title": "Devices & commands",
+    "tiles.pairing.title": "Manual pairing",
+    "tiles.model.title": "The model on this device",
+    "demo.tabs": "3 tabs open",
+    "demo.read": "summary + 12 actions",
+    "demo.deny": "refused: payment field",
+    "install.title": "Install",
+    "install.start": "Start installing",
+    "install.checklist": "Open the checklist",
+    "model.title": "Bring your own model",
+    "model.sub": "Paste the endpoint, model name, and API key from your provider. This form only talks to the installed extension: there is no server here to send anything to. The key is stored in your browser and never shown back to this page.",
+    "model.provider": "Provider",
+    "model.endpoint": "API endpoint",
+    "model.name": "Model name",
+    "model.key": "API key",
+    "model.save": "Save to the extension",
+    "model.copy": "Just copy",
+    "signin.title": "Sign in and let the assistant work",
+    "signin.sub": "Opera Agent speaks MCP, so any assistant that speaks MCP can drive it. Sign-in is handled by the project you connect.",
+    "signin.cta": "Sign in / Sign up",
+    "signin.oauth.dt": "OAuth consent",
+    "signin.oauth.dd": "Approving an assistant covers one page and one scope. Nothing is granted before you press the button there.",
+    "signin.tools.dd": "39 tools: burst actions, page reads, tabs, media, watch and wait. The 28 browser primitives underneath never change.",
+    "signin.human.dt": "Human in the loop",
+    "signin.human.dd": "Foreground mode needs permission every time. Passwords, one-time codes, and payment fields are refused.",
+    "privacy.title": "What leaves your machine",
+    "privacy.content.dt": "Page content",
+    "privacy.content.dd": "Content from pages you approve only goes to your own model endpoint. It transits through the command relay, and commands with their results are stored as queue history in the project database. It is never shared with any third party.",
+    "privacy.key.dt": "API key",
+    "privacy.key.dd": "Stored in this browser. Never uploaded, never shown back to this page, never logged.",
+    "privacy.commands.dt": "Commands",
+    "privacy.commands.dd": "The queue and results transit through the project bridge, so the assistant can act on your device.",
+    "privacy.shot.dd": "Refused on pages showing passwords, one-time codes, or payment fields, and refused in private and incognito tabs.",
+    "faq.title": "Frequently asked questions",
+    "faq.sub": "Short answers to the questions that come in most.",
+    "faq.cost.dt": "What it costs",
+    "faq.cost.dd": "Using Opera Agent is free. Only model usage is billed, by your own model provider — the endpoint, name, and key are yours, and so is that bill.",
+    "faq.model.dt": "Which model",
+    "faq.model.dd": "Any model with an API endpoint: your provider’s cloud or a local one like Ollama. The key is yours and stays in your hands.",
+    "faq.data.dt": "My data",
+    "faq.data.dd": "Page content only goes to your model endpoint; commands and results transit as queue history and are never shared with third parties.",
+    "faq.offline.dt": "Without internet",
+    "faq.offline.dd": "A local model on this machine works without internet. The command relay needs a connection, because your assistant lives in the cloud.",
+    "faq.stop.dt": "Quitting",
+    "faq.stop.dd": "The sign-out button forgets the session in this browser. Revoke the pairing to stop a device. Queue history is kept while the account exists, per the privacy policy.",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.signin": "Sign in",
+    "footer.account": "Account",
+    "footer.features": "Features",
+    "footer.support": "Support"
+  }}
+  </script>
+  <script src="./i18n.js"></script>
   <script type="module">
     // WHY the extension id is written here and pinned by a test: the page must be able
     // to name the extension it configures. The id is derived from the manifest key and

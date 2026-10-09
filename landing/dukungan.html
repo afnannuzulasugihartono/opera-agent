@@ -9,7 +9,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0d10" />
-  <title>Dukungan — Opera Agent</title>
+  <title data-i18n="meta.title">Dukungan — Opera Agent</title>
   <meta name="description" content="Dukungan Opera Agent: cara mengatasi device yang tidak muncul, ekstensi yang tidak ter-pasang, sesi yang keluar sendiri, dan laporan privasi yang benar." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
@@ -144,40 +144,41 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./index.html">Opera Agent</a>
-        <a href="./index.html#install">Instalasi</a>
-        <a href="./unduh.html">Unduh</a>
-        <a href="./index.html#model">Model Anda</a>
-        <a href="./akun.html">Akun</a>
+        <a href="./index.html#install" data-i18n="nav.install">Instalasi</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="./index.html#model" data-i18n="nav.model">Model Anda</a>
+        <a href="./akun.html" data-i18n="nav.account">Akun</a>
         <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html">Privasi</a>
-        <a href="./fitur.html">Fitur</a>
-        <a href="./dukungan.html" aria-current="page">Dukungan</a>
+        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./dukungan.html" aria-current="page" data-i18n="nav.support">Dukungan</a>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false">EN</button></span>
       </nav>
     </div>
   </header>
 
     <main class="wrap">
-    <h1>Dukungan</h1>
-    <p class="updated">Di mana Anda bisa minta tolong, dan di mana Anda bisa lapor.</p>
-    <p>Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah
+    <h1 data-i18n="page.title">Dukungan</h1>
+    <p class="updated" data-i18n="page.sub">Di mana Anda bisa minta tolong, dan di mana Anda bisa lapor.</p>
+    <p data-i18n="intro">Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah
     konkret di bawah.</p>
 
-    <h2>Device tidak muncul di Dashboard</h2>
+    <h2 data-i18n="nodev.title">Device tidak muncul di Dashboard</h2>
     <p>Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
     offline, pasangkan ulang lewat kode baru di sana. Jangan biarkan device tak dikenal
     tetap ter-pairing; cabut yang tidak Anda kenal.</p>
 
-    <h2>Ekstensi tidak ter-pasang</h2>
+    <h2 data-i18n="noext.title">Ekstensi tidak ter-pasang</h2>
     <p>Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
     diblokir, pakai arsip mentah dan aktifkan mode pengembang, lalu centang browser Anda
     dan tekan <strong>Pasang</strong>. Periksa <em>chrome://extensions</em> dan
     <em>chrome://policy</em>.</p>
 
-    <h2 id="hubungkan">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</h2>
-    <p>Server MCP:</p>
+    <h2 id="hubungkan" data-i18n="mcp.title">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</h2>
+    <p data-i18n="mcp.server">Server MCP:</p>
     <div class="copybox">
       <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
-      <button type="button" data-copy="mcp-url">Salin</button>
+      <button type="button" data-copy="mcp-url" data-i18n="copy">Salin</button>
     </div>
     <p>Masuk dengan akun Anda (OAuth). Nama device terlihat di
     <a href="./dashboard.html">Dashboard</a> beserta browser dan provider tiap perintah
@@ -199,7 +200,7 @@
     }
   }
 }</code></pre>
-      <button type="button" data-copy="cfg-opencode">Salin</button>
+      <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
     </div>
 
     <h3>Kilo Code</h3>
@@ -216,24 +217,57 @@
     }
   }
 }</code></pre>
-      <button type="button" data-copy="cfg-kilo">Salin</button>
+      <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
     </div>
 
     <h3>Claude Code</h3>
     <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
     <div class="copybox">
       <pre><code id="cfg-claude">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude"</code></pre>
-      <button type="button" data-copy="cfg-claude">Salin</button>
+      <button type="button" data-copy="cfg-claude" data-i18n="copy">Salin</button>
     </div>
 
-    <h3>ChatGPT dan konektor lain tanpa header kustom</h3>
-    <p>Cukup URL server di atas plus OAuth. Server memakai device pertama milik akun Anda
+    <h3 data-i18n="mcp.plain.title">ChatGPT dan konektor lain tanpa header kustom</h3>
+    <p data-i18n="mcp.plain.body">Cukup URL server di atas plus OAuth. Server memakai device pertama milik akun Anda
     dan menebak provider secara otomatis. Untuk memilih device lain, pasangkan ulang
     atau hubungi pemilik akun.</p>
     <p>Setelah terpasang: buka pengaturan konektor, pilih <strong>Allow all tools</strong>,
     lalu refresh atau buka chat baru. Daftar tools baru muncul sesudah itu — itu perilaku
     ChatGPT, bukan error koneksi.</p>
 
+    <script type="application/json" id="i18n-dict">
+    {"en": {
+      "nav.install": "Install",
+      "nav.download": "Download",
+      "nav.model": "Your model",
+      "nav.account": "Account",
+      "nav.privacy": "Privacy",
+      "nav.features": "Features",
+      "nav.support": "Support",
+      "meta.title": "Support — Opera Agent",
+      "page.title": "Support",
+      "page.sub": "Where you can ask for help, and where you can report.",
+      "intro": "This is a self-operated product, so the most effective support is the concrete steps below.",
+      "nodev.title": "Device missing from the dashboard",
+      "noext.title": "Extension not installed",
+      "mcp.title": "Connecting an AI harness (OpenCode, Kilo, ChatGPT, Claude)",
+      "mcp.server": "MCP server:",
+      "copy": "Copy",
+      "mcp.plain.title": "ChatGPT and other connectors without custom headers",
+      "mcp.plain.body": "The server URL above plus OAuth is enough. The server uses your account’s first device and guesses the provider automatically. To pick another device, re-pair or contact the account owner.",
+      "session.title": "Your session keeps expiring",
+      "privacy.title": "Privacy and data",
+      "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+      "footer.home": "Home",
+      "footer.privacy": "Privacy",
+      "footer.terms": "Terms",
+      "footer.signin": "Sign in",
+      "footer.account": "Account",
+      "footer.features": "Features",
+      "footer.support": "Support"
+    }}
+    </script>
+    <script src="./i18n.js"></script>
     <script type="module">
       for (const button of document.querySelectorAll('[data-copy]')) {
         button.addEventListener('click', async () => {
@@ -258,13 +292,13 @@
       }
     </script>
 
-    <h2>Sesi Anda keluar sendiri</h2>
+    <h2 data-i18n="session.title">Sesi Anda keluar sendiri</h2>
     <p>Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
     refresh token yang tersimpan; jika refresh ikut gagal, Anda dipulangkan ke
     <a href="./auth.html">Masuk</a>. Itu disengaja, bukan kehilangan akun. Riwayat
     perintah tetap ada.</p>
 
-    <h2>Privasi dan data</h2>
+    <h2 data-i18n="privacy.title">Privasi dan data</h2>
     <p>Pertanyaan tentang kendali data: semuanya mandiri di halaman
     <a href="./akun.html">Akun</a> dan <a href="./privasi.html">Privasi</a>.
     Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat lewat tab
@@ -274,9 +308,9 @@
 
   <footer>
     <div class="wrap cols">
-      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span class="doors">
-        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
+        <a href="./index.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./auth.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
       </span>
     </div>
   </footer>

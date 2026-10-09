@@ -9,7 +9,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0d10" />
-  <title>Fitur — Opera Agent</title>
+  <title data-i18n="meta.title">Fitur — Opera Agent</title>
   <meta name="description" content="Fitur Opera Agent: 39 tool dan 28 primitive, lima izin yang dijelaskan satu per satu, model milik Anda berjalan di perangkat Anda, pairing device yang tetap." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
@@ -115,50 +115,51 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./index.html">Opera Agent</a>
-        <a href="./index.html#install">Instalasi</a>
-        <a href="./unduh.html">Unduh</a>
-        <a href="./index.html#model">Model Anda</a>
-        <a href="./akun.html">Akun</a>
+        <a href="./index.html#install" data-i18n="nav.install">Instalasi</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="./index.html#model" data-i18n="nav.model">Model Anda</a>
+        <a href="./akun.html" data-i18n="nav.account">Akun</a>
         <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html">Privasi</a>
-        <a href="./fitur.html" aria-current="page">Fitur</a>
-        <a href="./dukungan.html">Dukungan</a>
+        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
+        <a href="./fitur.html" aria-current="page" data-i18n="nav.features">Fitur</a>
+        <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false">EN</button></span>
       </nav>
     </div>
   </header>
 
     <main class="wrap">
-    <h1>Fitur</h1>
-    <p class="updated">Apa yang bisa Opera Agent, dan untuk siapa.</p>
+    <h1 data-i18n="page.title">Fitur</h1>
+    <p class="updated" data-i18n="page.sub">Apa yang bisa Opera Agent, dan untuk siapa.</p>
     <p><strong>Companion dengan AI di belakangnya.</strong> Anda berbicara, asisten
     mengemudikan browser Anda lewat Opera Agent, dan hasilnya mendarat sebagai artefak
     nyata: minta dokumen Word di chat, dokumen itu ada.</p>
 
-    <h2>39 tool, 28 primitive</h2>
-    <p>Opera Agent mengemudikan asisten Anda di browser manapun: kartu, formulir,
+    <h2 data-i18n="s1.title">39 tool, 28 primitive</h2>
+    <p data-i18n="s1.body">Opera Agent mengemudikan asisten Anda di browser manapun: kartu, formulir,
     navigasi, dan tangkapan layar. Google Maps, YouTube, dan Docs adalah tempat utamanya;
     GitHub dan Wikipedia mengajarkan fungsi baru. Kami menambah tiap situs baru yang
     nyata, bukan satu happy path per situs.</p>
 
-    <h2>Lima izin, dijelaskan satu per satu</h2>
-    <p>Setiap aksi jatuh di bawah sebuah izin. Dari popup ekstensi sampai prompt izin di
+    <h2 data-i18n="s2.title">Lima izin, dijelaskan satu per satu</h2>
+    <p data-i18n="s2.body">Setiap aksi jatuh di bawah sebuah izin. Dari popup ekstensi sampai prompt izin di
     situs, Anda yang memutuskan apakah itu boleh berjalan. Tab, scripting, storage,
     alarms, dan debugger masing-masing bisa diberikan atau ditolak.</p>
 
-    <h2>Model milik Anda</h2>
+    <h2 data-i18n="s3.title">Model milik Anda</h2>
     <p>Kunci API dan endpoint model yang Anda ketik tidak pernah dikirimkan ke server
     ini. Konten halaman hanya pergi ke endpoint model yang Anda konfigurasi di
     perangkat Anda — tiga bentuk pertahanan yang sama di halaman
     <a href="./privasi.html">Privasi</a>.</p>
 
-    <h2>Pairing device</h2>
+    <h2 data-i18n="s4.title">Pairing device</h2>
     <p>Satu kode berlaku sepuluh menit dan mengikat perangkat baru ke akun Anda
     (<a href="./dashboard.html">Dashboard</a>). Device yang ter-pairing tetap
     ter-pairing meskipun Anda keluar dari sesi; kunci hanya dihapus dari memori browser
     ini, tidak dari akun.</p>
 
-    <h2>Baca halaman tanpa eksploitasi</h2>
-    <p>Opera Agent dirancang untuk menggerakkan halaman secara halus, tetapi izinnya
+    <h2 data-i18n="s5.title">Baca halaman tanpa eksploitasi</h2>
+    <p data-i18n="s5.body">Opera Agent dirancang untuk menggerakkan halaman secara halus, tetapi izinnya
     tegas: model tidak akan disentuh lewat halaman yang menampilkan password, kode sekali
     pakai, tokoh, atau kolom pembayaran. Semua itu ditolak otomatis.</p>
 
@@ -166,11 +167,43 @@
 
   <footer>
     <div class="wrap cols">
-      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span class="doors">
-        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
+        <a href="./index.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./auth.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
       </span>
     </div>
   </footer>
+
+  <script type="application/json" id="i18n-dict">
+  {"en": {
+    "nav.install": "Install",
+    "nav.download": "Download",
+    "nav.model": "Your model",
+    "nav.account": "Account",
+    "nav.privacy": "Privacy",
+    "nav.features": "Features",
+    "nav.support": "Support",
+    "meta.title": "Features — Opera Agent",
+    "page.title": "Features",
+    "page.sub": "What Opera Agent can do, and who it is for.",
+    "s1.title": "39 tools, 28 primitives",
+    "s1.body": "Opera Agent drives your assistant in any browser: cards, forms, navigation, and screenshots. Google Maps, YouTube, and Docs are its home ground; GitHub and Wikipedia teach it new functions. We add every new site that proves real, not one happy path per site.",
+    "s2.title": "Five permissions, each explained",
+    "s2.body": "Every action falls under a permission. From the extension popup to the site permission prompt, you decide whether it may run. Tabs, scripting, storage, alarms, and debugger can each be granted or refused.",
+    "s3.title": "Your own model",
+    "s4.title": "Device pairing",
+    "s5.title": "Read pages without exploits",
+    "s5.body": "Opera Agent is built to move pages smoothly, but its permissions are firm: the model is never reached through a page showing passwords, one-time codes, tokens, or payment fields. All of those are refused automatically.",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.signin": "Sign in",
+    "footer.account": "Account",
+    "footer.features": "Features",
+    "footer.support": "Support"
+  }}
+  </script>
+  <script src="./i18n.js"></script>
 </body>
 </html>
