@@ -16,6 +16,8 @@ const FILES = [
   'extension/worker/listen.js',
   'extension/worker/capture-page.js',
   'extension/worker/action-focus.js',
+  'extension/worker/burst.js',
+  'extension/worker/loop-engine.js',
 ];
 
 export async function extensionSource() {

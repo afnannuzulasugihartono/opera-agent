@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: action-focus — the foreground focus gate, the action pipeline and trusted input.
-// @state: owns the popup focus log and its floor; loop-engine reads popupLog/stateSessions from here through this export.
+// @state: owns the popup focus log and its floor; loop-engine reads popupLog from here, and this module takes stateSessions from loop-engine.
 // @dependencies: utils, tab-content, capture, background (loop helpers), log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
 
 import { log } from '../lib/log.js';
@@ -12,7 +12,7 @@ import { recordPopup, resolvePopupOpener, POPUP_LOG_LIMIT } from '../lib/popup-e
 import { sleep } from './utils.js';
 import { contentCall } from './tab-content.js';
 import { withDebugger } from './capture.js';
-import { finishLoop, finishStateLoop, loopSessions, stateSessions } from '../background.js';
+import { finishLoop, finishStateLoop, loopSessions, stateSessions } from './loop-engine.js';
 
 export function executionMode(params = {}) {
   return params.executionMode === 'foreground' ? 'foreground' : 'background';

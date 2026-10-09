@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-07 UTC+7.
 // @title: loop — Local sense-act loop program schema.
-// @state: validator and tick-band classifier only; no executor yet.
+// @state: validator and tick-band classifier only; the executors live in extension/worker/loop-engine.js (loopSessions, loopTick) and extension/worker/burst.js (runBurst).
 // @dependencies: none.
 
 // The loop program is data, never code: sensors name allowlisted pixel
