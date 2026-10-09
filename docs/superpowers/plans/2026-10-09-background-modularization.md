@@ -1958,13 +1958,54 @@ draf rencana yang menulis *"out of capture.js"* — regionnya ada di
 
 **Interfaces:**
 - Consumes: `./utils.js`, `./tab-content.js`, `./capture.js`, **`../background.js`** (sementara), `../lib/log.js`, `../lib/protocol.js`, `../lib/action-pipeline.js`, `../lib/focus-gate.js`, `../lib/keyboard.js`, `../lib/popup-events.js`.
-- Produces: `executionMode`, `foregroundRequired`, `withInputFocusEmulation`, `sampleTabFocus`, `withForegroundFocusGate`, `popupInFlightTab`, `withActionPopupTracking`, `prunePopupLog`, `notFoundHint`, `notReadyError`, `runActionPipeline`, `trustedClick`, `trustedFill`, `trustedPointer`, `trustedKey`, `burstPassthroughRef`, `burstStepParams`, plus state `popupLog`, `popupActionStack`, `POPUP_LOG_MAX_AGE_MS`, `UV_WAIT_FLOOR_MS` (sudah ada di dalam region: baris 757, 767, 768, 769).
+- Produces (diekspor, **tiga belas**): `executionMode`, `withInputFocusEmulation`, `sampleTabFocus`, `withForegroundFocusGate`, `popupLog`, `withActionPopupTracking`, `notReadyError`, `runActionPipeline`, `trustedClick`, `trustedFill`, `trustedPointer`, `trustedKey`, `burstStepParams`.
+  Sisanya (**delapan**) milik modul, **tak diekspor**: `foregroundRequired`, `popupInFlightTab`, `prunePopupLog`, `notFoundHint`, `burstPassthroughRef`, `popupActionStack`, `POPUP_LOG_MAX_AGE_MS`, `UV_WAIT_FLOOR_MS`.
+
+  Rencana versi awal memerintahkan `export` pada "kedelapan belas fungsi plus
+  keempat state" — dua puluh dua. Hitungan terhadap pohon hidup memang
+  menemukan dua puluh satu deklarasi, tapi hanya tiga belas yang punya pemanggil
+  di luar dirinya sendiri. Delapan lainnya dipanggil **di dalam** region
+  (`popupInFlightTab` oleh `withActionPopupTracking`, `prunePopupLog` oleh
+  pelacakan popup, `notFoundHint` oleh `runActionPipeline`, `burstPassthroughRef`
+  oleh `burstStepParams`, dst.) dan tak satu pun disebut di berkas lain mana pun.
+
+  Pengujinya sederhana: kalau disebut, kenapa rencana ini tidak menuliskan
+  keempat modul berikutnya yang mengimpornya? Semua yang dibutuhkan Task 16
+  (`executionMode`, `withInputFocusEmulation`, `notReadyError`,
+  `burstStepParams`), Task 17 (`executionMode`, `withInputFocusEmulation`,
+  `withForegroundFocusGate`, `runActionPipeline`, `trustedClick`) dan Task 18
+  (`notReadyError`) sudah ada di tiga belas itu. Delapan nama itu akan jadi
+  permukaan mati — keadaan yang sudah dua kali dibersihkan di task ini
+  (`captureFramePrivacyProbe`, `ensureContent`, `listenUrlFor`,
+  `MAX_SCREENSHOT_BYTES`).
 
 Siklus yang diterima: selama `loop-engine` masih di `background.js`, modul ini mengimpor `finishLoop`/`finishStateLoop` dari sana. Task 16 mengalihkannya ke `./loop-engine.js`.
+
+**`dispatch` tidak ikut diimpor.** Empat kemunculan kata itu di dalam region
+(`:113`, `:118`, `:154`, `:170`) semuanya komentar dan satu perbandingan string
+`decision.outcome === 'dispatch'` — bukan panggilan. Modul ini tidak
+memanggilnya.
 
 - [ ] **Step 1: Buat modulnya**
 
 Pindahkan **utuh** baris 666-1115.
+
+**Koordinat terverifikasi di pohon hidup** (baseline sudah bergeser — cari
+berdasarkan konten; `background.js` kini 2042 baris): region = **`:83`-`:538`**,
+yaitu **456 baris**. Jumlahnya melebihi baseline 450 baris karena Task 14
+menambahkan enam baris kosong di dalam rentang ini.
+
+- **Ambang atas** (ikut tinggal): `let loopPromise = null;` (`:80`) dan
+  `let loopGeneration = 0;` (`:81`). `:82` ialah baris kosong pemisah.
+- **Ambang bawah** (ikut tinggal): `function burstResultSize(results) {`
+  di **`:539`** — pintu masuk region `loop-engine` (Task 16).
+  `async function runBurst` di `:543` juga milik Task 16.
+- Dua penanda yang dipakai `tests/hygiene.test.mjs:305-313` dan
+  `tests/extension-source.test.mjs:43-50` berada **di dalam** region:
+  `withForegroundFocusGate` (`:135`) dan komentar `// Action Pipeline` (`:168`).
+  Keduanya berpindah bersama, jadi irisan 34 baris itu tetap utuh — selama
+  `action-focus.js` masuk `FILES`. Ini bukan kebetulan yang boleh dilanggar:
+  memisahkan keduanya menjatuhkan dua gerbang sekaligus.
 
 ```js
 // @last-edited: 2026-10-09 UTC+7.
@@ -1986,28 +2027,73 @@ import { finishLoop, finishStateLoop, loopSessions, stateSessions } from '../bac
 
 Empat nama dari `background.js`, bukan dua. `loopSessions` dibaca di `:810` dan `stateSessions` di `:813`, keduanya di dalam `withActionPopupTracking`. Pada titik Task 15, `loop-engine` belum diekstrak, jadi keempatnya masih tinggal di `background.js` — dan keduanya hanya **dibaca** (diiterasi), tidak pernah ditulis ulang, jadi aman sebagai binding impor.
 
-- [ ] **Step 2: Ekspor**
+**Blok impor di atas sudah terverifikasi lengkap, jangan dikurangi.** Ia
+memuat tepat 21 nama: 17 yang muncul di region (`FOCUS_GATE_ATTEMPTS`,
+`FOCUS_GATE_SETTLE_MS`, `METHOD_SPECS`, `POPUP_LOG_LIMIT`, `attachResolution`,
+`clamp`, `classifyResolve`, `contentCall`, `decideFocusGate`, `log`,
+`makeNotReady`, `pollDelays`, `recordPopup`, `resolveKeyInput`,
+`resolvePopupOpener`, `sleep`, `withDebugger`) ditambah empat dari
+`background.js`. `popupsSince` **tidak** ikut — ia hanya dipakai di `:1407`
+dan `:1415`, di luar region.
 
-`export` pada kedelapan belas fungsi plus keempat state.
+- [ ] **Step 2: Ekspor** **tiga belas** nama — daftarnya ada di bagian
+  **Interfaces** di atas. Delapan sisanya tetap privat.
 
-- [ ] **Step 3: Potong dari `background.js` dan impor**
+- [ ] **Step 3: Potong dari `background.js`, rapikan impornya, lalu impor balik**
 
-- Hapus baris 666-1115.
-- Tambahkan:
+- Hapus region `:83`-`:538`.
+- Tambahkan blok impor ini (empat belas baris, bukan sembilan nama):
 
 ```js
 import {
   executionMode,
+  withInputFocusEmulation,
   sampleTabFocus,
+  withForegroundFocusGate,
   withActionPopupTracking,
+  notReadyError,
   runActionPipeline,
   trustedClick,
   trustedFill,
   trustedPointer,
   trustedKey,
+  burstStepParams,
   popupLog,
 } from './worker/action-focus.js';
 ```
+
+**Empat belas nama, bukan sembilan.** Rencana versi awal hanya menulis
+`executionMode, sampleTabFocus, withActionPopupTracking, runActionPipeline,
+trustedClick, trustedFill, trustedPointer, trustedKey, popupLog`. Empat lagi
+dipanggil dari region yang belum ikut pindah:
+
+- `withInputFocusEmulation` — `:857`, `:1653`
+- `withForegroundFocusGate` — `:1654`
+- `notReadyError` — `:631` (di `runBurst`, Task 16), `:1683`, `:1704`
+- `burstStepParams` — `:618` (di `runBurst`, Task 16)
+
+Empat `ReferenceError` asinkron — cacat yang sama dengan Task 8, 9, 10, 11,
+12, 13 dan 14.
+
+- **Empat baris impor `background.js` jadi mati oleh potongan yang sama**, dan
+  tidak ada gerbang yang menangkapnya (ujian mati-ekspor hanya memeriksa simbol
+  yang *diekspor*, dan `background.js` tidak punya satu pun baris `export`):
+
+  | baris | isi | tindakan |
+  |---|---|---|
+  | `:58` | enam nama `capture.js` yang sudah mati sejak Task 14 | potong jadi `import { withDebugger, codedError, collectAxSummary, screenshotCache } from './worker/capture.js';` |
+  | `:32` | `pollDelays, classifyResolve, makeNotReady, attachResolution` | **hapus seluruh baris** |
+  | `:33` | `decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS` | **hapus seluruh baris** |
+  | `:49` | `recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT` | potong jadi `import { popupsSince } from './lib/popup-events.js';` |
+
+  Verifikasi: kesepuluh nama di baris `:32`, `:33` dan yang mati dari `:49`
+  hanya dipakai di dalam region. `popupsSince` tetap hidup di `:1407` dan
+  `:1415`. Tak ada penanda di `scripts/check.mjs` yang menuntut nama-nama itu
+  tetap muncul di bundel.
+
+  Baris `:58` bisa dibersihkan **sebelum** potongan (ia sudah mati sekarang);
+  tiga sisanya baru mati setelah region hilang. Kerjakan keempatnya dalam satu
+  commit, sekali re-pin.
 
 `popupLog` ikut diimpor karena `dispatch` membacanya. Ia `const` berbentuk objek — dibaca dan dimodifikasi, tidak pernah ditulis ulang, jadi aman.
 
@@ -2018,9 +2104,18 @@ Tambahkan `'extension/worker/action-focus.js',` setelah `capture-page.js`.
 ```bash
 npm test
 npm run check
-git add extension/worker extension/background.js tests/helpers/extension-source.mjs
+git status --porcelain   # harus tepat 4 jalur
+git add extension/worker extension/background.js tests/helpers/extension-source.mjs tests/helpers/boundary-locks.mjs
 git commit -m "refactor: move the focus gate and trusted input into worker/action-focus.js"
 ```
+
+Empat jalur: `action-focus.js` (baru), `background.js`,
+`tests/helpers/extension-source.mjs`, dan `tests/helpers/boundary-locks.mjs`
+(nilai hash — tanpa komentar bertanggal baru).
+
+Ukuran yang diharapkan: `background.js` 2042 → **sekitar 1599** — region 456
+baris terpotong, dua baris impor mati terhapus, satu blok impor 15 baris
+ditambahkan.
 
 Kegagalan yang mungkin terjadi di sini: `background-load.test.mjs` gagal dengan `ReferenceError: finishLoop is not defined` atau `... is not a function`. Itu berarti siklus sementara tidak terbentuk dengan benar — periksa bahwa `background.js` masih mendefinisikan `finishLoop` (Task 16 belum berjalan) dan bahwa impor modul ditulis persis seperti di atas.
 
