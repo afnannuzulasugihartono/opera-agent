@@ -1174,7 +1174,9 @@ import { DEFAULT_BRIDGE_URL } from '../lib/endpoints.js';
 
 - [ ] **Step 2: Ekspor**
 
-Tambahkan `export` pada kedelapan nama: `sleep`, `isTabDragRefusal`, `mutateTabs`, `nowIso`, `randomToken`, `getConfig`, `setState`, `STORAGE_KEYS`, `connectionState`.
+Tambahkan `export` pada **kesembilan** nama: `sleep`, `isTabDragRefusal`, `mutateTabs`, `nowIso`, `randomToken`, `getConfig`, `setState`, `STORAGE_KEYS`, `connectionState`.
+
+Sembilan, bukan delapan — bloknya menyebut sembilan nama, jadi angka kata itu yang salah. `isTabDragRefusal` diekspor untuk `mutateTabs` sendiri yang memakainya di dalam modul yang sama, dan `STORAGE_KEYS` dipakai `getConfig`; keduanya tetap diekspor karena langit-langit modul menuntut kelengkapan, meski tidak diimpor balik oleh `background.js`.
 
 - [ ] **Step 3: Potong dari `background.js` dan impor**
 
@@ -1182,10 +1184,19 @@ Tambahkan `export` pada kedelapan nama: `sleep`, `isTabDragRefusal`, `mutateTabs
 - Tambahkan:
 
 ```js
-import { mutateTabs, nowIso, randomToken, getConfig } from './worker/utils.js';
+import { sleep, mutateTabs, nowIso, randomToken, getConfig, connectionState } from './worker/utils.js';
 ```
 
-Empat itu saja yang dipakai `dispatch`. Sisanya diimpor langsung oleh modul yang memakainya.
+**Enam nama, bukan empat.** Empat — `mutateTabs`, `nowIso`, `randomToken`, `getConfig` — adalah yang dipakai `dispatch` (1837/1846/1860/1872, 1653, 1684/1746, dan sepanjang 1644-2544), dan mereka permanen. Dua lagi tetap dipakai `background.js` **sekarang**, karena pemakainya belum ikut pindah:
+
+- `sleep` — dipanggil `waitTabReady` (`background.js:212`, region tab-content, Task 12) dan `withForegroundFocusGate` (`:739`, region action-focus, Task 15). Baris 2362/2419 di `completeWithRetry`/`pullLoop` ikut Task 18.
+- `connectionState` — dibaca `localSelfTest` (`background.js:2547`, region execute-pull, Task 18).
+
+Tidak ada yang memakai `setState`, `STORAGE_KEYS`, maupun `isTabDragRefusal` di luar region yang dipotong — `setState` hanya dipanggil `emitWatchEvent` (Task 17) dan blok execute-pull (Task 18), keduanya mengimpor `utils.js` sendiri.
+
+`connectionState` adalah `let` yang berpindah utuh ke `utils.js`, dan `setState` — yang tetap satu modul dengannya — adalah satu-satunya yang menulis ulang; `background.js` hanya membaca, dan binding ESM hidup sehingga nilainya selalu terkini.
+
+**Kewajiban Task 18:** memangkas baris ini menjadi `import { mutateTabs, nowIso, randomToken, getConfig } from './worker/utils.js';` begitu region tab-content, action-focus, dan execute-pull berpindah — tanpa itu `sleep` dan `connectionState` jadi impor mati. Lihat langkah sapuan impor di Task 18.
 
 - [ ] **Step 4: Daftarkan di helper**
 
@@ -1829,10 +1840,30 @@ const FILES = [
 ];
 ```
 
-- [ ] **Step 4b: Pangkas impor serialize di `background.js`**
+- [ ] **Step 4b: Sapuan impor mati `background.js`**
 
-`executeCommand` kini sudah pindah, jadi dua nama terakhir di baris impor
-`background.js` tidak lagi punya pemanggil. Ubah:
+Setelah Task 18 ini, `background.js` hanya berisi header, konstanta, dan
+`dispatch`. Impor yang tersisa di atasnya mesti disapu sampai persis berisi
+yang masih dipanggil — semuanya oleh `dispatch`, atau oleh potongan yang tetap
+di berkas. Baca `git grep` sendiri terhadap berkas hasil ekstraksi, jangan
+percaya daftar ini, tapi titik awalnya:
+
+```js
+import { sleep, mutateTabs, nowIso, randomToken, getConfig, connectionState } from './worker/utils.js';
+```
+
+menjadi:
+
+```js
+import { mutateTabs, nowIso, randomToken, getConfig } from './worker/utils.js';
+```
+
+- `sleep` hilang: pemanggil terakhirnya (`waitTabReady`, `withForegroundFocusGate`,
+  `completeWithRetry`, `pullLoop`) semuanya sudah pindah.
+- `connectionState` hilang: satu-satunya pembacanya `localSelfTest`, ikut pindah.
+- `mutateTabs`, `nowIso`, `randomToken`, `getConfig` tetap — dipakai `dispatch`.
+
+Dan impor `serialize.js` dipangkas seperti pada langkah sebelumnya:
 
 ```js
 import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } from './lib/serialize.js';
@@ -1844,11 +1875,15 @@ menjadi:
 import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';
 ```
 
-Keduanya tetap wajib — `oversized` dipakai `dispatch` (`background.js:1890`)
-dan `MAX_RESULT_BYTES` dipakai `dispatch` pula (`:1897`), dan `dispatch` tidak
-pernah berpindah. `clearSerializedResult` dan `boundedResult` kini diimpor oleh
-`worker/execute-pull.js` sendiri. Tanpa langkah ini dua nama jadi impor mati
-yang tidak tertangkap gerbang mana pun.
+- `oversized` dipakai `dispatch` (`background.js:1890`) dan `MAX_RESULT_BYTES`
+  pula (`:1897`); keduanya permanen.
+- `clearSerializedResult` dan `boundedResult` kini diimpor `worker/execute-pull.js`
+  sendiri.
+
+Sisanya — `./worker/*.js`, `../lib/*.js` — berlaku aturan yang sama: buang
+nama yang tak punya pemanggil di `background.js`, sisakan yang dipakai `dispatch`
+dan oleh potongan yang tinggal. Tanpa langkah ini nama-nama mati tertinggal
+tanpa satu pun gerbang yang menangkapnya.
 
 - [ ] **Step 5: Ganti guard `background.js` dengan ambang akhir, lalu jalankan suite**
 
