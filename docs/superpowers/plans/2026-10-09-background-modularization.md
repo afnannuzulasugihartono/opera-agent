@@ -1580,11 +1580,19 @@ git commit -m "refactor: move the private-tab set into worker/private-tabs.js"
 
 **Interfaces:**
 - Consumes: `./utils.js`, `../lib/log.js`, `../lib/protocol.js`.
-- Produces: `fetchJson`, `publicTab`, `requireTabId`, `resolveTabId`, `waitTabReady`, `ensureContent`, `contentCall`, `executeInTab`, `HTTP_URL_RE`.
+- Produces: `fetchJson`, `publicTab`, `requireTabId`, `resolveTabId`, `waitTabReady`, `contentCall`, `executeInTab`, `HTTP_URL_RE` (diekspor, **delapan**); `ensureContent` (milik modul, **tak diekspor**).
 
 - [ ] **Step 1: Buat modulnya**
 
 Pindahkan **utuh** baris 163-268 plus baris 74 (`HTTP_URL_RE`).
+
+**Koordinat terverifikasi di pohon hidup** (angka di atas adalah baseline dan
+sudah bergeser beberapa kali — cari berdasarkan konten): region berjalan dari
+`async function fetchJson(url, body, timeoutMs = 30000) {` sampai kurung
+penutup `executeInTab`, yaitu **`:83`-`:187`** plus baris kosong `:188`.
+Deklarasi `const HTTP_URL_RE` ada di **`:69`**. Pemisah atasnya ialah
+`let loopGeneration = 0;` (`:81`) dan `const AX_SUMMARY_TEXT_POVERTY_CHARS` (`:78`)
+— keduanya **ikut tinggal**, milik task lain.
 
 ```js
 // @last-edited: 2026-10-09 UTC+7.
@@ -1597,20 +1605,70 @@ import { sleep } from './utils.js';
 import { clamp } from '../lib/protocol.js';
 ```
 
-- [ ] **Step 2: Ekspor** kesembilan nama.
+- [ ] **Step 2: Ekspor** delapan nama — semua kecuali `ensureContent`.
+
+`ensureContent` jangan diekspor. Setelah region ini pindah, satu-satunya
+pemanggilnya ialah `contentCall` di dalam modul yang sama. Tiga berkas yang
+menyebut namanya — `tests/efficiency.test.mjs:72`, `scripts/check.mjs:72`,
+dan sebuah komentar di `tests/helpers/boundary-locks.mjs:32` — semuanya
+menyapu **string** `async function ensureContent` untuk memotong bundel, bukan
+memanggilnya; tak satu pun butuh kata `export`. Ini keadaan yang persis sama
+dengan `captureFramePrivacyProbe`, yang sudah dilepas ekspornya di Task 10b.
+
+Gerbang `tests/hygiene.test.mjs:367` tetap akan lulus dengan `export`
+dipertahankan (karena string itu memang ada), jadi tidak ada tes yang memaksa
+keputusan ini — yang memaksa ialah prinsip yang uji itu sendiri nyatakan di
+`tests/hygiene.test.mjs:351`: *a public helper nothing calls is dead weight*.
 
 - [ ] **Step 3: Potong dari `background.js` dan impor**
 
-- Hapus baris 163-268 dan baris 74.
+- Hapus region (`:83`-`:188`) dan baris `HTTP_URL_RE` (`:69`).
 - Tambahkan:
 
 ```js
-import { publicTab, requireTabId, resolveTabId, waitTabReady, contentCall } from './worker/tab-content.js';
+import { fetchJson, publicTab, requireTabId, resolveTabId, waitTabReady, contentCall, executeInTab, HTTP_URL_RE } from './worker/tab-content.js';
 ```
+
+**Delapan nama, bukan lima.** Rencana versi awal hanya menulis `publicTab,
+requireTabId, resolveTabId, waitTabReady, contentCall`. Hitungan terhadap pohon
+hidup menemukan tiga lagi, semuanya dipanggil dari region yang belum ikut pindah:
+
+- `fetchJson` — `readListenSession`, `capturePage`, blok `loop`/`watch` dan `execute-pull` (`:218`, `:228`, `:234`, `:252`, `:273`, `:1871`, `:1919`, `:2028`, `:2083`, `:2120`, `:2184`)
+- `executeInTab` — `:1816`, `:1891`
+- `HTTP_URL_RE` — `listenStart` (`:213`, `LISTEN_BLOCKED`), `capturePage` (`:286`, `CAPTURE_BLOCKED`), `localSelfTest` (`:2202`)
+
+Ketiganya ialah `ReferenceError` asinkron yang tak diamati tes mana pun — dan
+`HTTP_URL_RE` paling ironis, sebab rencana ini justru membahasnya di baris 59-60
+dan 1631, hanya saja pembahasannya soal `listen` dan `capture-page` yang
+mengimpor dari `tab-content`, bukan soal `background.js` yang juga memakainya.
+
+Yang **tidak** diimpor: `ensureContent` — nol pemakai di luar region (lihat
+Step 2).
 
 - [ ] **Step 4: Daftarkan di helper dan jalankan**
 
-Tambahkan `'extension/worker/tab-content.js',` setelah `utils.js`.
+Tambahkan `'extension/worker/tab-content.js',` **setelah `private-tabs.js`**
+(akhiri daftar; rencana menulis `setelah utils.js` ketika daftar itu baru berisi
+empat entri, dan tiga task sejak itu menambah `capture.js` lalu
+`private-tabs.js`). `tests/extension-source.test.mjs` hanya mengunci
+`background.js` sebagai entri pertama, jadi urutan sisanya bebas — yang
+diikat cuma `serialize.js` sebelum `watch-registry.js`, dan `execute-pull.js`
+terakhir.
+
+**Jangan mengubah urutan di dalam `tab-content.js`.** Dua penggunanya memotong
+bundel dengan jangkar berurutan:
+
+```js
+background.slice(background.indexOf('async function ensureContent'),
+                 background.indexOf('async function contentCall'))
+```
+
+`tests/efficiency.test.mjs:72` dan `scripts/check.mjs:72` melakukan hal yang
+sama persis, dan keduanya menuntut `ensureContent` muncul **sebelum**
+`contentCall`. Karena potongan byte-identik, urutannya terjaga sendiri — tapi
+menyusun ulang fungsi, atau memisah keduanya, akan membuat irisan itu kosong
+dan menjatuhkan dua gerbang sekaligus. Perhatikan juga bahwa `indexOf` tidak
+berjangkar di awal baris, sehingga awalan `export ` tidak mengganggunya.
 
 ```bash
 npm test
