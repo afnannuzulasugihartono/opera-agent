@@ -15,6 +15,7 @@ const FILES = [
   'extension/worker/tab-content.js',
   'extension/worker/listen.js',
   'extension/worker/capture-page.js',
+  'extension/worker/action-focus.js',
 ];
 
 export async function extensionSource() {
