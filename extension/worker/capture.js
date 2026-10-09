@@ -12,7 +12,7 @@ const SCREENSHOT_CACHE_LIMIT = 8;
 
 export const screenshotCache = new Map();
 
-export function captureFramePrivacyProbe() {
+function captureFramePrivacyProbe() {
   const sensitivePattern = /(?:password|passwd|passcode|pin\b|one[-_ ]?time|otp\b|2fa|two[-_ ]?factor|verification\s*code|security\s*code|cvv|cvc|card\s*(?:code|number)|credit\s*card|expiry|expiration|payment)/i;
   const fields = [...document.querySelectorAll('input, textarea, [contenteditable="true"]')];
   const sensitive = fields.some((element) => {
@@ -180,10 +180,3 @@ export function rememberScreenshot(tabId, cacheKey, screenshot) {
   while (screenshotCache.size > SCREENSHOT_CACHE_LIMIT) screenshotCache.delete(screenshotCache.keys().next().value);
 }
 
-// WHY element capture and not tab capture: chrome.tabCapture refuses callers
-// without a user gesture ("Extension has not been invoked"), which an
-// autonomous agent never has — measured, not assumed, in headed Chromium 153.
-// Tapping the media element's own output through WebAudio needs no special
-// permission and no gesture. The element keeps playing to the speakers; the
-// recorder only forks a copy. Cross-origin media without CORS headers records
-// silence instead of failing, so a silent transcript proves nothing by itself.

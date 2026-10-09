@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 20:31 UTC+7.
 // @title: background — MV3 runtime.
 // @state: the observation says when the person last touched the page.
-// @dependencies: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints, role-reconcile, agent-log, ax-summary, popup-events, deadline-race.
+// @dependencies: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints, role-reconcile, agent-log, popup-events, deadline-race.
 
 import {
   PRODUCT_VERSION,
@@ -205,6 +205,13 @@ async function setPrivateTab(tabId, value) {
   return value;
 }
 
+// WHY element capture and not tab capture: chrome.tabCapture refuses callers
+// without a user gesture ("Extension has not been invoked"), which an
+// autonomous agent never has — measured, not assumed, in headed Chromium 153.
+// Tapping the media element's own output through WebAudio needs no special
+// permission and no gesture. The element keeps playing to the speakers; the
+// recorder only forks a copy. Cross-origin media without CORS headers records
+// silence instead of failing, so a silent transcript proves nothing by itself.
 function listenUrlFor(bridgeUrl) {
   const base = String(bridgeUrl || '');
   const functionsRoot = base.includes('/functions/v1/')
