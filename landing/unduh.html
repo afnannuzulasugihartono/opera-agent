@@ -1,6 +1,6 @@
 <!-- @last-edited: 2026-10-09 UTC+7.
-<!-- @title: unduh — one giant door, five browser cards, then the details. -->
-<!-- @state: the hero centers the title, the value, and the one archive; the cards below still name each browser, and each format keeps its own page. -->
+<!-- @title: unduh — one giant door, then the details. -->
+<!-- @state: the hero centers the title, the value, and the one archive; each format keeps its own page with its own browser cards. -->
 <!-- @dependencies: none. -->
 
 
@@ -235,108 +235,6 @@
 
     <p class="hero-cta"><a class="btn giant" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh Opera Agent</a></p>
     <p class="also">juga tersedia: <a href="./unduh-crx.html">Panduan CRX enterprise</a> &middot; <a href="./unduh-zip.html">Panduan arsip</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
-
-    <div class="browsers">
-      <article class="browser" data-browser="chrome">
-        <span class="badge" hidden>Browser Anda</span>
-        <span class="glyph" aria-hidden="true">C</span>
-        <h3>Chrome</h3>
-        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
-        <p class="req">Butuh mode developer + Load unpacked</p>
-        <label class="more">Unduhan lain
-          <select data-nav>
-            <option value="">Unduhan lain</option>
-            <option value="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip">Arsip .zip</option>
-            <option value="./unduh-crx.html">Panduan CRX enterprise</option>
-            <option value="./unduh-zip.html">Panduan zip</option>
-          </select>
-        </label>
-      </article>
-      <article class="browser" data-browser="edge">
-        <span class="badge" hidden>Browser Anda</span>
-        <span class="glyph" aria-hidden="true">E</span>
-        <h3>Edge</h3>
-        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
-        <p class="req">Butuh mode developer + Load unpacked</p>
-        <label class="more">Unduhan lain
-          <select data-nav>
-            <option value="">Unduhan lain</option>
-            <option value="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip">Arsip .zip</option>
-            <option value="./unduh-crx.html">Panduan CRX enterprise</option>
-            <option value="./unduh-zip.html">Panduan zip</option>
-          </select>
-        </label>
-      </article>
-      <article class="browser" data-browser="brave">
-        <span class="badge" hidden>Browser Anda</span>
-        <span class="glyph" aria-hidden="true">B</span>
-        <h3>Brave</h3>
-        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
-        <p class="req">Butuh mode developer + Load unpacked</p>
-        <label class="more">Unduhan lain
-          <select data-nav>
-            <option value="">Unduhan lain</option>
-            <option value="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip">Arsip .zip</option>
-            <option value="./unduh-crx.html">Panduan CRX enterprise</option>
-            <option value="./unduh-zip.html">Panduan zip</option>
-          </select>
-        </label>
-      </article>
-      <article class="browser" data-browser="opera">
-        <span class="badge" hidden>Browser Anda</span>
-        <span class="glyph" aria-hidden="true">O</span>
-        <h3>Opera</h3>
-        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
-        <p class="req">Butuh mode developer + Load unpacked</p>
-        <label class="more">Unduhan lain
-          <select data-nav>
-            <option value="">Unduhan lain</option>
-            <option value="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip">Arsip .zip</option>
-            <option value="./unduh-crx.html">Panduan CRX enterprise</option>
-            <option value="./unduh-zip.html">Panduan zip</option>
-          </select>
-        </label>
-      </article>
-      <article class="browser" data-browser="vivaldi">
-        <span class="badge" hidden>Browser Anda</span>
-        <span class="glyph" aria-hidden="true">V</span>
-        <h3>Vivaldi</h3>
-        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
-        <p class="req">Butuh mode developer + Load unpacked</p>
-        <label class="more">Unduhan lain
-          <select data-nav>
-            <option value="">Unduhan lain</option>
-            <option value="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip">Arsip .zip</option>
-            <option value="./unduh-crx.html">Panduan CRX enterprise</option>
-            <option value="./unduh-zip.html">Panduan zip</option>
-          </select>
-        </label>
-      </article>
-    </div>
-
-    <script type="module">
-      const cards = [...document.querySelectorAll('[data-browser]')];
-      const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand).join(' ');
-      const agent = `${brands} ${navigator.userAgent || ''}`;
-      const found = /OPR\/|Opera/i.test(agent) ? 'opera'
-        : /Edg/i.test(agent) ? 'edge'
-        : /Brave/i.test(agent) ? 'brave'
-        : /Vivaldi/i.test(agent) ? 'vivaldi'
-        : /Chrome/i.test(agent) ? 'chrome'
-        : '';
-      if (found) {
-        const card = cards.find((element) => element.dataset.browser === found);
-        card?.classList.add('yours');
-        const badge = card?.querySelector('.badge');
-        if (badge) badge.hidden = false;
-      }
-      for (const select of document.querySelectorAll('select[data-nav]')) {
-        select.addEventListener('change', () => {
-          if (select.value) location.assign(select.value);
-          select.selectedIndex = 0;
-        });
-      }
-    </script>
 
     <h2>Tiga langkah memasang</h2>
     <ol class="steps">
