@@ -3178,6 +3178,12 @@ test('no import brings in a name its own file never uses', async () => {
     // sebuah pernyataan { a, b, c } di banyak baris membaca baris kelanjutannya
     // sendiri sebagai pemakaian dan tidak pernah bisa merah — cacat yang sama
     // persis yang menyembunyikan 50 nama mati selama 18 task.
+    //
+    // Sebaliknya, impor efek samping (`import './role-reconcile.js';`) punya
+    // titik koma tapi tak punya kurawal. Membuka blok tanpa memeriksa ';' akan
+    // menandai seluruh sisa berkas sebagai "baris impor", menelan pemakaian yang
+    // sah, dan menuduh nama yang hidup sebagai mati. Kedua arah salah ini
+    // ditemukan pada pohon yang sama saat mengaudit Task 18.
     const insideImport = [];
     let open = false;
     for (const line of lines) {
@@ -3189,7 +3195,7 @@ test('no import brings in a name its own file never uses', async () => {
       }
       const isImport = head.startsWith('import');
       insideImport.push(isImport);
-      if (isImport && !head.includes('}')) open = true;
+      if (isImport && !head.includes('}') && !head.includes(';')) open = true;
     }
 
     for (const m of text.matchAll(/import\s*{([^}]*)}\s*from/gs)) {
