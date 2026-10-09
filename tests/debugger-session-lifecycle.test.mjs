@@ -58,7 +58,7 @@ test('a watch-fired trusted click releases its debugger session on every outcome
 });
 
 test('runBurst releases through the same helper rather than its own detach', () => {
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /finally\s*\{/);
   assert.match(burst, /releaseDebuggerSession\(/);
   // The old inline detach is gone, so there is one release path to audit.

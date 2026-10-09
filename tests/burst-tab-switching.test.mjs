@@ -138,13 +138,13 @@ test('refFromStep validation still runs before any tab check', () => {
 // --- execution: the session follows the active tab -----------------------
 
 test('a burst step may carry its own tabId', () => {
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /step\.tabId/);
   assert.match(burst, /activeTabId/);
 });
 
 test('the debugger session is re-keyed when the active tab changes', () => {
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   // The old single-tab guard must not survive as a blanket refusal.
   assert.doesNotMatch(burst, /cannot switch tabs/);
   // Switching releases the previous session before attaching the next.
@@ -167,7 +167,7 @@ test('every released session is detached, not merely forgotten', async () => {
 // --- evidence and budget ------------------------------------------------
 
 test('a burst still reports completed evidence when it times out mid-sequence', () => {
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /timedOut: true/);
   assert.match(burst, /completedSteps: results\.length/);
   assert.match(burst, /failedAt: index/);
@@ -175,14 +175,14 @@ test('a burst still reports completed evidence when it times out mid-sequence', 
 });
 
 test('the single 12s budget is not extended by a tab switch', () => {
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /BURST_MAX_TIMEOUT_MS/);
   // The per-step remaining time is recomputed from the same deadline.
   assert.match(burst, /deadline - Date\.now\(\)/);
 });
 
 test('the burst-level tabId is still resolved and still reported', () => {
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /resolveTabId\(params\)/);
   assert.match(burst, /tabId,/);
 });
@@ -237,7 +237,7 @@ test('runBurst enforces the source-tab comparison instead of the switch flag', (
   // Source-text pin with a stated reason: runBurst lives in the service worker
   // and cannot be imported in node, so the wiring itself is pinned by the exact
   // call while the behavior is pinned by the helper tests above.
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /burstCrossTabRef\(results, step\.refFromStep, stepTabId\)/);
   assert.doesNotMatch(burst, /switched && step\.refFromStep/);
 });
@@ -273,7 +273,7 @@ test('a ref minted before a navigate on the same tab is dead', () => {
 test('runBurst enforces the navigate staleness check with its own code', () => {
   // Same wiring-pin convention as the cross-tab check: runBurst cannot run in
   // node, so the exact call is pinned by source text and the behavior above.
-  const burst = sliceBetween('async function runBurst(', 'async function dispatch(');
+  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /burstStaleRef\(results, step\.refFromStep, stepTabId\)/);
   assert.match(burst, /BURST_STALE_REF/);
 });
