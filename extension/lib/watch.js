@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: watch — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: watch — the local watch-rule engine that evaluates rules against page facts.
+// @state: exports TRIGGER_KINDS, validateRule and evaluateRules; no DOM, no chrome — the caller supplies fact snapshots, once-mode rules retire after firing, every rule retires past deadline or maxEvents.
 // @dependencies: none.
 
 // Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact

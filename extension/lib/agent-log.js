@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: agent-log — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: agent-log — the no-export logger that classic scripts and the worker share.
+// @state: level-aware console sink published on globalThis; deliberately has no export so manifest content_scripts can load it as a classic script.
 // @dependencies: none.
 
 // Ring buffer of the last 200 log entries, published on globalThis as

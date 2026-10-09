@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-04 19:08 UTC+7.
-// @title: action-pipeline — MV3 runtime library, shared with the Node suite..
+// @title: action-pipeline — adaptive poll delays and resolve classification for the action engine.
 // @state: Pure Resolve-Wait-Heal-Verify policy; refusals carry the ref state.
 // @dependencies: none.
 

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
-// @title: external-origins — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: external-origins — the origin allowlist for chrome.runtime.onMessageExternal.
+// @state: exports EXTERNAL_CONFIG_ORIGINS and originAllowed; the site origin matches exactly, localhost matches by port prefix.
 // @dependencies: endpoints.
 
 // The origins allowed to push model config into the extension through

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: popup-events — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: popup-events — opener attribution and the bounded background popup log.
+// @state: exports recordPopup, popupsSince and resolvePopupOpener; events key by openerTabId, keep 8 per opener, and an in-flight tab claims misattributed popups.
 // @dependencies: none.
 
 // Popup and redirect follow-through: pure policy helpers for the

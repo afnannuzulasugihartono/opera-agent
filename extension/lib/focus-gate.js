@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: focus-gate — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: focus-gate — the retry-then-refuse policy for foreground dispatch.
+// @state: pure decision over a focus sample — no chrome, no DOM; three attempts, a satisfied sample dispatches first try, the final refusal carries the last sample.
 // @dependencies: none.
 
 // Pure focus policy — no chrome, no DOM, so the decision is deterministic and

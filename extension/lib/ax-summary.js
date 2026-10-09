@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: ax-summary — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: ax-summary — the bounded accessibility-tree filter behind page.axSummary.
+// @state: exports AX_SUMMARY_LIMITS and buildAxSummary; drops value fields and whole editable subtrees so results carry only read-only role/name facts.
 // @dependencies: none.
 
 // Bounded, value-free accessibility

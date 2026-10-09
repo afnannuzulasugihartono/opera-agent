@@ -490,3 +490,17 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
   assert.deepEqual(dead, [], 'these exports are referenced nowhere at all');
   assert.deepEqual(noCaller, [], 'these extension/ and lib/ exports have no caller in another file');
 });
+
+test('every lib header states what is actually in the file', async () => {
+  const boilerplate = 'MV3 runtime library, shared with the Node suite..';
+  const dir = new URL('../extension/lib/', import.meta.url);
+  const names = (await readdir(dir)).filter((n) => n.endsWith('.js')).sort();
+  assert.ok(names.length >= 17, 'the lib directory must not be empty');
+  const offenders = [];
+  for (const name of names) {
+    const text = await readFile(new URL(name, dir), 'utf8');
+    if (text.includes(boilerplate)) offenders.push(name);
+  }
+  assert.deepEqual(offenders, [],
+    `boilerplate header must be replaced with a description of the file: ${offenders.join(', ')}`);
+});

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-06 02:41 UTC+7.
-// @title: endpoints — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: endpoints — the single source of deployment endpoint truth for the deploy unit.
+// @state: the Supabase project ref, the function URLs derived from it, and the Cloudflare Pages site origin; tests/endpoint-source.test.mjs asserts the derivation.
 // @dependencies: none.
 
 // Single source of deployment endpoint truth for the extension deploy

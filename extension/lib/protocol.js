@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: protocol — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: protocol — the wire contract: primitive allowlist, parameter schemas, burst vocabulary.
+// @state: exports the method spec table, the allowlist derived from it, and the burst and command validators; npm run check reads this file for the primitive count.
 // @dependencies: keyboard.
 
 // The wire contract: the allowlist of browser primitives, their parameter schemas,

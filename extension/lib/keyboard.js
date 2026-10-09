@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: keyboard — MV3 runtime library, shared with the Node suite..
-// @state: MV3 runtime library, shared with the Node suite..
+// @title: keyboard — chord and bounded text resolution into exact CDP key events.
+// @state: pure resolver with no chrome dependency; modifiers OR into a CDP bitmask, unknown keys are rejected, and text is a separate length-bounded chunked path.
 // @dependencies: none.
 
 // Keyboard chords and bounded text entry: pure resolution
