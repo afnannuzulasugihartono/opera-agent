@@ -40,7 +40,10 @@ test('the hero stats equal live source counts, never stale copy', () => {
   const prims = (specs.match(/^\s*'[a-z][a-z0-9_.]*': \{ timeoutMs:/gm) || []).length;
   assert.ok(tools > 30 && prims >= 28, `sanity: ${tools} tools, ${prims} primitives`);
   const block = /<dl class="heroStats" id="heroStats">([\s\S]*?)<\/dl>/.exec(html)[1];
-  const stats = [...block.matchAll(/<div><dt>(\d+)<\/dt><dd>([^<]+)<\/dd><\/div>/g)];
+  // WHY tag and content separately: each label carries a data-i18n attribute,
+  // so a verbatim whole-tag match would break on the attribute rather than on
+  // a lost number or a lost label.
+  const stats = [...block.matchAll(/<div\b[^>]*><dt\b[^>]*>(\d+)<\/dt><dd\b[^>]*>([^<]+)<\/dd><\/div>/g)];
   const byLabel = Object.fromEntries(stats.map((m) => [m[2].trim(), Number(m[1])]));
   assert.equal(byLabel['tool MCP'], tools, 'tool stat matches the registered count');
   assert.equal(byLabel['primitive browser'], prims, 'primitive stat matches the allowlist');

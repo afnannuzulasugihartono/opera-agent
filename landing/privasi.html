@@ -115,15 +115,15 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./index.html">Opera Agent</a>
-        <a href="./index.html#install">Instalasi</a>
-        <a href="./unduh.html">Unduh</a>
-        <a href="./index.html#model">Model Anda</a>
-        <a href="./akun.html">Akun</a>
+        <a href="./index.html#install" data-i18n="nav.install">Instalasi</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="./index.html#model" data-i18n="nav.model">Model Anda</a>
+        <a href="./akun.html" data-i18n="nav.account">Akun</a>
         <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html" aria-current="page">Privasi</a>
-        <a href="./fitur.html">Fitur</a>
-        <a href="./dukungan.html">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false">EN</button></span>
+        <a href="./privasi.html" aria-current="page" data-i18n="nav.privacy">Privasi</a>
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
       </nav>
     </div>
   </header>
@@ -170,11 +170,32 @@
 
   <footer>
     <div class="wrap cols">
-      <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span class="doors">
-        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
+        <a href="./index.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./auth.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
       </span>
     </div>
   </footer>
+
+  <script type="application/json" id="i18n-dict">
+  {"en": {
+    "nav.install": "Install",
+    "nav.download": "Download",
+    "nav.model": "Your model",
+    "nav.account": "Account",
+    "nav.privacy": "Privacy",
+    "nav.features": "Features",
+    "nav.support": "Support",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.signin": "Sign in",
+    "footer.account": "Account",
+    "footer.features": "Features",
+    "footer.support": "Support"
+  }}
+  </script>
+  <script src="./i18n.js"></script>
 </body>
 </html>

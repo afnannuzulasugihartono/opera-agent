@@ -294,7 +294,7 @@
         <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
         <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false">EN</button></span>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
       </nav>
     </div>
   </header>
@@ -311,7 +311,7 @@
             dan Anda mengawasinya. Terutama Google Sheets/Excel, Docs, Maps, dan YouTube;
             yang lain ikut diajarkan.
           </p>
-          <p>39 tool, 28 primitive, dan <strong>lima izin</strong> yang
+          <p data-i18n-html="hero.proof">39 tool, 28 primitive, dan <strong>lima izin</strong> yang
         dijelaskan satu per satu di <a href="./unduh.html">halaman unduh</a>. Round tripnya
         pendek, karena semua aksi tidak perlu keluar dari primitif server yang sudah ada.</p>
           <div class="row" id="ctaOut">
@@ -327,21 +327,21 @@
           <div class="grid" id="quickTiles" hidden style="margin-top: 18px;">
             <div class="tile">
               <h3 data-i18n="tiles.devices.title">Device &amp; perintah</h3>
-              <p>Status, riwayat, dan kendali tiap device. <a href="./dashboard.html#device">Lihat device</a>.</p>
+              <p data-i18n-html="tiles.devices.body">Status, riwayat, dan kendali tiap device. <a href="./dashboard.html#device">Lihat device</a>.</p>
             </div>
             <div class="tile">
               <h3 data-i18n="tiles.pairing.title">Pairing manual</h3>
-              <p>Kode 10 menit untuk device baru. <a href="./dashboard.html#pairing">Buat kode</a>.</p>
+              <p data-i18n-html="tiles.pairing.body">Kode 10 menit untuk device baru. <a href="./dashboard.html#pairing">Buat kode</a>.</p>
             </div>
             <div class="tile">
               <h3 data-i18n="tiles.model.title">Model di device ini</h3>
-              <p>Endpoint dan kunci tetap di sini. <a href="#model">Atur model</a>.</p>
+              <p data-i18n-html="tiles.model.body">Endpoint dan kunci tetap di sini. <a href="#model">Atur model</a>.</p>
             </div>
           </div>
           <dl class="heroStats" id="heroStats">
-            <div><dt>39</dt><dd>tool MCP</dd></div>
-            <div><dt>28</dt><dd>primitive browser</dd></div>
-            <div><dt>5</dt><dd>izin, semua dijelaskan</dd></div>
+            <div><dt>39</dt><dd data-i18n="hero.stat.tools">tool MCP</dd></div>
+            <div><dt>28</dt><dd data-i18n="hero.stat.prims">primitive browser</dd></div>
+            <div><dt>5</dt><dd data-i18n="hero.stat.perms">izin, semua dijelaskan</dd></div>
           </dl>
         </div>
         <div class="demo" id="demo" role="img" aria-label="Contoh perintah Opera Agent dan jawabannya">
@@ -358,7 +358,7 @@
 
     <section id="install" class="reveal">
       <h2 data-i18n="install.title">Instalasi</h2>
-      <p class="sub">Extension adalah seluruh produk di mesin Anda. Langkah layarnya tetap sama: unduh, masuk, lalu pair. Jika Anda butuh daftar arsip atau verifikasi berkas, kedua-duanya ada di <a href="./unduh.html">halaman unduh</a>.</p>
+      <p class="sub" data-i18n-html="install.sub">Extension adalah seluruh produk di mesin Anda. Langkah layarnya tetap sama: unduh, masuk, lalu pair. Jika Anda butuh daftar arsip atau verifikasi berkas, kedua-duanya ada di <a href="./unduh.html">halaman unduh</a>.</p>
       <ol class="steps">
         <li><strong>Unduh dan pasang.</strong> Klik <em>Mulai instalasi</em> di <a href="./unduh.html">halaman unduh</a> untuk mengambil CRX atau arsip, lalu pasang ekstensi Anda — di <code>opera://extensions</code> aktifkan developer mode dan muat folder hasil ekstrak seperti di <a href="./unduh.html">halaman unduh</a>.</li>
         <li><strong>Masuk.</strong> Buka <a href="./auth.html">Masuk</a>. Setelah sign-in, Anda dibawa kembali ke tempat Anda datang — termasuk persetujuan dari asisten yang ingin memakainya.</li>
@@ -385,7 +385,7 @@
             <option value="groq">Groq</option>
             <option value="ollama">Ollama</option>
             <option value="lmstudio">LM Studio</option>
-            <option value="custom">Kustom…</option>
+            <option value="custom" data-i18n="model.custom">Kustom…</option>
           </select>
 
           <label for="modelEndpoint" data-i18n="model.endpoint">Endpoint API</label>
@@ -403,7 +403,7 @@
             <button class="btn" type="button" id="copyButton" data-i18n="model.copy">Salin saja</button>
           </div>
           <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
-          <p class="note">
+          <p class="note" data-i18n-html="model.note">
             Extension menerima endpoint https, atau http polos di 127.0.0.1 untuk model
             yang berjalan di mesin ini. Bila extension belum terpasang, gunakan
             <em>Salin saja</em> lalu tempel nilainya di popup extension.
@@ -427,7 +427,7 @@
 
     <section id="privacy" class="reveal">
       <h2 data-i18n="privacy.title">Apa yang meninggalkan mesin Anda</h2>
-      <p class="sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya. Selengkapnya di <a href="./privasi.html">kebijakan privasi</a>.</p>
+      <p class="sub" data-i18n-html="privacy.sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya. Selengkapnya di <a href="./privasi.html">kebijakan privasi</a>.</p>
       <dl class="facts">
         <dt data-i18n="privacy.content.dt">Konten halaman</dt><dd data-i18n="privacy.content.dd">Konten dari halaman yang Anda setujui hanya pergi ke endpoint model milik Anda. Ia transit melalui relay perintah, dan perintah beserta hasilnya disimpan sebagai riwayat antrean di database project. Ia tidak pernah dibagikan ke pihak ketiga mana pun.</dd>
         <dt data-i18n="privacy.key.dt">Kunci API</dt><dd data-i18n="privacy.key.dd">Tersimpan di browser ini. Tidak pernah diunggah, tidak pernah ditampilkan kembali ke halaman ini, tidak pernah dicatat.</dd>
@@ -521,6 +521,17 @@
     "faq.offline.dd": "A local model on this machine works without internet. The command relay needs a connection, because your assistant lives in the cloud.",
     "faq.stop.dt": "Quitting",
     "faq.stop.dd": "The sign-out button forgets the session in this browser. Revoke the pairing to stop a device. Queue history is kept while the account exists, per the privacy policy.",
+    "hero.proof": "39 tools, 28 primitives, and <strong>five permissions</strong> explained one by one on the <a href=\"./unduh.html\">download page</a>. Round trips stay short, because every action runs on the existing server primitives.",
+    "hero.stat.tools": "MCP tools",
+    "hero.stat.prims": "browser primitives",
+    "hero.stat.perms": "permissions, each explained",
+    "tiles.devices.body": "Status, history, and control for each device. <a href=\"./dashboard.html#device\">View devices</a>.",
+    "tiles.pairing.body": "A 10-minute code for a new device. <a href=\"./dashboard.html#pairing\">Create a code</a>.",
+    "tiles.model.body": "The endpoint and key stay here. <a href=\"#model\">Set up the model</a>.",
+    "install.sub": "The extension is the whole product on your machine. The on-screen steps stay the same: download, sign in, then pair. If you need the archive list or file verification, both live on the <a href=\"./unduh.html\">download page</a>.",
+    "model.custom": "Custom…",
+    "model.note": "The extension accepts https endpoints, or plain http on 127.0.0.1 for a model running on this machine. If the extension is not installed yet, use <em>Just copy</em> and paste the values into the extension popup.",
+    "privacy.sub": "Stated plainly, because an assistant with browser access deserves trust only when you know the answer. More in the <a href=\"./privasi.html\">privacy policy</a>.",
     "footer.rights": "© 2026 Opera Agent. All rights reserved.",
     "footer.home": "Home",
     "footer.privacy": "Privacy",

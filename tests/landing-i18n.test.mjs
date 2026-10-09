@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: landing-i18n — the shared toggle swaps English on, and only on, the pages that carry a dict.
-// @state: 6 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
+// @state: 10 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
 // @dependencies: test, assert, fs, vm.
 
 import test from 'node:test';
@@ -14,16 +14,16 @@ const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 // The toggle markup is one string everywhere, so a reader choosing English on
 // any page meets the same control. Compared verbatim, not normalised.
 
-const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pressed="true">ID</button>'
+const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button>'
   + '<span aria-hidden="true">|</span>'
-  + '<button type="button" data-lang="en" aria-pressed="false">EN</button></span>';
+  + '<button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>';
 
-const DICT_PAGES = ['index.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html'];
-const TOGGLE_PAGES = [...DICT_PAGES, 'unduh.html', 'privasi.html', 'syarat.html', 'akun.html', 'dashboard.html', 'oauth/consent.html'];
+const DICT_PAGES = ['index.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html'];
+const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html', 'auth.html'];
 
 function attrKeys(page) {
   const html = read(`landing/${page}`);
-  return [...html.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]);
+  return [...html.matchAll(/data-i18n(?:-html)?="([^"]+)"/g)].map((m) => m[1]);
 }
 
 function pageDict(page) {
@@ -46,7 +46,9 @@ test('every marked string has English, and no dict carries a string nothing mark
 });
 
 test('the pages without a dict mark nothing, so no toggle promises what is not there', () => {
-  for (const page of ['unduh.html', 'privasi.html', 'syarat.html', 'akun.html', 'dashboard.html', 'oauth/consent.html', 'auth.html']) {
+  // WHY the app pages are still here: Task 2 wires their content. Their toggle
+  // already persists the choice and paints its state; it just has no strings yet.
+  for (const page of ['akun.html', 'dashboard.html', 'oauth/consent.html', 'auth.html']) {
     assert.doesNotMatch(read(`landing/${page}`), /i18n-dict/, `${page} carries no dict`);
     assert.deepEqual(attrKeys(page), [], `${page} marks no string without a dict to translate it`);
   }
@@ -61,12 +63,6 @@ test('the toggle is one identical control on every page that may carry it', () =
     const count = html.split(TOGGLE).length - 1;
     assert.equal(count, 1, `${page} carries it exactly once`);
   }
-
-  // WHY auth.html is absent: its own accessible-name lock requires every button
-  // to carry more than two characters of text, and ID/EN are language codes of
-  // exactly two. Adding the verbatim toggle there turns that suite red, so the
-  // toggle stops here until that pin learns what a language code is.
-  assert.doesNotMatch(read('landing/auth.html'), /data-lang/, 'auth.html carries no toggle it cannot keep green');
 });
 
 test('the mechanism phones nowhere, ever', () => {
@@ -91,11 +87,12 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
 // Run the shipped mechanism file against a stub DOM, so the swap the tests
 // prove is the swap the pages load rather than a copy of its logic.
 
-function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, readyState = 'complete', storageThrows = false } = {}) {
+function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, readyState = 'complete', storageThrows = false, withHead = false } = {}) {
   const store = stored === null ? {} : { 'oa-lang': stored };
   const listeners = {};
   const element = (attrs, textContent) => ({
     textContent,
+    innerHTML: textContent,
     attrs: { ...attrs },
     handlers: {},
     getAttribute(key) { return this.attrs[key]; },
@@ -103,11 +100,29 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, rea
     addEventListener(event, handler) { this.handlers[event] = handler; },
   });
   const nodes = [element({ 'data-i18n': 'greeting' }, 'Halo'), element({ 'data-i18n': 'missing' }, 'Tetap')];
+  const rich = [element({ 'data-i18n-html': 'rich' }, 'Baca <a href="./x.html">panduan</a> dulu.')];
   const buttons = [
     element({ 'data-lang': 'id', 'aria-pressed': 'true' }, 'ID'),
     element({ 'data-lang': 'en', 'aria-pressed': 'false' }, 'EN'),
   ];
   const dictNode = { textContent: JSON.stringify(dict) };
+  const head = { children: [], appendChild(child) { this.children.push(child); } };
+  const documentStub = {
+    readyState,
+    documentElement: { lang: 'id' },
+    getElementById: (id) => (id === 'i18n-dict' ? dictNode : null),
+    querySelectorAll: (selector) => {
+      if (selector === '[data-i18n]') return nodes;
+      if (selector === '[data-i18n-html]') return rich;
+      if (selector === 'button[data-lang]') return buttons;
+      return [];
+    },
+    addEventListener: (event, handler) => { listeners[event] = handler; },
+  };
+  if (withHead) {
+    documentStub.head = head;
+    documentStub.createElement = (tag) => element({ 'data-tag': tag }, '');
+  }
   const context = vm.createContext({
     console, JSON, Map,
     localStorage: storageThrows
@@ -116,22 +131,12 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, rea
         getItem: (key) => (key in store ? store[key] : null),
         setItem: (key, value) => { store[key] = String(value); },
       },
-    document: {
-      readyState,
-      documentElement: { lang: 'id' },
-      getElementById: (id) => (id === 'i18n-dict' ? dictNode : null),
-      querySelectorAll: (selector) => {
-        if (selector === '[data-i18n]') return nodes;
-        if (selector === 'button[data-lang]') return buttons;
-        return [];
-      },
-      addEventListener: (event, handler) => { listeners[event] = handler; },
-    },
+    document: documentStub,
     window: {},
   });
   vm.runInContext(read('landing/i18n.js'), context, { filename: 'i18n.js' });
   return {
-    api: context.window.OperaAgentI18n, nodes, buttons, store, listeners, document: context.document,
+    api: context.window.OperaAgentI18n, nodes, rich, buttons, store, listeners, head, document: context.document,
     click: (button) => button.handlers.click.call(button),
   };
 }
@@ -185,4 +190,32 @@ test('while the document still parses, the helper exists and the swap waits for 
   run.listeners.DOMContentLoaded();
   assert.equal(run.nodes[0].textContent, 'Hello', 'the full page swaps once it exists');
   assert.equal(run.document.documentElement.lang, 'en');
+});
+
+test('a mixed paragraph swaps its markup and swaps it back, never blanking', () => {
+  const authored = 'Baca <a href="./x.html">panduan</a> dulu.';
+  const run = runMechanism({ stored: 'en', dict: { en: { greeting: 'Hello', rich: 'Read the <a href="./x.html">guide</a> first.' } } });
+  assert.equal(run.rich[0].innerHTML, 'Read the <a href="./x.html">guide</a> first.', 'the markup swaps with its links intact');
+
+  run.click(run.buttons[0]);
+  assert.equal(run.rich[0].innerHTML, authored, 'choosing Indonesian restores the authored markup');
+
+  const missing = runMechanism({ stored: 'en' });
+  assert.equal(missing.rich[0].innerHTML, authored, 'a missing key leaves the authored markup');
+});
+
+test('the toggle paints itself once, stays reachable, and presses the active language', () => {
+  const run = runMechanism({ stored: 'en', withHead: true });
+  assert.equal(run.head.children.length, 1, 'one stylesheet is injected');
+  const paint = run.head.children[0];
+  assert.equal(paint.attrs['data-tag'], 'style', 'it is a style element');
+  assert.match(paint.textContent, /\.lang/, 'it paints the shared control');
+  assert.match(paint.textContent, /aria-pressed/, 'the pressed button reads pressed');
+  assert.doesNotMatch(paint.textContent, /@keyframes|transition|animation/, 'with no motion anywhere in it');
+  assert.equal(run.buttons.length, 2, 'both buttons stay reachable');
+  assert.equal(run.buttons[0].attrs['aria-pressed'], 'false', 'the idle button unpresses');
+  assert.equal(run.buttons[1].attrs['aria-pressed'], 'true', 'the active button presses');
+
+  const bare = runMechanism({ stored: 'en' });
+  assert.equal(bare.nodes[0].textContent, 'Hello', 'without a head the swap still runs');
 });

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: i18n — one shared language swap for every page of the site.
-// @state: classic script, zero dependencies; reads oa-lang plus the page dict, swaps text, never networks.
+// @state: classic script, zero dependencies; reads oa-lang plus the page dict, swaps text and rich paragraphs, paints its own toggle, never networks.
 // @dependencies: none.
 
 (function () {
@@ -9,6 +9,40 @@
   // WHY one key for the whole site: the reader chooses once in any page nav and
   // every page honours it, so the toggle never disagrees with itself.
   var KEY = 'oa-lang';
+
+  // WHY the toggle paints itself: every page shares one control, so the shared
+  // file carries its paint and no page needs its own .lang CSS. A segmented
+  // ID|EN pill in house colors, no animation, no dependency. Injected as one
+  // <style> element, which the CSP already allows (style-src 'unsafe-inline').
+  var CSS = '.lang{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.16);border-radius:980px;padding:2px;white-space:nowrap}'
+    + '.lang button{width:auto;margin:0;border:0;background:transparent;color:#86868b;font:inherit;font-size:12px;font-weight:600;line-height:1;padding:5px 10px;border-radius:980px;cursor:pointer}'
+    + '.lang button:hover{color:#f5f5f7}'
+    + '.lang button[aria-pressed="true"]{background:rgba(62,207,142,.16);color:#f5f5f7}'
+    + '.lang span[aria-hidden="true"]{display:none}';
+
+  var painted = false;
+
+  function paint() {
+    if (painted) return;
+
+    painted = true;
+
+    try {
+      if (typeof document.createElement !== 'function') return;
+
+      var head = document.head;
+
+      if (!head || typeof head.appendChild !== 'function') return;
+
+      var style = document.createElement('style');
+
+      style.setAttribute('data-oa-i18n', 'lang');
+      style.textContent = CSS;
+      head.appendChild(style);
+    } catch (error) {
+      // An unpainted toggle still swaps; the paint is cosmetic, the swap is not.
+    }
+  }
 
   // WHY the authored Indonesian is the source of truth: the per-page dict carries
   // only English, so the swap back restores the stashed originals and a missing
@@ -52,6 +86,12 @@
 
   // WHY textContent and never innerHTML: a translation is a string, not markup,
   // so there is no parsed HTML for a dict to smuggle in.
+  //
+  // WHY data-i18n-html exists beside it: a mixed paragraph (links, code,
+  // emphasis) cannot swap through textContent without destroying its child
+  // nodes. The dict ships inside the page, never user input, so there is no
+  // injection surface; CSP is unaffected — no script executes, the swapped
+  // strings are markup the author wrote, parsed as HTML, never run.
   function apply() {
     var entries = table();
     var nodes = document.querySelectorAll('[data-i18n]');
@@ -62,6 +102,19 @@
       var text = entries[element.getAttribute('data-i18n')];
 
       element.textContent = (typeof text === 'string' && text !== '') ? text : authored;
+    }
+
+    var rich = document.querySelectorAll('[data-i18n-html]');
+
+    for (var k = 0; k < rich.length; k += 1) {
+      var paragraph = rich[k];
+
+      if (!originals.has(paragraph)) originals.set(paragraph, paragraph.innerHTML);
+
+      var authoredHtml = originals.get(paragraph);
+      var markup = entries[paragraph.getAttribute('data-i18n-html')];
+
+      paragraph.innerHTML = (typeof markup === 'string' && markup !== '') ? markup : authoredHtml;
     }
 
     document.documentElement.lang = current;
@@ -106,6 +159,7 @@
   }
 
   function init() {
+    paint();
     apply();
     wire();
   }

@@ -21,19 +21,24 @@ const berkas = read('unduh-berkas.html');
 const ZIP = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip';
 const CRX = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx';
 
+const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 test('the hub opens with one giant door to the merged files page', () => {
   // WHY the URL is cross-checked and not just repeated: the verification steps on the
   // merged page vouch for one archive URL, and a card drifting to another path would
   // offer a build those steps cannot verify.
   const curl = /curl\.exe -sI (\S+) \|/.exec(berkas)[1];
   assert.equal(ZIP, curl, 'the verification command reads the URL the cards offer');
-  assert.ok(hub.includes('<a class="btn giant" href="./unduh-berkas.html">Unduh Opera Agent</a>'),
+
+  // WHY tag and content separately: the door carries a data-i18n attribute, so a
+  // verbatim whole-tag match would break on the attribute rather than on a lost URL.
+  assert.match(hub, /<a\b[^>]*class="btn giant"[^>]*href="\.\/unduh-berkas\.html"[^>]*>Unduh Opera Agent<\/a>/,
     'one giant button to the merged page, product name as its text');
   assert.doesNotMatch(hub, /class="btn giant"[^>]*download/, 'navigation, not a download');
 });
 
 test('the also-available row names the other doors without leaving the page', () => {
-  const row = /<p class="also">([\s\S]*?)<\/p>/.exec(hub)[1];
+  const row = /<p\b[^>]*class="also"[^>]*>([\s\S]*?)<\/p>/.exec(hub)[1];
   assert.match(row, /juga tersedia/, 'the row says what it is');
   assert.ok(row.includes('<a href="./unduh-berkas.html">Panduan format</a>'), 'the one format guide');
   assert.ok(row.includes('<a href="./dashboard.html">Dashboard</a>'), 'and the dashboard');
@@ -52,10 +57,13 @@ test('every merged card names its own extensions surface and the archive require
     assert.ok(body.includes(`<h3>${names[key]}</h3>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
-    assert.ok(body.includes(`<a class="btn" href="${ZIP}" download>Unduh .zip</a>`), `${key} offers the one archive`);
+    // WHY tag and content separately: each offer carries a data-i18n attribute,
+    // so a verbatim whole-tag match would break on the attribute rather than on
+    // a lost URL or a lost button text.
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download[^>]*>Unduh \\.zip</a>`), `${key} offers the one archive`);
     assert.ok(body.includes(`<code>${surfaces[key]}</code>`), `${key} names its own extensions surface`);
     assert.match(body, /mode developer/, `${key} states the requirement`);
-    assert.ok(body.includes('<span class="badge" hidden>Browser Anda</span>'), `${key} hides its badge until detected`);
+    assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
   }
 });
 
@@ -63,7 +71,7 @@ test('every merged card keeps the enterprise frame on its signed file', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   for (const [, key, body] of cards) {
-    assert.ok(body.includes(`<a class="btn" href="${CRX}" download>Unduh .crx</a>`), `${key} offers the signed file`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file`);
     assert.match(body, /enterprise-managed/, `${key} keeps the policy audience`);
     assert.match(body, /Drag-and-drop manual ditolak/, `${key} keeps the manual rejection`);
     assert.doesNotMatch(body, /mengizinkan pemasangan/, `${key} implies no consumer install`);

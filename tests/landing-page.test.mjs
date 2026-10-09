@@ -74,7 +74,10 @@ test('the origin check admits the official site and localhost, and nothing else'
 
 test('the provider picker names the providers, and the NVIDIA pair plus the Groq trio exactly', () => {
   for (const id of ['nvidia', 'groq', 'ollama', 'lmstudio', 'custom']) {
-    assert.ok(html.includes(`<option value="${id}">`), `the provider picker offers ${id}`);
+    // WHY tag and value separately: an option may carry a data-i18n attribute,
+    // so a verbatim whole-tag match would break on the attribute rather than on
+    // a lost provider.
+    assert.match(html, new RegExp(`<option\\b[^>]*value="${id}"[^>]*>`), `the provider picker offers ${id}`);
   }
   assert.ok(html.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'the NVIDIA endpoint is exact');
   assert.ok(html.includes('meta/llama-3.2-11b-vision-instruct'), 'the fast NVIDIA model is exact');

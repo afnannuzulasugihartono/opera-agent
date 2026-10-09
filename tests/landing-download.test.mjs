@@ -288,11 +288,14 @@ test('the download page names every browser it supports and why one is not', () 
   // capture groups start at 1. The pattern allows a fourth cell because the table
   // answers one question per install path, and a column added later must not
   // silently stop being checked.
-  const rows = [...html.matchAll(/<tr><td>(\w+)<\/td>((?:<td class="\w+">[^<]*<\/td>){2,4})<\/tr>/g)];
+  // WHY tag and content separately: each verdict cell carries a data-i18n
+  // attribute, so a verbatim whole-tag match would break on the attribute
+  // rather than on a lost verdict.
+  const rows = [...html.matchAll(/<tr><td>(\w+)<\/td>((?:<td\b[^>]*class="\w+"[^>]*>[^<]*<\/td>){2,4})<\/tr>/g)];
   assert.ok(rows.length >= 6, `the table has a row per browser, found ${rows.length}`);
   const cells = rows.map(([, name, body]) => [
     name,
-    ...[...body.matchAll(/<td class="(\w+)">([^<]*)<\/td>/g)].map((m) => [m[1], m[2].trim()])
+    ...[...body.matchAll(/<td\b[^>]*class="(\w+)"[^>]*>([^<]*)<\/td>/g)].map((m) => [m[1], m[2].trim()])
   ]);
   for (const [name, ...answers] of cells) {
     assert.ok(answers.length >= 2, `${name} answers every path the table names`);

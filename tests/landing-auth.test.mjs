@@ -115,7 +115,14 @@ test('every auth control has an accessible name', () => {
   for (const [, id] of html.matchAll(/<input\b[^>]*\bid="([^"]+)"/gi)) {
     assert.ok(new RegExp(`<label[^>]*for="${id}"`).test(html), `input #${id} has a label`);
   }
-  for (const [, text] of html.matchAll(/<button\b[^>]*>([^<]{2,})<\//gi)) {
+  // WHY the label escape: the language toggle reads ID/EN, two-letter codes no
+  // prose can stretch past two characters. A button carrying a non-empty
+  // aria-label names itself that way; without one, its own text must do it.
+  for (const [, attrs, text] of html.matchAll(/<button\b([^>]*)>([^<]*)<\//gi)) {
+    const labelled = /aria-label="([^"]+)"/.exec(attrs);
+
+    if (labelled && labelled[1].trim() !== '') continue;
+
     assert.ok(text.trim().length > 2, 'each button names itself in its own text');
   }
   for (const [, text] of html.matchAll(/<a\b[^>]*class="provider"[^>]*>([^<]{2,})</gi)) {

@@ -22,11 +22,15 @@ const berkas = read('unduh-berkas.html');
 const ZIP = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip';
 const CRX = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx';
 
+const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 test('the hub carries exactly one giant door opening the merged files page', () => {
   // WHY navigation and not a download: the reader picks the browser first, then the
   // file, so a door that downloaded the archive would skip the choice the merged
   // page exists to offer. Steam opens the game page; this opens the files page.
-  const doors = [...hub.matchAll(/<a class="btn giant" href="([^"]+)">([^<]*)<\/a>/g)];
+  // WHY tag and content separately: the door carries a data-i18n attribute, so a
+  // verbatim whole-tag match would break on the attribute rather than on a lost URL.
+  const doors = [...hub.matchAll(/<a\b[^>]*class="btn giant"[^>]*href="([^"]+)"[^>]*>([^<]*)<\/a>/g)];
   assert.equal(doors.length, 1, 'exactly one giant door');
   assert.equal(doors[0][1], './unduh-berkas.html', 'the door opens the merged page');
   assert.equal(doors[0][2], 'Unduh Opera Agent', 'with the product name as its text');
@@ -38,7 +42,7 @@ test('the hub also-available row names the other doors without leaving the page'
   // WHY this replaces the per-card dropdowns: five selects each naming the same
   // three doors was the old cross-link UI, and it left with the hub cards. One row
   // under the giant door now names every other door a reader could want.
-  const rows = [...hub.matchAll(/<p class="also">([\s\S]*?)<\/p>/g)];
+  const rows = [...hub.matchAll(/<p\b[^>]*class="also"[^>]*>([\s\S]*?)<\/p>/g)];
   assert.equal(rows.length, 1, 'exactly one also-available row');
   const [, row] = rows[0];
   assert.match(row, /juga tersedia/, 'the row says what it is');
@@ -61,16 +65,19 @@ test('the merged page carries one card per browser, each offering both files', (
     assert.ok(body.includes(`<h3>${names[key]}</h3>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
-    assert.ok(body.includes(`<a class="btn" href="${ZIP}" download>Unduh .zip</a>`), `${key} offers the archive`);
-    assert.ok(body.includes(`<a class="btn" href="${CRX}" download>Unduh .crx</a>`), `${key} offers the signed file beside it`);
-    assert.ok(body.includes('<span class="badge" hidden>Browser Anda</span>'), `${key} hides its badge until detected`);
+    // WHY tag and content separately: each offer carries a data-i18n attribute,
+    // so a verbatim whole-tag match would break on the attribute rather than on
+    // a lost URL or a lost button text.
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download[^>]*>Unduh \\.zip</a>`), `${key} offers the archive`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file beside it`);
+    assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
   }
 });
 
 test('the merged detection marks the matching card and phones nowhere', () => {
   // WHY this moved off the hub and onto the one page: the highlight followed the
-  // cards when they merged, and the hub keeps no script at all now. The privacy
-  // promise moves with the code.
+  // cards when they merged, and the hub keeps no inline script of its own now —
+  // only the shared language file. The privacy promise moves with the code.
   const script = /<script type="module">([\s\S]*?)<\/script>/.exec(berkas)[1];
   assert.ok(script.includes('navigator.userAgentData?.brands'), 'reads brands first');
   assert.ok(script.includes('navigator.userAgent'), 'falls back to the UA string');
@@ -78,16 +85,20 @@ test('the merged detection marks the matching card and phones nowhere', () => {
   assert.match(script, /badge\.hidden = false/, 'shows its badge');
   assert.doesNotMatch(script, /fetch\s*\(/, 'fetches nothing');
   assert.doesNotMatch(script, /XMLHttpRequest|sendBeacon|WebSocket/, 'reaches no other network either');
-  assert.doesNotMatch(hub, /<script/, 'the hub itself runs no script');
+  // WHY the two halves: the hub runs no inline script of its own, but it loads
+  // the one shared language file every page shares. The JSON dict is data, not
+  // a script block, so it is excluded from the inline ban it would otherwise trip.
+  assert.doesNotMatch(hub, /<script(?![^>]*src=)(?![^>]*type="application\/json")/, 'the hub itself runs no inline script');
+  assert.ok(hub.includes('<script src="./i18n.js"></script>'), 'the hub loads the shared language file');
 });
 
 test('the hero states the value in one sentence, and the steps live on the merged page', () => {
-  assert.match(hub, /<h1>Pasang Opera Agent<\/h1>/, 'the hero keeps its title');
+  assert.match(hub, /<h1\b[^>]*>Pasang Opera Agent<\/h1>/, 'the hero keeps its title');
   assert.match(hub, /Gratis dan tanpa toko/, 'gratis and storeless in one sentence');
   assert.match(hub, /mesin enterprise/, 'enterprise named where the updates land');
   assert.doesNotMatch(hub.replace(/<!--[\s\S]*?-->/g, ''), /instan/i, 'no instant promise');
   assert.doesNotMatch(hub, /<ol class="steps">/, 'the hub itself keeps no steps beside the door');
-  const steps = /<h2>Lima langkah memasang dari arsip<\/h2>\s*<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas)[1];
+  const steps = /<h2\b[^>]*>Lima langkah memasang dari arsip<\/h2>\s*<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas)[1];
   assert.match(steps, /Ekstrak arsip/, 'first the extract');
   assert.match(steps, /mode pengembang/, 'then developer mode');
   assert.match(steps, /Load unpacked/, 'then the load');
@@ -102,7 +113,7 @@ test('the CRX section is framed enterprise-only, with the button untouched', () 
   assert.match(berkas, /BLOCKED/, 'the unmanaged status is stated');
   assert.match(berkas, /pengguna rumahan pakai <a href="#berkas">arsip zip<\/a>/, 'home users are sent to the zip on this same page');
   assert.doesNotMatch(berkas, /mengizinkan pemasangan/, 'no sentence implies a consumer browser allows it');
-  assert.ok(berkas.includes(`<a class="btn" href="${CRX}" download>Unduh berkas .crx terbaru</a>`), 'the button and its endpoint are unchanged');
+  assert.match(berkas, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh berkas \\.crx terbaru</a>`), 'the button and its endpoint are unchanged');
   assert.match(berkas, /namanya membawa versi build/, 'the filename note stays');
 });
 
