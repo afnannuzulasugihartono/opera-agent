@@ -3052,8 +3052,12 @@ laporkan, jangan ikut di-commit.
 ### Task 19: Verifikasi akhir dan penutupan
 
 **Files:**
-- Modify: `tests/extension-source.test.mjs` (tambahkan pengikatan yang tersisa)
-- Modify: `docs/handoff.md` bila menyebut struktur berkas
+- Modify: `tests/extension-source.test.mjs` (lima pengikatan yang tersisa)
+- Modify: `extension/background.js` (baris 4 saja — header `// @dependencies:`)
+- Modify: `tests/helpers/boundary-locks.mjs` (sematkan ulang nilai hash, nilai saja)
+- Modify: `docs/superpowers/specs/2026-10-09-background-modularization-design.md` (enam koreksi angka)
+- `docs/handoff.md`: **tidak disentuh.** Ia tidak menyebut struktur
+  `background.js` maupun jumlah barisnya — sudah diperiksa.
 
 **Interfaces:**
 - Consumes: seluruh 12 modul dari Task 7-18.
@@ -3069,7 +3073,7 @@ test('no state is declared twice across the bundle', async () => {
   if (files.length === 1) return;          // belum ada modul yang dipindah
   const decls = new Map();
   for (const rel of files) {
-    const text = await readFile(new URL(`../../${rel}`, import.meta.url), 'utf8');
+    const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
     const names = [...text.matchAll(/^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]);
     for (const name of names) decls.set(name, [...(decls.get(name) || []), rel]);
   }
@@ -3101,7 +3105,7 @@ test('every cross-module name is imported where it is used', async () => {
 
   const clean = new Map(), exported = new Map(), imported = new Map(), declared = new Map();
   for (const rel of files) {
-    const text = await readFile(new URL(`../../${rel}`, import.meta.url), 'utf8');
+    const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
     const code = strip(text);
     clean.set(rel, code);
 
@@ -3161,7 +3165,12 @@ test('the ensureContent script list still matches the manifest', async () => {
 test('capture never imports private-tabs, so the split cannot close a fifth cycle', async () => {
   const files = extensionSourceFiles();
   if (!files.includes('extension/worker/capture.js')) return;
-  const text = await readFile(new URL('../../extension/worker/capture.js', import.meta.url), 'utf8');
+  // Tingkatnya SATU, bukan dua: berkas ini ada di tests/, jadi ../ sudah mencapai
+  // akar repositori. Dua tingkat naik ke D:/GitHub/ dan melempar ENOENT — kesalahan
+  // yang ditemukan dengan menjalankan kelima tes ini ke pohon hidup sebelum brief
+  // dikirim. tests/helpers/extension-source.mjs memang memakai dua tingkat, karena
+  // berkas itu duduk di tests/helpers/.
+  const text = await readFile(new URL('../extension/worker/capture.js', import.meta.url), 'utf8');
   assert.ok(!/from\s+'\.\/private-tabs\.js'/.test(text),
     'capture -> private-tabs would form capture -> private-tabs -> capture');
 });
@@ -3171,7 +3180,7 @@ test('no import brings in a name its own file never uses', async () => {
   if (files.length === 1) return;          // belum ada modul yang dipindah
   const dead = [];
   for (const rel of files) {
-    const text = await readFile(new URL(`../../${rel}`, import.meta.url), 'utf8');
+    const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
     const lines = text.split('\n');
 
     // Sebuah pernyataan impor bisa membentang banyak baris. Tanpa penanda ini,
@@ -3218,6 +3227,44 @@ test('no import brings in a name its own file never uses', async () => {
 });
 ```
 
+**Tentang tes `every cross-module name is imported where it is used`.**
+
+- [ ] **Step 1b: Rapikan header `background.js` dan sematkan ulang lock**
+
+Baris 4 `extension/background.js` — `// @dependencies:` — menyebut enam modul
+yang tak lagi diimpor dan tak menyebut empat belas yang memang diimpor:
+
+```
+SEKARANG: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints,
+          role-reconcile, agent-log, popup-events, deadline-race.
+HILANG:   action-pipeline, focus-gate, keyboard, endpoints, agent-log, deadline-race
+KURANG:   loop, log, debugger-session, serialize, utils, capture, tab-content,
+          listen, capture-page, action-focus, burst, loop-engine, watch-registry,
+          execute-pull
+```
+
+Isi baris 4 yang benar — delapan belas nama, persis himpunan impor berkas itu:
+
+```
+// @dependencies: protocol, watch, loop, role-reconcile, log, popup-events,
+// debugger-session, serialize, utils, capture, tab-content, listen, capture-page,
+// action-focus, burst, loop-engine, watch-registry, execute-pull.
+```
+
+Ini Minor yang ditunda dari Task 18. Alasan melipatkannya ke sini, bukan
+meninggalkannya: `background.js` sudah menjadi jalur yang disahkan Task 18,
+perubahannya satu baris komentar tanpa efek runtime apa pun, dan
+AGENTS.md menyebut scaffolding basi sebagai sampah yang menumpuk. Meninggalkannya
+berarti menyerahkan pohon dengan header yang menjamin ketergantungan yang sudah
+tidak ada.
+
+**Mengubah `background.js` memaksa penempatan ulang lock** — `tests/helpers/boundary-locks.mjs`.
+Itu bukan pilihan, itu mekanik: hash-nya berubah dan `npm test` akan merah.
+Sematkan **nilai saja**, tanpa komentar bertanggal, dan biarkan komentar tetap
+yang berdiri di atas entri itu (ia sudah menjelaskan mengapa nilai itu terus
+berubah). Gunakan `sha1Blob` pada `tests/boundary-locks.test.mjs:16-21` —
+`git hash-object` polos di cek CRLF ini menghasilkan nilai berbeda.
+
 **Tentang tes `every cross-module name is imported where it is used`.** Heuristiknya sudah divalidasi sebelum ditulis ke dalam rencana, karena tes yang berisiko salah tembak lebih berbahaya daripada tidak ada tes sama sekali:
 
 - Dijalankan terhadap 17 modul `extension/lib/` yang sudah terpisah — **0 temuan** (108 nama diekspor, semuanya resolusi).
@@ -3251,18 +3298,112 @@ npm test
 npm run check
 ```
 
-Expected: `# fail 0`, `check ok`. `npm test` kini berjumlah **lebih dari 738**
-karena langkah ini menambah lima tes; laporkan angka sebenarnya, jangan
-mengklaim 738 lagi. Angka 738 ialah baseline ekstraksi, dan ekstraksinya sudah
-selesai.
+Expected: `# fail 0`, `check ok`. `npm test` kini berjumlah **743** —
+738 baseline ekstraksi ditambah lima tes langkah ini. Laporkan angka sebenarnya,
+jangan mengklaim 738 lagi. Angka 738 ialah baseline ekstraksi, dan ekstraksinya
+sudah selesai.
 
-- [ ] **Step 3: Baca ulang seluruh tabel angka di spec**
+**Telah divalidasi sebelum brief ini dikirim**, dengan kelima tes dijalankan ke
+pohon hidup di `724c826`: 21 nama state unik / 0 ganda; 80 nama diekspor
+lintas-modul / 0 miss; daftar injeksi cocok dengan manifest; nol tepi
+`capture → private-tabs`; 197 nama impor diperiksa / 0 mati. Jadi kelima tes
+ini hijau pada baris pertama mereka — dan merah segera setelah seseorang
+melanggar salah satu ikatan.
 
-Bandingkan angka di `docs/superpowers/specs/2026-10-09-background-modularization-design.md` *Fakta terverifikasi* dengan kondisi akhir. Kalau berbeda, **perbaiki angka di spec** — sesuai aturan yang sudah ditulis spec itu sendiri.
+Satu hal yang perlu diketahui: jalur di kelima tes itu **satu tingkat**
+(`../${rel}`), bukan dua. File tes ada di `tests/`, jadi satu tingkat sudah
+mencapai akar repositori; dua tingkat melempar `ENOENT` ke `D:/GitHub/extension/…`.
+Draf awal salah di empat tempat dan keempatnya terbukti merah sebelum diperbaiki.
+`tests/helpers/extension-source.mjs` memang memakai dua tingkat, karena berkas itu
+duduk di `tests/helpers/`.
+
+- [ ] **Step 3: Perbaiki angka spec yang kini berbeda**
+
+`docs/superpowers/specs/2026-10-09-background-modularization-design.md`.
+Spec itu menulis sendiri aturannya: angka yang berbeda dari kenyataan diperbaiki,
+bukan dijelaskan.
+
+**Telah diukur** — keempat belas berkas dibaca baris per baris dengan klasifikator
+`comment-spacing.mjs` yang sama untuk memisahkan kode dari komentar dan string:
+
+```
+modul                      baris  fungsi  chrome.*
+lib/log.js                    9      0        0
+lib/serialize.js             47      4        0
+worker/utils.js              81      7        2
+worker/private-tabs.js       27      3        2
+worker/tab-content.js       116      8        8
+worker/capture.js           181     10        7
+worker/listen.js            107      5        4
+worker/capture-page.js      136      1        3
+worker/action-focus.js      471     17       22
+worker/burst.js             142      2        0
+worker/loop-engine.js       431     17        9
+worker/watch-registry.js    245     13        4
+worker/execute-pull.js      414     13       27
+background.js               463      1       18
+```
+
+**Yang ternyata benar dan tak perlu disentuh:** kolom **fungsi** dan kolom
+**`chrome.*`** di tabel desain semuanya cocok — sepuluh dari sepuluh baris yang
+punya keduanya. Kriteria penempatan itu terukur dan terbukti; yang meleset hanya
+perkiraan panjang.
+
+**Enam koreksi, berurutan menurut baris:**
+
+1. **Baris 18 dan 20 (Intent)** — "sekitar **460 baris**" → "**463 baris**";
+   "**12 file baru**: 10 di `extension/worker/` dan 2 di `extension/lib/`" →
+   "**13 file baru**: 11 di `extension/worker/` dan 2 di `extension/lib/`".
+   Selisihnya satu, dan sebabnya tercatat: Task 16 memutuskan **membagi**
+   `loop-engine` menjadi `burst.js` + `loop-engine.js` alih-alih menaikkan
+   ambang 550. Rencana tumbuh dari 12 modul menjadi 13 pada hari itu; tabel
+   desain tidak ikut tumbuh.
+
+2. **Baris 148 (pohon)** — "(~460 baris)" → "(463 baris)".
+
+3. **Baris 153-165 (tabel modul)** — kolom `baris` sistematis terlalu pendek
+   karena desain menghitung **region**, sedangkan berkas membawa pula header dan
+   blok impor yang belum ada saat desain ditulis. Ganti dengan angka terukur di
+   atas. Satu penambahan: **`burst.js` 142 baris, 2 fungsi, `chrome.*` 0** —
+   baris itu tidak ada sama sekali di tabel, padahal berkasnya ada.
+   Dan `loop-engine.js` **19 → 17 fungsi**: dua di antaranya pindah ke `burst`.
+
+4. **Baris 164-165** — `log.js` "5 baris" → **9**; `serialize.js` "28 baris" → **47**.
+
+5. **Baris 476-477 dan 568** — "dua belas modul baru" → "**tiga belas** modul baru".
+   Ambangnya benar dan tak berubah: `background.js` 463 < 600, modul terbesar
+   `action-focus.js` 471 < 550.
+
+6. **Baris 570** — "Yang tidak berubah: **726 tes**" sudah basi dua kali. Rencana
+   ini sendiri menambah gerbang (tes load, tes identitas bundel), jadi jumlahnya
+   naik 726 → 738 → **743** setelah kelima tes langkah 1. Tulis apa yang
+   sebenarnya tidak berubah, dan jangan mengklaim angka tes yang sudah lewat.
+
+**Satu temuan yang TIDAK boleh diperbaiki diam-diam di sini**, catat saja di
+laporan: `burst.js` punya **`chrome.*` sebagai kode = 0**, sedangkan kriteria
+penempatan spec (baris 23-24) menaruh berkas begitu ke `extension/lib/`.
+Gerbangnya tidak menangkap ini — `scripts/check.mjs` hanya memeriksa arah
+`lib/` **bebas** `chrome.*`, dengan satu kecualian tertulis; tidak ada yang
+memeriksa arah sebaliknya. Memindahkannya berarti mengganti jalur impor di
+`background.js` dan `loop-engine.js`, menyusun ulang `FILES`, dan menyematkan ulang
+lock — refactor di task terakhir, bukan koreksi angka. Laporkan, jangan kerjakan.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add tests/extension-source.test.mjs docs/
-git commit -m "test: pin state uniqueness, the injection list and the cycle that must not exist"
+git add tests/extension-source.test.mjs extension/background.js \
+        tests/helpers/boundary-locks.mjs docs/
+git commit -m "test: pin state uniqueness, the injection list and the cycle that must not exist" \
+  -m "background.js's @dependencies header still named six modules the Task 18 sweep
+removed and none of the fourteen it gained, so it named a file that no longer
+exists. Rewritten to the file's real import set; the lock is re-pinned in the same
+commit because the bytes changed, which is what the standing comment above that
+entry has always described.
+
+The spec's design table counted the regions, not the files that carried a header
+and an import block the design had not budgeted for, and it never grew the row for
+burst.js — Task 16 split loop-engine in two rather than raising the 550 ceiling,
+taking the plan from twelve modules to thirteen. Function counts and chrome.*
+counts in that table were right on all ten rows that carry them; only the line
+counts and the module count were wrong."
 ```
