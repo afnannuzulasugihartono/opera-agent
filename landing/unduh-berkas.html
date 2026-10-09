@@ -170,15 +170,23 @@
     .meta { color: var(--muted); font-size: 13px; }
     /* WHY one grid for five browsers: the reader asks "which one is mine", and
        the matching card answers before any prose is read. */
-    .browsers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 18px 0 8px; }
-    .browser { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 12px; text-align: center; }
-    .browser.yours { border-color: var(--accent); background: var(--accent-soft); }
-    .browser .glyph { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0 auto 8px; border-radius: 12px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 20px; font-weight: 700; }
-    .browser h3 { margin: 0 0 8px; font-size: 16px; }
+    .wrap.wide { max-width: 1120px; }
+    .hero { text-align: center; margin: 8px auto 6px; max-width: 640px; }
+    .hero h1 { font-size: clamp(36px, 4.6vw, 52px); line-height: 1.08; margin: 0 0 12px; }
+    .hero p { font-size: 17px; }
+    .browsers { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 26px 0 10px; }
+    .browser { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px 18px 20px; text-align: center; transition: border-color .25s var(--ease), box-shadow .25s var(--ease); }
+    .browser.yours { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent), 0 18px 44px rgba(0, 0, 0, .4); }
+    .browser .glyph { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 24px; font-weight: 700; }
+    .browser h3 { margin: 0 0 12px; font-size: 18px; }
     /* WHY two buttons side by side: each card answers both formats, so the reader
-       picks the file without leaving their browser. */
+       picks the file without leaving their browser. The second button is a
+       ghost on purpose: the archive is the working path for a home reader,
+       the signed file the enterprise one — the hierarchy says so at a glance.
+       (Pure CSS on sibling order, so the pinned anchor strings stay exact.) */
     .browser .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-    .browser .btn { margin: 4px 0; padding: 10px 14px; font-size: 13.5px; }
+    .browser .btn { margin: 4px 0; padding: 12px 18px; font-size: 14px; }
+    .browser .btn-row .btn + .btn { background: transparent; color: var(--accent); }
     .browser .req { font-size: 12.5px; margin: 8px 0; }
     .browser .badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #04211d; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 980px; white-space: nowrap; }
 
@@ -210,11 +218,13 @@
     </div>
   </header>
 
-  <main class="wrap">
-    <h1>Unduh berkas</h1>
-    <p>Satu kartu per browser — tiap kartu menawarkan kedua berkas: arsip .zip untuk
-    pemasangan manual di semua Chromium, dan .crx bertanda tangan untuk mesin
-    enterprise. Kedua berkas selalu build terbaru.</p>
+  <main class="wrap wide">
+    <div class="hero">
+      <h1>Unduh berkas</h1>
+      <p>Satu kartu per browser — tiap kartu menawarkan kedua berkas: arsip .zip untuk
+      pemasangan manual di semua Chromium, dan .crx bertanda tangan untuk mesin
+      enterprise. Kedua berkas selalu build terbaru.</p>
+    </div>
 
     <div class="browsers" id="berkas">
       <article class="browser" data-browser="chrome">
@@ -225,8 +235,7 @@
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
         </div>
-        <p class="req">Ekstrak → buka <code>chrome://extensions</code>, mode developer → Load unpacked</p>
-        <p class="req">Hanya via policy enterprise-managed; Drag-and-drop manual ditolak di <code>chrome://extensions</code></p>
+        <p class="req">Ekstrak → buka <code>chrome://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="edge">
         <span class="badge" hidden>Browser Anda</span>
@@ -236,8 +245,7 @@
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
         </div>
-        <p class="req">Ekstrak → buka <code>edge://extensions</code>, mode developer → Load unpacked</p>
-        <p class="req">Hanya via policy enterprise-managed; Drag-and-drop manual ditolak di <code>edge://extensions</code></p>
+        <p class="req">Ekstrak → buka <code>edge://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="brave">
         <span class="badge" hidden>Browser Anda</span>
@@ -247,8 +255,7 @@
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
         </div>
-        <p class="req">Ekstrak → buka <code>brave://extensions</code>, mode developer → Load unpacked</p>
-        <p class="req">Hanya via policy enterprise-managed; Drag-and-drop manual ditolak di <code>brave://extensions</code></p>
+        <p class="req">Ekstrak → buka <code>brave://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="opera">
         <span class="badge" hidden>Browser Anda</span>
@@ -258,8 +265,7 @@
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
         </div>
-        <p class="req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked</p>
-        <p class="req">Hanya via policy enterprise-managed; Drag-and-drop manual ditolak di <code>opera://extensions</code></p>
+        <p class="req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="vivaldi">
         <span class="badge" hidden>Browser Anda</span>
@@ -269,8 +275,7 @@
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh .zip</a>
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
         </div>
-        <p class="req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked</p>
-        <p class="req">Hanya via policy enterprise-managed; Drag-and-drop manual ditolak di <code>opera://extensions</code></p>
+        <p class="req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
     </div>
 
