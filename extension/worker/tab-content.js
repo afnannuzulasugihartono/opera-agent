@@ -114,4 +114,3 @@ export async function executeInTab(tabId, method, params = {}) {
     return { ok: false, error: { code: 'CONTENT_CALL_FAILED', message: String(error?.message || error).slice(0, 300) } };
   }
 }
-

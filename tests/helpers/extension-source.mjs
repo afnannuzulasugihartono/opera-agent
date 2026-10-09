@@ -13,6 +13,7 @@ const FILES = [
   'extension/worker/capture.js',
   'extension/worker/private-tabs.js',
   'extension/worker/tab-content.js',
+  'extension/worker/listen.js',
 ];
 
 export async function extensionSource() {
