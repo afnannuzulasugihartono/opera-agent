@@ -32,7 +32,7 @@ import {
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
-import { DEFAULT_BRIDGE_URL, LISTEN_BASE_URL } from './lib/endpoints.js';
+import { LISTEN_BASE_URL } from './lib/endpoints.js';
 import { readModelConfig, saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
 import { buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS } from './lib/model-client.js';
 
@@ -56,6 +56,7 @@ import {
   handleDebuggerDetach
 } from './lib/debugger-session.js';
 import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } from './lib/serialize.js';
+import { sleep, mutateTabs, nowIso, randomToken, getConfig, setState, connectionState } from './worker/utils.js';
 
 // Without this, a cached `attached: true` outlives the debugger: if the user
 // opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
@@ -63,7 +64,6 @@ import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } fro
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
-const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel', 'listenSession'];
 const PRIVATE_TABS_KEY = 'privateTabIds';
 const WAKE_ALARM = 'opera-agent-wake';
 const HTTP_URL_RE = /^https?:\/\//i;
@@ -81,78 +81,7 @@ const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 
 let loopPromise = null;
 let loopGeneration = 0;
-let connectionState = {
-  status: 'starting',
-  lastError: null,
-  lastConnectedAt: null,
-  lastCommandAt: null,
-  retryMs: 250
-};
 const screenshotCache = new Map();
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// WHY retry: Chrome refuses every tab mutation while a tab drag is in flight
-// ("Tabs cannot be edited right now"). The drag lasts well under a second, but
-// the refusal reached the caller as a hard EXECUTION_ERROR, so an unattended run
-// that overlapped one died on a transient browser state. Linear backoff because
-// the drag is already underway. Any other error propagates on the first attempt.
-
-const TAB_DRAG_ATTEMPTS = 6;
-const TAB_DRAG_BACKOFF_MS = 250;
-
-function isTabDragRefusal(error) {
-  return /tabs cannot be edited right now/i.test(String((error && error.message) || error));
-}
-
-async function mutateTabs(run) {
-  for (let attempt = 1; ; attempt += 1) {
-    try {
-      return await run();
-    } catch (error) {
-      if (!isTabDragRefusal(error) || attempt >= TAB_DRAG_ATTEMPTS) throw error;
-      await sleep(TAB_DRAG_BACKOFF_MS * attempt);
-    }
-  }
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function randomToken() {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function getConfig() {
-  const cfg = await chrome.storage.local.get(STORAGE_KEYS);
-
-  // Apply the stored log level to the shared logger. Guarded so a corrupt or
-  // invalid stored value falls back silently to `warn`, the default level;
-  // getConfig never throws.
-  try { globalThis.OperaAgentLog?.configure?.({ level: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn' }); } catch {}
-  return {
-    paired: !!cfg.paired,
-    deviceName: String(cfg.deviceName || 'opera'),
-    deviceToken: String(cfg.deviceToken || ''),
-    deviceId: String(cfg.deviceId || ''),
-    bridgeUrl: String(cfg.bridgeUrl || DEFAULT_BRIDGE_URL),
-    logLevel: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn'
-  };
-}
-
-async function setState(patch) {
-  connectionState = { ...connectionState, ...patch };
-  try {
-    await chrome.storage.local.set({ connectionState });
-  } catch (error) {
-    log.warn('STATE_PERSIST_FAILED', error?.message || String(error));
-  }
-}
 
 async function fetchJson(url, body, timeoutMs = 30000) {
   const controller = new AbortController();

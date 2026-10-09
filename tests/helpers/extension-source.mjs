@@ -9,6 +9,7 @@ const FILES = [
   'extension/background.js',
   'extension/lib/log.js',
   'extension/lib/serialize.js',
+  'extension/worker/utils.js',
 ];
 
 export async function extensionSource() {
