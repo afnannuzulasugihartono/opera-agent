@@ -841,7 +841,7 @@ git add extension/lib/log.js extension/background.js tests/helpers/extension-sou
 git commit -m "refactor: give the worker graph one importable logger handle"
 ```
 
-Expected: `# fail 0` (gerbang ukuran masih merah — sudah diketahui, lihat catatan Task 6).
+Expected: `# pass 738` (task ini tidak menambah tes apa pun), `# fail 0`, `check ok`. Ketiga tes `structure-gates` tetap hijau — guard `<= 2647` masih terpenuhi setelah `background.js` menyusut, dan `lib/log.js` berada jauh di bawah langit-langit 550 baris. Kalau ada yang merah, itu kegagalanmu, bukan yang diharapkan; selidiki, jangan naikkan ambang.
 
 ---
 
