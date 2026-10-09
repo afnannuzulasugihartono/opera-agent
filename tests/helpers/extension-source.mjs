@@ -11,6 +11,7 @@ const FILES = [
   'extension/lib/serialize.js',
   'extension/worker/utils.js',
   'extension/worker/capture.js',
+  'extension/worker/private-tabs.js',
 ];
 
 export async function extensionSource() {

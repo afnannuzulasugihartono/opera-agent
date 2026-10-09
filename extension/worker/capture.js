@@ -179,4 +179,3 @@ export function rememberScreenshot(tabId, cacheKey, screenshot) {
   screenshotCache.set(tabId, { cacheKey, savedAt: Date.now(), screenshot });
   while (screenshotCache.size > SCREENSHOT_CACHE_LIMIT) screenshotCache.delete(screenshotCache.keys().next().value);
 }
-

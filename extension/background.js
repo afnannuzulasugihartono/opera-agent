@@ -57,6 +57,7 @@ import {
 import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } from './lib/serialize.js';
 import { sleep, mutateTabs, nowIso, randomToken, getConfig, setState, connectionState } from './worker/utils.js';
 import { assertCaptureFramesSafe, withDebugger, codedError, collectAxSummary, screenshotBytes, screenshotHash, screenshotLooksBlank, cachedScreenshot, rememberScreenshot, screenshotCache } from './worker/capture.js';
+import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './worker/private-tabs.js';
 
 // Without this, a cached `attached: true` outlives the debugger: if the user
 // opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
@@ -64,7 +65,6 @@ import { assertCaptureFramesSafe, withDebugger, codedError, collectAxSummary, sc
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
-const PRIVATE_TABS_KEY = 'privateTabIds';
 const WAKE_ALARM = 'opera-agent-wake';
 const HTTP_URL_RE = /^https?:\/\//i;
 const MAX_BURST_RESULT_BYTES = 256 * 1024;
@@ -184,25 +184,6 @@ async function executeInTab(tabId, method, params = {}) {
   } catch (error) {
     return { ok: false, error: { code: 'CONTENT_CALL_FAILED', message: String(error?.message || error).slice(0, 300) } };
   }
-}
-
-async function privateTabIds() {
-  const stored = await chrome.storage.local.get(PRIVATE_TABS_KEY);
-  return new Set((Array.isArray(stored[PRIVATE_TABS_KEY]) ? stored[PRIVATE_TABS_KEY] : [])
-    .map(Number)
-    .filter((id) => Number.isInteger(id) && id >= 0));
-}
-
-async function isPrivateTab(tabId) {
-  return (await privateTabIds()).has(tabId);
-}
-
-async function setPrivateTab(tabId, value) {
-  const ids = await privateTabIds();
-  if (value) ids.add(tabId); else ids.delete(tabId);
-  await chrome.storage.local.set({ [PRIVATE_TABS_KEY]: [...ids].slice(-200) });
-  screenshotCache.delete(tabId);
-  return value;
 }
 
 // WHY element capture and not tab capture: chrome.tabCapture refuses callers
