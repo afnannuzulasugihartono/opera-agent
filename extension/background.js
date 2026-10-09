@@ -58,6 +58,7 @@ import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } fro
 import { sleep, mutateTabs, nowIso, randomToken, getConfig, setState, connectionState } from './worker/utils.js';
 import { assertCaptureFramesSafe, withDebugger, codedError, collectAxSummary, screenshotBytes, screenshotHash, screenshotLooksBlank, cachedScreenshot, rememberScreenshot, screenshotCache } from './worker/capture.js';
 import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './worker/private-tabs.js';
+import { fetchJson, publicTab, requireTabId, resolveTabId, waitTabReady, contentCall, executeInTab, HTTP_URL_RE } from './worker/tab-content.js';
 
 // Without this, a cached `attached: true` outlives the debugger: if the user
 // opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
@@ -66,7 +67,6 @@ import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
 const WAKE_ALARM = 'opera-agent-wake';
-const HTTP_URL_RE = /^https?:\/\//i;
 const MAX_BURST_RESULT_BYTES = 256 * 1024;
 const MAX_SCREENSHOT_BYTES = 220 * 1024;
 const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
@@ -80,112 +80,6 @@ const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 let loopPromise = null;
 let loopGeneration = 0;
 
-async function fetchJson(url, body, timeoutMs = 30000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      cache: 'no-store'
-    });
-    const text = await response.text();
-    let data = {};
-    try { data = text ? JSON.parse(text) : {}; } catch (error) { log.debug('RESPONSE_BODY_PARSE_FAILED', error?.message || String(error)); data = { error: text || `HTTP ${response.status}` }; }
-    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
-    return data;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function publicTab(tab) {
-  return {
-    id: tab.id,
-    windowId: tab.windowId,
-    active: !!tab.active,
-    pinned: !!tab.pinned,
-    audible: !!tab.audible,
-    muted: !!tab.mutedInfo?.muted,
-    status: tab.status || '',
-    title: String(tab.title || '').slice(0, 1000),
-    url: String(tab.url || '').slice(0, 4000)
-  };
-}
-
-function requireTabId(value) {
-  if (typeof value === 'boolean') throw new Error('Invalid tabId.');
-  if (typeof value === 'string' && value.trim() === '') throw new Error('Invalid tabId.');
-  const id = Number(value);
-  if (!Number.isInteger(id) || id < 0) throw new Error('Invalid tabId.');
-  return id;
-}
-
-async function resolveTabId(params = {}) {
-  if (params.tabId != null) return requireTabId(params.tabId);
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) throw new Error('No active tab.');
-  return tab.id;
-}
-
-async function waitTabReady(tabId, timeoutMs = 12000) {
-  const deadline = Date.now() + clamp(timeoutMs, 100, 30000, 12000);
-  while (Date.now() < deadline) {
-    const tab = await chrome.tabs.get(tabId);
-    if (tab.status === 'complete') return publicTab(tab);
-    await sleep(75);
-  }
-  return publicTab(await chrome.tabs.get(tabId));
-}
-
-async function ensureContent(tabId) {
-  const tab = await chrome.tabs.get(tabId);
-  if (!HTTP_URL_RE.test(tab.url || '')) throw new Error('Page primitives only support http/https tabs.');
-  try {
-    const pong = await chrome.tabs.sendMessage(tabId, { scope: 'opera-agent-content', method: 'content.ping', params: {} });
-    if (pong?.ok) return;
-  } catch (error) {
-    log.debug('CONTENT_PING_FAILED', error?.message || String(error));
-  }
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content.js'] });
-}
-
-async function contentCall(tabId, method, params = {}) {
-  // Optimistic send: the content script is already there in the normal case,
-  // so the command goes out first and costs one IPC instead of three
-  // (tabs.get + ping + send). Only a transport failure -- sendMessage throwing
-  // or answering nothing -- falls back to ensureContent, which keeps the
-  // http/https guard and the re-inject step. A page-bridge refusal (ok:false)
-  // is an answer, not a transport failure, and throws without re-injection.
-  const message = { scope: 'opera-agent-content', method, params };
-  let response = null;
-  try {
-    response = await chrome.tabs.sendMessage(tabId, message);
-  } catch (error) {
-    // Transport failure, not an answer: fall through to recovery below.
-    log.debug('CONTENT_SEND_FAILED', error?.message || String(error));
-  }
-  if (response && response.ok === false) throw new Error(response.error || 'Page bridge error.');
-  if (!response) {
-    await ensureContent(tabId);
-    response = await chrome.tabs.sendMessage(tabId, message);
-    if (!response) throw new Error('No response from page bridge.');
-    if (response.ok === false) throw new Error(response.error || 'Page bridge error.');
-  }
-  return response;
-}
-
-async function executeInTab(tabId, method, params = {}) {
-  try {
-    const r = await contentCall(tabId, method, params);
-    return r;
-  } catch (error) {
-    return { ok: false, error: { code: 'CONTENT_CALL_FAILED', message: String(error?.message || error).slice(0, 300) } };
-  }
-}
-
 // WHY element capture and not tab capture: chrome.tabCapture refuses callers
 // without a user gesture ("Extension has not been invoked"), which an
 // autonomous agent never has — measured, not assumed, in headed Chromium 153.
@@ -193,6 +87,7 @@ async function executeInTab(tabId, method, params = {}) {
 // permission and no gesture. The element keeps playing to the speakers; the
 // recorder only forks a copy. Cross-origin media without CORS headers records
 // silence instead of failing, so a silent transcript proves nothing by itself.
+
 function listenUrlFor(bridgeUrl) {
   const base = String(bridgeUrl || '');
   const functionsRoot = base.includes('/functions/v1/')
