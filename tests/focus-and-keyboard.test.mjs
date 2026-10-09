@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: focus-and-keyboard.test — and-keyboard.test — Focus stability + keyboard chord/text contracts.
 // @state: drop the milestone prefix from the interaction test family.
-// @dependencies: node:test, strict, promises, focus-gate, keyboard.
+// @dependencies: node:test, strict, promises, focus-gate, keyboard, extension-source.
 
 // Focus stability + keyboard chord/text contracts.
 //
@@ -17,6 +17,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { extensionSource } from './helpers/extension-source.mjs';
 import {
   FOCUS_GATE_ATTEMPTS,
   decideFocusGate,
@@ -228,7 +229,7 @@ test('the synthetic path explains its narrower surface instead of a bare rejecti
 });
 
 test('trusted input executors never activate a tab or focus a window', async () => {
-  const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const source = await extensionSource();
   const start = source.indexOf('async function trustedClick');
   const end = source.indexOf('// Burst ref passthrough');
   assert.ok(start > 0 && end > start, 'trusted executor block must be locatable');
@@ -254,7 +255,7 @@ test('trusted input executors never activate a tab or focus a window', async () 
 });
 
 test('R9: keyboard text entry is routed through the existing sensitive-field guard', async () => {
-  const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const source = await extensionSource();
   const start = source.indexOf('async function trustedKey');
   assert.ok(start > 0, 'trustedKey must exist');
   const block = source.slice(start, source.indexOf('\n}', start) + 2);

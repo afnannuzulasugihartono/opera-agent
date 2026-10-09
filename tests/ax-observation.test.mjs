@@ -1,12 +1,13 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: ax-observation.test — Test..
 // @state: Test..
-// @dependencies: node:fs, node:test, strict, ax-summary.
+// @dependencies: node:fs, node:test, strict, ax-summary, extension-source.
 
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAxSummary, AX_SUMMARY_LIMITS } from '../extension/lib/ax-summary.js';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 // The observation path gains (A) an always-on pure-DOM accessibility layer in
 // content.js (shadow-piercing collection + computed accessible names) and (B) a
@@ -17,7 +18,7 @@ import { buildAxSummary, AX_SUMMARY_LIMITS } from '../extension/lib/ax-summary.j
 
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 const content = read('../extension/content.js');
-const background = read('../extension/background.js');
+const background = await extensionSource();
 const mcp = read('../supabase/functions/opera-agent-mcp/index.ts');
 
 function axNode(partial = {}) {

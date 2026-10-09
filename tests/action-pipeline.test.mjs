@@ -1,13 +1,14 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: action-pipeline.test — Test..
 // @state: Test..
-// @dependencies: node:test, strict, action-pipeline.
+// @dependencies: node:test, strict, action-pipeline, extension-source.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ACTION_RAMP_MS, pollDelays, classifyResolve, makeNotReady, attachResolution
 } from '../extension/lib/action-pipeline.js';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 // Action Pipeline: pure policy engine for Resolve -> Wait ->
 // Heal -> Verify. Locked semantics: ramp shape, deadline clipping, resolve
@@ -74,8 +75,8 @@ test('content exposes page.action_state for the U-V pipeline', () => {
 });
 
 // --- Task 3: host wiring source-contract ---
-test('every action route funnels through runActionPipeline', () => {
-  const src = read('extension/background.js');
+test('every action route funnels through runActionPipeline', async () => {
+  const src = await extensionSource();
   for (const site of ['trustedFill(tabId', 'trustedClick(tabId', 'trustedPointer(tabId', 'trustedKey(tabId']) {
     const direct = src.split('\n').filter(l => l.includes(site) && !l.includes('async function') && !l.includes('runActionPipeline'));
     assert.deepEqual(direct, [], `unwrapped direct call: ${site}`);

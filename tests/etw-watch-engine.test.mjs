@@ -1,11 +1,12 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: etw-watch-engine.test — Test..
 // @state: Test..
-// @dependencies: node:fs, node:test, strict.
+// @dependencies: node:fs, node:test, strict, extension-source.
 
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 //  Event-Triggered Workflows: the watch engine compiles a
 // model's intent into device-local trigger rules so reaction speed follows the
@@ -106,8 +107,8 @@ test('evaluateRules state threads across evaluations (the watch round-trip)', ()
   assert.equal(second.fired.length, 1, 'the threaded baseline is what the change is detected against');
 });
 
-test('background returns engine state in the facts reply and arms the documented deadline default', () => {
-  const bg = read('extension/background.js');
+test('background returns engine state in the facts reply and arms the documented deadline default', async () => {
+  const bg = await extensionSource();
   assert.match(bg, /return \{ fired: out\.fired\.length, state: out\.state \}/, 'facts reply must carry engine state for the content echo');
   assert.match(bg, /candidate\.deadlineMs = 60000/, 'arm path must persist the documented deadline default');
   assert.match(bg, /candidate\.deadlineMs == null/, 'arm default must also cover an explicit null');
@@ -115,13 +116,13 @@ test('background returns engine state in the facts reply and arms the documented
   assert.match(bg, /if \(!entries\.length\) return \{ fired: 0, state:/, 'no-entries reply must carry state so content never holds a stale one');
 });
 
-test('dead set-bridge-url popup action is gone (options saves via storage directly)', () => {
-  const bg = read('extension/background.js');
+test('dead set-bridge-url popup action is gone (options saves via storage directly)', async () => {
+  const bg = await extensionSource();
   assert.doesNotMatch(bg, /set-bridge-url/);
 });
 
-test('background exposes watch primitives and caps; bridge ingests events', () => {
-  const bg = read('extension/background.js');
+test('background exposes watch primitives and caps; bridge ingests events', async () => {
+  const bg = await extensionSource();
   assert.match(bg, /case 'watch\.start'/);
   assert.match(bg, /case 'watch\.stop'/);
   assert.match(bg, /watch\.stop_all/);

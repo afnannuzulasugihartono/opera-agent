@@ -1,15 +1,16 @@
 // @last-edited: 2026-10-06 02:41 UTC+7.
 // @title: endpoint-source.test — source.test — Test.
 // @state: activate the options tab before waiting on its async prefill.
-// @dependencies: node:test, strict, promises, endpoints.
+// @dependencies: node:test, strict, promises, endpoints, extension-source.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { extensionSource } from './helpers/extension-source.mjs';
 import { CONSENT_CONFIG_URL, DEFAULT_BRIDGE_URL, LISTEN_BASE_URL, SUPABASE_PROJECT_REF, UPDATE_BASE_URL } from '../extension/lib/endpoints.js';
 
 test('extension background has exactly one endpoint source', async () => {
-  const bg = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const bg = await extensionSource();
   assert.match(bg, /from '\.\/lib\/endpoints\.js'/);
   assert.equal((bg.match(/supabase\.co\/functions\/v1/g) || []).length, 0);
 });

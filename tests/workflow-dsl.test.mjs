@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: workflow-dsl.test — Test..
 // @state: Test..
-// @dependencies: node:test, strict, node:fs.
+// @dependencies: node:test, strict, node:fs, extension-source.
 
 // Why source-text pins, stated per AGENTS.md: the deliverable here is a
 // migration DSL boundary, and the hazards are all about what the SQL must NOT
@@ -15,6 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 const core = fs.readFileSync(new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url), 'utf8');
 const workflow = fs.readFileSync(new URL('../supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql', import.meta.url), 'utf8');
@@ -60,12 +61,12 @@ test('efficiency workflows keep generic primitives flexible', () => {
   assert.doesNotMatch(efficiency, /"ms":600/);
 });
 
-test('site-specific logic remains outside the extension', () => {
+test('site-specific logic remains outside the extension', async () => {
   assert.match(sql, /youtube\.captions_on/);
   assert.match(sql, /youtube\.play_recommendation/);
   assert.match(sql, /youtube\.get_transcript/);
   assert.match(sql, /research\.crawl_urls/);
-  const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const background = await extensionSource();
   const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
   assert.doesNotMatch(background + content, /youtube\.com|ytp-|youtube\./i);
 });

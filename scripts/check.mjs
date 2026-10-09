@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: check — Script.
 // @state: version 1.6.21 sweep for frame-rate state loops and track sensing.
-// @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol.
+// @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol, extension-source.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
+import { extensionSource } from '../tests/helpers/extension-source.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
@@ -64,7 +65,7 @@ for (const file of files) {
     }
   }
 }
-const background = fs.readFileSync(path.join(root, 'extension/background.js'), 'utf8');
+const background = await extensionSource();
 for (const marker of ['pendingCompletion','completeWithRetry','flushPendingCompletion']) assert.ok(background.includes(marker), marker);
 const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);

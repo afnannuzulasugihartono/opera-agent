@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: burst-atomic-actions.test — Test..
 // @state: Test..
-// @dependencies: node:fs, node:test, strict, protocol.
+// @dependencies: node:fs, node:test, strict, protocol, extension-source.
 
 import fs from 'node:fs';
 import test from 'node:test';
@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 // browser regression.
 
 import { BURST_STEP_KEYS, validateBurst } from '../extension/lib/protocol.js';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 test('burst click/fill steps accept refFromStep passthrough keys', () => {
   assert.ok(BURST_STEP_KEYS.click.includes('refFromStep'), 'click must allow refFromStep');
@@ -50,8 +51,8 @@ test('validateBurst rejects refFromStep pointing forward or at itself', () => {
   }
 });
 
-test('background burst runner resolves refFromStep from the referenced step result', () => {
-  const src = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+test('background burst runner resolves refFromStep from the referenced step result', async () => {
+  const src = await extensionSource();
   assert.match(src, /refFromStep/, 'background must read refFromStep');
   assert.match(src, /resolvedFrom:\s*`step:\$\{/i, 'click result must report resolvedFrom step:N');
   assert.match(src, /refFromStep must reference an earlier burst step/, 'forward references must fail with a clear message');

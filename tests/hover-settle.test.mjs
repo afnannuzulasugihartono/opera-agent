@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: hover-settle.test — settle.test — Hover-as-a-first-class-step contracts.
 // @state: drop the milestone prefix from the interaction test family.
-// @dependencies: node:test, strict, promises, protocol.
+// @dependencies: node:test, strict, promises, protocol, extension-source.
 
 // Hover-as-a-first-class-step contracts.
 //
@@ -14,6 +14,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { BURST_ACTION_METHODS, BURST_STEP_KEYS, validateBurst } from '../extension/lib/protocol.js';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 // extension/hover-settle.js is a classic content script with no export
 // statements, so it is imported for its side effect and read off globalThis.
@@ -123,7 +124,7 @@ test('page.hover stays a burst-internal action, not a new public primitive', asy
 });
 
 test('a hover never clicks, and it goes through the shared focus gate', async () => {
-  const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const source = await extensionSource();
   const start = source.indexOf('async function trustedHover');
   assert.ok(start > 0, 'trustedHover must exist');
   const block = source.slice(start, source.indexOf('\n}\n', start) + 2);

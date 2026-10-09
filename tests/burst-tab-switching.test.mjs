@@ -1,13 +1,14 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: burst-tab-switching.test — tab-switching.test — Phase D : a burst may address more than one tab.
 // @state: consolidate the latency cluster into one file.
-// @dependencies: node:test, strict, node:fs, protocol.
+// @dependencies: node:test, strict, node:fs, protocol, extension-source.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 import { validateBurst, burstCrossTabRef, burstStaleRef, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 // Phase D: a burst may address more than one tab.
 //
@@ -40,7 +41,7 @@ import { validateBurst, burstCrossTabRef, burstStaleRef, BURST_MAX_STEPS, BURST_
 // - A step that switches tabs must still be bounded by the single 12s budget and
 //   must still report completed evidence on timeout.
 
-const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+const background = await extensionSource();
 
 function sliceBetween(startMarker, endMarker) {
   const start = background.indexOf(startMarker);

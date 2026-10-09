@@ -1,15 +1,16 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: efficiency.test — Test.
 // @state: consolidate the latency cluster into one file.
-// @dependencies: node:test, strict, node:fs.
+// @dependencies: node:test, strict, node:fs, extension-source.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 const bridge = fs.readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8');
 const runner = fs.readFileSync(new URL('../supabase/functions/opera-agent-runner/index.ts', import.meta.url), 'utf8');
-const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+const background = await extensionSource();
 const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
 const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');

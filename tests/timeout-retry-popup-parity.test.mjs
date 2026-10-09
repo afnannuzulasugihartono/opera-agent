@@ -1,12 +1,13 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: timeout-retry-popup-parity.test — Test..
 // @state: Test..
-// @dependencies: node:test, strict, popup-events, protocol.
+// @dependencies: node:test, strict, popup-events, protocol, extension-source.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { recordPopup, popupsSince, resolvePopupOpener } from '../extension/lib/popup-events.js';
 import { PRODUCT_VERSION } from '../extension/lib/protocol.js';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 //  timeout/retry/popup parity: the owner's field testing found
 // three weaknesses — (1) no automatic retry on timeout and unknown outcomes
@@ -63,8 +64,8 @@ test('popup attribution claims background-tab popups for the acted-on tab', () =
 import fs from 'node:fs';
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
-test('command timeout carries outcome:"unknown" instead of a plain failure', () => {
-  const src = read('extension/background.js');
+test('command timeout carries outcome:"unknown" instead of a plain failure', async () => {
+  const src = await extensionSource();
   assert.match(src, /COMMAND_TIMEOUT/, 'timeout rejection must be coded COMMAND_TIMEOUT');
   assert.match(src, /outcome: 'unknown'/, 'timeout must report outcome unknown (parity with BURST_TIMEOUT family)');
   assert.match(src, /Verify page state before repeating/, 'timeout message must demand verify-before-repeating');
@@ -77,22 +78,22 @@ test('expect verification polls until verified inside a bounded window', () => {
   assert.match(src, /!\s*verification\.verified &&/, 'loop must exit early on verified');
 });
 
-test('page.fill gains retry/expect parity with page.click', () => {
+test('page.fill gains retry/expect parity with page.click', async () => {
   const src = read('extension/content.js');
   const fillStart = src.indexOf('async function fill(');
   assert.ok(fillStart >= 0, 'synthetic fill must exist');
   const fillBlock = src.slice(fillStart, src.indexOf('\n  function fillInfo'));
   assert.match(fillBlock, /args\.retry\?\.attempts/, 'fill must honor retry.attempts');
   assert.match(fillBlock, /postActionEvidence\(/, 'fill must verify through postActionEvidence');
-  const bg = read('extension/background.js');
+  const bg = await extensionSource();
   assert.match(bg, /fillOptions/, 'page.fill dispatch must read expect/attempts options');
   assert.match(bg, /method === 'page\.click' \|\| method === 'page\.fill'/, 'resolved verified telemetry must cover fill');
   assert.match(bg, /withActionPopupTracking\(tabId, \(\) => runActionPipeline\(tabId, 'page\.click'/, 'page.click dispatch must claim tabs opened while the action is in flight');
   assert.match(bg, /withActionPopupTracking\(tabId, \(\) => runActionPipeline\(tabId, 'page\.fill'/, 'page.fill dispatch must claim tabs opened while the action is in flight');
 });
 
-test('trustedFill evaluates post-action expectations', () => {
-  const bg = read('extension/background.js');
+test('trustedFill evaluates post-action expectations', async () => {
+  const bg = await extensionSource();
   const fillStart = bg.indexOf('async function trustedFill');
   const fillBlock = bg.slice(fillStart, bg.indexOf('\nasync function trustedPointer'));
   assert.match(fillBlock, /page\.post_action/, 'trusted fill must run the post-action check');

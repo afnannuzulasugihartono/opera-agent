@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: role-reconcile.test — reconcile.test — Role reconciliation contracts.
 // @state: drop the milestone prefix from the interaction test family.
-// @dependencies: node:test, strict, promises.
+// @dependencies: node:test, strict, promises, extension-source.
 
 // Role reconciliation contracts.
 //
@@ -14,6 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 // extension/role-reconcile.js is a classic content script with no export
 // statements, so it is imported here for its side effect and read off
@@ -182,7 +183,7 @@ test('a semantic gap justifies the accessibility walk even on a text-rich page',
   assert.equal(hasRoleGap([{ role: 'button' }, { role: '' }, { role: 'generic' }, { role: 'textbox' }]), false);
   assert.equal(hasRoleGap([{ role: 'button' }, { role: '' }, { role: 'generic' }, { role: 'textbox' }, { role: 'presentation' }]), true);
 
-  const background = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const background = await extensionSource();
   const start = background.indexOf("case 'page.read': {");
   const end = background.indexOf("case 'page.query':", start);
   const block = background.slice(start, end);
@@ -194,7 +195,7 @@ test('a semantic gap justifies the accessibility walk even on a text-rich page',
 });
 
 test('R9: an oversized read degrades instead of failing the whole call', async () => {
-  const background = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const background = await extensionSource();
   const start = background.indexOf("case 'page.read': {");
   const end = background.indexOf("case 'page.query':", start);
   const block = background.slice(start, end);
@@ -259,7 +260,7 @@ test('the manifest loads the role runtime before the content script', async () =
 });
 
 test('background shares the one content-script copy instead of duplicating it', async () => {
-  const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const source = await extensionSource();
 
   // A side-effect import of an export-free file publishes the same global, so
   // the role table cannot drift between the two contexts.
@@ -270,7 +271,7 @@ test('background shares the one content-script copy instead of duplicating it', 
 });
 
 test('background reconciliation runs only on the existing text-poor AX path', async () => {
-  const source = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const source = await extensionSource();
   const start = source.indexOf("case 'page.read': {");
   const end = source.indexOf("case 'page.query':", start);
   assert.ok(start > 0 && end > start, 'the page.read branch must be locatable');

@@ -1,13 +1,13 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: debugger-session-lifecycle.test — Test..
 // @state: Test..
-// @dependencies: node:test, strict, node:fs, deadline-race.
+// @dependencies: node:test, strict, extension-source, deadline-race.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 
 import { raceWithTimeout } from '../extension/lib/deadline-race.js';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 // Phase B Task 2: debugger and timer lifecycle in the service
 // worker.
@@ -35,7 +35,7 @@ import { raceWithTimeout } from '../extension/lib/deadline-race.js';
 // directions are testable; the debugger wiring is asserted structurally
 // because background.js cannot execute outside a browser.
 
-const background = fs.readFileSync(new URL('../extension/background.js', import.meta.url), 'utf8');
+const background = await extensionSource();
 
 function sliceBetween(startMarker, endMarker) {
   const start = background.indexOf(startMarker);

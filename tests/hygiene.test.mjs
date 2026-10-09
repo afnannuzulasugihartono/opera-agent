@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-06 14:45 UTC+7.
 // @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
 // @state: The memoized read path, the comment-spacing rule over untracked files, allowlist paths and four rule gates are locked.
-// @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing.
+// @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing, extension-source.
 
 // Properties that keep the runtime code correct as it grows, and that the code
 // itself violated when first written.
@@ -18,6 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { FOCUS_GATE_ATTEMPTS } from '../extension/lib/focus-gate.js';
 import { spacingViolations } from './helpers/comment-spacing.mjs';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 // Recursively collect the code files under a directory. The dead-export guard
 // below needs every runtime module and every test as a consumer, and it must
@@ -45,7 +46,7 @@ const collectTests = async (dir) => {
 await import('../extension/role-reconcile.js');
 await import('../extension/hover-settle.js');
 
-const background = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+const background = await extensionSource();
 
 test('every comment block is spaced from the code it does not document', async () => {
   const root = new URL('..', import.meta.url);

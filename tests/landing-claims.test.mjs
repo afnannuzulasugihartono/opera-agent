@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-06 12:20 UTC+7.
 // @title: landing-claims — every number the site states is checked against the code.
 // @state: 8 locks, all green; the audit that wrote them found the permission count unstated.
-// @dependencies: node:test, node:assert, node:fs.
+// @dependencies: node:test, node:assert, node:fs, extension-source.
 
 // The site's copy must never claim what the runtime cannot do. The numbers drift
 // silently otherwise: bump the manifest version or the tool count and the site keeps
@@ -10,6 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { extensionSource } from './helpers/extension-source.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
@@ -23,7 +24,7 @@ const site = ['landing/index.html', 'landing/auth.html', 'landing/akun.html', 'l
 const manifest = JSON.parse(read('extension/manifest.json'));
 const mcp = read('supabase/functions/opera-agent-mcp/index.ts');
 const content = read('extension/content.js');
-const background = read('extension/background.js');
+const background = await extensionSource();
 
 test('no page states a version, because a stated version is a promise nothing keeps', () => {
   // WHY this inverted: every page used to name the build it was written for, so a release
