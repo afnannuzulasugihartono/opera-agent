@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-07 UTC+7.
-<!-- @title: unduh-crx — the signed CRX and its stable id. -->
-<!-- @state: the CRX is always the newest signed build from the version-less endpoint path, so a release never edits this page. -->
+<!-- @last-edited: 2026-10-09 UTC+7.
+<!-- @title: unduh-crx — one card per browser, then the signed CRX and its stable id. -->
+<!-- @state: the cards answer "which one is mine" first; the CRX is always the newest signed build from the version-less endpoint path, so a release never edits this page. -->
 <!-- @dependencies: none. -->
 
 
@@ -177,6 +177,16 @@
     .format strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
     .format span { color: var(--muted); font-size: 13.5px; }
     .format .go { display: block; margin-top: 10px; font-size: 13.5px; }
+    /* WHY one grid for five browsers: the reader asks "which one is mine", and
+       the matching card answers before any prose is read. */
+    .browsers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0 8px; }
+    .browser { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 12px; text-align: center; }
+    .browser.yours { border-color: var(--accent); background: var(--accent-soft); }
+    .browser .glyph { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0 auto 8px; border-radius: 12px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 20px; font-weight: 700; }
+    .browser h3 { margin: 0 0 8px; font-size: 16px; }
+    .browser .btn { margin: 4px 0; padding: 10px 18px; font-size: 14px; }
+    .browser .req { font-size: 12.5px; margin: 8px 0; }
+    .browser .badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #04211d; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 980px; white-space: nowrap; }
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
@@ -208,6 +218,67 @@
 
   <main class="wrap">
     <h1>CRX bertanda tangan, khusus enterprise</h1>
+
+    <div class="browsers">
+      <article class="browser" data-browser="chrome">
+        <span class="badge" hidden>Browser Anda</span>
+        <span class="glyph" aria-hidden="true">C</span>
+        <h3>Chrome</h3>
+        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
+        <p class="req">Via policy di mesin enterprise-managed</p>
+        <p class="req">Drag-and-drop ditolak; cek <code>chrome://extensions</code> setelah policy dipasang</p>
+      </article>
+      <article class="browser" data-browser="edge">
+        <span class="badge" hidden>Browser Anda</span>
+        <span class="glyph" aria-hidden="true">E</span>
+        <h3>Edge</h3>
+        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
+        <p class="req">Via policy di mesin enterprise-managed</p>
+        <p class="req">Drag-and-drop ditolak; cek <code>edge://extensions</code> setelah policy dipasang</p>
+      </article>
+      <article class="browser" data-browser="brave">
+        <span class="badge" hidden>Browser Anda</span>
+        <span class="glyph" aria-hidden="true">B</span>
+        <h3>Brave</h3>
+        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
+        <p class="req">Via policy di mesin enterprise-managed</p>
+        <p class="req">Drag-and-drop ditolak; cek <code>brave://extensions</code> setelah policy dipasang</p>
+      </article>
+      <article class="browser" data-browser="opera">
+        <span class="badge" hidden>Browser Anda</span>
+        <span class="glyph" aria-hidden="true">O</span>
+        <h3>Opera</h3>
+        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
+        <p class="req">Via policy di mesin enterprise-managed</p>
+        <p class="req">Drag-and-drop ditolak; cek <code>opera://extensions</code> setelah policy dipasang</p>
+      </article>
+      <article class="browser" data-browser="vivaldi">
+        <span class="badge" hidden>Browser Anda</span>
+        <span class="glyph" aria-hidden="true">V</span>
+        <h3>Vivaldi</h3>
+        <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh .crx</a>
+        <p class="req">Via policy di mesin enterprise-managed</p>
+        <p class="req">Drag-and-drop ditolak; cek <code>opera://extensions</code> setelah policy dipasang</p>
+      </article>
+    </div>
+
+    <script type="module">
+      const cards = [...document.querySelectorAll('[data-browser]')];
+      const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand).join(' ');
+      const agent = `${brands} ${navigator.userAgent || ''}`;
+      const found = /OPR\/|Opera/i.test(agent) ? 'opera'
+        : /Edg/i.test(agent) ? 'edge'
+        : /Brave/i.test(agent) ? 'brave'
+        : /Vivaldi/i.test(agent) ? 'vivaldi'
+        : /Chrome/i.test(agent) ? 'chrome'
+        : '';
+      if (found) {
+        const card = cards.find((element) => element.dataset.browser === found);
+        card?.classList.add('yours');
+        const badge = card?.querySelector('.badge');
+        if (badge) badge.hidden = false;
+      }
+    </script>
 
     <p>Berkas <code>.crx</code> bertanda tangan untuk instalasi via policy di mesin
     enterprise-managed. Instalasi manual (drag-and-drop) ditolak browser di komputer

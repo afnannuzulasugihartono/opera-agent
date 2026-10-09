@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-07 UTC+7.
-<!-- @title: unduh — two doors, one per format. -->
-<!-- @state: the hub names the two formats; each format lives on its own page with its own steps, so a reader never scrolls past one install that is not theirs. -->
+<!-- @last-edited: 2026-10-09 UTC+7.
+<!-- @title: unduh — one giant door, five browser cards, then the details. -->
+<!-- @state: the hero centers the title, the value, and the one archive; the cards below still name each browser, and each format keeps its own page. -->
 <!-- @dependencies: none. -->
 
 
@@ -189,6 +189,14 @@
     .browser .badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #04211d; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 980px; white-space: nowrap; }
     .browser .more { display: block; font-size: 12.5px; }
     .browser select { width: 100%; margin-top: 6px; background: var(--surface-soft); color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+    /* WHY the centered hero with one giant door: the reader decided to install
+       before opening this page, so the title, the value, and the one archive
+       answer before the cards name the browsers. */
+    h1 { text-align: center; font-size: 40px; }
+    h1 + p, h1 + p + p { text-align: center; }
+    .hero-cta { text-align: center; margin: 20px 0 4px; }
+    .btn.giant { padding: 18px 52px; font-size: 19px; }
+    .also { text-align: center; font-size: 13.5px; }
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
@@ -224,6 +232,9 @@
     mesin enterprise pembaruan berikutnya dipasang sendiri oleh browser.</p>
 
     <p>Kedua berkas di bawah selalu build terbaru.</p>
+
+    <p class="hero-cta"><a class="btn giant" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh Opera Agent</a></p>
+    <p class="also">juga tersedia: <a href="./unduh-crx.html">Panduan CRX enterprise</a> &middot; <a href="./unduh-zip.html">Panduan arsip</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
 
     <div class="browsers">
       <article class="browser" data-browser="chrome">
