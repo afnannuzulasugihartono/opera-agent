@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
-// @title: listen — tabCapture session lifecycle and chunk streaming.
-// @state: no module-private state; the session lives in chrome.tabCapture.
+// @title: listen — the listen session lifecycle and chunk streaming.
+// @state: no module-private state; the session lives in chrome.storage.local['listenSession'], and recording runs inside the tab via contentCall media.listen_start.
 // @dependencies: utils, tab-content, private-tabs, capture, log, endpoints.
 
 import { log } from '../lib/log.js';

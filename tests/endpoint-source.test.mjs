@@ -11,7 +11,7 @@ import { CONSENT_CONFIG_URL, DEFAULT_BRIDGE_URL, LISTEN_BASE_URL, SUPABASE_PROJE
 
 test('extension background has exactly one endpoint source', async () => {
   const bg = await extensionSource();
-  assert.match(bg, /from '\.\/lib\/endpoints\.js'/);
+  assert.match(bg, /\.{1,2}\/lib\/endpoints\.js/);
   assert.equal((bg.match(/supabase\.co\/functions\/v1/g) || []).length, 0);
 });
 

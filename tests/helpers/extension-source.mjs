@@ -14,6 +14,7 @@ const FILES = [
   'extension/worker/private-tabs.js',
   'extension/worker/tab-content.js',
   'extension/worker/listen.js',
+  'extension/worker/capture-page.js',
 ];
 
 export async function extensionSource() {

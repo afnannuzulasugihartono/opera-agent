@@ -32,7 +32,6 @@ import {
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from './lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from './lib/focus-gate.js';
 import { resolveKeyInput } from './lib/keyboard.js';
-import { LISTEN_BASE_URL } from './lib/endpoints.js';
 import { readModelConfig, saveModelEndpoint, saveModelKey, saveModelName } from './lib/options-store.js';
 import { buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS } from './lib/model-client.js';
 
@@ -60,6 +59,7 @@ import { assertCaptureFramesSafe, withDebugger, codedError, collectAxSummary, sc
 import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './worker/private-tabs.js';
 import { fetchJson, publicTab, requireTabId, resolveTabId, waitTabReady, contentCall, executeInTab, HTTP_URL_RE } from './worker/tab-content.js';
 import { readListenSession, listenStart, listenStop, postListenChunk } from './worker/listen.js';
+import { capturePage } from './worker/capture-page.js';
 
 // Without this, a cached `attached: true` outlives the debugger: if the user
 // opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
@@ -69,7 +69,6 @@ chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
 const WAKE_ALARM = 'opera-agent-wake';
 const MAX_BURST_RESULT_BYTES = 256 * 1024;
-const MAX_SCREENSHOT_BYTES = 220 * 1024;
 const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
 
 // Canvas-class pages expose almost no DOM text while their
@@ -80,121 +79,6 @@ const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 
 let loopPromise = null;
 let loopGeneration = 0;
-
-async function capturePage(tabId, params, context) {
-  const tab = await chrome.tabs.get(tabId);
-  if (!HTTP_URL_RE.test(tab.url || '')) throw codedError('CAPTURE_BLOCKED', 'Screenshots only support HTTP/HTTPS tabs.', { tabId });
-  if (tab.incognito) throw codedError('CAPTURE_BLOCKED', 'Screenshots are blocked in incognito tabs.', { tabId, reason: 'INCOGNITO' });
-  if (await isPrivateTab(tabId)) throw codedError('CAPTURE_BLOCKED', 'This tab was marked private in the Opera Agent popup.', { tabId, reason: 'USER_PRIVATE' });
-
-  const policy = await contentCall(tabId, 'page.capture_policy', {});
-  if (!policy.allowed) {
-    throw codedError('CAPTURE_BLOCKED', 'Screenshot blocked because a visible password, OTP, payment, or other sensitive field is present.', {
-      tabId,
-      reason: policy.reason || 'SENSITIVE_SURFACE'
-    });
-  }
-  await assertCaptureFramesSafe(tabId);
-
-  const viewportWidth = Number(policy.viewport?.width);
-  const viewportHeight = Number(policy.viewport?.height);
-  if (!(viewportWidth > 0 && viewportHeight > 0)) throw codedError('CAPTURE_FAILED', 'The page has no capturable viewport.', { tabId });
-  const crop = params.crop || { x: 0, y: 0, width: viewportWidth, height: viewportHeight };
-  const x = Number(crop.x);
-  const y = Number(crop.y);
-  const width = Number(crop.width);
-  const height = Number(crop.height);
-  if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > viewportWidth + 0.5 || y + height > viewportHeight + 0.5) {
-    throw codedError('INVALID_CAPTURE_REGION', 'Capture crop must stay inside the visible viewport.', {
-      tabId,
-      viewport: { width: viewportWidth, height: viewportHeight }
-    });
-  }
-
-  const quality = clamp(params.quality, 40, 80, 60);
-  const maxWidth = clamp(params.maxWidth, 320, 1600, 1280);
-  const maxHeight = clamp(params.maxHeight, 240, 1200, 900);
-  const previousHash = typeof params.previousHash === 'string' ? params.previousHash.toLowerCase() : '';
-  const cacheKey = JSON.stringify([policy.documentId, x, y, width, height, quality, maxWidth, maxHeight]);
-  const cached = cachedScreenshot(tabId, cacheKey, previousHash);
-  if (cached) return { ok: true, tabId, page: { title: tab.title || '', url: tab.url || '' }, screenshot: cached };
-
-  const screenshot = await withDebugger(tabId, context, async (target) => {
-    const metrics = await chrome.debugger.sendCommand(target, 'Page.getLayoutMetrics');
-    const viewport = metrics?.cssVisualViewport || metrics?.cssLayoutViewport || metrics?.layoutViewport || {};
-    const pageX = Number(viewport.pageX ?? 0);
-    const pageY = Number(viewport.pageY ?? 0);
-    const baseScale = Math.min(1, maxWidth / width, maxHeight / height);
-    const attempts = [
-      { quality, scale: baseScale },
-      { quality: 40, scale: baseScale },
-      { quality: 40, scale: baseScale * 0.75 },
-      { quality: 40, scale: baseScale * 0.55 }
-    ].filter((attempt, index, all) => index === all.findIndex((item) => item.quality === attempt.quality && item.scale === attempt.scale));
-    let chosen = null;
-    let sawTooLarge = false;
-    let sawTooSmall = false;
-    for (const attempt of attempts) {
-      if (context?.deadline && Date.now() >= context.deadline - 100) throw codedError('CAPTURE_TIMEOUT', 'Screenshot capture deadline reached.', { tabId });
-      const response = await chrome.debugger.sendCommand(target, 'Page.captureScreenshot', {
-        format: 'jpeg',
-        quality: attempt.quality,
-        fromSurface: true,
-        captureBeyondViewport: false,
-        optimizeForSpeed: true,
-        clip: { x: pageX + x, y: pageY + y, width, height, scale: attempt.scale }
-      });
-      const data = String(response?.data || '');
-      const bytes = screenshotBytes(data);
-
-      // A frame under 512 bytes carries no image, so it is skipped without
-      // counting as a reduction failure; the refusal below names it exactly.
-
-      if (bytes < 512) {
-        sawTooSmall = true;
-        continue;
-      }
-      if (bytes > MAX_SCREENSHOT_BYTES) {
-        sawTooLarge = true;
-        continue;
-      }
-      chosen = { data, bytes, quality: attempt.quality, scale: attempt.scale };
-      break;
-    }
-    if (!chosen) {
-      if (sawTooLarge) throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
-      if (sawTooSmall) throw codedError('SCREENSHOT_TOO_SMALL', 'Screenshot capture produced no usable image data; the page may not have rendered yet.', { tabId, minBytes: 512 });
-      throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
-    }
-    const blank = await screenshotLooksBlank(chosen.data);
-    if (blank.blank) throw codedError('BLANK_SCREENSHOT', 'The captured frame appears blank; wait for the page to render and try again.', { tabId });
-    const sha256 = await screenshotHash(chosen.data);
-    return {
-      mimeType: 'image/jpeg',
-      data: chosen.data,
-      sha256,
-      encodedBytes: chosen.bytes,
-      width: Math.max(1, Math.round(width * chosen.scale)),
-      height: Math.max(1, Math.round(height * chosen.scale)),
-      sourceWidth: width,
-      sourceHeight: height,
-      crop: { x, y, width, height },
-      quality: chosen.quality,
-      blankChecked: blank.checked,
-      unchanged: false,
-      cached: false,
-      capturedAt: nowIso()
-    };
-  });
-
-  rememberScreenshot(tabId, cacheKey, screenshot);
-  const responseScreenshot = { ...screenshot };
-  if (previousHash && previousHash === screenshot.sha256) {
-    delete responseScreenshot.data;
-    responseScreenshot.unchanged = true;
-  }
-  return { ok: true, tabId, page: { title: tab.title || '', url: tab.url || '' }, screenshot: responseScreenshot };
-}
 
 function executionMode(params = {}) {
   return params.executionMode === 'foreground' ? 'foreground' : 'background';
@@ -241,6 +125,7 @@ async function withInputFocusEmulation(target, mode, work) {
 // with the user's own foreground permission. A window that genuinely is not
 // focused still returns the structured FOREGROUND_REQUIRED requirement, now
 // carrying the observed state so the failure is diagnosable.
+
 async function sampleTabFocus(tabId) {
   const tab = await chrome.tabs.get(tabId);
   const win = await chrome.windows.get(tab.windowId);
@@ -249,6 +134,7 @@ async function sampleTabFocus(tabId) {
 
 async function withForegroundFocusGate(tabId, mode, work) {
   if (mode !== 'foreground') return work();
+
   // Bounded by construction: decideFocusGate refuses on the final attempt, so
   // the loop always terminates. Written with an explicit bound rather than a
   // conditionless for(;;) so the termination is visible here and not only in
@@ -287,6 +173,7 @@ async function withForegroundFocusGate(tabId, mode, work) {
 // the adaptive ramp, rebind through the machinery, and report final
 // outcome telemetry. Pointers are coordinate-based (no ref), so their wait
 // phase is a pass-through; their own guards and scroll verification apply.
+
 const UV_WAIT_FLOOR_MS = 250; // keep the wait strictly inside the command race
 
 // Popup/redirect follow-through: clicks and fills on OAuth/login controls
@@ -297,6 +184,7 @@ const UV_WAIT_FLOOR_MS = 250; // keep the wait strictly inside the command race
 // Chromium attributes window.open on a BACKGROUND acted-on tab to the window's
 // active tab, so while a page action is in flight its tab claims new tabs
 // (see resolvePopupOpener).
+
 const popupLog = new Map();
 const popupActionStack = [];
 const POPUP_LOG_MAX_AGE_MS = 60000;
@@ -352,6 +240,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 // which is what a page that re-renders produces, and a caller that believes it
 // spends another full deadline on the same dead ref. Each case names the
 // recovery that works instead of a wait that does not.
+
 function notFoundHint(refState) {
   if (refState === 'expired') {
     return 'The page navigated or reset, so this ref was minted for another document or route and can never act again. Re-find on the current page; the ref is dead, not late.';
@@ -369,6 +258,7 @@ function notFoundHint(refState) {
 // field added to TARGET_NOT_READY reached one caller and was dropped by the
 // others. It also names the candidates in every message, which the burst path
 // alone used to drop.
+
 function notReadyError(error) {
   const out = {
     code: error.code,
