@@ -667,7 +667,9 @@ git commit -m "test: keep the bundle check true once a second file is listed"
 - Consumes: `extension/lib/*.js`, `extension/worker/*.js` (belum ada saat Task 6 berjalan — tesnya harus lulus dengan ketiadaan).
 - Produces: tiga gerbang yang menolak pemindahan yang melanggar aturan: `lib/` bebas `chrome.*`, ukuran file, keberadaan modul.
 
-Gerbang `lib/` harus **pecah komentar dan string** — kalau tidak, hitungannya salah dua arah. Terbukti: pemindai sembrono melaporkan `debugger-session.js:59` padahal itu baris JSDoc, dan `background.js:12` padahal itu bagian dari impor. Pemindai yang benar menghasilkan `background.js = 106` (persis angka spec) dan `lib = 1` di `debugger-session.js:51`.
+Gerbang `lib/` harus **pecah komentar dan string** — kalau tidak, hitungannya salah dua arah. Terbukti: pemindai sembrono melaporkan `debugger-session.js:59` padahal itu baris JSDoc, `external-origins.js:2` dan `options-store.js:7` padahal itu teks kepala berkas, dan di `background.js` persis **satu** baris — `:455`, komentar `// WHY element capture and not tab capture: chrome.tabCapture refuses callers` — yang membuat hitungan sembrono jadi 107 alih-alih 106. Pemindai yang benar menghasilkan `background.js = 106` (persis angka spec) dan `lib = 1` di `debugger-session.js:51`.
+
+Dua batas pemindai yang diketahui, supaya tidak dikira lolos tanpa diperiksa: ia mengenali `chrome.` dan `globalThis.chrome.`, tetapi **bukan** `chrome['storage']` maupun `const { storage } = chrome;` (hari ini tak ada satu pun di pohon). Sebuah literal regex yang memuat tanda kutip juga membuka status string yang tidak pernah ditutup sehingga sisa berkas jadi tak terlihat (hari ini pun tak ada yang begitu).
 
 - [ ] **Step 1: Tulis gerbangnya**
 
@@ -677,16 +679,16 @@ Buat `tests/structure-gates.test.mjs`:
 // @last-edited: 2026-10-09 UTC+7.
 // @title: structure-gates — the split's rules are enforced, not remembered.
 // @state: chrome-free lib with one written exception, size ceilings, and a complete worker module set.
-// @dependencies: node:test, strict, node:fs/promises, node:path.
+// @dependencies: node:test, strict, node:fs/promises.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 
 // Buang komentar dan string, pertahankan jumlah baris supaya nomor baris akurat.
+
 function stripCommentsAndStrings(text) {
   let out = '';
   let i = 0;
