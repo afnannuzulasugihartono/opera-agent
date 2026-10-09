@@ -58,7 +58,28 @@ test('no state is declared twice across the bundle', async () => {
   const decls = new Map();
   for (const rel of files) {
     const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
-    const names = [...text.matchAll(/^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]);
+    // `export` ialah bagian dari polanya, bukan hiasan opsional. Tanpa ia, pindai
+    // ini melihat 21 dari 36 deklarasi top-level bundel dan buta terhadap 14 yang
+    // diekspor — yakni persis state lintas-modul yang berbahayanya dinamai di
+    // bawah. Pembuktinya: probe yang diduplikasi sebagai `export const` lolos,
+    // probe yang sama sebagai `const` biasa merah.
+    const names = [
+      ...text.matchAll(/^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm),
+    ].map((m) => m[1]);
+    // Ikatan terdestrukturisi di tingkat modul ialah state seperti state lain:
+    // `const { a, b } = globalThis.…` mengikat dua nama, bukan satu.
+    for (const m of text.matchAll(/^(?:export\s+)?(?:const|let|var)\s*[{[]([^}\]]*)[}\]]/gm)) {
+      for (const piece of m[1].split(',')) {
+        const name = piece.trim().split(':').pop().trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) names.push(name);
+      }
+    }
+    // Sengaja TIDAK dicakup: `const a = 1, b = 2;`. Pencariannya membaca
+    // `let serializedResult = { value: null, text: '' };` di lib/serialize.js
+    // sebagai multi-deklarasi, karena tanda koma itu duduk di dalam sebuah objek
+    // nilai. Menangkapnya butuh pemindai sungguhan, dan heuristik yang salah
+    // baca ialah satu-satunya hal yang suite ini tolak. Celahnya dipilih,
+    // bukan terlewat.
     for (const name of names) decls.set(name, [...(decls.get(name) || []), rel]);
   }
   const duplicated = [...decls].filter(([, where]) => where.length > 1);
@@ -194,7 +215,13 @@ test('no import brings in a name its own file never uses', async () => {
     for (const m of text.matchAll(/import\s*{([^}]*)}\s*from/gs)) {
       for (const raw of m[1].split(',')) {
         const token = raw.trim().split(/\s+as\s+/).pop().trim();
-        if (!token) continue;
+        // Sebuah komentar inline di dalam kurawal impor (`foo, // alasan`)
+        // menghasilkan token `// alasan` — yang tak pernah bisa dieja oleh baris
+        // mana pun di luar blok impor, jadi tes ini menuduhnya mati. Tak ada
+        // pemicunya hari ini (nol dari 87 pernyataan impor di bundel membawa
+        // komentar inline), tapi bias tes ini ialah tak pernah menyalahkan keliru,
+        // dan ini satu-satunya pilihan pemformatan yang bisa mematahkan janji itu.
+        if (!/^[A-Za-z_$][\w$]*$/.test(token)) continue;
         let uses = 0;
         for (let i = 0; i < lines.length; i++) {
           if (insideImport[i]) continue;

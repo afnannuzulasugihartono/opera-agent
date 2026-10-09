@@ -16,7 +16,7 @@ state top-level, dan **satu** banner section di seluruh file (baris 2046). Batas
 wilayah tidak ditandai apa pun — pembaca hanya bisa menebaknya sambil menggulir
 700 baris.
 
-Hasil akhir: `background.js` **463 baris** — header, state yang hanya
+Hasil akhir: `background.js` **465 baris** — header, state yang hanya
 dipakai `dispatch`, dan `dispatch` sendiri (baris 1647-2018, tidak disentuh
 isinya) — plus **13 file baru**: 11 di `extension/worker/` dan 2 di
 `extension/lib/`.
@@ -146,7 +146,7 @@ loop.js (murni)              <-> loopSessions / loopTick     (background)
 
 ```
 extension/
-├── background.js   entry: header + impor + state yang hanya dipakai dispatch + dispatch   (463 baris)
+├── background.js   entry: header + impor + state yang hanya dipakai dispatch + dispatch   (465 baris)
 ├── content.js      tetap — tahap terpisah, IIFE klasik, tidak bisa ES module
 ├── lib/            MURNI: chrome.* sebagai kode = 0, kecuali daftar kecualian
 │                   17 file sekarang + 2 baru (log.js, serialize.js)
@@ -355,7 +355,7 @@ ditumpuk. Tahap 0 bukan perpindahan; ia prasyaratnya.
 
 **Fase B — modul daun** (tidak mengimpor modul worker lain):
 
-1. `extension/lib/log.js` — file baru, 5 baris. `background.js` ganti tiga baris
+1. `extension/lib/log.js` — file baru, 9 baris. `background.js` ganti tiga baris
    bootstrap jadi satu `import { log }`. Tidak ada kode pindah.
 2. `extension/lib/serialize.js` — region 2019-2045 (3 fungsi, `chrome.*` 0)
    plus `MAX_RESULT_BYTES`. Mengikuti aturan gerbang: `chrome.*` 0 → `lib/`.
