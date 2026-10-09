@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: action-focus — the foreground focus gate, the action pipeline and trusted input.
 // @state: owns the popup focus log and its floor; loop-engine reads popupLog from here, and this module takes stateSessions from loop-engine.
-// @dependencies: utils, tab-content, capture, background (loop helpers), log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
+// @dependencies: utils, tab-content, capture, loop-engine, log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
 
 import { log } from '../lib/log.js';
 import { METHOD_SPECS, clamp } from '../lib/protocol.js';

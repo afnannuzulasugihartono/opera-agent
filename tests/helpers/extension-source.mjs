@@ -9,6 +9,7 @@ const FILES = [
   'extension/background.js',
   'extension/lib/log.js',
   'extension/lib/serialize.js',
+  'extension/worker/watch-registry.js',
   'extension/worker/utils.js',
   'extension/worker/capture.js',
   'extension/worker/private-tabs.js',
