@@ -28,6 +28,24 @@ test('the hero sells the product instead of apologizing for it', () => {
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
 });
 
+test('the hero stats equal live source counts, never stale copy', () => {
+  // WHY recomputed: the stat once read 37 while the prose beside it read 39,
+  // because only the prose was pinned. Both numbers now derive from the same
+  // sources of truth the unduh hub test uses.
+  const html = read('index.html');
+  const mcp = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+  const tools = (mcp.match(/registerTool\("/g) || []).length;
+  const proto = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
+  const specs = proto.slice(proto.indexOf('METHOD_SPECS = Object.freeze({'), proto.indexOf('});', proto.indexOf('METHOD_SPECS')));
+  const prims = (specs.match(/^\s*'[a-z][a-z0-9_.]*': \{ timeoutMs:/gm) || []).length;
+  assert.ok(tools > 30 && prims >= 28, `sanity: ${tools} tools, ${prims} primitives`);
+  const block = /<dl class="heroStats" id="heroStats">([\s\S]*?)<\/dl>/.exec(html)[1];
+  const stats = [...block.matchAll(/<div><dt>(\d+)<\/dt><dd>([^<]+)<\/dd><\/div>/g)];
+  const byLabel = Object.fromEntries(stats.map((m) => [m[2].trim(), Number(m[1])]));
+  assert.equal(byLabel['tool MCP'], tools, 'tool stat matches the registered count');
+  assert.equal(byLabel['primitive browser'], prims, 'primitive stat matches the allowlist');
+});
+
 test('every section closes before the next one opens', () => {
   for (const page of pages) {
     const html = read(page);
