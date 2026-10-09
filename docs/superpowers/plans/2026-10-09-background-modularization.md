@@ -845,6 +845,133 @@ Expected: `# pass 738` (task ini tidak menambah tes apa pun), `# fail 0`, `check
 
 ---
 
+### Task 7b: Dua perbaikan lintas-task yang membuka jalan bagi dua belas ekstraksi
+
+Task 7 menemukan keduanya dan menaikkan eskalasi alih-alih menebak. Keduanya
+mematahkan suite pada task yang jauh di depan, jadi diperbaiki sekali di sini.
+
+**Files:**
+- Modify: `tests/helpers/boundary-locks.mjs` (satu hash + satu blok komentar)
+- Modify: `tests/burst-tab-switching.test.mjs` (7 pemanggilan)
+- Modify: `tests/debugger-session-lifecycle.test.mjs` (1 pemanggilan)
+- Commit: perubahan Task 7 yang masih terbuka (`extension/lib/log.js`,
+  `extension/background.js`, `tests/helpers/extension-source.mjs`)
+
+**Interfaces:**
+- Consumes: `PUBLIC_SURFACE_LOCKS`, `sha1Blob` dari `tests/boundary-locks.test.mjs`.
+- Produces: aturan bahwa setiap task yang menyentuh `background.js` ikut
+  menempel ulang hashnya di commit yang sama.
+
+**Perbaikan 1 — `background.js` dikunci hash, sehingga semua 12 ekstraksi
+akan mematahkannya.**
+
+`PUBLIC_SURFACE_LOCKS` memuat `['../extension/background.js', <sha1>]`, dan
+dicek oleh **dua** berkas: `tests/boundary-locks.test.mjs` (baru, Task 2) dan
+`tests/delta-first-observation.test.mjs:556` (lama, sudah ada sebelum rencana
+ini). Setiap perubahan apa pun pada `background.js` membuat keduanya merah —
+dan itu sudah terbukti: Task 7 merah sekarang, pada `dfe3e27… → e1e62cf…`.
+
+Rencana dan spec sama-sama tidak pernah membahas ini; spec `:570` bahkan
+mencatat `PUBLIC_SURFACE_LOCKS` di daftar "yang tidak berubah", yang kini
+salah. Berkas kuncinya sendiri sudah punya jawabannya: ia penuh blok komentar
+bertanggal berbunyi *"Re-pinned … No public contract moved: … background.js
+moved on …"*, dan blok terakhirnya (`:62`) sudah ditulis untuk rencana ini.
+
+**Ruling:** ikuti konvensi berkasnya. Tulis **satu** blok re-pin yang berlaku
+untuk seluruh pemecahan; setiap task berikutnya hanya menempel ulang nilai
+hashnya, tanpa blok komentar baru. Alasannya: `dispatch` — satu-satunya yang
+di spec disebut "tidak disentuh isinya" — memang tidak berpindah, jadi
+kontrak publik tidak bergerak; yang bergerak hanyalah berkas yang membungkusnya.
+
+- [ ] **Step 1: Tempel ulang hash `background.js`**
+
+Hitung dengan fungsi `sha1Blob` yang sudah ada di
+`tests/boundary-locks.test.mjs:16-21` (git blob SHA1 atas byte LF; berkas
+CRLF dinormalkan dulu). Jangan memakai `git hash-object` secara langsung
+tanpa normalisasi — pada checkout CRLF hasilnya berbeda.
+
+- [ ] **Step 2: Tulis blok re-pin sekali**
+
+Tambahkan tepat sebelum `export const PUBLIC_SURFACE_LOCKS`:
+
+```js
+// Re-pinned 2026-10-09 for the background.js split. No public contract moved:
+// dispatch keeps byte-identical content in background.js — only the code around
+// it moves into worker/ and lib/ modules. Every extraction task re-pins the
+// background.js hash below in the same commit, so the value tracks the file's
+// current bytes; this comment stays as the single record of why it keeps
+// changing. content.js, manifest.json and the MCP function are untouched by
+// the split and are not re-pinned.
+```
+
+- [ ] **Step 3: Commit Task 7 bersama perbaikan ini**
+
+```bash
+npm test
+npm run check
+git add extension/lib/log.js extension/background.js tests/helpers/extension-source.mjs tests/helpers/boundary-locks.mjs
+git commit -m "refactor: give the worker graph one importable logger handle"
+```
+
+Expected: `# pass 738`, `# fail 0`. `boundary-locks` dan
+`delta-first-observation` kembali hijau; `background.js` kini 2640 baris.
+
+**Perbaikan 2 — tujuh pemanggilan `sliceBetween` menyeberangi `dispatch`.**
+
+`tests/burst-tab-switching.test.mjs` (7) dan
+`tests/debugger-session-lifecycle.test.mjs` (1) memotong dari
+`async function runBurst(` sampai `async function dispatch(`.
+
+`dispatch` tetap di `background.js`, sedangkan `runBurst` ikut
+`worker/loop-engine.js` pada Task 16 — dan `background.js` selalu menjadi
+**entri pertama** bundel. Begitu Task 16 berjalan, `dispatch` mendahului
+`runBurst` di dalam bundel, `indexOf(endMarker, start)` mengembalikan `-1`,
+dan penjaga `assert.ok(end > start)` di `sliceBetween` gagal dengan pesan
+*"`async function dispatch(` must follow `async function runBurst(`"*. Delapan
+tes merah serempak, dan itu baru diketahui di Task 16.
+
+Solusinya bukan mengubah bundel, melainkan memakai penanda yang hidup di
+region yang sama. **Bukti bahwa ini aman:** semua pola yang di-assert positif
+oleh kedelapan tes berada di baris `1115–1226` — seluruhnya di dalam
+`runBurst` (`1114–1245`). Pernyataan `doesNotMatch` (`cannot switch tabs`,
+`chrome.debugger.detach({ tabId })`) berada di luar `runBurst` dan tetap di
+luar setelah irisan dipersempit, jadi keduanya tetap lulus.
+
+- [ ] **Step 4: Ganti penanda akhir di 8 pemanggilan**
+
+Ganti `'async function dispatch('` menjadi `'function loopSummary('` pada
+kedelapan pemanggilan — `loopSummary` (`:1246`) adalah fungsi top-level
+pertama setelah `runBurst` dan ikut pindah ke `loop-engine.js`, sehingga
+urutannya di bundel tidak pernah terbalik.
+
+- [ ] **Step 5: Jalankan dan commit**
+
+```bash
+node --test tests/burst-tab-switching.test.mjs tests/debugger-session-lifecycle.test.mjs
+npm test
+npm run check
+git add tests/burst-tab-switching.test.mjs tests/debugger-session-lifecycle.test.mjs
+git commit -m "test: end the burst slice at a marker that moves with runBurst"
+```
+
+Expected: kedua file fokus PASS, `# pass 738`, `# fail 0`, `check ok`.
+Jumlah tes tidak berubah.
+
+**Catatan pemindaian yang menyertai temuan ini.** Seluruh pasangan
+dua-jangkar lain yang memotong bundel sudah diperiksa terhadap tabel region:
+`requireTabId→resolveTabId`, `withDebugger→codedError`,
+`executeWatchAction→handleWatchFire`, `executeCommand→pair`,
+`trustedClick→// Burst ref passthrough`, `sampleTabFocus→// Action Pipeline`,
+`withForegroundFocusGate→// Action Pipeline`,
+`ensureContent→contentCall`, `contentCall→executeInTab`,
+`trustedFill→trustedPointer`, `boundedResult→Event-Triggered Workflows`,
+dan `case 'page.read'→case 'page.query'` — semuanya berpasangan di dalam
+modul yang sama, atau menyeberang dengan urutan bundel yang memang sudah
+dipaksa (serialize sebelum watch-registry). Hanya `runBurst→dispatch` yang
+terbalik. `scripts/check.mjs` aman karena Task 5 mengalihkannya ke bundel.
+
+---
+
 ### Task 8: `extension/lib/serialize.js` — termasuk penyimpangan yang terdokumentasi
 
 **Files:**
