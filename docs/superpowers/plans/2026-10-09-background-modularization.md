@@ -1394,6 +1394,84 @@ Catatan pengikatan: `capture` sengaja **tidak** mengimpor `private-tabs`. Kalau 
 
 ---
 
+### Task 10b: Tiga perbaikan hasil review Task 10
+
+Review menemukan dua temuan Important, keduanya nyata, plus satu header yang
+kini berbohong. Ketiganya kecil dan tak mengubah perilaku.
+
+**Files:**
+- Modify: `extension/worker/capture.js`
+- Modify: `extension/background.js`
+- Modify: `tests/helpers/boundary-locks.mjs` (nilai hash saja)
+
+**Interfaces:**
+- Consumes: —
+- Produces: — (perbaikan, bukan ekstraksi)
+
+- [ ] **Step 1: Pindahkan komentar WHY tabCapture ke region listen**
+
+`extension/worker/capture.js:183-189` diakhiri blok tujuh baris yang dibuka
+`// WHY element capture and not tab capture: chrome.tabCapture refuses
+callers…`. Isinya seluruhnya bahasa perekaman audio: WebAudio, media element,
+CORS, `a silent transcript proves nothing by itself`.
+
+`capture.js` **nol** kode perekaman — isinya `captureFramePrivacyProbe`,
+`assertCaptureFramesSafe`, `withDebugger`, `codedError`, `collectAxSummary`,
+`cachedScreenshot`, `rememberScreenshot`, memo screenshot. Komentar itu
+didokumentasikan oleh **region listen**, yang masih di `background.js` dan
+berisi `listenStart`/`postListenChunk` beserta komentar soal recorder dan
+transcription windows. Judul modul Task 13 sendiri adalah
+`listen — tabCapture session lifecycle and chunk streaming` — frasa yang sama
+dengan pembuka komentar.
+
+Ambil tujuh baris itu keluar dari `capture.js` dan tempatkan di
+`background.js`, tepat di atas `function listenUrlFor(bridgeUrl) {`. Karena
+kedua berkas sudah termasuk jalur yang diizinkan, perpindahan ini malah
+**menambah** byte-identitas region: Task 13 lalu mewarisi alasan desainnya,
+dan pembaca `capture.js` tidak lagi diberitahu bahwa filenya soal tabCapture.
+
+- [ ] **Step 2: Lepas `export` dari `captureFramePrivacyProbe`**
+
+`capture.js:15` mengekspor fungsi yang tak punya pengimpor. Pemakai
+tunggalnya ada di dalam modul sendiri (`capture.js:43`, sebagai argumen
+`func:`). Ekspornya hanya bertahan karena `scripts/check.mjs:111` menyebut
+namanya di dalam array penanda — dan penanda itu cuma menuntut **nama** muncul
+di bundel, bukan diekspor. Jadi:
+
+- Lepas kata `export` di `capture.js:15`.
+- `scripts/check.mjs:111` tetap hijau, karena nama itu masih ada di dalam
+  `capture.js`.
+- `tests/hygiene.test.mjs:367` ikut tetap hijau, karena simbol yang tak
+  diekspor memang tak diperiksa.
+
+Hasilnya **sepuluh** ekspor, bukan sebelas. Angka sebelas di Task 10 salah
+hitung: reviewer membuktikan satu-satunya "pemanggil" ekspor itu adalah string
+penanda, bukan kode. `captureFramePrivacyProbe` tetap ada dan tetap dipakai —
+hanya permukaan publiknya yang dipersempit, persis prinsip yang
+`tests/hygiene.test.mjs:351` nyatakan sendiri.
+
+- [ ] **Step 3: Koreksi header `background.js`**
+
+`background.js:4` masih menulis `… role-reconcile, agent-log, ax-summary,
+popup-events, deadline-race` — `ax-summary` sudah tidak diimpor sejak Task 10.
+Hapus kata `ax-summary,` saja. Sisanya biarkan: daftar itu memang sudah
+parsial sebelum rencana ini, dan itu cacat lama yang dicatat terpisah.
+
+- [ ] **Step 4: Re-pin hash, jalankan, commit**
+
+```bash
+npm test
+npm run check
+git add extension/worker/capture.js extension/background.js tests/helpers/boundary-locks.mjs
+git commit -m "refactor: return the tabCapture rationale to listen and drop a dead export"
+```
+
+Expected: `# pass 738`, `# fail 0`, `check ok`. Hash `background.js` berubah
+karena dua berkas disentuh — tempel ulang **nilai saja**, tanpa blok komentar
+baru. `git status --porcelain` mesti menunjuk tepat tiga jalur.
+
+---
+
 ### Task 11: `extension/worker/private-tabs.js`
 
 **Files:**
