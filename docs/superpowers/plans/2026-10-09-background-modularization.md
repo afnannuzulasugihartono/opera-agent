@@ -1074,10 +1074,51 @@ Expected: satu baris `const MAX_RESULT_BYTES = <nilai>;` — tempelkan nilainya 
 - Tambahkan impor:
 
 ```js
-import { oversized, MAX_RESULT_BYTES, clearSerializedResult } from './lib/serialize.js';
+import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } from './lib/serialize.js';
 ```
 
-`boundedResult` dan `serializeResult` belum diimpor `background.js` — yang memakainya (`executeCommand`) sudah pindah ke modul, dan `execute-pull` mengimpornya sendiri di Task 18.
+**Empat nama, bukan tiga.** `executeCommand` **belum** pindah — itu tugas Task 18 — sehingga `background.js` masih memanggil `clearSerializedResult()` (sekali) dan `boundedResult()` (dua titik) di dalamnya, dan keduanya wajib ikut diimpor sekaligus. Rencana versi awal hanya menulis tiga nama; itu menghasilkan `ReferenceError` pada setiap perintah yang tidak tertangkap suite mana pun, karena jalur itu tak diuji.
+
+Yang betul-betul permanen hanya `oversized` (`background.js:1890`) dan `MAX_RESULT_BYTES` (`:1897`) — keduanya dipakai `dispatch`, yang tidak pernah berpindah. `serializeResult` memang tidak diimpor karena tidak punya pemanggil di `background.js`.
+
+**Kewajiban Task 18:** memangkas baris impor ini menjadi `import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';` begitu `executeCommand` berpindah — tanpa itu dua nama terakhir jadi impor mati.
+
+- [ ] **Step 4b: Putar ulang jangkar akhir irisan `boundedResult`**
+
+`tests/hygiene.test.mjs` memotong dari `function boundedResult` ke
+`// ---- Event-Triggered Workflows: watch registry`. Jangkar pertama kini
+pindah ke `extension/lib/serialize.js`, sedangkan jangkar kedua masih ada di
+`background.js` — **entri pertama bundel** — sampai Task 17. Urutannya jadi
+terbalik: `indexOf` pertama menghasilkan indeks yang lebih besar, irisan jadi
+kosong, dan asersi `exactly one stringify` gagal dengan `0 !== 1`. Inilah satu-satunya
+penghalang task ini, dan ia berlaku selama Task 8 sampai Task 16.
+
+Ganti jangkar akhirnya dengan penanda yang hidup **di modul yang sama dan
+selalu sesudahnya**:
+
+```js
+  const block = background.slice(
+    background.indexOf('function boundedResult'),
+    background.indexOf('function clearSerializedResult() {')
+  );
+  assert.ok(
+    background.indexOf('function clearSerializedResult() {')
+      > background.indexOf('function boundedResult'),
+    'the result-sizing block must have a live end marker after boundedResult'
+  );
+```
+
+Bukti aman: blok yang dihasilkan mencakup `boundedResult`, `oversized`,
+komentar memo, `let serializedResult`, dan `serializeResult` — tepat **satu**
+`JSON.stringify(` (di `serializeResult`), sehingga asersi "exactly one"
+tetap benar; `function oversized` tetap ada di dalamnya untuk asersi
+berikutnya; dan `clearSerializedResult` tidak pernah dihapus di task mana pun,
+jadi jangkarnya bertahan sampai selesai. Penjaga `assert.ok` ditambahkan agar
+jangkar yang mati gagal nyaring, bukan diam-diam membesarkan irisan.
+
+Ini adalah **edit kedua** pada `tests/hygiene.test.mjs` untuk task ini —
+yang pertama adalah penggantian asersi `serializedResult`. Keduanya diizinkan
+secara eksplisit; tidak ada asersi lain yang disentuh.
 
 - [ ] **Step 5: Daftarkan di helper, tambahkan anchor**
 
@@ -1787,6 +1828,27 @@ const FILES = [
   'extension/worker/execute-pull.js',
 ];
 ```
+
+- [ ] **Step 4b: Pangkas impor serialize di `background.js`**
+
+`executeCommand` kini sudah pindah, jadi dua nama terakhir di baris impor
+`background.js` tidak lagi punya pemanggil. Ubah:
+
+```js
+import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } from './lib/serialize.js';
+```
+
+menjadi:
+
+```js
+import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';
+```
+
+Keduanya tetap wajib — `oversized` dipakai `dispatch` (`background.js:1890`)
+dan `MAX_RESULT_BYTES` dipakai `dispatch` pula (`:1897`), dan `dispatch` tidak
+pernah berpindah. `clearSerializedResult` dan `boundedResult` kini diimpor oleh
+`worker/execute-pull.js` sendiri. Tanpa langkah ini dua nama jadi impor mati
+yang tidak tertangkap gerbang mana pun.
 
 - [ ] **Step 5: Ganti guard `background.js` dengan ambang akhir, lalu jalankan suite**
 
