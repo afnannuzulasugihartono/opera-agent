@@ -276,7 +276,12 @@ test('a read is serialized once, not once per size check', () => {
   // to the three functions involved.
   const block = background.slice(
     background.indexOf('function boundedResult'),
-    background.indexOf('// ---- Event-Triggered Workflows: watch registry')
+    background.indexOf('function clearSerializedResult() {')
+  );
+  assert.ok(
+    background.indexOf('function clearSerializedResult() {')
+      > background.indexOf('function boundedResult'),
+    'the result-sizing block must have a live end marker after boundedResult'
   );
   assert.equal((block.match(/JSON\.stringify\(/g) || []).length, 1, 'exactly one stringify in the result-sizing path');
   assert.match(background, /function serializeResult\(value\)/);
@@ -294,7 +299,7 @@ test('the memo cannot retain a large result between commands', () => {
   // cleared per command.
   assert.match(background, /let serializedResult = \{ value: null, text: '' \};/);
   const executor = background.slice(background.indexOf('async function executeCommand'));
-  assert.match(executor.slice(0, 900), /serializedResult = \{ value: null, text: '' \};/);
+  assert.match(executor.slice(0, 900), /clearSerializedResult\(\);/);
 });
 
 test('the focus-gate slice is a real block, not the whole file', () => {

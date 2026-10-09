@@ -55,6 +55,7 @@ import {
   releaseDebuggerSession,
   handleDebuggerDetach
 } from './lib/debugger-session.js';
+import { oversized, MAX_RESULT_BYTES, clearSerializedResult, boundedResult } from './lib/serialize.js';
 
 // Without this, a cached `attached: true` outlives the debugger: if the user
 // opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
@@ -66,7 +67,6 @@ const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'devic
 const PRIVATE_TABS_KEY = 'privateTabIds';
 const WAKE_ALARM = 'opera-agent-wake';
 const HTTP_URL_RE = /^https?:\/\//i;
-const MAX_RESULT_BYTES = 512 * 1024;
 const MAX_BURST_RESULT_BYTES = 256 * 1024;
 const MAX_SCREENSHOT_BYTES = 220 * 1024;
 const SCREENSHOT_CACHE_MS = 750;
@@ -2010,33 +2010,6 @@ async function dispatch(method, params = {}, context = {}) {
   }
 }
 
-function boundedResult(value) {
-  const text = serializeResult(value);
-  if (text.length > MAX_RESULT_BYTES) {
-    throw new Error(`Result exceeds ${MAX_RESULT_BYTES} bytes. Use bounded/chunked reads.`);
-  }
-  return value;
-}
-
-function oversized(value) {
-  return serializeResult(value).length > MAX_RESULT_BYTES;
-}
-
-// Single-entry memo for result serialization. page.read measures the result
-// against the ceiling and the dispatcher then measures it again; without this,
-// every read paid a second full JSON.stringify on the hottest observation path.
-// Keyed on object identity, so a rebuilt result serializes exactly once, and
-// cleared per command so nothing large is retained between commands.
-let serializedResult = { value: null, text: '' };
-
-function serializeResult(value) {
-  if (serializedResult.value === value) return serializedResult.text;
-  let text;
-  try { text = JSON.stringify(value); } catch { throw new Error('Result is not serializable.'); }
-  serializedResult = { value, text };
-  return text;
-}
-
 // ---- Event-Triggered Workflows: watch registry ----
 // Rules are validated by the pure engine in lib/watch.js. content.js stays
 // dumb: it reports FACTS (presence/url/adState/mediaTime/text) on mutations;
@@ -2263,7 +2236,7 @@ async function trustedHover(tabId, params, context) {
 async function executeCommand(raw) {
   // Drop any memoized result serialization from the previous command so a large
   // page.read result is not pinned for the worker's lifetime.
-  serializedResult = { value: null, text: '' };
+  clearSerializedResult();
   // Watch.* and loop.* are internal extension-side families (protocol primitive
   // count stays frozen at 28); their validation lives in lib/watch.js and
   // lib/loop.js respectively.
