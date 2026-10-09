@@ -1331,7 +1331,48 @@ dalam modul; lihat langkah sebelumnya).
 - Hapus baris `import { buildAxSummary } from './lib/ax-summary.js';` dari
   `background.js`. Satu-satunya pemakainya adalah `:311`, yang ada di dalam
   region yang sedang dipindah — barisnya jadi impor mati begitu potongan
-  dilakukan, dan tidak ada gerbang yang menangkapnya.
+  dilakukan.
+
+  **Ada gerbang yang menangkap penghapusan ini, dan memang seharusnya ada:**
+  `tests/ax-observation.test.mjs:149` mengunci bentuk path impor itu:
+
+  ```js
+  assert.match(background, /import \{ buildAxSummary[^}]*\} from '\.\/lib\/ax-summary\.js'/);
+  ```
+
+  Setelah region pindah, `capture.js` yang mengimpornya — dan dari `worker/`,
+  path yang benar adalah `'../lib/ax-summary.js'`, bukan `'./lib/…'`. Regex
+  yang mengunci tanda kutip plus `./` persis itu lalu gagal.
+
+- [ ] **Step 3b: Putar ulang bentuk path pada asersi itu**
+
+  Ganti baris tersebut menjadi:
+
+  ```js
+  assert.match(background, /import \{ buildAxSummary[^}]*\} from '\.{1,2}\/lib\/ax-summary\.js'/);
+  ```
+
+  **Ini penyempitan yang jujur, bukan pelemahan.** Inti klaimnya tak berubah:
+  bundel tetap harus mengimpor `buildAxSummary` dari berkas bernama
+  `lib/ax-summary.js`, dan tetap gagal kalau impornya dihapus sama sekali
+  atau diarahkan ke berkas lain. Yang longgar hanya kedalaman modul — `./`
+  versus `../` — yaitu persis hal yang rencana ini ubah, dan yang bukan milik
+  klaimnya.
+
+  Ini **edit tes kedua** pada file ini untuk task ini, dan satu-satunya.
+  Sembilan asersi berikutnya dalam tes yang sama membaca bundel, dan kode
+  yang mereka cari (`AX_SUMMARY_TEXT_POVERTY_CHARS`, `Accessibility.enable`,
+  `withDebugger(tabId, context,`, `totalTextChars`, blok catch
+  `AX_SUMMARY_COLLECTION_FAILED`) ikut pindah ke `capture.js` — jadi tetap
+  cocok tanpa diubah. Dua pembaca langsung `background.js` yang lain
+  (`tests/extension-source.test.mjs:12` dan
+  `tests/structure-gates.test.mjs:69`) memang membaca berkasnya sendiri dan
+  tidak terpengaruh.
+
+  **Catatan:** `screenshotCache` di berkas hidup adalah `const`, bukan `let`.
+  Rencana menyebut `let` — itu keliru. `const` berisi `Map` yang hanya
+  dimutasi, tak pernah disetel ulang, jadi dipindahkan apa adanya adalah
+  benar; jangan diubah menjadi `let` demi menyelaraskan dengan teks.
 
 Jangan menghapus impor `./lib/debugger-session.js`: `registerDebuggerSession`
 (`:1612`), `releaseDebuggerSession` (`:1155`, `:1202`, `:2095`) dan
