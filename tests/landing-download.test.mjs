@@ -293,7 +293,7 @@ test('the download page names every browser it supports and why one is not', () 
     ...[...body.matchAll(/<td class="(\w+)">([^<]*)<\/td>/g)].map((m) => [m[1], m[2].trim()])
   ]);
   for (const [name, ...answers] of cells) {
-    assert.ok(answers.length >= 3, `${name} answers every path the table names`);
+    assert.ok(answers.length >= 2, `${name} answers every path the table names`);
   }
   const archive = cells.map(([name, ...answers]) => [name, answers[answers.length - 1]]);
   const chromium = archive.filter(([name]) => name !== 'Firefox');

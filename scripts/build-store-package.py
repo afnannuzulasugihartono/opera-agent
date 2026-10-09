@@ -42,7 +42,7 @@ def store_manifest():
         manifest = json.load(handle)
 
     # WHY a copy and not a mutation: existing policy installs name the id derived
-    # the id derived from `key`, and the CRX served for updates is signed with it.
+    # from `key`, and the CRX served for updates is signed with it.
     # Removing either from the real manifest would break every install that already
     # works, and the store gives the extension a different id anyway.
 
