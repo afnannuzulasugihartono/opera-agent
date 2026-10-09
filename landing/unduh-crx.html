@@ -10,13 +10,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0d10" />
-  <title>CRX bertanda tangan — Opera Agent</title>
-  <meta name="description" content="CRX Opera Agent yang sudah ditandatangani: id stabil dan update sendiri." />
+  <title>CRX untuk enterprise — Opera Agent</title>
+  <meta name="description" content="CRX Opera Agent bertanda tangan untuk instalasi via policy di mesin enterprise-managed." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
-  <meta property="og:title" content="CRX bertanda tangan — Opera Agent" />
-  <meta property="og:description" content="CRX Opera Agent yang sudah ditandatangani: id stabil dan update sendiri." />
+  <meta property="og:title" content="CRX untuk enterprise — Opera Agent" />
+  <meta property="og:description" content="CRX Opera Agent bertanda tangan untuk instalasi via policy di mesin enterprise-managed." />
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh-crx" />
   <meta property="og:locale" content="id_ID" />
   <style>
@@ -207,21 +207,22 @@
   </header>
 
   <main class="wrap">
-    <h1>CRX bertanda tangan</h1>
+    <h1>CRX bertanda tangan, khusus enterprise</h1>
 
-    <p>Untuk browser yang mengizinkan pemasangan berkas <code>.crx</code> langsung.</p>
+    <p>Berkas <code>.crx</code> bertanda tangan untuk instalasi via policy di mesin
+    enterprise-managed. Instalasi manual (drag-and-drop) ditolak browser di komputer
+    biasa — pengguna rumahan pakai <a href="./unduh.html">arsip zip</a>.</p>
 
-    <h2>Pasang dari arsip CRX bertanda tangan</h2>
+    <h2>Pasang via policy di mesin perusahaan</h2>
     <p>Berkas <code>.crx</code> sudah ditandatangani, jadi id extension-nya tetap sama
     di setiap komputer dan pembaruan berikutnya bisa dipasangkan browser sendiri.</p>
     <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download>Unduh berkas .crx terbaru</a></p>
     <p class="hash">Berkas ini ditandatangani, dan namanya membawa versi build yang kamu
       terima — jadi dua unduhan berbeda tidak terlihat sama.</p>
-    <p class="meta">Cara ini hanya untuk browser yang mengizinkan pemasangan berkas
-    <code>.crx</code>. Chrome, Edge, dan Brave menolaknya di komputer yang tidak
-    terdaftar sebagai komputer perusahaan — pakai arsip di bawah. Memuat berkas
-    <code>.crx</code> langsung ke halaman extension akan ditolak dengan
-    <em>Extension not listed in the Web Store</em>; itu bukan kerusakan berkas.</p>
+    <p class="meta">Di <code>chrome://policy</code>, entri non-toko pada mesin unmanaged
+    berstatus BLOCKED. Memuat berkas <code>.crx</code> langsung ke halaman extension
+    akan ditolak dengan <em>Extension not listed in the Web Store</em>; itu bukan
+    kerusakan berkas.</p>
 
     <p><a href="./unduh.html">&larr; Semua cara mengunduh</a></p>
   </main>
