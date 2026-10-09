@@ -592,6 +592,72 @@ git commit -m "test: read the worker source through one ordered bundle helper"
 
 ---
 
+### Task 5b: Buat tes identitas bundel tahan lama
+
+**Files:**
+- Modify: `tests/extension-source.test.mjs` (satu tes)
+
+**Interfaces:**
+- Consumes: `extensionSource`, `extensionSourceFiles`.
+- Produces: tidak ada.
+
+**Kesalahan fakta yang ditemukan setelah Task 5:** tes pertama
+`tests/extension-source.test.mjs` memakai `assert.equal(bundel, background.js)`
+dengan pesan *"with only one file listed the bundle must be byte-identical"*.
+Ia benar hari ini dan akan **salah pada Task 7** — begitu `extension/lib/log.js`
+ditambahkan ke `FILES`, bundel menjadi `background.js + '\n' + log.js`, dan
+tes itu merah selama dua belas task. Rencana ini tidak memberi tugas apa pun
+kepada Task 7-18 untuk membetulkannya, jadi suite akan merah tanpa ada yang
+tahu itu disengaja — cacat yang sama persis dengan gerbang ukuran Task 6, dan
+sama-sama melanggar Global Constraints.
+
+Nilai tes itu sebenarnya ada dua, dan keduanya bertahan lama bila dirumuskan
+ulang: (a) helper membaca **file yang benar** dengan **encoding yang benar**,
+(b) `background.js` selalu **urutan pertama** di `FILES`. Identitas byte penuh
+hanya menguji keduanya selama array berisi satu entri.
+
+- [ ] **Step 1: Ganti satu tes**
+
+```js
+test('the helper reads background.js itself, and lists it first', async () => {
+  const raw = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  const files = extensionSourceFiles();
+  assert.equal(files[0], 'extension/background.js',
+    'background.js must stay the first entry; every anchor is measured from it');
+  const bundle = await extensionSource();
+  assert.ok(bundle.startsWith(raw),
+    'the bundle must begin with background.js byte-for-byte — a wrong path, a '
+    + 'wrong encoding, or a reordered FILES array all break this');
+});
+```
+
+`startsWith` adalah bentuk dari klaim identitas byte yang tetap benar ketika
+modul ditambahkan: ia gagal kalau helper menunjuk file lain, memakai encoding
+lain, atau `FILES` dibalik — dan ia tidak pernah gagal hanya karena ada modul
+kedua. Hapus tes `the bundle equals background.js exactly while nothing has
+moved` dan baris `@state: ... before any module has moved.` di kepala berkas
+(ubah menjadi keterangan yang sesuai dengan isi berkas sekarang).
+
+- [ ] **Step 2: Jalankan**
+
+```bash
+node --test tests/extension-source.test.mjs
+npm test
+npm run check
+```
+
+Expected: PASS, `# fail 0`, `check ok`. Jumlah tes tidak berubah (satu tes
+diganti satu tes) — 735 saat task ini dijalankan.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add tests/extension-source.test.mjs
+git commit -m "test: keep the bundle check true once a second file is listed"
+```
+
+---
+
 ### Task 6: Gerbang struktural
 
 **Files:**
