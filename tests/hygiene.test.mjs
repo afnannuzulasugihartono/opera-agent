@@ -53,7 +53,10 @@ test('every comment block is spaced from the code it does not document', async (
   // tracked yet, and that is exactly when the rule is easiest to break. CI proved
   // it -- lib/goal-plan.js shipped with two unspaced blocks because the lock never
   // saw an untracked file.
-  const skip = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build']);
+  // WHY tmp rides with the build dirs: it is gitignored agent scratch (debug
+  // screenshots, probe scripts, backup copies), never shipped, so holding it
+  // to source gates turns every stray helper into a red suite. CI never has it.
+  const skip = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp']);
   const walk = async (dir, prefix = '') => {
     const out = [];
     for (const entry of await readdir(dir, { withFileTypes: true })) {
