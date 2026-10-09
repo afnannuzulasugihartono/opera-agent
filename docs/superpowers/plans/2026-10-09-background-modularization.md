@@ -2677,25 +2677,60 @@ berubah perilaku.
 
 **Files:**
 - Create: `extension/worker/execute-pull.js`
-- Modify: `extension/background.js:2269-2647`, `:73`, `:88-89`
+- Modify: `extension/background.js:497-875`, `:113`, `:122-123`, dan satu baris kembar `:124-125`
 - Modify: `tests/helpers/extension-source.mjs`
+- Modify: `tests/helpers/boundary-locks.mjs` (re-pin **nilai saja** — `background.js` pasti berubah)
 - Modify: `tests/structure-gates.test.mjs` (guard `<= 2647` menjadi `< 600`)
 
-**Interfaces:**
-- Consumes: `./utils.js`, `./tab-content.js`, `./private-tabs.js`, `./listen.js`, `./action-focus.js`, `./watch-registry.js`, `./capture.js`, `../lib/serialize.js`, **`../background.js`** (`dispatch`), `../lib/log.js`, `../lib/protocol.js`, `../lib/options-store.js`, `../lib/model-client.js`, `../lib/external-origins.js`, `../lib/deadline-race.js`.
-- Produces: `executeCommand`, `pair`, `unpair`, `completionPayload`, `complete`, `completeWithRetry`, `flushPendingCompletion`, `pullOnce`, `pullLoop`, `ensurePullLoop`, `restartPullLoop`, `heartbeat`, `localSelfTest`, plus `WAKE_ALARM`, `loopPromise`, `loopGeneration`.
+Lima jalur. Jika muncul jalur keenam, hentikan dan laporkan — kecuali
+`hygiene.test.mjs:51` menembak, yang memang akan menuntut satu blank per
+pelanggaran, seperti pada Task 14, 15 dan 17.
 
-**Kenapa langkah ini yang terakhir dan selalu begitu:** ia memuat sembilan listener top-level termasuk `chrome.runtime.onMessage` (baris 2535), `chrome.alarms.create` (2645), dan `ensurePullLoop()` (2646) — tiga pernyataan yang **dievaluasi saat load**. `WAKE_ALARM`, `loopPromise`, `loopGeneration` ikut pindah persis supaya tidak ada yang membaca binding `background.js` saat load. `background.js` mengimpornya **hanya untuk efek samping**, jadi registrasi tetap terjadi di startup.
+**Koordinat terverifikasi di pohon hidup.** `background.js` kini **875** baris.
+Angka lama (`2269-2647`, `:73`, `:88-89`) ialah koordinat baseline yang sudah
+bergeser tiga kali oleh Task 15, 16 dan 17 — jangan dipakai. Cari berdasarkan
+konten:
+
+| penanda | baris | keterangan |
+|---|---|---|
+| `chrome.debugger.onDetach.addListener(...)` | `:111` | **TETAP** |
+| `const WAKE_ALARM = 'opera-agent-wake';` | `:113` | ikut pindah |
+| `const SEMANTIC_RUNTIME_EPOCH` | `:114` | **TETAP** — pemakainya `dispatch` `:369` |
+| `const AX_SUMMARY_TEXT_POVERTY_CHARS` | `:120` | **TETAP** — pemakainya `dispatch` `:400` |
+| `let loopPromise` / `let loopGeneration` | `:122`, `:123` | ikut pindah |
+| dua baris kosong kembar | `:124`–`:125` | **dirapikan jadi satu** |
+| `export async function dispatch(` | `:126`, tutup `:496` | **TETAP** — tak tersentuh |
+| `async function executeCommand(raw)` | `:498` | batas atas region |
+| `ensurePullLoop();` | `:875` | batas bawah, baris terakhir |
+
+**Region pemotongan = `:497`–`:875`, 379 baris** — baris kosong pemisah `:497`
+ikut supaya `background.js` berakhir tepat di `}` penutup `dispatch`, bukan di
+`}\n\n`. Modul baru menerima **`:498`–`:875`** (378 baris): ia sudah punya baris
+kosongnya sendiri setelah blok impor, jadi tak perlu mewarisi `:497`.
+
+Total berpindah: 378 baris region + 3 baris konstanta = **381**.
+
+**Tiga hal yang BUKAN bagian region dan harus tertinggal:**
+
+- `chrome.debugger.onDetach.addListener(handleDebuggerDetach);` (`:111`) — baseline `:69`, jauh sebelum region. Ia tetap di `background.js`, dan karena itu `background.js` menyisakan **tepat satu** pernyataan load-time. Jangan ikut memindahkannya demi "keseragaman": ia tidak pernah masuk daftar langkah mana pun, dan memindahkannya mengubah di mana `handleDebuggerDetach` diimpor tanpa ada yang memintanya.
+- `SEMANTIC_RUNTIME_EPOCH` (`:114`) dan `AX_SUMMARY_TEXT_POVERTY_CHARS` (`:120`) — keduanya murni milik `dispatch`, yang tidak ikut berpindah. Ini penyebab terselubung kegagalan sapuan: sebuah konstanta kelihatan "tak terpakai" padahal pemakainya ada di fungsi yang tetap tinggal.
+
+**Interfaces:**
+- Consumes: `./utils.js`, `./tab-content.js`, `./private-tabs.js`, `./listen.js`, `./action-focus.js`, `./watch-registry.js`, **`./loop-engine.js`**, `./capture.js`, `../lib/serialize.js`, **`../background.js`** (`dispatch`), `../lib/log.js`, `../lib/protocol.js`, `../lib/options-store.js`, `../lib/model-client.js`, `../lib/external-origins.js`, `../lib/deadline-race.js`.
+  **`./loop-engine.js` hilang dari daftar lama** — region memanggil `handleStateEvent`, yang hanya diimpor `background.js` dari berkas itu. Tanpanya daftar `Consumes` menjanjikan 15 modul padahal kenyataannya 16.
+- Produces: **tidak ada satu pun.** Modul ini mengekspor **nol** simbol. Langkah 2 menjelaskan kenapa angka itu bukan kelalaian.
+
+**Kenapa langkah ini yang terakhir dan selalu begitu:** region memuat **sepuluh** pernyataan load-time — delapan listener (`chrome.runtime.onMessageExternal` `:745`, `chrome.runtime.onMessage` `:764`, `onInstalled` `:824`, `onStartup` `:833`, `onAlarm` `:839`, `onChanged` `:844`, `tabs.onUpdated` `:851`, `tabs.onRemoved` `:861`) plus `chrome.alarms.create` (`:874`) dan `ensurePullLoop()` (`:875`). Rencana lama menulis "sembilan"; dihitung ulang terhadap pohon hidup hasilnya sepuluh. `WAKE_ALARM`, `loopPromise`, `loopGeneration` ikut pindah persis supaya tidak ada yang membaca binding `background.js` saat load. `background.js` mengimpornya **hanya untuk efek samping**, jadi registrasi tetap terjadi di startup — itulah satu-satunya alasan modul ini boleh diekspor nol kali.
 
 - [ ] **Step 1: Buat modulnya**
 
-Pindahkan **utuh** baris 2269-2647 plus baris 73 (`WAKE_ALARM`), 88 (`loopPromise`), 89 (`loopGeneration`).
+Pindahkan **utuh** baris `:498`–`:875` plus baris `:113` (`WAKE_ALARM`), `:122` (`loopPromise`), `:123` (`loopGeneration`).
 
 ```js
 // @last-edited: 2026-10-09 UTC+7.
 // @title: execute-pull — command execution, pairing and the device pull loop.
 // @state: owns WAKE_ALARM, loopPromise and loopGeneration; every statement here that runs at load time is listed in tests/background-load.test.mjs.
-// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race.
+// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, loop-engine, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race.
 
 import { log } from '../lib/log.js';
 import {
@@ -2714,20 +2749,71 @@ import { fetchJson, publicTab, requireTabId, contentCall, HTTP_URL_RE } from './
 import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './private-tabs.js';
 import { readListenSession, listenStop, postListenChunk } from './listen.js';
 import { notReadyError } from './action-focus.js';
-import { loadWatchers, armWatchersForTab, handleWatchFacts } from './watch-registry.js';
+import { handleStateEvent } from './loop-engine.js';
+import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
 import { screenshotCache } from './capture.js';
 import { clearSerializedResult, boundedResult } from '../lib/serialize.js';
 import { dispatch } from '../background.js';
 ```
 
-- [ ] **Step 2: Ekspor**
+**Blok di atas = 43 nama dan terverifikasi lengkap terhadap pemanggil di
+`:498`–`:875`. Jangan dikurangi.** Dua di antaranya hilang dari rencana lama:
 
-`export` pada ketiga belas fungsi plus `WAKE_ALARM`, `loopPromise`, `loopGeneration`.
+| nama | dipakai di | dari modul |
+|---|---|---|
+| `commandTimeoutError` | `:511`, `:532` | `./watch-registry.js` |
+| `handleStateEvent` | `:776` | `./loop-engine.js` |
+
+Keduanya adalah cacat `X is not defined` kelas yang sama — ke-**dua belas** dan
+**ketiga belas** kalinya — dan keduanya akan terdeteksi oleh tes
+`every cross-module name is imported where it is used` di Task 19, jadi tidak
+ada gunanya menghemat satu baris di sini.
+
+- [ ] **Step 2: Ekspor nol simbol — ini perubahan dari rencana lama**
+
+Rencana lama menyuruh `export` pada "ketiga belas fungsi plus `WAKE_ALARM`,
+`loopPromise`, `loopGeneration`". **Jangan lakukan itu.** Enam belas `export`
+itu tidak punya pemanggil, dan delapan di antaranya akan **merah** di
+`tests/hygiene.test.mjs:367` pada baris `assert.deepEqual(noCaller, [], ...)`.
+
+Perhitungan gerbang itu presisi (`:485-:493`): sebuah simbol "reached" kalau
+muncul di file lain mana pun; untuk `extension/` syaratnya **tanpa syarat** —
+`if (!usedElsewhere && runtimeModules.includes(p)) noCaller.push(where)`
+tidak memandang berapa kali dipakai di file sendiri. Hasil pengukuran terhadap
+161 berkas konsumen dengan terjemahan persis pola `\\bnama\\b`:
+
+| 8 **reached** (boleh diekspor, tapi tidak perlu) | 8 **DEAD** (akan merah) |
+|---|---|
+| `executeCommand`, `pair`, `unpair`, `complete`, `completeWithRetry`, `flushPendingCompletion`, `pullOnce`, `heartbeat` | `completionPayload`, `pullLoop`, `ensurePullLoop`, `restartPullLoop`, `localSelfTest`, `WAKE_ALARM`, `loopPromise`, `loopGeneration` |
+
+**Kenapa nol, bukan delapan:** tidak ada satu pun file yang mengimpor dari
+modul ini. `grep "from './worker/"` terhadap seluruh `extension/` menghasilkan
+nol berkas di luar `background.js`, dan `background.js` sendiri memang tidak
+membutuhkan satu pun nama — audit pemanggil membuktikan ketiga belas fungsi
+punya **nol** pemanggil di luar region. Delapan yang "reached" pun dicapai
+karena kebetulan bunyi kata (`popup.js` punya action berbunyi `pair`,
+`content.js` punya fungsi `complete` miliknya sendiri), bukan karena ada
+pengimpor — gerbang tidak bisa membedakan, tapi keputusan kita bisa.
+
+`hygiene.test.mjs:396-403` menegaskan arahnya sendiri: *"the keyword promised a
+reusable API no file used. The repair is to drop the keyword, not to invent a
+consumer."* Ada preseden di pohon yang sama — `extension/lib/agent-log.js`
+mengekspor nol simbol. Dan sebelum pemisahan, `background.js` mengekspor tepat
+satu simbol: `dispatch`. Memindahkan berkas tidak boleh menciptakan API yang
+tak pernah ada.
+
+Satu-satunya hal yang **boleh** diekspor dari modul ini ialah `dispatch`, dan
+itu pun bukan miliknya — ia diimpor dari `../background.js`.
 
 - [ ] **Step 3: Potong dari `background.js` dan ganti menjadi impor efek samping**
 
-- Hapus baris 2269-2647, 73, 88, 89.
-- Tambahkan **tepat satu baris**:
+- Hapus baris `:497`–`:875`, `:113`, `:122`, `:123`.
+- Rapikan `:124`–`:125` (dua baris kosong kembar, sudah ada sebelum task ini)
+  menjadi **tepat satu** baris kosong sebelum `export async function dispatch(`.
+  Setelah tiga baris konstanta terhapus, ketiganya akan berdempetan jadi tiga
+  baris kosong — rapikan, jangan dibiarkan.
+- Tambahkan **tepat satu baris**, diletakkan sebagai **impor terakhir** (setelah
+  `dispatch`), supaya seluruh modul lain selesai dievaluasi sebelumnya:
 
 ```js
 import './worker/execute-pull.js';
@@ -2742,19 +2828,39 @@ const FILES = [
   'extension/background.js',
   'extension/lib/log.js',
   'extension/lib/serialize.js',
+  'extension/worker/watch-registry.js',
   'extension/worker/utils.js',
-  'extension/worker/tab-content.js',
-  'extension/worker/private-tabs.js',
   'extension/worker/capture.js',
+  'extension/worker/private-tabs.js',
+  'extension/worker/tab-content.js',
   'extension/worker/listen.js',
   'extension/worker/capture-page.js',
   'extension/worker/action-focus.js',
   'extension/worker/burst.js',
   'extension/worker/loop-engine.js',
-  'extension/worker/watch-registry.js',
   'extension/worker/execute-pull.js',
 ];
 ```
+
+**Daftar di atas adalah keadaan pohon hidup, bukan tebakan.** Daftar versi
+lama menyusun `utils → tab-content → private-tabs → capture` (urutan asli
+sudah `utils → capture → private-tabs → tab-content`) dan menaruh
+`watch-registry` setelah `loop-engine`. Menyalinnya berarti **mengurutkan ulang**
+yang sudah ada — dan `watch-registry` di belakang `loop-engine` membuat dua
+asersi merah sekaligus:
+
+```js
+// tests/extension-source.test.mjs:29
+assert.ok(idx('extension/lib/serialize.js') < idx('extension/worker/watch-registry.js'));
+// :32 — jangkarnya 'function boundedResult' di serialize.js:8
+assert.ok(src.indexOf('// ---- Event-Triggered Workflows') > src.indexOf('function boundedResult'));
+```
+
+**`private-tabs.js` tetap di daftar** walaupun `background.js` berhenti
+mengimpornya pada langkah berikut — empat konsumennya ikut pindah ke
+`execute-pull.js`, dan modul lain di `worker/` masih memakainya. Ini bukan
+satu-satunya hal yang tampak "mati" padahal tidak; baca Step 4b sebelum
+menghapus apa pun.
 
 - [ ] **Step 4b: Sapuan impor mati `background.js`**
 
@@ -2811,10 +2917,58 @@ Task 17, `background.js` sudah membawa **20** nama impor tanpa pemanggil —
 `executeInTab`, `releaseDebuggerSession`, `withDebugger`,
 `withForegroundFocusGate`, `withInputFocusEmulation`).
 
-Angka itu akan **naik** setelah potongan task ini. Ia bukan target untuk
-dipenuhi — ia alat untuk mendeteksi kalau sapuanmu berhenti terlalu cepat.
-Berhentilah ketika `git grep` tidak menemukan satu pun, bukan ketika cocok
-dengan dua puluh.
+**Angka akhir setelah potongan task ini: 59 nama tersisa dari 109, 50
+dibuang.** Itu dihitung langsung terhadap pohon hidup, bukan diturunkan dari
+rencana. Empat puluh sembilan penuh berarti sapuanmu berhenti sekitar satu
+nama sebelum selesai; 59 berarti berhenti lebih awal — keduanya perlu
+diulang, bukan dikompromikan.
+
+Enam blok impor **hilang seluruhnya**, bukan sekadar mengecil. Ini bagian yang
+paling mudah salah: sisa nama tinggal satu dua, mudah ditinggalkan dengan
+`import { } from '...'` yang sintaksis sah tapi sampah.
+
+```
+HAPUS SELURUH: './lib/keyboard.js'           (resolveKeyInput)
+HAPUS SELURUH: './lib/options-store.js'      (readModelConfig, saveModelEndpoint, saveModelKey, saveModelName)
+HAPUS SELURUH: './lib/model-client.js'       (buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS)
+HAPUS SELURUH: './lib/external-origins.js'   (originAllowed)
+HAPUS SELURUH: './lib/deadline-race.js'      (raceWithTimeout)
+HAPUS SELURUH: './worker/private-tabs.js'    (privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY)
+```
+
+Yang **kembali penuh**, jangan disentuh:
+
+```
+'./lib/protocol.js'      sisanya (5): PRODUCT_VERSION, PROTOCOL_VERSION, METHOD_SPECS, safeUrl, clamp
+'./lib/watch.js'         sisanya (1): validateRule
+'./lib/loop.js'          sisanya (2): startLoopState, validateLoopProgram
+'./lib/debugger-session' sisanya (2): registerDebuggerSession, handleDebuggerDetach
+'./worker/utils.js'      sisanya (4): mutateTabs, nowIso, randomToken, getConfig
+'./worker/tab-content'   sisanya (5): publicTab, requireTabId, resolveTabId, waitTabReady, contentCall
+'./worker/listen.js'     sisanya (2): listenStart, listenStop
+'./worker/action-focus'  sisanya (9): executionMode, sampleTabFocus, withActionPopupTracking, runActionPipeline, trustedClick, trustedFill, trustedPointer, trustedKey, popupLog
+'./worker/loop-engine'   sisanya (13): loopSummary, finishLoop, loopSessionOnTab, stateSummary, finishStateLoop, loopDecodeTemplate, loopTickLater, LOOP_MAX_ACTIVE, loopSessions, loopResults, STATE_READERS, stateSessions, stateResults
+'./worker/watch-registry' sisanya (8): watchRuleId, saveWatchers, watcherIdsForTab, pruneWatchers, armWatchersForTab, trustedHover, MAX_WATCHERS_PER_TAB, MAX_WATCHERS_GLOBAL
+'./lib/serialize.js'     sisanya (2): oversized, MAX_RESULT_BYTES
+'./worker/capture.js'    sisanya (2): codedError, collectAxSummary
+```
+
+Dua jebakan terselubung di daftar atas, keduanya sudah diketahui tapi tetap
+layak ditulis ulang karena keduanya menyerupai kegagalan:
+
+- `private-tabs.js` dihapus **seluruhnya** dari `background.js`, padahal
+  berkasnya tetap ada dan tetap di `FILES`. "Dipakai" dan "dipakai modul ini"
+  ialah dua pertanyaan berbeda; hanya yang kedua yang boleh memutuskan.
+- `handleStateEvent` ikut terbuang dari `background.js` **karena pemakainya
+  hanya ada di region** — padahal berkas yang mengimpornya (`loop-engine.js`)
+  tetap menjadi konsumen `execute-pull.js`. Jangan sampai kehilangan itu dua
+  kali: sekali sebagai impor yang terbuang di sini, sekali lagi sebagai impor
+  yang tak pernah ditambahkan di Step 1.
+
+Setelah sapuan, `background.js` berada di sekitar **463 baris** (492 sebelum
+sapuan, dikurangi 29 baris blok yang mengecil atau hilang) — masih jauh di
+bawah 600, jadi jangan biarkan angka itu menjadi alasan untuk menyisakan
+satu nama mati pun.
 
 - [ ] **Step 5: Ganti guard `background.js` dengan ambang akhir, lalu jalankan suite**
 
@@ -2841,16 +2995,57 @@ npm run check
 
 Expected: `# fail 0`, `check ok`. Ketiga tes `structure-gates` kini lulus, termasuk ambang `< 600` yang baru bisa ditegakkan setelah dua belas ekstraksi selesai.
 
-Kalau ambang itu gagal, `background.js` belum cukup kecil — periksa apakah ada baris yang seharusnya ikut berpindah tetapi tertinggal, **bukan** menaikkan ambang.
+**Ukuran yang diharapkan** — semua sudah dihitung terhadap pohon hidup, bukan
+ditebak, jadi selisih berarti memotong sesuatu yang salah:
+
+| berkas | sebelum | sesudah |
+|---|---|---|
+| `extension/background.js` | 875 | **~463** (492 sebelum sapuan impor, −29 baris blok yang mengecil/hilang) |
+| `extension/worker/execute-pull.js` | — | **~408** (378 region + blok impor + header) |
+
+Keduanya jauh di bawah ambangnya (`< 600` dan `< 550`).
+
+**Re-pin `tests/helpers/boundary-locks.mjs`** untuk berkas `background.js`
+baru, nilai saja tanpa komentar bertanggal, pakai `sha1Blob` di
+`tests/boundary-locks.test.mjs:16-21`. Lock ini akan merah pada langkah mana
+pun setelah potongan pertama — itu memang terjadi, bukan tanda ada yang
+bermasalah.
+
+Kalau ambang `< 600` itu gagal, `background.js` belum cukup kecil — periksa apakah ada baris yang seharusnya ikut berpindah tetapi tertinggal, **bukan** menaikkan ambang.
+
+**Empat kegagalan yang mungkin terjadi di sini, dan artinya:**
+
+- `Missing export in ...` atau `does not provide an export named 'dispatch'` —
+  kata kunci `export` pada `export async function dispatch(` ikut terhapus
+  oleh sapuan. Ia satu-satunya simbol yang masih diekspor `background.js`,
+  dan `execute-pull.js` mengimpornya. Gerbang `background-load.test.mjs`
+  menangkapnya sekaligus sebagai SyntaxError saat load.
+- `these extension/ and lib/ exports have no caller in another file` —
+  sebuah `export` tersangkut pada nama yang pindah ke modul ini. Ralatnya
+  sama persis dengan yang tertulis di Step 2: **buang kata kuncinya**, jangan
+  cari pemanggil.
+- `background.js must end up below 600 lines` — sapuan Step 4b berhenti
+  sebelum `git grep` benar-benar kosong, atau ada pernyataan yang seharusnya
+  ikut pindah tertinggal. Ukur dulu, lalu perbaiki pemotongannya.
+- `the runtime injection list must stay byte-identical to
+  manifest.content_scripts[0].js` — `ensureContent` ada di dua tempat dan
+  daftarnya tidak lagi identik; ini di luar scope task ini, jadi laporkan
+  sebagai temuan, jangan samakan dengan menulis ulang salah satunya.
 
 Kalau `background-load.test.mjs` gagal dengan `ReferenceError: WAKE_ALARM is not defined`, konstanta tidak ikut pindah. Kalau `loopPromise is not defined`, hal yang sama. Keduanya adalah penyebab tunggal yang dipastikan Task 18 tangani.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add extension/worker extension/background.js tests/helpers/extension-source.mjs
+git status --porcelain   # harus tepat 5 jalur, tanpa kejutan
+git add extension/worker extension/background.js tests/helpers/extension-source.mjs tests/helpers/boundary-locks.mjs tests/structure-gates.test.mjs
 git commit -m "refactor: move command execution and the pull loop into worker/execute-pull.js"
 ```
+
+`tests/structure-gates.test.mjs` masuk di sini — satu-satunya edit di berkas
+itu ialah ganti guard `<= 2647` menjadi `< 600`. `tests/helpers/boundary-locks.mjs`
+ikut karena `background.js` berubah bentuk. Bila muncul jalur keenam,
+laporkan, jangan ikut di-commit.
 
 ---
 
@@ -2970,6 +3165,51 @@ test('capture never imports private-tabs, so the split cannot close a fifth cycl
   assert.ok(!/from\s+'\.\/private-tabs\.js'/.test(text),
     'capture -> private-tabs would form capture -> private-tabs -> capture');
 });
+
+test('no import brings in a name its own file never uses', async () => {
+  const files = extensionSourceFiles();
+  if (files.length === 1) return;          // belum ada modul yang dipindah
+  const dead = [];
+  for (const rel of files) {
+    const text = await readFile(new URL(`../../${rel}`, import.meta.url), 'utf8');
+    const lines = text.split('\n');
+
+    // Sebuah pernyataan impor bisa membentang banyak baris. Tanpa penanda ini,
+    // sebuah pernyataan { a, b, c } di banyak baris membaca baris kelanjutannya
+    // sendiri sebagai pemakaian dan tidak pernah bisa merah — cacat yang sama
+    // persis yang menyembunyikan 50 nama mati selama 18 task.
+    const insideImport = [];
+    let open = false;
+    for (const line of lines) {
+      const head = line.trimStart();
+      if (open) {
+        insideImport.push(true);
+        if (head.includes('}')) open = false;
+        continue;
+      }
+      const isImport = head.startsWith('import');
+      insideImport.push(isImport);
+      if (isImport && !head.includes('}')) open = true;
+    }
+
+    for (const m of text.matchAll(/import\s*{([^}]*)}\s*from/gs)) {
+      for (const raw of m[1].split(',')) {
+        const token = raw.trim().split(/\s+as\s+/).pop().trim();
+        if (!token) continue;
+        let uses = 0;
+        for (let i = 0; i < lines.length; i++) {
+          if (insideImport[i]) continue;
+          // Pemakaian di komentar tetap dihitung: lebih baik tidak menyalahkan
+          // daripada menyalahkan keliru. Yang dilarang di sini ialah nol.
+          if (lines[i].split(/[^A-Za-z0-9_$]+/).includes(token)) uses++;
+        }
+        if (uses === 0) dead.push(`${rel}: ${token}`);
+      }
+    }
+  }
+  assert.deepEqual(dead, [],
+    'an imported name with no call site is weight that hides the next real import');
+});
 ```
 
 **Tentang tes `every cross-module name is imported where it is used`.** Heuristiknya sudah divalidasi sebelum ditulis ke dalam rencana, karena tes yang berisiko salah tembak lebih berbahaya daripada tidak ada tes sama sekali:
@@ -2979,6 +3219,25 @@ test('capture never imports private-tabs, so the split cannot close a fifth cycl
 
 Kuncinya ada pada penyaringan deklarasi lokal: sebuah nama hanya dituduh kalau file itu tidak mengekspornya sendiri, tidak mengimpornya, dan tidak mendeklarasikannya dalam bentuk apa pun. Tanpa penyaringan itu, `dispatch` — nama yang juga lazim sebagai parameter — akan memunculkan dugaan palsu di mana-mana.
 
+**Tentang tes kelima, `no import brings in a name its own file never uses`.**
+Ia adalah cermin dari tes kedua dan mengisi satu-satunya celah yang tersisa di
+harness: `hygiene.test.mjs:367` mengawasi ekspor mati, tapi tidak ada satu pun
+gerbang yang mengawasi **impor** mati. Akibatnya terukur — 20 nama terakumulasi
+lewat Task 16, lalu 50 lagi lewat Task 18, tanpa satu pun peringatan. Tanpa
+tes ini, sapuan Task 18 tidak meninggalkan bukti apa pun bahwa 50 nama itu
+tidak kembali pada task berikutnya.
+
+Status validasi, dijalankan terhadap pohon hidup sebelum tes ini ditulis:
+**nol impor mati** di seluruh `extension/` kecuali `background.js` yang memang
+belum disapu. Karena itu tes ini hijau tepat setelah Task 18 selesai — dan
+merah lagi begitu seseorang menambahkan satu nama impor yang dipakai nol kali.
+
+Satu keputusan sadar di dalamnya: pemakaian **di dalam komentar tetap
+dihitung**. Heuristik ini sengaja dibuat timpang ke arah diam — tugasnya hanya
+menangkap nol, bukan menduga. Sebuah tes yang menyalahkan keliru akan dilemahkan
+orang pada kesempatan pertama; tes yang hanya menangkap keadaan mustahil
+(0 pemakaian) tetap dipertahankan.
+
 - [ ] **Step 2: Jalankan suite penuh**
 
 ```bash
@@ -2986,7 +3245,10 @@ npm test
 npm run check
 ```
 
-Expected: `# fail 0`, `check ok`.
+Expected: `# fail 0`, `check ok`. `npm test` kini berjumlah **lebih dari 738**
+karena langkah ini menambah lima tes; laporkan angka sebenarnya, jangan
+mengklaim 738 lagi. Angka 738 ialah baseline ekstraksi, dan ekstraksinya sudah
+selesai.
 
 - [ ] **Step 3: Baca ulang seluruh tabel angka di spec**
 
