@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-04 18:25 UTC+7.
+# @last-edited: 2026-10-09 UTC+7.
 # @title: release — Repository file.
 # @state: verify current signed release identity (#14).
 # @dependencies: none stated.
@@ -94,7 +94,7 @@ jobs:
         shell: bash
         run: |
           NOTES="docs/releases/${VERSION}.md"
-          if [ ! -f "$NOTES" ]; then NOTES="CHANGELOG.md"; fi
+          if [ -f "$NOTES" ]; then NOTES_ARGS=(--notes-file "$NOTES"); else NOTES_ARGS=(--generate-notes); fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" \
               "Opera-Agent-${VERSION}-extension.zip" \
@@ -109,5 +109,5 @@ jobs:
               SHA256SUMS \
               --target "$GITHUB_SHA" \
               --title "Opera Agent ${VERSION}" \
-              --notes-file "$NOTES"
+              "${NOTES_ARGS[@]}"
           fi
