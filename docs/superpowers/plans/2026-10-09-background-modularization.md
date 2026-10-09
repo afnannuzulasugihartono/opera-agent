@@ -1138,7 +1138,7 @@ const FILES = [
 npm test
 npm run check
 git add extension/lib/serialize.js extension/background.js tests/hygiene.test.mjs tests/helpers/extension-source.mjs
-git commit -m "refactor: make the result memo module-private behind a reset function"
+git commit -m "refactor: bound and memoize command results in a lib module"
 ```
 
 Expected: `# fail 0`. Kalau asersi `serializedResult = \{ ... \}` yang lama masih ada dan masih lulus, itu berarti potongannya salah — periksa ulang baris 2272.
