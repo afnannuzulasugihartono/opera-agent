@@ -12,7 +12,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.21` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 142 runtime safety files, 697 unit tests, green.
+- Gates: `npm test`, `npm run check` — 28 primitives, 142 runtime safety files, 726 unit tests, green.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.20` to extension id
@@ -108,8 +108,10 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    provider per row. Verified live with stamped `browser.ping` calls. The gateway accepts
    a user JWT too (ChatGPT plugin bundle in `landing/chatgpt-plugin/`) and resolves the
    same way. A real second account still wants its own test before opening access.
-4. **The policy installer is deleted.** Chrome rejects off-store policy installs on unmanaged machines
-   (proven `[BLOCKED]` in `chrome://policy`); Opera CRX drag-and-drop plus the Web Store are the paths.
+4. **English toggle + login gate shipped.** Shared `landing/i18n.js` drives the EN/ID toggle on all
+   pages except legal bodies; Facebook-split login/register gate is live with magic-link-only
+   auth (no passwords), sessions held via refresh-token renewal. Live via `deploy-site`
+   dispatch.
 5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands is the
    device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms); conservative ladder in place
    (migration `20261007000000_opera_agent_claim_wait_fast_tail`). Lower only after fleet impact.
