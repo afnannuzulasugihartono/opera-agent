@@ -67,8 +67,8 @@ test('worker modules stay under their ceiling, and background.js does not grow',
   // sini akan membuat suite merah selama dua belas task berturut-turut dan setiap
   // implementer tidak akan bisa membedakan kegagalan sendiri dari kegagalan ini.
   const bg = await readFile(new URL('extension/background.js', root), 'utf8');
-  assert.ok(bg.split('\n').length <= 2647,
-    `background.js grew to ${bg.split('\n').length} lines; the split must only remove code`);
+  assert.ok(bg.split('\n').length < 600,
+    `background.js must end up below 600 lines, got ${bg.split('\n').length}`);
 
   const worker = new URL('extension/worker/', root);
   let names = [];
