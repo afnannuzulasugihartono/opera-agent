@@ -17,6 +17,8 @@
 - **Tiap task yang mengubah `extension/background.js` wajib menempel ulang hashnya di `tests/helpers/boundary-locks.mjs`, pada commit yang sama.** Kunci itu dicek dua berkas (`tests/boundary-locks.test.mjs` dan `tests/delta-first-observation.test.mjs:556`). Blok komentar re-pin berlaku sekali untuk seluruh pemecahan — cukup ganti nilai hashnya, jangan tambah blok baru. Lihat Task 7b.
 - **`dispatch` tidak disentuh isinya.** Fungsinya dideklarasikan di `background.js` mulai baris 1647 pada baseline 66b96f0 (kini bergeser karena ekstraksi) dan tetap di `background.js` sampai selesai.
 - **Nomor baris di rencana adalah koordinat baseline.** Setiap task memotong `background.js` dan menggeser semua angka setelahnya — Task 7 sudah menggesernya 6 baris. **Baca selalu ulang dari berkas terkini, dan verifikasi rentang potong lewat isinya, bukan lewat angkanya.**
+- **Satu simbol diekspor hanya kalau punya pemanggil di file lain.** `tests/hygiene.test.mjs:367` memegang ini untuk `extension/` dan `lib/`: pemakaian di dalam file pengeskpor sendiri tidak cukup, dan test/script pun dihitung sebagai pemanggil. Sebelum menambah `export`, `grep` namanya ke seluruh pohon di luar modul itu — yang nol hasil, jangan diekspor. Ini berlaku untuk dua belas modul yang akan dibuat.
+- **Setiap nama yang diimpor harus benar-benar dipakai di berkas itu, sekarang.** Jangan memangkas daftar impor karena pemakainya "nanti pindah ke modul lain" — sampai modul itu pindah, pemanggilnya masih di `background.js`. Tiga kali temuan ini sudah terbukti (Task 8 `boundedResult`, Task 9 `setState` dan `sleep`), dan tak satu pun ditangkap tes mana pun pada awalnya.
 - **File tidak di-rename.** `background.js` disebut 23 file, `content.js` 21, keduanya dikunci manifest.
 - **Fungsi tidak di-rename.** 24 dari 100 fungsi dirujuk sebagai deklarasi di dalam string/regex di tests+scripts.
 - **`content.js` tidak disentuh.** Ia tetap IIFE klasik satu file.
@@ -1154,7 +1156,7 @@ Expected: `# fail 0`. Kalau asersi `serializedResult = \{ ... \}` yang lama masi
 
 **Interfaces:**
 - Consumes: `../lib/log.js`, `../lib/endpoints.js`.
-- Produces: `sleep`, `isTabDragRefusal`, `mutateTabs`, `nowIso`, `randomToken`, `getConfig`, `setState`, `STORAGE_KEYS`, `connectionState`.
+- Produces: `sleep`, `mutateTabs`, `nowIso`, `randomToken`, `getConfig`, `setState`, `connectionState` (diekspor); `isTabDragRefusal`, `STORAGE_KEYS`, `TAB_DRAG_ATTEMPTS`, `TAB_DRAG_BACKOFF_MS` (milik modul, dipakai di dalamnya).
 
 - [ ] **Step 1: Buat direktori dan modulnya**
 
@@ -1174,9 +1176,24 @@ import { DEFAULT_BRIDGE_URL } from '../lib/endpoints.js';
 
 - [ ] **Step 2: Ekspor**
 
-Tambahkan `export` pada **kesembilan** nama: `sleep`, `isTabDragRefusal`, `mutateTabs`, `nowIso`, `randomToken`, `getConfig`, `setState`, `STORAGE_KEYS`, `connectionState`.
+Tambahkan `export` pada **tujuh** nama: `sleep`, `mutateTabs`, `nowIso`, `randomToken`, `getConfig`, `setState`, `connectionState`.
 
-Sembilan, bukan delapan — bloknya menyebut sembilan nama, jadi angka kata itu yang salah. `isTabDragRefusal` diekspor untuk `mutateTabs` sendiri yang memakainya di dalam modul yang sama, dan `STORAGE_KEYS` dipakai `getConfig`; keduanya tetap diekspor karena langit-langit modul menuntut kelengkapan, meski tidak diimpor balik oleh `background.js`.
+**Tujuh, bukan sembilan.** Blok asli menyebut sembilan, tapi dua di antaranya mustahil diekspor:
+
+- `STORAGE_KEYS` — setelah region ini pindah, satu-satunya pemakai `background.js`
+  adalah `getConfig`, yang ikut pindah. Namanya tidak muncul di file mana pun
+  lain — bukan di test, bukan di script.
+- `isTabDragRefusal` — hanya dipanggil `mutateTabs`, yang ikut pindah dan berada
+  di modul yang sama. Nama ini juga tak disebut di file mana pun lain.
+
+`tests/hygiene.test.mjs:367` menegakkan itu: *"no module under extension/, lib/,
+scripts/ or supabase/functions/ exports a symbol nothing reaches"*, dan
+komentarnya menyatakan khusus bahwa **di `extension/` dan `lib/`, sebuah simbol
+tetap butuh pemanggil di file lain** — pemakaian di dalam file pengeskpor sendiri
+tidak cukup. Jadi dua nama itu diekspor, dan suite langsung merah.
+
+Keduanya tetap hidup dan privat: `STORAGE_KEYS` dipakai `getConfig`, dan
+`isTabDragRefusal` dipakai `mutateTabs`, keduanya di dalam `utils.js`.
 
 - [ ] **Step 3: Potong dari `background.js` dan impor**
 
@@ -1184,19 +1201,41 @@ Sembilan, bukan delapan — bloknya menyebut sembilan nama, jadi angka kata itu 
 - Tambahkan:
 
 ```js
-import { sleep, mutateTabs, nowIso, randomToken, getConfig, connectionState } from './worker/utils.js';
+import { sleep, mutateTabs, nowIso, randomToken, getConfig, setState, connectionState } from './worker/utils.js';
 ```
 
-**Enam nama, bukan empat.** Empat — `mutateTabs`, `nowIso`, `randomToken`, `getConfig` — adalah yang dipakai `dispatch` (1837/1846/1860/1872, 1653, 1684/1746, dan sepanjang 1644-2544), dan mereka permanen. Dua lagi tetap dipakai `background.js` **sekarang**, karena pemakainya belum ikut pindah:
+**Tujuh nama, bukan empat.** Semuanya dipakai `background.js` **sekarang**, bukan
+hanya oleh `dispatch`; yang belum ikut pindah justru bagian terbesarnya:
 
-- `sleep` — dipanggil `waitTabReady` (`background.js:212`, region tab-content, Task 12) dan `withForegroundFocusGate` (`:739`, region action-focus, Task 15). Baris 2362/2419 di `completeWithRetry`/`pullLoop` ikut Task 18.
-- `connectionState` — dibaca `localSelfTest` (`background.js:2547`, region execute-pull, Task 18).
+- `mutateTabs` (1837/1846/1860/1872), `nowIso` (1653), `randomToken`
+  (1684/1746), `getConfig` (1644-2544) — dipakai `dispatch`, dan permanen.
+- `sleep` — dipanggil `waitTabReady` (`background.js:212`, region tab-content,
+  Task 12) dan `withForegroundFocusGate` (`:739`, region action-focus, Task 15),
+  lalu `completeWithRetry`/`pullLoop` (2362/2419, Task 18).
+- `connectionState` — dibaca `localSelfTest` (`background.js:2547`, Task 18).
+- `setState` — **sembilan panggilan**, di `emitWatchEvent` (`:2069`, Task 17) dan
+  sepanjang blok execute-pull (`:2236`-`:2384`, Task 18). Region-region itu masih
+  ada di `background.js`; mereka baru berpindah nanti.
 
-Tidak ada yang memakai `setState`, `STORAGE_KEYS`, maupun `isTabDragRefusal` di luar region yang dipotong — `setState` hanya dipanggil `emitWatchEvent` (Task 17) dan blok execute-pull (Task 18), keduanya mengimpor `utils.js` sendiri.
+Empat nama saja akan menghasilkan `ReferenceError: setState is not defined`
+lewat `ensurePullLoop()` → `pullLoop` → `setState` — persis cacat yang Task 8
+tangkap di impornya sendiri, dan tak satu pun tes mengamatinya pada awalnya.
 
-`connectionState` adalah `let` yang berpindah utuh ke `utils.js`, dan `setState` — yang tetap satu modul dengannya — adalah satu-satunya yang menulis ulang; `background.js` hanya membaca, dan binding ESM hidup sehingga nilainya selalu terkini.
+Tidak ada yang memakai `STORAGE_KEYS` maupun `isTabDragRefusal` di luar region
+yang dipotong, sehingga keduanya tidak diimpor dan tidak diekspor (lihat langkah sebelumnya).
 
-**Kewajiban Task 18:** memangkas baris ini menjadi `import { mutateTabs, nowIso, randomToken, getConfig } from './worker/utils.js';` begitu region tab-content, action-focus, dan execute-pull berpindah — tanpa itu `sleep` dan `connectionState` jadi impor mati. Lihat langkah sapuan impor di Task 18.
+`connectionState` adalah `let` yang berpindah utuh ke `utils.js`, dan `setState`
+— yang tetap satu modul dengannya — adalah satu-satunya yang menulis ulang;
+`background.js` hanya membaca, dan binding ESM hidup sehingga nilainya selalu terkini.
+
+- Hapus `DEFAULT_BRIDGE_URL` dari baris impor `background.js:35`, sisakan:
+
+```js
+import { LISTEN_BASE_URL } from './lib/endpoints.js';
+```
+
+`DEFAULT_BRIDGE_URL` hanya dipakai `getConfig` yang sudah pindah. Tanpa ini
+tertinggal satu impor mati yang tidak ditangkap gerbang mana pun.
 
 - [ ] **Step 4: Daftarkan di helper**
 
