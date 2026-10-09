@@ -18,7 +18,8 @@
 - **`dispatch` tidak disentuh isinya.** Fungsinya dideklarasikan di `background.js` mulai baris 1647 pada baseline 66b96f0 (kini bergeser karena ekstraksi) dan tetap di `background.js` sampai selesai.
 - **Nomor baris di rencana adalah koordinat baseline.** Setiap task memotong `background.js` dan menggeser semua angka setelahnya — Task 7 sudah menggesernya 6 baris. **Baca selalu ulang dari berkas terkini, dan verifikasi rentang potong lewat isinya, bukan lewat angkanya.**
 - **Satu simbol diekspor hanya kalau punya pemanggil di file lain.** `tests/hygiene.test.mjs:367` memegang ini untuk `extension/` dan `lib/`: pemakaian di dalam file pengeskpor sendiri tidak cukup, dan test/script pun dihitung sebagai pemanggil. Sebelum menambah `export`, `grep` namanya ke seluruh pohon di luar modul itu — yang nol hasil, jangan diekspor. Ini berlaku untuk dua belas modul yang akan dibuat.
-- **Setiap nama yang diimpor harus benar-benar dipakai di berkas itu, sekarang.** Jangan memangkas daftar impor karena pemakainya "nanti pindah ke modul lain" — sampai modul itu pindah, pemanggilnya masih di `background.js`. Tiga kali temuan ini sudah terbukti (Task 8 `boundedResult`, Task 9 `setState` dan `sleep`), dan tak satu pun ditangkap tes mana pun pada awalnya.
+- **Setiap nama yang diimpor harus benar-benar dipakai di berkas itu, sekarang.** Jangan memangkas daftar impor karena pemakainya "nanti pindah ke modul lain" — sampai modul itu pindah, pemanggilnya masih di `background.js`. Tiga kali temuan ini sudah terbukti (Task 8 `boundedResult`, Task 9 `setState` dan `sleep`), dan tak satu pun ditangkap tes mana pun pada awalnya — semuanya menilai `dispatch`, padahal pemanggilnya ada di region yang belum ikut pindah. Keempat kalinya terjadi di Task 11: brief-nya menyatakan "tidak ada impor baru", padahal empat namanya dipanggil `listenStart`, `capturePage` dan `localSelfTest`.
+- **Sebelum setiap dispatch ekstraksi, kontrol memeriksa dua hal secara mandiri terhadap pohon hidup:** (a) setiap kandidat impor punya panggilan nyata di `background.js` **di luar** region yang dipotong; (b) setiap kandidat ekspor punya pemanggil di file **selain** dirinya sendiri. Keduanya dihitung, bukan dinilai — hasilnya dibawa ke dalam dispatch. Tiga kegagalan berturut-turut (Task 8, 9, 10) menjadikan pemeriksaan ini wajib, bukan opsional.
 - **File tidak di-rename.** `background.js` disebut 23 file, `content.js` 21, keduanya dikunci manifest.
 - **Fungsi tidak di-rename.** 24 dari 100 fungsi dirujuk sebagai deklarasi di dalam string/regex di tests+scripts.
 - **`content.js` tidak disentuh.** Ia tetap IIFE klasik satu file.
@@ -1501,7 +1502,39 @@ import { screenshotCache } from './capture.js';
 - [ ] **Step 3: Potong dari `background.js`**
 
 - Hapus baris 269-287 dan baris 72.
-- **Tidak ada impor baru di `background.js`** — `dispatch` tidak memakai modul ini. Ia dimuat lewat `listen`, `capture-page`, dan `execute-pull` yang mengimpornya sendiri, dan lewat entri helper.
+- Tambahkan **impor empat nama** di `background.js`:
+
+```js
+import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './worker/private-tabs.js';
+```
+
+**Empat nama, bukan nol.** Rencana versi awal menulis *"tidak ada impor baru di
+`background.js` — `dispatch` tidak memakai modul ini"*. Pernyataan itu salah
+dengan cara yang sama seperti cacat Task 8, 9 dan 10: ia menilai `dispatch`,
+padahal yang tinggal di `background.js` bukan cuma `dispatch`. Empat nama itu
+dipanggil dari tiga wilayah yang **belum ikut pindah**:
+
+- `isPrivateTab` — `listenStart` (`:234`, `LISTEN_…`), `capturePage` (`:307`, `CAPTURE_…`)
+- `setPrivateTab` — `localSelfTest` (`:2313`)
+- `privateTabIds` — `localSelfTest` (`:2364`)
+- `PRIVATE_TABS_KEY` — `localSelfTest` (`:2366`)
+
+Empat `ReferenceError` asinkron yang tak diamati tes mana pun, kalau impornya
+dihilangkan.
+
+Klaim yang **benar** dalam kalimat itu: modul ini memang tak diimpor `dispatch`
+secara langsung, dan tetap termuat lewat `background.js` yang mengimpornya di
+atas — bukan lewat entri `FILES`, yang memang hanya untuk berkas uji.
+
+Ekspor keempat nama itu juga jadi sah oleh impor ini: `isPrivateTab`,
+`setPrivateTab`, `PRIVATE_TABS_KEY` tidak disebut di satu pun file lain sampai
+`background.js` menyebutnya, dan `tests/hygiene.test.mjs:367` menuntut pemanggil
+di file berbeda.
+
+- Hapus baris kosong ekor di `extension/worker/capture.js` (langkah pertama
+  task ini, bukan bagian ekstraksinya). Task 10b memotong komentar tujuh baris
+  dan meninggalkan `}\n\n`; `utils.js`, `log.js`, `serialize.js` dan
+  `content.js` semuanya berakhir satu `\n`.
 
 - [ ] **Step 4: Daftarkan di helper dan jalankan**
 
