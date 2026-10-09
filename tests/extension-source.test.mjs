@@ -51,3 +51,161 @@ test('the bundle order keeps every cross-module indexOf anchor valid', async () 
     assert.ok(src.indexOf(anchor) > 0, `anchor must exist in the bundle: ${anchor}`);
   }
 });
+
+test('no state is declared twice across the bundle', async () => {
+  const files = extensionSourceFiles();
+  if (files.length === 1) return;          // belum ada modul yang dipindah
+  const decls = new Map();
+  for (const rel of files) {
+    const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
+    const names = [...text.matchAll(/^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]);
+    for (const name of names) decls.set(name, [...(decls.get(name) || []), rel]);
+  }
+  const duplicated = [...decls].filter(([, where]) => where.length > 1);
+  assert.deepEqual(duplicated, [], 'a state declared in two files will silently diverge');
+});
+
+test('every cross-module name is imported where it is used', async () => {
+  const files = extensionSourceFiles();
+  if (files.length === 1) return;          // belum ada modul yang dipindah
+
+  // Buang komentar dan string agar nama di dalamnya tidak dihitung sebagai pemakaian.
+  const strip = (text) => {
+    let out = '', i = 0;
+    const keep = (s) => (s.match(/\n/g) || ['']).join('');
+    while (i < text.length) {
+      const c = text[i], c2 = text.slice(i, i + 2);
+      if (c2 === '//') { const s = i; while (i < text.length && text[i] !== '\n') i++; out += keep(text.slice(s, i)); continue; }
+      if (c2 === '/*') { const s = i; i += 2; while (i < text.length && text.slice(i, i + 2) !== '*/') i++; i += 2; out += keep(text.slice(s, i)); continue; }
+      if (c === '"' || c === "'" || c === '`') {
+        const q = c, s = i; i++;
+        while (i < text.length && text[i] !== q) { if (text[i] === '\\') i++; i++; }
+        i++; out += '""' + keep(text.slice(s, i)); continue;
+      }
+      out += c; i++;
+    }
+    return out;
+  };
+
+  const clean = new Map(), exported = new Map(), imported = new Map(), declared = new Map();
+  for (const rel of files) {
+    const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
+    const code = strip(text);
+    clean.set(rel, code);
+
+    const exp = new Set();
+    for (const m of text.matchAll(/export\s+(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) exp.add(m[1]);
+    for (const b of text.matchAll(/export\s*\{([^}]*)\}/g)) {
+      for (const n of b[1].split(',')) {
+        const name = n.trim().split(/\s+as\s+/).pop().trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) exp.add(name);
+      }
+    }
+    exported.set(rel, exp);
+
+    const imp = new Set();
+    for (const b of code.matchAll(/import\s*\{([^}]*)\}/g)) {
+      for (const n of b[1].split(',')) {
+        const name = n.trim().split(/\s+as\s+/).pop().trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) imp.add(name);
+      }
+    }
+    imported.set(rel, imp);
+
+    const dec = new Set();
+    for (const m of code.matchAll(/(?:^|[^\w$.])(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g)) dec.add(m[1]);
+    for (const m of code.matchAll(/(?:^|[^\w$.])(?:const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) dec.add(m[1]);
+    for (const m of code.matchAll(/(?:^|[^\w$.])(?:function|const|let|var|class)\s*\(?[^)]*\b([A-Za-z_$][\w$]*)\s*[)=,]/g)) dec.add(m[1]);
+    declared.set(rel, dec);
+  }
+
+  const universe = new Set();
+  for (const s of exported.values()) for (const n of s) universe.add(n);
+
+  const misses = [];
+  for (const rel of files) {
+    const code = clean.get(rel);
+    for (const n of universe) {
+      if (exported.get(rel).has(n)) continue;   // file ini pemiliknya
+      if (imported.get(rel).has(n)) continue;   // sudah diimpor
+      if (declared.get(rel).has(n)) continue;   // ditutupi deklarasi lokal
+      if (!new RegExp(`(?<![.\\w$])${n}\\b`).test(code)) continue;
+      misses.push(`${rel}: ${n}`);
+    }
+  }
+  assert.deepEqual(misses, [],
+    'a name used but not imported does not fail at load — it fails when the user hits the feature');
+});
+
+test('the ensureContent script list still matches the manifest', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
+  const expected = manifest.content_scripts[0].js;
+  const src = await extensionSource();
+  const literal = `files: [${expected.map((f) => `'${f}'`).join(', ')}]`;
+  assert.ok(src.includes(literal),
+    `the runtime injection list must stay byte-identical to manifest.content_scripts[0].js:\n  ${literal}`);
+});
+
+test('capture never imports private-tabs, so the split cannot close a fifth cycle', async () => {
+  const files = extensionSourceFiles();
+  if (!files.includes('extension/worker/capture.js')) return;
+  // Tingkatnya SATU, bukan dua: berkas ini ada di tests/, jadi ../ sudah mencapai
+  // akar repositori. Dua tingkat naik ke D:/GitHub/ dan melempar ENOENT — kesalahan
+  // yang ditemukan dengan menjalankan kelima tes ini ke pohon hidup sebelum brief
+  // dikirim. tests/helpers/extension-source.mjs memang memakai dua tingkat, karena
+  // berkas itu duduk di tests/helpers/.
+  const text = await readFile(new URL('../extension/worker/capture.js', import.meta.url), 'utf8');
+  assert.ok(!/from\s+'\.\/private-tabs\.js'/.test(text),
+    'capture -> private-tabs would form capture -> private-tabs -> capture');
+});
+
+test('no import brings in a name its own file never uses', async () => {
+  const files = extensionSourceFiles();
+  if (files.length === 1) return;          // belum ada modul yang dipindah
+  const dead = [];
+  for (const rel of files) {
+    const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
+    const lines = text.split('\n');
+
+    // Sebuah pernyataan impor bisa membentang banyak baris. Tanpa penanda ini,
+    // sebuah pernyataan { a, b, c } di banyak baris membaca baris kelanjutannya
+    // sendiri sebagai pemakaian dan tidak pernah bisa merah — cacat yang sama
+    // persis yang menyembunyikan 50 nama mati selama 18 task.
+    //
+    // Sebaliknya, impor efek samping (`import './role-reconcile.js';`) punya
+    // titik koma tapi tak punya kurawal. Membuka blok tanpa memeriksa ';' akan
+    // menandai seluruh sisa berkas sebagai "baris impor", menelan pemakaian yang
+    // sah, dan menuduh nama yang hidup sebagai mati. Kedua arah salah ini
+    // ditemukan pada pohon yang sama saat mengaudit Task 18.
+    const insideImport = [];
+    let open = false;
+    for (const line of lines) {
+      const head = line.trimStart();
+      if (open) {
+        insideImport.push(true);
+        if (head.includes('}')) open = false;
+        continue;
+      }
+      const isImport = head.startsWith('import');
+      insideImport.push(isImport);
+      if (isImport && !head.includes('}') && !head.includes(';')) open = true;
+    }
+
+    for (const m of text.matchAll(/import\s*{([^}]*)}\s*from/gs)) {
+      for (const raw of m[1].split(',')) {
+        const token = raw.trim().split(/\s+as\s+/).pop().trim();
+        if (!token) continue;
+        let uses = 0;
+        for (let i = 0; i < lines.length; i++) {
+          if (insideImport[i]) continue;
+          // Pemakaian di komentar tetap dihitung: lebih baik tidak menyalahkan
+          // daripada menyalahkan keliru. Yang dilarang di sini ialah nol.
+          if (lines[i].split(/[^A-Za-z0-9_$]+/).includes(token)) uses++;
+        }
+        if (uses === 0) dead.push(`${rel}: ${token}`);
+      }
+    }
+  }
+  assert.deepEqual(dead, [],
+    'an imported name with no call site is weight that hides the next real import');
+});

@@ -15,9 +15,9 @@ state top-level, dan **satu** banner section di seluruh file (baris 2046). Batas
 wilayah tidak ditandai apa pun — pembaca hanya bisa menebaknya sambil menggulir
 700 baris.
 
-Hasil akhir: `background.js` sekitar **460 baris** — header, state yang hanya
+Hasil akhir: `background.js` **463 baris** — header, state yang hanya
 dipakai `dispatch`, dan `dispatch` sendiri (baris 1647-2018, tidak disentuh
-isinya) — plus **12 file baru**: 10 di `extension/worker/` dan 2 di
+isinya) — plus **13 file baru**: 11 di `extension/worker/` dan 2 di
 `extension/lib/`.
 
 Pemisahan memakai satu kriteria yang terukur, bukan selera: **`chrome.*` sebagai
@@ -145,24 +145,25 @@ loop.js (murni)              <-> loopSessions / loopTick     (background)
 
 ```
 extension/
-├── background.js   entry: header + impor + state yang hanya dipakai dispatch + dispatch   (~460 baris)
+├── background.js   entry: header + impor + state yang hanya dipakai dispatch + dispatch   (463 baris)
 ├── content.js      tetap — tahap terpisah, IIFE klasik, tidak bisa ES module
 ├── lib/            MURNI: chrome.* sebagai kode = 0, kecuali daftar kecualian
 │                   17 file sekarang + 2 baru (log.js, serialize.js)
 └── worker/         BARU: kode service worker yang butuh chrome.*
-    ├── utils.js            99-162    72 baris   7 fungsi   chrome.*  2
-    ├── tab-content.js     163-268   107 baris   8 fungsi   chrome.*  8
-    ├── private-tabs.js    269-287    20 baris   3 fungsi   chrome.*  2
-    ├── capture.js         288-462   178 baris  10 fungsi   chrome.*  7
-    ├── listen.js          463-550    88 baris   5 fungsi   chrome.*  4
-    ├── capture-page.js    551-665   116 baris   1 fungsi   chrome.*  3
-    ├── action-focus.js    666-1115  450 baris  17 fungsi   chrome.* 22
-    ├── loop-engine.js    1116-1646  532 baris  19 fungsi   chrome.*  9
-    ├── watch-registry.js 2046-2268  223 baris  13 fungsi   chrome.*  4
-    └── execute-pull.js   2269-2647  382 baris  13 fungsi   chrome.* 27
+    ├── utils.js            99-162    81 baris   7 fungsi   chrome.*  2
+    ├── tab-content.js     163-268   116 baris   8 fungsi   chrome.*  8
+    ├── private-tabs.js    269-287    27 baris   3 fungsi   chrome.*  2
+    ├── capture.js         288-462   181 baris  10 fungsi   chrome.*  7
+    ├── listen.js          463-550   107 baris   5 fungsi   chrome.*  4
+    ├── capture-page.js    551-665   136 baris   1 fungsi   chrome.*  3
+    ├── action-focus.js    666-1115  471 baris  17 fungsi   chrome.* 22
+    ├── burst.js          1116-1646  142 baris   2 fungsi   chrome.*  0
+    ├── loop-engine.js    1116-1646  431 baris  17 fungsi   chrome.*  9
+    ├── watch-registry.js 2046-2268  245 baris  13 fungsi   chrome.*  4
+    └── execute-pull.js   2269-2647  414 baris  13 fungsi   chrome.* 27
 
-extension/lib/log.js        BARU, 5 baris,  chrome.* 0   — satu sumber `log`
-extension/lib/serialize.js  BARU, 28 baris, chrome.* 0   — region 2019-2045
+extension/lib/log.js        BARU, 9 baris,  chrome.* 0   — satu sumber `log`
+extension/lib/serialize.js  BARU, 47 baris, chrome.* 0   — region 2019-2045
 ```
 
 Angka baris termasuk konstanta header yang ikut pindah ke modulnya (daftar lengkap
@@ -473,7 +474,7 @@ keduanya termuat bersih.
 **Gerbang `lib/` bebas `chrome.*`** dengan daftar kecualian tertulis berisi
 `debugger-session.js`.
 
-**Ukuran** — `background.js` di bawah 600 baris (target sekitar 460); dua belas
+**Ukuran** — `background.js` di bawah 600 baris (target sekitar 460); tiga belas
 modul baru ada dan masing-masing di bawah 550.
 
 ### Yang berubah: 17 file, satu baris per file
@@ -565,9 +566,9 @@ tiap langkah sebagai bukti, bukan sebagai asumsi.
 - Gerbang `lib/` bebas `chrome.*` dengan satu kecualian tertulis.
 - Tes load `background.js`.
 - `background.js` di bawah 600 baris.
-- Dua belas modul baru, masing-masing di bawah 550.
+- Tiga belas modul baru, masing-masing di bawah 550.
 
-**Yang tidak berubah.** 726 tes, `PUBLIC_SURFACE_LOCKS`, jumlah 39 MCP tool,
+**Yang tidak berubah.** `PUBLIC_SURFACE_LOCKS`, jumlah 39 MCP tool,
 `manifest.json`, perilaku `dispatch`.
 
 ## Risiko

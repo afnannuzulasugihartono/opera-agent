@@ -1,7 +1,9 @@
 // @last-edited: 2026-10-04 20:31 UTC+7.
 // @title: background — MV3 runtime.
 // @state: the observation says when the person last touched the page.
-// @dependencies: protocol, watch, action-pipeline, focus-gate, keyboard, endpoints, role-reconcile, agent-log, popup-events, deadline-race.
+// @dependencies: protocol, watch, loop, role-reconcile, log, popup-events,
+// debugger-session, serialize, utils, capture, tab-content, listen, capture-page,
+// action-focus, burst, loop-engine, watch-registry, execute-pull.
 
 import {
   PRODUCT_VERSION,
