@@ -4,9 +4,10 @@
 # Spec: pecah `extension/background.js` jadi `extension/worker/`
 
 Disetujui di percakapan 2026-10-09. Satu file 2647 baris menjadi entry tipis plus
-12 file baru — 10 modul `extension/worker/` dan 2 modul `extension/lib/`. Tanpa
-perubahan perilaku: 726 tes hijau sebelum dan sesudah tiap langkah, bukan cuma di
-akhir.
+13 file baru — 11 modul `extension/worker/` dan 2 modul `extension/lib/`. Tanpa
+perubahan perilaku: seluruh suite hijau sebelum dan sesudah tiap langkah, bukan
+cuma di akhir. Suite itu tidak dimulai dari 743: rencana ini menambah gerbangnya
+sendiri — 17 tes ditambah, tidak satu pun dihapus — dan berakhir di 743 tes.
 
 ## Intent
 
@@ -103,7 +104,7 @@ bawah, judul *TDZ*.
 
 17 file membaca `background.js` sebagai teks — semuanya `fs.readFileSync` atau
 `readFile`. Nol `await import('../extension/background.js')`. Konsekuensinya:
-ekspor yang salah, impor yang putus, atau siklus yang gagal **lolos dari 726 tes**
+ekspor yang salah, impor yang putus, atau siklus yang gagal **lolos dari 743 tes**
 dan baru meledak di browser. Ini celah yang ditutup spesifikasi ini.
 
 ### Tidak ada tes yang mendeteksi siklus impor
@@ -190,7 +191,7 @@ seperti empat lock hash yang mati tanpa seorang pun sadar. Karena daftarnya ada
 di dalam tes, menambah file ke `lib/` yang melanggar aturan akan ketahuan.
 
 Inilah alasan pemilihan `worker/` atas `lib/`: `lib/` yang murni bisa diuji Node
-suite tanpa browser, dan itu yang membuat 726 tes tetap cepat.
+suite tanpa browser, dan itu yang membuat 743 tes tetap cepat.
 
 ### TDZ: satu-satunya tempat yang bisa membunuh saat load
 
@@ -344,7 +345,7 @@ akan dipakai memverifikasi semua langkah berikutnya.
 5. **Baca ulang seluruh tabel angka** di *Fakta terverifikasi*. Kalau berbeda,
    perbaiki tabelnya.
 
-### Enam fase, dua belas perpindahan
+### Enam fase, tiga belas perpindahan
 
 Tiap perpindahan diakhiri `npm test` **dan** `npm run check` — bukan tiap fase,
 bukan cuma di akhir. Fase ada supaya spec ini terbaca, bukan supaya verifikasi
@@ -387,7 +388,7 @@ ditumpuk. Tahap 0 bukan perpindahan; ia prasyaratnya.
    `popupLog` di dalam callback, jadi aman. Selama `loop-engine` masih di
    `background.js`, `action-focus` mengimpor `finishLoop`/`finishStateLoop`
    dari sana — siklus diterima.
-10. `extension/worker/loop-engine.js` — region 1116-1646 (19 fungsi, `chrome.*` 9).
+10. `extension/worker/loop-engine.js` — region 1116-1646 (17 fungsi, `chrome.*` 9).
     Mengimpor `executionMode` dkk. dari `action-focus` dan `dispatch` dari
     `background.js`. `chrome.*` 9 di region ini termasuk enam
     `Input.dispatch*` dari chrome.debugger yang **bukan** pemanggilan `dispatch`.
@@ -404,6 +405,10 @@ ditumpuk. Tahap 0 bukan perpindahan; ia prasyaratnya.
     yang dievaluasi saat load. Setelah konstanta di atas ikut pindah, tidak ada
     lagi yang membaca binding `background.js` saat load. Ini satu-satunya langkah
     yang membaca binding header saat load, jadi tes load wajib hijau setelahnya.
+13. `extension/worker/burst.js` — 142 baris, 2 fungsi, `chrome.*` sebagai kode 0.
+    Berkas ini lahir di Task 16 dari pembagian item 10: rencana memutuskan
+    **membagi** alih-alih menaikkan ambang 550, sehingga rencana tumbuh dari
+    dua belas modul menjadi tiga belas.
 
 ## Batasan
 
@@ -437,7 +442,7 @@ diverifikasi tidak berbagi state.
 
 ## Pengujian
 
-Semua dalam `npm test` (726 tes) plus `npm run check`, tanpa browser hidup.
+Semua dalam `npm test` (743 tes) plus `npm run check`, tanpa browser hidup.
 Tiap perpindahan diakhiri kedua perintah itu.
 
 ### Yang ditambahkan
