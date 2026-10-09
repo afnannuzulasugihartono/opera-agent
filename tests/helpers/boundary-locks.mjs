@@ -59,6 +59,12 @@
 // for the site, prefix match kept for localhost ports). No primitive, schema,
 // permission or entry point moved.
 
+// Re-pinned 2026-10-09 for the background.js split spec. No contract moved:
+// the observation and relevance stacks had never been asserted — nothing
+// imported their two arrays — and four of their five pins had gone stale
+// unnoticed. This test now checks all nine entries, so a drift fails here.
+// Hashes are git blob SHA1 over LF bytes; a CRLF checkout normalizes first.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '22be5ef8f1798df1327b4ed226748fd5496614c4'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists; forwards MAIN-world state-bridge events to the background, swallowing the worker-sleep rejection via ?.catch
   ['../extension/background.js', 'dfe3e2706e9a004e9da28d273a87dc55be19bd9b'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture, suspend floor, stillness and track sensors; per-tick sensor activity, values, and phase timings in the trace; native-resolution sense frames; front-edge tracking immune to ground texture; Wave B hardening only — burst fill value regardless of refFromStep, empty tabId refused, SCREENSHOT_TOO_SMALL split out, finishLoop awaits the debugger release, ensureContent re-injects the full manifest script list, external model-key clear refused; Wave C hardening only — facts reply carries engine state, arm-time deadlineMs default, boolean tabId refused, dead set-bridge-url popup action deleted; Wave C review minors — null deadlineMs normalizes at arm, missing deadline prunes as expired, no-entries reply carries empty state; official-site config grant — origin check moved to lib/external-origins.js (strict site match, localhost prefix kept)
@@ -67,12 +73,12 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', 'b7b0705156063384561b6184ac816c75a17737c9'], // reactive VM core without its unwired entry points; createReactiveVm and advanceReactiveVm had no importer and left with the dead-surface cleanup that unblocked the deploy gate
-  ['../lib/reactive-vm-control-flow.js', 'c5c8933f733c0217e3f0e33513d5efda3893b99d'], // reactive VM phase C
-  ['../lib/reactive-vm-collect.js', 'd5f748ec74e5af0355d2b638a495765269f3a575'], // reactive VM phase D without bindCollectionEvidence; unexported helpers stay module-private until the phase is wired
+  ['../lib/reactive-vm.js', 'aaa6caf1369e3358fcf14a35520754d6fc9c1731'], // reactive VM core without its unwired entry points; createReactiveVm and advanceReactiveVm had no importer and left with the dead-surface cleanup that unblocked the deploy gate
+  ['../lib/reactive-vm-control-flow.js', '52cc8027c9128f2038a80ffd77c191328e0787cc'], // reactive VM phase C
+  ['../lib/reactive-vm-collect.js', 'f99f039b0b588971a751d2f1ca44668dae497fae'], // reactive VM phase D without bindCollectionEvidence; unexported helpers stay module-private until the phase is wired
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../lib/multi-signal-relevance.js', '713cdf15960760d81f16dee9e20b2ed23bb4ff97'], // multi-signal relevance without the unreferenced P3 decision table
+  ['../lib/multi-signal-relevance.js', 'fe7554b663fbd20d4ae3fed4d90d5efc99d28d9b'], // multi-signal relevance without the unreferenced P3 decision table
   ['../lib/delta-first-observation.js', '534a3bb22b1e661a5799c3798196fcffa4764ae9'], // delta first observation
 ]);
