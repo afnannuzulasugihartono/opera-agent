@@ -1268,7 +1268,7 @@ git commit -m "refactor: move storage and tab-mutation helpers into worker/utils
 
 **Interfaces:**
 - Consumes: `../lib/log.js`, `../lib/ax-summary.js`, `../lib/debugger-session.js`.
-- Produces: `captureFramePrivacyProbe`, `assertCaptureFramesSafe`, `withDebugger`, `codedError`, `collectAxSummary`, `screenshotBytes`, `screenshotHash`, `screenshotLooksBlank`, `cachedScreenshot`, `rememberScreenshot`, `SCREENSHOT_CACHE_MS`, `SCREENSHOT_CACHE_LIMIT`, `screenshotCache`.
+- Produces: `captureFramePrivacyProbe`, `assertCaptureFramesSafe`, `withDebugger`, `codedError`, `collectAxSummary`, `screenshotBytes`, `screenshotHash`, `screenshotLooksBlank`, `cachedScreenshot`, `rememberScreenshot`, `screenshotCache` (diekspor); `SCREENSHOT_CACHE_MS`, `SCREENSHOT_CACHE_LIMIT` (milik modul, dipakai di dalamnya).
 
 - [ ] **Step 1: Buat modulnya**
 
@@ -1289,7 +1289,20 @@ import { registerDebuggerSession, releaseDebuggerSession } from '../lib/debugger
 
 - [ ] **Step 2: Ekspor**
 
-`export` pada kesepuluh fungsi plus tiga state.
+`export` pada **sebelas** nama: kesepuluh fungsi (`captureFramePrivacyProbe`,
+`assertCaptureFramesSafe`, `withDebugger`, `codedError`, `collectAxSummary`,
+`screenshotBytes`, `screenshotHash`, `screenshotLooksBlank`, `cachedScreenshot`,
+`rememberScreenshot`) plus `screenshotCache`.
+
+**Dua dari tiga state jangan diekspor.** `SCREENSHOT_CACHE_MS` dan
+`SCREENSHOT_CACHE_LIMIT` tidak punya satu pun penyebut di file lain mana pun —
+tidak di modul, tidak di test, tidak di script. Setelah region ini pindah,
+pemakai tunggalnya ada di dalam `capture.js` sendiri (`:363` dan `:375`),
+sehingga mengekspornya langsung mematahkan `tests/hygiene.test.mjs:367`:
+*"a symbol in `extension/` or `lib/` still needs a caller in another file."*
+`SCREENSHOT_CACHE_MS`/`LIMIT` tetap dideklarasikan dan tetap dipakai — hanya
+kata `export`-nya yang gugur. `screenshotCache` boleh diekspor karena
+dibaca `background.js` (kini) lalu `private-tabs` dan `execute-pull`.
 
 - [ ] **Step 3: Potong dari `background.js` dan impor**
 
@@ -1297,8 +1310,33 @@ import { registerDebuggerSession, releaseDebuggerSession } from '../lib/debugger
 - Tambahkan:
 
 ```js
-import { codedError, collectAxSummary } from './worker/capture.js';
+import { assertCaptureFramesSafe, withDebugger, codedError, collectAxSummary, screenshotBytes, screenshotHash, screenshotLooksBlank, cachedScreenshot, rememberScreenshot, screenshotCache } from './worker/capture.js';
 ```
+
+**Sepuluh nama, bukan dua.** Rencana versi awal hanya menulis `codedError` dan
+`collectAxSummary`; keduanya memang dipakai `dispatch`, tapi mereka bukan
+satwa yang paling langka. Delapan lainnya dipanggil dari region yang **belum
+pindah**, jadi masih hidup di `background.js` setelah potongan ini:
+
+- `assertCaptureFramesSafe` — `:487`
+- `withDebugger` — `:512`, `:849`, `:870`, `:908`, `:964`, `:2153`
+- `screenshotBytes` — `:538`; `screenshotHash` — `:561`; `screenshotLooksBlank` — `:559`
+- `cachedScreenshot` — `:509`; `rememberScreenshot` — `:580`
+- `screenshotCache` — `:207` (region private-tabs, Task 11) dan `:2529` (execute-pull, Task 18)
+
+Yang **tidak** diimpor: `captureFramePrivacyProbe` (hanya dipakai di dalam
+region), `SCREENSHOT_CACHE_MS`, `SCREENSHOT_CACHE_LIMIT` (hanya dipakai di
+dalam modul; lihat langkah sebelumnya).
+
+- Hapus baris `import { buildAxSummary } from './lib/ax-summary.js';` dari
+  `background.js`. Satu-satunya pemakainya adalah `:311`, yang ada di dalam
+  region yang sedang dipindah — barisnya jadi impor mati begitu potongan
+  dilakukan, dan tidak ada gerbang yang menangkapnya.
+
+Jangan menghapus impor `./lib/debugger-session.js`: `registerDebuggerSession`
+(`:1612`), `releaseDebuggerSession` (`:1155`, `:1202`, `:2095`) dan
+`handleDebuggerDetach` (pendaftaran listener di `:64`) semuanya masih dipakai
+`background.js` setelah region berpindah.
 
 - [ ] **Step 4: Daftarkan di helper dan jalankan**
 
