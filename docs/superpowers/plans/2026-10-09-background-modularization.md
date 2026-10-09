@@ -1522,6 +1522,28 @@ dipanggil dari tiga wilayah yang **belum ikut pindah**:
 Empat `ReferenceError` asinkron yang tak diamati tes mana pun, kalau impornya
 dihilangkan.
 
+**Koreksi atribusi setelah review Task 11** (teks di atas salah satu kali, dan
+reviewer menangkapnya). Panggilan itu bukan milik `localSelfTest` — yang
+memilikinya empat wilayah yang belum ikut pindah, dua di antaranya bukan
+fungsi bernama sama sekali melainkan blok pendaftaran listener:
+
+- `isPrivateTab` — `listenStart` (region `listen`, **Task 13**) dan `capturePage` (region `capture-page`, **Task 14**), lalu handler `chrome.runtime.onMessage` popup (region `execute-pull`, **Task 18**)
+- `setPrivateTab` — handler `chrome.runtime.onMessage` popup (**Task 18**)
+- `privateTabIds` dan `PRIVATE_TABS_KEY` — callback `chrome.tabs.onRemoved` (**Task 18**)
+
+Akar kesalahannya instruksional, bukan ketik: penghitungan memakai pencarian
+`^(async )?function ` pada awal baris, lalu mengambil deklarasi terakhir di atas
+titik itu. Blok `chrome.<sesuatu>.onListener(...)` bukan deklarasi fungsi, jadi
+tidak pernah menggeser kepemilikan — dan seluruh ekor berkas tampak jadi
+milik `localSelfTest`. **Perbaikan yang mengikat:** petakan pemanggil dengan
+blok kurung setara (`{ … }` naik ke tingkat paling atas), bukan dengan daftar
+deklarasi fungsi saja.
+
+**Konsekuensi untuk Task 18:** ketiga konsumen terakhir keluar bersama
+`execute-pull`, sehingga setelah Task 18 seluruh keempat nama kehilangan
+pemanggil di `background.js`. Sapuan impor mati di Task 18 langkah 4b wajib
+menghapus baris impor `private-tabs` seluruhnya — bukan hanya memperkecilnya.
+
 Klaim yang **benar** dalam kalimat itu: modul ini memang tak diimpor `dispatch`
 secara langsung, dan tetap termuat lewat `background.js` yang mengimpornya di
 atas — bukan lewat entri `FILES`, yang memang hanya untuk berkas uji.
