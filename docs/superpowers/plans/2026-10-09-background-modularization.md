@@ -13,8 +13,10 @@
 ## Global Constraints
 
 - **Tanpa perubahan perilaku.** Tiap perpindahan diakhiri `npm test` **dan** `npm run check` keduanya hijau, bukan cuma salah satu.
-- **Jumlah tes saat ini: 726.** Angka ini naik karena rencana menambah tes baru; yang tidak boleh berkurang adalah tes yang sudah ada — tidak ada tes yang dihapus.
-- **`dispatch` tidak disentuh isinya.** Baris 1647-2018 tetap di `background.js`.
+- **Jumlah tes naik dari 726 (baseline) karena rencana menambah tes baru; angka terkini dicatat di ledger.** Yang tidak boleh berkurang adalah tes yang sudah ada — tidak ada tes yang dihapus.
+- **Tiap task yang mengubah `extension/background.js` wajib menempel ulang hashnya di `tests/helpers/boundary-locks.mjs`, pada commit yang sama.** Kunci itu dicek dua berkas (`tests/boundary-locks.test.mjs` dan `tests/delta-first-observation.test.mjs:556`). Blok komentar re-pin berlaku sekali untuk seluruh pemecahan — cukup ganti nilai hashnya, jangan tambah blok baru. Lihat Task 7b.
+- **`dispatch` tidak disentuh isinya.** Fungsinya dideklarasikan di `background.js` mulai baris 1647 pada baseline 66b96f0 (kini bergeser karena ekstraksi) dan tetap di `background.js` sampai selesai.
+- **Nomor baris di rencana adalah koordinat baseline.** Setiap task memotong `background.js` dan menggeser semua angka setelahnya — Task 7 sudah menggesernya 6 baris. **Baca selalu ulang dari berkas terkini, dan verifikasi rentang potong lewat isinya, bukan lewat angkanya.**
 - **File tidak di-rename.** `background.js` disebut 23 file, `content.js` 21, keduanya dikunci manifest.
 - **Fungsi tidak di-rename.** 24 dari 100 fungsi dirujuk sebagai deklarasi di dalam string/regex di tests+scripts.
 - **`content.js` tidak disentuh.** Ia tetap IIFE klasik satu file.
