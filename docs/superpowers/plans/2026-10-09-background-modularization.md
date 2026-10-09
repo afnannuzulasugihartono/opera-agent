@@ -2125,18 +2125,56 @@ Kegagalan yang mungkin terjadi di sini: `background-load.test.mjs` gagal dengan 
 
 **Files:**
 - Create: `extension/worker/loop-engine.js`
-- Modify: `extension/worker/action-focus.js` (satu baris impor)
-- Modify: `extension/background.js:1116-1646`, `:76`
+- Modify: `extension/worker/action-focus.js` (satu baris impor **dan satu baris `@state`**)
+- Modify: `extension/background.js:96-628`, `:84`, **dan satu kata kunci `export` di `:630`**
 - Modify: `extension/lib/loop.js:3`
 - Modify: `tests/helpers/extension-source.mjs`
+- Modify: `tests/helpers/boundary-locks.mjs`
 
 **Interfaces:**
 - Consumes: `./action-focus.js`, `./tab-content.js`, **`../background.js`** (`dispatch`), `../lib/log.js`, `../lib/protocol.js`, `../lib/loop.js`, `../lib/keyboard.js`, `../lib/debugger-session.js`.
-- Produces: `burstResultSize`, `runBurst`, `loopSummary`, `finishLoop`, `loopSessionOnTab`, `stateSummary`, `finishStateLoop`, `handleStateEvent`, `loopDecodeTemplate`, `loopSnapshot`, `loopCropRegion`, `loopSyntheticKey`, `loopTrustedKey`, `loopTrustedPointer`, `loopActKey`, `loopAct`, `loopSense`, `loopTickLater`, `loopTick`, plus state `MAX_BURST_RESULT_BYTES`, `LOOP_MAX_ACTIVE`, `loopSessions`, `loopResults`, `STATE_READERS`, `stateSessions`, `stateResults`.
+- Produces (diekspor, **lima belas**): sembilan fungsi `runBurst`, `loopSummary`, `finishLoop`, `loopSessionOnTab`, `stateSummary`, `finishStateLoop`, `handleStateEvent`, `loopDecodeTemplate`, `loopTickLater`; enam state `LOOP_MAX_ACTIVE`, `loopSessions`, `loopResults`, `STATE_READERS`, `stateSessions`, `stateResults`.
+  Sebelas sisanya milik modul, **tak diekspor**: `burstResultSize`, `loopSnapshot`, `loopCropRegion`, `loopSyntheticKey`, `loopTrustedKey`, `loopTrustedPointer`, `loopActKey`, `loopAct`, `loopSense`, `loopTick`, `MAX_BURST_RESULT_BYTES`.
+  Dua lagi, `LOOP_POLICY_RECHECK_TICKS` (`:225`) dan `LOOP_SUSPEND_FLOOR_MS` (`:231`), juga berada di dalam region tetapi tidak tercatat di Produces versi awal — keduanya privat.
+
+  Rencana versi awal memerintahkan `export` pada "kesembilan belas fungsi plus
+  ketujuh state" — dua puluh enam. Hitungan terhadap pohon hidup menemukan
+  dua puluh tujuh deklarasi di region, tapi hanya lima belas yang punya
+  pemanggil di luar dirinya sendiri. Sisanya dipanggil **di dalam** region
+  (`burstResultSize` oleh `runBurst` `:186`, `loopTick` oleh `loopTickLater`
+  `:545`, `loopCropRegion` oleh `loopSense`, dst.).
+
+  **`MAX_BURST_RESULT_BYTES` bukan yang paling jelas di sini.** Ia dideklarasikan
+  di `:84`, **di luar** region, dan Task 16 memang memindahkannya — tapi hanya
+  satu pemakaiannya di luar region: baris itu sendiri. Satu-satunya pemakaian
+  nyata ada di `:186`, di dalam `runBurst`. Jadi ia ikut pindah **dan tetap
+  privat**; blok impor `background.js` memang tidak memuatnya.
+
+  Pengujinya sama seperti empat task sebelumnya: kalau disebut, kenapa rencana
+  ini tidak menuliskan keempat modul berikutnya yang mengimpornya? Task 17 hanya
+  mengambil `{ runBurst }` dan Task 18 tidak mengambil apa pun dari modul ini.
 
 - [ ] **Step 1: Buat modulnya**
 
 Pindahkan **utuh** baris 1116-1646 plus baris 76 (`MAX_BURST_RESULT_BYTES`).
+
+**Koordinat terverifikasi di pohon hidup** (baseline sudah bergeser — cari
+berdasarkan konten; `background.js` kini 1602 baris): region = **`:96`-`:628`**,
+yaitu **533 baris**, ditambah `const MAX_BURST_RESULT_BYTES = 256 * 1024;` di
+**`:84`**.
+
+- **Ambang atas** (ikut tinggal): `const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;`
+  (`:91`), `let loopPromise = null;` (`:93`), `let loopGeneration = 0;`
+  (`:94`), dan baris kosong pemisah (`:95`). Dua yang terakhir ialah milik
+  **Task 18** — `loopPromise` dipakai lagi di `:1415`–`:1427` dan
+  `loopGeneration` di `:1302`, `:1388`, yang keduanya belum berpindah.
+- **Ambang bawah** (ikut tinggal): baris kosong (`:629`) lalu
+  `async function dispatch(method, params = {}, context = {}) {` di **`:630`**
+  — dispatch ialah Task 18. Potong **tepat sampai `:628`**, baris penutup
+  `loopTick`.
+- Setelah region dan `:84` berpindah, **`background.js` tidak lagi menyebut
+  `MAX_BURST_RESULT_BYTES` sama sekali** — satu-satunya pemakaiannya di luar
+  region ialah deklarasinya sendiri.
 
 ```js
 // @last-edited: 2026-10-09 UTC+7.
@@ -2169,11 +2207,59 @@ import { executionMode, withInputFocusEmulation, notReadyError, burstStepParams 
 import { dispatch } from '../background.js';
 ```
 
-- [ ] **Step 2: Ekspor**
+**Blok impor di atas terverifikasi lengkap, jangan dikurangi: 23 nama.**
+Dua puluh dua diimpor `background.js` dan muncul di region
+(`BURST_ACTION_METHODS`, `BURST_MAX_TIMEOUT_MS`, `LOOP_SYNTHETIC_DEAD_TICKS`,
+`LOOP_TRACK_MIN_RUN`, `burstCrossTabRef`, `burstStaleRef`, `burstStepParams`,
+`centroidTrack`, `contentCall`, `downscaleHash`, `executionMode`,
+`frontOfChanged`, `log`, `matchTemplate`, `normalizeError`, `notReadyError`,
+`pixelDiff`, `recordTick`, `releaseDebuggerSession`, `resolveKeyInput`,
+`resolveTabId`, `withInputFocusEmulation`) ditambah `dispatch` yang
+dideklarasikan di `background.js`.
 
-`export` pada kesembilan belas fungsi plus ketujuh state.
+- [ ] **Step 2: Ekspor** **lima belas** nama — daftarnya ada di bagian
+  **Interfaces** di atas. Sebelas sisanya tetap privat.
 
-- [ ] **Step 3: Alihkan seluruh blok impor `action-focus.js` dari `background.js` ke `./loop-engine.js`**
+- [ ] **Step 3: Tiga perbaikan, sebelum potongan**
+
+Ketiganya bersifat wajib dan saling bergantung: tanpa yang pertama, modul tak
+bisa dimuat; tanpa yang kedua, `action-focus` jatuh pada waktu yang jauh lebih
+mahal.
+
+**3a. Ekspor `dispatch` di `background.js:630`.**
+
+Task 15 membuktikan cacat ini tepat saat terjadi — brief menyuruh mengimpor
+`finishLoop` dari `background.js`, padahal berkas itu tidak mengekspor apa pun,
+dan `background-load.test.mjs` langsung gagal dengan
+`SyntaxError: does not provide an export named 'finishLoop'`. Empat nama itu
+kini diekspor (penambahan Task 15), tapi **`dispatch` belum.**
+
+Modul ini menggunakannya di **`:178`**:
+
+```js
+const result = await dispatch(method, burstStepParams(step, stepTabId, remainingMs, mode, results), context);
+```
+
+Jadi ubah `async function dispatch(method, ...)` menjadi
+`export async function dispatch(method, ...)`. Tanpa ini Task 16 gagal sama
+persis cara dengan Task 15, dan Task 17 (`watch-registry`) serta Task 18
+(`execute-pull`) ikut mengimpornya — mereka sudah menuliskan
+`import { dispatch } from '../background.js'` di rencananya masing-masing.
+
+Pertimbangan keamanan: `background.js` memang sudah menjadi sumber siklus
+(`action-focus` mengimpornya), jadi satu baris ini tidak menciptakan pola baru
+— ia hanya melengkapi pola yang sudah ada. Reach-nya juga jujur sejak saat ini:
+tiga modul worker akan menyebutnya.
+
+**3b. Bawa keempat kata kunci `export` ikut bersama deklarasinya.**
+
+`export const loopSessions`, `export async function finishLoop`,
+`export const stateSessions`, `export function finishStateLoop` semuanya
+berada **di dalam region** (`:232`, `:253`, `:282`, `:299`). Potongan
+memindahkannya ke `loop-engine.js` **lengkap dengan kata kunci** — jangan
+dilepas. Itulah yang membuat langkah 3c di bawah aman.
+
+**3c. Alihkan blok impor `action-focus.js` dari `background.js` ke `./loop-engine.js`.**
 
 Ganti baris:
 
@@ -2191,10 +2277,32 @@ Keempatnya sekaligus — `finishLoop`/`finishStateLoop` dipanggil, `loopSessions
 
 Siklus `action-focus ↔ loop-engine` tetap ada, tapi kini antara dua modul peer — `background.js` tidak lagi berada di dalamnya.
 
+**Bonus: perbaiki `action-focus.js:3`, lini waktu berhenti dari `background.js`.**
+
+Temuan review Task 15: baris `@state` menulis *"...loop-engine reads
+popupLog/stateSessions from here through this export"* — padahal arahnya
+terbalik. `popupLog` memang dibaca `loop-engine` **dari sini**, tapi
+`stateSessions` di dalam modul ini ialah **yang diimpor** dari `background.js`
+(baris 15), dan setelah 3b baris itu diarahkan ke `./loop-engine.js`.
+Tukar:
+
+```js
+// @state: owns the popup focus log and its floor; loop-engine reads popupLog/stateSessions from here through this export.
+```
+
+menjadi:
+
+```js
+// @state: owns the popup focus log and its floor; loop-engine reads popupLog from here, and this module takes stateSessions from loop-engine.
+```
+
+Ini satu-satunya edit di `action-focus.js` selain 3c.
+
 - [ ] **Step 4: Potong dari `background.js` dan impor**
 
-- Hapus baris 1116-1646 dan baris 76.
-- Tambahkan:
+- Hapus region **`:96`-`:628`** (533 baris) dan baris **`:84`**
+  (`MAX_BURST_RESULT_BYTES`).
+- Tambahkan blok ini (**lima belas nama**, bukan empat belas):
 
 ```js
 import {
@@ -2204,6 +2312,7 @@ import {
   loopSessionOnTab,
   stateSummary,
   finishStateLoop,
+  handleStateEvent,
   loopDecodeTemplate,
   loopTickLater,
   LOOP_MAX_ACTIVE,
@@ -2214,6 +2323,15 @@ import {
   stateResults,
 } from './worker/loop-engine.js';
 ```
+
+**`handleStateEvent` ialah nama kesepuluh belas yang hilang dari rencana versi
+awal.** Ia dipanggil di **`:1503`**, di region yang belum ikut pindah. Tanpanya
+`handleStateEvent is not defined` — kegagalan asinkron yang sama dengan cacat
+sembilan kali sebelumnya.
+
+Yang **tidak** ikut diimpor: `MAX_BURST_RESULT_BYTES` (setelah `:84` pindah,
+`background.js` tidak menyebutnya lagi), `loopPromise` dan `loopGeneration`
+(keduanya masih milik `background.js` sampai Task 18).
 
 - [ ] **Step 5: Perbarui `extension/lib/loop.js:3`**
 
@@ -2236,9 +2354,33 @@ Tambahkan `'extension/worker/loop-engine.js',` setelah `action-focus.js`.
 ```bash
 npm test
 npm run check
-git add extension/worker extension/background.js extension/lib/loop.js tests/helpers/extension-source.mjs
+git status --porcelain   # harus tepat 6 jalur, tanpa kejutan
+git add extension/worker extension/background.js extension/worker/action-focus.js extension/lib/loop.js tests/helpers/extension-source.mjs tests/helpers/boundary-locks.mjs
 git commit -m "refactor: move the burst and loop sessions into worker/loop-engine.js"
 ```
+
+Enam jalur: `loop-engine.js` (baru), `background.js`,
+`action-focus.js` (impor 3c plus baris `@state`), `extension/lib/loop.js`
+(satu baris `@state`), `tests/helpers/extension-source.mjs`, dan
+`tests/helpers/boundary-locks.mjs` (nilai hash — tanpa komentar bertanggal).
+
+Ukuran yang diharapkan: `background.js` 1602 → **sekitar 1083** — region 533
+baris terpotong, satu konstanta terpindah, satu blok impor 15 baris ditambahkan.
+Kalau `tests/hygiene.test.mjs:51` menembak lagi dan menambahkan baris kosong,
+jumlahnya naik setingkat itu; koreksi itu sah dan sudah terjadi pada Task 14
+(enuh baris) dan Task 15 (tiga baris).
+
+**Empat kegagalan yang mungkin terjadi di sini, dan apa artinya:**
+
+- `SyntaxError: does not provide an export named 'dispatch'` — langkah 3a
+  terlewat. `background.js` memang tidak pernah mengekspor `dispatch` sebelum ini.
+- `ReferenceError: finishLoop is not defined` / `... is not a function` —
+  langkah 3b atau 3c tidak lengkap; periksa keempat kata kunci `export`
+  ikut pindah dan seluruh empat nama diarahkan.
+- `ReferenceError: handleStateEvent is not defined` — blok impor di Step 4
+  kehilangan satu nama.
+- Gerbang `hygiene` dead-export merah — sebuah dari 15 nama diekspor tapi tidak
+  disebut di berkas lain. Turunkan menjadi privat, jangan tambahkan pemanggil.
 
 ---
 
