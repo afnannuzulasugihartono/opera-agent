@@ -10,6 +10,12 @@ name: Publish CRX
 # inserting the row in the same place closes that gap, so the release workflow can
 # fetch what this one put there.
 #
+# WHY no human is ever asked for a key here: CRX_SIGNING_KEY and
+# SUPABASE_ACCESS_TOKEN live in GitHub Secrets (names verifiable with
+# `gh secret list`, values never printed). Rotating the signing key changes
+# the extension id and orphans every install, so rotation is an owner
+# decision with a migration plan, never a routine step.
+#
 # WHY the self-check is fatal: Chrome derives an installed extension's id from the
 # key in the manifest, and the update endpoint serves the CRX under a path named
 # after that id. If the packed CRX does not agree with the manifest key, a browser

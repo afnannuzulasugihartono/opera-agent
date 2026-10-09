@@ -17,6 +17,7 @@ These ride with every job. Read them before acting, not once per session.
 - Focus on real code: judge a change by the behaviour it produces when driven, never by prose, plans, or a stub that only looks green.
 - Work the Plan → Execute → Fix loop, and repeat it: each round ends with a fresh run against the artefact, not a restated intention. The runs are `npm test` and `npm run check`, plus `py tests/browser_extension_test.py` for anything the extension does inside a page.
 - Audit everything, delete the trash, simplify the program: sweep for dead files, dead exports, and stale scaffolds, remove what you find, and leave the tree simpler than you met it.
+- Never ask any human for signing keys or any secret material: publisher secrets live only in GitHub Secrets — verify presence with `gh secret list` (names only, values never print), and treat publishing as your own dispatch task, not a question for the owner.
 
 ## Goals
 
