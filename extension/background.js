@@ -46,13 +46,7 @@ import { originAllowed } from './lib/external-origins.js';
 import './role-reconcile.js';
 const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRoleReconcile || {};
 
-// Agent log: same no-export pattern as role-reconcile.js — the manifest
-// loads it first for classic content scripts; this side-effect import
-// publishes it for the module service worker.
-
-import './lib/agent-log.js';
-const log = globalThis.OperaAgentLog || {};
-if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
+import { log } from './lib/log.js';
 import { buildAxSummary } from './lib/ax-summary.js';
 import { recordPopup, popupsSince, resolvePopupOpener, POPUP_LOG_LIMIT } from './lib/popup-events.js';
 import { raceWithTimeout } from './lib/deadline-race.js';

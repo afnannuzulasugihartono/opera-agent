@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 
 const FILES = [
   'extension/background.js',
+  'extension/lib/log.js',
 ];
 
 export async function extensionSource() {
