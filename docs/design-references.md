@@ -45,6 +45,25 @@ grid wraps), detected-browser badge plus highlight, zip as the filled primary
 button and CRX as the ghost secondary, one requirement line per card. Site
 radius and green accent stay as the house style.
 
+## Facebook login page
+
+Source: `https://www.facebook.com/login/` (public login page, `id_ID` locale).
+
+Observed split grammar:
+- Two columns: a brand panel on the left (mark, headline, value lines) and a
+  compact card on the right holding the whole form.
+- Card anatomy top to bottom: heading, large rounded inputs, one full-width
+  primary button, an "atau" divider, provider buttons, a centered help line,
+  and a language list naming each language in itself ("Bahasa Indonesia",
+  "English") instead of codes.
+
+Adopted on `landing/auth.html`: the split (brand panel plus gate card, stacked
+below 860px), the card order (tabs, magic-link form, divider, providers,
+resend line, note), and the in-itself language list wired to the shared
+`oa-lang` choice. House dark plus the green accent stay; no Facebook blue,
+and no third-party asset ships. The tabs swap copy only: both post the same
+email to the same OTP endpoint, and the page takes no password in either tab.
+
 ## Standing rule
 
 A reference informs layout and hierarchy. Copy, counts, and claims always

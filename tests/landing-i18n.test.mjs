@@ -18,8 +18,8 @@ const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pre
   + '<span aria-hidden="true">|</span>'
   + '<button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>';
 
-const DICT_PAGES = ['index.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html'];
-const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html', 'auth.html'];
+const DICT_PAGES = ['index.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html', 'auth.html'];
+const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html'];
 
 function attrKeys(page) {
   const html = read(`landing/${page}`);
@@ -48,7 +48,7 @@ test('every marked string has English, and no dict carries a string nothing mark
 test('the pages without a dict mark nothing, so no toggle promises what is not there', () => {
   // WHY the app pages are still here: Task 2 wires their content. Their toggle
   // already persists the choice and paints its state; it just has no strings yet.
-  for (const page of ['akun.html', 'dashboard.html', 'oauth/consent.html', 'auth.html']) {
+  for (const page of ['akun.html', 'dashboard.html', 'oauth/consent.html']) {
     assert.doesNotMatch(read(`landing/${page}`), /i18n-dict/, `${page} carries no dict`);
     assert.deepEqual(attrKeys(page), [], `${page} marks no string without a dict to translate it`);
   }
