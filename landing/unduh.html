@@ -1,6 +1,6 @@
 <!-- @last-edited: 2026-10-07 UTC+7.
-<!-- @title: unduh — three doors, one per format. -->
-<!-- @state: the hub names the three formats; each format lives on its own page with its own steps, so a reader never scrolls past two installs that are not theirs. -->
+<!-- @title: unduh — two doors, one per format. -->
+<!-- @state: the hub names the two formats; each format lives on its own page with its own steps, so a reader never scrolls past one install that is not theirs. -->
 <!-- @dependencies: none. -->
 
 
@@ -11,12 +11,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0d10" />
   <title>Unduh — Opera Agent</title>
-  <meta name="description" content="Unduh Opera Agent: pemasang Windows, arsip manual, atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
+  <meta name="description" content="Unduh Opera Agent: arsip manual atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
   <meta property="og:title" content="Unduh — Opera Agent" />
-  <meta property="og:description" content="Unduh Opera Agent: pemasang Windows, arsip manual, atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
+  <meta property="og:description" content="Unduh Opera Agent: arsip manual atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh" />
   <meta property="og:locale" content="id_ID" />
   <style>
@@ -168,9 +168,9 @@
     table.support td.no { color: var(--muted); }
     table.support tr:last-child td { border-bottom: 0; }
     .meta { color: var(--muted); font-size: 13px; }
-    /* WHY cards and not a list: three formats answer "which one is mine" before
+    /* WHY cards and not a list: two formats answer "which one is mine" before
        any prose. One line each, then the dedicated page with its own steps. */
-    .formats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 8px; }
+    .formats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 18px 0 8px; }
     @media (max-width: 640px) { .formats { grid-template-columns: 1fr; } }
     .format { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-decoration: none; }
     .format:hover { border-color: var(--accent); }
@@ -208,13 +208,12 @@
 
   <main class="wrap">
     <h1>Pasang Opera Agent</h1>
-    <p>Jalankan pemasang, pilih browser, selesai. Tidak ada Chrome Web Store, tidak ada
-    <em>load unpacked</em>, dan pembaruan berikutnya dipasang sendiri oleh browser.</p>
+    <p>Ambil arsip atau CRX di bawah, pasang di browser, selesai. Tidak ada Chrome
+    Web Store, dan pembaruan berikutnya dipasang sendiri oleh browser.</p>
 
-    <p>Ketiga berkas di bawah selalu build terbaru.</p>
+    <p>Kedua berkas di bawah selalu build terbaru.</p>
 
     <div class="formats">
-      <a class="format" href="./unduh-exe.html"><strong>Pemasang Windows</strong><span>Berkas .exe: klik, centang browser, selesai.</span><span class="go">Buka panduan &rarr;</span></a>
       <a class="format" href="./unduh-zip.html"><strong>Arsip manual</strong><span>Berkas .zip: ekstrak dan muat sendiri di semua Chromium.</span><span class="go">Buka panduan &rarr;</span></a>
       <a class="format" href="./unduh-crx.html"><strong>CRX bertanda tangan</strong><span>Berkas .crx: id stabil dan update sendiri.</span><span class="go">Buka panduan &rarr;</span></a>
     </div>

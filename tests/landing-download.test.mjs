@@ -10,7 +10,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 
 const root = new URL('..', import.meta.url);
@@ -220,7 +219,7 @@ test('the download page links the paths that never change', () => {
   // WHY the page must not name a version: a link to opera-agent-1.6.15.crx is a promise
   // that 1.6.15 is current. Nothing enforces it, so the page goes stale on the next
   // release and serves an old build to a reader who has no way to tell.
-  for (const [page, html] of [['unduh.html', hub], ['unduh-exe.html', read('unduh-exe.html')], ['unduh-zip.html', zip], ['unduh-crx.html', crx]]) {
+  for (const [page, html] of [['unduh.html', hub], ['unduh-zip.html', zip], ['unduh-crx.html', crx]]) {
     assert.doesNotMatch(html, /opera-agent-\d+\.\d+\.\d+\.(zip|crx)/,
       `${page}: no download link carries a version, so no release can leave the page behind`);
   }
@@ -229,16 +228,16 @@ test('the download page links the paths that never change', () => {
   // WHY the link text names no file either: the file a reader saves is named by the
   // server, which knows the version, so the text could only ever be a stale guess.
   assert.doesNotMatch(crx, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
-  // WHY the reader is told the name will carry the version: the installer and the CRX do
+  // WHY the reader is told the name will carry the version: the CRX does
   // not change, and a reader comparing two downloads needs to tell them apart.
   assert.match(crx, /namanya membawa versi build/, 'the page says the saved file is named with its version');
 });
 
 test('each format has its own page, reached from the hub and back', () => {
   const hub = read('unduh.html');
-  // WHY this lock: three installs on one page made every reader scroll past two that
-  // were not theirs. Each format now has its own page; the hub only names the doors.
-  for (const page of ['unduh-exe.html', 'unduh-zip.html', 'unduh-crx.html']) {
+  // WHY this lock: stacked installs on one page made every reader scroll past ones
+  // that were not theirs. Each format now has its own page; the hub only names the doors.
+  for (const page of ['unduh-zip.html', 'unduh-crx.html']) {
     assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
     const html = read(page);
     assert.match(html, /class="btn".*download/, `${page} still downloads without scrolling elsewhere`);
@@ -271,7 +270,7 @@ test('the payload of a CRX is already the tree, so the archive needs no second b
 test('the download page names every browser it supports and why one is not', () => {
   const html = read('unduh.html');
   // WHY this lock: the page used to say "Brave dan Chrome" and name no others, while
-  // the installer writes a policy for four browsers and the zip loads in any
+  // the table answers for every Chromium browser and the zip loads in any
   // Chromium one. A reader on Edge was told the product was not for them.
   for (const browser of ['Chrome', 'Edge', 'Brave', 'Opera', 'Vivaldi']) {
     assert.match(html, new RegExp(`<td>${browser}</td>`), `${browser} has a row saying what it can do`);
@@ -308,55 +307,6 @@ test('the install section links the download page instead of dead-ending', () =>
   const html = read('index.html');
   assert.match(html, /href="\.\/unduh\.html"/, 'install reaches the download page');
   assert.match(html, /unduh\.html/, 'the link exists in the copy too');
-});
-
-test('the installer writes the policy entry Chrome can parse', () => {
-  const src = fs.readFileSync(new URL('scripts/OperaAgentInstaller.cs', root), 'utf8');
-  // WHY this lock: ExtensionInstallForcelist takes "extension_id;update_url". The
-  // installer once wrote the URL alone, which is not a shorter form of the same value
-  // but a different one, and Chrome ignores an entry it cannot parse. The policy then
-  // reads as applied, the installer reports success, and nothing is installed — which
-  // is exactly what an unrun installer looks like from the outside.
-  assert.match(src, /ForcelistEntry\s*=\s*ExtensionId\s*\+\s*";"\s*\+\s*FeedUrl/,
-    'the entry joins the extension id and the update URL with a semicolon');
-  // WHY the id is asserted here and not left to the reader: a key rotation changes the
-  // id, and an entry naming the old one installs an extension that can never update.
-  const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
-  const digest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
-  const currentId = [...digest].map((b) => `${String.fromCharCode(97 + (b >> 4))}${String.fromCharCode(97 + (b & 15))}`).join('');
-  assert.match(src, new RegExp(`ExtensionId = "${currentId}"`),
-    'the installer names the id the manifest key resolves to');
-  // WHY no bare URL: the entry written to the list is the joined form, so a URL alone
-  // anywhere in the write path means the bug is back.
-  assert.doesNotMatch(src, /next\.Add\(FeedUrl\)/, 'the list never receives the URL without its id');
-  // WHY the allowlist is a separate assertion: it is the policy that lets a reader
-  // enable an extension they dragged in themselves. Without it Brave installs the
-  // file and leaves the toggle off with "not listed in the Chrome Web Store", which
-  // looks like a broken download and is not.
-  assert.match(src, /CreateSubKey\("ExtensionInstallAllowlist"\)/,
-    'the allowlist key is written');
-  assert.match(src, /HasFeed\(t\) && HasAllowlist\(t\)/,
-    'and the read-back requires both, so a half-written install is not called success');
-  // WHY this second lock: Chrome reads a list policy as the numbered values 1, 2, 3
-  // inside the policy subkey. A value named after the policy is not in that sequence,
-  // so the key existed, the entry was well formed, chrome://policy showed the policy
-  // with an empty value, and nothing was installed. Two installers, two invisible
-  // failures, both of which looked like success from outside.
-  assert.match(src, /SetValue\(\(i \+ 1\)\.ToString\(\)/, 'entries are written as numbered values');
-  assert.match(src, /DeleteValue\(name, false\)/, 'and stale value names are cleared first');
-  assert.doesNotMatch(src, /GetValue\("ExtensionInstallForcelist"\)/,
-    'nothing reads a value named after the policy, which Chrome ignores');
-});
-
-test('the installer digest the page prints is the installer in the tree', () => {
-  // WHY only the installer: it is the one download whose bytes do not change on a release,
-  // so its digest can be printed on a static page and stay true. The archive and the CRX
-  // are served fresh from the endpoint and are verified by asking it, which the page says.
-  const exe = fs.readFileSync(new URL('landing/OperaAgent-Installer.exe', root));
-  const digest = crypto.createHash('sha256').update(exe).digest('hex');
-  const html = read('unduh-exe.html');
-  assert.ok(html.includes(digest), 'the page prints the real sha256 of the real installer');
-  assert.ok(exe.length > 1024, 'and the installer is not an empty placeholder');
 });
 
 test('the archive the endpoint serves is not an empty placeholder', () => {

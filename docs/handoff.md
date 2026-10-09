@@ -83,7 +83,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   [`supabase/config.toml`](../supabase/config.toml) and the production GoTrue `site_url` all name the
   Cloudflare host. `vercel.app` stays in the CORS allowlist
   ([`supabase/functions/_shared/cors.js`](../supabase/functions/_shared/cors.js)) and the redirect
-  list. The installer is the only binary the site hosts.
+  list. The site hosts no binary; the archive and the CRX are served from the update endpoint.
 - **A deploy is a dispatch, not a push.**
   [`.github/workflows/deploy-site.yml`](../.github/workflows/deploy-site.yml) publishes `landing/`
   with `wrangler pages deploy` after the unit and syntax gates. A push that does not deploy fails
@@ -108,10 +108,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    provider per row. Verified live with stamped `browser.ping` calls. The gateway accepts
    a user JWT too (ChatGPT plugin bundle in `landing/chatgpt-plugin/`) and resolves the
    same way. A real second account still wants its own test before opening access.
-4. **The installer GUI has never been run.**
-   [`scripts/OperaAgentInstaller.cs`](../scripts/OperaAgentInstaller.cs) compiles to a real PE with
-   `requireAdministrator` set. Unverified: the form itself, and whether Chrome reads the policy it
-   writes. `chrome://policy` is where to look.
+4. **The policy installer is deleted.** Chrome rejects off-store policy installs on unmanaged machines
+   (proven `[BLOCKED]` in `chrome://policy`); Opera CRX drag-and-drop plus the Web Store are the paths.
 5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands is the
    device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms); conservative ladder in place
    (migration `20261007000000_opera_agent_claim_wait_fast_tail`). Lower only after fleet impact.

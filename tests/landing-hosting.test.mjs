@@ -70,7 +70,7 @@ test('every path of the site is covered, so no rule can be reached by inheritanc
   // WHY this matters: the first live incident on this site was header precedence. An
   // unlisted path falls back to Cloudflare's default policy, which is not ours.
   const covered = new Set(rules.flatMap((rule) => rule.paths));
-  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-exe', '/unduh-exe.html', '/unduh-zip', '/unduh-zip.html', '/unduh-crx', '/unduh-crx.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/dukungan', '/dukungan.html', '/404.html', '/OperaAgent-Installer.exe', '/robots.txt', '/sitemap.xml']) {
+  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-zip', '/unduh-zip.html', '/unduh-crx', '/unduh-crx.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/dukungan', '/dukungan.html', '/404.html', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
   }
 });
@@ -214,27 +214,15 @@ test('the edge is told not to hold a page, because Cache-Control alone does not'
   for (const entry of vercel.headers) {
     const cdn = entry.headers.find((h) => h.key === 'Vercel-CDN-Cache-Control');
     assert.ok(cdn, `${entry.source} tells the edge what to do`);
-    // WHY the CRX is in the immutable group with the zip: both are versioned
-    // artifacts whose bytes never change under a given name, so re-fetching them
-    // on every visit would be waste, and a stale copy is impossible because a
-    // new version is a new filename. Nothing on the site qualifies for that any more:
-    // the archive and the CRX are served from the endpoint under a path that never
-    // changes, and the installer is rebuilt often from the same name.
+    // WHY the immutable group is empty: the archive and the CRX used to be versioned
+    // artifacts here, but both are served from the endpoint now under a path that
+    // never changes, so every entry releases rather than holds.
     assert.equal(cdn.value, 'no-store', `${entry.source} releases rather than holds`);
   }
   const headers = read('landing/_headers');
   const rules = headers.split('\n').filter((l) => /^ {2}Vercel-CDN-Cache-Control:/.test(l));
   const blocks = headers.split(/\n\n/).filter((b) => /^ {2}Cache-Control:/m.test(b));
   assert.equal(rules.length, blocks.length, 'the other host is told the same thing on every rule');
-});
-
-test('the installer is served from a stable name and is never held', () => {
-  // WHY the installer is not immutable: its bytes change whenever it is rebuilt, and its
-  // path never changes, so holding it would serve an installer that no longer matches the
-  // digest printed on the download page.
-  const installer = vercel.headers.find((h) => h.source.includes('Installer.exe'));
-  assert.ok(installer, 'the installer has a rule of its own');
-  assert.equal(installer.headers.find((h) => h.key === 'Cache-Control').value, 'no-store');
 });
 
 test('the site is reachable at the path GoTrue asks for, from the site root directory', () => {

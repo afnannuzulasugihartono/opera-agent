@@ -17,7 +17,7 @@ const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 // Every page a reader can open: a stale number on any one of them is the same
 // lie, so the count locks below read the whole site, not just the homepage.
 
-const site = ['landing/index.html', 'landing/auth.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/unduh.html', 'landing/unduh-crx.html', 'landing/unduh-exe.html', 'landing/unduh-zip.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/dashboard.html', 'landing/oauth/consent.html']
+const site = ['landing/index.html', 'landing/auth.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/unduh.html', 'landing/unduh-crx.html', 'landing/unduh-zip.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/dashboard.html', 'landing/oauth/consent.html']
   .map(read).join('\n');
 
 const manifest = JSON.parse(read('extension/manifest.json'));
