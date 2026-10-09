@@ -296,12 +296,22 @@ test('the memo cannot retain a large result between commands', () => {
   assert.match(executor.slice(0, 900), /serializedResult = \{ value: null, text: '' \};/);
 });
 
+test('the focus-gate slice is a real block, not the whole file', () => {
+  const start = background.indexOf('async function withForegroundFocusGate');
+  const end = background.indexOf('// Action Pipeline');
+  assert.ok(start > 0, 'withForegroundFocusGate must exist');
+  assert.ok(end > start, 'the section marker must come after the function');
+  const block = background.slice(start, end);
+  assert.ok(block.split('\n').length >= 30 && block.split('\n').length <= 40,
+    `expected a single function, got ${block.split('\n').length} lines`);
+});
+
 test('the focus gate loop is bounded by construction', () => {
   // It was a conditionless for(;;), which reads as unbounded even though the
   // policy module always refuses on the final attempt.
   const gate = background.slice(
     background.indexOf('async function withForegroundFocusGate'),
-    background.indexOf('// U-V Action Pipeline')
+    background.indexOf('// Action Pipeline')
   );
   assert.doesNotMatch(gate, /for \([^;]*;\s*;/);
   assert.match(gate, /for \(let attempt = 1; attempt <= FOCUS_GATE_ATTEMPTS; attempt \+= 1\)/);
