@@ -116,6 +116,6 @@ test('MCP instructions cover OAuth popups and openedTabs follow-through', () => 
   assert.match(instructions, /expect/, 'guidance must mention expect-based verification');
 });
 
-test('U-R line ships as release 1.6.20', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.20');
+test('U-R line ships as release 1.6.21', () => {
+  assert.equal(PRODUCT_VERSION, '1.6.21');
 });

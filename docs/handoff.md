@@ -11,7 +11,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 ## State
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
-- Version `1.6.20` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
+- Version `1.6.21` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
 - Gates: `npm test`, `npm run check` — 28 primitives, 142 runtime safety files, 697 unit tests, green.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.

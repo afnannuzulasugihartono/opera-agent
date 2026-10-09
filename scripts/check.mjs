@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
 // @title: check — Script.
-// @state: version 1.6.20 sweep for frame-rate state loops and track sensing.
+// @state: version 1.6.21 sweep for frame-rate state loops and track sensing.
 // @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol.
 
 import fs from 'node:fs';
@@ -15,9 +15,9 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.equal(manifest.name, 'Opera Agent');
-assert.equal(manifest.version, '1.6.20');
-assert.equal(PRODUCT_VERSION, '1.6.20');
-assert.equal(pkg.version, '1.6.20');
+assert.equal(manifest.version, '1.6.21');
+assert.equal(PRODUCT_VERSION, '1.6.21');
+assert.equal(pkg.version, '1.6.21');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));
