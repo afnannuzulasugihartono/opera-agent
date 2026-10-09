@@ -2451,16 +2451,81 @@ jumlahnya naik setingkat itu; koreksi itu sah dan sudah terjadi pada Task 14
 
 **Files:**
 - Create: `extension/worker/watch-registry.js`
-- Modify: `extension/background.js:2046-2268`
+- Modify: `extension/background.js:485-707`
+- Modify: `extension/worker/action-focus.js:4` (**satu baris `@dependencies`** — perbaikan dari review Task 16)
 - Modify: `tests/helpers/extension-source.mjs`
+- Modify: `tests/helpers/boundary-locks.mjs`
+
+**Koordinat terverifikasi di pohon hidup** (baseline sudah bergeser dua kali —
+cari berdasarkan konten; `background.js` kini **1085** baris):
+
+| penanda | baris | catatan |
+|---|---|---|
+| `export async function dispatch(` | `:113` | 372 baris, **tetap** — Task 18 tidak memindahkannya |
+| `// ---- Event-Triggered Workflows: watch registry ----` | `:485` | batas atas; tepat setelah penutup `dispatch` |
+| `const WATCH_*` | `:490`–`:493` | empat konstanta, ikut region |
+| `async function executeCommand(` | `:708` | batas bawah — **tidak ikut** |
+
+Region = **`:485`–`:707`**, yaitu **223 baris**: banner sampai baris kosong
+sebelum `executeCommand`. `:707` ikut supaya `background.js` tidak menyisakan
+dua baris kosong berdampingan (`:484` dan `:707`); di modul baru, baris kosong
+penutup itu dipangkas — aturan akhir satu `\n`, seperti Task 15.
 
 **Interfaces:**
 - Consumes: `./utils.js`, `./tab-content.js`, `./capture.js`, `./action-focus.js`, `./burst.js`, **`../background.js`** (`dispatch`), `../lib/log.js`, `../lib/protocol.js`, `../lib/watch.js`, `../lib/debugger-session.js`.
-- Produces: `watchRuleId`, `loadWatchers`, `saveWatchers`, `watcherIdsForTab`, `pruneWatchers`, `tabExists`, `armWatchersForTab`, `handleWatchFacts`, `emitWatchEvent`, `executeWatchAction`, `handleWatchFire`, `commandTimeoutError`, `trustedHover`, plus seluruh state `WATCH_*` di baris 2051-2054 termasuk `MAX_WATCHERS_PER_TAB` dan `MAX_WATCHERS_GLOBAL`.
+- Produces (diekspor, **sebelas**): `watchRuleId`, `loadWatchers`, `saveWatchers`, `watcherIdsForTab`, `pruneWatchers`, `armWatchersForTab`, `handleWatchFacts`, `commandTimeoutError`, `trustedHover`, `MAX_WATCHERS_PER_TAB`, `MAX_WATCHERS_GLOBAL`.
+  Enam lainnya milik modul, **tak diekspor**: `tabExists`, `emitWatchEvent`, `executeWatchAction`, `handleWatchFire`, `WATCH_STATE_KEY`, `WATCH_MAX_RULES_PER_ARM`.
+
+  Rencana versi awal memerintahkan `export` pada **"ketiga belas fungsi plus
+  seluruh state `WATCH_*`"** — tujuh belas. Ternyata sebelas. Enam yang sisanya
+  tidak punya pemanggil sama sekali di luar region: `tabExists` dipanggil
+  `armWatchersForTab`, `emitWatchEvent` dan `executeWatchAction` dipanggil
+  `handleWatchFire`, dua konstanta terakhir dipakai `loadWatchers` dan
+  `armWatchersForTab`. Semua di dalam region.
+
+  Empat yang memang disebut berkas lain (`executeWatchAction`,
+  `handleWatchFire` di `debugger-session-lifecycle.test.mjs`, `trustedHover`
+  di `hover-settle.test.mjs`, `MAX_WATCHERS_PER_TAB` di
+  `etw-watch-engine.test.mjs`) tetap tidak dihitung jangkauan — mengutip nama
+  dalam teks tes bukan pengimpor. Hanya pemanggil kode nyata yang menentukan.
+
+- **Yang `background.js` butuh dari modul ini: sebelas — bukan delapan.**
+  Blok impor rencana versi awal kehilangan `loadWatchers` (`:1064`),
+  `handleWatchFacts` (`:994`) dan `commandTimeoutError` (`:721`, `:742`).
+  Ketiganya dipanggil dari region yang **belum ikut pindah**: dua pertama dari
+  region Task 18, ketiga dari `executeCommand`. Tanpanya, ketiganya ialah
+  `X is not defined` — cacat yang sama untuk ke **sebelas** kalinya.
+
+- [ ] **Step 0: Perbaiki `extension/worker/action-focus.js:4` (temuan review Task 16)**
+
+Task 16 mengalihkan keempat nama `action-focus` ke `./loop-engine.js`, tapi
+baris `@dependencies`nya masih menulis `background (loop helpers)` — ia
+menyebut modul yang **bukan lagi** dependensinya, dan menghilangkan yang kini
+jadi. Tidak ada gerbang yang menjaganya (`tests/hygiene.test.mjs` hanya menolak
+teks *boilerplate* di `extension/lib/`), jadi cacat ini bisa hidup selamanya.
+
+Ganti:
+
+```js
+// @dependencies: utils, tab-content, capture, background (loop helpers), log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
+```
+
+menjadi:
+
+```js
+// @dependencies: utils, tab-content, capture, loop-engine, log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
+```
+
+Satu baris, dan itu **satu-satunya** edit di `action-focus.js` pada task ini.
 
 - [ ] **Step 1: Buat modulnya**
 
-Pindahkan **utuh** baris 2046-2268 (termasuk banner `// ---- Event-Triggered Workflows: watch registry ----` dan deklarasi `const` baris 2051-2054).
+Pindahkan **utuh** baris `:485`–`:707` (223 baris: banner `// ----
+Event-Triggered Workflows: watch registry ----`, empat `const WATCH_*`, dan
+seluruh isi sampai baris kosong sebelum `executeCommand`). Baris penutup `:707`
+ikut supaya `background.js` tidak menyisakan dua baris kosong berdampingan
+(`:484` dan `:707`); di modul baru, baris kosong itu **dipangkas** — aturan
+akhir satu `\n`, sama seperti Task 15.
 
 ```js
 // @last-edited: 2026-10-09 UTC+7.
@@ -2486,38 +2551,125 @@ import { runBurst } from './burst.js';
 import { dispatch } from '../background.js';
 ```
 
-- [ ] **Step 2: Ekspor**
+**Blok impor di atas terverifikasi lengkap, jangan dikurangi: 18 nama.**
+Tujuh belas diimpor `background.js` (`clamp`, `codedError`, `contentCall`,
+`evaluateRules`, `executeInTab`, `executionMode`, `fetchJson`, `getConfig`,
+`log`, `releaseDebuggerSession`, `runActionPipeline`, `runBurst`, `setState`,
+`trustedClick`, `withDebugger`, `withForegroundFocusGate`,
+`withInputFocusEmulation`) ditambah `dispatch`, yang satu-satunya disebut di
+luar daftar itu karena ia dideklarasikan — bukan diimpor — oleh `background.js`.
 
-`export` pada ketiga belas fungsi plus seluruh state `WATCH_*`.
+- [ ] **Step 2: Ekspor** **sebelas** nama — daftarnya ada di bagian
+  **Interfaces** di atas. Enam sisanya tetap privat.
 
 - [ ] **Step 3: Potong dari `background.js` dan impor**
 
-- Hapus baris 2046-2268.
-- Tambahkan:
+- Hapus baris **`:485`–`:707`** (223 baris).
+- Tambahkan ini — **sebelas nama, bukan delapan**:
 
 ```js
 import {
   watchRuleId,
+  loadWatchers,
   saveWatchers,
   watcherIdsForTab,
   pruneWatchers,
   armWatchersForTab,
+  handleWatchFacts,
+  commandTimeoutError,
   trustedHover,
   MAX_WATCHERS_PER_TAB,
   MAX_WATCHERS_GLOBAL,
 } from './worker/watch-registry.js';
 ```
 
-- [ ] **Step 4: Daftarkan di helper dan jalankan**
+**Tiga yang hilang dari rencana versi awal** — dan ketiganya dipanggil dari
+region yang **masih tinggal**:
 
-Tambahkan `'extension/worker/watch-registry.js',` setelah `extension/lib/serialize.js` — **urutannya di sini diuji** oleh `tests/extension-source.test.mjs`.
+| nama | pemanggil | setelah Task 17 |
+|---|---|---|
+| `loadWatchers` | `:1064` | pindah ke `execute-pull.js` di Task 18 |
+| `handleWatchFacts` | `:994` | pindah ke `execute-pull.js` di Task 18 |
+| `commandTimeoutError` | `:721`, `:742` | tetap di `executeCommand`, **tinggal di `background.js`** |
+
+Omitting them is the same `X is not defined` failure for the eleventh time
+across tasks 8–16 — and unlike the earlier ten, two of these three will be
+removed again by task 18's sweep, so a reviewer reading the final tree will
+not see them here at all. The task must still be correct at this commit.
+
+Yang **tidak** ikut diimpor: enam nama privat (`tabExists`, `emitWatchEvent`,
+`executeWatchAction`, `handleWatchFire`, `WATCH_STATE_KEY`,
+`WATCH_MAX_RULES_PER_ARM`) — semuanya hanya dipanggil di dalam region.
+
+- [ ] **Step 4: Daftarkan di helper, re-pin, dan jalankan**
+
+Tambahkan `'extension/worker/watch-registry.js',` **setelah
+`extension/lib/serialize.js`** (indeks 3). Ini bukan selera:
+
+```js
+// tests/extension-source.test.mjs:29
+assert.ok(idx('extension/lib/serialize.js') < idx('extension/worker/watch-registry.js'),
+  'serialize must precede watch-registry');
+// :32 — jangkarnya ada di serialize.js
+assert.ok(src.indexOf('// ---- Event-Triggered Workflows') > src.indexOf('function boundedResult'));
+```
+
+`function boundedResult` ada di `extension/lib/serialize.js:8`, dan tanda
+`// ---- Event-Triggered Workflows` kini **pindah** dari `background.js`
+(indeks 0) ke `watch-registry.js`. Simpanlah setelah `serialize.js`; letaknya
+di antara berkas worker mana pun setelah itu bebas — tidak ada satu pun irisan
+yang melintasi batas ini.
+
+**Yang perlu diketahui sebelum menjalankan** — dua irisan menyentuh berkas ini
+dan keduanya selamat, bukan karena keberuntungan tapi karena bergerak bersama:
+
+- `tests/debugger-session-lifecycle.test.mjs:51` memotong dari
+  `'async function executeWatchAction('` ke `'async function handleWatchFire('`
+  — **kedua penanda ada di region** (`:667` dan sebelumnya), jadi keduanya
+  berpindah ke berkas yang sama dan urutannya tak terbalik.
+- `tests/hover-settle.test.mjs:128` memotong `trustedHover` sampai `\n}\n` —
+  penanda penutupnya baris `:706` yang ikut berpindah. Setelah baris kosong
+  `:707` dipangkas, pola itu jatuh pada akhir berkas dan **tetap cocok**.
+
+Blok `dispatch` (`:113`–`:484`) **tidak** menyentuh region ini: `case`
+`page.read`/`page.query` (`:425`) dan `watch.*` (`:238`–`:284`) semuanya di
+dalamnya dan semuanya tinggal.
+
+Re-pin `tests/helpers/boundary-locks.mjs` — nilai hash saja, tanpa komentar
+bertanggal.
 
 ```bash
 npm test
 npm run check
-git add extension/worker extension/background.js tests/helpers/extension-source.mjs
+git status --porcelain   # harus tepat 5 jalur, tanpa kejutan
+git add extension/worker extension/background.js extension/worker/action-focus.js tests/helpers/extension-source.mjs tests/helpers/boundary-locks.mjs
 git commit -m "refactor: move the event-triggered watchers into worker/watch-registry.js"
 ```
+
+Lima jalur: `watch-registry.js` (baru), `background.js`,
+`action-focus.js` (Step 0), `tests/helpers/extension-source.mjs`, dan
+`tests/helpers/boundary-locks.mjs`.
+
+Ukuran yang diharapkan: `background.js` 1085 → **sekitar 875** — 223 baris
+terpotong, blok impor 13 baris ditambahkan. Tak ada pernyataan *load-time* di
+region (murni `const` dan `function`), jadi `background-load.test.mjs` tidak
+berubah perilaku.
+
+**Empat kegagalan yang mungkin terjadi di sini, dan apa artinya:**
+
+- `ReferenceError: loadWatchers is not defined` / `handleWatchFacts` /
+  `commandTimeoutError` — blok impor di Step 3 kehilangan satu dari tiga
+  nama yang baru. Ini cacat ke-sebelas, dan dua di antaranya akan hilang lagi
+  dari daftar itu di Task 18.
+- `serialize must precede watch-registry` atau `the watch section marker must
+  follow boundedResult` — `watch-registry.js` disisipkan setelah
+  `loop-engine.js` alih-alih setelah `serialize.js`.
+- `watchAction must exist` / `end > start` di
+  `debugger-session-lifecycle.test.mjs` — regionnya terpotong di tengah
+  `executeWatchAction`/`handleWatchFire`; periksa batas `:485`/`:707`.
+- Gerbang `hygiene` dead-export merah — sebuah dari sebelas nama diekspor
+  tapi tidak disebut di berkas lain. Turunkan menjadi privat, jangan
+  tambahkan pemanggil.
 
 ---
 
@@ -2648,6 +2800,21 @@ Sisanya — `./worker/*.js`, `../lib/*.js` — berlaku aturan yang sama: buang
 nama yang tak punya pemanggil di `background.js`, sisakan yang dipakai `dispatch`
 dan oleh potongan yang tinggal. Tanpa langkah ini nama-nama mati tertinggal
 tanpa satu pun gerbang yang menangkapnya.
+
+**Angka pembanding, diambil sebelum task ini memotong apa pun.** Di ujung
+Task 17, `background.js` sudah membawa **20** nama impor tanpa pemanggil —
+14 dari perpindahan burst/loop Task 16 (`BURST_ACTION_METHODS`,
+`BURST_MAX_TIMEOUT_MS`, `LOOP_SYNTHETIC_DEAD_TICKS`, `LOOP_TRACK_MIN_RUN`,
+`burstCrossTabRef`, `burstStaleRef`, `burstStepParams`, `centroidTrack`,
+`downscaleHash`, `frontOfChanged`, `matchTemplate`, `pixelDiff`, `recordTick`,
+`resolveKeyInput`) dan 6 dari pemotongan watch Task 17 (`evaluateRules`,
+`executeInTab`, `releaseDebuggerSession`, `withDebugger`,
+`withForegroundFocusGate`, `withInputFocusEmulation`).
+
+Angka itu akan **naik** setelah potongan task ini. Ia bukan target untuk
+dipenuhi — ia alat untuk mendeteksi kalau sapuanmu berhenti terlalu cepat.
+Berhentilah ketika `git grep` tidak menemukan satu pun, bukan ketika cocok
+dengan dua puluh.
 
 - [ ] **Step 5: Ganti guard `background.js` dengan ambang akhir, lalu jalankan suite**
 
