@@ -19,6 +19,20 @@
 - **Nomor baris di rencana adalah koordinat baseline.** Setiap task memotong `background.js` dan menggeser semua angka setelahnya — Task 7 sudah menggesernya 6 baris. **Baca selalu ulang dari berkas terkini, dan verifikasi rentang potong lewat isinya, bukan lewat angkanya.**
 - **Satu simbol diekspor hanya kalau punya pemanggil di file lain.** `tests/hygiene.test.mjs:367` memegang ini untuk `extension/` dan `lib/`: pemakaian di dalam file pengeskpor sendiri tidak cukup, dan test/script pun dihitung sebagai pemanggil. Sebelum menambah `export`, `grep` namanya ke seluruh pohon di luar modul itu — yang nol hasil, jangan diekspor. Ini berlaku untuk dua belas modul yang akan dibuat.
 - **Setiap nama yang diimpor harus benar-benar dipakai di berkas itu, sekarang.** Jangan memangkas daftar impor karena pemakainya "nanti pindah ke modul lain" — sampai modul itu pindah, pemanggilnya masih di `background.js`. Tiga kali temuan ini sudah terbukti (Task 8 `boundedResult`, Task 9 `setState` dan `sleep`), dan tak satu pun ditangkap tes mana pun pada awalnya — semuanya menilai `dispatch`, padahal pemanggilnya ada di region yang belum ikut pindah. Keempat kalinya terjadi di Task 11: brief-nya menyatakan "tidak ada impor baru", padahal empat namanya dipanggil `listenStart`, `capturePage` dan `localSelfTest`.
+- **Setiap modul baru diakhiri tepat satu `\n`.** Baris kosong ekor ialah sisa
+  pemotongan region yang membawa pemisah bersamanya; `capture.js` sempat
+  memilikinya (Task 10b) dan sudah dibersihkan di Task 11, `tab-content.js`
+  memilikinya sekarang. Setiap brief ekstraksi yang memotong baris kosong
+  terakhir region wajib menyebut pembersihannya.
+- **Klasifikasi jarak komentar bisa buta, dan kebutaannya bergeser tiap task.**
+  `tests/hygiene.test.mjs:51` mensyaratkan blok komentar kolom-0 berjarak satu
+  baris dari deklarasi, tapi `classifyJs` (`comment-spacing.mjs:20-58`) terjebak
+  mode template pada backtick yang bertemu `${`, sehingga setelah penutup
+  template tak pernah kembali ke mode kode. Akibatnya `background.js` kini
+  hanya diawasi sampai `:95` — `:96`-`2247` buta. Kalau task berikutnya membuat
+  gerbang ini merah, kemungkinan besar itu pelanggaran **tersimpan** yang barusan
+  terbuka, bukan kesalahan gerbang: perbaiki dengan satu baris kosong, jangan
+  longgarkan aturannya.
 - **Sebelum setiap dispatch ekstraksi, kontrol memeriksa dua hal secara mandiri terhadap pohon hidup:** (a) setiap kandidat impor punya panggilan nyata di `background.js` **di luar** region yang dipotong; (b) setiap kandidat ekspor punya pemanggil di file **selain** dirinya sendiri. Keduanya dihitung, bukan dinilai — hasilnya dibawa ke dalam dispatch. Tiga kegagalan berturut-turut (Task 8, 9, 10) menjadikan pemeriksaan ini wajib, bukan opsional.
 - **File tidak di-rename.** `background.js` disebut 23 file, `content.js` 21, keduanya dikunci manifest.
 - **Fungsi tidak di-rename.** 24 dari 100 fungsi dirujuk sebagai deklarasi di dalam string/regex di tests+scripts.
@@ -1694,6 +1708,33 @@ git commit -m "refactor: move the content-script bridge into worker/tab-content.
 
 Pindahkan **utuh** baris 463-550. Tidak ada state header yang ikut.
 
+**Koordinat terverifikasi di pohon hidup** (angka baseline sudah bergeser —
+cari berdasarkan konten): region berjalan dari **`:83`** sampai **`:178`**.
+`background.js` kini 2247 baris.
+
+**Region ini dimulai tujuh baris lebih tinggi dari yang ditulis rencana.**
+`:463` baseline ialah `function listenUrlFor`. Tapi blok komentar
+
+```
+// WHY element capture and not tab capture: chrome.tabCapture refuses callers
+```
+
+kini berdiri di **`:83`-`:89`**, tepat di atasnya, dan Task 10b meletakkannya
+di sana **supaya task ini mewarisinya**. Isinya murni alasan desain
+`listenStart`: WebAudio, media element, CORS, `a silent transcript proves
+nothing by itself`. Kalau potongan dimulai di `listenUrlFor`, komentar itu
+tinggal di `background.js` — terdampar di samping region `capture-page`,
+menjelaskan sesuatu yang sudah tidak ada di berkas itu.
+
+Jadi: potong `:83`-`:178` (96 baris = komentar 7, baris kosong, lima fungsi,
+baris kosong pemisah `:178`). Baris kosong pemisah ikut terpotong supaya
+`background.js` tidak berakhir dengan dua baris kosong berurutan —
+**dan karena itu `listen.js` akan berakhir `}\n\n`. Hapus baris kosong ekor
+itu** (lihat langkah 0).
+
+Pemisah atasnya ialah `let loopGeneration = 0;` (`:81`) dan baris kosong
+`:82` — keduanya **ikut tinggal**.
+
 ```js
 // @last-edited: 2026-10-09 UTC+7.
 // @title: listen — tabCapture session lifecycle and chunk streaming.
@@ -1710,20 +1751,57 @@ import { codedError } from './capture.js';
 
 `HTTP_URL_RE` ikut diimpor karena `listen` mengujinya di `:480` (`LISTEN_BLOCKED`). Ia dideklarasikan di `background.js:74` dan berpindah ke `tab-content` pada Task 12, sehingga tiap pembaca harus mengimpornya sendiri.
 
-- [ ] **Step 2: Ekspor** kelima fungsi.
+- [ ] **Step 2: Ekspor** **empat** fungsi: `readListenSession`, `listenStart`,
+  `listenStop`, `postListenChunk`.
+
+`listenUrlFor` **jangan diekspor.** Setelah region ini pindah, kelima
+panggilannya (`:113`, `:123`, `:129`, `:147`, `:168`) berada di dalam
+`listen.js` sendiri, di `listenStart` dan `listenStop`. Nama itu tidak disebut
+di satu pun file lain mana pun — dan kalaupun nanti disebut `background.js`,
+itu pun hanya lewat baris impor, bukan panggilan. Ini keadaan yang sama persis
+dengan `captureFramePrivacyProbe` (Task 10b) dan `ensureContent` (Task 12),
+keduanya sudah dilepas ekspornya. Rencana versi awal menulis "kelima fungsi" —
+yang kelima itu mati.
 
 - [ ] **Step 3: Potong dari `background.js` dan impor**
 
-- Hapus baris 463-550.
+- Hapus region `:83`-`:178`.
 - Tambahkan:
 
 ```js
-import { listenStart, listenStop } from './worker/listen.js';
+import { readListenSession, listenStart, listenStop, postListenChunk } from './worker/listen.js';
 ```
+
+**Empat nama, bukan dua.** Rencana versi awal hanya menulis `listenStart` dan
+`listenStop`. Dua lagi dipanggil dari region yang belum ikut pindah:
+
+- `postListenChunk` — `:2139`
+- `readListenSession` — `:2235`
+
+Dua `ReferenceError` asinkron di jalur yang tak ditutup tes mana pun — cacat
+yang sama dengan Task 8, 9, 10, 11 dan 12.
+
+- [ ] **Step 0: Dua pemangkasan, sebelum potongan**
+
+1. **`extension/worker/tab-content.js:117` berakhir `}\n\n`** — sisa baris
+   kosong `:188` dari region Task 12, yang brief-nya memerintahkan ikut
+   dipotong. Task 11 sudah memutuskan standar ini ketika menghapus cacat yang
+   sama dari `capture.js`: setiap berkas di pohon berakhir tepat satu `\n`
+   (`utils.js`, `capture.js`, `private-tabs.js`, `lib/serialize.js` semuanya
+   begitu). Hapus satu baris itu. Kunci tidak menyentuh `tab-content.js`,
+   jadi tak ada hash yang perlu ditempel ulang.
+2. Region Task 13 ikut menyisakan `}\n\n` di `listen.js` (alasannya dijelaskan
+   di Step 1). Setelah langkah 3, pastikan `listen.js` juga berakhir tepat
+   satu `\n`.
 
 - [ ] **Step 4: Daftarkan di helper dan jalankan**
 
-Tambahkan `'extension/worker/listen.js',` setelah `capture.js`.
+Tambahkan `'extension/worker/listen.js',` **setelah `tab-content.js`**
+(akhiri daftar — rencana menulis `setelah capture.js`, angka yang basi sejak
+Task 11 dan Task 12 menambah dua entri di belakangnya). `FILES` tumbuh
+berurutan kronologis; satu-satunya urutan yang dikunci tes ialah
+`background.js` pertama, `serialize.js` sebelum `watch-registry.js`, dan
+`execute-pull.js` terakhir.
 
 ```bash
 npm test
