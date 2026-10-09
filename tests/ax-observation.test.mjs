@@ -146,7 +146,7 @@ test('content.js exposes the pure-DOM accessibility layer (Layer A)', () => {
 });
 
 test('background.js attaches a poverty-triggered, fail-open CDP axSummary (Layer B)', () => {
-  assert.match(background, /import \{ buildAxSummary[^}]*\} from '\.\/lib\/ax-summary\.js'/);
+  assert.match(background, /import \{ buildAxSummary[^}]*\} from '\.{1,2}\/lib\/ax-summary\.js'/);
   assert.match(background, /AX_SUMMARY_TEXT_POVERTY_CHARS/);
   assert.match(background, /Accessibility\.enable/);
   assert.match(background, /Accessibility\.getFullAXTree/);

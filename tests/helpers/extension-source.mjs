@@ -10,6 +10,7 @@ const FILES = [
   'extension/lib/log.js',
   'extension/lib/serialize.js',
   'extension/worker/utils.js',
+  'extension/worker/capture.js',
 ];
 
 export async function extensionSource() {
