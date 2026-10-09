@@ -221,9 +221,9 @@ git add tests/boundary-locks.test.mjs tests/helpers/boundary-locks.mjs
 git commit -m "test: assert all nine boundary locks, re-pin four stale hashes"
 ```
 
-Expected: `# pass 728` (726 + 3 baru − 1? — lihat catatan di bawah), `check ok`.
+Expected: `# pass 729` (726 baseline + 3 tes baru), `# fail 0`, `check ok`.
 
-Catatan jujur: jumlah tes akhir dihitung dari keluaran `npm test`, bukan dari perkiraan. Yang mutlak: **tidak ada tes yang berkurang**, dan `tests/boundary-locks.test.mjs` melapor PASS.
+Yang wajib diperiksa bukan angka itu sendiri, melainkan dua hal: tidak ada tes yang **berkurang** dari baseline 726, dan `tests/boundary-locks.test.mjs` melapor PASS untuk ketiga array. Kalau keluaran `npm test` menunjukkan angka lain, catat angka sebenarnya — keluaran mesin mengalahkan angka di halaman ini.
 
 ---
 
@@ -237,14 +237,14 @@ Catatan jujur: jumlah tes akhir dihitung dari keluaran `npm test`, bukan dari pe
 - Consumes: tidak ada.
 - Produces: tidak ada; murni komentar. Satu-satunya tugasnya membuat header file menyatakan isi file.
 
-Kesalahan fakta yang harus diketahui: spec menyebut "sembilan baris `@state` identik". Pengecekan menemukan **9 di `@state`** plus **2 lagi membawa teks identik di `@title`** — masalahnya sama, boilerplate yang tidak menyatakan apa pun:
+Kesalahan fakta yang harus diketahui: spec menyebut "sembilan baris `@state` identik" — hitungannya salah, dan rencana ini awalnya mengulanginya. Hitungan sebenarnya **20 baris di 11 file**, dalam dua pola berbeda:
 
-| file | baris | field |
+| file | baris | field yang kena |
 |---|---|---|
-| `agent-log.js`, `ax-summary.js`, `endpoints.js`, `external-origins.js`, `focus-gate.js`, `keyboard.js`, `popup-events.js`, `protocol.js`, `watch.js` | 3 | `@state` |
-| `action-pipeline.js`, `options-store.js` | 2 | `@title` |
+| `agent-log.js`, `ax-summary.js`, `endpoints.js`, `external-origins.js`, `focus-gate.js`, `keyboard.js`, `popup-events.js`, `protocol.js`, `watch.js` (9 file) | 2 **dan** 3 | `@title` (sebagai akhiran setelah `"nama — "`) **dan** `@state` (murni boilerplate) |
+| `action-pipeline.js`, `options-store.js` (2 file) | 2 | `@title` **saja** — `@state` keduanya sudah berisi keterangan yang benar |
 
-Teks yang dihapus: `MV3 runtime library, shared with the Node suite..` (perhatikan titik ganda).
+Teks yang dihapus: `MV3 runtime library, shared with the Node suite..` (perhatikan titik ganda). Tesnya berbasis file (`text.includes(...)`), jadi ia melaporkan 11 nama file meski barisnya 20 — itu memang benar untuk tes ini.
 
 - [ ] **Step 1: Tulis tesnya dan jalankan — 11 file akan GAGAL**
 
@@ -275,25 +275,22 @@ import { readdir } from 'node:fs/promises';
 Run: `node --test tests/hygiene.test.mjs`
 Expected: FAIL — 11 nama file terdaftar.
 
-- [ ] **Step 2: Ganti kesebelas baris itu**
+- [ ] **Step 2: Ganti dua puluh baris boilerplate di sebelas file**
 
-Untuk tiap file, tulis `@title` dan `@state` yang benar-benar menjelaskan isinya. Contoh dua yang paling berbeda, agar bentuknya tidak diragukan:
+**Aturan yang tidak boleh dilanggar: ganti hanya teks yang memuat boilerplate.** `@state` yang sudah berisi keterangan benar harus dibiarkan persis apa adanya — menulis ulangnya akan memasukkan keterangan salah ke dalam kode.
 
-`extension/lib/agent-log.js`:
+Baca tiap file sebelum menulis. Jangan mengarang isi dari nama filenya.
+
+**Sembilan file (kedua baris berganti).** Contoh `extension/lib/agent-log.js`:
 
 ```js
 // @title: agent-log — the no-export logger that classic scripts and the worker share.
 // @state: level-aware console sink published on globalThis; deliberately has no export so manifest content_scripts can load it as a classic script.
 ```
 
-`extension/lib/options-store.js`:
+**Dua file (`action-pipeline.js`, `options-store.js`: hanya `@title` yang diganti).** `@state` mereka sudah benar dan tidak disentuh. Sebagai pembanding, `options-store.js:3` kini berbunyi *"The bridge URL, log level, and the user's own model endpoint, name and key, kept in local storage"* — dan itu akurat karena file ini memakai `chrome.storage.local`, bukan `sync`. Keterangan seperti itu yang harus bertahan.
 
-```js
-// @title: options-store — persisted model endpoint, key and name behind one accessor.
-// @state: reads and writes chrome.storage.sync; validation and defaults live here, not in the caller.
-```
-
-Sisanya mengikuti pola yang sama: satu kalimat judul, satu kalimat isi. Jangan mengulang "shared with the Node suite". Pastikan tidak ada `..` ganda.
+Sisanya mengikuti pola yang sama: satu kalimat judul, satu kalimat isi. Jangan mengulang "shared with the Node suite", dan pastikan tidak ada `..` ganda yang tersisa di baris mana pun.
 
 - [ ] **Step 3: Jalankan dan lihat LULUS**
 
@@ -673,10 +670,14 @@ test('the documented chrome.* exception is still real', async () => {
     'debugger-session.js no longer uses chrome.*; drop it from CHROME_FREE_EXCEPTIONS');
 });
 
-test('background.js and every worker module stay inside their size ceilings', async () => {
+test('worker modules stay under their ceiling, and background.js does not grow', async () => {
+  // Selama ekstraksi berjalan, background.js hanya boleh menyusut — bukan membesar.
+  // Ambang < 600 dipasang di Task 18, pada saat ia bisa ditegakkan; memasangnya di
+  // sini akan membuat suite merah selama dua belas task berturut-turut dan setiap
+  // implementer tidak akan bisa membedakan kegagalan sendiri dari kegagalan ini.
   const bg = await readFile(new URL('extension/background.js', root), 'utf8');
-  assert.ok(bg.split('\n').length < 600,
-    `background.js must shrink below 600 lines, got ${bg.split('\n').length}`);
+  assert.ok(bg.split('\n').length <= 2647,
+    `background.js grew to ${bg.split('\n').length} lines; the split must only remove code`);
 
   const worker = new URL('extension/worker/', root);
   let names = [];
@@ -689,21 +690,19 @@ test('background.js and every worker module stay inside their size ceilings', as
 });
 ```
 
-- [ ] **Step 2: Jalankan dan lihat GAGAL pada ukuran**
+- [ ] **Step 2: Jalankan dan lihat SEMUA LULUS**
 
 Run: `node --test tests/structure-gates.test.mjs`
-Expected: FAIL — `background.js must shrink below 600 lines, got 2647`. Dua tes lain PASS (17 file lib, satu kecualiannya nyata).
+Expected: PASS — 3 tes (17 file lib bebas `chrome.*` dengan satu kecualiannya yang nyata, tes kecualiannya sendiri, dan tes ukuran).
 
-Kegagalan ini **diharapkan** — ia yang mendorong Task 7-18. Jangan menaikkan ambang.
+Tidak ada yang merah di sini, dan itu disengaja. Global Constraints menuntut `npm test` **dan** `npm run check` hijau setelah *setiap* perpindahan; suite yang merah selama dua belas task akan menghapuskan sinyal kegagalan itu.
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add tests/structure-gates.test.mjs
-git commit -m "test: enforce the lib chrome-free rule and the split's size ceilings"
+git commit -m "test: enforce the lib chrome-free rule and worker module ceilings"
 ```
-
-Catatan: suite penuh kini merah pada satu tes ukuran sampai Task 18 selesai. Itu disengaja dan harus ditulis di pesan commit Task 18 — bukan disembunyikan dengan menaikkan ambang.
 
 ---
 
@@ -806,7 +805,7 @@ Expected: FAIL — `clearSerializedResult` belum ada.
 
 - [ ] **Step 2: Buat modulnya**
 
-Pindahkan **utuh** baris 2019-2045 `extension/background.js` (tiga fungsi `boundedResult`, `oversized`, `serializeResult`, beserta komentar dan `let serializedResult`) ke `extension/lib/serialize.js`, lalu tambahkan impor/ekspor berikut. Seluruh isi berkas setelah perpindahan:
+Pindahkan **utuh** baris 2019-2045 `extension/background.js` (dua fungsi `boundedResult`/`oversized`, blok komentar memo, `let serializedResult`, dan `serializeResult`) ke `extension/lib/serialize.js` — urutannya dipertahankan persis seperti asal — lalu tambahkan kepala berkas, `MAX_RESULT_BYTES`, `clearSerializedResult`, dan satu baris `export`. Seluruh isi berkas setelah perpindahan:
 
 ```js
 // @last-edited: 2026-10-09 UTC+7.
@@ -814,15 +813,26 @@ Pindahkan **utuh** baris 2019-2045 `extension/background.js` (tiga fungsi `bound
 // @state: owns the single memo that executeCommand clears per command; chrome-free, so it lives in lib/.
 // @dependencies: none.
 
-const MAX_RESULT_BYTES = 65536;
+const MAX_RESULT_BYTES = 512 * 1024;
 
-let serializedResult = { value: null, text: '' };
-
-function clearSerializedResult() {
-  // Drop the memo so a large previous result is not pinned for the worker's
-  // lifetime. Exported as a function because an imported binding is read-only.
-  serializedResult = { value: null, text: '' };
+function boundedResult(value) {
+  const text = serializeResult(value);
+  if (text.length > MAX_RESULT_BYTES) {
+    throw new Error(`Result exceeds ${MAX_RESULT_BYTES} bytes. Use bounded/chunked reads.`);
+  }
+  return value;
 }
+
+function oversized(value) {
+  return serializeResult(value).length > MAX_RESULT_BYTES;
+}
+
+// Single-entry memo for result serialization. page.read measures the result
+// against the ceiling and the dispatcher then measures it again; without this,
+// every read paid a second full JSON.stringify on the hottest observation path.
+// Keyed on object identity, so a rebuilt result serializes exactly once, and
+// cleared per command so nothing large is retained between commands.
+let serializedResult = { value: null, text: '' };
 
 function serializeResult(value) {
   if (serializedResult.value === value) return serializedResult.text;
@@ -832,10 +842,22 @@ function serializeResult(value) {
   return text;
 }
 
-export { MAX_RESULT_BYTES, clearSerializedResult, serializeResult, boundedResult, oversized };
+function clearSerializedResult() {
+  // Drop the memo so a large previous result is not pinned for the worker's
+  // lifetime. Exported as a function because an imported binding is read-only.
+  serializedResult = { value: null, text: '' };
+}
+
+export {
+  MAX_RESULT_BYTES,
+  boundedResult,
+  oversized,
+  serializeResult,
+  clearSerializedResult,
+};
 ```
 
-**Penting:** nilai `MAX_RESULT_BYTES` harus disalin persis dari `extension/background.js:75`, bukan ditulis ulang dari ingatan. Angka `65536` di atas adalah placeholder yang WAJIB diganti dengan nilai sebenarnya yang dibaca dari baris tersebut sebelum commit — kalau nilainya berbeda, perilaku perintah berubah.
+**Penting — nilai persis:** `const MAX_RESULT_BYTES = 512 * 1024;`, disalin dari `extension/background.js:75`. Jangan menuliskan `65536` atau hasil hitungannya — teksnya harus identik, termasuk bentuk perkaliannya. `boundedResult` dan `oversized` wajib ikut terbawa: kalau hanya `serializeResult` yang dipindah, blok `export` di atas merujuk nama yang tidak terdefinisi dan modul gagal saat *link*.
 
 - [ ] **Step 3: Ambil nilai asli**
 
@@ -1493,6 +1515,7 @@ git commit -m "refactor: move the event-triggered watchers into worker/watch-reg
 - Create: `extension/worker/execute-pull.js`
 - Modify: `extension/background.js:2269-2647`, `:73`, `:88-89`
 - Modify: `tests/helpers/extension-source.mjs`
+- Modify: `tests/structure-gates.test.mjs` (guard `<= 2647` menjadi `< 600`)
 
 **Interfaces:**
 - Consumes: `./utils.js`, `./tab-content.js`, `./private-tabs.js`, `./listen.js`, `./action-focus.js`, `./watch-registry.js`, `./capture.js`, `../lib/serialize.js`, **`../background.js`** (`dispatch`), `../lib/log.js`, `../lib/protocol.js`, `../lib/options-store.js`, `../lib/model-client.js`, `../lib/external-origins.js`, `../lib/deadline-race.js`.
@@ -1568,14 +1591,32 @@ const FILES = [
 ];
 ```
 
-- [ ] **Step 5: Jalankan suite penuh — gerbang ukuran kini hijau**
+- [ ] **Step 5: Ganti guard `background.js` dengan ambang akhir, lalu jalankan suite**
+
+Di `tests/structure-gates.test.mjs`, ganti guard yang dipasang Task 6:
+
+```js
+  assert.ok(bg.split('\n').length <= 2647,
+    `background.js grew to ${bg.split('\n').length} lines; the split must only remove code`);
+```
+
+menjadi ambang sebenarnya:
+
+```js
+  assert.ok(bg.split('\n').length < 600,
+    `background.js must end up below 600 lines, got ${bg.split('\n').length}`);
+```
+
+Lalu:
 
 ```bash
 npm test
 npm run check
 ```
 
-Expected: `# fail 0`, `check ok`. `tests/structure-gates.test.mjs` berhenti gagal karena `background.js` kini di bawah 600 baris.
+Expected: `# fail 0`, `check ok`. Ketiga tes `structure-gates` kini lulus, termasuk ambang `< 600` yang baru bisa ditegakkan setelah dua belas ekstraksi selesai.
+
+Kalau ambang itu gagal, `background.js` belum cukup kecil — periksa apakah ada baris yang seharusnya ikut berpindah tetapi tertinggal, **bukan** menaikkan ambang.
 
 Kalau `background-load.test.mjs` gagal dengan `ReferenceError: WAKE_ALARM is not defined`, konstanta tidak ikut pindah. Kalau `loopPromise is not defined`, hal yang sama. Keduanya adalah penyebab tunggal yang dipastikan Task 18 tangani.
 
