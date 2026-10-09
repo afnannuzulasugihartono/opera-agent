@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: landing-i18n — the shared toggle swaps English on, and only on, the pages that carry a dict.
-// @state: 10 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
+// @state: 11 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
 // @dependencies: test, assert, fs, vm.
 
 import test from 'node:test';
@@ -23,7 +23,22 @@ const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/conse
 
 function attrKeys(page) {
   const html = read(`landing/${page}`);
-  return [...html.matchAll(/data-i18n(?:-html)?="([^"]+)"/g)].map((m) => m[1]);
+  const marked = [...html.matchAll(/data-i18n(?:-html)?="([^"]+)"/g)].map((m) => m[1]);
+  for (const m of html.matchAll(/data-i18n-attr="([^"]+)"/g)) {
+    for (const part of m[1].split(';')) {
+      const sep = part.indexOf(':');
+      if (sep <= 0) continue;
+      const key = part.slice(sep + 1).trim();
+      if (key) marked.push(key);
+    }
+  }
+  // Dynamic strings rendered through the shared helper carry no data-i18n
+  // marker, so a standalone t('key', 'fallback') call counts as a mark too.
+  // The leading guard keeps element( from matching as a helper call.
+  for (const m of html.matchAll(/(?:[^A-Za-z0-9_$])t\(\s*['"]([^'"]+)['"]/g)) {
+    marked.push(m[1]);
+  }
+  return marked;
 }
 
 function pageDict(page) {
@@ -87,7 +102,7 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
 // Run the shipped mechanism file against a stub DOM, so the swap the tests
 // prove is the swap the pages load rather than a copy of its logic.
 
-function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, readyState = 'complete', storageThrows = false, withHead = false } = {}) {
+function runMechanism({ stored = null, dict = { en: { greeting: 'Hello', ph: 'Write here' } }, readyState = 'complete', storageThrows = false, withHead = false } = {}) {
   const store = stored === null ? {} : { 'oa-lang': stored };
   const listeners = {};
   const element = (attrs, textContent) => ({
@@ -101,6 +116,10 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, rea
   });
   const nodes = [element({ 'data-i18n': 'greeting' }, 'Halo'), element({ 'data-i18n': 'missing' }, 'Tetap')];
   const rich = [element({ 'data-i18n-html': 'rich' }, 'Baca <a href="./x.html">panduan</a> dulu.')];
+  const attributed = [
+    element({ 'data-i18n-attr': 'placeholder:ph', placeholder: 'Tulis di sini' }, ''),
+    element({ 'data-i18n-attr': 'placeholder:missing', placeholder: 'Tetap di sini' }, ''),
+  ];
   const buttons = [
     element({ 'data-lang': 'id', 'aria-pressed': 'true' }, 'ID'),
     element({ 'data-lang': 'en', 'aria-pressed': 'false' }, 'EN'),
@@ -114,6 +133,7 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, rea
     querySelectorAll: (selector) => {
       if (selector === '[data-i18n]') return nodes;
       if (selector === '[data-i18n-html]') return rich;
+      if (selector === '[data-i18n-attr]') return attributed;
       if (selector === 'button[data-lang]') return buttons;
       return [];
     },
@@ -136,7 +156,7 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello' } }, rea
   });
   vm.runInContext(read('landing/i18n.js'), context, { filename: 'i18n.js' });
   return {
-    api: context.window.OperaAgentI18n, nodes, rich, buttons, store, listeners, head, document: context.document,
+    api: context.window.OperaAgentI18n, nodes, rich, attributed, buttons, store, listeners, head, document: context.document,
     click: (button) => button.handlers.click.call(button),
   };
 }
@@ -202,6 +222,18 @@ test('a mixed paragraph swaps its markup and swaps it back, never blanking', () 
 
   const missing = runMechanism({ stored: 'en' });
   assert.equal(missing.rich[0].innerHTML, authored, 'a missing key leaves the authored markup');
+});
+
+test('a placeholder swaps through its attribute and swaps back, never blanking', () => {
+  const run = runMechanism({ stored: 'en' });
+  assert.equal(run.attributed[0].attrs.placeholder, 'Write here', 'a keyed placeholder swaps');
+  assert.equal(run.attributed[1].attrs.placeholder, 'Tetap di sini', 'a missing key leaves the authored placeholder');
+
+  run.click(run.buttons[0]);
+  assert.equal(run.attributed[0].attrs.placeholder, 'Tulis di sini', 'choosing Indonesian restores the authored placeholder');
+
+  run.click(run.buttons[1]);
+  assert.equal(run.attributed[0].attrs.placeholder, 'Write here', 'choosing English swaps again');
 });
 
 test('the toggle paints itself once, stays reachable, and presses the active language', () => {

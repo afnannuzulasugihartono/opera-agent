@@ -108,7 +108,17 @@ test('a returning login completes on the page instead of stranding the visitor',
   assert.match(html, /proveStoredSession/, 'a returning visitor sees their own state, not a stranger login form');
   assert.match(html, /localStorage/, 'the session survives across tabs like every other site');
   assert.doesNotMatch(html, /sessionStorage/, 'no tab-only storage remains to force a second login');
-  assert.match(html, /pageTitle'\)\.textContent = 'Akun'/, 'the signed-in view is titled account, not login');
+  // WHY the helper and not literals: showSignedIn once wrote Indonesian literals,
+  // so EN mode showed Indonesian there. The three strings now render through the
+  // shared helper with dict keys, keeping the exact Indonesian as the fallback.
+  assert.ok(html.includes('window.OperaAgentI18n'), 'the signed-in view renders through the shared helper');
+  for (const key of ['signedin.title', 'signedin.sub', 'signedin.whoami']) {
+    assert.ok(html.includes(`t('${key}'`), `showSignedIn renders ${key} through the helper`);
+    assert.ok(html.includes(`"${key}"`), `${key} exists in the page dict`);
+  }
+  assert.match(html, /pageTitle'\)\.textContent = t\('signedin\.title', 'Akun'\)/, 'the signed-in view is titled account, not login');
+  assert.match(html, /pageSub'\)\.textContent = t\('signedin\.sub', 'Akun Anda untuk website dan device\.'\)/, 'the signed-in sub renders through the helper');
+  assert.match(html, /whoami'\)\.textContent = t\('signedin\.whoami', 'Masuk sebagai \{email\}\.'\)\.replace\('\{email\}', email\)/, 'the whoami renders its template with the address in place');
 });
 
 test('every auth control has an accessible name', () => {

@@ -48,6 +48,7 @@
   // only English, so the swap back restores the stashed originals and a missing
   // key leaves the authored text instead of ever blanking it.
   var originals = new Map();
+  var attrOriginals = new Map();
 
   function readStored() {
     try {
@@ -78,6 +79,19 @@
     if (!originals.has(element)) originals.set(element, element.textContent);
 
     return originals.get(element);
+  }
+
+  function attrOriginalOf(element, attr) {
+    var saved = attrOriginals.get(element);
+
+    if (!saved) {
+      saved = {};
+      attrOriginals.set(element, saved);
+    }
+
+    if (!(attr in saved)) saved[attr] = element.getAttribute(attr);
+
+    return saved[attr];
   }
 
   function table() {
@@ -117,6 +131,37 @@
       paragraph.innerHTML = (typeof markup === 'string' && markup !== '') ? markup : authoredHtml;
     }
 
+    // WHY data-i18n-attr exists beside the text swap: a placeholder (or any
+    // attribute) cannot swap through textContent. The spec reads
+    // "attr:KEY" (semicolons separate pairs); a missing key leaves the
+    // authored attribute instead of ever blanking it.
+    var attributed = document.querySelectorAll('[data-i18n-attr]');
+
+    for (var a = 0; a < attributed.length; a += 1) {
+      var target = attributed[a];
+      var specs = (target.getAttribute('data-i18n-attr') || '').split(';');
+
+      for (var s = 0; s < specs.length; s += 1) {
+        var sep = specs[s].indexOf(':');
+
+        if (sep <= 0) continue;
+
+        var attr = specs[s].slice(0, sep).trim();
+        var key = specs[s].slice(sep + 1).trim();
+
+        if (!attr || !key) continue;
+
+        var authoredAttr = attrOriginalOf(target, attr);
+        var value = entries[key];
+
+        if (typeof value === 'string' && value !== '') {
+          target.setAttribute(attr, value);
+        } else if (typeof authoredAttr === 'string') {
+          target.setAttribute(attr, authoredAttr);
+        }
+      }
+    }
+
     document.documentElement.lang = current;
 
     var buttons = document.querySelectorAll('button[data-lang]');
@@ -138,10 +183,13 @@
     apply();
   }
 
-  function t(key) {
+  function t(key, fallback) {
     var text = table()[key];
 
-    return (typeof text === 'string' && text !== '') ? text : key;
+    if (typeof text === 'string' && text !== '') return text;
+    if (typeof fallback === 'string' && fallback !== '') return fallback;
+
+    return key;
   }
 
   function getLang() {

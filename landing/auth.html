@@ -255,7 +255,7 @@
           <p class="tabcopy" id="registerCopy" data-i18n="tabs.registerCopy" hidden>Masukkan email Anda — akun baru dibuat saat Anda klik link.</p>
           <form id="magicForm">
             <label for="magicEmail" data-i18n="form.email">Email</label>
-            <input id="magicEmail" type="email" autocomplete="email" spellcheck="false" maxlength="254" placeholder="anda@example.com" />
+            <input id="magicEmail" type="email" autocomplete="email" spellcheck="false" maxlength="254" placeholder="anda@example.com" data-i18n-attr="placeholder:form.emailPlaceholder" />
             <button type="submit" id="magicSubmitLogin" data-i18n="form.submitLogin">Kirim magic link</button>
             <button type="submit" id="magicSubmitRegister" data-i18n="form.submitRegister" hidden>Buat akun</button>
             <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
@@ -318,6 +318,7 @@
     "card.titleLogin": "Sign in with a magic link",
     "card.titleRegister": "Create a new account",
     "form.email": "Email",
+    "form.emailPlaceholder": "you@example.com",
     "form.submitLogin": "Send magic link",
     "form.submitRegister": "Create account",
     "or": "or",
@@ -330,6 +331,9 @@
     "return.home": "Home",
     "signed.dashboard": "Open dashboard",
     "signed.signout": "Sign out",
+    "signedin.title": "Account",
+    "signedin.sub": "Your account for the website and your devices.",
+    "signedin.whoami": "Signed in as {email}.",
     "footer.rights": "© 2026 Opera Agent. All rights reserved.",
     "footer.home": "Home",
     "footer.privacy": "Privacy",
@@ -457,12 +461,18 @@
     function showSignedIn(email) {
       // WHY the heading changes too: a signed-in visitor opening the account page
       // must see an account page, not a login page wearing a status line.
-      $('pageTitle').textContent = 'Akun';
-      $('pageSub').textContent = 'Akun Anda untuk website dan device.';
+      // WHY the helper and not literals: literals pinned EN mode to Indonesian
+      // here, so the three strings render through the shared helper with the
+      // exact Indonesian as the fallback default.
+      var t = window.OperaAgentI18n && typeof window.OperaAgentI18n.t === 'function'
+        ? window.OperaAgentI18n.t.bind(window.OperaAgentI18n)
+        : function (key, fallback) { return typeof fallback === 'string' ? fallback : key; };
+      $('pageTitle').textContent = t('signedin.title', 'Akun');
+      $('pageSub').textContent = t('signedin.sub', 'Akun Anda untuk website dan device.');
       $('signedOut').hidden = true;
       $('signedIn').hidden = false;
       if (returnTo() !== './index.html') $('returning').hidden = false;
-      $('whoami').textContent = `Masuk sebagai ${email}.`;
+      $('whoami').textContent = t('signedin.whoami', 'Masuk sebagai {email}.').replace('{email}', email);
     }
 
     // A provider or magic-link login returns here with the session in the URL
