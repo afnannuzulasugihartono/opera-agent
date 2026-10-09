@@ -17,7 +17,7 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
-const pages = ['index.html', 'akun.html', 'auth.html', 'dashboard.html', 'unduh.html', 'unduh-zip.html', 'unduh-crx.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
+const pages = ['index.html', 'akun.html', 'auth.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
 
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('index.html');

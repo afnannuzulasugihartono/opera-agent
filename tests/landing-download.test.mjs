@@ -180,7 +180,7 @@ test('the download page names no version, because a named version goes stale', (
 });
 
 test('the download page offers one archive and says how to verify it', () => {
-  const html = read('unduh-zip.html');
+  const html = read('unduh-berkas.html');
   assert.match(html, /download\/opera-agent\.zip/, 'one archive link, on the path that never changes');
   // WHY the archive digest is no longer printed here: the archive is always the newest
   // build, so its digest changes on every release and a static page would print one that
@@ -213,36 +213,38 @@ test('the endpoint serves the newest build, so a release needs no edit to the si
 });
 
 test('the download page links the paths that never change', () => {
-  const crx = read('unduh-crx.html');
-  const zip = read('unduh-zip.html');
+  const berkas = read('unduh-berkas.html');
   const hub = read('unduh.html');
   // WHY the page must not name a version: a link to opera-agent-1.6.15.crx is a promise
   // that 1.6.15 is current. Nothing enforces it, so the page goes stale on the next
   // release and serves an old build to a reader who has no way to tell.
-  for (const [page, html] of [['unduh.html', hub], ['unduh-zip.html', zip], ['unduh-crx.html', crx]]) {
+  for (const [page, html] of [['unduh.html', hub], ['unduh-berkas.html', berkas]]) {
     assert.doesNotMatch(html, /opera-agent-\d+\.\d+\.\d+\.(zip|crx)/,
       `${page}: no download link carries a version, so no release can leave the page behind`);
   }
-  assert.match(crx, /\/download\/opera-agent\.crx/, 'the CRX link is the version-less path');
-  assert.match(zip, /\/download\/opera-agent\.zip/, 'and so is the archive link');
+  assert.match(berkas, /\/download\/opera-agent\.crx/, 'the CRX link is the version-less path');
+  assert.match(berkas, /\/download\/opera-agent\.zip/, 'and so is the archive link');
   // WHY the link text names no file either: the file a reader saves is named by the
   // server, which knows the version, so the text could only ever be a stale guess.
-  assert.doesNotMatch(crx, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
+  assert.doesNotMatch(berkas, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
   // WHY the reader is told the name will carry the version: the CRX does
   // not change, and a reader comparing two downloads needs to tell them apart.
-  assert.match(crx, /namanya membawa versi build/, 'the page says the saved file is named with its version');
+  assert.match(berkas, /namanya membawa versi build/, 'the page says the saved file is named with its version');
 });
 
-test('each format has its own page, reached from the hub and back', () => {
+test('both formats share one page, reached from the hub and back', () => {
   const hub = read('unduh.html');
   // WHY this lock: stacked installs on one page made every reader scroll past ones
-  // that were not theirs. Each format now has its own page; the hub only names the doors.
-  for (const page of ['unduh-zip.html', 'unduh-crx.html']) {
-    assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
-    const html = read(page);
-    assert.match(html, /class="btn".*download/, `${page} still downloads without scrolling elsewhere`);
-    assert.ok(html.includes('href="./unduh.html"'), `${page} links back to the hub`);
-  }
+  // that were not theirs, and two format pages made every reader guess which door
+  // was theirs before anything downloaded. Both files now share one page with one
+  // card per browser, so the reader picks the browser, then the file; the hub only
+  // names the door.
+  const page = 'unduh-berkas.html';
+  assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
+  const html = read(page);
+  assert.match(html, /class="btn" href="[^"]*opera-agent\.zip" download/, `${page} downloads the archive without scrolling elsewhere`);
+  assert.match(html, /class="btn" href="[^"]*opera-agent\.crx" download/, `${page} downloads the signed file without scrolling elsewhere`);
+  assert.ok(html.includes('href="./unduh.html"'), `${page} links back to the hub`);
 });
 
 test('the payload of a CRX is already the tree, so the archive needs no second build', () => {
@@ -268,7 +270,7 @@ test('the payload of a CRX is already the tree, so the archive needs no second b
 });
 
 test('the download page names every browser it supports and why one is not', () => {
-  const html = read('unduh.html');
+  const html = read('unduh-berkas.html');
   // WHY this lock: the page used to say "Brave dan Chrome" and name no others, while
   // the table answers for every Chromium browser and the zip loads in any
   // Chromium one. A reader on Edge was told the product was not for them.
@@ -380,7 +382,7 @@ test('the download page shares the site navigation and floor', () => {
 });
 
 test('the download page has no typo where a stranger decides to trust it', () => {
-  const html = read('unduh-zip.html');
+  const html = read('unduh-berkas.html');
 
   // WHY this lock: the manual-install section is read by someone whose automatic
   // install just failed. A misspelled "kebijakan" there reads as a broken product,

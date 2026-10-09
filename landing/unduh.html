@@ -1,6 +1,6 @@
 <!-- @last-edited: 2026-10-09 UTC+7.
 <!-- @title: unduh — one giant door, then the details. -->
-<!-- @state: the hero centers the title, the value, and the one archive; each format keeps its own page with its own browser cards. -->
+<!-- @state: the hero centers the title, the value, and the one door; both formats share one page with its own browser cards. -->
 <!-- @dependencies: none. -->
 
 
@@ -168,17 +168,8 @@
     table.support td.no { color: var(--muted); }
     table.support tr:last-child td { border-bottom: 0; }
     .meta { color: var(--muted); font-size: 13px; }
-    /* WHY cards and not a list: two formats answer "which one is mine" before
-       any prose. One line each, then the dedicated page with its own steps. */
-    .formats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 18px 0 8px; }
-    @media (max-width: 640px) { .formats { grid-template-columns: 1fr; } }
-    .format { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-decoration: none; }
-    .format:hover { border-color: var(--accent); }
-    .format strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
-    .format span { color: var(--muted); font-size: 13.5px; }
-    .format .go { display: block; margin-top: 10px; font-size: 13.5px; }
     /* WHY the centered hero with one giant door: the reader decided to install
-       before opening this page, so the title, the value, and the one archive
+       before opening this page, so the title, the value, and the one door
        answer before the details. */
     h1 { text-align: center; font-size: 40px; }
     h1 + p, h1 + p + p { text-align: center; }
@@ -219,43 +210,10 @@
     <p>Gratis dan tanpa toko: satu arsip .zip untuk semua browser Chromium, dan di
     mesin enterprise pembaruan berikutnya dipasang sendiri oleh browser.</p>
 
-    <p>Kedua berkas di bawah selalu build terbaru.</p>
+    <p>Kedua berkas selalu build terbaru.</p>
 
-    <p class="hero-cta"><a class="btn giant" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download>Unduh Opera Agent</a></p>
-    <p class="also">juga tersedia: <a href="./unduh-crx.html">Panduan CRX enterprise</a> &middot; <a href="./unduh-zip.html">Panduan arsip</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
-
-    <h2>Tiga langkah memasang</h2>
-    <ol class="steps">
-      <li><strong>Ekstrak zip.</strong> Unzip ke folder yang tidak akan dipindah lagi.</li>
-      <li><strong>Buka halaman extension, aktifkan mode developer.</strong> Satu toggle di halaman itu.</li>
-      <li><strong>Klik Load unpacked.</strong> Pilih folder hasil ekstrak.</li>
-    </ol>
-
-    <div class="formats">
-      <a class="format" href="./unduh-zip.html"><strong>Arsip manual</strong><span>Berkas .zip: ekstrak dan muat sendiri di semua Chromium.</span><span class="go">Buka panduan &rarr;</span></a>
-      <a class="format" href="./unduh-crx.html"><strong>CRX bertanda tangan</strong><span>Berkas .crx: id stabil dan update sendiri.</span><span class="go">Buka panduan &rarr;</span></a>
-    </div>
-
-    <h2>Browser mana yang didukung</h2>
-    <p>Opera Agent berjalan di browser berbasis Chromium: Chrome, Edge, Brave, Opera, dan
-    Vivaldi. Firefox tidak didukung — Firefox tidak punya izin <code>debugger</code>, dan
-    izin itu yang membuat produk ini bekerja.</p>
-    <table class="support">
-      <thead>
-        <tr><th>Browser</th><th>Berkas .crx</th><th>Arsip .zip</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Chrome</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Edge</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Brave</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Opera</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Vivaldi</td><td class="no">ditolak</td><td class="yes">berjalan</td></tr>
-        <tr><td>Firefox</td><td class="no">tidak</td><td class="no">tidak</td></tr>
-      </tbody>
-    </table>
-    <p class="meta">Chrome, Edge, dan Brave menolak pemasangan otomatis dari luar Chrome
-    Web Store kalau komputer tidak terdaftar sebagai komputer perusahaan. Itu batas
-    Chrome, bukan salah berkasnya.</p>
+    <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html">Unduh Opera Agent</a></p>
+    <p class="also">juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
 
     <h2>Izin yang diminta, dan kenapa</h2>
     <p>Lima izin, satu per satu. Tidak ada izin yang tidak dijelaskan.</p>
