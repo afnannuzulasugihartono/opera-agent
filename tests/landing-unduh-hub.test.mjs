@@ -123,3 +123,17 @@ test('the hub needs no script hash, and the shared policy still names the merged
     assert.ok(block && block.includes(hash), `_headers still names it for ${path}`);
   }
 });
+
+test('the hub stats show live source counts, never stale copy', () => {
+  // WHY recomputed, not pinned literal: a hardcoded 39/28 would rot on the next
+  // tool or primitive, exactly the staleness this suite exists to kill. The page
+  // prints numbers; this test derives them from the same sources of truth.
+  const mcp = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+  const tools = (mcp.match(/registerTool\("/g) || []).length;
+  const proto = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
+  const specs = proto.slice(proto.indexOf('METHOD_SPECS = Object.freeze({'), proto.indexOf('});', proto.indexOf('METHOD_SPECS')));
+  const prims = (specs.match(/^\s*'[a-z][a-z0-9_.]*': \{ timeoutMs:/gm) || []).length;
+  assert.ok(tools > 30 && prims >= 28, `sanity: ${tools} tools, ${prims} primitives`);
+  const stats = [...hub.matchAll(/<span class="stat-num">(\d+)<\/span>/g)].map((m) => Number(m[1]));
+  assert.deepEqual(stats, [tools, prims], 'hub stats equal live source counts in order');
+});

@@ -168,14 +168,50 @@
     table.support td.no { color: var(--muted); }
     table.support tr:last-child td { border-bottom: 0; }
     .meta { color: var(--muted); font-size: 13px; }
-    /* WHY the centered hero with one giant door: the reader decided to install
-       before opening this page, so the title, the value, and the one door
-       answer before the details. */
-    h1 { text-align: center; font-size: 40px; }
-    h1 + p, h1 + p + p { text-align: center; }
-    .hero-cta { text-align: center; margin: 20px 0 4px; }
-    .btn.giant { padding: 18px 52px; font-size: 19px; }
-    .also { text-align: center; font-size: 13.5px; }
+    /* WHY the Steam shape: one hero answers before any detail — the title, the
+       value, and the one door — with a product shot beside it, because a wall
+       of centered prose reads as a manual, not a download page. The shot is
+       pure CSS, so no asset can rot and no script hash moves. */
+    .wrap.wide { max-width: 1120px; }
+    .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; margin: 20px 0 12px; }
+    .hero-text h1 { text-align: left; font-size: clamp(40px, 5.4vw, 60px); line-height: 1.05; margin: 0 0 14px; }
+    .hero-text > p { text-align: left; }
+    .hero-cta { margin: 24px 0 6px; }
+    /* WHY Steam's button grammar, in brand green: block, uppercase, letterspaced,
+       glyph pinned right, gradient that slides on hover. Uppercase rides CSS so
+       the pinned anchor text stays exact. */
+    .btn.giant { display: block; width: 100%; max-width: 420px; padding: 17px 52px 17px 26px; font-size: 19px; line-height: 1; letter-spacing: .03em; text-transform: uppercase; text-align: left; border-radius: 4px; border: 0; color: #fff; background: linear-gradient(to right, #3ecf8e 50%, #25a86f 100%); background-size: 200%; background-position: right 0; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .16)); transition: background-position 300ms ease-in; position: relative; }
+    .btn.giant:hover { background-position: 0 0; }
+    .btn.giant::after { content: "\2193"; position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 20px; margin: 0; }
+    .stats { display: flex; gap: 36px; margin: 20px 0 4px; }
+    .stat { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 8px; align-items: baseline; }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; align-self: center; }
+    .stat-dot.live { background: #2EBFFF; box-shadow: 0 0 8px #2EBFFF; }
+    .stat-dot.safe { background: #BAFF2E; box-shadow: 0 0 8px #BAFF2E; }
+    .stat-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .stat-num { grid-column: 1 / -1; font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+    .also { font-size: 13.5px; }
+    .chips { display: flex; gap: 8px; margin: 12px 0 0; }
+    .chips span { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 13px; font-weight: 700; color: var(--muted); }
+    .shot { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 16px; padding: 14px 16px 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
+    .shot-bar { display: flex; gap: 6px; margin-bottom: 14px; }
+    .shot-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line-strong); }
+    .shot-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+    .shot-row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+    .shot-row .dot.on { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .shot-row .dot.dim { opacity: .45; }
+    .shot-row .ln { height: 9px; border-radius: 5px; background: var(--surface-soft); border: 1px solid var(--line); }
+    .shot-row .ln.w70 { width: 70%; } .shot-row .ln.w60 { width: 60%; } .shot-row .ln.w45 { width: 45%; }
+    .shot-row .pill { margin-left: auto; width: 34px; height: 18px; border-radius: 980px; background: var(--surface-soft); border: 1px solid var(--line-strong); flex: none; }
+    .shot-row .pill.on { background: var(--accent-soft); border-color: var(--accent); }
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; gap: 28px; }
+      .shot { max-width: 440px; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .shot { animation: shot-float 9s ease-in-out infinite; }
+      @keyframes shot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+    }
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
@@ -205,15 +241,31 @@
     </div>
   </header>
 
-  <main class="wrap">
-    <h1>Pasang Opera Agent</h1>
-    <p>Gratis dan tanpa toko: satu arsip .zip untuk semua browser Chromium, dan di
-    mesin enterprise pembaruan berikutnya dipasang sendiri oleh browser.</p>
+  <main class="wrap wide">
+    <div class="hero">
+      <div class="hero-text">
+        <h1>Pasang Opera Agent</h1>
+        <p>Gratis dan tanpa toko: satu arsip .zip untuk semua browser Chromium, dan di
+        mesin enterprise pembaruan berikutnya dipasang sendiri oleh browser.</p>
 
-    <p>Kedua berkas selalu build terbaru.</p>
+        <p>Kedua berkas selalu build terbaru.</p>
 
-    <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html">Unduh Opera Agent</a></p>
-    <p class="also">juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
+        <div class="stats" aria-label="Cakupan produk">
+          <div class="stat"><span class="stat-dot live"></span><span class="stat-label">Perintah MCP</span><span class="stat-num">39</span></div>
+          <div class="stat"><span class="stat-dot safe"></span><span class="stat-label">Primitif browser</span><span class="stat-num">28</span></div>
+        </div>
+
+        <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html">Unduh Opera Agent</a></p>
+        <p class="also">juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
+        <p class="chips" aria-label="Browser yang didukung"><span title="Chrome">C</span><span title="Edge">E</span><span title="Brave">B</span><span title="Opera">O</span><span title="Vivaldi">V</span></p>
+      </div>
+      <div class="shot" aria-hidden="true">
+        <div class="shot-bar"><i></i><i></i><i></i></div>
+        <div class="shot-row"><span class="dot on"></span><span class="ln w70"></span><span class="pill on"></span></div>
+        <div class="shot-row"><span class="dot"></span><span class="ln w45"></span><span class="pill"></span></div>
+        <div class="shot-row"><span class="dot dim"></span><span class="ln w60"></span><span class="pill"></span></div>
+      </div>
+    </div>
 
     <h2>Izin yang diminta, dan kenapa</h2>
     <p>Lima izin, satu per satu. Tidak ada izin yang tidak dijelaskan.</p>

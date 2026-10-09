@@ -38,7 +38,7 @@ test('the also-available row names the other doors without leaving the page', ()
   assert.ok(row.includes('<a href="./unduh-berkas.html">Panduan format</a>'), 'the one format guide');
   assert.ok(row.includes('<a href="./dashboard.html">Dashboard</a>'), 'and the dashboard');
   assert.match(hub, /\.btn\.giant \{[^}]*font-size: 19px/, 'the giant door is styled larger than the rest');
-  assert.match(hub, /h1 \{ text-align: center/, 'and the hero is centered');
+  assert.match(hub, /\.hero-text h1 \{[^}]*text-align: left/, 'and the hero reads left like the reference, beside its visual');
 });
 
 test('every merged card names its own extensions surface and the archive requirement', () => {
