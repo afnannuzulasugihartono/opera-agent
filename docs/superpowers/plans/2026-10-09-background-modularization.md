@@ -1821,11 +1821,20 @@ git commit -m "refactor: move the tabCapture session into worker/listen.js"
 
 **Interfaces:**
 - Consumes: `./utils.js`, `./tab-content.js`, `./private-tabs.js`, `./capture.js`, `../lib/log.js`, `../lib/protocol.js`.
-- Produces: `capturePage`, `MAX_SCREENSHOT_BYTES`.
+- Produces: `capturePage` (diekspor); `MAX_SCREENSHOT_BYTES` (milik modul, **tak diekspor**).
 
 - [ ] **Step 1: Buat modulnya**
 
 Pindahkan **utuh** baris 551-665 plus baris 77 (`MAX_SCREENSHOT_BYTES`).
+
+**Koordinat terverifikasi di pohon hidup** (baseline sudah bergeser — cari
+berdasarkan konten; `background.js` kini 2152 baris): `capturePage` berada di
+**`:84`**, region berakhir di **`:198`**, dan `const MAX_SCREENSHOT_BYTES`
+di **`:72`**.
+
+Pemisah atasnya ialah `let loopGeneration = 0;` (`:82`) dan `AX_SUMMARY_TEXT_POVERTY_CHARS` (`:79`) — keduanya **ikut tinggal**.
+Fungsi berikutnya, `function executionMode(params = {}) {`, ada di `:199` dan
+**bukan bagian region** — ia milik region `action-focus` (Task 15).
 
 ```js
 // @last-edited: 2026-10-09 UTC+7.
@@ -1849,7 +1858,66 @@ import {
 } from './capture.js';
 ```
 
-- [ ] **Step 2: Ekspor** `capturePage` dan `MAX_SCREENSHOT_BYTES`.
+- [ ] **Step 2: Ekspor** `capturePage` **saja**.
+
+`MAX_SCREENSHOT_BYTES` **jangan diekspor.** Ketiga pemakaiannya
+(`:157`, `:165`, `:167`) berada di dalam `capturePage` sendiri, dan satu-satunya
+pemanggilan lain ialah deklarasinya di `:72` yang ikut berpindah. Nama itu tidak
+disebut di satu pun file lain kecuali sebagai string penanda di
+`scripts/check.mjs` — dan penanda itu menuntut nama *muncul di bundel*, bukan
+diekspor. Keadaan ini persis dengan `captureFramePrivacyProbe` (Task 10b),
+`ensureContent` (Task 12) dan `listenUrlFor` (Task 13); rencana versi awal
+memerintahkan mengeksporkannya, yang kelima kalinya kalimat itu salah.
+
+- [ ] **Step 2b: Tiga perbaikan** — dua di antaranya mendahului potongan,
+  satu lagi menutupinya. Kerjakan ketiganya bersama sebelum melanjutkan
+  ke Step 3, supaya potongan dan perbaikan dihitung dalam satu re-pin.
+
+1. **Hapus baris `background.js:35`** — `import { LISTEN_BASE_URL } from './lib/endpoints.js';`.
+   Setelah region `listen` pindah ke `listen.js`, tidak ada panggilan tersisa
+   di `background.js` (hanya penyebutan di header `@dependencies` `:4`, yang
+   memang sudah cacat lama dan tercatat terpisah).
+
+   Tapi ada gerbang yang menahannya: `tests/endpoint-source.test.mjs:14`
+   meminta bundel membawa bentuk `'./lib/endpoints.js'`. `options.js` dan
+   `popup.js` memang memakai bentuk itu, tapi keduanya tidak ada di dalam
+   `FILES` sehingga tidak ikut dalam bundel uji — baris `:35` adalah
+   satu-satunya.
+
+   **Otorisasi pengeditan tes:** lebarkan regex-nya menjadi
+   `/\.{1,2}\/lib\/endpoints\.js/`. Sama persis dengan otorisasi Task 10
+   untuk `ax-observation.test.mjs:149`: asersinya ialah *"satu-satunya sumber
+   endpoint ialah `lib/endpoints.js`"*, dan itu tetap dibawa oleh
+   `/supabase\.co\/functions\/v1/g` di baris `:15` — yang membuktikan tak ada
+   URL keras di mana pun. Yang dilonggarkan hanya kedalaman relatif modul,
+   dan tidak ada asersi yang dilepas. Ini edit tes keempat yang diizinkan.
+
+2. **Perbaiki judul `listen.js`.** `@title` baris `:2` menulis
+   *"tabCapture session lifecycle"* dan `@state` baris `:3` menulis *"the
+   session lives in chrome.tabCapture"* — padahal modul itu tidak pernah
+   menyebut `chrome.tabCapture`. Mekanismenya ialah
+   `chrome.storage.local['listenSession']` dan perekaman berjalan di dalam tab
+   lewat `contentCall('media.listen_start')`.
+
+   Ironinya: komentar WHY miliknya sendiri (`listen.js:13-19`) menjelaskan
+   mengapa `chrome.tabCapture` **tidak** dipakai — menolak pemanggil tanpa
+   gestur pengguna, yang tak pernah dimiliki agen otonom. Judulnya membantah
+   keputusan yang didokumentasikan modul itu sendiri.
+
+   Ganti `@title` menjadi
+   `// @title: listen — the listen session lifecycle and chunk streaming.`
+   dan `@state` menjadi
+   `// @state: no module-private state; the session lives in chrome.storage.local['listenSession'], and recording runs inside the tab via contentCall media.listen_start.`
+   Keduanya teks dari brief, jadi ini perbaikan cacat rencana, bukan selera.
+   `listen.js` tidak disentuh task ini selain langkah ini.
+
+3. **Pastikan `capture-page.js` berakhir tepat satu `\\n`.** Region `:84`-`:198`
+   memasukkan baris kosong pemisah `:198`, sehingga berkas baru akan berakhir
+   `}\\n\\n` — cacat yang sudah dibersihkan dari `capture.js`, `tab-content.js`
+   dan `listen.js`. Jangan ulangi.
+
+   Setelah berkas `background.js` dan `tests/endpoint-source.test.mjs` ikut
+   berubah, hitung ulang hash `background.js` di langkah 4.
 
 - [ ] **Step 3: Potong dari `background.js` dan impor**
 
@@ -1867,9 +1935,17 @@ Tambahkan `'extension/worker/capture-page.js',` setelah `listen.js`.
 ```bash
 npm test
 npm run check
-git add extension/worker extension/background.js tests/helpers/extension-source.mjs
-git commit -m "refactor: split page capture out of capture.js into its own module"
+git status --porcelain   # harus tepat 6 jalur, tanpa kejutan
+git add extension/worker extension/background.js tests/helpers/extension-source.mjs tests/helpers/boundary-locks.mjs tests/endpoint-source.test.mjs
+git commit -m "refactor: split page capture out of background into worker/capture-page.js"
 ```
+
+Enam jalur: `capture-page.js` (baru), `background.js`, `listen.js` (dua baris
+judul), `tests/helpers/extension-source.mjs`,
+`tests/helpers/boundary-locks.mjs` (nilai hash), dan
+`tests/endpoint-source.test.mjs` (regex satu baris). Pesan commit memperbaiki
+draf rencana yang menulis *"out of capture.js"* — regionnya ada di
+`background.js`.
 
 ---
 
