@@ -177,21 +177,9 @@
     .format strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
     .format span { color: var(--muted); font-size: 13.5px; }
     .format .go { display: block; margin-top: 10px; font-size: 13.5px; }
-    /* WHY one grid for five browsers: the reader asks "which one is mine", and
-       the matching card answers before any prose is read. */
-    .browsers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0 8px; }
-    .browser { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 12px; text-align: center; }
-    .browser.yours { border-color: var(--accent); background: var(--accent-soft); }
-    .browser .glyph { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0 auto 8px; border-radius: 12px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 20px; font-weight: 700; }
-    .browser h3 { margin: 0 0 8px; font-size: 16px; }
-    .browser .btn { margin: 4px 0; padding: 10px 18px; font-size: 14px; }
-    .browser .req { font-size: 12.5px; margin: 8px 0; }
-    .browser .badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #04211d; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 980px; white-space: nowrap; }
-    .browser .more { display: block; font-size: 12.5px; }
-    .browser select { width: 100%; margin-top: 6px; background: var(--surface-soft); color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
     /* WHY the centered hero with one giant door: the reader decided to install
        before opening this page, so the title, the value, and the one archive
-       answer before the cards name the browsers. */
+       answer before the details. */
     h1 { text-align: center; font-size: 40px; }
     h1 + p, h1 + p + p { text-align: center; }
     .hero-cta { text-align: center; margin: 20px 0 4px; }

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: landing-unduhswap — the Steam-style hub door and the per-browser format cards.
-// @state: 6 locks, all additive; the hub cards and every compatibility claim stay pinned where they were.
+// @state: 6 locks; the card/detection/hash pins live on the format pages, the hub keeps only the door pins.
 // @dependencies: test, assert, fs, crypto.
 
 // The hub opens with one giant door and an also-available row, while each format

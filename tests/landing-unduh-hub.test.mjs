@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: landing-unduh-hub — the Steam-style hub door, and the honest enterprise CRX page.
-// @state: 7 locks, all additive; the matrix values and the endpoint URLs stay pinned where they were.
+// @state: 7 locks; the card/detection/hash pins moved to the format pages, the hero/steps/CRX-frame pins unchanged.
 // @dependencies: test, assert, fs, crypto.
 
 // The hub answers with one giant door and an also-available row, while each format
