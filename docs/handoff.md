@@ -12,7 +12,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.21` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 142 runtime safety files, 726 unit tests, green.
+- Gates: `npm test`, `npm run check` — 28 primitives, 155 runtime safety files, 778 unit tests, green.
+- **The SonarCloud Quality Gate is green on the code that modularized the worker** — 2.9798%
+  against a 3.0% threshold on new code, security A, reliability A. It closed by deleting
+  repetition, not by moving the threshold: the scan assertion that was written out once per
+  case now exists once. `CircleCI Pipeline` still fails every PR; it has no `.circleci/`
+  and no reference in the tree, so it is a repo-settings removal for the owner.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.21` to extension id
@@ -126,6 +131,19 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    3x recurrence becomes a named-workflow candidate.
 9. **Console-style dashboard shipped.** Sidebar plus tabs, command-history table from existing
    device data with no new RPC; CSP hashes appended. Live via `deploy-site` dispatch.
+10. **The CRX is deliberately held at 1.6.21.** `main` carries the worker modularization and the
+    three defects it took with it, but shipping it is a release, and a version bump here touches
+    frozen surfaces: `PRODUCT_VERSION` in [`extension/lib/protocol.js`](../extension/lib/protocol.js)
+    is what `browser.ping` answers with, [`scripts/check.mjs`](../scripts/check.mjs) asserts three
+    copies at once, `store/store-manifest.json` uses the four-part form, and
+    [`tests/helpers/boundary-locks.mjs`](../tests/helpers/boundary-locks.mjs) pins the manifest
+    byte for byte. Seven tests carry "1.6.21" in their names. Notas for 1.6.22 are written and
+    waiting at [`docs/releases/1.6.22.md`](releases/1.6.22.md); `release.yml` prefers them to
+    generated notes. Owner decision, recorded 2026-10-10.
+11. **The update endpoint answers in a nested query string.** `?x=` is not the id — Chromium sends
+    `?x=id%3D<id>%26v%3D<version>`, and `requestedExtensionId` decodes it. Asking bare returns
+    `LEGACY_EXTENSION_ID` at 1.0.1, which reads as a broken endpoint and is not one. The id to
+    ask with is `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`, answered with 1.6.21.
 
 ## CI
 
