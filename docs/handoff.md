@@ -1,4 +1,4 @@
-@last-edited: 2026-10-07 UTC+7.
+@last-edited: 2026-10-10 UTC+7.
 @related: [AGENTS.md](../AGENTS.md)
 
 # handoff
@@ -12,7 +12,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.21` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 155 runtime safety files, 778 unit tests, green.
+- Gates: `npm test`, `npm run check` — 28 primitives, 156 runtime safety files, 791 unit tests, green.
 - **The SonarCloud Quality Gate is green on the code that modularized the worker** — 2.9798%
   against a 3.0% threshold on new code, security A, reliability A. It closed by deleting
   repetition, not by moving the threshold: the scan assertion that was written out once per
@@ -129,8 +129,14 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 8. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with total-stop
    CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); novel patterns go to the operator loop,
    3x recurrence becomes a named-workflow candidate.
-9. **Console-style dashboard shipped.** Sidebar plus tabs, command-history table from existing
-   device data with no new RPC; CSP hashes appended. Live via `deploy-site` dispatch.
+9. **Console-style dashboard shipped, and on 2026-10-10 it grew a table editor.** Sidebar plus tabs,
+   command-history table from existing device data with no new RPC. The `#tabel` section reads all
+   sixteen tables through SECURITY DEFINER `opera_konsol_*` readers: zero table grants (layer one
+   intact), sixteen policies rebuilt from one scope map with the qual text drift-locked string for
+   string by [`tests/konsol-tables.test.mjs`](../tests/konsol-tables.test.mjs), masks and clamps
+   server-side, and an `opera_operator` flag (RLS on, grants revoked, seeded from the earliest paired
+   device) gates the seven ownerless tables. Migration `20261010090000` is applied; read-only by
+   decision — a write side would be the next move, not this one.
 10. **The CRX is deliberately held at 1.6.21.** `main` carries the worker modularization and the
     three defects it took with it, but shipping it is a release, and a version bump here touches
     frozen surfaces: `PRODUCT_VERSION` in [`extension/lib/protocol.js`](../extension/lib/protocol.js)
