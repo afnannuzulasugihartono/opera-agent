@@ -108,6 +108,7 @@ test('a returning login completes on the page instead of stranding the visitor',
   assert.match(html, /proveStoredSession/, 'a returning visitor sees their own state, not a stranger login form');
   assert.match(html, /localStorage/, 'the session survives across tabs like every other site');
   assert.doesNotMatch(html, /sessionStorage/, 'no tab-only storage remains to force a second login');
+
   // WHY the helper and not literals: showSignedIn once wrote Indonesian literals,
   // so EN mode showed Indonesian there. The three strings now render through the
   // shared helper with dict keys, keeping the exact Indonesian as the fallback.

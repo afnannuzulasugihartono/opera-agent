@@ -50,6 +50,7 @@ const CONSENT_ELEMENTS = ['status', 'factsCard', 'signedOutCard', 'signInButton'
 // home page shows `ctaOut` in the markup, so a stub that started it hidden would
 // make "acquisition actions hide on a stored session" pass on an empty node —
 // a lock that cannot fail. The truth a run must change is recorded here instead.
+
 const HOME_ELEMENTS = {
   heroEyebrow: { textContent: 'Daftar terbuka \u00b7 Gratis dipakai' },
   ctaOut: { hidden: false },
@@ -64,6 +65,7 @@ const HOME_ELEMENTS = {
  * @param {object} shape what the stub Auth and the stub account answer
  * @returns {Promise<{nodes: object, store: object, cleared: string[], rejected: string[], rejectedFetch: boolean, assigned: string|undefined, forgot: boolean}>}
  */
+
 async function run(page, shape = {}) {
   const {
     search = '?authorization_id=abc123',
@@ -72,6 +74,7 @@ async function run(page, shape = {}) {
     refreshStatus = 200,
     refreshFails = false,
     unreachable = false,
+
     // WHY the default is false: a harness that claimed the extension was installed
     // would make every dashboard case pass on the "installed" copy and never exercise
     // the message a reader who has not installed anything will actually see.
@@ -93,12 +96,14 @@ async function run(page, shape = {}) {
     id, textContent: '', innerHTML: '', className: '', value: '', hidden: true, href: '',
     disabled: false, dataset: {}, children: [], querySelectorAll: () => [],
     addEventListener() {}, querySelector: () => null, closest: () => null,
+
     // WHY real child bookkeeping and not no-ops: the home page builds its model
     // datalist with createElement/append, so the stub keeps the appended options
     // where an assertion can read them instead of swallowing them silently.
     replaceChildren() { this.children.length = 0; },
     append(child) { this.children.push(child); return child; }
   });
+
   // Every element the page could ask for exists, so an untouched card reads as hidden rather
   // than absent, which is what the markup's `hidden` attribute means to a person.
   const preCreated = new Set(['status', 'whoami', 'profileCard', 'avatar', 'profileName', 'profileMeta', 'profileProvider', 'factEmail', 'factProvider', 'factLastSignIn', 'factUserId', 'linkedProviders', 'deviceSummary', 'signOutButton', 'runButton', 'runStatus', 'pairButton', 'pairStatus', 'devices', 'sessionStatus', ...CONSENT_ELEMENTS]);
@@ -158,6 +163,7 @@ async function run(page, shape = {}) {
       observe() {}
       disconnect() {}
     },
+
     // WHY the rail observer is stubbed too: the dashboard marks which section the
     // reader is on, and the harness runs the same module. A missing IntersectionObserver
     // makes every dashboard case fail on a feature no reader would ever notice.
@@ -180,6 +186,7 @@ async function run(page, shape = {}) {
         // so a call made after one must succeed. A stub answering 401 forever would make
         // every page look broken for a reason that does not exist.
         const usable = accessOk || store['opera-agent-access-token'] === RENEWED;
+
         // WHY this shape exactly: measured on this project, an account that signed in with
         // Google still reports provider "email" with providers ["email","google"], because a
         // magic link created the row first. A stub with a single google entry would not
@@ -222,12 +229,14 @@ test('the dashboard renders a device card for a paired device', async () => {
   const { nodes, rejected } = await run('dashboard.html');
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.match(nodes.status.textContent, /1 device ter-pairing/, 'the status line counts the device');
+
   // WHY the card and not the count: the deployed bug produced a correct status line above an
   // empty list, because the throw happened while building the cards.
   assert.match(nodes.devices.innerHTML, /opera/, 'the device name is rendered');
   assert.match(nodes.devices.innerHTML, new RegExp(DEVICE.id), 'the device id is rendered');
   assert.match(nodes.devices.innerHTML, /tabs\.list/, 'the recent commands are rendered');
   assert.match(nodes.devices.innerHTML, /Cabut device ini/, 'the revoke control is rendered');
+
   // WHY the summary is asserted from the same run: the stats must be sums over the
   // payload the cards render, and only an executed module proves the arithmetic.
   assert.equal(nodes.statDevices.textContent, 1, 'the device count is computed, not written');
@@ -239,6 +248,7 @@ test('the dashboard renders a device card for a paired device', async () => {
 test('the dashboard names the extension when the browser does not have it', async () => {
   const { nodes, rejected } = await run('dashboard.html', { extensionInstalled: false });
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
+
   // WHY this case matters most: an empty device list and a "not installed" browser look
   // identical on the page without this line, so a reader who has not installed anything
   // cannot tell which step is missing.

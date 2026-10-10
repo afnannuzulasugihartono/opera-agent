@@ -49,6 +49,7 @@ test('8D exclusive release refuses late committed rows and retains ownership',as
       assert.equal(query(`select owner_id from opera_agent_tx_candidate.operator_control`),'native_owner_01');
       query(`delete from ${table}`);
     }
+
     // Actual concurrent admission: release must wait for the share-lock holder,
     // then see the newly committed row rather than trust an earlier zero read.
     const late=spawn(exe('psql'),[...args,'-c',`set application_name='oa_8d_late_insert';begin;

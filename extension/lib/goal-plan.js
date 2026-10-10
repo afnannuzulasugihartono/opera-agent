@@ -79,6 +79,7 @@ export function buildPlanRequest(goal, { page, methods = ALLOWED_METHODS, maxCom
 // Fields the caller fills in and the model may not set, at the top level or on
 // any nested node. A nested root is the smuggle case: a node that carries its own
 // identity would execute as itself.
+
 const OWNED_FIELDS = new Set(['tenantId', 'goalId', 'target', 'budgets', 'root']);
 
 const DEFAULT_DEPTH = 12;
@@ -90,6 +91,7 @@ function refuse(code, message) {
 // Counts COMMAND nodes and reports whether the tree went deeper than allowed,
 // in one pass. Counting by node type rather than by key name means a new node
 // type in the VM cannot slip past this by living under a child key nobody listed.
+
 function measure(node, maxDepth, depth = 1, counter = { commands: 0, tooDeep: false }) {
   if (node === null || typeof node !== 'object') return counter;
   if (depth > maxDepth) {
@@ -181,6 +183,7 @@ export function compileGoalPlan(rawText, { target, budgets, programId = 'goal-pl
 // Every owned field counts here, `root` included. A nested root is the smuggle:
 // a node that carries its own program would execute as itself. Only the top level
 // may hold one, and that case is settled before this function is called.
+
 function findOwnedField(node, depth = 0) {
   if (node === null || typeof node !== 'object' || depth > 64) return null;
   for (const key of Object.keys(node)) {

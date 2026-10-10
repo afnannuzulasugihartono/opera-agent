@@ -84,6 +84,7 @@ export async function sealLedgerToken(ledgerInput, keyBytes, { requestId, issued
  * @param {Uint8Array} keyBytes
  * @param {{ now?: string, allowExpired?: boolean }} [options]
  */
+
 export async function openLedgerToken(token, keyBytes, { now, allowExpired = false } = {}) {
   if (typeof token !== 'string' || new TextEncoder().encode(token).byteLength > LEDGER_SERVER_LIMITS.tokenBytes) {
     fail('INVALID_TOKEN', 'Ledger token is invalid or over its byte limit.');

@@ -101,6 +101,7 @@ export async function handleWatchFacts(tabId, facts) {
   if (!entries.length) return { fired: 0, state: {} };
   const rules = entries.map((e) => e.rule);
   const out = evaluateRules(rules, facts, facts.state || {}, facts.now || Date.now());
+
   // persist engine state per watcher
   for (const entry of entries) {
     const st = out.state[entry.rule.ruleId];
@@ -164,6 +165,7 @@ async function executeWatchAction(entry, facts) {
       const ref = q?.ok && q.item && q.item.ref ? q.item.ref : null;
       if (!ref) return { type: 'click', ok: false, error: { code: 'TARGET_GONE', message: 'Matched element had no actionable ref.' } };
       const clickContext = { deadline: Date.now() + 15000, debuggerSession: { tabId: entry.tabId, attached: false } };
+
       // This path shares a debugger session, which is why it needs the release
       // that runBurst already had. Without it a single ad-overlay click left
       // the debugger attached to the tab, and Chrome's "started debugging this
@@ -213,6 +215,7 @@ async function handleWatchFire(entry, fire, facts) {
 // action may have taken effect (parity with the BURST_TIMEOUT / GATEWAY_ERROR
 // unknown-outcome contract family), so the model must verify page state
 // before repeating it.
+
 export function commandTimeoutError() {
   return codedError('COMMAND_TIMEOUT', 'Command timed out: the browser action may have taken effect. Verify page state before repeating it.');
 }
@@ -225,6 +228,7 @@ export function commandTimeoutError() {
 // aria-expanded flip, or DOM stability. It never clicks, so a hover cannot
 // become an action the caller did not ask for, and it routes through the same
 // foreground focus gate as every other pointer input.
+
 export async function trustedHover(tabId, params, context) {
   const mode = executionMode(params);
   const info = await contentCall(tabId, 'page.click_info', { ref: params.ref });

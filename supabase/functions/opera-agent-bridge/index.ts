@@ -139,6 +139,7 @@ async function complete(body: Record<string, unknown>) {
 // Event-Triggered Workflows: device pushes a fired watcher event. The
 // envelope is device-supplied but capped; the watcher identity is carried in
 // the envelope itself (the relay does not resolve watcher rows).
+
 async function watchEvent(body: Record<string, unknown>) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
     return json({ ok: false, error: "Unauthorized device." }, 401);

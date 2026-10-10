@@ -264,6 +264,7 @@ export async function runActionPipeline(tabId, method, params, context, exec) {
     throw makeNotReady(verdict, waitedMs, hints[verdict] + gates + resolver, undefined, state?.refState);
   }
   const result = await exec(params.ref);
+
   // Verify: only from an actual post-action check (postAction.verified exists
   // only when an expect spec was evaluated) - never invented.
   if ((method === 'page.click' || method === 'page.fill') && result?.postAction?.verified !== undefined) {
@@ -317,6 +318,7 @@ export async function trustedFill(tabId, ref, value, context, mode = 'background
       await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...key });
       action = { ok: true, ref, valueLength: 0, method: 'debugger' };
     }
+
     // Verify the fill in-page (expect parity with trustedClick); verified
     // exists only when an expect spec was evaluated - never invented.
     const postAction = await contentCall(tabId, 'page.post_action', {
@@ -331,6 +333,7 @@ export async function trustedFill(tabId, ref, value, context, mode = 'background
 export async function trustedPointer(tabId, params, context) {
   const mode = executionMode(params);
   const action = String(params.action || 'click');
+
   // WHY: the cursor is how a person sees an unattended run working, so gating it
   // on foreground left the normal background run invisible. An explicit
   // showCursor:true now works in either mode; the default is unchanged.
@@ -387,6 +390,7 @@ export async function trustedPointer(tabId, params, context) {
 // bounded text request through lib/keyboard.js instead of a flat 12-entry table
 // with no modifier support at all. The sensitive-field guard is unchanged and
 // still runs before anything is dispatched.
+
 export async function trustedKey(tabId, params, context, mode = 'background') {
   const request = resolveKeyInput({
     key: params?.key,
@@ -426,6 +430,7 @@ export async function trustedKey(tabId, params, context, mode = 'background') {
 // find/query step in the same burst, so the reference is minted and consumed
 // within milliseconds instead of surviving a model round-trip (live evidence:
 // YouTube skip control died in the 14.1 s between find and click).
+
 function burstPassthroughRef(results, step, index) {
   const from = step.refFromStep;
   if (from === undefined || from === null) return null;

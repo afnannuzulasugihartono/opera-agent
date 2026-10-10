@@ -92,6 +92,7 @@ function harness(db, fetchImpl) {
         return self;
       }
     };
+
     // WHY the builder is thenable: postgrest builders are lazy; update/delete
     // apply on await, and a bare awaited builder resolves the filtered rows.
     self.then = (resolve) => {
@@ -145,6 +146,7 @@ test('start refuses unknown devices and second live sessions', async () => {
 test('one complete window transcribes on arrival, then stop ends and deletes', async () => {
   const db = store();
   const h = harness(db);
+
   // WHY the hash dodge: the function hashes the token before comparing, and the
   // harness owns both sides, so the device row carries whatever the function
   // computes for the test token.
@@ -152,6 +154,7 @@ test('one complete window transcribes on arrival, then stop ends and deletes', a
   const started = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
   assert.equal(started.ok, true);
   const sid = started.sessionId;
+
   // WHY padded audio here: every real window carries its own base64 padding, and
   // joining the strings put "=" mid-stream, so atob threw "Failed to decode
   // base64" on every window — an hour of silence measured live. Separate decode
@@ -177,6 +180,7 @@ test('a concurrent second start takes the live session, never a duplicate', asyn
   const h = harness(db);
   const first = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
   assert.equal(first.ok, true);
+
   // The race: a second start whose live check misses the row above collides
   // on insert (unique_violation) and must answer the same 409 as a sequential
   // second start, carrying the winner's session id instead of a duplicate.
@@ -192,6 +196,7 @@ test('a concurrent second start takes the live session, never a duplicate', asyn
 test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
   const { readFile } = await import('node:fs/promises');
   const source = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
+
   // WHY this pin: gemini-2.5-flash answers 404 for new keys, gemini-3.8-flash was
   // at capacity for the whole build session, and gemini-3.5-transcribe refuses
   // every key with "Thinking is not enabled". Groq's endpoint was measured live
@@ -206,6 +211,7 @@ test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
 test('the live-session uniqueness is a partial unique index, not application logic', async () => {
   const { readFile } = await import('node:fs/promises');
   const sql = await readFile(new URL('../supabase/migrations/20261009000003_opera_agent_listen_live_uniq.sql', import.meta.url), 'utf8');
+
   // WHY this pin: check-then-insert let two concurrent starts both pass the
   // live check and insert duplicates. Only a database constraint closes it;
   // the start path maps its unique_violation to the existing 409.

@@ -58,6 +58,7 @@ test('the public key enum is exactly the runtime allowlist', () => {
     [...KEY_ALLOWLIST].sort(),
     'the public key enum and the runtime key allowlist must be the same set'
   );
+
   // Order does not matter, but the count must match exactly, so a duplicate
   // cannot hide a missing entry.
   assert.equal(new Set(declared).size, declared.length, 'the public enum must not contain duplicates');
@@ -69,6 +70,7 @@ test('the public modifier enum is exactly the runtime alias set', () => {
   const runtime = Object.keys(MODIFIER_ALIASES);
   assert.deepEqual([...declared].sort(), [...runtime].sort());
   assert.equal(new Set(declared).size, declared.length, 'the public enum must not contain duplicates');
+
   // Each alias must map to a known canonical modifier, so the public schema
   // cannot accept a name the runtime would then reject. The round-trip in the
   // last test proves the same thing behaviourally.
@@ -76,15 +78,18 @@ test('the public modifier enum is exactly the runtime alias set', () => {
   for (const alias of Object.keys(MODIFIER_ALIASES)) {
     assert.ok(canonical.has(MODIFIER_ALIASES[alias]), `${alias} must map to a canonical modifier`);
   }
+
   // Four canonical modifiers, and every alias is one of them.
   assert.equal(canonical.size, 4);
 });
 
 test('the public text bound matches the runtime bound, on both entry points', () => {
   assert.equal(MAX_TEXT_CHARS, 20000);
+
   // press_key
   const pressKey = mcp.slice(mcp.indexOf('server.registerTool("press_key"'));
   assert.match(pressKey.slice(0, 1500), new RegExp(`text: z\\.string\\(\\)\\.min\\(1\\)\\.max\\(${MAX_TEXT_CHARS}\\)`));
+
   // burst key step
   const burstKeyStep = mcp.match(/z\.object\(\{\s*action: z\.literal\("key"\)[\s\S]*?\}\)\.strict\(\)/)?.[0];
   assert.ok(burstKeyStep, 'the burst key step must be declared publicly');
@@ -107,6 +112,7 @@ test('the public surface does not promise a key the runtime would reject', () =>
   for (const key of enumMembers('navigationKeySchema')) {
     assert.doesNotThrow(() => resolveChord(key), `public key ${key} must resolve at runtime`);
   }
+
   // And every public modifier must be accepted.
   for (const modifier of enumMembers('modifierSchema')) {
     assert.doesNotThrow(() => resolveModifiers([modifier]), `public modifier ${modifier} must resolve`);

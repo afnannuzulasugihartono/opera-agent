@@ -156,12 +156,14 @@ test('both hosts upload the same file set, so no page exists on only one of them
   for (const entry of vercelIgnore) {
     assert.ok(assetsIgnore.includes(entry), `.assetsignore must also exclude ${entry}`);
   }
+
   // WHY these four are excluded on Cloudflare and not on Vercel: they are deployment
   // plumbing, not pages. Publishing them would make the two hosts differ, which is the
   // thing this lock exists to prevent, and a reader gains nothing from them.
   for (const entry of ['.gitignore', '.vercelignore', 'vercel.json', '.assetsignore']) {
     assert.ok(assetsIgnore.includes(entry), `.assetsignore must exclude ${entry}`);
   }
+
   // WHY every page must survive the exclusion list: an ignore pattern is a glob, and a
   // pattern too broad would silently take a page with it.
   const pages = fs.readdirSync(new URL('landing/', root)).filter((f) => f.endsWith('.html'));
@@ -214,6 +216,7 @@ test('the edge is told not to hold a page, because Cache-Control alone does not'
   for (const entry of vercel.headers) {
     const cdn = entry.headers.find((h) => h.key === 'Vercel-CDN-Cache-Control');
     assert.ok(cdn, `${entry.source} tells the edge what to do`);
+
     // WHY the immutable group is empty: the archive and the CRX used to be versioned
     // artifacts here, but both are served from the endpoint now under a path that
     // never changes, so every entry releases rather than holds.

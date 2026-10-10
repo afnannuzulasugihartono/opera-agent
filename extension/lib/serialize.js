@@ -22,6 +22,7 @@ function oversized(value) {
 // every read paid a second full JSON.stringify on the hottest observation path.
 // Keyed on object identity, so a rebuilt result serializes exactly once, and
 // cleared per command so nothing large is retained between commands.
+
 let serializedResult = { value: null, text: '' };
 
 function serializeResult(value) {

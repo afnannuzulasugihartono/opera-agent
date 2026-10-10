@@ -70,6 +70,7 @@ function consoleCalls(source) {
 
 // Response-body literals of `json(req, {...}, <status>)` calls at 401/405:
 // the auth-error surfaces whose bodies must never echo the credential.
+
 function errorBodies(source, statuses) {
   const bodies = [];
   for (const m of source.matchAll(/\bjson\(\s*req\s*,/g)) {
@@ -108,6 +109,7 @@ for (const name of ['opera-agent-gateway', 'opera-agent-mcp']) {
   test(`${name}: 401/405 bodies contain no Bearer echo`, async () => {
     const source = await functionSource(name);
     const bodies = errorBodies(source, [401, 405]);
+
     // Vacuous-pass guard: both auth-error surfaces must exist to be locked.
     assert.ok(bodies.some((b) => b.status === 401), `${name} must have a 401 json site`);
     assert.ok(bodies.some((b) => b.status === 405), `${name} must have a 405 json site`);
@@ -127,6 +129,7 @@ test('extractor self-check: locks trip on token-shaped calls', async () => {
   for (const call of calls) {
     assert.doesNotMatch(call.text, TOKEN_MATERIAL, `update:${call.line} logs token material`);
   }
+
   // The patterns themselves must fire on genuinely bad input.
   assert.match('console.log(token)', TOKEN_MATERIAL);
   assert.match('console.error(req.headers)', TOKEN_MATERIAL);

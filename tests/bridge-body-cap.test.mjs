@@ -55,6 +55,7 @@ test('a chunked body without content-length is still capped at 1 MiB', async () 
   const { body, duplex } = streamBody('x'.repeat(2 * 1024 * 1024));
   const response = await h.pull(body, {
     headers: { 'Content-Type': 'application/json' }, duplex,
+
     // undici would set content-length for a string; the stream arrives chunked.
   });
   assert.equal(response.status, 413);

@@ -57,6 +57,7 @@ test('every merged card names its own extensions surface and the archive require
     assert.ok(body.includes(`<h3>${names[key]}</h3>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
+
     // WHY tag and content separately: each offer carries a data-i18n attribute,
     // so a verbatim whole-tag match would break on the attribute rather than on
     // a lost URL or a lost button text.

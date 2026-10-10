@@ -75,6 +75,7 @@ test('content exposes page.action_state for the U-V pipeline', () => {
 });
 
 // --- Task 3: host wiring source-contract ---
+
 test('every action route funnels through runActionPipeline', async () => {
   const src = await extensionSource();
   for (const site of ['trustedFill(tabId', 'trustedClick(tabId', 'trustedPointer(tabId', 'trustedKey(tabId']) {

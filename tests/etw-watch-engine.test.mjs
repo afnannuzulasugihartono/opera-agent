@@ -51,6 +51,7 @@ test('selectorPresence fires and once-rules retire; gone fires only after presen
   assert.equal(st.r1.fireCount, 1);
   const again = evaluateRules([r1], snap(true), st, now += 10);
   assert.equal(again.fired.length, 0, 'once-rule retires after firing');
+
   // gone: armed while absent must NOT fire until a presence was observed
   const g = rule({ ruleId: 'g1', trigger: { kind: 'selectorGone', selector: '.x' } });
   let s2 = {};
@@ -85,6 +86,7 @@ test('composition any/all + textMatch + urlChange + adState + mediaTime', () => 
 test('already-true at arm fires immediately (the T041 lesson); debounce then throttles', () => {
   let st = {};
   const d = rule({ ruleId: 'd1', mode: 'repeat', maxEvents: 10, debounceMs: 500, deadlineMs: 5000 });
+
   // present on the very first evaluation = already-true-at-arm → fires NOW
   const first = evaluateRules([d], { facts: { d1: { present: true } }, url: '', adState: false, mediaTime: 0 }, st, 100);
   assert.equal(first.fired.length, 1, 'already-true must not be swallowed');
@@ -151,6 +153,7 @@ test('gateway is one-hop universal ingress with GPT-Actions-compatible auth', ()
   assert.match(src, /Deno\.serve/);
   assert.match(src, /x-opera-agent-token/, 'header auth');
   assert.match(src, /apiKey/, 'body auth because GPT Actions cannot set headers');
+
   // Transaction ordering is covered by the executable gateway regression tests.
   assert.match(src, /openapi\.json/, 'GPT Actions schema endpoint');
   assert.match(src, /p_request_id/, 'idempotency key passthrough');

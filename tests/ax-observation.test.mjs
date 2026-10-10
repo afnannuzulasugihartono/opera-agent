@@ -134,12 +134,15 @@ test('content.js exposes the pure-DOM accessibility layer (Layer A)', () => {
       `${anchor} must collect through open shadow roots`
     );
   }
+
   // Computed accessible names: descendant img alt / svg title add signal.
   assert.match(content, /function computeAccessibleName\(/);
   assert.match(content, /accessibleName/);
   assert.match(content, /compactElementProjection[\s\S]*?accessibleName: item\.accessibleName/);
+
   // find matches the accessible name alongside label/text/placeholder.
   assert.match(content, /s\.label, s\.text, s\.placeholder, s\.accessibleName/);
+
   // Shadow elements stay actionable: elementFromPoint returns the shadow host.
   assert.match(content, /function composedHostChain\(/);
   assert.match(content, /hitTestReachable/);
@@ -151,9 +154,11 @@ test('background.js attaches a poverty-triggered, fail-open CDP axSummary (Layer
   assert.match(background, /Accessibility\.enable/);
   assert.match(background, /Accessibility\.getFullAXTree/);
   assert.match(background, /withDebugger\(tabId, context, /);
+
   // The trigger must be text poverty only, and collection failures must not
   // break the observation: fail-open to no axSummary.
   assert.match(background, /totalTextChars/);
+
   // Re-frozen 2026-10-01 (Phase 2 Task 6): silent catches now log, so fail-open
   // is a logged catch returning null rather than an empty catch block.
   assert.match(background, /catch \(error\) \{\s*log\.debug\('AX_SUMMARY_COLLECTION_FAILED',[\s\S]*?return null;/);

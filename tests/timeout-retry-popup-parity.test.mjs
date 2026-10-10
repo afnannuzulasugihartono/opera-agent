@@ -52,6 +52,7 @@ test('popupsSince filters by timestamp', () => {
 // misses the popup. The host must claim tabs opened during a page action for
 // the acted-on tab (resolvePopupOpener prefers the in-flight tab over the
 // misattributed openerTabId, and falls back to the real opener otherwise).
+
 test('popup attribution claims background-tab popups for the acted-on tab', () => {
   assert.equal(resolvePopupOpener(42, { openerTabId: 7 }), 42, 'in-flight action tab wins over Chromium misattribution');
   assert.equal(resolvePopupOpener(null, { openerTabId: 7 }), 7, 'no in-flight action falls back to real openerTabId');
@@ -61,6 +62,7 @@ test('popup attribution claims background-tab popups for the acted-on tab', () =
 // --- Source-contract tests (recorded reason: executeCommand / toolError live
 // in chrome-/Deno-bound service files; the exact code paths are the contract
 // being frozen, same pattern as action-pipeline.test.mjs) ---
+
 import fs from 'node:fs';
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 

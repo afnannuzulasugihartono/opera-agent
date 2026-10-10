@@ -21,6 +21,15 @@ function classifyJs(text) {
   const lines = text.split('\n');
   const out = [];
   let mode = 'code';
+
+  // WHY pending and depth rather than a single mode: `${` opens an expression inside a
+  // template, and the scanner used to treat the backtick that closes it as a fresh opening
+  // — so the rest of the file was read as template text. Comments then classified as
+  // strings, spacingViolations saw nothing, and the blank-line rule reported clean over
+  // every file that interpolates. depth starts at 1 because `${` already consumed its own
+  // brace; counting from zero popped at the expression's first nested `}`.
+  let pending = 0;
+  let depth = 0;
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
     const rec = { code: false, comment: false, string: false };
@@ -32,6 +41,13 @@ function classifyJs(text) {
         if (c === '/' && d === '*') { rec.comment = true; mode = 'block'; j += 1; continue; }
         if (c === '"' || c === "'") { rec.string = true; mode = c; continue; }
         if (c === '`') { rec.string = true; mode = 'template'; continue; }
+        if (pending > 0) {
+          if (c === '{') depth += 1;
+          if (c === '}') {
+            depth -= 1;
+            if (depth <= 0) { pending -= 1; depth = 0; mode = 'template'; }
+          }
+        }
 
         // WHY whitespace is not code here: the spaces before an indented comment
         // marked the line as code, so isCommentLine skipped it and every comment
@@ -44,7 +60,7 @@ function classifyJs(text) {
       } else if (mode === 'template') {
         rec.string = true;
         if (c === '\\') { j += 1; continue; }
-        if (c === '$' && d === '{') { mode = 'code'; j += 1; continue; }
+        if (c === '$' && d === '{') { pending += 1; depth = 1; mode = 'code'; j += 1; continue; }
         if (c === '`') mode = 'code';
       } else {
         rec.string = true;
@@ -140,6 +156,7 @@ export function spacingViolations(file, text, ext) {
     }
     let end = i;
     while (end + 1 < lines.length && isCommentLine(lines, classes, end + 1)) end += 1;
+
     // WHY the gap below is required only at column zero: a module-level block is a
     // section heading and has to be set off from the code under it, while an
     // indented block documents the statement directly beneath it, and separating

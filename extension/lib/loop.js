@@ -163,6 +163,7 @@ export function validateLoopProgram(program) {
       if (!isPlainObject(entry) || !ids.has(entry.sensor)) return { ok: false, error: 'Loop stopWhen must reference declared sensors.' };
     }
   }
+
   // Budgets fail closed: an explicit out-of-range maxTicks or maxDurationMs is
   // rejected, never silently clamped to the max. Only an absent budget (or
   // null, which JSON callers use for absent) falls back to the max allowance.

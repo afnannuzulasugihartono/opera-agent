@@ -56,6 +56,7 @@ test('a shared link carries a title, not a bare URL', () => {
     assert.match(html, /<meta property="og:title" content="[^"]+"/, `${page} shares a titled card`);
     assert.match(html, /<meta property="og:site_name" content="Opera Agent"/, `${page} cards carry the brand`);
     assert.match(html, /<meta property="og:locale" content="id_ID"/, `${page} shares in its own language`);
+
     // WHY og:url and not a canonical link: a <link href="https:..."> trips the
     // no-external-origin locks, which exist to keep every render dependency local.
     // A share card still needs one absolute address, and that is what og:url is.
@@ -86,6 +87,7 @@ test('every nav marks the page being read', () => {
   // entry in the shared nav — both live in the footer — and adding one entry
   // site-wide for a single page fails the simplicity bar the one-nav rule exists
   // to enforce. Their tabs already read "Masuk — Opera Agent" and "Syarat
+
   // Layanan — Opera Agent", and auth's signed-in view retitles to Akun, which
   // is marked there.
   const marked = {

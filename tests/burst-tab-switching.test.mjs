@@ -59,6 +59,7 @@ function burstStep(action, extra = {}) {
 
 // A minimal valid step per action, so this test isolates the tabId change from
 // each action's own required fields.
+
 const VALID_STEP = Object.freeze({
   read: {},
   find: {},
@@ -145,8 +146,10 @@ test('a burst step may carry its own tabId', () => {
 
 test('the debugger session is re-keyed when the active tab changes', () => {
   const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+
   // The old single-tab guard must not survive as a blanket refusal.
   assert.doesNotMatch(burst, /cannot switch tabs/);
+
   // Switching releases the previous session before attaching the next.
   assert.match(burst, /releaseDebuggerSession\(/);
 });
@@ -154,12 +157,14 @@ test('the debugger session is re-keyed when the active tab changes', () => {
 test('withDebugger no longer refuses a different tab outright', () => {
   const fn = sliceBetween('async function withDebugger(', 'function codedError(');
   assert.doesNotMatch(fn, /cannot switch tabs/);
+
   // But it still refuses to hand one work call a target it was not asked for.
   assert.match(fn, /debuggerSession/);
 });
 
 test('every released session is detached, not merely forgotten', async () => {
   const { releaseDebuggerSession } = await import('../extension/lib/debugger-session.js');
+
   // A non-attached session is a no-op; that is what makes a finally safe.
   await assert.doesNotReject(releaseDebuggerSession({ tabId: 5, attached: false }));
 });
@@ -177,6 +182,7 @@ test('a burst still reports completed evidence when it times out mid-sequence', 
 test('the single 12s budget is not extended by a tab switch', () => {
   const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /BURST_MAX_TIMEOUT_MS/);
+
   // The per-step remaining time is recomputed from the same deadline.
   assert.match(burst, /deadline - Date\.now\(\)/);
 });
@@ -211,6 +217,7 @@ test('the burst still refuses to run JavaScript or loop or branch', () => {
   // No escape hatch: an unknown action and a JavaScript-looking key both fail.
   assert.equal(validateBurst({ steps: [burstStep('eval')] }).ok, false);
   assert.equal(validateBurst({ steps: [burstStep('find', { js: 'fetch("x")' })] }).ok, false);
+
   // Opening and closing tabs are still not burst actions; navigate joined the
   // vocabulary above, so only a bare (URL-less) navigate fails here now.
   assert.equal(validateBurst({ steps: [burstStep('open')] }).ok, false);
@@ -226,6 +233,7 @@ test('a ref consumed on a different tab than its source is refused, even without
   const results = [{ index: 0, action: 'find', tabId: 1, ok: true, result: { items: [{ ref: 'r1' }] } }];
   assert.equal(burstCrossTabRef(results, 0, 2), true, 'consume on a foreign tab must be a violation');
   assert.equal(burstCrossTabRef(results, 0, 1), false, 'consume on the minting tab must be allowed');
+
   // Both directions: a missing source is the schema layer's refusal
   // (validateBurst rejects non-earlier refs), so the executor helper must not
   // invent a cross-tab refusal for it.

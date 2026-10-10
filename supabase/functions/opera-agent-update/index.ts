@@ -136,6 +136,7 @@ Deno.serve(async (req: Request) => {
       const wantsZip = path.endsWith("/download/opera-agent.zip");
       const current = await activeRelease(CURRENT_EXTENSION_ID);
       if (!current) return response(req, "No active release for extension ID", 404, { "Content-Type": "text/plain; charset=utf-8" });
+
       // WHY both log as "crx": the archive is the signed CRX's own payload, served for a
       // reader rather than an updater. Adding a kind would need a migration to widen a
       // check constraint, and the path column already tells the two apart.
@@ -148,14 +149,17 @@ Deno.serve(async (req: Request) => {
       return response(req, req.method === "HEAD" ? null : new Uint8Array(bytes).buffer, 200, {
         "Content-Type": wantsZip ? "application/zip" : "application/x-chrome-extension",
         "Content-Length": String(bytes.byteLength),
+
         // WHY no-store and not the year the versioned paths carry: the bytes under this
         // path change on the next release, so a cached answer here is a stale answer the
         // reader has no way to notice.
         "Cache-Control": "no-store, max-age=0",
+
         // WHY the version rides in the filename: the link cannot change, but the file a
         // reader saves should still say which build it is, or two downloads are identical.
         "Content-Disposition": `attachment; filename="${filename}"`,
         "X-Opera-Version": current.version,
+
         // WHY this digest is of the bytes in this response and not the release's: the
         // archive is the CRX payload, so the release sha256 names a different file. A
         // reader told to compare the two would get two different numbers and conclude

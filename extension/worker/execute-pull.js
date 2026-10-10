@@ -362,6 +362,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
+
   // WHY stop on install and update: a recorder cannot survive either, so a
   // stored session would otherwise point at a dead capture while the server
   // still bills transcription windows against it.

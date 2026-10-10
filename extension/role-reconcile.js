@@ -163,6 +163,7 @@
     for (const item of elements) {
       if (isGenericRole(item && item.role)) {
         gaps += 1;
+
         // A few clear gaps are enough to justify the walk; do not require every
         // element to be unlabelled, which would also fire on healthy pages.
         if (gaps >= ROLE_GAP_SAMPLE_SIZE) return true;

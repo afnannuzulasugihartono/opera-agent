@@ -102,6 +102,7 @@ test('a magic-link-only account says so instead of claiming a provider', () => {
 
 test('a session missing every name field still renders something', () => {
   const card = render({ id: 'anon-1', email: '', app_metadata: {}, user_metadata: {} });
+
   // WHY: the page must never render a blank row that looks like a broken product.
   // The name falls back to "Akun Opera Agent", so the initials come from that rather
   // than from the 'OA' guard, which only fires if a future edit removes the fallback.

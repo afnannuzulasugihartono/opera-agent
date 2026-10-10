@@ -32,6 +32,7 @@ function attrKeys(page) {
       if (key) marked.push(key);
     }
   }
+
   // Dynamic strings rendered through the shared helper carry no data-i18n
   // marker, so a standalone t('key', 'fallback') call counts as a mark too.
   // The leading guard keeps element( from matching as a helper call.

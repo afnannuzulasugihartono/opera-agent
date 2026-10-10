@@ -22,9 +22,11 @@ const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8')
 // on the CI runner with `spawnSync powershell ENOENT`. A zip lists its entries in the
 // central directory at the end of the file, in a fixed record layout, so reading it
 // needs no shell and no dependency -- and this repository has no dependencies.
+
 function zipEntryNames(buffer) {
   const EOCD = 0x06054b50;
   const RECORD = 0x02014b50;
+
   // WHY the backward scan: the end-of-central-directory record is last, but a zip may
   // carry a comment of up to 65535 bytes after it, so it is found by signature rather
   // than by position.
@@ -51,6 +53,7 @@ function zipEntryNames(buffer) {
 // WHY the deflate path is handled: the archive is built by the release pack step, which
 // compresses, and by hand on a machine with no zip, which does not. Reading only stored
 // entries would make this lock depend on which machine built it.
+
 function zipEntryText(buffer, wanted) {
   const EOCD = 0x06054b50;
   let eocd = -1;
@@ -76,6 +79,7 @@ function zipEntryText(buffer, wanted) {
       const localExtraLength = buffer.readUInt16LE(localOffset + 28);
       const start = localOffset + 30 + localNameLength + localExtraLength;
       const raw = buffer.subarray(start, start + compressedSize);
+
       // WHY zlib and not DecompressionStream: the suite runs on Node and on Deno with
       // no dependencies, and node:zlib is the one inflate both accept.
       const bytes = method === 0
@@ -92,6 +96,7 @@ function zipEntryText(buffer, wanted) {
 // a fixed order with a fixed timestamp, so the same tree always produces the same bytes.
 // WHY it is built here and not read from the tree: the lock is about what the endpoint
 // derives from the CRX it holds, and the CRX it holds is produced in CI from this tree.
+
 function zipOfTree() {
   const dir = new URL('extension/', root);
   const walk = (prefix = '') => fs.readdirSync(new URL(prefix, dir), { withFileTypes: true })
@@ -140,6 +145,7 @@ function zipOfTree() {
 
 // WHY the table rather than a dependency: zlib.crc32 landed in Node 20.12 and this
 // repository pins no dependency, so the fallback keeps the lock runnable on both.
+
 const CRC_TABLE = (() => {
   const table = new Int32Array(256);
   for (let n = 0; n < 256; n += 1) {
@@ -157,6 +163,7 @@ function crc32(buffer) {
 }
 
 // A CRX3 envelope around a payload, which is the shape the endpoint has to slice.
+
 function buildCrxAround(payload) {
   const header = Buffer.from([0x12, 0x02, 0x01, 0x02]);
   const crx = Buffer.alloc(12 + header.length + payload.length);
@@ -182,6 +189,7 @@ test('the download page names no version, because a named version goes stale', (
 test('the download page offers one archive and says how to verify it', () => {
   const html = read('unduh-berkas.html');
   assert.match(html, /download\/opera-agent\.zip/, 'one archive link, on the path that never changes');
+
   // WHY the archive digest is no longer printed here: the archive is always the newest
   // build, so its digest changes on every release and a static page would print one that
   // is wrong by the next morning. The page tells the reader to ask the server instead,
@@ -201,11 +209,13 @@ test('the endpoint serves the newest build, so a release needs no edit to the si
   const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
   assert.match(src, /\/download\/opera-agent\.crx/, 'a version-less CRX path exists');
   assert.match(src, /\/download\/opera-agent\.zip/, 'and a version-less archive path exists');
+
   // WHY the archive is a slice of the CRX rather than a stored file: the payload after
   // the CRX header is already a valid zip, measured at offset 12 + headerLength. Building
   // it means no second copy of the tree exists that can disagree with the signed bytes.
   assert.match(src, /payload/, 'the archive is derived from the signed bytes');
   assert.match(src, /CRX_MAGIC/, 'and the slice is gated on the CRX magic, not a guessed offset');
+
   // WHY no-store: the newest build changes under a fixed path, so a cached answer is a
   // stale answer. The versioned paths keep their immutable year because their bytes never
   // change under them.
@@ -215,6 +225,7 @@ test('the endpoint serves the newest build, so a release needs no edit to the si
 test('the download page links the paths that never change', () => {
   const berkas = read('unduh-berkas.html');
   const hub = read('unduh.html');
+
   // WHY the page must not name a version: a link to opera-agent-1.6.15.crx is a promise
   // that 1.6.15 is current. Nothing enforces it, so the page goes stale on the next
   // release and serves an old build to a reader who has no way to tell.
@@ -224,9 +235,11 @@ test('the download page links the paths that never change', () => {
   }
   assert.match(berkas, /\/download\/opera-agent\.crx/, 'the CRX link is the version-less path');
   assert.match(berkas, /\/download\/opera-agent\.zip/, 'and so is the archive link');
+
   // WHY the link text names no file either: the file a reader saves is named by the
   // server, which knows the version, so the text could only ever be a stale guess.
   assert.doesNotMatch(berkas, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
+
   // WHY the reader is told the name will carry the version: the CRX does
   // not change, and a reader comparing two downloads needs to tell them apart.
   assert.match(berkas, /namanya membawa versi build/, 'the page says the saved file is named with its version');
@@ -234,6 +247,7 @@ test('the download page links the paths that never change', () => {
 
 test('both formats share one page, reached from the hub and back', () => {
   const hub = read('unduh.html');
+
   // WHY this lock: stacked installs on one page made every reader scroll past ones
   // that were not theirs, and two format pages made every reader guess which door
   // was theirs before anything downloaded. Both files now share one page with one
@@ -271,17 +285,20 @@ test('the payload of a CRX is already the tree, so the archive needs no second b
 
 test('the download page names every browser it supports and why one is not', () => {
   const html = read('unduh-berkas.html');
+
   // WHY this lock: the page used to say "Brave dan Chrome" and name no others, while
   // the table answers for every Chromium browser and the zip loads in any
   // Chromium one. A reader on Edge was told the product was not for them.
   for (const browser of ['Chrome', 'Edge', 'Brave', 'Opera', 'Vivaldi']) {
     assert.match(html, new RegExp(`<td>${browser}</td>`), `${browser} has a row saying what it can do`);
   }
+
   // WHY Firefox is named rather than omitted: it is the one browser a reader will
   // try that cannot work, because it has no debugger permission. Saying nothing
   // leaves them to discover it.
   assert.match(html, /<td>Firefox<\/td>/, 'Firefox is named');
   assert.match(html, /Firefox tidak punya izin <code>debugger<\/code>/, 'and the reason is the permission it lacks');
+
   // WHY every Chromium row must agree: a page that says "berjalan" for one and
   // "ditolak" for the next is a page nobody can act on.
   // WHY index 1 for the name: matchAll yields the whole match first, so the
@@ -342,6 +359,7 @@ test('the archive carries the manifest key, so an unpacked install can update', 
 
 test('the archive contains every file the manifest names', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
+
   // WHY this lock: a download page whose archive is missing background.js or a
   // content script fails only after a stranger installs it and clicks around.
   const payload = buildCrxAround(zipOfTree());
@@ -364,6 +382,7 @@ test('the archive contains every file the manifest names', () => {
 test('the download page explains every permission the manifest requests', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   const html = read('unduh.html');
+
   // WHY this lock: Chrome Web Store review asks what each permission is for, and a
   // stranger deciding to install deserves the same answer before, not after.
   for (const permission of manifest.permissions) {

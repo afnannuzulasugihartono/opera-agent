@@ -65,6 +65,7 @@ test('the merged page carries one card per browser, each offering both files', (
     assert.ok(body.includes(`<h3>${names[key]}</h3>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
+
     // WHY tag and content separately: each offer carries a data-i18n attribute,
     // so a verbatim whole-tag match would break on the attribute rather than on
     // a lost URL or a lost button text.
@@ -85,6 +86,7 @@ test('the merged detection marks the matching card and phones nowhere', () => {
   assert.match(script, /badge\.hidden = false/, 'shows its badge');
   assert.doesNotMatch(script, /fetch\s*\(/, 'fetches nothing');
   assert.doesNotMatch(script, /XMLHttpRequest|sendBeacon|WebSocket/, 'reaches no other network either');
+
   // WHY the two halves: the hub runs no inline script of its own, but it loads
   // the one shared language file every page shares. The JSON dict is data, not
   // a script block, so it is excluded from the inline ban it would otherwise trip.

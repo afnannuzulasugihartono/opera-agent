@@ -133,6 +133,7 @@ export function createManagementOperatorBackend(configuration){
     for(const item of values){if(!item||typeof item!=='object')continue;const value=item.value;if(item.name===name&&typeof value==='string'){selected=value;matches++;}if(Object.prototype.hasOwnProperty.call(item,'value'))item.value=null;}
     if(matches!==1||typeof selected!=='string'||!SECRET_DIGEST.test(selected))fail('SECRET_DIGEST_INVALID');return selected;
   }
+
   // Management lists DIGESTS, not plaintext. Key validity is observed in the
   // exact pinned Edge's initialized handler, without retrieving its private key.
   async function verifyInitializedHost(signal){

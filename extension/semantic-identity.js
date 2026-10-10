@@ -86,6 +86,7 @@
     const maxDeltaBytes = positiveInteger(options.maxDeltaBytes, DEFAULT_MAX_DELTA_BYTES);
     const removalGraceObservations = Number.isInteger(options.removalGraceObservations) && options.removalGraceObservations >= 0
       ? Math.min(options.removalGraceObservations, 3) : 1;
+
     // An entity observed present-but-invisible for this
     // many consecutive observations is marked stale in the model-facing view.
     // Canonical state keeps stale entities; the marking is advisory only.
@@ -97,6 +98,7 @@
     const refIndex = new Map();
     const lastObserved = new Map();
     const missingObservations = new Map();
+
     // Entities emitted as REMOVE after grace; a later re-observation
     // reports RETURNED_AFTER_ABSENCE instead of NEW_ENTITY so virtualized
     // feeds stop surfacing returning content as new state.

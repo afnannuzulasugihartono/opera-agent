@@ -79,6 +79,7 @@ export function keyNames() {
 // The single source of truth for what may be requested. The burst validator,
 // the MCP schema parity test, and the content-script path all read this one
 // list, so a key can never be accepted on one surface and rejected on another.
+
 export const KEY_ALLOWLIST = Object.freeze(keyNames());
 
 export function resolveModifiers(modifiers) {
@@ -98,6 +99,7 @@ export function resolveModifiers(modifiers) {
 
 // An uppercase letter is not produced without Shift, so the resolver adds the
 // implicit shift rather than emitting a key event the platform would drop.
+
 function withImplicitShift(spec, mask, names) {
   if (!spec.requiresShift) return { spec, mask, names };
   if (mask & MODIFIER_BITS.shift) return { spec, mask, names };
@@ -142,6 +144,7 @@ export function resolveKeyInput({ key, modifiers, text } = {}) {
   if (hasText) {
     const value = String(text);
     if (value.length > MAX_TEXT_CHARS) throw new Error(`Text must be at most ${MAX_TEXT_CHARS} characters.`);
+
     // A requested modifier alongside text is meaningless for Input.insertText
     // and silently dropped, so it is rejected rather than ignored.
     if (modifiers != null) throw new Error('Text entry does not accept modifiers.');

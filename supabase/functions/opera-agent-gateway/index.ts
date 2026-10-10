@@ -105,6 +105,7 @@ async function command(req: Request, _url: URL) {
   } catch {
     return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
   }
+
   // WHY the cap rides the stream, not just the header: the early gate below
   // reads content-length alone, so a chunked body without one skipped it and
   // the parse buffered an unbounded body before authentication. Command
@@ -131,6 +132,7 @@ async function command(req: Request, _url: URL) {
   const requestId = typeof body!.requestId === "string" && ID_RE.test(body!.requestId) ? body!.requestId : null;
 
   const tokenHash = await sha256Hex(token.toLowerCase());
+
   // Verify the device token BEFORE touching the command queue: enqueue
   // resolves the device by name only, so the hash check must happen here. The
   // verify answer also carries last_seen_at, so the 90s offline preflight
@@ -168,6 +170,7 @@ async function command(req: Request, _url: URL) {
   if (!auth?.ok) {
     return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
   }
+
   // Preserve the former wrapper's pairing/offline preflight before enqueue.
   // A valid token requires its row, so an authenticated answer without a
   // last_seen_at can only mean a device never seen: refused as offline, which
@@ -176,6 +179,7 @@ async function command(req: Request, _url: URL) {
   if (!lastSeenAt || Date.parse(lastSeenAt) < Date.now() - 90000) {
     return json(req, { ok: false, error: "Device is offline.", lastSeenAt });
   }
+
   // Separate awaited RPC requests commit the queue row before the device must
   // claim it. Enqueue + await in one SQL transaction hides it until timeout.
   let result = await rpc("opera_enqueue", {
@@ -228,6 +232,7 @@ async function command(req: Request, _url: URL) {
       error: { code: "AWAIT_TIMEOUT", message: "The device did not report back before waitMs. The action may still have succeeded — verify page state before repeating it." }
     }, 504);
   }
+
   // Structured device results (ok true OR ok false) are 200: AI platforms
   // read the envelope and recover; 5xx bodies can be dropped by GPT Actions.
   return json(req, result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);

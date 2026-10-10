@@ -27,10 +27,12 @@ assert.match(manifest.update_url, /^https:\/\/.*\.supabase\.co\//);
 assert.ok(typeof manifest.key === 'string' && manifest.key.length > 100);
 const identityDigest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
 const extensionId = [...identityDigest].map((byte) => `${String.fromCharCode(97 + (byte >> 4))}${String.fromCharCode(97 + (byte & 15))}`).join('');
+
 // WHY this id is asserted and not just derived: Chrome derives an installed
 // extension's id from this key, so the id decides which release row answers its
 // update check. A key that does not match the signing key publishes a CRX no
 // browser will install, and the check is the only place that can catch it.
+
 assert.equal(extensionId, 'ofgemipoobcnbjkfanmofjbdonjapmgl');
 
 function collectRuntimeFiles(relativeDir, extensions) {
@@ -53,6 +55,7 @@ for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
   assert.doesNotMatch(text, /\beval\s*\(/, `${file} must not use eval`);
   assert.doesNotMatch(text, /new\s+Function\s*\(/, `${file} must not use Function constructor`);
+
   // Recorded reason: a trustedFill parenthesis break in
   // extension/background.js shipped green through npm test (regex source
   // contracts) and npm run check (no parse step); only the live service
@@ -75,10 +78,12 @@ assert.doesNotMatch(ensureContent, /method: 'page\.read'/);
 assert.match(content, /args\.includeElements !== false/);
 assert.match(content, /case 'content\.ping'/);
 const bridge = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-bridge/index.ts'), 'utf8');
+
 // The client-side pull cadence was removed on 2026-10-02: `pull` now delegates
 // the wait to `opera_claim_next_wait`, so the bridge must issue exactly one
 // claim call per request and must not reintroduce pacing constants.
 // See tests/efficiency.test.mjs for the measured before/after.
+
 assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
 assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
 for (const marker of ['FAST_PULL_POLLS', 'FAST_PULL_INTERVAL_MS', 'IDLE_PULL_INTERVAL_MS']) {
@@ -90,8 +95,10 @@ assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);
 assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
 const mcp = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-mcp/index.ts'), 'utf8');
 assert.match(mcp, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
+
 // The AI path uses the adaptive ramp (Phase C 2026-10-02); the flat 50ms wait is
 // still the gateway's older choice, so only the MCP file is pinned here.
+
 assert.doesNotMatch(mcp, /: "opera_await"/);
 const efficiency = fs.readFileSync(path.join(root, 'supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql'), 'utf8');
 for (const marker of ['research.read_current_full', 'research.read_url_full', 'youtube.get_transcript', '"limit":12000', '"maxElements":1']) assert.ok(efficiency.includes(marker), marker);

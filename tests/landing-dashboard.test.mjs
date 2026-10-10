@@ -27,6 +27,7 @@ test('the dashboard reads through one owner-scoped RPC', () => {
   assert.match(html, /rpc\/opera_my_devices/, 'the only device list call is the owner-scoped RPC');
   assert.doesNotMatch(html, /\/rest\/v1\/opera_commands/, 'the page never queries the raw commands table');
   assert.doesNotMatch(html, /\/rest\/v1\/opera_devices/, 'the page never queries the raw devices table');
+
   // WHY this one is narrow: "result" appears in DOM ids, so the lock targets the
   // field the dashboard must never render, not the word itself.
   assert.doesNotMatch(html, /\.result\b|\['result'\]|"result"\s*:/, 'command payloads stay on the server; only method and status render');
@@ -42,12 +43,14 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
   assert.match(html, /Buat kode pairing/, 'issuance has a visible control');
   assert.match(html, /Cabut device ini/, 'revocation has a visible control');
   assert.match(html, /Jalankan/, 'running has a visible control');
+
   // WHY this one: measured on this project, the device picks a queued command up
   // about twelve seconds after it was enqueued, just past the wait window, and
   // then finishes in under half a second. Reporting that as a failure would teach
   // the reader the button is broken when the work actually succeeded.
   assert.match(html, /AWAIT_TIMEOUT/, 'a queued-but-pending run is recognised');
   assert.match(html, /masuk antrean/, 'pending is reported as pending, not as failure');
+
   // WHY the narrow patterns: the run payload may carry page content, so the page
   // may read status but never a payload field. result.status is the safe read.
   assert.doesNotMatch(html, /result\s*\.\s*(result|params|value|content|text)\b/i, 'the run payload is never rendered');
@@ -55,18 +58,21 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
 
 test('the device card answers "is it reachable" before anything else', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: an operator opening this page at 2am is asking one question about
   // each device — is it online — and the old card answered it in a sentence of dot
   // separated fragments where the status was the first thing you had to find. A
   // definition list puts it in the first row with a label of its own.
   assert.match(html, /<dt>Status<\/dt>/, 'status is a labelled row, not part of a sentence');
   assert.match(html, /<dt>Terakhir terlihat<\/dt>/, 'last seen is its own row');
+
   // WHY the chip and not a row: the build moved beside the name so two stacked
   // cards differ on their first line. It is still rendered, still escaped, and
   // still the tree's version — only its seat changed.
   assert.match(html, /class="chip">\$\{esc\(device\.extensionVersion \|\| '-'\)\}/, 'the build rides the card head');
   assert.match(html, /<dt>Perintah<\/dt>/, 'the command tally is its own row');
   assert.match(html, /<dt>ID device<\/dt>/, 'the id is a row, so it is not lost in a sentence');
+
   // WHY the colour must not be the only signal: a card that is green or amber and
   // otherwise silent is unreadable to a reader who cannot distinguish the two.
   // WHY the class assignment and not a literal: the install state sets its class from
@@ -79,12 +85,14 @@ test('the device card answers "is it reachable" before anything else', () => {
 
 test('the rail marks the section being read', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: the rail is a table of contents, and a table of contents that
   // always says "Ringkasan" is decoration. A reader who jumps to "Device" and
   // scrolls on should see the rail follow.
   assert.match(html, /IntersectionObserver/, 'the rail reads which section is in view');
   assert.match(html, /link\.setAttribute\('aria-current', 'true'\)/, 'and marks that one');
   assert.match(html, /link\.removeAttribute\('aria-current'\)/, 'and unmarks the rest');
+
   // WHY rootMargin: the header is sticky, so without an offset the section under it
   // never counts as visible and the rail would stall on the first heading.
   assert.match(html, /rootMargin: '-70px 0px -55% 0px'/, 'the sticky header is offset from the reading line');
@@ -92,6 +100,7 @@ test('the rail marks the section being read', () => {
 
 test('the dashboard re-reads the marker instead of reading it once', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: the content script runs at document_idle, so the marker can land
   // after the dashboard has already rendered. A single read tells a reader who has the
   // extension that it is missing, and the obvious reaction is to install a second copy.
@@ -101,6 +110,7 @@ test('the dashboard re-reads the marker instead of reading it once', () => {
 
 test('the device list refreshes itself after pairing elsewhere', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: pairing completes in the extension popup, a separate context the
   // page cannot hear, so a list read once stayed frozen on "offline" after a good
   // pairing. The list re-reads itself on a timer and on every return to the tab.
@@ -112,12 +122,14 @@ test('the device list refreshes itself after pairing elsewhere', () => {
 
 test('the dashboard says whether the extension is installed in this browser', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: a signed-in reader whose browser has no extension sees an empty
   // device list and a status line about pairing, which reads as a broken product
   // rather than as the one step they have not done. The content script runs on every
   // page and can leave a marker; the dashboard reads it and names the missing step.
   assert.match(html, /dataset\.operaAgent/, 'the page reads the marker the content script leaves');
   assert.match(html, /id="installState"/, 'and reports it on its own status line');
+
   // WHY both words are required: "terpasang" alone could describe the account, and
   // "belum" alone could describe a device that is offline. The copy has to say which.
   assert.match(html, /Opera Agent belum terpasang di browser ini/, 'the missing case names the extension and the browser');
@@ -126,9 +138,11 @@ test('the dashboard says whether the extension is installed in this browser', ()
 
 test('the content script leaves the marker the dashboard reads', () => {
   const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');
+
   // WHY the exact name: the dashboard matches a string, so two spellings would leave
   // the page permanently reporting "not installed" on a browser that has it.
   assert.match(content, /documentElement\.dataset\.operaAgent\s*=/, 'the marker is written on documentElement');
+
   // WHY it must be a dataset attribute and not a JS global: the dashboard is a
   // separate document context and can only read the DOM, never the content script's
   // own globals. A global would be invisible to the page for the same reason the page
@@ -138,6 +152,7 @@ test('the content script leaves the marker the dashboard reads', () => {
 
 test('the dashboard is about devices, not a profile page', () => {
   const html = read('dashboard.html');
+
   // WHY this lock changed: the page gained a read-only "Akun ini" section so a reader
   // landing here can tell they are on the right account. That is facts, not a profile
   // — no avatar, no editable name, nothing to scroll past to reach the device list.
@@ -145,6 +160,7 @@ test('the dashboard is about devices, not a profile page', () => {
   assert.doesNotMatch(html, /id="avatar"/, 'no avatar initials here either');
   assert.match(html, /Device milik/, 'the page names whose devices these are, in one line');
   assert.match(html, /aria-current="page"/, 'the nav marks this page as the current one');
+
   // WHY the account section must stay read-only: every write to the account lives on
   // akun.html, and two editors for one fact is how the two pages start disagreeing.
   assert.match(html, /<h2>Akun ini<\/h2>/, 'the account facts have their own section');
@@ -153,6 +169,7 @@ test('the dashboard is about devices, not a profile page', () => {
 
 test('the dashboard has a rail, because it has five jobs and no divider', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: the page was a flat stack of cards, so a reader who came to pair a
   // device had to read past the device list and the command runner to find it, and
   // had no way to know the other four existed.
@@ -163,11 +180,13 @@ test('the dashboard has a rail, because it has five jobs and no divider', () => 
   }
   assert.match(html, /class="rail"/, 'the rail is the element the lock above is about');
   assert.match(html, /aria-label="Bagian dashboard"/, 'and it is labelled, so a screen reader announces what it is');
+
   // WHY a heading per section: a reader who lands on #pairing from a shared link sees
   // a page with no heading unless each section names itself.
   for (const heading of ['Ringkasan', 'Device', 'Sesi dengar', 'Pairing manual', 'Jalankan aksi', 'Akun ini']) {
     assert.ok(html.includes(`<h2>${heading}</h2>`), `${heading} has a heading of its own`);
   }
+
   // WHY the rail collapses on a phone: a vertical rail at 320px would push the first
   // control off the screen, and this page is opened on a phone more than a desktop.
   assert.match(html, /@media \(max-width: 640px\)/, 'the rail has a narrow-screen form');
@@ -176,11 +195,13 @@ test('the dashboard has a rail, because it has five jobs and no divider', () => 
 
 test('the destructive control looks destructive', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: revoking a device is the only irreversible action on this page, and
   // it sits next to "Salin ID" which is the button a reader reaches for constantly. Two
   // identical buttons means the wrong one gets clicked by muscle memory.
   assert.match(html, /class="btn danger"/, 'the revoke control is marked as the dangerous one');
   assert.match(html, /\.btn\.danger\s*\{[^}]*var\(--danger\)/, 'and the danger colour is defined for it');
+
   // WHY confirm() stays: it is the last stop before a device stops answering, and the
   // page is the only place the reader can see what they are about to cut.
   assert.match(html, /globalThis\.confirm\(`Cabut \$\{button\.dataset\.name\}/, 'revoking still asks first');

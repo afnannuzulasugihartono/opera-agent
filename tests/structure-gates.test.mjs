@@ -78,6 +78,7 @@ test('the documented chrome.* exceptions are still real, and no more have crept 
   const text = await readFile(new URL('extension/lib/debugger-session.js', root), 'utf8');
   assert.ok(chromeCodeLines(text).length > 0,
     'debugger-session.js no longer uses chrome.*; drop it from CHROME_FREE_EXCEPTIONS');
+
   // Kecualian yang tak dipantau tumbuh tanpa suara: satu nama menambah satu berkas
   // bebas, dan tidak ada tes yang merah karenanya. Ukuran daftarnya dikunci.
   assert.equal(CHROME_FREE_EXCEPTIONS.size, 1,
@@ -112,6 +113,7 @@ test('worker modules stay under their ceiling, and background.js does not grow',
     `background.js must end up below 600 lines, got ${bg.split('\n').length}`);
 
   const worker = new URL('extension/worker/', root);
+
   // Sebuah catch yang menelan setiap error membuat ambang 550 tak bisa merah: kalau
   // direktori gagal dibaca, `names` kosong, badan loop tak pernah berjalan, dan tes
   // tetap lulus. Hanya ENOENT berarti "belum ada modul"; sisanya ialah kegagalan

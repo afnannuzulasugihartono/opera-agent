@@ -393,6 +393,7 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
       await supabase.from("opera_commands").update({ provider }).eq("id", String(queued.commandId));
     } catch { /* dashboard metadata only */ }
   }
+
   // opera_await_adaptive rather than opera_await: identical signature and
   // response envelope, but its ramp starts at 5ms instead of a flat 50ms, so a
   // fast action is noticed sooner. Phase A measured the two at the same loop
@@ -442,6 +443,7 @@ function execute(method: string, params: Record<string, unknown>, timeoutMs?: nu
 }
 
 // Variant for screenshot captures
+
 function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
   return runCommand("page.capture", params, timeoutMs, deviceName, provider).then(screenshotResult).catch(toolError);
 }
@@ -471,6 +473,7 @@ function sleepMs(ms: number) {
 // fires the runner itself via pg_net, so a single RPC starts the whole plan.
 // The runner re-queries fresh controls on every retry iteration, which keeps
 // fast-changing UIs (ad overlays) from dying between observation and action.
+
 async function runWorkflow(name: string, input: Record<string, unknown>, waitTimeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
   const started = await rpc("opera_start_workflow", {
     p_name: name,
@@ -883,6 +886,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
       const rows = waited && typeof waited === "object" && Array.isArray((waited as { events?: unknown }).events)
         ? (waited as { events: Array<{ device_name?: unknown }> }).events.filter((event) => event && event.device_name === deviceName)
         : [];
+
       // WHY never force ok: a falsy envelope carries its own error code, and
       // stamping ok:true over it would report success with empty events.
       const failed = waited && typeof waited === "object" && (waited as { ok?: unknown }).ok === false;
@@ -1329,6 +1333,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method !== "POST") return json(req, { error: "method_not_allowed", error_description: "Use POST for stateless Streamable HTTP MCP." }, 405);
+
   // Only unreachable when GoTrue itself is unconfigured, which no secret here
   // controls. An unset allowlist is not a fault: it answers 401 to every caller.
   if (!SUPABASE_URL) {
@@ -1350,6 +1355,7 @@ Deno.serve(async (req: Request) => {
     await server.connect(transport);
     const response = await transport.handleRequest(req);
     const headers = new Headers(response.headers);
+
     // Fail-closed: strip anything the transport set, then apply exactly the
     // per-request allowlist headers (no ACAO unless the origin matched).
     headers.delete("Access-Control-Allow-Origin");

@@ -50,6 +50,7 @@ const background = await extensionSource();
 
 test('every comment block is spaced from the code it does not document', async () => {
   const root = new URL('..', import.meta.url);
+
   // WHY the filesystem and not git ls-files: a file written minutes ago is not
   // tracked yet, and that is exactly when the rule is easiest to break. CI proved
   // it -- lib/goal-plan.js shipped with two unspaced blocks because the lock never
@@ -69,6 +70,7 @@ test('every comment block is spaced from the code it does not document', async (
     return out;
   };
   const files = (await walk(root))
+
     // Migrations are applied artifacts and must never be rewritten; JSON has no
     // comments, and the lockfiles beside them are generated.
     .filter((f) => !f.startsWith('supabase/migrations/'))
@@ -84,6 +86,7 @@ test('every comment block is spaced from the code it does not document', async (
 
 test('no document says Do X and another says Don\'t X', async () => {
   const root = new URL('..', import.meta.url);
+
   // WHY the hub and not a size: the hub was shortened to three sections on purpose,
   // so a line count would fire on the simplification it was written to survive. What
   // has to hold is that the file still binds — an empty hub passes a line count.
@@ -127,6 +130,7 @@ test('no document says Do X and another says Don\'t X', async () => {
 // Asserted rather than described: a rename that breaks the per-turn trigger would
 // leave the trigger pointing at a section that no longer exists, and that is
 // invisible in review.
+
 const REQUIRED_SECTIONS = ['Always', 'Goals', 'Priority order'];
 
 test('the three sections an agent reads every turn exist, in order', async () => {
@@ -141,6 +145,7 @@ test('the three sections an agent reads every turn exist, in order', async () =>
   }
   for (const { name, at } of found) {
     const section = body.slice(at).split('\n## ')[0];
+
     // Every section has to carry instructions: Always and Goals in bullets,
     // Priority order in its numbered list. The count is the proof it instructs.
     const bullets = (section.match(/^(?:- |\d+\. )/gm) || []).length;
@@ -151,6 +156,7 @@ test('the three sections an agent reads every turn exist, in order', async () =>
 test('every section the rules point at exists', async () => {
   const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
   const headings = new Set([...body.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim()));
+
   // The Always block names the sections it rides with. A renamed section leaves
   // those names pointing at nothing, which reads as a typo.
   const referenced = new Set(['Always', 'Goals', 'Priority order']);
@@ -162,6 +168,7 @@ test('every section the rules point at exists', async () => {
 // overlap of rules that merely share vocabulary, which is how a lock trains
 // people to ignore it. Volume is not asserted: the rule set is intentionally
 // small now, and the pairwise check below is what inspects it.
+
 const DUPLICATE_OVERLAP = 0.6;
 
 test('no rule is stated twice in two forms', async () => {
@@ -205,6 +212,7 @@ test('the logic gate actually inspected the rule set', async () => {
   // which is how a gate that inspects nothing comes to pass for a clean tree.
   const commands = (body.match(/\bDo(?:n't)?\s+\S/g) || []).length;
   assert.ok(commands >= 4, `AGENTS.md carries only ${commands} commands; the gates are reading too little`);
+
   // WHY the location and not just the count: the simplification keeps the command
   // dialect inside Goals only, so Always and Priority order stay plain binding
   // prose. A Do creeping back elsewhere means the old manual is regrowing.
@@ -289,6 +297,7 @@ test('a read is serialized once, not once per size check', () => {
   assert.match(block, /function oversized\(value\) \{\s*return serializeResult\(value\)\.length > MAX_RESULT_BYTES;/);
   const bounded = block.slice(block.indexOf('function boundedResult'), block.indexOf('function oversized'));
   assert.match(bounded, /const text = serializeResult\(value\)/);
+
   // Unserializable input still fails loudly rather than being silently accepted.
   assert.match(background, /Result is not serializable\./);
 });
@@ -330,6 +339,7 @@ test('the shared runtimes are frozen, so a sibling script cannot mutate them', (
   const hover = globalThis.OperaAgentHoverSettle;
   assert.equal(Object.isFrozen(roles), true, 'the role runtime must be frozen');
   assert.equal(Object.isFrozen(hover), true, 'the hover runtime must be frozen');
+
   // Object.freeze does NOT make a Set immutable, so the role list is published
   // as a frozen array. Assert it is an array, not a Set: handing out the Set
   // would leave it writable through .add().
@@ -354,9 +364,11 @@ test('the R9 modules expose no unused surface', async () => {
   const uses = keyboard.match(/keyNames/g) || [];
   assert.equal(uses.length, 2, 'keyNames must be referenced only by its declaration and its one caller');
   assert.match(keyboard, /export const KEY_ALLOWLIST = Object\.freeze\(keyNames\(\)\)/);
+
   // MODIFIER_ALLOWLIST was exported and referenced nowhere at all, not even
   // inside its own file.
   assert.doesNotMatch(keyboard, /MODIFIER_ALLOWLIST/);
+
   // isPlainObject is a pure internal predicate; exporting it was dead surface.
   assert.doesNotMatch(background, /export function isPlainObject/);
   const protocol = await readFile(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
@@ -413,6 +425,7 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
   };
   const jsFiles = /\.js$/;
   const runtimeModules = (await Promise.all(runtimeRoots.map((d) => collect(d, jsFiles)))).flat();
+
   // The _shared modules are .js, so the same collector is the whole edge scan:
   // nothing under supabase/functions is a .ts that declares an exportable symbol.
   const edgeModules = (await Promise.all(['../supabase/functions'].map((d) => collect(d, jsFiles)))).flat();
@@ -426,6 +439,7 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
   const scripts = (await readdir(new URL('../scripts', import.meta.url)))
     .filter((n) => n.endsWith('.mjs'))
     .map((n) => `../scripts/${n}`);
+
   // A file that is both a scanned module and a consumer (every script is) is read
   // once; the Set drops the duplicate path, never the file.
   const consumers = await Promise.all(
@@ -485,6 +499,7 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
       const usedElsewhere = consumers.some(
         (other) => other.p !== p && new RegExp(pattern(name)).test(callerText.get(other.p))
       );
+
       // Occurrences in the exporting file. One is the declaration alone, so
       // nothing there reads the name back; two or more is a real use.
       const usesHere = (text.match(new RegExp(pattern(name), 'g')) || []).length;

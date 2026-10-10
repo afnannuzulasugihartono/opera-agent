@@ -22,6 +22,7 @@ test('the popup speaks Indonesian and names where the code comes from', () => {
   assert.match(html, /<html lang="id"/, 'the document language is declared Indonesian');
   assert.match(html, /Sambungkan device/, 'the pairing section says what it does');
   assert.match(html, /Masukkan kode pairing/, 'the field says what to type');
+
   // WHY the anchor and not just the dashboard: the code is made in one section
   // of that page, and a stranger sent to the top of it scrolls past everything
   // else looking for the button.
@@ -35,6 +36,7 @@ test('the popup status answers in Indonesian, every state of it', () => {
   }
   assert.match(script, /'Diizinkan'/, 'an allowed tab says so');
   assert.match(script, /'Diblokir \(privat\)'/, 'a private tab says why it is blocked');
+
   // WHY the link is built from SITE_ORIGIN and not written out: the origin moved
   // once already, and a literal here would be the next stale link.
   assert.match(script, /SITE_ORIGIN/, 'the dashboard link follows the single source of truth');

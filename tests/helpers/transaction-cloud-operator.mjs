@@ -45,6 +45,7 @@ export function createFileOwnershipStore({directory,isProcessAlive=defaultProces
   if(typeof directory!=='string'||directory.length<1||typeof isProcessAlive!=='function')fail('INVALID_8D_STORE');
   const ensure=()=>mkdir(directory,{recursive:true});
   const writeJsonAtomic=async(path,value)=>{const tmp=`${path}.${randomUUID()}.tmp`;await writeFile(tmp,JSON.stringify(value)+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});await rename(tmp,path);};
+
   // Permanent NONEMPTY retirement directories are per-claim CAS witnesses.
   // A second stale reader cannot rename a successor onto the same destination.
   // Do not garbage-collect these while any old process/I/O may still resume.
@@ -83,6 +84,7 @@ export function createFileOwnershipStore({directory,isProcessAlive=defaultProces
         }
         const claimId=randomUUID(),stage=join(directory,'global-control.pending-'+claimId);
         await mkdir(stage);
+
         // Same publish-then-cleanup sequence as before without throwing inside a
         // finally block: the original lease error must never be swallowed by a
         // cleanup failure.
@@ -90,6 +92,7 @@ export function createFileOwnershipStore({directory,isProcessAlive=defaultProces
         let leaseError=null;
         try {
           await writeFile(join(stage,'lease.json'),JSON.stringify({version:2,claimId,ownerId,namespace,pid,expiresAt:nowMs+ttlMs})+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});
+
           // Publish the complete nonempty directory in one filesystem operation.
           await rename(stage,leaseDir(directory));claimed=true;
         }catch(error){

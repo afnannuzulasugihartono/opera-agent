@@ -80,6 +80,7 @@ function init() {
       showStatus(userErrorMessage(error?.message || error));
     }
   });
+
   // WHY its own form and button: one shared submit would mix two unrelated saves,
   // and a failure in one would leave the other silently unwritten.
   $('modelForm').addEventListener('submit', async (event) => {
@@ -93,6 +94,7 @@ function init() {
       showModelStatus(userErrorMessage(error?.message || error));
     }
   });
+
   // WHY fill without saving: picking a provider stages the values in the inputs and
   // the existing Simpan button commits them, so one save path stays the only save path.
   $('modelProvider').addEventListener('change', () => {

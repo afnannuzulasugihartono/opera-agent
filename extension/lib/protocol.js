@@ -136,6 +136,7 @@ function validateBurstStep(step) {
   if (action === 'wait' && !validRef(step.ref) && !(typeof step.selector === 'string' && step.selector.length >= 1 && step.selector.length <= 500) && !(typeof step.text === 'string' && step.text.length >= 1 && step.text.length <= 300)) {
     return 'Burst wait requires a ref, selector, or text target.';
   }
+
   // A hover needs a ref to hover; `text` is the optional submenu name to
   // wait for, never the hover target itself, so a hover can never be guessed
   // from a loose text match.
@@ -149,6 +150,7 @@ function validateBurstStep(step) {
     if (pointerAction === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(step[key]))) return `Invalid burst pointer ${key}.`;
     if (pointerAction === 'wheel' && !Number.isFinite(Number(step.deltaY))) return 'Invalid burst pointer deltaY.';
   }
+
   // Presence only: safeUrl at dispatch is the single source of truth for what
   // counts as a navigable URL, same as the tabs.navigate tool path.
   if (action === 'navigate' && (typeof step.url !== 'string' || !step.url)) return 'Burst navigate requires a URL.';

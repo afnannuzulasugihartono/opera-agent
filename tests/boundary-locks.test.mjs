@@ -23,6 +23,7 @@ function sha1Blob(bytes) {
 // Ukuran daftar dikunci bersama isinya. Tanpa itu, menghapus satu entri menghapus
 // satu pemeriksaan tanpa membuat satu pun tes merah — kunci kehilangan anggotanya
 // tanpa suara, dan suite tetap hijau atas berkas yang tak lagi dikunci.
+
 for (const [label, locks, expectedSize] of [
   ['public surface', PUBLIC_SURFACE_LOCKS, 4],
   ['observation stack', OBSERVATION_STACK_LOCKS, 3],

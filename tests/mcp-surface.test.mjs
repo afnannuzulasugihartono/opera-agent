@@ -90,7 +90,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   skill_save: 'e7152cae43153530',
   skill_recall: 'd7fdd2485fd9630a',
   start_watch: '395e579634b5f784',
-  wait_events: '4673d72247e494d2',
+  wait_events: 'b3465f71dcfbd091',
   stop_watch: '5192744559385f99',
   list_tabs: 'eb4fdda0376c5588',
   open_url: '268a9ac307859cc3',
@@ -114,7 +114,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_seek: '6f1a6205a1d59b1c',
   media_stream_start: 'd86a2ca61654b20d',
   media_stream_stop: 'c858c13598bce472',
-  media_listen_read: 'cbd7c953bb62bbf3',
+  media_listen_read: 'a56e6de8979f521f',
   loop_start: '32b755562b12fd32',
   loop_read: 'b28ca249fe932cb9',
   loop_stop: 'dec3840108c7bba2',
@@ -178,6 +178,7 @@ function outputSchemaOf(name) {
   const block = toolBlock(name);
   const at = block.indexOf('outputSchema:');
   assert.ok(at >= 0, `${name} must declare an outputSchema`);
+
   // Brace-matched slice so a nested object inside the schema cannot end it early.
   let depth = 0;
   for (let i = at + 'outputSchema:'.length; i < block.length; i += 1) {
@@ -345,6 +346,7 @@ test('advertised media capabilities are invocable tools, not just status text', 
 
 test('the OAuth client name resolves the provider when headers cannot', () => {
   const sql = fs.readFileSync(new URL('../supabase/migrations/20261007090000_opera_client_name.sql', import.meta.url), 'utf8');
+
   // WHY this lock: ChatGPT-style connectors send no custom header and no product
   // User-Agent, but their dynamically registered OAuth client is named ("ChatGPT").
   // The JWT is already verified before this runs; only the client_id claim is read.
@@ -359,9 +361,11 @@ test('the frozen schema map matches the live file, and records the one authorize
   assert.equal(blocks.length, 39, 'the public tool count grows only by reviewed decision (skill_save/skill_recall added)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
+
   // Every recorded digest must match the file, so a stale entry cannot mask a
   // later edit and an unauthorized edit cannot pass unnoticed.
   assert.deepEqual(actual, FROZEN_TOOL_SCHEMAS);
+
   // And the tools that were authorized to change must be recorded as changed.
   assert.notEqual(FROZEN_TOOL_SCHEMAS[R9B_CHANGED_TOOL], PRE_R9B_PRESS_KEY_DIGEST);
   assert.ok(FROZEN_TOOL_SCHEMAS[R9E_CHANGED_TOOL]);
@@ -373,12 +377,14 @@ test('the shared burst step schema is pinned by its step set, not only by digest
   // This is the layer that closes that gap: the public burst vocabulary is
   // pinned by name, so adding or removing a step fails loudly here.
   const steps = [...source.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
+
   // navigate joined the burst vocabulary (maps to the existing tabs.navigate
   // primitive; see the audit-repair note in boundary-locks.mjs). The list stays
   // exact so any further addition fails loudly here.
   assert.deepEqual(steps, [
     'read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer', 'navigate'
   ]);
+
   // The burst union must stay strict so unknown step keys are still rejected.
   const union = source.match(/const burstStepSchema = z\.discriminatedUnion\("action", \[([\s\S]*?)\n\]\);/);
   assert.ok(union, 'the burst step union must be locatable');
@@ -401,12 +407,14 @@ test('the keyboard surface now exposes chords and bounded text on both entry poi
 test('the expanded key and modifier vocabularies are bounded', () => {
   const declared = source.match(/const navigationKeySchema = z\.enum\(\[([\s\S]*?)\]\)/)[1]
     .split(',').map((entry) => entry.trim().replace(/^"|"$/g, ''));
+
   // The original 12 navigation keys must all remain, plus letters, digits, and
   // the editing keys an editor actually needs.
   for (const key of ['Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft',
     'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Space', 'Backspace', 'Delete']) {
     assert.ok(declared.includes(key), `${key} must stay allowlisted`);
   }
+
   // The alphabet and digits arrive as spreads, so assert the real sources rather
   // than re-parsing the enum literal.
   const array = (name) => {
@@ -422,11 +430,13 @@ test('the expanded key and modifier vocabularies are bounded', () => {
   assert.equal(digits.length, 10);
   assert.equal(lower.join(''), 'abcdefghijklmnopqrstuvwxyz');
   assert.equal(digits.join(''), '0123456789');
+
   // The enum must actually spread them, or the arrays are dead code.
   const enumBody = source.match(/const navigationKeySchema = z\.enum\(\[([\s\S]*?)\]\)/)[1];
   for (const spread of ['...lowercaseLetters', '...uppercaseLetters', '...digits']) {
     assert.ok(enumBody.includes(spread), `${spread} must be part of the key enum`);
   }
+
   // Bounded: a fixed vocabulary, not free-form key strings, so nothing
   // arbitrary can be injected through the public surface. The enum literal
   // holds 17 named keys plus the three spreads.
@@ -442,11 +452,14 @@ test('the expanded key and modifier vocabularies are bounded', () => {
 
 test('the instructions now teach the chords the schema actually accepts', () => {
   const instructions = source.match(/instructions: "([\s\S]*?)",\n/)[1];
+
   // The placeholder must be gone: the schema moved, so the guidance moves.
   assert.doesNotMatch(instructions, /are not available on this surface yet/);
+
   // Re-frozen 2026-10-01: instructions literal escaped (\"), served text unchanged — see 77ec536.
   assert.match(instructions, /select all with key \\"a\\" and modifiers \[\\"control\\"\]/);
   assert.match(instructions, /paste with key \\"v\\" and modifiers \[\\"control\\"\]/);
+
   // The menu/dialog habit from must survive, now expressed with the 
   // hover step rather than a hand-built wait between levels.
   assert.match(instructions, /The same rule applies to MENUS and DIALOGS/);
@@ -523,10 +536,12 @@ test('the swap is contract-neutral: both waits share a signature and a response 
     assert.match(body, /'queuedMs'/);
     assert.match(body, /'totalMs'/);
   }
+
   // Identical failure envelopes too.
   for (const body of [flat, adaptive]) {
     assert.match(body, /'AWAIT_TIMEOUT','message','Timed out waiting for command result\.'/);
   }
+
   // The only intended difference is the sleep schedule.
   assert.match(flat, /pg_sleep\(0\.05\)/);
   assert.match(adaptive, /pg_sleep\(case when v_polls<=4 then 0\.005/);
@@ -535,6 +550,7 @@ test('the swap is contract-neutral: both waits share a signature and a response 
 test('wait_events honours the timeoutMs its schema declares', () => {
   const block = toolBlock('wait_events');
   assert.match(block, /timeoutMs\s*:\s*timeoutSchema/);
+
   // The handler must destructure it and feed the RPC, not merely declare it.
   const handler = block.slice(block.indexOf('}, ({'));
   assert.match(handler, /\{[^}]*\btimeoutMs\b[^}]*\}/, 'the handler must receive timeoutMs');
@@ -543,6 +559,7 @@ test('wait_events honours the timeoutMs its schema declares', () => {
 
 test('timeoutMs takes precedence over the legacy waitMs alias', () => {
   const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
+
   // Precedence, not addition: a caller that sets both gets timeoutMs.
   assert.match(handler, /timeoutMs\s*\?\?\s*waitMs\s*\?\?\s*25000/);
 });
@@ -559,6 +576,7 @@ test('wait_events outputSchema matches what opera_watch_events_wait returns', ()
     assert.match(declared, new RegExp(`\\b${key}:`), `outputSchema must declare ${key}`);
     assert.match(sql, new RegExp(`'${key}'`), `the SQL must return ${key}`);
   }
+
   // And must NOT declare the command envelope it never returns.
   for (const key of ['commandId', 'status', 'result', 'timing']) {
     assert.doesNotMatch(declared, new RegExp(`\\b${key}:`), `outputSchema must not declare ${key}`);
@@ -587,6 +605,7 @@ test('the guidance states why each one removes a round trip', () => {
   assert.match(text, /instead of re-reading the page to notice/i);
   assert.match(text, /rather than polling/i);
   assert.match(text, /executes the whole versioned sequence server-side/i);
+
   // Each tool must be tied to the job it does, not merely named.
   const watchAt = text.indexOf('start_watch');
   const eventsAt = text.indexOf('wait_events');

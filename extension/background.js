@@ -336,6 +336,7 @@ export async function dispatch(method, params = {}, context = {}) {
     case 'page.read': {
       const tabId = await resolveTabId(params);
       let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
+
       // Read degradation: an oversized result used to fail the whole call at
       // the 512KB ceiling, which on a large application is a hard failure the
       // caller can only guess its way out of. Degrade instead: keep the text and
@@ -356,6 +357,7 @@ export async function dispatch(method, params = {}, context = {}) {
       if (result?.page?.viewport) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
       }
+
       // Text-poor surfaces pay the debugger round trip; collection
       // failures fail open and leave the observation unchanged.
       //
@@ -371,6 +373,7 @@ export async function dispatch(method, params = {}, context = {}) {
         const summary = await collectAxSummary(tabId, context);
         if (summary) {
           result.page.axSummary = summary;
+
           // Reuse the SAME bounded AX round trip to fill in roles the
           // markup does not carry, so a custom control that the platform
           // reports as a radio is finally discoverable by role. This is
@@ -382,6 +385,7 @@ export async function dispatch(method, params = {}, context = {}) {
           }
         }
       }
+
       // Report the user's current state with the observation. Without it the model
       // cannot tell whether the person is watching this tab or working elsewhere,
       // and so cannot choose foreground or background sensibly. It is the same

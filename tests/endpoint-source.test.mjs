@@ -26,6 +26,7 @@ test('the consent screen is a page of the site, not a deployment of its own', as
   assert.equal(endpoints.CONSENT_CONFIG_URL, CONSENT_CONFIG_URL, 'the shared constant is the one the extension uses');
   assert.equal(endpoints.CONSENT_URL, `${endpoints.SITE_ORIGIN}/oauth/consent`);
   assert.match(consent, /AUTH_HOST = 'https:\/\/nenmkmtvjremqphfqnfw\.supabase\.co\/auth\/v1'/, 'the page reads the project Auth host');
+
   // WHY comments are stripped first: this page explains in a comment that it used to load
 // supabase-js from esm.sh, and a scan of the raw text would match its own explanation.
   const consentCode = consent
@@ -45,11 +46,13 @@ test('the consent screen is a page of the site, not a deployment of its own', as
 test('update function derives base from SUPABASE_URL, no literal ref', async () => {
   const src = await readFile(new URL('../supabase/functions/opera-agent-update/index.ts', import.meta.url), 'utf8');
   // Source form is required here: the contract is "this deploy unit derives its
+
   // base from the environment rather than hard-coding it", which is only
   // observable as source text. The positive assertion matters as much as the
   // negative one -- without it, replacing the derivation with any other literal
   // URL would still pass.
   assert.doesNotMatch(src, /nenmkmtvjremqphfqnfw/);
+
   // Quote-style tolerant on purpose: the contract is that this deploy unit
   // derives its base from the environment rather than hard-coding it. The
   // replacement pattern is deliberately NOT asserted; only the

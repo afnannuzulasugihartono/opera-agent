@@ -58,6 +58,7 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
       throw new Error(`Unexpected RPC ${name}`);
     }
   };
+
   // The harness strips edge import lines, so runtime dependencies resolved by
   // the edge loader (createClient, the shared CORS resolver) are injected
   // here from the real shared module — the same code the function imports.

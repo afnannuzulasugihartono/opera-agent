@@ -94,6 +94,7 @@ async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime
   const body = await response.json();
   const segments = Array.isArray(body?.segments) ? body.segments : [];
   return segments
+
     // WHY the silence gate: Whisper hallucinates short words ("you") on silence
     // and noise, stamping them with high no_speech_prob. Measured live: a muted
     // session produced nothing but "you" rows. Above 0.6 the segment is almost
@@ -113,6 +114,7 @@ async function transcribeDue(session: { id: string; device_id: string; window_se
   const { data: chunks } = await supabase.from("opera_listen_chunks")
     .select("seq, audio_base64, mime").eq("session_id", session.id).order("seq").limit(needed);
   if (!chunks || !chunks.length) return 0;
+
   // WHY one window per recorder lifetime on the device side: MediaRecorder emits
   // the container header only in the first chunk of a recording, so joining timed
   // slices produces a file Groq refuses with invalid_media_file (measured live).

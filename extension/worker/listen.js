@@ -90,6 +90,7 @@ export async function postListenChunk(tabId, seq, audio, mime) {
   const cfg = await getConfig();
   const existing = await readListenSession();
   if (!existing?.sessionId || !cfg.deviceToken) return;
+
   // WHY drop chunks from any other tab: only the tab the session started on may
   // feed it. A chunk that names no tab, or the wrong one, is discarded rather
   // than billed to someone else's session.

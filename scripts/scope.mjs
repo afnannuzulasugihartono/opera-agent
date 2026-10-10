@@ -93,6 +93,7 @@ function run(argv) {
   const all = runtimeFiles();
   const whole = all.map((f) => measure(f));
   const runtimeTokens = whole.reduce((sum, m) => sum + m.tokens, 0);
+
   // The haystack is not the runtime source (that is small by design); it is
   // every tracked file, docs and tests included. An agent that "reads the
   // repo" pays this.

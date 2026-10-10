@@ -49,10 +49,13 @@ function sliceBetween(startMarker, endMarker) {
 
 test('a watch-fired trusted click releases its debugger session on every outcome', () => {
   const watchAction = sliceBetween('async function executeWatchAction(', 'async function handleWatchFire(');
+
   // The shared session is created for the click path...
   assert.match(watchAction, /debuggerSession:\s*\{\s*tabId:\s*entry\.tabId,\s*attached:\s*false\s*\}/);
+
   // ...and must be released, not just abandoned.
   assert.match(watchAction, /releaseDebuggerSession\(/);
+
   // The release must sit in a finally so a throw still detaches.
   assert.match(watchAction, /finally\s*\{[^}]*releaseDebuggerSession\(/s);
 });
@@ -61,6 +64,7 @@ test('runBurst releases through the same helper rather than its own detach', () 
   const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
   assert.match(burst, /finally\s*\{/);
   assert.match(burst, /releaseDebuggerSession\(/);
+
   // The old inline detach is gone, so there is one release path to audit.
   assert.doesNotMatch(burst, /chrome\.debugger\.detach\(\{ tabId \}\)/);
 });
@@ -140,6 +144,7 @@ test('raceWithTimeout clears its timer once the work wins', async (t) => {
     fired += 1;
     return new Error('should never fire');
   });
+
   // Without the finally-clear, advancing past the deadline would still run the
   // rejection callback against an already-settled promise.
   t.mock.timers.tick(60000);
@@ -185,12 +190,14 @@ test('executeCommand uses the clearing helper instead of a bare race', () => {
 
 test('withDebugger releases the previous session when a burst step switches tabs', () => {
   const fn = sliceBetween('async function withDebugger(', 'function codedError(');
+
   // Phase D superseded the blanket refusal. Chrome permits one
   // debugger attachment per tab but not two at once, so a switch must detach
   // before attaching the next, or the banner stays on the first tab.
   assert.doesNotMatch(fn, /cannot switch tabs/);
   assert.match(fn, /shared\.tabId !== tabId/);
   assert.match(fn, /releaseDebuggerSession\(shared, log\)/);
+
   // And the re-key must happen on attach, so the next switch is detected.
   assert.match(fn, /shared\.tabId = tabId/);
 });

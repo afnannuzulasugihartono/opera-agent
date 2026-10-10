@@ -229,6 +229,7 @@
       return state.actionable && !state.sensitive;
     });
     if (keyed.length > 0 || descriptor.stableKeySource === 'semantic') return keyed;
+
     // Keyed successor recreated without its id: fall back to the intrinsic
     // signature pool. The caller still requires exactly one candidate and the
     // geometry guard still applies before any rebind.
@@ -283,6 +284,7 @@
     const connected = resolveRef(key);
     if (connected) {
       if (!descriptorMatchesElement(descriptor, connected)) return null;
+
       // Preserve the historical explicit file-upload rejection without granting
       // sensitive revalidation authority. Only the original connected file
       // target may reach the caller's immediate fail-closed file guard.
@@ -316,6 +318,7 @@
           label: s.label || s.text,
           tag: s.tag,
           role: s.role,
+
           // The rectangle stays in the payload: a caller diagnosing a
           // geometry rejection needs the candidate's actual position, and the
           // browser regression suite asserts on those coordinates.
@@ -609,9 +612,11 @@
     const actionability = actionabilityState(el, blocked);
     const text = normalizeObservableText(el.innerText || el.textContent || '', 300);
     const label = normalizeObservableText(getAssociatedLabel(el), 300);
+
     // Attach the computed accessible name only when it adds signal the
     // label/text fields do not already carry, keeping payloads bounded.
     const accessibleName = computeAccessibleName(el);
+
     // An explicit author role still wins; otherwise derive the role the
     // platform would report from the element's own markup, so an unannotated
     // <button> is no longer serialized as role ''.
@@ -889,6 +894,7 @@
         ariaExpanded: el ? el.getAttribute?.('aria-expanded') ?? null : null,
         previousAriaExpanded,
         mutationVersion,
+
         // The first poll must observe a real change, so a page that is already
         // quiet cannot report "stable" before anything has been measured.
         previousMutationVersion: rounds > 0 ? beforeMutationVersion : -1,
@@ -1076,6 +1082,7 @@
     let projected = entries;
     if (args.limit == null && args.index == null && dominant.length === 1) projected = dominant;
     const rawItems = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
+
     // Ambiguous candidate lists carry rank + disambiguation hints so
     // the model can pick explicitly instead of guessing or re-reading.
     const items = rawItems.length > 1
@@ -1089,6 +1096,7 @@
     const item = args.index == null && dominant.length === 1
       ? serialize(dominant[0].el, { includeValue: !!args.includeValue })
       : items[index] ?? null;
+
     // A bare zero forces the model into capture/re-read loops.
     // When the exact-field search finds nothing, project one bounded fuzzy
     // candidate with an explicit hint so recovery costs one round trip.
@@ -1247,6 +1255,7 @@
     const before = args.before && typeof args.before === 'object' ? args.before : {};
     const settled = await waitForPostActionSettle();
     const resetReason = syncSemanticScope({});
+
     // Post-action verification must never consume the canonical semantic delta.
     // Baseline observation happens before the action; after the action we only
     // inspect revision/reset metadata and leave UPDATE/RESET delivery to the
@@ -1407,17 +1416,20 @@
       return { present: false, actionable: false, ambiguous: false, refState: refStateFor(key) };
     }
     const state = actionabilityState(el);
+
     // Pipeline readiness is executor-contract readiness: click_info requires
     // only visibility and the trusted executor scrolls into view itself, so
     // inViewport must NOT gate the wait (offscreen-but-clickable is normal).
     return {
       present: true,
+
       // Sensitive is NOT an actionability gate: sensitive targets are owned by
       // the executor's own guard (which names the real reason - sensitive/
       // file), so the pipeline must hand off instead of waiting them out.
       actionable: state.visible && state.enabled && state.pointerEnabled,
       ambiguous: false,
       gates: { visible: state.visible, enabled: state.enabled, sensitive: state.sensitive, pointerEnabled: state.pointerEnabled, inViewport: state.inViewport },
+
       // Rebind recovery means the ref was NOT connected before the resolve and
       // IS resolved now (fresh refs and live refs resolve without recovery).
       ...(before == null && el != null ? { rebound: true } : {})
@@ -1773,6 +1785,7 @@
     };
     recorder.onstop = () => {
       listenCapture.recorder = null;
+
       // WHY re-arm here and not on a timer: the next window starts the moment
       // this one flushed, so the gap is one recorder restart, not a full
       // polling interval. stop() disarms first, so its flush never restarts.
@@ -1810,6 +1823,7 @@
       try { ctx.close(); } catch {}
       throw new Error(`This media cannot be tapped: ${error?.message || error}`);
     }
+
     // WHY no await on resume: the promise only settles after a user gesture, and
     // an autonomous agent has none — awaiting it hangs the command until the
     // device-side timeout fires. A suspended context records silence, which the

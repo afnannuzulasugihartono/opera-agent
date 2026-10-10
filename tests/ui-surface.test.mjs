@@ -67,6 +67,7 @@ function tags(src, name) {
 
 // Every opening tag, quote-aware, so an attribute value containing `>` cannot
 // truncate the match.
+
 function anyTags(src) {
   return [...src.matchAll(/<[a-z][a-z0-9-]*\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)].map((m) => m[0]);
 }
@@ -118,6 +119,7 @@ function textOf(src, tag, from) {
     /<([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*aria-hidden\s*=\s*(?:"true"|'true'|true)[^>]*>[\s\S]*?<\/\1\s*>/gi,
     ' '
   );
+
   // A control named only by an image uses the image's alt text.
   const alt = exposed.match(/<img\b[^>]*\balt\s*=\s*["']([^"']+)["']/i);
   return `${exposed.replace(/<[^>]*>/g, ' ')} ${alt ? alt[1] : ''}`.replace(/\s+/g, ' ').trim();
@@ -131,6 +133,7 @@ function tagNameOf(tag) {
 // nested inside a hidden wrapper counts as hidden. Without this the check would
 // force redundant aria-hidden on every nested svg, and would still pass a
 // decorative graphic inside a container that was never hidden.
+
 function hiddenRanges(src) {
   const ranges = [];
   for (const m of src.matchAll(/<([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)) {
