@@ -345,7 +345,10 @@ async function loopSense(session, now) {
 export function loopTickLater(session) {
   session.timer = setTimeout(() => {
     session.timer = null;
-    loopTick(session.loopId);
+
+    // loopTick awaits finishLoop before it reaches its own try, so it can still
+    // reject from here. Left bare, that rejection escapes as unhandled.
+    loopTick(session.loopId).catch((error) => { log.warn('LOOP_TICK_UNCAUGHT', error?.message || String(error)); });
   }, session.program.tickMs);
 }
 

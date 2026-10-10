@@ -367,7 +367,10 @@ chrome.runtime.onStartup.addListener(async () => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name !== WAKE_ALARM) return;
-  heartbeat().finally(ensurePullLoop);
+
+  // .finally passes a rejection through, so without a handler here the alarm's
+  // heartbeat ends as an unhandled rejection instead of as a log line.
+  heartbeat().finally(ensurePullLoop).catch((error) => { log.warn('HEARTBEAT_FAILED', error?.message || String(error)); });
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {

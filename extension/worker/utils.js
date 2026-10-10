@@ -8,7 +8,7 @@ import { DEFAULT_BRIDGE_URL } from '../lib/endpoints.js';
 
 const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel', 'listenSession'];
 
-export let connectionState = {
+export const connectionState = {
   status: 'starting',
   lastError: null,
   lastConnectedAt: null,
@@ -72,7 +72,11 @@ export async function getConfig() {
 }
 
 export async function setState(patch) {
-  connectionState = { ...connectionState, ...patch };
+  // Merged in place rather than reassigned, so the binding above can stay
+  // const: a fresh object here makes an exported `let` mandatory. The state a
+  // reader observes is identical either way — same keys, same values, order
+  // kept for the keys that already existed.
+  Object.assign(connectionState, patch);
   try {
     await chrome.storage.local.set({ connectionState });
   } catch (error) {
