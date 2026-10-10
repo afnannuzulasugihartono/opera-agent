@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: burst-atomic-actions.test — Test..
 // @state: Test..
 // @dependencies: node:fs, node:test, strict, protocol, extension-source.
@@ -87,10 +87,10 @@ test('skip_ads workflow migration registers a re-querying loop workflow', () => 
   assert.match(sql, /ad-showing/, 'must poll the ad-state post-condition');
 });
 
-test('version bumped to 1.6.21 for windowed audio capture', () => {
+test('version bumped to 1.6.22 for the modular worker release', () => {
   assert.equal(BURST_STEP_KEYS && true, true);
   const protocol = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
-  assert.match(protocol, /PRODUCT_VERSION = '1.6.21'/);
+  assert.match(protocol, /PRODUCT_VERSION = '1.6.22'/);
   const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
-  assert.equal(manifest.version, '1.6.21');
+  assert.equal(manifest.version, '1.6.22');
 });
