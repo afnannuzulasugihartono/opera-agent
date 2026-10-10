@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: hover-settle.test — settle.test — Hover-as-a-first-class-step contracts.
 // @state: drop the milestone prefix from the interaction test family.
 // @dependencies: node:test, strict, promises, protocol, extension-source.
@@ -160,7 +160,7 @@ test('the manifest loads the settle runtime before the content script', async ()
   const scripts = manifest.content_scripts[0].js;
   assert.ok(scripts.includes('hover-settle.js'), 'the settle runtime must be injected');
   assert.ok(scripts.indexOf('hover-settle.js') < scripts.indexOf('content.js'));
-  assert.equal(manifest.version, '1.6.21');
+  assert.equal(manifest.version, '1.6.22');
 });
 
 test('the public burst schema accepts a hover step and still bounds everything', async () => {

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: protocol — the wire contract: primitive allowlist, parameter schemas, burst vocabulary.
 // @state: exports the method spec table, the allowlist derived from it, and the burst and command validators; npm run check reads this file for the primitive count.
 // @dependencies: keyboard.
@@ -10,7 +10,7 @@
 // WHY one file: the service worker, the MCP server, and the Node tests must agree on
 // exactly which primitives exist. A second copy of the list would eventually disagree.
 
-export const PRODUCT_VERSION = '1.6.21';
+export const PRODUCT_VERSION = '1.6.22';
 export const PROTOCOL_VERSION = 1;
 
 import { resolveKeyInput } from './keyboard.js';

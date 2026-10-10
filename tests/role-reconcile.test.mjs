@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: role-reconcile.test — reconcile.test — Role reconciliation contracts.
 // @state: drop the milestone prefix from the interaction test family.
 // @dependencies: node:test, strict, promises, extension-source.
@@ -256,7 +256,7 @@ test('the manifest loads the role runtime before the content script', async () =
     scripts.indexOf('role-reconcile.js') < scripts.indexOf('content.js'),
     'the role runtime must load before content.js reads it'
   );
-  assert.equal(manifest.version, '1.6.21');
+  assert.equal(manifest.version, '1.6.22');
 });
 
 test('background shares the one content-script copy instead of duplicating it', async () => {

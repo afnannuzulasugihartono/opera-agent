@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: protocol.test — Test.
 // @state: lock the page.fill value rule on the real site and in the protocol test.
 // @dependencies: node:test, strict, protocol.
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
 
 test('version and protocol are stable', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.21');
+  assert.equal(PRODUCT_VERSION, '1.6.22');
   assert.equal(PROTOCOL_VERSION, 1);
 });
 
