@@ -168,6 +168,7 @@ test('MCP guidance documents the accessibility surface without new tools', () =>
   assert.match(mcp, /accessibleName/);
   assert.match(mcp, /axSummary/);
   assert.doesNotMatch(mcp, /registerTool\("(?:read_ax|ax_summary|accessibility)/);
+
   // The public tool inventory stays frozen at the rebaseline (39 with loop and state tools).
   const tools = [...mcp.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
   assert.equal(tools.length, 39);

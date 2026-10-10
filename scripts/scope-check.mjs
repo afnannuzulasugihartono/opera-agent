@@ -31,6 +31,7 @@ const HEADER = /^#{1,3}\s/;
  * one edit as `background.js:96-628`, `:84` rather than repeating the name. A bullet may
  * wrap onto an indented continuation line, so the whole bullet is read before it is judged.
  */
+
 export function parseBrief(text) {
   const declared = [];
   const sideEffects = [];
@@ -71,6 +72,7 @@ export function parseBrief(text) {
   const flush = () => {
     if (bullet === null) return;
     const bucket = section === 'side-effect' ? sideEffects : section === 'file' ? declared : null;
+
     // Interfaces and every other block also use `- path` bullets. Only Files and
     // Side-effects say what may be touched; reading the rest invents permissions.
     if (bucket !== null) consume(bucket, bullet);
@@ -98,6 +100,7 @@ export function parseBrief(text) {
       bullet = raw;
       continue;
     }
+
     // A bullet may wrap, and its continuation is an indent. Prose under a blank line is
     // not an indent of anything — the flush above already closed the bullet, so this
     // line simply has nothing to attach to.
@@ -125,6 +128,7 @@ export function parseBrief(text) {
  * that to a violation counted seventeen honest declarations as crimes in the backtest, so an
  * unreadable brief reports `reliable: false` and stops short of accusing.
  */
+
 export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS) {
   const declared = new Set(brief.declared);
   const allowedSideEffects = new Set([...sideEffects, ...brief.sideEffects]);

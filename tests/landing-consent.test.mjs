@@ -119,6 +119,7 @@ test('every page link resolves, including on the page that lives in a subdirecto
     assert.ok(links.length > 0, `${page} has links to resolve`);
     for (const link of links) {
       if (/^(https?:|mailto:|tel:|data:)/.test(link)) continue;
+
       // WHY resolve rather than demand a leading slash: a relative link is correct on a
       // root page and wrong one directory down, so the rule that matters is the resolved
       // target. A nested page is additionally required to be root-relative, because the
@@ -147,6 +148,7 @@ test('nothing the runtime reads still points at the separate consent deployment'
   for (const file of ['supabase/config.toml', 'supabase/functions/opera-agent-auth/index.ts', 'supabase/functions/_shared/cors.js', 'tests/edge-cors.test.mjs', 'extension/lib/endpoints.js']) {
     assert.doesNotMatch(read(file), /oauth-consent-three/, `${file} no longer names the separate deployment`);
   }
+
   // The superseded screen is gone, and it is gone because the production switch happened
   // first: measured on this project, an authorize request is now redirected to
   // https://opera-agent.vercel.app/oauth/consent and the page served there is this site's.

@@ -77,6 +77,7 @@ function attr(tag, name) {
   if (m) return m[1];
   const single = tag.match(new RegExp(`\\b${name}\\s*=\\s*'([^']*)'`, 'i'));
   if (single) return single[1];
+
   // HTML also permits an unquoted attribute value.
   const bare = tag.match(new RegExp(`\\b${name}\\s*=\\s*([^\\s"'>]+)`, 'i'));
   return bare ? bare[1] : null;
@@ -92,6 +93,7 @@ function idOf(tag) {
 
 // An element has an accessible name if any of these resolve. `label[for]`
 // resolution is handled by the caller because it needs the whole document.
+
 function hasIntrinsicName(tag) {
   const labelled = attr(tag, 'aria-label');
   if (labelled !== null && labelled.trim() !== '') return true;
@@ -107,12 +109,14 @@ function hasIntrinsicName(tag) {
 // alone would let a nameless element inherit a sibling's identical open tag.
 // Close tags are matched case-insensitively and tolerate whitespace before `>`,
 // because both are legal HTML and neither should read as a missing name.
+
 function textOf(src, tag, from) {
   const name = tagNameOf(tag);
   const close = new RegExp(`</${name}\\s*>`, 'i');
   const rest = src.slice(from + tag.length);
   const m = close.exec(rest);
   const inner = m ? rest.slice(0, m.index) : '';
+
   // A name inside aria-hidden is not exposed to assistive technology, so it does
   // not name the control.
   const exposed = inner.replace(
@@ -188,6 +192,7 @@ for (const surface of surfaces) {
       // enclosing label.
       const labels = [...before.matchAll(/<(\/?)label\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)];
       const last = labels.pop();
+
       // Group 1 is the leading slash: '' for an opening tag, '/' for a closing one.
       // An opening tag is the one still unclosed at this point.
       if (!last || last[1] === '/') return false;
@@ -197,6 +202,7 @@ for (const surface of surfaces) {
     for (const name of ['input', 'select', 'textarea']) {
       for (const m of src.matchAll(tagPattern(name))) {
         const control = m[0];
+
         // A hidden control is not exposed to the user, so it needs no name.
         if (attr(control, 'type') === 'hidden') continue;
         const id = idOf(control);
@@ -225,6 +231,7 @@ for (const surface of surfaces) {
     for (const m of src.matchAll(tagPattern('svg'))) {
       const svg = m[0];
       const insideHiddenWrapper = hidden.some(([start, end]) => m.index >= start && m.index < end);
+
       // aria-hidden only hides when its value is true; aria-hidden="false" is an
       // explicit request to expose the element.
       const hiddenSelf = (attr(svg, 'aria-hidden') ?? '').toLowerCase() === 'true';
@@ -250,6 +257,7 @@ for (const surface of surfaces) {
 
   test(`${surface.name} uses unique ids`, async () => {
     const src = await readFile(surface.url, 'utf8');
+
     // Quote-aware and hyphen-aware: `id='a'` counts, `data-id="a"` does not.
     const ids = [...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
     const seen = new Set();
@@ -288,6 +296,7 @@ for (const surface of surfaces) {
       assert.doesNotMatch(tag, /\bon(?:click|dblclick|mousedown|mouseup)\s*=/i,
         `click handler on a non-focusable element: ${tag}`);
     }
+
     // An anchor is focusable only with href, so only an href-less anchor is a
     // violation here. A handler on a real link is a different smell and out of
     // scope for this file.

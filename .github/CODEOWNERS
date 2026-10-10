@@ -5,6 +5,7 @@
 
 # Default owner for everything. Release automation paths get the same
 # owner explicitly so no path is ever unowned.
+
 * @afnannuzulasugihartono
 /.github/workflows/release.yml @afnannuzulasugihartono
 /supabase/migrations/ @afnannuzulasugihartono

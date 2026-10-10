@@ -262,6 +262,7 @@
   </footer>
 
   <script type="module">
+
     // WHY fetch is allowed exactly one destination here: the project Auth host, plus
     // its REST reader for the device count. The page CSP forbids every other origin.
     const REST = 'https://nenmkmtvjremqphfqnfw.supabase.co/rest/v1';
@@ -282,6 +283,7 @@
 
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
+
       // WHY the three outcomes and not a boolean: "the refresh token was refused" and
       // "we could not reach Auth" look identical to a caller that only sees null, and
       // treating the second as the first deletes a working session over a dropped packet.
@@ -338,6 +340,7 @@
     const relativeTime = (() => {
       try {
         const format = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
+
         // WHY the English unit keys and not Indonesian words: format() takes CLDR
         // unit identifiers and localises them through the locale itself. Passing
         // "menit" throws "Invalid unit argument" at call time, which killed the device
@@ -375,6 +378,7 @@
       $('factLastSignIn').textContent = user.last_sign_in_at ? relativeTime(user.last_sign_in_at) : 'tidak diketahui';
       $('factUserId').textContent = user.id || '—';
       $('whoami').textContent = 'Akun ini yang dipakai untuk device dan perintah Anda.';
+
       // WHY a list, not a sentence: a reader with two linked providers must see both
       // to know that unlinking one would still let the other in.
       $('linkedProviders').innerHTML = linkedProviders(user)
@@ -384,6 +388,7 @@
 
     async function load() {
       let token = localStorage.getItem('opera-agent-access-token');
+
       // WHY the probe before the work: a token that aged out says nothing about the
       // account, and treating it as signed out is what made the session feel temporary.
       let temporary = null;
@@ -392,6 +397,7 @@
         if (probe && !probe.ok) {
           const renewed = await renewAccessToken();
           if (renewed.ok) token = renewed.token;
+
           // WHY only a refused refresh clears the session: a failure to reach Auth is a
           // dropped packet, not a signed-out reader, and clearing here would end sessions
           // on a train. The answer is carried to the call below, which would otherwise
@@ -400,6 +406,7 @@
           else temporary = renewed.why;
         }
       }
+
       // No token, no account page: a stranger gets the sign-in page, never an empty
       // profile that looks like a broken product.
       if (!token) {
@@ -425,6 +432,7 @@
         return;
       }
       renderIdentity(user);
+
       // WHY the count and not the list: the account page answers "who am I", and the
       // device list belongs to the dashboard, which is one click away and already
       // renders each device with its own id and controls.

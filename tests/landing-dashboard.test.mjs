@@ -229,6 +229,7 @@ test('every server refusal the dashboard can meet is written in Indonesian', () 
 
 test('a refusal on the dashboard answers with a status line, not a silent failure', () => {
   const html = read('dashboard.html');
+
   // WHY: the revoke handler used to swallow the server's answer entirely, so a
   // refused revoke looked identical to a successful one until the list reloaded.
   assert.match(html, /dicabut\. Pasang ulang/, 'a successful revoke says so');
@@ -240,6 +241,7 @@ test('a refusal on the dashboard answers with a status line, not a silent failur
 test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
   const html = read('dashboard.html');
   assert.match(html, /location\.replace\('\.\/auth\.html'\)/, 'no token means the sign-in page, not an empty state');
+
   // WHY every action re-reads the session: the token can be revoked in another tab,
   // and an expired token must send the reader to sign-in rather than failing opaquely.
   const guards = (html.match(/await currentSession\(\)/g) || []).length;
@@ -248,6 +250,7 @@ test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
 
 test('the page shows each connected device id and can copy it', () => {
   const html = read('dashboard.html');
+
   // WHY this lock: support asks which browser is misbehaving before anything else,
   // and an operator should not have to re-type a UUID to answer. The id already
   // travels in the RPC payload, so no new query is needed.
@@ -255,6 +258,7 @@ test('the page shows each connected device id and can copy it', () => {
   assert.match(html, /Salin ID/, 'copying has a visible control');
   assert.match(html, /navigator\.clipboard\.writeText/, 'copying actually copies');
   assert.match(html, /ID device disalin/, 'copying answers with a status line');
+
   // WHY delegated: the device list is re-rendered on every load, so a per-button
   // listener would be rebound each time and the affordance would die on refresh.
   assert.match(html, /\$\('devices'\)\.onclick/, 'the copy listener survives re-renders');
@@ -280,6 +284,7 @@ test('the dashboard may reach only Supabase like the auth page', () => {
 test('the account and device pages are separate files, not one page with tabs', () => {
   const account = read('akun.html');
   const dashboard = read('dashboard.html');
+
   // WHY: one page with both on it was the original problem. A tab switch would keep
   // the same ambiguity, and the reader would still not know which page to bookmark.
   assert.doesNotMatch(dashboard, /opera_my_devices[\s\S]{0,200}profileCard/, 'the device page is not the account page');
@@ -291,6 +296,7 @@ test('the account and device pages are separate files, not one page with tabs', 
 
 test('pairing issuance is rate limited per issuing account', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261005150000_opera_agent_pairing_rate_limit.sql', root), 'utf8');
+
   // WHY this lock: ROADMAP lists a pairing rate limit as a precondition for mass
   // distribution, and every code invalidates the previous one, so an account that
   // mints freely can keep cancelling a legitimate user's code.
@@ -302,6 +308,7 @@ test('pairing issuance is rate limited per issuing account', () => {
 
 test('pairing cannot take a device name another account owns, and the issuer is the session', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261007030000_opera_agent_pairing_ownership.sql', root), 'utf8');
+
   // WHY this lock: opera_pair_device upserted on device_name and kept the owner with
   // coalesce(existing, new), so a valid code for an owned name replaced the owner's
   // token while the owner stayed the owner. Measured in a rolled-back transaction on
@@ -319,6 +326,7 @@ test('pairing cannot take a device name another account owns, and the issuer is 
 
 test('commands and runs carry their harness provider for the dashboard', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261007070000_opera_commands_provider.sql', root), 'utf8');
+
   // WHY this lock: the dashboard shows device + browser + provider per row (e.g.
   // opera / Brave / opencode). The provider is stamped best-effort by the MCP
   // server after enqueue, so the column must exist with a safe default and the
@@ -330,6 +338,7 @@ test('commands and runs carry their harness provider for the dashboard', () => {
 
 test('consents can be listed and revoked by their owner only', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261007080000_opera_my_consents.sql', root), 'utf8');
+
   // WHY this lock: approving an app is half the story; a company-grade consent
   // screen also lets the person cut access off. Revoke must kill sessions and
   // refresh tokens, not just mark a row, and every step is scoped by auth.uid().
@@ -344,6 +353,7 @@ test('consents can be listed and revoked by their owner only', () => {
 
 test('listening sessions keep transcripts owner-scoped with no grants', () => {
   const sql = fs.readFileSync(new URL('supabase/migrations/20261007100000_opera_listen_sessions.sql', root), 'utf8');
+
   // WHY this lock: a listening session outlives any command, and transcripts are
   // speech — more sensitive than screenshots. Owners read their own rows through
   // policies; writers are service_role edge functions. Raw audio is never stored.
@@ -358,6 +368,7 @@ test('listening sessions keep transcripts owner-scoped with no grants', () => {
 test('the pairing issuer has exactly one signature, or PostgREST refuses it', () => {
   const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
   const drop = fs.readFileSync(new URL('supabase/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');
+
   // WHY this lock: the binding migration added a three-argument issuer while the
   // core migration left a two-argument one. PostgREST then answered PGRST203
   // "function is not unique" and the dashboard pairing button could never work.
@@ -366,6 +377,7 @@ test('the pairing issuer has exactly one signature, or PostgREST refuses it', ()
   const signatures = [...binding.matchAll(/create or replace function public\.opera_create_pairing_code\(/g)].length
     + [...drop.matchAll(/create or replace function public\.opera_create_pairing_code\(/g)].length;
   assert.equal(signatures, 1, 'exactly one creator and one dropper, never two overloads');
+
   // WHY the RLS policies are still load-bearing even though nothing grants SELECT:
   // measured on this project, an authenticated role reaching opera_devices asks for
   // a grant it does not have. The isolation therefore rests on the missing grant
@@ -375,6 +387,7 @@ test('the pairing issuer has exactly one signature, or PostgREST refuses it', ()
 
 test('account isolation rests on two layers, and both are asserted', () => {
   const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
+
   // WHY this test names the architecture: an authenticated role has no grant at all
   // on the tables, only EXECUTE on the RPCs, so the missing grant is layer one and
   // RLS is layer two for the day a grant appears. Proved on this project by
@@ -438,6 +451,7 @@ test('a failed command looks failed, not like every other row', () => {
   // ink, so the one failed click in the screenshot sat invisible among green
   // intentions. Colour pairs with the word, never replaces it.
   const html = read('dashboard.html');
+
   // WHY one helper and not inline ternaries: the ink decision is one rule in one
   // place, so the next status value changes it once instead of in every row.
   assert.match(html, /commandInk = \(status\) => status === 'completed' \? 'online' : status === 'failed' \? 'offline' : ''/, 'completed reads green, failed reads amber, anything else stays muted');
@@ -462,6 +476,7 @@ test('pairing and run sit side by side on a wide screen', () => {
   const html = read('dashboard.html');
   assert.match(html, /class="duo"/, 'one wrapper holds both verbs');
   assert.match(html, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'and the wrapper splits in two');
+
   // WHY the order and not a loose pattern: an earlier 640px media query for the
   // rail precedes every rule below it, so any loose match proves nothing. The
   // collapse must sit inside its own query, after the split.

@@ -19,11 +19,13 @@
 
 # Extend the built-in default config: default rules keep their regexes,
 # and the allowlists below are appended to them.
+
 [extend]
 useDefault = true
 
 [[rules]]
 id = "generic-api-key"
+
 # Inherits all default generic-api-key attributes; entries only add allowlists.
 
   [[rules.allowlists]]
@@ -56,6 +58,7 @@ id = "generic-api-key"
   ]
 
   [[rules.allowlists]]
+
   # WHY this one exists: gitleaks ran on this tree on 2026-10-05 and reported four leaks
   # that are not leaks. A Supabase publishable key is public by design -- it is the
   # counterpart of a secret key and the whole product is a client-side site whose only
@@ -74,4 +77,5 @@ id = "generic-api-key"
 
 [[rules]]
 id = "jwt"
+
 # Inherits all default jwt attributes; no allowlist: the test that needed one is gone.

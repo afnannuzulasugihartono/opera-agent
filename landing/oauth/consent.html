@@ -252,6 +252,7 @@
   </footer>
 
   <script type="module">
+
     // WHY plain fetch and not the Supabase SDK from a CDN: every page here may reach one
     // origin, pinned in vercel.json and _headers. The old consent screen imported
     // supabase-js from esm.sh, which added a second origin and a third party to a page
@@ -289,6 +290,7 @@
 
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
+
       // WHY the three outcomes and not a boolean: "the refresh token was refused" and
       // "we could not reach Auth" look identical to a caller that only sees null, and
       // treating the second as the first deletes a working session over a dropped packet.
@@ -329,6 +331,7 @@
       const token = localStorage.getItem('opera-agent-access-token');
       if (!token) return { token: null, dead: false };
       const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
+
       // WHY a failed probe is offline rather than usable: we learned nothing about the
       // token, and reporting it as working would let the page fail one call later with a
       // message that looks like a refusal.
@@ -367,6 +370,7 @@
 
     function renderDetails(details, user) {
       const name = details.client?.name?.trim() || '';
+
       // WHY no invented name: the separate screen hardcoded "ChatGPT", so a person
       // granting browser control was told the wrong application was asking. If the name
       // is missing, say so plainly rather than guessing.
@@ -456,6 +460,7 @@
         // WHY two different answers: telling a reader whose session is intact that they are
         // signed out is the bug this page had. Offline, the stored session is untouched.
         setStatus(session.offline ? 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman.' : 'Masuk dulu untuk memberi izin ini.', 'warn');
+
         // WHY the card is hidden only when offline: offering a sign-in form to a reader
         // whose session is intact is the wrong answer, and hiding it from a reader who
         // genuinely has no session leaves them with nothing to do.
@@ -478,6 +483,7 @@
         $('signedOutCard').hidden = /jwt|expired/i.test(String(error.message)) ? false : true;
         return;
       }
+
       // An authorization that is already decided comes back with a redirect to follow,
       // which is how a repeat consent request resolves without asking again.
       if (details.redirect_url) {

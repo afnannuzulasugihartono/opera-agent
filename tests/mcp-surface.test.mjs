@@ -674,6 +674,7 @@ test('MCP returns screenshots as image content without duplicating base64 in str
   assert.match(source, /type: "image", data, mimeType/);
   assert.match(source, /delete metadataScreenshot\.data/);
   assert.match(source, /runCommand\("page\.capture"/);
+
   // page.capture keeps opera_await_capture because it scrubs the image bytes out
   // of the command row; the ordinary path moved to the adaptive ramp in Phase C.
   assert.match(source, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
@@ -690,6 +691,7 @@ test('MCP defaults to background tabs and requires explicit automation targets',
   assert.doesNotMatch(source, /"auto"/);
   assert.match(source, /executionMode: executionMode \?\? "background"/);
   assert.match(source, /value, trusted: true, executionMode/);
+
   // The four coordinate tools always pass showCursor: true, and background.js honours
   // it in either mode, so describing background as invisible was false and would have
   // told the model it could not watch a run it is not present for. The server

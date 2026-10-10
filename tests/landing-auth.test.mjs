@@ -71,6 +71,7 @@ test('the sign-in page can return a person to where they came from, and nowhere 
   assert.match(html, /returnTo\(\) !== '\.\/index\.html'/, 'the return path changes what the page offers');
   assert.match(html, /redirect_to.*encodeURIComponent\(target\)/, 'the provider buttons carry the return path to Supabase');
   assert.match(html, /id="continueButton"/, 'a signed-in visitor is offered the return path explicitly');
+
   // WHY the provider buttons matter most: they leave the site entirely and come back
   // through Supabase, so a hardcoded redirect_to loses the request on that hop.
   for (const id of ['googleButton', 'githubButton']) {
@@ -126,6 +127,7 @@ test('every auth control has an accessible name', () => {
   for (const [, id] of html.matchAll(/<input\b[^>]*\bid="([^"]+)"/gi)) {
     assert.ok(new RegExp(`<label[^>]*for="${id}"`).test(html), `input #${id} has a label`);
   }
+
   // WHY the label escape: the language toggle reads ID/EN, two-letter codes no
   // prose can stretch past two characters. A button carrying a non-empty
   // aria-label names itself that way; without one, its own text must do it.

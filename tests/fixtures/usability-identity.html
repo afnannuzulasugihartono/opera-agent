@@ -61,6 +61,7 @@
       successor.setAttribute('aria-label', 'Skip');
       successor.textContent = 'Skip';
       successor.style.position = 'absolute';
+
       // Same DOCUMENT position as the original (convert viewport rect to
       // document coordinates) — the ad lifecycle recreates the control in
       // place, it does not move it.
@@ -80,6 +81,7 @@
 </body>
 </html>
 <script>
+
   // U-T (ETW): a delayed control appears 1.2s after load; clicking it appends
   // the etw-result marker. The watch scenario arms before it exists.
   setTimeout(() => {

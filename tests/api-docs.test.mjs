@@ -65,6 +65,7 @@ test('api.md documents no path the gateway stopped serving', async () => {
   // operator would keep reading about an endpoint that 404s.
   const gateway = await readFile(gatewayPath, 'utf8');
   const doc = await readFile(docPath, 'utf8');
+
   // The first-column convention is load-bearing: only a cell that opens with
   // a backticked slash is read as a path, so a request-body or error-code row
   // can never be mistaken for one.
@@ -119,6 +120,7 @@ test('extractToken accepts exactly the three documented carriers', async () => {
     /searchParams|\.search\b|URLSearchParams|\?apiKey=/,
     'extractToken reads no query-string carrier'
   );
+
   // Reads the request member syntactically; see KNOWN LIMITS above.
   const requestMembers = [...body.matchAll(/\breq(?:uest)?\.(\w+)/g)].map((m) => m[1]);
   assert.deepEqual(

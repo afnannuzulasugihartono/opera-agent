@@ -75,7 +75,17 @@ test('every comment block is spaced from the code it does not document', async (
     // comments, and the lockfiles beside them are generated.
     .filter((f) => !f.startsWith('supabase/migrations/'))
     .filter((f) => f !== 'LICENSE')
-    .filter((f) => !/\.(?:json|lock)$/.test(f));
+    .filter((f) => !/\.(?:json|lock)$/.test(f))
+
+    // WHY and not a hole: this is the one file whose comments sit inside the structure
+    // they document. Each `# from vercel.json …` label sits directly under its path
+    // line, and tests/landing-hosting.test.mjs:52 locks exactly that adjacency, so a
+    // blank above the label fails the lock. A blank below it lands between a path line
+    // and the header lines that rule applies to — splitting a rule block at the edge of
+    // a file whose own comments record rules having gone silently unapplied, and whether
+    // the edge ignores such a blank is not established here. The comments are classified
+    // and counted like any other; this rule does not put space around them.
+    .filter((f) => f !== 'landing/_headers');
   const violations = [];
   for (const file of files) {
     const text = await readFile(new URL(file, root), 'utf8');
@@ -206,6 +216,7 @@ test('no rule is stated twice in two forms', async () => {
 test('the logic gate actually inspected the rule set', async () => {
   const dir = fileURLToPath(new URL('..', import.meta.url));
   const body = fsSync.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+
   // WHY a word-boundary match and not `^Do`: the goals are one bullet each, so the
   // command sits mid-sentence after the bold name ("Do the deploy work that is
   // yours"). A line-anchored regex reads that file as carrying no commands at all,
@@ -252,6 +263,7 @@ test('every gitleaks allowlist path still names a file in the tree', async () =>
     .split('\n')
     .filter(Boolean));
   const config = await readFile(new URL('../.gitleaks.toml', import.meta.url), 'utf8');
+
   // Only the path lists, never the regexes: a regex is content, not a location.
   const patterns = [...config.matchAll(/paths\s*=\s*\[([^\]]*)\]/g)]
     .flatMap((m) => [...m[1].matchAll(/'''([^']+)'''/g)].map((n) => n[1]));

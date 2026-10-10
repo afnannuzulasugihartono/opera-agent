@@ -40,6 +40,7 @@ test('the hero stats equal live source counts, never stale copy', () => {
   const prims = (specs.match(/^\s*'[a-z][a-z0-9_.]*': \{ timeoutMs:/gm) || []).length;
   assert.ok(tools > 30 && prims >= 28, `sanity: ${tools} tools, ${prims} primitives`);
   const block = /<dl class="heroStats" id="heroStats">([\s\S]*?)<\/dl>/.exec(html)[1];
+
   // WHY tag and content separately: each label carries a data-i18n attribute,
   // so a verbatim whole-tag match would break on the attribute rather than on
   // a lost number or a lost label.
@@ -208,6 +209,7 @@ test('motion is an enhancement, never the content', () => {
   assert.match(html, /html\.js \.reveal/, 'hiding requires that announcement');
   assert.match(html, /prefers-reduced-motion/, 'and the motion bows out when asked');
   assert.match(html, /IntersectionObserver/, 'one observer per page, not per pixel');
+
   // WHY this second half: nothing scrolls a print preview, so every section below
   // the first printed blank, and a page that hides itself from being printed is
   // not motion worth having. Measured in Chromium with print media emulated:

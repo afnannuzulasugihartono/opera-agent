@@ -346,6 +346,7 @@
   </script>
   <script src="./i18n.js"></script>
   <script type="module">
+
     // WHY fetch is allowed exactly one destination here: the project Auth host. The
     // page CSP forbids every other origin, and the lock test pins that split, so a
     // second destination cannot be added without turning the suite red.
@@ -414,6 +415,7 @@
       });
       if (!response.ok) return { error: response.status };
       const user = await response.json();
+
       // WHY a refresh token is kept: a Supabase access token lasts about an hour, and this
       // site holds no SDK to renew it, so storing only the access token signed the reader
       // out roughly every hour with no warning. Renewal is one POST against the Auth host,
@@ -428,6 +430,7 @@
 // so renewing the session is written out here rather than pulled from a CDN.
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
+
       // WHY the three outcomes and not a boolean: "the refresh token was refused" and
       // "we could not reach Auth" look identical to a caller that only sees null, and
       // treating the second as the first deletes a working session over a dropped packet.
@@ -483,6 +486,7 @@
       const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ''));
       const accessToken = fragment.get('access_token');
       if (!accessToken) return proveStoredSession();
+
       // WHY keep the search string: the OAuth consent sends the browser to this
       // page with ?next=<the consent URL>, and a replaceState to location.pathname
       // strips that query, so after a provider login the reader landed on the
@@ -500,6 +504,7 @@
         return;
       }
       localStorage.setItem('opera-agent-access-token', accessToken);
+
       // WHY the refresh token is kept: a Supabase access token lasts about an hour and
       // this site holds no SDK to renew it. Storing only the access token meant the
       // reader was silently signed out roughly every hour, which is what "sering keluar
@@ -520,6 +525,7 @@
       } catch (error) {
         proof = null;
       }
+
       // WHY renew rather than sign out: an expired access token says nothing about the
       // reader's account. Signing them out on the first 401 is what made this feel like
       // the product forgot them, so the refresh token is tried before anything is cleared.
@@ -539,6 +545,7 @@
         localStorage.removeItem('opera-agent-access-token');
         localStorage.removeItem('opera-agent-refresh-token');
       }
+
       // WHY the extra card: a person who arrived here from the OAuth consent page has a
       // pending request. Telling them "you are signed in" and dropping them on the home
       // page loses the request; offering the return path keeps it.

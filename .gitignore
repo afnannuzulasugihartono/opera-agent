@@ -4,61 +4,75 @@
 # @dependencies: none stated.
 
 # Dependencies
+
 node_modules/
 
 # Build output
+
 dist/
 build/
 coverage/
 
 # Environment and secrets
+
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 *.p12
+
 # A CRX carries a public key and a signature, never the private one, so the
 # artifact is safe to publish. No copy is committed: the endpoint serves the
 # signed bytes the release workflow uploaded, and the download page asks it.
+
 *.crx
 
 # Supabase local state
+
 .supabase/
 supabase/.temp/
 
 # Local crash-recovery state for the transaction launchers (nonsecret, never commit)
+
 .opera-agent-state/
 
 # Repowise local codebase intelligence (cache + isolated Python environment)
+
 .repowise/
 .repowise-venv/
 
 # Spec Kit local isolated Python environment
+
 .spec-kit-venv/
 
 # Editor / OS
+
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 
 # Logs
+
 *.log
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
 # Temporary files
+
 .tmp/
 tmp/
 .vercel
 
 # Python test artifacts
+
 __pycache__/
 *.py[cod]
 
 # Local agent-tool state and analysis caches (machine-local, never tracked)
+
 .kilo/
 .superpowers/
 graphify-out/

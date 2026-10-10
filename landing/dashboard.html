@@ -554,6 +554,7 @@
   </footer>
 
   <script type="module">
+
     // WHY one RPC and no table reads: opera_my_devices returns the caller's devices
     // with their ten latest commands, method and status only. A page that queries
     // raw tables would need grants the project deliberately never hands out.
@@ -575,6 +576,7 @@
 
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
+
       // WHY the three outcomes and not a boolean: "the refresh token was refused" and
       // "we could not reach Auth" look identical to a caller that only sees null, and
       // treating the second as the first deletes a working session over a dropped packet.
@@ -611,6 +613,7 @@
     const relativeTime = (() => {
       try {
         const format = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
+
         // WHY the English unit keys and not Indonesian words: format() takes CLDR
         // unit identifiers and localises them through the locale itself. Passing
         // "menit" throws "Invalid unit argument" at call time, and because the throw
@@ -661,6 +664,7 @@
     // reader can tell which account's devices they are looking at.
     async function currentSession() {
       let token = localStorage.getItem('opera-agent-access-token');
+
       // WHY the probe before the work: a token that aged out says nothing about the
       // account, and treating it as signed out is what made the session feel temporary.
       let temporary = null;
@@ -669,6 +673,7 @@
         if (probe && !probe.ok) {
           const renewed = await renewAccessToken();
           if (renewed.ok) token = renewed.token;
+
           // WHY only a refused refresh clears the session: a failure to reach Auth is a
           // dropped packet, not a signed-out reader, and clearing here would end sessions
           // on a train. The answer is carried on, because the call that follows would
@@ -677,6 +682,7 @@
           else temporary = renewed.why;
         }
       }
+
       // No token, no dashboard: a stranger gets the sign-in page, never an empty
       // state that looks like a broken product.
       if (!token && !temporary) {
@@ -803,6 +809,7 @@
       liveToken = token;
       liveUser = user;
       $('whoami').textContent = `Device milik ${user.email}.`;
+
       // WHY the marker is read before the device list, not after: the reader who has
       // not installed anything should learn that first, and the device list alone
       // cannot say it, because an empty list looks identical whether the extension is
@@ -831,6 +838,7 @@
         });
       }
       await refreshDevices();
+
       // WHY polling and not a push channel: pairing completes in the extension
       // popup, a separate context this page cannot hear, so a list read once
       // stays frozen on "offline" after a successful pairing. Re-reading the
@@ -911,6 +919,7 @@
         return;
       }
       renderAccountFacts(user, data.devices);
+
       // WHY the numbers live here and not in a second fetch: they are sums over
       // the same payload the list renders, so the summary can never disagree
       // with it. The rail count rides along for the same reason.
@@ -926,6 +935,7 @@
       renderChecklist();
       document.querySelector('.rail a[href="#device"]').textContent = `Device (${total})`;
       renderHistory(data.devices);
+
       // WHY metadata only: a screenshot of this page must not leak speech, so the
       // section names sessions without quoting them. The text travels only in
       // media_listen_read results to the paired agent.
@@ -958,6 +968,7 @@
       const online = data.devices.filter((device) => device.status === 'online').length;
       $('status').textContent = `${data.devices.length} device ter-pairing, ${online} daring.`;
       $('status').className = online ? 'status ok' : 'status warn';
+
       // WHY the state rides the first line: two stacked cards once differed only in
       // a middle row, so the down device hid in plain sight. The build moves up
       // beside the name for the same reason; the facts below keep the rest.
@@ -982,6 +993,7 @@
             <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
           </div>
         </div>`).join('');
+
       // WHY one delegated listener: the device list is re-rendered on every load, so
       // per-button listeners would be re-bound each time and the copy affordance is
       // the one thing a stranger reaches for before writing a support message.
@@ -1031,6 +1043,7 @@
       try {
         const response = await fetch(`${REST}/rpc/opera_run_on_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_method: method }) });
         const result = await response.json();
+
         // WHY the pending branch: the device polls on a ramp, so a command can sit
         // queued a few seconds past the wait window and still complete. Reporting
         // that as a failure teaches the reader that the button is broken.
@@ -1046,6 +1059,7 @@
           $('runStatus').className = 'status warn';
           return;
         }
+
         // WHY the status only: the payload may carry page content, and this page
         // has no business showing it. The method and outcome are the useful parts.
         $('runStatus').textContent = `${method} — ${result.status}.`;

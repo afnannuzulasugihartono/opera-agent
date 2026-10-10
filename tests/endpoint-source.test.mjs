@@ -35,6 +35,7 @@ test('the consent screen is a page of the site, not a deployment of its own', as
     .join('\n');
   assert.doesNotMatch(consentCode, /esm\.sh|unpkg|jsdelivr|cdn\./i, 'the page loads no library from another origin');
   assert.doesNotMatch(consentCode, /<(script|img|link)[^>]+(src|href)="https?:/i, 'no tag points at a remote origin');
+
   // WHY the origin matters: GoTrue validates the origin of every consent call against
   // its configured site URL, so a screen on any other host can never approve anything.
   const config = await readFile(new URL('../supabase/config.toml', import.meta.url), 'utf8');
@@ -45,6 +46,7 @@ test('the consent screen is a page of the site, not a deployment of its own', as
 
 test('update function derives base from SUPABASE_URL, no literal ref', async () => {
   const src = await readFile(new URL('../supabase/functions/opera-agent-update/index.ts', import.meta.url), 'utf8');
+
   // Source form is required here: the contract is "this deploy unit derives its
 
   // base from the environment rather than hard-coding it", which is only

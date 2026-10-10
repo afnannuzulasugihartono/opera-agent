@@ -544,6 +544,7 @@
   </script>
   <script src="./i18n.js"></script>
   <script type="module">
+
     // WHY the extension id is written here and pinned by a test: the page must be able
     // to name the extension it configures. The id is derived from the manifest key and
     // is already asserted in scripts/check.mjs, so the two cannot drift apart silently.
@@ -665,6 +666,7 @@
         setStatus('Browser ini tidak bisa bicara ke extension. Gunakan Salin saja.', 'warn');
         return;
       }
+
       // One message, one destination: the installed extension. There is no fetch here
       // on purpose, because a fetch is where a key would leak.
       globalThis.chrome.runtime.sendMessage(EXTENSION_ID, { type: 'applyModelConfig', ...config }, (response) => {
