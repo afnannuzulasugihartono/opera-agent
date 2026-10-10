@@ -33,7 +33,7 @@ function readGateEntries() {
 // one. This computes a Git blob object id: SHA-1 over the literal bytes
 // "blob <length>\0" followed by the file content. That is not a hash this repository
 // chose for its own security -- it is the identifier Git itself assigns, so a pin here
-// can be checked against `git hash-object <file>` and against every other commit that
+// can be checked against  and against every other commit that
 // ever touched the file. Switching to SHA-256 would produce a number nothing else in
 // the toolchain can reproduce, and the drift check would stop agreeing with Git.
 //
