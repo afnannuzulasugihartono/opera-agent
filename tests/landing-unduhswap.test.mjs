@@ -1,12 +1,14 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: landing-unduhswap — the Steam-style hub door and the merged per-browser file cards.
 // @state: 6 locks; the card/detection/hash pins live on the merged page, the hub keeps only the door pins.
 // @dependencies: test, assert, fs, crypto.
 
 // The hub opens with one giant door and an also-available row, while the merged
-// page answers "which one is mine" with one card per browser, each card offering
-// both files before the shared steps. The download URLs and the compatibility
-// facts are out of scope and stay pinned in landing-download and landing-unduh-hub.
+// page answers "which one is mine" with one card per browser. Each card fills the
+// archive button — the file that installs on an unmanaged machine — and closes the
+// signed file and the update manifest behind a details, before the shared steps.
+// The download URLs and the compatibility facts are out of scope and stay pinned in
+// landing-download and landing-unduh-hub.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -72,7 +74,18 @@ test('every merged card keeps the enterprise frame on its signed file', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   for (const [, key, body] of cards) {
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file`);
+    // WHY the class is no longer asserted on the .crx: the signed file moved off the
+    // button row and into the card's closed <details>, because it is refused on an
+    // unmanaged machine and must not carry the same visual weight as the archive that
+    // installs everywhere. The claim under this lock is "the card still offers the
+    // signed file, and still frames it as enterprise" — both still hold, so the proof
+    // follows the file to its new place instead of the place being pinned instead.
+    const more = /<details class="more">([\s\S]*?)<\/details>/.exec(body);
+    assert.ok(more, `${key} keeps a closed list for its other downloads`);
+    assert.match(more[1], new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file inside it`);
+    assert.doesNotMatch(more[1], /class="btn"/, `${key} gives the signed file no button weight`);
+    assert.match(more[1], /update\.xml\?id=[a-p]{32}/, `${key} also offers the manifest the updater reads, pinned to this extension`);
+
     assert.match(body, /enterprise-managed/, `${key} keeps the policy audience`);
     assert.match(body, /Drag-and-drop manual ditolak/, `${key} keeps the manual rejection`);
     assert.doesNotMatch(body, /mengizinkan pemasangan/, `${key} implies no consumer install`);

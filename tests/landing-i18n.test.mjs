@@ -88,10 +88,17 @@ test('the mechanism phones nowhere, ever', () => {
 });
 
 test('the authored Indonesian stands byte-for-byte where the pins read it', () => {
+  // WHY the hero sentinels changed: the eyebrow read "Daftar terbuka · Gratis
+  // dipakai" and the proof paragraph read "39 tool, 28 primitive". Both were cut —
+  // the eyebrow because it made two claims and repeated "gratis" in the footnote one
+  // line below, the paragraph because the stats row beside it prints all three
+  // numbers. The claim under this lock is that the pages carry AUTHORED Indonesian
+  // rather than the English dict, so the sentinels moved to the trimmed hero's own
+  // lines instead of being dropped with the prose they named.
   const sentinels = [
     ['landing/beranda.html', 'Hak cipta dilindungi'],
-    ['landing/beranda.html', 'Daftar terbuka · Gratis dipakai'],
-    ['landing/beranda.html', '39 tool, 28 primitive'],
+    ['landing/beranda.html', 'Asisten AI yang sudah Anda pakai mendapat jembatan terkendali'],
+    ['landing/beranda.html', 'Sambungkan model'],
     ['landing/unduh-berkas.html', 'Kalau kebijakan ditolak'],
     ['landing/404.html', 'Lima jalan keluar'],
     ['landing/dukungan.html', 'Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)'],

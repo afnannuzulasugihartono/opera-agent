@@ -21,7 +21,12 @@ const html = fs.readFileSync(new URL('landing/akun.html', root), 'utf8');
 // Lift the page's own block out of the file: no copy of the logic lives in the test,
 // so the page and the lock can never disagree about what renders.
 
-const block = html.slice(html.indexOf('const PROVIDER_LABEL'), html.indexOf('async function load'));
+// WHY the slice starts at the escape helper rather than the label table: the page's
+// only innerHTML sink calls esc(), so a slice that began after it would evaluate
+// renderIdentity with esc undefined and fail for a reason that has nothing to do
+// with what the card renders. Both helpers are adjacent, so one anchor covers both.
+
+const block = html.slice(html.indexOf('const esc ='), html.indexOf('async function load'));
 
 function render(user) {
   const nodes = {};

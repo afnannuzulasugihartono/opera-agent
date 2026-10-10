@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-09 UTC+7.
-<!-- @title: unduh-berkas — one card per browser, both files side by side, then every install path. -->
-<!-- @state: the merged page: each browser card offers .zip and .crx together; the steps, verification, enterprise notes, and matrix live here, and the hub only opens the door. -->
+<!-- @last-edited: 2026-10-10 UTC+7.
+<!-- @title: unduh-berkas — one card per browser, the archive filled and the rest closed, then every install path. -->
+<!-- @state: the merged page: each browser card fills the .zip and closes the .crx and the update manifest behind a details; the steps, verification, enterprise notes, and matrix live here, and the hub only opens the door. -->
 <!-- @dependencies: none. -->
 
 
@@ -12,6 +12,7 @@
   <meta name="theme-color" content="#0b0d10" />
   <title data-i18n="meta.title">Unduh berkas — Opera Agent</title>
   <meta name="description" content="Unduh Opera Agent untuk Chrome, Edge, Brave, Opera, dan Vivaldi: arsip .zip manual atau CRX bertanda tangan untuk mesin enterprise." />
+  <link rel="stylesheet" href="/site.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -75,10 +76,13 @@
 
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
-       the brand into two ragged lines. A scrolling row keeps every item on one
-       line and the brand intact. */
-    @media (max-width: 640px) {
+    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
+   748px together, and the container is the viewport minus 48, so the row stops
+   fitting at 796px. The band used to read 640px, which left every window between
+   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
+   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
+   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
         -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
@@ -179,15 +183,40 @@
     .browser.yours { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent), 0 18px 44px rgba(0, 0, 0, .4); }
     .browser .glyph { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 24px; font-weight: 700; }
     .browser h3 { margin: 0 0 12px; font-size: 18px; }
-    /* WHY two buttons side by side: each card answers both formats, so the reader
-       picks the file without leaving their browser. The second button is a
-       ghost on purpose: the archive is the working path for a home reader,
-       the signed file the enterprise one — the hierarchy says so at a glance.
-       (Pure CSS on sibling order, so the pinned anchor strings stay exact.) */
-    .browser .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-    .browser .btn { margin: 4px 0; padding: 12px 18px; font-size: 14px; }
-    .browser .btn-row .btn + .btn { background: transparent; color: var(--accent); }
-    .browser .req { font-size: 12.5px; margin: 8px 0; }
+    /* WHY one filled button above one closed list: this is the shape
+       code.visualstudio.com/download uses, and the principle behind it is that a
+       reader who lands here wants the file that works — only someone rolling the
+       extension out to a fleet wants the signed one. Two equal buttons gave the
+       home path and the enterprise path the same visual weight, which is the one
+       thing this page must not do: the .crx is REFUSED on an unmanaged machine,
+       so a reader who picks it by shape loses ten minutes to learn that. */
+    .browser .btn-row { display: flex; justify-content: center; }
+    .browser .btn { margin: 4px 0; padding: 13px 24px; font-size: 15px; width: 100%; }
+
+    /* WHY details and not a select: a select fires navigation on change, hides its
+       choices from the keyboard and from the page's own text, and needs script to
+       restore the closed state on load. details is native, focusable, open by
+       keyboard alone, and reads correctly with the page's script blocked — which
+       is this page's whole posture, connect-src 'none' included. */
+    .browser .more { margin: 2px 0 0; border: 1px solid var(--line-strong); border-radius: 12px; }
+    .browser .more[open] { border-color: var(--accent); }
+    .browser .more > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 11px 14px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      border-radius: 12px;
+    }
+    .browser .more > summary::-webkit-details-marker { display: none; }
+    .browser .more > summary::after { content: " ▾"; color: var(--muted); }
+    .browser .more[open] > summary::after { content: " ▴"; }
+    .browser .more-list { list-style: none; margin: 0; padding: 0 8px 8px; }
+    .browser .more-list a { display: block; padding: 9px 6px; font-size: 13.5px; color: var(--accent); text-decoration: none; border-radius: 8px; text-align: left; }
+    .browser .more-list a:hover { background: var(--surface-soft); }
+    .browser .req { font-size: 12.5px; margin: 10px 0 0; }
     .browser .badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #04211d; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 980px; white-space: nowrap; }
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
@@ -206,7 +235,6 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./beranda.html#install" data-i18n="nav.install">Instalasi</a>
         <a href="./unduh.html" aria-current="page" data-i18n="nav.download">Unduh</a>
         <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
         <a href="./akun.html" data-i18n="nav.account">Akun</a>
@@ -214,7 +242,7 @@
         <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
         <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
   </header>
@@ -222,9 +250,10 @@
   <main class="wrap wide">
     <div class="hero">
       <h1 data-i18n="page.title">Unduh berkas</h1>
-      <p data-i18n="page.sub">Satu kartu per browser — tiap kartu menawarkan kedua berkas: arsip .zip untuk
-      pemasangan manual di semua Chromium, dan .crx bertanda tangan untuk mesin
-      enterprise. Kedua berkas selalu build terbaru.</p>
+      <p data-i18n="page.sub">Lima kartu, dua berkas yang sama. Opera Agent hanya punya satu build untuk
+      semua browser Chromium, jadi tiap kartu berbeda pada halaman ekstensi yang Anda
+      buka — bukan pada berkasnya: arsip .zip untuk pemasangan manual, dan .crx
+      bertanda tangan untuk mesin enterprise. Keduanya selalu build terbaru.</p>
     </div>
 
     <div class="browsers" id="berkas">
@@ -234,8 +263,14 @@
         <h3>Chrome</h3>
         <div class="btn-row">
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download data-i18n="card.zip">Unduh .zip</a>
-          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a>
         </div>
+        <details class="more">
+          <summary data-i18n="card.more">Unduhan lain</summary>
+          <ul class="more-list">
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a></li>
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
+          </ul>
+        </details>
         <p class="req" data-i18n-html="card.chrome.req">Ekstrak → buka <code>chrome://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="edge">
@@ -244,8 +279,14 @@
         <h3>Edge</h3>
         <div class="btn-row">
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download data-i18n="card.zip">Unduh .zip</a>
-          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a>
         </div>
+        <details class="more">
+          <summary data-i18n="card.more">Unduhan lain</summary>
+          <ul class="more-list">
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a></li>
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
+          </ul>
+        </details>
         <p class="req" data-i18n-html="card.edge.req">Ekstrak → buka <code>edge://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="brave">
@@ -254,8 +295,14 @@
         <h3>Brave</h3>
         <div class="btn-row">
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download data-i18n="card.zip">Unduh .zip</a>
-          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a>
         </div>
+        <details class="more">
+          <summary data-i18n="card.more">Unduhan lain</summary>
+          <ul class="more-list">
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a></li>
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
+          </ul>
+        </details>
         <p class="req" data-i18n-html="card.brave.req">Ekstrak → buka <code>brave://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="opera">
@@ -264,8 +311,14 @@
         <h3>Opera</h3>
         <div class="btn-row">
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download data-i18n="card.zip">Unduh .zip</a>
-          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a>
         </div>
+        <details class="more">
+          <summary data-i18n="card.more">Unduhan lain</summary>
+          <ul class="more-list">
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a></li>
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
+          </ul>
+        </details>
         <p class="req" data-i18n-html="card.opera.req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
       <article class="browser" data-browser="vivaldi">
@@ -274,26 +327,31 @@
         <h3>Vivaldi</h3>
         <div class="btn-row">
           <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download data-i18n="card.zip">Unduh .zip</a>
-          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a>
         </div>
+        <details class="more">
+          <summary data-i18n="card.more">Unduhan lain</summary>
+          <ul class="more-list">
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="card.crx">Unduh .crx</a></li>
+            <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
+          </ul>
+        </details>
         <p class="req" data-i18n-html="card.vivaldi.req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
       </article>
     </div>
 
     <script type="application/json" id="i18n-dict">
     {"en": {
-      "nav.install": "Install",
       "nav.download": "Download",
       "nav.model": "Your model",
+    "nav.signin": "Sign in",
       "nav.account": "Account",
       "nav.privacy": "Privacy",
       "nav.features": "Features",
       "nav.support": "Support",
       "meta.title": "Download files — Opera Agent",
       "page.title": "Download files",
-      "page.sub": "One card per browser — each card offers both files: the .zip archive for manual installs on every Chromium, and the signed .crx for enterprise machines. Both files are always the newest build.",
-      "fallback.body": "If the policy is refused, or your browser is not in the list above, download the archive and load it yourself. This works in every Chromium browser.",
-      "fallback.zip": "Download the newest archive",
+      "page.sub": "Five cards, the same two files. Opera Agent ships one build for every Chromium browser, so each card differs in the extensions page you open, not in the file: the .zip archive for a manual install, and the signed .crx for an enterprise machine. Both are always the newest build.",
+      "fallback.body": "If the policy is refused, or your browser is not in the list above, take the <a href=\"#berkas\">.zip archive</a> from the cards above and load it yourself. This works in every Chromium browser.",
       "verify.title": "Verify the files",
       "verify.match": "Both commands must produce the same number. If they differ, your file is incomplete — download it again.",
       "policy.title": "Policy installs on company machines",
@@ -306,6 +364,8 @@
       "card.yours": "Your browser",
       "card.zip": "Download .zip",
       "card.crx": "Download .crx",
+      "card.more": "Other downloads",
+      "card.manifest": "Update manifest",
       "card.chrome.req": "Extract → open <code>chrome://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
       "card.edge.req": "Extract → open <code>edge://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
       "card.brave.req": "Extract → open <code>brave://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
@@ -351,9 +411,9 @@
       }
     </script>
 
-    <p data-i18n="fallback.body">Kalau kebijakan ditolak, atau browser kamu tidak ada di daftar di atas, unduh arsip
-    dan muat sendiri. Cara ini berjalan di semua browser Chromium.</p>
-    <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip" download data-i18n="fallback.zip">Unduh arsip terbaru</a></p>
+    <p data-i18n-html="fallback.body">Kalau kebijakan ditolak, atau browser kamu tidak ada di daftar di atas, ambil
+    <a href="#berkas">arsip .zip</a> dari kartu di atas dan muat sendiri. Cara ini berjalan
+    di semua browser Chromium.</p>
 
     <p class="hash" data-i18n-html="fallback.hash">Arsip ini selalu build terbaru, jadi sidik jarinya berubah setiap rilis. Cara
       mengambil sidik jari yang sedang dilayani server, dan cara membandingkannya dengan

@@ -11,6 +11,7 @@
   <meta name="theme-color" content="#0b0d10" />
   <title>Akun — Opera Agent</title>
   <meta name="description" content="Akun Opera Agent: identitas Anda, penyedia yang tertaut, dan device yang ter-pairing." />
+  <link rel="stylesheet" href="/site.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -73,10 +74,13 @@
     nav a:hover { color: var(--text); }
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
-       the brand into two ragged lines. A scrolling row keeps every item on one
-       line and the brand intact. */
-    @media (max-width: 640px) {
+    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
+   748px together, and the container is the viewport minus 48, so the row stops
+   fitting at 796px. The band used to read 640px, which left every window between
+   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
+   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
+   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
         -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
@@ -185,7 +189,6 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./beranda.html#install">Instalasi</a>
         <a href="./unduh.html">Unduh</a>
         <a href="./beranda.html#model">Model Anda</a>
         <a href="./akun.html" aria-current="page">Akun</a>
@@ -193,7 +196,7 @@
         <a href="./privasi.html">Privasi</a>
         <a href="./fitur.html">Fitur</a>
         <a href="./dukungan.html">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span><a class="navCta" href="./index.html">Masuk</a>
       </nav>
     </div>
   </header>
@@ -320,6 +323,13 @@
     // providers ["email","google"], because a magic link created it first. Reading
     // provider alone would tell the operator they signed in by email when they did
     // not, so the array is the honest source and a named provider wins.
+    // WHY the escape: this is the only innerHTML sink on the page, and every
+    // sibling page escapes its interpolations through the same five-metacharacter
+    // helper. The provider slugs come from app_metadata, which a client cannot
+    // write, so this is defence in depth rather than a live hole -- but a page
+    // that interpolates unescaped in one map() is one refactor away from being one.
+
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const PROVIDER_LABEL = { google: 'Google', github: 'GitHub', email: 'Tautan email' };
     const providerOf = (user) => {
       const list = Array.isArray(user.app_metadata?.providers) ? user.app_metadata.providers : [];
@@ -383,7 +393,7 @@
       // WHY a list, not a sentence: a reader with two linked providers must see both
       // to know that unlinking one would still let the other in.
       $('linkedProviders').innerHTML = linkedProviders(user)
-        .map((name) => `<li><code>${name}</code> — ${PROVIDER_LABEL[name] || name}</li>`)
+        .map((name) => `<li><code>${esc(name)}</code> — ${esc(PROVIDER_LABEL[name] || name)}</li>`)
         .join('');
     }
 

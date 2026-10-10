@@ -11,9 +11,10 @@ import { readFile } from 'node:fs/promises';
 // never flow into edge logs or error payloads. These tests pin the exact
 // console call sites and 401/405 body literals, so any new log call naming
 // token material — or any credential echo in an auth-error body — fails
-// loudly instead of leaking silently. The four functions are the
-// token-handling surfaces audited under spec 
-// (docs/superpowers/specs/2026-10-02-enterprise-security-phase4-design.md).
+// loudly instead of leaking silently. The four functions below are the
+// token-handling surfaces: each authenticates before it does anything else,
+// and each has a path where a rejection body could otherwise echo the value
+// it rejected.
 
 const FUNCTIONS = [
   'opera-agent-gateway',

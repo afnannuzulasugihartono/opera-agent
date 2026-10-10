@@ -1,12 +1,13 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: landing-unduh-hub — the Steam-style hub door, and the merged per-browser file cards.
-// @state: 7 locks; the hub door navigates to the one merged page, whose cards each offer both files.
+// @state: 7 locks; the hub door navigates to the one merged page, whose cards fill one button and close the rest.
 // @dependencies: test, assert, fs, crypto.
 
 // The hub answers with one giant door and an also-available row, while the merged
-// page answers "which one is mine" with one card per browser, each card offering
-// both files side by side before the shared steps. The download URLs and the
-// compatibility claims themselves are out of scope and stay pinned in
+// page answers "which one is mine" with one card per browser. Each card fills the
+// archive button and closes its other two behind a details, the shape
+// code.visualstudio.com/download uses, before the shared steps. The download URLs
+// and the compatibility claims themselves are out of scope and stay pinned in
 // landing-download.
 
 import test from 'node:test';
@@ -70,8 +71,19 @@ test('the merged page carries one card per browser, each offering both files', (
     // so a verbatim whole-tag match would break on the attribute rather than on
     // a lost URL or a lost button text.
     assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download[^>]*>Unduh \\.zip</a>`), `${key} offers the archive`);
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file beside it`);
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
+
+    // WHY one filled button and not two: code.visualstudio.com/download gives the
+    // matching platform the only filled button and puts the rest behind a closed
+    // list, because a reader who lands here wants the file that works. The .crx is
+    // refused by an unmanaged browser, so giving it a button of its own made the
+    // failing path look as likely as the working one. The stronger claim — that the
+    // archive is the ONLY filled door in a card — is now pinned, which the old
+    // "both side by side" lock could not express at all.
+    const filled = [...body.matchAll(/<a\b[^>]*class="btn"[^>]*>/g)];
+    assert.equal(filled.length, 1, `${key} fills exactly one button`);
+    assert.ok(filled[0][0].includes(ZIP), `${key} fills the archive, the file that installs everywhere`);
+    assert.match(body, /<details class="more">/, `${key} keeps its other downloads behind a closed list`);
   }
 });
 

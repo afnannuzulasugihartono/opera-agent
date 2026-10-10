@@ -3,8 +3,6 @@
 // @state: hygiene pass over this file.
 // @dependencies: none.
 
-// Hover settle policy, as a classic content script.
-//
 // Loaded by the manifest BEFORE content.js and published on globalThis, the same
 // pattern as role-reconcile.js: content scripts are classic scripts and cannot
 // import, and this keeps one copy for both contexts.

@@ -3,8 +3,6 @@
 // @state: module headers say what a module is, not which task added it.
 // @dependencies: none.
 
-// Shared debugger session bookkeeping.
-//
 // A "shared session" is the `{ tabId, attached }` object a caller puts on its
 // context so that several CDP operations inside one logical operation reuse a
 // single attach. `runBurst` creates one; until this module existed, so did the

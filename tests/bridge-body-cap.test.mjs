@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
@@ -26,8 +27,13 @@ function harness({ claim = { ok: false, error: 'Unauthorized device.' } } = {}) 
   vm.runInNewContext(source, {
     createClient: () => client,
     createEdgeLog: () => ({ error() {} }),
+
+    // The real allowlist, not a stub: the bridge decides its Access-Control-Allow-
+    // Origin per request through this helper, and a stubbed one would let the
+    // header behaviour pass without ever exercising the shipped allowlist.
+    CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
     Deno: { env: { get: () => 'test' }, serve: (fn) => { handler = fn; } },
-    Request, Response, URL, TextEncoder, TextDecoder, crypto
+    Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
   });
   const pull = (body, init = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-bridge', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...init.headers }, body, ...init

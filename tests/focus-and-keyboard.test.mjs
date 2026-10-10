@@ -3,8 +3,6 @@
 // @state: drop the milestone prefix from the interaction test family.
 // @dependencies: node:test, strict, promises, focus-gate, keyboard, extension-source.
 
-// Focus stability + keyboard chord/text contracts.
-//
 // Two halves:
 // 1. The pure policy modules (lib/focus-gate.js, lib/keyboard.js) are asserted
 //    directly as behavior, not as source text.

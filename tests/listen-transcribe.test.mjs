@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
@@ -122,8 +123,13 @@ function harness(db, fetchImpl) {
   const edgeLog = { error: (svc, msg) => { errors.push(`${svc}: ${msg}`); } };
   vm.runInNewContext(source, {
     createClient: () => client, createEdgeLog: () => edgeLog,
+
+    // The real allowlist, not a stub: the listen function decides its
+    // Access-Control-Allow-Origin per request through this helper, and a stubbed
+    // one would let the header behaviour pass without the shipped allowlist.
+    CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
     Deno: { env: { get: (key) => (key === 'SUPABASE_URL' || key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test' : (key === 'GROQ_API_KEY' ? 'test-key' : '')) }, serve: (fn) => { handler = fn; } },
-    Request, Response, URL, TextEncoder, FormData, Blob, atob, fetch: fakeFetch, crypto
+    Request, Response, Headers, URL, TextEncoder, FormData, Blob, atob, fetch: fakeFetch, crypto
   });
   const call = (body) => handler(new Request('https://example.test/', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)

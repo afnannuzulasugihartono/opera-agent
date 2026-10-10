@@ -11,6 +11,7 @@
   <meta name="theme-color" content="#0b0d10" />
   <title data-i18n="meta.title">Masuk — Opera Agent</title>
   <meta name="description" content="Masuk ke Opera Agent dengan Google, GitHub, atau magic link email. Tanpa password milik kami." />
+  <link rel="stylesheet" href="/site.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -75,10 +76,13 @@
 
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
-       the brand into two ragged lines. A scrolling row keeps every item on one
-       line and the brand intact. */
-    @media (max-width: 640px) {
+    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
+   748px together, and the container is the viewport minus 48, so the row stops
+   fitting at 796px. The band used to read 640px, which left every window between
+   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
+   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
+   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
         -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
@@ -217,7 +221,6 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./beranda.html#install" data-i18n="nav.install">Instalasi</a>
         <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
         <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
         <a href="./akun.html" data-i18n="nav.account">Akun</a>
@@ -225,7 +228,7 @@
         <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
         <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
   </header>
@@ -297,9 +300,9 @@
 
   <script type="application/json" id="i18n-dict">
   {"en": {
-    "nav.install": "Install",
     "nav.download": "Download",
     "nav.model": "Your model",
+    "nav.signin": "Sign in",
     "nav.account": "Account",
     "nav.privacy": "Privacy",
     "nav.features": "Features",

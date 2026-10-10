@@ -3,6 +3,8 @@
 // @state: clear deno require-await and no-unused-vars in edge functions.
 // @dependencies: none.
 
+import { SECRET_VALUE } from '../../../lib/secret-pattern.js';
+
 const SCHEMA_VERSION = 1;
 const DIGEST_PREFIX = 'sha256:';
 const SHA256_HEX = /^sha256:[0-9a-f]{64}$/;
@@ -57,7 +59,6 @@ const CHANGE_FIELDS = new Set([
 ]);
 const TERMINAL_REQUEST_FIELDS = new Set(['expectedRevision', 'expectedDigest']);
 const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv)/i;
-const SECRET_VALUE = /(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.|\bsb_(?:secret|publishable)_[A-Za-z0-9_-]{16,}|\bsk-[A-Za-z0-9_-]{20,})/;
 
 export class LedgerError extends Error {
   constructor(code, message, details = undefined) {
