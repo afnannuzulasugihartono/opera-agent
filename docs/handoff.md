@@ -11,19 +11,18 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 ## State
 
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
-- Version `1.6.21` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
+- Version `1.6.22` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
 - Gates: `npm test`, `npm run check` — 28 primitives, 156 runtime safety files, 791 unit tests, green.
-- **The SonarCloud Quality Gate is green on the code that modularized the worker** — 2.9798%
-  against a 3.0% threshold on new code, security A, reliability A. It closed by deleting
-  repetition, not by moving the threshold: the scan assertion that was written out once per
-  case now exists once. `CircleCI Pipeline` still fails every PR; it has no `.circleci/`
-  and no reference in the tree, so it is a repo-settings removal for the owner.
+- **The SonarCloud Quality Gate is red** — new-code coverage sits at 2.9798% against the 3.0%
+  threshold on every PR. The threshold does not move; raising real coverage does.
+  `CircleCI Pipeline` also fails every PR; it has no `.circleci/` and no reference in the tree,
+  so it is a repo-settings removal.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
-- **The CRX is published.** The update endpoint offers `1.6.21` to extension id
+- **The CRX is published.** The update endpoint offers `1.6.22` to extension id
   `ofgemipoobcnbjkfanmofjbdonjapmgl`, which is both the manifest key's id and the signature's id.
-  `1.6.17` under that id is inactive; `1.6.14` under the old id `ohbbpamc…` stays active so installs
-  that never updated keep working. `opera_releases` allows one active row per id.
+  `1.6.21` and `1.6.17` under that id are inactive; `1.6.14` under the old id `ohbbpamc…` stays
+  active so installs that never updated keep working. `opera_releases` allows one active row per id.
 - **Live audio is end to end.** Element-tap capture (no new permission) → Groq Whisper
   `verbose_json` → segments in `opera_listen_segments`, audio deleted after use. MCP has
   `media_stream_start/stop` + `media_listen_read` (39 tools); the dashboard shows session
@@ -136,20 +135,23 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    string by [`tests/konsol-tables.test.mjs`](../tests/konsol-tables.test.mjs), masks and clamps
    server-side, and an `opera_operator` flag (RLS on, grants revoked, seeded from the earliest paired
    device) gates the seven ownerless tables. Migration `20261010090000` is applied; read-only by
-   decision — a write side would be the next move, not this one.
-10. **The CRX is deliberately held at 1.6.21.** `main` carries the worker modularization and the
-    three defects it took with it, but shipping it is a release, and a version bump here touches
-    frozen surfaces: `PRODUCT_VERSION` in [`extension/lib/protocol.js`](../extension/lib/protocol.js)
-    is what `browser.ping` answers with, [`scripts/check.mjs`](../scripts/check.mjs) asserts three
-    copies at once, `store/store-manifest.json` uses the four-part form, and
-    [`tests/helpers/boundary-locks.mjs`](../tests/helpers/boundary-locks.mjs) pins the manifest
-    byte for byte. Seven tests carry "1.6.21" in their names. Notas for 1.6.22 are written and
-    waiting at [`docs/releases/1.6.22.md`](releases/1.6.22.md); `release.yml` prefers them to
-    generated notes. Owner decision, recorded 2026-10-10.
+   decision — a write side would be the next move, not this one. Tidied the same day against
+   Studio's own table patterns (zebra, selected-row tint, catalog-typed right-aligned figures,
+   relative clocks over ISO, footer of totals, scope-grouped sidebar); the pass found the ID|EN
+   toggle dead on akun, dashboard and oauth/consent — markup without `i18n.js` — and fixed all three.
+10. **The CRX shipped at 1.6.22** on 2026-10-10. The bump moved every frozen surface as one piece:
+    three version copies asserted by [`scripts/check.mjs`](../scripts/check.mjs), the four-part
+    store form, seven tests carrying the release number, and
+    [`tests/helpers/boundary-locks.mjs`](../tests/helpers/boundary-locks.mjs) re-pinning the
+    manifest on the version line only (`a94f3abd…`, git-blob SHA1 over LF bytes; the id is
+    stable). `publish-crx.yml` signed and inserted the row, the endpoint answers `1.6.22`, and
+    `release.yml` verified the served CRX against the manifest key before publishing
+    [`docs/releases/1.6.22.md`](releases/1.6.22.md) as the GitHub release with four assets
+    (extension zip, source zip, signed CRX, SHA256SUMS).
 11. **The update endpoint answers in a nested query string.** `?x=` is not the id — Chromium sends
     `?x=id%3D<id>%26v%3D<version>`, and `requestedExtensionId` decodes it. Asking bare returns
     `LEGACY_EXTENSION_ID` at 1.0.1, which reads as a broken endpoint and is not one. The id to
-    ask with is `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`, answered with 1.6.21.
+    ask with is `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`, answered with 1.6.22.
 
 ## CI
 
