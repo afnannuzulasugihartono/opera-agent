@@ -209,3 +209,61 @@ test('toml and env files comment with # and are read like any other dialect', ()
     'FLAG=1',
   ), ['e.example:2 no blank line after the comment block']);
 });
+
+test('every comment block in a file is reported where it actually sits', () => {
+  // WHY this shape: every case above puts exactly one block in the file, so a scanner that
+  // reported only the first violation it found would satisfy all of them. Real files carry
+  // many — the longest in this tree carries sixty — and each has to be named at its own
+  // line, because a rule that reports line 4 when the fault is on line 47 sends a reader
+  // to the wrong place and they stop trusting it.
+  const found = scan('two.mjs', '.mjs',
+    'const a = 1;',
+    '',
+    '// the first block',
+    'const b = 2;',
+    '',
+    '// the second block',
+    'const c = 3;',
+  );
+  assert.equal(found.length, 2);
+  assert.match(found[0], /^two\.mjs:4 /);
+  assert.match(found[1], /^two\.mjs:7 /);
+});
+
+test('a file with no comments at all reports nothing', () => {
+  // WHY: it is the commonest shape in the tree and nothing here had covered it. Every case
+  // above hands the scanner something to find, so a scanner that flagged plain code would
+  // have gone unnoticed by all of them while reporting every clean file as dirty.
+  const found = scan('plain.mjs', '.mjs',
+    'const a = 1;',
+    'const b = a + 1;',
+    'const c = b * 2;',
+    'export default c;',
+  );
+  assert.deepEqual(found, []);
+});
+
+test('a comment on the first line has no code above it to be spaced from', () => {
+  // WHY: the rule asks for a blank line before a comment block, but at the top of a file
+  // there is nothing above it to space from. Treating the start of the file as though a
+  // statement preceded it would mark every file whose first line is its own header — and
+  // that is most of them.
+  const found = scan('header.mjs', '.mjs',
+    '// @title: the first line of this file is its own comment',
+    '',
+    'const a = 1;',
+  );
+  assert.deepEqual(found, []);
+});
+
+test('a comment that ends the file still needs the code above it spaced', () => {
+  // WHY: the other edge. A trailing block is where the walk stops, and a scanner that
+  // stopped before judging it would leave the last comment in every file outside the
+  // rule while the rest of the file reported clean.
+  const found = scan('tail.mjs', '.mjs',
+    'const a = 1;',
+    'const b = a + 1;',
+    '// WHY: the file ends on this line',
+  );
+  assert.match(found[0], /no blank line before/);
+});
