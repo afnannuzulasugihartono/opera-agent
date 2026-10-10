@@ -6,13 +6,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const listeners = { counts: {} };
+// Mock ini ialah kontrak API saat muat, bukan sekadar bantalan. Ia menyediakan
+// tepat apa yang graf menyentuhnya pada saat muat — kalau sebuah modul mulai
+// memanggil `chrome.storage.sync` di baris atasnya, tes ini harus merah dengan
+// TypeError, bukan diam-diam berhasil atas mock yang menyediakannya.
+
+const listeners = {};
 function event(name) {
   const fns = [];
   listeners[name] = fns;
-  return { addListener: (fn) => fns.push(fn), removeListener: (fn) => {
-    const i = fns.indexOf(fn); if (i >= 0) fns.splice(i, 1);
-  } };
+  return {
+    addListener: (fn) => { fns.push(fn); },
+    removeListener: (fn) => {
+      const i = fns.indexOf(fn); if (i >= 0) fns.splice(i, 1);
+    },
+  };
 }
 
 globalThis.chrome = {
@@ -35,10 +43,7 @@ globalThis.chrome = {
   storage: {
     onChanged: event('storage.onChanged'),
     local: { get: async () => ({}), set: async () => {} },
-    sync: { get: async () => ({}), set: async () => {} },
   },
-  scripting: { executeScript: async () => [] },
-  windows: { getCurrent: async () => ({ id: 1 }) },
 };
 
 test('the service worker module graph evaluates without throwing', async () => {

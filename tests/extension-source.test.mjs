@@ -74,6 +74,12 @@ test('no state is declared twice across the bundle', async () => {
         if (/^[A-Za-z_$][\w$]*$/.test(name)) names.push(name);
       }
     }
+    // Sebuah nama fungsi yang didefinisikan dua kali menyimpang dengan cara yang
+    // sama persis: definisi kedua mengalahkan yang pertama, dan yang mana yang
+    // menang bergantung urutan muat modul.
+    for (const m of text.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm)) {
+      names.push(m[1]);
+    }
     // Sengaja TIDAK dicakup: `const a = 1, b = 2;`. Pencariannya membaca
     // `let serializedResult = { value: null, text: '' };` di lib/serialize.js
     // sebagai multi-deklarasi, karena tanda koma itu duduk di dalam sebuah objek
@@ -108,7 +114,8 @@ test('every cross-module name is imported where it is used', async () => {
     return out;
   };
 
-  const clean = new Map(), exported = new Map(), imported = new Map(), declared = new Map();
+  const clean = new Map(), exported = new Map(), imported = new Map();
+  const declared = new Map(), topLevel = new Map();
   for (const rel of files) {
     const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
     const code = strip(text);
@@ -137,11 +144,43 @@ test('every cross-module name is imported where it is used', async () => {
     for (const m of code.matchAll(/(?:^|[^\w$.])(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g)) dec.add(m[1]);
     for (const m of code.matchAll(/(?:^|[^\w$.])(?:const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) dec.add(m[1]);
     for (const m of code.matchAll(/(?:^|[^\w$.])(?:function|const|let|var|class)\s*\(?[^)]*\b([A-Za-z_$][\w$]*)\s*[)=,]/g)) dec.add(m[1]);
+    // Destrukturisasi harus terlihat juga. Tanpanya, `const { a, b } =
+    // globalThis.…` di background.js mengikat tiga nama yang pemindai ini tak
+    // tahu sudah dimiliki berkasnya sendiri — lalu ketiganya dituduh dipakai
+    // tanpa diimpor. Terukur: tiga tuduhan palsu, satu per nama.
+    for (const m of code.matchAll(/^(?:export\s+)?(?:const|let|var)\s*[{[]([^}\]]*)[}\]]/gm)) {
+      for (const piece of m[1].split(',')) {
+        const name = piece.trim().split(':').pop().trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) dec.add(name);
+      }
+    }
     declared.set(rel, dec);
+
+    // Deklarasi top-level kolom nol, semua bentuk — inilah isi `universe`.
+    // Sengaja TIDAK dimulai dari `dec`: `dec` memang menangkap deklarasi di dalam
+    // fungsi, karena filternya harus menutupi nama yang ditutupi secara lokal.
+    // Menyalinnya ke sini akan memasukkan `ref`, `mode`, `error`, dan — lewat
+    // pola ketiganya — `true` dan `null` sebagai "nama lintas-modul". Terukur:
+    // itu menghasilkan puluhan tuduhan palsu, satu per nama lokal.
+    const top = new Set();
+    for (const m of code.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm)) top.add(m[1]);
+    for (const m of code.matchAll(/^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)) top.add(m[1]);
+    for (const m of code.matchAll(/^(?:export\s+)?(?:const|let|var)\s*[{[]([^}\]]*)[}\]]/gm)) {
+      for (const piece of m[1].split(',')) {
+        const name = piece.trim().split(':').pop().trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) top.add(name);
+      }
+    }
+    topLevel.set(rel, top);
   }
 
+  // `universe` dulu hanya berisi nama yang diekspor, sehingga sebuah nama PRIVAT
+  // yang dipakai di modul lain tanpa impor lolos — dan itu persis jalur
+  // `TypeError: X is not defined` yang rencana ini ditulis untuk menutupnya.
+  // Dibangun dari semua deklarasi top-level, jalur itu ikut tertutup: 79 → 139
+  // nama, nol miss di pohon ini (terukur sebelum baris ini ditulis).
   const universe = new Set();
-  for (const s of exported.values()) for (const n of s) universe.add(n);
+  for (const s of topLevel.values()) for (const n of s) universe.add(n);
 
   const misses = [];
   for (const rel of files) {

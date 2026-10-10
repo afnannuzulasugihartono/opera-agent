@@ -42,6 +42,5 @@ export {
   MAX_RESULT_BYTES,
   boundedResult,
   oversized,
-  serializeResult,
   clearSerializedResult,
 };

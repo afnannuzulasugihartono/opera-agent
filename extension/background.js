@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 20:31 UTC+7.
-// @title: background — MV3 runtime.
-// @state: the observation says when the person last touched the page.
+// @last-edited: 2026-10-10 UTC+7.
+// @title: background — the thin MV3 entry: dispatch's own state and dispatch.
+// @state: holds two constants dispatch reads, the role-reconcile bridge, and the one load-time listener; every other region of the original 2646-line file moved to worker/ and lib/.
 // @dependencies: protocol, watch, loop, role-reconcile, log, popup-events,
 // debugger-session, serialize, utils, capture, tab-content, listen, capture-page,
 // action-focus, burst, loop-engine, watch-registry, execute-pull.

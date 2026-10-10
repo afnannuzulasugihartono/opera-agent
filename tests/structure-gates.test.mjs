@@ -1,12 +1,11 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: structure-gates — the split's rules are enforced, not remembered.
 // @state: chrome-free lib with one written exception, size ceilings, and a complete worker module set.
-// @dependencies: node:test, strict, node:fs/promises, node:path.
+// @dependencies: node:test, strict, node:fs/promises.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 
@@ -27,6 +26,15 @@ function stripCommentsAndStrings(text) {
   return out;
 }
 
+// Dua batas pemindai ini diketahui dan TIDAK diperbaiki di sini, karena keduanya
+// butuh parser sungguhan:
+//   1. `chrome['storage']` dan `const { storage } = chrome` tidak terlihat —
+//      pemindai hanya mencari literal `chrome.`.
+//   2. Sebuah literal regex yang memuat tanda kutip membuka keadaan string yang
+//      tak pernah tertutup, sehingga sisa berkas terbaca sebagai string.
+// Keduanya terukur nol kemunculan di `extension/` saat komentar ini ditulis.
+// Kalau seseorang menambah salah satunya, gerbang ini diam — bukan merah.
+
 function chromeCodeLines(text) {
   const clean = stripCommentsAndStrings(text);
   const hits = [];
@@ -39,7 +47,18 @@ function chromeCodeLines(text) {
   return hits;
 }
 
+// Kecualiannya harus DITULIS, dan daftarnya harus DIPERIKSA dua arah: menambah
+// nama kedua tanpa alasan akan membebaskan seluruh berkas tanpa satu pun tes merah.
+
 const CHROME_FREE_EXCEPTIONS = new Set(['debugger-session.js']);
+
+// Kebalikannya juga aturan: sebuah modul worker memakai `chrome.*` sebagai kode,
+// kalau tidak ia milik lib/. burst.js melanggar kriterianya (nol kemunculan) dan
+// dikecualikan tertulis karena ia mengimpor `dispatch` dari background.js — yang
+// menarik `chrome.debugger.onDetach` ke dalam lingkar ketergantungannya, dan itu
+// akan merusak alasan tunggal kebebasan lib/: bisa diuji Node tanpa browser.
+
+const WORKER_CHROME_REQUIRED_EXCEPTIONS = new Set(['burst.js']);
 
 test('extension/lib is free of chrome.* as code, except the written exception', async () => {
   const dir = new URL('extension/lib/', root);
@@ -54,11 +73,33 @@ test('extension/lib is free of chrome.* as code, except the written exception', 
     'lib/ must stay testable without a browser; move the file to extension/worker/ instead');
 });
 
-test('the documented chrome.* exception is still real', async () => {
+test('the documented chrome.* exceptions are still real, and no more have crept in', async () => {
   // Kalau debugger-session.js berhenti memakai chrome, kecualiannya harus dihapus.
   const text = await readFile(new URL('extension/lib/debugger-session.js', root), 'utf8');
   assert.ok(chromeCodeLines(text).length > 0,
     'debugger-session.js no longer uses chrome.*; drop it from CHROME_FREE_EXCEPTIONS');
+  // Kecualian yang tak dipantau tumbuh tanpa suara: satu nama menambah satu berkas
+  // bebas, dan tidak ada tes yang merah karenanya. Ukuran daftarnya dikunci.
+  assert.equal(CHROME_FREE_EXCEPTIONS.size, 1,
+    'CHROME_FREE_EXCEPTIONS grew; every new exception needs a written reason');
+  assert.equal(WORKER_CHROME_REQUIRED_EXCEPTIONS.size, 1,
+    'WORKER_CHROME_REQUIRED_EXCEPTIONS grew; every new exception needs a written reason');
+  const burst = await readFile(new URL('extension/worker/burst.js', root), 'utf8');
+  assert.equal(chromeCodeLines(burst).length, 0,
+    'burst.js now uses chrome.*; drop it from WORKER_CHROME_REQUIRED_EXCEPTIONS');
+});
+
+test('a worker module with no chrome.* belongs in lib/, with one written exception', async () => {
+  const dir = new URL('extension/worker/', root);
+  const names = (await readdir(dir)).filter((n) => n.endsWith('.js')).sort();
+  const offenders = [];
+  for (const name of names) {
+    if (WORKER_CHROME_REQUIRED_EXCEPTIONS.has(name)) continue;
+    const hits = chromeCodeLines(await readFile(new URL(name, dir), 'utf8'));
+    if (!hits.length) offenders.push(name);
+  }
+  assert.deepEqual(offenders, [],
+    'lib/ is the chrome-free home; a worker module that never touches chrome.* has no reason to live here');
 });
 
 test('worker modules stay under their ceiling, and background.js does not grow', async () => {
@@ -71,8 +112,17 @@ test('worker modules stay under their ceiling, and background.js does not grow',
     `background.js must end up below 600 lines, got ${bg.split('\n').length}`);
 
   const worker = new URL('extension/worker/', root);
-  let names = [];
-  try { names = (await readdir(worker)).filter((n) => n.endsWith('.js')).sort(); } catch { names = []; }
+  // Sebuah catch yang menelan setiap error membuat ambang 550 tak bisa merah: kalau
+  // direktori gagal dibaca, `names` kosong, badan loop tak pernah berjalan, dan tes
+  // tetap lulus. Hanya ENOENT berarti "belum ada modul"; sisanya ialah kegagalan
+  // yang harus menggagalkan tes, bukan menyembunyikannya.
+  let names;
+  try {
+    names = (await readdir(worker)).filter((n) => n.endsWith('.js')).sort();
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+    names = [];
+  }
   for (const name of names) {
     const text = await readFile(new URL(name, worker), 'utf8');
     assert.ok(text.split('\n').length < 550,

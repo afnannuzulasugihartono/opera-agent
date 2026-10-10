@@ -20,12 +20,17 @@ function sha1Blob(bytes) {
   return createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
 
-for (const [label, locks] of [
-  ['public surface', PUBLIC_SURFACE_LOCKS],
-  ['observation stack', OBSERVATION_STACK_LOCKS],
-  ['relevance stack', RELEVANCE_STACK_LOCKS],
+// Ukuran daftar dikunci bersama isinya. Tanpa itu, menghapus satu entri menghapus
+// satu pemeriksaan tanpa membuat satu pun tes merah — kunci kehilangan anggotanya
+// tanpa suara, dan suite tetap hijau atas berkas yang tak lagi dikunci.
+for (const [label, locks, expectedSize] of [
+  ['public surface', PUBLIC_SURFACE_LOCKS, 4],
+  ['observation stack', OBSERVATION_STACK_LOCKS, 3],
+  ['relevance stack', RELEVANCE_STACK_LOCKS, 2],
 ]) {
   test(`${label} pins stay byte-for-byte unchanged`, async () => {
+    assert.equal(locks.length, expectedSize,
+      `${label} lock lost or gained an entry; update this count deliberately, never by deletion`);
     for (const [relativePath, expected] of new Map(locks)) {
       const bytes = await readFile(new URL(relativePath, import.meta.url));
       assert.equal(sha1Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged`);
