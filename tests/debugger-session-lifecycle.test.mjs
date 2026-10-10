@@ -183,7 +183,15 @@ test('raceWithTimeout still times out a work promise that never settles', async 
 test('executeCommand uses the clearing helper instead of a bare race', () => {
   const exec = sliceBetween('async function executeCommand(', 'async function pair(');
   assert.doesNotMatch(exec, /new Promise\(\(_\s*,\s*reject\)\s*=>\s*setTimeout/);
-  assert.equal((exec.match(/raceWithTimeout\(/g) || []).length, 2, 'both command paths must use it');
+
+  // Both command paths funnel through runDispatch now, so two call sites is what
+  // pins each of them to the shared race instead of letting either grow its own.
+  assert.equal((exec.match(/runDispatch\(/g) || []).length, 2, 'both command paths must use it');
+
+  // And the shared path has to be the clearing helper itself, not a bare timer.
+  const shared = sliceBetween('async function runDispatch(', 'async function executeCommand(');
+  assert.doesNotMatch(shared, /new Promise\(\(_\s*,\s*reject\)\s*=>\s*setTimeout/);
+  assert.equal((shared.match(/raceWithTimeout\(/g) || []).length, 1, 'the shared path must use the clearing helper');
 });
 
 // --- guard: the shared-session contract itself is unchanged -----------------

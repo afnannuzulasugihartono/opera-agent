@@ -30,43 +30,13 @@ const WAKE_ALARM = 'opera-agent-wake';
 let loopPromise = null;
 let loopGeneration = 0;
 
-async function executeCommand(raw) {
-  // Drop any memoized result serialization from the previous command so a large
-  // page.read result is not pinned for the worker's lifetime.
-  clearSerializedResult();
+// One shaped outcome for both dispatch paths below: the ok/catch ladder used to
+// be written out twice, once per path, and the two copies had to be kept equal
+// by hand.
 
-  // Watch.* and loop.* are internal extension-side families (protocol primitive
-  // count stays frozen at 28); their validation lives in lib/watch.js and
-  // lib/loop.js respectively.
-  if (raw && typeof raw.method === 'string' && (raw.method.startsWith('watch.') || raw.method.startsWith('loop.'))) {
-    const deadlineW = Date.now() + 10000;
-    try {
-      const result = await raceWithTimeout(
-        () => dispatch(raw.method, raw.params || {}, { deadline: deadlineW }),
-        10000,
-        commandTimeoutError
-      );
-      return { ok: true, result: boundedResult(result) };
-    } catch (error) {
-      if (error && error.code === 'TARGET_NOT_READY') {
-        return { ok: false, error: notReadyError(error) };
-      }
-      if (error && error.code === 'COMMAND_TIMEOUT') {
-        return { ok: false, error: { code: 'COMMAND_TIMEOUT', outcome: 'unknown', message: error.message } };
-      }
-      return { ok: false, error: normalizeError(error) };
-    }
-  }
-  const validated = validateCommand(raw);
-  if (!validated.ok) return { ok: false, error: { code: 'INVALID_COMMAND', message: validated.error } };
-  const { command } = validated;
-  const deadline = Date.now() + command.timeoutMs;
+async function runDispatch(dispatch, timeoutMs) {
   try {
-    const result = await raceWithTimeout(
-      () => dispatch(command.method, command.params, { deadline }),
-      Math.max(1, deadline - Date.now()),
-      commandTimeoutError
-    );
+    const result = await raceWithTimeout(dispatch, timeoutMs, commandTimeoutError);
     return { ok: true, result: boundedResult(result) };
   } catch (error) {
     if (error && error.code === 'TARGET_NOT_READY') {
@@ -77,6 +47,25 @@ async function executeCommand(raw) {
     }
     return { ok: false, error: normalizeError(error) };
   }
+}
+
+async function executeCommand(raw) {
+  // Drop any memoized result serialization from the previous command so a large
+  // page.read result is not pinned for the worker's lifetime.
+  clearSerializedResult();
+
+  // Watch.* and loop.* are internal extension-side families (protocol primitive
+  // count stays frozen at 28); their validation lives in lib/watch.js and
+  // lib/loop.js respectively.
+  if (raw && typeof raw.method === 'string' && (raw.method.startsWith('watch.') || raw.method.startsWith('loop.'))) {
+    const deadlineW = Date.now() + 10000;
+    return runDispatch(() => dispatch(raw.method, raw.params || {}, { deadline: deadlineW }), 10000);
+  }
+  const validated = validateCommand(raw);
+  if (!validated.ok) return { ok: false, error: { code: 'INVALID_COMMAND', message: validated.error } };
+  const { command } = validated;
+  const deadline = Date.now() + command.timeoutMs;
+  return runDispatch(() => dispatch(command.method, command.params, { deadline }), Math.max(1, deadline - Date.now()));
 }
 
 async function pair(code) {

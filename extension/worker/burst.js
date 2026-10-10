@@ -30,6 +30,21 @@ export async function runBurst(params, outerContext = {}) {
   const context = { ...outerContext, deadline, debuggerSession: { tabId, attached: false } };
   const results = [];
 
+  // The three step failures below differ only in their error. The envelope
+  // around them was written out three times, so a field added to a burst
+  // failure had to be remembered in three places.
+  const stepFailure = (index, step, error) => ({
+    ok: false,
+    tabId,
+    completedSteps: index,
+    failedAt: index,
+    failedAction: step.action,
+    executionMode: mode,
+    error,
+    results,
+    timingMs: Math.round((performance.now() - startedAt) * 100) / 100
+  });
+
   // Phase D: the tab the current step runs against. It starts at the burst tab
   // and only moves when a step names its own tabId, so every existing caller
   // behaves exactly as before.
@@ -68,36 +83,16 @@ export async function runBurst(params, outerContext = {}) {
       // the switch flag: a step that stays on the already-active tab must also
       // refuse a ref minted elsewhere.
       if (step.refFromStep !== undefined && step.refFromStep !== null && burstCrossTabRef(results, step.refFromStep, stepTabId)) {
-        return {
-          ok: false,
-          tabId,
-          completedSteps: index,
-          failedAt: index,
-          failedAction: step.action,
-          executionMode: mode,
-          error: {
-            code: 'BURST_CROSS_TAB_REF',
-            message: `Step ${index} switches tab and cannot consume a ref minted by step ${step.refFromStep} on another tab. Re-find on the target tab.`
-          },
-          results,
-          timingMs: Math.round((performance.now() - startedAt) * 100) / 100
-        };
+        return stepFailure(index, step, {
+          code: 'BURST_CROSS_TAB_REF',
+          message: `Step ${index} switches tab and cannot consume a ref minted by step ${step.refFromStep} on another tab. Re-find on the target tab.`
+        });
       }
       if (step.refFromStep !== undefined && step.refFromStep !== null && burstStaleRef(results, step.refFromStep, stepTabId)) {
-        return {
-          ok: false,
-          tabId,
-          completedSteps: index,
-          failedAt: index,
-          failedAction: step.action,
-          executionMode: mode,
-          error: {
-            code: 'BURST_STALE_REF',
-            message: `Step ${index} cannot consume a ref minted by step ${step.refFromStep} before a navigation on this tab replaced the document. Re-find after the navigation.`
-          },
-          results,
-          timingMs: Math.round((performance.now() - startedAt) * 100) / 100
-        };
+        return stepFailure(index, step, {
+          code: 'BURST_STALE_REF',
+          message: `Step ${index} cannot consume a ref minted by step ${step.refFromStep} before a navigation on this tab replaced the document. Re-find after the navigation.`
+        });
       }
       try {
         const result = await dispatch(method, burstStepParams(step, stepTabId, remainingMs, mode, results), context);
@@ -115,17 +110,7 @@ export async function runBurst(params, outerContext = {}) {
         if (error && error.code === 'TARGET_NOT_READY') {
           burstError = notReadyError(error);
         }
-        return {
-          ok: false,
-          tabId,
-          completedSteps: index,
-          failedAt: index,
-          failedAction: step.action,
-          executionMode: mode,
-          error: burstError,
-          results,
-          timingMs: Math.round((performance.now() - startedAt) * 100) / 100
-        };
+        return stepFailure(index, step, burstError);
       }
     }
     return {
