@@ -29,12 +29,29 @@ function readGateEntries() {
     });
 }
 
+// WHY sha1 and not sha256, which is the correct answer to every question except this
+// one. This computes a Git blob object id: SHA-1 over the literal bytes
+// "blob <length>\0" followed by the file content. That is not a hash this repository
+// chose for its own security -- it is the identifier Git itself assigns, so a pin here
+// can be checked against  and against every other commit that
+// ever touched the file. Switching to SHA-256 would produce a number nothing else in
+// the toolchain can reproduce, and the drift check would stop agreeing with Git.
+//
+// It is therefore not a weak hash in a sensitive context: the value is never a
+// credential, never an integrity guarantee for anything shipped, and cannot be turned
+// into a different file without a SHA-1 collision that buys an attacker nothing here.
+// The gate's job is to notice an ACCIDENTAL edit, and a collision attack is not that.
+// SonarCloud flagged this CRITICAL on its first analysis; the NOSONAR below records
+// the reason so the next person does not have to re-derive it, and so deleting the
+// suppression requires reading this paragraph first.
+
 function sha1Blob(relativePath) {
   const absolute = path.join(root, relativePath);
   if (!fs.existsSync(absolute)) return null;
   const bytes = fs.readFileSync(absolute);
   const content = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
-  return crypto.createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
+  return crypto.createHash('sha1') // NOSONAR -- a git blob object id, not a security hash; see above
+    .update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
 
 const entries = readGateEntries();
