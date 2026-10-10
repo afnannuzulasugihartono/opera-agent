@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 11:26 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: landing-dashboard — the device page shows your devices, nothing else's.
 // @state: 19 locks, green; the page moved out of akun.html when the two split.
 // @dependencies: test, assert, fs.
@@ -240,7 +240,7 @@ test('a refusal on the dashboard answers with a status line, not a silent failur
 
 test('a stranger is sent to sign-in, never shown an empty dashboard', () => {
   const html = read('dashboard.html');
-  assert.match(html, /location\.replace\('\.\/auth\.html'\)/, 'no token means the sign-in page, not an empty state');
+  assert.match(html, /location\.replace\('\.\/index\.html'\)/, 'no token means the sign-in page, not an empty state');
 
   // WHY every action re-reads the session: the token can be revoked in another tab,
   // and an expired token must send the reader to sign-in rather than failing opaquely.

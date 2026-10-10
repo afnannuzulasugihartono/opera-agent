@@ -6,7 +6,7 @@
   "description_for_model": "Drive the user's own Opera browser session through a strict allowlist of generic browser primitives. Call runBrowserCommand with a method (tabs.list, page.find, page.read, page.click, page.fill, tabs.navigate, browser.burst), params, and waitMs. A successful command and a structured device-side failure both return HTTP 200: read the envelope (ok true, or ok false with an actionable error) and never treat HTTP 200 alone as success. On 504/502 the action may already have run: verify page state before repeating, and pass requestId for replay protection. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction.",
   "auth": {
     "type": "oauth",
-    "client_url": "https://opera-agent.pages.dev/auth",
+    "client_url": "https://opera-agent.pages.dev/",
     "scope": "openid email",
     "authorization_url": "https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize",
     "authorization_content_type": "application/json"

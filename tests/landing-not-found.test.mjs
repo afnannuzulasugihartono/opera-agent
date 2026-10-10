@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-05 12:10 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: landing-not-found — a lost visitor gets the site, not a host error page.
 // @state: failing first: no 404 page exists, and Vercel answers with its own.
 // @dependencies: test, assert, fs.
@@ -27,10 +27,10 @@ test('the 404 page helps instead of apologising', () => {
   assert.match(html, /<html lang="id"/, 'the language is declared');
   assert.match(html, /<main/, 'a main landmark exists');
   assert.match(html, /<footer/, 'the footer exists');
-  assert.match(html, /index\.html/, 'the home page is one click away');
+  assert.match(html, /beranda\.html/, 'the home page is one click away');
   assert.match(html, /unduh\.html/, 'the download page is one click away');
-  assert.match(html, /auth\.html/, 'the account page is one click away');
-  assert.match(html, /akun\.html/, 'the dashboard is one click away');
+  assert.match(html, /index\.html/, 'the sign-in page is one click away');
+  assert.match(html, /akun\.html/, 'the account page is one click away');
   const noScript = html.replace(/<script[\s\S]*?<\/script>/g, '');
   assert.ok(noScript.replace(/<[^>]+>/g, ' ').trim().length > 60, 'it says something useful without script');
 });

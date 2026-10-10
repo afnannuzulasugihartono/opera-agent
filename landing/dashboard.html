@@ -410,10 +410,10 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./index.html">Opera Agent</a>
-        <a href="./index.html#install">Instalasi</a>
+        <a class="brand" href="./beranda.html">Opera Agent</a>
+        <a href="./beranda.html#install">Instalasi</a>
         <a href="./unduh.html">Unduh</a>
-        <a href="./index.html#model">Model Anda</a>
+        <a href="./beranda.html#model">Model Anda</a>
         <a href="./akun.html">Akun</a>
         <a href="./dashboard.html" aria-current="page">Dashboard</a>
         <a href="./privasi.html">Privasi</a>
@@ -548,7 +548,7 @@
     <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span class="doors">
-        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
+        <a href="./beranda.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./index.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
       </span>
     </div>
   </footer>
@@ -686,7 +686,7 @@
       // No token, no dashboard: a stranger gets the sign-in page, never an empty
       // state that looks like a broken product.
       if (!token && !temporary) {
-        globalThis.location.replace('./auth.html');
+        globalThis.location.replace('./index.html');
         return null;
       }
       try {
@@ -703,7 +703,7 @@
           return null;
         }
         forgetSession();
-        globalThis.location.replace('./auth.html');
+        globalThis.location.replace('./index.html');
         return null;
       }
     }

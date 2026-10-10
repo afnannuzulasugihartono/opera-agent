@@ -326,7 +326,7 @@ test('the download page names every browser it supports and why one is not', () 
 });
 
 test('the install section links the download page instead of dead-ending', () => {
-  const html = read('index.html');
+  const html = read('beranda.html');
   assert.match(html, /href="\.\/unduh\.html"/, 'install reaches the download page');
   assert.match(html, /unduh\.html/, 'the link exists in the copy too');
 });

@@ -57,7 +57,8 @@ Observed split grammar:
   and a language list naming each language in itself ("Bahasa Indonesia",
   "English") instead of codes.
 
-Adopted on `landing/auth.html`: the split (brand panel plus gate card, stacked
+Adopted on `landing/index.html` (the site root, the sign-in page): the split
+(brand panel plus gate card, stacked
 below 860px), the card order (tabs, magic-link form, divider, providers,
 resend line, note), and the in-itself language list wired to the shared
 `oa-lang` choice. House dark plus the green accent stay; no Facebook blue,

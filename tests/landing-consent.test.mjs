@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:24 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: landing-consent — the OAuth permission screen, and the two defects it removes.
 // @state: 8 locks green; the separate deployment it replaced is still on disk until the production site URL moves.
 // @dependencies: node:test, node:assert, node:fs.
@@ -49,15 +49,15 @@ test('the consent screen loads nothing from another origin', () => {
 test('the consent screen asks for no password, like every other page here', () => {
   assert.doesNotMatch(html, /type="password"/i, 'there is no password field');
   assert.doesNotMatch(code, /signInWithPassword/, 'and no password grant');
-  assert.match(html, /`\/auth\.html\?next=/, 'it sends the person to the provider sign-in page');
+  assert.match(html, /`\/index\.html\?next=/, 'it sends the person to the provider sign-in page');
 });
 
 test('a person who is not signed in keeps their request', () => {
   // WHY the id must survive the round trip: the consent page lives on the site, and a
-  // person without a session is sent to /auth. Losing authorization_id there means the
-  // permission screen silently becomes "no request found".
+  // person without a session is sent to the sign-in page at the site root. Losing
+  // authorization_id there means the permission screen silently becomes "no request found".
   assert.match(html, /authorization_id=\$\{authorizationId \|\| ''\}/, 'the id is carried through the sign-in return path');
-  assert.match(read('landing/auth.html'), /location\.replace\(returnTo\(\)\)/, 'and /auth returns the person to it');
+  assert.match(read('landing/index.html'), /location\.replace\(returnTo\(\)\)/, 'and the sign-in page returns the person to it');
 });
 
 test('the screen shows what a person needs to judge, and answers every action', () => {
@@ -95,7 +95,7 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
   const headers = read('landing/_headers');
   assert.match(headers, /^\/oauth\/consent$/m, 'and on Cloudflare, one path per block');
   assert.match(headers, /^\/oauth\/consent\.html$/m, 'both spellings of it');
-  assert.match(html, /`\/auth\.html\?next=/, 'the sign-in return path is root-relative, so it survives the subdirectory');
+  assert.match(html, /`\/index\.html\?next=/, 'the sign-in return path is root-relative, so it survives the subdirectory');
 });
 
 test('every page link resolves, including on the page that lives in a subdirectory', () => {
@@ -104,7 +104,7 @@ test('every page link resolves, including on the page that lives in a subdirecto
   // answered 404 — measured on the live site, all seven of them, on the page where a person
   // has just granted an application control of their browser. A link that looks right in
   // the source is not a link that works.
-  const pages = ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html'];
+  const pages = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html'];
   const exists = (path) => {
     try {
       return fs.statSync(new URL(`landing/${path}`, root)).isFile();
@@ -138,8 +138,8 @@ test('the consent screen carries the same navigation as every other page', () =>
   // WHY entries and not hrefs: the screen has to link the same places, and it cannot do it
   // with the same relative strings, because it is one directory down.
   const entries = (page) => [...read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0].matchAll(/>([^<>]+)<\/a>/g)].map((m) => m[1].trim());
-  const shared = entries('index.html');
-  for (const page of ['akun.html', 'dashboard.html', 'auth.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html']) {
+  const shared = entries('beranda.html');
+  for (const page of ['akun.html', 'dashboard.html', 'index.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html']) {
     assert.deepEqual(entries(page), shared, `${page} offers the same nav entries`);
   }
 });

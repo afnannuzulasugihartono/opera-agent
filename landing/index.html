@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-06 16:35 UTC+7. -->
-<!-- @title: landing — the public site: install, sign-in, and your own model. -->
-<!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
+<!-- @last-edited: 2026-10-10 UTC+7. -->
+<!-- @title: index — sign in with a provider or a magic link, never a password of ours. -->
+<!-- @state: initiates project Auth login; device-to-account binding arrives with pairing. -->
 <!-- @dependencies: none. -->
 
 <!doctype html>
@@ -9,19 +9,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b0d10" />
-  <title>Opera Agent</title>
-  <meta name="description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
+  <title data-i18n="meta.title">Masuk — Opera Agent</title>
+  <meta name="description" content="Masuk ke Opera Agent dengan Google, GitHub, atau magic link email. Tanpa password milik kami." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
-  <meta property="og:title" content="Opera Agent" />
-  <meta property="og:description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
+  <meta property="og:title" content="Masuk — Opera Agent" />
+  <meta property="og:description" content="Masuk ke Opera Agent dengan Google, GitHub, atau magic link email. Tanpa password milik kami." />
   <meta property="og:url" content="https://opera-agent.pages.dev/" />
   <meta property="og:locale" content="id_ID" />
   <style>
-    /* WHY inline and single file: this site has no build step, no framework and no
-       external origin. A marketing page that needs a bundler is a page that breaks
-       when the bundler changes. */
+    /* WHY the same single-file shape as the landing page: no build step, no
+       external origin, and the only network the CSP allows is the project Auth. */
     :root {
       --bg: #0b0d10;
       --surface: #16191e;
@@ -56,7 +55,8 @@
 
     a { color: var(--accent); }
 
-    .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 0 20px; }
+    main.wrap.auth { max-width: 980px; }
 
     header {
       position: sticky;
@@ -69,7 +69,7 @@
     }
 
     nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
-    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; white-space: nowrap; }
     nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
     nav a:hover { color: var(--text); }
 
@@ -86,111 +86,26 @@
       nav .brand { margin-right: 6px; }
     }
 
-    .hero { padding: 128px 0 96px; background: radial-gradient(760px 360px at 62% -60px, rgba(62, 207, 142, .13), transparent 70%); }
-    .hero h1 {
-      margin: 0 0 18px;
-      font-size: clamp(40px, 7.5vw, 84px);
-      line-height: 1.04;
-      letter-spacing: -.03em;
-      font-weight: 700;
-      max-width: 17ch;
-    }
+    main { padding: 72px 0 56px; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
 
-    .hero p { margin: 0 0 26px; color: var(--muted); font-size: 19px; line-height: 1.55; max-width: 58ch; }
+    /* WHY one grid for the split: the brand panel and the gate card are the
+       same decision side by side, so they share a row until 860px and stack
+       below it. House dark plus the green accent throughout; no Facebook blue. */
+    .split { display: grid; grid-template-columns: 1fr 1.1fr; gap: 40px; align-items: start; }
 
-    /* WHY the eyebrow: a company hero answers "is this alive" before the headline
-       is read. No version rides here — a named build goes stale, so this states
-       the offer, which does not change per release. */
-    .eyebrow {
-      display: inline-block;
-      margin: 0 0 18px;
-      color: var(--accent);
-      font-size: 12.5px;
-      font-weight: 600;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
+    .brand { padding-top: 8px; }
+    .brand .mark { width: 44px; height: 44px; }
+    .brandHead { font-size: 24px; line-height: 1.3; letter-spacing: -.01em; font-weight: 600; color: var(--text); margin: 16px 0; }
+    .brand ul { list-style: none; margin: 0; padding: 0; }
+    .brand li { position: relative; padding-left: 22px; margin: 0 0 12px; color: var(--muted); font-size: 15px; }
+    .brand li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 
-    /* WHY the grid: a wall of claims with no artefact reads as a pitch deck. The
-       demo is static markup, not a screenshot, so it never goes stale and costs
-       no request. It collapses under the copy on a phone instead of beside it. */
-    .heroGrid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 32px; align-items: center; }
-    @media (max-width: 760px) { .heroGrid { grid-template-columns: 1fr; } }
-
-    .demo {
-      background: linear-gradient(180deg, #171b21, #0e1216);
-      border: 1px solid var(--line-strong);
-      border-radius: 18px;
-      padding: 20px 20px 16px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
-      line-height: 2;
-    }
-
-    .demo .dots { display: flex; gap: 6px; margin-bottom: 10px; }
-    .demo .dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
-    .demo .dots span:first-child { background: var(--accent); }
-    .demo .cmd { color: var(--text); }
-    .demo .cmd::before { content: "$ "; color: var(--muted); }
-    .demo .out { color: var(--muted); }
-    .demo .out::before { content: "→ "; color: var(--accent); }
-    .demo .no { color: var(--warn); }
-    .demo .no::before { content: "→ "; }
-
-    .heroStats { display: flex; flex-wrap: wrap; gap: 18px 36px; margin: 30px 0 0; padding: 0; }
-    .heroStats div { margin: 0; }
-    .heroStats dt { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
-    .heroStats dd { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-    .row { display: flex; flex-wrap: wrap; gap: 12px; }
-
-    /* WHY this beats .row and .grid: author display:flex/grid outranks the UA
-       [hidden] rule, so toggling .hidden left both hero CTA rows visible at once
-       for signed-in readers — the "campur" the owner saw. Attribute plus class
-       wins without !important. */
-    .row[hidden], .grid[hidden] { display: none; }
-
-    .btn {
-      display: inline-block;
-      padding: 11px 22px;
-      border-radius: 980px;
-      border: 1px solid var(--line-strong);
-      background: var(--surface);
-      color: var(--text);
-      text-decoration: none;
-      font-size: 15px;
-      cursor: pointer;
-      transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
-    }
-
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #05231f; font-weight: 600; }
-    .btn.primary:hover { background: #1ac3b0; }
-
-    section { padding: 96px 0; border-top: 1px solid var(--line); }
-    h2 { margin: 0 0 12px; font-size: clamp(30px, 4vw, 44px); line-height: 1.1; letter-spacing: -.02em; }
-    .sub { color: var(--muted); margin: 0 auto 28px; max-width: 62ch; font-size: 19px; line-height: 1.55; }
-    /* Apple centers the opening thought and leaves the body flush under it. */
-    section > h2, section > .sub { text-align: center; }
-
-    ol.steps { margin: 0; padding-left: 20px; color: var(--muted); }
-    ol.steps li { margin: 0 0 10px; }
-    ol.steps strong { color: var(--text); font-weight: 600; }
-
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
-      /* WHY the wrap: the extension id and the MCP endpoint are unbreakable strings with no
-         spaces, and a reader copying them on a phone should not have to scroll sideways. */
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      padding: 2px 6px;
-      /* WHY the clone: a pill that wraps across two lines must box both halves, or the
-         second half reads as plain text spilling out of the card. */
-      box-decoration-break: clone;
-      -webkit-box-decoration-break: clone;
+    @media (max-width: 860px) {
+      .split { grid-template-columns: 1fr; gap: 24px; }
+      .brandHead { font-size: 20px; margin: 12px 0; }
+      .brand li { margin-bottom: 8px; }
     }
 
     .card {
@@ -198,78 +113,94 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 20px;
-      max-width: 620px;
-      margin: 0 auto;
     }
+
+    .provider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-align: center;
+      padding: 12px 22px;
+      border-radius: 980px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 15px;
+      margin: 0 0 10px;
+    }
+
+    .provider:hover { border-color: var(--accent); }
+
+    /* WHY inline and currentColor-free: no external origin may serve an icon file,
+       and each mark keeps its brand colors so the button reads as the provider. */
+    .provider svg { width: 16px; height: 16px; flex: none; }
+
+    .or { text-align: center; color: var(--muted); font-size: 13px; margin: 16px 0; }
 
     label { display: block; margin: 0 0 6px; font-size: 13px; color: var(--muted); }
 
-    input, select {
+    input {
       width: 100%;
       margin: 0 0 14px;
-      padding: 10px 12px;
-      border-radius: 9px;
+      padding: 14px 16px;
+      border-radius: 12px;
       border: 1px solid var(--line);
       background: var(--surface-soft);
       color: var(--text);
       font: inherit;
-      font-size: 14px;
+      font-size: 16px;
     }
 
-    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
-    .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+    button {
+      width: 100%;
+      padding: 12px 22px;
+      border-radius: 980px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #04211d;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
 
-    /* WHY the footnote: the eyebrow says free, and free-everything is not the
-       offer. One muted line where the click happens names the only money. */
-    .footnote { font-size: 12.5px; color: var(--muted); margin: 12px 0 0; }
+    /* WHY the tabs restyle the shared button: both post one email to the same
+       one-time-code endpoint, so they read as one control with two states. */
+    .tabs { display: flex; gap: 8px; margin: 0 0 20px; }
+    .tabs button { flex: 1; width: auto; background: transparent; border-color: var(--line-strong); color: var(--muted); }
+    .tabs button[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+    .card h2 { margin: 0 0 8px; font-size: 20px; letter-spacing: -.01em; }
+    .tabcopy { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+
+    .resend { text-align: center; margin: 16px 0 0; }
+
+    button.linklike { width: auto; background: none; border: 0; padding: 0; color: var(--accent); font-weight: 400; font-size: 14px; }
+    button.linklike:hover { text-decoration: underline; }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    .btn { display: inline-block; padding: 12px 22px; border-radius: 980px; border: 1px solid var(--line-strong); color: var(--text); text-decoration: none; font-size: 15px; text-align: center; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #04211d; font-weight: 600; }
+    button.btn { width: auto; background: transparent; }
+
+    /* WHY buttons and not links: the footer doors test pins every footer href,
+       while these write the shared oa-lang choice through the same
+       button[data-lang] mechanism the nav toggle uses. */
+    .langlist { text-align: center; margin: 24px 0 0; font-size: 13px; color: var(--muted); }
+    .langlist button { width: auto; background: none; border: 0; padding: 4px 6px; color: var(--muted); font-size: 13px; font-weight: 400; }
+    .langlist button:hover { color: var(--text); }
+    .langlist button[aria-pressed="true"] { color: var(--text); font-weight: 600; }
+
     .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; }
     .status.ok { color: var(--accent); }
     .status.warn { color: var(--warn); }
 
-    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
-
-    /* WHY gated on html.js: hiding before JS runs strands no-JS readers on a blank
-       page the tests still call green. One observer for the page, twelve percent
-       visibility to trigger, and the media query deletes the motion for those who
-       asked. The hero never hides — it is the largest paint. */
-    html.js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
-    html.js .reveal.in { opacity: 1; transform: none; }
-    @media (prefers-reduced-motion: reduce) {
-      html.js .reveal { opacity: 1; transform: none; transition: none; }
-    }
-    /* WHY print deletes the entrance: nothing scrolls a print preview, so every
-       section below the first would print blank, and find-in-page skips text that
-       is transparent. A page that hides itself from being read or printed is not
-       motion worth having. */
-    @media print {
-      html.js .reveal { opacity: 1; transform: none; transition: none; }
-    }
-
-    .tile {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px;
-    }
-
-    .tile h3 { margin: 0 0 6px; font-size: 15px; }
-    .tile p { margin: 0; color: var(--muted); font-size: 13.5px; }
-    .tile { transition: transform .3s var(--ease), border-color .3s var(--ease); }
-    .tile:hover { transform: translateY(-2px); border-color: var(--line-strong); }
-
-    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13.5px; }
-    dl.facts dt { color: var(--muted); }
-    dl.facts dd { margin: 0; }
-
-    /* WHY stacked under 420px: the label column is max-content and never shrinks, so on a
-       phone the value is left in a sliver. Every settings page a reader already knows puts
-       the value under its label at this width. */
-    @media (max-width: 420px) {
-      dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
-      dl.facts dd { margin: 0 0 10px; }
-    }
-
+    .note { font-size: 12.5px; color: var(--muted); margin: 16px 0 0; }
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
     /* WHY the gap and not a margin: the six footer doors are written with no
@@ -285,10 +216,10 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./index.html" aria-current="page">Opera Agent</a>
-        <a href="./index.html#install" data-i18n="nav.install">Instalasi</a>
+        <a class="brand" href="./beranda.html">Opera Agent</a>
+        <a href="./beranda.html#install" data-i18n="nav.install">Instalasi</a>
         <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="./index.html#model" data-i18n="nav.model">Model Anda</a>
+        <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
         <a href="./akun.html" data-i18n="nav.account">Akun</a>
         <a href="./dashboard.html">Dashboard</a>
         <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
@@ -299,161 +230,67 @@
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="hero">
-      <div class="heroGrid">
-        <div>
-          <p class="eyebrow" id="heroEyebrow" data-i18n="hero.eyebrow">Daftar terbuka · Gratis dipakai</p>
-          <h1 data-i18n="hero.title">Asisten Anda mengemudikan browser Anda.</h1>
-          <p data-i18n="hero.lede">
-            Opera Agent memberi asisten AI yang sudah Anda pakai sebuah jembatan terkendali ke
-            browser Anda sendiri — tanpa eksekusi skrip sembarangan; asisten Anda menyuruhnya,
-            dan Anda mengawasinya. Terutama Google Sheets/Excel, Docs, Maps, dan YouTube;
-            yang lain ikut diajarkan.
-          </p>
-          <p data-i18n-html="hero.proof">39 tool, 28 primitive, dan <strong>lima izin</strong> yang
-        dijelaskan satu per satu di <a href="./unduh.html">halaman unduh</a>. Round tripnya
-        pendek, karena semua aksi tidak perlu keluar dari primitif server yang sudah ada.</p>
-          <div class="row" id="ctaOut">
-            <a class="btn primary" href="#install" data-i18n="cta.install">Instalasi</a>
-            <a class="btn" href="./unduh.html" data-i18n="cta.download">Unduh</a>
-            <a class="btn" href="#model" data-i18n="cta.model">Sambungkan model</a>
-          </div>
-          <p class="footnote" data-i18n="hero.note">Gratis dipakai. Model ditagih penyedia Anda.</p>
-          <div class="row" id="ctaIn" hidden>
-            <a class="btn primary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
-            <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
-          </div>
-          <div class="grid" id="quickTiles" hidden style="margin-top: 18px;">
-            <div class="tile">
-              <h3 data-i18n="tiles.devices.title">Device &amp; perintah</h3>
-              <p data-i18n-html="tiles.devices.body">Status, riwayat, dan kendali tiap device. <a href="./dashboard.html#device">Lihat device</a>.</p>
-            </div>
-            <div class="tile">
-              <h3 data-i18n="tiles.pairing.title">Pairing manual</h3>
-              <p data-i18n-html="tiles.pairing.body">Kode 10 menit untuk device baru. <a href="./dashboard.html#pairing">Buat kode</a>.</p>
-            </div>
-            <div class="tile">
-              <h3 data-i18n="tiles.model.title">Model di device ini</h3>
-              <p data-i18n-html="tiles.model.body">Endpoint dan kunci tetap di sini. <a href="#model">Atur model</a>.</p>
-            </div>
-          </div>
-          <dl class="heroStats" id="heroStats">
-            <div><dt>39</dt><dd data-i18n="hero.stat.tools">tool MCP</dd></div>
-            <div><dt>28</dt><dd data-i18n="hero.stat.prims">primitive browser</dd></div>
-            <div><dt>5</dt><dd data-i18n="hero.stat.perms">izin, semua dijelaskan</dd></div>
-          </dl>
-        </div>
-        <div class="demo" id="demo" role="img" aria-label="Contoh perintah Opera Agent dan jawabannya">
-          <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
-          <div class="cmd">tabs.list</div>
-          <div class="out" data-i18n="demo.tabs">3 tab terbuka</div>
-          <div class="cmd">page.read</div>
-          <div class="out" data-i18n="demo.read">ringkasan + 12 aksi</div>
-          <div class="cmd">page.click “Bayar”</div>
-          <div class="out no" data-i18n="demo.deny">ditolak: kolom pembayaran</div>
-        </div>
+  <main class="wrap auth">
+    <div class="split">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><rect width="16" height="16" rx="3" fill="#0b0d10" /><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#3ecf8e" /></svg>
+        <p class="brandHead" data-i18n="brand.headline">Asisten Anda mengemudikan browser.</p>
+        <ul>
+          <li data-i18n="brand.b1">Anda berbicara, Opera Agent menggerakkan halaman.</li>
+          <li data-i18n="brand.b2">Tanpa password milik kami — cukup magic link email.</li>
+          <li data-i18n="brand.b3">Kunci model Anda tidak pernah dikirim ke server ini.</li>
+        </ul>
       </div>
-    </section>
-
-    <section id="install" class="reveal">
-      <h2 data-i18n="install.title">Instalasi</h2>
-      <p class="sub" data-i18n-html="install.sub">Extension adalah seluruh produk di mesin Anda. Langkah layarnya tetap sama: unduh, masuk, lalu pair. Jika Anda butuh daftar arsip atau verifikasi berkas, kedua-duanya ada di <a href="./unduh.html">halaman unduh</a>.</p>
-      <ol class="steps">
-        <li><strong>Unduh dan pasang.</strong> Klik <em>Mulai instalasi</em> di <a href="./unduh.html">halaman unduh</a> untuk mengambil CRX atau arsip, lalu pasang ekstensi Anda — di <code>opera://extensions</code> aktifkan developer mode dan muat folder hasil ekstrak seperti di <a href="./unduh.html">halaman unduh</a>.</li>
-        <li><strong>Masuk.</strong> Buka <a href="./auth.html">Masuk</a>. Setelah sign-in, Anda dibawa kembali ke tempat Anda datang — termasuk persetujuan dari asisten yang ingin memakainya.</li>
-        <li><strong>Pair dan uji.</strong> Buka <a href="./dashboard.html">Dashboard</a> dan tempel kode pairing di popup ekstensi. Checklist <em>Ringkasan</em> di sana menyala yang pertama-tama dicek, jadi tinggal ikuti satu per satu.</li>
-      </ol>
-      <div class="row" style="margin-top: 18px;">
-        <a class="btn primary" href="./unduh.html" data-i18n="install.start">Mulai instalasi</a>
-        <a class="btn" href="./dashboard.html" data-i18n="install.checklist">Buka checklist</a>
-      </div>
-    </section>
-
-    <section id="model" class="reveal">
-      <h2 data-i18n="model.title">Bawa model sendiri</h2>
-      <p class="sub" data-i18n="model.sub">
-        Tempel endpoint, nama model, dan kunci API dari penyedia Anda. Formulir ini hanya
-        bicara ke extension yang terpasang: tidak ada server di sini yang bisa dikirimi.
-        Kunci tersimpan di browser Anda dan tidak pernah ditampilkan kembali ke halaman ini.
-      </p>
-      <div class="card">
-        <form id="modelForm">
-          <label for="provider" data-i18n="model.provider">Penyedia</label>
-          <select id="provider">
-            <option value="nvidia">NVIDIA</option>
-            <option value="groq">Groq</option>
-            <option value="ollama">Ollama</option>
-            <option value="lmstudio">LM Studio</option>
-            <option value="custom" data-i18n="model.custom">Kustom…</option>
-          </select>
-
-          <label for="modelEndpoint" data-i18n="model.endpoint">Endpoint API</label>
-          <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1" />
-
-          <label for="modelName" data-i18n="model.name">Nama model</label>
-          <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" list="modelList" placeholder="Nama yang dipakai penyedia Anda" />
-          <datalist id="modelList"></datalist>
-
-          <label for="modelKey" data-i18n="model.key">Kunci API</label>
-          <input id="modelKey" type="text" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Kunci dari penyedia Anda" />
-
+      <div class="gate">
+        <h1 id="pageTitle" data-i18n="gate.title">Masuk atau daftar</h1>
+        <p class="sub" id="pageSub" data-i18n="gate.sub">Satu akun untuk website dan device Anda. Daftar terbuka — masuk, lalu pasangkan device.</p>
+        <div class="card" id="signedOut">
+          <div class="tabs" role="tablist" aria-label="Masuk atau daftar">
+            <button type="button" role="tab" id="loginTab" aria-selected="true" data-i18n="tabs.login">Masuk</button>
+            <button type="button" role="tab" id="registerTab" aria-selected="false" data-i18n="tabs.register">Daftar</button>
+          </div>
+          <h2 id="cardTitleLogin" data-i18n="card.titleLogin">Masuk dengan magic link</h2>
+          <h2 id="cardTitleRegister" data-i18n="card.titleRegister" hidden>Buat akun baru</h2>
+          <p class="tabcopy" id="loginCopy" data-i18n="tabs.loginCopy">Masukkan email akun Anda, lalu klik link yang kami kirim.</p>
+          <p class="tabcopy" id="registerCopy" data-i18n="tabs.registerCopy" hidden>Masukkan email Anda — akun baru dibuat saat Anda klik link.</p>
+          <form id="magicForm">
+            <label for="magicEmail" data-i18n="form.email">Email</label>
+            <input id="magicEmail" type="email" autocomplete="email" spellcheck="false" maxlength="254" placeholder="anda@example.com" data-i18n-attr="placeholder:form.emailPlaceholder" />
+            <button type="submit" id="magicSubmitLogin" data-i18n="form.submitLogin">Kirim magic link</button>
+            <button type="submit" id="magicSubmitRegister" data-i18n="form.submitRegister" hidden>Buat akun</button>
+            <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+          </form>
+          <p class="or" data-i18n="or">atau</p>
+          <a class="provider" id="googleButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://opera-agent.pages.dev/"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="#4285F4" d="M15.5 8.2c0-.55-.05-1.08-.14-1.6H8v3.03h4.2a3.6 3.6 0 0 1-1.56 2.36v1.96h2.53c1.48-1.36 2.33-3.37 2.33-5.75z"/><path fill="#34A853" d="M8 16c2.1 0 3.87-.7 5.16-1.89l-2.53-1.96c-.7.47-1.6.75-2.63.75-2.02 0-3.73-1.36-4.34-3.2H1.08v2.03A8 8 0 0 0 8 16z"/><path fill="#FBBC05" d="M3.66 9.7a4.8 4.8 0 0 1 0-3.4V4.27H1.08a8 8 0 0 0 0 7.46l2.58-2.03z"/><path fill="#EA4335" d="M8 3.1c1.14 0 2.17.4 2.98 1.17l2.24-2.24A8 8 0 0 0 1.08 4.27l2.58 2.03C4.27 4.46 5.98 3.1 8 3.1z"/></svg><span data-i18n="provider.google">Masuk dengan Google</span></a>
+          <a class="provider" id="githubButton" href="https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=github&redirect_to=https://opera-agent.pages.dev/"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="#e8eaed" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.36c-2.24.49-2.71-1.08-2.71-1.08-.37-.93-.9-1.18-.9-1.18-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></svg><span data-i18n="provider.github">Masuk dengan GitHub</span></a>
+          <p class="resend"><button type="submit" form="magicForm" class="linklike" data-i18n="resend">Tidak menerima email? Kirim ulang</button></p>
+          <p class="note" data-i18n="note">Masuk menghubungkan akun Anda. Pengikatan device ke akun menyusul bersama pairing, dan halaman ini tidak pernah meminta password Anda.</p>
+        </div>
+        <div class="card" id="returning" hidden>
+          <p class="sub" data-i18n="return.body">Selesai masuk, Anda kembali ke halaman izin OAuth.</p>
           <div class="row">
-            <button class="btn primary" type="submit" data-i18n="model.save">Simpan ke extension</button>
-            <button class="btn" type="button" id="copyButton" data-i18n="model.copy">Salin saja</button>
+            <a class="btn primary" id="continueButton" href="./beranda.html" data-i18n="return.continue">Lanjut ke izin</a>
+            <a class="btn" href="./beranda.html" data-i18n="return.home">Beranda</a>
           </div>
-          <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
-          <p class="note" data-i18n-html="model.note">
-            Extension menerima endpoint https, atau http polos di 127.0.0.1 untuk model
-            yang berjalan di mesin ini. Bila extension belum terpasang, gunakan
-            <em>Salin saja</em> lalu tempel nilainya di popup extension.
-          </p>
-        </form>
+        </div>
+        <div class="card" id="signedIn" hidden>
+          <p class="sub" id="whoami">Masuk sebagai …</p>
+          <div class="row">
+            <a class="btn primary" href="./dashboard.html" data-i18n="signed.dashboard">Buka dashboard</a>
+            <button class="btn" id="signOutButton" type="button" data-i18n="signed.signout">Keluar</button>
+          </div>
+          <p class="status" id="sessionStatus" role="status" aria-live="polite">&nbsp;</p>
+        </div>
+        <p class="langlist"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">Bahasa Indonesia</button><span aria-hidden="true"> · </span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">English</button></p>
       </div>
-    </section>
-
-    <section id="signin" class="reveal">
-      <h2 data-i18n="signin.title">Masuk dan biarkan asisten bekerja</h2>
-      <p class="sub" data-i18n="signin.sub">Opera Agent bicara MCP, sehingga asisten apa pun yang bicara MCP bisa mengemudikannya. Sign-in diurus oleh project yang Anda sambungkan.</p>
-      <div class="row" style="margin-bottom: 18px;">
-        <a class="btn primary" href="./auth.html" data-i18n="signin.cta">Masuk / Daftar</a>
-      </div>
-      <dl class="facts">
-        <dt data-i18n="signin.oauth.dt">Persetujuan OAuth</dt><dd data-i18n="signin.oauth.dd">Menyetujui asisten hanya satu halaman dan satu scope. Tidak ada yang diberikan sebelum Anda menekan tombol di sana.</dd>
-        <dt>Tools</dt><dd data-i18n="signin.tools.dd">39 tools: aksi burst, baca halaman, tab, media, watch dan wait. 28 primitive browser di bawahnya tidak berubah.</dd>
-        <dt data-i18n="signin.human.dt">Manusia di loop</dt><dd data-i18n="signin.human.dd">Mode foreground butuh izin setiap kali. Password, kode sekali pakai, dan kolom pembayaran ditolak.</dd>
-      </dl>
-    </section>
-
-    <section id="privacy" class="reveal">
-      <h2 data-i18n="privacy.title">Apa yang meninggalkan mesin Anda</h2>
-      <p class="sub" data-i18n-html="privacy.sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya. Selengkapnya di <a href="./privasi.html">kebijakan privasi</a>.</p>
-      <dl class="facts">
-        <dt data-i18n="privacy.content.dt">Konten halaman</dt><dd data-i18n="privacy.content.dd">Konten dari halaman yang Anda setujui hanya pergi ke endpoint model milik Anda. Ia transit melalui relay perintah, dan perintah beserta hasilnya disimpan sebagai riwayat antrean di database project. Ia tidak pernah dibagikan ke pihak ketiga mana pun.</dd>
-        <dt data-i18n="privacy.key.dt">Kunci API</dt><dd data-i18n="privacy.key.dd">Tersimpan di browser ini. Tidak pernah diunggah, tidak pernah ditampilkan kembali ke halaman ini, tidak pernah dicatat.</dd>
-        <dt data-i18n="privacy.commands.dt">Perintah</dt><dd data-i18n="privacy.commands.dd">Antrean dan hasil transit melalui bridge project, agar asisten bisa bertindak di device Anda.</dd>
-        <dt>Screenshot</dt><dd data-i18n="privacy.shot.dd">Ditolak di halaman yang menampilkan password, kode sekali pakai, atau kolom pembayaran, dan ditolak di tab private dan incognito.</dd>
-      </dl>
-    </section>
-
-    <section id="faq" class="reveal">
-      <h2 data-i18n="faq.title">Pertanyaan yang sering masuk</h2>
-      <p class="sub" data-i18n="faq.sub">Jawaban pendek atas yang paling sering ditanyakan.</p>
-      <dl class="facts">
-        <dt data-i18n="faq.cost.dt">Berapa biayanya</dt><dd data-i18n="faq.cost.dd">Memakai Opera Agent gratis. Yang berbayar hanya pemakaian model ke penyedia model Anda — endpoint, nama, dan kunci milik Anda, tagihannya pun urusan Anda dengan mereka.</dd>
-        <dt data-i18n="faq.model.dt">Model apa</dt><dd data-i18n="faq.model.dd">Model apa pun yang punya endpoint API: cloud milik penyedia Anda atau lokal seperti Ollama. Kuncinya milik Anda dan di tangan Anda.</dd>
-        <dt data-i18n="faq.data.dt">Data saya</dt><dd data-i18n="faq.data.dd">Konten halaman hanya pergi ke endpoint model Anda; perintah dan hasilnya transit sebagai riwayat antrean dan tidak pernah dibagikan ke pihak ketiga.</dd>
-        <dt data-i18n="faq.offline.dt">Tanpa internet</dt><dd data-i18n="faq.offline.dd">Model lokal di mesin ini bekerja tanpa internet. Relay perintah butuh koneksi, karena asisten Anda ada di cloud.</dd>
-        <dt data-i18n="faq.stop.dt">Berhenti</dt><dd data-i18n="faq.stop.dd">Tombol Keluar melupakan sesi di browser ini. Cabut pairing untuk menghentikan device. Riwayat antrean tersimpan selama akun ada, per kebijakan privasi.</dd>
-      </dl>
-    </section>
+    </div>
   </main>
 
   <footer>
     <div class="wrap cols">
       <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span class="doors">
-        <a href="./index.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./auth.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
       </span>
     </div>
   </footer>
@@ -467,71 +304,36 @@
     "nav.privacy": "Privacy",
     "nav.features": "Features",
     "nav.support": "Support",
-    "hero.eyebrow": "Open signup · Free to use",
-    "hero.title": "Your assistant drives your browser.",
-    "hero.lede": "Opera Agent gives the AI assistant you already use a controlled bridge into your own browser — no reckless script execution; your assistant commands it, and you supervise it. Google Sheets/Excel, Docs, Maps, and YouTube first; the rest are taught as they come.",
-    "cta.install": "Install",
-    "cta.download": "Download",
-    "cta.model": "Connect your model",
-    "hero.note": "Free to use. Your provider bills the model.",
-    "cta.dashboard": "Open the dashboard",
-    "cta.pair": "Pair a device",
-    "tiles.devices.title": "Devices & commands",
-    "tiles.pairing.title": "Manual pairing",
-    "tiles.model.title": "The model on this device",
-    "demo.tabs": "3 tabs open",
-    "demo.read": "summary + 12 actions",
-    "demo.deny": "refused: payment field",
-    "install.title": "Install",
-    "install.start": "Start installing",
-    "install.checklist": "Open the checklist",
-    "model.title": "Bring your own model",
-    "model.sub": "Paste the endpoint, model name, and API key from your provider. This form only talks to the installed extension: there is no server here to send anything to. The key is stored in your browser and never shown back to this page.",
-    "model.provider": "Provider",
-    "model.endpoint": "API endpoint",
-    "model.name": "Model name",
-    "model.key": "API key",
-    "model.save": "Save to the extension",
-    "model.copy": "Just copy",
-    "signin.title": "Sign in and let the assistant work",
-    "signin.sub": "Opera Agent speaks MCP, so any assistant that speaks MCP can drive it. Sign-in is handled by the project you connect.",
-    "signin.cta": "Sign in / Sign up",
-    "signin.oauth.dt": "OAuth consent",
-    "signin.oauth.dd": "Approving an assistant covers one page and one scope. Nothing is granted before you press the button there.",
-    "signin.tools.dd": "39 tools: burst actions, page reads, tabs, media, watch and wait. The 28 browser primitives underneath never change.",
-    "signin.human.dt": "Human in the loop",
-    "signin.human.dd": "Foreground mode needs permission every time. Passwords, one-time codes, and payment fields are refused.",
-    "privacy.title": "What leaves your machine",
-    "privacy.content.dt": "Page content",
-    "privacy.content.dd": "Content from pages you approve only goes to your own model endpoint. It transits through the command relay, and commands with their results are stored as queue history in the project database. It is never shared with any third party.",
-    "privacy.key.dt": "API key",
-    "privacy.key.dd": "Stored in this browser. Never uploaded, never shown back to this page, never logged.",
-    "privacy.commands.dt": "Commands",
-    "privacy.commands.dd": "The queue and results transit through the project bridge, so the assistant can act on your device.",
-    "privacy.shot.dd": "Refused on pages showing passwords, one-time codes, or payment fields, and refused in private and incognito tabs.",
-    "faq.title": "Frequently asked questions",
-    "faq.sub": "Short answers to the questions that come in most.",
-    "faq.cost.dt": "What it costs",
-    "faq.cost.dd": "Using Opera Agent is free. Only model usage is billed, by your own model provider — the endpoint, name, and key are yours, and so is that bill.",
-    "faq.model.dt": "Which model",
-    "faq.model.dd": "Any model with an API endpoint: your provider’s cloud or a local one like Ollama. The key is yours and stays in your hands.",
-    "faq.data.dt": "My data",
-    "faq.data.dd": "Page content only goes to your model endpoint; commands and results transit as queue history and are never shared with third parties.",
-    "faq.offline.dt": "Without internet",
-    "faq.offline.dd": "A local model on this machine works without internet. The command relay needs a connection, because your assistant lives in the cloud.",
-    "faq.stop.dt": "Quitting",
-    "faq.stop.dd": "The sign-out button forgets the session in this browser. Revoke the pairing to stop a device. Queue history is kept while the account exists, per the privacy policy.",
-    "hero.proof": "39 tools, 28 primitives, and <strong>five permissions</strong> explained one by one on the <a href=\"./unduh.html\">download page</a>. Round trips stay short, because every action runs on the existing server primitives.",
-    "hero.stat.tools": "MCP tools",
-    "hero.stat.prims": "browser primitives",
-    "hero.stat.perms": "permissions, each explained",
-    "tiles.devices.body": "Status, history, and control for each device. <a href=\"./dashboard.html#device\">View devices</a>.",
-    "tiles.pairing.body": "A 10-minute code for a new device. <a href=\"./dashboard.html#pairing\">Create a code</a>.",
-    "tiles.model.body": "The endpoint and key stay here. <a href=\"#model\">Set up the model</a>.",
-    "install.sub": "The extension is the whole product on your machine. The on-screen steps stay the same: download, sign in, then pair. If you need the archive list or file verification, both live on the <a href=\"./unduh.html\">download page</a>.",
-    "model.custom": "Custom…",
-    "model.note": "The extension accepts https endpoints, or plain http on 127.0.0.1 for a model running on this machine. If the extension is not installed yet, use <em>Just copy</em> and paste the values into the extension popup.",
-    "privacy.sub": "Stated plainly, because an assistant with browser access deserves trust only when you know the answer. More in the <a href=\"./privasi.html\">privacy policy</a>.",
+    "meta.title": "Sign in — Opera Agent",
+    "gate.title": "Sign in or register",
+    "gate.sub": "One account for your website and your devices. Sign-up is open — sign in, then pair a device.",
+    "brand.headline": "Your assistant drives your browser.",
+    "brand.b1": "You talk, Opera Agent moves the page.",
+    "brand.b2": "No password of ours — just an email magic link.",
+    "brand.b3": "Your model key is never sent to this server.",
+    "tabs.login": "Sign in",
+    "tabs.register": "Register",
+    "tabs.loginCopy": "Enter your account email, then click the link we send.",
+    "tabs.registerCopy": "Enter your email — a new account is created when you click the link.",
+    "card.titleLogin": "Sign in with a magic link",
+    "card.titleRegister": "Create a new account",
+    "form.email": "Email",
+    "form.emailPlaceholder": "you@example.com",
+    "form.submitLogin": "Send magic link",
+    "form.submitRegister": "Create account",
+    "or": "or",
+    "provider.google": "Sign in with Google",
+    "provider.github": "Sign in with GitHub",
+    "resend": "No email? Send it again",
+    "note": "Signing in connects your account. Binding a device to your account arrives with pairing, and this page never asks for your password.",
+    "return.body": "Once signed in, you return to the OAuth permission page.",
+    "return.continue": "Continue to permission",
+    "return.home": "Home",
+    "signed.dashboard": "Open dashboard",
+    "signed.signout": "Sign out",
+    "signedin.title": "Account",
+    "signedin.sub": "Your account for the website and your devices.",
+    "signedin.whoami": "Signed in as {email}.",
     "footer.rights": "© 2026 Opera Agent. All rights reserved.",
     "footer.home": "Home",
     "footer.privacy": "Privacy",
@@ -545,173 +347,254 @@
   <script src="./i18n.js"></script>
   <script type="module">
 
-    // WHY the extension id is written here and pinned by a test: the page must be able
-    // to name the extension it configures. The id is derived from the manifest key and
-    // is already asserted in scripts/check.mjs, so the two cannot drift apart silently.
-    const EXTENSION_ID = 'ofgemipoobcnbjkfanmofjbdonjapmgl';
+    // WHY fetch is allowed exactly one destination here: the project Auth host. The
+    // page CSP forbids every other origin, and the lock test pins that split, so a
+    // second destination cannot be added without turning the suite red.
+    const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
+    const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
 
     const $ = (id) => document.getElementById(id);
     const setStatus = (text, kind) => {
       $('status').textContent = text;
       $('status').className = `status${kind ? ` ${kind}` : ''}`;
     };
-
-    // WHY localStorage and zero network: the key is typed on this page, so the
-    // no-network promise is load-bearing. Presence of a stored session is enough
-    // to swap acquisition actions for member actions; the name is never shown
-    // because it cannot be known without a request, and one must not be made.
-    try {
-      if (globalThis.localStorage?.getItem('opera-agent-access-token')) {
-        document.body.classList.add('signed-in');
-        $('heroEyebrow').textContent = 'Sesi aktif di browser ini';
-        $('ctaOut').hidden = true;
-        $('ctaIn').hidden = false;
-        $('quickTiles').hidden = false;
-      }
-    } catch (error) {
-      // Private mode without storage keeps the acquisition hero, which is true.
-    }
-
-    // WHY a provider map and not option values: the select names the provider and the
-    // map owns its endpoint plus its model list, so one choice fills both inputs.
-    const MODEL_PROVIDERS = {
-      nvidia: {
-        endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
-        defaultModel: 'meta/llama-3.2-11b-vision-instruct',
-        models: [
-          { id: 'meta/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B (cepat)' },
-          { id: 'meta/llama-3.2-90b-vision-instruct', label: 'Llama 3.2 90B (teliti)' }
-        ]
-      },
-      groq: {
-        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-        defaultModel: 'llama-3.1-8b-instant',
-        models: [
-          { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (cepat)' },
-          { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (teliti)' },
-          { id: 'qwen/qwen3.8-27b', label: 'Qwen3.8 27B (pratinjau)' }
-        ]
-      },
-      ollama: {
-        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
-        defaultModel: '',
-        models: []
-      },
-      lmstudio: {
-        endpoint: 'http://127.0.0.1:1234/v1/chat/completions',
-        defaultModel: '',
-        models: []
-      },
-      custom: { endpoint: '', defaultModel: '', models: [] }
+    const setSessionStatus = (text, kind) => {
+      $('sessionStatus').textContent = text;
+      $('sessionStatus').className = `status${kind ? ` ${kind}` : ''}`;
     };
 
-    function fillModelList(providerId) {
-      const list = $('modelList');
-      list.replaceChildren();
-      for (const entry of MODEL_PROVIDERS[providerId]?.models ?? []) {
-        const option = document.createElement('option');
-        option.value = entry.id;
-        option.textContent = entry.label;
-        list.append(option);
-      }
-    }
-
-    function matchProvider(endpoint, model) {
-      const known = Object.entries(MODEL_PROVIDERS).find(([id, provider]) =>
-        id !== 'custom'
-        && provider.endpoint !== ''
-        && provider.endpoint === endpoint
-        && (provider.models.length === 0 || provider.models.some((entry) => entry.id === model)));
-      return known ? known[0] : 'custom';
-    }
-
-    $('provider').addEventListener('change', () => {
-      const provider = MODEL_PROVIDERS[$('provider').value];
-      if (!provider) return;
-      $('modelEndpoint').value = provider.endpoint;
-      $('modelName').value = provider.defaultModel;
-      fillModelList($('provider').value);
-    });
-
-    const syncProviderSelect = () => {
-      const providerId = matchProvider($('modelEndpoint').value, $('modelName').value);
-      $('provider').value = providerId;
-      fillModelList(providerId);
+    // WHY a same-site relative path and nothing else: the sign-in page is the one page
+    // an attacker can send a stranger to with a query string, so ?next must not become
+    // an open redirect. A value that does not start with "./" is discarded, which leaves
+    // "./beranda.html" as the only reachable destination.
+    const RETURNABLE = /^\.\/[A-Za-z0-9._~/?=&%-]*$/;
+    const returnTo = () => {
+      const asked = new URLSearchParams(globalThis.location.search).get('next') || '';
+      return RETURNABLE.test(asked) ? asked : './beranda.html';
     };
 
-    $('modelEndpoint').addEventListener('input', syncProviderSelect);
-    $('modelName').addEventListener('input', syncProviderSelect);
-
-    // WHY match on load instead of filling for the default option: the inputs start
-    // empty, which matches no known provider, so the select must say Kustom from the
-    // first paint — showing NVIDIA against empty fields would name a lie.
-    syncProviderSelect();
-
-    function collect() {
-      return {
-        modelEndpoint: $('modelEndpoint').value.trim(),
-        modelName: $('modelName').value.trim(),
-        modelKey: $('modelKey').value.trim()
-      };
+    // WHY the provider buttons carry next in redirect_to: Supabase sends the browser
+    // back to that exact URL, so without it a person who followed an OAuth request would
+    // land on the home page with their authorization_id dropped on the floor.
+    function wireReturnPath() {
+      const target = returnTo();
+      for (const id of ['googleButton', 'githubButton']) {
+        const link = $(id);
+        if (!link) continue;
+        const url = new URL(link.href);
+        url.searchParams.set('redirect_to', `${globalThis.location.origin}/?next=${encodeURIComponent(target)}`);
+        link.href = url.toString();
+      }
+      $('continueButton').href = target;
     }
 
-    $('modelForm').addEventListener('submit', (event) => {
-      event.preventDefault();
-      const config = collect();
-      if (!config.modelEndpoint || !config.modelName || !config.modelKey) {
-        setStatus('Isi endpoint, nama model, dan kuncinya.', 'warn');
-        return;
-      }
-      if (!globalThis.chrome?.runtime?.sendMessage) {
-        setStatus('Browser ini tidak bisa bicara ke extension. Gunakan Salin saja.', 'warn');
-        return;
-      }
+    wireReturnPath();
 
-      // One message, one destination: the installed extension. There is no fetch here
-      // on purpose, because a fetch is where a key would leak.
-      globalThis.chrome.runtime.sendMessage(EXTENSION_ID, { type: 'applyModelConfig', ...config }, (response) => {
-        const error = globalThis.chrome.runtime.lastError;
-        if (error || !response?.ok) {
-          setStatus(`Extension tidak menerimanya${response?.message ? `: ${response.message}` : ''}. Gunakan Salin saja.`, 'warn');
-          return;
-        }
-        $('modelKey').value = '';
-        setStatus('Tersimpan di device ini. Kunci tidak ditampilkan lagi di sini.', 'ok');
+    // WHY the tabs swap copy and nothing else: registering is the same one-time
+    // code request as signing in — Auth creates the account for a new address —
+    // so both tabs share one form, one endpoint, and one handler. The two copies
+    // live in marked blocks the language swap translates; this only flips which
+    // block shows, so tabs and languages never fight over the same text.
+    function selectTab(login) {
+      $('loginTab').setAttribute('aria-selected', login ? 'true' : 'false');
+      $('registerTab').setAttribute('aria-selected', login ? 'false' : 'true');
+      $('cardTitleLogin').hidden = !login;
+      $('cardTitleRegister').hidden = login;
+      $('loginCopy').hidden = !login;
+      $('registerCopy').hidden = login;
+      $('magicSubmitLogin').hidden = !login;
+      $('magicSubmitRegister').hidden = login;
+    }
+
+    $('loginTab').addEventListener('click', () => selectTab(true));
+    $('registerTab').addEventListener('click', () => selectTab(false));
+
+    async function proveSession(accessToken) {
+      const response = await fetch(`${AUTH_HOST}/user`, {
+        headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${accessToken}` }
       });
-    });
+      if (!response.ok) return { error: response.status };
+      const user = await response.json();
 
-    $('copyButton').addEventListener('click', async () => {
-      const config = collect();
-      const block = [
-        `Model endpoint: ${config.modelEndpoint || '(empty)'}`,
-        `Model name: ${config.modelName || '(empty)'}`,
-        `API key: ${config.modelKey || '(empty)'}`
-      ].join('\n');
-      try {
-        await navigator.clipboard.writeText(block);
-        setStatus('Tersalin. Tempel ke popup extension.', 'ok');
-      } catch (error) {
-        setStatus(block, 'warn');
-      }
-    });
-
-    // WHY last and fenced: motion must never gate content. The js class goes on
-    // <html> first so every hiding rule requires it, and a reader without JS —
-    // or with reduced motion — gets the full page with no animation at all.
-    try {
-      document.documentElement.classList.add('js');
-      const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!reduce && 'IntersectionObserver' in globalThis) {
-        const seen = new IntersectionObserver((entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) { entry.target.classList.add('in'); seen.unobserve(entry.target); }
-          }
-        }, { threshold: 0.12 });
-        for (const el of document.querySelectorAll('.reveal')) seen.observe(el);
-      }
-    } catch (error) {
-      // Content stays visible; only the entrance motion is lost.
+      // WHY a refresh token is kept: a Supabase access token lasts about an hour, and this
+      // site holds no SDK to renew it, so storing only the access token signed the reader
+      // out roughly every hour with no warning. Renewal is one POST against the Auth host,
+      // which the page's CSP already allows and no other origin would need.
+      const refreshed = user.session?.refresh_token;
+      if (refreshed) localStorage.setItem('opera-agent-refresh-token', refreshed);
+      if (!user?.email) return { error: 'tanpa-email' };
+      return { user };
     }
+
+    // WHY a plain POST and not a client library: the site loads nothing from another origin,
+// so renewing the session is written out here rather than pulled from a CDN.
+    async function renewAccessToken() {
+      const refreshToken = localStorage.getItem('opera-agent-refresh-token');
+
+      // WHY the three outcomes and not a boolean: "the refresh token was refused" and
+      // "we could not reach Auth" look identical to a caller that only sees null, and
+      // treating the second as the first deletes a working session over a dropped packet.
+      // Every other user on a phone loses signal, so this distinction is the difference
+      // between a session that survives a tunnel and one that does not.
+      if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
+      let response;
+      try {
+        response = await fetch(`${AUTH_HOST}/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken })
+        });
+      } catch (error) {
+        return { ok: false, dead: false, why: 'offline' };
+      }
+      if (response.status === 400 || response.status === 401) return { ok: false, dead: true, why: 'refused' };
+      if (!response.ok) return { ok: false, dead: false, why: `http-${response.status}` };
+      let renewed;
+      try {
+        renewed = await response.json();
+      } catch (error) {
+        return { ok: false, dead: false, why: 'no-body' };
+      }
+      if (!renewed.access_token) return { ok: false, dead: false, why: 'no-token' };
+      localStorage.setItem('opera-agent-access-token', renewed.access_token);
+      if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
+      return { ok: true, token: renewed.access_token };
+    }
+
+    function showSignedIn(email) {
+      // WHY the heading changes too: a signed-in visitor opening the account page
+      // must see an account page, not a login page wearing a status line.
+      // WHY the helper and not literals: literals pinned EN mode to Indonesian
+      // here, so the three strings render through the shared helper with the
+      // exact Indonesian as the fallback default.
+      var t = window.OperaAgentI18n && typeof window.OperaAgentI18n.t === 'function'
+        ? window.OperaAgentI18n.t.bind(window.OperaAgentI18n)
+        : function (key, fallback) { return typeof fallback === 'string' ? fallback : key; };
+      $('pageTitle').textContent = t('signedin.title', 'Akun');
+      $('pageSub').textContent = t('signedin.sub', 'Akun Anda untuk website dan device.');
+      $('signedOut').hidden = true;
+      $('signedIn').hidden = false;
+      if (returnTo() !== './beranda.html') $('returning').hidden = false;
+      $('whoami').textContent = t('signedin.whoami', 'Masuk sebagai {email}.').replace('{email}', email);
+    }
+
+    // A provider or magic-link login returns here with the session in the URL
+    // fragment. Read it, prove it against Auth, remember it across this browser's
+    // tabs like every other site, and hand the visitor back to the home page.
+    // Keluar forgets it. The token never leaves this browser except toward Auth.
+    async function completeReturningLogin() {
+      const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ''));
+      const accessToken = fragment.get('access_token');
+      if (!accessToken) return proveStoredSession();
+
+      // WHY keep the search string: the OAuth consent sends the browser to this
+      // page with ?next=<the consent URL>, and a replaceState to location.pathname
+      // strips that query, so after a provider login the reader landed on the
+      // home page with their authorization_id on the floor. Strip only the
+      // fragment (the token). The next URL survives into returnTo().
+      globalThis.history.replaceState(null, '', `${globalThis.location.pathname}${globalThis.location.search}`);
+      let proof = null;
+      try {
+        proof = await proveSession(accessToken);
+      } catch (error) {
+        proof = { error: 'jaringan' };
+      }
+      if (!proof?.user) {
+        setStatus(`Sesi tidak terbukti (${proof?.error || 'unknown'}). Coba masuk lagi.`, 'warn');
+        return;
+      }
+      localStorage.setItem('opera-agent-access-token', accessToken);
+
+      // WHY the refresh token is kept: a Supabase access token lasts about an hour and
+      // this site holds no SDK to renew it. Storing only the access token meant the
+      // reader was silently signed out roughly every hour, which is what "sering keluar
+      // sendiri" was. The refresh token is what turns that into a session that lasts.
+      const refreshToken = fragment.get('refresh_token');
+      if (refreshToken) localStorage.setItem('opera-agent-refresh-token', refreshToken);
+      globalThis.location.replace(returnTo());
+    }
+
+    // A signed-in visitor who opens this page again sees their state, not a stranger's
+    // login form: the remembered token is proven again before anything is shown.
+    async function proveStoredSession() {
+      let accessToken = localStorage.getItem('opera-agent-access-token');
+      if (!accessToken) return;
+      let proof = null;
+      try {
+        proof = await proveSession(accessToken);
+      } catch (error) {
+        proof = null;
+      }
+
+      // WHY renew rather than sign out: an expired access token says nothing about the
+      // reader's account. Signing them out on the first 401 is what made this feel like
+      // the product forgot them, so the refresh token is tried before anything is cleared.
+      if (!proof?.user && localStorage.getItem('opera-agent-refresh-token')) {
+        const renewed = await renewAccessToken();
+        if (renewed.ok) {
+          accessToken = renewed.token;
+          try {
+            proof = await proveSession(accessToken);
+          } catch (error) {
+            proof = null;
+          }
+        }
+      }
+      if (proof?.user) showSignedIn(proof.user.email);
+      else {
+        localStorage.removeItem('opera-agent-access-token');
+        localStorage.removeItem('opera-agent-refresh-token');
+      }
+
+      // WHY the extra card: a person who arrived here from the OAuth consent page has a
+      // pending request. Telling them "you are signed in" and dropping them on the home
+      // page loses the request; offering the return path keeps it.
+      if (proof?.user && returnTo() !== './beranda.html') $('returning').hidden = false;
+    }
+
+    $('signOutButton').addEventListener('click', async () => {
+      const accessToken = localStorage.getItem('opera-agent-access-token') || '';
+      try {
+        await fetch(`${AUTH_HOST}/logout`, {
+          method: 'POST',
+          headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${accessToken}` }
+        });
+      } catch (error) {
+        setSessionStatus('Tidak bisa mencapai layanan auth, tapi tab ini dilupakan.', 'warn');
+      }
+      localStorage.removeItem('opera-agent-access-token');
+      localStorage.removeItem('opera-agent-refresh-token');
+      $('signedIn').hidden = true;
+      $('signedOut').hidden = false;
+    });
+
+    completeReturningLogin();
+
+    $('magicForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = $('magicEmail').value.trim();
+      if (!email) {
+        setStatus('Isi alamat email dulu.', 'warn');
+        return;
+      }
+      let response;
+      try {
+        response = await fetch(`${AUTH_HOST}/otp`, {
+          method: 'POST',
+          headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+      } catch (error) {
+        setStatus('Tidak bisa mencapai layanan auth. Periksa koneksi Anda.', 'warn');
+        return;
+      }
+      if (!response.ok) {
+        setStatus('Email tidak terkirim. Coba lagi atau pakai tombol penyedia.', 'warn');
+        return;
+      }
+      $('magicEmail').value = '';
+      setStatus('Terkirim. Klik link di email Anda untuk masuk.', 'ok');
+    });
   </script>
 </body>
 </html>

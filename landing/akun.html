@@ -184,10 +184,10 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./index.html">Opera Agent</a>
-        <a href="./index.html#install">Instalasi</a>
+        <a class="brand" href="./beranda.html">Opera Agent</a>
+        <a href="./beranda.html#install">Instalasi</a>
         <a href="./unduh.html">Unduh</a>
-        <a href="./index.html#model">Model Anda</a>
+        <a href="./beranda.html#model">Model Anda</a>
         <a href="./akun.html" aria-current="page">Akun</a>
         <a href="./dashboard.html">Dashboard</a>
         <a href="./privasi.html">Privasi</a>
@@ -238,7 +238,7 @@
       <p class="meta" id="deviceSummary">Memeriksa…</p>
       <div class="row">
         <a class="btn primary" href="./dashboard.html">Buka dashboard</a>
-        <a class="btn" href="./index.html#install">Pasang di device lain</a>
+        <a class="btn" href="./beranda.html#install">Pasang di device lain</a>
       </div>
     </div>
 
@@ -256,7 +256,7 @@
     <div class="wrap cols">
       <span>&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
       <span class="doors">
-        <a href="./index.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./auth.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
+        <a href="./beranda.html">Beranda</a><a href="./privasi.html">Privasi</a><a href="./syarat.html">Syarat</a><a href="./index.html">Masuk</a><a href="./akun.html">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html">Fitur</a><a href="./dukungan.html">Dukungan</a>
       </span>
     </div>
   </footer>
@@ -410,7 +410,7 @@
       // No token, no account page: a stranger gets the sign-in page, never an empty
       // profile that looks like a broken product.
       if (!token) {
-        globalThis.location.replace('./auth.html');
+        globalThis.location.replace('./index.html');
         return;
       }
       let user;
@@ -428,7 +428,7 @@
           return;
         }
         forgetSession();
-        globalThis.location.replace('./auth.html');
+        globalThis.location.replace('./index.html');
         return;
       }
       renderIdentity(user);
@@ -471,7 +471,7 @@
         // Logout is best-effort against the network; forgetting locally is certain.
       }
       forgetSession();
-      globalThis.location.replace('./auth.html');
+      globalThis.location.replace('./index.html');
     });
 
     load();

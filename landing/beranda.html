@@ -1,0 +1,717 @@
+<!-- @last-edited: 2026-10-10 UTC+7. -->
+<!-- @title: landing — the public site: install, sign-in, and your own model. -->
+<!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
+<!-- @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
+  <title>Opera Agent</title>
+  <meta name="description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Opera Agent" />
+  <meta property="og:title" content="Opera Agent" />
+  <meta property="og:description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
+  <meta property="og:url" content="https://opera-agent.pages.dev/beranda" />
+  <meta property="og:locale" content="id_ID" />
+  <style>
+    /* WHY inline and single file: this site has no build step, no framework and no
+       external origin. A marketing page that needs a bundler is a page that breaks
+       when the bundler changes. */
+    :root {
+      --bg: #0b0d10;
+      --surface: #16191e;
+      --surface-soft: #1d2127;
+      --line: rgba(255, 255, 255, .08);
+      --line-strong: rgba(255, 255, 255, .16);
+      --text: #f5f5f7;
+      --muted: #86868b;
+      --accent: #3ecf8e;
+      --accent-soft: rgba(62,207,142,.14);
+      --warn: #f59e0b;
+      --ease: cubic-bezier(.28, .11, .32, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+
+    ::selection { background: var(--accent-soft); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    /* Apple scrolls anchors; readers who asked for stillness keep the jump. */
+    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+    a { color: var(--accent); }
+
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(11, 13, 16, .72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
+    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
+    nav a:hover { color: var(--text); }
+
+    nav a[aria-current="page"] { color: var(--text); }
+
+    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
+       the brand into two ragged lines. A scrolling row keeps every item on one
+       line and the brand intact. */
+    @media (max-width: 640px) {
+      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+        mask-image: linear-gradient(to right, #000 88%, transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
+      nav a { white-space: nowrap; }
+      nav .brand { margin-right: 6px; }
+    }
+
+    .hero { padding: 128px 0 96px; background: radial-gradient(760px 360px at 62% -60px, rgba(62, 207, 142, .13), transparent 70%); }
+    .hero h1 {
+      margin: 0 0 18px;
+      font-size: clamp(40px, 7.5vw, 84px);
+      line-height: 1.04;
+      letter-spacing: -.03em;
+      font-weight: 700;
+      max-width: 17ch;
+    }
+
+    .hero p { margin: 0 0 26px; color: var(--muted); font-size: 19px; line-height: 1.55; max-width: 58ch; }
+
+    /* WHY the eyebrow: a company hero answers "is this alive" before the headline
+       is read. No version rides here — a named build goes stale, so this states
+       the offer, which does not change per release. */
+    .eyebrow {
+      display: inline-block;
+      margin: 0 0 18px;
+      color: var(--accent);
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    /* WHY the grid: a wall of claims with no artefact reads as a pitch deck. The
+       demo is static markup, not a screenshot, so it never goes stale and costs
+       no request. It collapses under the copy on a phone instead of beside it. */
+    .heroGrid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 32px; align-items: center; }
+    @media (max-width: 760px) { .heroGrid { grid-template-columns: 1fr; } }
+
+    .demo {
+      background: linear-gradient(180deg, #171b21, #0e1216);
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      padding: 20px 20px 16px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 2;
+    }
+
+    .demo .dots { display: flex; gap: 6px; margin-bottom: 10px; }
+    .demo .dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+    .demo .dots span:first-child { background: var(--accent); }
+    .demo .cmd { color: var(--text); }
+    .demo .cmd::before { content: "$ "; color: var(--muted); }
+    .demo .out { color: var(--muted); }
+    .demo .out::before { content: "→ "; color: var(--accent); }
+    .demo .no { color: var(--warn); }
+    .demo .no::before { content: "→ "; }
+
+    .heroStats { display: flex; flex-wrap: wrap; gap: 18px 36px; margin: 30px 0 0; padding: 0; }
+    .heroStats div { margin: 0; }
+    .heroStats dt { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+    .heroStats dd { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+    /* WHY this beats .row and .grid: author display:flex/grid outranks the UA
+       [hidden] rule, so toggling .hidden left both hero CTA rows visible at once
+       for signed-in readers — the "campur" the owner saw. Attribute plus class
+       wins without !important. */
+    .row[hidden], .grid[hidden] { display: none; }
+
+    .btn {
+      display: inline-block;
+      padding: 11px 22px;
+      border-radius: 980px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
+    }
+
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #05231f; font-weight: 600; }
+    .btn.primary:hover { background: #1ac3b0; }
+
+    section { padding: 96px 0; border-top: 1px solid var(--line); }
+    h2 { margin: 0 0 12px; font-size: clamp(30px, 4vw, 44px); line-height: 1.1; letter-spacing: -.02em; }
+    .sub { color: var(--muted); margin: 0 auto 28px; max-width: 62ch; font-size: 19px; line-height: 1.55; }
+    /* Apple centers the opening thought and leaves the body flush under it. */
+    section > h2, section > .sub { text-align: center; }
+
+    ol.steps { margin: 0; padding-left: 20px; color: var(--muted); }
+    ol.steps li { margin: 0 0 10px; }
+    ol.steps strong { color: var(--text); font-weight: 600; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      /* WHY the wrap: the extension id and the MCP endpoint are unbreakable strings with no
+         spaces, and a reader copying them on a phone should not have to scroll sideways. */
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 2px 6px;
+      /* WHY the clone: a pill that wraps across two lines must box both halves, or the
+         second half reads as plain text spilling out of the card. */
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 20px;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    label { display: block; margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+
+    input, select {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+
+    /* WHY the footnote: the eyebrow says free, and free-everything is not the
+       offer. One muted line where the click happens names the only money. */
+    .footnote { font-size: 12.5px; color: var(--muted); margin: 12px 0 0; }
+    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; }
+    .status.ok { color: var(--accent); }
+    .status.warn { color: var(--warn); }
+
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+    /* WHY gated on html.js: hiding before JS runs strands no-JS readers on a blank
+       page the tests still call green. One observer for the page, twelve percent
+       visibility to trigger, and the media query deletes the motion for those who
+       asked. The hero never hides — it is the largest paint. */
+    html.js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
+    html.js .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      html.js .reveal { opacity: 1; transform: none; transition: none; }
+    }
+    /* WHY print deletes the entrance: nothing scrolls a print preview, so every
+       section below the first would print blank, and find-in-page skips text that
+       is transparent. A page that hides itself from being read or printed is not
+       motion worth having. */
+    @media print {
+      html.js .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    .tile {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .tile h3 { margin: 0 0 6px; font-size: 15px; }
+    .tile p { margin: 0; color: var(--muted); font-size: 13.5px; }
+    .tile { transition: transform .3s var(--ease), border-color .3s var(--ease); }
+    .tile:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+
+    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13.5px; }
+    dl.facts dt { color: var(--muted); }
+    dl.facts dd { margin: 0; }
+
+    /* WHY stacked under 420px: the label column is max-content and never shrinks, so on a
+       phone the value is left in a sliver. Every settings page a reader already knows puts
+       the value under its label at this width. */
+    @media (max-width: 420px) {
+      dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
+      dl.facts dd { margin: 0 0 10px; }
+    }
+
+    footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
+    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
+    /* WHY the gap and not a margin: the six footer doors are written with no
+       whitespace between the tags, so an inline row of anchors has no break
+       opportunity and pushed the footer 32px past a 320px screen. A flex gap
+       breaks between items wherever the line runs out. */
+    footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
+    footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="./beranda.html" aria-current="page">Opera Agent</a>
+        <a href="./beranda.html#install" data-i18n="nav.install">Instalasi</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
+        <a href="./akun.html" data-i18n="nav.account">Akun</a>
+        <a href="./dashboard.html">Dashboard</a>
+        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="heroGrid">
+        <div>
+          <p class="eyebrow" id="heroEyebrow" data-i18n="hero.eyebrow">Daftar terbuka · Gratis dipakai</p>
+          <h1 data-i18n="hero.title">Asisten Anda mengemudikan browser Anda.</h1>
+          <p data-i18n="hero.lede">
+            Opera Agent memberi asisten AI yang sudah Anda pakai sebuah jembatan terkendali ke
+            browser Anda sendiri — tanpa eksekusi skrip sembarangan; asisten Anda menyuruhnya,
+            dan Anda mengawasinya. Terutama Google Sheets/Excel, Docs, Maps, dan YouTube;
+            yang lain ikut diajarkan.
+          </p>
+          <p data-i18n-html="hero.proof">39 tool, 28 primitive, dan <strong>lima izin</strong> yang
+        dijelaskan satu per satu di <a href="./unduh.html">halaman unduh</a>. Round tripnya
+        pendek, karena semua aksi tidak perlu keluar dari primitif server yang sudah ada.</p>
+          <div class="row" id="ctaOut">
+            <a class="btn primary" href="#install" data-i18n="cta.install">Instalasi</a>
+            <a class="btn" href="./unduh.html" data-i18n="cta.download">Unduh</a>
+            <a class="btn" href="#model" data-i18n="cta.model">Sambungkan model</a>
+          </div>
+          <p class="footnote" data-i18n="hero.note">Gratis dipakai. Model ditagih penyedia Anda.</p>
+          <div class="row" id="ctaIn" hidden>
+            <a class="btn primary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
+            <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
+          </div>
+          <div class="grid" id="quickTiles" hidden style="margin-top: 18px;">
+            <div class="tile">
+              <h3 data-i18n="tiles.devices.title">Device &amp; perintah</h3>
+              <p data-i18n-html="tiles.devices.body">Status, riwayat, dan kendali tiap device. <a href="./dashboard.html#device">Lihat device</a>.</p>
+            </div>
+            <div class="tile">
+              <h3 data-i18n="tiles.pairing.title">Pairing manual</h3>
+              <p data-i18n-html="tiles.pairing.body">Kode 10 menit untuk device baru. <a href="./dashboard.html#pairing">Buat kode</a>.</p>
+            </div>
+            <div class="tile">
+              <h3 data-i18n="tiles.model.title">Model di device ini</h3>
+              <p data-i18n-html="tiles.model.body">Endpoint dan kunci tetap di sini. <a href="#model">Atur model</a>.</p>
+            </div>
+          </div>
+          <dl class="heroStats" id="heroStats">
+            <div><dt>39</dt><dd data-i18n="hero.stat.tools">tool MCP</dd></div>
+            <div><dt>28</dt><dd data-i18n="hero.stat.prims">primitive browser</dd></div>
+            <div><dt>5</dt><dd data-i18n="hero.stat.perms">izin, semua dijelaskan</dd></div>
+          </dl>
+        </div>
+        <div class="demo" id="demo" role="img" aria-label="Contoh perintah Opera Agent dan jawabannya">
+          <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="cmd">tabs.list</div>
+          <div class="out" data-i18n="demo.tabs">3 tab terbuka</div>
+          <div class="cmd">page.read</div>
+          <div class="out" data-i18n="demo.read">ringkasan + 12 aksi</div>
+          <div class="cmd">page.click “Bayar”</div>
+          <div class="out no" data-i18n="demo.deny">ditolak: kolom pembayaran</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install" class="reveal">
+      <h2 data-i18n="install.title">Instalasi</h2>
+      <p class="sub" data-i18n-html="install.sub">Extension adalah seluruh produk di mesin Anda. Langkah layarnya tetap sama: unduh, masuk, lalu pair. Jika Anda butuh daftar arsip atau verifikasi berkas, kedua-duanya ada di <a href="./unduh.html">halaman unduh</a>.</p>
+      <ol class="steps">
+        <li><strong>Unduh dan pasang.</strong> Klik <em>Mulai instalasi</em> di <a href="./unduh.html">halaman unduh</a> untuk mengambil CRX atau arsip, lalu pasang ekstensi Anda — di <code>opera://extensions</code> aktifkan developer mode dan muat folder hasil ekstrak seperti di <a href="./unduh.html">halaman unduh</a>.</li>
+        <li><strong>Masuk.</strong> Buka <a href="./index.html">Masuk</a>. Setelah sign-in, Anda dibawa kembali ke tempat Anda datang — termasuk persetujuan dari asisten yang ingin memakainya.</li>
+        <li><strong>Pair dan uji.</strong> Buka <a href="./dashboard.html">Dashboard</a> dan tempel kode pairing di popup ekstensi. Checklist <em>Ringkasan</em> di sana menyala yang pertama-tama dicek, jadi tinggal ikuti satu per satu.</li>
+      </ol>
+      <div class="row" style="margin-top: 18px;">
+        <a class="btn primary" href="./unduh.html" data-i18n="install.start">Mulai instalasi</a>
+        <a class="btn" href="./dashboard.html" data-i18n="install.checklist">Buka checklist</a>
+      </div>
+    </section>
+
+    <section id="model" class="reveal">
+      <h2 data-i18n="model.title">Bawa model sendiri</h2>
+      <p class="sub" data-i18n="model.sub">
+        Tempel endpoint, nama model, dan kunci API dari penyedia Anda. Formulir ini hanya
+        bicara ke extension yang terpasang: tidak ada server di sini yang bisa dikirimi.
+        Kunci tersimpan di browser Anda dan tidak pernah ditampilkan kembali ke halaman ini.
+      </p>
+      <div class="card">
+        <form id="modelForm">
+          <label for="provider" data-i18n="model.provider">Penyedia</label>
+          <select id="provider">
+            <option value="nvidia">NVIDIA</option>
+            <option value="groq">Groq</option>
+            <option value="ollama">Ollama</option>
+            <option value="lmstudio">LM Studio</option>
+            <option value="custom" data-i18n="model.custom">Kustom…</option>
+          </select>
+
+          <label for="modelEndpoint" data-i18n="model.endpoint">Endpoint API</label>
+          <input id="modelEndpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" placeholder="https://penyedia-anda.example/v1" />
+
+          <label for="modelName" data-i18n="model.name">Nama model</label>
+          <input id="modelName" type="text" autocomplete="off" spellcheck="false" maxlength="120" list="modelList" placeholder="Nama yang dipakai penyedia Anda" />
+          <datalist id="modelList"></datalist>
+
+          <label for="modelKey" data-i18n="model.key">Kunci API</label>
+          <input id="modelKey" type="text" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Kunci dari penyedia Anda" />
+
+          <div class="row">
+            <button class="btn primary" type="submit" data-i18n="model.save">Simpan ke extension</button>
+            <button class="btn" type="button" id="copyButton" data-i18n="model.copy">Salin saja</button>
+          </div>
+          <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+          <p class="note" data-i18n-html="model.note">
+            Extension menerima endpoint https, atau http polos di 127.0.0.1 untuk model
+            yang berjalan di mesin ini. Bila extension belum terpasang, gunakan
+            <em>Salin saja</em> lalu tempel nilainya di popup extension.
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <section id="signin" class="reveal">
+      <h2 data-i18n="signin.title">Masuk dan biarkan asisten bekerja</h2>
+      <p class="sub" data-i18n="signin.sub">Opera Agent bicara MCP, sehingga asisten apa pun yang bicara MCP bisa mengemudikannya. Sign-in diurus oleh project yang Anda sambungkan.</p>
+      <div class="row" style="margin-bottom: 18px;">
+        <a class="btn primary" href="./index.html" data-i18n="signin.cta">Masuk / Daftar</a>
+      </div>
+      <dl class="facts">
+        <dt data-i18n="signin.oauth.dt">Persetujuan OAuth</dt><dd data-i18n="signin.oauth.dd">Menyetujui asisten hanya satu halaman dan satu scope. Tidak ada yang diberikan sebelum Anda menekan tombol di sana.</dd>
+        <dt>Tools</dt><dd data-i18n="signin.tools.dd">39 tools: aksi burst, baca halaman, tab, media, watch dan wait. 28 primitive browser di bawahnya tidak berubah.</dd>
+        <dt data-i18n="signin.human.dt">Manusia di loop</dt><dd data-i18n="signin.human.dd">Mode foreground butuh izin setiap kali. Password, kode sekali pakai, dan kolom pembayaran ditolak.</dd>
+      </dl>
+    </section>
+
+    <section id="privacy" class="reveal">
+      <h2 data-i18n="privacy.title">Apa yang meninggalkan mesin Anda</h2>
+      <p class="sub" data-i18n-html="privacy.sub">Dinyatakan polos, karena asisten dengan akses browser hanya layak dipercaya bila Anda tahu jawabnya. Selengkapnya di <a href="./privasi.html">kebijakan privasi</a>.</p>
+      <dl class="facts">
+        <dt data-i18n="privacy.content.dt">Konten halaman</dt><dd data-i18n="privacy.content.dd">Konten dari halaman yang Anda setujui hanya pergi ke endpoint model milik Anda. Ia transit melalui relay perintah, dan perintah beserta hasilnya disimpan sebagai riwayat antrean di database project. Ia tidak pernah dibagikan ke pihak ketiga mana pun.</dd>
+        <dt data-i18n="privacy.key.dt">Kunci API</dt><dd data-i18n="privacy.key.dd">Tersimpan di browser ini. Tidak pernah diunggah, tidak pernah ditampilkan kembali ke halaman ini, tidak pernah dicatat.</dd>
+        <dt data-i18n="privacy.commands.dt">Perintah</dt><dd data-i18n="privacy.commands.dd">Antrean dan hasil transit melalui bridge project, agar asisten bisa bertindak di device Anda.</dd>
+        <dt>Screenshot</dt><dd data-i18n="privacy.shot.dd">Ditolak di halaman yang menampilkan password, kode sekali pakai, atau kolom pembayaran, dan ditolak di tab private dan incognito.</dd>
+      </dl>
+    </section>
+
+    <section id="faq" class="reveal">
+      <h2 data-i18n="faq.title">Pertanyaan yang sering masuk</h2>
+      <p class="sub" data-i18n="faq.sub">Jawaban pendek atas yang paling sering ditanyakan.</p>
+      <dl class="facts">
+        <dt data-i18n="faq.cost.dt">Berapa biayanya</dt><dd data-i18n="faq.cost.dd">Memakai Opera Agent gratis. Yang berbayar hanya pemakaian model ke penyedia model Anda — endpoint, nama, dan kunci milik Anda, tagihannya pun urusan Anda dengan mereka.</dd>
+        <dt data-i18n="faq.model.dt">Model apa</dt><dd data-i18n="faq.model.dd">Model apa pun yang punya endpoint API: cloud milik penyedia Anda atau lokal seperti Ollama. Kuncinya milik Anda dan di tangan Anda.</dd>
+        <dt data-i18n="faq.data.dt">Data saya</dt><dd data-i18n="faq.data.dd">Konten halaman hanya pergi ke endpoint model Anda; perintah dan hasilnya transit sebagai riwayat antrean dan tidak pernah dibagikan ke pihak ketiga.</dd>
+        <dt data-i18n="faq.offline.dt">Tanpa internet</dt><dd data-i18n="faq.offline.dd">Model lokal di mesin ini bekerja tanpa internet. Relay perintah butuh koneksi, karena asisten Anda ada di cloud.</dd>
+        <dt data-i18n="faq.stop.dt">Berhenti</dt><dd data-i18n="faq.stop.dd">Tombol Keluar melupakan sesi di browser ini. Cabut pairing untuk menghentikan device. Riwayat antrean tersimpan selama akun ada, per kebijakan privasi.</dd>
+      </dl>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
+      <span class="doors">
+        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+      </span>
+    </div>
+  </footer>
+
+  <script type="application/json" id="i18n-dict">
+  {"en": {
+    "nav.install": "Install",
+    "nav.download": "Download",
+    "nav.model": "Your model",
+    "nav.account": "Account",
+    "nav.privacy": "Privacy",
+    "nav.features": "Features",
+    "nav.support": "Support",
+    "hero.eyebrow": "Open signup · Free to use",
+    "hero.title": "Your assistant drives your browser.",
+    "hero.lede": "Opera Agent gives the AI assistant you already use a controlled bridge into your own browser — no reckless script execution; your assistant commands it, and you supervise it. Google Sheets/Excel, Docs, Maps, and YouTube first; the rest are taught as they come.",
+    "cta.install": "Install",
+    "cta.download": "Download",
+    "cta.model": "Connect your model",
+    "hero.note": "Free to use. Your provider bills the model.",
+    "cta.dashboard": "Open the dashboard",
+    "cta.pair": "Pair a device",
+    "tiles.devices.title": "Devices & commands",
+    "tiles.pairing.title": "Manual pairing",
+    "tiles.model.title": "The model on this device",
+    "demo.tabs": "3 tabs open",
+    "demo.read": "summary + 12 actions",
+    "demo.deny": "refused: payment field",
+    "install.title": "Install",
+    "install.start": "Start installing",
+    "install.checklist": "Open the checklist",
+    "model.title": "Bring your own model",
+    "model.sub": "Paste the endpoint, model name, and API key from your provider. This form only talks to the installed extension: there is no server here to send anything to. The key is stored in your browser and never shown back to this page.",
+    "model.provider": "Provider",
+    "model.endpoint": "API endpoint",
+    "model.name": "Model name",
+    "model.key": "API key",
+    "model.save": "Save to the extension",
+    "model.copy": "Just copy",
+    "signin.title": "Sign in and let the assistant work",
+    "signin.sub": "Opera Agent speaks MCP, so any assistant that speaks MCP can drive it. Sign-in is handled by the project you connect.",
+    "signin.cta": "Sign in / Sign up",
+    "signin.oauth.dt": "OAuth consent",
+    "signin.oauth.dd": "Approving an assistant covers one page and one scope. Nothing is granted before you press the button there.",
+    "signin.tools.dd": "39 tools: burst actions, page reads, tabs, media, watch and wait. The 28 browser primitives underneath never change.",
+    "signin.human.dt": "Human in the loop",
+    "signin.human.dd": "Foreground mode needs permission every time. Passwords, one-time codes, and payment fields are refused.",
+    "privacy.title": "What leaves your machine",
+    "privacy.content.dt": "Page content",
+    "privacy.content.dd": "Content from pages you approve only goes to your own model endpoint. It transits through the command relay, and commands with their results are stored as queue history in the project database. It is never shared with any third party.",
+    "privacy.key.dt": "API key",
+    "privacy.key.dd": "Stored in this browser. Never uploaded, never shown back to this page, never logged.",
+    "privacy.commands.dt": "Commands",
+    "privacy.commands.dd": "The queue and results transit through the project bridge, so the assistant can act on your device.",
+    "privacy.shot.dd": "Refused on pages showing passwords, one-time codes, or payment fields, and refused in private and incognito tabs.",
+    "faq.title": "Frequently asked questions",
+    "faq.sub": "Short answers to the questions that come in most.",
+    "faq.cost.dt": "What it costs",
+    "faq.cost.dd": "Using Opera Agent is free. Only model usage is billed, by your own model provider — the endpoint, name, and key are yours, and so is that bill.",
+    "faq.model.dt": "Which model",
+    "faq.model.dd": "Any model with an API endpoint: your provider’s cloud or a local one like Ollama. The key is yours and stays in your hands.",
+    "faq.data.dt": "My data",
+    "faq.data.dd": "Page content only goes to your model endpoint; commands and results transit as queue history and are never shared with third parties.",
+    "faq.offline.dt": "Without internet",
+    "faq.offline.dd": "A local model on this machine works without internet. The command relay needs a connection, because your assistant lives in the cloud.",
+    "faq.stop.dt": "Quitting",
+    "faq.stop.dd": "The sign-out button forgets the session in this browser. Revoke the pairing to stop a device. Queue history is kept while the account exists, per the privacy policy.",
+    "hero.proof": "39 tools, 28 primitives, and <strong>five permissions</strong> explained one by one on the <a href=\"./unduh.html\">download page</a>. Round trips stay short, because every action runs on the existing server primitives.",
+    "hero.stat.tools": "MCP tools",
+    "hero.stat.prims": "browser primitives",
+    "hero.stat.perms": "permissions, each explained",
+    "tiles.devices.body": "Status, history, and control for each device. <a href=\"./dashboard.html#device\">View devices</a>.",
+    "tiles.pairing.body": "A 10-minute code for a new device. <a href=\"./dashboard.html#pairing\">Create a code</a>.",
+    "tiles.model.body": "The endpoint and key stay here. <a href=\"#model\">Set up the model</a>.",
+    "install.sub": "The extension is the whole product on your machine. The on-screen steps stay the same: download, sign in, then pair. If you need the archive list or file verification, both live on the <a href=\"./unduh.html\">download page</a>.",
+    "model.custom": "Custom…",
+    "model.note": "The extension accepts https endpoints, or plain http on 127.0.0.1 for a model running on this machine. If the extension is not installed yet, use <em>Just copy</em> and paste the values into the extension popup.",
+    "privacy.sub": "Stated plainly, because an assistant with browser access deserves trust only when you know the answer. More in the <a href=\"./privasi.html\">privacy policy</a>.",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.signin": "Sign in",
+    "footer.account": "Account",
+    "footer.features": "Features",
+    "footer.support": "Support"
+  }}
+  </script>
+  <script src="./i18n.js"></script>
+  <script type="module">
+
+    // WHY the extension id is written here and pinned by a test: the page must be able
+    // to name the extension it configures. The id is derived from the manifest key and
+    // is already asserted in scripts/check.mjs, so the two cannot drift apart silently.
+    const EXTENSION_ID = 'ofgemipoobcnbjkfanmofjbdonjapmgl';
+
+    const $ = (id) => document.getElementById(id);
+    const setStatus = (text, kind) => {
+      $('status').textContent = text;
+      $('status').className = `status${kind ? ` ${kind}` : ''}`;
+    };
+
+    // WHY localStorage and zero network: the key is typed on this page, so the
+    // no-network promise is load-bearing. Presence of a stored session is enough
+    // to swap acquisition actions for member actions; the name is never shown
+    // because it cannot be known without a request, and one must not be made.
+    try {
+      if (globalThis.localStorage?.getItem('opera-agent-access-token')) {
+        document.body.classList.add('signed-in');
+        $('heroEyebrow').textContent = 'Sesi aktif di browser ini';
+        $('ctaOut').hidden = true;
+        $('ctaIn').hidden = false;
+        $('quickTiles').hidden = false;
+      }
+    } catch (error) {
+      // Private mode without storage keeps the acquisition hero, which is true.
+    }
+
+    // WHY a provider map and not option values: the select names the provider and the
+    // map owns its endpoint plus its model list, so one choice fills both inputs.
+    const MODEL_PROVIDERS = {
+      nvidia: {
+        endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
+        defaultModel: 'meta/llama-3.2-11b-vision-instruct',
+        models: [
+          { id: 'meta/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B (cepat)' },
+          { id: 'meta/llama-3.2-90b-vision-instruct', label: 'Llama 3.2 90B (teliti)' }
+        ]
+      },
+      groq: {
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        defaultModel: 'llama-3.1-8b-instant',
+        models: [
+          { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (cepat)' },
+          { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (teliti)' },
+          { id: 'qwen/qwen3.8-27b', label: 'Qwen3.8 27B (pratinjau)' }
+        ]
+      },
+      ollama: {
+        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+        defaultModel: '',
+        models: []
+      },
+      lmstudio: {
+        endpoint: 'http://127.0.0.1:1234/v1/chat/completions',
+        defaultModel: '',
+        models: []
+      },
+      custom: { endpoint: '', defaultModel: '', models: [] }
+    };
+
+    function fillModelList(providerId) {
+      const list = $('modelList');
+      list.replaceChildren();
+      for (const entry of MODEL_PROVIDERS[providerId]?.models ?? []) {
+        const option = document.createElement('option');
+        option.value = entry.id;
+        option.textContent = entry.label;
+        list.append(option);
+      }
+    }
+
+    function matchProvider(endpoint, model) {
+      const known = Object.entries(MODEL_PROVIDERS).find(([id, provider]) =>
+        id !== 'custom'
+        && provider.endpoint !== ''
+        && provider.endpoint === endpoint
+        && (provider.models.length === 0 || provider.models.some((entry) => entry.id === model)));
+      return known ? known[0] : 'custom';
+    }
+
+    $('provider').addEventListener('change', () => {
+      const provider = MODEL_PROVIDERS[$('provider').value];
+      if (!provider) return;
+      $('modelEndpoint').value = provider.endpoint;
+      $('modelName').value = provider.defaultModel;
+      fillModelList($('provider').value);
+    });
+
+    const syncProviderSelect = () => {
+      const providerId = matchProvider($('modelEndpoint').value, $('modelName').value);
+      $('provider').value = providerId;
+      fillModelList(providerId);
+    };
+
+    $('modelEndpoint').addEventListener('input', syncProviderSelect);
+    $('modelName').addEventListener('input', syncProviderSelect);
+
+    // WHY match on load instead of filling for the default option: the inputs start
+    // empty, which matches no known provider, so the select must say Kustom from the
+    // first paint — showing NVIDIA against empty fields would name a lie.
+    syncProviderSelect();
+
+    function collect() {
+      return {
+        modelEndpoint: $('modelEndpoint').value.trim(),
+        modelName: $('modelName').value.trim(),
+        modelKey: $('modelKey').value.trim()
+      };
+    }
+
+    $('modelForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const config = collect();
+      if (!config.modelEndpoint || !config.modelName || !config.modelKey) {
+        setStatus('Isi endpoint, nama model, dan kuncinya.', 'warn');
+        return;
+      }
+      if (!globalThis.chrome?.runtime?.sendMessage) {
+        setStatus('Browser ini tidak bisa bicara ke extension. Gunakan Salin saja.', 'warn');
+        return;
+      }
+
+      // One message, one destination: the installed extension. There is no fetch here
+      // on purpose, because a fetch is where a key would leak.
+      globalThis.chrome.runtime.sendMessage(EXTENSION_ID, { type: 'applyModelConfig', ...config }, (response) => {
+        const error = globalThis.chrome.runtime.lastError;
+        if (error || !response?.ok) {
+          setStatus(`Extension tidak menerimanya${response?.message ? `: ${response.message}` : ''}. Gunakan Salin saja.`, 'warn');
+          return;
+        }
+        $('modelKey').value = '';
+        setStatus('Tersimpan di device ini. Kunci tidak ditampilkan lagi di sini.', 'ok');
+      });
+    });
+
+    $('copyButton').addEventListener('click', async () => {
+      const config = collect();
+      const block = [
+        `Model endpoint: ${config.modelEndpoint || '(empty)'}`,
+        `Model name: ${config.modelName || '(empty)'}`,
+        `API key: ${config.modelKey || '(empty)'}`
+      ].join('\n');
+      try {
+        await navigator.clipboard.writeText(block);
+        setStatus('Tersalin. Tempel ke popup extension.', 'ok');
+      } catch (error) {
+        setStatus(block, 'warn');
+      }
+    });
+
+    // WHY last and fenced: motion must never gate content. The js class goes on
+    // <html> first so every hiding rule requires it, and a reader without JS —
+    // or with reduced motion — gets the full page with no animation at all.
+    try {
+      document.documentElement.classList.add('js');
+      const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && 'IntersectionObserver' in globalThis) {
+        const seen = new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) { entry.target.classList.add('in'); seen.unobserve(entry.target); }
+          }
+        }, { threshold: 0.12 });
+        for (const el of document.querySelectorAll('.reveal')) seen.observe(el);
+      }
+    } catch (error) {
+      // Content stays visible; only the entrance motion is lost.
+    }
+  </script>
+</body>
+</html>

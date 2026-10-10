@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import { EXTERNAL_CONFIG_ORIGINS, originAllowed } from '../extension/lib/external-origins.js';
 
 const root = new URL('..', import.meta.url);
-const html = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
+const html = fs.readFileSync(new URL('landing/beranda.html', root), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
 
 // The landing page is where a user types their API key, so its promises are

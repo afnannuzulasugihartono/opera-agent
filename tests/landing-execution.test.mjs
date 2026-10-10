@@ -293,14 +293,14 @@ test('home swaps to member actions on a stored session, and stays put without on
   // WHY executed and not source-read: the swap touches four elements and a body
   // class from one localStorage read. Only a run proves the hidden flags land
   // where the stylesheet expects them.
-  const signed = await run('index.html');
+  const signed = await run('beranda.html');
   assert.deepEqual(signed.rejected, [], `the module rejected: ${signed.rejected.join('; ')}`);
   assert.ok(signed.context.document.body.classList.contains('signed-in'), 'the body is marked');
   assert.equal(signed.nodes.ctaOut.hidden, true, 'acquisition actions hide');
   assert.equal(signed.nodes.ctaIn.hidden, false, 'member actions show');
   assert.equal(signed.nodes.quickTiles.hidden, false, 'and the inward tiles show');
   assert.equal(signed.nodes.heroEyebrow.textContent, 'Sesi aktif di browser ini', 'the eyebrow says what is true');
-  const stranger = await run('index.html', { stored: {} });
+  const stranger = await run('beranda.html', { stored: {} });
   assert.ok(!stranger.context.document.body.classList.contains('signed-in'), 'no session, no mark');
   assert.equal(stranger.nodes.ctaIn.hidden, true, 'member actions stay hidden');
 });

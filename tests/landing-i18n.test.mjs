@@ -18,7 +18,7 @@ const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pre
   + '<span aria-hidden="true">|</span>'
   + '<button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>';
 
-const DICT_PAGES = ['index.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html', 'auth.html'];
+const DICT_PAGES = ['beranda.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html', 'index.html'];
 const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html'];
 
 function attrKeys(page) {
@@ -87,9 +87,9 @@ test('the mechanism phones nowhere, ever', () => {
 
 test('the authored Indonesian stands byte-for-byte where the pins read it', () => {
   const sentinels = [
-    ['landing/index.html', 'Hak cipta dilindungi'],
-    ['landing/index.html', 'Daftar terbuka · Gratis dipakai'],
-    ['landing/index.html', '39 tool, 28 primitive'],
+    ['landing/beranda.html', 'Hak cipta dilindungi'],
+    ['landing/beranda.html', 'Daftar terbuka · Gratis dipakai'],
+    ['landing/beranda.html', '39 tool, 28 primitive'],
     ['landing/unduh-berkas.html', 'Kalau kebijakan ditolak'],
     ['landing/404.html', 'Lima jalan keluar'],
     ['landing/dukungan.html', 'Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)'],

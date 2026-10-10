@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:27 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
@@ -70,7 +70,7 @@ test('every path of the site is covered, so no rule can be reached by inheritanc
   // WHY this matters: the first live incident on this site was header precedence. An
   // unlisted path falls back to Cloudflare's default policy, which is not ours.
   const covered = new Set(rules.flatMap((rule) => rule.paths));
-  for (const page of ['/', '/index.html', '/auth', '/auth.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-berkas', '/unduh-berkas.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/dukungan', '/dukungan.html', '/404.html', '/robots.txt', '/sitemap.xml']) {
+  for (const page of ['/', '/beranda', '/beranda.html', '/index.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-berkas', '/unduh-berkas.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/dukungan', '/dukungan.html', '/404.html', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
   }
 });
@@ -96,13 +96,13 @@ test('no _headers rule uses a wildcard, because ordering is the trap it avoids',
 });
 
 test('the pages that talk to Supabase still name only that origin', () => {
-  for (const path of ['/auth', '/akun', '/dashboard']) {
+  for (const path of ['/', '/index.html', '/akun', '/dashboard']) {
     const rule = rules.find((r) => r.paths.includes(path));
     const csp = rule.headers['Content-Security-Policy'];
     assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${path} may reach Supabase`);
     assert.doesNotMatch(csp, /connect-src[^;]*https?:\/\/(?!\*\.supabase\.co)/, `${path} names no second origin`);
   }
-  for (const path of ['/', '/privasi.html', '/syarat.html', '/unduh.html']) {
+  for (const path of ['/beranda', '/privasi.html', '/syarat.html', '/unduh.html']) {
     const rule = rules.find((r) => r.paths.includes(path));
     assert.match(rule.headers['Content-Security-Policy'], /connect-src 'none'/, `${path} connects nowhere`);
   }
@@ -117,7 +117,7 @@ test('every inline module script is named by a hash, and the CSP offers no unsaf
     const body = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
     return "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
   };
-  for (const path of ['index.html', 'auth.html', 'akun.html', 'dashboard.html', 'dukungan.html', 'oauth/consent.html']) {
+  for (const path of ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'dukungan.html', 'oauth/consent.html']) {
     const rule = rules.find((r) => r.paths.includes(`/${path}`) || (path === 'index.html' && r.paths.includes('/')));
     const csp = rule?.headers['Content-Security-Policy'];
     const html = read(`landing/${path}`);

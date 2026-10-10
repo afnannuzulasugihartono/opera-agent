@@ -17,10 +17,10 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
-const pages = ['index.html', 'akun.html', 'auth.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
+const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
 
 test('the hero sells the product instead of apologizing for it', () => {
-  const html = read('index.html');
+  const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
   assert.match(html, /39 tool/, 'the tool count is stated as a number');
   assert.match(html, /class="eyebrow"/, 'an eyebrow names the release above the headline');
@@ -32,7 +32,7 @@ test('the hero stats equal live source counts, never stale copy', () => {
   // WHY recomputed: the stat once read 37 while the prose beside it read 39,
   // because only the prose was pinned. Both numbers now derive from the same
   // sources of truth the unduh hub test uses.
-  const html = read('index.html');
+  const html = read('beranda.html');
   const mcp = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   const tools = (mcp.match(/registerTool\("/g) || []).length;
   const proto = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
@@ -57,7 +57,7 @@ test('every section closes before the next one opens', () => {
     const closes = (html.match(/<\/section>/g) || []).length;
     assert.equal(opens, closes, `${page} balances its sections`);
   }
-  const index = read('index.html');
+  const index = read('beranda.html');
   assert.match(index, /<\/section>\s*<section id="faq"[^>]*>/, 'the FAQ stands beside privacy, not inside it');
 });
 
@@ -66,7 +66,7 @@ test('the nav survives a 390px phone without wrapping ragged', () => {
     const css = read(page);
     assert.match(css, /white-space:\s*nowrap/, `${page} keeps each nav item on one line`);
   }
-  const index = read('index.html');
+  const index = read('beranda.html');
   assert.match(index, /overflow-x:\s*auto/, 'the row scrolls instead of wrapping');
 });
 
@@ -74,11 +74,11 @@ test('a code pill never crosses its card border or breaks mid-word', () => {
   for (const page of pages) {
     assert.doesNotMatch(read(page), /word-break:\s*break-all/, `${page} breaks at word bounds, not mid-token`);
   }
-  assert.match(read('index.html'), /box-decoration-break:\s*clone/, 'a wrapped pill keeps both halves boxed');
+  assert.match(read('beranda.html'), /box-decoration-break:\s*clone/, 'a wrapped pill keeps both halves boxed');
 });
 
 test('the marked nav item is visible, not metadata only', () => {
-  for (const page of ['index.html', 'akun.html', 'dashboard.html', 'unduh.html', 'privasi.html', '404.html']) {
+  for (const page of ['beranda.html', 'akun.html', 'dashboard.html', 'unduh.html', 'privasi.html', '404.html']) {
     assert.match(read(page), /a\[aria-current="page"\]/, `${page} styles the current item`);
   }
 });
@@ -97,7 +97,7 @@ test('the hero states each number once', () => {
   // WHY this lock: the paragraph said "26 aksi yang diizinkan" and the next line
   // said "26 primitive" — the same number for two nouns, so neither meant
   // anything. Prose stays qualitative; numbers live in the stats row alone.
-  const hero = read('index.html').match(/<section class="hero">[\s\S]*?<\/section>/)[0];
+  const hero = read('beranda.html').match(/<section class="hero">[\s\S]*?<\/section>/)[0];
   assert.doesNotMatch(hero, /26 aksi/, 'no second 26 with another noun');
   assert.match(hero, /tanpa eksekusi skrip sembarangan/, 'the prose keeps its promise');
   assert.match(hero, /39 tool, 28 primitive/, 'and the count lives in one line');
@@ -107,11 +107,11 @@ test('no script renames a link that is not there', () => {
   // WHY this lock: a script retitled the header Masuk link with a dot for signed-in
   // readers, but the header nav holds no Masuk link — it guards on null and does
   // nothing. Dead code that describes a behavior is a lie waiting to be believed.
-  assert.doesNotMatch(read('index.html'), /Akun ●/, 'the dead rename is gone');
+  assert.doesNotMatch(read('beranda.html'), /Akun ●/, 'the dead rename is gone');
 });
 
 test('the provider buttons show their marks, not bare text', () => {
-  const html = read('auth.html');
+  const html = read('index.html');
   assert.match(html, /id="googleButton"[^>]*>[\s\S]*?<svg/, 'Google carries its mark inside the button');
   assert.match(html, /id="githubButton"[^>]*>[\s\S]*?<svg/, 'GitHub carries its mark inside the button');
 });
@@ -148,7 +148,7 @@ test('home after sign-in is a console door, not the sales pitch again', () => {
   // page where the model key is typed. localStorage presence is enough to swap
   // the actions; the name is not shown because it is not known without network,
   // and an invented greeting would be the lie this file exists to prevent.
-  const html = read('index.html');
+  const html = read('beranda.html');
   assert.match(html, /id="heroEyebrow"/, 'the eyebrow is addressable');
   assert.match(html, /id="ctaOut"/, 'the acquisition actions have an element');
   assert.match(html, /id="ctaIn" hidden/, 'the member actions start hidden');
@@ -171,7 +171,7 @@ test('display type sets the page apart from its own dashboard', () => {
   // 96px of air -- while the 40px floor stays, because at 320px the longest
   // word in the headline ("mengemudikan") measures 280px and a taller floor
   // pushes the page 24px past the screen. Measured in Chromium at 320px.
-  const html = read('index.html');
+  const html = read('beranda.html');
   assert.match(html, /clamp\(40px, 7\.5vw, 84px\)/, 'the headline spans display sizes');
   assert.match(html, /h2 \{[^}]*font-size: clamp\(30px, 4vw, 44px\)/, 'sections step down to a clear second rank');
   assert.match(html, /section \{[^}]*padding: 96px 0/, 'and breathe around each idea');
@@ -181,11 +181,11 @@ test('buttons are pills on every surface that has them', () => {
   // WHY pills and not slightly rounder rectangles: a half-measure reads as an
   // accident. One radius on every control is the standard; the number is
   // deliberately larger than any button so the shape never depends on height.
-  for (const page of ['index.html', 'akun.html', 'dashboard.html', 'unduh.html', 'oauth/consent.html']) {
+  for (const page of ['beranda.html', 'akun.html', 'dashboard.html', 'unduh.html', 'oauth/consent.html']) {
     const html = read(page);
     assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
   }
-  const auth = read('auth.html');
+  const auth = read('index.html');
   assert.match(auth, /\.provider \{[^}]*border-radius: 980px/, 'provider entries match');
   assert.match(auth, /button \{[^}]*border-radius: 980px/, 'and so does the submit');
 });
@@ -194,7 +194,7 @@ test('the hero carries its footnote instead of hiding the catch', () => {
   // WHY this lock: "Gratis dipakai" in the eyebrow without the model-cost
   // sentence beside the button reads as free-everything. Apple prints the
   // asterisk; this prints the one line, in 12.5px muted, where the click is.
-  const html = read('index.html');
+  const html = read('beranda.html');
   assert.match(html, /class="footnote"/, 'the line has an element');
   assert.match(html, /Model ditagih penyedia Anda/, 'stating the only money that moves');
 });
@@ -204,7 +204,7 @@ test('motion is an enhancement, never the content', () => {
   // reduced-motion readers get a blank page that tests still call green. The
   // gate class goes on <html> first, so every reveal rule requires it, and the
   // media query deletes the motion for those who asked.
-  const html = read('index.html');
+  const html = read('beranda.html');
   assert.match(html, /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
   assert.match(html, /html\.js \.reveal/, 'hiding requires that announcement');
   assert.match(html, /prefers-reduced-motion/, 'and the motion bows out when asked');

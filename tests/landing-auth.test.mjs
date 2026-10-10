@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 10:24 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: landing-auth — the sign-in page must offer providers, never a password.
 // @state: failing first: the auth page does not exist yet.
 // @dependencies: test, assert, fs.
@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const html = fs.readFileSync(new URL('landing/auth.html', root), 'utf8');
+const html = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
 
 const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
@@ -26,7 +26,7 @@ test('the auth page offers Google and GitHub through the project Auth, not throu
   // the value baked into the markup is only the fallback for a browser with no script.
   // It still has to name the host the site is served from, or that fallback strands the
   // visitor on the old site URL.
-  assert.match(html, /redirect_to=https:\/\/opera-agent\.pages\.dev\/auth/, 'both buttons must carry the way home, or login strands the visitor on the old site URL');
+  assert.match(html, /redirect_to=https:\/\/opera-agent\.pages\.dev\/"/, 'both buttons must carry the way home, or login strands the visitor on the old site URL');
 });
 
 test('the auth page takes no password, only a magic link', () => {
@@ -41,17 +41,18 @@ test('the landing page itself stays network-free while auth may reach only Supab
   // winning, so the catch-all must come first or it buries the auth policy.
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
-    ['/(.*)', '/auth', '/auth/:path*', '/auth.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/robots.txt', '/sitemap.xml'],
+    ['/(.*)', '/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/robots.txt', '/sitemap.xml'],
     'the catch-all stays first and the page entries follow'
   );
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
   const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
 
-  // WHY three entries per page: neither "/auth" nor "/auth/:path*" alone matched the
-  // served path on Vercel, so the auth page received the root CSP and its Supabase
-  // fetch died in the browser. All three carry the same single-origin policy.
-  const authSources = ['/auth', '/auth/:path*', '/auth.html', '/oauth/consent', '/oauth/consent.html'];
+  // WHY two entries per page and not one: the sign-in page is served at both "/"
+  // and "/index.html", and the consent page at both spellings of its path, so each
+  // served address carries its own entry or it receives the root CSP and its
+  // Supabase fetch dies in the browser. All carry the same single-origin policy.
+  const authSources = ['/', '/index.html', '/oauth/consent', '/oauth/consent.html'];
   for (const source of authSources) {
     const entry = bySource[source];
     assert.ok(entry, `vercel.json must define a header entry for ${source}`);
@@ -68,7 +69,7 @@ test('the sign-in page can return a person to where they came from, and nowhere 
   // authorization_id intact. But this is the one page an attacker can send a stranger to
   // with a query string, so ?next must never become an open redirect.
   assert.match(html, /const RETURNABLE = \/\^\\\.\\\//, 'only a same-site relative path is accepted');
-  assert.match(html, /returnTo\(\) !== '\.\/index\.html'/, 'the return path changes what the page offers');
+  assert.match(html, /returnTo\(\) !== '\.\/beranda\.html'/, 'the return path changes what the page offers');
   assert.match(html, /redirect_to.*encodeURIComponent\(target\)/, 'the provider buttons carry the return path to Supabase');
   assert.match(html, /id="continueButton"/, 'a signed-in visitor is offered the return path explicitly');
 
@@ -80,11 +81,11 @@ test('the sign-in page can return a person to where they came from, and nowhere 
 });
 
 test('the two pages navigate both ways as one site', () => {
-  const index = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
-  assert.match(index, /href="[^"]*auth\.html"/, 'landing links to the account page');
-  assert.match(html, /href="[^"]*index\.html/, 'the account page links back home');
-  assert.match(html, /index\.html#(install|model|privacy)/, 'the account page shares the landing sections');
-  assert.match(index, /Opera Agent/, 'both pages carry the same brand');
+  const landing = fs.readFileSync(new URL('landing/beranda.html', root), 'utf8');
+  assert.match(landing, /href="[^"]*index\.html"/, 'landing links to the sign-in page');
+  assert.match(html, /href="[^"]*beranda\.html/, 'the sign-in page links back home');
+  assert.match(html, /beranda\.html#(install|model|privacy)/, 'the sign-in page shares the landing sections');
+  assert.match(landing, /Opera Agent/, 'both pages carry the same brand');
   assert.match(html, /Opera Agent/, 'both pages carry the same brand');
 });
 
@@ -192,7 +193,7 @@ test('the provider entries keep their addresses and their marks', () => {
   // button is where a rewritten href hides.
   for (const provider of ['google', 'github']) {
     assert.ok(
-      html.includes(`https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=https://opera-agent.pages.dev/auth`),
+      html.includes(`https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=https://opera-agent.pages.dev/"`),
       `${provider} keeps its address`
     );
   }
