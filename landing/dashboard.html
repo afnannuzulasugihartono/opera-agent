@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-08 UTC+7. -->
-<!-- @title: dashboard — the control panel: devices, the account, pairing, and one command. -->
-<!-- @state: console shell with a command-history table; reads only through opera_my_devices; reads the content script's DOM marker to say whether the extension is installed here. -->
+<!-- @last-edited: 2026-10-10 UTC+7. -->
+<!-- @title: dashboard — the control panel: devices, history, the project's tables, pairing, and one command. -->
+<!-- @state: console shell with a command-history table and a read-only table editor; reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: none. -->
 
 <!doctype html>
@@ -384,6 +384,7 @@
     .rail a[href="#ringkasan"]::before { content: "◉"; }
     .rail a[href="#device"]::before { content: "▣"; }
     .rail a[href="#riwayat"]::before { content: "≣"; }
+    .rail a[href="#tabel"]::before { content: "▦"; }
     .rail a[href="#dengar"]::before { content: "◍"; }
     .rail a[href="#pairing"]::before { content: "⧉"; }
     .rail a[href="#aksi"]::before { content: "▶"; }
@@ -404,6 +405,102 @@
     .history td .dot { display: inline-block; vertical-align: 1px; margin-right: 6px; }
     .history td .online { color: var(--accent); }
     .history td .offline { color: var(--warn); }
+
+    /* WHY the editor is one instrument, not a stack of cards: the list, the grid and
+       the pager answer one question — what is in this table — and a page change is a
+       query, not navigation. The grid scrolls inside its own pane, so the rail and
+       the tabs never move while someone pages through twenty-eight thousand rows. */
+    .konsol { display: grid; grid-template-columns: 196px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .konsolSide { display: grid; gap: 2px; align-content: start; }
+    .konsolSide button {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      padding: 7px 10px;
+      border: 0;
+      border-left: 2px solid transparent;
+      border-radius: 8px;
+      background: none;
+      color: var(--muted);
+      font: inherit;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .konsolSide button:hover:not(:disabled) { color: var(--text); background: var(--surface); }
+    .konsolSide button[aria-current="true"] { color: var(--text); border-left-color: var(--accent); background: var(--surface); }
+    .konsolSide button:disabled { opacity: .55; cursor: not-allowed; }
+    .konsolSide .meta { font-variant-numeric: tabular-nums; }
+    .konsolMain { min-width: 0; }
+    .konsolBar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 4px; }
+    .konsolBar input {
+      flex: 1;
+      min-width: 180px;
+      margin: 0;
+      padding: 9px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      font: inherit;
+      font-size: 13.5px;
+    }
+    .konsolScroll { overflow: auto; max-height: 460px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .konsolScroll .empty { margin: 0; border: 0; border-radius: 0; }
+    .konsolGrid { border-collapse: collapse; width: 100%; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .konsolGrid th, .konsolGrid td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .konsolGrid th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--surface-soft);
+      border-bottom: 1px solid var(--line-strong);
+      font-weight: 600;
+    }
+    .konsolGrid th button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .konsolGrid th button:hover { color: var(--accent); }
+    .konsolGrid tbody tr { cursor: pointer; }
+    .konsolGrid tbody tr:hover { background: var(--surface-soft); }
+    .konsolFoot { margin-top: 10px; }
+    .konsolFoot .meta { font-variant-numeric: tabular-nums; }
+    .konsolJson {
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0 0;
+      max-height: 260px;
+      overflow: auto;
+      font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .konsolJson[hidden] { display: none; }
+    @media (max-width: 900px) {
+      .konsol { grid-template-columns: minmax(0, 1fr); }
+      .konsolSide { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+      .konsolSide button { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+      .konsolSide button[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
+    }
   </style>
 </head>
 <body>
@@ -430,12 +527,13 @@
 
     <div class="layout">
 
-      <!-- WHY the rail is nav and not a list of links in the footer: this page has seven jobs and the reader arrives knowing only which one they want. A rail puts the other six in view without making them read the page to find out they exist. -->
+      <!-- WHY the rail is nav and not a list of links in the footer: this page has eight jobs and the reader arrives knowing only which one they want. A rail puts the other seven in view without making them read the page to find out they exist. -->
 
       <nav class="rail" aria-label="Bagian dashboard">
         <a href="#ringkasan">Ringkasan</a>
         <a href="#device">Device</a>
         <a href="#riwayat" aria-current="true">Riwayat</a>
+        <a href="#tabel">Tabel</a>
         <a href="#dengar">Dengar</a>
         <a href="#pairing">Pairing</a>
         <a href="#aksi">Aksi</a>
@@ -448,6 +546,7 @@
           <a href="#ringkasan">Ringkasan</a>
           <a href="#device">Device</a>
           <a href="#riwayat" aria-current="true">Riwayat</a>
+          <a href="#tabel">Tabel</a>
           <a href="#dengar">Dengar</a>
           <a href="#pairing">Pairing</a>
           <a href="#aksi">Aksi</a>
@@ -484,6 +583,34 @@
               <tbody id="historyRows"></tbody>
             </table>
             <div class="empty" id="historyEmpty" hidden><strong>Belum ada riwayat perintah.</strong> Jalankan aksi pertama dari <a href="#aksi">tab Aksi</a>.</div>
+          </div>
+        </section>
+
+        <section id="tabel">
+          <h2>Tabel</h2>
+          <p class="meta">Editor data proyek, hanya-baca: baris yang sampai sudah disaring server untuk akun ini, dan kolom rahasia disamarkan sebelum keluar dari database. Aksi tulis tetap di tabnya masing-masing.</p>
+          <div class="konsol">
+            <div class="konsolSide" id="konsolList" role="group" aria-label="Daftar tabel"></div>
+            <div class="konsolMain">
+              <div class="konsolBar">
+                <input id="konsolSearch" type="search" placeholder="Cari di tabel ini…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari baris di tabel ini" />
+                <button class="btn ghost" id="konsolCsv" type="button" title="Unduh hingga 5.000 baris sesuai filter saat ini">Ekspor CSV</button>
+              </div>
+              <p class="status" id="konsolStatus" role="status" aria-live="polite">&nbsp;</p>
+              <div class="konsolScroll">
+                <table class="konsolGrid">
+                  <thead id="konsolHead"></thead>
+                  <tbody id="konsolRows"></tbody>
+                </table>
+                <div class="empty" id="konsolEmpty" hidden><strong>Tabel ini kosong.</strong> Tidak ada baris yang cocok dengan akun dan filter ini.</div>
+              </div>
+              <div class="konsolBar konsolFoot">
+                <button class="btn ghost" id="konsolPrev" type="button">‹ Sebelumnya</button>
+                <span class="meta" id="konsolPage">–</span>
+                <button class="btn ghost" id="konsolNext" type="button">Berikutnya ›</button>
+              </div>
+              <pre class="konsolJson" id="konsolJson" hidden></pre>
+            </div>
           </div>
         </section>
 
@@ -555,9 +682,11 @@
 
   <script type="module">
 
-    // WHY one RPC and no table reads: opera_my_devices returns the caller's devices
-    // with their ten latest commands, method and status only. A page that queries
-    // raw tables would need grants the project deliberately never hands out.
+    // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices
+    // with their ten latest commands, method and status only, and the opera_konsol_*
+    // pair returns one page of one table with the ownership filter, the page caps and
+    // the masking already applied server-side. A page that queried raw tables would
+    // need grants the project deliberately never hands out.
     const REST = 'https://nenmkmtvjremqphfqnfw.supabase.co/rest/v1';
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
@@ -716,7 +845,9 @@
       'Device is offline. Open the extension so it can check in.': 'Device sedang offline. Buka extension agar ia terhubung.',
       'Unknown or disabled method.': 'Primitive itu tidak dikenal atau dinonaktifkan.',
       'Not signed in.': 'Sesi tidak ada. Masuk lagi.',
-      'Timed out waiting for command result.': 'Device belum menjawab dalam batas waktu.'
+      'Timed out waiting for command result.': 'Device belum menjawab dalam batas waktu.',
+      'Unknown table.': 'Tabel itu tidak dikenal.',
+      'That table belongs to the operator account.': 'Tabel itu hanya untuk akun operator.'
     };
 
     // WHY the map: the server speaks English and the page speaks Indonesian. Showing a
@@ -1104,7 +1235,251 @@
       }
     });
 
-    // WHY one visible section: seven stacked jobs read as a form nobody finished.
+    // WHY the editor reads through opera_konsol_* and never a table path: the ownership
+    // filter, the page caps and the masking belong to the server, so a modified client
+    // can ask for a different page but cannot ask for a column the reader refuses to
+    // send. Everything below is presentation: pick a table, sort it, page it, copy it.
+    const konsol = { ready: false, seq: 0, table: null, cols: [], rows: [], total: 0, offset: 0, limit: 50, search: '', sort: null, dir: null };
+    let konsolToken = null;
+
+    const konsolSay = (message, tone) => {
+      $('konsolStatus').textContent = message;
+      $('konsolStatus').className = tone ? `status ${tone}` : 'status';
+    };
+
+    // WHY the cell shortens here: one cell can hold a workflow definition or a URL,
+    // and a grid that grows to fit its widest cell stops being a grid. The full value
+    // sits in the title attribute and, on a click, in the JSON pane below.
+    const konsolCell = (value) => {
+      if (value === null || value === undefined) return '–';
+      const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      return text.length > 96 ? `${text.slice(0, 93)}…` : text;
+    };
+
+    const konsolCsvCell = (value) => {
+      const text = value === null || value === undefined ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
+
+      // WHY the apostrophe: a device or workflow cell that starts with =, +, - or @
+      // is read as a formula by spreadsheet software even inside quotes, and this
+      // export carries names a stranger may have chosen. One leading apostrophe costs
+      // nothing honest and stops the file from running anything.
+      const guarded = /^[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${guarded.replace(/"/g, '""')}"`;
+    };
+
+    async function konsolRpc(name, body) {
+      if (!konsolToken) {
+        const session = await currentSession();
+        if (!session) return null;
+        konsolToken = session.token;
+      }
+      let response = await fetch(`${REST}/rpc/${name}`, { method: 'POST', headers: headersFor(konsolToken), body: JSON.stringify(body) }).catch(() => null);
+
+      // WHY the second pass through currentSession: an access token ages out in about
+      // an hour and this pane can be open across that hour. One renew here is the
+      // difference between a page that kept working and a console that signed the
+      // reader out mid-read over a token it could have refreshed itself.
+      if (response && response.status === 401) {
+        konsolToken = null;
+        const session = await currentSession();
+        if (!session) return null;
+        konsolToken = session.token;
+        response = await fetch(`${REST}/rpc/${name}`, { method: 'POST', headers: headersFor(konsolToken), body: JSON.stringify(body) }).catch(() => null);
+      }
+      if (!response) return null;
+      try {
+        return await response.json();
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function konsolPage() {
+      if (!konsol.table) return;
+
+      // WHY the sequence check: a fast reader can switch tables or pages while a
+      // response is still crossing the wire, and without it the older answer lands
+      // last and the grid shows page one of the table the reader just left.
+      const seq = ++konsol.seq;
+      konsolSay('Memuat…');
+      const data = await konsolRpc('opera_konsol_table', {
+        p_table: konsol.table,
+        p_limit: konsol.limit,
+        p_offset: konsol.offset,
+        p_search: konsol.search || null,
+        p_sort: konsol.sort,
+        p_dir: konsol.dir
+      });
+      if (seq !== konsol.seq) return;
+      if (!data?.ok) {
+        konsolSay(say(data?.error || 'Konsol tidak bisa membaca tabel itu.'), 'warn');
+        return;
+      }
+      konsol.cols = data.columns || [];
+      konsol.rows = data.rows || [];
+      konsol.total = data.total || 0;
+      $('konsolJson').hidden = true;
+      $('konsolHead').innerHTML = `<tr>${konsol.cols.map((col) => {
+        const active = konsol.sort === col.name;
+        const arrow = active ? (konsol.dir === 'asc' ? ' ▲' : ' ▼') : '';
+        const sortState = active ? (konsol.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+        return `<th scope="col" aria-sort="${sortState}"><button type="button" data-sort="${esc(col.name)}" title="${esc(col.type)}">${esc(col.name)}${arrow}</button></th>`;
+      }).join('')}</tr>`;
+      $('konsolRows').innerHTML = konsol.rows.map((record, index) =>
+        `<tr data-row="${index}">${konsol.cols.map((col) => {
+          const cell = konsolCell(record[col.name]);
+          return `<td title="${esc(cell)}">${esc(cell)}</td>`;
+        }).join('')}</tr>`
+      ).join('');
+      const from = konsol.total === 0 ? 0 : konsol.offset + 1;
+      const to = konsol.offset + konsol.rows.length;
+      $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `${from}–${to} dari ${konsol.total}`;
+      $('konsolPrev').disabled = konsol.offset <= 0;
+      $('konsolNext').disabled = to >= konsol.total;
+      $('konsolEmpty').hidden = konsol.rows.length !== 0;
+      konsolSay(konsol.search
+        ? `${konsol.total} baris ${konsol.table} cocok dengan “${konsol.search}”.`
+        : `${konsol.table} — ${konsol.total} baris.`, 'ok');
+    }
+
+    async function konsolOpen(name) {
+      konsol.table = name;
+      konsol.offset = 0;
+      konsol.search = '';
+      konsol.sort = null;
+      konsol.dir = null;
+      $('konsolSearch').value = '';
+      for (const button of $('konsolList').querySelectorAll('[data-table]')) {
+        button.setAttribute('aria-current', String(button.dataset.table === name));
+      }
+      await konsolPage();
+    }
+
+    async function konsolLoadList() {
+      const data = await konsolRpc('opera_konsol_tables', {});
+      if (!data?.ok) {
+        konsolSay('Konsol data belum bisa dimuat. Muat ulang halaman sebentar lagi.', 'warn');
+        return;
+      }
+      const entries = data.tables || [];
+      $('konsolList').innerHTML = entries.map((entry) => `
+        <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${entry.readable ? esc(`${entry.total} baris`) : 'Hanya akun operator yang boleh membaca tabel ini'}">
+          <span>${esc(entry.name.replace(/^opera_/, ''))}</span>
+          <span class="meta">${entry.readable ? esc(String(entry.total)) : '–'}</span>
+        </button>`).join('');
+      const first = entries.find((entry) => entry.readable);
+      if (first && !konsol.table) await konsolOpen(first.name);
+      const locked = entries.filter((entry) => !entry.readable).length;
+      if (locked && !konsol.table) konsolSay(`${locked} tabel di sini hanya untuk akun operator.`, 'warn');
+    }
+
+    async function konsolInit() {
+      if (konsol.ready) return;
+      konsol.ready = true;
+      await konsolLoadList();
+    }
+
+    $('konsolList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-table]');
+      if (!button || button.disabled) return;
+      await konsolOpen(button.dataset.table);
+    });
+
+    $('konsolHead').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-sort]');
+      if (!button) return;
+      const name = button.dataset.sort;
+      if (konsol.sort === name) konsol.dir = konsol.dir === 'asc' ? 'desc' : 'asc';
+      else { konsol.sort = name; konsol.dir = 'asc'; }
+      konsol.offset = 0;
+      await konsolPage();
+    });
+
+    $('konsolRows').addEventListener('click', (event) => {
+      const tr = event.target.closest('tr[data-row]');
+      if (!tr) return;
+      const record = konsol.rows[Number(tr.dataset.row)];
+      if (!record) return;
+      $('konsolJson').textContent = JSON.stringify(record, null, 2);
+      $('konsolJson').hidden = false;
+    });
+
+    $('konsolPrev').addEventListener('click', async () => {
+      konsol.offset = Math.max(0, konsol.offset - konsol.limit);
+      await konsolPage();
+    });
+
+    $('konsolNext').addEventListener('click', async () => {
+      konsol.offset += konsol.limit;
+      await konsolPage();
+    });
+
+    // WHY debounced from the first keystroke: every character is a server round trip
+    // over a table that may hold twenty-eight thousand rows, and a search that starts
+    // from page four lands on nothing. 300ms sits past a fast typist's burst and
+    // still reads as immediate to the eye.
+    let konsolDebounce = null;
+    $('konsolSearch').addEventListener('input', () => {
+      clearTimeout(konsolDebounce);
+      konsolDebounce = setTimeout(() => {
+        konsol.search = $('konsolSearch').value.trim().slice(0, 64);
+        konsol.offset = 0;
+        konsolPage();
+      }, 300);
+    });
+
+    // WHY the 5,000-row bound and pages of 200: the reader is a person, not a
+    // pipeline. An unbounded export would ask the browser to hold a file it cannot,
+    // and the server caps every page at 200 anyway — the loop just walks that cap
+    // until the filter drains or the bound is hit, one cell-masked row at a time.
+    $('konsolCsv').addEventListener('click', async () => {
+      if (!konsol.table) return;
+      const cap = 5000;
+      $('konsolCsv').disabled = true;
+      konsolSay('Menyiapkan CSV…');
+      try {
+        const lines = [konsol.cols.map((col) => konsolCsvCell(col.name)).join(',')];
+        let offset = 0;
+        let fetched = 0;
+        let total = konsol.total;
+        while (offset < total && fetched < cap) {
+          const page = await konsolRpc('opera_konsol_table', {
+            p_table: konsol.table,
+            p_limit: 200,
+            p_offset: offset,
+            p_search: konsol.search || null,
+            p_sort: konsol.sort,
+            p_dir: konsol.dir
+          });
+          if (!page?.ok) throw new Error(say(page?.error || 'gagal membaca tabel'));
+          total = page.total || 0;
+          const rowsOnPage = page.rows || [];
+          if (!rowsOnPage.length) break;
+          for (const record of rowsOnPage) {
+            if (fetched >= cap) break;
+            lines.push(konsol.cols.map((col) => konsolCsvCell(record[col.name])).join(','));
+            fetched += 1;
+          }
+          offset += rowsOnPage.length;
+        }
+        const href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = `${konsol.table}.csv`;
+        link.hidden = true;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(href);
+        konsolSay(`${fetched} baris diunduh sebagai ${konsol.table}.csv.`, 'ok');
+      } catch (error) {
+        konsolSay(`Ekspor gagal: ${error.message}.`, 'warn');
+      } finally {
+        $('konsolCsv').disabled = false;
+      }
+    });
+
+    // WHY one visible section: eight stacked jobs read as a form nobody finished.
     // Tabs show one at a time, deep-linked by hash so #riwayat is shareable.
     function showSection() {
       const sections = [...document.querySelectorAll('main section[id]')];
@@ -1116,6 +1491,11 @@
         if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');
         else link.removeAttribute('aria-current');
       }
+
+      // WHY lazy: the sidebar is sixteen counts over tables nobody who opens #riwayat
+      // asked about. The editor pays for them once, on first visit, and the rest of
+      // the session is local state plus one page per click.
+      if (target === 'tabel') konsolInit();
     }
     if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);
 

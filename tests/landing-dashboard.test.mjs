@@ -1,12 +1,16 @@
 // @last-edited: 2026-10-10 UTC+7.
-// @title: landing-dashboard — the device page shows your devices, nothing else's.
-// @state: 19 locks, green; the page moved out of akun.html when the two split.
+// @title: landing-dashboard — the device page shows your devices and your tables, nothing else's.
+// @state: 39 locks, green; the page moved out of akun.html when the two split, and grew the read-only #tabel editor.
 // @dependencies: test, assert, fs.
 
 // The dashboard is the fulcrum of the full-stack site: the one page that reads the
-// user's own device rows. It calls exactly one RPC, shows method and status but
-// never page content, and sends a stranger back to sign-in instead of leaking an
-// empty state that looks broken.
+// user's own device rows and, since the table editor landed, one page of any table
+// the reader owns. Every call goes through an owner-scoped reader RPC — opera_my_
+// devices for devices, opera_konsol_* for the grid — never a raw table path, so the
+// filter, the page caps and the masking live server-side where a modified client
+// cannot reach past them. It shows method and status but never page content, and
+// sends a stranger back to sign-in instead of leaking an empty state that looks
+// broken.
 //
 // It is a separate page from the account page on purpose. Supabase splits profile
 // (/account/me) from resources, and opencode splits settings from projects; a reader
@@ -22,11 +26,24 @@ const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8')
 const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
 const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
 
-test('the dashboard reads through one owner-scoped RPC', () => {
+test('the dashboard reads through scoped RPCs, never raw tables', () => {
   const html = read('dashboard.html');
-  assert.match(html, /rpc\/opera_my_devices/, 'the only device list call is the owner-scoped RPC');
-  assert.doesNotMatch(html, /\/rest\/v1\/opera_commands/, 'the page never queries the raw commands table');
-  assert.doesNotMatch(html, /\/rest\/v1\/opera_devices/, 'the page never queries the raw devices table');
+  assert.match(html, /rpc\/opera_my_devices/, 'the device list call is the owner-scoped RPC');
+  assert.match(html, /\$\{REST\}\/rpc\/\$\{name\}/, 'the konsol dispatcher addresses its target only as an RPC path');
+  assert.match(html, /konsolRpc\('opera_konsol_tables'/, 'the table sidebar is listed by the konsol reader');
+  assert.match(html, /konsolRpc\('opera_konsol_table'/, 'each page of the grid comes through the konsol reader');
+
+  // WHY the lookahead and not two table names: the page once queried two known
+  // tables, but the console grew to all sixteen, so locking two paths would let the
+  // seventeenth appear tomorrow. Two shapes are checked instead: no absolute URL
+  // under /rest/v1/ may name anything but rpc, and every use of the REST constant
+  // must be immediately followed by /rpc/ — the readers own the filter and the caps.
+  assert.doesNotMatch(html, /\/rest\/v1\/(?!rpc\/)/, 'no absolute path under /rest/v1/ reaches a table');
+  const restUses = [...html.matchAll(/\$\{REST\}[^`)]*/g)].map((match) => match[0]);
+  assert.ok(restUses.length > 0, 'the REST constant is actually used, or this proves nothing');
+  for (const use of restUses) {
+    assert.match(use, /^\$\{REST\}\/rpc\//, `every REST call is an RPC, found: ${use}`);
+  }
 
   // WHY this one is narrow: "result" appears in DOM ids, so the lock targets the
   // field the dashboard must never render, not the word itself.
