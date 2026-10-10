@@ -2075,13 +2075,22 @@
 
   // MAIN-world state bridge events (extension/state-bridge.js) arrive as
   // window messages because isolated worlds share only the DOM event system.
-  // Accepted only from this window with the exact source tag, then forwarded
-  // to the background, which owns the loop session the events belong to.
+  // Accepted only from this window, from this document's own origin, and only
+  // for the seven types the bridge itself emits, then forwarded to the
+  // background, which owns the loop session the events belong to.
+  //
+  // The allowlist is what bounds this. A page script shares the MAIN world with
+  // the bridge, so an origin check alone cannot tell the two apart — same
+  // window, same origin, same tag. What the allowlist fixes is the contract:
+  // nothing beyond what the bridge can actually say reaches the event log.
+
+  const STATE_EVENT_TYPES = ['duck-end', 'duck-start', 'game-over', 'heartbeat', 'jump', 'started', 'stopped'];
 
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
+    if (event.origin !== location.origin) return;
     const data = event.data;
-    if (!data || data.source !== 'opera-agent-state' || typeof data.type !== 'string') return;
+    if (!data || data.source !== 'opera-agent-state' || !STATE_EVENT_TYPES.includes(data.type)) return;
     try {
       chrome.runtime.sendMessage({ scope: 'opera-agent-state-event', type: data.type, detail: { ticks: data.ticks, jumps: data.jumps, speed: data.speed, reader: data.reader, reason: data.reason, obs: data.obs, near: data.near } })?.catch?.(() => {});
     } catch (error) {

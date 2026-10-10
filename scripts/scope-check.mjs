@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-10 UTC+7.
 // @title: scope-check — a brief declares the files it may touch; this counts what actually moved.
 // @state: reads the Files block of an SDD brief and reports which committed paths were never declared.
-// @dependencies: node:path, node:child_process, node:url.
+// @dependencies: node:fs, node:path, node:child_process, node:url.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -180,10 +180,34 @@ export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS)
   };
 }
 
+// S4036: a spawned process must not resolve its command through a PATH that a
+// user-writable directory can extend, so the child is handed a PATH holding
+// system directories only. `git` cannot be located by that search — it
+// normally lives outside those directories — so it is located here, against
+// the PATH that already started this script, and passed as an absolute path.
+// This does not make a hostile PATH safe for this script itself; nothing can.
+
+const SYSTEM_PATH = process.platform === 'win32'
+  ? [path.join(process.env.SystemRoot || 'C:\\Windows', 'System32'), process.env.SystemRoot || 'C:\\Windows'].join(';')
+  : ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin'].join(':');
+
+function locateGit() {
+  const names = process.platform === 'win32' ? ['git.exe', 'git.cmd'] : ['git'];
+  for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+    if (!dir) continue;
+    for (const name of names) {
+      const candidate = path.join(dir, name);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  }
+  return 'git';
+}
+
 export function changedFiles(root, base, head) {
-  const out = execFileSync('git', ['diff', '--name-only', `${base}..${head}`], {
+  const out = execFileSync(locateGit(), ['diff', '--name-only', `${base}..${head}`], {
     cwd: root,
     encoding: 'utf8',
+    env: { ...process.env, PATH: SYSTEM_PATH },
   });
   return out.split(/\r?\n/).filter(Boolean);
 }

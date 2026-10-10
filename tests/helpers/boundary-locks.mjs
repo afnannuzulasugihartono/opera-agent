@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-07 02:45 UTC+7.
+// @last-edited: 2026-10-10 UTC+7.
 // @title: boundary-locks — locks — Frozen public-boundary locks shared by the checkpoint tests.
 // @state: pins re-taken for the 1.6.16 sweep: content.js early-marker fix and manifest version bump; no contract moved.
 // @dependencies: none.
@@ -73,8 +73,15 @@
 // changing. content.js, manifest.json and the MCP function are untouched by
 // the split and are not re-pinned.
 
+// Re-pinned 2026-10-10 for the S2819 state-bridge origin fix. No public
+// contract moved: the listener accepts the same events from the same bridge
+// and forwards the same detail. content.js now checks each message's origin
+// against this document's own, and admits only the seven type literals
+// state-bridge.js can emit, where it previously accepted any string at all.
+// background.js, manifest.json and the MCP function are untouched.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'f72b39606133b8062aa6a65404e679092dd981cf'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists; forwards MAIN-world state-bridge events to the background, swallowing the worker-sleep rejection via ?.catch
+  ['../extension/content.js', '70619bc3d79be424b79c7afb092bcf52e4fab0e5'], // pointer cursor: one marker that moves, dims when idle, never intercepts a click; page.read reports userInput; media.play names the foreground path when the autoplay policy refuses; marks documentElement so a page can tell the extension is installed, even before documentElement exists; forwards MAIN-world state-bridge events to the background only after matching this document's origin and admitting the seven type literals the bridge emits, swallowing the worker-sleep rejection via ?.catch
   ['../extension/background.js', '59342664c31afbc2d4613b4ebbc4cd3e7101277a'], // tab mutations retry Chrome drag refusals; showCursor:true shows the cursor in background; page.read reports userState with lastInputMs; sense-act loop engine (loop.start/read/stop) with persistent debugger attach; region-clip capture, suspend floor, stillness and track sensors; per-tick sensor activity, values, and phase timings in the trace; native-resolution sense frames; front-edge tracking immune to ground texture; Wave B hardening only — burst fill value regardless of refFromStep, empty tabId refused, SCREENSHOT_TOO_SMALL split out, finishLoop awaits the debugger release, ensureContent re-injects the full manifest script list, external model-key clear refused; Wave C hardening only — facts reply carries engine state, arm-time deadlineMs default, boolean tabId refused, dead set-bridge-url popup action deleted; Wave C review minors — null deadlineMs normalizes at arm, missing deadline prunes as expired, no-entries reply carries empty state; official-site config grant — origin check moved to lib/external-origins.js (strict site match, localhost prefix kept)
   ['../extension/manifest.json', '6da2001d42e103e6458c634b21fdfadbbee6a550'], // entry points, permissions, version; key is the CRX signing public key, so it changed with the rotation that made the published CRX installable; version line 1.6.18 → 1.6.19 for sense-act loops; 1.6.19 → 1.6.20 for state loops; externally_connectable gains the official site
   ['../supabase/functions/opera-agent-mcp/index.ts', '908ae83e2d0a5fa52badd5316b80bfd24f4534d7'], // MCP tool surface and schemas; an empty allowlist admits nobody, since every caller drives the one device; re-pinned for loop_start/loop_read/loop_stop (sense-act loops); loop sensors stillness, track; state tools loop_state_start/read/stop; run_adhoc (one-off writes as ephemeral workflows); Wave E isolation — unowned device names refused with 401, wait_events filtered to the owned device; Wave E fix round 1 — wait_events preserves a falsy RPC envelope instead of forcing ok:true; skill_save/skill_recall (manual save/recall over the shared skill memory, no device queue)
