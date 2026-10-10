@@ -32,6 +32,21 @@ test('an interpolation does not blind the scanner to the comments below it', () 
   ), ['x.mjs:4 no blank line after the comment block']);
 });
 
+test('the same comment with room around it reports nothing at all', () => {
+  // WHY this is the other half of the file: every case below asserts that a
+  // violation is found, so a scanner that flagged every single line would still
+  // pass all of them. This pins the opposite failure — the rule staying quiet
+  // on input it should accept — which is the only thing that separates a
+  // scanner that is not blind from one that is actually right.
+  assert.deepEqual(scan('clean.mjs', '.mjs',
+    'const url = new URL(`./f/${name}`, import.meta.url);',
+    '',
+    '// this one is seen, and it is spaced correctly',
+    '',
+    'const x = 1;',
+  ), []);
+});
+
 test('the comment itself is classified, not just the violation it causes', () => {
   assert.equal(probe('.mjs',
     'const url = new URL(`./f/${name}`, import.meta.url);',
@@ -136,6 +151,21 @@ test('every line of a comment that opens on its own line is a comment', () => {
     '-->',
     '<p>hi</p>',
   ), ['h.html:4 no blank line after the comment block']);
+});
+
+test('a page comment with room around it reports nothing either', () => {
+  // WHY: the HTML classifier has its own path into the rule, and a page whose
+  // comments are all correctly spaced must come back from it empty. Checking
+  // only that HTML violations are found leaves the other direction unproven —
+  // a classifyHtml that marked every line as comment would satisfy every
+  // assertion this file makes about pages.
+  assert.deepEqual(scan('quiet.html', '.html',
+    '<p>above</p>',
+    '',
+    '<!-- a page comment with room around it -->',
+    '',
+    '<p>below</p>',
+  ), []);
 });
 
 test('JavaScript inside a shell string in a YAML run block is still JavaScript', () => {
