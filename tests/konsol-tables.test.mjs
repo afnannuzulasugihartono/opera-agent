@@ -161,7 +161,7 @@ test('the dashboard section exists, is reachable, and reads through the readers'
 });
 
 test('the dashboard grid escapes, caps, and never writes', () => {
-  assert.match(html, /title="\$\{esc\(cell\)\}">\$\{esc\(cell\)\}/, 'every cell is escaped on the way in, twice over');
+  assert.match(html, /title="\$\{esc\(cell\.full\)\}">\$\{esc\(cell\.text\)\}/, 'every cell escapes the whole value into the title and the shown text into the cell');
   assert.match(html, /\$\('konsolJson'\)\.textContent = JSON\.stringify\(record, null, 2\)/, 'the JSON pane sets text, never markup');
   assert.match(html, /const cap = 5000;/, 'an export stops at five thousand rows');
   assert.match(html, /p_limit: 200/, 'an export page is the reader\'s own maximum');
