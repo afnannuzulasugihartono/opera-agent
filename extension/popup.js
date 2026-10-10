@@ -126,8 +126,15 @@ $('privateTabButton').addEventListener('click', async () => {
   }
 });
 
-refresh();
-setInterval(refresh, 1500);
+// WHY the wrapper and not refresh directly: refresh swallows its own failures
+// today, so the hull below cannot fire — but a floating async call becomes an
+// unhandled rejection the day a throw lands outside its try, and both the first
+// paint and every timer tick deserve the same floor.
+
+const refreshQuietly = () => { refresh().catch(() => {}) };
+
+refreshQuietly();
+setInterval(refreshQuietly, 1500);
 
 // WHY set here and not left as the literal in popup.html: the literal is the
 // fallback the markup carries, but SITE_ORIGIN is where the site origin lives

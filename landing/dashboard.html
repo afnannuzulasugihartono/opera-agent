@@ -625,7 +625,7 @@
               <p class="status" id="konsolStatus" role="status" aria-live="polite">&nbsp;</p>
               <div class="konsolScroll">
                 <table class="konsolGrid">
-                  <thead id="konsolHead"></thead>
+                  <thead id="konsolHead"><tr><th scope="col">Memuat…</th></tr></thead>
                   <tbody id="konsolRows"></tbody>
                 </table>
                 <div class="empty" id="konsolEmpty" hidden><strong>Tabel ini kosong.</strong> Tidak ada baris yang cocok dengan akun dan filter ini.</div>
@@ -1350,6 +1350,11 @@
       });
       if (seq !== konsol.seq) return;
       if (!data?.ok) {
+
+        // WHY the clear: the static header row says "Memuat…" only while the first
+        // load is in flight; a first load that fails must not leave it promising
+        // data that never arrived. A later failure keeps the last good grid.
+        if (!$('konsolRows').children.length) $('konsolHead').innerHTML = '';
         konsolSay(say(data?.error || 'Konsol tidak bisa membaca tabel itu.'), 'warn');
         return;
       }
@@ -1408,6 +1413,11 @@
     async function konsolLoadList() {
       const data = await konsolRpc('opera_konsol_tables', {});
       if (!data?.ok) {
+
+        // WHY the clear: the static header row exists only for the first-load state;
+        // a list that never arrived means no table ever will, and "Memuat…" would
+        // promise otherwise.
+        $('konsolHead').innerHTML = '';
         konsolSay('Konsol data belum bisa dimuat. Muat ulang halaman sebentar lagi.', 'warn');
         return;
       }

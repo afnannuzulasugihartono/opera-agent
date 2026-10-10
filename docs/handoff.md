@@ -13,10 +13,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
 - Version `1.6.22` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
 - Gates: `npm test`, `npm run check` — 28 primitives, 156 runtime safety files, 791 unit tests, green.
-- **The SonarCloud Quality Gate is red** — new-code coverage sits at 2.9798% against the 3.0%
-  threshold on every PR. The threshold does not move; raising real coverage does.
-  `CircleCI Pipeline` also fails every PR; it has no `.circleci/` and no reference in the tree,
-  so it is a repo-settings removal.
+- **The SonarCloud Quality Gate is green.** Its binding condition is new-code duplication ≤3%
+  (it closed the worker split at 2.9798%); the only PR that ever failed (#56) failed on a
+  table without `<th>`, now fixed. The sixteen open reliability issues are triaged: two real
+  floating promises fixed, the rest Oracle-semantics false positives on Postgres, schema-bound
+  `then` keys, test fixtures and test sorts where byte order is the point. `CircleCI Pipeline`
+  was a repo webhook to a configless project — deleted 2026-10-10, zero hooks remain.
 - Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
   are live and reachable by name.
 - **The CRX is published.** The update endpoint offers `1.6.22` to extension id
@@ -123,8 +125,9 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     no new executor or primitive. The compiler stays device-local, one call per task over the owner
     endpoint, key never leaves ([`security.md`](security.md)); the options probe validates endpoint
     plus key with zero page content.
-7. Publishable-key rotation and SonarCloud project access still need owner action. Edge deploy runs
-   via the logged-in CLI; 10 functions plus 20 migrations are live.
+7. Publishable-key rotation still needs owner action. SonarCloud needs none: measures and the
+   issue list are readable from its public API without a token. Edge deploy runs via the
+   logged-in CLI; 10 functions plus 20 migrations are live.
 8. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with total-stop
    CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); novel patterns go to the operator loop,
    3x recurrence becomes a named-workflow candidate.
