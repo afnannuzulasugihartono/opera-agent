@@ -450,7 +450,11 @@ function burstPassthroughRef(results, step, index) {
 export function burstStepParams(step, tabId, remainingMs, mode, results) {
   const { action, pointerAction, ...values } = step;
   const params = { ...values, tabId, executionMode: mode };
-  if (action === 'click' || action === 'fill') {
+
+  // click, fill and hover behave identically: trust the step and hand through a
+  // ref an earlier step minted on this tab. The passthrough block below used to
+  // exist twice, once for click/fill and once for hover.
+  if (action === 'click' || action === 'fill' || action === 'hover') {
     const passthrough = burstPassthroughRef(results || [], step);
     if (passthrough) {
       params.ref = passthrough.ref;
@@ -459,14 +463,6 @@ export function burstStepParams(step, tabId, remainingMs, mode, results) {
     params.trusted = true;
   }
   if (action === 'key') params.trusted = true;
-  if (action === 'hover') {
-    const passthrough = burstPassthroughRef(results || [], step);
-    if (passthrough) {
-      params.ref = passthrough.ref;
-      params.resolvedFrom = passthrough.resolvedFrom;
-    }
-    params.trusted = true;
-  }
   if (action === 'pointer') {
     params.action = pointerAction || 'click';
     params.showCursor = true;
