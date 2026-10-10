@@ -3,8 +3,6 @@
 // @state: drop the milestone prefix from the interaction test family.
 // @dependencies: node:test, strict, promises, keyboard.
 
-// Keyboard vocabulary parity.
-//
 // The public MCP surface and the extension runtime keep two copies of the key
 // and modifier vocabularies. That duplication is architecturally forced — the
 // MCP is a Deno edge function and the runtime is a browser bundle, and neither

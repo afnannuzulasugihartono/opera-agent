@@ -9,9 +9,12 @@
     "test": "node --test tests/*.test.mjs",
     "test:unit": "node --test tests/protocol.test.mjs tests/workflow-dsl.test.mjs",
     "test:browser": "python tests/browser_extension_test.py",
+    "test:postgres": "node --test tests/postgres/*.test.mjs",
     "benchmark:semantic": "node scripts/semantic-baseline.mjs --runs=3",
     "benchmark:ledger": "node scripts/goal-ledger-benchmark.mjs --runs=3 --iterations=1000",
     "benchmark:proof": "node scripts/proof-engine-benchmark.mjs --runs=30",
+    "diagnose:mcp": "node scripts/mcp-connection-diagnostics.mjs",
+    "gates:refresh": "node scripts/gates.mjs --refresh",
     "check": "node scripts/check.mjs",
     "scope": "node scripts/scope.mjs",
     "scope:diff": "node scripts/scope-check.mjs"

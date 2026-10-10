@@ -1,0 +1,133 @@
+# gates.lock — the acceptance surface, pinned so the judge cannot move with the judged.
+#
+# THE ROOT OF TRUST IS NOT IN THIS FILE, and it is worth being exact about why.
+#
+# An agent that edits code can also edit the code that checks the code. That is
+# not a bug to be engineered away inside the repository; it is the structural
+# limit of any in-tree gate. Something has to sit outside the thing it judges, or
+# the chain is only the judge congratulating itself. So there are two layers, and
+# only the first is ours to maintain:
+#
+#   Layer 1 (this file). Every file that DEFINES an acceptance criterion is
+#   pinned here by git-blob SHA1, LF-normalized so a Windows checkout agrees with
+#   CI. Changing one without deliberately re-pinning it fails `npm run check`
+#   before anything else runs. That does not stop a determined edit; it stops a
+#   SILENT one, and it forces the admission into the diff, where a reviewer can
+#   catch it.
+#
+#   Layer 2 (the owner). .github/CODEOWNERS names these same paths and branch
+#   protection on main makes them owner-approvable only. THIS is the root of
+#   trust. An agent cannot grant itself review rights, and no hash written here
+#   can take that authority away. If you want one control that an AI genuinely
+#   cannot edit, it is that setting, not this file.
+#
+# WHY a file earns a pin: it decides whether a change is correct (accepts or
+# rejects it), changing it silently weakens a check, and no other pin would
+# notice. That is the whole test, and it is why the list is short.
+#
+# WHY refresh is a separate command: `npm run check` must never be able to make
+# itself pass. Only `npm run gates:refresh` re-pins; it prints what moved and
+# refuses to write a pin for a file it cannot find.
+#
+# KNOWN LIMIT, stated rather than hidden: scripts/gates.mjs is the program that
+# reads this file, and it is deliberately NOT pinned here. A verifier cannot
+# check its own hash without writing it, and writing it changes the hash — so
+# listing itself would either fail forever or need an exemption, and an
+# exemption is exactly the hole this file exists to close. Its protection is
+# therefore Layer 2 alone: .github/CODEOWNERS names it explicitly. If you are
+# reading this to find the soft spot in the design, that file is it, and the
+# honest answer is that closing it needs branch protection, not another hash.
+#
+# FORMAT: <path> <40-hex git blob sha1>. Re-pinning is a reviewed act: write the
+# new hash here and say in the commit why the criterion it enforces did or did
+# not change. A pin with no stated reason is an obstacle to be routed around.
+
+# --- what "correct" means at the repo level ---
+# ────────────────────────────────────────────────────────────────────────────
+# HOW A CHANGE TO THIS SITE IS PROVED
+# ────────────────────────────────────────────────────────────────────────────
+#
+# A test cannot tell you a page looks wrong. Every gate in this repository can go
+# green while the page is unreadable, because "unreadable" is not a property any of
+# them can compute. This is the one rule that is not a gate, and it is the one that
+# catches what the gates cannot.
+#
+# 1. OPEN IT. A change to landing/ is finished when the page has been rendered in a
+#    real browser and looked at, not when the suite is green. Screenshot it. A
+#    change that was never opened has not been made.
+#
+# 2. NAME WHAT IS WRONG, BEFORE FIXING IT. Open the page and write down the defect
+#    with its measurement — "the hero sits 250px above the cards", "the nav wraps
+#    'Model Anda' across two lines at 1600px", "the container uses 61% of a
+#    1920px window". A defect you cannot state is one you will guess at, and
+#    guessing is how a page gets worse while feeling like progress.
+#
+# 3. COMPARE IT TO SOMETHING THAT IS ALREADY GOOD. Open the reference the work
+#    imitates and see what it does with the same problem. Take the principle, never
+#    the pixels.
+#
+#    THE BENCHMARK FOR THE DOWNLOAD TAB IS https://code.visualstudio.com/Download
+#    and it is the one that decides that tab, every time, until this line changes.
+#    Open it before touching landing/unduh*.html and hold it to these four:
+#      - IT GIVES THE MATCHING PLATFORM THE ONLY FILLED BUTTON. Windows, macOS and
+#        Linux each get one; the other builds live behind a closed "Select a
+#        download…" list. A card with two equal buttons has not learned this.
+#      - WHAT IS CLOSED IS CLOSED BY DEFAULT. The variants exist on the page and
+#        cost the reader nothing until they ask. Five closed lists are not noise
+#        because none of them is open on arrival.
+#      - THE PRIMARY IS THE FILE THAT WORKS ON AN UNMANAGED MACHINE. Here that is
+#        the .zip. The .crx is refused by a browser that is not policy-managed, so
+#        filling it would advertise the failing path as the likely one.
+#      - IT SAYS WHAT EACH BUILD IS FOR next to the button, not only in a table
+#        further down.
+#
+#    The benchmark for the rest of the site is https://cohere.com/:
+#      - its nav carries CATEGORIES (Products, Solutions, Resources, Research), and
+#        its hero carries the ACTION. The two are different jobs. When a nav item
+#        only repeats what the hero already says, the nav is the wrong place for it.
+#      - its page fills the window it is given, and its text keeps its own measure.
+#        A 980px column on a 1920px screen is a letterbox, not a design.
+#      - it states one claim per line and does not qualify it in the next breath.
+#
+#    One more, for the tab itself at a different scale:
+#    https://kilo.ai/ for a download page that names the visitor's own platform.
+#
+#    Copying a competitor's trade dress is infringement, and a page that looks
+#    copied reads as cheap. This repository already did the right version of this —
+#    Opera Agent has a passwordless magic link, which beats the password every
+#    competitor asks for, and it never copied the thing that beat it.
+#
+# 4. WASH THE STACK. Check the change against every layer, not only the file you
+#    edited. A class added to site.css lands on twelve pages, one of which styles
+#    itself. That is how `.hero { min-height: 72dvh }`, written for one marketing
+#    page, put a band of dead space on the download page — and no test noticed,
+#    because the suite was green throughout.
+#
+# 5. SAY SO EVEN WHEN IT IS YOUR FAULT. A defect introduced in the same session is
+#    the easiest to leave unmentioned, because fixing it is work. It is also the one
+#    the next reader is least likely to find, having trusted a green run. Name it
+#    in the summary, unprompted.
+scripts/check.mjs 2e404f887c522d9e4d96cb787d27f6e89d946e3f
+scripts/scope.mjs 1cdbb3cea233d46baff049b1c5ac94232da0adfd
+scripts/scope-check.mjs ad0d41318f62ca836c0dda44312a5dc64a205f6d
+
+# --- the pins themselves: editing these is how a drift goes unnoticed ---
+tests/helpers/boundary-locks.mjs 048877b13dc7630945abef70b03d0ad43fb6d8fe
+tests/helpers/comment-spacing.mjs d907a431d1c0c3fd15752bf4aceee18fd96b0a45
+tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
+
+# --- structural rules a human reviewer would otherwise have to remember ---
+tests/hygiene.test.mjs caaa073a2278172aa0a5a70d3ebdffb0e22d1424
+tests/structure-gates.test.mjs 28996c59166550f30ac9e609dc30a1e1fa73edd9
+tests/boundary-locks.test.mjs 1dfc5e345d328eddd50bc290e5db4e7747538538
+
+# --- controls that decide what the product accepts at runtime ---
+extension/lib/protocol.js 0bb86cd9e0b3ebc2c03f9b6a6e5c82912d6edb19
+lib/secret-pattern.js 8a7ad9fdde6457b2a26f17cad0c9582f92e55625
+supabase/functions/_shared/cors.js 3f9a605ba04562016eec3b361ed1d564d5109f00
+
+# --- surfaces an owner, not an agent, should have to look at ---
+extension/manifest.json a94f3abdd9642df293874a1ebe93f232549b729e
+.gitleaks.toml 6e284692a631f9a32b6787145835b9c9821449b0
+.github/CODEOWNERS 018189b06335b26f42cd4a072bc59383d7700250
+.github/workflows/ci.yml 55a443d1c500386903f6415f99af0be81950f245

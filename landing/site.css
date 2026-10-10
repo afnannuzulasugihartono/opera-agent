@@ -1,0 +1,149 @@
+/* site.css — dynamic width and height, shared by every page.
+ *
+ * WHY here and not in twelve pages: these rules are the site answering its own
+ * viewport, so they are the same rule everywhere. Per-page copies are how the
+ * ID|EN toggle ended up dead on three pages at once. i18n.js already proved this
+ * site loads a same-origin asset under this CSP, so this needs no new permission.
+ *
+ * Scope: width and height only. Colour, type and chrome stay in each page. */
+
+/* ── height ─────────────────────────────────────────────────────────────── */
+
+/* dvh, not vh: on a phone the browser's own chrome eats the viewport, and 100vh
+   is measured before that happens, so the footer lands below the fold. The vh
+   line is the fallback and comes first so dvh wins where both exist. */
+
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* WHY main grows and the chrome does not: a short page must still push its
+   footer to the bottom instead of floating it halfway down, and a tall page must
+   not stretch the footer down the whole document. */
+
+header, footer { flex: 0 0 auto; }
+
+main { flex: 1 0 auto; width: 100%; }
+
+/* The home indicator covers the bottom of a notched screen, and a footer pinned
+   under it is a footer nobody can tap. env() is 0 everywhere else. */
+
+footer {
+  padding-bottom: max(52px, calc(52px + env(safe-area-inset-bottom)));
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+}
+
+/* ── width ──────────────────────────────────────────────────────────────── */
+
+/* WHY this ceiling and not 980px: on a 1920px window a 980px column left ~470px
+   of dead space on each side and the page read as squished into a phone frame.
+   Text inside keeps its own ch measure (17ch headlines, 58ch body), so a wider
+   container costs readability nothing — it only stops the layout letterboxing. */
+
+.wrap,
+main > .wrap { width: min(100% - 48px, 1240px); margin-inline: auto; }
+
+@media (max-width: 380px) {
+  .wrap, main > .wrap { width: min(100% - 28px, 1240px); }
+}
+
+/* A full-bleed figure is unreadable at arm's length on a wide monitor, and an
+   unconstrained table is the most common cause of sideways scroll on a phone. */
+
+img, video, canvas, svg { max-width: 100%; height: auto; }
+
+pre, table { max-width: 100%; overflow-x: auto; }
+
+/* WHY break-word and not anywhere: `anywhere` breaks mid-word ("mengem / udikan")
+   AND feeds back into min-content sizing, so the container shrinks and wraps a
+   headline one word per line. break-word stops the overflow without touching
+   intrinsic width, which is the whole point of this rule. */
+
+h1, h2, h3, p, li, td, th, label, summary { overflow-wrap: break-word; }
+
+/* clamp() interpolates between a floor and a ceiling, so the middle term only
+   applies between them: no breakpoints, and it stops growing where growing
+   stops helping. */
+
+h1 { font-size: clamp(28px, 1.4rem + 1.4vw, 44px); line-height: 1.15; }
+
+h2 { font-size: clamp(21px, 1.1rem + .8vw, 30px); line-height: 1.25; }
+
+/* ── header, shared ────────────────────────────────────────────────────── */
+
+/* WHY the nav carries a button: every product page of this size ends its nav
+   with an action, and a reader who scrolled the whole page has no next step. A
+   star count was the obvious alternative and it would have been a lie — the
+   repository has zero stars, and printing "0" is worse than printing nothing. */
+
+nav .navCta {
+  padding: 6px 15px;
+  border-radius: 980px;
+  background: #3ecf8e;
+  color: #05231f;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+nav .navCta:hover { background: #1ac3b0; color: #05231f; }
+
+/* WHY nowrap on the items and not just on the row: flex defaults to nowrap on
+   the ROW, so when the items do not fit they shrink and their TEXT wraps instead
+   — "Model Anda" broke across two lines at 1600px. The row scrolls instead. */
+
+header nav a,
+header nav .brand { white-space: nowrap; flex: 0 0 auto; }
+
+/* ── height-responsive components ───────────────────────────────────────── */
+
+/* A container query, not a media query: the same component in a 960px sidebar
+   and a 380px column must behave differently at the same screen width. Pages
+   opt in by declaring container-type; until one does, nothing changes. */
+
+@container (max-width: 420px) {
+  .card, .panel { padding: 16px; }
+}
+
+/* A hero at exactly 100dvh lands its bottom edge under the browser chrome on a
+   phone, cutting the call to action in half. WHY it is opt-in: `.hero` alone is
+   also the class on pages that want a heading and one sentence, and a min-height
+   there pushed the text into a band of dead space. */
+
+.hero--full {
+  min-height: min(72dvh, 720px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── the device, which is also what "dynamic" means ─────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* A touch device reports :hover on the element under the finger and keeps it
+   there, so a hover-only affordance stays lit after a tap. */
+
+@media (hover: hover) and (pointer: fine) {
+  a, button { transition: color .2s ease, background-color .2s ease, border-color .2s ease; }
+}
+
+@media print {
+  header, footer, .no-print { display: none !important; }
+  body { background: #fff; color: #000; }
+}

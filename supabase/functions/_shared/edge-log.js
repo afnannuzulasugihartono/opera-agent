@@ -4,7 +4,6 @@
 // @dependencies: none.
 
 const MAX_LOG_MESSAGE = 1000;
-export { MAX_LOG_MESSAGE };
 export function createEdgeLog(context) {
   const commandId = context && typeof context.commandId === 'string' ? context.commandId : null;
   const requestId = context && typeof context.requestId === 'string' ? context.requestId : null;

@@ -504,9 +504,10 @@ test('every burst step kind accepts an optional per-step tabId', () => {
 // Phase C: make the AI-facing command path pay what it should.
 //
 // Four defects, all on the MCP surface, all in one commit with one digest
-// re-freeze. `tests/mcp-contract-v1.json` freezes the whole-file SHA256, and
-// `tests/fixtures/reactive-vm-contract-v1.json` folds that SHA into
-// `inventory.digest`, so this commit re-freezes both rather than weakening them.
+// re-freeze. `tests/fixtures/mcp-contract-v1.json` freezes the whole-file SHA256,
+// so this commit re-freezes it rather than weakening it. (A second fixture,
+// reactive-vm-contract-v1.json, folded that same SHA into an inventory digest; it
+// was superseded by reading sourceSha256 directly here and was removed.)
 //
 // 1. The MCP server waited on `opera_await`, whose flat 50ms sleep was the coarser of the two available waits, while the gateway already used `opera_await_adaptive`; the two share a signature and a response envelope including the same timing fields, so this is a latency swap with no contract change. page.capture still uses `opera_await_capture`, which scrubs the stored screenshot.
 // 2. `wait_events` declares a `timeoutMs` its handler never destructured, so the model could set it and nothing happened.

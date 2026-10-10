@@ -13,7 +13,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // nineteen analysed tasks it was touched eleven times, eight of them undeclared. Naming it
 // turns those eight false positives into a footnote instead of an accusation.
 
-export const DEFAULT_SIDE_EFFECTS = ['tests/helpers/boundary-locks.mjs'];
+// WHY no export: this script is a program, entered from the shell rather than
+// imported, so a symbol the guarded main below already calls by bare name has no
+// consumer to export to. The export promised an API no module, test or script uses.
+
+const DEFAULT_SIDE_EFFECTS = ['tests/helpers/boundary-locks.mjs'];
+
 
 const SECTION = /^\*\*(.+?):\*\*\s*$/;
 const BACKTICKS = /`([^`]+)`/g;
@@ -203,7 +208,9 @@ function locateGit() {
   return 'git';
 }
 
-export function changedFiles(root, base, head) {
+// WHY no export: called once by the guarded main below and imported by nothing.
+
+function changedFiles(root, base, head) {
   const out = execFileSync(locateGit(), ['diff', '--name-only', `${base}..${head}`], {
     cwd: root,
     encoding: 'utf8',
@@ -212,7 +219,9 @@ export function changedFiles(root, base, head) {
   return out.split(/\r?\n/).filter(Boolean);
 }
 
-export const STATUS_MARK = {
+// WHY no export: read only by the formatter below, like DEFAULT_SIDE_EFFECTS above.
+
+const STATUS_MARK = {
   declared: '✓',
   'side-effect': '~',
   undeclared: '✗',

@@ -5,6 +5,7 @@
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
 import { canonicalJson, digestCanonical } from "../../../lib/goal-ledger.js";
 import {
@@ -43,12 +44,25 @@ const DOCUMENT_SCOPED = new Set([
 ]);
 
 const headers = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Cache-Control": "no-store",
   "Content-Type": "application/json; charset=utf-8",
 };
+
+// WHY the wildcard is gone and the origin is decided per request: this const used
+// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
+// read a VM response. The allowlist is the one the gateway and this function's own
+// MCP caller already use. It costs the product nothing: the MCP function is the
+// only caller and it runs server-side, where no Origin is sent at all.
+
+function withCors(req: Request, res: Response): Response {
+  const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
+  const out = new Headers(res.headers);
+  if (origin === null) out.delete("Access-Control-Allow-Origin");
+  else out.set("Access-Control-Allow-Origin", origin);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out });
+}
 
 class HostError extends Error {
   code: string;
@@ -613,7 +627,7 @@ async function getResult(runId: string, tenantId: string) {
   return { ...safePublicRun(metadata), result };
 }
 
-Deno.serve(async (req: Request) => {
+async function handle(req: Request) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   if (req.method !== "POST") return response({ ok: false, error: { code: "METHOD_NOT_ALLOWED" } }, 405);
   const user = await authenticatedUser(req);
@@ -641,4 +655,6 @@ Deno.serve(async (req: Request) => {
     console.error("opera-agent-vm", code);
     return response({ ok: false, error: { code } }, status);
   }
-});
+}
+
+Deno.serve((req: Request) => handle(req).then((res) => withCors(req, res)));

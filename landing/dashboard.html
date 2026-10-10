@@ -11,6 +11,7 @@
   <meta name="theme-color" content="#0b0d10" />
   <title>Dashboard — Opera Agent</title>
   <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
+  <link rel="stylesheet" href="/site.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -91,7 +92,7 @@
     /* WHY the header row scrolls on a phone: the rail already does, but this is
        the site nav, and seven items never fit 390px without stacking the brand
        into two ragged lines. Scoped to header nav so the rail keeps its own. */
-    @media (max-width: 640px) {
+    @media (max-width: 800px) {
       header nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
         -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
@@ -534,7 +535,6 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./beranda.html#install">Instalasi</a>
         <a href="./unduh.html">Unduh</a>
         <a href="./beranda.html#model">Model Anda</a>
         <a href="./akun.html">Akun</a>
@@ -542,7 +542,7 @@
         <a href="./privasi.html">Privasi</a>
         <a href="./fitur.html">Fitur</a>
         <a href="./dukungan.html">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span><a class="navCta" href="./index.html">Masuk</a>
       </nav>
     </div>
   </header>

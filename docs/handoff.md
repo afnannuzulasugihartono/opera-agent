@@ -10,169 +10,141 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 ## State
 
-- `main` = `origin/main`, sole remote branch, every merge `--ff-only`.
-- Version `1.6.22` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth.
-- Gates: `npm test`, `npm run check` — 28 primitives, 156 runtime safety files, 791 unit tests, green.
-- **The SonarCloud Quality Gate is green.** Its binding condition is new-code duplication ≤3%
-  (it closed the worker split at 2.9798%); the only PR that ever failed (#56) failed on a
-  table without `<th>`, now fixed. The sixteen open reliability issues are triaged: two real
-  floating promises fixed, the rest Oracle-semantics false positives on Postgres, schema-bound
-  `then` keys, test fixtures and test sorts where byte order is the point. `CircleCI Pipeline`
-  was a repo webhook to a configless project — deleted 2026-10-10, zero hooks remain.
-- Production: 68 `opera_*` functions, 10 edge functions, each with a repo counterpart. Account RPCs
-  are live and reachable by name.
+- `main` = `origin/main`, and it is the sole remote branch again. Nine stale branches were
+  removed on 2026-10-10 after each was measured: `main` was 1 to 277 commits ahead of every
+  one, and none held a file `main` lacks. Every merge `--ff-only`.
+- Version `1.6.22` in [`extension/manifest.json`](../extension/manifest.json) is the source
+  of truth. [`check.mjs`](../scripts/check.mjs) also asserts the version the MCP server
+  reports, the store form's four-part version, and that no module redeclares the secret regex.
+- Gates: `npm test`, `npm run check` — 28 primitives, 158 runtime safety files, 795 unit
+  tests, green.
+- Production, measured against the live database rather than the tree: 73 `opera_*`
+  functions (62 `SECURITY DEFINER`), 17 `opera_*` tables, 10 deployed edge functions.
 - **The CRX is published.** The update endpoint offers `1.6.22` to extension id
-  `ofgemipoobcnbjkfanmofjbdonjapmgl`, which is both the manifest key's id and the signature's id.
-  `1.6.21` and `1.6.17` under that id are inactive; `1.6.14` under the old id `ohbbpamc…` stays
-  active so installs that never updated keep working. `opera_releases` allows one active row per id.
+  `ofgemipoobcnbjkfanmofjbdonjapmgl`, which is both the manifest key's id and the
+  signature's id. `1.6.21` and `1.6.17` under that id are inactive; `1.6.14` under the old
+  id `ohbbpamc…` stays active. `opera_releases` allows one active row per id.
 - **Live audio is end to end.** Element-tap capture (no new permission) → Groq Whisper
   `verbose_json` → segments in `opera_listen_segments`, audio deleted after use. MCP has
   `media_stream_start/stop` + `media_listen_read` (39 tools); the dashboard shows session
-  metadata only, never speech text. Full session proven in the headed harness.
-- No management token or secret key in the tree. The four signed-in and consent pages carry the
-  Supabase publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
-- `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching` — so the model can tell
-  whether the person is looking at the tab before choosing foreground or background. Fails open.
-- **The plan path exists; the model call does not.** The model composes a plan once, the device
-  executes it locally, so a task costs one round trip instead of one per step.
-  [`lib/goal-plan.js`](../lib/goal-plan.js) is the gate between model text and that execution, and
-  it shares the allowlist so the two cannot drift.
-- The blank-line comment rule is a lock, not a habit:
-  [`tests/helpers/comment-spacing.mjs`](../tests/helpers/comment-spacing.mjs) classifies each line
-  per dialect and [`tests/hygiene.test.mjs`](../tests/hygiene.test.mjs) asserts the gap.
-- Provider+model pickers shipped on web + extension (NVIDIA duo live-verified, Groq trio from official docs, local + custom free-text, key always user-supplied).
-- Official site may push model config (strict origin match, localhost kept for dev); live on reload/update, not installed 1.6.20 CRX.
+  metadata only, never speech text.
+- No management token or secret key in the tree. The four signed-in and consent pages carry
+  the Supabase publishable key, which is public by design and allowlisted in
+  `.gitleaks.toml`.
+- `page.read` reports `userState` — `tabActive`, `windowFocused`, `watching`,
+  `lastInputMs` — so the model can tell whether the person is looking at the tab before
+  choosing foreground or background. Fails open.
+- **The plan path exists; the model call does not.** The model composes a plan once, the
+  device executes it locally, so a task costs one round trip instead of one per step.
+  [`lib/goal-plan.js`](../lib/goal-plan.js) is the gate between model text and that
+  execution, and it shares the allowlist so the two cannot drift.
+- **One CORS policy, not two.** Six edge functions answered
+  `Access-Control-Allow-Origin: "*"` while three used the shared allowlist. All ten resolve
+  per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js), and
+  [`edge-cors.test.mjs`](../tests/edge-cors.test.mjs) drives a real request to prove it.
+- **One credential-shape check, not nine.** Nine modules each carried their own copy of the
+  secret regex. They now import [`lib/secret-pattern.js`](../lib/secret-pattern.js), and
+  `check` fails if any module declares it again.
 
 ## Measured, not assumed
 
-- **A publish step must fail loudly.** The CRX base64 exceeds 131,072 bytes, the Linux limit for one
-  argument or environment string, so `node` died with "Argument list too long" inside a command
-  substitution where `errexit` is off. curl then had no body, and the run went green having published
-  nothing. [`.github/workflows/publish-crx.yml`](../.github/workflows/publish-crx.yml) now builds the
-  statement in files, deactivates this id's older row before the insert, and fails unless the status
-  is 2xx.
-- CI pins `ubuntu-24.04` and the node24 majors; the harness reads the version from the manifest.
-- The account and device pages are separate files, and the provider identity is read from
-  `app_metadata.providers` rather than `provider`. Both locked where the reason is.
-- `Intl.RelativeTimeFormat` takes CLDR unit identifiers, not localised names. Passing "menit" threw
-  inside the loop that builds the device cards, so the dashboard showed "1 device ter-pairing" above
-  an empty list. Locked by [`tests/landing-execution.test.mjs`](../tests/landing-execution.test.mjs).
-- A Supabase access token lasts about an hour and the site holds no SDK to renew it, so an aged token
-  read as signed out and was deleted. All four signed-in pages now store the refresh token and renew
-  it, and forget both halves only when renewal is also refused.
-- The MCP OAuth client is registered dynamically by OpenCode on a localhost port. Deleting the client
-  row makes it worse: GoTrue answers `oauth_client_not_found`. Restoring it by hand needs a non-null
-  `client_secret_hash`. Redirect URIs are a comma-separated list with no wildcards.
-  `OPERA_AGENT_MCP_TOKEN` is configured on the edge function, and using it as a bearer header removes
-  the dance.
-- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so the
-  function admits the static token or a named account and nobody else. An OAuth token that GoTrue
-  accepts with 200 still got 401 here because the deployed function (v40, 2026-10-02) rejects every
-  non-static token when the allowlist is empty. `OPERA_AGENT_MCP_USER_IDS` now names the owner;
-  the repo once carried a rule admitting any confirmed account, undeployed, and a test now bars it.
-- **A device name belongs to the account that paired it.** Pairing overwrote the token
-  but kept the owner, so a valid code for an owned name hijacked it. Fixed and proved
-  with two accounts in rolled-back transactions (5 of 10 failed before, all pass after).
-- **Advertised media capabilities are invocable tools.** `browser_status` reported
-  `media.play/pause/seek/state` that no caller could invoke; measured live from ChatGPT.
-  The four tools now exist (26 total); the keep-media-internal decision is superseded.
-- Account isolation has two measured layers: `authenticated` holds no table grant, only EXECUTE on the
-  RPCs, and RLS filters by ownership for the day a grant appears. A foreign account read zero devices
-  and was refused a revoke; anon got 401 on all four.
-- Two live-endpoint defects, both locked in
-  [`tests/landing-dashboard.test.mjs`](../tests/landing-dashboard.test.mjs): a fresh GRANT lands on
-  PUBLIC so anon could call every RPC, and two overloads of the pairing issuer made PostgREST answer
-  PGRST203.
-- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup host**, because
-  Vercel's budget was exhausted. `SITE_ORIGIN` in
-  [`extension/lib/endpoints.js`](../extension/lib/endpoints.js), `site_url` in
-  [`supabase/config.toml`](../supabase/config.toml) and the production GoTrue `site_url` all name the
-  Cloudflare host. `vercel.app` stays in the CORS allowlist
-  ([`supabase/functions/_shared/cors.js`](../supabase/functions/_shared/cors.js)) and the redirect
-  list. The site hosts no binary; the archive and the CRX are served from the update endpoint.
-- **A deploy is a dispatch, not a push.**
-  [`.github/workflows/deploy-site.yml`](../.github/workflows/deploy-site.yml) publishes `landing/`
-  with `wrangler pages deploy` after the unit and syntax gates. A push that does not deploy fails
-  silently: CI is green and production keeps the previous build, so check the live content. The Vercel
-  **CLI cannot deploy** this project, because Root Directory is `landing` and it resolves
-  `landing/landing` and refuses.
-- **Releases fire on a `v*` tag, and only that.** `release.yml` verifies the CRX and publishes.
-- `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every path
-  enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
+- **A publish step must fail loudly.** The CRX base64 exceeds 131,072 bytes, the Linux limit
+  for one argument, so `node` died with "Argument list too long" inside a command
+  substitution where `errexit` is off; curl then had no body and the run went green having
+  published nothing. [`publish-crx.yml`](../.github/workflows/publish-crx.yml) builds the
+  statement in files and fails unless the status is 2xx.
+- **Every edge function answers CORS per request.** A module-level answer cannot be right for
+  two in-flight requests, and threading an origin through 17 call sites is worse than one
+  wrapper at the serve boundary.
+- **An account signed in with Google reports provider "email"** if a magic link created the
+  row first. The account page renders the real shape; the card's own logic is executed
+  against measured payloads.
+- `Intl.RelativeTimeFormat` takes CLDR unit identifiers, not localised names. Passing
+  "menit" threw inside the loop that builds the device cards, so the dashboard showed
+  "1 device ter-pairing" above an empty list. Locked by
+  [`landing-execution.test.mjs`](../tests/landing-execution.test.mjs).
+- A Supabase access token lasts about an hour and the site holds no SDK to renew it, so an
+  aged token read as signed out and was deleted. All four signed-in pages store the refresh
+  token and renew it.
+- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so
+  the function admits the static token or a named account and nobody else.
+  `OPERA_AGENT_MCP_USER_IDS` names the owner; a rule admitting any confirmed account once
+  sat undeployed in the repo, and a test now bars it.
+- **A device name belongs to the account that paired it.** Pairing overwrote the token but
+  kept the owner, so a valid code for an owned name hijacked it. Proved with two accounts
+  in rolled-back transactions.
+- Account isolation has two layers: `authenticated` holds no table grant, only EXECUTE on
+  the RPCs, and RLS filters by ownership for the day a grant appears. A foreign account read
+  zero devices and was refused a revoke; anon got 401 on all four.
+- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**,
+  because Vercel's budget was exhausted. `SITE_ORIGIN` in
+  [`endpoints.js`](../extension/lib/endpoints.js), `site_url` in
+  [`config.toml`](../supabase/config.toml) and the production GoTrue `site_url` all name the
+  Cloudflare host. `vercel.app` stays in the CORS allowlist and the redirect list.
+- **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
+  publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates. A push
+  that does not deploy fails silently: CI is green and production keeps the previous build,
+  so check the live content. The Vercel **CLI cannot deploy** this project: Root Directory is
+  `landing`, so it resolves `landing/landing` and refuses.
+- `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every
+  path enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named
-  `script-src` in place of `unsafe-inline`.
+  `script-src` in place of `unsafe-inline`. Change a page's inline script and re-hash both
+  files or the page goes silent.
 
 ## Still open
 
-1. **The Cloudflare API token pasted into a chat is still live** and carries `Account API Tokens Write`. The owner has chosen to leave it for now.
-2. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page,
-   the code exchanges for a one-hour token, GoTrue `/user` answers 200, and a tool call
-   through it (`browser_status`) completes. Unverified: sign-in by Google.
-3. **MCP resolves one device per account and stamps the harness provider.** `X-Opera-Device`
-   picks among the caller's devices, `X-Opera-Provider` (else User-Agent: opencode, kilo,
-   chatgpt, …) lands on each command and run, and the dashboard shows device / browser /
-   provider per row. Verified live with stamped `browser.ping` calls. The gateway accepts
-   a user JWT too (ChatGPT plugin bundle in `landing/chatgpt-plugin/`) and resolves the
-   same way. A real second account still wants its own test before opening access.
+1. **The Cloudflare API token pasted into a chat is still live** and carries
+   `Account API Tokens Write`. The owner has chosen to leave it for now.
+2. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
+   code exchanges for a one-hour token, and a tool call completes. Unverified: sign-in by
+   Google.
+3. **MCP resolves one device per account and stamps the harness provider.**
+   `X-Opera-Device` picks among the caller's devices, `X-Opera-Provider` lands on each
+   command and run. A real second account still wants its own test before opening access.
 4. **English toggle + login gate shipped.** Shared `landing/i18n.js` drives EN/ID everywhere
-   except legal bodies; Facebook-split login/register gate is live, magic-link-only. Policy
-   installer stays deleted: Chrome marks off-store policy `[BLOCKED]` on unmanaged machines.
-5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands is the
-   device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms); conservative ladder in place
-   (migration `20261007000000_opera_agent_claim_wait_fast_tail`). Lower only after fleet impact.
+   except legal bodies. Policy installer stays deleted: Chrome marks off-store policy
+   `[BLOCKED]` on unmanaged machines.
+5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands is
+   the device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms). Lower only after
+   fleet impact.
 6. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
-    delete; lease plus sweeper bound every row; consequential actions need recorded confirmation;
-    no new executor or primitive. The compiler stays device-local, one call per task over the owner
-    endpoint, key never leaves ([`security.md`](security.md)); the options probe validates endpoint
-    plus key with zero page content.
-7. Publishable-key rotation still needs owner action. SonarCloud needs none: measures and the
-   issue list are readable from its public API without a token. Edge deploy runs via the
-   logged-in CLI; 10 functions plus 20 migrations are live.
+   delete; lease plus sweeper bound every row. The compiler stays device-local and the key
+   never leaves ([`security.md`](security.md)).
+7. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
 8. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with total-stop
-   CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); novel patterns go to the operator loop,
-   3x recurrence becomes a named-workflow candidate.
-9. **Console-style dashboard shipped, and on 2026-10-10 it grew a table editor.** Sidebar plus tabs,
-   command-history table from existing device data with no new RPC. The `#tabel` section reads all
-   sixteen tables through SECURITY DEFINER `opera_konsol_*` readers: zero table grants (layer one
-   intact), sixteen policies rebuilt from one scope map with the qual text drift-locked string for
-   string by [`tests/konsol-tables.test.mjs`](../tests/konsol-tables.test.mjs), masks and clamps
-   server-side, and an `opera_operator` flag (RLS on, grants revoked, seeded from the earliest paired
-   device) gates the seven ownerless tables. Migration `20261010090000` is applied; read-only by
-   decision — a write side would be the next move, not this one. Tidied the same day against
-   Studio's own table patterns (zebra, selected-row tint, catalog-typed right-aligned figures,
-   relative clocks over ISO, footer of totals, scope-grouped sidebar); the pass found the ID|EN
-   toggle dead on akun, dashboard and oauth/consent — markup without `i18n.js` — and fixed all three.
-10. **The CRX shipped at 1.6.22** on 2026-10-10. The bump moved every frozen surface as one piece:
-    three version copies asserted by [`scripts/check.mjs`](../scripts/check.mjs), the four-part
-    store form, seven tests carrying the release number, and
-    [`tests/helpers/boundary-locks.mjs`](../tests/helpers/boundary-locks.mjs) re-pinning the
-    manifest on the version line only (`a94f3abd…`, git-blob SHA1 over LF bytes; the id is
-    stable). `publish-crx.yml` signed and inserted the row, the endpoint answers `1.6.22`, and
-    `release.yml` verified the served CRX against the manifest key before publishing
-    [`docs/releases/1.6.22.md`](releases/1.6.22.md) as the GitHub release with four assets
-    (extension zip, source zip, signed CRX, SHA256SUMS).
-11. **The update endpoint answers in a nested query string.** `?x=` is not the id — Chromium sends
-    `?x=id%3D<id>%26v%3D<version>`, and `requestedExtensionId` decodes it. Asking bare returns
-    `LEGACY_EXTENSION_ID` at 1.0.1, which reads as a broken endpoint and is not one. The id to
-    ask with is `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`, answered with 1.6.22.
+   CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); 3x recurrence becomes a
+   named-workflow candidate.
+9. **Console-style dashboard shipped with a read-only table editor.** The `#tabel` section
+   reads sixteen tables through `SECURITY DEFINER` `opera_konsol_*` readers: zero table
+   grants, sixteen policies rebuilt from one scope map and drift-locked string for string.
+   Read-only by decision — a write side is the next move.
+10. **The CRX shipped at 1.6.22.** The bump moved every frozen surface as one piece; six
+    tests and one helper carry the release number, and
+    [`boundary-locks.mjs`](../tests/helpers/boundary-locks.mjs) re-pins the manifest on the
+    version line only.
+11. **The update endpoint answers in a nested query string.** `?x=` is not the id — Chromium
+    sends `?x=id%3D<id>%26v%3D<version>`. Ask with `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
+12. **`opera_v2_releases` was live but unwritten.** The table existed in production with no
+    migration creating it, so the tree could not rebuild what it described and
+    `20261010090000` would stop on a missing relation. Stated now in
+    `20261010080000`, timestamped before it for that reason.
 
 ## CI
 
-- Three gates on `ubuntu-24.04`: unit, secret-scan, browser (headed under `xvfb-run`).
+- Three gates on `ubuntu-24.04`, Node pinned to `22.20.0`: unit, secret-scan, browser
+  (headed under `xvfb-run`).
 - [`.gitleaks.toml`](../.gitleaks.toml) names paths and symbols that must exist. Re-point the
   allowlist when a file is renamed; never edit the fixture to dodge the scanner.
 - The concurrency group cancels an in-flight run when a newer one queues, so push, then wait.
 - gitleaks 8.24.0 runs locally and is the gate worth reproducing before a push.
-- `publish-crx.yml` may sit `queued` for many minutes with no job started. Cancelling and re-dispatching clears it.
 
 ## Blocked, needs the owner at the machine
 
 - Use `py`, not `python`, which hits the Microsoft Store shim. `py` is 3.13 with playwright.
-- The per-machine Python install is broken on this machine: its `dev_AllUsers` MSI crashes during
-  file costing in both scopes. Repairing it is OS-level. Nothing in the repo depends on it.
 
 ## Do not touch
 
-- `stash@{0}` — a paused pre-cutover state under an old milestone name. Do not pop, apply, delete,
-  or build from it.
+- `stash@{0}` — a paused pre-cutover state under an old milestone name. Do not pop, apply,
+  delete, or build from it.
 - `archive/*` tags are historical; never rewrite them.

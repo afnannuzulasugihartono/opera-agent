@@ -6,6 +6,7 @@
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -14,11 +15,31 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 });
 
 const cors = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Cache-Control": "no-store"
 };
+
+// WHY the wildcard is gone and the origin is decided per request: this const used
+// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
+// read a bridge response. The allowlist is the same one the gateway and the MCP
+// function already use, and it still covers both extension ids and both site
+// origins, so the extension and the site are unaffected -- a service worker
+// request carries host_permissions and ignores CORS entirely.
+//
+// WHY it is applied once at the edge instead of threaded through every json():
+// the route helpers below are module-level and never see the request, so passing
+// the origin down would have meant editing 17 call sites for no added safety. A
+// wrapper keeps the decision in exactly one place and keeps it per-request, so
+// two in-flight requests can never share an answer.
+
+function withCors(req: Request, res: Response): Response {
+  const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
+  const headers = new Headers(res.headers);
+  if (origin === null) headers.delete("Access-Control-Allow-Origin");
+  else headers.set("Access-Control-Allow-Origin", origin);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
 const MAX_BODY = 1024 * 1024;
 
@@ -200,7 +221,7 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
   return new TextDecoder().decode(out);
 }
 
-Deno.serve(async (req: Request) => {
+async function handle(req: Request) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required." }, 405);
   const length = Number(req.headers.get("content-length") || 0);
@@ -232,4 +253,6 @@ Deno.serve(async (req: Request) => {
     createEdgeLog({}).error("opera-agent-bridge error", message);
     return json({ ok: false, error: "Bridge request failed." }, 500);
   }
-});
+}
+
+Deno.serve((req: Request) => handle(req).then((res) => withCors(req, res)));

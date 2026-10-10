@@ -19,10 +19,11 @@ A private, local-browser control bridge.
 
 ## Boundary
 
-- [`AGENTS.md`](AGENTS.md) holds instructions: rules, guidelines, requirements, triggers,
-  and the map of which document answers which question.
-- `[README.md](README.md)` holds the explanation: what this is, what each directory does, how to run it.
-- A rule that changes what you may do lives in `[AGENTS.md](AGENTS.md)` and nowhere else.
+- [`AGENTS.md`](AGENTS.md) holds instructions: the rules, guidelines and requirements that
+  bind every task, and the map of which document answers which question.
+- [`README.md`](README.md) holds the explanation: what this is, what each directory does, how
+  to run it, and that same map.
+- A rule that changes what you may do lives in [`AGENTS.md`](AGENTS.md) and nowhere else.
 
 ## Contract
 
@@ -30,7 +31,7 @@ A private, local-browser control bridge.
 | --- | --- |
 | Protocol | `1` |
 | Browser primitives | **28** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) plus device-local `watch.*`/`loop.*` async methods |
-| MCP surface | **32** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
+| MCP surface | **39** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
 | Distribution | Signed CRX3 self-updates from the update service |
 
 ## Layout
@@ -39,9 +40,10 @@ A private, local-browser control bridge.
 |---|---|
 | `extension/` | MV3 runtime — background worker, content scripts, popup, options |
 | `lib/` | Shared pure modules the server and extension both read |
-| `supabase/functions/` | Deno edge: MCP server, bridge, gateway, runner, VM |
+| `supabase/functions/` | Deno edge: auth, bridge, gateway, ledger, listen, MCP, runner, update, VM (10 deployed) plus `_shared/` |
 | `supabase/migrations/` | SQL in timestamp order, never rewritten |
-| `tests/` | Fast suite is `npm test`; `cloud`, `postgres`, `deno` are live-only |
+| `tests/` | Fast suite is `npm test`; `cloud` and `postgres` are live-only |
+| `store/` | Generated Chrome Web Store form: `scripts/build-store-package.py` writes the manifest and the zip from `extension/` |
 
 ## Commands
 
@@ -58,5 +60,22 @@ Local green is not acceptance. The acceptance rule is in [`AGENTS.md`](AGENTS.md
 
 ## Which document answers what
 
-[`AGENTS.md`](AGENTS.md) holds the map. Spent detail is recoverable from git history;
-there is no archive file.
+| Question | Answer |
+| --- | --- |
+| What are the rules that bind every task? | [`AGENTS.md`](AGENTS.md) |
+| What is true right now, and what is next? | [`docs/handoff.md`](docs/handoff.md) |
+| What may I do with a credential, and where is the boundary? | [`docs/security.md`](docs/security.md) |
+| What primitives may the extension expose, and over what wire? | [`docs/api.md`](docs/api.md) |
+| What happens on a site nobody has a workflow for? | [`docs/unknown-site.md`](docs/unknown-site.md) |
+| How does this repo resist slop and silent drift? | [`docs/anti-drift.md`](docs/anti-drift.md) |
+| What did a release contain, and why? | [`docs/releases/`](docs/releases/) |
+| What design references informed this? | [`docs/design-references.md`](docs/design-references.md) |
+| What is the product aiming at? | [`docs/uec-north-star.md`](docs/uec-north-star.md) |
+
+A design spec under [`docs/superpowers/specs/`](docs/superpowers/specs/) records why a
+subsystem is shaped the way it is, and several of its rules are still enforced by
+`tests/structure-gates.test.mjs`. The implementation plans that used to sit beside them
+were execution checklists for work that has since shipped; they are deleted, and `git log`
+holds them.
+
+Spent detail is recoverable from git history; there is no archive file.

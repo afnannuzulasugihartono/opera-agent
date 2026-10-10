@@ -11,6 +11,7 @@
   <meta name="theme-color" content="#0b0d10" />
   <title>Opera Agent</title>
   <meta name="description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
+  <link rel="stylesheet" href="/site.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -75,10 +76,13 @@
 
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls: seven items never fit 390px, and wrapping them stacks
-       the brand into two ragged lines. A scrolling row keeps every item on one
-       line and the brand intact. */
-    @media (max-width: 640px) {
+    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
+   748px together, and the container is the viewport minus 48, so the row stops
+   fitting at 796px. The band used to read 640px, which left every window between
+   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
+   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
+   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
         -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
@@ -97,6 +101,10 @@
     }
 
     .hero p { margin: 0 0 26px; color: var(--muted); font-size: 19px; line-height: 1.55; max-width: 58ch; }
+
+    /* WHY one phrase in the accent: a headline set entirely in one colour has
+       nowhere for the eye to land, and the reader skims the last clause anyway. */
+    .accent { color: var(--accent); }
 
     /* WHY the eyebrow: a company hero answers "is this alive" before the headline
        is read. No version rides here — a named build goes stale, so this states
@@ -286,7 +294,6 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="./beranda.html" aria-current="page">Opera Agent</a>
-        <a href="./beranda.html#install" data-i18n="nav.install">Instalasi</a>
         <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
         <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
         <a href="./akun.html" data-i18n="nav.account">Akun</a>
@@ -294,29 +301,24 @@
         <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
         <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>
+        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
-    <section class="hero">
+    <section class="hero hero--full">
       <div class="heroGrid">
         <div>
-          <p class="eyebrow" id="heroEyebrow" data-i18n="hero.eyebrow">Daftar terbuka · Gratis dipakai</p>
-          <h1 data-i18n="hero.title">Asisten Anda mengemudikan browser Anda.</h1>
+          <p class="eyebrow" id="heroEyebrow" data-i18n="hero.eyebrow">Daftar terbuka</p>
+          <h1 data-i18n-html="hero.title">Asisten Anda mengemudikan <span class="accent">browser Anda.</span></h1>
           <p data-i18n="hero.lede">
-            Opera Agent memberi asisten AI yang sudah Anda pakai sebuah jembatan terkendali ke
-            browser Anda sendiri — tanpa eksekusi skrip sembarangan; asisten Anda menyuruhnya,
-            dan Anda mengawasinya. Terutama Google Sheets/Excel, Docs, Maps, dan YouTube;
-            yang lain ikut diajarkan.
+            Asisten AI yang sudah Anda pakai mendapat jembatan terkendali ke browser Anda
+            sendiri — tanpa eksekusi skrip sembarangan. Sheets, Docs, Maps, YouTube;
+            sisanya ikut diajarkan.
           </p>
-          <p data-i18n-html="hero.proof">39 tool, 28 primitive, dan <strong>lima izin</strong> yang
-        dijelaskan satu per satu di <a href="./unduh.html">halaman unduh</a>. Round tripnya
-        pendek, karena semua aksi tidak perlu keluar dari primitif server yang sudah ada.</p>
           <div class="row" id="ctaOut">
-            <a class="btn primary" href="#install" data-i18n="cta.install">Instalasi</a>
-            <a class="btn" href="./unduh.html" data-i18n="cta.download">Unduh</a>
+            <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Unduh</a>
             <a class="btn" href="#model" data-i18n="cta.model">Sambungkan model</a>
           </div>
           <p class="footnote" data-i18n="hero.note">Gratis dipakai. Model ditagih penyedia Anda.</p>
@@ -460,17 +462,16 @@
 
   <script type="application/json" id="i18n-dict">
   {"en": {
-    "nav.install": "Install",
     "nav.download": "Download",
     "nav.model": "Your model",
+    "nav.signin": "Sign in",
     "nav.account": "Account",
     "nav.privacy": "Privacy",
     "nav.features": "Features",
     "nav.support": "Support",
-    "hero.eyebrow": "Open signup · Free to use",
-    "hero.title": "Your assistant drives your browser.",
-    "hero.lede": "Opera Agent gives the AI assistant you already use a controlled bridge into your own browser — no reckless script execution; your assistant commands it, and you supervise it. Google Sheets/Excel, Docs, Maps, and YouTube first; the rest are taught as they come.",
-    "cta.install": "Install",
+    "hero.eyebrow": "Open signup",
+    "hero.title": "Your assistant drives <span class=\"accent\">your browser.</span>",
+    "hero.lede": "The AI assistant you already use gets a controlled bridge into your own browser — no reckless script execution. Sheets, Docs, Maps, YouTube; the rest are taught as they come.",
     "cta.download": "Download",
     "cta.model": "Connect your model",
     "hero.note": "Free to use. Your provider bills the model.",
@@ -521,7 +522,6 @@
     "faq.offline.dd": "A local model on this machine works without internet. The command relay needs a connection, because your assistant lives in the cloud.",
     "faq.stop.dt": "Quitting",
     "faq.stop.dd": "The sign-out button forgets the session in this browser. Revoke the pairing to stop a device. Queue history is kept while the account exists, per the privacy policy.",
-    "hero.proof": "39 tools, 28 primitives, and <strong>five permissions</strong> explained one by one on the <a href=\"./unduh.html\">download page</a>. Round trips stay short, because every action runs on the existing server primitives.",
     "hero.stat.tools": "MCP tools",
     "hero.stat.prims": "browser primitives",
     "hero.stat.perms": "permissions, each explained",

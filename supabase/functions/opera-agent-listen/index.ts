@@ -5,6 +5,7 @@
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -14,11 +15,25 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 });
 
 const cors = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Cache-Control": "no-store"
 };
+
+// WHY the wildcard is gone and the origin is decided per request: this const used
+// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
+// read a listen response. The allowlist is the one the gateway and the MCP
+// function already use, and it still covers both extension ids and both site
+// origins. Applied once here rather than threaded through every json(), so the
+// decision stays in one place and stays per-request.
+
+function withCors(req: Request, res: Response): Response {
+  const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
+  const headers = new Headers(res.headers);
+  if (origin === null) headers.delete("Access-Control-Allow-Origin");
+  else headers.set("Access-Control-Allow-Origin", origin);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
 // WHY these bounds: a 10-second opus window is under 200KB; 1MB caps a runaway
 // client without touching any real window. Sessions end themselves at 30 minutes
@@ -151,7 +166,7 @@ async function transcribeDue(session: { id: string; device_id: string; window_se
   return segments.length;
 }
 
-Deno.serve(async (req: Request) => {
+async function handle(req: Request) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "Use POST." }, 405);
   let body: Record<string, unknown>;
@@ -254,4 +269,6 @@ Deno.serve(async (req: Request) => {
     createEdgeLog({}).error("opera-agent-listen", error instanceof Error ? error.message.slice(0, 500) : String(error));
     return json({ ok: false, error: "Internal server error." }, 500);
   }
-});
+}
+
+Deno.serve((req: Request) => handle(req).then((res) => withCors(req, res)));

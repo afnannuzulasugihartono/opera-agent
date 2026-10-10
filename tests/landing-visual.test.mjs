@@ -93,14 +93,52 @@ test('the phone nav hints that it scrolls instead of clipping mid-word', () => {
   }
 });
 
+test('the hero carries exactly one filled action, and it is the download', () => {
+  // WHY this lock exists: the filled hero button used to be "Instalasi", pointing at
+  // #install, which duplicated the "Unduh" button one line below. The duplicate was
+  // cut — correctly — and the cut took the fill with it, because "Unduh" was a ghost
+  // button. The hero was left with two ghost actions and no filled one, and the whole
+  // suite stayed green, because nothing had ever asserted that a hero HAS a filled
+  // action. A screenshot caught it; a measurement should have.
+  //
+  // Cohere's rule in gates.lock: the hero carries THE action, and it is the filled
+  // one. So the claim is pinned — exactly one filled action in the hero, and it opens
+  // the download.
+  const hero = read('beranda.html').match(/<section class="hero[^"]*">[\s\S]*?<\/section>/)[0];
+
+  // WHY the row and not the hero: the hero carries BOTH cta rows — #ctaOut for a
+  // stranger and #ctaIn for a signed-in reader — and only one of them is ever
+  // shown. Scoping the count to the hero would read the hidden member row as a
+  // second filled action and fail on correct markup. The claim is per row: each
+  // row offers one filled action, because a row of two equal ghosts is not an
+  // action at all.
+
+  const row = (id) => new RegExp(`<div class="row" id="${id}"[^>]*>([\\s\\S]*?)</div>`).exec(hero)[1];
+  const filledIn = (id) => [...row(id).matchAll(/<a\b[^>]*class="btn primary"[^>]*href="([^"]*)"/g)].map((m) => m[1]);
+  assert.deepEqual(filledIn('ctaOut'), ['./unduh.html'], 'a stranger is offered exactly one filled action, the download');
+  assert.deepEqual(filledIn('ctaIn'), ['./dashboard.html'], 'a member is offered exactly one filled action, the dashboard');
+});
+
 test('the hero states each number once', () => {
   // WHY this lock: the paragraph said "26 aksi yang diizinkan" and the next line
   // said "26 primitive" — the same number for two nouns, so neither meant
   // anything. Prose stays qualitative; numbers live in the stats row alone.
-  const hero = read('beranda.html').match(/<section class="hero">[\s\S]*?<\/section>/)[0];
-  assert.doesNotMatch(hero, /26 aksi/, 'no second 26 with another noun');
+  // WHY it is now an absence lock and not a presence lock: the hero carried a
+  // 31-word paragraph restating 39, 28 and five, directly above the stats row that
+  // prints all three. Pinning "the count lives in one line" would have kept both
+  // copies alive forever. The stronger claim is that the hero's PROSE names no count
+  // at all — the stats row is then the only place the hero prints a number, and the
+  // sibling lock below proves those numbers equal the source.
+  // WHY the open class: the marketing hero carries a second, opt-in class for the
+  // full-height treatment in site.css, and this lock is about what the hero SAYS —
+  // the numbers appear once — not about the class list that styles it.
+  const hero = read('beranda.html').match(/<section class="hero[^"]*">[\s\S]*?<\/section>/)[0];
+  const prose = hero
+    .replace(/<dl class="heroStats"[\s\S]*?<\/dl>/, '')
+    .replace(/<div class="demo"[\s\S]*?<\/div>\s*<\/div>/, '');
+  assert.doesNotMatch(prose, /26 aksi/, 'no second 26 with another noun');
+  assert.doesNotMatch(prose, /\d+\s+(tool|primitive|izin|aksi|permission)/i, 'the hero prose names no count at all');
   assert.match(hero, /tanpa eksekusi skrip sembarangan/, 'the prose keeps its promise');
-  assert.match(hero, /39 tool, 28 primitive/, 'and the count lives in one line');
 });
 
 test('no script renames a link that is not there', () => {

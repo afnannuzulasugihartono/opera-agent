@@ -11,6 +11,7 @@ import {
   validateLedger,
 } from './goal-ledger.js';
 import { codeUnitCompare } from '../../../lib/canonical-order.js';
+import { SECRET_VALUE } from '../../../lib/secret-pattern.js';
 
 const SCHEMA_VERSION = 1;
 const EVALUATOR_VERSION = 'OA_PROOF_V1';
@@ -20,7 +21,6 @@ const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const SYMBOL_PATTERN = /^[A-Z][A-Z0-9_]{0,255}$/;
 const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv)/i;
-const SECRET_VALUE = /(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.|\bsb_(?:secret|publishable)_[A-Za-z0-9_-]{16,}|\bsk-[A-Za-z0-9_-]{20,})/;
 
 const EVIDENCE_FIELDS = new Set([
   'schemaVersion', 'evidenceId', 'category', 'tenantId', 'goalId', 'goalRevision',
@@ -177,7 +177,10 @@ export async function createEvidence(input) {
   return freezeEvidence({ ...normalized, evidenceDigest });
 }
 
-export async function validateEvidence(input) {
+// WHY no export: validateEvidence is called by the two paths below and by nothing
+// else in the tree, so the keyword promised a reusable entry point no caller used.
+
+async function validateEvidence(input) {
   if (!isPlainObject(input) || !SHA256_HEX.test(input.evidenceDigest || '')) fail('INVALID_DIGEST', 'evidence.evidenceDigest is invalid.');
   if (input[VALIDATED_EVIDENCE] === input.evidenceDigest && Object.isFrozen(input)) return input;
   const normalized = normalizeEvidence(input);
