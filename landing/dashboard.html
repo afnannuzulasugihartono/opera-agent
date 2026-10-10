@@ -84,7 +84,7 @@
 
     nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
     nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
+    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; white-space: nowrap; transition: color .25s var(--ease); }
     nav a:hover { color: var(--text); }
     nav a[aria-current="page"] { color: var(--text); }
 
@@ -402,6 +402,11 @@
     }
     .history td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
     .history tr:last-child td { border-bottom: 0; }
+
+    /* WHY the zebra: five columns of muted ink scan badly at speed, and the history
+       table is read while something is wrong. A faint second tone carries the row
+       the way every production table prints one. */
+    .history tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
     .history td .dot { display: inline-block; vertical-align: 1px; margin-right: 6px; }
     .history td .online { color: var(--accent); }
     .history td .offline { color: var(--warn); }
@@ -432,6 +437,18 @@
     .konsolSide button[aria-current="true"] { color: var(--text); border-left-color: var(--accent); background: var(--surface); }
     .konsolSide button:disabled { opacity: .55; cursor: not-allowed; }
     .konsolSide .meta { font-variant-numeric: tabular-nums; }
+
+    /* WHY grouped and captioned: sixteen table names scan as a wall until the two
+       rules behind them are visible — nine belong to this account, seven to the
+       operator. The caption is the Studio sidebar's section label, nothing more. */
+    .konsolSide .konsolGroup {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 12px 10px 4px;
+    }
+    .konsolSide .konsolGroup:first-child { padding-top: 2px; }
     .konsolMain { min-width: 0; }
     .konsolBar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 4px; }
     .konsolBar input {
@@ -446,7 +463,7 @@
       font: inherit;
       font-size: 13.5px;
     }
-    .konsolScroll { overflow: auto; max-height: 460px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .konsolScroll { overflow: auto; max-height: 460px; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
     .konsolScroll .empty { margin: 0; border: 0; border-radius: 0; }
     .konsolGrid { border-collapse: collapse; width: 100%; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .konsolGrid th, .konsolGrid td {
@@ -478,8 +495,16 @@
       cursor: pointer;
     }
     .konsolGrid th button:hover { color: var(--accent); }
+
+    /* WHY zebra, selection ink and right-aligned figures: the three signals every
+       production grid carries. The tinted row says which row the JSON pane below is
+       showing; the numeric class comes from the catalog type, never from the value. */
     .konsolGrid tbody tr { cursor: pointer; }
+    .konsolGrid tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
     .konsolGrid tbody tr:hover { background: var(--surface-soft); }
+    .konsolGrid tbody tr[aria-selected="true"] { background: var(--accent-soft); }
+    .konsolGrid tbody tr:last-child td { border-bottom: 0; }
+    .konsolGrid td.num, .konsolGrid th.num { text-align: right; font-variant-numeric: tabular-nums; }
     .konsolFoot { margin-top: 10px; }
     .konsolFoot .meta { font-variant-numeric: tabular-nums; }
     .konsolJson {
@@ -498,6 +523,7 @@
     @media (max-width: 900px) {
       .konsol { grid-template-columns: minmax(0, 1fr); }
       .konsolSide { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+      .konsolSide .konsolGroup { padding: 0 6px; align-self: center; }
       .konsolSide button { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
       .konsolSide button[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
     }
@@ -588,7 +614,7 @@
 
         <section id="tabel">
           <h2>Tabel</h2>
-          <p class="meta">Editor data proyek, hanya-baca: baris yang sampai sudah disaring server untuk akun ini, dan kolom rahasia disamarkan sebelum keluar dari database. Aksi tulis tetap di tabnya masing-masing.</p>
+          <p class="meta">Data proyek, hanya-baca: baris sudah disaring server untuk akun ini, dan kolom rahasia disamarkan sebelum keluar dari database.</p>
           <div class="konsol">
             <div class="konsolSide" id="konsolList" role="group" aria-label="Daftar tabel"></div>
             <div class="konsolMain">
@@ -680,6 +706,7 @@
     </div>
   </footer>
 
+  <script src="./i18n.js"></script>
   <script type="module">
 
     // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices
@@ -1247,13 +1274,24 @@
       $('konsolStatus').className = tone ? `status ${tone}` : 'status';
     };
 
+    const konsolNf = (n) => Number(n).toLocaleString('id-ID');
+    const konsolNum = new Set(['smallint', 'integer', 'bigint', 'numeric', 'real', 'double precision', 'money', 'smallserial', 'serial', 'bigserial']);
+    const konsolClock = new Set(['timestamp with time zone', 'timestamp without time zone', 'date']);
+
     // WHY the cell shortens here: one cell can hold a workflow definition or a URL,
-    // and a grid that grows to fit its widest cell stops being a grid. The full value
-    // sits in the title attribute and, on a click, in the JSON pane below.
-    const konsolCell = (value) => {
-      if (value === null || value === undefined) return '–';
-      const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
-      return text.length > 96 ? `${text.slice(0, 93)}…` : text;
+    // and a grid that grows to fit its widest cell stops being a grid. The grid shows
+    // what fits — a relative time where a clock column sits, a shortened value
+    // elsewhere — and the title always carries the whole truth, so a support
+    // conversation never asks for a value the screen had but hid.
+    const konsolRowCell = (record, col) => {
+      const raw = record[col.name];
+      if (raw === null || raw === undefined) return { text: '–', full: '' };
+      if (konsolClock.has(col.type) && typeof raw === 'string') {
+        const ms = new Date(raw).getTime();
+        if (Number.isFinite(ms)) return { text: relativeTime(raw), full: raw };
+      }
+      const full = typeof raw === 'object' ? JSON.stringify(raw) : String(raw);
+      return { text: full.length > 96 ? `${full.slice(0, 93)}…` : full, full };
     };
 
     const konsolCsvCell = (value) => {
@@ -1323,23 +1361,35 @@
         const active = konsol.sort === col.name;
         const arrow = active ? (konsol.dir === 'asc' ? ' ▲' : ' ▼') : '';
         const sortState = active ? (konsol.dir === 'asc' ? 'ascending' : 'descending') : 'none';
-        return `<th scope="col" aria-sort="${sortState}"><button type="button" data-sort="${esc(col.name)}" title="${esc(col.type)}">${esc(col.name)}${arrow}</button></th>`;
+
+        // WHY the num class and not right-aligned text: figures read down their right
+        // edge the way every production table prints them, and the choice comes from
+        // the catalog type, never from the shape of one value.
+        const num = konsolNum.has(col.type) ? ' num' : '';
+        return `<th scope="col" class="${num.trim()}" aria-sort="${sortState}"><button type="button" data-sort="${esc(col.name)}" title="${esc(col.type)}">${esc(col.name)}${arrow}</button></th>`;
       }).join('')}</tr>`;
       $('konsolRows').innerHTML = konsol.rows.map((record, index) =>
         `<tr data-row="${index}">${konsol.cols.map((col) => {
-          const cell = konsolCell(record[col.name]);
-          return `<td title="${esc(cell)}">${esc(cell)}</td>`;
+          const cell = konsolRowCell(record, col);
+          const num = konsolNum.has(col.type) ? ' num' : '';
+          return `<td class="${num.trim()}" title="${esc(cell.full)}">${esc(cell.text)}</td>`;
         }).join('')}</tr>`
       ).join('');
       const from = konsol.total === 0 ? 0 : konsol.offset + 1;
       const to = konsol.offset + konsol.rows.length;
-      $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `${from}–${to} dari ${konsol.total}`;
+      const pageNo = Math.floor(konsol.offset / konsol.limit) + 1;
+      const pageCount = Math.max(1, Math.ceil(konsol.total / konsol.limit));
+
+      // WHY the page position and the row span together: "1–50 dari 28.745" says how
+      // much exists and "Halaman 2 dari 575" says where the reader stands — the
+      // footer of totals every production table closes with.
+      $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `Halaman ${pageNo} dari ${pageCount} · ${konsolNf(from)}–${konsolNf(to)} dari ${konsolNf(konsol.total)} baris`;
       $('konsolPrev').disabled = konsol.offset <= 0;
       $('konsolNext').disabled = to >= konsol.total;
       $('konsolEmpty').hidden = konsol.rows.length !== 0;
       konsolSay(konsol.search
-        ? `${konsol.total} baris ${konsol.table} cocok dengan “${konsol.search}”.`
-        : `${konsol.table} — ${konsol.total} baris.`, 'ok');
+        ? `${konsolNf(konsol.total)} baris ${konsol.table} cocok dengan “${konsol.search}”.`
+        : `${konsol.table} — ${konsolNf(konsol.total)} baris.`, 'ok');
     }
 
     async function konsolOpen(name) {
@@ -1362,11 +1412,21 @@
         return;
       }
       const entries = data.tables || [];
-      $('konsolList').innerHTML = entries.map((entry) => `
-        <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${entry.readable ? esc(`${entry.total} baris`) : 'Hanya akun operator yang boleh membaca tabel ini'}">
+
+      // WHY grouped and not one flat wall: sixteen names read as a list of tables
+      // only when the two rules behind them are visible — nine belong to this
+      // account, seven to the operator. The server sends the scope; the page shows it.
+      const groupOf = { owner: 'Milik akun ini', operator: 'Operator' };
+      let lastScope = null;
+      $('konsolList').innerHTML = entries.map((entry) => {
+        const head = entry.scope === lastScope ? '' : `<span class="konsolGroup">${esc(groupOf[entry.scope] || entry.scope)}</span>`;
+        lastScope = entry.scope;
+        return `${head}
+        <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${entry.readable ? esc(`${konsolNf(entry.total)} baris`) : 'Hanya akun operator yang boleh membaca tabel ini'}">
           <span>${esc(entry.name.replace(/^opera_/, ''))}</span>
-          <span class="meta">${entry.readable ? esc(String(entry.total)) : '–'}</span>
-        </button>`).join('');
+          <span class="meta">${entry.readable ? konsolNf(entry.total) : '–'}</span>
+        </button>`;
+      }).join('');
       const first = entries.find((entry) => entry.readable);
       if (first && !konsol.table) await konsolOpen(first.name);
       const locked = entries.filter((entry) => !entry.readable).length;
@@ -1398,8 +1458,16 @@
     $('konsolRows').addEventListener('click', (event) => {
       const tr = event.target.closest('tr[data-row]');
       if (!tr) return;
+
+      // WHY a toggle and not a one-way open: the pane is the reader's magnifier, and
+      // a magnifier you cannot put down becomes the thing in the way. The tinted row
+      // says which row the pane is showing, so closing it never leaves a stale doubt.
+      const open = tr.getAttribute('aria-selected') === 'true';
+      for (const row of $('konsolRows').querySelectorAll('[aria-selected]')) row.removeAttribute('aria-selected');
+      if (open) { $('konsolJson').hidden = true; return; }
       const record = konsol.rows[Number(tr.dataset.row)];
       if (!record) return;
+      tr.setAttribute('aria-selected', 'true');
       $('konsolJson').textContent = JSON.stringify(record, null, 2);
       $('konsolJson').hidden = false;
     });
@@ -1426,6 +1494,18 @@
         konsol.offset = 0;
         konsolPage();
       }, 300);
+    });
+
+    // WHY escape: a search box that swallowed a keystroke mid-word leaves the grid
+    // filtered by something the reader can no longer see. Escape empties the box and
+    // returns the table to its own first page, the way every filter bar does.
+    $('konsolSearch').addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !$('konsolSearch').value) return;
+      clearTimeout(konsolDebounce);
+      $('konsolSearch').value = '';
+      konsol.search = '';
+      konsol.offset = 0;
+      konsolPage();
     });
 
     // WHY the 5,000-row bound and pages of 200: the reader is a person, not a
@@ -1471,7 +1551,7 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(href);
-        konsolSay(`${fetched} baris diunduh sebagai ${konsol.table}.csv.`, 'ok');
+        konsolSay(`${konsolNf(fetched)} baris diunduh sebagai ${konsol.table}.csv.`, 'ok');
       } catch (error) {
         konsolSay(`Ekspor gagal: ${error.message}.`, 'warn');
       } finally {
