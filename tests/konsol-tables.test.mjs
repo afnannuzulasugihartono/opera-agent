@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-10 UTC+7.
 // @title: konsol-tables — the table editor reads through definer functions, never a grant.
-// @state: 13 locks, green; pins migration 20261010090000 and the #tabel section of dashboard.html.
+// @state: 14 locks, green; pins migration 20261010090000 and the #tabel section of dashboard.html.
 // @dependencies: test, assert, fs.
 
 // The console's isolation rests on two layers, and this file pins both copies of the
@@ -171,4 +171,9 @@ test('the dashboard grid escapes, caps, and never writes', () => {
   assert.match(html, /const guarded = \/\^\[=\+\\-@\]\/\.test\(text\)/, 'a cell that begins with =, +, - or @ cannot become a spreadsheet formula');
   assert.match(html, /'Unknown table\.'\s*:\s*'Tabel itu tidak dikenal\.'/, 'the unknown-table refusal is translated');
   assert.match(html, /'That table belongs to the operator account\.'\s*:\s*'Tabel itu hanya untuk akun operator\.'/, 'the operator refusal is translated');
+});
+
+test('the grid declares a header cell before any data arrives', () => {
+  assert.match(html, /<thead id="konsolHead"><tr><th scope="col">/, 'a static header row exists so the table is never headerless');
+  assert.match(html, /if \(!\$\('konsolRows'\)\.children\.length\) \$\('konsolHead'\)\.innerHTML = '';/, 'a first load that fails takes the promise down with it');
 });

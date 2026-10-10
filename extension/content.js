@@ -2006,7 +2006,10 @@
     watchCheckQueued = true;
     setTimeout(() => {
       watchCheckQueued = false;
-      checkWatches();
+      checkWatches().catch(() => {
+        // the check swallows its own failures; this hull keeps a future edit inside
+        // it from becoming an unhandled rejection the page never sees.
+      });
     }, 100);
   }
 
