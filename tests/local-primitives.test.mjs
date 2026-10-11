@@ -119,6 +119,44 @@ test('a click is a real press and release at the browser level, not an element c
   assert.equal(events[2].params.y, 46);
 });
 
+test('a modified key sends no text, because text under a modifier is typed literally', async () => {
+  const cdp = recordingCdp();
+  await createPrimitives(cdp).key('2', ['Control', 'Alt']);
+
+  const down = cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent' && c.params.key === '2');
+  assert.equal(down.params.type, 'rawKeyDown', 'a modified key must not be a text keyDown');
+  assert.equal(down.params.text, undefined, 'sending text here types a literal 2 into the document');
+  assert.equal(down.params.code, 'Digit2');
+  assert.equal(down.params.modifiers, 3, 'control and alt both held');
+});
+
+test('an unmodified character still types, or ordinary typing would break', async () => {
+  const cdp = recordingCdp();
+  await createPrimitives(cdp).key('a');
+
+  const down = cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'keyDown');
+  assert.equal(down.params.text, 'a');
+});
+
+test('a modified letter sends no text either, or Ctrl+A would type an a', async () => {
+  const cdp = recordingCdp();
+  await createPrimitives(cdp).key('a', ['Control']);
+
+  const down = cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent' && c.params.key === 'a');
+  assert.equal(down.params.text, undefined);
+});
+
+test('a modifier goes down with itself excluded from the mask, and up with the full mask', async () => {
+  const cdp = recordingCdp();
+  await createPrimitives(cdp).key('2', ['Control', 'Alt']);
+
+  const events = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
+  const controlDown = events.find((e) => e.params.key === 'Control' && e.params.type === 'keyDown');
+  assert.equal(controlDown.params.modifiers, 1, 'alt only: control is not yet held at its own keydown');
+  const altDown = events.find((e) => e.params.key === 'Alt' && e.params.type === 'keyDown');
+  assert.equal(altDown.params.modifiers, 2, 'control only: alt is not yet held at its own keydown');
+});
+
 test('clear selects all and then deletes, because typing does not replace a selection', async () => {
   const cdp = recordingCdp();
   await createPrimitives(cdp).clear();

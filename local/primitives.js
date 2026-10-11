@@ -17,9 +17,25 @@
 // select, then delete, then type -- rather than a convenient replace that does
 // not exist at the protocol level.
 //
-// A newline is a real paragraph break. Measured in the same document: text
-// inserted with \n produced separately styled paragraphs, which is what lets a
-// whole paper go in as one call rather than hundreds.
+// A newline is a real paragraph break, and a key event is not. Measured in the
+// same document: text inserted with \n produced separately styled paragraphs,
+// which is what lets a whole paper go in as one call rather than hundreds. The
+// same document ignored a dispatched Enter key event entirely and still reported
+// success, merging every paragraph into one. Both paths reach the editor, only
+// one of them is read, and the result is indistinguishable from working unless
+// the document is captured and looked at. So callers break paragraphs through
+// type() and never through key('Enter').
+//
+// Structure is applied before content, never after. Measured in the same
+// document: a paragraph style applied to a paragraph that already held its text
+// did not take, while the identical chord applied to an empty paragraph did.
+// The chord returns ok either way, so the outline is the only witness.
+//
+// Text belongs to the key only when nothing is held down. Measured in the same
+// document: a chord that carried its character as text typed that character
+// literally, so Ctrl+Alt+2 wrote a "2" into the body instead of restyling it.
+// The dispatch frame is therefore a rawKeyDown whenever a modifier is present,
+// which is also why the same document accepts these chords at all.
 //
 // Text insertion is chunked. A single Input.insertText carries a practical limit,
 // and a long document arriving in one piece can be dropped or truncated partway
@@ -102,16 +118,28 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       for (const modifier of modifiers) {
         const code = modifierCode(modifier);
         if (!code) continue;
-        await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', modifiers: mask, code, key: modifier });
+        await cdp.send('Input.dispatchKeyEvent', {
+          type: 'keyDown', modifiers: mask & ~MODIFIER_BITS[modifier], code, key: modifier
+        });
       }
 
       const known = KEY_CODES[name];
-      const descriptor = known ?? (TEXT_KEY.test(name)
-        ? { key: name, code: `Key${name.toUpperCase()}`, windowsVirtualKeyCode: name.toUpperCase().charCodeAt(0), text: name }
-        : { key: name, code: name });
+      const descriptor = known ?? (/^[0-9]$/.test(name)
+        ? { key: name, code: `Digit${name}`, windowsVirtualKeyCode: name.charCodeAt(0), text: name }
+        : TEXT_KEY.test(name)
+          ? { key: name, code: `Key${name.toUpperCase()}`, windowsVirtualKeyCode: name.toUpperCase().charCodeAt(0), text: name }
+          : { key: name, code: name });
 
-      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', modifiers: mask, ...descriptor });
-      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...descriptor });
+      const printable = mask === 0 && Object.prototype.hasOwnProperty.call(descriptor, 'text');
+      const frame = printable
+        ? { type: 'keyDown', modifiers: mask, ...descriptor }
+        : { type: 'rawKeyDown', modifiers: mask, key: descriptor.key, code: descriptor.code, windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode };
+
+      await cdp.send('Input.dispatchKeyEvent', frame);
+      await cdp.send('Input.dispatchKeyEvent', {
+        type: 'keyUp', modifiers: mask, key: descriptor.key, code: descriptor.code,
+        windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode
+      });
 
       for (const modifier of [...modifiers].reverse()) {
         const code = modifierCode(modifier);
