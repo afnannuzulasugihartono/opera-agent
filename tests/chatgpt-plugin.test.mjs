@@ -33,10 +33,6 @@ test('the plugin bundle exists and names the hosted files', async () => {
 test('the gateway accepts a user JWT and resolves the caller device', async () => {
   const source = await read('supabase/functions/opera-agent-gateway/index.ts');
 
-  // WHY this pin: ChatGPT plugin OAuth arrives with a Supabase user JWT, not a
-  // device secret. The device-token path is untouched above it; the user path
-  // below must resolve by user_id, never the fixed name, or one account drives
-  // another account's browser.
   assert.match(source, /await supabase\.auth\.getUser\(token\)/);
   assert.match(source, /\.from\("opera_devices"\)/);
   assert.match(source, /\.eq\("user_id", userId\)/);

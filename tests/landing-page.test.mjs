@@ -13,10 +13,6 @@ const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/beranda.html', root), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
 
-// The landing page is where a user types their API key, so its promises are
-// load-bearing rather than marketing copy. Each one below is asserted instead of
-// trusted: a page that says the key never leaves will eventually grow a fetch.
-
 test('the page names the extension it configures, and it is the pinned one', () => {
   const digest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
   const expected = [...digest].map((byte) => `${String.fromCharCode(97 + (byte >> 4))}${String.fromCharCode(97 + (byte & 15))}`).join('');
@@ -26,8 +22,7 @@ test('the page names the extension it configures, and it is the pinned one', () 
 });
 
 test('the key is never sent to a network origin', () => {
-  // WHY the whole promise in one assertion: the only allowed recipient is the
-  // extension. Any fetch, XHR or form post in this file would make the copy a lie.
+
   assert.doesNotMatch(html, /\bfetch\s*\(/, 'the landing page must not fetch anything');
   assert.doesNotMatch(html, /XMLHttpRequest/, 'the landing page must not open an XHR');
   assert.doesNotMatch(html, /<form[^>]+action=/i, 'the form must not post anywhere');
@@ -58,10 +53,6 @@ test('the extension only accepts the handoff from an origin it was granted', () 
 
 test('the origin check admits the official site and localhost, and nothing else', () => {
 
-  // WHY these exact cases: sender.origin for an https page is the bare origin,
-  // so a plain prefix match would admit evil subdomains. Each line below is one
-  // row of the contract the background handler enforces.
-
   assert.deepEqual([...EXTERNAL_CONFIG_ORIGINS], ['http://localhost:', 'https://localhost:', 'https://opera-agent.pages.dev']);
   assert.equal(originAllowed('https://opera-agent.pages.dev'), true, 'the official site origin is accepted');
   assert.equal(originAllowed('https://opera-agent.pages.dev/model'), true, 'the sender.url form with a path is accepted');
@@ -74,9 +65,7 @@ test('the origin check admits the official site and localhost, and nothing else'
 
 test('the provider picker names the providers, and the NVIDIA pair plus the Groq trio exactly', () => {
   for (const id of ['nvidia', 'groq', 'ollama', 'lmstudio', 'custom']) {
-    // WHY tag and value separately: an option may carry a data-i18n attribute,
-    // so a verbatim whole-tag match would break on the attribute rather than on
-    // a lost provider.
+
     assert.match(html, new RegExp(`<option\\b[^>]*value="${id}"[^>]*>`), `the provider picker offers ${id}`);
   }
   assert.ok(html.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'the NVIDIA endpoint is exact');
@@ -91,8 +80,7 @@ test('the provider picker names the providers, and the NVIDIA pair plus the Groq
 });
 
 test('the key field is only ever cleared, never filled in by the page', () => {
-  // WHY this lock: the key is typed by the person and read by collect(); a page that
-  // writes anything but the post-send reset into it is autofilling a secret.
+
   const writes = [...html.matchAll(/\$\('modelKey'\)\.value\s*=\s*([^;]+);/g)].map((m) => m[1].trim());
   assert.ok(writes.length >= 1, 'the post-send reset exists');
   for (const written of writes) {
@@ -121,9 +109,7 @@ test('every form control on the page has an accessible name', () => {
 });
 
 test('the privacy section discloses the relay instead of denying it', () => {
-  // WHY this lock exists: the page once claimed page content never touches the
-  // bridge, while command results are stored as queue history in the project
-  // database. A privacy section that denies the relay is a lie the lock must catch.
+
   assert.doesNotMatch(html, /Nothing is uploaded/, 'the page must not claim nothing leaves the machine');
   assert.doesNotMatch(html, /Never to the .*bridge/, 'the page must not deny the relay');
   assert.match(html, /riwayat antrean/, 'the page must disclose queue-history storage');

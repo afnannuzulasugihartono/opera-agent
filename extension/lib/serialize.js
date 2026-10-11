@@ -17,12 +17,6 @@ function oversized(value) {
   return serializeResult(value).length > MAX_RESULT_BYTES;
 }
 
-// Single-entry memo for result serialization. page.read measures the result
-// against the ceiling and the dispatcher then measures it again; without this,
-// every read paid a second full JSON.stringify on the hottest observation path.
-// Keyed on object identity, so a rebuilt result serializes exactly once, and
-// cleared per command so nothing large is retained between commands.
-
 let serializedResult = { value: null, text: '' };
 
 function serializeResult(value) {
@@ -34,8 +28,7 @@ function serializeResult(value) {
 }
 
 function clearSerializedResult() {
-  // Drop the memo so a large previous result is not pinned for the worker's
-  // lifetime. Exported as a function because an imported binding is read-only.
+
   serializedResult = { value: null, text: '' };
 }
 

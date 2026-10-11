@@ -20,26 +20,14 @@
 
 const sessions = new Map();
 
-/** Live shared sessions, keyed by tab id. Exported for assertions. */
-
 export function getDebuggerSessions() {
   return sessions;
 }
-
-/**
- * Record a session that has just been attached, so an unexpected detach can
- * find it. Safe to call with a falsy session.
- */
 
 export function registerDebuggerSession(session) {
   if (!session || typeof session.tabId !== 'number') return;
   sessions.set(session.tabId, session);
 }
-
-/**
- * Detach a shared session and forget it. Idempotent: a session that is not
- * attached is a no-op, which is what makes it safe in a `finally`.
- */
 
 export async function releaseDebuggerSession(session, log) {
   if (!session || !session.attached) return;
@@ -52,11 +40,6 @@ export async function releaseDebuggerSession(session, log) {
     if (log && typeof log.debug === 'function') log.debug('DEBUGGER_DETACH_FAILED', message);
   }
 }
-
-/**
- * `chrome.debugger.onDetach` handler. Fired when the tab closes or when the
- * user opens DevTools on it. Without this the cached `attached` flag lies.
- */
 
 export function handleDebuggerDetach(source) {
   const tabId = source?.tabId;

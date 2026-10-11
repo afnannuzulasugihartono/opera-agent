@@ -89,8 +89,6 @@ begin
      and status in ('QUEUED','RUNNING')
      and expires_at <= v_now;
 
-  -- A cancellation request survives worker loss. Once that worker's lease is stale,
-  -- recovery terminalizes the run instead of returning it to the queue.
   update opera_agent_private.vm_runs
      set status = 'CANCELLED', lease_owner = null, lease_expires_at = null, available_at = null,
          updated_at = v_now, error_code = 'CANCELLED'

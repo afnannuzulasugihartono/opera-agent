@@ -21,15 +21,10 @@ import { openTransactionToken } from '../../lib/transaction-token.js';
 import { TRANSACTION_LIMITS,createTransactionPreview } from '../../lib/transaction-prepare.js';
 import { createApprovalChallenge,createModernApprovalRequest,verifyModernApprovalResponse } from '../../lib/transaction-authority.js';
 
-// Mandatory real native PostgreSQL gate. Missing tooling is a failure, not a skip.
-
 const run = promisify(execFile);
 const bin = process.env.OPERA_PG_BIN;
 if (!bin || !path.isAbsolute(bin)) throw new Error('Set OPERA_PG_BIN to native PostgreSQL bin directory.');
 const executable = (name) => path.join(bin, process.platform === 'win32' ? `${name}.exe` : name);
-
-// pg_ctl's detached Windows server can inherit pipes. Wait on its process exit,
-// not on inherited stream closure, and never open a visible console window.
 
 const control = (argv) => new Promise((resolve,reject) => {
   const child = spawn(executable('pg_ctl'), argv, { windowsHide: true, stdio: 'ignore' });
@@ -87,7 +82,6 @@ before(async () => {
   started = true;
   await query('create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;', 'postgres');
 
-  // Synthetic auth metadata only, shaped like the verified production columns.
   await query('create schema auth; create table auth.sessions(id text primary key,user_id text,oauth_client_id text,not_after timestamptz);','postgres');
   await query(`create schema opera_agent_private; create table opera_agent_private.goal_heads(tenant_id text,goal_id text,head_revision integer,head_digest text,status text,expires_at timestamptz,primary key(tenant_id,goal_id)); grant usage on schema opera_agent_private to service_role; grant select,update on opera_agent_private.goal_heads to service_role;`,'postgres');
   await run(executable('psql'), [...args, '-f', fileURLToPath(new URL('../../supabase/candidates/transaction-journal.sql', import.meta.url))], { windowsHide: true });
@@ -97,7 +91,6 @@ before(async () => {
 after(async () => {
   if (started) await control(['-D', data, '-m', 'fast', '-w', 'stop']);
 
-  // Keep synthetic diagnostic artifacts; never recursively delete a computed path.
   console.log(`Native PostgreSQL stopped; synthetic diagnostic directory: ${data}`);
 });
 
@@ -161,7 +154,6 @@ test('8D bound prepare locks actual current head and rejects cancellation/stale 
   assert.equal(await query(`select ${issueBound(challenge)}->>'replay';`),'true');
   const accepted=await verifyModernApprovalResponse({prepared:tx,preview,trustedChallenge:challenge,requestState:createModernApprovalRequest(challenge).requestState,inputResponses:[{requestId:'transaction_approval',value:'APPROVE'}],authenticatedContext,clientCapabilities:{elicitation:{form:true}},mrtrRound:1,evaluatedAt:new Date().toISOString(),consumedNonceDigests:[]});
 
-  // Synthetic first-party response, NOT actual ChatGPT human approval transport.
   const finalizeBound=`public.opera_tx_finalize_bound(${prefix},'${challenge.nonceDigest}','${challenge.approvalDigest}','${accepted.consumptionDigest}')`;
   await query("update opera_agent_private.goal_heads set status='CANCELLED' where tenant_id='tenant_alpha';",'postgres');
   await fails(`select ${prepare};`,'AUTHORITY_NOT_RESOLVED');
@@ -196,7 +188,6 @@ test('8D host route integrates crypto/admission with real native prepare/status/
   const binding={mode:'DARK',preparedDigest:tx.prepareDigest,ledgerDigest:ledger.ledgerDigest,target:tx.target,grant:f.state.grant,operands:[f.state.resolved]};
   await query(`insert into ${P}.principals values ('tenant_host','actor_host','user_host','client_host'); insert into auth.sessions values ('session_host','user_host','client_host',clock_timestamp()+interval '5 minutes'); insert into opera_agent_private.goal_heads values ('tenant_host','goal_alpha',${ledger.revision},${text(ledger.ledgerDigest)},'OPEN',${text(tx.expiresAt)}); insert into ${P}.acceptance_bindings values ('tenant_host','actor_host','tx_host_route','goal_alpha',${ledger.revision},${text(ledger.ledgerDigest)},${json(binding)});`,'postgres');
 
-  // Auth SDK boundary remains a synthetic double; every journal RPC is real PG.
   const sdk={auth:{getClaims:async()=>({data:{claims:{iss:'https://example.supabase.co/auth/v1',aud:'authenticated',role:'authenticated',sub:'user_host',client_id:'client_host',session_id:'session_host',iat:1,exp:Math.floor(Date.now()/1000)+300}}}),getUser:async()=>({data:{user:{id:'user_host'}}})},rpc:async(name,a)=>{
     let sql;
     if(name==='opera_goal_crypto_key')return {data:{enabled:true,key:Buffer.from(key).toString('base64url')}};
@@ -236,7 +227,6 @@ test('8D session expiry during row-lock wait rejects after acquiring the lock',a
   const identity={userId:'user_wait',tenantId:'tenant_wait',oauthClientId:'client_wait',sessionId:'session_wait',accessExpiresAt:Math.floor(Date.now()/1000)+300,acceptanceIdentity:'actor_wait'};
   const holder=query("set application_name='8d_expiry_holder'; begin; select id from auth.sessions where id='session_wait' for update; select pg_sleep(2); commit;",'postgres');
 
-  // Observe actual DB lock-holder readiness, not a guessed client-side delay.
   let ready=false;
   for(let i=0;i<15&&!ready;i++)ready=await query("select exists(select 1 from pg_stat_activity where application_name='8d_expiry_holder' and wait_event='PgSleep');",'postgres')==='t';
   assert.equal(ready,true);
@@ -418,7 +408,6 @@ test('8D smaller durable approval/validation/commit-rate budgets reject before s
   await install('budget_rate',{commitRatePerTenantPerMinute:1});
   await query(scoped(`select ${issue('budget_rate')};select ${consume('budget_rate')};`,name));
 
-  // Atomic synthetic seed + fresh validation + reservation, no client roundtrip.
   await fails(scoped(`update ${P}.rates set window_start=date_trunc('minute',clock_timestamp()),commits=1 where tenant_id='tenant_a';select ${validate('budget_rate')};select ${reserve('budget_rate')};`,name),'COMMIT_RATE_LIMIT');
   assert.equal(await query(`select count(*) from ${P}.commit_slots where transaction_id='budget_rate';`),'0');
   await cancelScope(name,'budget_rate');
@@ -451,7 +440,6 @@ test('8D actual native worker process death before/after finalize preserves one 
       assert.equal(worker.kill(),true);await exited;
     }finally{if(worker.exitCode===null&&!worker.killed)worker.kill();}
 
-    // Use a short synthetic remaining lease and let DATABASE time expire naturally.
     await query(`update ${P}.runs set lease_until=clock_timestamp()+interval '100 milliseconds' where transaction_id='${id}';`,'postgres');
     await query('select pg_sleep(0.15);');
     assert.equal(await query(scoped(`select ${claim(id,'replacement_worker')}->>'leaseEpoch';`,name)),'2');
@@ -495,14 +483,11 @@ test('8D tenth commit succeeds, eleventh rolls back, exact replay does not spend
   for(let i=0;i<11;i++) {
     const id=`commit_${i}`; await approveScope(name,id,300+i);
 
-    // Pin the isolated synthetic window: this is a boundary test, not wall-clock minute timing.
-    // Seed the synthetic boundary explicitly; do not let a real minute rollover
-    // make this counter-boundary fixture depend on test scheduling.
     await query(`update ${P}.rates set window_start=date_trunc('minute',clock_timestamp()),commits=${Math.min(i,10)} where tenant_id='${name}';`,'postgres');
     if(i===10) { await fails(scoped(`select ${reserve(id)};`,name),'COMMIT_RATE_LIMIT'); break; }
     await query(scoped(`select ${reserve(id)};`,name));
     assert.equal(await query(scoped(`select ${reserve(id)}->>'replay';`,name)),'true');
-    await cancelScope(name,id); // Candidate has no dispatch; release concurrent status without clearing rate/slot history.
+    await cancelScope(name,id);
   }
   assert.equal(await query(`select commits from ${P}.rates where tenant_id='${name}';`),'10');
   assert.equal(await query(`select count(*) from ${P}.commit_slots where tenant_id='${name}';`),'10');

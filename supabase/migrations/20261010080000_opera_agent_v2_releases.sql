@@ -26,11 +26,6 @@ create table if not exists public.opera_v2_releases (
 create unique index if not exists opera_v2_releases_one_active_idx
   on public.opera_v2_releases ((active)) where active = true;
 
--- WHY the grants are revoked here as well as in the konsol migration: this file
--- runs first, and a table created without them inherits Supabase's default grants
--- the moment it is created. The operator policy that reads it is added by
--- 20261010090000; until then the table is reachable by nobody but the service role.
-
 alter table public.opera_v2_releases enable row level security;
 revoke all on public.opera_v2_releases from public, anon, authenticated;
 

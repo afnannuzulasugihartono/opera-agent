@@ -8,17 +8,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-// Re-pins are the one side-effect this repo provably makes over and over: every edit to
-// background.js moves its pinned hash, and boundary-locks.mjs records that hash. Across
-// nineteen analysed tasks it was touched eleven times, eight of them undeclared. Naming it
-// turns those eight false positives into a footnote instead of an accusation.
-
-// WHY no export: this script is a program, entered from the shell rather than
-// imported, so a symbol the guarded main below already calls by bare name has no
-// consumer to export to. The export promised an API no module, test or script uses.
-
 const DEFAULT_SIDE_EFFECTS = ['tests/helpers/boundary-locks.mjs'];
-
 
 const SECTION = /^\*\*(.+?):\*\*\s*$/;
 const BACKTICKS = /`([^`]+)`/g;
@@ -26,16 +16,6 @@ const LINE_RANGE = /:\d+(?:-\d+)?\s*$/;
 const COUNT_WITHOUT_PATH = /\b\d+\s+(?:berkas|files?)\b/i;
 
 const HEADER = /^#{1,3}\s/;
-
-/**
- * Read the Files and Side-effects blocks of a brief.
- *
- * A path counts only when it carries a slash. Briefs backtick prose inside those blocks —
- * `@state`, `export`, `background.js` — and treating any backtick as a path invents files
- * nobody touched. A bare `:84` continues the path printed beside it, because briefs write
- * one edit as `background.js:96-628`, `:84` rather than repeating the name. A bullet may
- * wrap onto an indented continuation line, so the whole bullet is read before it is judged.
- */
 
 export function parseBrief(text) {
   const declared = [];
@@ -58,12 +38,12 @@ export function parseBrief(text) {
     for (const [, span] of line.matchAll(BACKTICKS)) {
       const value = span.trim();
       if (value.startsWith(':')) {
-        // A region of the path already named on this line: `:78-79` beside `background.js`.
+
         if (last) found = last;
         continue;
       }
       const file = value.replace(LINE_RANGE, '');
-      if (!file.includes('/')) continue; // prose, not a path
+      if (!file.includes('/')) continue;
       last = file;
       found = file;
       push(file, bucket);
@@ -72,14 +52,10 @@ export function parseBrief(text) {
     if (!found && COUNT_WITHOUT_PATH.test(line)) unparseable = true;
   };
 
-  // The bucket is read when the bullet closes, not when it opens, so a wrapped bullet is
-  // judged by the section it started in rather than whatever section ran into its tail.
   const flush = () => {
     if (bullet === null) return;
     const bucket = section === 'side-effect' ? sideEffects : section === 'file' ? declared : null;
 
-    // Interfaces and every other block also use `- path` bullets. Only Files and
-    // Side-effects say what may be touched; reading the rest invents permissions.
     if (bucket !== null) consume(bucket, bullet);
     bullet = null;
   };
@@ -106,9 +82,6 @@ export function parseBrief(text) {
       continue;
     }
 
-    // A bullet may wrap, and its continuation is an indent. Prose under a blank line is
-    // not an indent of anything — the flush above already closed the bullet, so this
-    // line simply has nothing to attach to.
     if (bullet !== null && /^\s+\S/.test(raw)) {
       bullet += ` ${raw.trim()}`;
       continue;
@@ -120,20 +93,6 @@ export function parseBrief(text) {
   return { declared, sideEffects, unparseable };
 }
 
-/**
- * Compare what moved against what the brief allowed.
- *
- * status is 'declared', 'side-effect', or 'undeclared'. Only an undeclared path under
- * tests/ escalates: that is the single class the repository's own history proved harmful —
- * both genuine violations in nineteen tasks were test edits, and a test edit is the one
- * change that can make every other gate turn green.
- *
- * escalation also requires a readable declaration. A brief that writes "Modify: 17 berkas —
- * daftar lengkap di Step 3" declared those files; it just declared them in prose. Promoting
- * that to a violation counted seventeen honest declarations as crimes in the backtest, so an
- * unreadable brief reports `reliable: false` and stops short of accusing.
- */
-
 export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS) {
   const declared = new Set(brief.declared);
   const allowedSideEffects = new Set([...sideEffects, ...brief.sideEffects]);
@@ -142,9 +101,6 @@ export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS)
   const rows = [];
   const escalations = [];
 
-  // A trailing slash means "everything under here". Briefs write `extension/lib/` when a
-  // task sweeps the folder, and matching that literally marked eleven honest files as
-  // undeclared. A plain path stays exact: declaring loop.js says nothing about loop-engine.js.
   const declares = (entries, file) => {
     if (entries.has(file)) return true;
     for (const entry of entries) {
@@ -163,8 +119,6 @@ export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS)
     rows.push({ file, status, escalate });
   }
 
-  // A swept folder is accounted for when anything under it moved — the folder path itself
-  // will never appear in a diff, so requiring the literal name would fail every sweep.
   const satisfied = (entry) => {
     if (moved.has(entry)) return true;
     if (entry.endsWith('/')) {
@@ -185,13 +139,6 @@ export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS)
   };
 }
 
-// S4036: a spawned process must not resolve its command through a PATH that a
-// user-writable directory can extend, so the child is handed a PATH holding
-// system directories only. `git` cannot be located by that search — it
-// normally lives outside those directories — so it is located here, against
-// the PATH that already started this script, and passed as an absolute path.
-// This does not make a hostile PATH safe for this script itself; nothing can.
-
 const SYSTEM_PATH = process.platform === 'win32'
   ? [path.join(process.env.SystemRoot || 'C:\\Windows', 'System32'), process.env.SystemRoot || 'C:\\Windows'].join(';')
   : ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin'].join(':');
@@ -208,8 +155,6 @@ function locateGit() {
   return 'git';
 }
 
-// WHY no export: called once by the guarded main below and imported by nothing.
-
 function changedFiles(root, base, head) {
   const out = execFileSync(locateGit(), ['diff', '--name-only', `${base}..${head}`], {
     cwd: root,
@@ -218,8 +163,6 @@ function changedFiles(root, base, head) {
   });
   return out.split(/\r?\n/).filter(Boolean);
 }
-
-// WHY no export: read only by the formatter below, like DEFAULT_SIDE_EFFECTS above.
 
 const STATUS_MARK = {
   declared: '✓',
@@ -234,8 +177,7 @@ export function format(result) {
   });
   lines.push('');
   if (!result.reliable) {
-    // The verdict leads here because it cannot be given: the declaration is incomplete, so
-    // no row below proves a violation. Showing the accusations first would still read as one.
+
     lines.push('⚠ DEKLARASI TIDAK BISA DIBACA MESIN — hasil di atas bersifat sementara.');
     lines.push(`   ${result.undeclared.length} file terlihat di luar deklarasi, tapi tidak bisa dituduh: brief menyebut jumlahnya tanpa menyebut isinya.`);
     lines.push('   Minta brief menuliskan path satu per satu, baru hasil ini bisa dipercaya.');

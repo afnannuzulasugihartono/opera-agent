@@ -5,18 +5,6 @@
 
 name: Deploy site
 
-# WHY this exists rather than a Cloudflare Git integration: a Direct Upload
-# project cannot be switched to Git integration later, and Vercel Hobby allows a
-# hundred deployments a day, which a busy main spends on its own. This is the
-# documented "Direct Upload with continuous integration" path, so the repo owns
-# the decision rather than a provider's build pipeline.
-#
-# WHY manual and not on every push: a deploy is a publication, and publishing a
-# one-word copy change to a stranger-facing site is not worth a build. CI still
-# runs on every push; this only decides when the site itself moves. The reason
-# input is free text for the deployment log, because the log is where the next
-# reader asks what shipped.
-
 on:
   workflow_dispatch:
     inputs:
@@ -26,9 +14,6 @@ on:
         type: string
 
 concurrency:
-
-  # WHY one at a time: a newer dispatch must not interleave with a deployment
-  # already in flight, or the edge ends up serving the older of the two.
 
   group: deploy-site
   cancel-in-progress: true
@@ -55,10 +40,6 @@ jobs:
       - name: Syntax gate
         run: npm run check
 
-      # WHY the gates run here and not as a dependency: this workflow may be
-      # dispatched on a head whose CI run has not finished, and the tree it is
-      # about to publish is the one that has to hold.
-
       - name: Publish
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
@@ -73,9 +54,6 @@ jobs:
             --branch=main \
             --commit-hash="$GITHUB_SHA" \
             --commit-message="${{ inputs.reason || format('deploy {0}', github.sha) }}"
-
-      # WHY read the served bytes: a deploy can report success while the edge still
-      # answers with an earlier copy, and only the response tells the two apart.
 
       - name: Confirm the site answers
         run: |

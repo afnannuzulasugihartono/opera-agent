@@ -106,9 +106,7 @@ begin
   select mode,legacy_gated,agent_commit_enabled into v_mode,v_legacy,v_agent
     from opera_agent_tx_candidate.policy where singleton=true for share;
   if v_host or v_mode<>'OFF' or v_legacy or v_agent then raise exception 'SERVER_FENCE_NOT_CLEAN'; end if;
-  -- This check is inside the exclusive control-row barrier, AFTER waiting for
-  -- previously admitted share-lock mutations. Earlier verifyClean is advisory:
-  -- a lost-reply insert may commit between that snapshot and this release.
+
   if exists(select 1 from opera_agent_tx_candidate.principals where tenant_id=p_namespace::text)
     or exists(select 1 from opera_agent_tx_candidate.rates where tenant_id=p_namespace::text)
     or exists(select 1 from opera_agent_tx_candidate.acceptance_bindings where tenant_id=p_namespace::text)

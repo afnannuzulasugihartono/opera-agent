@@ -23,10 +23,6 @@ begin
   p_ttl_minutes := least(greatest(coalesce(p_ttl_minutes, 10), 1), 60);
   v_issuer := coalesce(p_issued_by, auth.uid());
 
-  -- WHY capped per issuer and not per device name: the attack is an account minting
-  -- codes to keep cancelling a victim's, so the account is the unit that matters.
-  -- Five an hour is enough for a person installing on several machines and not
-  -- enough to race anyone.
   if v_issuer is not null then
     select count(*) into v_recent
     from public.opera_pairing_codes

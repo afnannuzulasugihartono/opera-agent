@@ -43,14 +43,8 @@
   'use strict';
   if (globalThis.OperaAgentRoleReconcile) return;
 
-  // A page needs enough unlabelled controls to be worth one bounded
-  // accessibility walk. Small pages and healthy pages both stay off it.
   const ROLE_GAP_SAMPLE_SIZE = 3;
 
-  // These are published on globalThis, where a sibling content script could
-  // reach them. A mutable Set or object would let any of them silently change
-  // role decisions for every later call, so they are frozen on the way out.
-  // genericRoleSet is internal and never exported.
   const GENERIC_ROLES = new Set([
     '', 'generic', 'presentation', 'none', 'div', 'span', 'text', 'statictext',
     'paragraph', 'group', 'region', 'section', 'figure', 'blockquote', 'label',
@@ -89,8 +83,7 @@
       return String(input.href || '').trim() ? 'link' : '';
     }
     if (tag === 'input') {
-      // A missing type attribute means text; a hidden input is still a textbox
-      // to the platform, so it is not special-cased away here.
+
       return INPUT_TYPE_ROLES[type] || 'textbox';
     }
     if (input.contenteditable === true) return 'textbox';
@@ -98,17 +91,12 @@
     return TAG_ROLES[tag] || '';
   }
 
-  // CDP reports AX roles in CamelCase; the model-facing vocabulary is lowercase
-  // ARIA. Unknown roles pass through lowercased rather than being dropped, so an
-  // unexpected platform role stays visible instead of silently disappearing.
   function normalizeAxRole(role) {
     const value = String(role == null ? '' : role).trim().toLowerCase();
     if (!value) return '';
     return value.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
 
-  // Only unambiguous names are indexed. If two different AX roles share one
-  // name, adopting either would be a guess, so that name is left out entirely.
   function axRoleIndex(axItems) {
     const list = Array.isArray(axItems) ? axItems : [];
     const candidates = new Map();
@@ -132,9 +120,6 @@
     return String(item.accessibleName || item.label || item.text || '').trim().toLowerCase();
   }
 
-  // Returns a NEW object; the input is never mutated, and ref, actionable, and
-  // every other field carry through untouched, so reconciliation can never
-  // grant or revoke action authority.
   function reconcileElementRole(item, index) {
     if (!item || typeof item !== 'object') return item;
     if (!index || typeof index.get !== 'function') return item;
@@ -147,16 +132,6 @@
     return { ...item, role, roleSource: 'ax-reconciled' };
   }
 
-  // Follow-up: whether a read left a semantic gap worth paying a bounded
-  // accessibility walk for.
-  //
-  // The accessibility walk used to be gated on text poverty alone, which meant
-  // it never ran on the app that motivated: a Google Docs document with 70
-  // pages is NOT text-poor, so its axSummary was never collected and the role
-  // reconciliation below never fired. The Page numbers dialog radios and
-  // checkboxes therefore stayed undiscoverable by role, which is why they had to
-  // be found by pointer probing. A page whose elements still carry no real role
-  // is a semantic gap whether or not it has plenty of text.
   function hasRoleGap(elements) {
     if (!Array.isArray(elements) || elements.length === 0) return false;
     let gaps = 0;
@@ -164,8 +139,6 @@
       if (isGenericRole(item && item.role)) {
         gaps += 1;
 
-        // A few clear gaps are enough to justify the walk; do not require every
-        // element to be unlabelled, which would also fire on healthy pages.
         if (gaps >= ROLE_GAP_SAMPLE_SIZE) return true;
       }
     }
@@ -178,10 +151,7 @@
   }
 
   globalThis.OperaAgentRoleReconcile = Object.freeze({
-    // Published as a frozen ARRAY, not the Set. Object.freeze does NOT make a
-    // Set immutable — .add() still works, because it mutates internal state
-    // rather than a property — so handing out the Set would leave it writable
-    // by any sibling content script. isGenericRole is the functional API.
+
     GENERIC_ROLES: Object.freeze([...GENERIC_ROLES]),
     ROLE_GAP_SAMPLE_SIZE,
     isGenericRole,

@@ -49,7 +49,6 @@ document.addEventListener('keydown', (event) => {
 </script>
 </body></html>"""
 
-
 class C0Handler(BaseHTTPRequestHandler):
 
     def log_message(self, *_):
@@ -62,7 +61,6 @@ class C0Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
-
 
 async def drive(port, profile):
     async with async_playwright() as p:
@@ -161,9 +159,7 @@ async def drive(port, profile):
         await cmd('tabs.close', {'tabId': tab_id})
         print('C0 GREEN')
 
-
 c0port = 0
-
 
 def main():
     global c0port
@@ -172,10 +168,6 @@ def main():
     threading.Thread(target=server.serve_forever, daemon=True).start()
     bridge = ThreadingHTTPServer((H.HOST, 0), H.Handler)
     port = bridge.server_address[1]
-
-    # The harness Handler serves the mock bridge on its own port, while the
-    # fixture game rides a second local server. The drive below must point at
-    # the bridge port, so it is passed explicitly.
 
     threading.Thread(target=bridge.serve_forever, daemon=True).start()
     profile = tempfile.TemporaryDirectory(prefix='opera-agent-c0-')
@@ -188,7 +180,6 @@ def main():
         bridge.shutdown()
         bridge.server_close()
         profile.cleanup()
-
 
 if __name__ == '__main__':
     main()

@@ -34,10 +34,6 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-// Fail-closed CORS: the allow origin is echoed ONLY for exact allowlist
-// matches (CORS_ALLOWED_ORIGINS env override, else the extension + consent
-// page defaults). A missing or non-allowlisted Origin gets no ACAO header.
-
 const CORS_BASE_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id, x-opera-device, x-opera-provider",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
@@ -201,18 +197,8 @@ async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<stri
   const { data } = await query.single();
   if (data?.device_name) return data.device_name;
 
-  // WHY null instead of echoing the header or falling back to DEVICE_NAME:
-  // device_name is globally unique and opera_enqueue resolves by name alone,
-  // so returning an unowned name would let one allowlisted account drive
-  // another account's browser. The gateway answers the same state with 401.
   return null;
 }
-
-// WHY a header first, User-Agent second: harnesses that can send headers
-// (OpenCode, Kilo, Claude Code) name themselves exactly via X-Opera-Provider,
-// while harnesses that cannot (ChatGPT, Claude.ai connectors) are identified by
-// their server-side User-Agent. Either way the provider is advisory metadata for
-// the dashboard, never an access decision — isolation rests on user_id.
 
 const PROVIDER_PATTERNS: Array<[RegExp, string]> = [
   [/opencode/i, "opencode"],
@@ -238,23 +224,11 @@ function slugifyProvider(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 32);
 }
 
-// WHY the OAuth client name last: ChatGPT-style connectors cannot send custom
-// headers and their server-side User-Agent carries no product name, but their
-// dynamically registered OAuth client does ("ChatGPT"). The JWT is already
-// verified by authenticate(); only its client_id claim is read here, and the
-// result stays advisory metadata — isolation rests on user_id.
-
 async function resolveProvider(req: Request, auth?: AuthContext | null): Promise<string> {
   const header = req.headers.get("x-opera-provider")?.trim().slice(0, 64) || "";
   if (/^[a-z0-9][a-z0-9_.-]{0,63}$/i.test(header)) return header.toLowerCase();
   const ua = req.headers.get("user-agent") || "";
   for (const [re, name] of PROVIDER_PATTERNS) if (re.test(ua)) return name;
-
-  // WHY the OAuth client name last: ChatGPT-style connectors cannot send custom
-  // headers and their server-side User-Agent carries no product name, but their
-  // dynamically registered OAuth client does ("ChatGPT"). The JWT is already
-  // verified by authenticate(); only its client_id claim is read here, and the
-  // result stays advisory metadata — isolation rests on user_id.
 
   if (auth?.type === "user") {
     try {
@@ -266,7 +240,8 @@ async function resolveProvider(req: Request, auth?: AuthContext | null): Promise
         const slug = typeof name === "string" ? slugifyProvider(name) : "";
         if (slug) return slug;
       }
-    } catch { /* dashboard metadata only */ }
+    } catch {
+ }
   }
   return "unknown";
 }
@@ -291,11 +266,6 @@ function bearerToken(req: Request) {
   const match = req.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i);
   return match?.[1]?.trim() || "";
 }
-
-// WHY an empty allowlist admits nobody rather than every confirmed account: every
-// caller drives the same device, DEVICE_NAME, and sign-up is open, so admitting
-// whoever Supabase confirms would hand a stranger the owner's browser. Access is the
-// static token or a named account until the device is resolved per account.
 
 async function authenticate(req: Request): Promise<AuthContext | null> {
   const token = bearerToken(req);
@@ -336,9 +306,7 @@ function textResult(value: unknown) {
 }
 
 function toolError(error: unknown) {
-  // Statement timeouts cancel the server-side wait, not the browser action:
-  // the outcome is unknown, so the model must verify state before retrying
-  // instead of treating the tool result as a definite failure.
+
   const raw = errorMessage(error);
   if (/statement timeout/i.test(raw)) {
     const unknownFailure = {
@@ -387,18 +355,13 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
     throw new Error(String(queued?.error || `Unable to queue ${method}.`));
   }
   if (provider) {
-    // WHY best-effort and never fatal: the provider is dashboard metadata, and a
-    // stamp failure must not fail a command that is already queued and billable.
+
     try {
       await supabase.from("opera_commands").update({ provider }).eq("id", String(queued.commandId));
-    } catch { /* dashboard metadata only */ }
+    } catch {
+ }
   }
 
-  // opera_await_adaptive rather than opera_await: identical signature and
-  // response envelope, but its ramp starts at 5ms instead of a flat 50ms, so a
-  // fast action is noticed sooner. Phase A measured the two at the same loop
-  // iteration count, so this is latency, not database cost. page.capture keeps
-  // opera_await_capture, which scrubs and rewrites the stored screenshot.
   const awaitFunction = method === "page.capture" ? "opera_await_capture" : "opera_await_adaptive";
   const completed = await rpc(awaitFunction, {
     p_command_id: queued.commandId,
@@ -417,10 +380,7 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
       ? (detail as { details: Record<string, unknown> }).details
       : undefined;
     if (code === "AWAIT_TIMEOUT") {
-      // The await deadline cancels the server-side wait, not the
-      // browser action — the outcome is unknown (parity with the
-      // statement-timeout envelope), so the model must verify page state
-      // before repeating the action instead of treating it as a failure.
+
       throw new CommandFailure(
         "AWAIT_OUTCOME_UNKNOWN",
         "The action result is unknown: the server stopped waiting before the browser reported back. The action may still have succeeded — verify the page state before repeating the action.",
@@ -441,8 +401,6 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
 function execute(method: string, params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
   return runCommand(method, params, timeoutMs, deviceName, provider).then(textResult).catch(toolError);
 }
-
-// Variant for screenshot captures
 
 function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
   return runCommand("page.capture", params, timeoutMs, deviceName, provider).then(screenshotResult).catch(toolError);
@@ -468,12 +426,6 @@ function sleepMs(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Versioned site workflows are the normal path for repeated multi-step
-// intents: opera_start_workflow snapshots the definition, inserts the run, and
-// fires the runner itself via pg_net, so a single RPC starts the whole plan.
-// The runner re-queries fresh controls on every retry iteration, which keeps
-// fast-changing UIs (ad overlays) from dying between observation and action.
-
 async function runWorkflow(name: string, input: Record<string, unknown>, waitTimeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
   const started = await rpc("opera_start_workflow", {
     p_name: name,
@@ -495,7 +447,8 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
   if (provider) {
     try {
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
-    } catch { /* dashboard metadata only */ }
+    } catch {
+ }
   }
   const startedAt = Date.now();
   let last: Record<string, unknown> | null = null;
@@ -519,11 +472,6 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
     timing
   };
 }
-
-// WHY a helper beside runWorkflow instead of inside it: a one-off write
-// compiles to a runner-shaped definition, registers under adhoc.*, runs, then
-// deletes. The runner itself is untouched, and the temporary row never
-// survives the call — the lease plus sweeper only cover the crash path.
 
 function rpcErrorParts(error: unknown, fallbackCode: string) {
   if (error && typeof error === "object" && !Array.isArray(error)) {
@@ -554,7 +502,8 @@ async function runAdhoc(
   const waitMs = Math.max(1000, Math.min(120000, waitTimeoutMs ?? 60000));
   try {
     await rpc("opera_sweep_ephemeral_workflows", {});
-  } catch { /* piggyback GC only; registration sweeps again server-side */ }
+  } catch {
+ }
   const registered = await rpc("opera_register_ephemeral_workflow", {
     p_request_id: requestId,
     p_definition: compiled.definition,
@@ -579,7 +528,8 @@ async function runAdhoc(
   if (provider) {
     try {
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
-    } catch { /* dashboard metadata only */ }
+    } catch {
+ }
   }
   const startedAt = Date.now();
   let last: Record<string, unknown> | null = null;
@@ -617,12 +567,6 @@ async function runAdhoc(
     ...(deleteError ? { deleteError } : {})
   };
 }
-
-// The VM host authenticates the same allowlisted user JWT the caller used on
-// this server, so the POST forwards Authorization token-identical (the same
-// bearer token; scheme case and spacing may normalize): minting identity
-// here would let one tenant enqueue as another. No new header names, and the
-// token never travels in the URL.
 
 async function callVmHost(
   operation: string,
@@ -677,12 +621,6 @@ async function callVmHost(
 function vmRunResult(value: unknown) {
   return textResult(value);
 }
-
-// WHY the literal and not a shared constant: the edge runtime cannot reach
-// extension/lib/protocol.js, so this cannot import PRODUCT_VERSION. It said
-// 1.6.0 through the whole 1.6.x line because nothing compared it to the
-// manifest. scripts/check.mjs now asserts these two agree, so the copy
-// cannot go stale again the moment it is edited without the other.
 
 const SERVER_VERSION = "1.6.22";
 
@@ -781,8 +719,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
   }, ({ task, site, lesson, pitfalls }: { task: string; site?: string; lesson: string; pitfalls?: string }) => {
-    // WHY a direct RPC and not the device command queue: the skill memory is
-    // shared across accounts, so there is no tab, timeout, or device to address.
+
     return rpc("opera_skill_save", { p_task: task, p_site: site ?? "", p_lesson: lesson, p_pitfalls: pitfalls ?? "" }).then((saved) => {
       if (!saved?.ok) {
         const parts = rpcErrorParts(saved?.error, "SKILL_SAVE_FAILED");
@@ -805,8 +742,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ query, site, limit }: { query: string; site?: string; limit?: number }) => {
-    // WHY a direct RPC and not the device command queue: the skill memory is
-    // shared across accounts, so there is no tab, timeout, or device to address.
+
     return rpc("opera_skill_recall", { p_query: query, p_site: site ?? "", p_limit: limit ?? 5 }).then((recalled) => {
       if (!recalled?.ok) {
         const parts = rpcErrorParts(recalled?.error, "SKILL_RECALL_FAILED");
@@ -887,16 +823,11 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
       p_after_seq: cursor ?? 0,
       p_timeout_ms: Math.max(500, Math.min(30000, timeoutMs ?? waitMs ?? 25000))
     }).then((waited) => {
-      // WHY filter here instead of in SQL: the RPC is granted to service_role
-      // and takes no tenant parameter (applied migrations are never rewritten),
-      // while device_name is globally unique and deviceName is always a device
-      // the caller owns — so only this device's events leave the server.
+
       const rows = waited && typeof waited === "object" && Array.isArray((waited as { events?: unknown }).events)
         ? (waited as { events: Array<{ device_name?: unknown }> }).events.filter((event) => event && event.device_name === deviceName)
         : [];
 
-      // WHY never force ok: a falsy envelope carries its own error code, and
-      // stamping ok:true over it would report success with empty events.
       const failed = waited && typeof waited === "object" && (waited as { ok?: unknown }).ok === false;
       return textResult({ ...waited as object, ...(failed ? {} : { ok: true }), events: rows, count: rows.length });
     }).catch(toolError);
@@ -1207,12 +1138,6 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, x, y, deltaX, deltaY, executionMode }: TargetTab & { x: number; y: number; deltaX?: number; deltaY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
-  // WHY four separate tools and not one "media" tool with an action enum: ChatGPT-style
-  // connectors list one row per tool, and a single media tool hides play behind a
-  // parameter the router never offers. The device already implements all four
-  // primitives; the surface simply never exposed them, so capability discovery
-  // advertised what no caller could invoke.
-
   server.registerTool("media_state", {
     title: "Read media playback state",
     description: "Report the page audio/video elements: presence and count, paused/ended, currentTime, duration, mute and volume. Read-only. Verify playback from this state, never from the wall clock.",
@@ -1260,11 +1185,6 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, ({ tabId, index, seconds, executionMode, timeoutMs }: TargetTab & { index?: number; seconds: number; executionMode?: ExecutionMode; timeoutMs?: number }) => execute("media.seek", { tabId, index, seconds, executionMode: executionMode ?? "background" }, timeoutMs, deviceName, provider));
-
-  // WHY three tools and not one: start and stop drive the device through the
-  // normal command queue (audited, budgeted, offline-aware), while read serves
-  // the transcript that already landed. Collapsing them would mix a device
-  // action with a database read, and the two fail in different ways.
 
   server.registerTool("media_stream_start", {
     title: "Start listening to tab audio",
@@ -1342,8 +1262,6 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== "POST") return json(req, { error: "method_not_allowed", error_description: "Use POST for stateless Streamable HTTP MCP." }, 405);
 
-  // Only unreachable when GoTrue itself is unconfigured, which no secret here
-  // controls. An unset allowlist is not a fault: it answers 401 to every caller.
   if (!SUPABASE_URL) {
     return json(req, { error: "server_misconfigured", error_description: "MCP authentication is not configured." }, 503);
   }
@@ -1364,8 +1282,6 @@ Deno.serve(async (req: Request) => {
     const response = await transport.handleRequest(req);
     const headers = new Headers(response.headers);
 
-    // Fail-closed: strip anything the transport set, then apply exactly the
-    // per-request allowlist headers (no ACAO unless the origin matched).
     headers.delete("Access-Control-Allow-Origin");
     for (const [key, value] of Object.entries(corsHeadersFor(req))) headers.set(key, value);
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });

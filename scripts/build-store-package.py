@@ -28,9 +28,6 @@ OUT_MANIFEST = os.path.join(REPO, "store", "store-manifest.json")
 
 STORE_NAME = "Opera Agent"
 
-# WHY 132 characters: that is the store's hard limit and it is counted on the
-# rendered listing, so anything longer is silently truncated rather than refused.
-
 STORE_DESC = (
     "Bawa asisten AI Anda mengemudikan browser: klik, ketik, isi formulir, "
     "baca halaman. Anda pilih modelnya."
@@ -41,23 +38,11 @@ def store_manifest():
     with open(os.path.join(EXT, "manifest.json"), encoding="utf-8") as handle:
         manifest = json.load(handle)
 
-    # WHY a copy and not a mutation: existing policy installs name the id derived
-    # from `key`, and the CRX served for updates is signed with it.
-    # Removing either from the real manifest would break every install that already
-    # works, and the store gives the extension a different id anyway.
-
     manifest.pop("key", None)
     manifest.pop("update_url", None)
 
-    # The store listing is the one place a person reads this, so the description
-    # here is the user-facing one rather than the internal one.
-
     manifest["name"] = STORE_NAME
     manifest["description"] = STORE_DESC
-
-    # WHY the version is rewritten rather than the source one touched: the store
-    # requires four dot-separated parts and the project carries three. The build
-    # appends a zero so a release version still sorts and compares as expected.
 
     parts = manifest.get("version", "0.0.0").split(".")
     if len(parts) == 3:
@@ -80,9 +65,6 @@ def write_manifest(manifest):
 def build_zip(manifest):
     os.makedirs(os.path.dirname(OUT_ZIP), exist_ok=True)
 
-    # Staging in a temp directory is what lets manifest.json be written last with
-    # the store's field set, without a second copy of every other file in the repo.
-
     stage = tempfile.mkdtemp(prefix="opera-store-")
     try:
         for name in os.listdir(EXT):
@@ -96,10 +78,6 @@ def build_zip(manifest):
             json.dump(manifest, handle, indent=2, ensure_ascii=False)
             handle.write("\n")
 
-        # WHY the fixed timestamp: a zip entry carries the file's mtime, so two builds
-        # of identical source produce different bytes and a different digest. The
-        # digest is what gets recorded for the upload, so it has to mean something.
-
         stamp = (1980, 1, 1, 0, 0, 0)
         with zipfile.ZipFile(OUT_ZIP, "w", zipfile.ZIP_DEFLATED) as archive:
             for root, dirs, files in os.walk(stage):
@@ -109,9 +87,6 @@ def build_zip(manifest):
                     info = zipfile.ZipInfo(
                         os.path.relpath(full, stage).replace(os.sep, "/"), stamp
                     )
-
-                    # ZipInfo defaults to stored mode when written this way, so the
-                    # compression has to be set explicitly or the package grows.
 
                     info.compress_type = zipfile.ZIP_DEFLATED
                     info.external_attr = 0o644 << 16

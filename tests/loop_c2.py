@@ -84,7 +84,6 @@ document.addEventListener('keydown', (event) => {
 </script>
 </body></html>"""
 
-
 class C2Handler(BaseHTTPRequestHandler):
 
     def log_message(self, *_):
@@ -97,7 +96,6 @@ class C2Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
-
 
 async def drive(port, profile, gameport):
     async with async_playwright() as p:
@@ -152,7 +150,6 @@ async def drive(port, profile, gameport):
         opened = await cmd('tabs.open', {'url': f'http://{H.HOST}:{gameport}/game', 'active': False, 'wait': True})
         tab_id = H.assert_completed_ok(opened)['tab']['id']
 
-        # Phase 1: the C1 red-telegraph table against a game that turns fast.
         started = await cmd('loop.start', {'tabId': tab_id, 'program': {
             'tickMs': 200, 'maxTicks': 200, 'maxDurationMs': 60000,
             'sensors': [
@@ -167,7 +164,6 @@ async def drive(port, profile, gameport):
         loop1 = H.assert_completed_ok(started)['loopId']
         print('phase 1 loop:', loop1)
 
-        # Text-only watch: trace plus DOM text, never a screenshot.
         dead = False
         for _ in range(90):
             await asyncio.sleep(0.5)
@@ -184,7 +180,6 @@ async def drive(port, profile, gameport):
         assert dead or 'dead' in text1, 'anomaly never killed phase 1; C2 inconclusive: ' + text1
         print('anomaly killed phase 1 (text evidence only)')
 
-        # Fresh game, revised table: dodge on blue approach over the wide lane.
         await cmd('tabs.reload', {'tabId': tab_id})
         await asyncio.sleep(1.5)
         started2 = await cmd('loop.start', {'tabId': tab_id, 'program': {
@@ -209,7 +204,6 @@ async def drive(port, profile, gameport):
         assert 'alive' in text2 and 'dead' not in text2, text2
         print('C2 GREEN: recovered without one screenshot')
 
-
 def main():
     server = ThreadingHTTPServer((H.HOST, 0), C2Handler)
     gameport = server.server_address[1]
@@ -227,7 +221,6 @@ def main():
         bridge.shutdown()
         bridge.server_close()
         profile.cleanup()
-
 
 if __name__ == '__main__':
     main()

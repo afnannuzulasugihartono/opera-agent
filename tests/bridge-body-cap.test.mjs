@@ -28,9 +28,6 @@ function harness({ claim = { ok: false, error: 'Unauthorized device.' } } = {}) 
     createClient: () => client,
     createEdgeLog: () => ({ error() {} }),
 
-    // The real allowlist, not a stub: the bridge decides its Access-Control-Allow-
-    // Origin per request through this helper, and a stubbed one would let the
-    // header behaviour pass without ever exercising the shipped allowlist.
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
     Deno: { env: { get: () => 'test' }, serve: (fn) => { handler = fn; } },
     Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
@@ -62,7 +59,6 @@ test('a chunked body without content-length is still capped at 1 MiB', async () 
   const response = await h.pull(body, {
     headers: { 'Content-Type': 'application/json' }, duplex,
 
-    // undici would set content-length for a string; the stream arrives chunked.
   });
   assert.equal(response.status, 413);
   assert.equal((await response.json()).error, 'Request too large.');
@@ -78,9 +74,7 @@ test('a small chunked body still parses and reaches the pull path', async () => 
 });
 
 test('an oversize chunked body aborts at the cap instead of buffering whole', async () => {
-  // WHY pull-counting chunks: req.text() drains every chunk before measuring,
-  // so a reader that aborts early must leave most of the stream unread. 128
-  // chunks of 16 KiB (2 MiB) against the 1 MiB cap must die after ~65 pulls.
+
   const TOTAL = 128;
   const CHUNK = 16 * 1024;
   let pulled = 0;

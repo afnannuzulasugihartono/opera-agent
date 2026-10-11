@@ -8,22 +8,12 @@ import assert from 'node:assert/strict';
 
 import { commentClasses, spacingViolations } from './helpers/comment-spacing.mjs';
 
-// WHY this shape: every case below is the same experiment — assemble a few
-// source lines, hand them to the scanner, compare what came back. That assembly
-// used to be written out once per case, so the copy-paste detector counted 144
-// duplicated lines here out of 217 and this single file carried 94% of the
-// repository's duplication. The helper appends the trailing blank line every
-// fixture ended with, so the text each scanner sees is byte-identical to before.
-
 const source = (...lines) => [...lines, ''].join('\n');
 const scan = (file, ext, ...lines) => spacingViolations(file, source(...lines), ext);
 const probe = (ext, ...lines) => commentClasses(source(...lines), ext);
 
 test('an interpolation does not blind the scanner to the comments below it', () => {
-  // WHY this shape: `${name}` put classifyJs into template mode and left it there, so every
-  // line after it was read as string content. Comments stopped existing for the scanner,
-  // spacingViolations returned nothing, and the whole repo reported clean. The rule was
-  // never running on the 106 files that interpolate.
+
   assert.deepEqual(scan('x.mjs', '.mjs',
     'const url = new URL(`./f/${name}`, import.meta.url);',
     '',
@@ -31,10 +21,6 @@ test('an interpolation does not blind the scanner to the comments below it', () 
     'const x = 1;',
   ), ['x.mjs:4 no blank line after the comment block']);
 
-  // WHY the other half: every case in this file demands that a violation be found, so a
-  // scanner flagging every single line would still pass all of them. The same fixture with
-  // its blank line restored has to come back empty — the only thing that separates a
-  // scanner which is not blind from one which is actually right.
   assert.deepEqual(scan('clean.mjs', '.mjs',
     'const url = new URL(`./f/${name}`, import.meta.url);',
     '',
@@ -55,8 +41,7 @@ test('the comment itself is classified, not just the violation it causes', () =>
 });
 
 test('an interpolation carrying its own braces returns to the template', () => {
-  // WHY: depth has to start at the brace `${` already consumed. Counting from zero popped
-  // at the inner closing brace and left the rest of the line read as code.
+
   const seen = probe('.mjs',
     'const t = `a${ { k: 1 }.k }b`;',
     '',
@@ -69,8 +54,7 @@ test('an interpolation carrying its own braces returns to the template', () => {
 });
 
 test('a // inside a string is still not a comment', () => {
-  // WHY paired with the fix: loosening the scanner would trade blindness for false
-  // comments, and a URL in a string is common enough to fire on.
+
   assert.deepEqual(scan('y.mjs', '.mjs',
     "const url = 'https://example.test/path';",
     '',
@@ -90,10 +74,7 @@ test('an indented comment inside a function is judged like any other block', () 
 });
 
 test('a regex literal holding a quote does not blind the comments below it', () => {
-  // WHY this shape: a `"` inside `/…/` opened a string the scanner never closed, so
-  // every comment after it in the file was read as string content. api-docs.test.mjs
-  // and hygiene.test.mjs both went unread this way — one for a quote, one for the
-  // apostrophe in `Don't`.
+
   assert.deepEqual(scan('r.mjs', '.mjs',
     'const m = [...list.matchAll(/endsWith\\("([^"]+)"\\)/g)];',
     '',
@@ -103,9 +84,7 @@ test('a regex literal holding a quote does not blind the comments below it', () 
 });
 
 test('a regex literal holding a backtick does not open a template', () => {
-  // WHY: scripts/scope-check.mjs carried `` /`([^`]+)`/g `` on line 19 and never left
-  // template mode again — the mode probe ended the file still inside it, with 15
-  // comments unread behind it.
+
   assert.equal(probe('.mjs',
     'const BACKTICKS = /`([^`]+)`/g;',
     '',
@@ -115,10 +94,7 @@ test('a regex literal holding a backtick does not open a template', () => {
 });
 
 test('division is not mistaken for a literal that swallows the comment after it', () => {
-  // WHY paired with the fix: the heuristic could only ever trade blindness for blindness
-  // in the other direction — treating `a / b` as a literal would consume up to the next
-  // slash and take a real `//` with it. regexLiteralEnd returns -1 when a comment or a
-  // block opener arrives before any closing slash, and this is the shape that proves it.
+
   assert.deepEqual(scan('d.mjs', '.mjs',
     'const s = fmt(a / b // nothing closed here',
     '  , c);',
@@ -129,8 +105,7 @@ test('division is not mistaken for a literal that swallows the comment after it'
 });
 
 test('the body of a script tag is classified as JavaScript, not as HTML', () => {
-  // WHY: classifyHtml read only `<!--`, so all 293 comments inside this tree's inline
-  // module scripts were outside the rule while every one of those files reported clean.
+
   assert.deepEqual(scan('p.html', '.html',
     '<script type="module">',
     '  // WHY this is a real comment inside a module script',
@@ -140,8 +115,7 @@ test('the body of a script tag is classified as JavaScript, not as HTML', () => 
 });
 
 test('every line of a comment that opens on its own line is a comment', () => {
-  // WHY: `<!--` and `-->` sit on separate lines in this tree's page headers, and reading
-  // each line alone left the @title and @dependencies lines classified as code.
+
   assert.deepEqual(scan('h.html', '.html',
     '<!--',
     '  @title: the second line of this comment was read as code',
@@ -149,10 +123,6 @@ test('every line of a comment that opens on its own line is a comment', () => {
     '<p>hi</p>',
   ), ['h.html:4 no blank line after the comment block']);
 
-  // WHY the other direction: the HTML classifier reaches the rule by its own path, so a page
-  // whose comments are all correctly spaced has to come back empty from that path. Without
-  // this, every assertion in this file about pages proves only that violations can be found
-  // — never that the right ones are.
   assert.deepEqual(scan('quiet.html', '.html',
     '<p>above</p>',
     '',
@@ -163,10 +133,7 @@ test('every line of a comment that opens on its own line is a comment', () => {
 });
 
 test('JavaScript inside a shell string in a YAML run block is still JavaScript', () => {
-  // WHY: publish-crx.yml hands a double-quoted body to `node -e`, and classifyHash reads
-  // only `#` — so the five comments it carries were never examined. The region ends at
-  // the first bare quote in code position, which in valid JavaScript can only be the
-  // shell closing its own string.
+
   assert.deepEqual(scan('w.yml', '.yml',
     'jobs:',
     '  build:',
@@ -180,8 +147,7 @@ test('JavaScript inside a shell string in a YAML run block is still JavaScript',
 });
 
 test('a shell region with no closing quote is not treated as one', () => {
-  // WHY: a mistakable match has to cost nothing. `node -e "…"` that never closes leaves
-  // the region unopened rather than running the JavaScript classifier to end of file.
+
   assert.equal(probe('.yml',
     '      node -e "process.exit(1)" \\',
     '        || exit 1',
@@ -190,9 +156,7 @@ test('a shell region with no closing quote is not treated as one', () => {
 });
 
 test('a dialect with no file extension still comments with #', () => {
-  // WHY: path.extname reports '' for `.gitignore`, `CODEOWNERS` and `_headers`. Without
-  // the empty key the walk returned null for every one of them — 19 comments in the root
-  // ignore file alone, never opened while the rule claimed the whole tree.
+
   assert.deepEqual(scan('ignorefile', '',
     '# @title: root ignore file',
     'node_modules/',
@@ -211,11 +175,7 @@ test('toml and env files comment with # and are read like any other dialect', ()
 });
 
 test('every comment block in a file is reported where it actually sits', () => {
-  // WHY this shape: every case above puts exactly one block in the file, so a scanner that
-  // reported only the first violation it found would satisfy all of them. Real files carry
-  // many — the longest in this tree carries sixty — and each has to be named at its own
-  // line, because a rule that reports line 4 when the fault is on line 47 sends a reader
-  // to the wrong place and they stop trusting it.
+
   const found = scan('two.mjs', '.mjs',
     'const a = 1;',
     '',
@@ -231,9 +191,7 @@ test('every comment block in a file is reported where it actually sits', () => {
 });
 
 test('a file with no comments at all reports nothing', () => {
-  // WHY: it is the commonest shape in the tree and nothing here had covered it. Every case
-  // above hands the scanner something to find, so a scanner that flagged plain code would
-  // have gone unnoticed by all of them while reporting every clean file as dirty.
+
   const found = scan('plain.mjs', '.mjs',
     'const a = 1;',
     'const b = a + 1;',
@@ -244,10 +202,7 @@ test('a file with no comments at all reports nothing', () => {
 });
 
 test('a comment on the first line has no code above it to be spaced from', () => {
-  // WHY: the rule asks for a blank line before a comment block, but at the top of a file
-  // there is nothing above it to space from. Treating the start of the file as though a
-  // statement preceded it would mark every file whose first line is its own header — and
-  // that is most of them.
+
   const found = scan('header.mjs', '.mjs',
     '// @title: the first line of this file is its own comment',
     '',
@@ -257,9 +212,7 @@ test('a comment on the first line has no code above it to be spaced from', () =>
 });
 
 test('a comment that ends the file still needs the code above it spaced', () => {
-  // WHY: the other edge. A trailing block is where the walk stops, and a scanner that
-  // stopped before judging it would leave the last comment in every file outside the
-  // rule while the rest of the file reported clean.
+
   const found = scan('tail.mjs', '.mjs',
     'const a = 1;',
     'const b = a + 1;',

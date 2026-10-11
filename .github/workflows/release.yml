@@ -45,11 +45,6 @@ jobs:
           (cd extension && zip -r "../Opera-Agent-${VERSION}-extension.zip" .)
           git archive --format=zip --output="Opera-Agent-${VERSION}-source.zip" HEAD
 
-      # WHY the id is derived here and not written down: the CRX lives under the
-      # path named after the extension id, and Chrome derives that id from the
-      # manifest key. Hardcoding it is how the 1.6.15 release ended up fetching a
-      # 404 while the CRX itself was published correctly.
-
       - name: Fetch and verify signed CRX
         shell: bash
         run: |
@@ -67,12 +62,6 @@ jobs:
             --dump-header "${RUNNER_TEMP}/crx.headers" \
             "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-${EXTENSION_ID}-${VERSION}.crx" \
             --output "Opera-Agent-${VERSION}.crx"
-
-          # WHY compare against the served ETag and not a file in the tree: the
-          # update function already publishes the digest it stored, so the bytes
-          # just downloaded can be checked against the same value the browser will
-          # cache. docs/releases/ held these digests once and was deleted, which is
-          # what left this step asserting a file that no longer existed.
 
           EXPECTED="$(grep -i '^etag:' "${RUNNER_TEMP}/crx.headers" | tr -d '\r"' | sed 's/^[Ee][Tt][Aa][Gg]: *//')"
           ACTUAL="$(sha256sum "Opera-Agent-${VERSION}.crx" | cut -d' ' -f1)"

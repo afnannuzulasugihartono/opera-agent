@@ -24,11 +24,6 @@ export class LedgerTokenError extends Error {
   }
 }
 
-/**
- * @returns {never} Always throws; annotated so Deno infers that callers
- * never fall through (otherwise token openers look nullable).
- */
-
 function fail(code, message) {
   throw new LedgerTokenError(code, message);
 }
@@ -78,12 +73,6 @@ export async function sealLedgerToken(ledgerInput, keyBytes, { requestId, issued
   if (new TextEncoder().encode(token).byteLength > LEDGER_SERVER_LIMITS.tokenBytes) fail('OVER_LIMIT', 'Ledger token exceeds its byte limit.');
   return token;
 }
-
-/**
- * @param {string} token
- * @param {Uint8Array} keyBytes
- * @param {{ now?: string, allowExpired?: boolean }} [options]
- */
 
 export async function openLedgerToken(token, keyBytes, { now, allowExpired = false } = {}) {
   if (typeof token !== 'string' || new TextEncoder().encode(token).byteLength > LEDGER_SERVER_LIMITS.tokenBytes) {

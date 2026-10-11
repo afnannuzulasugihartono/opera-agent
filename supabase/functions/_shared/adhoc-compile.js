@@ -5,10 +5,6 @@
 
 export const MAX_COMMAND_NODES = 12;
 
-// WHY no export: the byte ceiling and the repeat ceiling are read only by the two
-// checks below. Exporting them promised a contract nothing imports, and the
-// re-export shim in lib/ then carried that promise to the Node suite as well.
-
 const MAX_DEFINITION_BYTES = 32768;
 const REPEAT_MAX = 6;
 

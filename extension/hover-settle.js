@@ -25,8 +25,6 @@
   'use strict';
   if (globalThis.OperaAgentHoverSettle) return;
 
-  // Published on globalThis, so it is frozen: a sibling content script must not
-  // be able to change the default settle budget for every later hover.
   const DEFAULTS = Object.freeze({ timeoutMs: 1500, intervalMs: 50, stableRounds: 2 });
 
   function clamp(value, min, max, fallback) {
@@ -45,13 +43,10 @@
     };
   }
 
-  // Called once per poll. Returns whether the hover has landed and why, so the
-  // in-page loop and the reported reason can never disagree.
   function plan(state) {
     const input = state || {};
     const wanted = String(input.text == null ? '' : input.text).trim().toLowerCase();
 
-    // An explicit expectation is satisfied only by actually observing it.
     if (wanted) {
       const seen = String(input.observedText == null ? '' : input.observedText).toLowerCase();
       if (seen.includes(wanted)) {
@@ -63,7 +58,6 @@
       return { done: false, reason: 'awaiting_text' };
     }
 
-    // A control that reports its own expansion flipping is a real signal.
     if (input.ariaExpanded != null && input.previousAriaExpanded != null
       && input.ariaExpanded !== input.previousAriaExpanded) {
       return { done: true, reason: 'aria_expanded_changed' };

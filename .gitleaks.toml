@@ -26,15 +26,13 @@ useDefault = true
 [[rules]]
 id = "generic-api-key"
 
-# Inherits all default generic-api-key attributes; entries only add allowlists.
-
   [[rules.allowlists]]
   description = "Chrome extension manifest 'key' is the public half pinned for a stable extension ID (Chrome docs); safe to commit. The v2/ copy stopped existing with the v2 tree, so the path list is the one that is still there."
   condition = "AND"
   paths = ['''^extension/manifest\.json$''']
   regexTarget = "line"
   regexes = [
-    # Only the manifest key field carrying a public RSA key blob.
+
     '''"key":\s?"MIIBI''',
   ]
 
@@ -59,14 +57,6 @@ id = "generic-api-key"
 
   [[rules.allowlists]]
 
-  # WHY this one exists: gitleaks ran on this tree on 2026-10-05 and reported four leaks
-  # that are not leaks. A Supabase publishable key is public by design -- it is the
-  # counterpart of a secret key and the whole product is a client-side site whose only
-  # boundary is RLS, so it has to be in the page. The management token is not, and is not
-  # in the tree.
-  #
-  # The regex is the assignment and the publishable prefix together, so a different
-  # credential appearing on any of these pages is still reported.
   description = "Supabase publishable key, public by design and required in a client-side page; the secret key and the management token are not in the tree."
   condition = "AND"
   paths = ['''^landing/.*\.html$''']
@@ -78,4 +68,3 @@ id = "generic-api-key"
 [[rules]]
 id = "jwt"
 
-# Inherits all default jwt attributes; no allowlist: the test that needed one is gone.

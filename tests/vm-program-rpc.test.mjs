@@ -15,9 +15,6 @@ const body = fs.readdirSync(dir)
 
 const RPCS = ['opera_vm_enqueue', 'opera_vm_get', 'opera_vm_cancel'];
 
-// Slice every `CREATE ... FUNCTION public.<fn>` definition from the joined
-// migration text: from its CREATE up to (excluding) the next CREATE FUNCTION.
-
 function definitionsOf(fn) {
   return body
     .split(/(?=create\s+(?:or\s+replace\s+)?function\s+)/i)

@@ -126,5 +126,4 @@ grant execute on function public.opera_await_adaptive(uuid,integer) to service_r
 revoke all on function public.opera_run_fast(text,jsonb,integer,text,text) from public,anon,authenticated;
 grant execute on function public.opera_run_fast(text,jsonb,integer,text,text) to service_role;
 
--- Retention: watch events are a notification stream, not an archive.
 delete from public.opera_watch_events where created_at < now() - interval '24 hours';

@@ -34,8 +34,6 @@ async function boundedJson(response) {
   } finally { await reader.cancel().catch(()=>{}); }
 }
 
-/** @param {{publicKey?:string, now?:()=>number, fetchImpl?:typeof fetch, verifyAccessToken?:(credential:string,signal:AbortSignal)=>Promise<{signedClaimsVerified:boolean,hostStatusHttpStatus:number,hostIdentityAccepted:boolean,hostDisabled:boolean,browserDispatchAllowed:boolean}>}} options */
-
 export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyAccessToken}={}) {
   if(verifyAccessToken!==undefined&&typeof verifyAccessToken!=='function')throw new Error('INVALID_TRUSTED_VERIFIER');
   if(typeof publicKey!=='string' || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicKey)) throw new Error('PUBLIC_PUBLISHABLE_KEY_REQUIRED');
@@ -80,14 +78,12 @@ export function createOAuthProbe({publicKey,now=Date.now,fetchImpl=fetch,verifyA
         !Number.isFinite(tokens.expires_in) || tokens.expires_in<=0) throw new Error();
       accessToken=tokens.access_token;
 
-      // Do not retain refresh/id tokens or inspect/decode claims as authority.
       tokens.access_token=null; tokens.refresh_token=null; tokens.id_token=null;
       if(abort.signal.aborted || now()>=deadline) throw new Error();
       const user=await boundedJson(await fetchImpl(ISSUER+'/auth/v1/user',{method:'GET',redirect:'error',signal:requestSignal(),
         headers:{apikey:publicKey,Authorization:'Bearer '+accessToken}}));
       if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(user.id??'') || abort.signal.aborted || now()>=deadline) throw new Error();
 
-      // Only Auth user-endpoint success. No host client/session admission or approval claim.
       let extra={};
       if(verifyAccessToken){
         extra=await verifyAccessToken(accessToken,signal);

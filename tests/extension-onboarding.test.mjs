@@ -23,9 +23,6 @@ test('the popup speaks Indonesian and names where the code comes from', () => {
   assert.match(html, /Sambungkan device/, 'the pairing section says what it does');
   assert.match(html, /Masukkan kode pairing/, 'the field says what to type');
 
-  // WHY the anchor and not just the dashboard: the code is made in one section
-  // of that page, and a stranger sent to the top of it scrolls past everything
-  // else looking for the button.
   assert.match(html, /dashboard\.html#pairing/, 'the hint links the exact section that makes the code');
 });
 
@@ -37,8 +34,6 @@ test('the popup status answers in Indonesian, every state of it', () => {
   assert.match(script, /'Diizinkan'/, 'an allowed tab says so');
   assert.match(script, /'Diblokir \(privat\)'/, 'a private tab says why it is blocked');
 
-  // WHY the link is built from SITE_ORIGIN and not written out: the origin moved
-  // once already, and a literal here would be the next stale link.
   assert.match(script, /SITE_ORIGIN/, 'the dashboard link follows the single source of truth');
 });
 
@@ -50,9 +45,7 @@ test('the options page speaks Indonesian too', () => {
 });
 
 test('every user-facing error is Indonesian, never a raw internal', () => {
-  // WHY one assertion per known source: the mapper only maps exact static source
-  // strings, so a source added without its Indonesian pair falls back to GENERIC
-  // and the popup starts speaking English again with no test turning red.
+
   for (const source of [
     'Pairing failed.',
     'Invalid pairing code.',

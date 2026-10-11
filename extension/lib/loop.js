@@ -20,14 +20,7 @@ export const LOOP_TEMPLATE_MAX_BYTES = 32768;
 export const LOOP_TIMER_MIN_MS = 50;
 export const LOOP_TIMER_MAX_MS = 60000;
 
-// Synthetic input that never visibly acts for this many firing ticks in a
-// row is treated as ignored by the page: the loop flips to the trusted path
-// mid-run and records the tick it flipped on.
-
 export const LOOP_SYNTHETIC_DEAD_TICKS = 3;
-
-// FPS-style bands, locked in plan: green runs full rate, yellow degrades,
-// orange sheds to cheap sensors, red counts toward the overrun guard.
 
 export const LOOP_TICK_BANDS = Object.freeze({ green: 60, yellow: 150, orange: 250 });
 
@@ -164,11 +157,6 @@ export function validateLoopProgram(program) {
     }
   }
 
-  // Budgets fail closed: an explicit out-of-range maxTicks or maxDurationMs is
-  // rejected, never silently clamped to the max. Only an absent budget (or
-  // null, which JSON callers use for absent) falls back to the max allowance.
-  // Booleans are rejected explicitly: Number(true) === 1 would otherwise slip
-  // through as a valid budget (same class as the tabId boolean rejection).
   if (program.maxTicks !== undefined && program.maxTicks !== null) {
     if (typeof program.maxTicks === 'boolean') {
       return { ok: false, error: `Loop maxTicks must be an integer from 1 to ${LOOP_MAX_TICKS}.` };
@@ -213,10 +201,6 @@ export function validateLoopProgram(program) {
   };
 }
 
-// Tick state: the executor brain without any DOM. Bands feed the degrade
-// ladder (full → degraded → shed) and consecutive reds trip the overrun
-// guard; green ticks flush the window back to full.
-
 export const LOOP_TRACE_LIMIT = 500;
 export const LOOP_BAND_WINDOW = 20;
 export const LOOP_OVERRUN_REDS = 5;
@@ -245,10 +229,6 @@ export function recordTick(state, reading = {}) {
   const band = classifyTickBand(reading.workMs);
   const fired = Number.isFinite(Number(reading.fired)) && Number(reading.fired) > 0 ? Math.floor(Number(reading.fired)) : 0;
 
-  // Active sensor ids ride the trace so inputs (rules bound to them) can be
-  // matched against outputs (unbound sense-only sensors) after the run.
-  // Compact per-sensor values ride along for the same reason: a sensor that
-  // never fires is indistinguishable from a blind one without its numbers.
   const active = Array.isArray(reading.active) ? reading.active.filter((id) => typeof id === 'string').slice(0, 8) : [];
   const values = {};
   if (reading.values && typeof reading.values === 'object') {
@@ -264,9 +244,6 @@ export function recordTick(state, reading = {}) {
   if (state.bands.length > LOOP_BAND_WINDOW) state.bands.splice(0, state.bands.length - LOOP_BAND_WINDOW);
   state.trace.push({ tick: state.tick, band, fired, sensors: active, values });
 
-  // Phase timings ride along when the caller measured them: capture, sense,
-  // and act have different owners (CDP, pixel math, input), so a slow tick
-  // is only diagnosable when the total is split.
   if (reading.timing && typeof reading.timing === 'object') {
     const timing = {};
     for (const [key, value] of Object.entries(reading.timing).slice(0, 8)) {
@@ -277,10 +254,6 @@ export function recordTick(state, reading = {}) {
   if (state.trace.length > LOOP_TRACE_LIMIT) state.trace.splice(0, state.trace.length - LOOP_TRACE_LIMIT);
   return { band, mode: loopMode(state), overrun: loopOverrun(state) };
 }
-
-// Pixel sensors: pure RGBA math over caller-supplied buffers. The executor
-// reads pixels via canvas in-page; these functions decide what the pixels
-// mean, so they run identically in Node tests and in the content script.
 
 function luminanceAt(data, i) {
   return 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
@@ -353,16 +326,7 @@ export function matchTemplate(region, regionWidth, regionHeight, template, templ
   return best;
 }
 
-// Changed-mass centroid: where the motion is, not just whether any exists.
-// Uniform scrolling (ground dots) centres every frame, so its velocity reads
-// ~0 and stays quiet; an entering obstacle shifts the centroid hard.
-
 export const LOOP_TRACK_MIN_RUN = 12;
-
-// Rightmost solid front: the x of the rightmost column holding a vertical
-// run of changed pixels. Speckle (ground dots, JPEG shimmer) never forms a
-// run, so it cannot pin the front; a cactus column always does. This is what
-// lets a track sensor ignore texture and time the threat itself.
 
 export function frontOfChanged(a, b, width, height, perPixel = 16, minRun = LOOP_TRACK_MIN_RUN) {
   if (!a || !b || a.length !== b.length || a.length !== width * height * 4 || a.length === 0) return null;
@@ -388,10 +352,6 @@ export function frontOfChanged(a, b, width, height, perPixel = 16, minRun = LOOP
   }
   return null;
 }
-
-// Time-to-impact from two front sightings. Positions run in crop pixels with
-// x growing rightward, so an approaching obstacle has a falling x. Returns
-// impact milliseconds, or null when there is nothing to time.
 
 export function centroidTrack(prevX, currX, dtMs, padPx, leadMs) {
   if (prevX == null || currX == null) return null;

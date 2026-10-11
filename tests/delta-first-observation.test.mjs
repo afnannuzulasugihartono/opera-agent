@@ -192,8 +192,7 @@ function patch(result) {
 }
 
 function sha1Blob(bytes) {
-  // Lock constants are git blob hashes of the committed LF bytes; strip
-  // checkout-added CR so autocrlf checkouts hash identically to CI.
+
   const content = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
   return createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
@@ -554,7 +553,7 @@ test('does not synthesize completion or foreground/browser authority', () => {
 });
 
 test('keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
-  // Lock set: the public MCP surface stays byte-identical (see helper for the authorization history).
+
   const files = new Map(PUBLIC_SURFACE_LOCKS);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));

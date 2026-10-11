@@ -33,7 +33,6 @@ test('the geometry tolerance is unchanged and still unbroadened', () => {
   const tolerance = source.match(/const GEOMETRY_DRIFT_TOLERANCE_PX = (\d+)/)?.[1];
   assert.equal(tolerance, '24', 'the guard value must not be widened');
 
-  // The mint-time comparison itself must still be the deciding test.
   const geometry = source.slice(
     source.indexOf('function geometryMatchesMint'),
     source.indexOf('\n  // U-I (I4')
@@ -47,16 +46,13 @@ test('the geometry tolerance is unchanged and still unbroadened', () => {
 test('a moved successor is still refused, and the stale ref is never revived', () => {
   const block = resolveBlock();
 
-  // The refusal must still happen, and it must still throw rather than rebind.
   assert.match(block, /if \(!geometryMatchesMint\(replacement, descriptor\)\) \{[\s\S]*?throw new Error\(/);
 
-  // A rebind may only happen after the guard passed.
   assert.ok(
     block.indexOf('if (!geometryMatchesMint') < block.lastIndexOf('reverseRefs.set(key, replacement)'),
     'the rebind assignment must come after the geometry guard'
   );
 
-  // The guard must not be short-circuited for any candidate class.
   assert.doesNotMatch(block, /geometryMatchesMint\([^)]*\) \|\|/);
   assert.doesNotMatch(block, /skipGeometry|ignoreGeometry|forceRebind/i);
 });
@@ -64,15 +60,12 @@ test('a moved successor is still refused, and the stale ref is never revived', (
 test('recovery is bounded and only offers refs that are already safe to act on', () => {
   const block = resolveBlock();
 
-  // Only the unique-candidate branch may offer a fresh ref, and it is capped.
   assert.match(block, /const candidates = revalidationCandidates\(descriptor\);\s*if \(candidates\.length !== 1\) return null;/);
   assert.match(block, /candidates\.slice\(0, 3\)\.map/);
 
-  // Each offered candidate must carry a freshly minted ref and its actionability.
   assert.match(block, /freshRef: getRef\(el\)/);
   assert.match(block, /actionable: s\.actionable/);
 
-  // Uniqueness is still required, so an ambiguous pool is never resolved.
   assert.match(block, /if \(candidates\.length !== 1\) return null;/);
 });
 
@@ -81,11 +74,8 @@ test('the refusal message is diagnostic and tells the model how to recover', () 
   assert.match(block, /refusing automatic rebind of the stale ref/);
   assert.match(block, /may be acted on directly without re-running find/);
 
-  // It reports the measured drift and the tolerance, so a failure is
-  // diagnosable rather than guesswork.
   assert.match(block, /drift \$\{Math\.round\(driftPx\)\}px, tolerance \$\{GEOMETRY_DRIFT_TOLERANCE_PX\}px/);
 
-  // Value-bearing state must not leak into the message.
   const messageBlock = block.slice(block.indexOf('const currentCandidates'));
   assert.doesNotMatch(messageBlock, /value:|includeValue/);
 });
@@ -93,14 +83,10 @@ test('the refusal message is diagnostic and tells the model how to recover', () 
 test('sensitive targets are never offered a fresh ref', () => {
   const block = resolveBlock();
 
-  // The sensitive descriptor short-circuits before any candidate pool is built,
-  // so a re-acquisition can never touch one.
   assert.match(block, /if \(descriptor\.sensitive\) return null;/);
   const pool = block.slice(block.indexOf('const candidates = revalidationCandidates'));
   assert.match(pool, /freshRef: getRef\(el\)/);
 
-  // And the candidate pool itself filters on actionability, which excludes
-  // sensitive surfaces.
   const revalidation = source.slice(
     source.indexOf('function revalidationCandidates'),
     source.indexOf('function resolveActionRef')
@@ -112,13 +98,9 @@ test('the model is told the fresh refs are directly actionable', async () => {
   const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   assert.match(mcp, /that stale ref is refused on purpose/);
 
-  // The instructions must name the field the extension actually ships. The envelope
-  // carries `candidates`, and each entry carries `freshRef`; an instruction that
-  // said "freshRefs" pointed a model at a field that does not exist.
   assert.match(mcp, /the error carries candidates, each entry holding a freshRef/);
   assert.match(mcp, /act on one of those freshRef values directly/);
   assert.doesNotMatch(mcp, /carries freshRefs/);
 
-  // The instructions must not tell the model to bypass the guard.
   assert.doesNotMatch(mcp, /increase the geometry tolerance|widen the tolerance/);
 });

@@ -107,27 +107,76 @@
 #    the easiest to leave unmentioned, because fixing it is work. It is also the one
 #    the next reader is least likely to find, having trusted a green run. Name it
 #    in the summary, unprompted.
-scripts/check.mjs 2e404f887c522d9e4d96cb787d27f6e89d946e3f
-scripts/scope.mjs 1cdbb3cea233d46baff049b1c5ac94232da0adfd
-scripts/scope-check.mjs ad0d41318f62ca836c0dda44312a5dc64a205f6d
+#
+# 6. A COMMENT DOCUMENTS A DECLARATION, SO IT STANDS OUTSIDE IT.
+#
+#    ALLOWED: a comment above a declaration or statement at the top level of its
+#    block — the file header, a function above its signature, a config key above
+#    its value. It documents what comes next, and is outside it.
+#
+#    FORBIDDEN: a comment inside a body. Between two statements of a function,
+#    inside a loop, inside an if, in the middle of a stylesheet, in the middle of a
+#    SQL statement. If it is about code above, it belongs above that code; if it
+#    is about code below, it belongs above that.
+#
+#    WHY, MEASURED: 4,036 comments in this repository, a large share of them
+#    inside bodies. The cost was never the words — it was placement. A comment
+#    three lines from the decision it describes stops describing it the moment the
+#    code moves, and nothing notices, because a stale comment is still
+#    syntactically a comment. Worse, a comment inside a body reads as permanent: it
+#    looks like part of the algorithm, so nobody dares touch the block around it.
+#
+#    WHY THIS IS NOT NEGOTIABLE PER FILE. The rule was first written with a
+#    carve-out — "runtime code, but not tests" — and the carve-out was true, and
+#    still wrong, because "which files count" is the question a gate exists to
+#    stop having. The scope is the repository.
+#
+#    WHAT WAS LOST, SAID PLAINLY: removing the comments also removed 705 lines of
+#    migration notes in supabase/migrations/ that recorded why each migration
+#    exists, including the measurements behind them. That history is now only in
+#    git. This is the accepted cost of the rule, not an oversight.
+#
+#    ENFORCED BY: tests/comment-placement.test.mjs — every tracked AND untracked
+#    file, in every language, with a scanner that tells a comment from a string and
+#    from a regex literal. Spacing is a separate rule with its own gate,
+#    tests/comment-spacing.test.mjs; two gates asserting one property is one gate
+#    too many to keep honest.
+#
+# 7. A LOCK ANCHORS ON CODE, NEVER ON A COMMENT.
+#
+#    Six tests used a decorative comment as a structural marker — "// Action
+#    Pipeline", "// Burst ref passthrough", "// ---- Event-Triggered Workflows" —
+#    to slice a source file. They passed on code nobody could read and would have
+#    failed the moment the banner was reworded, which is not a contract change.
+#    A lock names the code it protects: a function signature, a constant, a call.
+#
+#    The same rule applies to digests. A digest over raw source text pins the
+#    formatting as much as the contract, so a comment edit moves the pin and the
+#    lock teaches people to re-pin without reading. Normalise first, then hash:
+#    tests/mcp-surface.test.mjs strips comments and collapses whitespace before
+#    hashing a tool schema, so the pin holds the tool's contract and not its
+#    indentation.
+scripts/check.mjs 44bdb2c08692b9c489bb61f5d6be1d4654a7917b
+scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
+scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 048877b13dc7630945abef70b03d0ad43fb6d8fe
-tests/helpers/comment-spacing.mjs d907a431d1c0c3fd15752bf4aceee18fd96b0a45
+tests/helpers/boundary-locks.mjs db8c89ed88951ad028ca275bf68de620967f4623
+tests/helpers/comment-spacing.mjs e9d8a61eaccdedf7018fe64acdfe9c8159f75d0c
 tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs caaa073a2278172aa0a5a70d3ebdffb0e22d1424
-tests/structure-gates.test.mjs 28996c59166550f30ac9e609dc30a1e1fa73edd9
-tests/boundary-locks.test.mjs 1dfc5e345d328eddd50bc290e5db4e7747538538
+tests/hygiene.test.mjs 285389e61fdcd8c57e22bb7a4511ed5db8c3181a
+tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
+tests/boundary-locks.test.mjs 07e6f83bb80e6dadd212e1dbb3294d0cf33a028f
 
 # --- controls that decide what the product accepts at runtime ---
-extension/lib/protocol.js 0bb86cd9e0b3ebc2c03f9b6a6e5c82912d6edb19
+extension/lib/protocol.js d1de18751c91d417954663099f13a1878621b3f3
 lib/secret-pattern.js 8a7ad9fdde6457b2a26f17cad0c9582f92e55625
-supabase/functions/_shared/cors.js 3f9a605ba04562016eec3b361ed1d564d5109f00
+supabase/functions/_shared/cors.js 03a97007d61329edc1377de25e13fcde6a49b0ff
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json a94f3abdd9642df293874a1ebe93f232549b729e
-.gitleaks.toml 6e284692a631f9a32b6787145835b9c9821449b0
+.gitleaks.toml d446ad6a0e95b4bf9dda3ee9188050f4e91e815e
 .github/CODEOWNERS 018189b06335b26f42cd4a072bc59383d7700250
-.github/workflows/ci.yml 55a443d1c500386903f6415f99af0be81950f245
+.github/workflows/ci.yml d2aed40dcbf066982c0ccc15ee6b366d2082747c

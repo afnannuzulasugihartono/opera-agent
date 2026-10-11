@@ -6,11 +6,6 @@
 const TOKEN_PREFIX = 'oavm1';
 const KINDS = new Set(['PROGRAM', 'CHECKPOINT', 'RESULT']);
 
-// The VM contract bounds the raw canonical payload at 128 KiB. The encrypted
-// envelope adds a tiny authenticated JSON wrapper, so its internal plaintext cap
-// must leave room for that wrapper without weakening the raw payload limit enforced
-// by the host.
-
 const MAX_PLAINTEXT_BYTES = 132096;
 const MAX_TOKEN_BYTES = 196608;
 
@@ -21,11 +16,6 @@ export class VmHostTokenError extends Error {
     this.code = code;
   }
 }
-
-/**
- * @returns {never} Always throws; annotated so Deno infers that key decoders
- * return bytes rather than bytes-or-undefined.
- */
 
 function fail(code, message) {
   throw new VmHostTokenError(code, message);

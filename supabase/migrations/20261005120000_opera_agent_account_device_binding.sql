@@ -14,9 +14,6 @@ alter table public.opera_devices
 alter table public.opera_pairing_codes
   add column if not exists issued_by uuid references auth.users(id) on delete set null;
 
--- Issuance records who asked, so pairing transfers ownership instead of
--- creating an orphan. The issuer argument defaults to null to keep every
--- existing caller compiling.
 create or replace function public.opera_create_pairing_code(p_device_name text default 'opera', p_ttl_minutes integer default 10, p_issued_by uuid default null)
 returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
@@ -33,8 +30,6 @@ begin
   return jsonb_build_object('ok', true, 'deviceName', trim(p_device_name), 'code', v_code, 'expiresAt', v_expires);
 end $$;
 
--- Pairing adopts the issuer, but never steals: a device that already has an
--- owner keeps it even when a new code is consumed for it.
 create or replace function public.opera_pair_device(p_code text, p_token_hash text, p_device_name text, p_extension_version text, p_protocol_version integer, p_capabilities jsonb default '[]'::jsonb)
 returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
@@ -52,9 +47,6 @@ begin
   return jsonb_build_object('ok', true, 'deviceId', v_device.id, 'deviceName', v_device.device_name, 'protocolVersion', v_device.protocol_version);
 end $$;
 
--- The dashboard reads through one function so the page never needs table
--- grants: devices owned by the caller plus their ten latest commands, with
--- page content excluded by construction (method, status and timestamps only).
 create or replace function public.opera_my_devices()
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -76,8 +68,6 @@ begin
   ), '[]'::jsonb));
 end $$;
 
--- First policies on these tables: owners read their own rows, nobody else's.
--- Service-role paths are untouched; they bypass RLS as before.
 create policy opera_devices_owner_read on public.opera_devices
   for select to authenticated using (user_id = auth.uid());
 
@@ -89,6 +79,5 @@ create policy opera_commands_owner_read on public.opera_commands
 create policy opera_pairing_codes_owner_read on public.opera_pairing_codes
   for select to authenticated using (issued_by = auth.uid());
 
--- Authenticated callers need execute rights on the two RPCs the dashboard uses.
 grant execute on function public.opera_create_pairing_code(text, integer, uuid) to authenticated;
 grant execute on function public.opera_my_devices() to authenticated;

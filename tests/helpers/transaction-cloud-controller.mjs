@@ -32,7 +32,6 @@ export function createCloudAcceptanceController(configuration) {
   const getClaims=configuration.sdk.auth.getClaims.bind(configuration.sdk.auth),getUser=configuration.sdk.auth.getUser.bind(configuration.sdk.auth);
   let used=false;
 
-  // Must finish BEFORE the future CLI advertises its OAuth authorization URL.
   const ready=(async()=>{
     try {
       const result=await operator.preflight(namespace,AbortSignal.timeout(10000));
@@ -63,7 +62,6 @@ export function createCloudAcceptanceController(configuration) {
       const recorded=await operator.recordOwnership(fixture.cleanup,signal);check();
       if(!exact(recorded,'recorded')||recorded.recorded!==true)throw new Error();
 
-      // Partial install/unknown control-plane completion still requires cleanup.
       dirty=true;
       const installed=await operator.installFixture(Object.freeze({fixture,identity:claims}),signal);check();
       if(!exact(installed,'sessionBound')||installed.sessionBound!==true)throw new Error();
@@ -106,9 +104,7 @@ export function createCloudAcceptanceController(configuration) {
     finally {
       credential=null;
       if(dirty){
-        // Restore both control-plane safety gates first. Never delete fixture rows
-        // while host disablement or OFF restoration is failed/ambiguous. The
-        // durable dirty manifest is intentionally left for the recovery runner.
+
         let controlFailed=false;
         for(const name of ['disableHost','setOff']) {
           try {

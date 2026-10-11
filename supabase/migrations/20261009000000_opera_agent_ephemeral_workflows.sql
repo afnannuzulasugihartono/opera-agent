@@ -1,3 +1,4 @@
+
 alter table public.opera_workflows add column if not exists ephemeral boolean not null default false;
 alter table public.opera_workflows add column if not exists lease_until timestamptz;
 alter table public.opera_workflows add column if not exists request_id text;
@@ -29,10 +30,7 @@ begin
   end if;
   select * into v_existing from public.opera_workflows where request_id = p_request_id;
   if found then
-    -- A request_id that already names a DIFFERENT definition must not silently
-    -- share the row: the second caller would run the first caller's workflow.
-    -- Same definition stays idempotent; a mismatch is an explicit conflict so
-    -- the caller retries with a fresh key.
+
     if v_existing.definition is distinct from p_definition then
       return jsonb_build_object('ok', false, 'error', 'REQUEST_ID_CONFLICT');
     end if;

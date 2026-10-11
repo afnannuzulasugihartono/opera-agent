@@ -43,9 +43,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import browser_extension_test as harness  # noqa: E402  (needs the sys.path above)
+import browser_extension_test as harness
 
-from playwright.async_api import async_playwright  # noqa: E402
+from playwright.async_api import async_playwright
 
 EXT = harness.EXT
 HOST = harness.HOST
@@ -55,19 +55,11 @@ EXPECTED_VERSION = harness.EXPECTED_VERSION
 
 RESULTS = []
 
-# A real video title carried an emoji and the Windows console codec raised
-# UnicodeEncodeError on print, which took the whole run down. Replace what the
-# terminal cannot encode rather than losing the run.
-
 for _stream in (sys.stdout, sys.stderr):
     try:
         _stream.reconfigure(encoding='utf-8', errors='replace')
     except (AttributeError, ValueError):
         pass
-
-# A success envelope can carry the paired device token, and a failure path that
-# printed a raw body leaked it straight into the transcript. Redaction lives in
-# record() so no call site can leak by forgetting.
 
 SECRETS = (
     (re.compile(r'sbp_[A-Za-z0-9_]+'), 'sbp_***'),
@@ -76,12 +68,10 @@ SECRETS = (
     (re.compile(r'\b[0-9a-f]{40}\b'), '***'),
 )
 
-
 def redact(text):
     for pattern, replacement in SECRETS:
         text = pattern.sub(replacement, text)
     return text
-
 
 def record(name, outcome, detail=''):
     """outcome: True passed, False failed, None skipped."""
@@ -90,10 +80,8 @@ def record(name, outcome, detail=''):
     mark = {True: 'ok  ', False: 'FAIL', None: 'skip'}[outcome]
     print(f'{mark} {name}{"  " + detail if detail else ""}', flush=True)
 
-
 def skip(name, why):
     record(name, None, why)
-
 
 async def drive(method, params=None, timeout_ms=45000):
     """Send one command to the extension through the mock bridge."""
@@ -101,10 +89,8 @@ async def drive(method, params=None, timeout_ms=45000):
     body = await asyncio.to_thread(harness.STATE.wait, cid)
     return harness.assert_completed_ok(body)
 
-
 def host_of(url):
     return url.split('/')[2].lower() if '://' in url else ''
-
 
 async def open_and_read(url, allow_hosts=()):
     """Open a real page and return (tab, page). Raises only on our own failures."""
@@ -113,17 +99,10 @@ async def open_and_read(url, allow_hosts=()):
     page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1200}))['page']
     return tab, page
 
-
-# A real site gates its own content behind cookies and sign-in. That is the site
-# reporting its state, not our path breaking, so it is reported as skipped with
-# the reason rather than failed — otherwise every first run looks like a product
-# regression and the suite stops being trusted.
-
 AUTH_HOSTS = ('accounts.google.com', 'login.microsoftonline.com', 'github.com/login')
 CONSENT_MARKERS = ('before you continue', 'accept all', 'consent', 'cookies',
                    'sign in to continue', 'unusual traffic', 'verify you are human',
                    'enable javascript', 'i agree')
-
 
 def gated_reason(tab, page):
     """Why the site gave us nothing usable, or None if it did."""
@@ -131,7 +110,7 @@ def gated_reason(tab, page):
     if any(host in url for host in AUTH_HOSTS):
         return f'site redirected to sign-in ({url[:50]})'
     if (page.get('axSummary') or {}).get('items'):
-        return None  # a named accessibility tree is usable even with no DOM text
+        return None
     haystack = f"{tab['title']} {page.get('text', '')[:400]}".lower()
     marker = next((m for m in CONSENT_MARKERS if m in haystack), None)
     if marker:
@@ -139,7 +118,6 @@ def gated_reason(tab, page):
     if page['totalTextChars'] < 400:
         return f'no usable content ({page["totalTextChars"]} chars, no named a11y nodes)'
     return None
-
 
 def by_role(page, role, contains=None):
     for item in page['elements']:
@@ -150,14 +128,12 @@ def by_role(page, role, contains=None):
         return item
     return None
 
-
 def by_label(page, needle):
     needle = needle.lower()
     for item in page['elements']:
         if needle in str(item.get('label', '')).lower():
             return item
     return None
-
 
 async def case_landing(url, name):
     try:
@@ -174,10 +150,9 @@ async def case_landing(url, name):
             return tab, page
         record(name, page['totalTextChars'] > 400 or bool(ax_items), detail)
         return tab, page
-    except Exception as exc:  # a real site can fail any number of ways
+    except Exception as exc:
         record(name, False, f'{type(exc).__name__}: {str(exc)[:120]}')
         return None, None
-
 
 async def case_click_through(tab, page, name, limit=6):
     """Click real controls and confirm the page actually responded.
@@ -210,11 +185,6 @@ async def case_click_through(tab, page, name, limit=6):
             err = body.get('error') if isinstance(body, dict) else None
             code = err.get('code') if isinstance(err, dict) else ''
 
-            # The extension's own remedy comes first: a stale-ref refusal carries
-            # error.candidates, each entry holding a freshRef that already passed
-            # uniqueness, identity, actionability and the non-sensitive check. Using
-            # them verifies that path actually reaches a caller.
-
             candidates = (err or {}).get('candidates') if isinstance(err, dict) else None
             fresh = [c['freshRef'] for c in (candidates or []) if isinstance(c, dict) and c.get('freshRef')]
             if fresh:
@@ -229,11 +199,6 @@ async def case_click_through(tab, page, name, limit=6):
                     errors.append(f"{control.get('label', '')[:16]!r} freshRef failed: {type(retry).__name__}")
                     continue
             if code == 'TARGET_NOT_READY':
-
-                # No successor at the same place, so the node is genuinely gone.
-                # A live SPA re-renders between the read and the click; that is the
-                # site being alive, not a defect. A person looks again and clicks it,
-                # so re-read and find the same label.
 
                 stale += 1
                 page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 800}))['page']
@@ -254,17 +219,10 @@ async def case_click_through(tab, page, name, limit=6):
                     detail += f' (carries {len(err["candidates"])} freshRef candidates)'
             elif isinstance(body, dict):
 
-                # record() redacts, so printing the whole completion is safe and is
-                # the only way to tell a refusal apart from a success with no result.
-
                 detail = f'{type(exc).__name__} keys={sorted(body)} {json.dumps(body, ensure_ascii=False)}'
             else:
                 detail = f'{type(exc).__name__}: {str(exc)[:80]}'
             errors.append(f"{control.get('label', '')[:16]!r} {detail[:260]}")
-
-    # Every control was dispatched without an error; "responded" counts the ones
-    # that visibly changed the page. A control that does nothing is information,
-    # not a failure, so the pass condition is delivery.
 
     detail = f'{len(controls)} clicked, {responded} changed the page'
     if stale:
@@ -272,7 +230,6 @@ async def case_click_through(tab, page, name, limit=6):
     if errors:
         detail += f', inert: {errors[:3]}'
     record(name, len(errors) < len(controls), detail)
-
 
 async def case_login_and_navigate(site, login_url, email, password):
     """Land, sign in, move around inside the authenticated area, sign out."""
@@ -303,9 +260,6 @@ async def case_login_and_navigate(site, login_url, email, password):
         landed = host_of(current['url'])
         moved = landed != host_of(login_url) or 'login' not in current['url'].lower()
         record(tag, moved, f'after submit: {landed} {current["url"][:60]}')
-
-        # Inside the authenticated area: an internal link is the cheapest proof
-        # that the session is real and navigation still works.
 
         inside = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1500}))['page']
         links = [i for i in inside['elements'] if str(i.get('role', '')).lower() in ('link', 'menuitem')]
@@ -338,7 +292,6 @@ async def case_login_and_navigate(site, login_url, email, password):
     except Exception as exc:
         record(tag, False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
 async def case_maps_journey():
     """A Maps trip a person would actually do: search, scroll, save, close, then undo.
 
@@ -356,11 +309,6 @@ async def case_maps_journey():
             record('maps journey', False, f'landed on {tab["url"][:60]}')
             return
 
-        # Maps hydrates well after the load event: the first read came back at 0
-        # characters and the content only appeared once the canvas painted. Poll
-        # instead of asserting on the first sample, or the suite reports our
-        # impatience as a product failure.
-
         page = {'totalTextChars': 0, 'elements': [], 'axSummary': {}}
         for _ in range(8):
             page = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1200}))['page']
@@ -368,10 +316,6 @@ async def case_maps_journey():
                 break
             await asyncio.sleep(1.5)
         ax = (page.get('axSummary') or {}).get('items', [])
-
-        # Maps is canvas-rendered, so "loaded" means the page gave us something to
-        # act on: named a11y nodes, elements, or text. Which one it gives varies by
-        # locale and by whether the list has hydrated into the DOM yet.
 
         loaded = bool(ax or page['elements'] or page['totalTextChars'])
         record('maps search results loaded', loaded,
@@ -385,10 +329,6 @@ async def case_maps_journey():
         after = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
         record('maps scroll', after['totalTextChars'] > 0,
                f'chars {page["totalTextChars"]} -> {after["totalTextChars"]}')
-
-        # Open a place by coordinate: the first result card sits in the left rail.
-        # There is no ref for it, which is the whole point on a canvas page. The
-        # assertion is that the page responded, not that we dispatched a click.
 
         before_click = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 400}))['page']
         await drive('page.pointer', {
@@ -411,7 +351,6 @@ async def case_maps_journey():
     except Exception as exc:
         record('maps journey', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
 async def case_youtube_search_and_open():
     """What a person does on YouTube: type a search, read the results, open one.
 
@@ -420,10 +359,6 @@ async def case_youtube_search_and_open():
     watch page loaded rather than assuming the click landed.
     """
     try:
-
-        # Reuse the YouTube tab the landing case already opened. A person does not
-        # open the same page twice, and a second cold load of YouTube is slow enough
-        # to look like a failure of ours.
 
         found = await drive('tabs.find', {'urlContains': 'youtube.com', 'limit': 1})
         tabs = found.get('tabs') or []
@@ -441,10 +376,6 @@ async def case_youtube_search_and_open():
                 break
             await asyncio.sleep(1.5)
 
-        # YouTube labels its search field a combobox, not a searchbox. The
-        # extension reported it correctly and the selector was wrong, so accept
-        # every role a search field legitimately carries, preferring a labelled one.
-
         box = (by_role(page, 'searchbox')
                or by_role(page, 'combobox', 'search')
                or by_role(page, 'textbox', 'search')
@@ -458,26 +389,14 @@ async def case_youtube_search_and_open():
         record('youtube search box found', True,
                f'role={box.get("role")!r} label={str(box.get("label", ""))[:24]!r}')
 
-        # The order matters and is the whole point: a trusted fill refuses to insert
-        # text unless the field already holds document focus, so focus first. An
-        # untrusted fill leaves focus where it was, and the Enter then lands on the
-        # body and the site ignores it. This is the sequence a person performs.
-
         focused = await drive('page.focus', {'tabId': tab['id'], 'ref': box['ref']})
         filled = await drive('page.fill', {'tabId': tab['id'], 'ref': box['ref'],
                                            'value': 'kucing chipset', 'trusted': True})
         keyed = await drive('page.key', {'tabId': tab['id'], 'key': 'Enter', 'trusted': True})
 
-        # valueLength is the only proof the text actually went in. Assert it rather
-        # than the ok flag: a caller that misspells the parameter used to get ok:true
-        # and a zero-length fill, which is how this case silently did nothing.
-
         record('youtube typed a query', filled.get('valueLength') == len('kucing chipset'),
                f'focus={focused.get("ok")} fillLen={filled.get("valueLength")} '
                f'fillMethod={filled.get("method")} keyOk={keyed.get("ok")}')
-
-        # A misspelled parameter is now refused instead of clearing the field, which
-        # is what it used to do silently.
 
         try:
             await drive('page.fill', {'tabId': tab['id'], 'ref': box['ref'],
@@ -495,9 +414,6 @@ async def case_youtube_search_and_open():
         results = (await drive('page.read', {'tabId': tab['id'], 'offset': 0, 'limit': 1500}))['page']
         after_enter = (await drive('tabs.get', {'tabId': tab['id']}))['tab']
 
-        # The results page leads with the same nav links as the home page, so drop
-        # those before choosing something to open.
-
         nav = ('home', 'shorts', 'subscriptions', 'sign in', 'guide', 'settings',
                'youtube home', 'search', 'history', 'you', 'premium', 'studio')
         links = [i for i in results['elements']
@@ -510,12 +426,6 @@ async def case_youtube_search_and_open():
 
         if not links:
             return
-
-        # The element payload cannot say which link is a video: a ref carries a
-        # hashed stable key, not the URL, and the first links on a results page are
-        # channel and avatar chrome. Choosing by URL shape instead of by position is
-        # what a person reads off the page, and it stops the case from clicking five
-        # channel links and leaving the tab on someone's channel.
 
         videos = []
         try:
@@ -544,7 +454,6 @@ async def case_youtube_search_and_open():
                f'elements={len(watch["elements"])}')
     except Exception as exc:
         record('youtube search', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_primitive_sweep():
     """Drive all 26 allowlisted primitives against real pages and report each one.
@@ -575,9 +484,6 @@ async def case_primitive_sweep():
                 err = body.get('error') if isinstance(body, dict) else None
                 message = str((err or {}).get('message', ''))
                 if 'sensitive' in message:
-
-                    # The page put something sensitive under the coordinate. The
-                    # refusal is the feature working, so it is reported, not failed.
 
                     record(f'sweep {label}', None, f'refused: {message[:70]}')
                 elif isinstance(body, dict):
@@ -611,9 +517,6 @@ async def case_primitive_sweep():
             await drive('tabs.close', {'tabId': tid})
             return
 
-        # page.query takes a CSS selector, not free text. Passing a word is rejected
-        # with EXECUTION_ERROR "Invalid selector.", which is the extension being right.
-
         await step('page.query', 'page.query',
                    {'tabId': tid, 'selector': 'a[href]', 'limit': 5},
                    lambda r: f'{len(r.get("items", []))} item(s)')
@@ -638,10 +541,6 @@ async def case_primitive_sweep():
                    moved.get('visiblePointer') is True,
                    f'visiblePointer={moved.get("visiblePointer")} in background mode')
 
-            # The extension serves an unchanged capture from a 750ms cache, so a
-            # second capture taken straight after returns the first image and the
-            # comparison proves nothing. Wait past the window to force a real shot.
-
             await asyncio.sleep(1.1)
             with_cursor = await drive('page.capture', {'tabId': tid})
             h1 = shot(plain).get('sha256')
@@ -650,14 +549,8 @@ async def case_primitive_sweep():
                    shot(with_cursor).get('cached') is not True,
                    f'cached={shot(with_cursor).get("cached")}')
 
-            # Proven, not assumed: an unchanged page with a cursor drawn must hash
-            # differently from the same page without one.
-
             record('sweep the cursor is actually drawn', bool(h1) and bool(h2) and h1 != h2,
                    f'without cursor {str(h1)[:10]} vs with cursor {str(h2)[:10]}')
-
-        # Dedupe needs a hash taken from the state the page is in right now. The one
-        # from the baseline predates the cursor, so it can never match.
 
         fresh = await drive('page.capture', {'tabId': tid})
         after = await step('page.capture reuses the hash', 'page.capture',
@@ -669,11 +562,6 @@ async def case_primitive_sweep():
                    shot(after).get('unchanged') is True and not shot(after).get('data'),
                    f'unchanged={shot(after).get("unchanged")} '
                    f'chars sent={len(shot(after).get("data") or "")}')
-
-        # Coordinates sit in the left margin below the header. Anywhere nearer the
-        # centre can land on the sign-in dialog when the page decides to show it, and
-        # the extension then refuses the pointer for a sensitive target, which is
-        # correct behaviour and not a sweep failure.
 
         await step('page.pointer click', 'page.pointer',
                    {'tabId': tid, 'x': 300, 'y': 200, 'action': 'click',
@@ -694,11 +582,6 @@ async def case_primitive_sweep():
         await step('page.scroll up', 'page.scroll',
                    {'tabId': tid, 'x': 0, 'y': -500, 'block': 'center'},
                    lambda r: 'scrolled up')
-
-        # page.wait_for turns a timeout into a command error rather than a result with
-        # ok:false, so a caller that only inspects the error envelope catches it. The
-        # content script's own {ok:false, error:'wait_for timeout'} is what the
-        # dispatcher converts.
 
         found = await step('page.wait_for finds text', 'page.wait_for',
                            {'tabId': tid, 'text': 'youtube', 'timeoutMs': 6000},
@@ -737,19 +620,12 @@ async def case_primitive_sweep():
                    all('ok' in s for s in burst.get('results', [])),
                    f'{len(burst.get("results", []))} step(s)')
 
-            # The mission counts round trips, so measure the thing itself: the same
-            # three actions as one burst against the same three as separate calls.
-
             separate_started = time.perf_counter()
             await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 300})
             await drive('page.find', {'tabId': tid, 'text': 'Home', 'limit': 3})
             await drive('page.scroll', {'tabId': tid, 'y': 200})
             separate_ms = (time.perf_counter() - separate_started) * 1000
             burst_ms = next(ms for label, ms in timings if label == 'browser.burst')
-
-            # Reported, not asserted. Measured repeatedly on this loopback bridge the
-            # ratio has come out above and below 1, so any ordering claim from here
-            # would be noise dressed as a result.
 
             record('sweep burst against three round trips', None,
                    f'burst {burst_ms:.0f}ms in 1 call vs separate {separate_ms:.0f}ms '
@@ -766,9 +642,6 @@ async def case_primitive_sweep():
         await step('tabs.close', 'tabs.close', {'tabId': tid},
                    lambda r: 'closed the sweep tab')
 
-        # Round-trip cost on a real site, which no fixture can tell you. Sorted
-        # slowest first, because that is the list worth acting on.
-
         ranked = sorted(timings, key=lambda row: -row[1])
         slow = ranked[:5]
         record('sweep slowest round trips', True,
@@ -778,16 +651,7 @@ async def case_primitive_sweep():
     except Exception as exc:
         record('sweep', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
-# Chrome's own wording, and the product's replacement for it. The extension now
-# catches NotAllowedError and names the autoplay refusal itself, because Chrome's
-# message describes a browser concept the caller cannot act on. Keying on the
-# browser's English alone turned that improvement into a failed case, which is the
-# wrong lesson to teach a suite. What makes this a real classifier rather than a
-# sentence check is the step after it: the trusted click has to move the playhead.
-
 AUTOPLAY_REFUSED = ("didn't interact with the document", 'no user gesture')
-
 
 async def case_media_on_real_video():
     """media.* against a real YouTube video, not a synthetic media element."""
@@ -824,20 +688,9 @@ async def case_media_on_real_video():
                                       f'readyState={r["media"].get("readyState")} '
                                       f'duration={r["media"].get("duration")}'))
 
-        # Chrome's autoplay policy refuses play() on a document the user never
-        # interacted with, and the extension reports that refusal in its own words.
-        # That is the browser's policy, not us, so it is reported rather than failed;
-        # the next step proves the capability with the gesture the policy asks for.
-
         played = await step('play', 'media.play', {'tabId': tid, 'index': 0},
                             lambda r: 'play dispatched', tolerate=AUTOPLAY_REFUSED)
         if played is None:
-
-            # Chrome refuses play() on a document the user has never interacted with,
-            # and says so in its own message. The gesture it wants is a real click,
-            # so give it one: a trusted pointer click on the player is exactly what a
-            # person does. If that does not move the playhead, the capability is
-            # genuinely broken and the step stays failed.
 
             await step('play via a trusted click', 'page.pointer',
                        {'tabId': tid, 'x': 480, 'y': 300, 'action': 'click',
@@ -869,7 +722,6 @@ async def case_media_on_real_video():
     except Exception as exc:
         record('media sweep', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
 async def case_youtube_interactions():
     """A person on a watch page: scroll to the comments, type, like, read the transcript.
 
@@ -890,9 +742,6 @@ async def case_youtube_interactions():
         async def read():
             return (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1500}))['page']
 
-        # Open the first result the way a person picks a video, instead of a
-        # hardcoded id that can turn out to be made-for-kids with no comments.
-
         page = await read()
         video = next((i for i in page['elements']
                       if str(i.get('role', '')).lower() == 'link'
@@ -908,9 +757,6 @@ async def case_youtube_interactions():
         record('youtube interactions video opened',
                '/watch' in info.get('url', ''),
                f'url={info.get("url", "")[:70]}')
-
-        # The tab title is the video title even while an ad plays, so the ad is
-        # detected by its own button instead. A person skips when it appears.
 
         opened = False
         await asyncio.sleep(8.0)
@@ -932,9 +778,6 @@ async def case_youtube_interactions():
                 break
             if not opened:
 
-                # The listing only carries what the page rendered, so ask the
-                # page itself where the comments are, then scroll there.
-
                 try:
                     found = await drive('page.find', {'tabId': tid, 'text': 'Comments',
                                                       'limit': 3})
@@ -949,9 +792,6 @@ async def case_youtube_interactions():
                     pass
             comments = by_label(panel, 'comments')
             if comments and comments.get('role') == 'button' and not opened:
-
-                # The list hides behind a Comments button; open it once, because
-                # a second click would fold it shut again.
 
                 await drive('page.click', {'tabId': tid, 'ref': comments['ref'],
                                            'executionMode': 'background'})
@@ -969,9 +809,6 @@ async def case_youtube_interactions():
             text = page.get('text', '')
             off = 'comments are turned off' in text.lower()
 
-            # Six videos, same shape: the listing carries likes, subscribe and
-            # share, but no comments section at all for a logged-out session.
-
             reason = ('comments disabled on this video' if off else
                       'no comments section rendered logged-out')
             record('youtube comment box found', None,
@@ -984,8 +821,6 @@ async def case_youtube_interactions():
                                                'value': 'percobaan ketik', 'trusted': True})
             record('youtube comment typed', filled.get('valueLength') == len('percobaan ketik'),
                    f'fillLen={filled.get("valueLength")}')
-
-            # Leave nothing behind: clear what was typed, submit nothing.
 
             await drive('page.fill', {'tabId': tid, 'ref': box['ref'], 'value': ''})
             cleared = await drive('page.query', {'tabId': tid,
@@ -1018,9 +853,6 @@ async def case_youtube_interactions():
             more = by_label(page, '...more')
             if more:
 
-                # The transcript hides inside the description box; a person
-                # opens ...more first, then picks Show transcript.
-
                 await drive('page.click', {'tabId': tid, 'ref': more['ref'],
                                            'executionMode': 'background'})
                 await asyncio.sleep(2.0)
@@ -1049,7 +881,6 @@ async def case_youtube_interactions():
                f'{type(exc).__name__} {(err or {}).get("code")} '
                f'{(err or {}).get("message", str(exc))[:200]}')
 
-
 async def case_google_search_and_expand():
     """Google Search: type a query, read the results, expand an answer in place.
 
@@ -1069,9 +900,6 @@ async def case_google_search_and_expand():
             await drive('tabs.close', {'tabId': tid})
             return
 
-        # Same sequence a person performs, and the same reason: a trusted fill needs
-        # document focus first, and an untrusted one leaves Enter on the body.
-
         await drive('page.focus', {'tabId': tid, 'ref': box['ref']})
         filled = await drive('page.fill', {'tabId': tid, 'ref': box['ref'],
                                            'value': 'cara mengedit video', 'trusted': True})
@@ -1083,10 +911,6 @@ async def case_google_search_and_expand():
         landed = (await drive('tabs.get', {'tabId': tid}))['tab']
         results = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 1200}))['page']
 
-        # Google answers an automated submit from a data-centre IP with its own bot
-        # check. That is the site reporting its state, not our path breaking, so it is
-        # skipped with the reason; the in-place expansion is still proven elsewhere.
-
         gate = gated_reason(landed, results) or ('/sorry/' in landed['url'] and 'google bot check')
         if gate:
             record('google search results loaded', None, str(gate))
@@ -1096,9 +920,6 @@ async def case_google_search_and_expand():
                f'url={landed["url"][:70]} chars={results["totalTextChars"]} '
                f'elements={len(results["elements"])}')
 
-        # Pick a result by URL shape, never by position: the first links on a Google
-        # results page are chrome, not answers.
-
         try:
             collected = await drive('page.collect_links', {'tabId': tid, 'limit': 120})
             urls = [str(l.get('url', '')) for l in (collected.get('links') or [])]
@@ -1107,9 +928,6 @@ async def case_google_search_and_expand():
                    f'{len(urls)} links, {len(answers)} off-google')
         except Exception as exc:
             record('google results carry answer links', False, type(exc).__name__)
-
-        # The in-place change: a collapsed control on the results page opens without
-        # navigating. aria-expanded is the proof, and it is the same ref either way.
 
         collapsed = (await drive('page.query', {
             'tabId': tid, 'selector': '[aria-expanded="false"]'
@@ -1133,7 +951,6 @@ async def case_google_search_and_expand():
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('google search', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_in_place_expansion():
     """A collapsed control opens its answer without the page navigating.
@@ -1159,10 +976,6 @@ async def case_in_place_expansion():
         await drive('page.click', {'tabId': tid, 'ref': collapsed['ref'],
                                    'executionMode': 'background'})
 
-        # Wait for that same control to report itself expanded, rather than sleeping
-        # and hoping: page.wait_for takes the ref and the state, so the proof is that
-        # the element we clicked is the element that opened.
-
         opened = await drive('page.wait_for', {
             'tabId': tid, 'ref': collapsed['ref'],
             'state': {'ariaExpanded': 'true'}, 'timeoutMs': 4000
@@ -1174,7 +987,6 @@ async def case_in_place_expansion():
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('in-place expansion', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_google_docs_wall():
     """Google Docs logged out: the wall itself is the coverage.
@@ -1204,7 +1016,6 @@ async def case_google_docs_wall():
     except Exception as exc:
         record('google docs wall', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
 async def case_github_search():
     """GitHub logged out: type in search, submit, read the results.
 
@@ -1231,9 +1042,6 @@ async def case_github_search():
             filled = await drive('page.fill', {'tabId': tid, 'ref': box['ref'],
                                                'value': 'playwright python', 'trusted': True})
         except Exception as fill_exc:
-
-            # GitHub's landing search is a trigger that opens an overlay, not an
-            # input: the refusal is correct, and a person clicks it first.
 
             filled = None
             await drive('page.click', {'tabId': tid, 'ref': box['ref'],
@@ -1272,7 +1080,6 @@ async def case_github_search():
                f'{type(exc).__name__} {(err or {}).get("code")} '
                f'{(err or {}).get("message", str(exc))[:200]}')
 
-
 async def case_wikipedia_article():
     """Wikipedia: scroll a long article, jump through its table of contents, go back.
 
@@ -1285,11 +1092,6 @@ async def case_wikipedia_article():
         tid = tab['id']
         before = (await drive('page.read', {'tabId': tid, 'offset': 0,
                                             'limit': 1200}))['page']
-
-        # The provable scroll is the ref variant: it moves the element into view
-        # and reports whether the scroll settled, so no viewport inference is
-        # needed. The Table of Contents History link is real content below the
-        # fold on a long article.
 
         target = by_label(before, 'history') or by_role(before, 'link', 'history')
         if not target:
@@ -1320,23 +1122,17 @@ async def case_wikipedia_article():
     except Exception as exc:
         record('wikipedia article', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
-# A sweep clicks real controls, so it must not click the ones that spend money,
-# delete something, or end the session. Everything else on the page is fair game.
-
 UNSAFE_LABELS = (
     'sign out', 'log out', 'logout', 'signout', 'delete', 'remove', 'unsubscribe',
     'subscribe', 'buy', 'purchase', 'checkout', 'pay', 'confirm', 'send', 'post',
     'publish', 'reply', 'report', 'block', 'leave', 'deactivate', 'cancel account'
 )
 
-
 def is_safe_label(label):
     low = str(label or '').strip().lower()
     if not low:
         return False
     return not any(word in low for word in UNSAFE_LABELS)
-
 
 async def case_click_every_control(url, name, limit=14):
     """Click every control the page offers, the way a person explores a site.
@@ -1367,9 +1163,6 @@ async def case_click_every_control(url, name, limit=14):
             await asyncio.sleep(1.2)
             page = await refresh()
 
-        # Dedupe by label, not by ref: a click re-renders the page and mints new refs
-        # for the same controls, so ref-based dedupe clicked one link eight times.
-
         seen = set()
         for _ in range(limit):
             controls = [i for i in page['elements']
@@ -1377,12 +1170,6 @@ async def case_click_every_control(url, name, limit=14):
                         in ('button', 'link', 'menuitem', 'tab', 'switch', 'checkbox', 'option')
                         and str(i.get('label', '')).strip()
                         and is_safe_label(i.get('label'))
-
-                        # An element the listing reports as not visible is a hidden
-                        # duplicate, and clicking it is a guaranteed refusal, so the
-                        # budget is better spent on controls a person could click.
-                        # Only an explicit False is skipped, because the projection
-                        # drops absent fields rather than reporting them false.
 
                         and i.get('visible') is not False
                         and str(i.get('label', '')).strip().lower() not in seen]
@@ -1393,12 +1180,6 @@ async def case_click_every_control(url, name, limit=14):
 
             control = controls[0]
 
-            # The dedupe key must be the same value the filter above compares, or the
-            # sweep clicks one control for the whole budget: a 20-character display
-            # label was stored while the filter tested the full label, so 'Search with
-            # your voi' never matched 'Search with your voice' and YouTube's voice
-            # button was clicked eleven times instead of eleven controls once.
-
             key = str(control.get('label', '')).strip().lower()
             seen.add(key)
             label = key[:20]
@@ -1407,19 +1188,11 @@ async def case_click_every_control(url, name, limit=14):
 
             async def window_tabs():
 
-                # tabs.list answers both questions at once: where this tab is now, and
-                # how many tabs the window holds. A link with target=_blank changes
-                # neither the document nor the url, and a person watching sees a tab
-                # appear, so the count is part of what counts as a response.
-
                 tabs = (await drive('tabs.list', {'currentWindow': True}))['tabs']
                 mine = next((t for t in tabs if t.get('id') == tid), None)
                 return (mine or {}).get('url'), len(tabs)
 
             before_url, before_tab_count = await window_tabs()
-
-            # Read after the click, and only on the path that actually clicked: a
-            # refused click left the state alone, and the burst below may have moved it.
 
             now_url = None
             try:
@@ -1444,11 +1217,6 @@ async def case_click_every_control(url, name, limit=14):
                 message = str(err.get('message', ''))[:90] if isinstance(err, dict) else ''
                 refusals.append(f'{label!r} {code}')
 
-                # What page.read claimed about the refused element decides whether the
-                # refusal is the product refusing to guess or a contradiction: a hidden
-                # duplicate under the same accessible name is correct behaviour, and an
-                # element the listing called visible and actionable is a real bug.
-
                 claimed = next(
                     (i for i in page['elements'] if i.get('ref') == control.get('ref')), None
                 )
@@ -1458,16 +1226,7 @@ async def case_click_every_control(url, name, limit=14):
                     f'actionable={claimed.get("actionable")}'
                 )
 
-                # Reported, not failed: the burst below is the recovery and it carries
-                # the verdict for this control.
-
                 record(f'{name} click {label!r}', None, f'{code} {message}{gates}'.strip())
-
-                # A ref read in one round trip is already stale on a header that
-                # re-renders constantly, and re-finding in another round trip is
-                # just as stale. The product's own answer is to find and click inside
-                # ONE burst with refFromStep, so the ref is consumed milliseconds
-                # after it is minted. That is also what a person does: look and click.
 
                 try:
                     burst = await drive('browser.burst', {
@@ -1495,17 +1254,9 @@ async def case_click_every_control(url, name, limit=14):
             now = now_url if now_url is not None else (await window_tabs())[0]
             if host_of(now) != host_of(before_url):
 
-                # The click navigated off the host. A person goes back and keeps
-                # exploring. A same-host navigation is left in place, because the
-                # next iteration reads the page it produced.
-
                 await drive('tabs.navigate', {'tabId': tid, 'url': before_url})
                 await asyncio.sleep(2)
                 page = await refresh()
-
-        # A refusal the burst recovered is not a failure: it is the measurement that
-        # a fast-changing header needs the single-call path. Only a control that was
-        # refused AND stayed refused fails the sweep.
 
         unrecovered = len(refusals) - recovered
         summary = (f'{clicked} clicked, {responded} responded, '
@@ -1526,7 +1277,6 @@ async def case_click_every_control(url, name, limit=14):
             except Exception:
                 pass
 
-
 async def maybe(coro_factory, label):
     """Run a case unless OA_ONLY names a different one. Keeps a single run short
     while a case is being diagnosed."""
@@ -1534,7 +1284,6 @@ async def maybe(coro_factory, label):
     if only and only not in label:
         return
     await coro_factory()
-
 
 async def case_login_form(site, login_url):
     """Prove the login form is found, without ever submitting anything.
@@ -1562,10 +1311,6 @@ async def case_login_form(site, login_url):
         password_box = (by_role(page, 'textbox', 'assword')
                         or by_label(page, 'password'))
 
-        # Google asks for the identifier first and only reveals the password field
-        # after Next, so a missing password on the first screen is that site's flow,
-        # not a missed control. The submit control is what proves the step.
-
         submit = (by_label(page, 'next') or by_label(page, 'continue')
                   or by_label(page, 'sign in') or by_label(page, 'log in'))
         record(f'{site} login form detected', bool(email_box and submit),
@@ -1577,13 +1322,9 @@ async def case_login_form(site, login_url):
         record(f'{site} login submit control found', bool(submit),
                f'{str(submit.get("label"))[:28]!r}' if submit else 'no submit control seen')
 
-        # Nothing is typed and nothing is submitted. The point is that the next
-        # session, with credentials, starts from a form it has already located.
-
         await drive('tabs.close', {'tabId': tab['id']})
     except Exception as exc:
         record(f'{site} login form', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_stale_ref_recovery():
     """Does a refused ref ever come back if you wait longer than the deadline?
@@ -1641,9 +1382,6 @@ async def case_stale_ref_recovery():
                        f'{code} after {(time.perf_counter() - started) * 1000:.0f}ms')
             await asyncio.sleep(3)
 
-        # The measurement completing is the pass. What it found is the point: zero
-        # recoveries means the deadline spent on this ref bought nothing.
-
         record('stale ref recovery', True,
                f'the same ref resolved {recoveries} time(s) in {attempts + recoveries} '
                f'attempts spaced 3s apart, so the deadline spent waiting on it is '
@@ -1652,7 +1390,6 @@ async def case_stale_ref_recovery():
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('stale ref recovery', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_foreground_mode():
     """Foreground mode on a real page: the focus gate, the refusal, and the cursor.
@@ -1667,9 +1404,6 @@ async def case_foreground_mode():
         }))['tab']
         tid = tab['id']
         state = (await drive('tabs.get', {'tabId': tid}))['tab']
-
-        # A tab the harness opened but did not activate must refuse a foreground
-        # action. That refusal is the whole point of the gate.
 
         other = (await drive('tabs.open', {
             'url': 'https://opencode.ai/', 'active': False, 'wait': True
@@ -1689,9 +1423,6 @@ async def case_foreground_mode():
                    f'{(err or {}).get("code")} {str((err or {}).get("message", ""))[:80]}')
         await drive('tabs.close', {'tabId': other['id']})
 
-        # Now the tab is active, so a foreground action is allowed and shows the
-        # cursor. Proved the same way as in background: the hash must change.
-
         before = (await drive('page.capture', {'tabId': tid}))['screenshot']
         moved = await drive('page.pointer', {
             'tabId': tid, 'x': 420, 'y': 240, 'action': 'move',
@@ -1706,15 +1437,9 @@ async def case_foreground_mode():
                bool(before.get('sha256')) and before.get('sha256') != after.get('sha256'),
                f'{str(before.get("sha256"))[:10]} -> {str(after.get("sha256"))[:10]}')
 
-        # And the observation must say the owner is present.
-
         page = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 300}))['page']
         us = page.get('userState') or {}
         record('userState reports the tab as watched', us.get('watching') is True, str(us))
-
-        # A trusted click of ours is a real gesture as far as the page is concerned, so
-        # lastInputMs must become a small number. It is null before any interaction,
-        # because "never" is not the same claim as "long ago".
 
         record('userState reports no input before any interaction',
                'lastInputMs' in us, f'lastInputMs={us.get("lastInputMs")}')
@@ -1731,7 +1456,6 @@ async def case_foreground_mode():
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('foreground mode', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_burst_hover_menu():
     """The pattern the MCP instructions prescribe for menus, on a real page.
@@ -1750,20 +1474,12 @@ async def case_burst_hover_menu():
                 'url': 'https://www.youtube.com/', 'active': True, 'wait': True
             }))['tab']['id']
 
-        # Wait until the header is actually there. Bursting into a page that has not
-        # hydrated yet finds an element the actionability gate then refuses, which is
-        # our impatience rather than the site's behaviour.
-
         for _ in range(10):
             probe = (await drive('page.read', {'tabId': tid, 'offset': 0, 'limit': 900}))['page']
             labels = [str(i.get('label', '')).lower() for i in probe['elements']]
             if any('home' in x for x in labels):
                 break
             await asyncio.sleep(1.2)
-
-        # Every ref is minted inside the burst. Taking one from an earlier read is
-        # exactly what fails on this page: the header re-renders and the ref is stale
-        # before the burst starts.
 
         result = await drive('browser.burst', {
             'tabId': tid,
@@ -1791,7 +1507,6 @@ async def case_burst_hover_menu():
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('burst hover pattern', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_lazy_list():
     """Scroll a list that only exists once you reach it, the way the instructions say.
@@ -1851,7 +1566,6 @@ async def case_lazy_list():
     except Exception as exc:
         record('lazy list', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
 async def case_sensitive_surface():
     """The screenshot refusal, proven on a real page rather than a fixture.
 
@@ -1887,10 +1601,6 @@ async def case_sensitive_surface():
             record('screenshot refused on a sensitive page', code == 'CAPTURE_BLOCKED',
                    f'{code} {str((err or {}).get("message", ""))[:90]}')
 
-        # The pointer must refuse the field too, not only the screenshot. A coordinate
-        # click is checked by hit-testing, so aiming at where the password box sits on
-        # a real form is refused by name rather than by silently doing nothing.
-
         try:
             await drive('page.pointer', {
                 'tabId': tid, 'x': 300, 'y': 340, 'action': 'click',
@@ -1908,7 +1618,6 @@ async def case_sensitive_surface():
         await drive('tabs.close', {'tabId': tid})
     except Exception as exc:
         record('sensitive surface', False, f'{type(exc).__name__}: {str(exc)[:140]}')
-
 
 async def case_stale_document_ref():
     """A ref minted before a navigation must not act on the page that replaced it.
@@ -1958,7 +1667,6 @@ async def case_stale_document_ref():
     except Exception as exc:
         record('stale document ref', False, f'{type(exc).__name__}: {str(exc)[:140]}')
 
-
 async def run(port, profile):
     async with async_playwright() as p:
         launch = {}
@@ -1992,9 +1700,6 @@ async def run(port, profile):
 
         email = os.environ.get('OA_TEST_EMAIL', '')
         password = os.environ.get('OA_TEST_PASSWORD', '')
-
-        # Google is the primary account: it gates Docs, Drive and Maps, so one
-        # sign-in exercises the most surfaces. GitHub is secondary.
 
         google_email = os.environ.get('OA_GOOGLE_EMAIL', email)
         google_password = os.environ.get('OA_GOOGLE_PASSWORD', password)
@@ -2048,7 +1753,6 @@ async def run(port, profile):
         await drive('tabs.close', {'tabId': (await drive('tabs.list'))['tabs'][0]['id']})
         await context.close()
 
-
 def main():
     if os.environ.get('OA_REAL_SITE') != '1':
         print('skipped: set OA_REAL_SITE=1 to run live-site smoke (it hits the real internet)')
@@ -2077,7 +1781,6 @@ def main():
     if failed:
         print('failed: ' + ', '.join(failed))
     return 0 if not failed else 1
-
 
 if __name__ == '__main__':
     raise SystemExit(main())

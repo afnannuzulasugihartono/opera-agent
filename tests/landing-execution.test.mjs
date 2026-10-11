@@ -45,26 +45,12 @@ const AUTHORIZATION = {
 
 const CONSENT_ELEMENTS = ['status', 'factsCard', 'signedOutCard', 'signInButton', 'clientName', 'factClient', 'factRedirect', 'redirectNote', 'scopeList', 'factUser', 'approveButton', 'denyButton', 'consentsCard', 'consentList'];
 
-// WHY the home elements start in their markup state and not in the stub's default:
-// the shared stub answers `hidden: true` so an untouched card reads as hidden. The
-// home page shows `ctaOut` in the markup, so a stub that started it hidden would
-// make "acquisition actions hide on a stored session" pass on an empty node —
-// a lock that cannot fail. The truth a run must change is recorded here instead.
-
 const HOME_ELEMENTS = {
   heroEyebrow: { textContent: 'Daftar terbuka \u00b7 Gratis dipakai' },
   ctaOut: { hidden: false },
   ctaIn: { hidden: true },
   quickTiles: { hidden: true }
 };
-
-/**
- * Run one landing page's module against stub network and stub DOM.
- *
- * @param {string} page file name under landing/
- * @param {object} shape what the stub Auth and the stub account answer
- * @returns {Promise<{nodes: object, store: object, cleared: string[], rejected: string[], rejectedFetch: boolean, assigned: string|undefined, forgot: boolean}>}
- */
 
 async function run(page, shape = {}) {
   const {
@@ -75,9 +61,6 @@ async function run(page, shape = {}) {
     refreshFails = false,
     unreachable = false,
 
-    // WHY the default is false: a harness that claimed the extension was installed
-    // would make every dashboard case pass on the "installed" copy and never exercise
-    // the message a reader who has not installed anything will actually see.
     extensionInstalled = false,
     devices = [DEVICE],
     authorization = AUTHORIZATION,
@@ -97,21 +80,13 @@ async function run(page, shape = {}) {
     disabled: false, dataset: {}, children: [], querySelectorAll: () => [],
     addEventListener() {}, querySelector: () => null, closest: () => null,
 
-    // WHY real child bookkeeping and not no-ops: the home page builds its model
-    // datalist with createElement/append, so the stub keeps the appended options
-    // where an assertion can read them instead of swallowing them silently.
     replaceChildren() { this.children.length = 0; },
     append(child) { this.children.push(child); return child; }
   });
 
-  // Every element the page could ask for exists, so an untouched card reads as hidden rather
-  // than absent, which is what the markup's `hidden` attribute means to a person.
   const preCreated = new Set(['status', 'whoami', 'profileCard', 'avatar', 'profileName', 'profileMeta', 'profileProvider', 'factEmail', 'factProvider', 'factLastSignIn', 'factUserId', 'linkedProviders', 'deviceSummary', 'signOutButton', 'runButton', 'runStatus', 'pairButton', 'pairStatus', 'devices', 'sessionStatus', ...CONSENT_ELEMENTS]);
   for (const id of preCreated) element(id);
 
-  // The home page reads these only when a session is stored, so a run with no
-  // session would otherwise answer `undefined` for the very flags it must prove
-  // stayed put. Markup state is the baseline both cases are judged against.
   for (const [id, state] of Object.entries(HOME_ELEMENTS)) Object.assign(element(id), state);
 
   const context = vm.createContext({
@@ -125,22 +100,13 @@ async function run(page, shape = {}) {
     },
     navigator: { clipboard: { writeText: async () => {} } },
     document: {
-      // WHY documentElement exists here: the dashboard reads the install marker the
-      // content script leaves on documentElement, so the harness has to offer the node
-      // the page reads. `extensionInstalled` models the two real cases — a browser with
-      // the extension, where the content script has written the marker, and one
-      // without, where it has not.
+
       documentElement: {
         dataset: extensionInstalled ? { operaAgent: 'installed' } : {}
       },
 
-      // WHY MutationObserver exists here: the dashboard watches for the install marker
-      // landing after the module has read the document, so the harness has to offer the
-      // observer the page constructs. observe() records nothing; the two cases set the
-      // marker before load, and a second run sets it later to prove the page reacts.
       body: {
-        // WHY a recording set: the home page marks the body signed-in from a stored
-        // session, and only an executed module proves the swap instead of its source.
+
         classes: new Set(),
         classList: {
           add(c) { nodes.__bodyClasses.add(c); },
@@ -152,9 +118,6 @@ async function run(page, shape = {}) {
       querySelectorAll: () => [],
       createElement: (tag) => ({ tagName: String(tag).toUpperCase(), value: '', textContent: '' }),
 
-      // WHY a stub element and not null: the dashboard writes the device count
-      // into its rail link, so a null answer turns every device render into a
-      // TypeError. The stub records under its selector, like getElementById does.
       querySelector: (sel) => element(`qs:${sel}`),
       addEventListener() {}
     },
@@ -164,9 +127,6 @@ async function run(page, shape = {}) {
       disconnect() {}
     },
 
-    // WHY the rail observer is stubbed too: the dashboard marks which section the
-    // reader is on, and the harness runs the same module. A missing IntersectionObserver
-    // makes every dashboard case fail on a feature no reader would ever notice.
     IntersectionObserver: class {
       constructor() { this.cb = () => {}; }
       observe() {}
@@ -182,15 +142,9 @@ async function run(page, shape = {}) {
         return { ok: true, status: 200, json: async () => ({ access_token: RENEWED, refresh_token: 'renewed-refresh-token' }) };
       }
       if (url.includes('/auth/v1/user')) {
-        // WHY the stub reads the store rather than a flag: a renewal produces a new token,
-        // so a call made after one must succeed. A stub answering 401 forever would make
-        // every page look broken for a reason that does not exist.
+
         const usable = accessOk || store['opera-agent-access-token'] === RENEWED;
 
-        // WHY this shape exactly: measured on this project, an account that signed in with
-        // Google still reports provider "email" with providers ["email","google"], because a
-        // magic link created the row first. A stub with a single google entry would not
-        // exercise the reason the page reads the array.
         const user = {
           email: EMAIL,
           id: 'u1',
@@ -230,15 +184,11 @@ test('the dashboard renders a device card for a paired device', async () => {
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.match(nodes.status.textContent, /1 device ter-pairing/, 'the status line counts the device');
 
-  // WHY the card and not the count: the deployed bug produced a correct status line above an
-  // empty list, because the throw happened while building the cards.
   assert.match(nodes.devices.innerHTML, /opera/, 'the device name is rendered');
   assert.match(nodes.devices.innerHTML, new RegExp(DEVICE.id), 'the device id is rendered');
   assert.match(nodes.devices.innerHTML, /tabs\.list/, 'the recent commands are rendered');
   assert.match(nodes.devices.innerHTML, /Cabut device ini/, 'the revoke control is rendered');
 
-  // WHY the summary is asserted from the same run: the stats must be sums over the
-  // payload the cards render, and only an executed module proves the arithmetic.
   assert.equal(nodes.statDevices.textContent, 1, 'the device count is computed, not written');
   assert.equal(nodes.statOnline.textContent, 1, 'and so is the online count');
   assert.match(nodes.statCommands.textContent, /8970 dari 9000/, 'and the command tally');
@@ -249,9 +199,6 @@ test('the dashboard names the extension when the browser does not have it', asyn
   const { nodes, rejected } = await run('dashboard.html', { extensionInstalled: false });
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
 
-  // WHY this case matters most: an empty device list and a "not installed" browser look
-  // identical on the page without this line, so a reader who has not installed anything
-  // cannot tell which step is missing.
   assert.match(nodes.installState.textContent, /Opera Agent belum terpasang di browser ini/,
     'the missing extension is named, not left for the reader to infer');
   assert.match(nodes.installState.textContent, /Pasang dulu/, 'and the next step is given');
@@ -265,9 +212,7 @@ test('the dashboard confirms the extension once the content script has marked th
 });
 
 test('the dashboard reacts to the marker landing after it has already read the page', async () => {
-  // WHY this case: the content script runs at document_idle, so on a slow page the
-  // marker arrives after the module has rendered. Reading once would tell a reader who
-  // already has the extension that it is missing, and they would install a second copy.
+
   const { nodes, rejected, context } = await run('dashboard.html', { extensionInstalled: false });
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.match(nodes.installState.textContent, /belum terpasang/, 'the page starts by reporting it missing');
@@ -290,9 +235,7 @@ test('the account page renders the identity facts and the device count', async (
 });
 
 test('home swaps to member actions on a stored session, and stays put without one', async () => {
-  // WHY executed and not source-read: the swap touches four elements and a body
-  // class from one localStorage read. Only a run proves the hidden flags land
-  // where the stylesheet expects them.
+
   const signed = await run('beranda.html');
   assert.deepEqual(signed.rejected, [], `the module rejected: ${signed.rejected.join('; ')}`);
   assert.ok(signed.context.document.body.classList.contains('signed-in'), 'the body is marked');
@@ -332,18 +275,14 @@ test('a client that sent no name is not replaced with a guess', async () => {
 });
 
 test('a request Supabase already decided is followed, not asked again', async () => {
-  // WHY: GoTrue auto-approves when the same client already holds consent covering the
-  // requested scopes and returns the redirect instead of details. Asking again would put a
-  // decision in front of a person that was already made for them.
+
   const { nodes, context } = await run('oauth/consent.html', { authorizationRedirect: 'http://127.0.0.1:1/callback?code=already' });
   assert.equal(context.assigned, 'http://127.0.0.1:1/callback?code=already');
   assert.equal(nodes.factsCard.hidden, true, 'nothing is asked for');
 });
 
 test('an unreachable Auth does not offer a sign-in form, and says the session is safe', async () => {
-  // WHY: the session is intact and the network is not. Offering a sign-in form tells them the
-  // opposite, and signing them out over a dropped packet was the defect this page was
-  // measured with.
+
   const { nodes, context } = await run('oauth/consent.html', { unreachable: true });
   assert.equal(nodes.signedOutCard.hidden, true, 'no sign-in form while the network is down');
   assert.match(nodes.status.textContent, /Sesi Anda tetap aman/, 'and the page reassures rather than alarms');
@@ -361,9 +300,7 @@ test('an aged access token is renewed rather than deleted', async () => {
 });
 
 test('a renewal that cannot reach Auth is not a sign-out', async () => {
-  // WHY this is the lock that matters for every other user: a dropped packet and a refused
-  // token look identical to a caller that only sees null, and the caller was deleting the
-  // session either way. A phone in a tunnel must not end a session.
+
   for (const page of SIGNED_IN_PAGES) {
     const { store, cleared } = await run(page, { accessOk: false, refreshFails: true });
     assert.deepEqual(cleared, [], `${page} forgets nothing when Auth is unreachable`);
@@ -380,8 +317,7 @@ test('a server error from the renewal endpoint is treated as temporary', async (
 });
 
 test('a refused refresh token is the only thing that ends a session, and both halves of it', async () => {
-  // WHY both keys: clearing only the access token leaves a refresh token behind, and the next
-  // load would try to renew with a token already known to be dead.
+
   for (const page of SIGNED_IN_PAGES) {
     const { cleared } = await run(page, { accessOk: false, refreshStatus: 401 });
     for (const key of ['opera-agent-access-token', 'opera-agent-refresh-token']) {

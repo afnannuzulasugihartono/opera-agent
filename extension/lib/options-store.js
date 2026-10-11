@@ -80,9 +80,6 @@ function isHttpUrl(value) {
   }
 }
 
-// WHY loopback is exempt: a local model on 127.0.0.1 never sends the content off the
-// machine, so demanding https of it would only block the one case that is safest.
-
 function isLoopbackHttp(value) {
   try {
     const url = new URL(String(value));
@@ -102,12 +99,9 @@ export async function loadOptions(storage) {
     bridgeUrl,
     logLevel,
 
-    // Read-time defaults only: an empty store reports the default provider without
-    // writing anything, so the provider can move under a user who never chose.
     modelEndpoint: storedEndpoint ? storedEndpoint : DEFAULT_PROVIDER.endpoint,
     modelName: storedModel ? storedModel : DEFAULT_PROVIDER.defaultModel,
 
-    // The key is reported as present or absent, never as a value.
     modelKeySet: typeof cfg.modelKey === 'string' && cfg.modelKey.length > 0
   };
 }
@@ -147,17 +141,11 @@ export async function saveModelName(storage, value) {
   return trimmed;
 }
 
-// WHY empty clears rather than refuses: revoking a key has to be possible without a
-// keyboard, and a store that cannot be emptied is a store nobody trusts.
-
 export async function saveModelKey(storage, value) {
   const trimmed = String(value ?? '').trim();
   await storage.set({ modelKey: trimmed });
   return trimmed;
 }
-
-// Fail closed, and say which part is missing: an absent key is the common case and
-// a silent plan attempt would look like a broken product rather than an unconfigured one.
 
 export async function readModelConfig(storage) {
   const cfg = await storage.get(['modelEndpoint', 'modelName', 'modelKey']);

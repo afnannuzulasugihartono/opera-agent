@@ -13,12 +13,7 @@ import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/function
 const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'origin' ? origin : null) } });
 
 test('default origins are exactly the extension and the site', () => {
-  // WHY the site and not a separate consent deployment: the consent screen is a page of
-  // the site now, so the origin that may call the backend is the site's own origin.
-  //
-  // WHY two extension ids: the signing key produced a new one, and an install that
-  // has not been replaced still presents the old id. WHY two site origins: Cloudflare
-  // is the front door and Vercel stays reachable as the backup host.
+
   assert.deepEqual(CORS_DEFAULT_ORIGINS, [
     'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
     'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
@@ -50,12 +45,6 @@ test('env list overrides defaults', () => {
   delete process.env.CORS_ALLOWED_ORIGINS;
 });
 
-// WHY this lock exists: six functions answered Access-Control-Allow-Origin: "*"
-// while the other three used the resolver above, so the project carried two
-// contradictory CORS policies and only the resolver's was tested. The helper can
-// stay perfect while a function beside it ignores it, and the unit tests above
-// would never notice — so every function is checked for the wildcard here.
-
 const EDGE_FUNCTIONS = [
   'opera-agent-auth',
   'opera-agent-bridge',
@@ -75,18 +64,11 @@ test('no edge function answers a wildcard origin any more', () => {
 });
 
 test('the config endpoint is not a publicly cacheable copy of the anon key', () => {
-  // WHY: the anon key is public by design, so the cache directive is not the
-  // secret here — it is that "public" lets any shared cache keep a copy keyed by
-  // nothing, which outlives the question of whether the body is sensitive today.
+
   const source = readFileSync(new URL('../supabase/functions/opera-agent-auth/index.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /"Cache-Control":\s*"public/);
   assert.match(source, /"Cache-Control":\s*"no-store"/);
 });
-
-// WHY this is driven rather than read: the source assertions above would pass on a
-// withCors that computes the right value and then never applies it, or one that
-// always answers "*". The bridge is loaded and run, and the header is read off a
-// real response, so the behaviour is measured rather than assumed.
 
 function loadBridge() {
   const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
@@ -123,8 +105,6 @@ test('a hostile origin gets no ACAO back, and an allowlisted one is echoed exact
   const extension = await call('chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl');
   assert.equal(extension.headers.get('access-control-allow-origin'), 'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl');
 
-  // A server-to-server caller sends no Origin at all, which is how the MCP
-  // function reaches the VM: no header is the correct answer, not a wildcard.
   const none = await call(null);
   assert.equal(none.headers.get('access-control-allow-origin'), null);
 });

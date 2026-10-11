@@ -8,13 +8,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extensionSource } from './helpers/extension-source.mjs';
 
-//  Event-Triggered Workflows: the watch engine compiles a
-// model's intent into device-local trigger rules so reaction speed follows the
-// page, not the model round trip. The pure policy engine is exercised for real
-// in Node (trigger kinds, any/all composition, debounce, deadline, once/repeat,
-// maxEvents, already-true-at-arm); migration and gateway are source-contract
-// locked like the suite.
-
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const { validateRule, evaluateRules, TRIGGER_KINDS } = await import('../extension/lib/watch.js');
 
@@ -52,7 +45,6 @@ test('selectorPresence fires and once-rules retire; gone fires only after presen
   const again = evaluateRules([r1], snap(true), st, now += 10);
   assert.equal(again.fired.length, 0, 'once-rule retires after firing');
 
-  // gone: armed while absent must NOT fire until a presence was observed
   const g = rule({ ruleId: 'g1', trigger: { kind: 'selectorGone', selector: '.x' } });
   let s2 = {};
   const absent = { facts: { g1: { present: false } }, url: '', adState: false, mediaTime: 0 };
@@ -87,7 +79,6 @@ test('already-true at arm fires immediately (the T041 lesson); debounce then thr
   let st = {};
   const d = rule({ ruleId: 'd1', mode: 'repeat', maxEvents: 10, debounceMs: 500, deadlineMs: 5000 });
 
-  // present on the very first evaluation = already-true-at-arm → fires NOW
   const first = evaluateRules([d], { facts: { d1: { present: true } }, url: '', adState: false, mediaTime: 0 }, st, 100);
   assert.equal(first.fired.length, 1, 'already-true must not be swallowed');
   st = first.state;
@@ -154,7 +145,6 @@ test('gateway is one-hop universal ingress with GPT-Actions-compatible auth', ()
   assert.match(src, /x-opera-agent-token/, 'header auth');
   assert.match(src, /apiKey/, 'body auth because GPT Actions cannot set headers');
 
-  // Transaction ordering is covered by the executable gateway regression tests.
   assert.match(src, /openapi\.json/, 'GPT Actions schema endpoint');
   assert.match(src, /p_request_id/, 'idempotency key passthrough');
 });
@@ -167,22 +157,13 @@ test('MCP gains start_watch/wait_events/stop_watch wired to the device path', ()
 });
 
 test('MCP start_watch schema preserves adSelectors for adState rules', () => {
-  // The content script reads trigger.adSelectors (array) to detect ad overlays
-  // (site-agnostic: the selectors live in the rule). A zod object without the
-  // field strips unknown keys, so an adState rule armed through the MCP could
-  // never fire — live evidence 2026-09-23. The exact schema shape is the
-  // frozen contract: array of 1..8 non-empty selectors, optional.
+
   const src = read('supabase/functions/opera-agent-mcp/index.ts');
   assert.match(src, /adSelectors:\s*z\.array\(z\.string\(\)\.min\(1\)\.max\(500\)\)\.max\(8\)\.optional\(\)/, 'trigger schema must carry adSelectors');
 });
 
 test('migration seeds watch methods into the opera_methods enqueue allowlist', () => {
-  // Exact seed text is the frozen contract: MCP start_watch/stop_watch enqueue
-  // through opera_enqueue, whose allowlist is the opera_methods table. The ETW
-  // migration shipped the engine and MCP tools without these rows, so arming
-  // failed live with "Method is not allowlisted.". The watch
-  // family stays out of the 26 browser primitives (internal), but the three
-  // methods the MCP surface needs must be seeded and enabled.
+
   const src = read('supabase/migrations/20260923010000_opera_agent_watch_methods.sql');
   assert.match(src, /insert into public\.opera_methods/i);
   for (const method of ['watch.start', 'watch.stop', 'watch.stop_all']) {

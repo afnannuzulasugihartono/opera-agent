@@ -161,9 +161,6 @@ function matchesTrigger(rule, snapshot, rs) {
   }
 }
 
-// Evaluate a batch of rules against one snapshot. `state` maps ruleId ->
-// per-rule runtime bookkeeping; the returned state is the one to persist.
-
 export function evaluateRules(rules, snapshot, state, now) {
   const next = { ...(state || {}) };
   const fired = [];

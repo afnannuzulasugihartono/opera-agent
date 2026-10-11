@@ -19,13 +19,9 @@ const root = new URL('..', import.meta.url);
 const sql = fs.readFileSync(new URL('supabase/migrations/20261010090000_opera_agent_konsol_tables.sql', root), 'utf8');
 const html = fs.readFileSync(new URL('landing/dashboard.html', root), 'utf8');
 
-// The map, parsed from the values rows: one entry per table.
-
 const mapRows = [...sql.matchAll(/^ {4}\('([a-z0-9_]+)', '(owner|operator)', '(.*)'\),?$/gm)]
   .map((match) => ({ table: match[1], scope: match[2], qual: match[3] }));
 const map = new Map(mapRows.map((row) => [row.table, row]));
-
-// The policies, parsed from their one-line create statements.
 
 const policyRows = [...sql.matchAll(/^create policy (\w+) on public\.([a-z0-9_]+) for select to authenticated using \((.*)\);$/gm)]
   .map((match) => ({ name: match[1], table: match[2], qual: match[3] }));
@@ -143,8 +139,7 @@ test('secrets are masked in the database, never in the page', () => {
 });
 
 test('the tautology is gone and workflow runs stay owned', () => {
-  // The header comment quotes the old bug to warn the next reader, so the check
-  // runs against the statements alone.
+
   const code = sql.split('\n').filter((line) => !line.trim().startsWith('--')).join('\n');
   assert.doesNotMatch(code, /device_name = d\.device_name/, 'the silent drift that opened every run to every device is not reintroduced');
   assert.match(map.get('opera_workflow_runs').qual, /\(opera_workflow_runs\.user_id = auth\.uid\(\)\) or exists/, 'a run is readable to its user and to the owner of its device');

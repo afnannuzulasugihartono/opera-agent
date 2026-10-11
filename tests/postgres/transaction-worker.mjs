@@ -21,4 +21,4 @@ if(Object.keys(context).sort(codeUnitCompare).join(',')!=='actor,approval,consum
 const finalize=context.route==='bound'?'public.opera_tx_finalize_bound':'opera_agent_tx_candidate.finalize_dark';
 if(mode==='after')await run(path.join(bin,process.platform==='win32'?'psql.exe':'psql'),['-X','-qAt','-v','ON_ERROR_STOP=1','-h','127.0.0.1','-p',port,'-U','postgres','-d','postgres','-c',`set statement_timeout='5s';set role service_role;select ${finalize}('${tenant}','${context.actor}','${tx}',${context.epoch},'${context.fence}','${context.nonce}','${context.approval}','${context.consumption}');`],{windowsHide:true});
 process.send({phase:mode});
-setInterval(()=>{},1000); // Deliberate checkpoint; parent terminates this worker.
+setInterval(()=>{},1000);

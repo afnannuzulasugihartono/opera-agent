@@ -69,10 +69,6 @@ declare
   v_polls     integer := 0;
   v_now       timestamptz;
 begin
-  -- ONE clock for the whole function, read at the moment of use. Reading
-  -- clock_timestamp() inline would work too, but then each call site is a separate
-  -- chance to reintroduce the bug and there is no way to see from the SQL whether a
-  -- given reference was left on the frozen clock.
 
   v_started := clock_timestamp();
   v_device_id := public.opera_auth_device(p_device_name, p_token_hash);
@@ -126,9 +122,6 @@ begin
                               'waitedMs', round(extract(epoch from (clock_timestamp() - v_started)) * 1000));
   end if;
 
-  -- The line the whole migration exists for. claimed_at is the moment the claim
-  -- happened, and the claim happens after a wait that may be a quarter of a minute
-  -- long, so now() would stamp it before the row existed.
   update public.opera_commands
      set status = 'claimed',
          attempts = attempts + 1,
@@ -149,8 +142,5 @@ $$;
 revoke all on function public.opera_claim_next_wait(text, text, text, integer, jsonb, integer) from public, anon, authenticated;
 grant execute on function public.opera_claim_next_wait(text, text, text, integer, jsonb, integer) to service_role;
 
--- WHY this comment: a function whose every line reads now() is indistinguishable
--- from a function that has this bug again. The invariant is one sentence, so the next
--- reader can check it without reading the body.
 comment on function public.opera_claim_next_wait(text, text, text, integer, jsonb, integer) is
   'Long-poll claim. EVERY time reference must use clock_timestamp(), never now(): this function holds one transaction for up to 25 seconds and now() is frozen at BEGIN. On the frozen clock a claim is stamped before its command exists, and a command that expired during the wait is still handed out.';

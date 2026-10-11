@@ -21,8 +21,6 @@ async function prefill() {
   $('modelProvider').value = providerId;
   fillModelList(providerId);
 
-  // The page is told whether a key exists and never what it is. The key itself is
-  // entered in the popup, next to pairing: a secret has no business here.
   $('modelStatus').textContent = options.modelKeySet
     ? 'Endpoint dan model tersimpan di sini. Kunci sudah tersimpan; atur di popup.'
     : 'Endpoint dan model tersimpan di sini. Belum ada kunci; atur di popup.';
@@ -41,10 +39,6 @@ function showProbeStatus(text) {
 }
 
 const providerOf = (id) => MODEL_PROVIDERS.find((provider) => provider.id === id);
-
-// A stored config names its provider only when both halves match a known entry;
-// anything else is custom work, so the select says Kustom. Providers without a
-// model list match on the endpoint alone, because the user types that name.
 
 function matchProvider(endpoint, model) {
   const known = MODEL_PROVIDERS.find((provider) =>
@@ -81,8 +75,6 @@ function init() {
     }
   });
 
-  // WHY its own form and button: one shared submit would mix two unrelated saves,
-  // and a failure in one would leave the other silently unwritten.
   $('modelForm').addEventListener('submit', async (event) => {
     event.preventDefault();
     try {
@@ -95,8 +87,6 @@ function init() {
     }
   });
 
-  // WHY fill without saving: picking a provider stages the values in the inputs and
-  // the existing Simpan button commits them, so one save path stays the only save path.
   $('modelProvider').addEventListener('change', () => {
     const provider = providerOf($('modelProvider').value);
     if (!provider) return;

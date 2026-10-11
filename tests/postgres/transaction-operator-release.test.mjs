@@ -11,8 +11,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import net from 'node:net';
 
-// Opt-in real PostgreSQL gate; absence of native tools is a failure, not a skip.
-
 const bin=process.env.OPERA_PG_BIN;
 assert.ok(bin,'OPERA_PG_BIN is required for the native release gate');
 const exe=name=>join(bin,name+(process.platform==='win32'?'.exe':''));
@@ -50,8 +48,6 @@ test('8D exclusive release refuses late committed rows and retains ownership',as
       query(`delete from ${table}`);
     }
 
-    // Actual concurrent admission: release must wait for the share-lock holder,
-    // then see the newly committed row rather than trust an earlier zero read.
     const late=spawn(exe('psql'),[...args,'-c',`set application_name='oa_8d_late_insert';begin;
       select public.opera_tx_operator_assert_8d(${binding});
       insert into opera_agent_tx_candidate.principals values('${ns}');

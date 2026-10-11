@@ -57,17 +57,12 @@ test('a shared link carries a title, not a bare URL', () => {
     assert.match(html, /<meta property="og:site_name" content="Opera Agent"/, `${page} cards carry the brand`);
     assert.match(html, /<meta property="og:locale" content="id_ID"/, `${page} shares in its own language`);
 
-    // WHY og:url and not a canonical link: a <link href="https:..."> trips the
-    // no-external-origin locks, which exist to keep every render dependency local.
-    // A share card still needs one absolute address, and that is what og:url is.
     assert.match(html, /<meta property="og:url" content="https:\/\/opera-agent\.pages\.dev\/[^"]*"/, `${page} names the address the card points at`);
   }
 });
 
 test('every page renders in standards mode with its own theme color', () => {
-  // WHY this lock: dashboard.html once opened with four plain-text lines before
-  // the doctype, which throws every browser into quirks mode — the one rendering
-  // bug no screenshot review catches, because the page still looks almost right.
+
   const raw = (page) => fs.readFileSync(new URL(`landing/${page}`, root), 'utf8');
   for (const page of [...pages, 'oauth/consent.html']) {
     const full = raw(page);
@@ -78,18 +73,7 @@ test('every page renders in standards mode with its own theme color', () => {
 });
 
 test('every nav marks the page being read', () => {
-  // WHY this lock: akun, dashboard and unduh already mark themselves while the
-  // other five mark nothing, so a reader with three tabs open could not tell
-  // which was which without reading each title. The entries stay identical
-  // everywhere — this only marks, never renames. The 404 marks home: it has no
-  // link of its own, and home is where its copy sends the reader.
-  // WHY index.html and syarat.html are absent from this map: neither has a self
-  // entry in the shared nav — both live in the footer — and adding one entry
-  // site-wide for a single page fails the simplicity bar the one-nav rule exists
-  // to enforce. Their tabs already read "Masuk — Opera Agent" and "Syarat
 
-  // Layanan — Opera Agent", and auth's signed-in view retitles to Akun, which
-  // is marked there.
   const marked = {
     'beranda.html': './beranda.html',
     'akun.html': './akun.html',
@@ -108,10 +92,7 @@ test('every nav marks the page being read', () => {
 });
 
 test('no page claims invite-only access while sign-up stands open', () => {
-  // WHY measured and not assumed: the live Auth settings answer
-  // "disable_signup":false with google and email enabled, so "Akses awal lewat
-  // undangan sampai sign-up terbuka" is not cautious copy but a false statement
-  // on the page a stranger reads before creating an account.
+
   const copy = (page) => read(`landing/${page}`).replace(/<!--[\s\S]*?-->/g, '');
   for (const page of ['index.html', 'syarat.html', 'beranda.html']) {
     assert.doesNotMatch(copy(page), /undangan/i, `${page} no longer rations access that is open`);
@@ -121,10 +102,7 @@ test('no page claims invite-only access while sign-up stands open', () => {
 });
 
 test('no page points at support that does not exist', () => {
-  // WHY these two phrases and not every "kontak": the privacy page keeps its
-  // Kontak section, which names the real self-service surface and the real
-  // security channel. What dies here are the pointers to a help desk nobody
-  // staffs: "bertanya ke dukungan" and "lewat kontak" on the landing FAQ.
+
   const index = read('landing/beranda.html').replace(/<!--[\s\S]*?-->/g, '');
   assert.doesNotMatch(index, /bertanya ke dukungan/, 'the FAQ does not promise a help desk');
   assert.doesNotMatch(index, /lewat kontak/, 'and the exit row does not point at one either');
@@ -135,9 +113,7 @@ test('no page points at support that does not exist', () => {
 });
 
 test('no page sells billing that does not exist', () => {
-  // WHY this lock: the FAQ priced "bayar per hasil" while the tree holds no
-  // billing of any kind. The only money in this product moves between the
-  // reader and their own model provider, and the terms already say so.
+
   const index = read('landing/beranda.html').replace(/<!--[\s\S]*?-->/g, '');
   assert.doesNotMatch(index, /bayar per hasil/i, 'no per-result billing is promised');
   assert.match(index, /penyedia model Anda|penyedia Anda/, 'the reader pays their provider, nobody else');

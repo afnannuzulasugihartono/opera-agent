@@ -24,29 +24,27 @@ test('the bundle order keeps every cross-module indexOf anchor valid', async () 
   const files = extensionSourceFiles();
   const idx = (name) => files.indexOf(name);
 
-  // serialize sebelum watch-registry: hygiene menyatukan pasangan ini.
   if (files.includes('extension/lib/serialize.js') && files.includes('extension/worker/watch-registry.js')) {
     assert.ok(idx('extension/lib/serialize.js') < idx('extension/worker/watch-registry.js'),
       'serialize must precede watch-registry');
     assert.ok(src.indexOf('function boundedResult') >= 0, 'boundedResult must be in the bundle');
-    assert.ok(src.indexOf('// ---- Event-Triggered Workflows') > src.indexOf('function boundedResult'),
-      'the watch section marker must follow boundedResult');
+
+    assert.ok(src.indexOf("const WATCH_STATE_KEY") > src.indexOf('function boundedResult'),
+      'the watch registry must follow boundedResult');
   }
 
-  // execute-pull terakhir: hygiene memotong executeCommand tanpa batas kedua.
   if (files.includes('extension/worker/execute-pull.js')) {
     assert.equal(idx('extension/worker/execute-pull.js'), files.length - 1,
       'execute-pull must be last so its slice runs to the end of the bundle');
   }
 
-  // Anchor yang selalu ada — menangkap kasus seperti U-V yang memotong -1.
   for (const anchor of [
     'async function executeCommand',
     'async function withForegroundFocusGate',
-    '// Action Pipeline',
+    'const UV_WAIT_FLOOR_MS',
     'function boundedResult',
     'function oversized',
-    '// ---- Event-Triggered Workflows',
+    'const WATCH_STATE_KEY',
   ]) {
     assert.ok(src.indexOf(anchor) > 0, `anchor must exist in the bundle: ${anchor}`);
   }
@@ -54,22 +52,15 @@ test('the bundle order keeps every cross-module indexOf anchor valid', async () 
 
 test('no state is declared twice across the bundle', async () => {
   const files = extensionSourceFiles();
-  if (files.length === 1) return;          // belum ada modul yang dipindah
+  if (files.length === 1) return;
   const decls = new Map();
   for (const rel of files) {
     const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
 
-    // `export` ialah bagian dari polanya, bukan hiasan opsional. Tanpa ia, pindai
-    // ini melihat 21 dari 36 deklarasi top-level bundel dan buta terhadap 14 yang
-    // diekspor — yakni persis state lintas-modul yang berbahayanya dinamai di
-    // bawah. Pembuktinya: probe yang diduplikasi sebagai `export const` lolos,
-    // probe yang sama sebagai `const` biasa merah.
     const names = [
       ...text.matchAll(/^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm),
     ].map((m) => m[1]);
 
-    // Ikatan terdestrukturisi di tingkat modul ialah state seperti state lain:
-    // `const { a, b } = globalThis.…` mengikat dua nama, bukan satu.
     for (const m of text.matchAll(/^(?:export\s+)?(?:const|let|var)\s*[{[]([^}\]]*)[}\]]/gm)) {
       for (const piece of m[1].split(',')) {
         const name = piece.trim().split(':').pop().trim();
@@ -77,19 +68,10 @@ test('no state is declared twice across the bundle', async () => {
       }
     }
 
-    // Sebuah nama fungsi yang didefinisikan dua kali menyimpang dengan cara yang
-    // sama persis: definisi kedua mengalahkan yang pertama, dan yang mana yang
-    // menang bergantung urutan muat modul.
     for (const m of text.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm)) {
       names.push(m[1]);
     }
 
-    // Sengaja TIDAK dicakup: `const a = 1, b = 2;`. Pencariannya membaca
-    // `let serializedResult = { value: null, text: '' };` di lib/serialize.js
-    // sebagai multi-deklarasi, karena tanda koma itu duduk di dalam sebuah objek
-    // nilai. Menangkapnya butuh pemindai sungguhan, dan heuristik yang salah
-    // baca ialah satu-satunya hal yang suite ini tolak. Celahnya dipilih,
-    // bukan terlewat.
     for (const name of names) decls.set(name, [...(decls.get(name) || []), rel]);
   }
   const duplicated = [...decls].filter(([, where]) => where.length > 1);
@@ -98,9 +80,8 @@ test('no state is declared twice across the bundle', async () => {
 
 test('every cross-module name is imported where it is used', async () => {
   const files = extensionSourceFiles();
-  if (files.length === 1) return;          // belum ada modul yang dipindah
+  if (files.length === 1) return;
 
-  // Buang komentar dan string agar nama di dalamnya tidak dihitung sebagai pemakaian.
   const strip = (text) => {
     let out = '', i = 0;
     const keep = (s) => (s.match(/\n/g) || ['']).join('');
@@ -149,10 +130,6 @@ test('every cross-module name is imported where it is used', async () => {
     for (const m of code.matchAll(/(?:^|[^\w$.])(?:const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) dec.add(m[1]);
     for (const m of code.matchAll(/(?:^|[^\w$.])(?:function|const|let|var|class)\s*\(?[^)]*\b([A-Za-z_$][\w$]*)\s*[)=,]/g)) dec.add(m[1]);
 
-    // Destrukturisasi harus terlihat juga. Tanpanya, `const { a, b } =
-    // globalThis.…` di background.js mengikat tiga nama yang pemindai ini tak
-    // tahu sudah dimiliki berkasnya sendiri — lalu ketiganya dituduh dipakai
-    // tanpa diimpor. Terukur: tiga tuduhan palsu, satu per nama.
     for (const m of code.matchAll(/^(?:export\s+)?(?:const|let|var)\s*[{[]([^}\]]*)[}\]]/gm)) {
       for (const piece of m[1].split(',')) {
         const name = piece.trim().split(':').pop().trim();
@@ -161,12 +138,6 @@ test('every cross-module name is imported where it is used', async () => {
     }
     declared.set(rel, dec);
 
-    // Deklarasi top-level kolom nol, semua bentuk — inilah isi `universe`.
-    // Sengaja TIDAK dimulai dari `dec`: `dec` memang menangkap deklarasi di dalam
-    // fungsi, karena filternya harus menutupi nama yang ditutupi secara lokal.
-    // Menyalinnya ke sini akan memasukkan `ref`, `mode`, `error`, dan — lewat
-    // pola ketiganya — `true` dan `null` sebagai "nama lintas-modul". Terukur:
-    // itu menghasilkan puluhan tuduhan palsu, satu per nama lokal.
     const top = new Set();
     for (const m of code.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm)) top.add(m[1]);
     for (const m of code.matchAll(/^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)) top.add(m[1]);
@@ -179,11 +150,6 @@ test('every cross-module name is imported where it is used', async () => {
     topLevel.set(rel, top);
   }
 
-  // `universe` dulu hanya berisi nama yang diekspor, sehingga sebuah nama PRIVAT
-  // yang dipakai di modul lain tanpa impor lolos — dan itu persis jalur
-  // `TypeError: X is not defined` yang rencana ini ditulis untuk menutupnya.
-  // Dibangun dari semua deklarasi top-level, jalur itu ikut tertutup: 79 → 139
-  // nama, nol miss di pohon ini (terukur sebelum baris ini ditulis).
   const universe = new Set();
   for (const s of topLevel.values()) for (const n of s) universe.add(n);
 
@@ -191,9 +157,9 @@ test('every cross-module name is imported where it is used', async () => {
   for (const rel of files) {
     const code = clean.get(rel);
     for (const n of universe) {
-      if (exported.get(rel).has(n)) continue;   // file ini pemiliknya
-      if (imported.get(rel).has(n)) continue;   // sudah diimpor
-      if (declared.get(rel).has(n)) continue;   // ditutupi deklarasi lokal
+      if (exported.get(rel).has(n)) continue;
+      if (imported.get(rel).has(n)) continue;
+      if (declared.get(rel).has(n)) continue;
       if (!new RegExp(`(?<![.\\w$])${n}\\b`).test(code)) continue;
       misses.push(`${rel}: ${n}`);
     }
@@ -215,11 +181,6 @@ test('capture never imports private-tabs, so the split cannot close a fifth cycl
   const files = extensionSourceFiles();
   if (!files.includes('extension/worker/capture.js')) return;
 
-  // Tingkatnya SATU, bukan dua: berkas ini ada di tests/, jadi ../ sudah mencapai
-  // akar repositori. Dua tingkat naik ke D:/GitHub/ dan melempar ENOENT — kesalahan
-  // yang ditemukan dengan menjalankan kelima tes ini ke pohon hidup sebelum brief
-  // dikirim. tests/helpers/extension-source.mjs memang memakai dua tingkat, karena
-  // berkas itu duduk di tests/helpers/.
   const text = await readFile(new URL('../extension/worker/capture.js', import.meta.url), 'utf8');
   assert.ok(!/from\s+'\.\/private-tabs\.js'/.test(text),
     'capture -> private-tabs would form capture -> private-tabs -> capture');
@@ -227,22 +188,12 @@ test('capture never imports private-tabs, so the split cannot close a fifth cycl
 
 test('no import brings in a name its own file never uses', async () => {
   const files = extensionSourceFiles();
-  if (files.length === 1) return;          // belum ada modul yang dipindah
+  if (files.length === 1) return;
   const dead = [];
   for (const rel of files) {
     const text = await readFile(new URL(`../${rel}`, import.meta.url), 'utf8');
     const lines = text.split('\n');
 
-    // Sebuah pernyataan impor bisa membentang banyak baris. Tanpa penanda ini,
-    // sebuah pernyataan { a, b, c } di banyak baris membaca baris kelanjutannya
-    // sendiri sebagai pemakaian dan tidak pernah bisa merah — cacat yang sama
-    // persis yang menyembunyikan 50 nama mati selama 18 task.
-    //
-    // Sebaliknya, impor efek samping (`import './role-reconcile.js';`) punya
-    // titik koma tapi tak punya kurawal. Membuka blok tanpa memeriksa ';' akan
-    // menandai seluruh sisa berkas sebagai "baris impor", menelan pemakaian yang
-    // sah, dan menuduh nama yang hidup sebagai mati. Kedua arah salah ini
-    // ditemukan pada pohon yang sama saat mengaudit Task 18.
     const insideImport = [];
     let open = false;
     for (const line of lines) {
@@ -261,19 +212,11 @@ test('no import brings in a name its own file never uses', async () => {
       for (const raw of m[1].split(',')) {
         const token = raw.trim().split(/\s+as\s+/).pop().trim();
 
-        // Sebuah komentar inline di dalam kurawal impor (`foo, // alasan`)
-        // menghasilkan token `// alasan` — yang tak pernah bisa dieja oleh baris
-        // mana pun di luar blok impor, jadi tes ini menuduhnya mati. Tak ada
-        // pemicunya hari ini (nol dari 87 pernyataan impor di bundel membawa
-        // komentar inline), tapi bias tes ini ialah tak pernah menyalahkan keliru,
-        // dan ini satu-satunya pilihan pemformatan yang bisa mematahkan janji itu.
         if (!/^[A-Za-z_$][\w$]*$/.test(token)) continue;
         let uses = 0;
         for (let i = 0; i < lines.length; i++) {
           if (insideImport[i]) continue;
 
-          // Pemakaian di komentar tetap dihitung: lebih baik tidak menyalahkan
-          // daripada menyalahkan keliru. Yang dilarang di sini ialah nol.
           if (lines[i].split(/[^A-Za-z0-9_$]+/).includes(token)) uses++;
         }
         if (uses === 0) dead.push(`${rel}: ${token}`);

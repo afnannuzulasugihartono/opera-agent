@@ -9,18 +9,8 @@ import { readFile } from 'node:fs/promises';
 import { SUPABASE_PROJECT_REF } from '../extension/lib/endpoints.js';
 import { stripComments } from './helpers/source-scan.mjs';
 
-// Frozen contract: docs/api.md is the narrative API reference and must cover
-// everything the gateway actually serves. The machine source of truth remains
-// the live GET /openapi.json; this test exists so narrative drift fails in CI
-// rather than silently misleading an integrator.
-
 const gatewayPath = new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url);
 const docPath = new URL('../docs/api.md', import.meta.url);
-
-// A bare mention is not coverage: paths and error codes are also named in the
-// prose sections, so `doc.includes(...)` keeps passing when the table row that
-// actually carries them is deleted. These helpers read the markdown table rows
-// so coverage can be asserted in the form the document is read in.
 
 function tableRows(doc) {
   return doc.split('\n').filter((line) => line.trimStart().startsWith('|'));
@@ -33,8 +23,6 @@ function tableCells(row) {
 function hasTableRow(doc, firstCell) {
   return tableRows(doc).some((row) => tableCells(row)[0] === firstCell);
 }
-
-// The gateway section, isolated from the request-body and error-code tables.
 
 function section(doc, heading) {
   const start = doc.indexOf(heading);
@@ -60,15 +48,10 @@ test('api.md documents every path the gateway routes', async () => {
 });
 
 test('api.md documents no path the gateway stopped serving', async () => {
-  // The complement of the test above. Without it, a route deleted from the
-  // gateway would leave its row behind in docs/api.md forever, and the
-  // operator would keep reading about an endpoint that 404s.
+
   const gateway = await readFile(gatewayPath, 'utf8');
   const doc = await readFile(docPath, 'utf8');
 
-  // The first-column convention is load-bearing: only a cell that opens with
-  // a backticked slash is read as a path, so a request-body or error-code row
-  // can never be mistaken for one.
   const listed = tableRows(section(doc, '## Endpoints'))
     .map((row) => tableCells(row)[0])
     .filter((cell) => cell.startsWith('`/') && cell.endsWith('`'))
@@ -93,18 +76,7 @@ test('api.md documents every error code the gateway emits', async () => {
 });
 
 test('extractToken accepts exactly the three documented carriers', async () => {
-  // The narrative states that ?apiKey= is not a carrier on ANY route. Rather than
-  // trying to ban every way a query string could be parsed across the whole file --
-  // which misses helpers and rejects legitimate non-token query parameters -- this
-  // pins the carrier set POSITIVELY inside the function that decides it.
-  //
-  // KNOWN LIMITS. This pins the body of `extractToken` as written here. It cannot
-  // see a carrier reached by calling a helper (`queryCarrier(req)`), and it cannot
-  // see a route handler that reads the query string and ORs the result in
-  // afterwards. It also reads the last request member syntactically, so an honest
-  // refactor to destructuring (`const { headers } = req`) would fail it. Those are
-  // the trade for not rejecting correct code, and they are the shapes a future
-  // reviewer should re-examine if a query-string carrier is ever suspected.
+
   const gateway = await readFile(gatewayPath, 'utf8');
   const code = stripComments(gateway, 'javascript');
 
@@ -121,7 +93,6 @@ test('extractToken accepts exactly the three documented carriers', async () => {
     'extractToken reads no query-string carrier'
   );
 
-  // Reads the request member syntactically; see KNOWN LIMITS above.
   const requestMembers = [...body.matchAll(/\breq(?:uest)?\.(\w+)/g)].map((m) => m[1]);
   assert.deepEqual(
     [...new Set(requestMembers)],
@@ -131,10 +102,7 @@ test('extractToken accepts exactly the three documented carriers', async () => {
 });
 
 test('command resolves a user JWT to the caller-owned first device, never the fixed name', async () => {
-  // Fourth auth path, past extractToken: a Supabase user JWT (ChatGPT plugin
-  // OAuth, and any future per-user caller) is verified with getUser when the
-  // device-token check fails, and the device is resolved by owner, never by
-  // DEVICE_NAME, so one account cannot drive another account's browser.
+
   const gateway = await readFile(gatewayPath, 'utf8');
   const code = stripComments(gateway, 'javascript');
   assert.match(code, /supabase\.auth\.getUser\(token\)/, 'the gateway verifies a user JWT when the device token fails');
@@ -144,11 +112,7 @@ test('command resolves a user JWT to the caller-owned first device, never the fi
 });
 
 test('the security policy states the true carrier set and nothing else', async () => {
-  // SECURITY.md is the most-read statement of the topic. An earlier version of
-  // this test required it to keep the original false sentence as history; that
-  // pinned a history book inside the policy, against the rule that documents
-  // state what is true now. What is pinned instead: the true carriers, and the
-  // absence of the false one.
+
   const security = await readFile(new URL('../docs/security.md', import.meta.url), 'utf8');
   assert.doesNotMatch(
     security,

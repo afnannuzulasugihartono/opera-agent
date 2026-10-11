@@ -7,11 +7,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileGoalPlan } from '../lib/goal-plan.js';
 
-// A plan is handed over once and executed locally on the device, so the model
-// never sits in the step loop. That makes this file the narrow door between
-// model text and an action machine: everything the caller owns is refused here,
-// before a single byte reaches the device.
-
 const TARGET = { deviceId: 'device-test', tabId: 7, documentGeneration: 'doc-gen-1' };
 const BUDGETS = { astNodes: 256, astDepth: 12, browserCommandLeavesPerRun: 4 };
 

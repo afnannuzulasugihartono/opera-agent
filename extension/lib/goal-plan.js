@@ -16,16 +16,6 @@
 
 import { ALLOWED_METHODS } from './protocol.js';
 
-// WHY the prompt is built here and not in the edge function: the gate and the
-// prompt have to agree on the same allowlist and the same caller-owned fields. If
-// the prompt lived next to the fetch, the list would be typed twice and would
-// drift, and the model would be told about a method the gate refuses.
-//
-// It is bounded on purpose. The model plans against observed page facts, not the
-// whole page, and the observation is capped: a prompt that carries 500 elements
-// costs tokens, slows the first token, and gets worse at exactly the pages where
-// the model most needs to be told no.
-
 const GOAL_MAX_CHARS = 1200;
 const PAGE_ELEMENT_LIMIT = 40;
 
@@ -76,10 +66,6 @@ export function buildPlanRequest(goal, { page, methods = ALLOWED_METHODS, maxCom
   return { ok: true, system, user };
 }
 
-// Fields the caller fills in and the model may not set, at the top level or on
-// any nested node. A nested root is the smuggle case: a node that carries its own
-// identity would execute as itself.
-
 const OWNED_FIELDS = new Set(['tenantId', 'goalId', 'target', 'budgets', 'root']);
 
 const DEFAULT_DEPTH = 12;
@@ -87,10 +73,6 @@ const DEFAULT_DEPTH = 12;
 function refuse(code, message) {
   return { ok: false, code, message };
 }
-
-// Counts COMMAND nodes and reports whether the tree went deeper than allowed,
-// in one pass. Counting by node type rather than by key name means a new node
-// type in the VM cannot slip past this by living under a child key nobody listed.
 
 function measure(node, maxDepth, depth = 1, counter = { commands: 0, tooDeep: false }) {
   if (node === null || typeof node !== 'object') return counter;
@@ -124,15 +106,11 @@ export function compileGoalPlan(rawText, { target, budgets, programId = 'goal-pl
     return refuse('PLAN_NOT_JSON', 'The plan must be a JSON object.');
   }
   if (!parsed.root || typeof parsed.root !== 'object') {
-    // WHY the model's own reason is kept: a refusal that says nothing leaves the
-    // caller guessing whether the model failed, the page lacked a control, or the
-    // goal is out of scope. One sentence from the model is the diagnosis.
+
     const reason = typeof parsed.reason === 'string' && parsed.reason.trim() ? ` Model: ${parsed.reason.trim().slice(0, 300)}` : '';
     return refuse('PLAN_MISSING_ROOT', `The plan has no root node.${reason}`);
   }
 
-  // WHY refuse instead of strip: a model that sets tenantId is either confused
-  // or aiming at another tenant. Silently overwriting it would hide both.
   const owned = Object.keys(parsed).find((key) => OWNED_FIELDS.has(key) && key !== 'root');
   if (owned) {
     return refuse('PLAN_SETS_OWNED_FIELD', `The model may not set ${owned}; the caller owns it.`);
@@ -175,14 +153,6 @@ export function compileGoalPlan(rawText, { target, budgets, programId = 'goal-pl
     }
   };
 }
-
-// WHY not a recursive scan here: the walk in measure() already visits every node,
-// and a second visitor would have to be kept in step with it. This is a shallow
-// check on the node it passes, and it stops at the first offender on purpose.
-//
-// Every owned field counts here, `root` included. A nested root is the smuggle:
-// a node that carries its own program would execute as itself. Only the top level
-// may hold one, and that case is settled before this function is called.
 
 function findOwnedField(node, depth = 0) {
   if (node === null || typeof node !== 'object' || depth > 64) return null;

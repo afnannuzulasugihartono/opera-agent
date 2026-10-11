@@ -86,9 +86,6 @@ export async function capturePage(tabId, params, context) {
       const data = String(response?.data || '');
       const bytes = screenshotBytes(data);
 
-      // A frame under 512 bytes carries no image, so it is skipped without
-      // counting as a reduction failure; the refusal below names it exactly.
-
       if (bytes < 512) {
         sawTooSmall = true;
         continue;

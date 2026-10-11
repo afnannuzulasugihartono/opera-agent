@@ -177,9 +177,6 @@ export async function createEvidence(input) {
   return freezeEvidence({ ...normalized, evidenceDigest });
 }
 
-// WHY no export: validateEvidence is called by the two paths below and by nothing
-// else in the tree, so the keyword promised a reusable entry point no caller used.
-
 async function validateEvidence(input) {
   if (!isPlainObject(input) || !SHA256_HEX.test(input.evidenceDigest || '')) fail('INVALID_DIGEST', 'evidence.evidenceDigest is invalid.');
   if (input[VALIDATED_EVIDENCE] === input.evidenceDigest && Object.isFrozen(input)) return input;

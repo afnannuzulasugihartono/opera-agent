@@ -8,10 +8,6 @@
   if (globalThis.__operaAgentStateBridgeV1) return;
   globalThis.__operaAgentStateBridgeV1 = true;
 
-  // A registered state reader is a reviewed, bundled script — the opposite of
-  // remote eval. Each reader names exactly which page fields it touches; the
-  // allowlist lives here, in one auditable place, and nowhere else.
-
   function readTrex() {
     const Runner = globalThis.Runner;
     const instance = Runner && (Runner.instance_ || (typeof Runner.getInstance === 'function' ? Runner.getInstance() : null));
@@ -23,8 +19,6 @@
     const dimensions = instance.dimensions || {};
     const canvasH = dimensions.HEIGHT || dimensions.height || 150;
 
-    // currentSpeed is pixels per frame, not per second: without the frame
-    // rate the time-to-impact math inflates by 60x and only contact fires.
     const msPerFrame = Number(instance.msPerFrame) || 16.6667;
     const speedPxS = (Number(instance.currentSpeed) || 0) * (1000 / msPerFrame);
     const obstacles = instance.horizon.obstacles.map((o) => ({
@@ -119,8 +113,6 @@
     }
     const decision = decide.decideTrex(reading, session.params);
 
-    // Airborne guard: the game ignores mid-air jumps, so firing into the air
-    // only pollutes the trace. The reader already reports airborne state.
     const acted = reading.airborne && decision.action === 'jump' ? 'run' : act(decision.action, session.latch);
     session.ticks += 1;
     if (acted === 'jump') session.jumps += 1;

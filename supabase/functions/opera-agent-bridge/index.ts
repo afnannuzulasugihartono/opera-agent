@@ -20,19 +20,6 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-// WHY the wildcard is gone and the origin is decided per request: this const used
-// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
-// read a bridge response. The allowlist is the same one the gateway and the MCP
-// function already use, and it still covers both extension ids and both site
-// origins, so the extension and the site are unaffected -- a service worker
-// request carries host_permissions and ignores CORS entirely.
-//
-// WHY it is applied once at the edge instead of threaded through every json():
-// the route helpers below are module-level and never see the request, so passing
-// the origin down would have meant editing 17 call sites for no added safety. A
-// wrapper keeps the decision in exactly one place and keeps it per-request, so
-// two in-flight requests can never share an answer.
-
 function withCors(req: Request, res: Response): Response {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   const headers = new Headers(res.headers);
@@ -42,13 +29,6 @@ function withCors(req: Request, res: Response): Response {
 }
 
 const MAX_BODY = 1024 * 1024;
-
-// WHY the wait lives in Postgres: client-side polling minted ~52
-// `opera_claim_next` calls per 12s window (~13k/hour/device, 95% of all edge
-// traffic) and a new command waited p50 830ms / p95 1910ms, of which ~97% was
-// spent at the idle rate. One `opera_claim_next_wait` per window cut that to a
-// single round trip while the DB owns the wait. Recorded figures and the
-// rejected ramp live in `tests/efficiency.test.mjs`.
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -123,13 +103,6 @@ async function pull(body: Record<string, unknown>) {
   const tokenHash = await sha256(body.token.toLowerCase());
   const waitMs = clamp(body.waitMs, 0, 25000, 12000);
 
-  // The wait lives in Postgres, next to the queue. This handler used to sleep
-  // between `opera_claim_next` calls, which minted one HTTP round trip per poll
-  // -- 14 per 12s window per idle device -- and left a command waiting up to
-  // 2000ms for the device to ask again. Phase A measured that queue wait at
-  // p50 830ms and p95 1910ms. `opera_claim_next_wait` polls with a ramp that
-  // stays under 50ms for the first 720ms of an idle window, which is where
-  // follow-up commands actually arrive. One call, one response.
   const result = await rpc("opera_claim_next_wait", {
     p_device_name: body.deviceName.trim(),
     p_token_hash: tokenHash,
@@ -156,10 +129,6 @@ async function complete(body: Record<string, unknown>) {
   });
   return json(result || { ok: false }, result?.ok ? 200 : 400);
 }
-
-// Event-Triggered Workflows: device pushes a fired watcher event. The
-// envelope is device-supplied but capped; the watcher identity is carried in
-// the envelope itself (the relay does not resolve watcher rows).
 
 async function watchEvent(body: Record<string, unknown>) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
@@ -195,9 +164,7 @@ async function startWorkflow(body: Record<string, unknown>) {
 }
 
 async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
-  // WHY a bounded reader instead of req.text(): text() buffers the entire
-  // body before the length check, so a huge chunked body exhausts isolate
-  // memory first. This stops at maxBytes + 1 and never holds more.
+
   if (!req.body) return "";
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -207,7 +174,8 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
     if (done) break;
     total += value.byteLength;
     if (total > maxBytes) {
-      try { await reader.cancel(); } catch { /* oversize is the answer */ }
+      try { await reader.cancel(); } catch {
+ }
       return null;
     }
     chunks.push(value);
@@ -228,10 +196,7 @@ async function handle(req: Request) {
   if (length > MAX_BODY) return json({ ok: false, error: "Request too large." }, 413);
 
   try {
-    // WHY the cap rides the stream, not just the header: the gate above reads
-    // content-length alone, so a chunked body without one skipped it and the
-    // parse buffered an unbounded body before authentication. Pull envelopes
-    // are small, so refusing past exactly MAX_BODY is the whole fix.
+
     const raw = await readBoundedBody(req, MAX_BODY);
     if (raw === null) {
       return json({ ok: false, error: "Request too large." }, 413);

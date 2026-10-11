@@ -26,14 +26,10 @@ const CRX = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-u
 const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 test('the hub opens with one giant door to the merged files page', () => {
-  // WHY the URL is cross-checked and not just repeated: the verification steps on the
-  // merged page vouch for one archive URL, and a card drifting to another path would
-  // offer a build those steps cannot verify.
+
   const curl = /curl\.exe -sI (\S+) \|/.exec(berkas)[1];
   assert.equal(ZIP, curl, 'the verification command reads the URL the cards offer');
 
-  // WHY tag and content separately: the door carries a data-i18n attribute, so a
-  // verbatim whole-tag match would break on the attribute rather than on a lost URL.
   assert.match(hub, /<a\b[^>]*class="btn giant"[^>]*href="\.\/unduh-berkas\.html"[^>]*>Unduh Opera Agent<\/a>/,
     'one giant button to the merged page, product name as its text');
   assert.doesNotMatch(hub, /class="btn giant"[^>]*download/, 'navigation, not a download');
@@ -49,8 +45,7 @@ test('the also-available row names the other doors without leaving the page', ()
 });
 
 test('every merged card names its own extensions surface and the archive requirement', () => {
-  // WHY the URL is cross-checked per card: five cards offering five different archives
-  // would break the one-build promise the verification steps keep.
+
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   const names = { chrome: 'Chrome', edge: 'Edge', brave: 'Brave', opera: 'Opera', vivaldi: 'Vivaldi' };
@@ -60,9 +55,6 @@ test('every merged card names its own extensions surface and the archive require
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 
-    // WHY tag and content separately: each offer carries a data-i18n attribute,
-    // so a verbatim whole-tag match would break on the attribute rather than on
-    // a lost URL or a lost button text.
     assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download[^>]*>Unduh \\.zip</a>`), `${key} offers the one archive`);
     assert.ok(body.includes(`<code>${surfaces[key]}</code>`), `${key} names its own extensions surface`);
     assert.match(body, /mode developer/, `${key} states the requirement`);
@@ -74,12 +66,7 @@ test('every merged card keeps the enterprise frame on its signed file', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   for (const [, key, body] of cards) {
-    // WHY the class is no longer asserted on the .crx: the signed file moved off the
-    // button row and into the card's closed <details>, because it is refused on an
-    // unmanaged machine and must not carry the same visual weight as the archive that
-    // installs everywhere. The claim under this lock is "the card still offers the
-    // signed file, and still frames it as enterprise" — both still hold, so the proof
-    // follows the file to its new place instead of the place being pinned instead.
+
     const more = /<details class="more">([\s\S]*?)<\/details>/.exec(body);
     assert.ok(more, `${key} keeps a closed list for its other downloads`);
     assert.match(more[1], new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file inside it`);
@@ -103,9 +90,7 @@ test('the merged detection marks the matching card and phones nowhere', () => {
 });
 
 test('the merged script is named by a hash on both hosts', () => {
-  // WHY this mirrors the hub hash lock additively: the /(.*) policy is shared, so
-  // a script without a hash would go silent in the browser while every other
-  // page stayed green.
+
   const vercel = JSON.parse(read('vercel.json'));
   const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
     .find((h) => h.key === 'Content-Security-Policy').value;

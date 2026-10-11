@@ -30,10 +30,6 @@ const WAKE_ALARM = 'opera-agent-wake';
 let loopPromise = null;
 let loopGeneration = 0;
 
-// One shaped outcome for both dispatch paths below: the ok/catch ladder used to
-// be written out twice, once per path, and the two copies had to be kept equal
-// by hand.
-
 async function runDispatch(dispatch, timeoutMs) {
   try {
     const result = await raceWithTimeout(dispatch, timeoutMs, commandTimeoutError);
@@ -50,13 +46,9 @@ async function runDispatch(dispatch, timeoutMs) {
 }
 
 async function executeCommand(raw) {
-  // Drop any memoized result serialization from the previous command so a large
-  // page.read result is not pinned for the worker's lifetime.
+
   clearSerializedResult();
 
-  // Watch.* and loop.* are internal extension-side families (protocol primitive
-  // count stays frozen at 28); their validation lives in lib/watch.js and
-  // lib/loop.js respectively.
   if (raw && typeof raw.method === 'string' && (raw.method.startsWith('watch.') || raw.method.startsWith('loop.'))) {
     const deadlineW = Date.now() + 10000;
     return runDispatch(() => dispatch(raw.method, raw.params || {}, { deadline: deadlineW }), 10000);
@@ -99,8 +91,6 @@ async function pair(code) {
 async function unpair() {
   loopGeneration += 1;
 
-  // WHY stop listening first: the device token is removed below, so chunks
-  // would fail auth anyway — but the recorder would keep running silently.
   await listenStop().catch(() => {});
   await chrome.storage.local.remove(['paired', 'deviceToken', 'deviceId']);
   await setState({ status: 'unpaired', lastError: null });
@@ -174,11 +164,6 @@ async function pullOnce(cfg) {
     protocolVersion: PROTOCOL_VERSION,
     capabilities: Object.keys(METHOD_SPECS),
 
-    // Short-window pull: the server wait stays well inside the fetch timeout
-    // with room for a cold start. A 12s wait leaves only a 3s margin, and any
-    // path hostile to long idle requests turns every window into an abort
-    // while fast requests keep passing. Idle cost rises from one trip per 12s
-    // window to one per 5s; worst-case claim latency falls from ~12s to ~5s.
     waitMs: 5000
   }, 10000);
 }
@@ -264,12 +249,6 @@ async function localSelfTest() {
   };
 }
 
-// WHY an external listener at all: the landing page configures the user's own model
-// by sending one message to this extension. externally_connectable decides which
-// pages may send it, and it needs no content script and no host permission, so the
-// page cannot read anything from here and this side still validates every value
-// with the same store the Options page uses.
-
 chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) => {
   if (!message || message.type !== 'applyModelConfig') return false;
   const from = String(sender?.origin || sender?.url || '');
@@ -352,9 +331,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
 
-  // WHY stop on install and update: a recorder cannot survive either, so a
-  // stored session would otherwise point at a dead capture while the server
-  // still bills transcription windows against it.
   await listenStop().catch(() => {});
   ensurePullLoop();
 });
@@ -368,8 +344,6 @@ chrome.runtime.onStartup.addListener(async () => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name !== WAKE_ALARM) return;
 
-  // .finally passes a rejection through, so without a handler here the alarm's
-  // heartbeat ends as an unhandled rejection instead of as a log line.
   heartbeat().finally(ensurePullLoop).catch((error) => { log.warn('HEARTBEAT_FAILED', error?.message || String(error)); });
 });
 
@@ -381,7 +355,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Re-arm after full navigations; content.js re-injects itself on the new document.
+
   if (changeInfo.status === 'complete' && /^https?:/i.test(tab.url || '')) {
     const w = loadWatchers();
     Promise.resolve(w).then((watchers) => {
@@ -393,8 +367,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   screenshotCache.delete(tabId);
   readListenSession().then((existing) => {
-    // WHY stop when the captured tab closes: the recorder dies with the page, so
-    // keeping the session live would transcribe silence until the 30-minute cap.
+
     if (existing?.tabId === tabId) listenStop().catch(() => {});
   }).catch(() => {});
   privateTabIds().then((ids) => {

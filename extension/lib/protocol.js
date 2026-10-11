@@ -29,9 +29,6 @@ export const BURST_ACTION_METHODS = Object.freeze({
   hover: 'page.hover',
   pointer: 'page.pointer',
 
-  // Navigation is not new authority: tabs.navigate already exists as a
-  // primitive. Composing it into a burst is what is new, and the stale-ref
-  // guard below is the safety half of that composition.
   navigate: 'tabs.navigate'
 });
 export const BURST_STEP_KEYS = Object.freeze({
@@ -102,11 +99,6 @@ function validateBurstStep(step) {
   const unexpectedKey = Object.keys(step).find((key) => !allowedKeys.has(key));
   if (unexpectedKey) return `Burst ${action} does not allow ${unexpectedKey}.`;
 
-  // Phase D: a step may name its own tab. Optional and additive, so a step that
-  // omits it still resolves to the burst-level tab and every existing caller is
-  // unaffected. A ref minted by an earlier step is NOT carried across a tab
-  // boundary: `refFromStep` below still binds only to earlier steps, and the
-  // executor refuses a passthrough whose source ran on a different tab.
   if (step.tabId !== undefined && step.tabId !== null) {
     if (typeof step.tabId === 'boolean' || !Number.isInteger(step.tabId) || step.tabId < 0) return 'Invalid burst step tabId.';
   }
@@ -114,18 +106,11 @@ function validateBurstStep(step) {
   if (action === 'click' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst click requires a valid ref or refFromStep.';
   if (action === 'fill' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
 
-  // The value check is unconditional: a passthrough ref supplies only the
-  // target, never the text, so a refFromStep fill without a value would dispatch
-  // an empty clear and report success, the same destructive edit the
-  // single-command page.fill rule refuses.
-
   if (action === 'fill' && (typeof step.value !== 'string' || step.value.length > 20000)) {
     return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
   }
   if (action === 'key') {
-    // A key step is either a chord or bounded text. The shared resolver
-    // is the single source of truth, so a key can never be accepted here and
-    // rejected later by the executor.
+
     try {
       resolveKeyInput({ key: step.key, modifiers: step.modifiers, text: step.text });
     } catch (error) {
@@ -137,9 +122,6 @@ function validateBurstStep(step) {
     return 'Burst wait requires a ref, selector, or text target.';
   }
 
-  // A hover needs a ref to hover; `text` is the optional submenu name to
-  // wait for, never the hover target itself, so a hover can never be guessed
-  // from a loose text match.
   if (action === 'hover' && !validRef(step.ref) && step.refFromStep === undefined) {
     return 'Burst hover requires a valid ref or refFromStep.';
   }
@@ -151,8 +133,6 @@ function validateBurstStep(step) {
     if (pointerAction === 'wheel' && !Number.isFinite(Number(step.deltaY))) return 'Invalid burst pointer deltaY.';
   }
 
-  // Presence only: safeUrl at dispatch is the single source of truth for what
-  // counts as a navigable URL, same as the tabs.navigate tool path.
   if (action === 'navigate' && (typeof step.url !== 'string' || !step.url)) return 'Burst navigate requires a URL.';
   return null;
 }
@@ -189,10 +169,7 @@ export function validateBurst(params) {
 }
 
 export function burstStaleRef(results, from, stepTabId) {
-  // Companion to burstCrossTabRef for navigation: a navigate step replaces the
-  // document, so every ref minted at or before it is dead by definition. Only
-  // navigations on the consuming tab matter; a navigate elsewhere kills
-  // nothing here (cross-tab reuse is the other helper's refusal).
+
   const list = results || [];
   for (let index = Number(from); index < list.length; index += 1) {
     const entry = list[index];
@@ -202,12 +179,7 @@ export function burstStaleRef(results, from, stepTabId) {
 }
 
 export function burstCrossTabRef(results, from, stepTabId) {
-  // Executor-side half of the ref tab scope: schema validation can only check
-  // that a ref points at an earlier step, because tab assignment happens at
-  // runtime. Each recorded result carries the tab it ran on, so the executor
-  // compares the source step's tab against the consuming step's tab. A missing
-  // source is not a cross-tab case: validateBurst already refuses non-earlier
-  // refs, so this helper must not invent a refusal for it.
+
   const source = (results || [])[Number(from)];
   const sourceTab = source ? source.tabId : undefined;
   if (sourceTab === undefined || sourceTab === null) return false;
@@ -264,10 +236,7 @@ export function validateCommand(command) {
     }
   }
   if (command.method === 'page.fill') {
-    // WHY required: trustedFill treats a non-string value as an empty string and
-    // dispatches a Backspace, then reports ok:true. A caller that misspelled the
-    // parameter therefore got a success and a destructive edit. An explicit ""
-    // stays legal because clearing a field is a real intent.
+
     const value = (command.params || {}).value;
     if (typeof value !== 'string') {
       return { ok: false, error: 'page.fill requires a string value. Use "" to clear the field.' };
@@ -309,9 +278,7 @@ export function safeUrl(value) {
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
     return url.toString();
   } catch (error) {
-    // Classic-or-module safe: protocol.js loads in the module service worker,
-    // Node tests, and any future classic context — never import the logger,
-    // resolve it lazily and tolerate its absence.
+
     globalThis.OperaAgentLog?.debug?.('SAFE_URL_PARSE_FAILED', error?.message || String(error));
     return null;
   }

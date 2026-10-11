@@ -26,11 +26,7 @@ const CRX = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-u
 const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 test('the hub carries exactly one giant door opening the merged files page', () => {
-  // WHY navigation and not a download: the reader picks the browser first, then the
-  // file, so a door that downloaded the archive would skip the choice the merged
-  // page exists to offer. Steam opens the game page; this opens the files page.
-  // WHY tag and content separately: the door carries a data-i18n attribute, so a
-  // verbatim whole-tag match would break on the attribute rather than on a lost URL.
+
   const doors = [...hub.matchAll(/<a\b[^>]*class="btn giant"[^>]*href="([^"]+)"[^>]*>([^<]*)<\/a>/g)];
   assert.equal(doors.length, 1, 'exactly one giant door');
   assert.equal(doors[0][1], './unduh-berkas.html', 'the door opens the merged page');
@@ -40,9 +36,7 @@ test('the hub carries exactly one giant door opening the merged files page', () 
 });
 
 test('the hub also-available row names the other doors without leaving the page', () => {
-  // WHY this replaces the per-card dropdowns: five selects each naming the same
-  // three doors was the old cross-link UI, and it left with the hub cards. One row
-  // under the giant door now names every other door a reader could want.
+
   const rows = [...hub.matchAll(/<p\b[^>]*class="also"[^>]*>([\s\S]*?)<\/p>/g)];
   assert.equal(rows.length, 1, 'exactly one also-available row');
   const [, row] = rows[0];
@@ -53,10 +47,7 @@ test('the hub also-available row names the other doors without leaving the page'
 });
 
 test('the merged page carries one card per browser, each offering both files', () => {
-  // WHY this moved off the two format pages: each page offered one file five times,
-  // so every reader had to guess the right door before anything downloaded. One card
-  // per browser now offers both files side by side, and each card downloads the file
-  // its own page verifies.
+
   const zipButton = /class="btn" href="([^"]+)"/.exec(berkas)[1];
   assert.equal(ZIP, zipButton, 'the shared archive URL is the one the page verifies');
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
@@ -67,19 +58,9 @@ test('the merged page carries one card per browser, each offering both files', (
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 
-    // WHY tag and content separately: each offer carries a data-i18n attribute,
-    // so a verbatim whole-tag match would break on the attribute rather than on
-    // a lost URL or a lost button text.
     assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download[^>]*>Unduh \\.zip</a>`), `${key} offers the archive`);
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
 
-    // WHY one filled button and not two: code.visualstudio.com/download gives the
-    // matching platform the only filled button and puts the rest behind a closed
-    // list, because a reader who lands here wants the file that works. The .crx is
-    // refused by an unmanaged browser, so giving it a button of its own made the
-    // failing path look as likely as the working one. The stronger claim — that the
-    // archive is the ONLY filled door in a card — is now pinned, which the old
-    // "both side by side" lock could not express at all.
     const filled = [...body.matchAll(/<a\b[^>]*class="btn"[^>]*>/g)];
     assert.equal(filled.length, 1, `${key} fills exactly one button`);
     assert.ok(filled[0][0].includes(ZIP), `${key} fills the archive, the file that installs everywhere`);
@@ -88,9 +69,7 @@ test('the merged page carries one card per browser, each offering both files', (
 });
 
 test('the merged detection marks the matching card and phones nowhere', () => {
-  // WHY this moved off the hub and onto the one page: the highlight followed the
-  // cards when they merged, and the hub keeps no inline script of its own now —
-  // only the shared language file. The privacy promise moves with the code.
+
   const script = /<script type="module">([\s\S]*?)<\/script>/.exec(berkas)[1];
   assert.ok(script.includes('navigator.userAgentData?.brands'), 'reads brands first');
   assert.ok(script.includes('navigator.userAgent'), 'falls back to the UA string');
@@ -99,9 +78,6 @@ test('the merged detection marks the matching card and phones nowhere', () => {
   assert.doesNotMatch(script, /fetch\s*\(/, 'fetches nothing');
   assert.doesNotMatch(script, /XMLHttpRequest|sendBeacon|WebSocket/, 'reaches no other network either');
 
-  // WHY the two halves: the hub runs no inline script of its own, but it loads
-  // the one shared language file every page shares. The JSON dict is data, not
-  // a script block, so it is excluded from the inline ban it would otherwise trip.
   assert.doesNotMatch(hub, /<script(?![^>]*src=)(?![^>]*type="application\/json")/, 'the hub itself runs no inline script');
   assert.ok(hub.includes('<script src="./i18n.js"></script>'), 'the hub loads the shared language file');
 });
@@ -119,9 +95,7 @@ test('the hero states the value in one sentence, and the steps live on the merge
 });
 
 test('the CRX section is framed enterprise-only, with the button untouched', () => {
-  // WHY the negative pins: the page used to imply a consumer browser would accept
-  // the file, which is the contradiction this reframe removes. The URL and the
-  // version-carrying filename note stay exactly where they were.
+
   assert.match(berkas, /enterprise-managed/, 'policy installs are the audience');
   assert.match(berkas, /drag-and-drop/, 'manual installs are named as rejected');
   assert.match(berkas, /BLOCKED/, 'the unmanaged status is stated');
@@ -132,9 +106,7 @@ test('the CRX section is framed enterprise-only, with the button untouched', () 
 });
 
 test('the hub needs no script hash, and the shared policy still names the merged script', () => {
-  // WHY this replaces the hub hash lock: the hub script left with the hub cards,
-  // so there is no hub body to hash. The /(.*) policy is shared, so the merged
-  // script stays named on both hosts exactly as before — additive, never removed.
+
   assert.doesNotMatch(hub, /<script type="module">/, 'the hub carries no inline module to name');
   const vercel = JSON.parse(read('vercel.json'));
   const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
@@ -150,9 +122,7 @@ test('the hub needs no script hash, and the shared policy still names the merged
 });
 
 test('the hub stats show live source counts, never stale copy', () => {
-  // WHY recomputed, not pinned literal: a hardcoded 39/28 would rot on the next
-  // tool or primitive, exactly the staleness this suite exists to kill. The page
-  // prints numbers; this test derives them from the same sources of truth.
+
   const mcp = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
   const tools = (mcp.match(/registerTool\("/g) || []).length;
   const proto = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');

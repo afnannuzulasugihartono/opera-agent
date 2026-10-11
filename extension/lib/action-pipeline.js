@@ -31,7 +31,7 @@ export function pollDelays(deadlineMs, elapsedMs = 0) {
 export function classifyResolve(state) {
   if (!state || state.present !== true) return 'not-found';
   if (state.ambiguous === true) return 'ambiguous';
-  if (state.masked === true) return 'ready'; // executor-owned guard (e.g. sensitive fields)
+  if (state.masked === true) return 'ready';
   return state.actionable === true ? 'ready' : 'not-actionable';
 }
 
@@ -39,9 +39,6 @@ export function makeNotReady(reason, waitedMs, hint, candidates, refState) {
   const err = { code: 'TARGET_NOT_READY', reason, waitedMs, hint };
   if (reason === 'ambiguous' && candidates) err.candidates = candidates;
 
-  // WHY carried: "not-found" alone cannot be acted on. A ref whose node left the
-  // DOM and a ref that cannot resolve on this document need different advice,
-  // and the caller decides the advice from this field rather than guessing.
   if (refState) err.refState = refState;
   return err;
 }

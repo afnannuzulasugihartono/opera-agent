@@ -15,21 +15,10 @@ import zlib from 'node:zlib';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
 
-// Every entry name in a zip, read with nothing but the buffer.
-//
-// WHY this replaced a shell: the listing came from Windows PowerShell with the
-// absolute path of the laptop it was written on, so the gate passed here and failed
-// on the CI runner with `spawnSync powershell ENOENT`. A zip lists its entries in the
-// central directory at the end of the file, in a fixed record layout, so reading it
-// needs no shell and no dependency -- and this repository has no dependencies.
-
 function zipEntryNames(buffer) {
   const EOCD = 0x06054b50;
   const RECORD = 0x02014b50;
 
-  // WHY the backward scan: the end-of-central-directory record is last, but a zip may
-  // carry a comment of up to 65535 bytes after it, so it is found by signature rather
-  // than by position.
   let eocd = -1;
   for (let at = buffer.length - 22; at >= 0; at -= 1) {
     if (buffer.readUInt32LE(at) === EOCD) {
@@ -49,10 +38,6 @@ function zipEntryNames(buffer) {
   }
   return names.map((n) => n.replace(/\\/g, '/'));
 }
-
-// WHY the deflate path is handled: the archive is built by the release pack step, which
-// compresses, and by hand on a machine with no zip, which does not. Reading only stored
-// entries would make this lock depend on which machine built it.
 
 function zipEntryText(buffer, wanted) {
   const EOCD = 0x06054b50;
@@ -80,8 +65,6 @@ function zipEntryText(buffer, wanted) {
       const start = localOffset + 30 + localNameLength + localExtraLength;
       const raw = buffer.subarray(start, start + compressedSize);
 
-      // WHY zlib and not DecompressionStream: the suite runs on Node and on Deno with
-      // no dependencies, and node:zlib is the one inflate both accept.
       const bytes = method === 0
         ? raw
         : zlib.inflateRawSync(raw);
@@ -91,11 +74,6 @@ function zipEntryText(buffer, wanted) {
   }
   throw new Error(`${wanted} is not in the archive`);
 }
-
-// A zip of the extension tree, built the way the release pack step builds one: entries in
-// a fixed order with a fixed timestamp, so the same tree always produces the same bytes.
-// WHY it is built here and not read from the tree: the lock is about what the endpoint
-// derives from the CRX it holds, and the CRX it holds is produced in CI from this tree.
 
 function zipOfTree() {
   const dir = new URL('extension/', root);
@@ -143,9 +121,6 @@ function zipOfTree() {
   return Buffer.concat([...locals, directory, eocd]);
 }
 
-// WHY the table rather than a dependency: zlib.crc32 landed in Node 20.12 and this
-// repository pins no dependency, so the fallback keeps the lock runnable on both.
-
 const CRC_TABLE = (() => {
   const table = new Int32Array(256);
   for (let n = 0; n < 256; n += 1) {
@@ -162,8 +137,6 @@ function crc32(buffer) {
   return (c ^ -1) >>> 0;
 }
 
-// A CRX3 envelope around a payload, which is the shape the endpoint has to slice.
-
 function buildCrxAround(payload) {
   const header = Buffer.from([0x12, 0x02, 0x01, 0x02]);
   const crx = Buffer.alloc(12 + header.length + payload.length);
@@ -176,10 +149,7 @@ function buildCrxAround(payload) {
 }
 
 test('the download page names no version, because a named version goes stale', () => {
-  // WHY this inverted: the page used to say "Pasang Opera Agent 1.6.15" and link
-  // opera-agent-1.6.15.zip. Both are claims nothing re-checks, so the day 1.6.16 shipped the
-  // page still told every reader to install 1.6.15 and offered them those exact bytes. The
-  // page now says nothing about which build it is, and the file the reader saves says it.
+
   const html = read('unduh.html');
   assert.doesNotMatch(html.replace(/<!--[\s\S]*?-->/g, ''), /\b\d+\.\d+\.\d+\b/,
     'no version appears in the copy a reader sees');
@@ -190,35 +160,20 @@ test('the download page offers one archive and says how to verify it', () => {
   const html = read('unduh-berkas.html');
   assert.match(html, /download\/opera-agent\.zip/, 'one archive link, on the path that never changes');
 
-  // WHY the archive digest is no longer printed here: the archive is always the newest
-  // build, so its digest changes on every release and a static page would print one that
-  // is wrong by the next morning. The page tells the reader to ask the server instead,
-  // and the two locks below prove those instructions actually run.
   assert.match(html, /findstr \/i x-opera-sha256/, 'the page gives the command that reads the served digest');
   assert.match(html, /Get-FileHash/, 'and the command that hashes what the reader downloaded');
   assert.match(html, /Load unpacked|unpacked/i, 'the reader is told what the archive is');
 });
 
 test('the endpoint serves the newest build, so a release needs no edit to the site', () => {
-  // WHY this lock: the download page used to name opera-agent-1.6.15.zip and
-  // opera-agent-1.6.15.crx and print three sha256 values, all hand-maintained. A
-  // release had to rebuild the archive, copy the CRX out of the endpoint by hand, re-cut
-  // every digest and redeploy — six steps, each of which can be silently skipped. The
-  // endpoint already holds the newest signed CRX, so it serving the archive is what
-  // makes the page stop carrying a version.
+
   const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
   assert.match(src, /\/download\/opera-agent\.crx/, 'a version-less CRX path exists');
   assert.match(src, /\/download\/opera-agent\.zip/, 'and a version-less archive path exists');
 
-  // WHY the archive is a slice of the CRX rather than a stored file: the payload after
-  // the CRX header is already a valid zip, measured at offset 12 + headerLength. Building
-  // it means no second copy of the tree exists that can disagree with the signed bytes.
   assert.match(src, /payload/, 'the archive is derived from the signed bytes');
   assert.match(src, /CRX_MAGIC/, 'and the slice is gated on the CRX magic, not a guessed offset');
 
-  // WHY no-store: the newest build changes under a fixed path, so a cached answer is a
-  // stale answer. The versioned paths keep their immutable year because their bytes never
-  // change under them.
   assert.match(src, /"Cache-Control": "no-store, max-age=0"/, 'the newest-build path is never cached');
 });
 
@@ -226,9 +181,6 @@ test('the download page links the paths that never change', () => {
   const berkas = read('unduh-berkas.html');
   const hub = read('unduh.html');
 
-  // WHY the page must not name a version: a link to opera-agent-1.6.15.crx is a promise
-  // that 1.6.15 is current. Nothing enforces it, so the page goes stale on the next
-  // release and serves an old build to a reader who has no way to tell.
   for (const [page, html] of [['unduh.html', hub], ['unduh-berkas.html', berkas]]) {
     assert.doesNotMatch(html, /opera-agent-\d+\.\d+\.\d+\.(zip|crx)/,
       `${page}: no download link carries a version, so no release can leave the page behind`);
@@ -236,23 +188,14 @@ test('the download page links the paths that never change', () => {
   assert.match(berkas, /\/download\/opera-agent\.crx/, 'the CRX link is the version-less path');
   assert.match(berkas, /\/download\/opera-agent\.zip/, 'and so is the archive link');
 
-  // WHY the link text names no file either: the file a reader saves is named by the
-  // server, which knows the version, so the text could only ever be a stale guess.
   assert.doesNotMatch(berkas, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
 
-  // WHY the reader is told the name will carry the version: the CRX does
-  // not change, and a reader comparing two downloads needs to tell them apart.
   assert.match(berkas, /namanya membawa versi build/, 'the page says the saved file is named with its version');
 });
 
 test('both formats share one page, reached from the hub and back', () => {
   const hub = read('unduh.html');
 
-  // WHY this lock: stacked installs on one page made every reader scroll past ones
-  // that were not theirs, and two format pages made every reader guess which door
-  // was theirs before anything downloaded. Both files now share one page with one
-  // card per browser, so the reader picks the browser, then the file; the hub only
-  // names the door.
   const page = 'unduh-berkas.html';
   assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
   const html = read(page);
@@ -262,12 +205,7 @@ test('both formats share one page, reached from the hub and back', () => {
 });
 
 test('the payload of a CRX is already the tree, so the archive needs no second build', () => {
-  // WHY this replaces a lock on a committed file: the shipped zip was a hand-built
-  // artefact in the tree that no workflow rebuilt, so it survived a key rotation and kept
-  // handing strangers a manifest naming the old identity — an install from that archive
-  // asked the update endpoint under the old id and was offered a release it already had.
-  // Slicing the payload out of the signed CRX removes that second copy entirely, and this
-  // proves the property the endpoint's slice depends on.
+
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   const payload = buildCrxAround(zipOfTree());
   const headerLength = payload.readUInt32LE(8);
@@ -286,28 +224,13 @@ test('the payload of a CRX is already the tree, so the archive needs no second b
 test('the download page names every browser it supports and why one is not', () => {
   const html = read('unduh-berkas.html');
 
-  // WHY this lock: the page used to say "Brave dan Chrome" and name no others, while
-  // the table answers for every Chromium browser and the zip loads in any
-  // Chromium one. A reader on Edge was told the product was not for them.
   for (const browser of ['Chrome', 'Edge', 'Brave', 'Opera', 'Vivaldi']) {
     assert.match(html, new RegExp(`<td>${browser}</td>`), `${browser} has a row saying what it can do`);
   }
 
-  // WHY Firefox is named rather than omitted: it is the one browser a reader will
-  // try that cannot work, because it has no debugger permission. Saying nothing
-  // leaves them to discover it.
   assert.match(html, /<td>Firefox<\/td>/, 'Firefox is named');
   assert.match(html, /Firefox tidak punya izin <code>debugger<\/code>/, 'and the reason is the permission it lacks');
 
-  // WHY every Chromium row must agree: a page that says "berjalan" for one and
-  // "ditolak" for the next is a page nobody can act on.
-  // WHY index 1 for the name: matchAll yields the whole match first, so the
-  // capture groups start at 1. The pattern allows a fourth cell because the table
-  // answers one question per install path, and a column added later must not
-  // silently stop being checked.
-  // WHY tag and content separately: each verdict cell carries a data-i18n
-  // attribute, so a verbatim whole-tag match would break on the attribute
-  // rather than on a lost verdict.
   const rows = [...html.matchAll(/<tr><td>(\w+)<\/td>((?:<td\b[^>]*class="\w+"[^>]*>[^<]*<\/td>){2,4})<\/tr>/g)];
   assert.ok(rows.length >= 6, `the table has a row per browser, found ${rows.length}`);
   const cells = rows.map(([, name, body]) => [
@@ -332,10 +255,7 @@ test('the install section links the download page instead of dead-ending', () =>
 });
 
 test('the archive the endpoint serves is not an empty placeholder', () => {
-  // WHY this reads the tree rather than a file: the site no longer carries an archive,
-  // because a hand-built one is exactly what went stale — it survived a key rotation and
-  // kept naming the old identity. The endpoint slices the payload out of the signed CRX,
-  // so the archive is whatever the tree packs to.
+
   const payload = buildCrxAround(zipOfTree());
   const archive = payload.subarray(12 + payload.readUInt32LE(8));
   assert.ok(archive.length > 1024, 'the payload is not an empty placeholder');
@@ -343,10 +263,7 @@ test('the archive the endpoint serves is not an empty placeholder', () => {
 });
 
 test('the archive carries the manifest key, so an unpacked install can update', () => {
-  // WHY this lock: an install from an unpacked archive asks the update endpoint under
-  // whatever id the archive's manifest resolves to. A manifest carrying a stale key asks
-  // under the old id and is offered a release it already has, so the reader is stuck on a
-  // build they can never leave.
+
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   const payload = buildCrxAround(zipOfTree());
   const archive = payload.subarray(12 + payload.readUInt32LE(8));
@@ -360,8 +277,6 @@ test('the archive carries the manifest key, so an unpacked install can update', 
 test('the archive contains every file the manifest names', () => {
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
 
-  // WHY this lock: a download page whose archive is missing background.js or a
-  // content script fails only after a stranger installs it and clicks around.
   const payload = buildCrxAround(zipOfTree());
   const names = zipEntryNames(payload.subarray(12 + payload.readUInt32LE(8)));
   const needed = [
@@ -383,8 +298,6 @@ test('the download page explains every permission the manifest requests', () => 
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   const html = read('unduh.html');
 
-  // WHY this lock: Chrome Web Store review asks what each permission is for, and a
-  // stranger deciding to install deserves the same answer before, not after.
   for (const permission of manifest.permissions) {
     assert.ok(html.includes(permission), `the page must name the ${permission} permission`);
   }
@@ -406,9 +319,6 @@ test('the download page shares the site navigation and floor', () => {
 test('the download page has no typo where a stranger decides to trust it', () => {
   const html = read('unduh-berkas.html');
 
-  // WHY this lock: the manual-install section is read by someone whose automatic
-  // install just failed. A misspelled "kebijakan" there reads as a broken product,
-  // exactly when trust matters most.
   assert.doesNotMatch(html, /polityvek/, 'kebijakan is spelled correctly');
   assert.match(html, /Kalau kebijakan ditolak/, 'the sentence reads as written');
 });

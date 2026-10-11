@@ -50,12 +50,6 @@ const headers = {
   "Content-Type": "application/json; charset=utf-8",
 };
 
-// WHY the wildcard is gone and the origin is decided per request: this const used
-// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
-// read a VM response. The allowlist is the one the gateway and this function's own
-// MCP caller already use. It costs the product nothing: the MCP function is the
-// only caller and it runs server-side, where no Origin is sent at all.
-
 function withCors(req: Request, res: Response): Response {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   const out = new Headers(res.headers);

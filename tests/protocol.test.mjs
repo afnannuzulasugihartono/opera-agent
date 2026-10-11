@@ -35,20 +35,12 @@ test('bounded browser burst accepts only linear page actions', () => {
   assert.equal(validateBurst({ steps: [] }).ok, false);
   assert.equal(validateBurst({ steps: Array.from({ length: 9 }, () => ({ action: 'read' })) }).ok, false);
 
-  // Phase D: a step may now name its own tab. This line previously
-  // asserted the opposite and was the same-tab guarantee at the schema layer;
-  // it is superseded by the per-step tabId, which stays optional so a step
-  // without one still resolves to the burst tab.
   assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: 9 }] }).ok, true);
 
-  // Still strict: a malformed tab is rejected, and the burst-level tabId is
-  // still required to be a non-negative integer.
   assert.equal(validateBurst({ steps: [{ action: 'click', ref: 'oa-1', tabId: -1 }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'read' }], tabId: -1 }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'read' }], output: { arbitrary: true } }).ok, false);
 
-  // navigate joined the burst vocabulary (maps to tabs.navigate; the http/https
-  // gate stays at dispatch). Bare navigate still fails closed on the missing URL.
   assert.equal(validateBurst({ steps: [{ action: 'navigate' }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'navigate', url: 'https://example.com' }] }).ok, true);
   assert.equal(validateBurst({ steps: [{ action: 'pointer', pointerAction: 'drag', x: 1, y: 2 }] }).ok, false);
@@ -72,9 +64,6 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { quality: 90 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { crop: { x: 0, y: 0, width: -1, height: 2 } } }).ok, false);
 
-  // A fill with no value used to be dispatched as an empty string, which pressed
-  // Backspace in the field and still answered ok:true. Found by misspelling the
-  // parameter in the live suite. An explicit "" stays legal: clearing is an intent.
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', text: 'typo' } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1' } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: null } }).ok, false);

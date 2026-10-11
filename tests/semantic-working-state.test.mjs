@@ -10,42 +10,6 @@ import {
   createSemanticWorkingStateStore,
 } from '../lib/semantic-working-state.js';
 
-//  semantic working state, consolidated 2026-10-03.
-//
-// Two files drove lib/semantic-working-state.js: the store's own contract,
-// and an adversarial corpus that feeds it observations which lie -- a rich
-// observation that changed semantically with no matching delta, a changed view
-// that changedRegionIds did not authorize, a state that blows the byte cap.
-// Splitting those apart meant the fail-closed cases lived in a file titled
-// "adversarial", so a reader of the happy path never saw them.
-//
-//   tests/semantic-working-state.test.mjs             9 tests
-//   tests/semantic-working-state-adversarial.test.mjs 4 tests
-//   -> tests/semantic-working-state.test.mjs            13 tests
-//
-//   A  the store contract: bootstrap, continuity, scope, bounds, privacy
-//   B  the adversarial corpus: delta lies, view lies, byte cap
-//
-// Test count and assertion count are the invariants: 13 tests and 38
-// assertion call sites before, 13 and 38 after, none dropped, weakened or
-// added. Proved by the masked source scan used for the previous clusters:
-// 0 missing, 0 added.
-//
-// The two files shared no top-level name, so nothing needed renaming. The two
-// builders are deliberately kept distinct and unmerged: `observation` and
-// `obs` produce different shapes on purpose -- the first carries a
-// dependencies block and per-change confidence, the second a minimal region and
-// an empty invalidatedViews list -- and collapsing them would blur exactly the
-// distinction the adversarial section depends on. `assertCode` and `code` are
-// kept apart for the same reason: the first also pins `instanceof
-// SemanticWorkingStateError` separately from the code value.
-//
-// This module is distinct from tests/semantic-engine.test.mjs: that file drives
-// the identity and view engines, this one drives the store that reconstructs
-// their canonical state from deltas.
-
-// --- A. the store contract --------------------------------------------------
-
 const identity = (overrides = {}) => ({
   tenantId: 'tenant-a',
   deviceId: 'device-a',
@@ -355,12 +319,6 @@ test('P1 RESET observations require a fresh bootstrap rather than being merged i
   assert.equal(rebuilt.semanticRevision, 1);
   assert.equal(rebuilt.documentGeneration, 2);
 });
-
-// --- B. the adversarial corpus ----------------------------------------------
-//
-// Observations that lie: rich enough to look trustworthy, but inconsistent with
-// the delta or the view authorization that is supposed to cover them. Each must
-// fail closed and leave the accepted state untouched.
 
 const id = { tenantId: 't', deviceId: 'd', tabId: 'tab', documentGeneration: 1, runtimeEpoch: 'e' };
 

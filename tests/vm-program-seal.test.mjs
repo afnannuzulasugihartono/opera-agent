@@ -18,11 +18,6 @@ import {
 import { digestCanonical } from '../lib/goal-ledger.js';
 import { validateCollectProgram } from '../lib/reactive-vm-collect.js';
 
-// Behavioral lock for the run_program sealing pre-filter: sealing moved out
-// of the MCP entrypoint into supabase/functions/_shared/seal-vm-program.js,
-// so these cases drive the real extracted function, not a copy. The VM host
-// re-validates regardless; anything unsealable is refused here, never widened.
-
 const caller = { userId: 'caller-tenant' };
 
 function validProgram(overrides = {}) {
