@@ -3,40 +3,25 @@
 // @state: 2 locks; no comment inside a body, and the scanner that decides it.
 // @dependencies: node:test, assert, fs, path, child_process.
 
-// WHY THIS RULE
+// A COMMENT DOCUMENTS A DECLARATION, SO IT STANDS OUTSIDE IT.
 //
-// A comment in the middle of a function is a message to the person already reading
-// that function. The person who needs it arrives at the file cold, six months from
-// now, at 2am, with no memory of writing it — and they read from the top down, not
-// into the middle of a loop. Measured in this repository before the rule: 4,036
-// comments, of which a large share sat inside function bodies.
+// Above a declaration or a top-level statement is fine: the file header, a function
+// above its signature, a config key above its value. Inside a body is not: between two
+// statements, inside a loop, in the middle of a stylesheet or a SQL statement.
 //
-// WHY IT DECAYED. A comment three lines from the decision it describes stops
-// describing it the moment the code moves, and nothing notices, because a stale
-// comment is still syntactically a comment. Worse, a comment inside a body reads as
-// permanent: it looks like part of the algorithm, so nobody dares to touch the block
-// around it. A comment above a declaration is visibly about the file's structure, and
-// moving it with the declaration is the obvious thing to do.
+// WHY, MEASURED: 4,036 comments in this repository before the rule, a large share inside
+// bodies. The cost was never the words — a comment three lines from the decision it
+// describes stops describing it when the code moves, and nothing notices, because a stale
+// comment is still syntactically a comment. A comment inside a body reads as permanent:
+// it looks like part of the algorithm, so nobody touches the block around it.
 //
-// THE RULE, exactly
+// WHY NO CARVE-OUT: the rule first said "runtime code, but not tests". That was true and
+// still wrong — "which files count" is the question a gate exists to stop having. So the
+// scope is every tracked and untracked file, in every language.
 //
-//   Allowed — a comment immediately above a declaration or a statement that sits at
-//   the top level of its block: the file header, a function above its signature, a
-//   config key above its value. It documents what comes next and is outside it.
-//
-//   Forbidden — a comment anywhere inside a body: between two statements of a
-//   function, inside a loop, inside an if, in the middle of a CSS rule, in the middle
-//   of a SQL statement. If it is about code above it, it belongs above the code it is
-//   about; if it is about code below it, it belongs above that.
-//
-//   Spacing is a separate rule and has its own gate: tests/comment-spacing.test.mjs
-//   requires a blank line on each side of every comment. This file does not restate it,
-//   because two gates asserting one property is one gate too many to keep honest.
-//
-// WHY EVERY LANGUAGE: `#` is a comment in Python, YAML and TOML and a directive in
-// TypeScript; `//` is a comment in JavaScript and a URL in a string; `--` is a comment
-// in SQL and a flag on a command line. A rule with a per-language carve-out is a rule
-// that grows a new exception every time a language is added.
+// WHAT IT COST: 705 lines of migration notes in supabase/migrations/, which recorded why
+// each migration exists. That history is now only in git. Recorded here rather than left
+// to be discovered.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

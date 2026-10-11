@@ -1,53 +1,24 @@
 // @last-edited: 2026-10-11 UTC+7.
-// @title: transaction-identity — the adapter that decides WHO is calling, which nothing tested at all.
+// @title: transaction-identity — the adapter that decides WHO is calling.
+// @state: 7 tests; configuration, claim gates, temporal gates, cross-checks, frozen shape.
 // @state: 6 tests; configuration, the claim gates, the temporal gates, the cross-checks, and the frozen shape.
 // @dependencies: node:test, assert.
 
 // WHY THIS FILE EXISTS
 //
-// lib/transaction-identity.js had no test and no gate. A grep across tests/ and
-// scripts/ for the module name returned nothing. It is not scaffolding: it is imported
-// by lib/transaction-host.js, which is the host behind the deployed transactions edge
-// function. So the code that decides WHO IS CALLING — before any approval, before any
-// browser commit — was carrying roughly twenty invariants with nothing holding them.
+// lib/transaction-identity.js had no test and no gate, and it is imported by the
+// host behind the deployed transactions edge function. It is where a bug is a breach
+// rather than a crash.
 //
-// This is the module where a bug is not a crash but a breach, so the locks below are
-// ordered the way the function is ordered, and each one is a way an innocent edit
-// silently widens who gets through:
+// TWO LOCKS BELOW CANNOT BE PROVEN BY BEHAVIOUR, so they are locked on the source.
 //
-//   - the configuration is validated at CONSTRUCTION, so a misconfigured adapter never
-//     exists rather than failing per request;
-//   - the claims object is rebuilt from an EIGHT-KEY ALLOWLIST, so a claim the issuer
-//     adds later cannot ride along into the returned identity;
-//   - evaluatedAt comes from the caller's clock, never from the request, and a bad one
-//     refuses rather than defaulting to "now";
-//   - the temporal gates are iat > now, exp <= now, and exp <= iat — the last one
-//     refuses a token that claims to have expired before it was issued;
-//   - getUser is cross-checked against the claims, so a token whose subject does not
-//     match the user it authenticates as is refused;
-//   - the RPC grant is cross-checked against BOTH the subject and the client id, so a
-//     row belonging to a different session cannot authorise this one;
-//   - the returned object is frozen, so a caller cannot mutate an identity it has been
-//     handed.
+// Widening the eight-key allowlist to Object.entries(raw) is unobservable from
+// outside: `c` is read at sub, client_id, session_id and the role and temporal
+// fields, and widening it ADDS keys without changing those reads. tenant_id and
+// actor_id come from the GRANT row, never from `c`.
 //
-// TWO LOCKS BELOW ARE SOURCE LOCKS, NOT BEHAVIOUR LOCKS, AND HERE IS WHY.
-//
-// The allowlist lock. Widening the eight-key allowlist to Object.entries(raw) is
-// UNOBSERVABLE from outside this module. `c` is read at c.sub, c.client_id,
-// c.session_id and the role and temporal fields; widening the allowlist ADDS keys to
-// `c` and changes none of those reads. tenant_id and actor_id are read from the GRANT
-// row, never from `c`. Confirmed by running the widened build against a grant row
-// carrying no tenant: it still returns null, exactly as the narrow build does.
-//
-// The freeze lock. `c` is a local inside the try block, never returned, never stored,
-// never passed to anything that outlives the call. Nothing can mutate it after the
-// synchronous checks have read it, so freezing it has no observable consequence.
-//
-// Both are weaker than a lock proved by mutation, and the assertions below say so
-// rather than pretending otherwise. Read these two paragraphs before widening that
-// allowlist or dropping that freeze: no test in this file will stop you, so the reason
-// has to.
-
+// Freezing `c` is unobservable too: it is a local inside the try block, never
+// returned and never passed to anything outliving the call.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
