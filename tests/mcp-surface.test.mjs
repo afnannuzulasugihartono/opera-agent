@@ -402,12 +402,22 @@ test('the instructions now teach the chords the schema actually accepts', () => 
 
   assert.doesNotMatch(instructions, /are not available on this surface yet/);
 
-  assert.match(instructions, /select all with key \\"a\\" and modifiers \[\\"control\\"\]/);
-  assert.match(instructions, /paste with key \\"v\\" and modifiers \[\\"control\\"\]/);
+  assert.match(instructions, /key \\"a\\" and modifiers \[\\"control\\"\] to select all/);
+  assert.match(instructions, /key \\"v\\" and modifiers \[\\"control\\"\] to paste/);
+  assert.match(instructions, /key \\"Delete\\" to clear that selection/);
 
   assert.match(instructions, /The same rule applies to MENUS and DIALOGS/);
   assert.match(instructions, /use a hover burst step with the found ref via refFromStep/);
   assert.match(instructions, /chain the levels in a single burst/);
+});
+
+test('the instructions warn that typed text does not replace a selection, which was measured not assumed', () => {
+  const instructions = source.match(/instructions: "([\s\S]*?)",\n/)[1];
+
+  assert.match(instructions, /does NOT replace an active selection/,
+    'the guidance must state the behaviour, not imply that select-all then typing overwrites');
+  assert.match(instructions, /appends instead of overwriting/,
+    'the consequence must be named, because the failure is silent');
 });
 
 test('the sensitive-field guard is still advertised for keyboard input', () => {
