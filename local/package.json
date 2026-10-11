@@ -1,0 +1,31 @@
+{
+  "name": "opera-local",
+  "version": "0.1.0",
+  "description": "Drive your own Chromium browser over CDP from an MCP client, with no cloud round trip and no dependencies.",
+  "type": "module",
+  "bin": {
+    "opera-local": "bin/opera-local.js"
+  },
+  "files": [
+    "bin",
+    "browsers.js",
+    "cdp.js",
+    "driver.js",
+    "mcp-server.js",
+    "primitives.js",
+    "transport.js"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "cdp",
+    "chrome-devtools-protocol",
+    "browser-automation",
+    "google-docs",
+    "google-sheets",
+    "google-slides"
+  ],
+  "license": "MIT"
+}
