@@ -102,3 +102,14 @@ test('the device emits without awaiting, so a slow bridge cannot slow a burst st
     'the emit is awaited or its rejection is propagated, so a slow bridge becomes burst latency');
   assert.doesNotMatch(emitter[0], /await\s+fetchJson/, 'the helper awaits the network call itself');
 });
+
+test('emits are chained, so a done event cannot overtake the step events that preceded it', () => {
+  const pull = readFileSync(new URL('../extension/worker/execute-pull.js', import.meta.url), 'utf8');
+  const emitter = pull.match(/function emitCommandEvent[\s\S]*?\n}/)[0];
+
+  assert.match(emitter, /emitChain = emitChain\.then\(/,
+    'the emit fires independently, so two concurrent requests race and done can be written before the steps it follows');
+
+  const declared = pull.match(/^let emitChain = Promise\.resolve\(\);$/m);
+  assert.ok(declared, 'emitChain must start as a resolved promise, or the first emit waits on nothing and the rest chain behind it');
+});

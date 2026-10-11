@@ -653,7 +653,7 @@ function vmRunResult(value: unknown) {
   return textResult(value);
 }
 
-const SERVER_VERSION = "1.6.23";
+const SERVER_VERSION = "1.6.24";
 
 function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: VmCaller | null = null) {
   const server = new McpServer(

@@ -13,7 +13,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - `main` = `origin/main`, and it is the sole remote branch again. Nine stale branches were
   removed on 2026-10-10 after each was measured: `main` was 1 to 277 commits ahead of every
   one, and none held a file `main` lacks. Every merge `--ff-only`.
-- Version `1.6.23` in [`extension/manifest.json`](../extension/manifest.json) is the source
+- Version `1.6.24` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth. [`check.mjs`](../scripts/check.mjs) also asserts the version the MCP server
   reports, the store form's four-part version, and that no module redeclares the secret regex.
 - Gates: `npm test`, `npm run check` — 28 primitives, 162 runtime safety files, 850 unit
