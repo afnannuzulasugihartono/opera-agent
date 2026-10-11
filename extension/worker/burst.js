@@ -91,6 +91,7 @@ export async function runBurst(params, outerContext = {}) {
         if (entry.tabId !== tabId) entry.switchedTab = true;
         if (burstResultSize([...results, entry]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);
         results.push(entry);
+        if (typeof context.onStep === 'function') context.onStep({ index, action: step.action, timingMs: entry.timingMs });
       } catch (error) {
         let burstError = normalizeError(error);
         if (error && error.code === 'TARGET_NOT_READY') {

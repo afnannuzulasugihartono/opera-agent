@@ -95,7 +95,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_seek: 'b5e27995716abd38',
   media_stream_start: '0c5fbfac4707448f',
   media_stream_stop: '5df002e4171733eb',
-  media_listen_read: 'ec556b0a30cf7644',
+  media_listen_read: '9349cc0da3306131',
   loop_start: '212649bff3efff47',
   loop_read: '42112d0c11c4347d',
   loop_stop: 'ab504dfa4d3a4b53',

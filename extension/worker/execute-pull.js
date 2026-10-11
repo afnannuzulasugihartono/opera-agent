@@ -45,19 +45,35 @@ async function runDispatch(dispatch, timeoutMs) {
   }
 }
 
-async function executeCommand(raw) {
+function emitCommandEvent(cfg, commandId, kind, envelope) {
+  if (!cfg?.bridgeUrl || !commandId) return;
+  fetchJson(cfg.bridgeUrl, {
+    action: 'command_event',
+    deviceName: cfg.deviceName,
+    token: cfg.deviceToken,
+    commandId,
+    kind,
+    envelope
+  }, 5000).catch(() => {});
+}
+
+async function executeCommand(raw, cfg) {
 
   clearSerializedResult();
 
+  const onStep = cfg
+    ? (info) => emitCommandEvent(cfg, raw?.id, 'step', { method: raw?.method, ...info })
+    : null;
+
   if (raw && typeof raw.method === 'string' && (raw.method.startsWith('watch.') || raw.method.startsWith('loop.'))) {
     const deadlineW = Date.now() + 10000;
-    return runDispatch(() => dispatch(raw.method, raw.params || {}, { deadline: deadlineW }), 10000);
+    return runDispatch(() => dispatch(raw.method, raw.params || {}, { deadline: deadlineW, onStep }), 10000);
   }
   const validated = validateCommand(raw);
   if (!validated.ok) return { ok: false, error: { code: 'INVALID_COMMAND', message: validated.error } };
   const { command } = validated;
   const deadline = Date.now() + command.timeoutMs;
-  return runDispatch(() => dispatch(command.method, command.params, { deadline }), Math.max(1, deadline - Date.now()));
+  return runDispatch(() => dispatch(command.method, command.params, { deadline, onStep }), Math.max(1, deadline - Date.now()));
 }
 
 async function pair(code) {
@@ -182,7 +198,9 @@ async function pullLoop(generation) {
       retryMs = 250;
       await setState({ status: 'ready', lastError: null, lastConnectedAt: nowIso(), retryMs });
       if (!data.command) continue;
-      const execution = await executeCommand(data.command);
+      emitCommandEvent(cfg, data.command.id, 'received', { method: data.command.method });
+      const execution = await executeCommand(data.command, cfg);
+      emitCommandEvent(cfg, data.command.id, 'done', { ok: execution?.ok !== false });
       const pending = completionPayload(data.command.id, execution);
       await chrome.storage.local.set({ pendingCompletion: pending });
       await completeWithRetry(cfg, pending);
