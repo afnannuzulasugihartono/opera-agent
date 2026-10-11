@@ -31,9 +31,11 @@ const BODY = '0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklm';
 const NUM = '012345678901';
 const TAIL = 'abcdefghijklmnopqrstuvwx';
 const TAIL2 = 'SyA0123456789abcdefghijklmnopqrstuvw';
+const JWT_HEADER = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+const JWT_BODY = 'eyJzdWIiOiIxMjM0NTY3ODkwIn0';
 const SECRET_SHAPES = [
   ['a PEM private key', '-----BEGIN RSA PRIVATE KEY-----\nMIIEow=='],
-  ['a JWT', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc'],
+  ['a JWT', `${JWT_HEADER}.${JWT_BODY}.abc`],
   ['a Supabase key', `sb_secret_${BODY}`],
   ['a sk- key', `sk-${BODY}`]
 ];
