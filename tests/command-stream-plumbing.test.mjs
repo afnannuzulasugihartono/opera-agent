@@ -77,33 +77,21 @@ test('a well-formed emit reaches the RPC with the device token hashed, never in 
   assert.equal(call.args.p_token_hash.length, 64);
 });
 
-test('an emit with a bad token is refused before any RPC runs', async () => {
-  const h = harness();
-  const res = await h.post(validBody({ token: 'short' }));
-  assert.equal(res.status, 401);
-  assert.equal(h.calls.length, 0, 'an unauthenticated emit reached the database');
-});
+const REFUSALS = [
+  ['an emit with a bad token never reaches the database', { token: 'short' }, 401],
+  ['a commandId that is not a uuid never reaches the database', { commandId: 'not-a-uuid' }, 400],
+  ['an unknown kind never reaches the database', { kind: 'exfiltrate' }, 400],
+  ['an oversized envelope never reaches the database', { envelope: { blob: 'x'.repeat(64 * 1024) } }, 400]
+];
 
-test('a commandId that is not a uuid is refused before any RPC runs', async () => {
-  const h = harness();
-  const res = await h.post(validBody({ commandId: 'not-a-uuid' }));
-  assert.equal(res.status, 400);
-  assert.equal(h.calls.length, 0, 'a malformed command id reached the database');
-});
-
-test('an unknown kind is refused, so the allowlist has one owner in the bridge too', async () => {
-  const h = harness();
-  const res = await h.post(validBody({ kind: 'exfiltrate' }));
-  assert.equal(res.status, 400);
-  assert.equal(h.calls.length, 0, 'an unknown kind reached the database');
-});
-
-test('an oversized envelope is refused, because events are spent from a model budget', async () => {
-  const h = harness();
-  const res = await h.post(validBody({ envelope: { blob: 'x'.repeat(64 * 1024) } }));
-  assert.equal(res.status, 400);
-  assert.equal(h.calls.length, 0, 'an oversized envelope reached the database');
-});
+for (const [name, override, status] of REFUSALS) {
+  test(name, async () => {
+    const h = harness();
+    const res = await h.post(validBody(override));
+    assert.equal(res.status, status);
+    assert.equal(h.calls.length, 0, 'a refused emit still reached the database');
+  });
+}
 
 test('the device emits without awaiting, so a slow bridge cannot slow a burst step', () => {
   const pull = readFileSync(new URL('../extension/worker/execute-pull.js', import.meta.url), 'utf8');
