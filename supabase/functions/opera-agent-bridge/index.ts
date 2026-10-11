@@ -148,6 +148,36 @@ async function watchEvent(body: Record<string, unknown>) {
   return json(result || { ok: false }, result?.ok ? 200 : 400);
 }
 
+const COMMAND_EVENT_KINDS = ["received", "step", "observation", "note", "done"];
+const COMMAND_EVENT_ENVELOPE_MAX = 16 * 1024;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function commandEvent(body: Record<string, unknown>) {
+  if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
+    return json({ ok: false, error: "Unauthorized device." }, 401);
+  }
+  const commandId = String(body.commandId || "").trim();
+  if (!UUID_RE.test(commandId)) {
+    return json({ ok: false, error: "Invalid command id." }, 400);
+  }
+  const kind = String(body.kind || "").trim();
+  if (!COMMAND_EVENT_KINDS.includes(kind)) {
+    return json({ ok: false, error: "Unknown event kind." }, 400);
+  }
+  const envelope = (body.envelope && typeof body.envelope === "object") ? body.envelope as Record<string, unknown> : {};
+  if (JSON.stringify(envelope).length > COMMAND_EVENT_ENVELOPE_MAX) {
+    return json({ ok: false, error: "Event envelope too large." }, 400);
+  }
+  const result = await rpc("opera_emit_command_event", {
+    p_device_name: String(body.deviceName).trim(),
+    p_token_hash: await sha256(String(body.token).toLowerCase()),
+    p_command_id: commandId,
+    p_kind: kind,
+    p_envelope: envelope
+  });
+  return json(result || { ok: false }, result?.ok ? 200 : 400);
+}
+
 async function startWorkflow(body: Record<string, unknown>) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
     return json({ ok: false, error: "Unauthorized device." }, 401);
@@ -208,6 +238,7 @@ async function handle(req: Request) {
     if (action === "complete") return await complete(body);
     if (action === "heartbeat") return await heartbeat(body);
     if (action === "watch_event") return await watchEvent(body);
+    if (action === "command_event") return await commandEvent(body);
     if (action === "start_workflow") return await startWorkflow(body);
     return json({ ok: false, error: "Unknown action." }, 400);
   } catch (error) {
