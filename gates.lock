@@ -156,12 +156,12 @@
 #    tests/mcp-surface.test.mjs strips comments and collapses whitespace before
 #    hashing a tool schema, so the pin holds the tool's contract and not its
 #    indentation.
-scripts/check.mjs 5ebde3695363af01a0e1422d5ff7348986e88b12
+scripts/check.mjs 1cc3ad3c1cc9193414a964e549f96f31e61c26e0
 scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 72b565e6b522fa47ab0b8a31e0e7480b407acec7
+tests/helpers/boundary-locks.mjs 336beca9cb88b8664070aefa6a8de961755275d0
 tests/helpers/comment-spacing.mjs e9d8a61eaccdedf7018fe64acdfe9c8159f75d0c
 tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
 
@@ -176,7 +176,7 @@ lib/secret-pattern.js 8a7ad9fdde6457b2a26f17cad0c9582f92e55625
 supabase/functions/_shared/cors.js 03a97007d61329edc1377de25e13fcde6a49b0ff
 
 # --- surfaces an owner, not an agent, should have to look at ---
-extension/manifest.json 247e26b473a28eb7d029d55b0ea92b4fecb366c1
+extension/manifest.json a5eaef00ee4d648fa3439554c161b14a25e0c8a2
 .gitleaks.toml d446ad6a0e95b4bf9dda3ee9188050f4e91e815e
 .github/CODEOWNERS 018189b06335b26f42cd4a072bc59383d7700250
 .github/workflows/ci.yml d2aed40dcbf066982c0ccc15ee6b366d2082747c

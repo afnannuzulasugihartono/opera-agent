@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
+import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
 
 const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'origin' ? origin : null) } });
 
@@ -78,6 +79,7 @@ function loadBridge() {
     createClient: () => ({ async rpc() { return { data: { ok: false } }; } }),
     createEdgeLog: () => ({ error() {} }),
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
+    isUpgradeRequest, serveDeviceSocket,
     Deno: { env: { get: () => 'test' }, serve: (fn) => { handler = fn; } },
     Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
   });

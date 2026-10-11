@@ -58,6 +58,46 @@ The gateway accepts the token in three carriers, checked in this order:
 
 - `GET /openapi.json` and `GET /health` require no token at all; both are unauthenticated.
 
+## Device transport
+
+The gateway above is the model-facing surface. Between the gateway and the
+extension there is a second surface, and it is a socket rather than a poll.
+
+The extension opens one WebSocket to the bridge (`wss://<bridge host>/bridge`)
+and holds it. Nothing on that connection asks a question: the bridge pushes a
+`command` frame the moment a row appears in `opera_commands`, and the device
+pushes its `complete` frame back up the same connection. Before this, the device
+POSTed `/pull` every 500 ms and POSTed `/complete` afterwards, which cost two
+round trips per action; measured on one machine, a six step burst spent 238 ms
+in the browser and 496 ms in transport.
+
+Frames, in both directions:
+
+| Frame | Direction | Carries |
+| --- | --- | --- |
+| `hello` | device | `token`, `deviceName`, `protocolVersion` |
+| `ready` | bridge | `serverTime`, sent only after the device is authenticated |
+| `command` | bridge | `id`, `method`, `params`, `timeoutMs`, `serverTime` |
+| `complete` | device | `commandId`, `ok`, and exactly one of `result` or `error` |
+| `ack` / `error` | bridge | The outcome of a frame, for diagnosis |
+
+Three rules the transport depends on:
+
+- **The token travels in the first frame, not in a header.** An MV3 service
+  worker cannot set arbitrary headers on a WebSocket handshake. The alternative,
+  a query parameter, would put a credential into every access log on the path.
+- **Nothing is executed before `ready`.** An open socket proves the TCP
+  connection and nothing about the identity behind it, so `ready` is the only
+  thing that unlocks work.
+- **Authentication is not claiming.** The handshake calls `opera_auth_device`,
+  a lookup. The claim RPC is what takes ownership of a queued command, so using
+  it to authenticate would silently swallow the one command the device was
+  waiting for.
+
+There is no polling fallback. A device that cannot connect is a device that is
+down, and says so; a quiet fallback would restore the latency this replaced
+while looking perfectly healthy.
+
 ## Endpoints
 
 | Endpoint | Method | Purpose | Auth |

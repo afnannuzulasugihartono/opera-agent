@@ -10,9 +10,17 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
+import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
+
+// The upgrade path is stripped out of the harness source so a body test cannot be
+// dragged into socket territory, and is supplied here instead. The real symbols
+// are used rather than a stand-in: a fake upgrade detector would pass these tests
+// while the production one still hijacked a normal POST.
+
+const bodySource = source.replace(/^\/\/ WHY the socket is checked[\s\S]*?^Deno\.serve\(\(req: Request\) => \{/m, 'Deno.serve((req: Request) => {');
 
 function harness({ claim = { ok: false, error: 'Unauthorized device.' } } = {}) {
   const calls = [];
@@ -24,11 +32,12 @@ function harness({ claim = { ok: false, error: 'Unauthorized device.' } } = {}) 
       throw new Error(`Unexpected RPC ${name}`);
     }
   };
-  vm.runInNewContext(source, {
+  vm.runInNewContext(bodySource, {
     createClient: () => client,
     createEdgeLog: () => ({ error() {} }),
 
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
+    isUpgradeRequest, serveDeviceSocket,
     Deno: { env: { get: () => 'test' }, serve: (fn) => { handler = fn; } },
     Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
   });

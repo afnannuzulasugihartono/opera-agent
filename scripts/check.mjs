@@ -69,7 +69,17 @@ for (const file of files) {
   }
 }
 const background = await extensionSource();
-for (const marker of ['pendingCompletion','completeWithRetry','flushPendingCompletion']) assert.ok(background.includes(marker), marker);
+
+// `completeWithRetry` used to be pinned here. It is gone because it is dead: the
+// device no longer POSTs completions, so the retry ladder had no caller left and
+// only pretended to be a safety net. What must be pinned instead is that a
+// completion still has somewhere to go, and that it goes out on the socket.
+
+for (const marker of ['pendingCompletion', 'flushPendingCompletion', 'createSocketClient', 'completionFrame']) {
+  assert.ok(background.includes(marker), marker);
+}
+assert.doesNotMatch(background, /action: 'complete'/, 'the device must not report over HTTP again');
+assert.doesNotMatch(background, /action: 'pull'/, 'the device must not ask for work over HTTP');
 const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);
 const ensureContent = background.slice(background.indexOf('async function ensureContent'), background.indexOf('async function contentCall'));
