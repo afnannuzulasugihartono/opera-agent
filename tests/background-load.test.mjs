@@ -6,11 +6,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// Mock ini ialah kontrak API saat muat, bukan sekadar bantalan. Ia menyediakan
-// tepat apa yang graf menyentuhnya pada saat muat — kalau sebuah modul mulai
-// memanggil `chrome.storage.sync` di baris atasnya, tes ini harus merah dengan
-// TypeError, bukan diam-diam berhasil atas mock yang menyediakannya.
-
 const listeners = {};
 function event(name) {
   const fns = [];
@@ -52,7 +47,7 @@ test('the service worker module graph evaluates without throwing', async () => {
 });
 
 test('the load-time listeners actually registered', () => {
-  // Dua listener tabs.onRemoved: action-focus (popupLog) dan execute-pull (screenshotCache).
+
   assert.equal(listeners['runtime.onMessage'].length, 1, 'exactly one onMessage handler');
   assert.equal(listeners['tabs.onRemoved'].length, 2, 'both tabs.onRemoved handlers register');
   assert.equal(listeners['debugger.onDetach'].length, 1, 'the debugger detach handler registers');

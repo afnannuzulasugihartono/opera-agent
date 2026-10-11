@@ -6,8 +6,6 @@
 import { createServer } from 'node:http';
 import { parseLocalCallbackRequest } from './transaction-oauth.mjs';
 
-// Nondefault physical ports/windows are test injection only; CLI exposes neither.
-
 export function startOAuthListener({probe,write=console.log,listenPort=6276,timeoutMs=300000}) {
   if(!Number.isInteger(timeoutMs)||timeoutMs<1||timeoutMs>300000) throw new Error('LISTENER_WINDOW_INVALID');
   let stopped=false; let timer;

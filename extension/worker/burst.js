@@ -30,9 +30,6 @@ export async function runBurst(params, outerContext = {}) {
   const context = { ...outerContext, deadline, debuggerSession: { tabId, attached: false } };
   const results = [];
 
-  // The three step failures below differ only in their error. The envelope
-  // around them was written out three times, so a field added to a burst
-  // failure had to be remembered in three places.
   const stepFailure = (index, step, error) => ({
     ok: false,
     tabId,
@@ -45,9 +42,6 @@ export async function runBurst(params, outerContext = {}) {
     timingMs: Math.round((performance.now() - startedAt) * 100) / 100
   });
 
-  // Phase D: the tab the current step runs against. It starts at the burst tab
-  // and only moves when a step names its own tabId, so every existing caller
-  // behaves exactly as before.
   let activeTabId = tabId;
 
   try {
@@ -58,8 +52,6 @@ export async function runBurst(params, outerContext = {}) {
       if (switched) activeTabId = stepTabId;
       const remainingMs = deadline - Date.now();
 
-      // A burst timeout is an unknown outcome, not a failure: steps that already
-      // ran may have taken effect, so their evidence must reach the caller.
       if (remainingMs < 50) {
         return {
           ok: false,
@@ -76,12 +68,6 @@ export async function runBurst(params, outerContext = {}) {
       const method = BURST_ACTION_METHODS[step.action];
       const stepStartedAt = performance.now();
 
-      // A refFromStep binding may only be consumed on the tab that minted it. A
-      // ref is a live handle into one document, so reusing one across tabs is
-      // exactly the stale-reference failure the ref-recovery work exists to
-      // prevent. The comparison is against the source step's recorded tab, not
-      // the switch flag: a step that stays on the already-active tab must also
-      // refuse a ref minted elsewhere.
       if (step.refFromStep !== undefined && step.refFromStep !== null && burstCrossTabRef(results, step.refFromStep, stepTabId)) {
         return stepFailure(index, step, {
           code: 'BURST_CROSS_TAB_REF',

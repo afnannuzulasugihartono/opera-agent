@@ -51,19 +51,15 @@ test('trace carries compact sensor values', () => {
 
 test('centroid tracker fires on time-to-impact, not on presence', () => {
 
-  // No history, no motion, or receding motion never fires.
   assert.equal(centroidTrack(null, 300, 200, 90, 500), null);
   assert.equal(centroidTrack(300, null, 200, 90, 500), null);
   assert.equal(centroidTrack(300, 300, 200, 90, 500), null);
   assert.equal(centroidTrack(280, 300, 200, 90, 500), null);
   assert.equal(centroidTrack(300, 250, 0, 90, 500), null);
 
-  // Approaching at 100px per 200ms (500px/s): 110px past the pad takes
-  // 220ms, inside a 500ms lead, so it fires with the impact estimate.
   assert.equal(centroidTrack(300, 200, 200, 90, 500), 220);
   assert.equal(centroidTrack(300, 290, 200, 90, 500), null);
 
-  // Already past the pad fires immediately: late is better than never.
   assert.equal(centroidTrack(300, 50, 200, 90, 500), 0);
 });
 
@@ -79,17 +75,14 @@ test('front detection finds solid masses, not speckle', () => {
     }
   };
 
-  // Identical frames have no front.
   assert.equal(frontOfChanged(blank(10, 10), blank(10, 10), 10, 10), null);
 
-  // Scattered changed pixels never form the required vertical run.
   const a = blank(10, 10);
   const speckled = blank(10, 10);
   paint(speckled, 10, 8, 0, 2);
   paint(speckled, 10, 9, 5, 7);
   assert.equal(frontOfChanged(a, speckled, 10, 10, 16, 3), null);
 
-  // A solid bar reads at its column; the rightmost of two wins.
   const bar = blank(10, 10);
   paint(bar, 10, 7, 0, 10);
   assert.equal(frontOfChanged(a, bar, 10, 10, 16, 3), 7);
@@ -120,7 +113,6 @@ test('overrun fires on consecutive reds only', () => {
   recordTick(state, { workMs: 500, fired: 0 });
   assert.equal(loopOverrun(state), true);
 
-  // Scattered reds are slow, not stuck: green breaks the streak.
   const scattered = startLoopState();
   for (let i = 0; i < LOOP_OVERRUN_REDS * 2; i += 1) {
     recordTick(scattered, { workMs: 500, fired: 0 });

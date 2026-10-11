@@ -18,12 +18,6 @@ import {
   validateLoopProgram
 } from './lib/loop.js';
 
-
-// The same file the content script loads via the manifest. It declares no
-// export statements, so this is a valid side-effect import that publishes the
-// pure helpers on globalThis — one source of truth for both contexts, and no
-// second, drifting copy of the role table.
-
 import './role-reconcile.js';
 const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRoleReconcile || {};
 
@@ -78,17 +72,9 @@ import {
 } from './worker/watch-registry.js';
 import './worker/execute-pull.js';
 
-// Without this, a cached `attached: true` outlives the debugger: if the user
-// opens DevTools on a tab we are attached to, or the tab closes, Chrome ends
-// the session and every later CDP call in it fails against a dead debugger.
-
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
 const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
-
-// Canvas-class pages expose almost no DOM text while their
-// accessibility tree still carries state. A read this text-poor attaches a
-// bounded read-only axSummary; rich pages keep the unchanged fast path.
 
 const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 
@@ -230,10 +216,6 @@ export async function dispatch(method, params = {}, context = {}) {
       const v = validateRule(candidate);
       if (!v.ok) throw new Error(v.reason);
 
-      // The validator accepts an absent deadlineMs (defaulting locally to 60s)
-      // but pruneWatchers compares the stored field raw, so a stored rule
-      // without it compares against NaN and never expires. Persist the
-      // documented default at arm time so the stored rule is self-sufficient.
       if (candidate.deadlineMs == null) candidate.deadlineMs = 60000;
       const entry = { id: candidate.ruleId, tabId, rule: candidate, createdAt: Date.now(), runtime: {} };
       w.watchers.push(entry);
@@ -337,11 +319,6 @@ export async function dispatch(method, params = {}, context = {}) {
       const tabId = await resolveTabId(params);
       let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
 
-      // Read degradation: an oversized result used to fail the whole call at
-      // the 512KB ceiling, which on a large application is a hard failure the
-      // caller can only guess its way out of. Degrade instead: keep the text and
-      // the observation, drop the element list, and say so. The caller can then
-      // re-read with a narrower scope rather than starting over.
       if (result?.page && oversized(result)) {
         const { elements, ...withoutElements } = result.page;
         result = {
@@ -358,14 +335,6 @@ export async function dispatch(method, params = {}, context = {}) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
       }
 
-      // Text-poor surfaces pay the debugger round trip; collection
-      // failures fail open and leave the observation unchanged.
-      //
-      // Follow-up: text poverty alone is the wrong trigger. A 70-page
-      // Google Docs document is NOT text-poor, so its accessibility tree is
-      // never collected and the role reconciliation below never runs. A page
-      // whose elements still carry no real role is a semantic gap regardless of
-      // how much text it has, and it is worth the same one bounded walk.
       const r9SemanticGap = hasRoleGap(result?.page?.elements);
       const shouldCollectAx = result?.ok !== false && result?.page
         && (Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS || r9SemanticGap);
@@ -374,11 +343,6 @@ export async function dispatch(method, params = {}, context = {}) {
         if (summary) {
           result.page.axSummary = summary;
 
-          // Reuse the SAME bounded AX round trip to fill in roles the
-          // markup does not carry, so a custom control that the platform
-          // reports as a radio is finally discoverable by role. This is
-          // read-only annotation: no ref is minted, moved, or invalidated, and
-          // an explicit DOM role still wins over the AX one.
           const index = axRoleIndex?.(summary.items);
           if (index && index.size > 0 && Array.isArray(result.page.elements)) {
             result.page.elements = reconcileElements?.(result.page.elements, index) || result.page.elements;
@@ -386,13 +350,6 @@ export async function dispatch(method, params = {}, context = {}) {
         }
       }
 
-      // Report the user's current state with the observation. Without it the model
-      // cannot tell whether the person is watching this tab or working elsewhere,
-      // and so cannot choose foreground or background sensibly. It is the same
-      // sample the focus gate already takes, plus how long ago the page last saw a
-      // real user gesture, which is what separates "reading it right now" from "left
-      // it open". It fails open: a missing userState is a gap in the report, not a
-      // failure of the read.
       if (result?.page) {
         try {
           const { tabActive, windowFocused } = await sampleTabFocus(tabId);

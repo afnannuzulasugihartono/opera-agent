@@ -5,43 +5,6 @@
 
 name: CI
 
-# Three jobs, all on GitHub's own Linux runner.
-#  - unit:        npm test + npm run check
-#  - secret-scan: gitleaks, the one gate that cannot run locally
-#  - browser:     the playwright harness, headless, on the image's Chrome
-#
-# WHY no self-hosted runner. Every job used to need the one Windows laptop, so while
-# it was offline every push queued with no result at all and CI acceptance was
-# unobtainable. Nothing here needs that machine: the Node suite needs Node, the
-# secret scan needs the tree, and the harness already carries a headless path with
-# an executable override for exactly this case. The harness was last run on a Linux
-# runner before the jobs moved onto this laptop, so this is a return, not a first
-# attempt. Local gates still run against Brave headed on this machine, which is
-# where the focus behaviour a headless runner cannot see is caught.
-#
-# WHY every job has a timeout. Measured on the laptop this repo used to run on:
-# actions/setup-python removed the tool-cache Python and then its installer sat at
-# zero CPU for two hours, and because it was the single runner it blocked the two
-# jobs that need no Python at all, with ten pushes queued behind them and no result.
-# A timeout turns that silent block into a failure.
-#
-# WHY the concurrency group. Ten commits pushed in a session is ten runs of the same
-# gates. Only the newest head can be the acceptance evidence, so superseded runs are
-# cancelled rather than queued behind each other.
-#
-# WHY the runner image and the action majors are pinned. GitHub announced that
-# `ubuntu-latest` becomes Ubuntu 26 on 2026-10-19, and the browser job depends on the
-# image's Chrome and xvfb, so a moved label would change the gate under a green main.
-# `ubuntu-24.04` is the image these gates were last measured on. The action majors are
-# the node24 ones; the node20 ones logged a deprecation warning on every run.
-#
-# WHY there is no GIT_CONFIG_GLOBAL here any more. It existed because this machine's
-# global git config rewrites every https://github.com URL to SSH
-# (url.ssh://git@github.com.insteadOf), so checkout died with "Host key verification
-# failed". It was a Windows workaround pointing at /dev/null, and on Linux every git
-# config call fails against that path, so it has no place in a workflow whose jobs all
-# run on GitHub's own Linux images.
-
 on:
   push:
     branches: [main]
@@ -54,16 +17,6 @@ permissions:
 
 defaults:
   run:
-
-    # WHY pwsh. The bare name `bash` resolves to C:\Windows\System32\bash.exe, the WSL
-    # launcher, and the Windows runner has no WSL distribution: every job died in under a
-    # second with "Windows Subsystem for Linux has no installed distributions" without
-    # running a command. Pointing at Git Bash instead failed differently, on MSYS path
-    # mangling of the runner's own arguments. PowerShell 7 is installed and needs no
-    # path translation, so the Windows job is written for it. The two Linux jobs
-    # override this back to bash: pwsh exists on the Linux image, but its output came
-    # back as undecodable bytes and its failures were unreadable, which is the worst
-    # way to run a gate.
 
     shell: pwsh
 
@@ -100,11 +53,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # WHY the linux tarball: the gate scans the tree, not the machine, so it
-          # has no reason to need this laptop. gitleaks publishes linux_x64 as a
-          # tar.gz and windows_x64 as a zip, and the artifact name has to match the
-          # runner or the download 404s.
-
           version=8.24.0
           curl -sSfL -o "${RUNNER_TEMP}/gitleaks.tar.gz" \
             "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
@@ -123,12 +71,6 @@ jobs:
         with:
           python-version: '3.12'
 
-      # WHY the Python pin is restored here. It was dropped because the python.org
-      # installer never completes on this Windows machine, which is a fault of that
-      # host and not of the pin. On a GitHub runner setup-python installs from its
-      # own cache in seconds, so 3.12 is pinned again and CI runs the interpreter
-      # the repo asks for.
-
       - name: Install playwright and its chromium
         run: |
           python -m pip install --quiet playwright
@@ -139,24 +81,7 @@ jobs:
       - name: Browser harness (playwright chromium under xvfb)
         env:
 
-          # WHY headed under xvfb, and playwright's chromium rather than the image's
-          # Chrome. Two measured dead ends, both the same 20-second failure, "extension
-          # service worker did not start": headless on the image's Chrome, and headed
-          # under xvfb on the image's Chrome. The branded Chrome build is what
-          # playwright drives with an executable override, and it does not load an
-          # unpacked MV3 extension here. Playwright's own chromium is the build its
-          # --load-extension support is written against, so it is the one left to try;
-          # xvfb-run with OA_BROWSER_HEADLESS=0 is the invocation this same file ran
-          # under when CI last accepted it.
-
           OA_BROWSER_HEADLESS: '0'
-
-        # WHY stdout goes to a file. xvfb-run reads the child's stdout through a
-        # pipe to watch for the display tearing down, and it stops draining that
-        # pipe: the harness runs the whole suite and then dies writing its summary
-        # with "BlockingIOError: [Errno 11] write could not complete without
-        # blocking". Redirecting stdout gives xvfb-run an empty pipe to read.
-        # stderr still reaches the log, so a real failure is still visible.
 
         run: |
           xvfb-run -a python tests/browser_extension_test.py > "${RUNNER_TEMP}/harness.json"

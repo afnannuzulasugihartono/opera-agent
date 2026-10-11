@@ -123,10 +123,6 @@ export function createManagementOperatorBackend(configuration){
     try{return await response.json();}catch{fail('MANAGEMENT_RESPONSE_INVALID');}
   }
 
-  // All fixed private operations use the existing internal operator realm.
-  // Management read_only=true selects a restricted role without these grants;
-  // it is not a read-only transaction retaining operator authority. Never grant
-  // client/read-only roles access or fall back dynamically after a denial.
   const db=(query,parameters=[],{signal}={})=>request(`/v1/projects/${PROJECT_REF}/database/query`,{method:'POST',signal,body:{query,parameters,read_only:false}});
   async function secretDigest(name,signal){
     const values=asRows(await request(`/v1/projects/${PROJECT_REF}/secrets`,{signal}));let selected=null,matches=0;
@@ -134,8 +130,6 @@ export function createManagementOperatorBackend(configuration){
     if(matches!==1||typeof selected!=='string'||!SECRET_DIGEST.test(selected))fail('SECRET_DIGEST_INVALID');return selected;
   }
 
-  // Management lists DIGESTS, not plaintext. Key validity is observed in the
-  // exact pinned Edge's initialized handler, without retrieving its private key.
   async function verifyInitializedHost(signal){
     const keys=asRows(await request(`/v1/projects/${PROJECT_REF}/api-keys`,{signal}));
     let publicAnon=null,matches=0;

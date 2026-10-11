@@ -20,13 +20,6 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-// WHY the wildcard is gone and the origin is decided per request: this const used
-// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
-// read a listen response. The allowlist is the one the gateway and the MCP
-// function already use, and it still covers both extension ids and both site
-// origins. Applied once here rather than threaded through every json(), so the
-// decision stays in one place and stays per-request.
-
 function withCors(req: Request, res: Response): Response {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   const headers = new Headers(res.headers);
@@ -34,10 +27,6 @@ function withCors(req: Request, res: Response): Response {
   else headers.set("Access-Control-Allow-Origin", origin);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
-
-// WHY these bounds: a 10-second opus window is under 200KB; 1MB caps a runaway
-// client without touching any real window. Sessions end themselves at 30 minutes
-// so a forgotten tab cannot transcribe all night on the owner's key.
 
 const MAX_CHUNK_BYTES = 1024 * 1024;
 const MAX_SESSION_MINUTES = 30;
@@ -63,16 +52,6 @@ async function sha256(value: string) {
 async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime: string }>, language: string, offsetSeconds: number) {
   if (!GROQ_API_KEY) throw new Error("transcription is not configured");
 
-  // WHY Groq Whisper and not Gemini: gemini-2.5-flash answers 404 for new keys,
-  // gemini-3.8-flash was at capacity for the whole build session, and
-  // gemini-3.5-transcribe refuses every key with "Thinking is not enabled".
-  // Groq's OpenAI-compatible audio endpoint answers with verbose_json segments
-  // carrying start/end out of the box. Measured live before this shipped.
-
-  // WHY decode each window separately: every chunk carries its own base64
-  // padding, so joining the strings puts "=" mid-stream and atob throws
-  // "Failed to decode base64" — measured live, an hour of silence for one
-  // character class. Bytes join cleanly; strings do not.
   const parts: Uint8Array[] = [];
   let total = 0;
   for (const c of windowChunks) {
@@ -100,9 +79,7 @@ async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime
     body: form
   });
   if (!response.ok) {
-    // WHY the upstream body rides along (truncated, key-free): Groq's 400 names
-    // the actual defect (bad file, bad field), and without it every refusal
-    // looks identical from the outside.
+
     const detail = await response.text().then((t) => t.slice(0, 200)).catch(() => "");
     throw new Error(`transcribe refused: http ${response.status} ${detail}`);
   }
@@ -110,10 +87,6 @@ async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime
   const segments = Array.isArray(body?.segments) ? body.segments : [];
   return segments
 
-    // WHY the silence gate: Whisper hallucinates short words ("you") on silence
-    // and noise, stamping them with high no_speech_prob. Measured live: a muted
-    // session produced nothing but "you" rows. Above 0.6 the segment is almost
-    // certainly not speech, so it never reaches the transcript or the bill.
     .filter((s: { text?: unknown; no_speech_prob?: unknown }) =>
       typeof s.text === "string" && s.text.trim() &&
       (typeof s.no_speech_prob !== "number" || s.no_speech_prob <= 0.6))
@@ -130,11 +103,6 @@ async function transcribeDue(session: { id: string; device_id: string; window_se
     .select("seq, audio_base64, mime").eq("session_id", session.id).order("seq").limit(needed);
   if (!chunks || !chunks.length) return 0;
 
-  // WHY one window per recorder lifetime on the device side: MediaRecorder emits
-  // the container header only in the first chunk of a recording, so joining timed
-  // slices produces a file Groq refuses with invalid_media_file (measured live).
-  // Each staged chunk is therefore already a complete file; transcribing it on
-  // arrival keeps offsets exact (seq * CHUNK_SECONDS) with no reassembly.
   if (!force && chunks.length < needed) return 0;
   const windowChunks = chunks;
   let segments: Array<{ start: number; end: number; text: string }>;
@@ -142,10 +110,7 @@ async function transcribeDue(session: { id: string; device_id: string; window_se
     const baseSeq = windowChunks[0].seq as number;
     segments = await transcribeWindow(windowChunks as Array<{ audio_base64: string; mime: string }>, session.language, baseSeq * CHUNK_SECONDS);
   } catch (error) {
-    // WHY failures are audited, not just thrown: a stuck session with zero
-    // segments is undebuggable from the outside — the upstream status is the
-    // only thing distinguishing a bad key, a refused file, and no network.
-    // No audio, no token and no key material lands in the audit row.
+
     await supabase.from("opera_audit").insert({
       event_type: "listen.transcribe_failed", device_id: session.device_id,
       details: { sessionId: session.id, reason: String(error instanceof Error ? error.message : error).slice(0, 200) }
@@ -206,11 +171,7 @@ async function handle(req: Request) {
         tab_id: tabId, language, window_secs: 10, status: "live"
       }).select("id").single();
       if (error || !session) {
-        // WHY the second look instead of trusting the pre-check: two
-        // concurrent starts both pass the live check above, so only the
-        // partial unique index on (device_id) WHERE status = 'live' stops the
-        // double insert. The loser answers the same 409 as a sequential
-        // second start, carrying the live session id instead of a duplicate.
+
         const code = (error as { code?: string } | null)?.code;
         if (code === "23505") {
           const { data: winner } = await supabase.from("opera_listen_sessions")

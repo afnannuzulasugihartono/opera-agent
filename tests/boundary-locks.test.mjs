@@ -14,15 +14,10 @@ import {
 } from './helpers/boundary-locks.mjs';
 
 function sha1Blob(bytes) {
-  // git blob hash of the committed LF bytes; strip checkout-added CR so
-  // autocrlf checkouts hash identically to CI.
+
   const content = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
   return createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
-
-// Ukuran daftar dikunci bersama isinya. Tanpa itu, menghapus satu entri menghapus
-// satu pemeriksaan tanpa membuat satu pun tes merah — kunci kehilangan anggotanya
-// tanpa suara, dan suite tetap hijau atas berkas yang tak lagi dikunci.
 
 for (const [label, locks, expectedSize] of [
   ['public surface', PUBLIC_SURFACE_LOCKS, 4],

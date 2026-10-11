@@ -25,12 +25,6 @@ export const AX_SUMMARY_LIMITS = Object.freeze({
   maxNameChars: 200
 });
 
-// WHY 'generic' is not skipped outright: canvas and SPA surfaces label their
-// controls as generic, so dropping every generic node threw away the only named
-// thing such a page exposes. A generic node WITH a name is still information; an
-// unnamed one is noise and is dropped below by the empty-name check, which is
-// also where RootWebArea-only noise ends up.
-
 const SKIP_ROLES = new Set(['RootWebArea', 'InlineTextBox', 'none', 'presentation']);
 const EDITABLE_ROLES = new Set(['textbox', 'searchbox', 'spinbutton', 'combobox', 'entry']);
 
@@ -57,8 +51,6 @@ export function buildAxSummary(nodes, options = {}) {
     if (node && node.nodeId != null) byId.set(String(node.nodeId), node);
   }
 
-  // Memoized closure over parentId chains: an editable node excludes itself
-  // and every descendant (CDP mirrors editable values as child StaticText).
   const exclusionMemo = new Map();
   const isExcluded = (id) => {
     if (exclusionMemo.has(id)) return exclusionMemo.get(id);
@@ -79,8 +71,6 @@ export function buildAxSummary(nodes, options = {}) {
     const role = roleOf(node);
     if (SKIP_ROLES.has(role)) continue;
 
-    // Only DOM-backed nodes carry backendDOMNodeId; pseudo-nodes duplicate
-    // text already represented by their StaticText parent.
     if (node.backendDOMNodeId == null) continue;
     const name = nameOf(node);
     if (!name) continue;

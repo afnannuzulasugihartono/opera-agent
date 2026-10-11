@@ -46,9 +46,6 @@ export function createFileOwnershipStore({directory,isProcessAlive=defaultProces
   const ensure=()=>mkdir(directory,{recursive:true});
   const writeJsonAtomic=async(path,value)=>{const tmp=`${path}.${randomUUID()}.tmp`;await writeFile(tmp,JSON.stringify(value)+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});await rename(tmp,path);};
 
-  // Permanent NONEMPTY retirement directories are per-claim CAS witnesses.
-  // A second stale reader cannot rename a successor onto the same destination.
-  // Do not garbage-collect these while any old process/I/O may still resume.
   const retirementPath=current=>join(directory,'global-control.retired-'+(current.claimId??
     createHash('sha256').update(JSON.stringify([current.namespace,current.ownerId,current.pid])).digest('hex')));
   const retire=async current=>{
@@ -60,7 +57,7 @@ export function createFileOwnershipStore({directory,isProcessAlive=defaultProces
     catch(error){
       if(error?.code!=='ENOENT')throw error;
       try { await lstat(leaseDir(directory)); } catch(statError){if(statError?.code==='ENOENT')return null;throw statError;}
-      fail('GLOBAL_CONTROL_BUSY'); // Legacy/unknown unfinished lock: never steal.
+      fail('GLOBAL_CONTROL_BUSY');
     }
   };
   const readManifest=async namespace=>{try{return validateManifest(JSON.parse(await readFile(manifestPath(directory,namespace),'utf8')));}catch(error){if(error?.code==='ENOENT')return null;throw error;}};
@@ -85,15 +82,11 @@ export function createFileOwnershipStore({directory,isProcessAlive=defaultProces
         const claimId=randomUUID(),stage=join(directory,'global-control.pending-'+claimId);
         await mkdir(stage);
 
-        // Same publish-then-cleanup sequence as before without throwing inside a
-        // finally block: the original lease error must never be swallowed by a
-        // cleanup failure.
         let claimed=false;
         let leaseError=null;
         try {
           await writeFile(join(stage,'lease.json'),JSON.stringify({version:2,claimId,ownerId,namespace,pid,expiresAt:nowMs+ttlMs})+'\n',{encoding:'utf8',mode:0o600,flag:'wx'});
 
-          // Publish the complete nonempty directory in one filesystem operation.
           await rename(stage,leaseDir(directory));claimed=true;
         }catch(error){
           if(!['EEXIST','ENOTEMPTY','EPERM'].includes(error?.code))leaseError=error;

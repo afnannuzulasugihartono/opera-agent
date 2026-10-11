@@ -22,9 +22,6 @@ HOST = '127.0.0.1'
 PAIR_CODE = 'TEST-PAIR-1234'
 EXPECTED_EXTENSION_ID = 'ofgemipoobcnbjkfanmofjbdonjapmgl'
 
-# WHY read, not typed: the version lives in the manifest, and a literal here went stale on
-# every release and failed the browser gate before any behaviour was exercised.
-
 EXPECTED_VERSION = json.loads((EXT / 'manifest.json').read_text(encoding='utf-8'))['version']
 
 class BridgeState:
@@ -317,12 +314,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json({'ok': True, 'serverTime': time.time()})
         return self._send_json({'ok': False, 'error': 'unknown action'}, 400)
 
-
 def assert_completed_ok(body):
-
-    # The body rides on the exception as an attribute, not only as the message.
-    # A caller that reports a failure can then read error.code and error.message
-    # instead of guessing from a stringified dict.
 
     if body.get('ok') is not True or body.get('result') is None:
         failure = AssertionError(body)
@@ -347,13 +339,6 @@ async def browser_focus_state(worker):
 
 def focus_audit_verdict(before, after):
 
-    # Why a steal must end with something focused: the runtime can only add focus,
-    # chrome.windows.update({focused: true}) in tabs.activate, and nothing in it can
-    # remove focus. So a command that ends with no focused window did not take focus,
-    # the operating system withdrew it, which a headed runner without an interactive
-    # desktop does on its own. A real steal always lands on a window or a tab, so that
-    # is what fails, and a different tab in the same window is a steal too.
-
     if before['focusedWindowId'] is None:
         return 'no-baseline'
     if before['focusedWindowId'] not in after['windowIds']:
@@ -366,12 +351,7 @@ def focus_audit_verdict(before, after):
         return 'stole'
     return 'preserved'
 
-
 def check_focus_audit_verdicts():
-
-    # Proves the classifier on every state it exists to separate, so a run that never
-    # loses focus still exercises it. Without this the branches below would be accepted
-    # on the strength of a green run that never reached them.
 
     def state(window_id, tab_id, window_ids):
         return {'focusedWindowId': window_id, 'activeTabId': tab_id,
@@ -379,15 +359,11 @@ def check_focus_audit_verdicts():
 
     assert focus_audit_verdict(state(7, 9, [7]), state(7, 9, [7])) == 'preserved'
 
-    # Each steal case moves exactly one thing, so disabling either steal branch
-    # turns that case red instead of being masked by the other branch.
-
     assert focus_audit_verdict(state(7, 9, [7]), state(8, 9, [7, 8])) == 'stole'
     assert focus_audit_verdict(state(7, 9, [7]), state(7, 11, [7])) == 'stole'
     assert focus_audit_verdict(state(7, 9, [7]), state(None, None, [7])) == 'unfocused'
     assert focus_audit_verdict(state(7, 9, [7]), state(None, None, [])) == 'window-closed'
     assert focus_audit_verdict(state(None, None, [7]), state(None, None, [7])) == 'no-baseline'
-
 
 async def audited_background_command(worker, audit, method, params=None, timeout=20, command_timeout=12000):
     command_params = params or {}
@@ -404,10 +380,6 @@ async def audited_background_command(worker, audit, method, params=None, timeout
         'after': after,
         'verdict': verdict,
 
-        # A command with no baseline, one whose window closed underneath it, or one
-        # that ended with nothing focused did not take focus. Only 'stole' fails, so
-        # the aggregate assertion at the end of the run keeps failing on a real steal.
-
         'focusPreserved': verdict != 'stole'
     })
     if verdict == 'no-baseline':
@@ -417,9 +389,6 @@ async def audited_background_command(worker, audit, method, params=None, timeout
         print(f'[focus-audit] {method}: window {before["focusedWindowId"]} closed during the command')
         return body
     if verdict == 'unfocused':
-
-        # Reported, not failed: nothing holds focus now, and only the runtime can add
-        # focus, so this is the host withdrawing it rather than the agent taking it.
 
         print(f'[focus-audit] {method}: window {before["focusedWindowId"]} still open but '
               'no longer focused, the host withdrew focus')
@@ -494,7 +463,6 @@ def managed_browser_resources(func):
             profile_dir.cleanup()
     return wrapped
 
-
 @managed_browser_resources
 async def run(port, profile):
     check_focus_audit_verdicts()
@@ -519,11 +487,6 @@ async def run(port, profile):
                 '--no-sandbox',
                 '--disable-dev-shm-usage',
 
-                # WHY no user gesture is required here: a fresh AudioContext
-                # starts suspended without one, and CDP-synthesized input does
-                # not count as activation. Production pages have real gestures
-                # behind them; this flag puts the test browser in that same
-                # state instead of testing a never-touched profile.
                 '--autoplay-policy=no-user-gesture-required'
             ]
         )
@@ -559,9 +522,6 @@ async def run(port, profile):
         assert len(small_page['elements']) == 1
         assert small_page['viewport']['width'] > 0
 
-        # Text-rich pages keep the unchanged fast path — no CDP
-        # accessibility snapshot is attached.
-
         assert 'axSummary' not in small_page, small_page.keys()
         assert small_page['viewport']['height'] > 0
         assert small_page['viewport']['zoomFactor'] > 0
@@ -579,19 +539,10 @@ async def run(port, profile):
         assert page['semanticState']['documentGeneration'] == 1
         assert page['semanticState']['ambiguityCount'] >= 2
 
-        #  ranks non-sensitive usable controls before the bounded element cap.
-        # This page has >50 non-sensitive controls, so sensitive fields should no
-        # longer consume the first 50 model-facing observation slots.
-
         assert page['semanticState']['excludedSensitiveCount'] == 0
         assert all(item['sensitive'] is False for item in page['elements'])
         identified = page['elements']
         assert all(item['logicalId'].startswith('se_') for item in identified)
-
-        #  actionability ranking is viewport-sensitive. Settle the viewport on
-        # the rerender target before taking the identity baseline so this legacy
-        # rerender test measures DOM replacement continuity, not bounded-window
-        # membership changes caused by clickSynthetic scrolling the target.
 
         rerender_pre_scroll = next(item for item in page['elements'] if item['label'] == 'Rerender target')
         cid = STATE.push('page.scroll', {
@@ -604,12 +555,6 @@ async def run(port, profile):
 
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
         settled_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
-
-        # Semantic identity intentionally uses removalGraceObservations=1. After
-        # the viewport-sensitive ranking changes bounded top-50 membership,
-        # one additional observation may emit ABSENT_AFTER_GRACE removals for
-        # entities that left the observation window. Drain that grace transition
-        # before asserting a stable no-change baseline.
 
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 50})
         grace_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
@@ -643,11 +588,6 @@ async def run(port, profile):
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': rerender_before['ref']})
         revalidated = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert revalidated['ref'] == rerender_before['ref'], revalidated
-
-        # Reuse the fixture as a cross-check that the actionability repair
-        # ranks the on-screen Skip ahead of the CSS-visible offscreen navigation
-        # target and the same-document revalidation repair recovers its stale
-        # pre-rerender ref without changing the frozen historical evidence file.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r0',
@@ -746,10 +686,6 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r0_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-
-        # Acceptance: generic actionability ranking must hold before
-        # bounded model-facing truncation.
-
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r1',
             'active': False,
@@ -786,9 +722,6 @@ async def run(port, profile):
         assert r1_sensitive['inViewport'] is True, r1_sensitive
         assert r1_sensitive['actionable'] is False, r1_sensitive
         assert all(item['label'] != 'Skip hidden' for item in r1_items), r1_items
-
-        # Acceptance: the normal omitted-limit find path projects a unique
-        # exact actionable match without hiding genuine actionable ambiguity.
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
@@ -849,9 +782,6 @@ async def run(port, profile):
         assert r8_combined_exact['count'] == 1, r8_combined_exact
         assert r8_combined_exact['item']['label'] == 'Alpha', r8_combined_exact
 
-        # Repair: callers may request a diagnostic list explicitly. Keep the
-        # list intact, but expose the one exact actionable match as `item`.
-
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
             'text': 'Launch',
@@ -872,10 +802,6 @@ async def run(port, profile):
         }, benchmark='r8.page.find.explicit-index-wins')
         r8_explicit_index = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert r8_explicit_index['item']['label'] == 'Launch options', r8_explicit_index
-
-        # CSS overflow does not clip an absolutely positioned descendant when
-        # the clipping node lies between it and its containing block. Browser
-        # hit-testing is the authority for this reachable viewport target.
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
@@ -923,8 +849,6 @@ async def run(port, profile):
         assert r1_read['elements'][0]['label'] == 'Skip', r1_read['elements']
         assert r1_read['elements'][0]['actionable'] is True, r1_read['elements'][0]
 
-        # Ranked candidates expose disambiguation hints.
-
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
             'text': 'Choose',
@@ -937,9 +861,6 @@ async def run(port, profile):
         assert ui_hints['items'][1]['candidateRank'] == 2, ui_hints
         assert 'chose:1' in ui_hints['items'][0]['hint'], ui_hints
         assert 'chose:2' in ui_hints['items'][1]['hint'], ui_hints
-
-        # When no exact-field match exists, one bounded fuzzy projection
-        # is returned with an explicit hint instead of a bare zero.
 
         cid = STATE.push('page.find', {
             'tabId': r1_tab_id,
@@ -954,9 +875,6 @@ async def run(port, profile):
         assert ui_fuzzy['item']['label'] == 'Skip navigation', ui_fuzzy
         assert ui_fuzzy['item']['actionable'] is False, ui_fuzzy
         assert 'exact-match' in ui_fuzzy['hint'], ui_fuzzy
-
-        # A ref minted before a geometric relocation refuses rebind and
-        # names the plausible current candidate with fresh geometry.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-ui-identity',
@@ -995,14 +913,6 @@ async def run(port, profile):
         assert 'Zoom in' in ui_reject_msg, ui_reject
         assert str(int(ui_zoom_x) + 600) in ui_reject_msg, ui_reject
 
-        # ------------------------------------------------------------------
-        #  live acceptance. The unit suite covers the pure policy and the
-        # structural wiring, but nothing in it runs the extension in a browser.
-        # These cases exercise the four capabilities against a real page.
-        # ------------------------------------------------------------------
-        # Later cases assert on the ALREADY-active tab, so remember which tab
-        # was active and put it back when this block finishes.
-
         cid = STATE.push('tabs.list', {}, benchmark='r9.tabs.list.before')
         r9_before_tabs = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tabs']
         r9_previous_active = next((t['id'] for t in r9_before_tabs if t.get('active')), None)
@@ -1018,13 +928,8 @@ async def run(port, profile):
             page = context.pages[-1]
             return await page.evaluate(expression)
 
-        # Bring the fixture tab to the front so trusted input reaches it.
-
         cid = STATE.push('tabs.activate', {'tabId': r9_tab_id}, benchmark='r9.tabs.activate')
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-
-        # An unannotated <button> has no role attribute. Before it
-        # serialized as role: '' and a role-filtered find returned nothing.
 
         cid = STATE.push('page.find', {
             'tabId': r9_tab_id,
@@ -1038,9 +943,6 @@ async def run(port, profile):
         assert r9_role['item']['role'] == 'button', r9_role
         assert r9_role['item']['tag'] == 'button', r9_role
         r9_unannotated_ref = r9_role['item']['ref']
-
-        # A trusted chord must reach a real surface. Click the editor,
-        # select all with Ctrl+A, then replace the contents with typed text.
 
         cid = STATE.push('page.click', {
             'tabId': r9_tab_id,
@@ -1079,13 +981,9 @@ async def run(port, profile):
         assert keyboard_text['input'] == 'text', keyboard_text
         assert keyboard_text['valueLength'] == len('keyboard acceptance'), keyboard_text
 
-        # The keystrokes must have actually landed in the editor.
-
         keyboard_editor_text = await r9_evaluate(
             'document.getElementById("editor").textContent', 'r9.editor.text')
         assert 'keyboard acceptance' in keyboard_editor_text, keyboard_editor_text
-
-        # A chord and text must be mutually exclusive at the boundary.
 
         cid = STATE.push('page.key', {
             'tabId': r9_tab_id,
@@ -1096,21 +994,13 @@ async def run(port, profile):
         r9_conflict = await asyncio.to_thread(STATE.wait, cid)
         assert r9_conflict['ok'] is False, r9_conflict
 
-        # The sensitive-field guard must survive the new key path.
-
         cid = STATE.push('page.query', {'tabId': r9_tab_id, 'selector': '#otp'}, benchmark='r9.page.query.otp')
         r9_otp = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
         assert r9_otp['sensitive'] is True, r9_otp
 
-        # A sensitive field is not actionable, so it cannot even be clicked.
-        # That is the first line of defence and it is unchanged by.
-
         cid = STATE.push('page.click', {'tabId': r9_tab_id, 'ref': r9_otp['ref']}, benchmark='r9.page.click.otp-refused')
         r9_otp_click = await asyncio.to_thread(STATE.wait, cid)
         assert r9_otp_click['ok'] is False, r9_otp_click
-
-        # Focus it directly instead, so the KEY guard is genuinely exercised:
-        #  added a text path, and it must not become a way to type secrets.
 
         cid = STATE.push('page.focus', {'tabId': r9_tab_id, 'ref': r9_otp['ref']}, benchmark='r9.page.focus.otp')
         await asyncio.to_thread(STATE.wait, cid)
@@ -1125,12 +1015,8 @@ async def run(port, profile):
         r9_otp_key_msg = r9_otp_key['error']['message'] if isinstance(r9_otp_key.get('error'), dict) else str(r9_otp_key.get('error'))
         assert 'sensitive' in r9_otp_key_msg.lower(), r9_otp_key
 
-        # And the field must still be empty.
-
         r9_otp_value = await r9_evaluate('document.getElementById("otp").value', 'r9.otp.value')
         assert r9_otp_value == '', r9_otp_value
-
-        # The same must hold for a chord, not just text.
 
         cid = STATE.push('page.key', {
             'tabId': r9_tab_id,
@@ -1140,9 +1026,6 @@ async def run(port, profile):
         }, benchmark='r9.page.key.otp-chord-guard')
         r9_otp_chord = await asyncio.to_thread(STATE.wait, cid)
         assert r9_otp_chord['ok'] is False, r9_otp_chord
-
-        # Hover must reveal a submenu and settle, in one burst, without
-        # the caller hand-building hover/wait chains or touching coordinates.
 
         cid = STATE.push('browser.burst', {
             'steps': [
@@ -1162,13 +1045,8 @@ async def run(port, profile):
             assert step['result']['input'] == 'hover', step
             assert step['result']['settle']['settled'] is True, step
 
-        # The submenu click must have actually fired.
-
         r9_sink = await r9_evaluate('document.getElementById("sink").textContent', 'r9.sink')
         assert r9_sink == 'page-numbers-clicked', r9_sink
-
-        # After a legitimate relocation the stale ref is refused on
-        # purpose, and the refusal carries a fresh ref that is safe to act on.
 
         cid = STATE.push('page.find', {
             'tabId': r9_tab_id,
@@ -1198,10 +1076,6 @@ async def run(port, profile):
         assert 'freshRef' in r9_stale_msg, r9_stale_msg
         assert 'rect' in r9_stale_msg, r9_stale_msg
 
-        # The advertised fresh ref must be genuinely usable. The candidate array
-        # is embedded in the message; slice the first JSON object array only, so
-        # the trailing "Candidates: []" suffix is not mistaken for it.
-
         r9_fresh_ref = None
         for candidate in r9_stale.get('error', {}).get('candidates', []) or []:
             if candidate.get('freshRef'):
@@ -1223,9 +1097,6 @@ async def run(port, profile):
         r9_fresh = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert r9_fresh['ok'] is True, r9_fresh
 
-        # Foreground mode must still be refused without a real focused
-        # window, and must never auto-activate anything to work around it.
-
         cid = STATE.push('page.pointer', {
             'tabId': r9_tab_id,
             'action': 'move',
@@ -1238,17 +1109,11 @@ async def run(port, profile):
             r9_fg_msg = r9_fg['error']['message'] if isinstance(r9_fg.get('error'), dict) else str(r9_fg.get('error'))
             assert 'FOREGROUND_REQUIRED' in str(r9_fg.get('error', {}).get('code', '')) or 'focus' in r9_fg_msg.lower(), r9_fg
 
-        # Teardown: restore the previously active tab and close the fixture tab,
-        # so the surrounding suite keeps the preconditions it expects.
-
         if r9_previous_active is not None:
             cid = STATE.push('tabs.activate', {'tabId': r9_previous_active, 'focusWindow': False}, benchmark='r9.tabs.activate.restore')
             await asyncio.to_thread(STATE.wait, cid)
         cid = STATE.push('tabs.close', {'tabId': r9_tab_id}, benchmark='r9.tabs.close')
         await asyncio.to_thread(STATE.wait, cid)
-
-        # Visible text without an interactive element surfaces a nearby
-        # actionable candidate in one round trip.
 
         cid = STATE.push('page.find', {
             'tabId': ui_tab_id,
@@ -1260,10 +1125,6 @@ async def run(port, profile):
         assert ui_fallback['fuzzy'] is True, ui_fallback
         assert ui_fallback['item']['label'] == 'Save', ui_fallback
         assert ui_fallback['item']['ref'] is not None, ui_fallback
-
-        # A keyed ref survives a same-place successor recreated
-        # WITHOUT its id (YouTube-style control re-render) via the unique
-        # intrinsic-signature rebind fallback.
 
         cid = STATE.push('page.find', {
             'tabId': ui_tab_id,
@@ -1301,11 +1162,6 @@ async def run(port, profile):
         ui_after_skip = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'Skipped' in (ui_after_skip.get('text') or ''), ui_after_skip
 
-        # Controls inside open shadow roots join
-        # the model-facing observation. Flat document scans never saw them;
-        # the fixture hosts a shadow button that must be findable and
-        # clickable through its normal ref.
-
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-ax',
             'active': False,
@@ -1331,10 +1187,6 @@ async def run(port, profile):
         ax_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'SavedByShadow' in (ax_after.get('text') or ''), ax_after
 
-        # Icon-only controls match through the computed
-        # accessible name (field data: Maps transport buttons read as glyph
-        # labels like " 3 min" while their icon vocabulary is an img alt).
-
         cid = STATE.push('page.find', {
             'tabId': ax_tab_id,
             'text': 'Motorcycle',
@@ -1343,11 +1195,6 @@ async def run(port, profile):
         ax_icon = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert ax_icon['count'] == 1, ax_icon
         assert ax_icon['item']['accessibleName'] == 'Motorcycle, 3 minutes', ax_icon
-
-        # The text-poor canvas-class fixture
-        # attaches a read-only CDP accessibility snapshot so the model can
-        # read canvas-app state. Editable field values must never surface
-        # anywhere in the result.
 
         cid = STATE.push('page.read', {
             'tabId': ax_tab_id,
@@ -1366,10 +1213,6 @@ async def run(port, profile):
         ax_serialized = json.dumps(ax_read)
         assert 'typed secret text' not in ax_serialized, 'field values must never surface through axSummary'
         assert 'hunter2' not in ax_serialized, 'password content must never surface'
-
-        # Dismissed panels go stale in the model-facing
-        # view and drop out of compact observations, so dismissed FAQ/cookie
-        # controls stop reaching the model. Canonical state keeps them.
 
         cid = STATE.push('page.find', {'tabId': ax_tab_id, 'text': 'Dismiss panel', 'exact': True, 'limit': 10}, benchmark='up3.page.find.dismiss')
         dismiss = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -1396,13 +1239,6 @@ async def run(port, profile):
         dropped_panel = [item for item in stale_dropped['elements'] if item.get('label') == 'Dismiss panel']
         assert len(dropped_panel) == 0, dropped_panel
 
-        # Burst ref passthrough — find and click in ONE command so the
-        # ref is minted and consumed within milliseconds, immune to the model
-        # round-trip staleness observed live (find 15:29:36. -> click
-        # 15:29:50. on YouTube). find result feeds click via refFromStep,
-        # and a trailing wait acts as the in-burst post-condition check.
-        # Reuses the already-verified fixture tab.
-
         us_tab_id = ui_tab_id
 
         cid = STATE.push('browser.burst', {
@@ -1428,8 +1264,6 @@ async def run(port, profile):
         assert us_clicked.get('resolvedFrom') == 'step:0', us_burst
         assert (us_steps[2].get('result') or {}).get('ok') is True, us_burst
 
-        # Negative: a burst click may only reference an EARLIER step.
-
         cid = STATE.push('browser.burst', {
             'tabId': us_tab_id,
             'steps': [{'action': 'click', 'refFromStep': 3, 'refIndex': 0}]
@@ -1437,11 +1271,6 @@ async def run(port, profile):
         us_forward = await asyncio.to_thread(STATE.wait, cid)
         assert us_forward.get('ok') is False, us_forward
         assert 'refFromStep' in str(us_forward.get('error')), us_forward
-
-        # Control: the same find-then-click split across two model round
-        # trips (the shape that went stale live) still resolves on this fixture
-        # through the established rebind path, because the Save control is
-        # never destroyed here — the contrast is timing, not selection.
 
         cid = STATE.push('page.find', {
             'tabId': us_tab_id,
@@ -1460,9 +1289,6 @@ async def run(port, profile):
                 'body': us_separate
             })
 
-        # A device-local watcher must click a control that appears
-        # AFTER arming, with zero model round trips between trigger and action.
-
         cid = STATE.push('watch.start', {
             'tabId': us_tab_id,
             'rule': {
@@ -1479,8 +1305,6 @@ async def run(port, profile):
                 'recentMetrics': STATE.metrics[-8:],
                 'body': us_watch
             })
-
-        # Wait past the 1.2s fixture delay, then inspect the debug markers.
 
         etw_verified = False
         us_watch_debug = None
@@ -1507,11 +1331,6 @@ async def run(port, profile):
         us_watch_list = await asyncio.to_thread(STATE.wait, cid)
         assert us_watch_list.get('ok') is True, us_watch_list
 
-        # Action pipeline: instant-by-default actions. One command waits
-        # out a late-actionable target, heals a stale ref via the rebind
-        # machinery, verifies via the expect machinery, and reports a final
-        # structured outcome for a never-ready target.
-
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-uv',
             'active': False,
@@ -1526,17 +1345,12 @@ async def run(port, profile):
             body = await asyncio.to_thread(STATE.wait, cid_)
             return body
 
-        # Arm the fixture clock, then find the still-disabled Late button.
-
         cid = await uv_push('page.query', {'tabId': uv_tab_id, 'selector': '#uv-arm'})
         uv_arm_ref = assert_completed_ok(await uv_wait(cid, 'uv.arm.query'))['item']['ref']
         cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_arm_ref, 'trusted': False})
         assert_completed_ok(await uv_wait(cid, 'uv.arm.click'))
         cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Late', 'exact': True, 'limit': 5}, benchmark='uv.page.find.late')
         uv_late_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.late'))['item']['ref']
-
-        # (a) The target becomes actionable at t0+1.5s; ONE trusted command
-        # must wait it out (waitedMs >= ~1400) and land the click.
 
         t0 = time.perf_counter()
         cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_late_ref, 'trusted': True}, benchmark='uv.page.click.late')
@@ -1550,9 +1364,6 @@ async def run(port, profile):
         cid = await uv_push('page.query', {'tabId': uv_tab_id, 'selector': '#uv-late-result'})
         assert assert_completed_ok(await uv_wait(cid, 'uv.late.effect'))['item'], 'late click did not land'
 
-        # (b) Same-place successor: destroy the ref, then ONE trusted click on
-        # the stale ref must heal (rebind) and land on the successor.
-
         cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Victim', 'exact': True, 'limit': 5}, benchmark='uv.page.find.victim')
         uv_victim_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.victim'))['item']['ref']
         cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Kill', 'exact': True, 'limit': 5}, benchmark='uv.page.find.kill')
@@ -1565,17 +1376,11 @@ async def run(port, profile):
         cid = await uv_push('page.query', {'tabId': uv_tab_id, 'selector': '#uv-victim-result'})
         assert assert_completed_ok(await uv_wait(cid, 'uv.heal.effect'))['item'], 'healed click did not land on successor'
 
-        # (c) Verify path: click with an expect spec must surface the real
-        # post-action verification as resolved.verified.
-
         cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Toggle', 'exact': True, 'limit': 5}, benchmark='uv.page.find.tog')
         uv_tog_ref = assert_completed_ok(await uv_wait(cid, 'uv.page.find.tog'))['item']['ref']
         cid = await uv_push('page.click', {'tabId': uv_tab_id, 'ref': uv_tog_ref, 'trusted': True, 'expect': {'selectorAppears': '#uv-tog-result'}}, benchmark='uv.page.click.verify')
         uv_tog_click = assert_completed_ok(await uv_wait(cid, 'uv.page.click.verify'))
         assert uv_tog_click['resolved'].get('verified') is True, uv_tog_click
-
-        # (d) Never-ready target: one command returns the structured final
-        # outcome after waiting out the deadline (single command, no retry).
 
         cid = await uv_push('page.find', {'tabId': uv_tab_id, 'text': 'Gone', 'exact': True, 'limit': 5}, benchmark='uv.page.find.gone')
         uv_gone_find = assert_completed_ok(await uv_wait(cid, 'uv.page.find.gone'))
@@ -1590,16 +1395,8 @@ async def run(port, profile):
         assert uv_nr['error']['reason'] == 'not-found', uv_nr
         assert uv_nr['error']['waitedMs'] >= 3000, uv_nr
 
-        # The node left the DOM, so the refusal must say so and hand back the
-        # one-round-trip recovery instead of the generic "never appeared".
-
         assert uv_nr['error']['refState'] == 'detached', uv_nr
         assert 'burst' in uv_nr['error']['hint'], uv_nr
-
-        # (e) A ref from a document that no longer exists is the other case: the
-        # node never detached, the ref simply cannot act here or ever again. The
-        # refusal must say that, and must not spend the deadline waiting for a
-        # recovery that cannot happen.
 
         cid = await uv_push('tabs.navigate', {'tabId': uv_tab_id, 'url': f'http://{HOST}:{port}/pre8e-r0'}, benchmark='uv.tabs.navigate.other')
         assert_completed_ok(await uv_wait(cid, 'uv.tabs.navigate.other'))
@@ -1612,13 +1409,6 @@ async def run(port, profile):
 
         cid = STATE.push('tabs.close', {'tabId': us_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-
-        #  tests-first acceptance. Current runtime is expected to fail the
-        # unique same-document recovery assertion until bounded revalidation is
-        # implemented. The negative cases must already remain fail-closed.
-
-        # Unique same-document replacement: old ref should recover exactly one
-        # equivalent current target and click that replacement.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r2?case=unique',
@@ -1638,9 +1428,6 @@ async def run(port, profile):
         r2_unique_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         cid = STATE.push('tabs.close', {'tabId': r2_unique_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-
-        # Ambiguous replacement: two equally plausible current targets must never
-        # be selected, even when callers supply observational logicalId/coordinates.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r2?case=ambiguous',
@@ -1669,9 +1456,6 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r2_ambiguous_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # Route discontinuity: a same-tab SPA route change invalidates the old
-        # action authority even if an element with the same id is recreated.
-
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r2?case=route',
             'active': False,
@@ -1692,9 +1476,6 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r2_route_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # Sensitivity change: stable id alone cannot recover a target that has
-        # become credential/security-code shaped.
-
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r2?case=sensitive',
             'active': False,
@@ -1713,8 +1494,6 @@ async def run(port, profile):
         r2_sensitive_after = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         cid = STATE.push('tabs.close', {'tabId': r2_sensitive_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-
-        # Disappearing target: zero current equivalents must remain stale.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r2?case=disappear',
@@ -1741,11 +1520,6 @@ async def run(port, profile):
             'disappearingRejected': r2_disappear_click['ok'] is False
         }
         assert all(r2_acceptance.values()), r2_acceptance
-
-        # Tests-first acceptance: page.click must return fresh bounded
-        # post-action evidence directly, without a mandatory model-mediated
-        # page.read. Current runtime is expected to fail because page.click
-        # still returns only action acknowledgement.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r3',
@@ -1800,9 +1574,6 @@ async def run(port, profile):
         assert_r3_post_action(r3_synthetic_click, r3_change_target['ref'], True)
         assert_r3_post_action(r3_trusted_click, r3_remove_target['ref'], False)
 
-        # No page.read occurs between either click and these assertions. The
-        # direct click result itself is the bounded verification evidence.
-
         r3_acceptance = {
             'syntheticPostAction': 'postAction' in r3_synthetic_click,
             'trustedPostAction': 'postAction' in r3_trusted_click,
@@ -1816,8 +1587,6 @@ async def run(port, profile):
 
         cid = STATE.push('tabs.close', {'tabId': r3_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-
-        # Compact model-facing observation (tests-first) ---
 
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r4', 'active': False, 'wait': True})
         r4_tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
@@ -1901,8 +1670,6 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # --- V1 quick-win: self-verifying actions, absent wait, burst timeout partials ---
-
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r3', 'active': False, 'wait': True})
         uv1_r3_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
         cid = STATE.push('page.query', {'tabId': uv1_r3_tab, 'selector': '#r3-change'})
@@ -1922,10 +1689,6 @@ async def run(port, profile):
         cid = STATE.push('page.wait_for', {'tabId': uv1_r3_tab, 'selector': '#r3-remove', 'absent': True, 'timeoutMs': 2000}, benchmark='uv1.absent')
         uv1_absent = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert uv1_absent.get('absent') is True
-
-        # Burst partial results: a failing wait step preserves the successful
-        # prefix instead of discarding completed steps (read prefix keeps the
-        # scenario independent of window focus).
 
         uv1_burst_steps = [
             {'action': 'read', 'limit': 200},
@@ -1967,12 +1730,6 @@ async def run(port, profile):
         }
         print(json.dumps({'uv1Acceptance': uv1_acceptance}, indent=2))
 
-        # Timeout/retry/popup parity (owner field-testing) ---
-        # (1) SPA-slow redirect: the URL only changes 1200ms after the click,
-        # well past the 400ms settle. A single early evaluation used to report
-        # verified:false and drive a harmful re-click. The bounded expect window
-        # must observe the redirect so attempts stays 1 (no re-click).
-
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-ur', 'active': False, 'wait': True})
         ur_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
         cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-slow-redirect'})
@@ -1989,9 +1746,6 @@ async def run(port, profile):
         assert ur_redirect['resolved'].get('attempts') == 1, ur_redirect
         assert any(item['key'] == 'urlChanged' and item['pass'] for item in ur_redirect['postAction']['expectations']), ur_redirect
         assert ur_redirect['postAction']['continuity'] == 'SAME_DOCUMENT_ROUTE', ur_redirect
-
-        # (2) Fill parity: page.fill now verifies through the same post-action
-        # check as page.click. A verified fill stops after one attempt.
 
         cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-field'})
         ur_field_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
@@ -2011,10 +1765,6 @@ async def run(port, profile):
         ur_mirror = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'mirror:ur-verified' in ur_mirror['text'], ur_mirror['text']
 
-        # (3) A fill whose expectation can never hold must report verified:false
-        # without an unbounded wait and without a fabricated success. Attempts
-        # stays 1 because retry.attempts is 1 (fail-closed, honest reporting).
-
         cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-field'})
         ur_field_ref2 = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
         cid = STATE.push('page.fill', {
@@ -2029,11 +1779,6 @@ async def run(port, profile):
         assert ur_fill_bad['resolved'].get('verified') is False, ur_fill_bad
         assert ur_fill_bad.get('attempts') == 1, ur_fill_bad
         assert any(item['key'] == 'minMutationDelta' and not item['pass'] for item in ur_fill_bad['postAction']['expectations']), ur_fill_bad
-
-        # (4) OAuth-style popup follow-through: a trusted click opens a popup
-        # synchronously inside the gesture (as real login buttons do). The action
-        # result must carry openedTabs so the model can continue in the popup by
-        # tabId, without auto-activating it.
 
         cid = STATE.push('page.query', {'tabId': ur_tab, 'selector': '#ur-popup'})
         ur_popup_ref = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['ref']
@@ -2068,8 +1813,6 @@ async def run(port, profile):
         assert all(ur_acceptance.values()), ur_acceptance
         print(json.dumps({'urAcceptance': ur_acceptance}, indent=2))
 
-        # Ready-media local seek benchmark ---
-
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r5',
             'active': False,
@@ -2080,20 +1823,11 @@ async def run(port, profile):
         r5_focus_baseline = await browser_focus_state(worker)
         assert r5_focus_baseline['activeTabId'] != r5_tab_id, r5_focus_baseline
 
-        # userState: the observation has to say whether the person is looking at
-        # this tab, because that is what decides foreground versus background.
-        # Asserted in both directions against the browser's own focus state, using
-        # the tab this run already made active and the one it made inactive, so the
-        # check cannot pass by always reporting one value.
-
         cid = STATE.push('page.read', {'tabId': r5_tab_id, 'offset': 0, 'limit': 120})
         r5_away = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert 'userState' in r5_away, sorted(r5_away)
         assert r5_away['userState']['tabActive'] is False, r5_away['userState']
         assert r5_away['userState']['watching'] is False, r5_away['userState']
-
-        # A page nobody has touched reports null, not a number. "never" and "long ago"
-        # are different claims and the model must be able to tell them apart.
 
         assert r5_away['userState']['lastInputMs'] is None, r5_away['userState']
 
@@ -2102,9 +1836,6 @@ async def run(port, profile):
         expected = r5_here['userState']['tabActive'] and r5_here['userState']['windowFocused']
         assert r5_here['userState']['tabActive'] is True, r5_here['userState']
         assert r5_here['userState']['watching'] is expected, r5_here['userState']
-
-        # After a real interaction in that tab the same field becomes a small number,
-        # so the two cases together prove the field tracks the page and not the clock.
 
         cid = STATE.push('page.pointer', {'tabId': r5_tab_id, 'x': 30, 'y': 30,
                                           'action': 'click', 'trusted': True})
@@ -2134,17 +1865,8 @@ async def run(port, profile):
         assert media_state['duration'] >= 1.5, media_state
         assert media_state['readyState'] >= 2, media_state
 
-        # Keep the controlled media paused so each measured seek is independent
-        # of playback progress. The production workflow preserves prior playback
-        # state around this same media.seek primitive.
-
         cid = STATE.push('media.pause', {'tabId': r5_tab_id, 'index': 0})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-
-        # media.play was the one allowlisted primitive this file never drove, so a
-        # regression in it could reach main without CI noticing. Seek to a position
-        # with room left, prove currentTime advances rather than only that paused
-        # flipped, then pause again so the seek loop below stays independent.
 
         cid = STATE.push('media.seek', {'tabId': r5_tab_id, 'index': 0, 'seconds': 0.2})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -2220,10 +1942,6 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': r5_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        # Listening session lifecycle: start records against the mock listen
-        # endpoint, audio windows flow while live, a second start is refused
-        # without touching audio, and stop ends the session.
-
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/pre8e-r5',
             'active': False,
@@ -2239,11 +1957,6 @@ async def run(port, profile):
         assert listen_refused.get('ok') is False, listen_refused
         assert 'already live' in str(listen_refused.get('error', '')), listen_refused
 
-        # WHY a real keystroke before waiting for audio: a fresh AudioContext
-        # starts suspended without a user gesture, and a suspended graph renders
-        # nothing for the recorder. A trusted keypress is a gesture, so the
-        # context resumes and windows start flowing — the same physics as a
-        # person pressing play before the model starts listening.
         cid = STATE.push('page.key', {'tabId': listen_tab_id, 'key': 'k', 'trusted': True})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         listen_deadline = time.time() + 20.0
@@ -2389,11 +2102,6 @@ async def run(port, profile):
         assert result['item']['ariaPressed'] == 'true'
         toggle = result['item']
 
-        # Windows blocks background processes from stealing OS focus, so a
-        # headless-adjacent CI run can start with the browser window
-        # unfocused; foreground pointer actions require focus (FOREGROUND_REQUIRED).
-        # Prime it through the extension's own activation path.
-
         cid = STATE.push('tabs.activate', {'tabId': tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.pointer', {'tabId': tab_id, 'action': 'click', 'x': toggle['rect']['centerX'], 'y': toggle['rect']['centerY'], 'executionMode': 'foreground'})
@@ -2500,9 +2208,6 @@ async def run(port, profile):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert result['count'] == 1
         assert result['links'][0]['url'].startswith(f'http://{HOST}:{port}/page')
-
-        # Keep a user tab active while every background-capable
-        # primitive targets the original, now-inactive automation tab.
 
         cid = STATE.push('tabs.open', {
             'url': f'http://{HOST}:{port}/page?user-active=1',
@@ -2697,17 +2402,8 @@ async def run(port, profile):
         assert background_input_burst['results'][0]['result']['method'] == 'debugger'
         assert background_input_burst['results'][0]['result']['focusEmulated'] is True
 
-        # A burst pointer step asks for the cursor, so it shows in background too:
-        # a run the owner cannot see is the one they most need to watch. The
-        # direct background page.pointer above still asserts False, so the
-        # default stays off and only an explicit request turns it on.
-
         assert background_input_burst['results'][2]['result']['visiblePointer'] is True
         assert background_input_burst['results'][2]['result']['focusEmulated'] is True
-
-        # The marker must survive the run going idle, dimmed rather than removed, so
-        # an owner coming back to the tab can still see where the work stopped.
-        # Queried in the page, because that is where the marker lives.
 
         cursor_sel = '#__opera_agent_pointer_cursor'
         body = await audited_background_command(worker, focus_audit, 'page.query', {
@@ -2723,9 +2419,6 @@ async def run(port, profile):
             'tabId': tab_id, 'selector': '#canvas-status'
         })
         assert assert_completed_ok(body)['item']['text'] == 'canvas-clicked-2', body
-
-        # Generic scroll observability identifies the wheel container, waits for
-        # lazy DOM changes to settle, and reports whether another pass is needed.
 
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#scrollbox'
@@ -2761,9 +2454,6 @@ async def run(port, profile):
             'action': 'wheel',
             'x': scrollbox['rect']['centerX'],
             'y': scrollbox['rect']['centerY'],
-
-            # Trigger loading well before the old boundary so scroll anchoring
-            # cannot nondeterministically jump to the newly expanded boundary.
 
             'deltaY': 350
         })
@@ -2822,8 +2512,6 @@ async def run(port, profile):
         feed_boundary_stable = next(view for view in boundary_stable['regions'] if view['regionId'] == feed_before['regionId'])
         assert feed_boundary_stable['exhaustion']['status'] == 'BOUNDED_COMPLETE', feed_boundary_stable
 
-        # A mutation outside the feed must not invalidate the feed view.
-
         body = await audited_background_command(worker, focus_audit, 'page.query', {
             'tabId': tab_id, 'selector': '#toggle'
         })
@@ -2848,9 +2536,6 @@ async def run(port, profile):
         assert unrelated_read['provenance']['category'] == 'DIRECT_OBSERVATION'
         assert unrelated_read['provenance']['sensor'] == 'DOM_ACCESSIBILITY'
         assert unrelated_read['provenance']['sourceRevision'] > 0
-
-        # A visible pointer remains an explicit foreground diagnostic. It must
-        # refuse an inactive tab rather than activating it as a fallback.
 
         body = await audited_background_command(worker, focus_audit, 'page.pointer', {
             'tabId': tab_id,
@@ -2949,26 +2634,10 @@ async def run(port, profile):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
         assert result['version'] == EXPECTED_VERSION
 
-        # Options page: the only settings surface. Placed AFTER every
-        # focus-sensitive assertion on purpose -- an extra Playwright page
-        # becomes the foreground tab, and the pointer/query primitives assert
-        # that browser focus is never taken over. Reusing the popup tab (unused
-        # since pairing) keeps the tab count unchanged. The empty-reset path is
-        # covered by tests/options-store.test.mjs instead: it would overwrite the
-        # live bridge URL the extension still needs.
-
         bridge_url = f'http://{HOST}:{port}/bridge'
         options = popup
         await options.bring_to_front()
         await options.goto(f'chrome-extension://{ext_id}/options.html')
-
-        # options.js prefills asynchronously after the load event, so waiting on
-        # visibility would race the storage read and read empty fields.
-        # bring_to_front() above is what makes this tab foreground; polling is set
-        # explicitly because wait_for_function defaults to requestAnimationFrame,
-        # which is paused while a tab is hidden. BOTH are needed: the explicit
-        # interval cannot help Playwright's rAF-based click actionability checks
-        # below, which hang on a hidden tab regardless.
 
         await options.wait_for_function(
             "() => document.getElementById('bridgeUrl').value !== ''",
@@ -2979,9 +2648,6 @@ async def run(port, profile):
         assert await options.input_value('#bridgeUrl') == bridge_url
         assert await options.input_value('#logLevel') == 'warn'
 
-        # A non-https value must be refused with a mapped message and must not
-        # reach storage.
-
         await options.fill('#bridgeUrl', 'not-a-url')
         await options.click('#saveButton')
         await wait_text(options, '#saveStatus', 'https')
@@ -2989,10 +2655,6 @@ async def run(port, profile):
             "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
         assert stored == bridge_url, stored
         assert await options.input_value('#bridgeUrl') == 'not-a-url'
-
-        # A valid https override must be accepted and persisted. The status line
-        # is cleared first: it already reads 'Tersimpan.', so waiting for that text
-        # again would return immediately and race the async submit handler.
 
         await options.fill('#bridgeUrl', 'https://bridge.example.test/hook')
         await clear_status(options)
@@ -3002,13 +2664,9 @@ async def run(port, profile):
             "async () => (await chrome.storage.local.get(['bridgeUrl'])).bridgeUrl")
         assert stored == 'https://bridge.example.test/hook', stored
 
-        # Log level persistence, waited on the storage write itself.
-
         await options.select_option('#logLevel', 'debug')
         await options.click('#saveButton')
         await wait_stored(options, 'logLevel', 'debug')
-
-        # Restore the live harness state before continuing.
 
         await options.evaluate(
             f"async () => chrome.storage.local.set("

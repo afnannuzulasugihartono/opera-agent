@@ -1,3 +1,4 @@
+
 create or replace function public.opera_resolve_json(p_value jsonb, p_context jsonb)
 returns jsonb
 language plpgsql
@@ -292,9 +293,6 @@ begin
 end;
 $$;
 
--- Seed command-free cloud self-test.
-
--- Restrict workflow administration/execution to privileged paths.
 revoke all on function public.opera_register_workflow(text,jsonb,text,boolean) from public, anon, authenticated;
 revoke all on function public.opera_rollback_workflow(text,integer) from public, anon, authenticated;
 revoke all on function public.opera_run_workflow(text,jsonb,integer,text) from public, anon, authenticated;

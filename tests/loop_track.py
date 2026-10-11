@@ -47,7 +47,6 @@ setInterval(() => {
 </script>
 </body></html>"""
 
-
 class TrackHandler(BaseHTTPRequestHandler):
 
     def log_message(self, *_):
@@ -60,7 +59,6 @@ class TrackHandler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
-
 
 async def drive(port, profile, gameport):
     async with async_playwright() as p:
@@ -100,8 +98,6 @@ async def drive(port, profile, gameport):
         opened = await cmd('tabs.open', {'url': f'http://{H.HOST}:{gameport}/game', 'active': False, 'wait': True})
         tab_id = H.assert_completed_ok(opened)['tab']['id']
 
-        # A throttled renderer reads as sensor blindness, so the game window
-        # is kept in the foreground for the whole run.
         user32 = ctypes.windll.user32
         front_stop = [False]
 
@@ -128,9 +124,6 @@ async def drive(port, profile, gameport):
 
         front_task = asyncio.create_task(keep_front())
 
-        # The bar crosses 400px at 100px/s (4s per pass). The zone sees the
-        # front from x=350; impact at pad 20 needs (350-20)/100 = 3.3s of
-        # tracking, firing once time-to-impact drops under 400ms.
         started = await cmd('loop.start', {'tabId': tab_id, 'program': {
             'tickMs': 100, 'maxTicks': 120, 'maxDurationMs': 20000,
             'sensors': [
@@ -157,7 +150,6 @@ async def drive(port, profile, gameport):
         front_stop[0] = True
         print('TRACK PROOF GREEN')
 
-
 def main():
     server = ThreadingHTTPServer((H.HOST, 0), TrackHandler)
     gameport = server.server_address[1]
@@ -175,7 +167,6 @@ def main():
         bridge.shutdown()
         bridge.server_close()
         profile.cleanup()
-
 
 if __name__ == '__main__':
     main()

@@ -40,12 +40,6 @@ const headers = {
   "Content-Type": "application/json",
 };
 
-// WHY the wildcard is gone and the origin is decided per request: this const used
-// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
-// read a ledger response. The allowlist is the one the gateway and the MCP
-// function already use. Every route below still authenticates a bearer token
-// first, so this only closes the read side rather than replacing that check.
-
 function withCors(req: Request, res: Response): Response {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   const out = new Headers(res.headers);

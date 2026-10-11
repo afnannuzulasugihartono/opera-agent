@@ -7,14 +7,6 @@ import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
-// Universal fastpath gateway: ONE HTTP round trip from any AI platform
-// (ChatGPT GPTs/Actions, Claude/MCP, n8n, plain curl) to a completed browser
-// action. GPT Actions cannot set custom headers, so the token may arrive via
-// the x-opera-agent-token header, an Authorization header (whose "Bearer "
-// prefix is optional and case-insensitive), or body.apiKey. The query string
-// is never read: a ?apiKey= token is ignored on every route.
-// /openapi.json and /health need no token at all.
-
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -26,10 +18,6 @@ const CORS_BASE_HEADERS = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   "Cache-Control": "no-store"
 };
-
-// Fail-closed CORS: the allow origin is echoed ONLY for exact allowlist
-// matches (CORS_ALLOWED_ORIGINS env override, else the extension + consent
-// page defaults). A missing or non-allowlisted Origin gets no ACAO header.
 
 function corsHeaders(req: Request): Record<string, string> {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
@@ -72,9 +60,7 @@ async function rpc(name: string, args: Record<string, unknown>) {
 }
 
 async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
-  // WHY a bounded reader instead of req.text(): text() buffers the entire
-  // body before the length check, so a huge chunked body exhausts isolate
-  // memory first. This stops at maxBytes + 1 and never holds more.
+
   if (!req.body) return "";
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -84,7 +70,8 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
     if (done) break;
     total += value.byteLength;
     if (total > maxBytes) {
-      try { await reader.cancel(); } catch { /* oversize is the answer */ }
+      try { await reader.cancel(); } catch {
+ }
       return null;
     }
     chunks.push(value);
@@ -106,10 +93,6 @@ async function command(req: Request, _url: URL) {
     return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
   }
 
-  // WHY the cap rides the stream, not just the header: the early gate below
-  // reads content-length alone, so a chunked body without one skipped it and
-  // the parse buffered an unbounded body before authentication. Command
-  // envelopes are small, so refusing past exactly MAX_BODY is the whole fix.
   if (raw === null) {
     return json(req, { ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
   }
@@ -133,10 +116,6 @@ async function command(req: Request, _url: URL) {
 
   const tokenHash = await sha256Hex(token.toLowerCase());
 
-  // Verify the device token BEFORE touching the command queue: enqueue
-  // resolves the device by name only, so the hash check must happen here. The
-  // verify answer also carries last_seen_at, so the 90s offline preflight
-  // rides the same round trip instead of a second REST read of the same row.
   let auth = await rpc("opera_verify_device", {
     p_device_name: DEVICE_NAME,
     p_token_hash: tokenHash
@@ -144,19 +123,15 @@ async function command(req: Request, _url: URL) {
   let deviceName = DEVICE_NAME;
   let tokenClientId = "";
   if (!auth?.ok) {
-    // WHY a second path instead of a second token: ChatGPT plugin OAuth (and any
-    // future per-user caller) arrives with a Supabase user JWT, not a device
-    // secret. getUser verifies signature + expiry, and the caller's own first
-    // device is resolved by user_id — never the fixed name — so one account
-    // cannot drive another account's browser. The offline preflight below is
-    // shared by both paths.
+
     const { data, error } = await supabase.auth.getUser(token);
     const userId = !error ? data.user?.id : null;
     if (userId) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
         if (typeof payload.client_id === "string") tokenClientId = payload.client_id;
-      } catch { /* client lookup below treats it as absent */ }
+      } catch {
+ }
       const { data: device } = await supabase.from("opera_devices")
         .select("device_name, last_seen_at")
         .eq("user_id", userId).neq("status", "disabled")
@@ -171,17 +146,11 @@ async function command(req: Request, _url: URL) {
     return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
   }
 
-  // Preserve the former wrapper's pairing/offline preflight before enqueue.
-  // A valid token requires its row, so an authenticated answer without a
-  // last_seen_at can only mean a device never seen: refused as offline, which
-  // is the same outcome the old REST layer produced for it.
   const lastSeenAt = typeof auth.last_seen_at === "string" ? auth.last_seen_at : null;
   if (!lastSeenAt || Date.parse(lastSeenAt) < Date.now() - 90000) {
     return json(req, { ok: false, error: "Device is offline.", lastSeenAt });
   }
 
-  // Separate awaited RPC requests commit the queue row before the device must
-  // claim it. Enqueue + await in one SQL transaction hides it until timeout.
   let result = await rpc("opera_enqueue", {
     p_method: method,
     p_params: params,
@@ -190,11 +159,7 @@ async function command(req: Request, _url: URL) {
     p_request_id: requestId
   });
   if (result?.ok === true && result.commandId) {
-    // WHY best-effort and never fatal: the provider is dashboard metadata, and a
-    // stamp failure must not fail a command that is already queued and billable.
-    // The ChatGPT plugin path carries no custom header, so its callers are
-    // recognized by User-Agent first and by their OAuth client name second;
-    // header-capable harnesses are stamped by MCP.
+
     try {
       const ua = req.headers.get("user-agent") || "";
       let provider = /chatgpt|openai/i.test(ua) ? "chatgpt" : "";
@@ -203,7 +168,8 @@ async function command(req: Request, _url: URL) {
         if (typeof name === "string" && name) provider = name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 32);
       }
       if (provider) await supabase.from("opera_commands").update({ provider }).eq("id", String(result.commandId));
-    } catch { /* dashboard metadata only */ }
+    } catch {
+ }
   }
   if (result?.ok === true) {
     const commandId = result.commandId;
@@ -213,7 +179,7 @@ async function command(req: Request, _url: URL) {
         p_timeout_ms: timeoutMs
       });
     } catch {
-      // Enqueue already committed; a lost wait response is not action failure.
+
       return json(req, {
         ok: false,
         commandId,
@@ -233,8 +199,6 @@ async function command(req: Request, _url: URL) {
     }, 504);
   }
 
-  // Structured device results (ok true OR ok false) are 200: AI platforms
-  // read the envelope and recover; 5xx bodies can be dropped by GPT Actions.
   return json(req, result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
 }
 
@@ -296,10 +260,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     const url = new URL(req.url);
     if (url.pathname.endsWith("/openapi.json")) {
-      // servers must carry the FULL public function base path: GPT Actions
-      // appends the spec's paths to servers[url]. The hosted proxy rewrites
-      // the request URL (strips /functions/v1, downgrades scheme), so the
-      // base path comes from SUPABASE_URL, never from the request URL.
+
       return json(req, openApiSpec(`${SUPABASE_URL}/functions/v1/opera-agent-gateway`), 200);
     }
     if (url.pathname.endsWith("/health")) return health(req);

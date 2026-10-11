@@ -33,13 +33,11 @@ PASS_SCORE = 100
 ATTEMPTS = 3
 MAX_VISION_CALLS = 10
 
-
 def qwen_call(request):
     with urllib.request.urlopen(request, timeout=90) as response:
         payload = json.loads(response.read())
     time.sleep(12)
     return json.loads(payload['choices'][0]['message']['content'])
-
 
 def nim_json(image_b64, question):
     key = os.environ.get('NVIDIA_API_KEY', '')
@@ -72,11 +70,8 @@ def nim_json(image_b64, question):
             time.sleep(wait)
     raise last
 
-
 def see_json(image_b64, question):
 
-    # Calibrator failover: NIM 11b-vision first (~3s), Groq qwen on failure.
-    # Whichever answers valid JSON wins; the caller never knows the difference.
     last = None
     if os.environ.get('NVIDIA_API_KEY') and os.environ.get('VISION_PROVIDER', 'nim') == 'nim':
         try:
@@ -85,7 +80,6 @@ def see_json(image_b64, question):
             last = error
             print('nim failed, failing over to groq:', str(error)[:120])
     return qwen_json(image_b64, question)
-
 
 def qwen_json(image_b64, question):
     key = os.environ.get('GROQ_API_KEY', '')
@@ -117,7 +111,6 @@ def qwen_json(image_b64, question):
             print('groq 429, backing off %ds' % attempt)
             time.sleep(attempt)
     raise last
-
 
 async def drive(port, profile):
     calls = [0]
@@ -155,9 +148,6 @@ async def drive(port, profile):
                 '--disable-dev-shm-usage',
                 '--autoplay-policy=no-user-gesture-required',
 
-                # The game loop reads pixels every tick: a throttled renderer
-                # dilates game time (score 9 after 16s was measured), which
-                # reads as sensor blindness. These flags keep rAF honest.
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',
@@ -182,8 +172,6 @@ async def drive(port, profile):
         page = [pg for pg in context.pages if 't-rex-runner' in (pg.url or '')][0]
         await asyncio.sleep(5)
 
-        # A throttled renderer reads as sensor blindness (identical frames),
-        # so the game window is kept in the foreground for the whole run.
         user32 = ctypes.windll.user32
         front_stop = [False]
 
@@ -211,7 +199,6 @@ async def drive(port, profile):
 
         front_task = asyncio.create_task(keep_front())
 
-        # Watch snapshots every 5s so a human can follow the run later.
         watching = [True]
 
         async def watcher():
@@ -226,26 +213,15 @@ async def drive(port, profile):
 
         watch_task = asyncio.create_task(watcher())
 
-        # Start the game first: obstacles only exist on a running screen,
-        # so the calibrator cannot mark an approach zone before this.
         await cmd('page.key', {'tabId': tab_id, 'key': 'Space', 'trusted': True})
         await asyncio.sleep(3)
 
-        # Zone from direct observation of the running screen (1280x720
-        # viewport, stable in this drive): dino at x<65, ground y~395.
-        # Trigger distance must cover the widest clusters: the sense-act
-        # latency (~1 tick) shifts every trigger earlier by v*tick, so the
-        # zone sits further right than the raw jump window suggests.
         zone = [260, 340, 80, 55]
         print('approach zone:', zone)
 
         best = 0
         for attempt in range(1, ATTEMPTS + 1):
 
-            # Guard FIRST, verify after: the game kills an unguarded dino in
-            # ~4s while a vision round trip costs 5-15s, so every earlier run
-            # handed the loop a corpse. The loop guards from the first tick;
-            # vision only observes.
             await cmd('page.key', {'tabId': tab_id, 'key': 'Space', 'trusted': True})
             started = await cmd('loop.start', {'tabId': tab_id, 'program': {
                 'tickMs': 100, 'maxTicks': 300, 'maxDurationMs': 45000, 'trusted': True,
@@ -269,9 +245,6 @@ async def drive(port, profile):
                 await asyncio.sleep(1)
                 continue
 
-            # Death stops the loop itself via the stillness sensors (score
-            # digits and ground texture freeze), so no vision polling is
-            # needed mid-run: the debugger detaches within seconds of death.
             await asyncio.sleep(35)
             body = await cmd('loop.read', {'loopId': loop_id})
             final = H.assert_completed_ok(body)
@@ -292,9 +265,6 @@ async def drive(port, profile):
             print('input ticks (obstacle):', obstacle_ticks[:20])
             print('output ticks (leapt):', leapt_ticks[:20])
 
-            # Vision-free pass: surviving to the duration budget without a
-            # death stop means the loop guarded the whole run. Score stays
-            # unknown without vision; survival time is the evidence.
             if os.environ.get('VISION_OFF') == '1':
                 if final.get('stopReason') in ('max-duration', 'max-ticks') and final['tick'] >= 140:
                     print('attempt %d survived %d ticks guarding' % (attempt, final['tick']))
@@ -319,7 +289,6 @@ async def drive(port, profile):
         assert best >= PASS_SCORE, {'best': best}
         print('C3 GREEN')
 
-
 def main():
     bridge = ThreadingHTTPServer((H.HOST, 0), H.Handler)
     port = bridge.server_address[1]
@@ -332,7 +301,6 @@ def main():
         bridge.shutdown()
         bridge.server_close()
         profile.cleanup()
-
 
 if __name__ == '__main__':
     main()

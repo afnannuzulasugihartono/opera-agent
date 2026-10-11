@@ -43,8 +43,6 @@ begin
 
   p:='m8d_bounds_prepare_rate';
 
-  -- Pin each synthetic boundary in its actual database minute; not rollover proof.
-
   for i in 1..20 loop
     insert into opera_agent_tx_candidate.rates values(p,date_trunc('minute',clock_timestamp()),i-1,0)
       on conflict(tenant_id) do update set window_start=excluded.window_start,prepares=excluded.prepares;

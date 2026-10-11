@@ -20,12 +20,10 @@ test('both skill RPCs exist and reject empty input', () => {
 test('recall matches case-insensitively with an escaped LIKE pattern', () => {
   assert.match(migration, /ILIKE/i);
 
-  // Literal escape clause, not mere word presence: both task and lesson ILIKEs bind backslash escape.
   assert.ok(migration.includes("escape '\\'"), "literal escape '\\' clause missing");
   const escapeCount = migration.split("escape '\\'").length - 1;
   assert.ok(escapeCount >= 2, `expected >=2 literal escape clauses, found ${escapeCount}`);
 
-  // Backslash-first replacement order: '\' -> '\\' must run before '%' and '_' escapes.
   const backslashIdx = migration.indexOf("'\\', '\\\\'");
   const percentIdx = migration.indexOf("'%', '\\%'");
   const underscoreIdx = migration.indexOf("'_', '\\_'");

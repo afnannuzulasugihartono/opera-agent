@@ -60,11 +60,7 @@ export async function assertCaptureFramesSafe(tabId) {
 export async function withDebugger(tabId, context, work) {
   const shared = context?.debuggerSession;
   if (shared) {
-    // Phase D: a burst step may target another tab. Chrome allows one debugger
-    // attachment per tab but not two at once, so switching tabs releases the
-    // previous session before attaching the next. The release is a real detach:
-    // a session left attached keeps Chrome's "started debugging this browser"
-    // bar on the user's tab.
+
     if (shared.tabId !== tabId) {
       await releaseDebuggerSession(shared, log);
     }
@@ -96,12 +92,6 @@ export function codedError(code, message, details = {}) {
   error.details = details;
   return error;
 }
-
-// Layer B: semantically poor surfaces (canvas apps, hidden
-// DOM mirrors) keep their accessibility tree even when DOM text is empty. The
-// snapshot runs once per poor read through the bounded debugger session and is
-// filtered by the pure value-free builder; every failure mode fails open (no
-// axSummary, the observation result stays intact).
 
 export async function collectAxSummary(tabId, context) {
   try {

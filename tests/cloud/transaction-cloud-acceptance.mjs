@@ -55,7 +55,6 @@ export async function runAcceptanceCli(configuration){
     global:{fetch:(input,init={})=>fetchImpl(input,{...init,redirect:'error',signal:AbortSignal.any([init.signal,AbortSignal.timeout(10000)].filter(Boolean))})}});
   const controller=createCloudAcceptanceController({namespace,publicKey:configuration.publicKey,now,fetchImpl,sdk,operator:transport.operator});
 
-  // The production-shape preflight must finish before an OAuth URL exists.
   await controller.ready;
   write(JSON.stringify({checkpoint:'8D',mode:'accept',namespace,recoveryCommand:`deno run tests/cloud/transaction-cloud-acceptance.mjs --recover ${namespace}`,secretsPrinted:false}));
   let accepted=false;

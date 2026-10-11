@@ -22,8 +22,6 @@ import zlib
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SIZES = (16, 32, 48, 128)
 
-# The site's own palette, so the icon reads as the product on a page that uses it.
-
 BG = (0x0B, 0x0D, 0x10)
 SURFACE = (0x14, 0x18, 0x1D)
 LINE = (0x26, 0x2C, 0x34)
@@ -80,8 +78,6 @@ def render(size):
                 if 0 < edge < 1:
                     pixel = blend(pixel, LINE, edge * 0.9)
 
-            # The caret reads as acting on a page, so the mark is not just a dot.
-
             hit = triangle(x, y, caret)
             if hit:
                 pixel = blend(pixel, ACCENT, 0.92)
@@ -124,8 +120,6 @@ def box_filter(rows, size):
 def write_png(path, rows):
     size = len(rows)
 
-    # Each scanline is prefixed with its filter type; 0 means "no filter".
-
     raw = b"".join(b"\x00" + row for row in rows)
 
     def chunk(tag, payload):
@@ -143,9 +137,6 @@ def write_png(path, rows):
 def main():
     master = render(128)
     for size in SIZES:
-
-        # The manifest icons live beside the extension; the store listing keeps its
-        # own copy of the largest, because that is the one the store uploads.
 
         targets = [os.path.join(REPO, "extension", "icons", f"icon{size}.png")]
         if size == 128:

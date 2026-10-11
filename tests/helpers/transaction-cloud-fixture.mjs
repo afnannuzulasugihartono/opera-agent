@@ -26,7 +26,6 @@ export async function createCloudFixtureData(options) {
     throw new Error('INVALID_CLOUD_FIXTURE_CONFIGURATION');
   }
 
-  // Snapshot primitive input before any await. No ambient clock/randomness/key.
   const { namespace, userId, preparedAt } = options;
   const tag = namespace.replaceAll('-', '');
   const actorId = 'm8d_fixture_actor_' + tag, goalId = 'm8d_fixture_goal_' + tag, transactionId = 'm8d_fixture_tx_' + tag;

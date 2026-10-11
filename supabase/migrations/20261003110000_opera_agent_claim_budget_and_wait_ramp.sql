@@ -59,8 +59,7 @@ begin
   select * into v_device from public.opera_devices where device_name=trim(p_device_name) and status<>'disabled'; if not found then return jsonb_build_object('ok',false,'error','Device is not paired.'); end if;
   v_timeout:=least(greatest(coalesce(p_timeout_ms,v_default_timeout),500),55000);
   if p_request_id is not null then select * into v_cmd from public.opera_commands where device_id=v_device.id and request_id=left(p_request_id,128); if found then return jsonb_build_object('ok',true,'commandId',v_cmd.id,'status',v_cmd.status,'reused',true); end if; end if;
-  -- Unchanged in meaning: this is the "nobody ever claims it" deadline. The
-  -- claim below restarts the clock for the command's actual execution budget.
+
   insert into public.opera_commands(device_id,request_id,method,params,status,timeout_ms,expires_at) values(v_device.id,case when p_request_id is null then null else left(p_request_id,128) end,p_method,coalesce(p_params,'{}'::jsonb),'queued',v_timeout,clock_timestamp()+make_interval(secs=>(v_timeout/1000.0)+5)) returning * into v_cmd;
   insert into public.opera_audit(event_type,device_id,command_id,details) values('command.queued',v_device.id,v_cmd.id,jsonb_build_object('method',v_cmd.method,'timeoutMs',v_timeout));
   return jsonb_build_object('ok',true,'commandId',v_cmd.id,'status',v_cmd.status,'reused',false);
@@ -75,9 +74,7 @@ begin
   update public.opera_commands set status='expired',completed_at=now(),error=jsonb_build_object('code','EXPIRED','message','Command expired before execution.') where device_id=v_device_id and status in ('queued','claimed') and expires_at<=now();
   select * into v_cmd from public.opera_commands where device_id=v_device_id and status='queued' and expires_at>now() order by created_at for update skip locked limit 1;
   if not found then return jsonb_build_object('ok',true,'command',null); end if;
-  -- The device takes the work now, so the budget starts now. Without this a
-  -- command queued while the device was offline could be swept to 'expired' by
-  -- the next poll while it was still executing, and its completion rejected.
+
   update public.opera_commands set status='claimed',attempts=attempts+1,claimed_at=clock_timestamp(),expires_at=clock_timestamp()+make_interval(secs=>(v_cmd.timeout_ms/1000.0)+5) where id=v_cmd.id returning * into v_cmd;
   insert into public.opera_audit(event_type,device_id,command_id,details) values('command.claimed',v_device_id,v_cmd.id,jsonb_build_object('method',v_cmd.method,'attempt',v_cmd.attempts));
   return jsonb_build_object('ok',true,'command',jsonb_build_object('id',v_cmd.id,'method',v_cmd.method,'params',v_cmd.params,'timeoutMs',v_cmd.timeout_ms));
@@ -119,7 +116,6 @@ begin
   return jsonb_build_object('ok',true,'command',jsonb_build_object('id',v_cmd.id,'method',v_cmd.method,'params',v_cmd.params,'timeoutMs',v_cmd.timeout_ms),'waitedPolls',v_polls,'waitedMs',round(extract(epoch from (clock_timestamp()-v_started))*1000));
 end $$;
 
--- 2. The watch wait stops polling at a flat 5ms for half a minute.
 create or replace function public.opera_watch_events_wait(p_watcher text, p_after_seq bigint, p_timeout_ms integer default 25000) returns jsonb
 language plpgsql stable security definer set search_path=public as $$
 declare
@@ -157,11 +153,8 @@ begin
   end loop;
 end $$;
 
--- 3. now() is transaction_timestamp(), so it is constant per transaction and the
---    queue had no deterministic order for rows inserted together.
 alter table public.opera_commands alter column created_at set default clock_timestamp();
 
--- 4. Dead, unreachable, and granted to service_role. See the header note.
 drop function if exists public.opera_run_fast(text,jsonb,integer,text,text);
 
 revoke all on function public.opera_enqueue(text,jsonb,integer,text,text) from public,anon,authenticated;

@@ -41,24 +41,13 @@ const read = (p) => fs.readFileSync(new URL(p, root), 'utf8');
 const MIGRATION = 'supabase/migrations/20261011120000_opera_agent_claim_clock_timestamps.sql';
 const migration = read(MIGRATION);
 
-// The function body only: between the first $$ and the SECOND one, with every SQL
-// comment line removed. Ending at the second $$ matters — the trailing
-// `comment on function` string after it names now() in prose, and including it would
-// make the count check unsatisfiable while teaching the next reader to delete the
-// comment instead of the bug. A comment that mentions now() is documentation; a
-// statement that calls it is the defect.
-
 const open = migration.indexOf('$$');
 const close = migration.indexOf('$$', open + 2);
 const body = migration.slice(open + 2, close).split('\n')
   .filter((l) => !l.trimStart().startsWith('--')).join('\n');
 
 test('the long-poll claim reads a clock that moves, never the one frozen at BEGIN', () => {
-  // WHY this is the lock and not a lint: the failure mode is silent. With now() the
-  // function still returns a correct command and a correct waitedMs — waitedMs was
-  // always measured with clock_timestamp() — so nothing at runtime looks wrong. Only
-  // the row it writes disagrees with reality, and only for the claims that came
-  // fastest, which are the ones nobody re-examines.
+
   assert.doesNotMatch(body, /now\(\)/,
     'no executable now() survives in the claim function');
 
@@ -66,9 +55,6 @@ test('the long-poll claim reads a clock that moves, never the one frozen at BEGI
   assert.ok(clocks.length >= 8,
     `every elapsed-time read uses clock_timestamp() (found ${clocks.length})`);
 
-  // WHY this pair specifically, rather than the bare count: a function rewritten with
-  // one clock_timestamp() and the rest of the drift left would pass a count check and
-  // keep the bug on exactly these two lines.
   assert.match(body, /claimed_at\s*=\s*clock_timestamp\(\)/,
     'the claim stamp is the moment of the claim, not the start of the transaction');
   assert.match(body, /expires_at\s*>\s*v_now/,
@@ -76,22 +62,13 @@ test('the long-poll claim reads a clock that moves, never the one frozen at BEGI
 });
 
 test('exactly one overload of the claim function can exist', () => {
-  // WHY the drop is part of the fix and not a cleanup: a second overload makes the
-  // function unresolvable for a named-argument call, which is how the bridge calls it.
-  // That is a production break, not a warning, so the migration has to remove the
-  // wrong-signature copy before it writes the right one.
+
   const wrong = /drop function if exists public\.opera_claim_next_wait\(text, text, integer, text, integer, jsonb\);/;
   assert.match(migration, wrong,
     'the overload that a wrong parameter order would create is dropped explicitly');
 
   const declared = migration.match(/create or replace function public\.opera_claim_next_wait\(/g) || [];
   assert.equal(declared.length, 1, 'the migration declares the function exactly once');
-
-  // WHY the second token and not the last: a parameter line reads
-  // "p_wait_ms integer default 12000", so the LAST token is the default and the type
-  // is in the middle. Reading the last token would have compared ["text","text",
-  // "null","null","null","12000"] against the real signature and failed on correct
-  // SQL -- which is how a lock teaches people to stop reading it.
 
   const signature = /create or replace function public\.opera_claim_next_wait\(([^)]*)\)/.exec(migration)[1];
   const types = signature.split(',').map((s) => s.trim().split(/\s+/)[1]);
@@ -100,18 +77,11 @@ test('exactly one overload of the claim function can exist', () => {
 });
 
 test('the signature the migration writes is the signature the bridge calls', () => {
-  // WHY this cross-check is the one that would have caught the mistake: the migration
-  // and the call site live in different files and were written at different times, and
-  // nothing in PostgreSQL warns when they disagree. It agrees only by luck otherwise.
+
   const bridge = read('supabase/functions/opera-agent-bridge/index.ts');
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/,
     'the bridge still calls the long-poll claim');
 
-  // WHY the call is scoped to the rpc block and not the whole file: p_token_hash is
-  // computed in a statement ABOVE the rpc call, so scanning the file for parameter
-  // names finds it first and reports an order that does not exist at the call site.
-  // The order inside the object literal is the call site's real order, which is what
-  // PostgREST resolves.
   const call = /rpc\("opera_claim_next_wait", \{([\s\S]*?)\}/.exec(bridge);
   assert.ok(call, 'the bridge calls the long-poll claim with a named-argument object');
   const named = [...call[1].matchAll(/^\s*(p_[a-z_]+):/gm)].map((m) => m[1]);
@@ -126,10 +96,7 @@ test('the signature the migration writes is the signature the bridge calls', () 
 });
 
 test('the claim stays callable by exactly the role that runs it', () => {
-  // WHY this is re-stated: create or replace keeps an existing function's grants, but
-  // a migration that re-created the function from scratch would not, and a revoked
-  // service_role here looks like a network fault from the extension's side rather
-  // than a permission fault from here.
+
   assert.match(migration,
     /revoke all on function public\.opera_claim_next_wait\(text, text, text, integer, jsonb, integer\) from public, anon, authenticated;/,
     'the queue is not readable by an anonymous or signed-in browser');

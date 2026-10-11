@@ -44,22 +44,6 @@ export async function withInputFocusEmulation(target, mode, work) {
   }
 }
 
-// The at-dispatch foreground focus gate.
-//
-// The historical check sampled `tab.active` / `window.focused` ONCE, before a
-// content-script round trip and a debugger attach, and never re-checked. A
-// window that lost focus inside that window produced FOREGROUND_REQUIRED even
-// though the user had just activated the tab. This gate re-samples AT dispatch
-// time from inside the debugger session, so the decision is made against the
-// state that will actually receive the input, and it retries a bounded number
-// of times before refusing.
-//
-// It never activates a tab, never focuses a window, and never moves the OS
-// cursor: that authority stays with the explicit tabs.activate primitive and
-// with the user's own foreground permission. A window that genuinely is not
-// focused still returns the structured FOREGROUND_REQUIRED requirement, now
-// carrying the observed state so the failure is diagnosable.
-
 export async function sampleTabFocus(tabId) {
   const tab = await chrome.tabs.get(tabId);
   const win = await chrome.windows.get(tab.windowId);
@@ -69,10 +53,6 @@ export async function sampleTabFocus(tabId) {
 export async function withForegroundFocusGate(tabId, mode, work) {
   if (mode !== 'foreground') return work();
 
-  // Bounded by construction: decideFocusGate refuses on the final attempt, so
-  // the loop always terminates. Written with an explicit bound rather than a
-  // conditionless for(;;) so the termination is visible here and not only in
-  // the policy module.
   for (let attempt = 1; attempt <= FOCUS_GATE_ATTEMPTS; attempt += 1) {
     let sample = null;
     try {
@@ -99,25 +79,7 @@ export async function withForegroundFocusGate(tabId, mode, work) {
   }
 }
 
-// Action Pipeline: Resolve -> Wait -> Heal -> Verify around
-// the shared trusted executors. Every action path (MCP page.*, burst steps,
-// gateway /command, workflow steps, ETW local actions) reaches the dispatch
-// action cases or the ETW click site below, so this one host gives all of
-// them the same guarantee: never return `stale`, wait out dynamic targets via
-// the adaptive ramp, rebind through the machinery, and report final
-// outcome telemetry. Pointers are coordinate-based (no ref), so their wait
-// phase is a pass-through; their own guards and scroll verification apply.
-
-const UV_WAIT_FLOOR_MS = 250; // keep the wait strictly inside the command race
-
-// Popup/redirect follow-through: clicks and fills on OAuth/login controls
-// open popup tabs (window.open / target=_blank) whose creation the original
-// tab's DOM never shows. A bounded per-opener log records them so the action
-// result can carry openedTabs and the model can continue in the popup by
-// tabId (no auto-activation; activation stays an explicit user decision).
-// Chromium attributes window.open on a BACKGROUND acted-on tab to the window's
-// active tab, so while a page action is in flight its tab claims new tabs
-// (see resolvePopupOpener).
+const UV_WAIT_FLOOR_MS = 250;
 
 export const popupLog = new Map();
 const popupActionStack = [];
@@ -170,11 +132,6 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
-// WHY per-case text: "never appeared" is false whenever the node left the DOM,
-// which is what a page that re-renders produces, and a caller that believes it
-// spends another full deadline on the same dead ref. Each case names the
-// recovery that works instead of a wait that does not.
-
 function notFoundHint(refState) {
   if (refState === 'expired') {
     return 'The page navigated or reset, so this ref was minted for another document or route and can never act again. Re-find on the current page; the ref is dead, not late.';
@@ -187,11 +144,6 @@ function notFoundHint(refState) {
   }
   return 'Target never appeared before the deadline. Arm watch.start for late UI or re-find later.';
 }
-
-// WHY one builder: three refusal sites hand-copied the same field list, so a
-// field added to TARGET_NOT_READY reached one caller and was dropped by the
-// others. It also names the candidates in every message, which the burst path
-// alone used to drop.
 
 export function notReadyError(error) {
   const out = {
@@ -223,7 +175,7 @@ export async function runActionPipeline(tabId, method, params, context, exec) {
       state = await contentCall(tabId, 'page.action_state', { ref: params.ref });
       resolveError = null;
     } catch (error) {
-      state = null; // non-ambiguity content refusal: not resolvable this cycle
+      state = null;
       resolveError = String(error?.message || error);
     }
     if (state?.rebound) healed = true;
@@ -232,10 +184,6 @@ export async function runActionPipeline(tabId, method, params, context, exec) {
   let verdict = hasRef ? await resolveState() : 'ready';
   const delays = pollDelays(deadline - started, 0);
 
-  // WHY stop on 'expired': the content script proved this ref can never act on this
-  // document or route again (no descriptor, or one minted elsewhere, and refCounter
-  // never re-mints a key). Polling a ref that cannot recover only spends the deadline
-  // the caller was trying to protect.
   const isExpired = () => state?.refState === 'expired';
   for (let di = 0; hasRef && verdict !== 'ready' && verdict !== 'ambiguous' && !isExpired() && di < delays.length; di += 1) {
     if (Date.now() + delays[di] > deadline - UV_WAIT_FLOOR_MS) break;
@@ -244,14 +192,9 @@ export async function runActionPipeline(tabId, method, params, context, exec) {
     verdict = await resolveState();
   }
 
-  // Synthetic actions historically act on present-but-not-actionable targets
-  // (their content paths own disabled/hidden gates — regression proves the
-  // revalidate-then-click contract), so only TRUSTED actions wait for full
-  // actionability; synthetic waits resolve on presence.
   if (verdict === 'not-actionable' && params?.trusted !== true) verdict = 'ready';
   if (verdict === 'ambiguous') {
-    // Carry the original geometry-guard refusal text: legacy consumers assert
-    // on it, and it names the concrete tolerance mismatch behind the refusal.
+
     throw makeNotReady('ambiguous', waitedMs, state?.refusal || 'Refusal is deliberate (geometry guard). Pick a listed candidate deliberately or re-find with narrower text.', state?.candidates);
   }
   if (verdict !== 'ready') {
@@ -265,8 +208,6 @@ export async function runActionPipeline(tabId, method, params, context, exec) {
   }
   const result = await exec(params.ref);
 
-  // Verify: only from an actual post-action check (postAction.verified exists
-  // only when an expect spec was evaluated) - never invented.
   if ((method === 'page.click' || method === 'page.fill') && result?.postAction?.verified !== undefined) {
     return attachResolution(result, { attempts, waitedMs, healed, verified: result.postAction.verified === true });
   }
@@ -319,8 +260,6 @@ export async function trustedFill(tabId, ref, value, context, mode = 'background
       action = { ok: true, ref, valueLength: 0, method: 'debugger' };
     }
 
-    // Verify the fill in-page (expect parity with trustedClick); verified
-    // exists only when an expect spec was evaluated - never invented.
     const postAction = await contentCall(tabId, 'page.post_action', {
       ref,
       before: info.postActionBefore,
@@ -334,9 +273,6 @@ export async function trustedPointer(tabId, params, context) {
   const mode = executionMode(params);
   const action = String(params.action || 'click');
 
-  // WHY: the cursor is how a person sees an unattended run working, so gating it
-  // on foreground left the normal background run invisible. An explicit
-  // showCursor:true now works in either mode; the default is unchanged.
   const visiblePointer = params.showCursor === true || (mode === 'foreground' && params.showCursor !== false);
   const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: visiblePointer, action });
   const end = action === 'drag'
@@ -386,11 +322,6 @@ export async function trustedPointer(tabId, params, context) {
   })));
 }
 
-// The trusted key path resolves a declarative chord or a
-// bounded text request through lib/keyboard.js instead of a flat 12-entry table
-// with no modifier support at all. The sensitive-field guard is unchanged and
-// still runs before anything is dispatched.
-
 export async function trustedKey(tabId, params, context, mode = 'background') {
   const request = resolveKeyInput({
     key: params?.key,
@@ -426,11 +357,6 @@ export async function trustedKey(tabId, params, context, mode = 'background') {
   })));
 }
 
-// Burst ref passthrough: a click/fill step may take its ref from a previous
-// find/query step in the same burst, so the reference is minted and consumed
-// within milliseconds instead of surviving a model round-trip (live evidence:
-// YouTube skip control died in the 14.1 s between find and click).
-
 function burstPassthroughRef(results, step, index) {
   const from = step.refFromStep;
   if (from === undefined || from === null) return null;
@@ -451,9 +377,6 @@ export function burstStepParams(step, tabId, remainingMs, mode, results) {
   const { action, pointerAction, ...values } = step;
   const params = { ...values, tabId, executionMode: mode };
 
-  // click, fill and hover behave identically: trust the step and hand through a
-  // ref an earlier step minted on this tab. The passthrough block below used to
-  // exist twice, once for click/fill and once for hover.
   if (action === 'click' || action === 'fill' || action === 'hover') {
     const passthrough = burstPassthroughRef(results || [], step);
     if (passthrough) {

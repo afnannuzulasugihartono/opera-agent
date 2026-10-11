@@ -11,12 +11,6 @@ import { SITE_ORIGIN } from './endpoints.js';
 
 export const EXTERNAL_CONFIG_ORIGINS = Object.freeze(['http://localhost:', 'https://localhost:', SITE_ORIGIN]);
 
-// WHY exact match for the site origin: sender.origin for an https page is the
-// bare origin, so a plain startsWith would also admit evil subdomains like
-// https://opera-agent.pages.dev.evil.com. Entries ending in ':' keep the
-// dynamic-port prefix match; every other entry must match exactly or be
-// followed by '/'.
-
 export function originAllowed(from) {
   const value = String(from || '');
   return EXTERNAL_CONFIG_ORIGINS.some((origin) => (

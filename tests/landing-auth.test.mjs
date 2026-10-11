@@ -22,10 +22,6 @@ test('the auth page offers Google and GitHub through the project Auth, not throu
   assert.match(html, /provider=github/, 'a Masuk dengan GitHub button must point at the provider');
   assert.ok(html.includes(AUTH_HOST), 'both buttons must go to the project Auth host, never a middleman');
 
-  // WHY this origin: the page rewrites redirect_to from its own location at runtime, so
-  // the value baked into the markup is only the fallback for a browser with no script.
-  // It still has to name the host the site is served from, or that fallback strands the
-  // visitor on the old site URL.
   assert.match(html, /redirect_to=https:\/\/opera-agent\.pages\.dev\/"/, 'both buttons must carry the way home, or login strands the visitor on the old site URL');
 });
 
@@ -37,8 +33,7 @@ test('the auth page takes no password, only a magic link', () => {
 });
 
 test('the landing page itself stays network-free while auth may reach only Supabase', () => {
-  // WHY order matters: Vercel applies every matching source with later entries
-  // winning, so the catch-all must come first or it buries the auth policy.
+
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
     ['/(.*)', '/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/robots.txt', '/sitemap.xml'],
@@ -48,10 +43,6 @@ test('the landing page itself stays network-free while auth may reach only Supab
   const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
 
-  // WHY two entries per page and not one: the sign-in page is served at both "/"
-  // and "/index.html", and the consent page at both spellings of its path, so each
-  // served address carries its own entry or it receives the root CSP and its
-  // Supabase fetch dies in the browser. All carry the same single-origin policy.
   const authSources = ['/', '/index.html', '/oauth/consent', '/oauth/consent.html'];
   for (const source of authSources) {
     const entry = bySource[source];
@@ -64,17 +55,12 @@ test('the landing page itself stays network-free while auth may reach only Supab
 });
 
 test('the sign-in page can return a person to where they came from, and nowhere else', () => {
-  // WHY this lock: the OAuth consent screen lives on the site, so a person who follows
-  // a permission request and is not signed in has to come back to that screen with its
-  // authorization_id intact. But this is the one page an attacker can send a stranger to
-  // with a query string, so ?next must never become an open redirect.
+
   assert.match(html, /const RETURNABLE = \/\^\\\.\\\//, 'only a same-site relative path is accepted');
   assert.match(html, /returnTo\(\) !== '\.\/beranda\.html'/, 'the return path changes what the page offers');
   assert.match(html, /redirect_to.*encodeURIComponent\(target\)/, 'the provider buttons carry the return path to Supabase');
   assert.match(html, /id="continueButton"/, 'a signed-in visitor is offered the return path explicitly');
 
-  // WHY the provider buttons matter most: they leave the site entirely and come back
-  // through Supabase, so a hardcoded redirect_to loses the request on that hop.
   for (const id of ['googleButton', 'githubButton']) {
     assert.ok(html.includes(`'${id}'`), `${id} is rewired to carry the return path`);
   }
@@ -90,18 +76,13 @@ test('the two pages navigate both ways as one site', () => {
 });
 
 test('the auth page says sign-up is open, because it is', () => {
-  // WHY this lock replaced the invite-only one: the live Auth settings answer
-  // "disable_signup":false with google and email enabled, so the old copy —
-  // "Akses awal lewat undangan sampai sign-up terbuka" — was a false statement
-  // on the page a stranger reads before creating an account.
+
   assert.match(html, /Daftar terbuka/i, 'open sign-up is stated, not rationed');
   assert.doesNotMatch(html, /undangan/i, 'no invitation wording remains');
 });
 
 test('a returning login completes on the page instead of stranding the visitor', () => {
-  // WHY this lock exists: provider and magic-link logins return to this page with
-  // tokens in the URL fragment. A page that ignores them leaves a layperson staring
-  // at a login form while already logged in.
+
   assert.match(html, /access_token/, 'the page reads the returning session from the URL');
   assert.ok(html.includes('https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1'), 'the session is proven against the project Auth host');
   assert.match(html, /\$\{AUTH_HOST\}\/user/, 'the page proves the session through the user endpoint');
@@ -111,9 +92,6 @@ test('a returning login completes on the page instead of stranding the visitor',
   assert.match(html, /localStorage/, 'the session survives across tabs like every other site');
   assert.doesNotMatch(html, /sessionStorage/, 'no tab-only storage remains to force a second login');
 
-  // WHY the helper and not literals: showSignedIn once wrote Indonesian literals,
-  // so EN mode showed Indonesian there. The three strings now render through the
-  // shared helper with dict keys, keeping the exact Indonesian as the fallback.
   assert.ok(html.includes('window.OperaAgentI18n'), 'the signed-in view renders through the shared helper');
   for (const key of ['signedin.title', 'signedin.sub', 'signedin.whoami']) {
     assert.ok(html.includes(`t('${key}'`), `showSignedIn renders ${key} through the helper`);
@@ -129,9 +107,6 @@ test('every auth control has an accessible name', () => {
     assert.ok(new RegExp(`<label[^>]*for="${id}"`).test(html), `input #${id} has a label`);
   }
 
-  // WHY the label escape: the language toggle reads ID/EN, two-letter codes no
-  // prose can stretch past two characters. A button carrying a non-empty
-  // aria-label names itself that way; without one, its own text must do it.
   for (const [, attrs, text] of html.matchAll(/<button\b([^>]*)>([^<]*)<\//gi)) {
     const labelled = /aria-label="([^"]+)"/.exec(attrs);
 
@@ -145,9 +120,7 @@ test('every auth control has an accessible name', () => {
 });
 
 test('the gate splits brand from form, and stacks on a narrow screen', () => {
-  // WHY this shape: the Facebook login page puts the brand panel left and the
-  // form card right, which is what a stranger recognises as a login page. The
-  // mark, the headline, and the three value lines stay house style throughout.
+
   assert.match(html, /<div class="split">/, 'brand and gate share one row');
   assert.match(html, /<div class="brand">/, 'the brand panel stands on the left');
   const mark = 'M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z';
@@ -159,8 +132,7 @@ test('the gate splits brand from form, and stacks on a narrow screen', () => {
 });
 
 test('the register tab swaps copy only, never the endpoint', () => {
-  // WHY copy only: Auth creates the account for a new address on the same
-  // one-time-code request, so a second form would be a second way to break.
+
   assert.match(html, /role="tablist"/, 'the tabs announce themselves as tabs');
   assert.match(html, /id="loginTab"[^>]*aria-selected="true"/, 'Masuk starts selected');
   assert.match(html, /id="registerTab"[^>]*aria-selected="false"/, 'Daftar starts idle');
@@ -173,24 +145,21 @@ test('the register tab swaps copy only, never the endpoint', () => {
 });
 
 test('the resend line resubmits the same form instead of growing an endpoint', () => {
-  // WHY a form attribute and not a link: the resend is the same magic-link
-  // request a second time, so it submits the existing form from outside it.
+
   assert.match(html, /Tidak menerima email\? Kirim ulang/, 'the centered line names the retry');
   assert.match(html, /<button[^>]*form="magicForm"/, 'it submits the existing form');
   assert.doesNotMatch(html, /\/(signup|register|resend|invite)/i, 'no second auth endpoint exists to call');
 });
 
 test('the language footer reuses the shared choice without inventing a control', () => {
-  // WHY buttons and not links: the mechanism wires button[data-lang], so the
-  // footer names each language in itself and writes oa-lang through it.
+
   assert.match(html, />Bahasa Indonesia<\/button>/, 'Indonesian names itself');
   assert.match(html, />English<\/button>/, 'English names itself');
   assert.match(html, /<p class="langlist">[\s\S]*data-lang="id"[\s\S]*data-lang="en"[\s\S]*<\/p>/, 'both write through the shared mechanism');
 });
 
 test('the provider entries keep their addresses and their marks', () => {
-  // WHY byte-exact: the restyle moves the buttons under the form, and a moved
-  // button is where a rewritten href hides.
+
   for (const provider of ['google', 'github']) {
     assert.ok(
       html.includes(`https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=https://opera-agent.pages.dev/"`),
@@ -201,8 +170,7 @@ test('the provider entries keep their addresses and their marks', () => {
 });
 
 test('the signed-in view keeps its elements and its ids', () => {
-  // WHY every id: the restyle reorders the signed-out card, and the skip-login
-  // behavior finds its cards by id, so a renamed card is a silent login.
+
   for (const id of ['pageTitle', 'pageSub', 'signedOut', 'signedIn', 'returning', 'continueButton', 'whoami', 'sessionStatus', 'signOutButton']) {
     assert.ok(html.includes(`id="${id}"`), `#${id} survives the restyle`);
   }

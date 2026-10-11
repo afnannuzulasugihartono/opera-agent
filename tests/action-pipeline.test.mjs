@@ -10,10 +10,6 @@ import {
 } from '../extension/lib/action-pipeline.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 
-// Action Pipeline: pure policy engine for Resolve -> Wait ->
-// Heal -> Verify. Locked semantics: ramp shape, deadline clipping, resolve
-// classification, TARGET_NOT_READY shape, resolved telemetry superset.
-
 test('ACTION_RAMP_MS is the frozen 25..400 ramp', () => {
   assert.deepEqual(ACTION_RAMP_MS, [25, 50, 100, 200, 400]);
 });
@@ -61,8 +57,6 @@ test('attachResolution adds resolved and omits absent verified', () => {
   assert.equal(env2.resolved.verified, true);
 });
 
-// --- Task 2: content resolver source-contract ---
-
 import fs from 'node:fs';
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -73,8 +67,6 @@ test('content exposes page.action_state for the U-V pipeline', () => {
   assert.match(src, /refusing automatic rebind/, 'ambiguity surfaced via the U-I refusal path');
   assert.match(src, /candidates/, 'ambiguity must surface candidates');
 });
-
-// --- Task 3: host wiring source-contract ---
 
 test('every action route funnels through runActionPipeline', async () => {
   const src = await extensionSource();

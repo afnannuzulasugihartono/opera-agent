@@ -11,9 +11,6 @@ import vm from 'node:vm';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
-// The toggle markup is one string everywhere, so a reader choosing English on
-// any page meets the same control. Compared verbatim, not normalised.
-
 const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button>'
   + '<span aria-hidden="true">|</span>'
   + '<button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>';
@@ -33,9 +30,6 @@ function attrKeys(page) {
     }
   }
 
-  // Dynamic strings rendered through the shared helper carry no data-i18n
-  // marker, so a standalone t('key', 'fallback') call counts as a mark too.
-  // The leading guard keeps element( from matching as a helper call.
   for (const m of html.matchAll(/(?:[^A-Za-z0-9_$])t\(\s*['"]([^'"]+)['"]/g)) {
     marked.push(m[1]);
   }
@@ -62,9 +56,7 @@ test('every marked string has English, and no dict carries a string nothing mark
 });
 
 test('the pages without a dict mark nothing, so no toggle promises what is not there', () => {
-  // WHY the app pages are still here: Task 2 wires their content. Their toggle
-  // persists the choice and paints its state — which takes the shared file, so all
-  // three must load it or the control renders as two dead boxes in the nav.
+
   for (const page of ['akun.html', 'dashboard.html', 'oauth/consent.html']) {
     assert.doesNotMatch(read(`landing/${page}`), /i18n-dict/, `${page} carries no dict`);
     assert.deepEqual(attrKeys(page), [], `${page} marks no string without a dict to translate it`);
@@ -88,13 +80,7 @@ test('the mechanism phones nowhere, ever', () => {
 });
 
 test('the authored Indonesian stands byte-for-byte where the pins read it', () => {
-  // WHY the hero sentinels changed: the eyebrow read "Daftar terbuka · Gratis
-  // dipakai" and the proof paragraph read "39 tool, 28 primitive". Both were cut —
-  // the eyebrow because it made two claims and repeated "gratis" in the footnote one
-  // line below, the paragraph because the stats row beside it prints all three
-  // numbers. The claim under this lock is that the pages carry AUTHORED Indonesian
-  // rather than the English dict, so the sentinels moved to the trimmed hero's own
-  // lines instead of being dropped with the prose they named.
+
   const sentinels = [
     ['landing/beranda.html', 'Hak cipta dilindungi'],
     ['landing/beranda.html', 'Asisten AI yang sudah Anda pakai mendapat jembatan terkendali'],
@@ -108,9 +94,6 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
     assert.ok(read(page).includes(sentinel), `${page} still carries ${JSON.stringify(sentinel)}`);
   }
 });
-
-// Run the shipped mechanism file against a stub DOM, so the swap the tests
-// prove is the swap the pages load rather than a copy of its logic.
 
 function runMechanism({ stored = null, dict = { en: { greeting: 'Hello', ph: 'Write here' } }, readyState = 'complete', storageThrows = false, withHead = false } = {}) {
   const store = stored === null ? {} : { 'oa-lang': stored };

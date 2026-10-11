@@ -29,22 +29,13 @@ create table if not exists public.opera_operator (
 
 alter table public.opera_operator enable row level security;
 
--- WHY earliest paired device and not a hardcoded id: the seed must mean the same thing
--- on any environment with a paired device, and the first device on a project belongs to
--- whoever set it up. A fresh install seeds nothing; an operator is inserted by hand there.
 insert into public.opera_operator (user_id)
   select user_id from public.opera_devices where user_id is not null
   group by user_id order by min(created_at) asc limit 1
   on conflict (user_id) do nothing;
 
--- WHY this toggle: opera_skills has run with row security off while its grants were
--- revoked from anon and authenticated — layer one alone, unlike every other table here.
--- The line makes both layers uniform and changes no access, because no grant exists to act on.
 alter table public.opera_skills enable row level security;
 
--- The scope map: one row per table, every qual fully parenthesized so the reader can
--- append `and <search>` without an OR escaping its group. Scope 'owner' means rows are
--- filtered per caller; scope 'operator' means the whole table is refused without the flag.
 create or replace function public.opera_konsol_scope()
 returns table (tbl text, scope text, qual text)
 language sql stable
@@ -83,9 +74,6 @@ begin
   end if;
   v_operator := exists (select 1 from public.opera_operator o where o.user_id = v_uid);
 
-  -- WHY the count rides the qual: a table the caller cannot read must show no number
-  -- at all, and a count outside the predicate would leak row totals the caller has no
-  -- right to see, even behind a disabled cell.
   for v_rec in select s.tbl, s.scope, s.qual from public.opera_konsol_scope() s loop
     if v_rec.scope = 'operator' and not v_operator then
       v_tables := v_tables || jsonb_build_object('name', v_rec.tbl, 'scope', v_rec.scope, 'readable', false, 'total', null);
@@ -146,9 +134,6 @@ begin
     from information_schema.columns
    where table_schema = 'public' and table_name = v_rec.tbl;
 
-  -- WHY the primary key is read from the catalog: paging with OFFSET needs one stable
-  -- order, and a table without created_at (or without any key) still has to sort by
-  -- something deterministic or page two repeats rows from page one.
   select coalesce(array_agg(a.attname order by a.attnum), array[]::text[])
     into v_pk_names
     from pg_index i
@@ -158,8 +143,6 @@ begin
     into v_pk_order
     from unnest(v_pk_names) with ordinality as keys(x, ord);
 
-  -- WHY the sort is validated and quoted: p_sort is spliced into dynamic SQL, so it
-  -- becomes a quoted identifier only after it is proven to be a real column of this table.
   if p_sort is not null then
     select exists (
       select 1 from information_schema.columns c
@@ -192,12 +175,6 @@ begin
     end if;
   end if;
 
-  -- WHY two paths instead of one: measured on this project, serialising all 28,745
-  -- audit rows to text for an empty ilike '%%' costs 253ms where the bare predicate
-  -- costs 25ms, so the default page — nobody has typed yet — never touches to_jsonb.
-  -- A typed search pays that one scan as the price of its filter, on an explicit
-  -- request. The placeholder is $1 because plpgsql EXECUTE does not substitute bare
-  -- ? — it would parse as the jsonb operator and die at the end of the string.
   v_where := v_rec.qual;
   if v_search <> '' then
     v_where := format('%s and to_jsonb(%I)::text ilike $1', v_rec.qual, v_rec.tbl);
@@ -218,10 +195,6 @@ begin
     execute v_sql into v_rows using ('%' || v_search || '%');
   end if;
 
-  -- WHY masking happens here and never in the page: a hash that never leaves the
-  -- database cannot be asked for again by a modified client. Short values keep four
-  -- characters so two devices are still tellable apart; blobs report their length,
-  -- which is the only fact a grid cell ever had about them.
   for v_row in select value from jsonb_array_elements(v_rows) loop
     foreach v_key in array array['token_hash', 'code_hash'] loop
       if v_row ? v_key and jsonb_typeof(v_row -> v_key) = 'string' then
@@ -251,10 +224,6 @@ begin
     'columns', v_cols, 'rows', v_out, 'total', v_total, 'operator', v_operator
   );
 end $$;
-
--- Layer two, table by table, with the predicate copied verbatim from the map above.
--- No grant changes anywhere: the missing grant stays layer one, and these policies are
--- what keep the rows owned the day someone adds one.
 
 drop policy if exists opera_audit_owner_read on public.opera_audit;
 create policy opera_audit_owner_read on public.opera_audit for select to authenticated using ((exists (select 1 from public.opera_devices d where d.id = opera_audit.device_id and d.user_id = auth.uid()) or exists (select 1 from public.opera_commands c join public.opera_devices d on d.id = c.device_id where c.id = opera_audit.command_id and d.user_id = auth.uid()) or exists (select 1 from public.opera_operator o where o.user_id = auth.uid())));
@@ -289,14 +258,6 @@ create policy opera_workflow_versions_operator_read on public.opera_workflow_ver
 drop policy if exists opera_workflows_operator_read on public.opera_workflows;
 create policy opera_workflows_operator_read on public.opera_workflows for select to authenticated using ((exists (select 1 from public.opera_operator o where o.user_id = auth.uid())));
 
--- The five tables whose first policies were written before this file — devices,
--- commands, pairing codes, listen sessions, listen segments — state the same rule
--- in unqualified words: `user_id = auth.uid()` where the map says
--- `opera_devices.user_id = auth.uid()`. Both forms always resolved to one door, but
--- a string-for-string drift test can only compare what one file holds, so these
--- five are rebuilt from the map here: same door, identical text, and the file above
--- then describes every policy the console rests on.
-
 drop policy if exists opera_devices_owner_read on public.opera_devices;
 create policy opera_devices_owner_read on public.opera_devices for select to authenticated using ((opera_devices.user_id = auth.uid()));
 
@@ -312,13 +273,8 @@ create policy opera_listen_sessions_owner_read on public.opera_listen_sessions f
 drop policy if exists opera_listen_segments_owner_read on public.opera_listen_segments;
 create policy opera_listen_segments_owner_read on public.opera_listen_segments for select to authenticated using ((exists (select 1 from public.opera_listen_sessions s where s.id = opera_listen_segments.session_id and s.user_id = auth.uid())));
 
--- The flag table inherits Supabase's default table grants the moment it is created,
--- so layer one is taken back the way every other table in this project takes it back:
--- anon and authenticated hold nothing, and the policies above are then the only door.
 revoke all on public.opera_operator from anon, authenticated;
 
--- The scope map stays owner-readable by nothing: it holds no rows, and the two readers
--- reach it as owners inside their definer bodies. Signed-in callers get the two readers.
 revoke execute on function public.opera_konsol_scope() from public, anon, authenticated;
 revoke execute on function public.opera_konsol_tables() from public, anon;
 grant execute on function public.opera_konsol_tables() to authenticated;

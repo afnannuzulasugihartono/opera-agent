@@ -9,18 +9,6 @@ import { recordPopup, popupsSince, resolvePopupOpener } from '../extension/lib/p
 import { PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 
-//  timeout/retry/popup parity: the owner's field testing found
-// three weaknesses — (1) no automatic retry on timeout and unknown outcomes
-// reported without parity, (2) SPA-slow redirects verified too early and then
-// re-clicked, (3) OAuth/login popups invisible to the model. Locked here:
-// - popup event log is bounded, keyed by openerTabId, filtered by time
-// - expect verification polls until verified inside a bounded window
-// - page.fill gains the same retry/expect parity as page.click
-// - command timeout carries outcome:"unknown" (parity with BURST_TIMEOUT /
-//   GATEWAY_ERROR unknown-outcome contract family)
-// - MCP AWAIT_TIMEOUT maps to the unknown-outcome envelope
-// Version 1.6.13.
-
 test('popup event log records opener-tab creations', () => {
   const log = new Map();
   recordPopup(log, { openerTabId: 7, id: 42, pendingUrl: 'https://oauth.example.com/auth' }, 1_000);
@@ -46,22 +34,11 @@ test('popupsSince filters by timestamp', () => {
   assert.deepEqual(popupsSince(log, 5, 6_000), []);
 });
 
-// Background-tab attribution: live diagnosis confirmed that
-// when a page action runs on a NON-active tab, Chromium attributes the popup
-// from window.open to the window's ACTIVE tab, so a raw openerTabId lookup
-// misses the popup. The host must claim tabs opened during a page action for
-// the acted-on tab (resolvePopupOpener prefers the in-flight tab over the
-// misattributed openerTabId, and falls back to the real opener otherwise).
-
 test('popup attribution claims background-tab popups for the acted-on tab', () => {
   assert.equal(resolvePopupOpener(42, { openerTabId: 7 }), 42, 'in-flight action tab wins over Chromium misattribution');
   assert.equal(resolvePopupOpener(null, { openerTabId: 7 }), 7, 'no in-flight action falls back to real openerTabId');
   assert.equal(resolvePopupOpener(null, { openerTabId: undefined }), null, 'unrelated tabs are not recorded');
 });
-
-// --- Source-contract tests (recorded reason: executeCommand / toolError live
-// in chrome-/Deno-bound service files; the exact code paths are the contract
-// being frozen, same pattern as action-pipeline.test.mjs) ---
 
 import fs from 'node:fs';
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');

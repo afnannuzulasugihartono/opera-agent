@@ -8,18 +8,6 @@
   if (globalThis.__operaAgentContentV1) return;
   globalThis.__operaAgentContentV1 = true;
 
-  // WHY a dataset attribute and not a global: the content script and the page live in
-  // separate JavaScript worlds, so a global here is invisible to the page. The DOM is
-  // the one thing both can see. MV3 forbids the page from messaging the extension
-  // directly, so this marker is the only way a site can answer "is the extension
-  // installed here?" — and the dashboard reads it to stop showing a signed-in reader
-  // an empty device list without saying which step they have not done yet.
-
-  // WHY the marker is written before anything else can throw: the manifest runs at
-  // document_start, where documentElement may not exist yet, and every runtime
-  // below throws when its helper is missing. A throw before this line leaves a
-  // browser that has the extension reporting "not installed".
-
   function markInstalled() {
 
     if (!document.documentElement) return;
@@ -32,13 +20,9 @@
 
   if (!document.documentElement) document.addEventListener('DOMContentLoaded', markInstalled, { once: true });
 
-  // Published by role-reconcile.js, which the manifest loads before this
-  // file. Content scripts are classic scripts and cannot import, so the same
-  // global pattern as the semantic engines is used.
   const { implicitRole } = globalThis.OperaAgentRoleReconcile || {};
   if (typeof implicitRole !== 'function') throw new Error('Role reconcile runtime is unavailable.');
 
-  // Hover settle policy, published by hover-settle.js.
   const hoverSettle = globalThis.OperaAgentHoverSettle;
   if (!hoverSettle || typeof hoverSettle.plan !== 'function') throw new Error('Hover settle runtime is unavailable.');
 
@@ -83,9 +67,6 @@
     return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
-  // Model-facing labels pick up private-use glyphs (icon fonts) and status
-  // suffixes like "Visited link" that break exact matching; strip them before
-  // the text reaches results or find matching.
   const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\uFEFF]|\u200D/g;
   const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
   function normalizeObservableText(value, max = 500) {
@@ -149,11 +130,6 @@
     );
   }
 
-  // A ref minted before a geometric relocation must not silently
-  // rebind to an element that now sits somewhere else — that produced the
-  // production Street-View mis-click. Rebind is allowed only when the current
-  // target still sits within the mint-time geometry tolerance. Comparison
-  // happens in document coordinates so ordinary scrolling never trips it.
   const GEOMETRY_DRIFT_TOLERANCE_PX = 24;
 
   function documentRectOf(el) {
@@ -173,15 +149,6 @@
     );
   }
 
-  // : the keyed rebind pool
-  // goes empty when the page recreates a control whose keyed successor is
-  // rewritten without its original id (YouTube rebuilt the Skip button during
-  // the ad lifecycle between find and click). Match a unique replacement by
-  // intrinsic signature instead: identical visible key, tag, and explicit
-  // fields, still actionable and non-sensitive. Uniqueness is enforced by the
-  // caller (candidates must be exactly one) and the mint-time geometry guard
-  // still decides, so a same-place successor rebinds but a moved or ambiguous
-  // one fails closed.
   function signatureRebindCandidates(descriptor) {
     const expectedKey = clean(descriptor.label || descriptor.text, 300);
     if (!expectedKey) return [];
@@ -230,9 +197,6 @@
     });
     if (keyed.length > 0 || descriptor.stableKeySource === 'semantic') return keyed;
 
-    // Keyed successor recreated without its id: fall back to the intrinsic
-    // signature pool. The caller still requires exactly one candidate and the
-    // geometry guard still applies before any rebind.
     return keyed.concat(signatureRebindCandidates(descriptor));
   }
 
@@ -255,16 +219,6 @@
     return el && el.isConnected ? el : null;
   }
 
-  // WHY three states: each is decidable here and they are not the same fault.
-  // 'expired' means the ref can never act here again -- no descriptor, or one
-  // minted for another document or route. refCounter is monotonic and resetActionRefs
-  // never lowers it, so such a key is never minted twice, and resolveActionRef already
-  // refuses it on the first call: waiting cannot recover it. 'detached' means the node
-  // left the DOM while the ref is still good, so the rebind path may still find a
-  // successor and the caller must keep waiting. 'unresolvable' means the node is
-  // connected but no longer matches its descriptor: resolveActionRef refuses that
-  // immediately and without rebinding, yet the label, role and name it compares can
-  // revert when a framework re-renders, so this one can still come back.
   function refStateFor(ref) {
     const key = String(ref || '');
     const descriptor = actionRefDescriptors.get(key);
@@ -285,9 +239,6 @@
     if (connected) {
       if (!descriptorMatchesElement(descriptor, connected)) return null;
 
-      // Preserve the historical explicit file-upload rejection without granting
-      // sensitive revalidation authority. Only the original connected file
-      // target may reach the caller's immediate fail-closed file guard.
       if (descriptor.sensitive) {
         return sensitiveDescriptor(connected) === 'file' ? connected : null;
       }
@@ -300,14 +251,7 @@
 
     const replacement = candidates[0];
     if (!geometryMatchesMint(replacement, descriptor)) {
-      // The mint-time geometry guard still decides this ref, unchanged and
-      // unbroadened — it exists because a same-place successor can be a
-      // DIFFERENT control, and widening it would reintroduce that mis-click.
-      // What was genuinely broken is the cost of recovery: the model had to run
-      // a fresh page.find purely to obtain a usable ref. The candidates below
-      // have already passed uniqueness, intrinsic identity, actionability, and
-      // the non-sensitive check, so handing back their fresh refs is exactly as
-      // safe as a find would have been. The stale ref is still refused.
+
       const driftPx = Math.max(
         Math.abs(documentRectOf(replacement).x - descriptor.rectAtMint.x),
         Math.abs(documentRectOf(replacement).y - descriptor.rectAtMint.y)
@@ -319,9 +263,6 @@
           tag: s.tag,
           role: s.role,
 
-          // The rectangle stays in the payload: a caller diagnosing a
-          // geometry rejection needs the candidate's actual position, and the
-          // browser regression suite asserts on those coordinates.
           rect: rectOf(el),
           freshRef: getRef(el),
           actionable: s.actionable,
@@ -388,10 +329,6 @@
     };
   }
 
-  // Document.elementFromPoint retargets at open shadow
-  // boundaries, so a control inside an open shadow root hit-tests as its
-  // host element. Accept a hit when it is the element, a light-DOM
-  // descendant, or a host on the element's composed path.
   function composedHostChain(el) {
     const hosts = [];
     let node = el;
@@ -434,10 +371,6 @@
     });
   }
 
-  // inViewport keeps its original overlap semantics; fullyInViewport adds
-  // strict viewport containment and viewportClipped reports whether an
-  // ancestor's overflow box actually cut the element (transformed Maps-style
-  // panels report large negative x without any ancestor clipping).
   function viewportFlags(el) {
     if (!isVisible(el)) return { inViewport: false, fullyInViewport: false, viewportClipped: false };
     const rect = el.getBoundingClientRect();
@@ -559,11 +492,6 @@
     };
   }
 
-  // When did the person last touch this page? Focus alone cannot answer that: a tab
-  // can be focused while they read it, and left focused while they work somewhere
-  // else. This is the signal an agent needs to decide whether it may interrupt, and
-  // it is free because the page only receives these events when the user is really
-  // here. Capture phase so a page that stops propagation cannot hide a real click.
   let lastUserInputAt = 0;
   for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input']) {
     addEventListener(type, () => { lastUserInputAt = Date.now(); }, { capture: true, passive: true });
@@ -571,7 +499,7 @@
 
   function userInputState() {
     return {
-      // null before any interaction: "never" is not the same claim as "long ago".
+
       lastInputMs: lastUserInputAt ? Date.now() - lastUserInputAt : null
     };
   }
@@ -613,13 +541,8 @@
     const text = normalizeObservableText(el.innerText || el.textContent || '', 300);
     const label = normalizeObservableText(getAssociatedLabel(el), 300);
 
-    // Attach the computed accessible name only when it adds signal the
-    // label/text fields do not already carry, keeping payloads bounded.
     const accessibleName = computeAccessibleName(el);
 
-    // An explicit author role still wins; otherwise derive the role the
-    // platform would report from the element's own markup, so an unannotated
-    // <button> is no longer serialized as role ''.
     const tag = String(el.tagName || '').toLowerCase();
     const explicitRole = clean(el.getAttribute?.('role'), 80);
     const role = explicitRole || implicitRole({
@@ -669,10 +592,6 @@
     '[role="menuitem"]', '[role="menuitemradio"]', '[role="tab"]', '[contenteditable="true"]'
   ].join(',');
 
-  // Flat document scans miss controls inside open shadow
-  // roots; collect through open shadow boundaries with a bounded traversal.
-  // Closed roots stay invisible (fail closed) and deeper trees stop at the
-  // bounds below, so the walk stays proportional to existing observation work.
   const MAX_SHADOW_ROOTS = 120;
   const MAX_COLLECTED_NODES = 600;
   function collectInteractiveNodes() {
@@ -700,12 +619,6 @@
     return nodes;
   }
 
-  // Compute a bounded accessible name for icon-only
-  // controls whose DOM text is glyphs or whitespace. The priority follows the
-  // W3C accessible-name subset the serializer already resolves via
-  // getAssociatedLabel (aria-label, aria-labelledby, label, title,
-  // placeholder); descendant img alt and svg title add the icon vocabulary
-  // plain DOM text never carries.
   function computeAccessibleName(el) {
     const primary = normalizeObservableText(getAssociatedLabel(el), 300);
     if (primary) return primary;
@@ -775,8 +688,7 @@
   }
 
   function resetActionRefs() {
-    // Keep refCounter monotonic for this content-script lifetime. Reusing a ref
-    // after an SPA/runtime reset could revive stale action authority.
+
     refs = new WeakMap();
     reverseRefs = new Map();
     actionRefDescriptors = new Map();
@@ -874,10 +786,6 @@
     return selected;
   }
 
-  // Bounded settle after a hover. A submenu is the common case, so an
-  // expected name is honoured first; otherwise DOM mutation stability or an
-  // aria-expanded flip ends the wait. It only observes — it never clicks, moves
-  // the pointer, or mints a ref, so it cannot become an action of its own.
   async function hoverSettleState(args) {
     const options = hoverSettle.normalize(args);
     const startedAt = Date.now();
@@ -895,8 +803,6 @@
         previousAriaExpanded,
         mutationVersion,
 
-        // The first poll must observe a real change, so a page that is already
-        // quiet cannot report "stable" before anything has been measured.
         previousMutationVersion: rounds > 0 ? beforeMutationVersion : -1,
         elapsedMs,
         timeoutMs: options.timeoutMs,
@@ -918,8 +824,6 @@
     }
   }
 
-  // Presence-only signal for the awaited name. It returns a boolean, never page
-  // content, so a settle result cannot carry document text into the payload.
   function containsVisibleText(wanted) {
     const needle = String(wanted || '').trim().toLowerCase();
     if (!needle) return false;
@@ -962,8 +866,7 @@
       const regional = semanticRegionObservation(args.maxElements);
       const observation = semanticIdentity.observe(regional.items);
       if (compactView) {
-        // Advance the existing semantic view engine so internal canonical state
-        // stays current, but project only task-useful facts to the model.
+
         semanticViews.observe({
           regions: regional.regions,
           items: observation.items,
@@ -1013,9 +916,6 @@
     };
   }
 
-  // Disambiguation hints make ranked candidate lists actionable
-  // without another round trip — the model sees why each rank was produced
-  // and how to select a specific candidate explicitly.
   function findDisambiguationHint(el, position) {
     const state = actionabilityState(el);
     const facts = [];
@@ -1025,10 +925,6 @@
     return `chose:${position + 1} — ${facts.join(', ')}; select explicitly with index:${position} or narrow the query`;
   }
 
-  // Docs-style surfaces show the target text in the page but attach
-  // it to no interactive element, so exact field matching returns zero.
-  // Surface the closest actionable element near the visible text so the model
-  // can act in one round trip instead of a capture/re-read loop.
   function findVisibleTextCandidate(text) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const maxTextNodes = 2000;
@@ -1083,8 +979,6 @@
     if (args.limit == null && args.index == null && dominant.length === 1) projected = dominant;
     const rawItems = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
 
-    // Ambiguous candidate lists carry rank + disambiguation hints so
-    // the model can pick explicitly instead of guessing or re-reading.
     const items = rawItems.length > 1
       ? rawItems.map((entry, position) => ({
           ...entry,
@@ -1097,9 +991,6 @@
       ? serialize(dominant[0].el, { includeValue: !!args.includeValue })
       : items[index] ?? null;
 
-    // A bare zero forces the model into capture/re-read loops.
-    // When the exact-field search finds nothing, project one bounded fuzzy
-    // candidate with an explicit hint so recovery costs one round trip.
     if (text && entries.length === 0) {
       const fuzzyMatch = collectInteractiveNodes()
         .find((el) => serialize(el).text.toLowerCase().includes(text));
@@ -1168,8 +1059,6 @@
     };
   }
 
-  // V1: expected-state checks evaluated in-page right after the settle, so
-  // verifying an action costs no extra round trip and no full re-read.
   function normalizeExpectSpec(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const spec = {};
@@ -1220,11 +1109,6 @@
     };
   }
 
-  // SPA-slow transitions (OAuth redirects, heavy SPA route changes) do
-  // not complete inside the 400 ms settle window; a single early evaluation
-  // declares verified:false and drives a harmful re-click. When an expect spec
-  // is present, poll the expectations until they pass or the bounded window
-  // ends, so verification is only reported once it had a fair chance.
   const EXPECT_VERIFY_WINDOW_MS = 2000;
 
   async function waitForExpectVerification(spec, before, budgetMs = EXPECT_VERIFY_WINDOW_MS) {
@@ -1256,10 +1140,6 @@
     const settled = await waitForPostActionSettle();
     const resetReason = syncSemanticScope({});
 
-    // Post-action verification must never consume the canonical semantic delta.
-    // Baseline observation happens before the action; after the action we only
-    // inspect revision/reset metadata and leave UPDATE/RESET delivery to the
-    // next canonical page observation.
     const semanticState = semanticIdentity.inspect();
     const semantic = {
       schemaVersion: 1,
@@ -1327,8 +1207,6 @@
     return result;
   }
 
-  // Fill gains the same retry/expect parity as click — re-verify through
-  // postActionEvidence, re-fill only on verification failure, bounded 1..3.
   async function fill(args) {
     const attempts = Math.max(1, Math.min(3, Number(args.retry?.attempts) || 1));
     const value = String(args.value ?? '').slice(0, 20000);
@@ -1385,10 +1263,6 @@
     return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el), postActionBefore };
   }
 
-  // Action Pipeline: compact resolve snapshot for the
-  // background host. Reuses resolveActionRef (the rebind machinery) so
-  // rebind authority stays in one place; ambiguity is read from the existing
-  // geometry-guard refusal, which already carries the candidate list.
   function actionState(args) {
     const key = String(args?.ref || '');
     const before = resolveRef(key);
@@ -1406,10 +1280,7 @@
       throw error;
     }
     if (!el) {
-      // Sensitive targets are fail-closed from ref resolution (rebind
-      // authority never hands them over), but they ARE present and owned by
-      // the executor's own guard. Report masked instead of not-found so the
-      // pipeline hands off immediately instead of waiting out the deadline.
+
       if (before && sensitiveDescriptor(before)) {
         return { present: true, actionable: false, ambiguous: false, masked: true };
       }
@@ -1417,21 +1288,13 @@
     }
     const state = actionabilityState(el);
 
-    // Pipeline readiness is executor-contract readiness: click_info requires
-    // only visibility and the trusted executor scrolls into view itself, so
-    // inViewport must NOT gate the wait (offscreen-but-clickable is normal).
     return {
       present: true,
 
-      // Sensitive is NOT an actionability gate: sensitive targets are owned by
-      // the executor's own guard (which names the real reason - sensitive/
-      // file), so the pipeline must hand off instead of waiting them out.
       actionable: state.visible && state.enabled && state.pointerEnabled,
       ambiguous: false,
       gates: { visible: state.visible, enabled: state.enabled, sensitive: state.sensitive, pointerEnabled: state.pointerEnabled, inViewport: state.inViewport },
 
-      // Rebind recovery means the ref was NOT connected before the resolve and
-      // IS resolved now (fresh refs and live refs resolve without recovery).
       ...(before == null && el != null ? { rebound: true } : {})
     };
   }
@@ -1446,12 +1309,7 @@
     const blocked = el && sensitiveDescriptor(el);
     if (blocked) throw new Error(`Pointer blocked on sensitive target (${blocked}).`);
     if (args.showCursor) {
-      // WHY one marker that stays instead of a blip: an owner working in another
-      // window needs to see where the run is, follow it across a sequence, and see
-      // where it stopped when they come back. It was recreated and dropped after
-      // 900ms, so a burst flickered and vanished between steps. It now moves to
-      // each new target and dims rather than disappearing once the run goes idle,
-      // so it is always visible and its brightness says whether work is happening.
+
       let cursor = document.getElementById('__opera_agent_pointer_cursor');
       if (!cursor) {
         cursor = document.createElement('div');
@@ -1638,21 +1496,13 @@
   }
 
   function key(args) {
-    // The synthetic path stays unmodified-key only. Content scripts are classic
-    // scripts and cannot import the shared lib/keyboard.js resolver, so allowing
-    // chords here would mean a second, drifting copy of the allowlist. Chords
-    // and text entry are refused with a pointer to the trusted path, which is
-    // what every public tool actually uses.
+
     if (args?.modifiers != null || args?.text != null) {
       throw new Error('Key chords and text entry require the trusted path.');
     }
     const keyName = args.key === 'Space' ? ' ' : String(args.key || '');
     if (!NAV_KEYS.has(args.key) && !NAV_KEYS.has(keyName)) {
-      // The synthetic path is deliberately narrower than the trusted path: it
-      // can only re-dispatch unmodified navigation keys, because dispatching a
-      // fabricated chord or text event would let a caller believe input landed
-      // on a surface that never received it. Say so, rather than reporting a
-      // bare allowlist rejection for a key the product accepts elsewhere.
+
       throw new Error(
         'Key is not allowlisted for the synthetic path. Chords, text, and '
         + 'non-navigation keys require the trusted path (page.key with trusted: true).'
@@ -1695,10 +1545,6 @@
     const startedAt = Date.now();
     const deadline = startedAt + timeoutMs;
 
-    // WHY waitedMs on every branch: a bounded wait that reports only ok:true or a
-    // timeout string cannot be diagnosed. "Timed out at 200ms" and "timed out at
-    // 8000ms" are different pages and different bugs, and the caller cannot tell
-    // them apart without timing it from the outside.
     const text = clean(args.text, 300).toLowerCase();
     while (Date.now() <= deadline) {
       let candidates = [];
@@ -1740,20 +1586,6 @@
     return [...document.querySelectorAll('video,audio')][clamp(index, 0, 50, 0)] || null;
   }
 
-  // WHY element tap and not tab capture: tab capture refuses callers without a
-  // user gesture, which an autonomous agent never has. Forking the element's own
-  // output through WebAudio needs no permission and no gesture, and the element
-  // keeps playing to the speakers — the recorder only takes a copy. One
-  // recorder per page: a second start is refused rather than double-billing.
-  // Cross-origin media without CORS headers records silence instead of failing,
-  // so a silent transcript proves nothing by itself.
-
-  // WHY one window per recorder lifetime: MediaRecorder emits the container
-  // header only in the first chunk of a recording, so joining timed slices
-  // produces a file Groq refuses with invalid_media_file (measured live).
-  // Stopping and starting a fresh recorder every window costs ~100ms of audio
-  // and yields self-contained files the transcriber accepts as-is.
-
   const LISTEN_WINDOW_MS = 10000;
 
   const listenCapture = { ctx: null, stream: null, recorder: null, seq: 0, active: false, mime: 'audio/webm' };
@@ -1776,7 +1608,9 @@
             audio: base64,
             mime: blob.type || 'audio/webm'
           })?.catch?.(() => {});
-        } catch {}
+        } catch (sendError) {
+          log.debug('MEDIA_TRANSCRIPT_SEND_FAILED', sendError?.message || String(sendError));
+        }
       };
       reader.readAsDataURL(blob);
     };
@@ -1786,9 +1620,6 @@
     recorder.onstop = () => {
       listenCapture.recorder = null;
 
-      // WHY re-arm here and not on a timer: the next window starts the moment
-      // this one flushed, so the gap is one recorder restart, not a full
-      // polling interval. stop() disarms first, so its flush never restarts.
       if (listenCapture.active) {
         try {
           listenCapture.recorder = listenArmedRecorder();
@@ -1824,10 +1655,6 @@
       throw new Error(`This media cannot be tapped: ${error?.message || error}`);
     }
 
-    // WHY no await on resume: the promise only settles after a user gesture, and
-    // an autonomous agent has none — awaiting it hangs the command until the
-    // device-side timeout fires. A suspended context records silence, which the
-    // transcript honestly reports as no speech.
     try {
       ctx.resume().catch(() => {});
     } catch {}
@@ -1870,9 +1697,7 @@
   }
 
   async function listenStop() {
-    // WHY stop the recorder and not just the tracks: stop() flushes the final
-    // partial window through ondataavailable, so the last seconds are
-    // transcribed instead of dropped. Context closes in onstop right after.
+
     const recorder = listenCapture.recorder;
     if (recorder && recorder.state !== 'inactive') {
       try { recorder.stop(); } catch {}
@@ -1914,10 +1739,7 @@
       try {
         await el.play();
       } catch (error) {
-        // Chrome refuses to start unmuted playback without a user gesture, and its
-        // own wording names a browser concept the caller cannot act on. Observed on a
-        // real video: the refusal is the autoplay policy, and foreground mode is the
-        // path that works, because it clicks the player.
+
         if (error && error.name === 'NotAllowedError') {
           throw new Error(
             'The browser blocked playback because the document has no user gesture. '
@@ -1936,9 +1758,6 @@
     return mediaState(args);
   }
 
-  // ---- Event-Triggered Workflows: page-side watch facts ----
-  // content.js stays dumb: it only reports FACTS for armed rules (plus a
-  // compact text snapshot for textMatch). Evaluation lives in background.
   const watchRules = [];
   let watchState = {};
   let watchChecking = false;
@@ -1994,7 +1813,7 @@
       const r = await chrome.runtime.sendMessage({ scope: 'opera-agent-watch', method: 'watch.facts', params: snapshot });
       if (r && r.state) watchState = r.state;
     } catch (watchError) {
-      // extension context invalidated or transient; the next mutation retries
+      log.debug('WATCH_FACTS_FAILED', watchError?.message || String(watchError));
     } finally {
       watchChecking = false;
     }
@@ -2007,8 +1826,7 @@
     setTimeout(() => {
       watchCheckQueued = false;
       checkWatches().catch(() => {
-        // the check swallows its own failures; this hull keeps a future edit inside
-        // it from becoming an unhandled rejection the page never sees.
+
       });
     }, 100);
   }
@@ -2075,17 +1893,6 @@
     disposed = true;
     mutationObserver.disconnect();
   }
-
-  // MAIN-world state bridge events (extension/state-bridge.js) arrive as
-  // window messages because isolated worlds share only the DOM event system.
-  // Accepted only from this window, from this document's own origin, and only
-  // for the seven types the bridge itself emits, then forwarded to the
-  // background, which owns the loop session the events belong to.
-  //
-  // The allowlist is what bounds this. A page script shares the MAIN world with
-  // the bridge, so an origin check alone cannot tell the two apart — same
-  // window, same origin, same tag. What the allowlist fixes is the contract:
-  // nothing beyond what the bridge can actually say reaches the event log.
 
   const STATE_EVENT_TYPES = ['duck-end', 'duck-start', 'game-over', 'heartbeat', 'jump', 'started', 'stopped'];
 

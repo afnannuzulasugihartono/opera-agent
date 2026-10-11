@@ -26,7 +26,7 @@ begin
   if coalesce(trim(p_task),'')='' or coalesce(trim(p_lesson),'')='' then
     return jsonb_build_object('ok',false,'error',jsonb_build_object('code','INVALID_INPUT','message','Task and lesson must not be empty.'));
   end if;
-  -- Truncate, never error: clip overlong inputs to fit (task 500, site 120, lesson 4000, pitfalls 2000).
+
   insert into public.opera_skills(task, site, lesson, pitfalls)
   values(left(trim(p_task),500), left(coalesce(p_site,''),120), left(trim(p_lesson),4000), left(coalesce(p_pitfalls,''),2000))
   returning id into v_id;
@@ -49,8 +49,7 @@ declare
   v_escaped text;
   v_skills jsonb;
 begin
-  -- Security-relevant: escape the LIKE wildcards (and the escape char itself)
-  -- so the caller query always matches literally, never as a pattern.
+
   v_escaped := replace(replace(replace(coalesce(p_query,''), '\', '\\'), '%', '\%'), '_', '\_');
   select coalesce(jsonb_agg(s.skill), '[]'::jsonb) into v_skills
   from (

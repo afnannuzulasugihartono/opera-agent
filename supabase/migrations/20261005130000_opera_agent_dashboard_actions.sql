@@ -29,8 +29,6 @@ begin
   return jsonb_build_object('ok', true, 'deviceName', v_name);
 end $$;
 
--- Issuance defaults to the caller, so the dashboard never asserts its own id:
--- the server names the issuer from the JWT, which the client cannot spoof.
 create or replace function public.opera_create_pairing_code(p_device_name text default 'opera', p_ttl_minutes integer default 10, p_issued_by uuid default null)
 returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
@@ -48,7 +46,6 @@ begin
   return jsonb_build_object('ok', true, 'deviceName', trim(p_device_name), 'code', v_code, 'expiresAt', v_expires);
 end $$;
 
--- Usage counts ride along so billing-per-result has a meter to read later.
 create or replace function public.opera_my_devices()
 returns jsonb
 language plpgsql security definer set search_path = public as $$

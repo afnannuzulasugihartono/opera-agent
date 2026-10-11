@@ -60,11 +60,7 @@ function harness(db, fetchImpl) {
       limit(n) { limitN = n; return self; },
       in(col, val) { filters.push(['in', col, val]); return self; },
       async single() {
-        // WHY the hide flag: the race under test is exactly a live check that
-        // misses a row its own insert then collides with. The flag hides the
-        // live row from one check, and the unique guard below emulates the
-        // partial unique index on the insert, so the test drives the real
-        // 23505 branch instead of asserting on source text.
+
         if (liveHidden()) { db.__hideLiveOnce = false; return { data: null, error: null }; }
         let rows = match(table(name), filters);
         if (orderCol) rows = [...rows].sort((a, b) => (a[orderCol] > b[orderCol] ? 1 : -1));
@@ -94,8 +90,6 @@ function harness(db, fetchImpl) {
       }
     };
 
-    // WHY the builder is thenable: postgrest builders are lazy; update/delete
-    // apply on await, and a bare awaited builder resolves the filtered rows.
     self.then = (resolve) => {
       if (pendingUpdate) for (const r of match(table(name), filters)) Object.assign(r, pendingUpdate);
       if (pendingDelete) db[name] = db[name].filter((r) => !match([r], filters).length);
@@ -124,9 +118,6 @@ function harness(db, fetchImpl) {
   vm.runInNewContext(source, {
     createClient: () => client, createEdgeLog: () => edgeLog,
 
-    // The real allowlist, not a stub: the listen function decides its
-    // Access-Control-Allow-Origin per request through this helper, and a stubbed
-    // one would let the header behaviour pass without the shipped allowlist.
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
     Deno: { env: { get: (key) => (key === 'SUPABASE_URL' || key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test' : (key === 'GROQ_API_KEY' ? 'test-key' : '')) }, serve: (fn) => { handler = fn; } },
     Request, Response, Headers, URL, TextEncoder, FormData, Blob, atob, fetch: fakeFetch, crypto
@@ -153,18 +144,11 @@ test('one complete window transcribes on arrival, then stop ends and deletes', a
   const db = store();
   const h = harness(db);
 
-  // WHY the hash dodge: the function hashes the token before comparing, and the
-  // harness owns both sides, so the device row carries whatever the function
-  // computes for the test token.
   db.opera_devices[0].token_hash = createHash('sha256').update(TOKEN.toLowerCase()).digest('hex');
   const started = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
   assert.equal(started.ok, true);
   const sid = started.sessionId;
 
-  // WHY padded audio here: every real window carries its own base64 padding, and
-  // joining the strings put "=" mid-stream, so atob threw "Failed to decode
-  // base64" on every window — an hour of silence measured live. Separate decode
-  // per chunk is what this exercises.
   const chunk = Buffer.from('fake-opus-byte').toString('base64');
   assert.match(chunk, /=+$/, 'the fixture audio carries padding like real windows');
   const first = await (await h.call({ action: 'append', token: TOKEN, sessionId: sid, seq: 0, audio: chunk })).json();
@@ -187,9 +171,6 @@ test('a concurrent second start takes the live session, never a duplicate', asyn
   const first = await (await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 7 })).json();
   assert.equal(first.ok, true);
 
-  // The race: a second start whose live check misses the row above collides
-  // on insert (unique_violation) and must answer the same 409 as a sequential
-  // second start, carrying the winner's session id instead of a duplicate.
   db.__hideLiveOnce = true;
   const raced = await h.call({ action: 'start', token: TOKEN, deviceName: 'opera', tabId: 8 });
   assert.equal(raced.status, 409);
@@ -203,10 +184,6 @@ test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
   const { readFile } = await import('node:fs/promises');
   const source = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
 
-  // WHY this pin: gemini-2.5-flash answers 404 for new keys, gemini-3.8-flash was
-  // at capacity for the whole build session, and gemini-3.5-transcribe refuses
-  // every key with "Thinking is not enabled". Groq's endpoint was measured live
-  // before this shipped, returning segments with start/end out of the box.
   assert.match(source, /api\.groq\.com\/openai\/v1\/audio\/transcriptions/);
   assert.match(source, /whisper-large-v3/);
   assert.match(source, /response_format", "verbose_json/);
@@ -218,9 +195,6 @@ test('the live-session uniqueness is a partial unique index, not application log
   const { readFile } = await import('node:fs/promises');
   const sql = await readFile(new URL('../supabase/migrations/20261009000003_opera_agent_listen_live_uniq.sql', import.meta.url), 'utf8');
 
-  // WHY this pin: check-then-insert let two concurrent starts both pass the
-  // live check and insert duplicates. Only a database constraint closes it;
-  // the start path maps its unique_violation to the existing 409.
   assert.match(sql, /create unique index if not exists opera_listen_sessions_device_live_uniq/);
   assert.match(sql, /on public\.opera_listen_sessions\(device_id\) where status = 'live'/);
   assert.doesNotMatch(sql, /^\s*(grant|revoke)\s/im, 'index-only change carries no grant statement');

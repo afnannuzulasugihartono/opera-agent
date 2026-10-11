@@ -48,10 +48,6 @@ test('stored values round-trip verbatim', async () => {
   assert.equal(loaded.logLevel, 'error');
 });
 
-// The model endpoint receives page content, so it is held to the same rule as the
-// bridge: https for anything remote, plain http only on loopback, because a local
-// model never leaves the machine.
-
 test('saveModelEndpoint accepts https and loopback, refuses remote http', async () => {
   const s = fake();
   await assert.rejects(saveModelEndpoint(s, 'http://model.example/v1'), /https/);
@@ -99,9 +95,6 @@ test('readModelConfig fails closed until all three are set', async () => {
   assert.equal(ready.model, 'm');
   assert.equal(ready.key, 'sk-live-123');
 });
-
-// Providers ship public endpoint URLs and model names only, never keys: the key stays
-// strictly user-supplied, so an empty store still fails closed on the key alone.
 
 test('loadOptions reports the default provider endpoint and model on empty storage', async () => {
   const s = fake();

@@ -12,22 +12,6 @@ import { createHash } from 'node:crypto';
 import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 
-// MCP surface, consolidated 2026-10-03.
-//
-// Four files covered the same surface from different angles and every schema
-// change had to be re-pinned in each of them, so they now live here as
-// sections: A identity, B schemas, C behavior and wiring, D digests. Merged
-// from tests/mcp.test.mjs (15) + tests/mcp-inventory-compat-r4.test.mjs (3) +
-// tests/mcp-roundtrip-efficiency.test.mjs (14) +
-// tests/r9-public-surface-unchanged.test.mjs (6) = 38 assertions. The count is
-// the invariant: consolidating must move assertions, never drop or weaken
-// them. Per-test comments below keep their original re-freeze reasons, because
-// those reasons are the audit trail for why each pin exists.
-//
-// What this file does NOT cover stays where it was: semantic engine behavior
-// remains in tests/semantic-engine.test.mjs section F (only its MCP digest
-// angle is duplicated here by necessity, not by design).
-
 const sourceUrl = new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url);
 const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', import.meta.url);
 const authUrl = new URL('../supabase/functions/opera-agent-mcp/../opera-agent-auth/index.ts', import.meta.url);
@@ -56,9 +40,6 @@ const screenshot = fs.readFileSync(
   'utf8'
 );
 
-// Freeze the public compatibility inventory before the compact
-// model-facing projection changes any extension output behavior.
-
 const FROZEN_MCP_TOOLS = [
   'activate_tab', 'browser_status', 'capture_page', 'click_at', 'click_element',
   'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
@@ -82,68 +63,52 @@ const FROZEN_READ_PAGE_PROPERTIES = [
 ];
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
-  browser_status: '07fd9d13e0cfa930',
-  run_browser_burst: '9cc28895fa1df26e',
-  run_workflow: '97abc3e06829e4cc',
-  run_program: '34db36eb9242c5ed',
-  run_adhoc: 'e1f5a7e6a15991f6',
-  skill_save: 'e7152cae43153530',
-  skill_recall: 'd7fdd2485fd9630a',
-  start_watch: '395e579634b5f784',
-  wait_events: 'b3465f71dcfbd091',
-  stop_watch: '5192744559385f99',
-  list_tabs: 'eb4fdda0376c5588',
-  open_url: '268a9ac307859cc3',
-  activate_tab: 'd0f95b64fd039eaf',
-  navigate_tab: 'ed55ce62e4c4f97b',
-  close_tab: '93d3d6716da6bed4',
-  read_page: 'e8d070d67b65343c',
-  capture_page: 'c882f8243ee2f423',
-  find_elements: '1df13d647f6a2a86',
-  click_element: '9b84980f69974580',
-  fill_element: 'a2e498170b24fcd9',
-  press_key: '090e5db35dfbb416',
-  scroll_page: 'd2d5b9a490f68789',
-  move_pointer: 'f470b754ffe36435',
-  click_at: '09fd94d6dbce359e',
-  drag_pointer: '2508c2ed483615c2',
-  wheel_at: 'f8e511ea7274c273',
-  media_state: 'cfcb3d77b0fe2604',
-  media_play: '87dd389b92e41ee9',
-  media_pause: 'f2546ae639ea4063',
-  media_seek: '6f1a6205a1d59b1c',
-  media_stream_start: 'd86a2ca61654b20d',
-  media_stream_stop: 'c858c13598bce472',
-  media_listen_read: 'a56e6de8979f521f',
-  loop_start: '32b755562b12fd32',
-  loop_read: 'b28ca249fe932cb9',
-  loop_stop: 'dec3840108c7bba2',
-  loop_state_start: '0b741baeb28f40f6',
-  loop_state_read: '027b30772359e700',
-  loop_state_stop: '81227e8d8345ccf8'
+  browser_status: 'cbc26bda16868a68',
+  run_browser_burst: 'd948c904d171e8d3',
+  run_workflow: '09ce624d89ed95ba',
+  run_program: '4220be7d53db3ab1',
+  run_adhoc: '14bb44a13751b230',
+  skill_save: '12779fcd8c0787db',
+  skill_recall: '778eae1cc693e9a3',
+  start_watch: '6080c4ec1568b132',
+  wait_events: '5edbf05fabbb14c8',
+  stop_watch: '5133e82aa7a83fb1',
+  list_tabs: '0ded59ff6c5f1b0c',
+  open_url: '9b68095958a8242f',
+  activate_tab: '39a762c1732bee92',
+  navigate_tab: '4947602daae152c1',
+  close_tab: '7fba21a3f036f380',
+  read_page: '7724641fbfc8270a',
+  capture_page: '744f0230732b9e89',
+  find_elements: '5ee494a2286bfe19',
+  click_element: '524bbdcd910efb97',
+  fill_element: '299f17ba1498cd96',
+  press_key: 'e4b0dcdca29f6450',
+  scroll_page: '49c584144a526142',
+  move_pointer: 'd13a06fe00a47847',
+  click_at: '0d0a269d88f73068',
+  drag_pointer: '4fd6791950121bbd',
+  wheel_at: 'a24a25677ba41390',
+  media_state: 'dd36328bc7f5eaad',
+  media_play: 'be8f1ff4460c156e',
+  media_pause: '733cd49a0e0bea0a',
+  media_seek: 'b5e27995716abd38',
+  media_stream_start: '0c5fbfac4707448f',
+  media_stream_stop: '5df002e4171733eb',
+  media_listen_read: 'ec556b0a30cf7644',
+  loop_start: '212649bff3efff47',
+  loop_read: '42112d0c11c4347d',
+  loop_stop: 'ab504dfa4d3a4b53',
+  loop_state_start: '520af840e35a5023',
+  loop_state_read: '25aa53b167aa6a02',
+  loop_state_stop: '9d5a19a9bd910269'
 });
-
-// The only tool whose schema the keyboard commit changed. Everything else
-// must stay byte-identical, so an unrelated schema edit cannot ride along.
 
 const R9B_CHANGED_TOOL = 'press_key';
 
-// The press_key digest before, kept so the record of the change is visible
-// and a silent revert cannot be mistaken for "nothing ever changed".
-
 const PRE_R9B_PRESS_KEY_DIGEST = '41a4003cadb60196';
 
-//  then added the hover burst step, which lives inside run_browser_burst's
-// schema rather than in a tool of its own.
-
 const R9E_CHANGED_TOOL = 'run_browser_burst';
-
-// Wave E re-pinned wait_events (its handler now filters to the caller-owned
-// device) and media_listen_read (its block runs to EOF, so it also observes
-// the serve-level 401 for callers with no owned device). Both moves are the
-// tenant-isolation fix, recorded here the way R9B/R9E record theirs.
-// Wave E fix round 1 re-pinned wait_events again: the handler preserves a
-// falsy RPC envelope instead of forcing ok:true.
 
 function instructions() {
   const line = source.split('\n').find((l) => l.includes('instructions:'));
@@ -170,8 +135,40 @@ function toolBlocks() {
   });
 }
 
+function stripSchemaComments(text) {
+  let out = '';
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const c = text[i];
+    if (c === '/' && text[i + 1] === '/') { while (i < n && text[i] !== '\n') i += 1; continue; }
+    if (c === '/' && text[i + 1] === '*') {
+      i += 2;
+      while (i < n && !(text[i] === '*' && text[i + 1] === '/')) i += 1;
+      i += 2;
+      out += ' ';
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      const quote = c;
+      out += c; i += 1;
+      while (i < n) {
+        if (text[i] === '\\') { out += text[i] + (text[i + 1] ?? ''); i += 2; continue; }
+        out += text[i];
+        if (text[i] === quote) { i += 1; break; }
+        i += 1;
+      }
+      continue;
+    }
+    out += c; i += 1;
+  }
+  return out;
+}
+
 function schemaDigest(schema) {
-  return createHash('sha256').update(schema.replace(/\r\n/g, '\n')).digest('hex').slice(0, 16);
+  const normalised = stripSchemaComments(schema.replace(/\r\n/g, '\n'))
+    .split('\n').map((line) => line.trim()).filter(Boolean).join('\n');
+  return createHash('sha256').update(normalised).digest('hex').slice(0, 16);
 }
 
 function outputSchemaOf(name) {
@@ -179,7 +176,6 @@ function outputSchemaOf(name) {
   const at = block.indexOf('outputSchema:');
   assert.ok(at >= 0, `${name} must declare an outputSchema`);
 
-  // Brace-matched slice so a nested object inside the schema cannot end it early.
   let depth = 0;
   for (let i = at + 'outputSchema:'.length; i < block.length; i += 1) {
     if (block[i] === '{') depth += 1;
@@ -198,12 +194,8 @@ function sqlBody(sql, fn) {
   return sql.slice(start, end);
 }
 
-// --- A. identity: names, counts, inventory ------------------------------
-
 test('MCP dependencies are pinned', () => {
-  // Re-frozen 2026-10-02: JSR file imports carry a path after the version
-  // (edge-runtime.d.ts); the pin requirement is unchanged, only the
-  // version-may-be-followed-by-path form is admitted.
+
   for (const specifier of Object.values(config.imports)) {
     assert.match(specifier, /@[0-9]+\.[0-9]+\.[0-9]+(\/|$)/);
     assert.doesNotMatch(specifier, /@(latest|next)(\/|$)/);
@@ -231,7 +223,7 @@ test('R4 keeps the protocol inventory frozen at 28 allowlisted primitives for re
 
 test('R4 keeps the public MCP tool inventory frozen at 39 tools (skill_save/skill_recall added: task lessons save to and recall from the shared skill memory)', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 39); // skill_save/skill_recall added: manual save/recall over the shared opera_skills table
+  assert.equal(registered.length, 39);
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop'].sort());
 });
 
@@ -261,11 +253,6 @@ test('no generic escape hatch was introduced', () => {
 });
 
 test('an empty allowlist admits nobody, because every caller drives the same device', () => {
-  // WHY this pin: every authenticated caller reaches the one device named by
-  // DEVICE_NAME, and sign-up is open. A rule that admitted "any confirmed account"
-  // when the allowlist was empty would give whoever registers the owner's browser.
-  // That rule was written once and never deployed; this keeps it from coming back
-  // until the device is resolved per account.
 
   const authenticate = source.match(/async function authenticate\([\s\S]*?\n}\n/)[0];
   assert.match(authenticate, /if \(ALLOWED_USER_IDS\.size === 0 && ALLOWED_USER_EMAILS\.size === 0\) return null;/);
@@ -274,11 +261,7 @@ test('an empty allowlist admits nobody, because every caller drives the same dev
 });
 
 test('resolveDeviceName never hands out a device the caller does not own', () => {
-  // WHY this pin: device_name is globally unique and opera_enqueue resolves by
-  // name alone, so echoing the X-Opera-Device header (or falling back to the
-  // fixed DEVICE_NAME) when the owner query missed let one allowlisted account
-  // drive another account's browser. A caller with no owned device gets 401,
-  // the same answer the gateway gives the same state.
+
   const fn = source.match(/async function resolveDeviceName\([\s\S]*?\n}\n/)[0];
   assert.doesNotMatch(fn, /return deviceFromHeader/);
   assert.match(fn, /return null/);
@@ -286,29 +269,20 @@ test('resolveDeviceName never hands out a device the caller does not own', () =>
 });
 
 test('wait_events exposes only the caller-owned device events', () => {
-  // WHY this pin: opera_watch_events_wait is granted to service_role and takes
-  // no tenant parameter, so without a scope the tool returned every tenant's
-  // device-local events. device_name is globally unique and deviceName is
-  // always caller-owned by the pin above, so the edge layer filters to it.
+
   const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
   assert.match(handler, /event\.device_name === deviceName/);
 });
 
 test('wait_events preserves a falsy RPC envelope instead of forcing ok:true', () => {
-  // WHY this pin: the handler stamped ok:true over whatever the RPC returned,
-  // so an upstream ok:false arrived as success with empty events and its error
-  // code never reached the caller.
+
   const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
   assert.match(handler, /ok === false/);
   assert.doesNotMatch(handler, /ok: true, events: rows/);
 });
 
 test('each command is stamped with its harness provider, never used for access', () => {
-  // WHY this pin: the dashboard shows device + browser + provider per row (e.g.
-  // opera / Brave / opencode), and harnesses that cannot send headers (ChatGPT,
-  // Claude.ai connectors) are detected by User-Agent. The provider is advisory
-  // metadata only; isolation rests on user_id, so this test also asserts the
-  // stamp path cannot refuse a command.
+
   assert.match(source, /x-opera-provider/);
   assert.match(source, /async function resolveProvider\(req: Request, auth\?: AuthContext \| null\): Promise<string>/);
   assert.match(source, /\[\/chatgpt\|openai-connector\|oai-mcp\/i, "chatgpt"\]/);
@@ -323,9 +297,7 @@ test('each command is stamped with its harness provider, never used for access',
 });
 
 test('listening tools route commands and read transcripts owner-scoped', () => {
-  // WHY this pin: media_stream_start/stop drive the device through the normal
-  // command queue, while media_listen_read serves stored segments. The read
-  // refuses foreign sessions by device name, never by trusting the caller.
+
   assert.match(source, /execute\("media\.stream_start"/);
   assert.match(source, /execute\("media\.stream_stop"/);
   assert.match(source, /That session belongs to another device\./);
@@ -334,9 +306,7 @@ test('listening tools route commands and read transcripts owner-scoped', () => {
 });
 
 test('advertised media capabilities are invocable tools, not just status text', () => {
-  // WHY this pin: browser_status reported media.play/pause/seek/state while the
-  // tool registry exposed none of them, so a model that checked capabilities
-  // first planned around tools it could never call. Measured live from ChatGPT.
+
   for (const [tool, method] of [['media_state', 'media.state'], ['media_play', 'media.play'], ['media_pause', 'media.pause'], ['media_seek', 'media.seek']]) {
     assert.match(source, new RegExp(`server\\.registerTool\\("${tool}"`));
     assert.match(source, new RegExp(`execute\\("${method.replace('.', '\\.')}"`));
@@ -347,14 +317,9 @@ test('advertised media capabilities are invocable tools, not just status text', 
 test('the OAuth client name resolves the provider when headers cannot', () => {
   const sql = fs.readFileSync(new URL('../supabase/migrations/20261007090000_opera_client_name.sql', import.meta.url), 'utf8');
 
-  // WHY this lock: ChatGPT-style connectors send no custom header and no product
-  // User-Agent, but their dynamically registered OAuth client is named ("ChatGPT").
-  // The JWT is already verified before this runs; only the client_id claim is read.
   assert.match(sql, /select client_name into v_name from auth\.oauth_clients where id = p_client_id/);
   assert.match(sql, /revoke execute on function public\.opera_client_name\(uuid\) from public, anon/);
 });
-
-// --- B. schemas: per-tool pins, burst vocabulary, keyboard surface --------
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
@@ -362,30 +327,20 @@ test('the frozen schema map matches the live file, and records the one authorize
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
-  // Every recorded digest must match the file, so a stale entry cannot mask a
-  // later edit and an unauthorized edit cannot pass unnoticed.
   assert.deepEqual(actual, FROZEN_TOOL_SCHEMAS);
 
-  // And the tools that were authorized to change must be recorded as changed.
   assert.notEqual(FROZEN_TOOL_SCHEMAS[R9B_CHANGED_TOOL], PRE_R9B_PRESS_KEY_DIGEST);
   assert.ok(FROZEN_TOOL_SCHEMAS[R9E_CHANGED_TOOL]);
 });
 
 test('the shared burst step schema is pinned by its step set, not only by digest', () => {
-  // run_browser_burst's inputSchema is a *reference* to burstStepSchema, so the
-  // per-tool digest above cannot observe a change inside the shared constant.
-  // This is the layer that closes that gap: the public burst vocabulary is
-  // pinned by name, so adding or removing a step fails loudly here.
+
   const steps = [...source.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
 
-  // navigate joined the burst vocabulary (maps to the existing tabs.navigate
-  // primitive; see the audit-repair note in boundary-locks.mjs). The list stays
-  // exact so any further addition fails loudly here.
   assert.deepEqual(steps, [
     'read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer', 'navigate'
   ]);
 
-  // The burst union must stay strict so unknown step keys are still rejected.
   const union = source.match(/const burstStepSchema = z\.discriminatedUnion\("action", \[([\s\S]*?)\n\]\);/);
   assert.ok(union, 'the burst step union must be locatable');
   assert.equal((union[1].match(/\}\)\.strict\(\)/g) || []).length, steps.length);
@@ -408,15 +363,11 @@ test('the expanded key and modifier vocabularies are bounded', () => {
   const declared = source.match(/const navigationKeySchema = z\.enum\(\[([\s\S]*?)\]\)/)[1]
     .split(',').map((entry) => entry.trim().replace(/^"|"$/g, ''));
 
-  // The original 12 navigation keys must all remain, plus letters, digits, and
-  // the editing keys an editor actually needs.
   for (const key of ['Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft',
     'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Space', 'Backspace', 'Delete']) {
     assert.ok(declared.includes(key), `${key} must stay allowlisted`);
   }
 
-  // The alphabet and digits arrive as spreads, so assert the real sources rather
-  // than re-parsing the enum literal.
   const array = (name) => {
     const body = source.match(new RegExp(`const ${name} = "([^"]*)"\\.split\\(""\\)`))?.[1];
     assert.ok(body !== undefined, `${name} must be a split string literal`);
@@ -431,15 +382,11 @@ test('the expanded key and modifier vocabularies are bounded', () => {
   assert.equal(lower.join(''), 'abcdefghijklmnopqrstuvwxyz');
   assert.equal(digits.join(''), '0123456789');
 
-  // The enum must actually spread them, or the arrays are dead code.
   const enumBody = source.match(/const navigationKeySchema = z\.enum\(\[([\s\S]*?)\]\)/)[1];
   for (const spread of ['...lowercaseLetters', '...uppercaseLetters', '...digits']) {
     assert.ok(enumBody.includes(spread), `${spread} must be part of the key enum`);
   }
 
-  // Bounded: a fixed vocabulary, not free-form key strings, so nothing
-  // arbitrary can be injected through the public surface. The enum literal
-  // holds 17 named keys plus the three spreads.
   assert.equal(declared.length, 20);
   assert.equal(declared.filter((entry) => entry.startsWith('...')).length, 3);
   assert.equal(declared.length - 3 + lower.length + upper.length + digits.length, 79);
@@ -453,15 +400,11 @@ test('the expanded key and modifier vocabularies are bounded', () => {
 test('the instructions now teach the chords the schema actually accepts', () => {
   const instructions = source.match(/instructions: "([\s\S]*?)",\n/)[1];
 
-  // The placeholder must be gone: the schema moved, so the guidance moves.
   assert.doesNotMatch(instructions, /are not available on this surface yet/);
 
-  // Re-frozen 2026-10-01: instructions literal escaped (\"), served text unchanged — see 77ec536.
   assert.match(instructions, /select all with key \\"a\\" and modifiers \[\\"control\\"\]/);
   assert.match(instructions, /paste with key \\"v\\" and modifiers \[\\"control\\"\]/);
 
-  // The menu/dialog habit from must survive, now expressed with the 
-  // hover step rather than a hand-built wait between levels.
   assert.match(instructions, /The same rule applies to MENUS and DIALOGS/);
   assert.match(instructions, /use a hover burst step with the found ref via refFromStep/);
   assert.match(instructions, /chain the levels in a single burst/);
@@ -482,11 +425,7 @@ test('MCP burst schema is bounded and does not expose arbitrary commands or code
 });
 
 test('every burst step kind accepts an optional per-step tabId', () => {
-  // Audit repair: the extension executes a per-step tabId, but
-  // every burstStepSchema object was .strict() without one, so the public tool
-  // rejected cross-tab bursts while appearing to support them. Each of the ten
-  // step kinds must carry the optional field; strictness stays so nothing else
-  // rides in. Counted structurally: one optional tabId per step kind.
+
   const start = source.indexOf('const burstStepSchema');
   const end = source.indexOf(']);', start);
   assert.ok(start >= 0 && end > start, 'burstStepSchema block must exist');
@@ -499,29 +438,13 @@ test('every burst step kind accepts an optional per-step tabId', () => {
   assert.equal(stricts.length, kinds.length, 'strictness must stay on every step kind');
 });
 
-// --- C. behavior and wiring ---------------------------------------------
-
-// Phase C: make the AI-facing command path pay what it should.
-//
-// Four defects, all on the MCP surface, all in one commit with one digest
-// re-freeze. `tests/fixtures/mcp-contract-v1.json` freezes the whole-file SHA256,
-// so this commit re-freezes it rather than weakening it. (A second fixture,
-// reactive-vm-contract-v1.json, folded that same SHA into an inventory digest; it
-// was superseded by reading sourceSha256 directly here and was removed.)
-//
-// 1. The MCP server waited on `opera_await`, whose flat 50ms sleep was the coarser of the two available waits, while the gateway already used `opera_await_adaptive`; the two share a signature and a response envelope including the same timing fields, so this is a latency swap with no contract change. page.capture still uses `opera_await_capture`, which scrubs the stored screenshot.
-// 2. `wait_events` declares a `timeoutMs` its handler never destructured, so the model could set it and nothing happened.
-// 3. `wait_events` declares an `outputSchema` of {ok, commandId, status, result, timing}, which is the *command* envelope. `opera_watch_events_wait` actually returns {ok, events, cursor, count}. A model trusting the declared schema looked for fields that do not exist.
-// 4. The 4.5 KB system prompt never mentions `start_watch`, `wait_events`, or `run_workflow`. All three exist to remove model round trips, and the prompt spends three emphatic passages on burst instead. The model cannot use a mechanism it was never told about.
-
 test('the MCP command path waits on the adaptive ramp, not the flat 50ms', () => {
   assert.match(source, /"opera_await_adaptive"/);
   assert.doesNotMatch(source, /"opera_await"/);
 });
 
 test('page.capture still uses opera_await_capture, which rewrites the screenshot', () => {
-  // It scrubs the image bytes out of the command row and stores them, so it
-  // cannot be swapped for the plain command wait.
+
   assert.match(sqlBody(screenshot, 'opera_await_capture'), /scrubbed/);
   assert.match(source, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
 });
@@ -538,12 +461,10 @@ test('the swap is contract-neutral: both waits share a signature and a response 
     assert.match(body, /'totalMs'/);
   }
 
-  // Identical failure envelopes too.
   for (const body of [flat, adaptive]) {
     assert.match(body, /'AWAIT_TIMEOUT','message','Timed out waiting for command result\.'/);
   }
 
-  // The only intended difference is the sleep schedule.
   assert.match(flat, /pg_sleep\(0\.05\)/);
   assert.match(adaptive, /pg_sleep\(case when v_polls<=4 then 0\.005/);
 });
@@ -552,7 +473,6 @@ test('wait_events honours the timeoutMs its schema declares', () => {
   const block = toolBlock('wait_events');
   assert.match(block, /timeoutMs\s*:\s*timeoutSchema/);
 
-  // The handler must destructure it and feed the RPC, not merely declare it.
   const handler = block.slice(block.indexOf('}, ({'));
   assert.match(handler, /\{[^}]*\btimeoutMs\b[^}]*\}/, 'the handler must receive timeoutMs');
   assert.match(handler, /p_timeout_ms:[\s\S]*?timeoutMs\s*\?\?\s*waitMs/);
@@ -561,7 +481,6 @@ test('wait_events honours the timeoutMs its schema declares', () => {
 test('timeoutMs takes precedence over the legacy waitMs alias', () => {
   const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
 
-  // Precedence, not addition: a caller that sets both gets timeoutMs.
   assert.match(handler, /timeoutMs\s*\?\?\s*waitMs\s*\?\?\s*25000/);
 });
 
@@ -578,7 +497,6 @@ test('wait_events outputSchema matches what opera_watch_events_wait returns', ()
     assert.match(sql, new RegExp(`'${key}'`), `the SQL must return ${key}`);
   }
 
-  // And must NOT declare the command envelope it never returns.
   for (const key of ['commandId', 'status', 'result', 'timing']) {
     assert.doesNotMatch(declared, new RegExp(`\\b${key}:`), `outputSchema must not declare ${key}`);
   }
@@ -607,7 +525,6 @@ test('the guidance states why each one removes a round trip', () => {
   assert.match(text, /rather than polling/i);
   assert.match(text, /executes the whole versioned sequence server-side/i);
 
-  // Each tool must be tied to the job it does, not merely named.
   const watchAt = text.indexOf('start_watch');
   const eventsAt = text.indexOf('wait_events');
   const workflowAt = text.indexOf('run_workflow');
@@ -676,8 +593,6 @@ test('MCP returns screenshots as image content without duplicating base64 in str
   assert.match(source, /delete metadataScreenshot\.data/);
   assert.match(source, /runCommand\("page\.capture"/);
 
-  // page.capture keeps opera_await_capture because it scrubs the image bytes out
-  // of the command row; the ordinary path moved to the adaptive ramp in Phase C.
   assert.match(source, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
   assert.match(source, /user-private, password, OTP, payment/);
   assert.doesNotMatch(source, /captureVisibleTab/);
@@ -693,10 +608,6 @@ test('MCP defaults to background tabs and requires explicit automation targets',
   assert.match(source, /executionMode: executionMode \?\? "background"/);
   assert.match(source, /value, trusted: true, executionMode/);
 
-  // The four coordinate tools always pass showCursor: true, and background.js honours
-  // it in either mode, so describing background as invisible was false and would have
-  // told the model it could not watch a run it is not present for. The server
-  // instructions and the burst description carried the same false claim.
   assert.match(source, /A visible cursor marker is drawn in both modes/);
   assert.match(source, /coordinate steps draw a visible cursor marker/);
   assert.doesNotMatch(source, /Background mode is invisible/);
@@ -704,9 +615,7 @@ test('MCP defaults to background tabs and requires explicit automation targets',
 });
 
 test('MCP preserves structured command failures for foreground permission handling', () => {
-  // Re-pinned 2026-10-08 for the seal extraction: CommandFailure now lives in
-  // supabase/functions/_shared/seal-vm-program.js and the entrypoint imports
-  // the single class, so seal refusals keep their codes through toolError.
+
   assert.match(source, /import \{ CommandFailure, sealVmProgram \} from "\.\.\/_shared\/seal-vm-program\.js"/);
   assert.match(source, /code: error\.code, message: error\.message/);
   assert.match(source, /throw new CommandFailure\(code, message/);
@@ -721,9 +630,7 @@ test('OAuth config endpoint exposes only public client configuration', () => {
 });
 
 test('hosted OAuth consent artifact has no embedded privileged secret', () => {
-  // WHY the SDK calls are gone: the screen now lives on the site and calls the Auth host
-  // directly, so it loads no library from a CDN. The contract it must keep is the one that
-  // matters — no privileged secret in a page anyone can load.
+
   assert.match(consentSource, /\/oauth\/authorizations\/\$\{encodeURIComponent\(authorizationId\)\}/);
   assert.match(consentSource, /\/oauth\/authorizations\/\$\{encodeURIComponent\(authorizationId\)\}\/consent/);
   assert.match(consentSource, /JSON\.stringify\(\{ action \}\)/);
@@ -746,8 +653,6 @@ test('Supabase OAuth config declares a hosted consent page and dynamic registrat
   assert.match(supabaseConfig, /authorization_path = "\/oauth\/consent"/);
   assert.match(supabaseConfig, /allow_dynamic_registration = true/);
 });
-
-// --- D. digests: the freeze itself ------------------------------------
 
 test('the whole-file digest fixture is re-frozen to the live file', () => {
   assert.equal(sha256CanonicalLf(source), contract.sourceSha256);

@@ -38,11 +38,8 @@ export function stripComments(src, kind) {
   const out = [];
   let i = 0;
 
-  // 'code' | 'sq' | 'dq' | 'bt' | 'block' | 'line'
   let state = 'code';
 
-  // True while nothing but whitespace has been seen on the current line, so a
-  // `//` that begins a line is a comment and a `//` after code is not.
   let lineBlank = true;
 
   while (i < src.length) {
@@ -108,9 +105,6 @@ export function stripComments(src, kind) {
       continue;
     }
 
-    // Inside a string of some flavour. A newline inside a single- or
-    // double-quoted string is not valid JS/SQL, so return to code rather than
-    // swallowing the remainder of the file. Template literals may span lines.
     if (ch === '\\') {
       out.push(ch, next ?? '');
       i += 2;
@@ -130,14 +124,6 @@ export function stripComments(src, kind) {
   }
   return out.join('');
 }
-
-/**
- * Collect every source file under `dir` (recursively) with the given extensions.
- *
- * @param {URL} dir
- * @param {string[]} extensions
- * @returns {Promise<Array<{name: string, url: URL, src: string}>>}
- */
 
 export async function collectSources(dir, extensions) {
   const { readdir, readFile } = await import('node:fs/promises');

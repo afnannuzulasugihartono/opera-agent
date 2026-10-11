@@ -17,9 +17,6 @@ test('a wrong path lands on the site instead of a host error page', () => {
   const catchAll = rewrites.find((r) => r.source === '/(.*)' && r.destination === '/404.html');
   assert.ok(catchAll, 'every unknown path rewrites to the site 404');
 
-  // WHY ordering matters: Vercel applies rewrites after the filesystem check, so
-  // this must be the only rewrite and it must not be preceded by a path rewrite
-  // that would swallow a real page.
   assert.deepEqual(rewrites, [{ source: '/(.*)', destination: '/404.html' }], 'exactly one catch-all rewrite, nothing before it');
 });
 

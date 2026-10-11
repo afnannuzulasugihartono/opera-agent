@@ -79,7 +79,6 @@ test('sensor kinds are allowlisted with bounded params', () => {
   assert.equal(validateLoopProgram(withSensor({ id: 's', kind: 'timer', everyMs: 1000 })).ok, true);
   assert.equal(validateLoopProgram(withSensor({ id: 's', kind: 'timer', everyMs: 5 })).ok, false);
 
-  // A template over the byte cap is rejected, not truncated.
   assert.equal(validateLoopProgram(withSensor({ id: 's', kind: 'templateMatch', template: 'a'.repeat(32769), region: { x: 0, y: 0, width: 64, height: 64 }, threshold: 0.8 })).ok, false);
   assert.equal(validateLoopProgram(withSensor({ id: 's', kind: 'templateMatch', template: 'a'.repeat(100), region: { x: 0, y: 0, width: 64, height: 64 }, threshold: 1.5 })).ok, false);
 });

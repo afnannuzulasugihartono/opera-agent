@@ -37,9 +37,7 @@
       url.hash = '';
       return url.toString();
     } catch (error) {
-      // Classic-script safe: this IIFE loads via manifest content scripts,
-      // executeScript injection, and Node test imports — never import the
-      // logger, resolve it lazily and tolerate its absence.
+
       globalThis.OperaAgentLog?.debug?.('HREF_CANONICALIZE_FAILED', error?.message || String(error));
       return '';
     }
@@ -87,9 +85,6 @@
     const removalGraceObservations = Number.isInteger(options.removalGraceObservations) && options.removalGraceObservations >= 0
       ? Math.min(options.removalGraceObservations, 3) : 1;
 
-    // An entity observed present-but-invisible for this
-    // many consecutive observations is marked stale in the model-facing view.
-    // Canonical state keeps stale entities; the marking is advisory only.
     const invisibleGraceObservations = Number.isInteger(options.invisibleGraceObservations) && options.invisibleGraceObservations >= 1
       ? Math.min(options.invisibleGraceObservations, 3) : 2;
     const now = typeof options.now === 'function' ? options.now : Date.now;
@@ -99,9 +94,6 @@
     const lastObserved = new Map();
     const missingObservations = new Map();
 
-    // Entities emitted as REMOVE after grace; a later re-observation
-    // reports RETURNED_AFTER_ABSENCE instead of NEW_ENTITY so virtualized
-    // feeds stop surfacing returning content as new state.
     const returnedAfterGrace = new Set();
     let documentGeneration = 1;
     let observationRevision = 0;
@@ -208,9 +200,6 @@
       return record;
     }
 
-    // Track consecutive present-but-invisible observations
-    // per entity. After the grace the entity is marked stale in the
-    // model-facing view; canonical state keeps it and the marking is advisory.
     function trackStaleness(record, item) {
       const rendered = item.visible !== false;
       if (rendered) {

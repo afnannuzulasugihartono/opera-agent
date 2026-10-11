@@ -14,11 +14,6 @@ export class CommandFailure extends Error {
   }
 }
 
-// Sealing for run_program mirrors the producer contract pinned by
-// tests/vm-program-intake.test.mjs: children, read-only methods, full budgets,
-// single-call digestCanonical, tenantId of the caller. Anything unsealable is
-// refused here, never widened, because the VM host re-validates regardless.
-
 export const VM_PROGRAM_VERSION = 'OA_REACTIVE_VM_V1';
 
 export const VM_READ_ONLY_METHODS = new Set([
@@ -33,10 +28,6 @@ export const VM_OBSERVATION_METHODS = new Set([
 ]);
 
 export const VM_BURST_STEP_ACTIONS = new Set(['read', 'find', 'wait']);
-
-// Maxima copied verbatim from validateBudgets in lib/reactive-vm.js. A missing
-// key is filled from VM_BUDGET_DEFAULTS one at a time; a provided key outside
-// its maximum is refused, never clamped, so the tool cannot widen the VM.
 
 export const VM_BUDGET_MAXIMA = {
   serializedProgramBytes: 131072,

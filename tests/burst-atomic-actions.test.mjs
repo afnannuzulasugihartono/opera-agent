@@ -7,13 +7,6 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// Burst atomic actions: find->click->verify in one burst via
-// refFromStep passthrough, plus run_workflow as the normal path for versioned
-// site workflows. Burst validation is tested directly by importing the real
-// protocol module; the chrome-api and edge-runtime surfaces are locked with
-// source contracts, and runtime behavior is exercised by the controlled
-// browser regression.
-
 import { BURST_STEP_KEYS, validateBurst } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 
@@ -38,10 +31,9 @@ test('validateBurst accepts a find -> click passthrough plan referencing an earl
 
 test('validateBurst rejects refFromStep pointing forward or at itself', () => {
   const badPlans = [
-    // forward: click at index 1 referencing index 1
+
     { tabId: 7, steps: [{ action: 'find', text: 'Skip' }, { action: 'click', refFromStep: 1, refIndex: 0 }] },
 
-    // at itself: click at index 0 referencing index 0
     { tabId: 7, steps: [{ action: 'click', refFromStep: 0, refIndex: 0 }] }
   ];
   for (const plan of badPlans) {

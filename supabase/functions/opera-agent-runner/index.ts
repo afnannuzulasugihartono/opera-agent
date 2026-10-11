@@ -20,13 +20,6 @@ const cors = {
   "Cache-Control": "no-store"
 };
 
-// WHY the wildcard is gone and the origin is decided per request: this const used
-// to answer Access-Control-Allow-Origin: "*", so any page on the internet could
-// read a runner response. The allowlist is the one the gateway and the MCP
-// function already use, and it still covers both extension ids and both site
-// origins. Applied once here rather than threaded through every json(), so the
-// decision stays in one place and stays per-request.
-
 function withCors(req: Request, res: Response): Response {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   const headers = new Headers(res.headers);
@@ -367,10 +360,6 @@ async function runCommandOnce(
 
   const commandId = String(enqueued.commandId);
 
-  // Short polls instead of one long wait: a single await can outlive the
-  // transport (statement timeouts have killed healthy waits), while the
-  // result row persists, so re-awaiting the same command id resumes safely
-  // with no duplicate execution.
   const budgetMs = Math.max(100, Math.min(55000, workflowDeadline - Date.now()));
   const pollSliceMs = 8000;
   const spentAt = Date.now();
@@ -384,9 +373,7 @@ async function runCommandOnce(
         p_timeout_ms: sliceMs
       });
     } catch (error) {
-      // A server-side statement timeout cancels the WAIT, not the command:
-      // the browser may still complete it, so resume polling instead of
-      // reporting. Anything else is a real transport failure.
+
       const message = error instanceof Error ? error.message : String(error);
       if (/statement timeout/i.test(message)) {
         lastError = error;

@@ -37,7 +37,6 @@ test('pixel diff is the fraction of changed pixels', () => {
   const b = solidRgba(4, 4, 0, 0, 0);
   assert.equal(pixelDiff(a, b), 0);
 
-  // One of sixteen pixels flips to white: 1/16 = 0.0625.
   b[0] = 255;
   b[1] = 255;
   b[2] = 255;
@@ -49,7 +48,6 @@ test('pixel diff is the fraction of changed pixels', () => {
 test('template match finds the sprite position with a score', () => {
   const region = solidRgba(8, 8, 0, 0, 0);
 
-  // Paint a 2x2 white sprite at (5, 3).
   for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
     const i = ((3 + dy) * 8 + (5 + dx)) * 4;
     region[i] = 255;

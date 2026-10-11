@@ -57,7 +57,6 @@ begin
   v_started:=clock_timestamp();
   v_device_id:=public.opera_auth_device(p_device_name,p_token_hash); if v_device_id is null then return jsonb_build_object('ok',false,'error','Unauthorized device.'); end if;
 
-  -- Written once. These are the two expensive statements; see the note above.
   update public.opera_devices set status='online',extension_version=case when coalesce(p_extension_version,'')<>'' then left(p_extension_version,64) else extension_version end,protocol_version=coalesce(p_protocol_version,protocol_version),capabilities=case when jsonb_typeof(coalesce(p_capabilities,'[]'::jsonb))='array' then p_capabilities else capabilities end,last_seen_at=now(),updated_at=now() where id=v_device_id and (last_seen_at is null or last_seen_at<now()-interval '3 seconds');
   update public.opera_commands set status='expired',completed_at=now(),error=jsonb_build_object('code','EXPIRED','message','Command expired before execution.') where device_id=v_device_id and status in ('queued','claimed') and expires_at<=now();
 

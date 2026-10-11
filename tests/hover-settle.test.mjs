@@ -16,9 +16,6 @@ import { readFile } from 'node:fs/promises';
 import { BURST_ACTION_METHODS, BURST_STEP_KEYS, validateBurst } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 
-// extension/hover-settle.js is a classic content script with no export
-// statements, so it is imported for its side effect and read off globalThis.
-
 await import('../extension/hover-settle.js');
 const { DEFAULTS, normalize, plan } = globalThis.OperaAgentHoverSettle;
 
@@ -51,7 +48,6 @@ test('without an expectation, stability or an expansion flip settles the hover',
   });
   assert.equal(flipped.done, true);
 
-  // The expansion flip is reported as its own signal, not as generic stability.
   assert.equal(flipped.reason, 'aria_expanded_changed');
 
   const mutating = plan({ mutationVersion: 9, previousMutationVersion: 8, elapsedMs: 20, timeoutMs: 1500 });
@@ -84,29 +80,19 @@ test('settle bounds are clamped so a caller cannot ask for an unbounded wait', (
 test('the hover burst step exists and requires a ref target', () => {
   assert.equal(BURST_ACTION_METHODS.hover, 'page.hover');
 
-  // tabId was appended by Phase D so a step can target its own tab.
-  // The hover target rules are otherwise unchanged.
   assert.deepEqual(BURST_STEP_KEYS.hover, ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId']);
 
-  // A hover needs a concrete target: text is the submenu to WAIT for, never the
-  // thing to hover, so a hover can never be guessed from a loose text match.
   assert.equal(validateBurst({ steps: [{ action: 'hover', ref: 'oa-1' }] }).ok, true);
 
-  // refFromStep is the whole point of a burst: the ref is minted and consumed
-  // inside the same call. Found by live browser acceptance, where a
-  // find-then-hover-by-refFromStep chain was rejected at validation time
-  // because the validator only accepted a literal ref.
   assert.deepEqual(
     validateBurst({ steps: [{ action: 'find', text: 'Insert' }, { action: 'hover', refFromStep: 0, text: 'Page numbers' }] }),
     { ok: true }
   );
 
-  // A refFromStep must still point at an earlier step, exactly as click/fill do.
   assert.equal(validateBurst({ steps: [{ action: 'hover', refFromStep: 0 }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'hover' }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'hover', text: 'Insert' }] }).ok, false);
 
-  // Unknown keys are still rejected, and the burst stays bounded at 8 steps.
   assert.equal(validateBurst({ steps: [{ action: 'hover', ref: 'oa-1', click: true }] }).ok, false);
   assert.equal(validateBurst({
     steps: Array.from({ length: 9 }, () => ({ action: 'hover', ref: 'oa-1' }))
@@ -114,9 +100,7 @@ test('the hover burst step exists and requires a ref target', () => {
 });
 
 test('page.hover stays a burst-internal action, not a new public primitive', async () => {
-  // The 26 allowlisted primitives are frozen. page.hover is reached only
-  // through the burst step map, exactly like the other burst actions, so it
-  // must not appear in the public allowlist.
+
   const protocol = await readFile(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
   const allowlist = protocol.match(/export const ALLOWED_METHODS = Object\.freeze\(\[([\s\S]*?)\]\)/)?.[1] ?? '';
   assert.doesNotMatch(allowlist, /page\.hover/);
@@ -129,8 +113,6 @@ test('a hover never clicks, and it goes through the shared focus gate', async ()
   assert.ok(start > 0, 'trustedHover must exist');
   const block = source.slice(start, source.indexOf('\n}\n', start) + 2);
 
-  // Exactly one pointer event, and it is a move. A hover that could click would
-  // be an action the caller never asked for.
   assert.equal((block.match(/Input\.dispatchMouseEvent/g) || []).length, 1);
   assert.match(block, /type: 'mouseMoved'/);
   for (const forbidden of ['mousePressed', 'mouseReleased', 'Input\.insertText', 'dispatchKeyEvent']) {
@@ -145,12 +127,9 @@ test('the in-page settle only observes and never carries document text out', asy
   assert.ok(start > 0, 'hoverSettleState must exist');
   const block = source.slice(start, source.indexOf('function containsVisibleText', start));
 
-  // A presence signal only: the caller's matched/not-matched answer is the only
-  // thing that crosses the boundary, never the matched text itself.
   assert.match(block, /observedText: options\.text \? containsVisibleText\(options\.text\) : ''/);
   assert.doesNotMatch(block, /innerText|textContent/);
 
-  // It is dispatched as a settle, never as an input action.
   assert.match(source, /case 'page\.hover_settle': return hoverSettleState\(args\)/);
   assert.match(source, /const hoverSettle = globalThis\.OperaAgentHoverSettle;/);
 });
@@ -171,7 +150,6 @@ test('the public burst schema accepts a hover step and still bounds everything',
   assert.match(hover, /text: z\.string\(\)\.max\(300\)\.optional\(\)/);
   assert.match(hover, /timeoutMs: z\.number\(\)\.int\(\)\.min\(50\)\.max\(8000\)\.optional\(\)/);
 
-  // The existing step set is intact.
   for (const action of ['read', 'find', 'click', 'fill', 'key', 'scroll', 'wait', 'pointer']) {
     assert.ok(source.includes(`z.literal("${action}")`), `burst step ${action} must remain`);
   }

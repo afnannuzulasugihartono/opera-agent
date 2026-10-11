@@ -20,12 +20,6 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// WHY retry: Chrome refuses every tab mutation while a tab drag is in flight
-// ("Tabs cannot be edited right now"). The drag lasts well under a second, but
-// the refusal reached the caller as a hard EXECUTION_ERROR, so an unattended run
-// that overlapped one died on a transient browser state. Linear backoff because
-// the drag is already underway. Any other error propagates on the first attempt.
-
 const TAB_DRAG_ATTEMPTS = 6;
 const TAB_DRAG_BACKOFF_MS = 250;
 
@@ -57,10 +51,11 @@ export function randomToken() {
 export async function getConfig() {
   const cfg = await chrome.storage.local.get(STORAGE_KEYS);
 
-  // Apply the stored log level to the shared logger. Guarded so a corrupt or
-  // invalid stored value falls back silently to `warn`, the default level;
-  // getConfig never throws.
-  try { globalThis.OperaAgentLog?.configure?.({ level: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn' }); } catch {}
+  try {
+    globalThis.OperaAgentLog?.configure?.({ level: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn' });
+  } catch (error) {
+    globalThis.OperaAgentLog?.debug?.('LOG_CONFIGURE_FAILED', error?.message || String(error));
+  }
   return {
     paired: !!cfg.paired,
     deviceName: String(cfg.deviceName || 'opera'),
@@ -72,10 +67,7 @@ export async function getConfig() {
 }
 
 export async function setState(patch) {
-  // Merged in place rather than reassigned, so the binding above can stay
-  // const: a fresh object here makes an exported `let` mandatory. The state a
-  // reader observes is identical either way — same keys, same values, order
-  // kept for the keys that already existed.
+
   Object.assign(connectionState, patch);
   try {
     await chrome.storage.local.set({ connectionState });

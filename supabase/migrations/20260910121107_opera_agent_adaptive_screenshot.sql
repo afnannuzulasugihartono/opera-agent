@@ -16,10 +16,6 @@ set default_timeout_ms = excluded.default_timeout_ms,
     enabled = excluded.enabled,
     description = excluded.description;
 
--- Screenshot payloads are intentionally handled by a dedicated await function.
--- It returns a completed result once while clearing the database copy in the
--- same transaction. A timeout cancels the command so a late completion cannot
--- write screenshot bytes after the caller has stopped waiting.
 create or replace function public.opera_await_capture(
   p_command_id uuid,
   p_timeout_ms integer default 12000

@@ -37,8 +37,6 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
         };
       }
 
-      // The offline check moved into opera_verify_device, so any other REST
-      // read is a regression back to four round trips, not a tolerated fallback.
       throw new Error(`REST read removed: gateway must not query ${table}`);
     },
     async rpc(name, args) {
@@ -59,9 +57,6 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
     }
   };
 
-  // The harness strips edge import lines, so runtime dependencies resolved by
-  // the edge loader (createClient, the shared CORS resolver) are injected
-  // here from the real shared module — the same code the function imports.
   vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, TextDecoder, crypto });
   return { calls, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
@@ -109,11 +104,7 @@ test('gateway 401 responses never echo the submitted token', async () => {
 });
 
 test('unpaired and offline devices are rejected before enqueue', async () => {
-  // The auth answer now carries last_seen_at, so unpaired and offline are both
-  // decided from the single verify call. Note the old null-device sub-case is
-  // gone on purpose: a valid token requires its row, so "authenticated but no
-  // row" is unreachable in production and only ever exercised the removed REST
-  // layer rather than a reachable state.
+
   {
     const h = harness({ auth: { ok: false } });
     const response = await h.request();
@@ -131,9 +122,7 @@ test('unpaired and offline devices are rejected before enqueue', async () => {
 });
 
 test('a user JWT resolves the caller device, never the fixed name', async () => {
-  // WHY this test: ChatGPT plugin OAuth arrives with a Supabase user JWT, not a
-  // device secret. The gateway must enqueue on the caller's own device, or one
-  // account drives another account's browser.
+
   const h = harness({ auth: { ok: false }, user: { id: 'user-1', device: 'opera-brave' } });
   const response = await h.request();
   assert.equal(response.status, 200);
@@ -205,9 +194,7 @@ test('openapi servers url is the full public base path from SUPABASE_URL, never 
 });
 
 function streamRequest(payload, { chunked = true } = {}) {
-  // WHY a stream body: undici sets content-length for string bodies, so only a
-  // stream arrives without one — exactly the chunked framing whose bodies used
-  // to skip the size gate and parse unbounded before authentication.
+
   const bytes = new TextEncoder().encode(payload);
   const stream = new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } });
   return new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
@@ -239,9 +226,7 @@ test('a declared content-length over 256 KiB is still rejected before parsing', 
 });
 
 test('an oversize chunked body aborts at the cap instead of buffering whole', async () => {
-  // WHY pull-counting chunks: req.text() drains every chunk before measuring,
-  // so a reader that aborts early must leave most of the stream unread. 64
-  // chunks of 16 KiB (1 MiB) against the 256 KiB cap must die after ~17 pulls.
+
   const TOTAL = 64;
   const CHUNK = 16 * 1024;
   let pulled = 0;

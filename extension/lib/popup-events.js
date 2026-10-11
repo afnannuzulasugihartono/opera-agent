@@ -29,13 +29,6 @@ export function popupsSince(log, tabId, sinceMs) {
   return list.filter((e) => Number.isFinite(Number(e.at)) && Number(e.at) >= Number(sinceMs));
 }
 
-// When a page action runs on a BACKGROUND tab, Chromium attributes a
-// window.open popup to the window's *active* tab, not the acted-on tab, so
-// openerTabId alone misses it. While a page.click /
-// page.fill is in flight, any new tab belongs to the acted-on tab, so attribute
-// it there; otherwise fall back to the real openerTabId. Returns the opener key
-// to record under, or null when the tab is unrelated to automation.
-
 export function resolvePopupOpener(inFlightTabId, tab) {
   if (!tab) return null;
   if (inFlightTabId != null) return Number(inFlightTabId);

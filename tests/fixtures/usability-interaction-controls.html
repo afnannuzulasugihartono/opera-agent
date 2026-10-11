@@ -26,21 +26,9 @@
 <body>
 <h1>R9 control fixture</h1>
 
-<!-- R9-C: an unannotated <button>. It carries NO role attribute, so before
-
-     R9-C it serialized as role: '' and was invisible to a role-filtered
-
-     find_elements. It must now be discoverable as role "button". -->
-
 <p><button id="unannotated">Unannotated action</button></p>
 
-<!-- R9-C: an unannotated checkbox-like control. No role, no type=checkbox:
-     a custom widget whose semantics must come from the AX tree. -->
-
 <p><div id="custom-check" aria-label="Show on first page" tabindex="0" role="switch">Show on first page</div></p>
-
-<!-- R9-E: a two-level menu revealed by hover, each level driven by
-     aria-expanded so the settle has a real signal to observe. -->
 
 <div class="menu" id="menu-root">
   <button id="insert" aria-expanded="false" aria-haspopup="true">Insert</button>
@@ -55,23 +43,12 @@
 </div>
 <p><button id="after-menu">After menu</button></p>
 
-<!-- R9-B: a rich-editor surface. contenteditable, so trusted text entry and
-     chords must reach it; the synthetic key path must refuse them. -->
-
 <div id="editor" contenteditable="true">seed</div>
 <p><input id="plain" type="text" value=""></p>
 <p><input id="secret" type="password" value=""></p>
 
-<!-- R9-D: a control that is DESTROYED and replaced elsewhere on click, so its
-
-     ref goes stale and the geometry guard must refuse the STALE ref while
-
-     handing back a fresh one for the replacement. -->
-
 <p><button id="relocate-trigger">Relocate the control</button></p>
 <p><button id="moved">Relocate me</button></p>
-
-<!-- R9-A: sensitive-field refusal surface. -->
 
 <p><input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code"></p>
 

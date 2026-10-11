@@ -19,17 +19,8 @@ import { releaseDebuggerSession } from '../lib/debugger-session.js';
 import { contentCall } from './tab-content.js';
 import { withInputFocusEmulation } from './action-focus.js';
 
-// Local sense-act loops. Async by design: loop.start validates and returns a
-// loopId immediately, ticks run on a setTimeout chain against one persistent
-// debugger attach, and loop.read/loop.stop report. No queue round trip
-// happens inside a tick; the bands in the trace say how fast ticks ran.
-
 export const LOOP_MAX_ACTIVE = 4;
 const LOOP_POLICY_RECHECK_TICKS = 20;
-
-// A tick slower than five cadences is ordinary slowness (a heavy capture),
-// not suspension: only a gap past both five cadences and this floor means
-// the worker slept through ticks it had already scheduled.
 
 const LOOP_SUSPEND_FLOOR_MS = 15000;
 export const loopSessions = new Map();
@@ -75,11 +66,6 @@ export function loopSessionOnTab(tabId) {
   }
   return null;
 }
-
-// MAIN-world state loops (extension/state-bridge.js). The reflex loop runs
-// at frame rate inside the page against exact game state; the device only
-// supervises: start it, collect its compact events, stop it. No debugger
-// attach, no screenshots, no per-tick round trips at all.
 
 export const STATE_READERS = Object.freeze(['trex']);
 export const stateSessions = new Map();
@@ -159,11 +145,6 @@ async function loopSnapshot(tabId, clip) {
   const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
   const fullWidth = clip ? clip.width : bitmap.width;
 
-  // No downscale: this frame never leaves the device, so the transfer-size
-  // budget that forces downscaling elsewhere does not apply. Downscaling to
-  // a 320-wide snapshot averaged sub-pixel motion into invisibility (a
-  // scrolling ground and running legs read exactly 0.000), which is what a
-  // cheap sensor must still see. getImageData on a region union costs ~15ms.
   const width = bitmap.width;
   const height = bitmap.height;
   const canvas = new OffscreenCanvas(width, height);
@@ -251,9 +232,7 @@ async function loopSense(session, now) {
   let snapshot = null;
   let captureMs = 0;
   if (pixelSensors.length > 0) {
-    // Capture only the union of sensed regions: a full-viewport JPEG encode
-    // per tick measured red (>250ms) in the headed drive, while the game
-    // regions the schema allows are a fraction of that.
+
     const union = { x: Infinity, y: Infinity, right: 0, bottom: 0 };
     for (const sensor of pixelSensors) {
       union.x = Math.min(union.x, sensor.region.x);
@@ -346,8 +325,6 @@ export function loopTickLater(session) {
   session.timer = setTimeout(() => {
     session.timer = null;
 
-    // loopTick awaits finishLoop before it reaches its own try, so it can still
-    // reject from here. Left bare, that rejection escapes as unhandled.
     loopTick(session.loopId).catch((error) => { log.warn('LOOP_TICK_UNCAUGHT', error?.message || String(error)); });
   }, session.program.tickMs);
 }

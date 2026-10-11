@@ -8,12 +8,6 @@
   if (globalThis.__operaAgentLoopDecideV1) return;
   globalThis.__operaAgentLoopDecideV1 = true;
 
-  // Frame-rate decide, extracted from the field-proven bot pattern: react to
-  // the nearest unpassed obstacle, scale the trigger by game speed through
-  // time-to-impact, and pick jump, duck, or nothing from obstacle height.
-  // Pure data in, decision out; the MAIN-world bridge and the Node suite run
-  // this same function so the two cannot drift.
-
   function decideTrex(state, params) {
     const run = { action: 'run', tti: null, obstacle: null };
     if (!state || typeof state !== 'object' || !params || typeof params !== 'object') return run;
@@ -30,8 +24,6 @@
     const obstacle = upcoming[0];
     if (!obstacle) return run;
 
-    // Center-based trigger: a wide cluster must be met earlier, because the
-    // jump has to clear its tail, not just its front.
     const center = Number(obstacle.x) + Number(obstacle.w) / 2;
     const tti = (center - dinoFront) / speed * 1000;
     if (!Number.isFinite(tti) || tti > leadMs) return { action: 'run', tti: Number.isFinite(tti) ? tti : null, obstacle };

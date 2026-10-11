@@ -18,14 +18,6 @@ import vm from 'node:vm';
 const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/akun.html', root), 'utf8');
 
-// Lift the page's own block out of the file: no copy of the logic lives in the test,
-// so the page and the lock can never disagree about what renders.
-
-// WHY the slice starts at the escape helper rather than the label table: the page's
-// only innerHTML sink calls esc(), so a slice that began after it would evaluate
-// renderIdentity with esc undefined and fail for a reason that has nothing to do
-// with what the card renders. Both helpers are adjacent, so one anchor covers both.
-
 const block = html.slice(html.indexOf('const esc ='), html.indexOf('async function load'));
 
 function render(user) {
@@ -53,7 +45,7 @@ function render(user) {
 }
 
 test('the block the lock executes is the block the page ships', () => {
-  // WHY: if this ever reads empty, the locks below would pass on nothing at all.
+
   for (const part of ['PROVIDER_LABEL', 'providerOf', 'linkedProviders', 'initialsOf']) {
     assert.ok(block.includes(part), `the account page block carries ${part}`);
   }
@@ -62,9 +54,7 @@ test('the block the lock executes is the block the page ships', () => {
 });
 
 test('an account created by magic link then signed in with Google still says Google', () => {
-  // WHY this exact payload: measured on this project, app_metadata.provider reads
-  // "email" for this account while providers reads ["email","google"], because the
-  // magic link created the row before Google was linked.
+
   const card = render({
     id: '1ec02bc3-7c1b-45a2-b864-837e95ba3b24',
     email: 'afnan@example.com',
@@ -108,9 +98,6 @@ test('a magic-link-only account says so instead of claiming a provider', () => {
 test('a session missing every name field still renders something', () => {
   const card = render({ id: 'anon-1', email: '', app_metadata: {}, user_metadata: {} });
 
-  // WHY: the page must never render a blank row that looks like a broken product.
-  // The name falls back to "Akun Opera Agent", so the initials come from that rather
-  // than from the 'OA' guard, which only fires if a future edit removes the fallback.
   assert.match(card.initials, /^[A-Z]{2}$/, `the avatar is never blank, got "${card.initials}"`);
   assert.equal(card.name, 'Akun Opera Agent', 'a nameless session gets the product name, not undefined');
   assert.equal(card.factEmail, '(tanpa alamat)', 'the missing address is stated, not blank');
@@ -119,9 +106,7 @@ test('a session missing every name field still renders something', () => {
 });
 
 test('the account page never fetches a provider avatar', () => {
-  // WHY: an <img> from a provider CDN would be a second network origin, a second CSP
-  // entry in vercel.json, and a third party receiving a request on every page view.
-  // The name and provider name carry the same information for free.
+
   assert.doesNotMatch(html, /<img[^>]+src=/, 'no image element is rendered');
   assert.doesNotMatch(html, /avatar_url/, 'not even the provider image URL is read');
   assert.match(html, /class="avatar"/, 'the avatar is drawn locally from initials');

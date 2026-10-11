@@ -121,7 +121,6 @@ test('modifiers OR into the CDP bitmask and accept their common aliases', () => 
   assert.equal(resolveChord('Enter', ['control', 'shift', 'alt', 'meta']).modifiers, 15);
   assert.deepEqual(resolveChord('a', ['control']).modifierNames, ['control']);
 
-  // Alias spellings collapse to one canonical name rather than double-counting.
   assert.deepEqual(resolveModifiers(['ctrl', 'control']).names, ['control']);
   assert.equal(resolveModifiers(['ctrl', 'control']).mask, MODIFIER_BITS.control);
   assert.equal(resolveModifiers([]).mask, 0);
@@ -150,7 +149,6 @@ test('an uppercase letter carries an implicit Shift so the platform does not dro
   assert.equal(chord.modifiers, MODIFIER_BITS.shift);
   assert.deepEqual(chord.modifierNames, ['shift']);
 
-  // An explicit shift is not doubled.
   assert.equal(resolveChord('A', ['shift']).modifiers, MODIFIER_BITS.shift);
 });
 
@@ -174,7 +172,6 @@ test('text is a bounded, chunked, separate path from a key', () => {
   assert.equal(long.chunks.join('').length, 9000);
   assert.equal(long.chunks.length, 3);
 
-  // Exactly at the bound is accepted; one character over is rejected.
   assert.equal(resolveKeyInput({ text: 'y'.repeat(MAX_TEXT_CHARS) }).chars, MAX_TEXT_CHARS);
   assert.throws(() => resolveKeyInput({ text: 'y'.repeat(MAX_TEXT_CHARS + 1) }), /at most 20000 characters/);
 });
@@ -189,13 +186,10 @@ test('exactly one of key or text may be requested, and modifiers cannot ride alo
   assert.throws(() => resolveKeyInput({ key: 'a', text: 'b' }), /not both/i);
   assert.throws(() => resolveKeyInput({}), /requires a key or text/i);
 
-  // An empty text string means "no text requested", not a conflict.
   assert.equal(resolveKeyInput({ key: 'a', text: '' }).kind, 'chord');
   assert.throws(() => resolveKeyInput({ text: 'abc', modifiers: ['control'] }), /does not accept modifiers/i);
   assert.equal(resolveKeyInput({ key: 'Enter' }).kind, 'chord');
 
-  // Empty text is treated as absent rather than a silent no-op, so a caller
-  // that meant to type something cannot believe it did.
   assert.throws(() => resolveKeyInput({ text: '' }), /requires a key or text/i);
 });
 
@@ -208,57 +202,43 @@ test('R9: the shared key allowlist is the single source of truth for bursts and 
     assert.doesNotThrow(() => resolveChord(name), `allowlisted key must resolve: ${name}`);
   }
 
-  // The frozen public key surface stays reachable, and no site-specific or
-  // free-form escape hatch is admitted.
   for (const bad of ['F13', 'javascript:alert(1)', 'AnyKey']) {
     assert.ok(!KEY_ALLOWLIST.includes(bad));
   }
 });
 
 test('the synthetic path explains its narrower surface instead of a bare rejection', async () => {
-  // The synthetic key path accepts only 12 unmodified navigation keys while the
-  // runtime allowlist has 79. A bare "Key is not allowlisted" reads as a bug for
-  // a key the product accepts everywhere else, so the message must name the
-  // reason and the alternative.
+
   const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /throw new Error\('Key is not allowlisted\.'\)/);
   assert.match(source, /Key is not allowlisted for the synthetic path/);
   assert.match(source, /require the trusted path/);
 
-  // The guard itself must stay: the synthetic path may not accept chords.
   assert.match(source, /Chords, text, and /);
   assert.match(source, /non-navigation keys require the trusted path/);
 
-  // And it must still refuse chords and text outright.
   assert.match(source, /Key chords and text entry require the trusted path\./);
 });
 
 test('trusted input executors never activate a tab or focus a window', async () => {
   const source = await extensionSource();
   const start = source.indexOf('async function trustedClick');
-  const end = source.indexOf('// Burst ref passthrough');
+  const end = source.indexOf('function burstPassthroughRef');
   assert.ok(start > 0 && end > start, 'trusted executor block must be locatable');
   const block = source.slice(start, end);
 
-  // The gate re-samples; it must never take the foreground itself.
   assert.doesNotMatch(block, /chrome\.tabs\.update\([^)]*active:\s*true/);
   assert.doesNotMatch(block, /chrome\.windows\.update\([^)]*focused:\s*true/);
 
-  // Every trusted executor routes through the shared at-dispatch gate.
   assert.match(block, /withForegroundFocusGate/);
 
-  // No executor raises the foreground requirement itself. Both raise points
-  // (unverifiable state, and refusal) live in the gate, so no executor can
-  // re-introduce a racing pre-flight check of its own.
   const gateStart = source.indexOf('async function sampleTabFocus');
-  const gateEnd = source.indexOf('// Action Pipeline');
+  const gateEnd = source.indexOf('const UV_WAIT_FLOOR_MS');
   assert.ok(gateStart > 0 && gateEnd > gateStart, 'the shared gate must be locatable');
   const gate = source.slice(gateStart, gateEnd);
   assert.equal((gate.match(/foregroundRequired\(/g) || []).length, 2);
   assert.equal((block.match(/foregroundRequired\(/g) || []).length, 0);
 
-  // The historical racing pre-flight sample is gone: the tab/window read now
-  // lives only inside the gate.
   assert.equal((block.match(/chrome\.windows\.get\(/g) || []).length, 0);
   assert.match(gate, /chrome\.windows\.get\(/);
 });

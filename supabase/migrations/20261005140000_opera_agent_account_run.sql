@@ -19,8 +19,7 @@ language plpgsql security definer set search_path = public as $$
 declare v_device public.opera_devices%rowtype; v_enqueue jsonb; v_command_id uuid; v_wait integer;
 begin
   if auth.uid() is null then return jsonb_build_object('ok', false, 'error', 'Not signed in.'); end if;
-  -- The method must be an enabled allowlisted primitive; the device-side runtime
-  -- refuses anything else regardless, and this keeps the error honest early.
+
   if not exists (select 1 from public.opera_methods where method = p_method and enabled) then
     return jsonb_build_object('ok', false, 'error', 'Unknown or disabled method.');
   end if;
@@ -40,11 +39,6 @@ end $$;
 
 grant execute on function public.opera_run_on_my_device(text, jsonb, integer, text) to authenticated;
 
--- WHY these revokes: a fresh GRANT also lands on PUBLIC, and PostgREST routes
--- anon through it. Verified on this project: anon could execute all four
--- dashboard RPCs until these lines ran. The functions refuse without a session
--- anyway, but a caller that cannot reach them fails at the database rather than
--- relying on one IF statement.
 revoke execute on function public.opera_run_on_my_device(text, jsonb, integer, text) from public, anon;
 revoke execute on function public.opera_revoke_my_device(uuid) from public, anon;
 revoke execute on function public.opera_my_devices() from public, anon;

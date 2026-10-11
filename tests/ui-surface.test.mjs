@@ -8,65 +8,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
-// Extension UI surface, consolidated 2026-10-03.
-//
-// Three files locked the extension's own UI, all by reading the same popup and
-// options sources as text, because popup.js and content.js need chrome.* and
-// cannot be imported in node. They are one file here, in surface order.
-//
-//   tests/ui-accessibility.test.mjs        8 tests x 2 surfaces = 16
-//   tests/popup-ui.test.mjs                1 test
-//   tests/ui-identity-hardening.test.mjs   6 tests
-//   -> tests/ui-surface.test.mjs          23 tests
-//
-//   A  accessible names and document structure, popup + options
-//   B  popup control, layout and status contract
-//   C  identity hardening: ref rebind, ranked find, visible-text fallback
-//
-// Test count and assertion count are the invariants: 23 tests and 45 assertions
-// before, 23 and 45 after, none dropped, weakened or added. No identifier had
-// to be renamed for the merge; the three files shared no top-level names.
-//
-// The scope limits are preserved verbatim in the section that owns them. They
-// are not boilerplate: each one says what these checks deliberately do NOT
-// establish, so a future reader cannot cite this file as evidence it does not
-// provide.
-
-// --- A. accessible names and document structure -----------------------------
-//
-// Structural accessibility contract for the extension's own UI surfaces.
-//
-// SCOPE, stated plainly so nobody over-reads this file: these are automated
-// STRUCTURE checks, not a WCAG conformance audit and not assistive-technology
-// testing. They catch the regressions that are cheap to introduce and expensive
-// to notice -- a control that loses its label, a heading level skipped, a
-// duplicate id, a click handler bolted onto a non-focusable element. They do NOT
-// establish contrast ratios, focus order across the whole document, screen
-// reader announcements, or conformance at any WCAG level. Nothing here may be
-// cited as evidence of accessibility conformance.
-//
-// WHY REGEX INSTEAD OF A PARSER: this repository has zero runtime and dev
-// dependencies (node 22 native only), so no HTML parser is available and adding
-// one for a test would be a worse trade than a careful extractor. The tag
-// matcher below understands quoted attribute values, so it does not break on a
-// `>` inside an attribute.
-
 const surfaces = [
   { name: 'popup.html', url: new URL('../extension/popup.html', import.meta.url) },
   { name: 'options.html', url: new URL('../extension/options.html', import.meta.url) }
 ];
-
-// Matches `<name ...>` allowing quoted attribute values, so a `>` inside an
-// attribute cannot truncate the match.
 
 const tagPattern = (name) => new RegExp(`<${name}\\b(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi');
 
 function tags(src, name) {
   return [...src.matchAll(tagPattern(name))].map((m) => m[0]);
 }
-
-// Every opening tag, quote-aware, so an attribute value containing `>` cannot
-// truncate the match.
 
 function anyTags(src) {
   return [...src.matchAll(/<[a-z][a-z0-9-]*\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)].map((m) => m[0]);
@@ -78,7 +29,6 @@ function attr(tag, name) {
   const single = tag.match(new RegExp(`\\b${name}\\s*=\\s*'([^']*)'`, 'i'));
   if (single) return single[1];
 
-  // HTML also permits an unquoted attribute value.
   const bare = tag.match(new RegExp(`\\b${name}\\s*=\\s*([^\\s"'>]+)`, 'i'));
   return bare ? bare[1] : null;
 }
@@ -91,9 +41,6 @@ function idOf(tag) {
   return attr(tag, 'id');
 }
 
-// An element has an accessible name if any of these resolve. `label[for]`
-// resolution is handled by the caller because it needs the whole document.
-
 function hasIntrinsicName(tag) {
   const labelled = attr(tag, 'aria-label');
   if (labelled !== null && labelled.trim() !== '') return true;
@@ -104,12 +51,6 @@ function hasIntrinsicName(tag) {
   return false;
 }
 
-// Text content of the element STARTING AT `from`, up to its matching close tag.
-// `from` must be the match index of this exact occurrence: resolving by tag text
-// alone would let a nameless element inherit a sibling's identical open tag.
-// Close tags are matched case-insensitively and tolerate whitespace before `>`,
-// because both are legal HTML and neither should read as a missing name.
-
 function textOf(src, tag, from) {
   const name = tagNameOf(tag);
   const close = new RegExp(`</${name}\\s*>`, 'i');
@@ -117,14 +58,11 @@ function textOf(src, tag, from) {
   const m = close.exec(rest);
   const inner = m ? rest.slice(0, m.index) : '';
 
-  // A name inside aria-hidden is not exposed to assistive technology, so it does
-  // not name the control.
   const exposed = inner.replace(
     /<([a-z][a-z0-9-]*)\b(?:"[^"]*"|'[^']*'|[^>"'])*aria-hidden\s*=\s*(?:"true"|'true'|true)[^>]*>[\s\S]*?<\/\1\s*>/gi,
     ' '
   );
 
-  // A control named only by an image uses the image's alt text.
   const alt = exposed.match(/<img\b[^>]*\balt\s*=\s*["']([^"']+)["']/i);
   return `${exposed.replace(/<[^>]*>/g, ' ')} ${alt ? alt[1] : ''}`.replace(/\s+/g, ' ').trim();
 }
@@ -132,11 +70,6 @@ function textOf(src, tag, from) {
 function tagNameOf(tag) {
   return tag.match(/^<([a-z0-9]+)/i)[1];
 }
-
-// Character ranges covered by an `aria-hidden="true"` element, so a graphic
-// nested inside a hidden wrapper counts as hidden. Without this the check would
-// force redundant aria-hidden on every nested svg, and would still pass a
-// decorative graphic inside a container that was never hidden.
 
 function hiddenRanges(src) {
   const ranges = [];
@@ -180,21 +113,12 @@ for (const surface of surfaces) {
         .filter(Boolean)
     );
 
-    // The implicit association -- <label>Name <input></label> -- is legal and common,
-    // so it counts, including when the label wraps markup such as <br> or a <span>.
-    // It does NOT count when the label contains no text, because an empty label
-    // names nothing.
     const wrappingLabel = (at) => {
       const before = src.slice(0, at);
 
-      // Consider only <label> tags, not the last tag of any kind: a label may
-      // legitimately contain <br> or a <span>, and those must not hide the
-      // enclosing label.
       const labels = [...before.matchAll(/<(\/?)label\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)];
       const last = labels.pop();
 
-      // Group 1 is the leading slash: '' for an opening tag, '/' for a closing one.
-      // An opening tag is the one still unclosed at this point.
       if (!last || last[1] === '/') return false;
       const labelBody = src.slice(last.index + last[0].length, at);
       return labelBody.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() !== '';
@@ -203,7 +127,6 @@ for (const surface of surfaces) {
       for (const m of src.matchAll(tagPattern(name))) {
         const control = m[0];
 
-        // A hidden control is not exposed to the user, so it needs no name.
         if (attr(control, 'type') === 'hidden') continue;
         const id = idOf(control);
         const named = hasIntrinsicName(control)
@@ -232,8 +155,6 @@ for (const surface of surfaces) {
       const svg = m[0];
       const insideHiddenWrapper = hidden.some(([start, end]) => m.index >= start && m.index < end);
 
-      // aria-hidden only hides when its value is true; aria-hidden="false" is an
-      // explicit request to expose the element.
       const hiddenSelf = (attr(svg, 'aria-hidden') ?? '').toLowerCase() === 'true';
       assert.ok(
         hiddenSelf || insideHiddenWrapper || hasIntrinsicName(svg),
@@ -258,7 +179,6 @@ for (const surface of surfaces) {
   test(`${surface.name} uses unique ids`, async () => {
     const src = await readFile(surface.url, 'utf8');
 
-    // Quote-aware and hyphen-aware: `id='a'` counts, `data-id="a"` does not.
     const ids = [...src.matchAll(/(?<![\w-])id\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
     const seen = new Set();
     const duplicates = ids.filter((id) => (seen.has(id) ? true : (seen.add(id), false)));
@@ -287,8 +207,6 @@ for (const surface of surfaces) {
       'no positive tabindex reorders focus'
     );
 
-    // Any element that is not natively interactive. Anchors are handled
-    // separately because they are focusable only when they carry href.
     const nonInteractive = 'div|span|p|li|section|header|footer|main|nav|article|aside|figure'
       + '|h1|h2|h3|h4|h5|h6|td|th|tr|thead|tbody|tfoot|table|dt|dd|label|ul|ol|img|form'
       + '|fieldset|legend|option|optgroup|col|colgroup|caption|summary';
@@ -297,9 +215,6 @@ for (const surface of surfaces) {
         `click handler on a non-focusable element: ${tag}`);
     }
 
-    // An anchor is focusable only with href, so only an href-less anchor is a
-    // violation here. A handler on a real link is a different smell and out of
-    // scope for this file.
     for (const tag of src.match(/<a\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi) || []) {
       if (hasAttr(tag, 'href')) continue;
       assert.doesNotMatch(tag, /\bon(?:click|dblclick|mousedown|mouseup)\s*=/i,
@@ -307,8 +222,6 @@ for (const surface of surfaces) {
     }
   });
 }
-
-// --- B. popup control, layout and status contract ---------------------------
 
 const popup = fs.readFileSync(new URL('../extension/popup.html', import.meta.url), 'utf8');
 const script = fs.readFileSync(new URL('../extension/popup.js', import.meta.url), 'utf8');
@@ -334,14 +247,6 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
   assert.match(script, /ready:\s*'Terhubung'/);
   assert.match(script, /currentTabPrivate \? 'blocked' : 'allowed'/);
 });
-
-// --- C. identity hardening --------------------------------------------------
-//
-// Identity hardening: geometry-aware action-ref rebind
-// rejection, ambiguity-ranked find with disambiguation hints, and a
-// visible-text actionable fallback. Source-contract style: the runtime
-// behavior is exercised by the controlled browser regression; these
-// assertions lock the contract in source.
 
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 const content = read('../extension/content.js');
@@ -373,18 +278,16 @@ test('I2: a zero exact match projects one bounded fuzzy candidate with an explic
 
 test('I3: visible text without an interactive element surfaces a nearby actionable candidate', () => {
   assert.match(content, /function findVisibleTextCandidate/);
-  assert.match(content, /closest actionable element near the visible text/);
+  assert.match(content, /function findVisibleTextCandidate/);
+  assert.match(content, /findVisibleTextCandidate\(text\)/);
+  assert.match(content, /collectInteractiveNodes\(\)/);
 });
 
 test('I4: rebind falls back to a unique intrinsic-signature successor when the keyed node loses its id', () => {
-  // Live: YouTube recreated the Skip control
-  // without its id between find and click; the keyed pool was empty and the
-  // ref died as "Element not found or reference is stale." The fallback must
-  // scan the interactive pool by intrinsic signature, keep uniqueness, and
-  // leave the mint-time geometry guard as the last line of defense.
+
   assert.match(content, /function signatureRebindCandidates/);
   assert.match(content, /signatureRebindCandidates\(descriptor\)/);
-  assert.match(content, /Keyed successor recreated without its id/);
+  assert.match(content, /return keyed\.concat\(signatureRebindCandidates\(descriptor\)\)/);
   assert.match(content, /INTERACTIVE_SELECTOR\)\]\.slice\(0, 500\)/);
   assert.match(content, /visibleKey !== expectedKey/);
 });

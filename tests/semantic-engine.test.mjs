@@ -9,55 +9,11 @@ import test from 'node:test';
 
 import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 
-// Semantic engine surface, consolidated 2026-10-03.
-//
-// Six files drove the two engines behind every page.read: the identity engine
-// that mints logicalIds across DOM churn, and the view engine that projects
-// regions and completion status. Four of them loaded the engines through the
-// content-script side-effect import and read the same `globalThis` bindings.
-//
-//   tests/semantic-baseline.test.mjs       3 tests   the frozen corpus
-//   tests/semantic-identity.test.mjs      11 tests   identity engine
-//   tests/semantic-views.test.mjs          7 tests   view engine
-//   tests/semantic-delta.test.mjs          8 tests   delta classification
-//   tests/stale-semantic-pruning.test.mjs  7 tests   stale pruning
-//   tests/semantic-release-gate.test.mjs   4 tests   MCP digest + fuzz
-//   -> tests/semantic-engine.test.mjs     40 tests
-//
-// Sections follow the engine: A the frozen corpus, B identity, C views, D
-// delta, E stale pruning, F the release gate.
-//
-// Test count and assertion count are the invariants: 40 tests and 165
-// assertions before, 40 and 165 after, none dropped, weakened or added. Proved
-// by the masked source scan used for the previous clusters: 0 missing, 0 added.
-//
-// `createIdentityEngine` and `createViewEngine` were declared in four and two
-// of the sources respectively and are declared once here. Six module-scope
-// factories collided and each was renamed after the section that owns it:
-//   deltaItem, viewItem, staleItem   (three different `item` factories)
-//   identityElement, gateElement     (two different `element` factories)
-// No factory body changed. Renaming is a merge necessity, not a cleanup, and
-// the body of each is byte-identical to its source.
-//
-// The working-state store is NOT here: it is a separate module with its own
-// two files, in tests/semantic-working-state.test.mjs.
-
 await import('../extension/semantic-identity.js');
 await import('../extension/semantic-views.js');
 
 const { createIdentityEngine } = globalThis.OperaAgentSemanticIdentity;
 const { COMPLETION_STATUSES, classifyCompletion, createViewEngine } = globalThis.OperaAgentSemanticViews;
-
-// --- A. the frozen corpus ---------------------------------------------------
-//
-// Why source-text and fixture pins, stated per AGENTS.md: this is the corpus
-// the identity and view work is measured against, so its value is that it is
-// fixed. These assertions check the required synthetic shapes are present, that
-// the corpus and runner persist metadata only (no page text, no screenshots, no
-// credentials in the evidence), and that the thresholds are bounded before
-// identity work begins. They intentionally pin a baseline rather than behavior:
-// the point is that a later change to these numbers must be a deliberate,
-// visible act.
 
 const corpus = JSON.parse(fs.readFileSync(new URL('./fixtures/semantic-replay-v1.json', import.meta.url), 'utf8'));
 const thresholds = JSON.parse(fs.readFileSync(new URL('./fixtures/semantic-baseline-thresholds-v1.json', import.meta.url), 'utf8'));
@@ -141,8 +97,6 @@ test('semantic baseline thresholds are bounded before identity work begins', () 
   assert.match(thresholds.measured.unavailableReason, /do not exist in baseline 1\.5\.2/);
   assert.equal(thresholds.measured.corpusSha256, '277d87d655859bd2a291cf286e9584e0bdc20ff9272d8059758641dd49f8e091');
 });
-
-// --- B. identity engine -----------------------------------------------------
 
 function identityElement(overrides = {}) {
   return {
@@ -282,8 +236,6 @@ test('cache inspection stores only hashed bindings, never raw hrefs', () => {
   assert.doesNotMatch(cache, /private_token|secret-value|example\.test/);
 });
 
-// --- C. view engine ---------------------------------------------------------
-
 const region = (overrides = {}) => ({ regionId: 'region-feed', kind: 'repeated', role: 'feed', label: 'Results', ...overrides });
 const viewItem = (id, overrides = {}) => ({ logicalId: `logical-${id}`, semanticRevision: 1, regionKey: 'region-feed', stableKey: `key-${id}`, stableKeySource: 'id', inViewport: true, ...overrides });
 
@@ -373,8 +325,6 @@ test('action success alone can never manufacture a PROVED completion', () => {
   assert.equal(classifyCompletion({ scopeKind: 'closed-world', exhaustiveEvidence: true }).status, 'UNKNOWN');
   assert.equal(classifyCompletion({ scopeKind: 'closed-world', exhaustiveEvidence: true, evidence: ['enumerated finite set'] }).status, 'PROVED');
 });
-
-// --- D. delta classification ------------------------------------------------
 
 const deltaItem = (key, overrides = {}) => {
   return {
@@ -487,17 +437,6 @@ test('a one-item delta is materially smaller than a 100-item snapshot', () => {
   assert.ok(ratio <= 0.5, ratio);
 });
 
-// --- E. stale pruning -------------------------------------------------------
-//
-// Stale semantic pruning: an
-// (A) entities observed present-but-invisible for N consecutive observations
-// are marked stale in the model-facing view while canonical state keeps them;
-// (B) compact observations drop stale items so dismissed panels (Miro
-// remnants, FAQ/cookie controls) stop reaching the model; (C) entities that
-// return after a grace removal emit RETURNED_AFTER_ABSENCE instead of
-// NEW_ENTITY so virtualized feeds (X scroll) stop reporting recurring state
-// as new. Canonical identity is preserved in every path.
-
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 const content = read('../extension/content.js');
 
@@ -591,8 +530,6 @@ test('stale tracking is bounded and resets cleanly', () => {
   assert.notEqual(fresh.items[0].stale, true);
   assert.equal(fresh.state.entityCount, 1);
 });
-
-// --- F. release gate and mutation fuzz --------------------------------------
 
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8'));
 const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');

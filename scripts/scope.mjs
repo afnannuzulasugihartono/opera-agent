@@ -8,15 +8,6 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// Scope preflight: bound the read set before reading it.
-//
-// A task does not need the repository, it needs a handful of files. This ranks
-// runtime sources by task terms, caps the result, and prints the token cost of
-// the recommendation against the cost of reading everything — so an agent sees
-// the trade it is making instead of discovering it in the middle of a turn.
-//
-// Usage: node scripts/scope.mjs "burst navigate" [--json] [--limit N]
-
 const root = fileURLToPath(new URL('..', import.meta.url));
 const RUNTIME_DIRS = ['extension', 'lib', 'supabase/functions'];
 const RUNTIME_EXT = /\.(js|ts)$/;
@@ -83,8 +74,6 @@ function run(argv) {
     process.exit(1);
   }
 
-  // Only the token right after --limit is the limit value. Comparing by value
-  // instead ate a task term that happened to equal it.
   const task = argv
     .filter((item, index) => !item.startsWith('--') && !(limitIndex >= 0 && index === limitIndex + 1))
     .join(' ');
@@ -94,9 +83,6 @@ function run(argv) {
   const whole = all.map((f) => measure(f));
   const runtimeTokens = whole.reduce((sum, m) => sum + m.tokens, 0);
 
-  // The haystack is not the runtime source (that is small by design); it is
-  // every tracked file, docs and tests included. An agent that "reads the
-  // repo" pays this.
   const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
     .split('\n')
     .filter(Boolean);
@@ -105,8 +91,7 @@ function run(argv) {
     try {
       wholeRepoTokens += measure(f).tokens;
     } catch {
-      // A path that vanished between ls-files and stat is not counted; the
-      // estimate stays a lower bound rather than throwing mid-task.
+
     }
   }
 
