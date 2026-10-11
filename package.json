@@ -1,6 +1,6 @@
 {
   "name": "opera-agent",
-  "version": "1.6.22",
+  "version": "1.6.23",
   "private": true,
   "license": "MIT",
   "description": "Local Opera browser control bridge with Supabase-powered workflows and automation.",
