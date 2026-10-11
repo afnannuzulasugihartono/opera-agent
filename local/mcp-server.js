@@ -161,6 +161,11 @@ export function createMcpServer(context) {
 // newline-delimited JSON, so a line that is not yet complete is not a frame, and a
 // malformed one must be reported rather than thrown, because a throwing read loop
 // ends the session over one bad message.
+//
+// WHY the dispatch carries a rejection handler. Without one a single rejected
+// handle ends the process on an unhandled rejection, which takes down a whole
+// session over one bad call. SonarCloud caught that on this file and it was right:
+// the handler is not decoration.
 
 export function startStdio({ input = process.stdin, output = process.stdout, context }) {
   const server = createMcpServer(context);
@@ -182,9 +187,11 @@ export function startStdio({ input = process.stdin, output = process.stdout, con
         output.write(`${JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } })}\n`);
         continue;
       }
-      Promise.resolve(server.handle(request)).then((response) => {
-        if (response) output.write(`${JSON.stringify(response)}\n`);
-      });
+      Promise.resolve(server.handle(request))
+        .catch((error) => ({ jsonrpc: '2.0', id: request.id ?? null, error: { code: -32603, message: error.message } }))
+        .then((response) => {
+          if (response) output.write(`${JSON.stringify(response)}\n`);
+        });
     }
   });
 
