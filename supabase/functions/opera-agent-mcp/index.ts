@@ -6,6 +6,8 @@
 import "@supabase/edge-runtime";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { streamCommandEvents } from "../_shared/command-stream.ts";
 import { createClient } from "@supabase/supabase-js";
 import * as z from "zod/v4";
 import { createEdgeLog } from "../_shared/edge-log.js";
@@ -342,7 +344,34 @@ async function rpc(name: string, args: Record<string, unknown>) {
   return data as Record<string, unknown> | null;
 }
 
-async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "") {
+type ProgressEmitter = {
+  _meta?: { progressToken?: string | number };
+  sendNotification?: (n: unknown) => Promise<unknown> | void;
+};
+
+const progressScope = new AsyncLocalStorage<ProgressEmitter>();
+
+function forwardCommandProgress(commandId: string, timeoutMs: number, progress: (() => ProgressEmitter | null) | null) {
+  const emitter = progress?.();
+  if (!emitter?.sendNotification) return Promise.resolve();
+  const token = emitter._meta?.progressToken;
+  if (token === undefined || token === null) return Promise.resolve();
+
+  return streamCommandEvents({
+    rpc,
+    commandId,
+    deadlineMs: timeoutMs + 2000,
+    onEvent: (event) => {
+      const message = String(event?.kind ?? 'progress');
+      return Promise.resolve(emitter.sendNotification({
+        method: "notifications/progress",
+        params: { progressToken: token, message }
+      })).catch(() => {});
+    }
+  }).catch(() => ({ ok: false }));
+}
+
+async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "", progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null) {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
   const queued = await rpc("opera_enqueue", {
     p_method: method,
@@ -361,6 +390,8 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
     } catch {
  }
   }
+
+  await forwardCommandProgress(queued.commandId, boundedTimeout, progress);
 
   const awaitFunction = method === "page.capture" ? "opera_await_capture" : "opera_await_adaptive";
   const completed = await rpc(awaitFunction, {
@@ -632,6 +663,14 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
       capabilities: { logging: {} }
     }
   );
+
+  const defineTool = server.registerTool.bind(server) as (
+    name: string, config: unknown, handler: (args: never, extra: ProgressEmitter) => unknown
+  ) => unknown;
+  (server as unknown as { registerTool: unknown }).registerTool = (
+    name: string, config: unknown, handler: (args: never, extra: ProgressEmitter) => unknown
+  ) => defineTool(name, config, (args: never, extra: ProgressEmitter) =>
+    progressScope.run(extra, () => handler(args, extra)));
 
   server.registerTool("browser_status", {
     title: "Check Opera Agent",
@@ -1277,7 +1316,7 @@ Deno.serve(async (req: Request) => {
   try {
     const server = createServer(deviceName, provider, caller);
 
-    const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
+    const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: false });
     await server.connect(transport);
     const response = await transport.handleRequest(req);
     const headers = new Headers(response.headers);
