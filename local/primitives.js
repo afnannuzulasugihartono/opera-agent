@@ -37,6 +37,13 @@
 // The dispatch frame is therefore a rawKeyDown whenever a modifier is present,
 // which is also why the same document accepts these chords at all.
 //
+// A capture is one pixel per clickable coordinate. Taken at device pixels on a
+// HiDPI screen a picture comes back larger than the clickable viewport, so a
+// coordinate read off it and sent as CSS pixels lands a quarter of the way off:
+// that is what put a click meant for A1 into A3 on a 1.25 screen. Every capture
+// is therefore clipped to the viewport at scale 1, which is the same space
+// clickAt speaks, so looking at a picture and clicking what is in it is true.
+//
 // Text insertion is chunked. A single Input.insertText carries a practical limit,
 // and a long document arriving in one piece can be dropped or truncated partway
 // with no error. Chunking bounds the blast radius of that.
@@ -167,8 +174,21 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       await primitives.key('Delete');
     },
 
+    async viewport() {
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: '({ width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio })',
+        returnByValue: true
+      });
+      return result?.value ?? { width: 0, height: 0, dpr: 1 };
+    },
+
     async capture({ format = 'jpeg', quality = 60 } = {}) {
-      const { data } = await cdp.send('Page.captureScreenshot', { format, quality });
+      const { width, height } = await primitives.viewport();
+      const { data } = await cdp.send('Page.captureScreenshot', {
+        format,
+        quality,
+        clip: { x: 0, y: 0, width, height, scale: 1 }
+      });
       return data;
     },
 

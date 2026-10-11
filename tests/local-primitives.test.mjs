@@ -36,7 +36,13 @@ function recordingCdp() {
     calls,
     send: async (method, params = {}) => {
       calls.push({ method, params });
-      if (method === 'Runtime.evaluate') return { result: { value: params.expression.includes('readyState') ? 'complete' : { title: 't', url: 'u', text: 'body text' } } };
+      if (method === 'Runtime.evaluate') {
+        if (params.expression.includes('readyState')) return { result: { value: 'complete' } };
+        if (params.expression.includes('devicePixelRatio')) {
+          return { result: { value: { width: 1136, height: 770, dpr: 1.25 } } };
+        }
+        return { result: { value: { title: 't', url: 'u', text: 'body text' } } };
+      }
       if (method === 'Page.captureScreenshot') return { data: 'BASE64' };
       return { result: {} };
     }
@@ -155,6 +161,23 @@ test('a modifier goes down with itself excluded from the mask, and up with the f
   assert.equal(controlDown.params.modifiers, 1, 'alt only: control is not yet held at its own keydown');
   const altDown = events.find((e) => e.params.key === 'Alt' && e.params.type === 'keyDown');
   assert.equal(altDown.params.modifiers, 2, 'control only: alt is not yet held at its own keydown');
+});
+
+test('a capture is clipped to the clickable viewport at one to one, or every visual click misses', async () => {
+  const cdp = recordingCdp();
+  await createPrimitives(cdp).capture();
+
+  const shot = cdp.calls.find((c) => c.method === 'Page.captureScreenshot');
+  assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 1136, height: 770, scale: 1 },
+    'a pixel in the picture must be a coordinate clickAt accepts');
+});
+
+test('the viewport reports the device pixel ratio, so a scaled screen is not mistaken for a scaled picture', async () => {
+  const cdp = recordingCdp();
+  const view = await createPrimitives(cdp).viewport();
+
+  assert.equal(view.width, 1136);
+  assert.equal(view.dpr, 1.25);
 });
 
 test('clear selects all and then deletes, because typing does not replace a selection', async () => {
