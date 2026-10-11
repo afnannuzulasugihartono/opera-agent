@@ -162,10 +162,11 @@ export function createMcpServer(context) {
 // malformed one must be reported rather than thrown, because a throwing read loop
 // ends the session over one bad message.
 //
-// WHY the dispatch carries a rejection handler. Without one a single rejected
-// handle ends the process on an unhandled rejection, which takes down a whole
-// session over one bad call. SonarCloud caught that on this file and it was right:
-// the handler is not decoration.
+// WHY the dispatch carries a rejection handler and a void. Without the handler a
+// single rejected handle ends the process on an unhandled rejection, taking down a
+// whole session over one bad call. SonarCloud caught that on this file and it was
+// right: the handler is not decoration. The void then says the reply is deliberately
+// not awaited, because an event loop has nothing else to wait for.
 
 export function startStdio({ input = process.stdin, output = process.stdout, context }) {
   const server = createMcpServer(context);
@@ -187,7 +188,7 @@ export function startStdio({ input = process.stdin, output = process.stdout, con
         output.write(`${JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } })}\n`);
         continue;
       }
-      Promise.resolve(server.handle(request))
+      void Promise.resolve(server.handle(request))
         .catch((error) => ({ jsonrpc: '2.0', id: request.id ?? null, error: { code: -32603, message: error.message } }))
         .then((response) => {
           if (response) output.write(`${JSON.stringify(response)}\n`);
