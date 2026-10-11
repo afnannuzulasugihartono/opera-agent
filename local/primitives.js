@@ -37,6 +37,11 @@
 // The dispatch frame is therefore a rawKeyDown whenever a modifier is present,
 // which is also why the same document accepts these chords at all.
 //
+// A hover moves and stops. A menu item that owns a submenu opens it on hover and
+// closes on click, so a press here dismisses the menu the caller was reaching into
+// and the submenu is then gone. Measured against a real View menu: the press did
+// nothing but close it, the hover opened it.
+//
 // A capture is one pixel per clickable coordinate. Taken at device pixels on a
 // HiDPI screen a picture comes back larger than the clickable viewport, so a
 // coordinate read off it and sent as CSS pixels lands a quarter of the way off:
@@ -162,6 +167,11 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
       await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...common });
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...common });
+      return { x, y };
+    },
+
+    async hover(x, y) {
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
       return { x, y };
     },
 

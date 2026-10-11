@@ -163,6 +163,16 @@ test('a modifier goes down with itself excluded from the mask, and up with the f
   assert.equal(altDown.params.modifiers, 2, 'control only: alt is not yet held at its own keydown');
 });
 
+test('a hover moves the pointer and stops, because a submenu opens on hover and a click closes the menu', async () => {
+  const cdp = recordingCdp();
+  await createPrimitives(cdp).hover(193, 113);
+
+  const calls = cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent');
+  assert.equal(calls.length, 1, 'a hover must not press anything');
+  assert.equal(calls[0].params.type, 'mouseMoved');
+  assert.equal(calls[0].params.buttons, 0);
+});
+
 test('a capture is clipped to the clickable viewport at one to one, or every visual click misses', async () => {
   const cdp = recordingCdp();
   await createPrimitives(cdp).capture();
