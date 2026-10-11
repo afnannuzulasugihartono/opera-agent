@@ -5,26 +5,14 @@
 
 // WHY THIS FILE EXISTS
 //
-// lib/transaction-http.js had no test and no gate. A grep across tests/ and scripts/
-// for the module name returned nothing. It is not scaffolding either: it is imported
-// by supabase/functions/opera-agent-transactions-8d/index.ts, which is a deployed edge
-// function. So a deployed HTTP boundary — the one place a malformed request, an
-// oversized body or a stolen token enters the system — was carrying roughly twenty
-// invariants with nothing holding any of them.
+// lib/transaction-http.js had no test and no gate, and it is imported by a deployed
+// edge function: a boundary where a malformed request, an oversized body or a
+// stolen token enters the system.
 //
-// This is the shape of a security boundary, and every lock below is one an innocent
-// edit could plausibly break:
-//
-//   - configuration is validated at CONSTRUCTION, so a misconfigured handler never
-//     exists, rather than at request time where it would fail per request;
-//   - unknown keys are rejected outright, because a typo'd key would otherwise be
-//     silently ignored and the operator would believe a setting applied;
-//   - the refusal ladder is ordered, and the order is the security property: a
-//     disabled host must not leak whether the token was good;
-//   - the body limit is enforced WHILE STREAMING, with the reader cancelled, because a
-//     limit checked only after buffering is not a limit;
-//   - every response carries browserDispatchAllowed:false, so nothing that reaches a
-//     browser can be mistaken for authority to drive one.
+// Every lock below was proven by mutating the code it protects. The first run caught
+// seven of nine and missed two, and both holes were in these tests rather than in the
+// module: a UTF-8 payload that failed for the wrong reason, and a mutation that landed
+// on the wrong catch.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
