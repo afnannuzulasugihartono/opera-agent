@@ -115,6 +115,29 @@ export async function discoverPageWebSocket(port, { fetch = globalThis.fetch } =
   return page.webSocketDebuggerUrl;
 }
 
+// Opening a tab is the one thing a drive must never do to the person using the
+// browser: navigating the page they already had open destroys whatever they were
+// looking at. A new target leaves that page alone. The endpoint takes PUT and
+// refuses GET, so a driver built on GET reports every open as a failure.
+
+export async function openTabWebSocket(port, url, { fetch = globalThis.fetch } = {}) {
+  let created;
+  try {
+    created = await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' });
+  } catch (cause) {
+    throw new Error(`Browser on port ${port} is not reachable: ${cause.message}`);
+  }
+  if (!created?.ok) {
+    throw new Error(`Browser on port ${port} would not open a tab: HTTP ${created?.status ?? 'none'}.`);
+  }
+
+  const page = await created.json();
+  if (!page?.webSocketDebuggerUrl) {
+    throw new Error(`Browser on port ${port} opened a tab without a websocket url.`);
+  }
+  return page.webSocketDebuggerUrl;
+}
+
 export async function waitForPage(port, options = {}) {
   const { timeoutMs = 10000, intervalMs = 100, now = Date.now, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fetch } = options;
   const deadline = now() + timeoutMs;

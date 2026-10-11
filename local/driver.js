@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from './browsers.js';
 import { createCdpClient } from './cdp.js';
 import { createPrimitives } from './primitives.js';
-import { attachToPage, discoverPageWebSocket, discoverWebSocket } from './transport.js';
+import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTabWebSocket, waitForPage } from './transport.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({
@@ -47,9 +47,14 @@ export function resolveBinary({ id, platform = process.platform, exists = exists
   return { ...entry, binary };
 }
 
+// A named tab is always a NEW tab. Driving a document, a sheet and a deck in
+// one session means three targets, and reusing whichever page happened to be in
+// front would navigate away whatever the person was reading.
+
 export async function openSession({
   id,
   port = 9333,
+  tabUrl = null,
   platform = process.platform,
   exists = existsSync,
   env = process.env,
@@ -59,12 +64,18 @@ export async function openSession({
   primitives: primitivesOptions = {}
 } = {}) {
   let reused = false;
+  let target = null;
 
-  try {
-    await discoverPageWebSocket(port);
+  if (tabUrl) {
+    target = await openTabWebSocket(port, tabUrl);
     reused = true;
-  } catch {
-    if (!launch) throw new Error(`No browser is listening on port ${port}.`);
+  } else {
+    try {
+      target = await discoverPageWebSocket(port);
+      reused = true;
+    } catch {
+      if (!launch) throw new Error(`No browser is listening on port ${port}.`);
+    }
   }
 
   let child = null;
@@ -75,7 +86,8 @@ export async function openSession({
     child = spawnBrowser(entry.binary, args, { detached: false, stdio: 'ignore' });
   }
 
-  const { transport } = await attachToPage(port, { timeoutMs });
+  if (!target) target = await waitForPage(port, { timeoutMs });
+  const transport = await connect(target, { timeoutMs });
   const cdp = createCdpClient(transport);
 
   return {
