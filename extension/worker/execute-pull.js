@@ -45,16 +45,19 @@ async function runDispatch(dispatch, timeoutMs) {
   }
 }
 
+let emitChain = Promise.resolve();
+
 function emitCommandEvent(cfg, commandId, kind, envelope) {
   if (!cfg?.bridgeUrl || !commandId) return;
-  fetchJson(cfg.bridgeUrl, {
+  const body = {
     action: 'command_event',
     deviceName: cfg.deviceName,
     token: cfg.deviceToken,
     commandId,
     kind,
     envelope
-  }, 5000).catch(() => {});
+  };
+  emitChain = emitChain.then(() => fetchJson(cfg.bridgeUrl, body, 5000)).catch(() => {});
 }
 
 async function executeCommand(raw, cfg) {
