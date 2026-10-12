@@ -9,21 +9,15 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
-import { notifyDevice } from '../supabase/functions/_shared/device-signal.js';
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
 const commandId = '00000000-0000-4000-8000-000000000001';
 
-function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, user = null, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {}, signalOk = true } = {}) {
+function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, user = null, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
   const calls = [];
-  const signals = [];
   let handler;
   let committed = false;
-  const fetchImpl = async (url, init) => {
-    signals.push({ url, init });
-    return { ok: signalOk };
-  };
   const client = {
     auth: {
       async getUser() {
@@ -63,8 +57,8 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
     }
   };
 
-  vm.runInNewContext(source, { createClient: () => client, notifyDevice, fetch: fetchImpl, AbortSignal, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, TextDecoder, crypto });
-  return { calls, signals, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
+  vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, TextDecoder, crypto });
+  return { calls, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list', ...body })
   })), raw: (req) => handler(req), getOpenApi: () => handler(new Request('https://proxy.test/opera-agent-gateway/openapi.json')) };
@@ -253,37 +247,3 @@ test('an oversize chunked body aborts at the cap instead of buffering whole', as
   assert.ok(pulled < TOTAL, `the reader stopped early after ${pulled} of ${TOTAL} chunks`);
 });
 
-// WHY the gateway signals instead of only inserting. The bridge learns through
-// postgres_changes in 650-1000 ms; the broadcast on the device channel lands in
-// tens of milliseconds. Without it every gateway request pays the slow path.
-
-test('a committed enqueue signals the device channel before the wait answers', async () => {
-  const h = harness({});
-  const response = await h.request({ params: {}, waitMs: 2000 });
-
-  assert.equal(response.status, 200);
-  assert.equal(h.signals.length, 1, 'the enqueue committed but no signal went out');
-  assert.match(h.signals[0].url, /\/realtime\/v1\/api\/broadcast\/opera-commands-opera\/events\/new-command$/);
-  assert.deepEqual(JSON.parse(h.signals[0].init.body), { commandId });
-  assert.equal(h.signals[0].init.headers.apikey, 'test');
-});
-
-test('a failed signal still answers the request, because postgres_changes is listening', async () => {
-  const h = harness({ signalOk: false });
-  const response = await h.request({ params: {}, waitMs: 2000 });
-
-  assert.equal(response.status, 200);
-  assert.equal(h.signals.length, 1);
-  const body = await response.json();
-  assert.equal(body.ok, true);
-});
-
-test('debugSignal reports the fast-path outcome without changing the normal shape', async () => {
-  const plain = await (await harness({}).request({ params: {}, waitMs: 2000 })).json();
-  assert.equal('signal' in plain, false, 'the debug key leaks into normal responses');
-
-  const h = harness({});
-  const body = await (await h.request({ params: {}, waitMs: 2000, debugSignal: true })).json();
-  assert.deepEqual(body.signal, { ok: true, ms: body.signal.ms });
-  assert.equal(typeof body.signal.ms, 'number');
-});

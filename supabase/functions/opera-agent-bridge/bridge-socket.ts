@@ -33,25 +33,6 @@ const HANDSHAKE_TIMEOUT_MS = 8000;
 export const MAX_FRAME_BYTES = 1024 * 1024;
 export const KEEPALIVE_MS = 20000;
 
-// WHY there is a safety drain on a timer, because the change channel turned out to
-// be unreliable in exactly the way that matters. Observed live: a device connected
-// and kept receiving keepalives for twenty-six minutes while the change channel
-// that was supposed to tell it about new work had died silently. The keepalives
-// come down the device socket; the change channel comes down a second connection
-// the realtime client opens, and nothing detects when that one goes. The device
-// looked perfectly healthy and every command queued behind a dead subscription.
-//
-// So the keepalive tick also drains. It is not the primary path: a change channel
-// that works delivers in about four hundred milliseconds, and this runs sixty
-// times slower. It is there so that a dead subscription costs a minute of latency
-// instead of costing every command until somebody reconnects by hand.
-//
-// WHY sixty seconds. Fast enough that a command is never stuck behind a dead
-// channel for long, slow enough that one cheap claim call per device per minute is
-// invisible next to the work the device actually does.
-
-export const SAFETY_DRAIN_MS = 60000;
-
 // WHY a keepalive exists, and why it is not polling. An MV3 service worker with a
 // silent WebSocket is an idle service worker, and Chrome ends idle workers after
 // thirty seconds. Observed against the deployed bridge: the device connected,
@@ -148,14 +129,20 @@ export function parseDeviceFrame(raw, maxBytes = MAX_FRAME_BYTES) {
 // no EdgeRuntime at all. A bare reference would throw on import and take down
 // the whole suite for a symbol that only exists on the platform.
 
-export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, onTick, log }) {
+// WHY the protocol idle timeout is disabled. Deno closes a socket whose peer
+// misses a protocol-level pong, and not every client answers those: observed
+// live, a healthy probe was closed with "No response from ping frame". Liveness
+// here is decided one layer up, where an unanswered application ping closes the
+// socket with 4003 — a verdict with a reason, rather than a transport guess.
+
+export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log }) {
   const upgrade = isUpgradeRequest(req);
   if (!upgrade) return { upgraded: false, response: null };
 
-  const { socket, response } = Deno.upgradeWebSocket(req);
+  const { socket, response } = Deno.upgradeWebSocket(req, { idleTimeout: 0 });
 
   const state = { ready: false, identity: null };
-  const counts = { pings: 0, pongs: 0, lastSafetyDrainAt: 0 };
+  const counts = { pings: 0, pongs: 0 };
   let unsubscribe = null;
 
   let resolveClosed = null;
@@ -185,18 +172,6 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, onTi
   const sendCommand = (command) => {
     if (!state.ready || socket.readyState !== WebSocket.OPEN) return;
     socket.send(frameForCommand(command, new Date().toISOString()));
-  };
-
-  const safetyDrain = async () => {
-    if (!state.identity || typeof onTick !== "function") return;
-    let command = null;
-    try {
-      command = await onTick(state.identity);
-    } catch (error) {
-      log?.warn?.("safety drain failed", String(error?.message || error));
-      return;
-    }
-    if (command) sendCommand(command);
   };
 
   const dispatch = async (message) => {
@@ -239,10 +214,6 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, onTi
         } catch {
           teardown();
           return;
-        }
-        if (counts.pings * KEEPALIVE_MS - counts.lastSafetyDrainAt >= SAFETY_DRAIN_MS) {
-          counts.lastSafetyDrainAt = counts.pings * KEEPALIVE_MS;
-          void safetyDrain();
         }
       }, KEEPALIVE_MS);
 

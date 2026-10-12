@@ -123,29 +123,25 @@ it already knows about, which would remove the insert-event leg entirely rather
 than make it faster. Until that happens, the honest description of this
 transport is "no polling", not "instant".
 
-### Broadcast (added after the above)
+### Broadcast (tried, measured, and removed)
 
-The enqueue side now also sends a Realtime broadcast on the device channel,
-which the bridge listens for alongside postgres_changes. The signal POST
-measures 102-223 ms from inside the edge network, and three gateway-driven
-pings after the change claimed in 362, 462, and 781 ms, completing in 842-1272
-ms — down from the 650-1000 ms insert-to-claim above, but not dramatically, and
-one sample still took the slow path.
+Two event feeds were tried for insert-to-claim. postgres_changes measured
+650-1000 ms. A Realtime broadcast fired 46 ms after insert still claimed
+anywhere between 200 and 1300 ms, because the subscriber websocket held by the
+edge isolate proved flaky — sometimes fast, sometimes silent. Faster signalling
+into an unreliable subscriber does not make anything reliable, so both feeds
+were removed. What replaced them is a 200 ms claim poll in the bridge:
+deterministic where both feeds were not, at four trivial indexed RPCs per
+second per connected device.
 
-That the broadcast works at all was proven by isolation, not by averaging:
-with the postgres listener temporarily removed from a deployed bridge, a
-command enqueued through the gateway on the same socket claimed in 367 ms,
-while a direct SQL insert on that socket waited 18.1 seconds for the next
-reconnect drain. The first version of the signal opened a Realtime channel per
-request and waited for SUBSCRIBED; from a short-lived isolate that handshake
-never completed, so every request paid the full timeout and the gateway went
-from one second to four. The shipped version is one HTTP POST to the broadcast
-endpoint with apikey only — no Authorization header, which Realtime answers
-with 500 when empty.
+Measured after the change, direct inserts on a stable socket: insert-to-claim
+58, 146, 155, 205, 250, 256, 289, 297 ms. Claim-to-complete on a trivial ping
+runs another ~600 ms on the measured network, most of it the device round trip
+rather than anything the bridge does.
 
-Remaining wall, measured: the complete leg (~470 ms claim-to-complete on a
-trivial ping) is now the single biggest cost, and it is edge-to-database round
-trips, not idle time. Removing it means fewer round trips, not faster ones.
+An honest footnote on method: one series showed every claim landing 30 seconds
+late in a batch. That was not the transport — ten inserts issued inside one DO
+block share one transaction and stay invisible until it commits.
 
 ## Endpoints
 
