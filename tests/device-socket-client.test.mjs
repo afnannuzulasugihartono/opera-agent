@@ -65,6 +65,21 @@ function harness(overrides = {}) {
   return { client, timers, watchTimers, states, executed, sockets };
 }
 
+// Each watchdog tick schedules the next one, so only the last recorded timer is
+// ever live. Every timing test drives the same crank, which is why it lives here
+// instead of being copied into each one.
+
+function runTicks(env, time, count, stepMs = 10000) {
+  for (let tick = 0; tick < count; tick += 1) {
+    time.now += stepMs;
+    env.watchTimers[env.watchTimers.length - 1].fn();
+  }
+}
+
+function trackTime() {
+  return { now: 1000 };
+}
+
 test('an opening socket sends the handshake before anything else', () => {
   const { client, sockets } = harness();
   client.start();
@@ -332,34 +347,30 @@ test('a ping is answered, because a one-way keepalive cannot detect a dead bridg
 // which is a lesson the first version of this test learned the hard way.
 
 test('a socket that stops hearing anything is torn down and replaced', () => {
-  const { client, sockets, watchTimers } = harness({ now: () => clock });
-  let clock = 1000;
+  const time = trackTime();
+  const env = harness({ now: () => time.now });
+  const { client, sockets } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
   assert.equal(client.isReady(), true);
 
-  for (let round = 0; round < 10; round += 1) {
-    clock += 10000;
-    watchTimers[watchTimers.length - 1].fn();
-  }
+  runTicks(env, time, 10);
 
   assert.ok(sockets.length >= 2, 'a silent socket was never replaced');
   assert.equal(client.isReady(), false, 'the device still believes a dead peer is ready');
 });
 
 test('a ping from the bridge is proof the peer is alive, so the deadline resets', () => {
-  const { client, sockets, watchTimers } = harness({ now: () => clock });
-  let clock = 1000;
+  const time = trackTime();
+  const env = harness({ now: () => time.now });
+  const { client, sockets } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
 
   for (let round = 0; round < 4; round += 1) {
-    for (let tick = 0; tick < 4; tick += 1) {
-      clock += 5000;
-      watchTimers[watchTimers.length - 1].fn();
-    }
+    runTicks(env, time, 4, 5000);
     sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
   }
 
@@ -421,17 +432,15 @@ test('a fresh attempt never erases why the previous one ended', () => {
 // already closing answers nothing and reports an error for free.
 
 test('tearing down a socket the peer is already closing sends no second close', () => {
-  const { client, sockets, watchTimers } = harness({ now: () => clock });
-  let clock = 1000;
+  const time = trackTime();
+  const env = harness({ now: () => time.now });
+  const { client, sockets } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
   sockets[0].peerClosing();
 
-  for (let round = 0; round < 10; round += 1) {
-    clock += 10000;
-    watchTimers[watchTimers.length - 1].fn();
-  }
+  runTicks(env, time, 10);
 
   assert.equal(sockets[0].closes, 0, 'a close was sent on a socket already closing');
   assert.ok(sockets.length >= 2, 'the dead socket was kept because its close was skipped');
@@ -456,16 +465,16 @@ test('stop does not close a socket that is already closed', () => {
 // nothing ever notices.
 
 test('an idle socket past its age is replaced before the platform kills it', () => {
-  const { client, sockets, states, watchTimers } = harness({ now: () => clock });
-  let clock = 1000;
+  const time = trackTime();
+  const env = harness({ now: () => time.now });
+  const { client, sockets, states } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
 
   for (let tick = 0; tick < 14; tick += 1) {
-    clock += 10000;
     sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
-    watchTimers[watchTimers.length - 1].fn();
+    runTicks(env, time, 1);
   }
 
   assert.ok(sockets.length >= 2, 'an aged socket was never recycled');
@@ -482,15 +491,16 @@ test('a socket past its age keeps serving while a command is running', async () 
   let release;
   const gate = new Promise((resolve) => { release = resolve; });
   const executed = [];
-  const { client, sockets, watchTimers } = harness({
-    now: () => clock,
+  const time = trackTime();
+  const env = harness({
+    now: () => time.now,
     execute: async (command) => {
       executed.push(command.id);
       await gate;
       return { ok: true, result: {} };
     }
   });
-  let clock = 1000;
+  const { client, sockets } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -498,9 +508,8 @@ test('a socket past its age keeps serving while a command is running', async () 
   await new Promise((r) => setImmediate(r));
 
   for (let tick = 0; tick < 14; tick += 1) {
-    clock += 10000;
     sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
-    watchTimers[watchTimers.length - 1].fn();
+    runTicks(env, time, 1);
   }
 
   assert.equal(sockets.length, 1, 'a running command was interrupted for a recycle');
@@ -508,8 +517,7 @@ test('a socket past its age keeps serving while a command is running', async () 
   release();
   await new Promise((r) => setImmediate(r));
   await new Promise((r) => setImmediate(r));
-  clock += 10000;
-  watchTimers[watchTimers.length - 1].fn();
+  runTicks(env, time, 1);
 
   assert.ok(sockets.length >= 2, 'the overdue socket was kept after its command finished');
   assert.deepEqual(executed, ['long']);

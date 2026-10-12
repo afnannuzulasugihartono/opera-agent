@@ -166,6 +166,22 @@ function harness(emit = { ok: true, eventId: 7 }) {
   return { calls, post, openSocket, sockets, timers };
 }
 
+// Every socket test opens the same way and waits for the same settled state. The
+// wait is a turn loop rather than a fixed count because the handshake hashes on
+// the threadpool, which queues behind the rest of the suite when everything runs
+// at once, and a fixed count would make these locks flaky under load.
+
+async function handshakenSocket(h) {
+  const socket = await h.openSocket();
+  socket.onopen();
+  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
+  for (let turn = 0; turn < 5000; turn += 1) {
+    if (h.timers.intervals.size) break;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  return socket;
+}
+
 const validBody = (extra = {}) => ({
   action: 'command_event', token: 'a'.repeat(64), deviceName: 'opera',
   commandId: COMMAND_ID, kind: 'step', envelope: { n: 1 }, ...extra
@@ -243,9 +259,7 @@ test('a socket that fails the handshake is closed unread and never receives work
 
 test('a fresh socket drains the backlog on arrival, so work queued while away still runs', async () => {
   const h = harness();
-  const socket = await h.openSocket();
-
-  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
+  const socket = await handshakenSocket(h);
 
   for (let turn = 0; turn < 5000; turn += 1) {
     if (h.calls.some((c) => c.name === 'opera_claim_next_wait')) break;
@@ -263,13 +277,7 @@ test('a fresh socket drains the backlog on arrival, so work queued while away st
 
 test('closing the socket stops the keepalive, so a gone device leaks no timer', async () => {
   const h = harness();
-  const socket = await h.openSocket();
-  socket.onopen();
-  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
-  for (let turn = 0; turn < 5000; turn += 1) {
-    if (h.timers.intervals.size) break;
-    await new Promise((resolve) => setImmediate(resolve));
-  }
+  const socket = await handshakenSocket(h);
 
   assert.equal(h.timers.intervals.size, 1, 'a handshaken socket runs no keepalive at all');
   assert.equal(h.timers.timeouts.length, 1, 'a socket with no handshake deadline can hold a half-open device forever');
@@ -310,13 +318,7 @@ test('an upgraded socket holds the worker until it closes, or the platform retir
 
 test('the keepalive tick drains past the safety interval, so a dead channel costs a minute, not every command', async () => {
   const h = harness();
-  const socket = await h.openSocket();
-  socket.onopen();
-  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
-  for (let turn = 0; turn < 5000; turn += 1) {
-    if (h.timers.intervals.size) break;
-    await new Promise((resolve) => setImmediate(resolve));
-  }
+  const socket = await handshakenSocket(h);
 
   const keepalive = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms === 20000);
   assert.ok(keepalive, 'no keepalive interval to drive');

@@ -57,7 +57,12 @@ test('the device asks nothing, so there is no pull wait to pin', () => {
 
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
   assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
-  assert.match(bridge, /p_wait_ms:\s*waitMs/);
+
+  const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
+  assert.match(pull, /waitMs\n\s*\}/,
+    'pull no longer hands its clamped wait to the claim');
+  assert.match(bridge, /p_wait_ms: clamp\(detail\.waitMs, 0, 25000, 0\)/,
+    'the claim no longer forwards the wait to Postgres');
 
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
 
@@ -66,9 +71,12 @@ test('the device asks nothing, so there is no pull wait to pin', () => {
   assert.match(background, /createSocketClient/);
   assert.match(background, /socketClient\.start\(\)/);
 
-  const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
-  assert.equal((pull.match(/rpc\(/g) || []).length, 1, 'pull must make exactly one RPC call');
-  assert.doesNotMatch(pull, /while\s*\(true\)|do\s*\{/);
+  const claim = bridge.slice(bridge.indexOf('async function claimForDevice('));
+  const claimFn = claim.slice(0, claim.indexOf('\n}\n'));
+  assert.equal((claimFn.match(/rpc\(/g) || []).length, 1, 'the claim must make exactly one RPC call');
+  assert.doesNotMatch(claimFn, /while\s*\(true\)|do\s*\{/);
+  assert.doesNotMatch(pull, /rpc\("opera_claim_next_wait"/,
+    'pull claims directly instead of going through the one claim function');
   assert.doesNotMatch(bridge, /FAST_PULL_|IDLE_PULL_/);
 });
 
