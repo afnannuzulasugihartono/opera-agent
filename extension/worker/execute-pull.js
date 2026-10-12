@@ -202,7 +202,7 @@ async function ensureSocket() {
     },
     onState: (state) => {
       const status = state.status === 'connected' ? 'ready' : state.status;
-      setState({ status, lastError: status === 'rejected' ? 'Bridge refused this device.' : null });
+      setState({ status, lastError: status === 'rejected' ? 'Bridge refused this device.' : null }).catch(() => { });
       if (status === 'ready') {
         flushPendingCompletion(cfg).catch(() => { });
       }

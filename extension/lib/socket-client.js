@@ -35,6 +35,15 @@
 // WHY the queue survives a dropped socket. A command already taken off the wire was
 // taken off on purpose; the device owes a completion for it, and that completion
 // still fits on the next connection.
+//
+// WHY sending is guarded. A socket can close between the moment a completion is
+// built and the moment it is written, and an unhandled throw inside a drain would
+// reject a promise nobody awaits. The frame is simply lost, which is exactly what
+// the stored-completion resend exists to cover.
+//
+// WHY the drain loop does not test a stop flag. stop() empties the queue, which
+// ends a drain already in flight; reading a second flag would only obscure why the
+// loop stopped.
 
 import {
   completionFrame,
@@ -69,6 +78,12 @@ export function createSocketClient({
     if (socket && socket.readyState === 1) socket.send(text);
   };
 
+  const sendFrame = (text) => {
+    try {
+      frame(text);
+    } catch { }
+  };
+
   const scheduleRetry = (gen) => {
     if (closedByUs) return;
     const wait = retryMs;
@@ -83,7 +98,7 @@ export function createSocketClient({
     if (draining) return;
     draining = true;
     try {
-      while (takeQueue.length && !closedByUs) {
+      while (takeQueue.length) {
         const command = takeQueue.shift();
         let outcome;
         try {
@@ -91,7 +106,7 @@ export function createSocketClient({
         } catch (error) {
           outcome = { ok: false, error: { code: 'EXECUTION_ERROR', message: String(error?.message || error).slice(0, 300) } };
         }
-        frame(completionFrame(
+        sendFrame(completionFrame(
           command.id,
           outcome?.ok !== false,
           outcome?.result ?? outcome,

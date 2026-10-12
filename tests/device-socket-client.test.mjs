@@ -249,6 +249,34 @@ test('a dropped socket keeps the work it already took, so a completion is not lo
   assert.ok(executed.includes('lost'), 'work taken before the drop was thrown away');
 });
 
+test('stop ends a drain that is already running, so queued work is not run for a stopped device', async () => {
+  const executed = [];
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const { client, sockets } = harness({
+    execute: async (command) => {
+      executed.push(command.id);
+      if (command.id === 'running') await gate;
+      return { ok: true, result: {} };
+    }
+  });
+
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'running', method: 'page.key' } }));
+  await new Promise((r) => setImmediate(r));
+  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'queued', method: 'page.key' } }));
+  await new Promise((r) => setImmediate(r));
+
+  client.stop();
+  release();
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setImmediate(r));
+
+  assert.deepEqual(executed, ['running'], 'a stopped device went on to run work it had already been given');
+});
+
 test('stop leaves nothing running, so a paused worker does not keep a socket alive', () => {
   const { client, sockets, states } = harness();
   client.start();
