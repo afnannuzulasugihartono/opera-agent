@@ -10,6 +10,8 @@ export class Device {
     this.state = state;
     this.env = env;
     this.sockets = new Set();
+    this.deviceName = null;
+    this.tokenHash = null;
     const rpc = createPostgrest({
       baseUrl: env.SUPABASE_URL,
       serviceKey: env.SUPABASE_SERVICE_ROLE_KEY,
@@ -25,6 +27,7 @@ export class Device {
         if (!authed) return { ok: false };
         this.deviceName = identity.deviceName;
         this.tokenHash = tokenHash;
+        await this.state.storage.put({ deviceName: identity.deviceName, tokenHash });
         return { ok: true };
       },
       claim: async () => {
@@ -61,16 +64,49 @@ export class Device {
         }
         this.sockets.clear();
       },
+      replaced: () => {
+        const live = [...this.sockets];
+        const newest = live[live.length - 1];
+        for (const ws of live) {
+          if (ws === newest) continue;
+          try { ws.close(1000, 'replaced'); } catch { }
+          this.sockets.delete(ws);
+        }
+      },
       setAlarm: (atMs) => this.state.storage.setAlarm(atMs),
       now: () => Date.now()
     });
-    this.deviceName = null;
-    this.tokenHash = null;
+    this.state.blockConcurrencyWhile(async () => {
+      const stored = await this.state.storage.get(['deviceName', 'tokenHash']);
+      if (stored?.deviceName) {
+        this.deviceName = stored.deviceName;
+        this.tokenHash = stored.tokenHash || null;
+        this.logic.restore({ deviceName: stored.deviceName, token: '' });
+      }
+      for (const ws of this.state.getWebSockets()) {
+        this.sockets.add(ws);
+      }
+    });
+  }
+
+  openSockets() {
+    const live = [...this.sockets].filter((ws) => {
+      try {
+        return ws.readyState === 1;
+      } catch {
+        return false;
+      }
+    });
+    this.sockets = new Set(live);
+    return live;
   }
 
   async fetch(request) {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/run') {
+      if (this.openSockets().length === 0) {
+        return Response.json({ ok: false, error: { code: 'DEVICE_GONE', message: 'The device is not connected.' } });
+      }
       const body = await request.json();
       const result = await this.logic.runCommand({
         commandId: body.commandId,
@@ -94,16 +130,24 @@ export class Device {
     await this.logic.onMessage(typeof message === 'string' ? message : String(message));
   }
 
-  async webSocketClose() {
+  async webSocketClose(ws) {
+    this.sockets.delete(ws);
+    if (this.sockets.size > 0) return;
+    await this.state.storage.delete(['deviceName', 'tokenHash']);
+    this.deviceName = null;
+    this.tokenHash = null;
     await this.logic.onClose(1006, '');
   }
 
-  async webSocketError() {
+  async webSocketError(ws) {
+    this.sockets.delete(ws);
+    if (this.sockets.size > 0) return;
     await this.logic.onClose(1006, '');
   }
 
   async alarm() {
     try {
+      if (this.openSockets().length === 0) return;
       await this.logic.onAlarm();
     } catch {
       this.state.storage.setAlarm(Date.now() + 20000);

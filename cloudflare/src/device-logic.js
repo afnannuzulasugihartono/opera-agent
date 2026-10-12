@@ -9,7 +9,7 @@ import { frameForCommand, handshakePayload } from '../../supabase/functions/oper
 const KEEPALIVE_MS = 20000;
 const UNANSWERED_LIMIT_MS = 40000;
 
-export function createDevice({ verify, claim, complete, send, close, setAlarm, now = () => Date.now(), setTimer = (fn, ms) => setTimeout(fn, ms), log = null }) {
+export function createDevice({ verify, claim, complete, send, close, replaced, setAlarm, now = () => Date.now(), setTimer = (fn, ms) => setTimeout(fn, ms), log = null }) {
   let identity = null;
   let socketOpen = false;
   let lastHeardAt = 0;
@@ -46,6 +46,14 @@ export function createDevice({ verify, claim, complete, send, close, setAlarm, n
       lastHeardAt = now();
     },
 
+    restore(session) {
+      if (!session || typeof session.deviceName !== 'string' || !session.deviceName) return false;
+      identity = { deviceName: session.deviceName, token: session.token || '' };
+      socketOpen = true;
+      lastHeardAt = now();
+      return true;
+    },
+
     async onMessage(text) {
       lastHeardAt = now();
       const parsed = parseFrame(typeof text === 'string' ? text : String(text ?? ''));
@@ -73,7 +81,7 @@ export function createDevice({ verify, claim, complete, send, close, setAlarm, n
           close(4001, 'unauthorized');
           return;
         }
-        if (identity) close(1000, 'replaced');
+        if (identity) replaced();
         identity = found;
         socketOpen = true;
         send(JSON.stringify({ type: 'ready', serverTime: new Date(now()).toISOString() }));

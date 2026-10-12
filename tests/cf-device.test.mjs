@@ -15,7 +15,7 @@ function harness(overrides = {}) {
   const sent = [];
   const closed = [];
   const alarms = [];
-  const calls = { verify: 0, claim: 0, complete: 0 };
+  const calls = { verify: 0, claim: 0, complete: 0, replaced: 0 };
   let time = 1000;
   const { verify: verifyOutcome, commands: commandsOpt, ...rest } = overrides;
   const commands = commandsOpt || [];
@@ -28,6 +28,7 @@ function harness(overrides = {}) {
     complete: async () => { calls.complete += 1; return { ok: true }; },
     send: (text) => { sent.push(JSON.parse(text)); },
     close: (code, reason) => { closed.push({ code, reason }); },
+    replaced: () => { calls.replaced += 1; },
     setAlarm: (atMs) => { alarms.push(atMs); },
     now: () => time,
     setTimer: (fn) => fn,
@@ -82,8 +83,34 @@ test('a second socket replaces the first instead of doubling it', async () => {
   await h.device.onMessage(HELLO());
   await h.device.onMessage(HELLO());
 
-  assert.equal(h.closed.length, 1, 'the old socket was left open');
+  assert.equal(h.calls.replaced, 1, 'the old socket was left open');
+  assert.equal(h.closed.length, 0, 'a blind close-all would kill the new socket too');
   assert.equal(h.sent.filter((f) => f.type === 'ready').length, 2);
+});
+
+test('a woken object restores its session instead of forgetting the device', async () => {
+  const h = harness();
+  await h.device.onMessage(HELLO());
+
+  const reborn = createDevice({
+    verify: async () => { throw new Error('must not re-verify on wake'); },
+    claim: async () => null,
+    complete: async () => {},
+    send: (text) => { h.sent.push(JSON.parse(text)); },
+    close: (code, reason) => { h.closed.push({ code, reason }); },
+    setAlarm: (atMs) => { h.alarms.push(atMs); },
+    now: h.getTime,
+    setTimer: (fn) => fn
+  });
+
+  const before = await reborn.runCommand({ commandId: 'c0', timeoutMs: 5000, deadlineMs: h.getTime() + 5000 });
+  assert.equal(before.error.code, 'DEVICE_GONE', 'a fresh object somehow knew the device');
+
+  reborn.restore({ deviceName: 'opera', token: 'a'.repeat(64) });
+  const pending = reborn.runCommand({ commandId: 'c1', timeoutMs: 5000, deadlineMs: h.getTime() + 5000 });
+  await reborn.onMessage(JSON.stringify({ type: 'complete', commandId: 'c1', ok: true, result: { ok: true } }));
+
+  assert.deepEqual(await pending, { ok: true, result: { ok: true } });
 });
 
 test('two concurrent runs complete exactly once each, in order', async () => {
