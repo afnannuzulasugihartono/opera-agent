@@ -294,6 +294,13 @@ async function claimForDevice(
   return { command: claimed.command ?? null, raw: claimed };
 }
 
+// WHY the channel listens twice. postgres_changes measured 650-1000 ms from
+// insert to claim; the broadcast the enqueue side sends lands in tens of
+// milliseconds. Both call the same drain, and the claim RPC arbitrates, so a
+// double trigger costs one cheap empty claim. The postgres listener stays because
+// writers that never broadcast — direct SQL, future code — must still work, just
+// slower. Removing it would make the fast path mandatory instead of preferred.
+
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
   const drain = async () => {
     const claimed = await claimForDevice(identity);
@@ -307,6 +314,11 @@ function subscribe(identity: { deviceName: string; token: string }, onCommand: (
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "opera_commands" },
+      drain
+    )
+    .on(
+      "broadcast",
+      { event: "new-command" },
       drain
     )
     .subscribe();

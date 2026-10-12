@@ -110,6 +110,7 @@ function harness(emit = { ok: true, eventId: 7 }) {
   const calls = [];
   let handler;
   const sockets = [];
+  const channels = [];
   const timers = { intervals: new Set(), intervalsById: new Map(), cleared: [], timeouts: [] };
   activeTimers = timers;
   upgradedSockets.length = 0;
@@ -121,8 +122,26 @@ function harness(emit = { ok: true, eventId: 7 }) {
       if (name === 'opera_claim_next_wait') return { data: { ok: true, command: null } };
       throw new Error(`Unexpected RPC ${name}`);
     },
-    channel() {
-      return { on() { return this; }, subscribe() { return this; } };
+    channel(topic) {
+      const bindings = [];
+      channels.push({ topic, bindings, fire: null });
+      const entry = channels[channels.length - 1];
+      return {
+        on(kind, filter, callback) {
+          bindings.push({ kind, filter, callback });
+          return this;
+        },
+        subscribe() {
+          entry.fire = async (kind, event) => {
+            for (const b of bindings) {
+              if (b.kind !== kind) continue;
+              if (kind === 'broadcast' && b.filter?.event !== event) continue;
+              await b.callback({});
+            }
+          };
+          return this;
+        }
+      };
     },
     async removeChannel() { }
   };
@@ -163,7 +182,7 @@ function harness(emit = { ok: true, eventId: 7 }) {
     }));
     return upgradedSockets[0];
   };
-  return { calls, post, openSocket, sockets, timers };
+  return { calls, post, openSocket, sockets, timers, channels };
 }
 
 // Every socket test opens the same way and waits for the same settled state. The
@@ -338,6 +357,30 @@ test('the keepalive tick drains past the safety interval, so a dead channel cost
     'four keepalive ticks crossed the safety interval and claimed nothing');
   assert.ok(socket.sent.some((text) => text.includes('"ping"')),
     'the keepalive tick sent no ping at all');
+});
+
+// WHY the bridge listens for the broadcast too. postgres_changes measured
+// 650-1000 ms from insert to claim; the enqueue side now broadcasts on the same
+// channel, which lands in tens of milliseconds. Both triggers call the same
+// drain and the claim arbitrates, so proving the binding exists and fires is
+// proving the fast path is wired.
+
+test('a broadcast on the device channel drains like an insert does', async () => {
+  const h = harness();
+  await handshakenSocket(h);
+
+  const entry = h.channels.find((c) => c.topic === 'opera-commands-opera');
+  assert.ok(entry, 'the socket subscribed to no device channel at all');
+
+  const kinds = entry.bindings.map((b) => b.kind);
+  assert.ok(kinds.includes('broadcast'), 'the channel never listens for the broadcast');
+  assert.ok(kinds.includes('postgres_changes'), 'the backup listener was dropped with the fast path');
+
+  const claimsBefore = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
+  await entry.fire('broadcast', 'new-command');
+  const claimsAfter = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
+
+  assert.ok(claimsAfter > claimsBefore, 'the broadcast arrived and claimed nothing');
 });
 
 test('the device emits without awaiting, so a slow bridge cannot slow a burst step', () => {
