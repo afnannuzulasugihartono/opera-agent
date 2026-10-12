@@ -26,11 +26,13 @@ test('the worker may reach the owner https endpoint and loopback, Supabase stays
 test('the worker may open a socket to the loopback bridge and to Supabase', () => {
   assert.match(csp, /ws:\/\/127\.0\.0\.1:\*/, 'the test and dev bridge socket is blocked');
   assert.match(csp, /wss:\/\/\*\.supabase\.co/, 'the deployed bridge socket is blocked');
+  assert.match(csp, /https:\/\/opera-agent\.opera-agent\.workers\.dev/, 'the Cloudflare worker is blocked');
+  assert.match(csp, /wss:\/\/opera-agent\.opera-agent\.workers\.dev/, 'the Cloudflare socket is blocked');
 });
 
-test('no websocket scheme is opened wider than the two hosts already trusted', () => {
+test('no websocket scheme is opened wider than the hosts already trusted', () => {
   assert.doesNotMatch(csp, /ws:\/\/\*/,
     'a wildcard websocket host is more permission than this extension needs');
-  assert.doesNotMatch(csp, /wss:\/\/(?!\*\.supabase\.co)/,
-    'a secure socket must point only at the bridge host');
+  assert.doesNotMatch(csp, /wss:\/\/(?!\*\.supabase\.co|opera-agent\.opera-agent\.workers\.dev)/,
+    'a secure socket must point only at a bridge host');
 });
