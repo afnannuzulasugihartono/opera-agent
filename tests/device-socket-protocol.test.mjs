@@ -18,6 +18,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEVICE_PROTOCOL_VERSION,
+  FRAME_MAX_BYTES,
   completionFrame,
   handshakeFrame,
   isFatalClose,
@@ -26,6 +27,7 @@ import {
   normalizeCommand,
   parseFrame
 } from '../extension/lib/socket-protocol.js';
+import { MAX_RESULT_BYTES } from '../extension/lib/serialize.js';
 
 test('the handshake carries the token and the device name the bridge verifies', () => {
   const frame = JSON.parse(handshakeFrame('secret-token', 'opera'));
@@ -84,4 +86,17 @@ test('an unauthorized or timed out handshake is fatal, so the device stops rathe
   assert.equal(isFatalClose(4001), true);
   assert.equal(isFatalClose(4002), true);
   assert.equal(isFatalClose(1006), false);
+});
+
+// The device parses what the bridge sends, and the bridge answers within the
+// same bound, so the device cap carries the same proof as the bridge side: a
+// lawful completion near the product bound must parse.
+
+test('a frame near the product bound parses on the device side too', () => {
+  assert.ok(FRAME_MAX_BYTES >= MAX_RESULT_BYTES * 1.5);
+  const frame = JSON.stringify({
+    type: 'command',
+    command: { id: 'cmd-big', method: 'page.read', params: { blob: 'y'.repeat(400 * 1024) } }
+  });
+  assert.equal(parseFrame(frame).ok, true);
 });
