@@ -193,7 +193,7 @@ async function handshakenSocket(h) {
 function pollTick(h) {
   const poll = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms !== 20000);
   assert.ok(poll, 'no drain poll interval to drive');
-  assert.ok(poll[1].ms >= 100 && poll[1].ms <= 500,
+  assert.ok(poll[1].ms >= 50 && poll[1].ms <= 300,
     `a ${poll[1].ms}ms poll is either wasteful or felt`);
   return poll;
 }

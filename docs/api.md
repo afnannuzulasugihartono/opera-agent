@@ -139,6 +139,20 @@ Measured after the change, direct inserts on a stable socket: insert-to-claim
 runs another ~600 ms on the measured network, most of it the device round trip
 rather than anything the bridge does.
 
+The poll interval was then halved to 100 ms after pg_stat_statements showed the
+claim RPC executes in 0.30 ms server-side: ten trivial indexed RPCs per second
+per connected device cost nothing, and the poll phase averages half the
+interval. Measured after that: insert-to-claim 24, 43, 84, 146, 160 ms,
+completing in 486-810 ms.
+
+What remains is counted, not guessed. DB execution across all RPCs on the path
+is under 15 ms total with optimal index usage. The await wakes on a 5-50 ms
+ramp. What is left is round trips: five edge-to-database hops and two socket
+traversals per command. Merging verify-plus-enqueue into the await call would
+save one hop (~100 ms) but touches authentication and pinned RPC surfaces for
+a tenth of a second, so it stays unwritten; the device round trip on a slow
+network is the single biggest term and only batching amortizes it.
+
 An honest footnote on method: one series showed every claim landing 30 seconds
 late in a batch. That was not the transport — ten inserts issued inside one DO
 block share one transaction and stay invisible until it commits.

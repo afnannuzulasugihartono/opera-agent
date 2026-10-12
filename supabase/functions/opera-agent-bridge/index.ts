@@ -298,17 +298,23 @@ async function claimForDevice(
 // tried and measured: postgres_changes delivered in 650-1000 ms, and a broadcast
 // fired 46 ms after insert still claimed anywhere between 200 and 1300 ms,
 // because the Realtime subscriber websocket held by the edge isolate proved
-// flaky — sometimes fast, sometimes silent. A 200 ms poll is deterministic where
-// both feeds were not, costs four trivial indexed RPCs per second per connected
-// device, and has no connection to go stale. The interval lives here rather than
-// on the device because this side has wall power and no radio.
+// flaky — sometimes fast, sometimes silent. A short poll is deterministic where
+// both feeds were not, costs ten trivial indexed RPCs per second per connected
+// device — each measured at 0.3 ms server-side — and has no connection to go
+// stale. The interval lives here rather than on the device because this side has
+// wall power and no radio.
+//
+// WHY one hundred milliseconds. The poll phase averages half the interval, so
+// 100 ms lands commands in ~50 ms average, ~100 ms worst case. Faster would burn
+// queries to shave tens of milliseconds nobody can feel; slower would be felt
+// directly, since this wait sits on every single command.
 //
 // WHY the drain refuses to overlap itself. Two drains in flight can claim two
 // commands and push the second before the first, which would execute same-device
 // commands out of order. A tick that arrives while a drain is running is skipped;
-// the next tick, 200 ms later, picks up whatever is still queued.
+// the next tick picks up whatever is still queued.
 
-const DRAIN_POLL_MS = 200;
+const DRAIN_POLL_MS = 100;
 
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
   let draining = false;
