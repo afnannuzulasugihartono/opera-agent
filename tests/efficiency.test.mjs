@@ -18,7 +18,12 @@ const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/2026
 const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
 const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
 
-test('bridge delegates the pull wait to Postgres and issues one claim call per request', () => {
+// The pull endpoint stays: it is still what pairing and heartbeats use, and
+// deleting a deployed contract is not this change's business. What must not
+// survive is the device asking for work, which was two round trips per action and
+// is gone with the poll loop.
+
+test('the device asks nothing, so there is no pull wait to pin', () => {
 
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
   assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
@@ -26,8 +31,10 @@ test('bridge delegates the pull wait to Postgres and issues one claim call per r
 
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
 
-  assert.match(background, /waitMs:\s*5000/);
-  assert.match(background, /\}, 10000\);/);
+  assert.doesNotMatch(background, /waitMs:\s*5000/,
+    'the device still carries a five second poll wait');
+  assert.match(background, /createSocketClient/);
+  assert.match(background, /socketClient\.start\(\)/);
 
   const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
   assert.equal((pull.match(/rpc\(/g) || []).length, 1, 'pull must make exactly one RPC call');

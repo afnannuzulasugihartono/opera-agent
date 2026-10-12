@@ -7,6 +7,7 @@ import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import { isUpgradeRequest, serveDeviceSocket } from "./bridge-socket.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -251,4 +252,72 @@ async function handle(req: Request) {
   }
 }
 
-Deno.serve((req: Request) => handle(req).then((res) => withCors(req, res)));
+// WHY the socket is checked before handle(). A device that opens a socket must never
+// reach the HTTP body parser, and the upgrade handshake has to be answered by the
+// runtime itself, which handle() cannot do.
+
+// WHY this is the part that removes polling. The device used to ask whether work
+// existed, which cost a round trip and a blocking wait on every action. A change
+// channel inverts it: the database says a row appeared, and the socket already
+// open carries it. Nothing asks, so nothing waits.
+//
+// WHY the claim still runs. Delivery is not ownership. Two sockets, or a restart
+// after delivery but before completion, would otherwise run the same command
+// twice, so the claim RPC is still the thing that decides who executes.
+
+function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
+  const channel = supabase
+    .channel(`opera-commands-${identity.deviceName}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "opera_commands" },
+      async () => {
+        const claimed = await rpc("opera_claim_next_wait", {
+          p_device_name: identity.deviceName,
+          p_token_hash: await sha256(identity.token.toLowerCase()),
+          p_extension_version: "",
+          p_protocol_version: 1,
+          p_capabilities: [],
+          p_wait_ms: 0
+        });
+
+        if (!claimed?.ok || !claimed.command) return;
+        onCommand(claimed.command);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+// WHY the handshake authenticates instead of claiming. The claim RPC is the only
+// existing check that a token belongs to a device name, which makes reusing it look
+// free. It is not: claiming is what takes ownership of a queued command, and a
+// handshake that claims discards the result. The device then sits connected and
+// silent while the one command waiting for it has been marked as somebody else's.
+// opera_auth_device answers exactly the question a handshake asks, and nothing more.
+
+async function verifyDeviceSocket(identity: { token: string; deviceName: string }) {
+  if (!validToken(identity.token) || !validDeviceName(identity.deviceName)) {
+    return { ok: false };
+  }
+  const deviceId = await rpc("opera_auth_device", {
+    p_device_name: identity.deviceName.trim(),
+    p_token_hash: await sha256(identity.token.toLowerCase())
+  });
+  return deviceId ? { ok: true, deviceId } : { ok: false };
+}
+
+Deno.serve((req: Request) => {
+  if (isUpgradeRequest(req)) {
+    return serveDeviceSocket(req, {
+      verifyDevice: verifyDeviceSocket,
+      complete,
+      subscribe,
+      log: createEdgeLog({})
+    }).response;
+  }
+  return handle(req).then((res) => withCors(req, res));
+});

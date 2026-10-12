@@ -1,9 +1,11 @@
-# @last-edited: 2026-10-04 19:35 UTC+7.
+# @last-edited: 2026-10-11 UTC+7.
 # @title: browser_extension_test — Test.
-# @state: a steal must end with something focused, which is what CI proved.
-# @dependencies: asyncio, io, json, queue, tempfile, threading, time, uuid, wave, http.server, pathlib, playwright.async_api.
+# @state: a steal must end with something focused, which is what CI proved; the bridge speaks the push socket the device now uses.
+# @dependencies: asyncio, base64, hashlib, io, json, queue, tempfile, threading, time, uuid, wave, http.server, pathlib, playwright.async_api.
 
 import asyncio
+import base64
+import hashlib
 import io
 import json
 import queue
@@ -24,16 +26,104 @@ EXPECTED_EXTENSION_ID = 'ofgemipoobcnbjkfanmofjbdonjapmgl'
 
 EXPECTED_VERSION = json.loads((EXT / 'manifest.json').read_text(encoding='utf-8'))['version']
 
+class CommandQueue:
+    """A FIFO that can put an undelivered command back at the head.
+
+    A socket can die between taking a command and writing it. The device never saw
+    that command, so losing it here would strand the caller until its timeout, and
+    the failure would read as a device that stopped answering rather than as the
+    transport it is."""
+
+    def __init__(self):
+        self._items = []
+        self._cv = threading.Condition()
+
+    def put(self, item):
+        with self._cv:
+            self._items.append(item)
+            self._cv.notify_all()
+
+    def put_front(self, item):
+        with self._cv:
+            self._items.insert(0, item)
+            self._cv.notify_all()
+
+    def get(self, timeout=None):
+        with self._cv:
+            if not self._items:
+                self._cv.wait(timeout)
+            if not self._items:
+                raise queue.Empty
+            return self._items.pop(0)
+
+    def qsize(self):
+        with self._cv:
+            return len(self._items)
+
+
 class BridgeState:
     def __init__(self):
-        self.commands = queue.Queue()
+        self.commands = CommandQueue()
         self.completed = {}
         self.started = {}
+        self.issued = {}
         self.metrics = []
         self.cv = threading.Condition()
         self.paired = False
-        self.fail_pull_until = 0.0
+        self.http_pull_calls = 0
+        self.http_complete_calls = 0
         self.listen = []
+        self.device_token = None
+        self.sockets = []
+        self.sockets_lock = threading.Lock()
+
+    def verify_device(self, token, device_name):
+        """A socket is a way to execute whatever it is sent, so this handshake is the
+        only thing standing between a stranger and the browser. The integration test
+        proves the gate is a gate: a wrong token is told no and disconnected unread,
+        and no command is ever pushed down it."""
+
+        if not self.paired:
+            return False, 'not paired'
+        if not self.device_token or token != self.device_token:
+            return False, 'bad token'
+        if not device_name:
+            return False, 'no device name'
+        return True, 'ok'
+
+    def drop_sockets(self):
+        """Kills every live device socket, so the reconnect path can be driven the
+        way a dropped network would drive it rather than by restarting anything.
+
+        The device is marked dropped here, synchronously, rather than left to the
+        handler thread to notice. A pusher that is already blocked on the queue can
+        otherwise take a command in the window between the close and the notice,
+        write it into a buffer the peer will discard, and report success."""
+
+        with self.sockets_lock:
+            live = list(self.sockets)
+            self.sockets = []
+        for device in live:
+            device.dropped = True
+            try:
+                device.sock.shutdown(2)
+            except OSError:
+                pass
+            try:
+                device.sock.close()
+            except OSError:
+                pass
+        return len(live)
+
+    def register_socket(self, device):
+        with self.sockets_lock:
+            self.sockets.append(device)
+
+    def unregister_socket(self, device):
+        with self.sockets_lock:
+            if device in self.sockets:
+                self.sockets.remove(device)
+
 
     def push(self, method, params=None, timeout=12000, benchmark=None):
         cid = str(uuid.uuid4())
@@ -44,6 +134,7 @@ class BridgeState:
             'started': time.perf_counter(),
             'requestBytes': len(json.dumps(command).encode())
         }
+        self.issued[cid] = method
         self.commands.put(command)
         return cid
 
@@ -68,7 +159,10 @@ class BridgeState:
             while cid not in self.completed and time.time() < deadline:
                 self.cv.wait(timeout=0.1)
             if cid not in self.completed:
-                raise TimeoutError(f'command {cid} not completed')
+                raise TimeoutError(
+                    f'{self.issued.get(cid, "?")} {cid} not completed; '
+                    f'sockets={len(self.sockets)} paired={self.paired} '
+                    f'token_set={bool(self.device_token)} queued={self.commands.qsize()}')
             return self.completed[cid]
 
 STATE = BridgeState()
@@ -160,6 +254,123 @@ def build_r5_wav():
 
 R5_WAV = build_r5_wav()
 
+WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+
+class DeviceSocket:
+    """One device connection. Commands are pushed the moment they are queued, which
+    is the whole point of the transport, so nothing here waits for the device to ask.
+
+    The write lock is load bearing: the reader answers acks while the pusher sends
+    work, and two threads writing frames into one stream interleave into garbage."""
+
+    def __init__(self, wfile, sock):
+        self.wfile = wfile
+        self.sock = sock
+        self.write_lock = threading.Lock()
+        self.ready = threading.Event()
+        self.dropped = False
+
+    def send(self, text):
+        payload = text.encode()
+        size = len(payload)
+        if size < 126:
+            head = bytes([0x81, size])
+        elif size < 65536:
+            head = bytes([0x81, 126]) + size.to_bytes(2, 'big')
+        else:
+            head = bytes([0x81, 127]) + size.to_bytes(8, 'big')
+        with self.write_lock:
+            self.wfile.write(head + payload)
+
+    def pong(self, payload):
+        with self.write_lock:
+            self.wfile.write(bytes([0x8A, len(payload)]) + payload)
+
+    def close(self, code=1000):
+        payload = code.to_bytes(2, 'big')
+        with self.write_lock:
+            self.wfile.write(bytes([0x88, len(payload)]) + payload)
+
+
+def read_ws_frame(rfile):
+    """Returns (opcode, payload, is_final). Client frames are always masked, so an
+    unmasked one is malformed rather than empty."""
+    header = rfile.read(2)
+    if len(header) < 2:
+        return None, None, True
+    is_final = bool(header[0] & 0x80)
+    opcode = header[0] & 0x0F
+    masked = bool(header[1] & 0x80)
+    length = header[1] & 0x7F
+    if length == 126:
+        length = int.from_bytes(rfile.read(2), 'big')
+    elif length == 127:
+        length = int.from_bytes(rfile.read(8), 'big')
+    mask = rfile.read(4) if masked else b''
+    payload = rfile.read(length) if length else b''
+    if masked and payload:
+        payload = bytes(byte ^ mask[index % 4] for index, byte in enumerate(payload))
+    return opcode, payload, is_final
+
+
+def read_ws_message(rfile, max_bytes=16 * 1024 * 1024):
+    """Returns (opcode, payload) for one whole message.
+
+    A browser splits a payload that outgrows a frame into an initial frame plus
+    continuation frames, and it is entitled to. Reading only the first one drops
+    the rest silently, which looks exactly like a device that stopped reporting:
+    the frame arrives, the payload does not parse, and no error is ever raised."""
+
+    opcode_start = None
+    buffer = bytearray()
+    while True:
+        opcode, payload, is_final = read_ws_frame(rfile)
+        if opcode is None:
+            return None, None
+        if opcode == 0x8:
+            return 0x8, payload
+        if opcode == 0x9:
+            return 0x9, payload
+        if opcode == 0xA:
+            continue
+        if opcode in (0x1, 0x2):
+            opcode_start = opcode
+            buffer = bytearray(payload)
+        elif opcode == 0x0 and opcode_start is not None:
+            buffer.extend(payload)
+        else:
+            continue
+        if len(buffer) > max_bytes:
+            return None, None
+        if is_final:
+            return opcode_start, bytes(buffer)
+
+
+def push_commands(device):
+    """Drains queued work down the socket, which is how the real bridge notifies a
+    device: on insert, not on request."""
+    while not device.ready.is_set():
+        time.sleep(0.02)
+    while not device.dropped:
+        try:
+            command = STATE.commands.get(timeout=0.2)
+        except queue.Empty:
+            continue
+        if device.dropped:
+            STATE.commands.put_front(command)
+            return
+        try:
+            device.send(json.dumps({
+                'type': 'command',
+                'command': command,
+                'serverTime': time.time()
+            }))
+        except OSError:
+            device.dropped = True
+            STATE.commands.put_front(command)
+            return
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
@@ -183,7 +394,82 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'content-type')
         self.end_headers()
 
+    def _ws_handshake(self):
+        """A 101 is only valid on HTTP/1.1, and the base handler speaks 1.0 by
+        default. Switching it here rather than on the class keeps every ordinary
+        response on 1.0, where a missing Content-Length costs nothing."""
+
+        self.protocol_version = 'HTTP/1.1'
+        key = self.headers.get('Sec-WebSocket-Key', '')
+        accept = base64.b64encode(hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
+        self.send_response(101, 'Switching Protocols')
+        self.send_header('Upgrade', 'websocket')
+        self.send_header('Connection', 'Upgrade')
+        self.send_header('Sec-WebSocket-Accept', accept)
+        self.end_headers()
+        self.wfile.flush()
+
+    def _serve_socket(self):
+        self._ws_handshake()
+        device = DeviceSocket(self.wfile, self.connection)
+        STATE.register_socket(device)
+        pusher = None
+        try:
+            while True:
+                opcode, payload = read_ws_message(self.rfile)
+                if opcode is None or opcode == 0x8:
+                    break
+                if opcode == 0x9:
+                    device.pong(payload)
+                    continue
+                if opcode != 0x1 or not payload:
+                    continue
+                try:
+                    message = json.loads(payload.decode('utf-8'))
+                except (ValueError, UnicodeDecodeError):
+                    device.send(json.dumps({'type': 'error', 'error': 'Frame must be JSON.'}))
+                    continue
+                if not isinstance(message, dict):
+                    continue
+
+                kind = message.get('type')
+                if kind == 'hello':
+                    allowed, reason = STATE.verify_device(
+                        str(message.get('token') or ''),
+                        str(message.get('deviceName') or ''))
+                    if not allowed:
+                        device.send(json.dumps({'type': 'error', 'error': reason}))
+                        device.close(4001)
+                        return
+                    device.ready.set()
+                    device.send(json.dumps({'type': 'ready', 'serverTime': time.time()}))
+                    pusher = threading.Thread(target=push_commands, args=(device,), daemon=True)
+                    pusher.start()
+                    continue
+
+                if kind == 'complete':
+                    if not device.ready.is_set():
+                        device.send(json.dumps({'type': 'error', 'error': 'Handshake first.'}))
+                        continue
+                    STATE.complete(message.get('commandId'), {
+                        'ok': message.get('ok') is True,
+                        'result': message.get('result'),
+                        'error': message.get('error')
+                    })
+                    device.send(json.dumps({
+                        'type': 'ack',
+                        'commandId': message.get('commandId')
+                    }))
+        except (OSError, ValueError):
+            pass
+        finally:
+            device.dropped = True
+            device.ready.clear()
+            STATE.unregister_socket(device)
+
     def do_GET(self):
+        if self.path.startswith('/bridge') and self.headers.get('Upgrade', '').lower() == 'websocket':
+            return self._serve_socket()
         if self.path.startswith('/pre8e-r5.wav'):
             payload = R5_WAV
             start = 0
@@ -298,16 +584,17 @@ class Handler(BaseHTTPRequestHandler):
             if body.get('code') != PAIR_CODE:
                 return self._send_json({'ok': False, 'error': 'bad code'}, 401)
             STATE.paired = True
+            STATE.device_token = body.get('token')
             return self._send_json({'ok': True, 'deviceId': 'mock-device', 'deviceName': body.get('deviceName', 'opera'), 'protocolVersion': 1})
         if action == 'pull':
-            if time.time() < STATE.fail_pull_until:
-                return self._send_json({'ok': False, 'error': 'temporary network failure'}, 503)
+            STATE.http_pull_calls += 1
             try:
                 cmd = STATE.commands.get(timeout=0.25)
             except queue.Empty:
                 cmd = None
             return self._send_json({'ok': True, 'command': cmd})
         if action == 'complete':
+            STATE.http_complete_calls += 1
             STATE.complete(body.get('commandId'), body)
             return self._send_json({'ok': True, 'status': 'completed' if body.get('ok') else 'failed'})
         if action == 'heartbeat':
@@ -501,6 +788,26 @@ async def run(port, profile):
         await popup.click('#pairButton')
         await popup.locator('#pairedSection').wait_for(state='visible', timeout=10000)
         assert STATE.paired
+
+        refusal = await popup.evaluate("""async (url) => {
+            const out = { frames: [], closed: null };
+            await new Promise((resolve) => {
+                const ws = new WebSocket(url);
+                const timer = setTimeout(resolve, 5000);
+                ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', token: 'not-the-token', deviceName: 'impostor' }));
+                ws.onmessage = (event) => {
+                    out.frames.push(String(event.data));
+                    if (JSON.parse(String(event.data)).type === 'error') {
+                        ws.onclose = (close) => { out.closed = close.code; clearTimeout(timer); resolve(); };
+                    }
+                };
+                ws.onclose = (close) => { out.closed = close.code; clearTimeout(timer); resolve(); };
+            });
+            return out;
+        }""", f'ws://{HOST}:{port}/bridge')
+        assert refusal['frames'], refusal
+        assert json.loads(refusal['frames'][0])['type'] == 'error', refusal['frames']
+        assert refusal['closed'] == 4001, refusal
 
         cid = STATE.push('browser.ping', benchmark='browser.ping')
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -2628,11 +2935,13 @@ async def run(port, profile):
 
         assert all(item['focusPreserved'] for item in focus_audit), focus_audit
 
-        STATE.fail_pull_until = time.time() + 1.2
-        await asyncio.sleep(1.5)
+        dropped = STATE.drop_sockets()
+        assert dropped >= 1, 'no live device socket to drop; the transport proved nothing'
         cid = STATE.push('browser.ping')
-        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 15))
+        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 25))
         assert result['version'] == EXPECTED_VERSION
+        assert STATE.http_pull_calls == 0, 'the device asked for work over HTTP'
+        assert STATE.http_complete_calls == 0, 'the device reported over HTTP'
 
         bridge_url = f'http://{HOST}:{port}/bridge'
         options = popup
