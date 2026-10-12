@@ -174,6 +174,26 @@ test('a socket that fails the handshake is closed unread and never receives work
     'a command went out before the bridge accepted this device');
 });
 
+// WHY this lock exists. The change channel is the only thing that claims a command
+// now that the device stopped polling, and a channel only exists while a socket is
+// connected. So work that queued while the device was away sat unclaimed until the
+// next command happened to arrive, which means the first command after any outage
+// could wait indefinitely. Claiming once on subscribe is what makes a reconnect
+// self-healing instead of dependent on luck.
+
+test('a fresh socket drains the backlog on arrival, so work queued while away still runs', async () => {
+  const h = harness();
+  const socket = await h.openSocket();
+
+  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const claims = h.calls.filter((c) => c.name === 'opera_claim_next_wait');
+  assert.ok(claims.length >= 1, 'connecting claimed nothing, so the backlog waits for the next insert');
+  assert.equal(claims[0].args.p_wait_ms, 0, 'the drain must not block the handshake that triggered it');
+});
+
 test('the device emits without awaiting, so a slow bridge cannot slow a burst step', () => {
   const pull = readFileSync(new URL('../extension/worker/execute-pull.js', import.meta.url), 'utf8');
   const emitter = pull.match(/function emitCommandEvent[\s\S]*?\n}/);

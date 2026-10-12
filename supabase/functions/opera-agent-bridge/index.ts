@@ -265,27 +265,48 @@ async function handle(req: Request) {
 // after delivery but before completion, would otherwise run the same command
 // twice, so the claim RPC is still the thing that decides who executes.
 
+// WHY the channel is drained the moment it opens, and then drained again for as
+// long as it stays open. A change channel only reports rows inserted while it is
+// listening, so anything that queued while the device was disconnected would
+// otherwise sit unclaimed until the next command happened to arrive, which makes
+// the first command after an outage depend on luck. The loop keeps draining
+// because one insert can leave more than one command queued behind a claim.
+
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
+  const drain = async () => {
+    const claimed = await rpc("opera_claim_next_wait", {
+      p_device_name: identity.deviceName,
+      p_token_hash: await sha256(identity.token.toLowerCase()),
+      p_extension_version: "",
+      p_protocol_version: 1,
+      p_capabilities: [],
+      p_wait_ms: 0
+    });
+
+    if (!claimed?.ok || !claimed.command) return false;
+    onCommand(claimed.command);
+    return true;
+  };
+
   const channel = supabase
     .channel(`opera-commands-${identity.deviceName}`)
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "opera_commands" },
-      async () => {
-        const claimed = await rpc("opera_claim_next_wait", {
-          p_device_name: identity.deviceName,
-          p_token_hash: await sha256(identity.token.toLowerCase()),
-          p_extension_version: "",
-          p_protocol_version: 1,
-          p_capabilities: [],
-          p_wait_ms: 0
-        });
-
-        if (!claimed?.ok || !claimed.command) return;
-        onCommand(claimed.command);
-      }
+      drain
     )
     .subscribe();
+
+  void (async () => {
+    for (;;) {
+      try {
+        if (!await drain()) return;
+      } catch (error) {
+        createEdgeLog({}).error("bridge socket drain failed", String(error?.message || error));
+        return;
+      }
+    }
+  })();
 
   return () => {
     void supabase.removeChannel(channel);

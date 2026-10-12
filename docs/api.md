@@ -98,6 +98,31 @@ There is no polling fallback. A device that cannot connect is a device that is
 down, and says so; a quiet fallback would restore the latency this replaced
 while looking perfectly healthy.
 
+### Measured
+
+Against the deployed bridge, timestamps taken from `opera_commands` rather than
+from either end's clock. Four consecutive commands on one held socket, each
+queued while the socket was idle:
+
+| | insert to claim | claim to complete | total |
+| --- | --- | --- | --- |
+| sample 1 | 454 ms | 227 ms | 681 ms |
+| sample 2 | 436 ms | 130 ms | 566 ms |
+| sample 3 | 574 ms | 375 ms | 949 ms |
+| sample 4 | 213 ms | 399 ms | 612 ms |
+
+The old polling path measured about 810 ms per action end to end, so the change
+is real but it is not the order of magnitude it looks like on paper. Polling is
+gone, and what replaced it is now the cost: roughly 445 ms is the change channel
+delivering the insert event, and roughly 300 ms is the edge round trip out to the
+device and back.
+
+The change channel is therefore the next thing to attack. The enqueue side
+already calls this bridge, so it could push the command directly over the socket
+it already knows about, which would remove the insert-event leg entirely rather
+than make it faster. Until that happens, the honest description of this
+transport is "no polling", not "instant".
+
 ## Endpoints
 
 | Endpoint | Method | Purpose | Auth |
