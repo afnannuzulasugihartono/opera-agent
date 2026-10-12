@@ -24,6 +24,25 @@ const HANDSHAKE_TIMEOUT_MS = 8000;
 const MAX_FRAME_BYTES = 64 * 1024;
 export const KEEPALIVE_MS = 20000;
 
+// WHY there is a safety drain on a timer, because the change channel turned out to
+// be unreliable in exactly the way that matters. Observed live: a device connected
+// and kept receiving keepalives for twenty-six minutes while the change channel
+// that was supposed to tell it about new work had died silently. The keepalives
+// come down the device socket; the change channel comes down a second connection
+// the realtime client opens, and nothing detects when that one goes. The device
+// looked perfectly healthy and every command queued behind a dead subscription.
+//
+// So the keepalive tick also drains. It is not the primary path: a change channel
+// that works delivers in about four hundred milliseconds, and this runs sixty
+// times slower. It is there so that a dead subscription costs a minute of latency
+// instead of costing every command until somebody reconnects by hand.
+//
+// WHY sixty seconds. Fast enough that a command is never stuck behind a dead
+// channel for long, slow enough that one cheap claim call per device per minute is
+// invisible next to the work the device actually does.
+
+export const SAFETY_DRAIN_MS = 60000;
+
 // WHY a keepalive exists, and why it is not polling. An MV3 service worker with a
 // silent WebSocket is an idle service worker, and Chrome ends idle workers after
 // thirty seconds. Observed against the deployed bridge: the device connected,
@@ -109,15 +128,32 @@ export function parseDeviceFrame(raw, maxBytes = MAX_FRAME_BYTES) {
   return { ok: true, message };
 }
 
-export function serveDeviceSocket(req, { verifyDevice, claim, complete, subscribe, log }) {
+// WHY the runtime is told to wait. After the upgrade response is returned, the
+// HTTP request is considered complete, and with no unresolved waitUntil work the
+// isolate looks idle and is retired early — documented as EarlyDrop, observed
+// here as every device socket dying with code 1006 at a consistent seventy-some
+// seconds. Keeping one promise pending until the socket closes is what tells the
+// supervisor this worker is still doing its job.
+//
+// WHY the guard. This module is imported directly by unit tests, where there is
+// no EdgeRuntime at all. A bare reference would throw on import and take down
+// the whole suite for a symbol that only exists on the platform.
+
+export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, onTick, log }) {
   const upgrade = isUpgradeRequest(req);
   if (!upgrade) return { upgraded: false, response: null };
 
   const { socket, response } = Deno.upgradeWebSocket(req);
 
-  const state = { ready: false, identity: null, queueing: false };
-  const counts = { pings: 0, pongs: 0 };
+  const state = { ready: false, identity: null };
+  const counts = { pings: 0, pongs: 0, lastSafetyDrainAt: 0 };
   let unsubscribe = null;
+
+  let resolveClosed = null;
+  if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
+    const closed = new Promise((resolve) => { resolveClosed = resolve; });
+    EdgeRuntime.waitUntil(closed);
+  }
   let handshakeTimer = null;
   let keepaliveTimer = null;
 
@@ -130,6 +166,28 @@ export function serveDeviceSocket(req, { verifyDevice, claim, complete, subscrib
       try { unsubscribe(); } catch { }
       unsubscribe = null;
     }
+    if (resolveClosed) {
+      const done = resolveClosed;
+      resolveClosed = null;
+      done();
+    }
+  };
+
+  const sendCommand = (command) => {
+    if (!state.ready || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(frameForCommand(command, new Date().toISOString()));
+  };
+
+  const safetyDrain = async () => {
+    if (!state.identity || typeof onTick !== "function") return;
+    let command = null;
+    try {
+      command = await onTick(state.identity);
+    } catch (error) {
+      log?.warn?.("safety drain failed", String(error?.message || error));
+      return;
+    }
+    if (command) sendCommand(command);
   };
 
   const dispatch = async (message) => {
@@ -156,10 +214,7 @@ export function serveDeviceSocket(req, { verifyDevice, claim, complete, subscrib
       socket.send(JSON.stringify({ type: "ready", serverTime: new Date().toISOString() }));
       log?.info?.("bridge socket ready", identity.deviceName);
 
-      unsubscribe = subscribe(identity, (command) => {
-        if (!state.ready || socket.readyState !== WebSocket.OPEN) return;
-        socket.send(frameForCommand(command, new Date().toISOString()));
-      });
+      unsubscribe = subscribe(identity, sendCommand);
 
       keepaliveTimer = setInterval(() => {
         if (socket.readyState !== WebSocket.OPEN) return;
@@ -174,6 +229,11 @@ export function serveDeviceSocket(req, { verifyDevice, claim, complete, subscrib
           socket.send(frameForKeepalive(new Date().toISOString()));
         } catch {
           teardown();
+          return;
+        }
+        if (counts.pings * KEEPALIVE_MS - counts.lastSafetyDrainAt >= SAFETY_DRAIN_MS) {
+          counts.lastSafetyDrainAt = counts.pings * KEEPALIVE_MS;
+          void safetyDrain();
         }
       }, KEEPALIVE_MS);
 

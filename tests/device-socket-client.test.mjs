@@ -17,7 +17,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSocketClient } from '../extension/lib/socket-client.js';
+import { createSocketClient, connectionPatch } from '../extension/lib/socket-client.js';
 
 class FakeSocket {
   static OPEN = 1;
@@ -25,11 +25,14 @@ class FakeSocket {
     this.url = url;
     this.readyState = 0;
     this.sent = [];
+    this.closes = 0;
     FakeSocket.last = this;
   }
   open() { this.readyState = 1; this.onopen?.(); }
   receive(data) { this.onmessage?.({ data }); }
   send(text) { this.sent.push(text); }
+  close() { this.closes += 1; this.readyState = 3; }
+  peerClosing() { this.readyState = 2; }
   drop(code = 1006, reason = '') { this.readyState = 3; this.onclose?.({ code, reason }); }
 }
 
@@ -354,7 +357,7 @@ test('a ping from the bridge is proof the peer is alive, so the deadline resets'
 
   for (let round = 0; round < 4; round += 1) {
     for (let tick = 0; tick < 4; tick += 1) {
-      clock += 10000;
+      clock += 5000;
       watchTimers[watchTimers.length - 1].fn();
     }
     sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
@@ -362,6 +365,160 @@ test('a ping from the bridge is proof the peer is alive, so the deadline resets'
 
   assert.equal(sockets.length, 1, 'a device that keeps hearing from the bridge was still replaced');
   assert.equal(client.isReady(), true);
+});
+
+// The mapping from socket events to reported connection state is the one piece of
+// the transport that used to be untestable, and it hid a crash: a bare `retryMs`
+// with no binding threw the first time onState fired, which killed start() before
+// the socket opened and left the device at "connecting" forever with no error.
+// Every branch below is a state the popup has to render, so every branch is
+// stated.
+
+test('a connected socket reports ready and stamps the moment it connected', () => {
+  assert.deepEqual(connectionPatch({ status: 'connected' }, '2026-10-12T00:00:00.000Z'), {
+    status: 'ready',
+    lastConnectedAt: '2026-10-12T00:00:00.000Z',
+    lastError: null
+  });
+});
+
+test('an error frame reports only its message, because the socket it arrived on is alive', () => {
+  const patch = connectionPatch({ status: 'error', message: 'Dispatch failed.' }, 'stamp');
+  assert.equal(patch.lastError, 'Bridge: Dispatch failed.');
+  assert.equal(patch.status, undefined, 'an error frame must not rewrite the connection status');
+  assert.equal(patch.lastConnectedAt, undefined, 'an error is not a fresh connection');
+});
+
+test('a rejected handshake says the bridge refused this device, not a code', () => {
+  const patch = connectionPatch({ status: 'rejected', code: 4001, reason: 'unauthorized' }, 'stamp');
+  assert.equal(patch.status, 'rejected');
+  assert.equal(patch.lastError, 'Bridge refused this device.');
+});
+
+test('a dropped socket carries its reason into the reported state', () => {
+  const patch = connectionPatch({ status: 'reconnecting', code: 1006, reason: '' }, 'stamp');
+  assert.equal(patch.status, 'reconnecting');
+  assert.match(patch.lastError, /1006/);
+});
+
+test('a stale socket reports reconnecting, because a new socket is already opening', () => {
+  const patch = connectionPatch({ status: 'stale', silenceMs: 61400 }, 'stamp');
+  assert.equal(patch.status, 'reconnecting');
+  assert.match(patch.lastError, /61400/);
+});
+
+test('a fresh attempt never erases why the previous one ended', () => {
+  const patch = connectionPatch({ status: 'connecting' }, 'stamp');
+  assert.equal(patch.status, 'connecting');
+  assert.equal('lastError' in patch, false,
+    'connecting clears the error, so a reconnect cycle reports nothing');
+});
+
+// WHY a close is never sent twice. Observed live on the extension errors page:
+// "Close received after close", raised from the send path when the client closed
+// a socket the bridge was already closing. Chromium logs that to the errors page
+// even though it is caught, so every user sees it. Closing a socket that is
+// already closing answers nothing and reports an error for free.
+
+test('tearing down a socket the peer is already closing sends no second close', () => {
+  const { client, sockets, watchTimers } = harness({ now: () => clock });
+  let clock = 1000;
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+  sockets[0].peerClosing();
+
+  for (let round = 0; round < 10; round += 1) {
+    clock += 10000;
+    watchTimers[watchTimers.length - 1].fn();
+  }
+
+  assert.equal(sockets[0].closes, 0, 'a close was sent on a socket already closing');
+  assert.ok(sockets.length >= 2, 'the dead socket was kept because its close was skipped');
+});
+
+test('stop does not close a socket that is already closed', () => {
+  const { client, sockets } = harness();
+  client.start();
+  sockets[0].open();
+  sockets[0].drop();
+
+  client.stop();
+
+  assert.equal(sockets[0].closes, 0, 'stop closed an already closed socket');
+});
+
+// WHY the socket recycles itself on a timer. Edge isolates have a hard wall clock
+// limit — about 150 seconds here — and waitUntil only prevents early retirement,
+// never extends it. Observed live as code 1006 at a metronomic 151 seconds after
+// waitUntil fixed the 76-second EarlyDrop deaths. Recycling on our own schedule,
+// and only when idle, turns a surprise kill mid-anything into a routine reconnect
+// nothing ever notices.
+
+test('an idle socket past its age is replaced before the platform kills it', () => {
+  const { client, sockets, states, watchTimers } = harness({ now: () => clock });
+  let clock = 1000;
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+
+  for (let tick = 0; tick < 14; tick += 1) {
+    clock += 10000;
+    sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
+    watchTimers[watchTimers.length - 1].fn();
+  }
+
+  assert.ok(sockets.length >= 2, 'an aged socket was never recycled');
+  assert.ok(states.some((s) => s.status === 'recycling'), 'the recycle reported no reason');
+  assert.equal(sockets[0].closes, 1, 'the old socket was abandoned, not closed cleanly');
+
+  const replacement = sockets[sockets.length - 1];
+  replacement.open();
+  const hello = JSON.parse(replacement.sent[0]);
+  assert.equal(hello.type, 'hello', 'the replacement never handshaked');
+});
+
+test('a socket past its age keeps serving while a command is running', async () => {
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const executed = [];
+  const { client, sockets, watchTimers } = harness({
+    now: () => clock,
+    execute: async (command) => {
+      executed.push(command.id);
+      await gate;
+      return { ok: true, result: {} };
+    }
+  });
+  let clock = 1000;
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'long', method: 'page.read' } }));
+  await new Promise((r) => setImmediate(r));
+
+  for (let tick = 0; tick < 14; tick += 1) {
+    clock += 10000;
+    sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
+    watchTimers[watchTimers.length - 1].fn();
+  }
+
+  assert.equal(sockets.length, 1, 'a running command was interrupted for a recycle');
+
+  release();
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setImmediate(r));
+  clock += 10000;
+  watchTimers[watchTimers.length - 1].fn();
+
+  assert.ok(sockets.length >= 2, 'the overdue socket was kept after its command finished');
+  assert.deepEqual(executed, ['long']);
+});
+
+test('a recycled socket reports reconnecting with no error, because nothing failed', () => {
+  const patch = connectionPatch({ status: 'recycling', ageMs: 121000 }, 'stamp');
+  assert.equal(patch.status, 'reconnecting');
+  assert.equal(patch.lastError, null);
 });
 
 test('stop leaves nothing running, so a paused worker does not keep a socket alive', () => {

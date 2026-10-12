@@ -95,6 +95,9 @@ $('unpairButton').addEventListener('click', async () => {
     await call('unpair');
     $('selfTestResult').hidden = true;
     await refresh();
+  } catch (error) {
+    $('error').hidden = false;
+    $('error').textContent = userErrorMessage(error?.message || error);
   } finally {
     setBusy($('unpairButton'), false);
   }
@@ -105,6 +108,9 @@ $('selfTestButton').addEventListener('click', async () => {
   try {
     const result = await call('self-test');
     $('selfTestResult').textContent = JSON.stringify(result, null, 2);
+    $('selfTestResult').hidden = false;
+  } catch (error) {
+    $('selfTestResult').textContent = userErrorMessage(error?.message || error);
     $('selfTestResult').hidden = false;
   } finally {
     setBusy($('selfTestButton'), false);

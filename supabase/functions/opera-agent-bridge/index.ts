@@ -272,19 +272,25 @@ async function handle(req: Request) {
 // the first command after an outage depend on luck. The loop keeps draining
 // because one insert can leave more than one command queued behind a claim.
 
+async function claimForDevice(identity: { deviceName: string; token: string }) {
+  const claimed = await rpc("opera_claim_next_wait", {
+    p_device_name: identity.deviceName,
+    p_token_hash: await sha256(identity.token.toLowerCase()),
+    p_extension_version: "",
+    p_protocol_version: 1,
+    p_capabilities: [],
+    p_wait_ms: 0
+  });
+
+  if (!claimed?.ok) return null;
+  return claimed.command ?? null;
+}
+
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
   const drain = async () => {
-    const claimed = await rpc("opera_claim_next_wait", {
-      p_device_name: identity.deviceName,
-      p_token_hash: await sha256(identity.token.toLowerCase()),
-      p_extension_version: "",
-      p_protocol_version: 1,
-      p_capabilities: [],
-      p_wait_ms: 0
-    });
-
-    if (!claimed?.ok || !claimed.command) return false;
-    onCommand(claimed.command);
+    const command = await claimForDevice(identity);
+    if (!command) return false;
+    onCommand(command);
     return true;
   };
 
@@ -335,6 +341,7 @@ Deno.serve((req: Request) => {
   if (isUpgradeRequest(req)) {
     return serveDeviceSocket(req, {
       verifyDevice: verifyDeviceSocket,
+      onTick: claimForDevice,
       complete,
       subscribe,
       log: createEdgeLog({})

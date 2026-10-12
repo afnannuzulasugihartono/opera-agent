@@ -194,7 +194,10 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
 test('serialize derives roles from markup instead of only the role attribute', async () => {
   const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
 
-  assert.match(source, /const \{ implicitRole \} = globalThis\.OperaAgentRoleReconcile \|\| \{\}/);
+  assert.match(source, /const roleRuntime = globalThis\.OperaAgentRoleReconcile \|\| \{\}/,
+    'the runtime is no longer read straight into a bare binding');
+  assert.match(source, /typeof roleRuntime\.implicitRole === 'function'/,
+    'implicitRole is not checked before it is used');
   assert.doesNotMatch(source, /^\s*import\s/m);
 
   const start = source.indexOf('function serialize(el, options = {}) {');

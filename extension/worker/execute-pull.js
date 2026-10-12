@@ -21,7 +21,7 @@ import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './
 import { readListenSession, listenStop, postListenChunk } from './listen.js';
 import { notReadyError } from './action-focus.js';
 import { handleStateEvent } from './loop-engine.js';
-import { createSocketClient } from '../lib/socket-client.js';
+import { createSocketClient, connectionPatch } from '../lib/socket-client.js';
 import { completionFrame } from '../lib/socket-protocol.js';
 import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
 import { screenshotCache } from './capture.js';
@@ -204,19 +204,8 @@ async function ensureSocket() {
       if (state.status === 'error') {
         log.warn('SOCKET_ERROR_FRAME', state.message);
       }
-      const status = state.status === 'connected' ? 'ready' : state.status;
-      const closed = state.code
-        ? `Socket closed ${state.code}${state.reason ? `: ${state.reason}` : ''}.`
-        : null;
-      setState({
-        status: status === 'error' ? 'ready' : status,
-        lastError: status === 'rejected' ? 'Bridge refused this device.'
-          : status === 'error' ? `Bridge: ${state.message}`
-            : closed,
-        retryMs,
-        ...(status === 'ready' ? { lastConnectedAt: nowIso(), lastError: null } : {})
-      }).catch(() => { });
-      if (status === 'ready') {
+      setState(connectionPatch(state, nowIso())).catch(() => { });
+      if (state.status === 'connected') {
         flushPendingCompletion(cfg).catch(() => { });
       }
     }

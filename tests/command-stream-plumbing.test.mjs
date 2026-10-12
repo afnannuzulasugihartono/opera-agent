@@ -60,6 +60,18 @@ globalThis.Deno = {
 };
 process.on('exit', () => { globalThis.Deno = realDeno; });
 
+// WHY the runtime is stubbed globally alongside Deno. serveDeviceSocket keeps one
+// promise pending through EdgeRuntime.waitUntil until the socket closes, which is
+// what stops the platform retiring the isolate while a device is connected. The
+// stub records the promise so a test can prove it is held and then released.
+
+const waitedPromises = [];
+const realEdgeRuntime = globalThis.EdgeRuntime;
+globalThis.EdgeRuntime = {
+  waitUntil(promise) { waitedPromises.push(promise); }
+};
+process.on('exit', () => { globalThis.EdgeRuntime = realEdgeRuntime; });
+
 // WHY the timers are stubbed globally too. serveDeviceSocket is the real module,
 // so its setInterval and setTimeout are the globals, exactly like its Deno. A
 // real keepalive interval holds the process open after the last test, so the suite
@@ -225,7 +237,9 @@ test('a socket that fails the handshake is closed unread and never receives work
 // WHY the drain is given turns rather than a fixed count of microtasks. The drain
 // is deliberately not awaited by the handshake, and asserting on an exact number
 // of turns makes this lock itself flaky under load, which is worse than not having
-// it at all.
+// it at all. The bound is generous because each turn is nearly free when idle and
+// the handshake's hashing runs on the threadpool, which queues behind the rest of
+// the suite when everything runs at once.
 
 test('a fresh socket drains the backlog on arrival, so work queued while away still runs', async () => {
   const h = harness();
@@ -233,7 +247,7 @@ test('a fresh socket drains the backlog on arrival, so work queued while away st
 
   await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
 
-  for (let turn = 0; turn < 50; turn += 1) {
+  for (let turn = 0; turn < 5000; turn += 1) {
     if (h.calls.some((c) => c.name === 'opera_claim_next_wait')) break;
     await new Promise((resolve) => setImmediate(resolve));
   }
@@ -252,7 +266,7 @@ test('closing the socket stops the keepalive, so a gone device leaks no timer', 
   const socket = await h.openSocket();
   socket.onopen();
   await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
-  for (let turn = 0; turn < 50; turn += 1) {
+  for (let turn = 0; turn < 5000; turn += 1) {
     if (h.timers.intervals.size) break;
     await new Promise((resolve) => setImmediate(resolve));
   }
@@ -265,6 +279,63 @@ test('closing the socket stops the keepalive, so a gone device leaks no timer', 
   assert.equal(h.timers.intervals.size, 0, 'the keepalive survived the socket it belonged to');
   assert.equal(h.timers.cleared.length, 2,
     'the handshake timer must be cleared too, or it fires on a dead socket');
+});
+
+// WHY the worker is kept alive by a promise the test can see. Without an
+// unresolved waitUntil, the platform retires the isolate as idle and every device
+// socket dies at a consistent interval — observed live as code 1006 every
+// seventy-some seconds. Holding the promise is what keeps the socket's worker
+// alive, and resolving it on close is what lets the worker end.
+
+test('an upgraded socket holds the worker until it closes, or the platform retires it early', async () => {
+  waitedPromises.length = 0;
+  const h = harness();
+  const socket = await h.openSocket();
+
+  assert.equal(waitedPromises.length, 1, 'the upgrade held no promise, so the worker looks idle');
+
+  let released = false;
+  waitedPromises[0].then(() => { released = true; });
+  socket.onclose({ code: 1006, reason: '' });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(released, true, 'closing the socket never released the worker');
+});
+
+// WHY the safety drain is driven, not just bounded. Pinning the interval says how
+// often it should run; it does not say it runs at all. The drain is the net under
+// the change channel, so this test turns the keepalive crank by hand until the
+// interval is crossed and proves a claim follows.
+
+test('the keepalive tick drains past the safety interval, so a dead channel costs a minute, not every command', async () => {
+  const h = harness();
+  const socket = await h.openSocket();
+  socket.onopen();
+  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
+  for (let turn = 0; turn < 5000; turn += 1) {
+    if (h.timers.intervals.size) break;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  const keepalive = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms === 20000);
+  assert.ok(keepalive, 'no keepalive interval to drive');
+  const tick = keepalive[1].fn;
+
+  const claimsBefore = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
+
+  for (let round = 0; round < 4; round += 1) {
+    await socket.onmessage({ data: JSON.stringify({ type: 'pong' }) });
+    tick();
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  const claimsAfter = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
+  assert.ok(claimsAfter > claimsBefore,
+    'four keepalive ticks crossed the safety interval and claimed nothing');
+  assert.ok(socket.sent.some((text) => text.includes('"ping"')),
+    'the keepalive tick sent no ping at all');
 });
 
 test('the device emits without awaiting, so a slow bridge cannot slow a burst step', () => {
