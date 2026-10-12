@@ -42,6 +42,34 @@ test('the device asks nothing, so there is no pull wait to pin', () => {
   assert.doesNotMatch(bridge, /FAST_PULL_|IDLE_PULL_/);
 });
 
+// The heartbeat used to be the poll loop's status writer as well as its keepalive.
+// Left alone, it kept doing that job after the socket took over: every thirty
+// seconds it stamped lastConnectedAt over the socket's own state, and a heartbeat
+// that failed set the status to reconnecting while the socket was sitting there
+// healthy. Observed live against the deployed bridge, where a perfectly connected
+// device reported itself reconnecting. The heartbeat now keeps the device row
+// fresh and says nothing about the connection.
+
+test('the heartbeat keeps the device row fresh without claiming the connection status', () => {
+  const body = background.slice(background.indexOf('async function heartbeat('));
+  const fn = body.slice(0, body.indexOf('\n}'));
+
+  assert.match(fn, /action: 'heartbeat'/, 'the heartbeat must still be sent');
+  assert.doesNotMatch(fn, /setState\(/,
+    'the heartbeat still writes connection state, so it fights the socket for it');
+});
+
+test('only the socket stamps lastConnectedAt, because only the socket knows when it connected', () => {
+  const code = background.replace(/^\s*\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  const writes = [...code.matchAll(/lastConnectedAt:(?!\s*null)/g)];
+  assert.equal(writes.length, 1,
+    `lastConnectedAt is written in ${writes.length} places; one writer owns it or two of them disagree`);
+
+  const owner = code.slice(Math.max(0, writes[0].index - 400), writes[0].index);
+  assert.match(owner, /onState:/, 'lastConnectedAt is not written by the socket state handler');
+});
+
 test('runner awaits command completion inside Postgres and keeps safe transient retries', () => {
   assert.match(runner, /rpc\("opera_await"/);
   assert.match(runner, /normalizeAwaitTiming/);

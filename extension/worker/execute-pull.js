@@ -202,7 +202,15 @@ async function ensureSocket() {
     },
     onState: (state) => {
       const status = state.status === 'connected' ? 'ready' : state.status;
-      setState({ status, lastError: status === 'rejected' ? 'Bridge refused this device.' : null }).catch(() => { });
+      const closed = state.code
+        ? `Socket closed ${state.code}${state.reason ? `: ${state.reason}` : ''}.`
+        : null;
+      setState({
+        status,
+        lastError: status === 'rejected' ? 'Bridge refused this device.' : closed,
+        retryMs,
+        ...(status === 'ready' ? { lastConnectedAt: nowIso(), lastError: null } : {})
+      }).catch(() => { });
       if (status === 'ready') {
         flushPendingCompletion(cfg).catch(() => { });
       }
@@ -218,9 +226,18 @@ function restartSocket() {
   ensureSocket().catch((error) => { log.debug('SOCKET_START_FAILED', String(error?.message || error)); });
 }
 
+// WHY the heartbeat no longer reports a connection status. It used to, back when
+// it was the poll loop's status writer as well as its keepalive, and it went on
+// doing that job after the socket took ownership of it: every thirty seconds it
+// stamped lastConnectedAt over the socket's own state, and a heartbeat that failed
+// set the status to reconnecting while the socket was healthy and connected.
+// Observed live against the deployed bridge. The heartbeat's job is to keep the
+// device row's last_seen_at fresh, and that is all it does now.
+
 async function heartbeat() {
   const cfg = await getConfig();
   if (!cfg.paired || !cfg.deviceToken) return;
+
   try {
     await fetchJson(cfg.bridgeUrl, {
       action: 'heartbeat',
@@ -230,9 +247,8 @@ async function heartbeat() {
       protocolVersion: PROTOCOL_VERSION,
       capabilities: Object.keys(METHOD_SPECS)
     }, 8000);
-    await setState({ status: 'ready', lastConnectedAt: nowIso(), lastError: null });
   } catch (error) {
-    await setState({ status: 'reconnecting', lastError: String(error?.message || error).slice(0, 1000) });
+    log.debug('HEARTBEAT_FAILED', String(error?.message || error));
   }
 }
 

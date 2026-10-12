@@ -30,7 +30,7 @@ class FakeSocket {
   open() { this.readyState = 1; this.onopen?.(); }
   receive(data) { this.onmessage?.({ data }); }
   send(text) { this.sent.push(text); }
-  drop(code = 1006) { this.readyState = 3; this.onclose?.({ code }); }
+  drop(code = 1006, reason = '') { this.readyState = 3; this.onclose?.({ code, reason }); }
 }
 
 function harness(overrides = {}) {
@@ -52,7 +52,7 @@ function harness(overrides = {}) {
       executed.push(command);
       return { ok: true, result: { done: true } };
     },
-    onState: (s) => states.push(s.status),
+    onState: (s) => states.push(s),
     setTimer: (fn, ms) => { timers.push({ fn, ms }); },
     ...overrides
   });
@@ -144,7 +144,7 @@ test('a rejected handshake stops the device for good instead of retrying forever
 
   sockets[0].drop(4001);
   assert.equal(timers.length, 0, 'no retry after the bridge refuses this device');
-  assert.ok(states.includes('rejected'));
+  assert.ok(states.some((s) => s.status === 'rejected'));
 });
 
 test('a malformed frame is ignored rather than allowed to throw inside the socket', async () => {
@@ -277,6 +277,45 @@ test('stop ends a drain that is already running, so queued work is not run for a
   assert.deepEqual(executed, ['running'], 'a stopped device went on to run work it had already been given');
 });
 
+// A socket that dies leaves a number behind, and today nothing records it. A
+// device that reconnects forever with no reason in any log is indistinguishable
+// from a device that is working, which is the one failure this transport cannot
+// afford.
+
+test('a dropped socket says why, so a reconnect loop is not silent', () => {
+  const { client, sockets, states } = harness();
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+
+  sockets[0].drop(1011, 'service restarting');
+
+  const dropped = states.filter((s) => s.status === 'reconnecting').pop();
+  assert.ok(dropped, 'the close carried no reason at all');
+  assert.equal(dropped.code, 1011);
+  assert.match(dropped.reason || '', /./, 'a numeric code with no text is still no explanation');
+});
+
+// A keepalive only proves the bridge can still write. Observed live: a device
+// socket held for twenty minutes across an edge instance being replaced, still
+// receiving pings, with a change subscription that had died with the old instance.
+// Nothing looked wrong, so nothing reconnected. The device has to answer, so the
+// bridge can tell an open socket from a dead one.
+
+test('a ping is answered, because a one-way keepalive cannot detect a dead bridge', () => {
+  const { client, sockets } = harness();
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+  const before = sockets[0].sent.length;
+
+  sockets[0].receive(JSON.stringify({ type: 'ping', serverTime: '2026-10-12T00:00:00.000Z' }));
+
+  const reply = sockets[0].sent.slice(before).map((text) => JSON.parse(text));
+  assert.equal(reply.length, 1, 'the device read a keepalive and said nothing back');
+  assert.equal(reply[0].type, 'pong');
+});
+
 test('stop leaves nothing running, so a paused worker does not keep a socket alive', () => {
   const { client, sockets, states } = harness();
   client.start();
@@ -284,7 +323,7 @@ test('stop leaves nothing running, so a paused worker does not keep a socket ali
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
 
   client.stop();
-  assert.ok(states.includes('stopped'));
+  assert.ok(states.some((s) => s.status === 'stopped'));
   assert.equal(client.isOpen(), false);
   assert.equal(client.isReady(), false);
 });

@@ -52,7 +52,8 @@ import {
   isReady,
   isRunnableCommand,
   normalizeCommand,
-  parseFrame
+  parseFrame,
+  pongFrame
 } from './socket-protocol.js';
 
 const BASE_RETRY_MS = 500;
@@ -143,6 +144,11 @@ export function createSocketClient({
       if (!parsed.ok) return;
 
       const message = parsed.message;
+      if (message.type === 'ping') {
+        frame(pongFrame());
+        return;
+      }
+
       if (isReady(message)) {
         ready = true;
         retryMs = BASE_RETRY_MS;
@@ -163,12 +169,13 @@ export function createSocketClient({
       socket = null;
       ready = false;
       const code = Number(event?.code ?? 0);
+      const reason = String(event?.reason || '').slice(0, 200);
       if (isFatalClose(code)) {
         closedByUs = true;
-        onState({ status: 'rejected', code });
+        onState({ status: 'rejected', code, reason });
         return;
       }
-      onState({ status: 'reconnecting' });
+      onState({ status: 'reconnecting', code, reason });
       scheduleRetry(gen);
     };
 

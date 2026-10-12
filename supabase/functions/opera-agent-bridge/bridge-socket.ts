@@ -22,6 +22,45 @@
 
 const HANDSHAKE_TIMEOUT_MS = 8000;
 const MAX_FRAME_BYTES = 64 * 1024;
+export const KEEPALIVE_MS = 20000;
+
+// WHY a keepalive exists, and why it is not polling. An MV3 service worker with a
+// silent WebSocket is an idle service worker, and Chrome ends idle workers after
+// thirty seconds. Observed against the deployed bridge: the device connected,
+// reported ready, and was closed with "signal is aborted without reason" about
+// every thirty seconds after. Nothing was refused; the worker simply stopped
+// existing, taking its socket with it.
+//
+// A frame on a timer asks nothing and waits for nothing, which is the whole
+// difference from the /pull loop this transport replaced. It exists because an
+// arriving message is what resets the worker timer, and because a peer that has
+// gone away should be noticed rather than written to forever.
+//
+// WHY twenty seconds. The worker dies at thirty, so the interval has to be
+// comfortably inside it; twenty leaves a full missed frame of slack before a slow
+// or delayed delivery is enough to lose the device.
+
+export function frameForKeepalive(serverTime) {
+  return JSON.stringify({ type: "ping", serverTime });
+}
+
+// WHY an unanswered ping closes the socket rather than being retried. A socket
+// that looks open and is not is worse than one that is closed: the device sits
+// connected, every health signal reads fine, and no command ever arrives. That is
+// not hypothetical. Observed live against this bridge, a device socket held for
+// twenty minutes across an edge instance being replaced, still receiving pings,
+// with a change subscription that had died with the old instance.
+//
+// WHY one tick of slack. Closing on the first missing answer would drop healthy
+// sockets whenever a reply is merely late, which trades a rare silent hang for a
+// routine reconnect. Waiting one tick means a peer has to miss a full interval
+// before it is declared gone.
+
+export function keepaliveDecision(counts) {
+  if (counts.pings === 0) return "wait";
+  if (counts.pings > counts.pongs) return "close";
+  return "wait";
+}
 
 // Dependencies are injected so the protocol is testable without a socket, a
 // database, or a browser, and so the channel opens only after auth: a socket that
@@ -77,12 +116,16 @@ export function serveDeviceSocket(req, { verifyDevice, claim, complete, subscrib
   const { socket, response } = Deno.upgradeWebSocket(req);
 
   const state = { ready: false, identity: null, queueing: false };
+  const counts = { pings: 0, pongs: 0 };
   let unsubscribe = null;
   let handshakeTimer = null;
+  let keepaliveTimer = null;
 
   const teardown = () => {
     if (handshakeTimer) clearTimeout(handshakeTimer);
     handshakeTimer = null;
+    if (keepaliveTimer) clearInterval(keepaliveTimer);
+    keepaliveTimer = null;
     if (typeof unsubscribe === "function") {
       try { unsubscribe(); } catch { }
       unsubscribe = null;
@@ -90,6 +133,11 @@ export function serveDeviceSocket(req, { verifyDevice, claim, complete, subscrib
   };
 
   const dispatch = async (message) => {
+    if (message.type === "pong") {
+      counts.pongs += 1;
+      return;
+    }
+
     if (message.type === "hello") {
       const identity = handshakePayload(message);
       if (!identity) {
@@ -112,6 +160,23 @@ export function serveDeviceSocket(req, { verifyDevice, claim, complete, subscrib
         if (!state.ready || socket.readyState !== WebSocket.OPEN) return;
         socket.send(frameForCommand(command, new Date().toISOString()));
       });
+
+      keepaliveTimer = setInterval(() => {
+        if (socket.readyState !== WebSocket.OPEN) return;
+        if (keepaliveDecision(counts) === "close") {
+          log?.warn?.("device stopped answering keepalives", identity.deviceName);
+          teardown();
+          socket.close(4003, "keepalive unanswered");
+          return;
+        }
+        counts.pings += 1;
+        try {
+          socket.send(frameForKeepalive(new Date().toISOString()));
+        } catch {
+          teardown();
+        }
+      }, KEEPALIVE_MS);
+
       return;
     }
 

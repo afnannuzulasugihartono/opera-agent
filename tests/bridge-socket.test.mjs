@@ -18,8 +18,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  KEEPALIVE_MS,
   frameForCommand,
+  frameForKeepalive,
   isUpgradeRequest,
+  keepaliveDecision,
   parseDeviceFrame,
   handshakePayload
 } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
@@ -27,6 +30,52 @@ import {
 const upgradeRequest = (headers = {}) => new Request('https://bridge.example/', {
   method: 'GET',
   headers: { upgrade: 'websocket', ...headers }
+});
+
+// WHY this lock exists. A service worker with a silent WebSocket is an idle
+// service worker, and Chrome ends idle workers after thirty seconds. Observed on
+// this extension against the deployed bridge: connected and ready, then closed
+// with "signal is aborted without reason" roughly every thirty seconds, which is
+// the worker being torn down rather than the bridge refusing anything.
+//
+// A frame the bridge sends on a timer is not polling. Polling is asking a question
+// and waiting for an answer, and nothing here waits: the frame says nothing and
+// expects nothing. It is what keeps the device alive, and it doubles as the check
+// that a peer which has gone away is noticed rather than written to forever.
+
+test('the keepalive is frequent enough to beat the worker idle timeout', () => {
+  assert.ok(KEEPALIVE_MS > 0 && KEEPALIVE_MS < 30000,
+    `a ${KEEPALIVE_MS}ms keepalive cannot keep a 30000ms idle worker alive`);
+});
+
+test('a keepalive frame asks for nothing, so a device never waits on it', () => {
+  const frame = JSON.parse(frameForKeepalive('2026-10-12T00:00:00.000Z'));
+  assert.equal(frame.type, 'ping');
+  assert.equal(frame.serverTime, '2026-10-12T00:00:00.000Z');
+  assert.deepEqual(Object.keys(frame).sort(), ['serverTime', 'type']);
+});
+
+test('a device ignores a keepalive rather than treating it as work', () => {
+  const parsed = parseDeviceFrame(frameForKeepalive('2026-10-12T00:00:00.000Z'));
+  assert.equal(parsed.ok, true);
+  assert.notEqual(parsed.message.type, 'command');
+  assert.notEqual(parsed.message.type, 'complete');
+});
+
+// WHY a missed pong closes the socket. Observed live: a device socket held for
+// twenty minutes across an edge instance being replaced, still receiving pings,
+// with a change subscription that had died with the old instance. Every signal
+// said healthy and no command ever arrived. A ping that is answered proves both
+// directions are alive; a ping that is not answered is the only evidence there is
+// that the peer is gone, so the socket is closed and the device reconnects to a
+// live instance.
+
+test('a keepalive tick with no answer since the last one closes the socket', () => {
+  assert.equal(keepaliveDecision({ pings: 2, pongs: 2 }), 'wait', 'an answered peer was closed anyway');
+  assert.equal(keepaliveDecision({ pings: 1, pongs: 1 }), 'wait', 'one tick of slack, or a slow reply closes a healthy socket');
+  assert.equal(keepaliveDecision({ pings: 2, pongs: 1 }), 'close', 'the latest ping went unanswered for a whole interval');
+  assert.equal(keepaliveDecision({ pings: 1, pongs: 0 }), 'close', 'a peer that never answered must not be waited on forever');
+  assert.equal(keepaliveDecision({ pings: 0, pongs: 0 }), 'wait', 'the first tick has nothing to compare against');
 });
 
 test('only a websocket request is treated as an upgrade, or a normal POST would be hijacked', () => {
