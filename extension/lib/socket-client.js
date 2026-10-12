@@ -147,7 +147,7 @@ export function createSocketClient({
         ready = true;
         retryMs = BASE_RETRY_MS;
         onState({ status: 'connected' });
-        drain();
+        void drain();
         return;
       }
 
@@ -155,7 +155,7 @@ export function createSocketClient({
       if (!ready) return;
 
       takeQueue.push(normalizeCommand(message));
-      drain();
+      void drain();
     };
 
     next.onclose = (event) => {
