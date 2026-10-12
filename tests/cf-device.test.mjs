@@ -58,6 +58,25 @@ test('a bad handshake is closed unread and never drains', async () => {
   assert.equal(h.calls.claim, 0, 'an unauthenticated socket triggered a claim');
 });
 
+test('a verifier outage closes with 1011 instead of hanging the socket silent', async () => {
+  const h = harness();
+  h.device = createDevice({
+    verify: async () => { throw new Error('postgrest down'); },
+    claim: async () => { throw new Error('must never drain'); },
+    complete: async () => {},
+    send: (text) => { h.sent.push(JSON.parse(text)); },
+    close: (code, reason) => { h.closed.push({ code, reason }); },
+    setAlarm: (atMs) => { h.alarms.push(atMs); },
+    now: h.getTime,
+    setTimer: (fn) => fn
+  });
+  await h.device.onMessage(HELLO());
+
+  assert.equal(h.closed.length, 1);
+  assert.equal(h.closed[0].code, 1011);
+  assert.equal(h.sent[0].type, 'error');
+});
+
 test('a second socket replaces the first instead of doubling it', async () => {
   const h = harness();
   await h.device.onMessage(HELLO());

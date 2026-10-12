@@ -6,6 +6,9 @@ name = "opera-agent"
 main = "src/worker.js"
 compatibility_date = "2026-01-01"
 
+[vars]
+SUPABASE_URL = "https://nenmkmtvjremqphfqnfw.supabase.co"
+
 [[durable_objects.bindings]]
 name = "DEVICE"
 class_name = "Device"

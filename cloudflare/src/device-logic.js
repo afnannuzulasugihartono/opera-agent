@@ -59,7 +59,15 @@ export function createDevice({ verify, claim, complete, send, close, setAlarm, n
 
       if (message.type === 'hello') {
         const found = handshakePayload(message);
-        const verified = found ? await verify(found) : null;
+        let verified = null;
+        try {
+          verified = found ? await verify(found) : null;
+        } catch (error) {
+          try { log?.warn?.('verify failed', String(error?.message || error)); } catch { }
+          send(JSON.stringify({ type: 'error', error: 'Verification unavailable.' }));
+          close(1011, 'verify unavailable');
+          return;
+        }
         if (!verified?.ok) {
           send(JSON.stringify({ type: 'error', error: 'Unauthorized device.' }));
           close(4001, 'unauthorized');
