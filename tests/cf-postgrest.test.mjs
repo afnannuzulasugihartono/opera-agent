@@ -2,6 +2,7 @@
 // @title: cf-postgrest — the PostgREST RPC call, checked without a network.
 // @state: 4 locks; endpoint shape, failure mapping, credential gate, deadline.
 // @dependencies: node:test, strict, ../cloudflare/src/postgrest.js.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPostgrest } from '../cloudflare/src/postgrest.js';
