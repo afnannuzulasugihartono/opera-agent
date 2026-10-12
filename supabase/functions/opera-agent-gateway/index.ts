@@ -116,13 +116,17 @@ async function command(req: Request, _url: URL) {
 
   const tokenHash = await sha256Hex(token.toLowerCase());
 
-  let auth = await rpc("opera_verify_device", {
+  let result = await rpc("opera_verify_enqueue", {
+    p_token_hash: tokenHash,
     p_device_name: DEVICE_NAME,
-    p_token_hash: tokenHash
+    p_method: method,
+    p_params: params,
+    p_timeout_ms: timeoutMs,
+    p_request_id: requestId
   });
   let deviceName = DEVICE_NAME;
   let tokenClientId = "";
-  if (!auth?.ok) {
+  if (result && result.ok === false && result.error === "Unauthorized device.") {
 
     const { data, error } = await supabase.auth.getUser(token);
     const userId = !error ? data.user?.id : null;
@@ -138,26 +142,30 @@ async function command(req: Request, _url: URL) {
         .order("created_at").limit(1).single();
       if (device?.device_name) {
         deviceName = device.device_name as string;
-        auth = { ok: true, last_seen_at: (device.last_seen_at as string | null) ?? null };
+        result = await rpc("opera_enqueue", {
+          p_method: method,
+          p_params: params,
+          p_timeout_ms: timeoutMs,
+          p_device_name: deviceName,
+          p_request_id: requestId
+        });
       }
     }
   }
-  if (!auth?.ok) {
+  if (result && result.ok === false && result.error === "Unauthorized device.") {
     return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
   }
-
-  const lastSeenAt = typeof auth.last_seen_at === "string" ? auth.last_seen_at : null;
-  if (!lastSeenAt || Date.parse(lastSeenAt) < Date.now() - 90000) {
-    return json(req, { ok: false, error: "Device is offline.", lastSeenAt });
+  if (result && result.ok === false && result.error === "Device is not paired.") {
+    return json(req, { ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
   }
-
-  let result = await rpc("opera_enqueue", {
-    p_method: method,
-    p_params: params,
-    p_timeout_ms: timeoutMs,
-    p_device_name: deviceName,
-    p_request_id: requestId
-  });
+  if (result && result.ok === false && typeof result.error === "string") {
+    const body = { ok: false, error: result.error };
+    if (result.lastSeenAt !== undefined) body.lastSeenAt = result.lastSeenAt;
+    return json(req, body, 200);
+  }
+  if (!result?.ok) {
+    return json(req, result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
+  }
 
   if (result?.ok === true && result.commandId) {
 

@@ -14,7 +14,7 @@ const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/
   .replace(/^import .*;\r?\n/gm, ''));
 const commandId = '00000000-0000-4000-8000-000000000001';
 
-function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, user = null, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
+function harness({ merged = { ok: true, commandId }, user = null, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
   const calls = [];
   let handler;
   let committed = false;
@@ -43,9 +43,12 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
       calls.push({ name, args });
       if (name === 'opera_await_adaptive' && fail === 'transport') throw new Error('connection reset');
       if (name === fail) return { data: null, error: { message: 'RPC failed' } };
-      if (name === 'opera_verify_device') return { data: auth };
-      if (name === 'opera_enqueue') {
+      if (name === 'opera_verify_enqueue') {
         if (release) await release;
+        if (merged?.ok) committed = true;
+        return { data: merged };
+      }
+      if (name === 'opera_enqueue') {
         committed = true;
         return { data: enqueue };
       }
@@ -64,29 +67,31 @@ function harness({ auth = { ok: true, last_seen_at: new Date().toISOString() }, 
   })), raw: (req) => handler(req), getOpenApi: () => handler(new Request('https://proxy.test/opera-agent-gateway/openapi.json')) };
 }
 
-test('one caller request waits for committed enqueue, then adaptive await with unchanged arguments', async () => {
+test('one caller request authenticates and enqueues in a single call, then adaptive await with unchanged arguments', async () => {
   let release;
   const gate = new Promise((resolve) => { release = resolve; });
   const h = harness({ release: gate });
   const response = h.request({ params: { active: false }, waitMs: 2000, requestId: 'retry-1' });
   const deadline = Date.now() + 2000;
-  while (!h.calls.some((c) => c.name === 'opera_enqueue')) {
-    assert.ok(Date.now() < deadline, 'gateway did not reach enqueue');
+  while (!h.calls.some((c) => c.name === 'opera_verify_enqueue')) {
+    assert.ok(Date.now() < deadline, 'gateway did not reach verify-enqueue');
     if (h.calls.some((c) => c.name === 'opera_run_fast')) assert.fail('combined transaction cannot expose the queued command');
     await new Promise((resolve) => setImmediate(resolve));
   }
   assert.equal(h.calls.some((c) => c.name === 'opera_await_adaptive'), false);
+  assert.equal(h.calls.some((c) => c.name === 'opera_verify_device'), false, 'auth rides inside the merged call now');
   release();
   assert.equal((await response).status, 200);
   const calls = JSON.parse(JSON.stringify(h.calls));
-  assert.deepEqual(calls.map((c) => c.name || c), ['opera_verify_device', 'opera_enqueue', 'opera_await_adaptive']);
-  assert.deepEqual(calls[1].args, { p_method: 'tabs.list', p_params: { active: false }, p_timeout_ms: 2000, p_device_name: 'opera', p_request_id: 'retry-1' });
-  assert.deepEqual(calls[2].args, { p_command_id: commandId, p_timeout_ms: 2000 });
+  assert.deepEqual(calls.map((c) => c.name || c), ['opera_verify_enqueue', 'opera_await_adaptive']);
+  assert.match(calls[0].args.p_token_hash, /^[a-f0-9]{64}$/);
+  assert.deepEqual({ ...calls[0].args, p_token_hash: 'hash' }, { p_token_hash: 'hash', p_device_name: 'opera', p_method: 'tabs.list', p_params: { active: false }, p_timeout_ms: 2000, p_request_id: 'retry-1' });
+  assert.deepEqual(calls[1].args, { p_command_id: commandId, p_timeout_ms: 2000 });
 });
 
 test('missing and invalid tokens cannot read devices or enqueue', async () => {
   for (const missing of [true, false]) {
-    const h = harness({ auth: { ok: false } });
+    const h = harness({ merged: { ok: false, error: 'Unauthorized device.' } });
     assert.equal((await h.request(missing ? { apiKey: null } : {})).status, 401);
     assert.equal(h.calls.length, missing ? 0 : 1);
   }
@@ -94,7 +99,7 @@ test('missing and invalid tokens cannot read devices or enqueue', async () => {
 
 test('gateway 401 responses never echo the submitted token', async () => {
   const marker = 'TEST-TOKEN-UNIQUE-12345';
-  const h = harness({ auth: { ok: false } });
+  const h = harness({ merged: { ok: false, error: 'Unauthorized device.' } });
   const r1 = await h.request({ apiKey: marker });
   assert.equal(r1.status, 401);
   assert.doesNotMatch(await r1.text(), /TEST-TOKEN-UNIQUE-12345/);
@@ -106,14 +111,14 @@ test('gateway 401 responses never echo the submitted token', async () => {
 test('unpaired and offline devices are rejected before enqueue', async () => {
 
   {
-    const h = harness({ auth: { ok: false } });
+    const h = harness({ merged: { ok: false, error: 'Unauthorized device.' } });
     const response = await h.request();
     assert.equal(response.status, 401);
     assert.equal((await response.json()).error.code, 'UNAUTHORIZED');
     assert.equal(h.calls.some((c) => c.name === 'opera_enqueue'), false);
   }
-  for (const last_seen_at of [null, '2000-01-01T00:00:00Z']) {
-    const h = harness({ auth: { ok: true, last_seen_at } });
+  for (const lastSeenAt of [null, '2000-01-01T00:00:00Z']) {
+    const h = harness({ merged: { ok: false, error: 'Device is offline.', lastSeenAt } });
     const response = await h.request();
     assert.equal(response.status, 200);
     assert.equal((await response.json()).error, 'Device is offline.');
@@ -123,7 +128,7 @@ test('unpaired and offline devices are rejected before enqueue', async () => {
 
 test('a user JWT resolves the caller device, never the fixed name', async () => {
 
-  const h = harness({ auth: { ok: false }, user: { id: 'user-1', device: 'opera-brave' } });
+  const h = harness({ merged: { ok: false, error: 'Unauthorized device.' }, user: { id: 'user-1', device: 'opera-brave' } });
   const response = await h.request();
   assert.equal(response.status, 200);
   const enqueue = h.calls.find((c) => c.name === 'opera_enqueue');
@@ -132,20 +137,20 @@ test('a user JWT resolves the caller device, never the fixed name', async () => 
 });
 
 test('enqueue rejection is preserved and never followed by await', async () => {
-  for (const enqueue of [{ ok: false, error: 'Method is not allowlisted.' }, { ok: false, error: 'Device is not paired.' }, null]) {
-    const h = harness({ enqueue });
+  for (const merged of [{ ok: false, error: 'Method is not allowlisted.' }, { ok: false, error: 'Device is not paired.' }, null]) {
+    const h = harness({ merged });
     const response = await h.request();
-    assert.equal(response.status, enqueue?.error.includes('not paired') ? 401 : 200);
+    assert.equal(response.status, merged?.error.includes('not paired') ? 401 : 200);
     const body = await response.json();
-    if (enqueue?.error === 'Method is not allowlisted.') assert.deepEqual(body, enqueue);
-    if (!enqueue) assert.equal(body.error.code, 'GATEWAY_ERROR');
+    if (merged?.error === 'Method is not allowlisted.') assert.deepEqual(body, merged);
+    if (!merged) assert.equal(body.error.code, 'GATEWAY_ERROR');
     assert.equal(h.calls.some((c) => c.name === 'opera_await_adaptive'), false);
   }
 });
 
 test('reused command IDs, result envelopes and timeout semantics are preserved', async () => {
   for (const result of [{ ok: true, result: { value: 1 } }, { ok: false, error: { code: 'STALE_REF' } }, { ok: false, error: { code: 'AWAIT_TIMEOUT' } }]) {
-    const h = harness({ enqueue: { ok: true, commandId, reused: true }, result });
+    const h = harness({ merged: { ok: true, commandId, reused: true }, result });
     const response = await h.request({ apiKey: null, requestId: 'same-key', waitMs: 999999 }, { authorization: 'Bearer TEST-TOKEN' });
     assert.equal(response.status, result.error?.code === 'AWAIT_TIMEOUT' ? 504 : 200);
     const body = await response.json();
@@ -156,13 +161,13 @@ test('reused command IDs, result envelopes and timeout semantics are preserved',
   }
 });
 
-test('RPC failures retain gateway errors and do not retry enqueue', async () => {
-  for (const fail of ['opera_verify_device', 'opera_enqueue', 'opera_await_adaptive']) {
+test('RPC failures retain gateway errors and do not retry the merged call', async () => {
+  for (const fail of ['opera_verify_enqueue', 'opera_await_adaptive']) {
     const h = harness({ fail });
     const response = await h.request();
     assert.equal(response.status, 502);
     assert.equal((await response.json()).error.code, 'GATEWAY_ERROR');
-    assert.ok(h.calls.filter((c) => c.name === 'opera_enqueue').length <= 1);
+    assert.ok(h.calls.filter((c) => c.name === 'opera_verify_enqueue').length <= 1);
     if (fail !== 'opera_await_adaptive') assert.equal(h.calls.some((c) => c.name === 'opera_await_adaptive'), false);
   }
 });
@@ -178,9 +183,9 @@ test('post-enqueue RPC and transport failures preserve command identity and unkn
     assert.equal(body.outcome, 'unknown');
     assert.match(body.error.message, /may still have succeeded/);
     assert.match(body.error.message, /verify page state before repeating/i);
-    assert.equal(h.calls.filter((c) => c.name === 'opera_enqueue').length, 1);
+    assert.equal(h.calls.filter((c) => c.name === 'opera_verify_enqueue').length, 1);
     assert.equal(h.calls.filter((c) => c.name === 'opera_await_adaptive').length, 1);
-    assert.equal(h.calls.find((c) => c.name === 'opera_enqueue').args.p_request_id, null);
+    assert.equal(h.calls.find((c) => c.name === 'opera_verify_enqueue').args.p_request_id, null);
   }
 });
 
@@ -214,7 +219,7 @@ test('a small chunked body still parses and runs the normal path', async () => {
   const h = harness({});
   const response = await h.raw(streamRequest(JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list' })));
   assert.equal(response.status, 200);
-  assert.ok(h.calls.some((c) => c.name === 'opera_enqueue'), 'legit chunked traffic is unaffected');
+  assert.ok(h.calls.some((c) => c.name === 'opera_verify_enqueue'), 'legit chunked traffic is unaffected');
 });
 
 test('a declared content-length over 256 KiB is still rejected before parsing', async () => {
