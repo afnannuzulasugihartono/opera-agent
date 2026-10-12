@@ -1,0 +1,14 @@
+# @title: wrangler — edge deployment: worker entry, fleet object binding, migration.
+# @state: v1 migration creates the Device class.
+# @dependencies: src/worker.js.
+name = "opera-agent"
+main = "src/worker.js"
+compatibility_date = "2026-01-01"
+
+[[durable_objects.bindings]]
+name = "DEVICE"
+class_name = "Device"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Device"]
