@@ -44,9 +44,11 @@ const COMMAND_ID = 'a2f0f239-aa99-4d1c-a168-4a5ca51be777';
 // this stands in for the one call it makes.
 
 const upgradedSockets = [];
+const upgradeOptions = [];
 const realDeno = globalThis.Deno;
 globalThis.Deno = {
-  upgradeWebSocket() {
+  upgradeWebSocket(req, options) {
+    upgradeOptions.push(options);
     const socket = {
       readyState: 1,
       sent: [],
@@ -106,11 +108,15 @@ globalThis.clearTimeout = function stubbedClearTimeout(id) {
   activeTimers?.cleared.push(id);
 };
 
+// WHY the sandbox shares the stubbed timers. The bridge source runs inside the vm
+// context with its own globals, so the outer stubs are invisible to it — without
+// sharing, the drain poll would be a real interval the test can neither see nor
+// stop, and the suite would hang on exit.
+
 function harness(emit = { ok: true, eventId: 7 }) {
   const calls = [];
   let handler;
   const sockets = [];
-  const channels = [];
   const timers = { intervals: new Set(), intervalsById: new Map(), cleared: [], timeouts: [] };
   activeTimers = timers;
   upgradedSockets.length = 0;
@@ -121,27 +127,6 @@ function harness(emit = { ok: true, eventId: 7 }) {
       if (name === 'opera_auth_device') return { data: 'device-uuid' };
       if (name === 'opera_claim_next_wait') return { data: { ok: true, command: null } };
       throw new Error(`Unexpected RPC ${name}`);
-    },
-    channel(topic) {
-      const bindings = [];
-      channels.push({ topic, bindings, fire: null });
-      const entry = channels[channels.length - 1];
-      return {
-        on(kind, filter, callback) {
-          bindings.push({ kind, filter, callback });
-          return this;
-        },
-        subscribe() {
-          entry.fire = async (kind, event) => {
-            for (const b of bindings) {
-              if (b.kind !== kind) continue;
-              if (kind === 'broadcast' && b.filter?.event !== event) continue;
-              await b.callback({});
-            }
-          };
-          return this;
-        }
-      };
     },
     async removeChannel() { }
   };
@@ -171,6 +156,10 @@ function harness(emit = { ok: true, eventId: 7 }) {
       },
       clearTimeout() { }
     },
+    setInterval: globalThis.setInterval,
+    clearInterval: globalThis.clearInterval,
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
     Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
   });
   const post = (payload) => handler(new Request('https://example.test/functions/v1/opera-agent-bridge', {
@@ -182,7 +171,7 @@ function harness(emit = { ok: true, eventId: 7 }) {
     }));
     return upgradedSockets[0];
   };
-  return { calls, post, openSocket, sockets, timers, channels };
+  return { calls, post, openSocket, sockets, timers };
 }
 
 // Every socket test opens the same way and waits for the same settled state. The
@@ -195,10 +184,18 @@ async function handshakenSocket(h) {
   socket.onopen();
   await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
   for (let turn = 0; turn < 5000; turn += 1) {
-    if (h.timers.intervals.size) break;
+    if ([...h.timers.intervalsById.values()].some((t) => t.ms === 20000)) break;
     await new Promise((resolve) => setImmediate(resolve));
   }
   return socket;
+}
+
+function pollTick(h) {
+  const poll = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms !== 20000);
+  assert.ok(poll, 'no drain poll interval to drive');
+  assert.ok(poll[1].ms >= 100 && poll[1].ms <= 500,
+    `a ${poll[1].ms}ms poll is either wasteful or felt`);
+  return poll;
 }
 
 const validBody = (extra = {}) => ({
@@ -298,14 +295,15 @@ test('closing the socket stops the keepalive, so a gone device leaks no timer', 
   const h = harness();
   const socket = await handshakenSocket(h);
 
-  assert.equal(h.timers.intervals.size, 1, 'a handshaken socket runs no keepalive at all');
+  const keepalive = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms === 20000);
+  assert.ok(keepalive, 'a handshaken socket runs no keepalive at all');
   assert.equal(h.timers.timeouts.length, 1, 'a socket with no handshake deadline can hold a half-open device forever');
 
   socket.onclose({ code: 1006, reason: 'worker stopped' });
 
-  assert.equal(h.timers.intervals.size, 0, 'the keepalive survived the socket it belonged to');
-  assert.equal(h.timers.cleared.length, 2,
-    'the handshake timer must be cleared too, or it fires on a dead socket');
+  assert.ok(!h.timers.intervals.has(keepalive[0]), 'the keepalive survived the socket it belonged to');
+  assert.equal(h.timers.cleared.length, 3,
+    'the handshake timer and the poll must be cleared too, or they fire on a dead socket');
 });
 
 // WHY the worker is kept alive by a promise the test can see. Without an
@@ -330,57 +328,89 @@ test('an upgraded socket holds the worker until it closes, or the platform retir
   assert.equal(released, true, 'closing the socket never released the worker');
 });
 
-// WHY the safety drain is driven, not just bounded. Pinning the interval says how
-// often it should run; it does not say it runs at all. The drain is the net under
-// the change channel, so this test turns the keepalive crank by hand until the
-// interval is crossed and proves a claim follows.
+// WHY the drain runs on a fast poll instead of listening. Two event feeds were
+// tried and measured: postgres_changes delivered in 650-1000 ms, and a broadcast
+// fired 46 ms after insert still claimed anywhere between 200 and 1300 ms,
+// because the Realtime subscriber held by the edge isolate proved flaky. A 200 ms
+// poll is deterministic where both feeds were not. This test turns that crank by
+// hand and proves each tick claims.
 
-test('the keepalive tick drains past the safety interval, so a dead channel costs a minute, not every command', async () => {
-  const h = harness();
-  const socket = await handshakenSocket(h);
-
-  const keepalive = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms === 20000);
-  assert.ok(keepalive, 'no keepalive interval to drive');
-  const tick = keepalive[1].fn;
-
-  const claimsBefore = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
-
-  for (let round = 0; round < 4; round += 1) {
-    await socket.onmessage({ data: JSON.stringify({ type: 'pong' }) });
-    tick();
-    await new Promise((resolve) => setImmediate(resolve));
-    await new Promise((resolve) => setImmediate(resolve));
-  }
-
-  const claimsAfter = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
-  assert.ok(claimsAfter > claimsBefore,
-    'four keepalive ticks crossed the safety interval and claimed nothing');
-  assert.ok(socket.sent.some((text) => text.includes('"ping"')),
-    'the keepalive tick sent no ping at all');
-});
-
-// WHY the bridge listens for the broadcast too. postgres_changes measured
-// 650-1000 ms from insert to claim; the enqueue side now broadcasts on the same
-// channel, which lands in tens of milliseconds. Both triggers call the same
-// drain and the claim arbitrates, so proving the binding exists and fires is
-// proving the fast path is wired.
-
-test('a broadcast on the device channel drains like an insert does', async () => {
+test('each poll tick claims, so a queued command waits one interval at most', async () => {
   const h = harness();
   await handshakenSocket(h);
 
-  const entry = h.channels.find((c) => c.topic === 'opera-commands-opera');
-  assert.ok(entry, 'the socket subscribed to no device channel at all');
-
-  const kinds = entry.bindings.map((b) => b.kind);
-  assert.ok(kinds.includes('broadcast'), 'the channel never listens for the broadcast');
-  assert.ok(kinds.includes('postgres_changes'), 'the backup listener was dropped with the fast path');
+  const poll = pollTick(h);
 
   const claimsBefore = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
-  await entry.fire('broadcast', 'new-command');
+  poll[1].fn();
+  for (let turn = 0; turn < 5000; turn += 1) {
+    if (h.calls.filter((c) => c.name === 'opera_claim_next_wait').length > claimsBefore) break;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
   const claimsAfter = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
 
-  assert.ok(claimsAfter > claimsBefore, 'the broadcast arrived and claimed nothing');
+  assert.ok(claimsAfter > claimsBefore, 'a poll tick ran and claimed nothing');
+});
+
+// WHY overlapping drains are refused rather than queued. Two drains in flight can
+// claim two commands and push the second before the first, which would execute
+// same-device commands out of order. A tick that arrives mid-drain is skipped;
+// the next tick picks up whatever is still queued 200 ms later.
+
+test('a poll tick during a running drain is skipped, so commands stay ordered', async () => {
+  const h = harness();
+  await handshakenSocket(h);
+
+  const poll = pollTick(h);
+  const tick = poll[1].fn;
+
+  for (let turn = 0; turn < 5000; turn += 1) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  const settled = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
+
+  tick();
+  tick();
+  for (let turn = 0; turn < 5000; turn += 1) {
+    if (h.calls.filter((c) => c.name === 'opera_claim_next_wait').length > settled) break;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  for (let turn = 0; turn < 200; turn += 1) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  assert.equal(
+    h.calls.filter((c) => c.name === 'opera_claim_next_wait').length,
+    settled + 1,
+    'two overlapping ticks both drained, so two commands can overtake each other'
+  );
+});
+
+test('closing the socket stops the poll, so a gone device costs no queries', async () => {
+  const h = harness();
+  const socket = await handshakenSocket(h);
+
+  const poll = pollTick(h);
+  assert.ok(h.timers.intervals.has(poll[0]), 'the poll is not running');
+
+  socket.onclose({ code: 1006, reason: '' });
+
+  assert.ok(!h.timers.intervals.has(poll[0]), 'the poll survived the socket it belonged to');
+});
+
+// WHY the protocol idle timeout stays disabled. Deno's default closes a socket
+// whose peer misses a protocol-level pong, and observed live that killed a fully
+// healthy client. Liveness is decided by the application ping instead, so the
+// transport guess must stay off or the two verdicts fight.
+
+test('upgraded sockets disable the protocol idle timeout', async () => {
+  upgradeOptions.length = 0;
+  const h = harness();
+  await h.openSocket();
+
+  assert.equal(upgradeOptions.length, 1, 'no upgrade happened to check');
+  assert.equal(upgradeOptions[0]?.idleTimeout, 0,
+    'the protocol timeout is back on, so healthy clients can be closed without reason');
 });
 
 test('the device emits without awaiting, so a slow bridge cannot slow a burst step', () => {

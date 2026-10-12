@@ -65,6 +65,16 @@ id = "generic-api-key"
     '''PUBLISHABLE_KEY\s*=\s*.sb_publishable_''',
   ]
 
+  [[rules.allowlists]]
+
+  description = "The same publishable key inside one reverted experiment migration, kept as history. The live tree carries no key in migrations; a secret here in any other migration file is still flagged."
+  condition = "AND"
+  paths = ['''^supabase/migrations/20261012100000_opera_agent_command_insert_signal\.sql$''']
+  regexTarget = "line"
+  regexes = [
+    '''apikey., .sb_publishable_''',
+  ]
+
 [[rules]]
 id = "jwt"
 

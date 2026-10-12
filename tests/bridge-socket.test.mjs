@@ -20,7 +20,6 @@ import assert from 'node:assert/strict';
 import {
   KEEPALIVE_MS,
   MAX_FRAME_BYTES,
-  SAFETY_DRAIN_MS,
   frameForCommand,
   frameForKeepalive,
   isUpgradeRequest,
@@ -80,18 +79,6 @@ test('a keepalive tick with no answer since the last one closes the socket', () 
   assert.equal(keepaliveDecision({ pings: 2, pongs: 1 }), 'close', 'the latest ping went unanswered for a whole interval');
   assert.equal(keepaliveDecision({ pings: 1, pongs: 0 }), 'close', 'a peer that never answered must not be waited on forever');
   assert.equal(keepaliveDecision({ pings: 0, pongs: 0 }), 'wait', 'the first tick has nothing to compare against');
-});
-
-test('the channel is drained again on a timer, because a change channel is not reliable on its own', () => {
-  assert.ok(SAFETY_DRAIN_MS >= 30000,
-    'a safety net this frequent is the primary path wearing a disguise');
-  assert.ok(SAFETY_DRAIN_MS < 120000,
-    'a device can be left waiting this long for work that already exists');
-});
-
-test('a ping is answered, so the keepalive doubles as the safety drain tick', () => {
-  assert.ok(KEEPALIVE_MS < SAFETY_DRAIN_MS,
-    'the safety drain rides on the keepalive tick and cannot outrun it');
 });
 
 // WHY the transport cap is locked against the product bound. Results up to

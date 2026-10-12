@@ -294,48 +294,47 @@ async function claimForDevice(
   return { command: claimed.command ?? null, raw: claimed };
 }
 
-// WHY the channel listens twice. postgres_changes measured 650-1000 ms from
-// insert to claim; the broadcast the enqueue side sends lands in tens of
-// milliseconds. Both call the same drain, and the claim RPC arbitrates, so a
-// double trigger costs one cheap empty claim. The postgres listener stays because
-// writers that never broadcast — direct SQL, future code — must still work, just
-// slower. Removing it would make the fast path mandatory instead of preferred.
+// WHY the bridge claims on an interval instead of listening. Two event feeds were
+// tried and measured: postgres_changes delivered in 650-1000 ms, and a broadcast
+// fired 46 ms after insert still claimed anywhere between 200 and 1300 ms,
+// because the Realtime subscriber websocket held by the edge isolate proved
+// flaky — sometimes fast, sometimes silent. A 200 ms poll is deterministic where
+// both feeds were not, costs four trivial indexed RPCs per second per connected
+// device, and has no connection to go stale. The interval lives here rather than
+// on the device because this side has wall power and no radio.
+//
+// WHY the drain refuses to overlap itself. Two drains in flight can claim two
+// commands and push the second before the first, which would execute same-device
+// commands out of order. A tick that arrives while a drain is running is skipped;
+// the next tick, 200 ms later, picks up whatever is still queued.
+
+const DRAIN_POLL_MS = 200;
 
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
+  let draining = false;
+
   const drain = async () => {
-    const claimed = await claimForDevice(identity);
-    if (!claimed?.command) return false;
-    onCommand(claimed.command);
-    return true;
+    if (draining) return false;
+    draining = true;
+    try {
+      for (;;) {
+        const claimed = await claimForDevice(identity);
+        if (!claimed?.command) return false;
+        onCommand(claimed.command);
+      }
+    } catch (error) {
+      createEdgeLog({}).error("bridge socket drain failed", String(error?.message || error));
+      return false;
+    } finally {
+      draining = false;
+    }
   };
 
-  const channel = supabase
-    .channel(`opera-commands-${identity.deviceName}`)
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "opera_commands" },
-      drain
-    )
-    .on(
-      "broadcast",
-      { event: "new-command" },
-      drain
-    )
-    .subscribe();
-
-  void (async () => {
-    for (;;) {
-      try {
-        if (!await drain()) return;
-      } catch (error) {
-        createEdgeLog({}).error("bridge socket drain failed", String(error?.message || error));
-        return;
-      }
-    }
-  })();
+  void drain();
+  const timer = setInterval(() => { void drain(); }, DRAIN_POLL_MS);
 
   return () => {
-    void supabase.removeChannel(channel);
+    clearInterval(timer);
   };
 }
 
@@ -361,7 +360,6 @@ Deno.serve((req: Request) => {
   if (isUpgradeRequest(req)) {
     return serveDeviceSocket(req, {
       verifyDevice: verifyDeviceSocket,
-      onTick: async (identity) => (await claimForDevice(identity))?.command ?? null,
       complete,
       subscribe,
       log: createEdgeLog({})
