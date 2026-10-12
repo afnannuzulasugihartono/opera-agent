@@ -15,7 +15,19 @@
 // frame, a missing handshake, or a completion for an unknown command is refused
 // rather than trusted.
 
-const FRAME_MAX_BYTES = 64 * 1024;
+// WHY the cap is a megabyte. Results up to MAX_RESULT_BYTES (512 KiB, owned by
+// lib/serialize.js) are legal product output: boundedResult throws only above it,
+// and page.read degrades gracefully instead. A transport cap below that refuses
+// legal results — observed live as "Frame too large" killing a page.read the
+// product explicitly allows. The cap exists to bound a single message against a
+// misbehaving peer, not to second-guess the product bound, so it sits at twice
+// the largest legal completion plus envelope headroom.
+//
+// WHY the relation is locked in a test instead of importing the constant. The
+// bridge cannot import this file and this file must stay dependency-free, so both
+// caps are stated twice and a test asserts they still cover the bound.
+
+export const FRAME_MAX_BYTES = 1024 * 1024;
 
 export const DEVICE_PROTOCOL_VERSION = 2;
 

@@ -72,6 +72,8 @@ class BridgeState:
         self.paired = False
         self.http_pull_calls = 0
         self.http_complete_calls = 0
+        self.pings_sent = 0
+        self.pongs_received = 0
         self.listen = []
         self.device_token = None
         self.sockets = []
@@ -371,6 +373,27 @@ def push_commands(device):
             return
 
 
+def ping_device(device, interval=20.0):
+    """Keeps the socket alive the way the deployed bridge does.
+
+    Without this the harness speaks a different protocol than production: the
+    device's silence deadline fires every minute mid-suite, each unscheduled
+    reconnect is a small window for a command to be lost into a dying socket,
+    and the suite flakes. Observed live as one failure in five runs."""
+
+    while not device.ready.is_set():
+        time.sleep(0.02)
+    while not device.dropped:
+        time.sleep(interval)
+        if device.dropped:
+            return
+        try:
+            device.send(json.dumps({'type': 'ping', 'serverTime': time.time()}))
+            STATE.pings_sent += 1
+        except OSError:
+            return
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
@@ -445,6 +468,12 @@ class Handler(BaseHTTPRequestHandler):
                     device.send(json.dumps({'type': 'ready', 'serverTime': time.time()}))
                     pusher = threading.Thread(target=push_commands, args=(device,), daemon=True)
                     pusher.start()
+                    pinger = threading.Thread(target=ping_device, args=(device,), daemon=True)
+                    pinger.start()
+                    continue
+
+                if kind == 'pong':
+                    STATE.pongs_received += 1
                     continue
 
                 if kind == 'complete':
@@ -2942,6 +2971,8 @@ async def run(port, profile):
         assert result['version'] == EXPECTED_VERSION
         assert STATE.http_pull_calls == 0, 'the device asked for work over HTTP'
         assert STATE.http_complete_calls == 0, 'the device reported over HTTP'
+        assert STATE.pings_sent > 0, 'the harness never pinged, so the keepalive proved nothing'
+        assert STATE.pongs_received > 0, 'the device never answered a ping'
 
         bridge_url = f'http://{HOST}:{port}/bridge'
         options = popup

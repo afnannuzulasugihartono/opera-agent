@@ -21,7 +21,16 @@
 // already verifies, and a socket that fails the handshake is closed unread.
 
 const HANDSHAKE_TIMEOUT_MS = 8000;
-const MAX_FRAME_BYTES = 64 * 1024;
+
+// WHY the cap is a megabyte. Results up to MAX_RESULT_BYTES (512 KiB, owned by
+// extension/lib/serialize.js) are legal product output, and a completion carries
+// one. A transport cap below that refuses legal results — observed live as "Frame
+// too large" killing a page.read the product explicitly allows, which stranded
+// the command as claimed forever with no recovery. Stated here rather than
+// imported because the edge bundle cannot reach outside its own directory; a test
+// asserts the relation still holds.
+
+export const MAX_FRAME_BYTES = 1024 * 1024;
 export const KEEPALIVE_MS = 20000;
 
 // WHY there is a safety drain on a timer, because the change channel turned out to
