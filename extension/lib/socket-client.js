@@ -41,6 +41,11 @@
 // reject a promise nobody awaits. The frame is simply lost, which is exactly what
 // the stored-completion resend exists to cover.
 //
+// WHY an error frame is reported rather than dropped. The bridge answers a frame
+// it could not handle with an error and nothing else, so ignoring it means a
+// device whose handshake or whose completion was refused looks exactly like one
+// that is working.
+//
 // WHY the drain loop does not test a stop flag. stop() empties the queue, which
 // ends a drain already in flight; reading a second flag would only obscure why the
 // loop stopped.
@@ -59,6 +64,27 @@ import {
 const BASE_RETRY_MS = 500;
 const MAX_RETRY_MS = 30000;
 
+// WHY the device keeps its own deadline. The bridge pings every twenty seconds, so
+// silence past a bound means the peer is gone even though nothing said so. The
+// case that makes this necessary is a zombie connection: observed live, a device
+// reported ready for nineteen minutes on a socket whose far end had been replaced,
+// because the TCP connection was never closed, no ping ever arrived, and no close
+// ever came. Nothing on that device could tell the difference between a healthy
+// socket and one that would never deliver another command.
+//
+// WHY three intervals. One interval could be a delayed frame, two could be a busy
+// network, and a false teardown costs a reconnect. Three missing pings is past any
+// delay worth waiting through.
+//
+// WHY the watchdog has its own timer. It is a liveness check, not a retry, and it
+// runs for the whole life of the client rather than between attempts. Sharing one
+// timer with the backoff would make every test that drives the backoff also drive
+// the watchdog, which is exactly the kind of coupling that turns a timing change
+// into a mystery failure somewhere else.
+
+const SILENCE_LIMIT_MS = 60000;
+const WATCHDOG_MS = 10000;
+
 export function createSocketClient({
   url,
   token,
@@ -67,13 +93,33 @@ export function createSocketClient({
   onState = () => {},
   WebSocketImpl = globalThis.WebSocket,
   now = () => Date.now(),
-  setTimer = (fn, ms) => setTimeout(fn, ms)
+  setTimer = (fn, ms) => setTimeout(fn, ms),
+  setWatchTimer = setTimer
 } = {}) {
   let socket = null;
   let ready = false;
   let retryMs = BASE_RETRY_MS;
   let generation = 0;
   let closedByUs = false;
+  let lastHeardAt = 0;
+
+  const heard = () => {
+    lastHeardAt = now();
+  };
+
+  const watch = () => {
+    if (closedByUs) return;
+    if (ready && lastHeardAt && now() - lastHeardAt > SILENCE_LIMIT_MS) {
+      generation += 1;
+      const dead = socket;
+      socket = null;
+      ready = false;
+      onState({ status: 'stale', silenceMs: now() - lastHeardAt });
+      try { dead?.close(); } catch { }
+      connect();
+    }
+    setWatchTimer(watch, WATCHDOG_MS);
+  };
 
   const frame = (text) => {
     if (socket && socket.readyState === 1) socket.send(text);
@@ -136,16 +182,23 @@ export function createSocketClient({
     socket = next;
 
     next.onopen = () => {
+      heard();
       frame(handshakeFrame(token, deviceName));
     };
 
     next.onmessage = (event) => {
+      heard();
       const parsed = parseFrame(event?.data);
       if (!parsed.ok) return;
 
       const message = parsed.message;
       if (message.type === 'ping') {
         frame(pongFrame());
+        return;
+      }
+
+      if (message.type === 'error') {
+        onState({ status: 'error', message: String(message.error || 'bridge error').slice(0, 200) });
         return;
       }
 
@@ -187,7 +240,9 @@ export function createSocketClient({
 
   function start() {
     closedByUs = false;
+    lastHeardAt = 0;
     connect();
+    watch();
   }
 
   function stop() {

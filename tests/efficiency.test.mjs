@@ -66,7 +66,7 @@ test('only the socket stamps lastConnectedAt, because only the socket knows when
   assert.equal(writes.length, 1,
     `lastConnectedAt is written in ${writes.length} places; one writer owns it or two of them disagree`);
 
-  const owner = code.slice(Math.max(0, writes[0].index - 400), writes[0].index);
+  const owner = code.slice(Math.max(0, writes[0].index - 700), writes[0].index);
   assert.match(owner, /onState:/, 'lastConnectedAt is not written by the socket state handler');
 });
 

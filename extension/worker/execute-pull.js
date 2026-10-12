@@ -201,13 +201,18 @@ async function ensureSocket() {
       return execution;
     },
     onState: (state) => {
+      if (state.status === 'error') {
+        log.warn('SOCKET_ERROR_FRAME', state.message);
+      }
       const status = state.status === 'connected' ? 'ready' : state.status;
       const closed = state.code
         ? `Socket closed ${state.code}${state.reason ? `: ${state.reason}` : ''}.`
         : null;
       setState({
-        status,
-        lastError: status === 'rejected' ? 'Bridge refused this device.' : closed,
+        status: status === 'error' ? 'ready' : status,
+        lastError: status === 'rejected' ? 'Bridge refused this device.'
+          : status === 'error' ? `Bridge: ${state.message}`
+            : closed,
         retryMs,
         ...(status === 'ready' ? { lastConnectedAt: nowIso(), lastError: null } : {})
       }).catch(() => { });

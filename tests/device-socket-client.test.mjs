@@ -35,6 +35,7 @@ class FakeSocket {
 
 function harness(overrides = {}) {
   const timers = [];
+  const watchTimers = [];
   const states = [];
   const executed = [];
   const sockets = [];
@@ -54,10 +55,11 @@ function harness(overrides = {}) {
     },
     onState: (s) => states.push(s),
     setTimer: (fn, ms) => { timers.push({ fn, ms }); },
+    setWatchTimer: (fn, ms) => { watchTimers.push({ fn, ms }); },
     ...overrides
   });
 
-  return { client, timers, states, executed, sockets };
+  return { client, timers, watchTimers, states, executed, sockets };
 }
 
 test('an opening socket sends the handshake before anything else', () => {
@@ -314,6 +316,52 @@ test('a ping is answered, because a one-way keepalive cannot detect a dead bridg
   const reply = sockets[0].sent.slice(before).map((text) => JSON.parse(text));
   assert.equal(reply.length, 1, 'the device read a keepalive and said nothing back');
   assert.equal(reply[0].type, 'pong');
+});
+
+// A socket whose peer has vanished leaves nothing to react to. Observed live: a
+// device reported ready for nineteen minutes on a connection whose far end had
+// been replaced, because the zombie TCP connection was never closed and no ping
+// ever came. Every signal read healthy and no command ever arrived. The only
+// remaining evidence is time, so the device takes its own deadline.
+
+// Each watchdog tick schedules the next one, so the queue grows as it is drained
+// and only the last entry is live. Iterating the whole array would never end,
+// which is a lesson the first version of this test learned the hard way.
+
+test('a socket that stops hearing anything is torn down and replaced', () => {
+  const { client, sockets, watchTimers } = harness({ now: () => clock });
+  let clock = 1000;
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+  assert.equal(client.isReady(), true);
+
+  for (let round = 0; round < 10; round += 1) {
+    clock += 10000;
+    watchTimers[watchTimers.length - 1].fn();
+  }
+
+  assert.ok(sockets.length >= 2, 'a silent socket was never replaced');
+  assert.equal(client.isReady(), false, 'the device still believes a dead peer is ready');
+});
+
+test('a ping from the bridge is proof the peer is alive, so the deadline resets', () => {
+  const { client, sockets, watchTimers } = harness({ now: () => clock });
+  let clock = 1000;
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+
+  for (let round = 0; round < 4; round += 1) {
+    for (let tick = 0; tick < 4; tick += 1) {
+      clock += 10000;
+      watchTimers[watchTimers.length - 1].fn();
+    }
+    sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
+  }
+
+  assert.equal(sockets.length, 1, 'a device that keeps hearing from the bridge was still replaced');
+  assert.equal(client.isReady(), true);
 });
 
 test('stop leaves nothing running, so a paused worker does not keep a socket alive', () => {
