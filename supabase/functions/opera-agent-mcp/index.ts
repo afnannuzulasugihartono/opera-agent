@@ -11,6 +11,7 @@ import { streamCommandEvents } from "../_shared/command-stream.ts";
 import { createClient } from "@supabase/supabase-js";
 import * as z from "zod/v4";
 import { createEdgeLog } from "../_shared/edge-log.js";
+import { notifyDevice } from "../_shared/device-signal.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
@@ -371,6 +372,11 @@ function forwardCommandProgress(commandId: string, timeoutMs: number, progress: 
   }).catch(() => ({ ok: false }));
 }
 
+// WHY runCommand signals after a committed enqueue. Same reason as the gateway:
+// the bridge learns through postgres_changes in 650-1000 ms, and the broadcast
+// lands in tens of milliseconds. notifyDevice never throws, so a failed signal
+// only costs the backup path.
+
 async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "", progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null) {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
   const queued = await rpc("opera_enqueue", {
@@ -383,6 +389,7 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   if (!queued?.ok || !queued.commandId) {
     throw new Error(String(queued?.error || `Unable to queue ${method}.`));
   }
+  await notifyDevice({ supabaseUrl: SUPABASE_URL, supabaseKey: SERVICE_ROLE_KEY }, deviceName, String(queued.commandId), null, fetch);
   if (provider) {
 
     try {

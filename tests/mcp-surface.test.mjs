@@ -667,3 +667,21 @@ test('Supabase OAuth config declares a hosted consent page and dynamic registrat
 test('the whole-file digest fixture is re-frozen to the live file', () => {
   assert.equal(sha256CanonicalLf(source), contract.sourceSha256);
 });
+
+// WHY runCommand signals instead of only inserting. The bridge learns through
+// postgres_changes in 650-1000 ms; the broadcast on the device channel lands in
+// tens of milliseconds. The gateway carries the behavioral lock for the shared
+// helper; this pins the second call site so a refactor cannot silently drop it.
+
+test('MCP signals the device channel after a committed enqueue', () => {
+  assert.match(source, /import \{ notifyDevice \} from "\.\.\/_shared\/device-signal\.js";/);
+
+  const start = source.indexOf('async function runCommand(');
+  assert.ok(start > 0, 'runCommand must exist');
+  const fn = source.slice(start, source.indexOf('\n}\n', start));
+
+  const enqueued = fn.indexOf('rpc("opera_enqueue"');
+  const signalled = fn.indexOf('await notifyDevice({ supabaseUrl: SUPABASE_URL, supabaseKey: SERVICE_ROLE_KEY }, deviceName, String(queued.commandId), null, fetch)');
+  assert.ok(enqueued > 0 && signalled > enqueued,
+    'runCommand enqueues without signalling the device channel afterwards');
+});

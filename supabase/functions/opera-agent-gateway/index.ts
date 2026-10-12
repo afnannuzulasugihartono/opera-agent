@@ -6,6 +6,7 @@
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import { notifyDevice } from "../_shared/device-signal.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -85,6 +86,11 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
   return new TextDecoder().decode(out);
 }
 
+// WHY the signal goes out after enqueue and before the wait starts. The bridge
+// learns through postgres_changes in 650-1000 ms; the broadcast lands in tens of
+// milliseconds. notifyDevice never throws, so a failed signal only costs the
+// backup path, never the request.
+
 async function command(req: Request, _url: URL) {
   let raw: string | null;
   try {
@@ -158,6 +164,14 @@ async function command(req: Request, _url: URL) {
     p_device_name: deviceName,
     p_request_id: requestId
   });
+  let signalInfo: { ok: boolean; ms: number } | null = null;
+
+  if (result?.ok === true && result.commandId) {
+    const signalStart = Date.now();
+    const signalOk = await notifyDevice({ supabaseUrl: SUPABASE_URL, supabaseKey: SERVICE_ROLE_KEY }, deviceName, String(result.commandId), null, fetch);
+    signalInfo = { ok: signalOk, ms: Date.now() - signalStart };
+  }
+
   if (result?.ok === true && result.commandId) {
 
     try {
@@ -199,7 +213,11 @@ async function command(req: Request, _url: URL) {
     }, 504);
   }
 
-  return json(req, result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
+  const outgoing = result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } };
+  if (body && (body as Record<string, unknown>).debugSignal === true && signalInfo && outgoing && typeof outgoing === "object") {
+    (outgoing as Record<string, unknown>).signal = signalInfo;
+  }
+  return json(req, outgoing, 200);
 }
 
 function openApiSpec(basePath: string) {
