@@ -131,7 +131,10 @@ test('the in-page settle only observes and never carries document text out', asy
   assert.doesNotMatch(block, /innerText|textContent/);
 
   assert.match(source, /case 'page\.hover_settle': return hoverSettleState\(args\)/);
-  assert.match(source, /const hoverSettle = globalThis\.OperaAgentHoverSettle;/);
+  assert.match(source, /const hoverRuntime = globalThis\.OperaAgentHoverSettle;/,
+    'the runtime is no longer read straight into a bare binding');
+  assert.match(source, /typeof hoverRuntime\.plan === 'function'/,
+    'the planner is not checked before it is used');
 });
 
 test('the manifest loads the settle runtime before the content script', async () => {

@@ -47,6 +47,10 @@ export function parseFrame(raw, maxBytes = FRAME_MAX_BYTES) {
   return { ok: true, message };
 }
 
+export function pongFrame() {
+  return JSON.stringify({ type: 'pong' });
+}
+
 export function isRunnableCommand(message) {
   if (!message || message.type !== 'command') return false;
   const command = message.command;

@@ -23,11 +23,46 @@ const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/202609
 // survive is the device asking for work, which was two round trips per action and
 // is gone with the poll loop.
 
+test('a missing page helper costs one feature, never the whole content script', () => {
+  const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(content, /throw new Error\('Role reconcile runtime/,
+    'a missing helper still takes down every capability on the page');
+  assert.doesNotMatch(content, /throw new Error\('Hover settle runtime/,
+    'a missing helper still takes down every capability on the page');
+  assert.match(content, /semanticRuntime/,
+    'the missing helper is not reported anywhere');
+});
+
+// WHY this lock exists. Two popup buttons used to send a message to the worker
+// inside try/finally with no catch, so clicking either one while the worker was
+// restarting produced "Unchecked runtime.lastError: Could not establish
+// connection" on the extension errors page. Observed live. Every message a piece
+// of UI sends has to land somewhere the user can read it.
+
+test('every popup message lands in a catch the user can read', () => {
+  const popup = fs.readFileSync(new URL('../extension/popup.js', import.meta.url), 'utf8');
+
+  const handlers = [...popup.matchAll(/\$\('(\w+)'\)\.addEventListener\('click', async \(\) => \{([\s\S]*?)\n\}\);/g)];
+  assert.ok(handlers.length >= 4, 'no popup click handlers found to check');
+
+  for (const [, id, body] of handlers) {
+    if (!body.includes('call(')) continue;
+    assert.match(body, /catch\s*\(/,
+      `$(' + id + ') sends a message with no catch, so a worker restart surfaces as an unchecked lastError`);
+  }
+});
+
 test('the device asks nothing, so there is no pull wait to pin', () => {
 
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
   assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
-  assert.match(bridge, /p_wait_ms:\s*waitMs/);
+
+  const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
+  assert.match(pull, /waitMs\n\s*\}/,
+    'pull no longer hands its clamped wait to the claim');
+  assert.match(bridge, /p_wait_ms: clamp\(detail\.waitMs, 0, 25000, 0\)/,
+    'the claim no longer forwards the wait to Postgres');
 
   assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
 
@@ -36,10 +71,43 @@ test('the device asks nothing, so there is no pull wait to pin', () => {
   assert.match(background, /createSocketClient/);
   assert.match(background, /socketClient\.start\(\)/);
 
-  const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
-  assert.equal((pull.match(/rpc\(/g) || []).length, 1, 'pull must make exactly one RPC call');
-  assert.doesNotMatch(pull, /while\s*\(true\)|do\s*\{/);
+  const claim = bridge.slice(bridge.indexOf('async function claimForDevice('));
+  const claimFn = claim.slice(0, claim.indexOf('\n}\n'));
+  assert.equal((claimFn.match(/rpc\(/g) || []).length, 1, 'the claim must make exactly one RPC call');
+  assert.doesNotMatch(claimFn, /while\s*\(true\)|do\s*\{/);
+  assert.doesNotMatch(pull, /rpc\("opera_claim_next_wait"/,
+    'pull claims directly instead of going through the one claim function');
   assert.doesNotMatch(bridge, /FAST_PULL_|IDLE_PULL_/);
+});
+
+// The heartbeat used to be the poll loop's status writer as well as its keepalive.
+// Left alone, it kept doing that job after the socket took over: every thirty
+// seconds it stamped lastConnectedAt over the socket's own state, and a heartbeat
+// that failed set the status to reconnecting while the socket was sitting there
+// healthy. Observed live against the deployed bridge, where a perfectly connected
+// device reported itself reconnecting. The heartbeat now keeps the device row
+// fresh and says nothing about the connection.
+
+test('the heartbeat keeps the device row fresh without claiming the connection status', () => {
+  const body = background.slice(background.indexOf('async function heartbeat('));
+  const fn = body.slice(0, body.indexOf('\n}'));
+
+  assert.match(fn, /action: 'heartbeat'/, 'the heartbeat must still be sent');
+  assert.doesNotMatch(fn, /setState\(/,
+    'the heartbeat still writes connection state, so it fights the socket for it');
+});
+
+test('only the socket stamps lastConnectedAt, because only the socket knows when it connected', () => {
+  const device = ['../extension/worker/execute-pull.js', '../extension/lib/socket-client.js']
+    .map((p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, ''))
+    .join('\n');
+
+  const writes = [...device.matchAll(/lastConnectedAt:(?!\s*null)/g)];
+  assert.equal(writes.length, 1,
+    `lastConnectedAt is written in ${writes.length} places; one writer owns it or two of them disagree`);
+
+  const owner = device.slice(Math.max(0, writes[0].index - 700), writes[0].index);
+  assert.match(owner, /connectionPatch/, 'lastConnectedAt is not written by the socket state mapping');
 });
 
 test('runner awaits command completion inside Postgres and keeps safe transient retries', () => {

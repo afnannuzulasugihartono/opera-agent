@@ -60,10 +60,58 @@ globalThis.Deno = {
 };
 process.on('exit', () => { globalThis.Deno = realDeno; });
 
+// WHY the runtime is stubbed globally alongside Deno. serveDeviceSocket keeps one
+// promise pending through EdgeRuntime.waitUntil until the socket closes, which is
+// what stops the platform retiring the isolate while a device is connected. The
+// stub records the promise so a test can prove it is held and then released.
+
+const waitedPromises = [];
+const realEdgeRuntime = globalThis.EdgeRuntime;
+globalThis.EdgeRuntime = {
+  waitUntil(promise) { waitedPromises.push(promise); }
+};
+process.on('exit', () => { globalThis.EdgeRuntime = realEdgeRuntime; });
+
+// WHY the timers are stubbed globally too. serveDeviceSocket is the real module,
+// so its setInterval and setTimeout are the globals, exactly like its Deno. A
+// real keepalive interval holds the process open after the last test, so the suite
+// would never exit; recording the handles also makes it possible to prove the
+// interval is cleared when the socket closes.
+
+// WHY the handles are plain numbers and not real timers. A stand-in built on
+// setInterval(fn, 0) is itself an interval that never stops, which holds the
+// process open after the last test and makes the whole suite look like it hung.
+// Nothing here needs a real timer; the assertions are about which handles were
+// created and which were released.
+
+let nextTimerId = 0;
+let activeTimers = null;
+
+globalThis.setInterval = function stubbedSetInterval(fn, ms) {
+  const id = ++nextTimerId;
+  activeTimers?.intervals.add(id);
+  activeTimers?.intervalsById.set(id, { fn, ms });
+  return id;
+};
+globalThis.clearInterval = function stubbedClearInterval(id) {
+  activeTimers?.intervals.delete(id);
+  activeTimers?.cleared.push(id);
+};
+globalThis.setTimeout = function stubbedSetTimeout(fn, ms) {
+  const id = ++nextTimerId;
+  activeTimers?.timeouts.push({ id, ms });
+  return id;
+};
+globalThis.clearTimeout = function stubbedClearTimeout(id) {
+  activeTimers?.cleared.push(id);
+};
+
 function harness(emit = { ok: true, eventId: 7 }) {
   const calls = [];
   let handler;
   const sockets = [];
+  const timers = { intervals: new Set(), intervalsById: new Map(), cleared: [], timeouts: [] };
+  activeTimers = timers;
   upgradedSockets.length = 0;
   const client = {
     async rpc(name, args) {
@@ -97,7 +145,12 @@ function harness(emit = { ok: true, eventId: 7 }) {
         };
         sockets.push(socket);
         return { socket, response: { status: 101 } };
-      }
+      },
+      setTimeout(fn, ms) {
+        timers.timeouts.push({ fn, ms });
+        return -1;
+      },
+      clearTimeout() { }
     },
     Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
   });
@@ -110,7 +163,23 @@ function harness(emit = { ok: true, eventId: 7 }) {
     }));
     return upgradedSockets[0];
   };
-  return { calls, post, openSocket, sockets };
+  return { calls, post, openSocket, sockets, timers };
+}
+
+// Every socket test opens the same way and waits for the same settled state. The
+// wait is a turn loop rather than a fixed count because the handshake hashes on
+// the threadpool, which queues behind the rest of the suite when everything runs
+// at once, and a fixed count would make these locks flaky under load.
+
+async function handshakenSocket(h) {
+  const socket = await h.openSocket();
+  socket.onopen();
+  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
+  for (let turn = 0; turn < 5000; turn += 1) {
+    if (h.timers.intervals.size) break;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  return socket;
 }
 
 const validBody = (extra = {}) => ({
@@ -181,17 +250,94 @@ test('a socket that fails the handshake is closed unread and never receives work
 // could wait indefinitely. Claiming once on subscribe is what makes a reconnect
 // self-healing instead of dependent on luck.
 
+// WHY the drain is given turns rather than a fixed count of microtasks. The drain
+// is deliberately not awaited by the handshake, and asserting on an exact number
+// of turns makes this lock itself flaky under load, which is worse than not having
+// it at all. The bound is generous because each turn is nearly free when idle and
+// the handshake's hashing runs on the threadpool, which queues behind the rest of
+// the suite when everything runs at once.
+
 test('a fresh socket drains the backlog on arrival, so work queued while away still runs', async () => {
   const h = harness();
-  const socket = await h.openSocket();
+  const socket = await handshakenSocket(h);
 
-  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
-  await new Promise((resolve) => setImmediate(resolve));
-  await new Promise((resolve) => setImmediate(resolve));
+  for (let turn = 0; turn < 5000; turn += 1) {
+    if (h.calls.some((c) => c.name === 'opera_claim_next_wait')) break;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
 
   const claims = h.calls.filter((c) => c.name === 'opera_claim_next_wait');
   assert.ok(claims.length >= 1, 'connecting claimed nothing, so the backlog waits for the next insert');
   assert.equal(claims[0].args.p_wait_ms, 0, 'the drain must not block the handshake that triggered it');
+});
+
+// The keepalive is what keeps the device's worker alive, and an interval that
+// outlives its socket is a leak that grows with every reconnect and never shows
+// up in a log. Closing must clear it.
+
+test('closing the socket stops the keepalive, so a gone device leaks no timer', async () => {
+  const h = harness();
+  const socket = await handshakenSocket(h);
+
+  assert.equal(h.timers.intervals.size, 1, 'a handshaken socket runs no keepalive at all');
+  assert.equal(h.timers.timeouts.length, 1, 'a socket with no handshake deadline can hold a half-open device forever');
+
+  socket.onclose({ code: 1006, reason: 'worker stopped' });
+
+  assert.equal(h.timers.intervals.size, 0, 'the keepalive survived the socket it belonged to');
+  assert.equal(h.timers.cleared.length, 2,
+    'the handshake timer must be cleared too, or it fires on a dead socket');
+});
+
+// WHY the worker is kept alive by a promise the test can see. Without an
+// unresolved waitUntil, the platform retires the isolate as idle and every device
+// socket dies at a consistent interval — observed live as code 1006 every
+// seventy-some seconds. Holding the promise is what keeps the socket's worker
+// alive, and resolving it on close is what lets the worker end.
+
+test('an upgraded socket holds the worker until it closes, or the platform retires it early', async () => {
+  waitedPromises.length = 0;
+  const h = harness();
+  const socket = await h.openSocket();
+
+  assert.equal(waitedPromises.length, 1, 'the upgrade held no promise, so the worker looks idle');
+
+  let released = false;
+  waitedPromises[0].then(() => { released = true; });
+  socket.onclose({ code: 1006, reason: '' });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(released, true, 'closing the socket never released the worker');
+});
+
+// WHY the safety drain is driven, not just bounded. Pinning the interval says how
+// often it should run; it does not say it runs at all. The drain is the net under
+// the change channel, so this test turns the keepalive crank by hand until the
+// interval is crossed and proves a claim follows.
+
+test('the keepalive tick drains past the safety interval, so a dead channel costs a minute, not every command', async () => {
+  const h = harness();
+  const socket = await handshakenSocket(h);
+
+  const keepalive = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms === 20000);
+  assert.ok(keepalive, 'no keepalive interval to drive');
+  const tick = keepalive[1].fn;
+
+  const claimsBefore = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
+
+  for (let round = 0; round < 4; round += 1) {
+    await socket.onmessage({ data: JSON.stringify({ type: 'pong' }) });
+    tick();
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  const claimsAfter = h.calls.filter((c) => c.name === 'opera_claim_next_wait').length;
+  assert.ok(claimsAfter > claimsBefore,
+    'four keepalive ticks crossed the safety interval and claimed nothing');
+  assert.ok(socket.sent.some((text) => text.includes('"ping"')),
+    'the keepalive tick sent no ping at all');
 });
 
 test('the device emits without awaiting, so a slow bridge cannot slow a burst step', () => {

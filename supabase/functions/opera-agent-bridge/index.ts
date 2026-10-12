@@ -101,19 +101,19 @@ async function pull(body: Record<string, unknown>) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
     return json({ ok: false, error: "Unauthorized device." }, 401);
   }
-  const tokenHash = await sha256(body.token.toLowerCase());
   const waitMs = clamp(body.waitMs, 0, 25000, 12000);
 
-  const result = await rpc("opera_claim_next_wait", {
-    p_device_name: body.deviceName.trim(),
-    p_token_hash: tokenHash,
-    p_extension_version: String(body.extensionVersion || "").slice(0, 64),
-    p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
-    p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : [],
-    p_wait_ms: waitMs
-  });
-  if (!result?.ok) return json(result || { ok: false }, 401);
-  return json({ ...result, serverTime: new Date().toISOString() }, 200);
+  const claimed = await claimForDevice(
+    { deviceName: body.deviceName, token: body.token },
+    {
+      extensionVersion: String(body.extensionVersion || ""),
+      protocolVersion: body.protocolVersion,
+      capabilities: body.capabilities,
+      waitMs
+    }
+  );
+  if (!claimed) return json({ ok: false }, 401);
+  return json({ ...claimed.raw, serverTime: new Date().toISOString() }, 200);
 }
 
 async function complete(body: Record<string, unknown>) {
@@ -272,18 +272,32 @@ async function handle(req: Request) {
 // the first command after an outage depend on luck. The loop keeps draining
 // because one insert can leave more than one command queued behind a claim.
 
+// WHY there is one function that claims. The HTTP pull and the socket drain used
+// to build the same RPC call separately, which meant two places to get the hash,
+// the clamps, and the capability cap right. A claim is a claim no matter who
+// asked, so both paths go through here now.
+
+async function claimForDevice(
+  identity: { deviceName: string; token: string },
+  detail: { extensionVersion?: unknown; protocolVersion?: unknown; capabilities?: unknown; waitMs?: unknown } = {}
+) {
+  const claimed = await rpc("opera_claim_next_wait", {
+    p_device_name: identity.deviceName.trim(),
+    p_token_hash: await sha256(identity.token.toLowerCase()),
+    p_extension_version: String(detail.extensionVersion || "").slice(0, 64),
+    p_protocol_version: clamp(detail.protocolVersion, 1, 1000, 1),
+    p_capabilities: Array.isArray(detail.capabilities) ? detail.capabilities.slice(0, 100) : [],
+    p_wait_ms: clamp(detail.waitMs, 0, 25000, 0)
+  });
+
+  if (!claimed?.ok) return null;
+  return { command: claimed.command ?? null, raw: claimed };
+}
+
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
   const drain = async () => {
-    const claimed = await rpc("opera_claim_next_wait", {
-      p_device_name: identity.deviceName,
-      p_token_hash: await sha256(identity.token.toLowerCase()),
-      p_extension_version: "",
-      p_protocol_version: 1,
-      p_capabilities: [],
-      p_wait_ms: 0
-    });
-
-    if (!claimed?.ok || !claimed.command) return false;
+    const claimed = await claimForDevice(identity);
+    if (!claimed?.command) return false;
     onCommand(claimed.command);
     return true;
   };
@@ -335,6 +349,7 @@ Deno.serve((req: Request) => {
   if (isUpgradeRequest(req)) {
     return serveDeviceSocket(req, {
       verifyDevice: verifyDeviceSocket,
+      onTick: async (identity) => (await claimForDevice(identity))?.command ?? null,
       complete,
       subscribe,
       log: createEdgeLog({})

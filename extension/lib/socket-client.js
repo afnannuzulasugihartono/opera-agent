@@ -41,6 +41,11 @@
 // reject a promise nobody awaits. The frame is simply lost, which is exactly what
 // the stored-completion resend exists to cover.
 //
+// WHY an error frame is reported rather than dropped. The bridge answers a frame
+// it could not handle with an error and nothing else, so ignoring it means a
+// device whose handshake or whose completion was refused looks exactly like one
+// that is working.
+//
 // WHY the drain loop does not test a stop flag. stop() empties the queue, which
 // ends a drain already in flight; reading a second flag would only obscure why the
 // loop stopped.
@@ -52,11 +57,112 @@ import {
   isReady,
   isRunnableCommand,
   normalizeCommand,
-  parseFrame
+  parseFrame,
+  pongFrame
 } from './socket-protocol.js';
 
 const BASE_RETRY_MS = 500;
 const MAX_RETRY_MS = 30000;
+
+// WHY the mapping from socket events to connection state lives here as a pure
+// function instead of inline in the worker. It used to be an object literal inside
+// the onState callback, where a bare `retryMs` with no binding threw a
+// ReferenceError the first time the callback fired. That killed start() before the
+// socket was ever opened, and because the client was already assigned, nothing
+// ever retried: the device sat at "connecting" with no socket and no error, which
+// is exactly what the integration test reported. A function with locks cannot hide
+// a crash the same way.
+//
+// WHY an error frame reports only its message. It arrives on a live socket, so it
+// says nothing about the connection and must not stamp a fresh lastConnectedAt or
+// clear an unrelated error. The previous inline version did both by accident.
+//
+// WHY stale becomes reconnecting. The watchdog opens a new socket in the same
+// breath, so by the time this patch is read the device is reconnecting, and the
+// popup never has to learn a status that lasts less than a millisecond.
+
+// WHY connecting carries no lastError key at all. A fresh attempt does not erase
+// the reason the previous one ended, and merging a null over it did exactly that:
+// observed live, a device cycling ready to connecting every minute with no error
+// anywhere, which made the cycle itself undiagnosable. Only a connection clears
+// the slate.
+
+export function connectionPatch(event, stamp) {
+  const status = event?.status;
+
+  if (status === 'connected') {
+    return { status: 'ready', lastConnectedAt: stamp, lastError: null };
+  }
+
+  if (status === 'error') {
+    return { lastError: `Bridge: ${String(event.message || 'bridge error').slice(0, 200)}` };
+  }
+
+  if (status === 'rejected') {
+    return { status: 'rejected', lastError: 'Bridge refused this device.' };
+  }
+
+  if (status === 'recycling') {
+    return { status: 'reconnecting', lastError: null };
+  }
+
+  const closed = event?.code
+    ? `Socket closed ${event.code}${event.reason ? `: ${event.reason}` : ''}.`
+    : null;
+  const stale = status === 'stale'
+    ? `Silent for ${Math.round(Number(event.silenceMs) || 0)}ms; reconnecting.`
+    : null;
+
+  if (status === 'connecting') {
+    return { status: 'connecting' };
+  }
+
+  return {
+    status: status === 'stale' ? 'reconnecting' : status,
+    lastError: stale || closed
+  };
+}
+
+// WHY the device keeps its own deadline. The bridge pings every twenty seconds, so
+// silence past a bound means the peer is gone even though nothing said so. The
+// case that makes this necessary is a zombie connection: observed live, a device
+// reported ready for nineteen minutes on a socket whose far end had been replaced,
+// because the TCP connection was never closed, no ping ever arrived, and no close
+// ever came. Nothing on that device could tell the difference between a healthy
+// socket and one that would never deliver another command.
+//
+// WHY three intervals. One interval could be a delayed frame, two could be a busy
+// network, and a false teardown costs a reconnect. Three missing pings is past any
+// delay worth waiting through.
+//
+// WHY a close is only ever sent on an open or connecting socket. Closing one the
+// peer already started closing answers nothing, and Chromium reports "Close
+// received after close" on the extension errors page even though the call itself
+// is caught, so every user sees it. Observed live. A socket that is already
+// closing needs no close from us; it only needs to be forgotten.
+//
+// WHY the watchdog has its own timer. It is a liveness check, not a retry, and it
+// runs for the whole life of the client rather than between attempts. Sharing one
+// timer with the backoff would make every test that drives the backoff also drive
+// the watchdog, which is exactly the kind of coupling that turns a timing change
+// into a mystery failure somewhere else.
+
+const SILENCE_LIMIT_MS = 60000;
+const WATCHDOG_MS = 10000;
+
+// WHY the socket is recycled before the platform kills it. Edge isolates have a
+// hard wall clock limit — about 150 seconds on this project — and waitUntil only
+// prevents early retirement, never extends it. Observed live as code 1006 at a
+// metronomic 151 seconds after waitUntil fixed the 76-second EarlyDrop deaths. A
+// recycle is the same reconnect the client already does, except it happens on our
+// schedule: only when no command is running, so nothing is ever interrupted, and
+// early enough that the wall clock never fires first.
+//
+// WHY 120 seconds. Thirty seconds of margin under the observed limit, and short
+// enough that a command landing in the few seconds of reconnect waits only for the
+// drain that picks it up rather than for a surprise.
+
+const RECYCLE_AGE_MS = 120000;
 
 export function createSocketClient({
   url,
@@ -66,13 +172,43 @@ export function createSocketClient({
   onState = () => {},
   WebSocketImpl = globalThis.WebSocket,
   now = () => Date.now(),
-  setTimer = (fn, ms) => setTimeout(fn, ms)
+  setTimer = (fn, ms) => setTimeout(fn, ms),
+  setWatchTimer = setTimer
 } = {}) {
   let socket = null;
   let ready = false;
   let retryMs = BASE_RETRY_MS;
   let generation = 0;
   let closedByUs = false;
+  let lastHeardAt = 0;
+  let connectedAt = 0;
+  const takeQueue = [];
+  let draining = false;
+
+  const heard = () => {
+    lastHeardAt = now();
+  };
+
+  const replaceSocket = (event) => {
+    generation += 1;
+    const dead = socket;
+    socket = null;
+    ready = false;
+    onState(event);
+    closeSocket(dead);
+    connect();
+  };
+
+  const watch = () => {
+    if (closedByUs) return;
+    if (ready && lastHeardAt && now() - lastHeardAt > SILENCE_LIMIT_MS) {
+      replaceSocket({ status: 'stale', silenceMs: now() - lastHeardAt });
+    } else if (ready && connectedAt && !draining && takeQueue.length === 0
+      && now() - connectedAt > RECYCLE_AGE_MS) {
+      replaceSocket({ status: 'recycling', ageMs: now() - connectedAt });
+    }
+    setWatchTimer(watch, WATCHDOG_MS);
+  };
 
   const frame = (text) => {
     if (socket && socket.readyState === 1) socket.send(text);
@@ -84,15 +220,19 @@ export function createSocketClient({
     } catch { }
   };
 
+  const closeSocket = (target) => {
+    if (!target) return;
+    try {
+      if (target.readyState === 0 || target.readyState === 1) target.close();
+    } catch { }
+  };
+
   const scheduleRetry = (gen) => {
     if (closedByUs) return;
     const wait = retryMs;
     retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
     setTimer(() => { if (gen === generation) connect(); }, wait);
   };
-
-  const takeQueue = [];
-  let draining = false;
 
   const drain = async () => {
     if (draining) return;
@@ -135,14 +275,27 @@ export function createSocketClient({
     socket = next;
 
     next.onopen = () => {
+      heard();
+      connectedAt = now();
       frame(handshakeFrame(token, deviceName));
     };
 
     next.onmessage = (event) => {
+      heard();
       const parsed = parseFrame(event?.data);
       if (!parsed.ok) return;
 
       const message = parsed.message;
+      if (message.type === 'ping') {
+        frame(pongFrame());
+        return;
+      }
+
+      if (message.type === 'error') {
+        onState({ status: 'error', message: String(message.error || 'bridge error').slice(0, 200) });
+        return;
+      }
+
       if (isReady(message)) {
         ready = true;
         retryMs = BASE_RETRY_MS;
@@ -163,12 +316,13 @@ export function createSocketClient({
       socket = null;
       ready = false;
       const code = Number(event?.code ?? 0);
+      const reason = String(event?.reason || '').slice(0, 200);
       if (isFatalClose(code)) {
         closedByUs = true;
-        onState({ status: 'rejected', code });
+        onState({ status: 'rejected', code, reason });
         return;
       }
-      onState({ status: 'reconnecting' });
+      onState({ status: 'reconnecting', code, reason });
       scheduleRetry(gen);
     };
 
@@ -180,7 +334,9 @@ export function createSocketClient({
 
   function start() {
     closedByUs = false;
+    lastHeardAt = 0;
     connect();
+    watch();
   }
 
   function stop() {
@@ -188,7 +344,7 @@ export function createSocketClient({
     generation += 1;
     ready = false;
     takeQueue.length = 0;
-    try { socket?.close(); } catch { }
+    closeSocket(socket);
     socket = null;
     onState({ status: 'stopped' });
   }

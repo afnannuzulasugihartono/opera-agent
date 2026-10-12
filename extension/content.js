@@ -1,7 +1,17 @@
-// @last-edited: 2026-10-07 02:15 UTC+7.
+// @last-edited: 2026-10-12 UTC+7.
 // @title: content — MV3 browser runtime..
 // @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
 // @dependencies: none.
+
+// WHY the page helpers degrade rather than throw. A throw at module scope takes
+// down every capability on the page at once: no read, no find, no click, nothing.
+// Observed live on a Google Docs tab after a reload, where the extension reported
+// "Role reconcile runtime is unavailable" and the whole content script was gone
+// from that document. A missing helper is a missing feature, so it is recorded in
+// semanticRuntime and the rest of the page keeps working. Each helper then falls
+// back to a shape that answers rather than one that throws: implicitRole returns
+// an empty role, and the hover planner reports that it is off instead of breaking
+// the call.
 
 (() => {
   'use strict';
@@ -20,11 +30,25 @@
 
   if (!document.documentElement) document.addEventListener('DOMContentLoaded', markInstalled, { once: true });
 
-  const { implicitRole } = globalThis.OperaAgentRoleReconcile || {};
-  if (typeof implicitRole !== 'function') throw new Error('Role reconcile runtime is unavailable.');
+  const roleRuntime = globalThis.OperaAgentRoleReconcile || {};
+  const hoverRuntime = globalThis.OperaAgentHoverSettle;
+  const semanticRuntime = typeof roleRuntime.implicitRole === 'function'
+    && hoverRuntime
+    && typeof hoverRuntime.plan === 'function';
 
-  const hoverSettle = globalThis.OperaAgentHoverSettle;
-  if (!hoverSettle || typeof hoverSettle.plan !== 'function') throw new Error('Hover settle runtime is unavailable.');
+  if (!semanticRuntime) {
+    console.warn('[opera-agent] semantic helpers unavailable; role and hover features are off on this page');
+  }
+
+  const implicitRole = typeof roleRuntime.implicitRole === 'function'
+    ? roleRuntime.implicitRole
+    : () => '';
+  const hoverSettle = hoverRuntime && typeof hoverRuntime.plan === 'function'
+    ? hoverRuntime
+    : {
+        normalize: (args) => args,
+        plan: () => ({ done: false, reason: 'hover-settle-unavailable' })
+      };
 
   const MAX_TEXT_CHUNK = 12000;
   const MAX_ELEMENTS = 200;
