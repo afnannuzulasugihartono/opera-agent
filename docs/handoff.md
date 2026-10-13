@@ -13,16 +13,29 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - `main` = `origin/main`, and it is the sole remote branch again. Nine stale branches were
   removed on 2026-10-10 after each was measured: `main` was 1 to 277 commits ahead of every
   one, and none held a file `main` lacks. Every merge `--ff-only`.
-- Version `1.6.24` in [`extension/manifest.json`](../extension/manifest.json) is the source
+- Version `1.6.26` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth. [`check.mjs`](../scripts/check.mjs) also asserts the version the MCP server
   reports, the store form's four-part version, and that no module redeclares the secret regex.
-- Gates: `npm test`, `npm run check` — 28 primitives, 162 runtime safety files, 850 unit
+- Gates: `npm test`, `npm run check` — 29 primitives, 162 runtime safety files, 1100 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 73 `opera_*`
   functions (62 `SECURITY DEFINER`), 17 `opera_*` tables, 10 deployed edge functions.
-- **The CRX is published.** The update endpoint offers `1.6.22` to extension id
+- **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge`
+  runs the whole MCP surface over the everyday profile with no debugging flag and no cloud
+  hop. Measured on that profile: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms,
+  `read_page` 20 ms after seventy idle seconds, and a burst of eight at 23 ms mean, 66 ms
+  max.
+- **The bridge transport is a held `POST /poll`, not a WebSocket.** The WebSocket version
+  never delivered a command on this Chrome: the worker's counters read `messages 0` after
+  hundreds of frames sent, the same server's frames reached a real WebSocket client every
+  time, and the identical code path receives inbound frames from the `wss://` relay without
+  trouble. Chrome does not start a service worker for an inbound socket frame, and the
+  socket it keeps outlives the worker behind it, so the link reported `OPEN` and heard
+  nothing — a ping answered in the network layer proves nothing about worker code. A fetch
+  is the one thing that does start it. Do not put a socket back on this road.
+- **The CRX is published.** The update endpoint offers `1.6.26` to extension id
   `ofgemipoobcnbjkfanmofjbdonjapmgl`, which is both the manifest key's id and the
-  signature's id. `1.6.21` and `1.6.17` under that id are inactive; `1.6.14` under the old
+  signature's id. Older rows under that id are inactive; `1.6.14` under the old
   id `ohbbpamc…` stays active. `opera_releases` allows one active row per id.
 - **Live audio is end to end.** Element-tap capture (no new permission) → Groq Whisper
   `verbose_json` → segments in `opera_listen_segments`, audio deleted after use. MCP has
@@ -119,7 +132,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    reads sixteen tables through `SECURITY DEFINER` `opera_konsol_*` readers: zero table
    grants, sixteen policies rebuilt from one scope map and drift-locked string for string.
    Read-only by decision — a write side is the next move.
-10. **The CRX shipped at 1.6.22.** The bump moved every frozen surface as one piece; six
+10. **The CRX shipped at 1.6.26.** The bump moved every frozen surface as one piece; six
     tests and one helper carry the release number, and
     [`boundary-locks.mjs`](../tests/helpers/boundary-locks.mjs) re-pins the manifest on the
     version line only.
