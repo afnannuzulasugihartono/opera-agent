@@ -62,7 +62,7 @@ test('the load-time listeners actually registered', () => {
   assert.equal(listeners['tabs.onRemoved'].length, 3, 'pull, loops and bridge-link all drop their tab state');
   assert.equal(listeners['debugger.onDetach'].length, 1, 'the debugger detach handler registers');
   assert.equal(listeners['alarms.onAlarm'].length, 2, 'wake alarm plus the bridge loop guard');
-  assert.equal(listeners['tabs.onActivated'].length, 0, 'the bridge no longer needs a tab to relink on');
+  assert.equal(listeners['tabs.onActivated'].length, 1, 'the bridge retries sooner when the person switches tab');
   assert.ok(listeners['tabs.onCreated'].length >= 1, 'the tab-drag gate registers');
   assert.ok(listeners['runtime.onInstalled'].length >= 1, 'onInstalled registers');
 });

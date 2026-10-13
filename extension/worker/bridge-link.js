@@ -49,7 +49,7 @@ import { releaseDebuggerSession } from '../lib/debugger-session.js';
 
 const BRIDGE_ORIGIN = globalThis.OPERA_BRIDGE_ORIGIN || 'http://127.0.0.1:9451';
 const BRIDGE_ALARM = 'opera-bridge-link';
-const RETRY_MS = 400;
+const BACKOFF_MS = [400, 1000, 3000, 5000, 15000];
 const POLL_HOLD_MS = 20000;
 const REPLY_TIMEOUT_MS = 10000;
 
@@ -166,14 +166,19 @@ async function handle(command) {
 
 // WHY the poll loop never gives up. The local server is not always running, and
 // a driver that starts ten minutes later must find a worker already waiting.
-// The retry is short because a refused loopback connect costs nothing, and every
-// failure is counted so a person can see the loop is alive rather than stuck.
+//
+// WHY the retry backs off. With no driver running every attempt is a refused
+// loopback connection: no work, and a red row in the Network panel each time,
+// observed filling up while nothing was wrong. Four hundred milliseconds is the
+// right first try and the wrong forever, so the wait grows to fifteen seconds.
 
 async function poll(mine) {
+  let step = 0;
   while (running && generation === mine) {
     try {
       stats.polls += 1;
       const command = await post('/poll', {}, POLL_HOLD_MS + 5000);
+      step = 0;
       if (command && command.id !== undefined) {
         queue = queue.then(() => handle(command)).catch(() => {});
       }
@@ -181,7 +186,8 @@ async function poll(mine) {
       stats.failures += 1;
       stats.lastError = `poll: ${error?.message || error}`;
       note(`poll failed ${error?.message || error}`);
-      await sleep(RETRY_MS);
+      await sleep(BACKOFF_MS[Math.min(step, BACKOFF_MS.length - 1)]);
+      step += 1;
     }
   }
 }
@@ -191,6 +197,16 @@ export function ensureBridgeLink() {
   running = true;
   generation += 1;
   note('loop up');
+  void poll(generation);
+}
+
+// WHY a nudge exists. The loop is already running, so the alarm cannot make it
+// take a fresh step; bumping the generation retires the attempt in flight and
+// starts one at the first backoff step. That is how a person touching a tab
+// finds a driver which started while nothing was talking to it.
+
+function nudge() {
+  generation += 1;
   void poll(generation);
 }
 
@@ -213,7 +229,12 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm?.name !== BRIDGE_ALARM) return;
   stats.alarms += 1;
-  ensureBridgeLink();
+  if (running) nudge();
+  else ensureBridgeLink();
+});
+
+chrome.tabs.onActivated.addListener(() => {
+  if (running) nudge();
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
