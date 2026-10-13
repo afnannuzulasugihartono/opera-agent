@@ -7,7 +7,7 @@ import { log } from '../lib/log.js';
 import { METHOD_SPECS, clamp } from '../lib/protocol.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from '../lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from '../lib/focus-gate.js';
-import { resolveKeyInput } from '../lib/keyboard.js';
+import { resolveKeyInput, resolveKeyStream } from '../lib/keyboard.js';
 import { recordPopup, resolvePopupOpener, POPUP_LOG_LIMIT } from '../lib/popup-events.js';
 import { sleep } from './utils.js';
 import { contentCall } from './tab-content.js';
@@ -353,6 +353,47 @@ export async function trustedKey(tabId, params, context, mode = 'background') {
       modifiers: request.modifierNames,
       method: 'debugger',
       input: 'chord'
+    };
+  })));
+}
+
+export async function trustedKeyStream(tabId, params, context, mode = 'background') {
+  const events = resolveKeyStream(params?.events);
+  const active = await contentCall(tabId, 'page.active_state', {});
+  if (active.sensitive) throw new Error('Keyboard input blocked on sensitive field.');
+  return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
+    withForegroundFocusGate(tabId, mode, async () => {
+    const started = Date.now();
+    let chords = 0;
+    let chars = 0;
+    for (const event of events) {
+      if (event.kind === 'text') {
+        for (const chunk of event.chunks) {
+          await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
+        }
+        chars += event.chars;
+      } else {
+        const spec = {
+          key: event.key,
+          code: event.code,
+          windowsVirtualKeyCode: event.windowsVirtualKeyCode,
+          nativeVirtualKeyCode: event.nativeVirtualKeyCode
+        };
+        const modifiers = event.modifiers ? { modifiers: event.modifiers } : {};
+        await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...modifiers, ...spec });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...modifiers, ...spec });
+        chords += 1;
+      }
+      if (event.gapMs > 0) await sleep(event.gapMs);
+    }
+    return {
+      ok: true,
+      events: events.length,
+      chords,
+      chars,
+      execMs: Date.now() - started,
+      method: 'debugger',
+      input: 'stream'
     };
   })));
 }

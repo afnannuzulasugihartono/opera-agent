@@ -222,5 +222,5 @@ test('per-step tabId does not widen the primitive count', () => {
   const protocol = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
   const block = protocol.match(/export const METHOD_SPECS = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
   const count = [...block[1].matchAll(/^\s*'([^']+)':\s*\{/gm)].length;
-  assert.equal(count, 28, 'stream methods are new primitives, burst parameters are not');
+  assert.equal(count, 29, 'stream methods are new primitives, burst parameters are not');
 });

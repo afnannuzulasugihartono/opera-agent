@@ -20,6 +20,7 @@ import {
   DEVICE_PROTOCOL_VERSION,
   FRAME_MAX_BYTES,
   completionFrame,
+  encodeCompletionFrame,
   handshakeFrame,
   isFatalClose,
   isReady,
@@ -99,4 +100,35 @@ test('a frame near the product bound parses on the device side too', () => {
     command: { id: 'cmd-big', method: 'page.read', params: { blob: 'y'.repeat(400 * 1024) } }
   });
   assert.equal(parseFrame(frame).ok, true);
+});
+
+// WHY completions compress. A page.read result runs to hundreds of kilobytes,
+// and on a slow link the transfer dwarfs everything else — measured: an 88 KiB
+// read completed in 1914 ms against ~600 ms of fixed costs. gzip shrinks page
+// JSON five to fifty times, so a big completion travels as one small binary
+// frame instead. Small completions stay text: readable in logs, and the few
+// hundred bytes saved are not worth a second code path per message.
+
+test('a small completion stays a text frame', async () => {
+  const frame = await encodeCompletionFrame('c-1', true, { ok: true }, null);
+  assert.equal(typeof frame, 'string');
+  assert.equal(JSON.parse(frame).commandId, 'c-1');
+});
+
+test('a large completion becomes a versioned gzip frame', async () => {
+  const frame = await encodeCompletionFrame('c-2', true, { blob: 'civil-engineering-semantic-reader '.repeat(3000) }, null);
+  assert.ok(frame instanceof Uint8Array, 'large completions must leave as binary');
+  assert.equal(frame[0], 1, 'first byte is the frame version');
+  assert.ok(frame.length < 20000, `98 KiB of text must shrink, got ${frame.length} bytes`);
+});
+
+test('a runtime without compression still sends text, never throws', async () => {
+  const real = globalThis.CompressionStream;
+  globalThis.CompressionStream = undefined;
+  try {
+    const frame = await encodeCompletionFrame('c-3', true, { blob: 'y'.repeat(100000) }, null);
+    assert.equal(typeof frame, 'string');
+  } finally {
+    globalThis.CompressionStream = real;
+  }
 });

@@ -20,6 +20,11 @@
 // whoever else's machine runs it. So the protocol lives in a function that takes a
 // request and returns a response, and the stdio wrapper below it stays thin enough
 // to be obvious by reading.
+//
+// WHY closing goes through the fallback driver. Routing close_tab by its tab id
+// would open a websocket to the tab being closed just to tear it down, and fail
+// on a tab already half-dead. The fallback closes by id with no session at all,
+// and both caches still drop what they hold for it.
 
 const PROTOCOL_VERSION = '2024-11-05';
 
@@ -31,6 +36,8 @@ const numberArg = (name) => ({ type: 'number', description: name });
 // pretending a local stdio process has them would advertise something it cannot
 // honour. Coordinates and a fresh read per action are honest and sufficient.
 
+const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes.' };
+
 export const TOOLS = Object.freeze([
   {
     name: 'browser_status',
@@ -39,51 +46,91 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'list_tabs',
-    description: 'List the page targets the browser currently has open.',
+    description: 'List the page targets the browser currently has open, each with an id. Pass that id as tabId to drive a specific tab.',
     inputSchema: { type: 'object', properties: {}, required: [] }
   },
   {
     name: 'open_url',
-    description: 'Open a url in its own tab and return it. Never navigates a tab that is already open, so a drive cannot destroy what the user was reading.',
+    description: 'Open a url in its own tab and return its id. Never navigates a tab that is already open, so a drive cannot destroy what the user was reading.',
     inputSchema: { type: 'object', properties: { url: stringArg('absolute url to open') }, required: ['url'] }
   },
   {
+    name: 'close_tab',
+    description: 'Close one tab by id and drop its cached session, so mapping runs and abandoned drives do not pile up tabs in the browser.',
+    inputSchema: { type: 'object', properties: { tabId: stringArg('which tab to close, from list_tabs') }, required: ['tabId'] }
+  },
+  {
     name: 'read_page',
-    description: 'Read the focused tab: url, title and visible text. A canvas-rendered page returns little or no text, so pair this with capture_page when the task needs to see content.',
-    inputSchema: { type: 'object', properties: {}, required: [] }
+    description: 'Read one tab: url, title and visible text. A canvas-rendered page returns little or no text, so pair this with capture_page when the task needs to see content.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {
     name: 'find_elements',
     description: 'Find visible text on the page and return each match with a viewport rect. Coordinates are in the same space capture_page returns, so a rect here can be clicked directly.',
-    inputSchema: { type: 'object', properties: { query: stringArg('text to look for') }, required: ['query'] }
+    inputSchema: { type: 'object', properties: { tabId: tabArg, query: stringArg('text to look for') }, required: ['query'] }
   },
   {
     name: 'click',
-    description: 'Click a coordinate in the focused tab. The coordinate space is the viewport in CSS pixels, which is what capture_page is clipped to.',
+    description: 'Click a coordinate in one tab. The coordinate space is the viewport in CSS pixels, which is what capture_page is clipped to.',
     inputSchema: {
       type: 'object',
-      properties: { x: numberArg('viewport x'), y: numberArg('viewport y') },
+      properties: { tabId: tabArg, x: numberArg('viewport x'), y: numberArg('viewport y') },
+      required: ['x', 'y']
+    }
+  },
+  {
+    name: 'click_row',
+    description: 'Find a row by role and name in a fresh snapshot and click its center in one round trip: no stale coordinates, no separate snapshot call. The name matches case-insensitively as a substring; the first match wins.',
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: tabArg, role: stringArg('menuitem, button, option, link, textbox, ...'), name: stringArg('substring of the visible name') },
+      required: ['role', 'name']
+    }
+  },
+  {
+    name: 'hover',
+    description: 'Move the pointer over a coordinate without pressing, and mark the spot blue for the watcher. Dropdown menus and submenus open on hover and close on click, so hover first, then read ax_snapshot to see what appeared. Returns after dispatch: the reply is page-timed and proves nothing, the follow-up snapshot proves everything.',
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: tabArg, x: numberArg('viewport x'), y: numberArg('viewport y') },
       required: ['x', 'y']
     }
   },
   {
     name: 'press_key',
-    description: 'Send a key with optional modifiers to the focused element, for example a chord or an arrow. Measured against Google editors: the first key after a write is swallowed, so send one harmless key first.',
+    description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow.',
     inputSchema: {
       type: 'object',
-      properties: { key: stringArg('key name'), modifiers: { type: 'array', items: { type: 'string' }, description: 'Control, Alt, Shift, Meta' } },
+      properties: { tabId: tabArg, key: stringArg('key name'), modifiers: { type: 'array', items: { type: 'string' }, description: 'Control, Alt, Shift, Meta' } },
       required: ['key']
     }
   },
   {
     name: 'type',
-    description: 'Insert text into the focused surface, including newlines as real paragraph breaks in a rich editor.',
-    inputSchema: { type: 'object', properties: { text: stringArg('text to insert') }, required: ['text'] }
+    description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
+  },
+  {
+    name: 'stream_keys',
+    description: 'Send up to 100 keys and texts in one call, in order, with optional gaps. One round trip however many events, so a menu walk costs one call instead of twenty.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        events: { type: 'array', items: { type: 'object' }, description: 'in order: { key, modifiers?, gapMs? } or { text, gapMs? }' }
+      },
+      required: ['events']
+    }
   },
   {
     name: 'capture_page',
-    description: 'Capture the focused tab as a JPEG, clipped to the viewport at one pixel per clickable coordinate.',
-    inputSchema: { type: 'object', properties: {}, required: [] }
+    description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Returns image content the caller can see.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg } }
+  },
+  {
+    name: 'ax_snapshot',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Read this before clicking anything without a stable selector; every coordinate is resolved fresh from a live tree.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
   }
 ]);
 
@@ -103,9 +150,24 @@ function asText(value) {
 }
 
 export function createMcpServer(context) {
+  const sessions = new Map();
+  const fallback = context.driver ?? null;
+
+  const driverFor = async (tabId) => {
+    if (!tabId) return fallback;
+    const known = context.resolveTab ? await context.resolveTab() : [];
+    if (known.length && !known.includes(tabId)) {
+      throw new Error(`No page target ${tabId}. Open pages: ${known.join(' | ')}`);
+    }
+    if (!sessions.has(tabId)) {
+      sessions.set(tabId, await context.open({ ...(context.sessionOptions ?? {}), targetId: tabId }));
+    }
+    return sessions.get(tabId);
+  };
+
   const run = async (name, args) => {
-    const { driver } = context;
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
+    const driver = name === 'close_tab' ? fallback : await driverFor(args?.tabId);
 
     switch (name) {
       case 'browser_status':
@@ -114,24 +176,44 @@ export function createMcpServer(context) {
         return asText(await driver.tabs());
       case 'open_url':
         return asText(await driver.open(args.url));
+      case 'close_tab': {
+        const out = await driver.close(args.tabId);
+        sessions.get(args.tabId)?.close?.();
+        sessions.delete(args.tabId);
+        return asText(out);
+      }
       case 'read_page':
         return asText(await driver.read());
       case 'find_elements':
         return asText(await driver.find(args.query));
       case 'click':
         return asText(await driver.click(args.x, args.y));
+      case 'click_row':
+        return asText(await driver.clickRow(args.role, args.name));
+      case 'hover':
+        return asText(await driver.hover(args.x, args.y));
       case 'press_key':
         return asText(await driver.key(args.key, args.modifiers ?? []));
       case 'type':
         return asText(await driver.type(args.text));
-      case 'capture_page':
-        return asText(await driver.capture());
+      case 'stream_keys':
+        return asText(await driver.keys(args.events));
+      case 'ax_snapshot':
+        return asText(await driver.snapshot(args.limit));
+      case 'capture_page': {
+        const data = await driver.capture();
+        return { content: [{ type: 'image', data, mimeType: 'image/jpeg' }] };
+      }
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
   };
 
   return {
+    async close() {
+      for (const session of sessions.values()) session.close?.();
+      sessions.clear();
+    },
     async handle(request) {
       const { id, method, params } = request ?? {};
       const reply = (result) => ({ jsonrpc: '2.0', id, result });

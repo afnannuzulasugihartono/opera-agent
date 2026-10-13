@@ -58,9 +58,51 @@ function validDeviceName(value: unknown): value is string {
 }
 
 async function rpc(name: string, args: Record<string, unknown>) {
+  if (directDb) {
+    try {
+      return await rpcViaDirect(name, args);
+    } catch {
+      directDb = null;
+    }
+  }
   const { data, error } = await supabase.rpc(name, args);
   if (error) throw new Error(`${name}: ${error.message}`);
   return data as Record<string, unknown> | null;
+}
+
+// WHY THE SOCKET HOLDS ITS OWN DATABASE CONNECTION. Every completion crosses into the
+// database to record the result, and that crossing sits inside the command's own
+// lifetime: created-at to completed-at includes the write that stamps it done. Over the
+// client library that write measured roughly 250 ms against work the browser answers in
+// under a millisecond. A socket holds its isolate open for as long as the device stays
+// connected, so the first completion pays the handshake once and every completion after
+// it skips the gateway. The function invoked and its return shape are identical either
+// way, and a direct call that fails falls back rather than failing the completion.
+
+let directDb: { sql: (...args: unknown[]) => Promise<unknown[]> } | null = null;
+
+async function rpcViaDirect(name: string, args: Record<string, unknown>) {
+  if (!directDb) throw new Error("no direct connection");
+  if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`refused function name: ${name}`);
+  const keys = Object.keys(args);
+  const values = keys.map((k) => args[k] === undefined ? null : args[k]);
+  const placeholders = keys.map((k, i) => {
+    if (!/^[a-z_][a-z0-9_]*$/.test(k)) throw new Error(`refused argument name: ${k}`);
+    return `${k} := $${i + 1}`;
+  }).join(", ");
+  const rows = await directDb.sql(`select public."${name}"(${placeholders}) as data`, values) as Array<{ data: unknown }>;
+  if (!rows.length) return null;
+  return rows[0].data as Record<string, unknown> | null;
+}
+
+async function connectDirectDb(): Promise<void> {
+  if (directDb) return;
+  const url = Deno.env.get("SUPABASE_DB_URL") ?? "";
+  if (!url) throw new Error("No direct database url is configured.");
+  const { default: postgres } = await import("postgres");
+  const pg = postgres(url, { max: 3, connect_timeout: 10, idle_timeout: 30 });
+  await pg`select 1`;
+  directDb = { sql: (text: unknown, values: unknown) => pg.unsafe(text as string, values as unknown[], { prepare: true }) as unknown as Promise<unknown[]> };
 }
 
 async function pair(body: Record<string, unknown>) {
@@ -309,12 +351,26 @@ async function claimForDevice(
 // queries to shave tens of milliseconds nobody can feel; slower would be felt
 // directly, since this wait sits on every single command.
 //
-// WHY the drain refuses to overlap itself. Two drains in flight can claim two
-// commands and push the second before the first, which would execute same-device
-// commands out of order. A tick that arrives while a drain is running is skipped;
-// the next tick picks up whatever is still queued.
+// WHY THE DRAIN WAITS INSTEAD OF TICKING. This used to wake every 100 ms and ask whether
+// anything was queued, which is a poll wearing a socket's clothes: the socket was
+// connected, but command delivery still began with a delay of up to a full tick, and
+// every idle device spent a tenth of a second checking for work it knew was not there.
+// opera_claim_next_wait already parks server-side and returns the moment a command
+// exists, which is what it exists for, so the drain now asks it to wait. Delivery
+// becomes "as soon as it is written" instead of "within a hundred milliseconds", and an
+// idle device costs nothing at all.
+//
+// The claim stays bounded by the same clamp as before, and a device that disconnects
+// mid-wait leaves at most one parked call, which the next drain replaces.
+//
+// WHY THE FIRST CLAIM STILL DOES NOT WAIT. A device that was away has a backlog, and the
+// first claim is what finds it. Parking that one call would hold queued work for the
+// whole wait, so the first claim of each drain is immediate and every claim after it
+// parks. Backlog is caught on arrival, and everything after that arrives as it is
+// written rather than within a tick.
 
 const DRAIN_POLL_MS = 100;
+const DRAIN_WAIT_MS = 10000;
 
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
   let draining = false;
@@ -323,8 +379,10 @@ function subscribe(identity: { deviceName: string; token: string }, onCommand: (
     if (draining) return false;
     draining = true;
     try {
+      let first = true;
       for (;;) {
-        const claimed = await claimForDevice(identity);
+        const claimed = await claimForDevice(identity, { waitMs: first ? 0 : DRAIN_WAIT_MS });
+        first = false;
         if (!claimed?.command) return false;
         onCommand(claimed.command);
       }
@@ -359,7 +417,13 @@ async function verifyDeviceSocket(identity: { token: string; deviceName: string 
     p_device_name: identity.deviceName.trim(),
     p_token_hash: await sha256(identity.token.toLowerCase())
   });
-  return deviceId ? { ok: true, deviceId } : { ok: false };
+  if (!deviceId) return { ok: false };
+  try {
+    await connectDirectDb();
+  } catch {
+    directDb = null;
+  }
+  return { ok: true, deviceId };
 }
 
 Deno.serve((req: Request) => {

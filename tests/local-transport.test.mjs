@@ -26,27 +26,28 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { connect, discoverWebSocket, openTabWebSocket, waitForBrowser } from '../local/transport.js';
+import { connect, discoverWebSocket, openTab, closeTab, waitForBrowser } from '../local/transport.js';
 
 test('a new tab is opened as its own target, so a drive never hijacks the page already open', async () => {
   const calls = [];
-  const url = await openTabWebSocket(9450, 'https://sheets.google.com/spreadsheets/u/0/create', {
+  const tab = await openTab(9450, 'https://sheets.google.com/spreadsheets/u/0/create', {
     fetch: async (target, init) => {
       calls.push({ target, method: init?.method });
-      return response({ webSocketDebuggerUrl: 'ws://127.0.0.1:9450/devtools/page/new' });
+      return response({ id: 'NEWTAB', webSocketDebuggerUrl: 'ws://127.0.0.1:9450/devtools/page/new' });
     }
   });
 
-  assert.equal(url, 'ws://127.0.0.1:9450/devtools/page/new');
+  assert.equal(tab.webSocketDebuggerUrl, 'ws://127.0.0.1:9450/devtools/page/new');
+  assert.equal(tab.id, 'NEWTAB', 'without the id the caller cannot address the tab it just opened');
   assert.equal(calls[0].target, 'http://127.0.0.1:9450/json/new?https%3A%2F%2Fsheets.google.com%2Fspreadsheets%2Fu%2F0%2Fcreate');
 });
 
 test('a new tab is opened with PUT, because the endpoint refuses GET', async () => {
   let seen = null;
-  await openTabWebSocket(9450, 'about:blank', {
+  await openTab(9450, 'about:blank', {
     fetch: async (target, init) => {
       seen = init?.method;
-      return response({ webSocketDebuggerUrl: 'ws://x' });
+      return response({ id: 'N', webSocketDebuggerUrl: 'ws://x' });
     }
   });
 
@@ -55,10 +56,10 @@ test('a new tab is opened with PUT, because the endpoint refuses GET', async () 
 
 test('the url is encoded, so a target carrying its own query string survives', async () => {
   let seen = null;
-  await openTabWebSocket(9450, 'https://docs.google.com/document/d/abc/edit?tab=t.0', {
+  await openTab(9450, 'https://docs.google.com/document/d/abc/edit?tab=t.0', {
     fetch: async (target) => {
       seen = target;
-      return response({ webSocketDebuggerUrl: 'ws://x' });
+      return response({ id: 'N', webSocketDebuggerUrl: 'ws://x' });
     }
   });
 
@@ -67,14 +68,14 @@ test('the url is encoded, so a target carrying its own query string survives', a
 
 test('a new tab that opens without a websocket url fails loudly, rather than handing back nothing', async () => {
   await assert.rejects(
-    openTabWebSocket(9450, 'about:blank', { fetch: async () => response({}) }),
-    /websocket/i
+    openTab(9450, 'about:blank', { fetch: async () => response({}) }),
+    /addressable/
   );
 });
 
 test('a browser that refuses the new tab says so in the port it refused on', async () => {
   await assert.rejects(
-    openTabWebSocket(9450, 'about:blank', { fetch: async () => ({ ok: false, status: 405 }) }),
+    openTab(9450, 'about:blank', { fetch: async () => ({ ok: false, status: 405 }) }),
     /9450|405/
   );
 });

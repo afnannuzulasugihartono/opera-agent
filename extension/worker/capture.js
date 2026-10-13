@@ -57,6 +57,30 @@ export async function assertCaptureFramesSafe(tabId) {
   }
 }
 
+// WHY ATTACH HEALS ITSELF. A detach that throws leaves Chrome holding an attachment
+// the code believes is gone, and every later attach then fails with "already attached"
+// forever: one flaky detach bricks the tab until the extension reloads. Observed live
+// as a capture failing minutes after a timed-out key press on the same tab. Recovery is
+// a detach-then-attach, which is safe because detach only ever releases this
+// extension's own attachment: a debugger held by anyone else survives it, and the
+// re-attach fails again with the truthful error instead of a stale one. A failure that
+// is not already-attached propagates untouched and never triggers a detach.
+
+async function attachResilient(target) {
+  try {
+    await chrome.debugger.attach(target, '1.3');
+    return;
+  } catch (error) {
+    if (!/already attached/i.test(error?.message || '')) throw error;
+    log.warn('DEBUGGER_RECOVERING', `stale attach on tab ${target.tabId}, detaching first`);
+  }
+  try {
+    await chrome.debugger.detach(target);
+  } catch {
+  }
+  await chrome.debugger.attach(target, '1.3');
+}
+
 export async function withDebugger(tabId, context, work) {
   const shared = context?.debuggerSession;
   if (shared) {
@@ -65,7 +89,7 @@ export async function withDebugger(tabId, context, work) {
       await releaseDebuggerSession(shared, log);
     }
     if (!shared.attached) {
-      await chrome.debugger.attach({ tabId }, '1.3');
+      await attachResilient({ tabId });
       shared.tabId = tabId;
       shared.attached = true;
       registerDebuggerSession(shared);
@@ -76,7 +100,7 @@ export async function withDebugger(tabId, context, work) {
   const target = { tabId };
   let attached = false;
   try {
-    await chrome.debugger.attach(target, '1.3');
+    await attachResilient(target);
     attached = true;
     return await work(target);
   } finally {

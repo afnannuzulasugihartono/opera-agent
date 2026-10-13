@@ -44,7 +44,7 @@ const FROZEN_MCP_TOOLS = [
   'activate_tab', 'browser_status', 'capture_page', 'click_at', 'click_element',
   'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
   'media_pause', 'media_play', 'media_seek', 'media_state',
-  'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page',
+  'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page', 'stream_keys',
   'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save', 'wheel_at',
   'media_stream_start', 'media_stream_stop', 'media_listen_read'
 ];
@@ -53,7 +53,7 @@ const FROZEN_METHODS = [
   'browser.burst', 'browser.ping', 'media.pause', 'media.play', 'media.seek',
   'media.state', 'media.stream_start', 'media.stream_stop', 'page.capture', 'page.click', 'page.collect_links',
   'page.fill', 'page.find', 'page.focus', 'page.key', 'page.pointer',
-  'page.query', 'page.read', 'page.scroll', 'page.wait_for', 'tabs.activate',
+  'page.query', 'page.read', 'page.scroll', 'page.stream', 'page.wait_for', 'tabs.activate',
   'tabs.close', 'tabs.find', 'tabs.get', 'tabs.list', 'tabs.navigate',
   'tabs.open', 'tabs.reload'
 ];
@@ -73,6 +73,12 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   start_watch: '6080c4ec1568b132',
   wait_events: '5edbf05fabbb14c8',
   stop_watch: '5133e82aa7a83fb1',
+  loop_start: '212649bff3efff47',
+  loop_read: '42112d0c11c4347d',
+  loop_stop: 'ab504dfa4d3a4b53',
+  loop_state_start: '520af840e35a5023',
+  loop_state_read: '25aa53b167aa6a02',
+  loop_state_stop: '9d5a19a9bd910269',
   list_tabs: '0ded59ff6c5f1b0c',
   open_url: '9b68095958a8242f',
   activate_tab: '39a762c1732bee92',
@@ -84,6 +90,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   click_element: '524bbdcd910efb97',
   fill_element: '299f17ba1498cd96',
   press_key: 'e4b0dcdca29f6450',
+  stream_keys: '9487610ec1707601',
   scroll_page: '49c584144a526142',
   move_pointer: 'd13a06fe00a47847',
   click_at: '0d0a269d88f73068',
@@ -95,13 +102,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_seek: 'b5e27995716abd38',
   media_stream_start: '0c5fbfac4707448f',
   media_stream_stop: '5df002e4171733eb',
-  media_listen_read: '9349cc0da3306131',
-  loop_start: '212649bff3efff47',
-  loop_read: '42112d0c11c4347d',
-  loop_stop: 'ab504dfa4d3a4b53',
-  loop_state_start: '520af840e35a5023',
-  loop_state_read: '25aa53b167aa6a02',
-  loop_state_stop: '9d5a19a9bd910269'
+  media_listen_read: 'a2cb4790d87fc893',
 });
 
 const R9B_CHANGED_TOOL = 'press_key';
@@ -206,7 +207,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
     'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'scroll_page',
+    'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'move_pointer', 'click_at', 'drag_pointer', 'wheel_at',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read'
@@ -215,15 +216,15 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
 });
 
-test('R4 keeps the protocol inventory frozen at 28 allowlisted primitives for release 1.6.24', () => {
+test('R4 keeps the protocol inventory frozen at 29 allowlisted primitives for release 1.6.24 (page.stream added)', () => {
   assert.equal(PRODUCT_VERSION, '1.6.24');
-  assert.equal(ALLOWED_METHODS.length, 28);
+  assert.equal(ALLOWED_METHODS.length, 29);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 39 tools (skill_save/skill_recall added: task lessons save to and recall from the shared skill memory)', async () => {
+test('R4 keeps the public MCP tool inventory frozen at 40 tools (stream_keys added: one command replays up to 100 key/text events back-to-back)', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 39);
+  assert.equal(registered.length, 40);
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop'].sort());
 });
 
@@ -243,9 +244,9 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names are unchanged', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 39);
+  assert.equal(registered.length, 40);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 39);
+  assert.equal(contract.toolCount, 40);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -290,7 +291,8 @@ test('each command is stamped with its harness provider, never used for access',
   assert.match(source, /return "unknown";/);
   assert.match(source, /const provider = await resolveProvider\(req, authContext\);/);
   assert.match(source, /createServer\(deviceName, provider, caller\)/);
-  assert.match(source, /await supabase\.from\("opera_commands"\)\.update\(\{ provider \}\)/);
+  assert.match(source, /p_provider: provider \|\| null/);
+  assert.doesNotMatch(source, /await supabase\.from\("opera_commands"\)\.update\(\{ provider \}\)/);
   assert.match(source, /await supabase\.from\("opera_workflow_runs"\)\.update\(\{ provider \}\)/);
   assert.match(source, /opera_client_name/);
   assert.match(source, /slugifyProvider/);
@@ -323,7 +325,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 39, 'the public tool count grows only by reviewed decision (skill_save/skill_recall added)');
+  assert.equal(blocks.length, 40, 'the public tool count grows only by reviewed decision (stream_keys added)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -575,7 +577,7 @@ test('MCP delegates only known Opera Agent methods', () => {
   const methods = [...source.matchAll(/execute\("([a-z.]+)"/g)].map((match) => match[1]);
   const allowed = new Set([
     'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
-    'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer',
+    'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer', 'page.stream',
     'media.state', 'media.play', 'media.pause', 'media.seek',
     'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list',
     'loop.start', 'loop.read', 'loop.stop'

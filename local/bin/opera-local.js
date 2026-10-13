@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-// @last-edited: 2026-10-11 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: opera-local — the installed entry point: a local CDP driver behind an MCP stdio server.
 // @state: binds the protocol to a real browser and to the environment it was given.
-// @dependencies: ../mcp-server.js, ../driver.js.
+// @dependencies: ../mcp-server.js, ../driver.js, ../sessions.js, ../transport.js.
 
 // WHY THIS FILE EXISTS
 //
@@ -22,9 +22,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
-import { connect, openTabWebSocket } from '../transport.js';
-import { createCdpClient } from '../cdp.js';
-import { createPrimitives } from '../primitives.js';
+import { createSessionStore } from '../sessions.js';
+import { listPageWebSockets, openTab, closeTab } from '../transport.js';
 import { startStdio } from '../mcp-server.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -33,33 +32,12 @@ const pkg = createRequire(join(here, '..', 'package.json'))('./package.json');
 const PORT = Number(process.env.OPERA_LOCAL_PORT || 9333);
 const BROWSER = process.env.OPERA_LOCAL_BROWSER || undefined;
 
-let session = null;
-let wanted = null;
+const store = createSessionStore({ openSession, port: PORT, browserId: BROWSER });
+const open = (options) => store.open(options);
+const attach = () => store.attach();
 
-async function pages() {
-  const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
-  return list.filter((t) => t.type === 'page');
-}
-
-// WHY the target is matched rather than taken first. A drive that opens a sheet
-// beside a document must end up driving the sheet, and attaching to whichever page
-// the browser happens to list first does that by accident, on some machines and not
-// others. The tab that was opened is named, and the session follows that name.
-
-async function attach() {
-  if (session) return session;
-
-  if (wanted) {
-    const page = (await pages()).find((t) => t.url.startsWith(wanted));
-    if (!page) throw new Error(`The tab for ${wanted} is no longer open.`);
-    const transport = await connect(page.webSocketDebuggerUrl);
-    const cdp = createCdpClient(transport);
-    session = { close: () => cdp.close(), ...createPrimitives(cdp) };
-    return session;
-  }
-
-  session = await openSession({ port: PORT, id: BROWSER, launch: false });
-  return session;
+async function resolveTab() {
+  return (await listPageWebSockets(PORT)).map((page) => page.id);
 }
 
 async function reachable() {
@@ -73,15 +51,16 @@ async function reachable() {
 
 const driver = {
   async tabs() {
-    const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
-    return list.filter((t) => t.type === 'page').map((t) => ({ id: t.id, url: t.url, title: t.title }));
+    return (await listPageWebSockets(PORT)).map(({ id, url, title }) => ({ id, url, title }));
   },
 
   async open(url) {
-    if (session) { session.close(); session = null; }
-    await openTabWebSocket(PORT, url);
-    wanted = url;
-    return { url, port: PORT };
+    const tab = await openTab(PORT, url);
+    return { url, id: tab.id, port: PORT };
+  },
+
+  async close(tabId) {
+    return store.closeTab(tabId, (id) => closeTab(PORT, id));
   },
 
   async read() {
@@ -89,24 +68,19 @@ const driver = {
   },
 
   async find(query) {
-    const page = await attach();
-    return page.evaluate(`(() => {
-      const needle = ${JSON.stringify(String(query).toLowerCase())};
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
-      const out = [];
-      for (let node = walker.currentNode; node && out.length < 25; node = walker.nextNode()) {
-        const own = Array.from(node.childNodes).filter((n) => n.nodeType === 3).map((n) => n.textContent).join('');
-        if (!own.toLowerCase().includes(needle)) continue;
-        const r = node.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) continue;
-        out.push({ text: own.slice(0, 80), x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) });
-      }
-      return out;
-    })()`);
+    return (await attach()).find(query);
   },
 
   async click(x, y) {
-    return (await attach()).clickAt(x, y);
+    return (await attach()).click(x, y);
+  },
+
+  async hover(x, y) {
+    return (await attach()).hover(x, y);
+  },
+
+  async clickRow(role, name) {
+    return (await attach()).clickRow(role, name);
   },
 
   async key(name, modifiers) {
@@ -117,6 +91,14 @@ const driver = {
     return (await attach()).type(text);
   },
 
+  async keys(events) {
+    return (await attach()).keys(events);
+  },
+
+  async snapshot(limit) {
+    return (await attach()).snapshot(limit);
+  },
+
   async capture() {
     return (await attach()).capture();
   }
@@ -125,6 +107,9 @@ const driver = {
 startStdio({
   context: {
     driver,
+    open,
+    resolveTab,
+    sessionOptions: {},
     port: PORT,
     version: pkg.version,
     browsers: installedBrowsers(),

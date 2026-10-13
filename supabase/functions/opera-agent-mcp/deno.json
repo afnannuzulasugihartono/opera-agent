@@ -3,6 +3,7 @@
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@1.30.0",
     "@supabase/edge-runtime": "jsr:@supabase/functions-js@2.116.0/edge-runtime.d.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.57.4",
-    "zod": "npm:zod@4.5.4"
+    "zod": "npm:zod@4.5.4",
+    "postgres": "npm:postgres@3.4.5"
   }
 }

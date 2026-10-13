@@ -166,3 +166,25 @@ test('releaseDebuggerSession tolerates a session that is not attached', async ()
   await assert.doesNotReject(releaseDebuggerSession(null));
   await assert.doesNotReject(releaseDebuggerSession({ tabId: 7, attached: false }));
 });
+
+// A detach that throws leaves Chrome holding an attachment the code believes is gone,
+// and every later attach then fails with "already attached" forever: one flaky detach
+// bricks the tab until the extension reloads. Observed live as a capture failing
+// minutes after a timed-out key press on the same tab. Recovery is detach-then-attach,
+// which only ever releases this extension's own attachment.
+
+test('withDebugger recovers from a stale attach instead of failing forever', async () => {
+  const fs = await import('node:fs');
+  const capture = fs.readFileSync(new URL('../extension/worker/capture.js', import.meta.url), 'utf8');
+  const fn = capture.slice(
+    capture.indexOf('async function attachResilient('),
+    capture.indexOf('export async function withDebugger(')
+  );
+
+  assert.match(fn, /already attached\/i\.test/);
+  assert.match(fn, /chrome\.debugger\.detach\(target\)/);
+  assert.match(fn, /await chrome\.debugger\.attach\(target, '1\.3'\)/);
+
+  const nonMatching = fn.match(/if \(!\/already attached\/i\.test\(error\?\.message \|\| ''\)\) throw error;/);
+  assert.ok(nonMatching, 'a foreign error must propagate, not trigger a detach');
+});

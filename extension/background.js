@@ -42,6 +42,7 @@ import {
   trustedFill,
   trustedPointer,
   trustedKey,
+  trustedKeyStream,
   popupLog,
 } from './worker/action-focus.js';
 import { runBurst } from './worker/burst.js';
@@ -418,6 +419,11 @@ export async function dispatch(method, params = {}, context = {}) {
     case 'page.key': {
       const tabId = await resolveTabId(params);
       const result = await runActionPipeline(tabId, 'page.key', params, context, () => (params.trusted ? trustedKey(tabId, params, context, executionMode(params)) : contentCall(tabId, 'page.key', params)));
+      return { ...result, tabId };
+    }
+    case 'page.stream': {
+      const tabId = await resolveTabId(params);
+      const result = await runActionPipeline(tabId, 'page.stream', params, context, () => trustedKeyStream(tabId, params, context, executionMode(params)));
       return { ...result, tabId };
     }
     default:

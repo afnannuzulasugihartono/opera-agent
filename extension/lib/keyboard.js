@@ -143,3 +143,40 @@ export function resolveKeyInput({ key, modifiers, text } = {}) {
   }
   return resolveChord(key, modifiers);
 }
+
+// WHY A STREAM IS ONE REQUEST, NOT MANY. Every lone key pays a full round trip of
+// roughly a second, so a twenty-key menu walk costs twenty seconds one key at a time
+// while the device itself absorbs twenty keys in nineteen milliseconds, measured. A
+// stream carries the whole walk in one command: one enqueue, one execution, one
+// completion. Events keep their order, gaps ride along for menus that need a beat to
+// open, and the total text stays within the same budget as a single text entry so a
+// stream cannot smuggle in more than typing allows.
+
+const MAX_STREAM_EVENTS = 100;
+const MAX_STREAM_GAP_MS = 2000;
+
+export function resolveKeyStream(events) {
+  if (!Array.isArray(events) || events.length === 0) {
+    throw new Error('A key stream needs at least one event.');
+  }
+  if (events.length > MAX_STREAM_EVENTS) {
+    throw new Error(`A key stream holds at most ${MAX_STREAM_EVENTS} events.`);
+  }
+
+  let chars = 0;
+  return events.map((event, index) => {
+    if (!event || typeof event !== 'object' || Array.isArray(event)) {
+      throw new Error(`Stream event ${index} must be an object.`);
+    }
+    const gapMs = event.gapMs ?? 0;
+    if (!Number.isFinite(gapMs) || gapMs < 0 || gapMs > MAX_STREAM_GAP_MS) {
+      throw new Error(`Stream event ${index} gap must be between 0 and ${MAX_STREAM_GAP_MS} ms.`);
+    }
+    const resolved = resolveKeyInput(event);
+    if (resolved.kind === 'text') chars += resolved.chars;
+    if (chars > MAX_TEXT_CHARS) {
+      throw new Error(`Stream text must total at most ${MAX_TEXT_CHARS} characters.`);
+    }
+    return { ...resolved, gapMs };
+  });
+}

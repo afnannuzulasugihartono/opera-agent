@@ -66,6 +66,7 @@ export const METHOD_SPECS = Object.freeze({
   'page.focus': { timeoutMs: 5000 },
   'page.scroll': { timeoutMs: 5000 },
   'page.key': { timeoutMs: 5000 },
+  'page.stream': { timeoutMs: 30000 },
   'page.wait_for': { timeoutMs: 15000 },
   'media.state': { timeoutMs: 5000 },
   'media.play': { timeoutMs: 5000 },
