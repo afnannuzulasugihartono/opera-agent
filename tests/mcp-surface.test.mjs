@@ -73,12 +73,6 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   start_watch: '6080c4ec1568b132',
   wait_events: '5edbf05fabbb14c8',
   stop_watch: '5133e82aa7a83fb1',
-  loop_start: '212649bff3efff47',
-  loop_read: '42112d0c11c4347d',
-  loop_stop: 'ab504dfa4d3a4b53',
-  loop_state_start: '520af840e35a5023',
-  loop_state_read: '25aa53b167aa6a02',
-  loop_state_stop: '9d5a19a9bd910269',
   list_tabs: '0ded59ff6c5f1b0c',
   open_url: '9b68095958a8242f',
   activate_tab: '39a762c1732bee92',
@@ -203,7 +197,7 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
+    'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
@@ -219,10 +213,10 @@ test('R4 keeps the protocol inventory frozen at 29 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R10 merges the four coordinate tools into pointer, so the public MCP tool inventory is 37 tools', async () => {
+test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 31 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 37);
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop'].sort());
+  assert.equal(registered.length, 31);
+  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events'].sort());
 });
 
 test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
@@ -241,9 +235,9 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 37);
+  assert.equal(registered.length, 31);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 37);
+  assert.equal(contract.toolCount, 31);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -322,7 +316,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 37, 'the public tool count changes only by reviewed decision (pointer merged)');
+  assert.equal(blocks.length, 31, 'the public tool count changes only by reviewed decision (loop tools removed)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -576,8 +570,7 @@ test('MCP delegates only known Opera Agent methods', () => {
     'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
     'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer', 'page.stream',
     'media.state', 'media.play', 'media.pause', 'media.seek',
-    'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list',
-    'loop.start', 'loop.read', 'loop.stop'
+    'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list'
   ]);
   assert.ok(methods.length >= 16);
   for (const method of methods) assert.ok(allowed.has(method), `unexpected method ${method}`);

@@ -1,9 +1,9 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: background — the thin MV3 entry: dispatch's own state and dispatch.
 // @state: holds two constants dispatch reads, the role-reconcile bridge, and the one load-time listener; every other region of the original 2646-line file moved to worker/ and lib/.
-// @dependencies: protocol, watch, loop, role-reconcile, log, popup-events,
+// @dependencies: protocol, watch, role-reconcile, log, popup-events,
 // debugger-session, serialize, utils, capture, tab-content, listen, capture-page,
-// action-focus, burst, loop-engine, watch-registry, execute-pull.
+// action-focus, burst, watch-registry, execute-pull.
 
 import {
   PRODUCT_VERSION,
@@ -13,23 +13,16 @@ import {
   clamp
 } from './lib/protocol.js';
 import { validateRule } from './lib/watch.js';
-import {
-  startLoopState,
-  validateLoopProgram
-} from './lib/loop.js';
 
 import './role-reconcile.js';
 const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRoleReconcile || {};
 
 import { log } from './lib/log.js';
 import { popupsSince } from './lib/popup-events.js';
-import {
-  registerDebuggerSession,
-  handleDebuggerDetach
-} from './lib/debugger-session.js';
+import { handleDebuggerDetach } from './lib/debugger-session.js';
 import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';
-import { mutateTabs, nowIso, randomToken, getConfig } from './worker/utils.js';
-import { codedError, collectAxSummary } from './worker/capture.js';
+import { mutateTabs, nowIso, getConfig } from './worker/utils.js';
+import { collectAxSummary } from './worker/capture.js';
 import { publicTab, requireTabId, resolveTabId, waitTabReady, contentCall } from './worker/tab-content.js';
 import { listenStart, listenStop } from './worker/listen.js';
 import { capturePage } from './worker/capture-page.js';
@@ -46,21 +39,6 @@ import {
   popupLog,
 } from './worker/action-focus.js';
 import { runBurst } from './worker/burst.js';
-import {
-  loopSummary,
-  finishLoop,
-  loopSessionOnTab,
-  stateSummary,
-  finishStateLoop,
-  loopDecodeTemplate,
-  loopTickLater,
-  LOOP_MAX_ACTIVE,
-  loopSessions,
-  loopResults,
-  STATE_READERS,
-  stateSessions,
-  stateResults,
-} from './worker/loop-engine.js';
 import {
   watchRuleId,
   saveWatchers,
@@ -99,114 +77,6 @@ export async function dispatch(method, params = {}, context = {}) {
     }
     case 'browser.burst':
       return runBurst(params, context);
-    case 'loop.start': {
-      const cfg = await getConfig();
-      if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');
-      const validated = validateLoopProgram(params.program);
-      if (!validated.ok) throw new Error(validated.error);
-      const tabId = await resolveTabId(params);
-      if (loopSessionOnTab(tabId)) throw codedError('LOOP_ACTIVE', 'One loop per tab: stop the running loop first.', { tabId });
-      if (loopSessions.size >= LOOP_MAX_ACTIVE) throw codedError('LOOP_ACTIVE', `Loop cap reached (${LOOP_MAX_ACTIVE} active).`, { tabId });
-      const policy = await contentCall(tabId, 'page.capture_policy', {});
-      if (!policy.allowed) {
-        throw codedError('LOOP_BLOCKED', 'Loop refused on a sensitive surface.', { tabId, reason: policy.reason || 'SENSITIVE_SURFACE' });
-      }
-      const program = validated.program;
-      const templates = new Map();
-      for (const sensor of program.sensors) {
-        if (sensor.kind !== 'templateMatch') continue;
-        try {
-          templates.set(sensor.id, await loopDecodeTemplate(sensor.template));
-        } catch (error) {
-          throw new Error(`Loop template for sensor ${sensor.id} could not be decoded: ${error?.message || error}`);
-        }
-      }
-      const debuggerSession = { tabId, attached: false };
-      await chrome.debugger.attach({ tabId }, '1.3');
-      debuggerSession.attached = true;
-      registerDebuggerSession(debuggerSession);
-      const loopId = `lp_${randomToken().slice(0, 16)}`;
-      const session = {
-        loopId,
-        tabId,
-        program,
-        templates,
-        state: startLoopState(),
-        timers: new Map(),
-        frames: new Map(),
-        quiet: new Map(),
-        track: new Map(),
-        debuggerSession,
-        scale: 1,
-        trusted: program.trusted,
-        trustedAtTick: program.trusted ? 0 : null,
-        deadStreak: 0,
-        lastFrameHash: null,
-        mode: 'full',
-        timer: null,
-        tickErrors: 0,
-        startedAt: Date.now(),
-        lastTickAt: 0
-      };
-      loopSessions.set(loopId, session);
-      loopTickLater(session);
-      return { ok: true, loopId, tabId, tickMs: program.tickMs, trusted: session.trusted };
-    }
-    case 'loop.read': {
-      const loopId = String(params.loopId || '');
-      const session = loopSessions.get(loopId);
-      if (session) return loopSummary(session, true);
-      const finished = loopResults.get(loopId);
-      if (finished) return finished;
-      throw new Error('Unknown loop.');
-    }
-    case 'loop.stop': {
-      const loopId = String(params.loopId || '');
-      const summary = await finishLoop(loopId);
-      if (!summary) throw new Error('Unknown loop.');
-      return summary;
-    }
-    case 'loop.state_start': {
-      const cfg = await getConfig();
-      if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');
-      const reader = String(params.reader || '');
-      if (!STATE_READERS.includes(reader)) throw new Error('Unknown state reader.');
-      const leadMs = Number(params.leadMs);
-      const tabId = await resolveTabId(params);
-      if (loopSessionOnTab(tabId)) throw codedError('LOOP_ACTIVE', 'One loop per tab: stop the running loop first.', { tabId });
-      const policy = await contentCall(tabId, 'page.capture_policy', {});
-      if (!policy.allowed) {
-        throw codedError('LOOP_BLOCKED', 'Loop refused on a sensitive surface.', { tabId, reason: policy.reason || 'SENSITIVE_SURFACE' });
-      }
-      await chrome.scripting.executeScript({ target: { tabId }, world: 'MAIN', files: ['loop-decide.js', 'state-bridge.js'] });
-      const started = await chrome.scripting.executeScript({
-        target: { tabId },
-        world: 'MAIN',
-        func: (readerName, lead) => globalThis.OperaAgentStateBridge.start(readerName, { leadMs: lead }),
-        args: [reader, Number.isFinite(leadMs) && leadMs > 0 ? leadMs : 500]
-      });
-      const ack = started?.[0]?.result;
-      if (!ack?.ok) throw new Error(ack?.error || 'State bridge refused to start.');
-      const loopId = `st_${randomToken().slice(0, 16)}`;
-      stateSessions.set(loopId, {
-        loopId, tabId, reader, startedAt: Date.now(), ticks: 0, jumps: 0, events: []
-      });
-      return { ok: true, loopId, tabId, reader };
-    }
-    case 'loop.state_read': {
-      const loopId = String(params.loopId || '');
-      const session = stateSessions.get(loopId);
-      if (session) return stateSummary(session, true);
-      const finished = stateResults.get(loopId);
-      if (finished) return finished;
-      throw new Error('Unknown loop.');
-    }
-    case 'loop.state_stop': {
-      const loopId = String(params.loopId || '');
-      const summary = finishStateLoop(loopId);
-      if (!summary) throw new Error('Unknown loop.');
-      return summary;
-    }
     case 'watch.start': {
       const cfg = await getConfig();
       if (!cfg.paired || !cfg.deviceToken) throw new Error('Device is not paired.');

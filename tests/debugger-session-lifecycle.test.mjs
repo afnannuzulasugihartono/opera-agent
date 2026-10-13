@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: debugger-session-lifecycle.test — Test..
 // @state: Test..
 // @dependencies: node:test, strict, extension-source, deadline-race.
@@ -30,7 +30,7 @@ test('a watch-fired trusted click releases its debugger session on every outcome
 });
 
 test('runBurst releases through the same helper rather than its own detach', () => {
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /finally\s*\{/);
   assert.match(burst, /releaseDebuggerSession\(/);
 

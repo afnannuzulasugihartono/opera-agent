@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-12 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: content — MV3 browser runtime..
 // @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
 // @dependencies: none.
@@ -1917,20 +1917,6 @@
     disposed = true;
     mutationObserver.disconnect();
   }
-
-  const STATE_EVENT_TYPES = ['duck-end', 'duck-start', 'game-over', 'heartbeat', 'jump', 'started', 'stopped'];
-
-  window.addEventListener('message', (event) => {
-    if (event.source !== window) return;
-    if (event.origin !== location.origin) return;
-    const data = event.data;
-    if (!data || data.source !== 'opera-agent-state' || !STATE_EVENT_TYPES.includes(data.type)) return;
-    try {
-      chrome.runtime.sendMessage({ scope: 'opera-agent-state-event', type: data.type, detail: { ticks: data.ticks, jumps: data.jumps, speed: data.speed, reader: data.reader, reason: data.reason, obs: data.obs, near: data.near } })?.catch?.(() => {});
-    } catch (error) {
-      globalThis.OperaAgentLog?.debug?.('STATE_EVENT_FORWARD_FAILED', error?.message || String(error));
-    }
-  });
 
   window.addEventListener('pagehide', () => {
     disposed = true;

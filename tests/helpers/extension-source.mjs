@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: extension-source — every source file the worker graph spans, in one string.
 // @state: order is load-bearing — serialize before watch-registry, execute-pull last; both are asserted by extension-source.test.mjs.
 // @dependencies: node:fs/promises.
@@ -18,7 +18,6 @@ const FILES = [
   'extension/worker/capture-page.js',
   'extension/worker/action-focus.js',
   'extension/worker/burst.js',
-  'extension/worker/loop-engine.js',
   'extension/worker/execute-pull.js',
 ];
 

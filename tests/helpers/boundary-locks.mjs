@@ -28,10 +28,10 @@
 // would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'e809ee82b67048fe9a970d02fc641eb77e9a4a8a'],
-  ['../extension/background.js', '7939e6527d99298b58b61796b50b5eef80c51509'],
+  ['../extension/content.js', 'f0acb1c0661a46e823655ebcd7e0a7d3ced4d599'],
+  ['../extension/background.js', 'ff1811e8c7d5fce3ae5bb167a1f50db78c9be3ff'],
   ['../extension/manifest.json', '6fa62e7eeb7b53650b6ea661d351611bd98c5ced'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'fa448a8f4e355d5770cd87b1e15fc7a960a89d2f'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'ed5b895fe846c67663d44e9ac7fa19dc757e124c'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

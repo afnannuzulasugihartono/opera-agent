@@ -156,12 +156,12 @@
 #    tests/mcp-surface.test.mjs strips comments and collapses whitespace before
 #    hashing a tool schema, so the pin holds the tool's contract and not its
 #    indentation.
-scripts/check.mjs c18e1a4d387b759bcd27eee702eeecdf85d8ac16
+scripts/check.mjs 64a1a88f0ffa8df9a43d25c3644630c2db22f84f
 scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 7ead61e59f6cfbb928b4c7a61de585fc193ede68
+tests/helpers/boundary-locks.mjs de463ebf920d845904cec6c5edb91d37a9c2e797
 tests/helpers/comment-spacing.mjs e9d8a61eaccdedf7018fe64acdfe9c8159f75d0c
 tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
 

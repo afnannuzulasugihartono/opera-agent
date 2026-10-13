@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-12 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: execute-pull — command execution, pairing and the device socket.
 // @state: owns WAKE_ALARM and socketClient; every statement here that runs at load time is listed in tests/background-load.test.mjs.
-// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, loop-engine, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
+// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
 
 import { log } from '../lib/log.js';
 import {
@@ -20,7 +20,6 @@ import { fetchJson, publicTab, requireTabId, contentCall, HTTP_URL_RE } from './
 import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './private-tabs.js';
 import { readListenSession, listenStop, postListenChunk } from './listen.js';
 import { notReadyError } from './action-focus.js';
-import { handleStateEvent } from './loop-engine.js';
 import { createSocketClient, connectionPatch } from '../lib/socket-client.js';
 import { completionFrame } from '../lib/socket-protocol.js';
 import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
@@ -290,16 +289,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     Promise.resolve(postListenChunk(tabId, message.seq, message.audio, message.mime))
       .then(() => sendResponse({ ok: true }))
       .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) }));
-    return true;
-  }
-  if (message && message.scope === 'opera-agent-state-event') {
-    const tabId = sender?.tab?.id;
-    if (tabId == null) { sendResponse({ ok: false, error: 'No sender tab.' }); return true; }
-    try {
-      sendResponse({ ok: true, ...handleStateEvent(tabId, String(message.type || ''), message.detail || {}) });
-    } catch (error) {
-      sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) });
-    }
     return true;
   }
   if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {    const tabId = sender?.tab?.id;

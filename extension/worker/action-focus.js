@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: action-focus — the foreground focus gate, the action pipeline and trusted input.
-// @state: owns the popup focus log and its floor; loop-engine reads popupLog from here, and this module takes stateSessions from loop-engine.
-// @dependencies: utils, tab-content, capture, loop-engine, log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
+// @state: owns the popup focus log and its floor.
+// @dependencies: utils, tab-content, capture, log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
 
 import { log } from '../lib/log.js';
 import { METHOD_SPECS, clamp } from '../lib/protocol.js';
@@ -12,7 +12,6 @@ import { recordPopup, resolvePopupOpener, POPUP_LOG_LIMIT } from '../lib/popup-e
 import { sleep } from './utils.js';
 import { contentCall } from './tab-content.js';
 import { withDebugger } from './capture.js';
-import { finishLoop, finishStateLoop, loopSessions, stateSessions } from './loop-engine.js';
 
 export function executionMode(params = {}) {
   return params.executionMode === 'foreground' ? 'foreground' : 'background';
@@ -123,12 +122,6 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     const withoutPopup = list.filter((e) => e.tabId !== tabId);
     if (withoutPopup.length) popupLog.set(opener, withoutPopup);
     else popupLog.delete(opener);
-  }
-  for (const [loopId, session] of loopSessions) {
-    if (session.tabId === tabId) finishLoop(loopId, 'tab-closed').catch((error) => log.debug('LOOP_FINISH_FAILED', error?.message || String(error)));
-  }
-  for (const [loopId, session] of stateSessions) {
-    if (session.tabId === tabId) finishStateLoop(loopId, 'tab-closed');
   }
 });
 

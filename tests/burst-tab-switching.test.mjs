@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: burst-tab-switching.test — tab-switching.test — Phase D : a burst may address more than one tab.
 // @state: consolidate the latency cluster into one file.
 // @dependencies: node:test, strict, node:fs, protocol, extension-source.
@@ -97,13 +97,13 @@ test('refFromStep validation still runs before any tab check', () => {
 });
 
 test('a burst step may carry its own tabId', () => {
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /step\.tabId/);
   assert.match(burst, /activeTabId/);
 });
 
 test('the debugger session is re-keyed when the active tab changes', () => {
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
 
   assert.doesNotMatch(burst, /cannot switch tabs/);
 
@@ -124,7 +124,7 @@ test('every released session is detached, not merely forgotten', async () => {
 });
 
 test('a burst still reports completed evidence when it times out mid-sequence', () => {
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /timedOut: true/);
   assert.match(burst, /completedSteps: results\.length/);
   assert.match(burst, /failedAt: index/);
@@ -132,14 +132,14 @@ test('a burst still reports completed evidence when it times out mid-sequence', 
 });
 
 test('the single 12s budget is not extended by a tab switch', () => {
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /BURST_MAX_TIMEOUT_MS/);
 
   assert.match(burst, /deadline - Date\.now\(\)/);
 });
 
 test('the burst-level tabId is still resolved and still reported', () => {
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /resolveTabId\(params\)/);
   assert.match(burst, /tabId,/);
 });
@@ -182,7 +182,7 @@ test('a ref consumed on a different tab than its source is refused, even without
 
 test('runBurst enforces the source-tab comparison instead of the switch flag', () => {
 
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /burstCrossTabRef\(results, step\.refFromStep, stepTabId\)/);
   assert.doesNotMatch(burst, /switched && step\.refFromStep/);
 });
@@ -213,7 +213,7 @@ test('a ref minted before a navigate on the same tab is dead', () => {
 
 test('runBurst enforces the navigate staleness check with its own code', () => {
 
-  const burst = sliceBetween('async function runBurst(', 'function loopSummary(');
+  const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /burstStaleRef\(results, step\.refFromStep, stepTabId\)/);
   assert.match(burst, /BURST_STALE_REF/);
 });
