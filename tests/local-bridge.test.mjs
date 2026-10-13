@@ -33,6 +33,7 @@ process.env.OPERA_BRIDGE_PORT = '0';
 async function scriptedWorker(port, handle, { answerProof = true, deaf = false } = {}) {
   let alive = true;
   let abort = null;
+  const seen = [];
   const post = (id, payload) => fetch(`http://127.0.0.1:${port}/reply`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -50,6 +51,7 @@ async function scriptedWorker(port, handle, { answerProof = true, deaf = false }
       }
       if (response.status !== 200) continue;
       const command = await response.json();
+      seen.push(command);
       if (deaf) continue;
       if (command.bridge === 'ping') {
         if (answerProof) await post(command.id, { result: { pong: true } });
@@ -67,6 +69,7 @@ async function scriptedWorker(port, handle, { answerProof = true, deaf = false }
   loop.catch(() => {});
 
   return {
+    seen,
     async stop() {
       alive = false;
       abort?.abort();
@@ -75,12 +78,22 @@ async function scriptedWorker(port, handle, { answerProof = true, deaf = false }
   };
 }
 
+// WHY the registry. A test that fails mid-body leaves its worker polling, and the
+// next test is then answered by a stranger — which reads as a flaky bridge
+// rather than as a failed assertion. Observed: one red test turned two.
+
+const live = [];
+test.afterEach(async () => {
+  for (const worker of live.splice(0)) await worker.stop();
+});
+
 // A worker is not live until it has polled once, and the local side measures
 // liveness from exactly that. Waiting here is the same wait a driver does.
 
 async function startWorker(handle, options) {
   const { port } = await bridgeAddress();
   const worker = await scriptedWorker(port, handle, options);
+  live.push(worker);
   const deadline = Date.now() + 3000;
   while (!(await waitForBridgeLink({ timeoutMs: 100 })) && Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 50));
@@ -190,6 +203,18 @@ test('a worker that answers nothing is named, not waited out silently', async ()
 
   await worker.stop();
   await closeBridge();
+});
+
+test('a CDP call is proved before it is sent, like every other command', async () => {
+  const worker = await startWorker(() => ({ value: 1 }));
+
+  const transport = connectBridgeTarget(5);
+  const cdp = createCdpClient(transport);
+  await cdp.send('Runtime.evaluate', { expression: '1' });
+
+  assert.equal(worker.seen[0].bridge, 'ping', 'the liveness proof goes first');
+  assert.equal(worker.seen[1].method, 'Runtime.evaluate');
+  cdp.close();
 });
 
 test('teardown settles the pending and drops the server', async () => {

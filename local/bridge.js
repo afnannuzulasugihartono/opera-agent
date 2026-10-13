@@ -118,10 +118,15 @@ export async function closeBridgeTarget(targetId) {
   return request({ tabs: { op: 'close', tabId: Number(targetId) } });
 }
 
+// WHY a CDP frame takes the same road as a tab operation. It used to enqueue
+// itself and wait forever: no liveness proof, no bound. A worker that went away
+// after the session opened left that promise pending for good, and a pending
+// promise is the one failure a driver cannot see. Caught by review, not by a
+// test that only ever asked a worker which was there.
+
 export function connectBridgeTarget(targetId) {
   const tab = Number(targetId);
-  const srv = server;
-  if (!srv) throw new Error(NOT_LINKED);
+  if (!server) throw new Error(NOT_LINKED);
   return {
     send(raw) {
       let frame;
@@ -130,17 +135,13 @@ export function connectBridgeTarget(targetId) {
       } catch {
         throw new Error('bridge: transport takes JSON CDP frames');
       }
-      if (!srv.linked()) throw new Error(NOT_LINKED);
-      const id = nextId++;
-      srv.settleWhen(id, (reply) => {
-        const deliver = routers.get(tab);
-        if (!deliver) return;
-        const out = reply?.error
-          ? { id: frame.id, error: reply.error }
-          : { id: frame.id, result: reply?.result ?? null };
-        deliver(JSON.stringify(out));
-      });
-      srv.enqueue({ id, tab, method: frame.method, params: frame.params ?? {} });
+      attempt({ tab, method: frame.method, params: frame.params ?? {} }, REPLY_TIMEOUT_MS).then(
+        (result) => routers.get(tab)?.(JSON.stringify({ id: frame.id, result: result ?? null })),
+        (error) => routers.get(tab)?.(JSON.stringify({
+          id: frame.id,
+          error: { message: error?.message || String(error) }
+        }))
+      );
     },
     onMessage(fn) {
       routers.set(tab, fn);

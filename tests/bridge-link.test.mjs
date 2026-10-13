@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPollBridge } from '../local/poll-server.js';
+import { createPollBridge, POLL_HOLD_MS } from '../local/poll-server.js';
 
 const listeners = {};
 function event(name) {
@@ -55,7 +55,8 @@ await bridge.listen();
 
 const answers = new Map();
 bridge.settleWhen('unused', () => {});
-const { stopBridgeLink, bridgeLinkState, ensureBridgeLink } = await import('../extension/worker/bridge-link.js');
+const { stopBridgeLink, bridgeLinkState, ensureBridgeLink, pollTimeoutMs } =
+  await import('../extension/worker/bridge-link.js');
 
 test.after(() => stopBridgeLink());
 
@@ -101,6 +102,12 @@ test('a CDP command reaches the debugger and its result comes back', async () =>
   });
   assert.deepEqual(reply.result, { method: 'Runtime.evaluate', tabId: 5, params: { expression: '1+1' } });
   assert.equal(debugged.at(-1).method, 'Runtime.evaluate');
+});
+
+test('our own poll timeout always outlasts the server hold', () => {
+  assert.equal(pollTimeoutMs(POLL_HOLD_MS) > POLL_HOLD_MS, true,
+    'an idle poll must not abort while the server is still holding it');
+  assert.equal(pollTimeoutMs(0), 5000, 'a request still has a bound even with no hold');
 });
 
 test('a failing command answers with an error instead of vanishing', async () => {

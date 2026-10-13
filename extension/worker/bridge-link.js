@@ -103,8 +103,22 @@ function sleep(ms) {
 // shape — so the bridge inherits a request style that is proven on this browser
 // instead of a second one that is not.
 
-async function post(path, body) {
-  return fetchJson(`${BRIDGE_ORIGIN}${path}`, body, REPLY_TIMEOUT_MS);
+// WHY the timeout is a parameter and not a constant. A poll is held open for
+// twenty seconds and a reply must beat three; one bound for both aborted every
+// healthy idle poll halfway, which counted as a failure and left a waiter on the
+// server that nobody would ever read. Caught by review, not by a test that only
+// ever sent commands.
+
+async function post(path, body, timeoutMs = REPLY_TIMEOUT_MS) {
+  return fetchJson(`${BRIDGE_ORIGIN}${path}`, body, timeoutMs);
+}
+
+// WHY this is a function. The invariant that matters is that our own timeout
+// outlasts the server's hold, and an invariant nobody can call is an invariant
+// nobody checks.
+
+export function pollTimeoutMs(holdMs) {
+  return holdMs + 5000;
 }
 
 function publicBridgeTab(tab) {
@@ -177,7 +191,7 @@ async function poll(mine) {
   while (running && generation === mine) {
     try {
       stats.polls += 1;
-      const command = await post('/poll', {}, POLL_HOLD_MS + 5000);
+      const command = await post('/poll', {}, pollTimeoutMs(POLL_HOLD_MS));
       step = 0;
       if (command && command.id !== undefined) {
         queue = queue.then(() => handle(command)).catch(() => {});
