@@ -149,8 +149,66 @@ test('an extension error arrives as a CDP error on the same id', async () => {
   await closeBridge();
 });
 
-test('teardown settles the pending and drops the server', async () => {
+test('a silent link is dropped and the retry rides a fresh dial', async () => {
   const { port } = await bridgeAddress();
+  let dials = 0;
+  let answered = false;
+  const dial = async () => {
+    dials += 1;
+    const socket = connect(port, '127.0.0.1');
+    await new Promise((resolve) => socket.on('connect', resolve));
+    const key = randomBytes(16).toString('base64');
+    socket.write(
+      `GET /bridge HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ${key}\r\nSec-WebSocket-Version: 13\r\n\r\n`
+    );
+    await new Promise((resolve) => {
+      let buf = Buffer.alloc(0);
+      const onData = (chunk) => {
+        buf = Buffer.concat([buf, chunk]);
+        if (buf.indexOf('\r\n\r\n') >= 0) {
+          socket.off('data', onData);
+          resolve();
+        }
+      };
+      socket.on('data', onData);
+    });
+    let tail = Buffer.alloc(0);
+    socket.on('data', (chunk) => {
+      tail = Buffer.concat([tail, chunk]);
+      for (;;) {
+        if (tail.length < 2) return;
+        const length = tail[1] & 0x7f;
+        if (tail.length < 2 + length) return;
+        const text = tail.subarray(2, 2 + length).toString('utf8');
+        tail = tail.subarray(2 + length);
+        if (dials === 1) return;
+        const request = JSON.parse(text);
+        const payload = Buffer.from(JSON.stringify({ id: request.id, result: [{ id: 3, url: '', title: '' }] }), 'utf8');
+        const mask = randomBytes(4);
+        const head = Buffer.from([0x81, 0x80 | payload.length]);
+        const body = Buffer.alloc(payload.length);
+        for (let i = 0; i < payload.length; i++) body[i] = payload[i] ^ mask[i % 4];
+        socket.write(Buffer.concat([head, mask, body]));
+        answered = true;
+      }
+    });
+    socket.on('close', () => {
+      if (dials === 1) void dial();
+    });
+    return socket;
+  };
+
+  const first = await dial();
+  const tabs = await listBridgeTargets({ timeoutMs: 500 });
+  assert.deepEqual(tabs, [{ id: 3, url: '', title: '' }]);
+  assert.equal(dials, 2, 'the silent first link is dropped and answered on the redial');
+  assert.equal(answered, true);
+
+  first.destroy();
+  await closeBridge();
+});
+
+test('teardown settles the pending and drops the server', async () => {  const { port } = await bridgeAddress();
   const socket = await fakeExtension(port, () => {});
 
   const transport = connectBridgeTarget(1);

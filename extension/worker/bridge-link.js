@@ -40,6 +40,28 @@ let socket = null;
 let dialingSince = 0;
 let backoff = 0;
 let retryTimer = null;
+let lastTrafficAt = 0;
+const STALE_LINK_MS = 45000;
+
+export function isLinkStale(lastTrafficAt, now = Date.now()) {
+  return now - lastTrafficAt > STALE_LINK_MS;
+}
+
+export function linkNeedsRefresh(now = Date.now()) {
+  return socket !== null && isLinkStale(lastTrafficAt, now);
+}
+
+function touch() {
+  lastTrafficAt = Date.now();
+}
+const stats = { dials: 0, links: 0, messages: 0, replies: 0, alarms: 0, lastError: null };
+
+export function bridgeLinkState() {
+  return {
+    ...stats,
+    socket: socket ? ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][socket.readyState] ?? socket.readyState : 'none'
+  };
+}
 const debuggerSessions = new Map();
 
 function sessionFor(tabId) {
@@ -53,8 +75,11 @@ function sessionFor(tabId) {
 
 function post(message) {
   try {
+    stats.replies += 1;
+    touch();
     socket?.send(JSON.stringify(message));
   } catch (error) {
+    stats.lastError = `post: ${error?.message || error}`;
     log.debug('BRIDGE_SEND_FAILED', error?.message || String(error));
   }
 }
@@ -107,6 +132,8 @@ function route(data) {
     return;
   }
   if (message === null || typeof message !== 'object' || message.id === undefined) return;
+  stats.messages += 1;
+  touch();
   if (message.tabs && typeof message.tabs === 'object') void handleTabs(message);
   else void handleCdp(message);
 }
@@ -159,6 +186,7 @@ async function connect() {
     });
     socket = ws;
     backoff = 0;
+    touch();
     log.info('BRIDGE_LINK_UP', 'localhost bridge connected');
     ws.onmessage = (event) => route(event?.data ?? event);
     ws.onclose = () => {
@@ -192,7 +220,12 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm?.name === BRIDGE_ALARM) void connect();
+  if (alarm?.name !== BRIDGE_ALARM) return;
+  if (linkNeedsRefresh()) {
+    try { socket?.close(); } catch {}
+    socket = null;
+  }
+  void connect();
 });
 
 chrome.tabs.onActivated.addListener(() => {

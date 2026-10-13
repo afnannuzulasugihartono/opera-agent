@@ -139,8 +139,21 @@ test('a second link replaces the first', async () => {
   await bridge.close();
 });
 
-test('sending with no link fails loudly instead of vanishing', async () => {
+test('dropping the link clears it so the next wait sees a fresh dial', async () => {
   const bridge = createWsBridge({ port: 0 });
+  bridge.onMessage(() => {});
+  const { port } = await bridge.listen();
+
+  const { socket } = await handshake(port);
+  assert.equal(bridge.linked(), true);
+  bridge.dropLink();
+  assert.equal(bridge.linked(), false);
+
+  socket.destroy();
+  await bridge.close();
+});
+
+test('sending with no link fails loudly instead of vanishing', async () => {  const bridge = createWsBridge({ port: 0 });
   await bridge.listen();
 
   assert.throws(() => bridge.send('{}'), /not connected/);

@@ -73,12 +73,29 @@ async function ensureServer() {
 }
 
 function request(message, { timeoutMs = REPLY_TIMEOUT_MS } = {}) {
+  return attempt(message, timeoutMs, false);
+}
+
+async function attempt(message, timeoutMs, retried) {
+  if (!server.linked() && !(await server.waitForLink({ timeoutMs: 30000 }))) {
+    throw new Error('bridge: extension is not connected (reload it with the bridge running)');
+  }
+  try {
+    return await roundTrip(message, timeoutMs);
+  } catch (error) {
+    if (retried || !/no answer for/.test(error?.message ?? '')) throw error;
+    server.dropLink();
+    if (!(await server.waitForLink({ timeoutMs: 45000 }))) {
+      throw new Error('bridge: extension is not connected (reload it with the bridge running)');
+    }
+    return roundTrip(message, timeoutMs);
+  }
+}
+
+function roundTrip(message, timeoutMs) {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     const run = async () => {
-      if (!server.linked() && !(await server.waitForLink({ timeoutMs: 30000 }))) {
-        throw new Error('bridge: extension is not connected (reload it with the bridge running)');
-      }
       const timer = setTimeout(() => {
         pending.delete(String(id));
         reject(new Error(`bridge: no answer for ${message.tabs ? 'tabs.' + message.tabs.op : message.method} in ${timeoutMs} ms`));
@@ -113,9 +130,9 @@ export async function waitForBridgeLink({ timeoutMs = 15000 } = {}) {
   return srv.waitForLink({ timeoutMs });
 }
 
-export async function listBridgeTargets() {
+export async function listBridgeTargets({ timeoutMs } = {}) {
   await ensureServer();
-  const tabs = await request({ tabs: { op: 'list' } });
+  const tabs = await request({ tabs: { op: 'list' } }, ...(timeoutMs === undefined ? [] : [{ timeoutMs }]));
   return (Array.isArray(tabs) ? tabs : []).map((t) => ({ id: t.id, url: t.url ?? '', title: t.title ?? '' }));
 }
 

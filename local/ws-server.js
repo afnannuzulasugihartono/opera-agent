@@ -201,6 +201,9 @@ export function createWsBridge({ port = 9451, host = '127.0.0.1', log = () => {}
       if (!link) throw new Error('bridge: extension is not connected (reload it with the bridge running)');
       link.socket.write(Buffer.from([0x89, 0x00]));
     },
+    dropLink() {
+      if (link) drop(link.socket, link.id);
+    },
     async waitForLink({ timeoutMs = 10000, intervalMs = 100 } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {

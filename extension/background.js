@@ -72,7 +72,7 @@ import {
   MAX_WATCHERS_GLOBAL,
 } from './worker/watch-registry.js';
 import './worker/execute-pull.js';
-import './worker/bridge-link.js';
+import { bridgeLinkState } from './worker/bridge-link.js';
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
@@ -91,6 +91,7 @@ export async function dispatch(method, params = {}, context = {}) {
         protocolVersion: PROTOCOL_VERSION,
         deviceName: cfg.deviceName,
         paired: cfg.paired,
+        bridge: bridgeLinkState(),
         capabilities: Object.keys(METHOD_SPECS),
         time: nowIso()
       };
