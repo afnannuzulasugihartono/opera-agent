@@ -24,6 +24,7 @@ globalThis.chrome = {
     onCreated: event('tabs.onCreated'),
     onRemoved: event('tabs.onRemoved'),
     onUpdated: event('tabs.onUpdated'),
+    onActivated: event('tabs.onActivated'),
   },
   runtime: {
     onMessage: event('runtime.onMessage'),
@@ -49,9 +50,10 @@ test('the service worker module graph evaluates without throwing', async () => {
 test('the load-time listeners actually registered', () => {
 
   assert.equal(listeners['runtime.onMessage'].length, 1, 'exactly one onMessage handler');
-  assert.equal(listeners['tabs.onRemoved'].length, 2, 'both tabs.onRemoved handlers register');
+  assert.equal(listeners['tabs.onRemoved'].length, 3, 'pull, loops and bridge-link all drop their tab state');
   assert.equal(listeners['debugger.onDetach'].length, 1, 'the debugger detach handler registers');
-  assert.equal(listeners['alarms.onAlarm'].length, 1, 'the wake alarm handler registers');
+  assert.equal(listeners['alarms.onAlarm'].length, 2, 'wake alarm plus bridge-link reconnect');
+  assert.equal(listeners['tabs.onActivated'].length, 1, 'bridge-link relinks when the person switches tabs');
   assert.ok(listeners['tabs.onCreated'].length >= 1, 'the tab-drag gate registers');
   assert.ok(listeners['runtime.onInstalled'].length >= 1, 'onInstalled registers');
 });

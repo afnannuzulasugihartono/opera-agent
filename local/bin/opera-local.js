@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
 import { createSessionStore } from '../sessions.js';
 import { listPageWebSockets, openTab, closeTab } from '../transport.js';
+import { bridgePort, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
 import { startStdio } from '../mcp-server.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -31,12 +32,14 @@ const pkg = createRequire(join(here, '..', 'package.json'))('./package.json');
 
 const PORT = Number(process.env.OPERA_LOCAL_PORT || 9333);
 const BROWSER = process.env.OPERA_LOCAL_BROWSER || undefined;
+const BRIDGED = process.env.OPERA_LOCAL_TRANSPORT === 'bridge';
 
-const store = createSessionStore({ openSession, port: PORT, browserId: BROWSER });
+const store = createSessionStore({ openSession, port: PORT, browserId: BROWSER, viaBridge: BRIDGED || null });
 const open = (options) => store.open(options);
 const attach = () => store.attach();
 
 async function resolveTab() {
+  if (BRIDGED) return (await listBridgeTargets()).map((page) => String(page.id));
   return (await listPageWebSockets(PORT)).map((page) => page.id);
 }
 
@@ -51,16 +54,21 @@ async function reachable() {
 
 const driver = {
   async tabs() {
+    if (BRIDGED) return listBridgeTargets();
     return (await listPageWebSockets(PORT)).map(({ id, url, title }) => ({ id, url, title }));
   },
 
   async open(url) {
+    if (BRIDGED) {
+      const tab = await openBridgeTarget(url);
+      return { url, id: tab.id, port: bridgePort() };
+    }
     const tab = await openTab(PORT, url);
     return { url, id: tab.id, port: PORT };
   },
 
   async close(tabId) {
-    return store.closeTab(tabId, (id) => closeTab(PORT, id));
+    return store.closeTab(tabId, (id) => BRIDGED ? closeBridgeTarget(id) : closeTab(PORT, id));
   },
 
   async read() {
@@ -110,7 +118,7 @@ startStdio({
     open,
     resolveTab,
     sessionOptions: {},
-    port: PORT,
+    port: BRIDGED ? bridgePort() : PORT,
     version: pkg.version,
     browsers: installedBrowsers(),
     reachable

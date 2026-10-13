@@ -156,12 +156,12 @@
 #    tests/mcp-surface.test.mjs strips comments and collapses whitespace before
 #    hashing a tool schema, so the pin holds the tool's contract and not its
 #    indentation.
-scripts/check.mjs 31709ce0347fe83941d32c3c3cfe0350e5363152
+scripts/check.mjs bd6fde2aecdcc96b7c4c9f58610bef092129a58a
 scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 277f7ad7a2a596ffdb65c5d743f1f2ce3af8e5d4
+tests/helpers/boundary-locks.mjs 111f3102e418aadef837927bd975d9fc027cdff4
 tests/helpers/comment-spacing.mjs e9d8a61eaccdedf7018fe64acdfe9c8159f75d0c
 tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
 
@@ -171,12 +171,12 @@ tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs 07e6f83bb80e6dadd212e1dbb3294d0cf33a028f
 
 # --- controls that decide what the product accepts at runtime ---
-extension/lib/protocol.js 0b6edb0064f806784a44ad9421f76d88ea2fc984
+extension/lib/protocol.js 25991c147c6234156105fc10de835043afdf7c0a
 lib/secret-pattern.js 8a7ad9fdde6457b2a26f17cad0c9582f92e55625
 supabase/functions/_shared/cors.js 03a97007d61329edc1377de25e13fcde6a49b0ff
 
 # --- surfaces an owner, not an agent, should have to look at ---
-extension/manifest.json a5eaef00ee4d648fa3439554c161b14a25e0c8a2
+extension/manifest.json 667500da9e1981dd62c77c85158b00341091cf1d
 .gitleaks.toml 0e65aabf1cc06121b4ad4272c8bf5d434133f4f3
 .github/CODEOWNERS 018189b06335b26f42cd4a072bc59383d7700250
 .github/workflows/ci.yml d2aed40dcbf066982c0ccc15ee6b366d2082747c

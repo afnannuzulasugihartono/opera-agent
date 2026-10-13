@@ -72,6 +72,7 @@ import {
   MAX_WATCHERS_GLOBAL,
 } from './worker/watch-registry.js';
 import './worker/execute-pull.js';
+import './worker/bridge-link.js';
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
