@@ -248,3 +248,32 @@ test('a port owned by another driver is named, and freeing it heals the next try
   assert.ok(port > 0, 'the next try listened instead of reusing the dead server');
   await closeBridge();
 });
+
+// WHY the trust is observed through pings, not time. A clock assertion would be
+// flaky under load; the ping count is exact: one proof costs exactly one ping
+// against a healthy worker, and a trusted call costs none.
+
+test('a trusted window skips the proof ping, and zero trust proves every call', async () => {
+  const worker = await startWorker(() => [{ id: 7, url: 'https://x/', title: 'X' }]);
+  const pings = () => worker.seen.filter((command) => command.bridge === 'ping').length;
+  const previous = process.env.OPERA_BRIDGE_TRUST_MS;
+  try {
+    delete process.env.OPERA_BRIDGE_TRUST_MS;
+    await listBridgeTargets();
+    await listBridgeTargets();
+    assert.equal(pings(), 2, 'without trust every call proves');
+
+    process.env.OPERA_BRIDGE_TRUST_MS = '50';
+    await new Promise((r) => setTimeout(r, 80));
+    await listBridgeTargets();
+    assert.equal(pings(), 3, 'an expired window proves again');
+    await listBridgeTargets();
+    assert.equal(pings(), 3, 'a trusted call sends no ping');
+  } finally {
+    if (previous === undefined) delete process.env.OPERA_BRIDGE_TRUST_MS;
+    else process.env.OPERA_BRIDGE_TRUST_MS = previous;
+  }
+
+  await worker.stop();
+  await closeBridge();
+});

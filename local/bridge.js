@@ -43,7 +43,21 @@ export function bridgePort() {
 
 let server = null;
 let nextId = 1;
+let lastProofAt = 0;
 const routers = new Map();
+
+// WHY the proof is trusted on request and never by default. A ping round trip
+// costs about half of a fast call, so bursts pay it over and over for an answer
+// that does not change between one command and the next. Trusting it for a few
+// seconds removes that half — and delays a dead worker's diagnosis by exactly
+// the trust window plus one command timeout, because a skipped proof cannot
+// fail. Default zero keeps the safe behavior; whoever sets the window opts
+// into the trade with open eyes.
+
+function trustedRecently() {
+  const trustMs = Math.max(0, Number(process.env.OPERA_BRIDGE_TRUST_MS || 0));
+  return trustMs > 0 && Date.now() - lastProofAt < trustMs;
+}
 
 async function ensureServer() {
   if (!server) {
@@ -100,8 +114,11 @@ async function prove(srv) {
 async function attempt(message, timeoutMs) {
   const srv = await ensureServer();
   if (!srv.linked() && !(await srv.waitForLink({ timeoutMs: 12000 }))) throw new Error(NOT_LINKED);
-  if (!(await prove(srv))) {
-    throw new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
+  if (!trustedRecently()) {
+    if (!(await prove(srv))) {
+      throw new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
+    }
+    lastProofAt = Date.now();
   }
   return roundTrip(srv, message, timeoutMs);
 }
