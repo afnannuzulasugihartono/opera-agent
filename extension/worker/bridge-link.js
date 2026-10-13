@@ -17,6 +17,19 @@
 // listens, this side connects, reconnects with backoff, and also retries on a
 // half-minute alarm so a worker that died mid-idle links again by itself.
 //
+// WHY there is a heartbeat, and it is not optional. An MV3 worker that hears
+// nothing for thirty seconds is retired, and Chrome does NOT close its
+// WebSocket when that happens: the browser keeps the TCP connection, still
+// answers protocol pings in the network layer, and the socket keeps reporting
+// OPEN to code that no longer runs. Observed live as a link that looked perfect
+// — established, right magic bytes, nine pings answered — while a command sat
+// unanswered for thirty seconds, because every frame that arrived went to a
+// message loop that had stopped existing. Incoming WebSocket data does not wake
+// a service worker, so a socket nobody speaks on is a socket nobody hears on.
+// A ping every fifteen seconds is that traffic: it keeps the worker alive, and
+// it carries proof the link is alive, which is what the deaf-link rule below
+// turns into a decision to throw the socket away and dial again.
+//
 // WHY one debugger attach per tab, held open. Attaching per message would put a
 // hundred milliseconds on every CDP call; holding it makes the second call as
 // cheap as the twentieth. The shared-session machinery already heals the two
@@ -35,26 +48,29 @@ import { releaseDebuggerSession } from '../lib/debugger-session.js';
 const BRIDGE_URL = 'ws://127.0.0.1:9451/bridge';
 const BRIDGE_ALARM = 'opera-bridge-link';
 const BACKOFF_MS = [1000, 2000, 5000, 10000, 30000];
+const HEARTBEAT_MS = 15000;
+const DEAF_LINK_MS = 30000;
 
 let socket = null;
 let dialingSince = 0;
 let backoff = 0;
 let retryTimer = null;
+let heartbeatTimer = null;
 let lastTrafficAt = 0;
-const STALE_LINK_MS = 45000;
+let pingSentAt = 0;
 
-export function isLinkStale(lastTrafficAt, now = Date.now()) {
-  return now - lastTrafficAt > STALE_LINK_MS;
-}
+// A ping that nothing answers is the only evidence worth acting on. A quiet link
+// is normal; a deaf link is a socket the browser kept while the worker behind it
+// stopped existing, and the two look identical from the outside.
 
-export function linkNeedsRefresh(now = Date.now()) {
-  return socket !== null && isLinkStale(lastTrafficAt, now);
+export function linkIsDeaf({ lastTrafficAt, pingSentAt }, now = Date.now()) {
+  return pingSentAt > 0 && lastTrafficAt < pingSentAt && now - pingSentAt > DEAF_LINK_MS;
 }
 
 function touch() {
   lastTrafficAt = Date.now();
 }
-const stats = { dials: 0, links: 0, messages: 0, replies: 0, alarms: 0, lastError: null };
+const stats = { dials: 0, links: 0, messages: 0, replies: 0, alarms: 0, pings: 0, recycles: 0, lastError: null };
 
 export function bridgeLinkState() {
   return {
@@ -134,8 +150,54 @@ function route(data) {
   if (message === null || typeof message !== 'object' || message.id === undefined) return;
   stats.messages += 1;
   touch();
+  if (message.bridge === 'ping') {
+    post({ id: message.id, result: { pong: true } });
+    return;
+  }
   if (message.tabs && typeof message.tabs === 'object') void handleTabs(message);
   else void handleCdp(message);
+}
+
+// WHY the beat is armed from the alarm and not only from the link. A worker the
+// browser retired loses its timers with everything else, so a chain started once
+// at connect time stops existing; the alarm is the one event that always arrives,
+// and it re-arms the chain and proves the link in the same tick.
+
+function heartbeat() {
+  if (heartbeatTimer) {
+    clearTimeout(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  if (linkIsDeaf({ lastTrafficAt, pingSentAt })) {
+    recycle();
+    return;
+  }
+  pingSentAt = Date.now();
+  stats.pings += 1;
+  try {
+    socket.send(JSON.stringify({ id: `hb-${stats.pings}`, bridge: 'ping' }));
+  } catch {
+    recycle();
+    return;
+  }
+  heartbeatTimer = setTimeout(() => heartbeat(), HEARTBEAT_MS);
+}
+
+function recycle() {
+  stats.recycles += 1;
+  const dead = socket;
+  socket = null;
+  pingSentAt = 0;
+  if (heartbeatTimer) {
+    clearTimeout(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+  try {
+    dead?.close();
+  } catch {}
+  log.warn('BRIDGE_LINK_DEAF', 'localhost bridge link stopped answering, redialling');
+  void connect();
 }
 
 function schedule() {
@@ -149,10 +211,16 @@ function schedule() {
   if (retryTimer.unref) retryTimer.unref();
 }
 
+export function ensureBridgeLink() {
+  heartbeat();
+  if (!socket || socket.readyState > WebSocket.OPEN) void connect();
+}
+
 async function connect() {
   if (dialingSince && Date.now() - dialingSince < 15000) return;
   if (socket && socket.readyState <= WebSocket.OPEN) return;
   dialingSince = Date.now();
+  stats.dials += 1;
   try {
     const ws = await new Promise((resolve, reject) => {
       let sock;
@@ -186,6 +254,8 @@ async function connect() {
     });
     socket = ws;
     backoff = 0;
+    stats.links += 1;
+    pingSentAt = 0;
     touch();
     log.info('BRIDGE_LINK_UP', 'localhost bridge connected');
     ws.onmessage = (event) => route(event?.data ?? event);
@@ -201,6 +271,7 @@ async function connect() {
       }
       schedule();
     };
+    heartbeat();
   } catch {
     log.debug('BRIDGE_DIAL_FAILED', 'localhost bridge unreachable, backing off');
     schedule();
@@ -221,10 +292,8 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm?.name !== BRIDGE_ALARM) return;
-  if (linkNeedsRefresh()) {
-    try { socket?.close(); } catch {}
-    socket = null;
-  }
+  stats.alarms += 1;
+  heartbeat();
   void connect();
 });
 

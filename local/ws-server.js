@@ -27,6 +27,11 @@ import { createServer } from 'node:net';
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const MAX_FRAME_BYTES = 16 * 1024 * 1024;
 
+// One sentence for a dead link, written once: three call sites throw it, and a
+// driver, a test and a person all read the same words.
+
+export const LINK_ERROR = 'bridge: extension is not connected (start the local driver, then reload the extension)';
+
 export function acceptKey(clientKey) {
   return createHash('sha1').update(String(clientKey).trim() + GUID).digest('base64');
 }
@@ -194,11 +199,11 @@ export function createWsBridge({ port = 9451, host = '127.0.0.1', log = () => {}
       return link !== null;
     },
     send(text) {
-      if (!link) throw new Error('bridge: extension is not connected (reload it with the bridge running)');
+      if (!link) throw new Error(LINK_ERROR);
       link.socket.write(encodeTextFrame(text));
     },
     ping() {
-      if (!link) throw new Error('bridge: extension is not connected (reload it with the bridge running)');
+      if (!link) throw new Error(LINK_ERROR);
       link.socket.write(Buffer.from([0x89, 0x00]));
     },
     dropLink() {

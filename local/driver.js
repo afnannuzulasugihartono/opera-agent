@@ -27,6 +27,7 @@ import { createCdpClient } from './cdp.js';
 import { createPrimitives } from './primitives.js';
 import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTab, pageWebSocketById, waitForPage } from './transport.js';
 import { closeBridgeTarget, connectBridgeTarget, listBridgeTargets, openBridgeTarget, waitForBridgeLink } from './bridge.js';
+import { LINK_ERROR } from './ws-server.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({
@@ -59,7 +60,7 @@ export function resolveBinary({ id, platform = process.platform, exists = exists
 
 async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions }) {
   const linked = await waitForBridgeLink({ timeoutMs });
-  if (!linked) throw new Error('bridge: extension is not connected (reload it with the bridge running)');
+  if (!linked) throw new Error(LINK_ERROR);
   let numericId;
   if (tabUrl) {
     numericId = (await openBridgeTarget(tabUrl)).id;

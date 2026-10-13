@@ -39,7 +39,12 @@ function masked(text) {
   return Buffer.concat([head, body]);
 }
 
-async function fakeExtension(port, onRequest) {
+// WHY the fake answers heartbeats by default. Answering one is the extension's
+// job, and a local side that stopped answering would retire the worker with its
+// socket still open — the exact failure this transport keeps re-learning. A test
+// that needs a deaf link turns it off on purpose.
+
+async function fakeExtension(port, onRequest, { answerPing = true } = {}) {
   const socket = connect(port, '127.0.0.1');
   await new Promise((resolve) => socket.on('connect', resolve));
   const key = randomBytes(16).toString('base64');
@@ -77,10 +82,41 @@ async function fakeExtension(port, onRequest) {
       if (tail.length < head + size) return;
       const text = tail.subarray(head, head + size).toString('utf8');
       tail = tail.subarray(head + size);
-      void onRequest(JSON.parse(text), (reply) => socket.write(masked(JSON.stringify(reply))));
+      const request = JSON.parse(text);
+      const reply = (out) => socket.write(masked(JSON.stringify(out)));
+      if (answerPing && request.bridge === 'ping') {
+        reply({ id: request.id, result: { pong: true } });
+        return;
+      }
+      if (!request.tabs && !request.method) return;
+      void onRequest(request, reply);
     }
   });
   return socket;
+}
+
+// One frame out, one frame back, straight off the socket: the only way to speak
+// to the local side as the worker does, without the fake in the middle.
+
+function sendRaw(socket, message) {
+  return new Promise((resolve) => {
+    let tail = Buffer.alloc(0);
+    const onData = (chunk) => {
+      tail = Buffer.concat([tail, chunk]);
+      for (;;) {
+        if (tail.length < 2) return;
+        const size = tail[1] & 0x7f;
+        if (tail.length < 2 + size) return;
+        const frame = JSON.parse(tail.subarray(2, 2 + size).toString('utf8'));
+        tail = tail.subarray(2 + size);
+        if (String(frame.id) !== String(message.id)) continue;
+        socket.off('data', onData);
+        resolve(frame);
+      }
+    };
+    socket.on('data', onData);
+    socket.write(masked(JSON.stringify(message)));
+  });
 }
 
 test('a session waits for its link instead of failing a slow extension', async () => {
@@ -149,12 +185,29 @@ test('an extension error arrives as a CDP error on the same id', async () => {
   await closeBridge();
 });
 
-test('a silent link is dropped and the retry rides a fresh dial', async () => {
+test('a worker heartbeat is answered, because dropping it retires the worker', async () => {
+  const { port } = await bridgeAddress();
+  const seen = [];
+  const socket = await fakeExtension(port, (request, reply) => {
+    seen.push(request);
+    reply({ id: request.id, result: [] });
+  });
+
+  const pong = await sendRaw(socket, { id: 'hb-1', bridge: 'ping' });
+  assert.deepEqual(pong, { id: 'hb-1', result: { pong: true } });
+  assert.equal(seen.length, 0, 'the heartbeat never became a command');
+
+  socket.destroy();
+  await closeBridge();
+});
+
+test('a deaf link is dropped in a second, and the retry rides a fresh dial', async () => {
   const { port } = await bridgeAddress();
   let dials = 0;
   let answered = false;
   const dial = async () => {
     dials += 1;
+    const silent = dials === 1;
     const socket = connect(port, '127.0.0.1');
     await new Promise((resolve) => socket.on('connect', resolve));
     const key = randomBytes(16).toString('base64');
@@ -181,9 +234,12 @@ test('a silent link is dropped and the retry rides a fresh dial', async () => {
         if (tail.length < 2 + length) return;
         const text = tail.subarray(2, 2 + length).toString('utf8');
         tail = tail.subarray(2 + length);
-        if (dials === 1) return;
+        if (silent) return;
         const request = JSON.parse(text);
-        const payload = Buffer.from(JSON.stringify({ id: request.id, result: [{ id: 3, url: '', title: '' }] }), 'utf8');
+        const result = request.bridge === 'ping'
+          ? { pong: true }
+          : [{ id: 3, url: '', title: '' }];
+        const payload = Buffer.from(JSON.stringify({ id: request.id, result }), 'utf8');
         const mask = randomBytes(4);
         const head = Buffer.from([0x81, 0x80 | payload.length]);
         const body = Buffer.alloc(payload.length);
@@ -193,16 +249,19 @@ test('a silent link is dropped and the retry rides a fresh dial', async () => {
       }
     });
     socket.on('close', () => {
-      if (dials === 1) void dial();
+      if (silent) void dial();
     });
     return socket;
   };
 
   const first = await dial();
-  const tabs = await listBridgeTargets({ timeoutMs: 500 });
+  const started = Date.now();
+  const tabs = await listBridgeTargets({ timeoutMs: 30000 });
+  const waited = Date.now() - started;
   assert.deepEqual(tabs, [{ id: 3, url: '', title: '' }]);
-  assert.equal(dials, 2, 'the silent first link is dropped and answered on the redial');
+  assert.equal(dials, 2, 'the deaf first link is dropped and answered on the redial');
   assert.equal(answered, true);
+  assert.ok(waited < 5000, `a deaf link cost ${waited} ms, not the 30000 ms command timeout`);
 
   first.destroy();
   await closeBridge();

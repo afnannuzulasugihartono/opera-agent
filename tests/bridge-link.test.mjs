@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-13 UTC+7.
-// @title: bridge-link — staleness math and message validation without a browser.
+// @title: bridge-link — deaf-link math and message routing without a browser.
 // @state: imports the worker module under a chrome mock; socket behavior stays live-verified.
 // @dependencies: node:test, strict, ../extension/worker/bridge-link.js.
 
@@ -31,15 +31,31 @@ globalThis.chrome = {
   storage: { onChanged: event('storage.onChanged'), local: { get: async () => ({}), set: async () => {} } },
 };
 
-const { isLinkStale, linkNeedsRefresh } = await import('../extension/worker/bridge-link.js');
+const { linkIsDeaf, bridgeLinkState } = await import('../extension/worker/bridge-link.js');
 
-test('a link idles 45 seconds before it counts as stale', () => {
-  assert.equal(isLinkStale(100000, 100000 + 44000), false);
-  assert.equal(isLinkStale(100000, 100000 + 46000), true);
+test('a link that answers a ping is not deaf, however long it has been open', () => {
+  assert.equal(linkIsDeaf({ lastTrafficAt: 200000, pingSentAt: 100000 }, 260000), false);
 });
 
-test('with no socket there is nothing to refresh', () => {
-  assert.equal(linkNeedsRefresh(Date.now()), false);
+test('an unanswered ping makes the link deaf after the bound', () => {
+  const deaf = { lastTrafficAt: 99000, pingSentAt: 100000 };
+  assert.equal(linkIsDeaf(deaf, 129000), false);
+  assert.equal(linkIsDeaf(deaf, 131000), true);
+});
+
+test('traffic that is not the ping still counts as proof the link hears', () => {
+  assert.equal(linkIsDeaf({ lastTrafficAt: 150000, pingSentAt: 100000 }, 131000), false);
+});
+
+test('a link that has never pinged cannot be deaf', () => {
+  assert.equal(linkIsDeaf({ lastTrafficAt: 0, pingSentAt: 0 }, 999999), false);
+});
+
+test('the module reports a bridge state the ping can be read from', () => {
+  const state = bridgeLinkState();
+  for (const key of ['dials', 'links', 'pings', 'recycles', 'socket']) {
+    assert.ok(key in state, `bridge state carries ${key}`);
+  }
 });
 
 test('the module registers its reconnect listeners', () => {
