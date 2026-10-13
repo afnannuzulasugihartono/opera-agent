@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: protocol — the wire contract: primitive allowlist, parameter schemas, burst vocabulary.
 // @state: exports the method spec table, the allowlist derived from it, and the burst and command validators; npm run check reads this file for the primitive count.
 // @dependencies: keyboard.
@@ -201,10 +201,14 @@ export function validateCommand(command) {
   if (command.method === 'page.pointer') {
     const params = command.params || {};
     const action = String(params.action || 'click');
-    if (!['move', 'click', 'drag', 'wheel'].includes(action)) return { ok: false, error: 'Invalid pointer action.' };
-    for (const key of ['x', 'y']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
-    if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
-    if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
+    if (!['move', 'click', 'drag', 'wheel', 'hover'].includes(action)) return { ok: false, error: 'Invalid pointer action.' };
+    if (action === 'hover') {
+      if (typeof params.ref !== 'string' || !params.ref) return { ok: false, error: 'Invalid pointer ref.' };
+    } else {
+      for (const key of ['x', 'y']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+      if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+      if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
+    }
   }
   if (command.method === 'page.capture') {
     const params = command.params || {};

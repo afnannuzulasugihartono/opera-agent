@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: protocol.test — Test.
 // @state: lock the page.fill value rule on the real site and in the protocol test.
 // @dependencies: node:test, strict, protocol.
@@ -59,6 +59,9 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6, endX: 7, endY: 8 } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'click', x: 5, y: 6, executionMode: 'auto' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'hover', ref: 'oa_1_1' } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'hover' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'hover', x: 5, y: 6 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, quality: 60, maxWidth: 1280, maxHeight: 900 } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, crop: { x: 0, y: 0, width: 320, height: 240 }, previousHash: 'a'.repeat(64) } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { quality: 90 } }).ok, false);
