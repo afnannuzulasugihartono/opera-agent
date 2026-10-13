@@ -27,7 +27,7 @@ import { createCdpClient } from './cdp.js';
 import { createPrimitives } from './primitives.js';
 import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTab, pageWebSocketById, waitForPage } from './transport.js';
 import { closeBridgeTarget, connectBridgeTarget, listBridgeTargets, openBridgeTarget, waitForBridgeLink } from './bridge.js';
-import { LINK_ERROR } from './ws-server.js';
+import { LINK_ERROR } from './poll-server.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({
