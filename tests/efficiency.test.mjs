@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: efficiency.test — Test.
 // @state: consolidate the latency cluster into one file.
 // @dependencies: node:test, strict, node:fs, extension-source.
@@ -18,10 +18,10 @@ const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/2026
 const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
 const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
 
-// The pull endpoint stays: it is still what pairing and heartbeats use, and
-// deleting a deployed contract is not this change's business. What must not
-// survive is the device asking for work, which was two round trips per action and
-// is gone with the poll loop.
+// The pull endpoint is gone: no client asked through it anymore — the device
+// learns work over its socket — so the deployed contract it was is deleted
+// rather than kept warm. What must not come back is the device asking for work,
+// which was two round trips per action.
 
 test('a missing page helper costs one feature, never the whole content script', () => {
   const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
@@ -53,18 +53,16 @@ test('every popup message lands in a catch the user can read', () => {
   }
 });
 
-test('the device asks nothing, so there is no pull wait to pin', () => {
+test('the device asks nothing, so there is no pull endpoint left', () => {
 
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
   assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
-
-  const pull = bridge.slice(bridge.indexOf('async function pull('), bridge.indexOf('async function complete('));
-  assert.match(pull, /waitMs\n\s*\}/,
-    'pull no longer hands its clamped wait to the claim');
+  assert.doesNotMatch(bridge, /async function pull\(/,
+    'the pull endpoint is back, and with it the asking device');
+  assert.equal((bridge.match(/rpc\("opera_claim_next_wait", \{/g) || []).length, 1,
+    'more than one place claims, so the one-claim-function rule is gone');
   assert.match(bridge, /p_wait_ms: clamp\(detail\.waitMs, 0, 25000, 0\)/,
     'the claim no longer forwards the wait to Postgres');
-
-  assert.match(bridge, /waitMs,\s*0,\s*25000,\s*12000/);
 
   assert.doesNotMatch(background, /waitMs:\s*5000/,
     'the device still carries a five second poll wait');
@@ -75,8 +73,6 @@ test('the device asks nothing, so there is no pull wait to pin', () => {
   const claimFn = claim.slice(0, claim.indexOf('\n}\n'));
   assert.equal((claimFn.match(/rpc\(/g) || []).length, 1, 'the claim must make exactly one RPC call');
   assert.doesNotMatch(claimFn, /while\s*\(true\)|do\s*\{/);
-  assert.doesNotMatch(pull, /rpc\("opera_claim_next_wait"/,
-    'pull claims directly instead of going through the one claim function');
   assert.doesNotMatch(bridge, /FAST_PULL_|IDLE_PULL_/);
 });
 
