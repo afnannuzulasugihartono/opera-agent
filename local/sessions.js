@@ -63,7 +63,7 @@ export function asDriver(session) {
   };
 }
 
-export function createSessionStore({ openSession, port, browserId }) {
+export function createSessionStore({ openSession, port, browserId, viaBridge = null }) {
   const sessions = new Map();
   let fronted = null;
 
@@ -71,7 +71,7 @@ export function createSessionStore({ openSession, port, browserId }) {
     const { url: targetUrl, targetId: named, ...rest } = options;
     const key = targetUrl ?? named ?? '';
     if (!sessions.has(key)) {
-      const session = await openSession({ port, id: browserId, launch: false, tabUrl: targetUrl ?? null, targetId: named ?? null, ...rest });
+      const session = await openSession({ port, id: browserId, launch: false, tabUrl: targetUrl ?? null, targetId: named ?? null, viaBridge, ...rest });
       sessions.set(key, asDriver(session));
     }
     const driver = sessions.get(key);

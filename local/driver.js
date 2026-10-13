@@ -26,6 +26,7 @@ import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from '.
 import { createCdpClient } from './cdp.js';
 import { createPrimitives } from './primitives.js';
 import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTab, pageWebSocketById, waitForPage } from './transport.js';
+import { closeBridgeTarget, connectBridgeTarget, listBridgeTargets, openBridgeTarget, waitForBridgeLink } from './bridge.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({
@@ -51,6 +52,44 @@ export function resolveBinary({ id, platform = process.platform, exists = exists
 // one session means three targets, and reusing whichever page happened to be in
 // front would navigate away whatever the person was reading.
 
+// A bridged session is a CDP session whose wire runs through the extension
+// instead of a debugging port: same client, same primitives, numeric tab ids.
+// There is nothing to launch and nothing to reuse; either the link is up or the
+// call fails loudly naming the one fix that exists.
+
+async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions }) {
+  const linked = await waitForBridgeLink({ timeoutMs });
+  if (!linked) throw new Error('bridge: extension is not connected (reload it with the bridge running)');
+  let numericId;
+  if (tabUrl) {
+    numericId = (await openBridgeTarget(tabUrl)).id;
+  } else if (targetId !== null && targetId !== undefined && targetId !== '') {
+    const known = await listBridgeTargets();
+    if (!known.some((t) => String(t.id) === String(targetId))) {
+      throw new Error(`No page target ${targetId}. Open pages: ${known.map((t) => t.id).join(' | ')}`);
+    }
+    numericId = Number(targetId);
+  } else {
+    const pages = await listBridgeTargets();
+    if (!pages.length) throw new Error('bridge: the browser has no page to drive');
+    numericId = pages[0].id;
+  }
+  const transport = connectBridgeTarget(numericId);
+  const cdp = createCdpClient(transport);
+  return {
+    port: null,
+    reused: true,
+    binary: null,
+    bridge: true,
+    targetId: numericId,
+    cdp,
+    ...createPrimitives(cdp, primitivesOptions),
+    close() {
+      cdp.close();
+    }
+  };
+}
+
 export async function openSession({
   id,
   port = 9333,
@@ -62,8 +101,12 @@ export async function openSession({
   spawnBrowser = spawn,
   launch = true,
   timeoutMs = 15000,
-  primitives: primitivesOptions = {}
+  primitives: primitivesOptions = {},
+  viaBridge = null
 } = {}) {
+  const bridged = viaBridge ?? env.OPERA_LOCAL_TRANSPORT === 'bridge';
+  if (bridged) return openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions });
+
   let reused = false;
   let target = null;
 

@@ -1,0 +1,209 @@
+// @last-edited: 2026-10-13 UTC+7.
+// @title: bridge-link — the extension end of the localhost bridge: raw CDP over one socket.
+// @state: dials the local server, routes CDP by tab, heals across worker restarts.
+// @dependencies: capture, debugger-session, log.
+
+// WHY THIS FILE EXISTS
+//
+// Chrome refuses a debugging port on the Default profile, and the relay road to
+// this extension costs ~2 s a call through Singapore. The extension can, however,
+// open an outbound WebSocket to this machine, and a CDP frame fits in one JSON
+// text frame: method in, result out, debugger calls between them. The local
+// driver speaks identical CDP over that socket, so the whole MCP surface runs on
+// the everyday profile at localhost milliseconds with no flags and no queue.
+//
+// WHY the extension dials out. Nothing can dial in: extensions accept no
+// connections and the profile accepts no debugging port. The local server
+// listens, this side connects, reconnects with backoff, and also retries on a
+// half-minute alarm so a worker that died mid-idle links again by itself.
+//
+// WHY one debugger attach per tab, held open. Attaching per message would put a
+// hundred milliseconds on every CDP call; holding it makes the second call as
+// cheap as the twentieth. The shared-session machinery already heals the two
+// ways this goes stale — a user opening DevTools, a tab closing — and the
+// infobar Chrome pins on an attached tab doubles as the agent-is-here sign.
+//
+// WHAT IT DELIBERATELY DOES NOT DO. No CDP events ride back: nothing on the
+// local side subscribes to any, so forwarding them would be latency for nobody.
+// No auth beyond loopback: the debugging port this replaces never had any, and
+// the manifest already scopes outbound sockets to 127.0.0.1.
+
+import { log } from '../lib/log.js';
+import { withDebugger } from './capture.js';
+import { releaseDebuggerSession } from '../lib/debugger-session.js';
+
+const BRIDGE_URL = 'ws://127.0.0.1:9451/bridge';
+const BRIDGE_ALARM = 'opera-bridge-link';
+const BACKOFF_MS = [1000, 2000, 5000, 10000, 30000];
+
+let socket = null;
+let dialingSince = 0;
+let backoff = 0;
+let retryTimer = null;
+const debuggerSessions = new Map();
+
+function sessionFor(tabId) {
+  let session = debuggerSessions.get(tabId);
+  if (!session) {
+    session = { tabId, attached: false };
+    debuggerSessions.set(tabId, session);
+  }
+  return session;
+}
+
+function post(message) {
+  try {
+    socket?.send(JSON.stringify(message));
+  } catch (error) {
+    log.debug('BRIDGE_SEND_FAILED', error?.message || String(error));
+  }
+}
+
+async function handleCdp(message) {
+  const { id, tab, method, params } = message ?? {};
+  if (typeof tab !== 'number' || typeof method !== 'string') {
+    post({ id, error: { message: 'bridge: a CDP message needs a numeric tab and a method' } });
+    return;
+  }
+  try {
+    const result = await withDebugger(tab, { debuggerSession: sessionFor(tab) }, (target) =>
+      chrome.debugger.sendCommand(target, method, params ?? {}));
+    post({ id, result: result === undefined ? null : result });
+  } catch (error) {
+    post({ id, error: { message: error?.message || String(error) } });
+  }
+}
+
+function publicBridgeTab(tab) {
+  return { id: tab.id, url: tab.url ?? '', title: tab.title ?? '' };
+}
+
+async function handleTabs(message) {
+  const { id, tabs } = message ?? {};
+  const op = tabs?.op;
+  try {
+    if (op === 'list') {
+      const all = await chrome.tabs.query({});
+      post({ id, result: all.map(publicBridgeTab) });
+    } else if (op === 'open') {
+      const created = await chrome.tabs.create({ url: String(tabs.url || 'about:blank') });
+      post({ id, result: publicBridgeTab(created) });
+    } else if (op === 'close') {
+      await chrome.tabs.remove(Number(tabs.tabId));
+      post({ id, result: { id: Number(tabs.tabId), closed: true } });
+    } else {
+      post({ id, error: { message: `bridge: unknown tabs op ${JSON.stringify(op)}` } });
+    }
+  } catch (error) {
+    post({ id, error: { message: error?.message || String(error) } });
+  }
+}
+
+function route(data) {
+  let message;
+  try {
+    message = JSON.parse(String(data));
+  } catch {
+    return;
+  }
+  if (message === null || typeof message !== 'object' || message.id === undefined) return;
+  if (message.tabs && typeof message.tabs === 'object') void handleTabs(message);
+  else void handleCdp(message);
+}
+
+function schedule() {
+  if (retryTimer) return;
+  const wait = BACKOFF_MS[Math.min(backoff, BACKOFF_MS.length - 1)];
+  backoff += 1;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    void connect();
+  }, wait);
+  if (retryTimer.unref) retryTimer.unref();
+}
+
+async function connect() {
+  if (dialingSince && Date.now() - dialingSince < 15000) return;
+  if (socket && socket.readyState <= WebSocket.OPEN) return;
+  dialingSince = Date.now();
+  try {
+    const ws = await new Promise((resolve, reject) => {
+      let sock;
+      try {
+        sock = new WebSocket(BRIDGE_URL);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      const silence = () => {
+        sock.onopen = null;
+        sock.onerror = null;
+        sock.onclose = null;
+      };
+      const openTimer = setTimeout(() => {
+        silence();
+        try { sock.close(); } catch {}
+        reject(new Error('bridge unreachable'));
+      }, 5000);
+      sock.onopen = () => {
+        clearTimeout(openTimer);
+        silence();
+        resolve(sock);
+      };
+      sock.onerror = () => {
+        clearTimeout(openTimer);
+        silence();
+        try { sock.close(); } catch {}
+        reject(new Error('bridge unreachable'));
+      };
+    });
+    socket = ws;
+    backoff = 0;
+    log.info('BRIDGE_LINK_UP', 'localhost bridge connected');
+    ws.onmessage = (event) => route(event?.data ?? event);
+    ws.onclose = () => {
+      if (socket === ws) socket = null;
+      log.info('BRIDGE_LINK_DOWN', 'localhost bridge closed, retrying');
+      schedule();
+    };
+    ws.onerror = () => {
+      if (socket === ws) {
+        try { ws.close(); } catch {}
+        socket = null;
+      }
+      schedule();
+    };
+  } catch {
+    log.debug('BRIDGE_DIAL_FAILED', 'localhost bridge unreachable, backing off');
+    schedule();
+  } finally {
+    dialingSince = 0;
+  }
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.alarms.create(BRIDGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
+  void connect();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  chrome.alarms.create(BRIDGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
+  void connect();
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm?.name === BRIDGE_ALARM) void connect();
+});
+
+chrome.tabs.onActivated.addListener(() => {
+  void connect();
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  const session = debuggerSessions.get(tabId);
+  debuggerSessions.delete(tabId);
+  if (session?.attached) void releaseDebuggerSession(session, log);
+});
+
+chrome.alarms.create(BRIDGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
+void connect();

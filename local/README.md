@@ -51,18 +51,23 @@ Sign in to Google once inside it; the profile at
 Browse in this window whenever the agent is driving: a normally-opened Chrome
 window cannot be driven and blocks this one from starting.
 
-### Your everyday Chrome instead
+### Your everyday Chrome instead: the bridge
 
-To drive the Chrome already full of your tabs instead of a separate window:
+Chrome refuses a debugging port on the Default profile, so the everyday window
+cannot be driven over CDP at all — the flag dies with an error and no port. The
+bridge is the road that remains: the extension dials out to this machine over a
+loopback WebSocket and carries raw CDP both ways, so the whole surface below
+runs on your real tabs with no flags, no queue and no cloud.
 
-```bat
-local\bin\opera-chrome-main.cmd
+```bash
+OPERA_LOCAL_TRANSPORT=bridge npx opera-local
 ```
 
-It starts your Default profile with the debugging port and the extension. Close
-every Chrome window first or the flags die silently. Trade-off, stated plainly:
-a debugging port lets any program on this machine drive those tabs, so use the
-dedicated window above for anything sensitive and this one for daily driving.
+Load the extension unpacked once from `extension/` (it persists in the
+profile), reload it after pulling, and drive. The touched tab comes forward so
+you can watch, and every click and hover leaves a red or blue ring where it
+landed. Trust boundary, stated plainly: loopback without auth, exactly what the
+debugging port it replaces already was.
 
 Point a client at it:
 
@@ -82,11 +87,14 @@ Point a client at it:
 |---|---|---|
 | `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
 | `OPERA_LOCAL_BROWSER` | first installed | which browser to launch if none is listening |
+| `OPERA_LOCAL_TRANSPORT` | unset (CDP) | `bridge` drives the everyday profile through the extension |
+| `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
 
 ## Tools
 
-`browser_status`, `list_tabs`, `open_url`, `read_page`, `find_elements`, `click`,
-`press_key`, `type`, `capture_page`.
+`browser_status`, `list_tabs`, `open_url`, `close_tab`, `read_page`,
+`find_elements`, `click`, `click_row`, `hover`, `press_key`, `type`,
+`stream_keys`, `capture_page`, `ax_snapshot`.
 
 `open_url` always opens its own tab, so a drive never navigates a page someone is
 already reading. `capture_page` is clipped to the viewport at one pixel per
