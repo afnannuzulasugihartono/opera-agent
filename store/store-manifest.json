@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Opera Agent",
-  "version": "1.6.25.0",
+  "version": "1.6.26.0",
   "description": "Bawa asisten AI Anda mengemudikan browser: klik, ketik, isi formulir, baca halaman. Anda pilih modelnya.",
   "permissions": [
     "tabs",

@@ -42,18 +42,27 @@ globalThis.chrome = {
   },
 };
 
+// WHY the loop is stopped before the file ends. Importing the worker graph is
+// what starts the bridge poll, and a poll that keeps asking a port nobody is
+// listening on keeps this process alive forever. The production loop is the
+// point; in a test it is only something to switch off again.
+
+const { stopBridgeLink } = await import('../extension/worker/bridge-link.js');
+
 test('the service worker module graph evaluates without throwing', async () => {
   await assert.doesNotReject(() => import('../extension/background.js'),
     'importing background.js must not throw');
 });
+
+test.after(() => stopBridgeLink());
 
 test('the load-time listeners actually registered', () => {
 
   assert.equal(listeners['runtime.onMessage'].length, 1, 'exactly one onMessage handler');
   assert.equal(listeners['tabs.onRemoved'].length, 3, 'pull, loops and bridge-link all drop their tab state');
   assert.equal(listeners['debugger.onDetach'].length, 1, 'the debugger detach handler registers');
-  assert.equal(listeners['alarms.onAlarm'].length, 2, 'wake alarm plus bridge-link reconnect');
-  assert.equal(listeners['tabs.onActivated'].length, 1, 'bridge-link relinks when the person switches tabs');
+  assert.equal(listeners['alarms.onAlarm'].length, 2, 'wake alarm plus the bridge loop guard');
+  assert.equal(listeners['tabs.onActivated'].length, 1, 'the bridge retries sooner when the person switches tab');
   assert.ok(listeners['tabs.onCreated'].length >= 1, 'the tab-drag gate registers');
   assert.ok(listeners['runtime.onInstalled'].length >= 1, 'onInstalled registers');
 });

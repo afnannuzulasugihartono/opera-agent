@@ -787,7 +787,7 @@ function vmRunResult(value: unknown) {
   return textResult(value);
 }
 
-const SERVER_VERSION = "1.6.25";
+const SERVER_VERSION = "1.6.26";
 
 // WHY A SOCKET NEXT TO THE HTTP. Every HTTPS call pays for an isolate that has never
 // run before: the platform boots one per request, measured here as twenty distinct

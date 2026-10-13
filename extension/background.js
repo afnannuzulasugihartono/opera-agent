@@ -72,7 +72,7 @@ import {
   MAX_WATCHERS_GLOBAL,
 } from './worker/watch-registry.js';
 import './worker/execute-pull.js';
-import './worker/bridge-link.js';
+import { bridgeLinkState, ensureBridgeLink } from './worker/bridge-link.js';
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
@@ -81,6 +81,7 @@ const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
 const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 
 export async function dispatch(method, params = {}, context = {}) {
+  ensureBridgeLink();
   switch (method) {
     case 'browser.ping': {
       const cfg = await getConfig();
@@ -91,6 +92,7 @@ export async function dispatch(method, params = {}, context = {}) {
         protocolVersion: PROTOCOL_VERSION,
         deviceName: cfg.deviceName,
         paired: cfg.paired,
+        bridge: bridgeLinkState(),
         capabilities: Object.keys(METHOD_SPECS),
         time: nowIso()
       };

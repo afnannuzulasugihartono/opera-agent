@@ -1,12 +1,17 @@
 // @last-edited: 2026-10-13 UTC+7.
-// @title: local-bridge — the local bridge end, proven against a scripted extension over loopback.
-// @state: 5 locks; link wait, tab ops, CDP round trip, timeouts, teardown.
-// @dependencies: node:test, strict, node:net, node:crypto, ../local/bridge.js, ../local/cdp.js.
+// @title: local-bridge — the local bridge end, proven against a scripted worker over loopback.
+// @state: tab ops, CDP round trip, error surfacing, a deaf worker, teardown.
+// @dependencies: node:test, strict, ../local/bridge.js, ../local/cdp.js.
+
+// WHY a scripted worker and not the real module here. The extension worker polls
+// one fixed port, so two test files that both import it fight over the same
+// replies — observed, and a green run would have meant nothing. The worker's own
+// half of the conversation is proven in tests/bridge-link.test.mjs against the
+// real module; this file proves the local API against a worker that behaves the
+// way the real one does: poll, answer, report.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { connect } from 'node:net';
-import { randomBytes } from 'node:crypto';
 
 import {
   bridgeAddress,
@@ -21,104 +26,108 @@ import { createCdpClient } from '../local/cdp.js';
 
 process.env.OPERA_BRIDGE_PORT = '0';
 
-function masked(text) {
-  const payload = Buffer.from(text, 'utf8');
-  const mask = randomBytes(4);
-  const head = Buffer.alloc(payload.length < 126 ? 6 : 8);
-  head[0] = 0x81;
-  if (payload.length < 126) {
-    head[1] = 0x80 | payload.length;
-    mask.copy(head, 2);
-  } else {
-    head[1] = 0x80 | 126;
-    head.writeUInt16BE(payload.length, 2);
-    mask.copy(head, 4);
-  }
-  const body = Buffer.alloc(payload.length);
-  for (let i = 0; i < payload.length; i++) body[i] = payload[i] ^ mask[i % 4];
-  return Buffer.concat([head, body]);
-}
+// WHY the poll is abortable. A held poll does not come back for twenty seconds,
+// so a worker told to stop would keep answering the next test's commands for
+// twenty seconds — observed, and it looks exactly like a flaky bridge.
 
-async function fakeExtension(port, onRequest) {
-  const socket = connect(port, '127.0.0.1');
-  await new Promise((resolve) => socket.on('connect', resolve));
-  const key = randomBytes(16).toString('base64');
-  socket.write(
-    `GET /bridge HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ${key}\r\nSec-WebSocket-Version: 13\r\n\r\n`
-  );
-  await new Promise((resolve) => {
-    let buf = Buffer.alloc(0);
-    const onData = (chunk) => {
-      buf = Buffer.concat([buf, chunk]);
-      if (buf.indexOf('\r\n\r\n') >= 0) {
-        socket.off('data', onData);
-        resolve();
-      }
-    };
-    socket.on('data', onData);
+async function scriptedWorker(port, handle, { answerProof = true, deaf = false } = {}) {
+  let alive = true;
+  let abort = null;
+  const post = (id, payload) => fetch(`http://127.0.0.1:${port}/reply`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id, ...payload })
   });
-  let tail = Buffer.alloc(0);
-  socket.on('data', (chunk) => {
-    tail = Buffer.concat([tail, chunk]);
-    for (;;) {
-      if (tail.length < 2) return;
-      const length = tail[1] & 0x7f;
-      let head = 2;
-      let size = length;
-      if (length === 126) {
-        if (tail.length < 4) return;
-        size = tail.readUInt16BE(2);
-        head = 4;
-      } else if (length === 127) {
-        if (tail.length < 10) return;
-        size = Number(tail.readBigUInt64BE(2));
-        head = 10;
+
+  const loop = (async () => {
+    while (alive) {
+      abort = new AbortController();
+      let response;
+      try {
+        response = await fetch(`http://127.0.0.1:${port}/poll`, { method: 'POST', signal: abort.signal });
+      } catch {
+        continue;
       }
-      if (tail.length < head + size) return;
-      const text = tail.subarray(head, head + size).toString('utf8');
-      tail = tail.subarray(head + size);
-      void onRequest(JSON.parse(text), (reply) => socket.write(masked(JSON.stringify(reply))));
+      if (response.status !== 200) continue;
+      const command = await response.json();
+      if (deaf) continue;
+      if (command.bridge === 'ping') {
+        if (answerProof) await post(command.id, { result: { pong: true } });
+        continue;
+      }
+      let answer;
+      try {
+        answer = { result: await handle(command) };
+      } catch (error) {
+        answer = { error: { message: error?.message || String(error) } };
+      }
+      await post(command.id, answer);
     }
-  });
-  return socket;
+  })();
+  loop.catch(() => {});
+
+  return {
+    async stop() {
+      alive = false;
+      abort?.abort();
+      await Promise.race([loop, new Promise((resolve) => setTimeout(resolve, 250))]);
+    }
+  };
 }
 
-test('a session waits for its link instead of failing a slow extension', async () => {
+// A worker is not live until it has polled once, and the local side measures
+// liveness from exactly that. Waiting here is the same wait a driver does.
+
+async function startWorker(handle, options) {
+  const { port } = await bridgeAddress();
+  const worker = await scriptedWorker(port, handle, options);
+  const deadline = Date.now() + 3000;
+  while (!(await waitForBridgeLink({ timeoutMs: 100 })) && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  assert.equal(await waitForBridgeLink({ timeoutMs: 200 }), true, 'the worker came up');
+  return worker;
+}
+
+test('a session waits for its worker instead of failing a slow extension', async () => {
   const { port } = await bridgeAddress();
   assert.equal(await waitForBridgeLink({ timeoutMs: 60 }), false);
 
-  const socket = await fakeExtension(port, () => {});
-  assert.equal(await waitForBridgeLink({ timeoutMs: 2000 }), true);
+  const worker = await scriptedWorker(port, () => []);
+  const deadline = Date.now() + 3000;
+  while (!(await waitForBridgeLink({ timeoutMs: 100 })) && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  assert.equal(await waitForBridgeLink({ timeoutMs: 200 }), true);
 
-  socket.destroy();
+  await worker.stop();
   await closeBridge();
 });
 
-test('tab operations round-trip through the fake extension', async () => {
-  const { port } = await bridgeAddress();
+test('tab operations round-trip through the worker', async () => {
   const seen = [];
-  const socket = await fakeExtension(port, (request, reply) => {
-    seen.push(request);
-    if (request.tabs?.op === 'list') reply({ id: request.id, result: [{ id: 7, url: 'https://x/', title: 'X' }] });
-    if (request.tabs?.op === 'open') reply({ id: request.id, result: { id: 8, url: request.tabs.url, title: '' } });
-    if (request.tabs?.op === 'close') reply({ id: request.id, result: { id: 8, closed: true } });
+  const worker = await startWorker((command) => {
+    seen.push(command);
+    if (command.tabs.op === 'list') return [{ id: 7, url: 'https://x/', title: 'X' }];
+    if (command.tabs.op === 'open') return { id: 8, url: command.tabs.url, title: '' };
+    return { id: 8, closed: true };
   });
 
   assert.deepEqual(await listBridgeTargets(), [{ id: 7, url: 'https://x/', title: 'X' }]);
   assert.equal((await openBridgeTarget('https://y/')).id, 8);
   assert.deepEqual(await closeBridgeTarget(8), { id: 8, closed: true });
-  assert.ok(seen.every((r) => r.id !== undefined), 'every bridge message carries its id');
+  assert.ok(seen.every((command) => command.id !== undefined), 'every command carries its id');
+  assert.ok(!seen.some((command) => command.bridge === 'ping'), 'the liveness proof never becomes a tab op');
 
-  socket.destroy();
+  await worker.stop();
   await closeBridge();
 });
 
 test('a CDP client drives through the bridge transport untouched', async () => {
-  const { port } = await bridgeAddress();
   const seen = [];
-  const socket = await fakeExtension(port, (request, reply) => {
-    seen.push(request);
-    reply({ id: request.id, result: { value: 42 } });
+  const worker = await startWorker((command) => {
+    seen.push(command);
+    return { value: 42 };
   });
 
   const transport = connectBridgeTarget(77);
@@ -126,18 +135,17 @@ test('a CDP client drives through the bridge transport untouched', async () => {
   const out = await cdp.send('Runtime.evaluate', { expression: '6*7' });
 
   assert.deepEqual(out, { value: 42 });
-  assert.equal(seen[0].tab, 77);
-  assert.equal(seen[0].method, 'Runtime.evaluate');
+  assert.equal(seen.at(-1).tab, 77);
+  assert.equal(seen.at(-1).method, 'Runtime.evaluate');
   cdp.close();
 
-  socket.destroy();
+  await worker.stop();
   await closeBridge();
 });
 
-test('an extension error arrives as a CDP error on the same id', async () => {
-  const { port } = await bridgeAddress();
-  const socket = await fakeExtension(port, (request, reply) => {
-    reply({ id: request.id, error: { message: 'No such tab' } });
+test('an extension error arrives as a CDP error rather than silence', async () => {
+  const worker = await startWorker(() => {
+    throw new Error('No such tab');
   });
 
   const transport = connectBridgeTarget(99);
@@ -145,21 +153,55 @@ test('an extension error arrives as a CDP error on the same id', async () => {
   await assert.rejects(() => cdp.send('Page.bringToFront', {}), /No such tab/);
   cdp.close();
 
-  socket.destroy();
+  await worker.stop();
+  await closeBridge();
+});
+
+test('a command survives a worker that went away mid-call', async () => {
+  const first = await startWorker(() => [{ id: 7, url: 'https://x/', title: 'X' }]);
+  await first.stop();
+
+  const pending = listBridgeTargets({ timeoutMs: 20000 });
+  const { port } = await bridgeAddress();
+  const second = await scriptedWorker(port, () => [{ id: 9, url: 'https://y/', title: 'Y' }]);
+  const deadline = Date.now() + 5000;
+  while (!(await waitForBridgeLink({ timeoutMs: 100 })) && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+
+  assert.deepEqual(await pending, [{ id: 9, url: 'https://y/', title: 'Y' }], 'the command waited for the next worker');
+
+  await second.stop();
+  await closeBridge();
+});
+
+test('a worker that answers nothing is named, not waited out silently', async () => {
+  const { port } = await bridgeAddress();
+  const worker = await scriptedWorker(port, () => [], { answerProof: false, deaf: true });
+  const deadline = Date.now() + 3000;
+  while (!(await waitForBridgeLink({ timeoutMs: 100 })) && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+
+  const started = Date.now();
+  await assert.rejects(() => listBridgeTargets({ timeoutMs: 2000 }), /no answer for tabs.list/);
+  const waited = Date.now() - started;
+  assert.ok(waited < 6000, `the failure was named in ${waited} ms`);
+
+  await worker.stop();
   await closeBridge();
 });
 
 test('teardown settles the pending and drops the server', async () => {
-  const { port } = await bridgeAddress();
-  const socket = await fakeExtension(port, () => {});
+  const worker = await startWorker(() => new Promise(() => {}));
 
   const transport = connectBridgeTarget(1);
   const cdp = createCdpClient(transport);
   const hanging = cdp.send('Page.bringToFront', {});
+  await new Promise((r) => setTimeout(r, 120));
+  await worker.stop();
   await closeBridge();
-  await assert.rejects(() => hanging, /bridge closed/);
-  assert.equal(await waitForBridgeLink({ timeoutMs: 60 }), false);
 
-  socket.destroy();
-  await closeBridge();
+  await assert.rejects(() => hanging, /bridge closed|not connected/);
+  cdp.close();
 });

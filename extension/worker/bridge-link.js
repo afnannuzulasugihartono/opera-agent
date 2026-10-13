@@ -1,23 +1,32 @@
 // @last-edited: 2026-10-13 UTC+7.
-// @title: bridge-link — the extension end of the localhost bridge: raw CDP over one socket.
-// @state: dials the local server, routes CDP by tab, heals across worker restarts.
+// @title: bridge-link — the extension end of the localhost bridge: one held HTTP poll.
+// @state: polls the local server, routes CDP by tab, one command at a time, traceable.
 // @dependencies: capture, debugger-session, log.
 
 // WHY THIS FILE EXISTS
 //
 // Chrome refuses a debugging port on the Default profile, and the relay road to
 // this extension costs ~2 s a call through Singapore. The extension can, however,
-// open an outbound WebSocket to this machine, and a CDP frame fits in one JSON
-// text frame: method in, result out, debugger calls between them. The local
-// driver speaks identical CDP over that socket, so the whole MCP surface runs on
-// the everyday profile at localhost milliseconds with no flags and no queue.
+// reach this machine over loopback, and a CDP frame fits in one JSON body: method
+// in, result out, debugger calls between them. The local driver speaks identical
+// CDP over that conversation, so the whole MCP surface runs on the everyday
+// profile at localhost milliseconds with no flags and no queue.
 //
-// WHY the extension dials out. Nothing can dial in: extensions accept no
-// connections and the profile accepts no debugging port. The local server
-// listens, this side connects, reconnects with backoff, and also retries on a
-// half-minute alarm so a worker that died mid-idle links again by itself.
+// WHY this is a held fetch and not a WebSocket. It was one, and it was a real
+// WebSocket on both sides, and it never delivered a command. The evidence is
+// in local/poll-server.js: this Chrome hands an inbound loopback frame to an
+// extension service worker about never, while the identical code path delivers
+// inbound frames from the wss:// relay without trouble. A fetch is the one thing
+// Chrome will start a service worker for. So the poll is the transport, the
+// wake-up and the keepalive at once: while the poll hangs the worker stays
+// alive, and when the answer arrives the worker is running to receive it.
 //
-// WHY one debugger attach per tab, held open. Attaching per message would put a
+// WHY one command at a time. Two browser actions racing over one tab leave the
+// page in neither of the two states anybody asked for. Commands run in the order
+// they were queued and the poll keeps running meanwhile, so a slow command
+// costs the next one its place in line and nothing else.
+//
+// WHY the debugger attach is held per tab. Attaching per message would put a
 // hundred milliseconds on every CDP call; holding it makes the second call as
 // cheap as the twentieth. The shared-session machinery already heals the two
 // ways this goes stale — a user opening DevTools, a tab closing — and the
@@ -25,21 +34,55 @@
 //
 // WHAT IT DELIBERATELY DOES NOT DO. No CDP events ride back: nothing on the
 // local side subscribes to any, so forwarding them would be latency for nobody.
-// No auth beyond loopback: the debugging port this replaces never had any, and
-// the manifest already scopes outbound sockets to 127.0.0.1.
+// No auth beyond loopback: the debugging port this replaces never had any.
 
 import { log } from '../lib/log.js';
+import { fetchJson } from './tab-content.js';
 import { withDebugger } from './capture.js';
 import { releaseDebuggerSession } from '../lib/debugger-session.js';
 
-const BRIDGE_URL = 'ws://127.0.0.1:9451/bridge';
-const BRIDGE_ALARM = 'opera-bridge-link';
-const BACKOFF_MS = [1000, 2000, 5000, 10000, 30000];
+// WHY the origin is read from the global rather than written in. One machine,
+// one address, no setting to get wrong — and a test process that imports the
+// worker graph must be able to point its poll somewhere that is not the port
+// another test process is already answering, or two files race for the same
+// replies and both go green for the wrong reason.
 
-let socket = null;
-let dialingSince = 0;
-let backoff = 0;
-let retryTimer = null;
+const BRIDGE_ORIGIN = globalThis.OPERA_BRIDGE_ORIGIN || 'http://127.0.0.1:9451';
+const BRIDGE_ALARM = 'opera-bridge-link';
+const BACKOFF_MS = [400, 1000, 3000, 5000, 15000];
+const POLL_HOLD_MS = 20000;
+const REPLY_TIMEOUT_MS = 10000;
+
+let running = false;
+let generation = 0;
+let queue = Promise.resolve();
+
+const stats = { polls: 0, messages: 0, replies: 0, alarms: 0, failures: 0, lastError: null };
+
+// WHY there is a trace. Every symptom of a bridge link is a symptom of something
+// that did not happen, so counters alone kept leaving the same question open:
+// did the command arrive and die quietly, or never arrive at all? A short ring of
+// the last dozen events, readable over the relay with a ping, answers it without
+// a person opening DevTools — which is the only kind of evidence that survives a
+// browser this quiet.
+
+const TRACE_MAX = 12;
+const startedAt = Date.now();
+const trace = [];
+
+function note(event) {
+  trace.push({ at: Date.now(), event });
+  if (trace.length > TRACE_MAX) trace.shift();
+}
+
+export function bridgeLinkState() {
+  return {
+    ...stats,
+    running,
+    trace: trace.map((entry) => ({ ms: entry.at - startedAt, event: entry.event }))
+  };
+}
+
 const debuggerSessions = new Map();
 
 function sessionFor(tabId) {
@@ -51,152 +94,147 @@ function sessionFor(tabId) {
   return session;
 }
 
-function post(message) {
-  try {
-    socket?.send(JSON.stringify(message));
-  } catch (error) {
-    log.debug('BRIDGE_SEND_FAILED', error?.message || String(error));
-  }
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function handleCdp(message) {
-  const { id, tab, method, params } = message ?? {};
-  if (typeof tab !== 'number' || typeof method !== 'string') {
-    post({ id, error: { message: 'bridge: a CDP message needs a numeric tab and a method' } });
-    return;
-  }
-  try {
-    const result = await withDebugger(tab, { debuggerSession: sessionFor(tab) }, (target) =>
-      chrome.debugger.sendCommand(target, method, params ?? {}));
-    post({ id, result: result === undefined ? null : result });
-  } catch (error) {
-    post({ id, error: { message: error?.message || String(error) } });
-  }
+// WHY fetchJson and not a bare fetch. It is the same call the relay road already
+// makes thousands of times a day — same timeout, same no-store, same error
+// shape — so the bridge inherits a request style that is proven on this browser
+// instead of a second one that is not.
+
+async function post(path, body) {
+  return fetchJson(`${BRIDGE_ORIGIN}${path}`, body, REPLY_TIMEOUT_MS);
 }
 
 function publicBridgeTab(tab) {
   return { id: tab.id, url: tab.url ?? '', title: tab.title ?? '' };
 }
 
-async function handleTabs(message) {
-  const { id, tabs } = message ?? {};
-  const op = tabs?.op;
-  try {
+async function runCommand(command) {
+  if (command.bridge === 'ping') return { pong: true };
+
+  if (command.tabs && typeof command.tabs === 'object') {
+    const op = command.tabs.op;
     if (op === 'list') {
       const all = await chrome.tabs.query({});
-      post({ id, result: all.map(publicBridgeTab) });
-    } else if (op === 'open') {
-      const created = await chrome.tabs.create({ url: String(tabs.url || 'about:blank') });
-      post({ id, result: publicBridgeTab(created) });
-    } else if (op === 'close') {
-      await chrome.tabs.remove(Number(tabs.tabId));
-      post({ id, result: { id: Number(tabs.tabId), closed: true } });
-    } else {
-      post({ id, error: { message: `bridge: unknown tabs op ${JSON.stringify(op)}` } });
+      return all.map(publicBridgeTab);
     }
+    if (op === 'open') {
+      const created = await chrome.tabs.create({ url: String(command.tabs.url || 'about:blank') });
+      return publicBridgeTab(created);
+    }
+    if (op === 'close') {
+      await chrome.tabs.remove(Number(command.tabs.tabId));
+      return { id: Number(command.tabs.tabId), closed: true };
+    }
+    throw new Error(`bridge: unknown tabs op ${JSON.stringify(op)}`);
+  }
+
+  if (typeof command.tab !== 'number' || typeof command.method !== 'string') {
+    throw new Error('bridge: a CDP message needs a numeric tab and a method');
+  }
+  const result = await withDebugger(command.tab, { debuggerSession: sessionFor(command.tab) }, (target) =>
+    chrome.debugger.sendCommand(target, command.method, command.params ?? {}));
+  return result === undefined ? null : result;
+}
+
+// WHY the answer is built before it is sent. A command that fails silently is
+// the one thing the local side cannot tell from a command that never arrived,
+// which is how a two-second error turns into a thirty-second mystery. So
+// whatever the command did, something comes back carrying it.
+
+async function handle(command) {
+  if (!command || typeof command !== 'object' || command.id === undefined) return;
+  stats.messages += 1;
+  note(`in ${command.id}`);
+  let answer;
+  try {
+    answer = { result: await runCommand(command) };
   } catch (error) {
-    post({ id, error: { message: error?.message || String(error) } });
+    answer = { error: { message: error?.message || String(error) } };
   }
-}
 
-function route(data) {
-  let message;
   try {
-    message = JSON.parse(String(data));
-  } catch {
-    return;
+    await post('/reply', { id: command.id, ...answer });
+    stats.replies += 1;
+  } catch (error) {
+    stats.lastError = `reply: ${error?.message || error}`;
+    note(`reply lost ${error?.message || error}`);
   }
-  if (message === null || typeof message !== 'object' || message.id === undefined) return;
-  if (message.tabs && typeof message.tabs === 'object') void handleTabs(message);
-  else void handleCdp(message);
 }
 
-function schedule() {
-  if (retryTimer) return;
-  const wait = BACKOFF_MS[Math.min(backoff, BACKOFF_MS.length - 1)];
-  backoff += 1;
-  retryTimer = setTimeout(() => {
-    retryTimer = null;
-    void connect();
-  }, wait);
-  if (retryTimer.unref) retryTimer.unref();
+// WHY the poll loop never gives up. The local server is not always running, and
+// a driver that starts ten minutes later must find a worker already waiting.
+//
+// WHY the retry backs off. With no driver running every attempt is a refused
+// loopback connection: no work, and a red row in the Network panel each time,
+// observed filling up while nothing was wrong. Four hundred milliseconds is the
+// right first try and the wrong forever, so the wait grows to fifteen seconds.
+
+async function poll(mine) {
+  let step = 0;
+  while (running && generation === mine) {
+    try {
+      stats.polls += 1;
+      const command = await post('/poll', {}, POLL_HOLD_MS + 5000);
+      step = 0;
+      if (command && command.id !== undefined) {
+        queue = queue.then(() => handle(command)).catch(() => {});
+      }
+    } catch (error) {
+      stats.failures += 1;
+      stats.lastError = `poll: ${error?.message || error}`;
+      note(`poll failed ${error?.message || error}`);
+      await sleep(BACKOFF_MS[Math.min(step, BACKOFF_MS.length - 1)]);
+      step += 1;
+    }
+  }
 }
 
-async function connect() {
-  if (dialingSince && Date.now() - dialingSince < 15000) return;
-  if (socket && socket.readyState <= WebSocket.OPEN) return;
-  dialingSince = Date.now();
-  try {
-    const ws = await new Promise((resolve, reject) => {
-      let sock;
-      try {
-        sock = new WebSocket(BRIDGE_URL);
-      } catch (error) {
-        reject(error);
-        return;
-      }
-      const silence = () => {
-        sock.onopen = null;
-        sock.onerror = null;
-        sock.onclose = null;
-      };
-      const openTimer = setTimeout(() => {
-        silence();
-        try { sock.close(); } catch {}
-        reject(new Error('bridge unreachable'));
-      }, 5000);
-      sock.onopen = () => {
-        clearTimeout(openTimer);
-        silence();
-        resolve(sock);
-      };
-      sock.onerror = () => {
-        clearTimeout(openTimer);
-        silence();
-        try { sock.close(); } catch {}
-        reject(new Error('bridge unreachable'));
-      };
-    });
-    socket = ws;
-    backoff = 0;
-    log.info('BRIDGE_LINK_UP', 'localhost bridge connected');
-    ws.onmessage = (event) => route(event?.data ?? event);
-    ws.onclose = () => {
-      if (socket === ws) socket = null;
-      log.info('BRIDGE_LINK_DOWN', 'localhost bridge closed, retrying');
-      schedule();
-    };
-    ws.onerror = () => {
-      if (socket === ws) {
-        try { ws.close(); } catch {}
-        socket = null;
-      }
-      schedule();
-    };
-  } catch {
-    log.debug('BRIDGE_DIAL_FAILED', 'localhost bridge unreachable, backing off');
-    schedule();
-  } finally {
-    dialingSince = 0;
-  }
+export function ensureBridgeLink() {
+  if (running) return;
+  running = true;
+  generation += 1;
+  note('loop up');
+  void poll(generation);
+}
+
+// WHY a nudge exists. The loop is already running, so the alarm cannot make it
+// take a fresh step; bumping the generation retires the attempt in flight and
+// starts one at the first backoff step. That is how a person touching a tab
+// finds a driver which started while nothing was talking to it.
+
+function nudge() {
+  generation += 1;
+  void poll(generation);
+}
+
+export function stopBridgeLink() {
+  running = false;
+  generation += 1;
+  note('loop down');
 }
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create(BRIDGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
-  void connect();
+  ensureBridgeLink();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create(BRIDGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
-  void connect();
+  ensureBridgeLink();
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm?.name === BRIDGE_ALARM) void connect();
+  if (alarm?.name !== BRIDGE_ALARM) return;
+  stats.alarms += 1;
+  if (running) nudge();
+  else ensureBridgeLink();
 });
 
 chrome.tabs.onActivated.addListener(() => {
-  void connect();
+  if (running) nudge();
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
@@ -206,4 +244,4 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 chrome.alarms.create(BRIDGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
-void connect();
+ensureBridgeLink();
