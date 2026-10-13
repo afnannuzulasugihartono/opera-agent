@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
 import { createSessionStore } from '../sessions.js';
 import { listPageWebSockets, openTab, closeTab } from '../transport.js';
-import { bridgePort, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
+import { bridgeAddress, bridgePort, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
 import { startStdio } from '../mcp-server.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -111,6 +111,14 @@ const driver = {
     return (await attach()).capture();
   }
 };
+
+// WHY the bridge listens before the first tool call. A lazy server makes the
+// first command pay the whole link wait, and leaves the extension polling a
+// dead port until then. Listening here links the worker while the client is
+// still shaking hands. A failure is swallowed on purpose: the port may belong
+// to another session, and every tool call retries with a named error anyway.
+
+if (BRIDGED) await bridgeAddress().catch(() => {});
 
 startStdio({
   context: {

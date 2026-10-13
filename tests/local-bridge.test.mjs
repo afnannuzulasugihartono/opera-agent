@@ -12,6 +12,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
 
 import {
   bridgeAddress,
@@ -224,4 +225,26 @@ test('teardown settles the pending and drops the server', async () => {
 
   await assert.rejects(() => hanging, /bridge closed|not connected/);
   cdp.close();
+});
+
+// WHY a taken port is named and never poisons. Two sessions on one machine
+// fight over the same loopback port, and the loser used to fail with a bare
+// system error while keeping the dead server — so freeing the port healed
+// nothing. The name tells the loser what happened; forgetting the dead server
+// lets the next try listen.
+
+test('a port owned by another driver is named, and freeing it heals the next try', async () => {
+  const squatter = createServer((req, res) => res.end());
+  await new Promise((resolve) => squatter.listen(0, '127.0.0.1', resolve));
+  const taken = squatter.address().port;
+  process.env.OPERA_BRIDGE_PORT = String(taken);
+  try {
+    await assert.rejects(() => bridgeAddress(), /already owned by another driver/);
+  } finally {
+    await new Promise((resolve) => squatter.close(resolve));
+    process.env.OPERA_BRIDGE_PORT = '0';
+  }
+  const { port } = await bridgeAddress();
+  assert.ok(port > 0, 'the next try listened instead of reusing the dead server');
+  await closeBridge();
 });

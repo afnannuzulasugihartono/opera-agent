@@ -47,8 +47,14 @@ const routers = new Map();
 
 async function ensureServer() {
   if (!server) {
-    server = createPollBridge({ port: bridgePort() });
-    await server.listen();
+    const fresh = createPollBridge({ port: bridgePort() });
+    try {
+      await fresh.listen();
+    } catch (error) {
+      if (error?.code === 'EADDRINUSE') throw new Error(`bridge: port ${bridgePort()} is already owned by another driver`);
+      throw error;
+    }
+    server = fresh;
   }
   return server;
 }
