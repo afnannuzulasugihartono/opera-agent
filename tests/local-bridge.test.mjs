@@ -188,18 +188,13 @@ test('a command survives a worker that went away mid-call', async () => {
   await closeBridge();
 });
 
-test('a worker that answers nothing is named, not waited out silently', async () => {
-  const { port } = await bridgeAddress();
-  const worker = await scriptedWorker(port, () => [], { answerProof: false, deaf: true });
-  const deadline = Date.now() + 3000;
-  while (!(await waitForBridgeLink({ timeoutMs: 100 })) && Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 50));
-  }
+test('a worker that polls but answers nothing fails on the proof, not on the command', async () => {
+  const worker = await startWorker(() => [], { answerProof: false });
 
   const started = Date.now();
-  await assert.rejects(() => listBridgeTargets({ timeoutMs: 2000 }), /no answer for tabs.list/);
+  await assert.rejects(() => listBridgeTargets({ timeoutMs: 30000 }), /liveness proof/);
   const waited = Date.now() - started;
-  assert.ok(waited < 6000, `the failure was named in ${waited} ms`);
+  assert.ok(waited < 12000, `the proof named it in ${waited} ms, not the 30000 ms command timeout`);
 
   await worker.stop();
   await closeBridge();

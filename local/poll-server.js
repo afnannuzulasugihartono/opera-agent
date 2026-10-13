@@ -46,14 +46,20 @@ export const LINK_ERROR = 'bridge: extension is not connected (start the local d
 
 export const POLL_HOLD_MS = 20000;
 export const POLL_STALE_MS = 45000;
+const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk) => {
+    const onData = (chunk) => {
       body += chunk;
-      if (body.length > 4 * 1024 * 1024) reject(new Error('poll-server: reply body is absurd'));
-    });
+      if (body.length > MAX_BODY_BYTES) {
+        req.off('data', onData);
+        req.destroy();
+        reject(new Error('reply body is absurd'));
+      }
+    };
+    req.on('data', onData);
     req.on('end', () => resolve(body));
     req.on('error', reject);
   });
@@ -153,11 +159,21 @@ export function createPollBridge({ port = 9451, host = '127.0.0.1', log = () => 
     },
     forget(id) {
       waiting.delete(String(id));
+      const at = queued.findIndex((command) => String(command?.id) === String(id));
+      if (at >= 0) queued.splice(at, 1);
     },
     async waitForLink({ timeoutMs = 10000, intervalMs = 50 } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
         if (live()) return true;
+        if (Date.now() >= deadline) return false;
+        await new Promise((r) => setTimeout(r, intervalMs));
+      }
+    },
+    async waitForFreshPoll({ after, timeoutMs = 3000, intervalMs = 25 } = {}) {
+      const deadline = Date.now() + timeoutMs;
+      for (;;) {
+        if (polls > after) return true;
         if (Date.now() >= deadline) return false;
         await new Promise((r) => setTimeout(r, intervalMs));
       }

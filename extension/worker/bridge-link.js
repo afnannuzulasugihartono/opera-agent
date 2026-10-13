@@ -56,6 +56,8 @@ const REPLY_TIMEOUT_MS = 10000;
 let running = false;
 let generation = 0;
 let queue = Promise.resolve();
+let inFlight = null;
+let lastPollFailed = false;
 
 const stats = { polls: 0, messages: 0, replies: 0, alarms: 0, failures: 0, lastError: null };
 
@@ -109,8 +111,8 @@ function sleep(ms) {
 // server that nobody would ever read. Caught by review, not by a test that only
 // ever sent commands.
 
-async function post(path, body, timeoutMs = REPLY_TIMEOUT_MS) {
-  return fetchJson(`${BRIDGE_ORIGIN}${path}`, body, timeoutMs);
+async function post(path, body, timeoutMs = REPLY_TIMEOUT_MS, signal = undefined) {
+  return fetchJson(`${BRIDGE_ORIGIN}${path}`, body, timeoutMs, signal);
 }
 
 // WHY this is a function. The invariant that matters is that our own timeout
@@ -186,22 +188,35 @@ async function handle(command) {
 // observed filling up while nothing was wrong. Four hundred milliseconds is the
 // right first try and the wrong forever, so the wait grows to fifteen seconds.
 
+// WHY the attempt is abortable. Bumping the generation on its own retires the
+// loop but not the request inside it, so every tab switch left another poll
+// hanging on the same server and they took turns stealing commands from each
+// other — one command delivered to whichever waiter the queue happened to meet.
+// The controller is what makes retirement real.
+
 async function poll(mine) {
   let step = 0;
   while (running && generation === mine) {
+    const attempt = new AbortController();
+    inFlight = attempt;
     try {
       stats.polls += 1;
-      const command = await post('/poll', {}, pollTimeoutMs(POLL_HOLD_MS));
+      const command = await post('/poll', {}, pollTimeoutMs(POLL_HOLD_MS), attempt.signal);
       step = 0;
+      lastPollFailed = false;
       if (command && command.id !== undefined) {
         queue = queue.then(() => handle(command)).catch(() => {});
       }
     } catch (error) {
+      if (attempt.signal.aborted) continue;
       stats.failures += 1;
+      lastPollFailed = true;
       stats.lastError = `poll: ${error?.message || error}`;
       note(`poll failed ${error?.message || error}`);
       await sleep(BACKOFF_MS[Math.min(step, BACKOFF_MS.length - 1)]);
       step += 1;
+    } finally {
+      if (inFlight === attempt) inFlight = null;
     }
   }
 }
@@ -214,19 +229,24 @@ export function ensureBridgeLink() {
   void poll(generation);
 }
 
-// WHY a nudge exists. The loop is already running, so the alarm cannot make it
-// take a fresh step; bumping the generation retires the attempt in flight and
-// starts one at the first backoff step. That is how a person touching a tab
-// finds a driver which started while nothing was talking to it.
+// WHY a nudge only fires when a poll has just failed. The loop is already
+// running, so the alarm cannot make it take a fresh step; bumping the generation
+// retires the attempt in flight and starts one at the first backoff step. That is
+// how a person touching a tab finds a driver which started while nothing was
+// talking to it — and doing it to a healthy held poll would only tear down a
+// request that was working.
 
 function nudge() {
+  if (!running || !lastPollFailed) return;
   generation += 1;
+  inFlight?.abort();
   void poll(generation);
 }
 
 export function stopBridgeLink() {
   running = false;
   generation += 1;
+  inFlight?.abort();
   note('loop down');
 }
 

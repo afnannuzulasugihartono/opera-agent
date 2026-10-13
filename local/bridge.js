@@ -34,6 +34,7 @@ import { createPollBridge, LINK_ERROR } from './poll-server.js';
 const DEFAULT_BRIDGE_PORT = 9451;
 const REPLY_TIMEOUT_MS = 30000;
 const PROOF_TIMEOUT_MS = 1500;
+const PROOF_WAIT_MS = 4000;
 const NOT_LINKED = LINK_ERROR;
 
 export function bridgePort() {
@@ -74,20 +75,33 @@ function roundTrip(srv, message, timeoutMs) {
   });
 }
 
-async function attempt(message, timeoutMs, retried) {
-  const srv = await ensureServer();
-  if (!srv.linked()) {
-    if (!(await srv.waitForLink({ timeoutMs: retried ? 30000 : 12000 }))) throw new Error(NOT_LINKED);
+// WHY the proof gets two goes and no more. A worker that has just woken answers
+// the first ping while it is still finding its feet, so one try is a race and
+// thirty is a lie. Two tries with a wait for a fresh poll between them is the
+// difference between a worker that needed a moment and a worker that is gone,
+// and the difference is about seven seconds rather than thirty.
+
+async function prove(srv) {
+  for (let try_ = 0; try_ < 2; try_++) {
+    const seen = srv.polls();
+    const pong = await roundTrip(srv, { bridge: 'ping' }, PROOF_TIMEOUT_MS).catch(() => null);
+    if (pong?.pong === true) return true;
+    await srv.waitForFreshPoll({ after: seen, timeoutMs: try_ === 0 ? PROOF_WAIT_MS : 0 });
   }
-  if (!retried) {
-    const proof = await roundTrip(srv, { bridge: 'ping' }, PROOF_TIMEOUT_MS).catch(() => null);
-    if (proof?.pong !== true) return attempt(message, timeoutMs, true);
+  return false;
+}
+
+async function attempt(message, timeoutMs) {
+  const srv = await ensureServer();
+  if (!srv.linked() && !(await srv.waitForLink({ timeoutMs: 12000 }))) throw new Error(NOT_LINKED);
+  if (!(await prove(srv))) {
+    throw new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
   }
   return roundTrip(srv, message, timeoutMs);
 }
 
 function request(message, { timeoutMs = REPLY_TIMEOUT_MS } = {}) {
-  return attempt(message, timeoutMs, false);
+  return attempt(message, timeoutMs);
 }
 
 export async function bridgeAddress() {

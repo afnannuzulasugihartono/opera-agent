@@ -96,6 +96,50 @@ test('a GET is refused: this conversation speaks POST or nothing', async () => {
   await bridge.close();
 });
 
+test('forgetting an id drops the command too, so no ghost runs after a timeout', async () => {
+  const bridge = createPollBridge({ port: 0 });
+  await bridge.listen();
+  const { port } = bridge.address();
+
+  bridge.settleWhen('7', () => {});
+  bridge.enqueue({ id: 7, tabs: { op: 'open', url: 'https://ghost.test/' } });
+  bridge.forget(7);
+
+  const answer = await poll(port);
+  assert.equal(answer.status, 204, 'the abandoned command was never delivered');
+  await bridge.close();
+});
+
+test('an absurd reply body is refused instead of accumulating without bound', async () => {
+  const bridge = createPollBridge({ port: 0 });
+  await bridge.listen();
+  const { port } = bridge.address();
+
+  const answer = await fetch(`http://127.0.0.1:${port}/reply`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: 'x'.repeat(5 * 1024 * 1024)
+  }).then((response) => response.status).catch(() => 'refused');
+
+  assert.ok(answer === 'refused' || answer === 400, `a five-megabyte reply was ${answer}`);
+  assert.equal(bridge.linked(), false, 'the server is still standing');
+  await bridge.close();
+});
+
+test('waiting for a fresh poll distinguishes a working worker from an existing one', async () => {
+  const bridge = createPollBridge({ port: 0 });
+  await bridge.listen();
+  const { port } = bridge.address();
+
+  const before = bridge.polls();
+  assert.equal(await bridge.waitForFreshPoll({ after: before, timeoutMs: 120 }), false, 'nobody has polled');
+
+  void poll(port).catch(() => {});
+  assert.equal(await bridge.waitForFreshPoll({ after: before, timeoutMs: 2000 }), true);
+  assert.ok(bridge.polls() > before, 'the count moved');
+  await bridge.close();
+});
+
 test('closing settles what is still waiting, which is the only humane way to stop', async () => {
   const bridge = createPollBridge({ port: 0 });
   await bridge.listen();
