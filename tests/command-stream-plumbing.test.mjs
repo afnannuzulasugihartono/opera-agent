@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-11 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: command-stream-plumbing — the device side of the streaming channel must not become a way to stall or flood.
 // @state: 6 locks; bridge validation, the envelope cap, and the device fire-and-forget rule.
 // @dependencies: node:test, strict, node:fs, node:module, node:vm.
@@ -290,6 +290,10 @@ test('a fresh socket drains the backlog on arrival, so work queued while away st
 // The keepalive is what keeps the device's worker alive, and an interval that
 // outlives its socket is a leak that grows with every reconnect and never shows
 // up in a log. Closing must clear it.
+//
+// The handshake carries two deadlines rather than one: arrival answers the first,
+// and verification is bounded by the second. Both must be answered on a socket
+// that became ready, or a live device leaks a timer per reconnect the same way.
 
 test('closing the socket stops the keepalive, so a gone device leaks no timer', async () => {
   const h = harness();
@@ -297,13 +301,16 @@ test('closing the socket stops the keepalive, so a gone device leaks no timer', 
 
   const keepalive = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms === 20000);
   assert.ok(keepalive, 'a handshaken socket runs no keepalive at all');
-  assert.equal(h.timers.timeouts.length, 1, 'a socket with no handshake deadline can hold a half-open device forever');
+  assert.equal(h.timers.timeouts.length, 2, 'the handshake ran without both of its deadlines');
+  for (const { id } of h.timers.timeouts) {
+    assert.ok(h.timers.cleared.includes(id), 'a ready socket still holds a handshake deadline');
+  }
 
   socket.onclose({ code: 1006, reason: 'worker stopped' });
 
   assert.ok(!h.timers.intervals.has(keepalive[0]), 'the keepalive survived the socket it belonged to');
-  assert.equal(h.timers.cleared.length, 3,
-    'the handshake timer and the poll must be cleared too, or they fire on a dead socket');
+  assert.equal(h.timers.cleared.length, 4,
+    'both handshake deadlines, the keepalive and the poll must be cleared too, or they fire on a dead socket');
 });
 
 // WHY the worker is kept alive by a promise the test can see. Without an

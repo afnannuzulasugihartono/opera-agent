@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-11 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: bridge-socket — one persistent socket per device: commands are pushed, completions ride back on it.
 // @state: 8 locks; upgrade, handshake, push-on-insert, and completions riding back the same socket.
 // @dependencies: ./index.ts helpers via injection.
@@ -20,7 +20,16 @@
 // handshake verifies the same token hash and the same device name the pull path
 // already verifies, and a socket that fails the handshake is closed unread.
 
+// WHY the handshake timer is answered by arrival and the verify carries its own
+// budget. The timer used to guard state.ready, but verification awaits an RPC
+// plus a direct database connect that allows ten seconds on its own, so a cold
+// isolate answered valid devices with "Handshake timeout", closed them with
+// 4002, and then kept verifying into the closed socket on every reconnect.
+// Arrival answers the first question; thirty seconds bounds the second, still
+// far under the platform wall clock.
+
 const HANDSHAKE_TIMEOUT_MS = 8000;
+const VERIFY_TIMEOUT_MS = 30000;
 
 // WHY the cap is a megabyte. Results up to MAX_RESULT_BYTES (512 KiB, owned by
 // extension/lib/serialize.js) are legal product output, and a completion carries
@@ -209,7 +218,7 @@ export function frameForCommand(command, serverTime) {
 // here is decided one layer up, where an unanswered application ping closes the
 // socket with 4003 — a verdict with a reason, rather than a transport guess.
 
-export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log }) {
+export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log, handshakeTimeoutMs = HANDSHAKE_TIMEOUT_MS, verifyTimeoutMs = VERIFY_TIMEOUT_MS }) {
   const upgrade = isUpgradeRequest(req);
   if (!upgrade) return { upgraded: false, response: null };
 
@@ -227,9 +236,20 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log 
   let handshakeTimer = null;
   let keepaliveTimer = null;
 
-  const teardown = () => {
+  const disarmHandshake = () => {
     if (handshakeTimer) clearTimeout(handshakeTimer);
     handshakeTimer = null;
+  };
+
+  const timeOutHandshake = () => {
+    if (!state.ready) {
+      socket.send(JSON.stringify({ type: "error", error: "Handshake timeout." }));
+      socket.close(4002, "handshake timeout");
+    }
+  };
+
+  const teardown = () => {
+    disarmHandshake();
     if (keepaliveTimer) clearInterval(keepaliveTimer);
     keepaliveTimer = null;
     if (typeof unsubscribe === "function") {
@@ -255,18 +275,22 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log 
     }
 
     if (message.type === "hello") {
+      disarmHandshake();
       const identity = handshakePayload(message);
       if (!identity) {
         socket.send(JSON.stringify({ type: "error", error: "Handshake needs token and deviceName." }));
         socket.close(4001, "unauthorized");
         return;
       }
+      handshakeTimer = setTimeout(timeOutHandshake, verifyTimeoutMs);
       const verified = await verifyDevice(identity);
       if (!verified?.ok) {
+        disarmHandshake();
         socket.send(JSON.stringify({ type: "error", error: "Unauthorized device." }));
         socket.close(4001, "unauthorized");
         return;
       }
+      disarmHandshake();
       state.ready = true;
       state.identity = identity;
       socket.send(JSON.stringify({ type: "ready", serverTime: new Date().toISOString() }));
@@ -305,12 +329,7 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log 
   };
 
   socket.onopen = () => {
-    handshakeTimer = setTimeout(() => {
-      if (!state.ready) {
-        socket.send(JSON.stringify({ type: "error", error: "Handshake timeout." }));
-        socket.close(4002, "handshake timeout");
-      }
-    }, HANDSHAKE_TIMEOUT_MS);
+    handshakeTimer = setTimeout(timeOutHandshake, handshakeTimeoutMs);
   };
 
   socket.onmessage = async (event) => {
