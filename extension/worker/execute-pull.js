@@ -4,6 +4,7 @@
 // @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
 
 import { log } from '../lib/log.js';
+import { socketUrl } from '../lib/endpoints.js';
 import {
   PRODUCT_VERSION,
   PROTOCOL_VERSION,
@@ -158,15 +159,6 @@ async function flushPendingCompletion(cfg) {
 // between finishing a command and reporting it would otherwise lose the result
 // silently, and the caller would wait out its timeout for a device that had
 // already finished. Reconnecting is also the moment that owed completion is resent.
-
-function socketUrl(bridgeUrl) {
-  const raw = String(bridgeUrl || '').trim();
-  if (!raw) return '';
-  if (raw.startsWith('wss://')) return raw;
-  if (raw.startsWith('https://')) return `wss://${raw.slice('https://'.length)}`;
-  if (raw.startsWith('http://')) return `ws://${raw.slice('http://'.length)}`;
-  return raw;
-}
 
 // WHY there is one way to start, and no generation counter. The old loop was
 // generation guarded so a restart could not fight an in-flight poll, and that

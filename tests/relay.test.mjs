@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-12 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: relay — the local stdio server that fronts the remote edge function.
 // @state: four locks; id fidelity, notification silence, tool passthrough, serialization.
 // @dependencies: node:test, assert, ../local/relay.js.
@@ -6,7 +6,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createRelay, createSocketTransport } from '../local/relay.js';
+import { createRelay, createSocketTransport, EDGE_REGION as RELAY_EDGE_REGION } from '../local/relay.js';
+import { EDGE_REGION as ENDPOINT_EDGE_REGION, socketUrl } from '../extension/lib/endpoints.js';
 
 // The edge function is the system under relay: a stream of SSE frames, and a reply
 // that does not always carry the id of the request that asked for it. These tests
@@ -15,12 +16,15 @@ import { createRelay, createSocketTransport } from '../local/relay.js';
 
 function fakeServer(handler) {
   const calls = [];
+  const seen = [];
   return {
     calls,
+    seen,
     url: 'https://relay.test/mcp',
     fetch: async (_url, options) => {
       const body = JSON.parse(options.body);
       calls.push(body);
+      seen.push({ url: _url, headers: options.headers });
       const frames = handler(body, calls.length);
       const encoded = new TextEncoder().encode(frames.map((f) => `event: message\ndata: ${JSON.stringify(f)}\n\n`).join(''));
       let sent = false;
@@ -162,10 +166,13 @@ test('resource and prompt listings are answered, not left to time out', async ()
 function fakeSocketServer({ authResult = { ok: true, direct: true }, callResult = { ok: true } } = {}) {
   const listeners = { open: [], message: [], close: [], error: [] };
   const sent = [];
+  const urls = [];
   const server = {
     sent,
+    urls,
     WebSocket: class {
-      constructor() {
+      constructor(url) {
+        urls.push(url);
         queueMicrotask(() => listeners.open.forEach((fn) => fn()));
       }
       addEventListener(type, fn) {
@@ -238,4 +245,49 @@ test('a live socket carries the call and HTTPS stays idle', async () => {
   const reply = await relay.handle({ jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
   assert.equal(reply?.result?.via, 'socket');
   assert.equal(fake.calls.length, 0, 'HTTPS was touched while the socket was up');
+});
+
+// WHY the region is pinned on both roads. Edge functions run closest to the
+// requester, which from here is Tokyo while the database sits in Singapore,
+// so each database crossing paid Tokyo-Singapore instead of rack-local. HTTPS
+// carries the pin as a header; the socket carries it as a query parameter,
+// because a WebSocket client cannot set headers. Both pins must name the same
+// region the extension pins, or the two runtimes split across regions.
+
+test('HTTPS calls pin the edge region the database lives in', async () => {
+  const fake = fakeServer(() => [{ jsonrpc: '2.0', result: { ok: true } }]);
+  const relay = createRelay({
+    url: fake.url,
+    forwardHeaders: { authorization: 'Bearer test' },
+    timeoutMs: 2000,
+    fetchImpl: fake.fetch,
+    socketTransport: { ready: false, connect: async () => false, call: async () => { throw new Error('socket is not connected'); }, close: () => {} }
+  });
+
+  await relay.handle({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
+  assert.equal(fake.seen.length, 1);
+  assert.equal(fake.seen[0].headers['x-region'], 'ap-southeast-1');
+});
+
+test('the socket URL pins the region as a query parameter', async () => {
+  const good = fakeSocketServer();
+  const up = createSocketTransport({ url: 'https://x/mcp', token: 't', device: 'd', provider: 'p', timeoutMs: 1000, WebSocketImpl: good.WebSocket });
+  assert.equal(await up.connect(), true);
+  assert.equal(good.urls.length, 1);
+  assert.equal(good.urls[0], 'wss://x/mcp?forceFunctionRegion=ap-southeast-1');
+  up.close();
+});
+
+test('both runtimes pin the same region, or calls split across regions', () => {
+  assert.equal(RELAY_EDGE_REGION, 'ap-southeast-1');
+  assert.equal(ENDPOINT_EDGE_REGION, RELAY_EDGE_REGION);
+});
+
+test('a socket URL converts every scheme and keeps an existing query string', () => {
+  assert.equal(socketUrl('https://h.test/functions/v1/opera-agent-bridge'), 'wss://h.test/functions/v1/opera-agent-bridge?forceFunctionRegion=ap-southeast-1');
+  assert.equal(socketUrl('http://127.0.0.1:54321/functions/v1/opera-agent-bridge'), 'ws://127.0.0.1:54321/functions/v1/opera-agent-bridge?forceFunctionRegion=ap-southeast-1');
+  assert.equal(socketUrl('wss://h.test/bridge'), 'wss://h.test/bridge?forceFunctionRegion=ap-southeast-1');
+  assert.equal(socketUrl('wss://h.test/bridge?a=b'), 'wss://h.test/bridge?a=b&forceFunctionRegion=ap-southeast-1');
+  assert.equal(socketUrl(''), '');
+  assert.equal(socketUrl(null), '');
 });

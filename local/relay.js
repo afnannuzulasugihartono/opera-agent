@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-12 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: opera-relay — a local stdio MCP server that fronts the remote Opera Agent edge function.
 // @state: connection reuse, event-scoped resolve, prewarm, and honest passthrough.
 // @dependencies: none.
@@ -59,10 +59,20 @@ const PROTOCOL_VERSION = '2024-11-05';
 const SUPPORTED_PROTOCOL_VERSIONS = Object.freeze(['2025-06-18', '2025-03-26', '2024-11-05', '2024-10-07']);
 const WARM_AFTER_IDLE_MS = 45000;
 
+// WHY every call is pinned to Singapore. Edge functions run closest to the
+// requester, and from here that is Tokyo while the database sits in Singapore,
+// so each database crossing paid Tokyo-Singapore instead of rack-local. The pin
+// rides a header on HTTPS and a query parameter on the socket, where no header
+// can be set. It must stay equal to EDGE_REGION in extension/lib/endpoints.js,
+// which a test asserts because the two runtimes cannot import each other.
+
+export const EDGE_REGION = 'ap-southeast-1';
+
 function headersFor(extra = {}) {
   const headers = {
     'content-type': 'application/json',
     accept: 'application/json, text/event-stream',
+    'x-region': EDGE_REGION,
     ...extra
   };
   for (const [key, value] of Object.entries(extra)) {
@@ -153,7 +163,9 @@ const WS_PING_IDLE_MS = 20000;
 const WS_PONG_TIMEOUT_MS = 10000;
 
 export function createSocketTransport({ url, token, device, provider, timeoutMs, log = () => {}, WebSocketImpl = globalThis.WebSocket } = {}) {
-  const wsUrl = String(url).replace(/^http/, "ws");
+  const converted = String(url).replace(/^http/, "ws");
+  const separator = converted.includes('?') ? '&' : '?';
+  const wsUrl = `${converted}${separator}forceFunctionRegion=${EDGE_REGION}`;
   let socket = null;
   let ready = false;
   let failures = 0;
