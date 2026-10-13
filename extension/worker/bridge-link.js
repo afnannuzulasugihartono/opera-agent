@@ -72,10 +72,26 @@ function touch() {
 }
 const stats = { dials: 0, links: 0, messages: 0, replies: 0, alarms: 0, pings: 0, recycles: 0, lastError: null };
 
+// WHY there is a trace. Every symptom of this link is a symptom of something
+// that did not happen, so counters alone kept leaving the same question open:
+// did the frame arrive and die quietly, or never arrive at all? A short ring of
+// the last dozen events, readable over the relay with a ping, answers it
+// without a person opening DevTools — which is the only kind of evidence that
+// survives a browser this quiet.
+
+const TRACE_MAX = 12;
+const startedAt = Date.now();
+const trace = [];
+function note(event) {
+  trace.push({ at: Date.now(), event });
+  if (trace.length > TRACE_MAX) trace.shift();
+}
+
 export function bridgeLinkState() {
   return {
     ...stats,
-    socket: socket ? ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][socket.readyState] ?? socket.readyState : 'none'
+    socket: socket ? ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][socket.readyState] ?? socket.readyState : 'none',
+    trace: trace.map((entry) => ({ ms: entry.at - startedAt, event: entry.event }))
   };
 }
 const debuggerSessions = new Map();
@@ -93,9 +109,11 @@ function post(message) {
   try {
     stats.replies += 1;
     touch();
+    note(`out ${message?.id}`);
     socket?.send(JSON.stringify(message));
   } catch (error) {
     stats.lastError = `post: ${error?.message || error}`;
+    note(`send-failed ${error?.message || error}`);
     log.debug('BRIDGE_SEND_FAILED', error?.message || String(error));
   }
 }
@@ -149,6 +167,7 @@ function route(data) {
   }
   if (message === null || typeof message !== 'object' || message.id === undefined) return;
   stats.messages += 1;
+  note(`in ${message.id}`);
   touch();
   if (message.bridge === 'ping') {
     post({ id: message.id, result: { pong: true } });
@@ -221,6 +240,7 @@ async function connect() {
   if (socket && socket.readyState <= WebSocket.OPEN) return;
   dialingSince = Date.now();
   stats.dials += 1;
+  note('dial');
   try {
     const ws = await new Promise((resolve, reject) => {
       let sock;
@@ -258,8 +278,11 @@ async function connect() {
     pingSentAt = 0;
     touch();
     log.info('BRIDGE_LINK_UP', 'localhost bridge connected');
+    note(`link #${stats.links} open`);
     ws.onmessage = (event) => route(event?.data ?? event);
-    ws.onclose = () => {
+    ws.addEventListener('message', () => note('message event'));
+    ws.onclose = (event) => {
+      note(`link closed ${event?.code ?? '?'}`);
       if (socket === ws) socket = null;
       log.info('BRIDGE_LINK_DOWN', 'localhost bridge closed, retrying');
       schedule();
@@ -272,7 +295,8 @@ async function connect() {
       schedule();
     };
     heartbeat();
-  } catch {
+  } catch (error) {
+    note(`dial failed ${error?.message || error}`);
     log.debug('BRIDGE_DIAL_FAILED', 'localhost bridge unreachable, backing off');
     schedule();
   } finally {
