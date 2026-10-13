@@ -28,6 +28,7 @@ import {
   chunkText,
   resolveChord,
   resolveKeyInput,
+  resolveKeyStream,
   resolveModifiers
 } from '../extension/lib/keyboard.js';
 
@@ -174,6 +175,36 @@ test('text is a bounded, chunked, separate path from a key', () => {
 
   assert.equal(resolveKeyInput({ text: 'y'.repeat(MAX_TEXT_CHARS) }).chars, MAX_TEXT_CHARS);
   assert.throws(() => resolveKeyInput({ text: 'y'.repeat(MAX_TEXT_CHARS + 1) }), /at most 20000 characters/);
+});
+
+// A stream is validated event by event with the same rules as lone keys, plus bounds
+// of its own: at most a hundred events, gaps capped so a stream cannot pin the device,
+// and total text within the single-entry budget so bulk typing gains no new channel.
+
+test('a key stream validates every event and carries its own bounds', () => {
+  const events = resolveKeyStream([
+    { key: 'ArrowDown' },
+    { key: 'a', modifiers: ['control'] },
+    { text: 'hi', gapMs: 500 }
+  ]);
+
+  assert.equal(events.length, 3);
+  assert.equal(events[0].kind, 'chord');
+  assert.equal(events[0].gapMs, 0);
+  assert.equal(events[1].modifierNames.join(','), 'control');
+  assert.equal(events[2].kind, 'text');
+  assert.equal(events[2].gapMs, 500);
+
+  assert.throws(() => resolveKeyStream([]), /at least one event/);
+  assert.throws(() => resolveKeyStream(new Array(101).fill({ key: 'a' })), /at most 100 events/);
+  assert.throws(() => resolveKeyStream([{ key: 'a', gapMs: 2001 }]), /between 0 and 2000/);
+  assert.throws(() => resolveKeyStream([{ key: 'a', gapMs: -1 }]), /between 0 and 2000/);
+  assert.throws(() => resolveKeyStream([null]), /must be an object/);
+  assert.throws(() => resolveKeyStream([{ key: 'Nope' }]), /not allowlisted/i);
+  assert.throws(
+    () => resolveKeyStream([{ text: 'x'.repeat(15000) }, { text: 'y'.repeat(6000) }]),
+    /total at most 20000/
+  );
 });
 
 test('chunking never loses or reorders characters', () => {

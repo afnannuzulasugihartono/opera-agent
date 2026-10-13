@@ -44,6 +44,59 @@ export function completionFrame(commandId, ok, result, error) {
   });
 }
 
+// WHY 2048 bytes. Below that the few hundred bytes gzip would save are not
+// worth a second code path per message; above it page JSON shrinks five to
+// fifty times, which on a slow link is the difference between a one-second
+// completion and a two-second one.
+//
+// WHY the first byte is a version rather than a magic string. The bridge
+// distinguishes text from binary by type already; the version only has to
+// survive this format ever changing, and one byte does that.
+
+export const GZIP_FRAME_VERSION = 1;
+const GZIP_THRESHOLD_BYTES = 2048;
+
+async function gzipBytes(text) {
+  const stream = new CompressionStream('gzip');
+  const writer = stream.writable.getWriter();
+  const reader = stream.readable.getReader();
+  const chunks = [];
+  const pump = (async () => {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      chunks.push(value);
+    }
+  })();
+  pump.catch(() => null);
+  await writer.write(new TextEncoder().encode(text));
+  await writer.close();
+  await pump;
+  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
+}
+
+export async function encodeCompletionFrame(commandId, ok, result, error) {
+  const text = completionFrame(commandId, ok, result, error);
+  if (text.length <= GZIP_THRESHOLD_BYTES) return text;
+  if (typeof CompressionStream === 'undefined') return text;
+  try {
+    const gzipped = await gzipBytes(text);
+    const frame = new Uint8Array(gzipped.length + 1);
+    frame[0] = GZIP_FRAME_VERSION;
+    frame.set(gzipped, 1);
+    return frame;
+  } catch {
+    return text;
+  }
+}
+
 export function parseFrame(raw, maxBytes = FRAME_MAX_BYTES) {
   if (typeof raw !== 'string') return { ok: false, error: 'Frame must be text.' };
   if (raw.length > maxBytes) return { ok: false, error: 'Frame too large.' };

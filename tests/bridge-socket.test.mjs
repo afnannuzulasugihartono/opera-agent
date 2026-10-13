@@ -19,6 +19,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   KEEPALIVE_MS,
+  MAX_DECOMPRESSED_BYTES,
   MAX_FRAME_BYTES,
   frameForCommand,
   frameForKeepalive,
@@ -58,8 +59,8 @@ test('a keepalive frame asks for nothing, so a device never waits on it', () => 
   assert.deepEqual(Object.keys(frame).sort(), ['serverTime', 'type']);
 });
 
-test('a device ignores a keepalive rather than treating it as work', () => {
-  const parsed = parseDeviceFrame(frameForKeepalive('2026-10-12T00:00:00.000Z'));
+test('a device ignores a keepalive rather than treating it as work', async () => {
+  const parsed = await parseDeviceFrame(frameForKeepalive('2026-10-12T00:00:00.000Z'));
   assert.equal(parsed.ok, true);
   assert.notEqual(parsed.message.type, 'command');
   assert.notEqual(parsed.message.type, 'complete');
@@ -95,14 +96,14 @@ test('both frame caps fit the largest legal completion with room to spare', () =
     `the device cap (${FRAME_MAX_BYTES}) no longer fits a legal result (${MAX_RESULT_BYTES})`);
 });
 
-test('a completion near the product bound parses instead of being refused', () => {
+test('a completion near the product bound parses instead of being refused', async () => {
   const frame = JSON.stringify({
     type: 'complete',
     commandId: 'cmd-big',
     ok: true,
     result: { blob: 'y'.repeat(400 * 1024) }
   });
-  const parsed = parseDeviceFrame(frame);
+  const parsed = await parseDeviceFrame(frame);
   assert.equal(parsed.ok, true, 'a lawful completion was refused by the transport');
 });
 
@@ -131,24 +132,24 @@ test('a command with no params still carries an object, or the device dereferenc
   assert.equal(frame.command.timeoutMs, 30000);
 });
 
-test('a frame that is not JSON is refused with a reason, not by throwing inside the socket', () => {
-  const parsed = parseDeviceFrame('not json');
+test('a frame that is not JSON is refused with a reason, not by throwing inside the socket', async () => {
+  const parsed = await parseDeviceFrame('not json');
   assert.equal(parsed.ok, false);
   assert.match(parsed.error, /JSON/);
 });
 
-test('an oversized frame is refused before it is parsed, or one message can exhaust memory', () => {
-  const parsed = parseDeviceFrame(`{"type":"x","pad":"${'a'.repeat(500)}"}`, 100);
+test('an oversized frame is refused before it is parsed, or one message can exhaust memory', async () => {
+  const parsed = await parseDeviceFrame(`{"type":"x","pad":"${'a'.repeat(500)}"}`, 100);
   assert.equal(parsed.ok, false);
   assert.match(parsed.error, /large/i);
 });
 
-test('a frame with no type is refused, so an unlabelled message cannot reach a handler', () => {
-  assert.equal(parseDeviceFrame('{"commandId":"x"}').ok, false);
+test('a frame with no type is refused, so an unlabelled message cannot reach a handler', async () => {
+  assert.equal((await parseDeviceFrame('{"commandId":"x"}')).ok, false);
 });
 
-test('a well formed frame is accepted and keeps its type', () => {
-  const parsed = parseDeviceFrame('{"type":"complete","commandId":"c-9","ok":true}');
+test('a well formed frame is accepted and keeps its type', async () => {
+  const parsed = await parseDeviceFrame('{"type":"complete","commandId":"c-9","ok":true}');
   assert.equal(parsed.ok, true);
   assert.equal(parsed.message.type, 'complete');
   assert.equal(parsed.message.commandId, 'c-9');
@@ -159,4 +160,68 @@ test('a handshake needs both a token and a device name, and never accepts a part
   assert.equal(handshakePayload({ token: 'secret' }), null);
   assert.equal(handshakePayload({ deviceName: 'opera' }), null);
   assert.equal(handshakePayload({ token: '   ', deviceName: 'opera' }), null);
+});
+
+// WHY the bridge accepts gzip frames. The device sends completions over 2 KiB
+// as versioned gzip, because page JSON shrinks five to fifty times and the
+// transfer dominates on a slow link. The bridge must read exactly what the
+// device writes — same version byte, same cap relation — or large results die
+// in transit with no error the device can act on.
+
+async function gzipFrame(payload, version = 1) {
+  const text = JSON.stringify(payload);
+  const stream = new CompressionStream('gzip');
+  const writer = stream.writable.getWriter();
+  const reader = stream.readable.getReader();
+  const chunks = [];
+  const pump = (async () => {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      chunks.push(value);
+    }
+  })();
+  await writer.write(new TextEncoder().encode(text));
+  await writer.close();
+  await pump;
+  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const out = new Uint8Array(total + 1);
+  out[0] = version;
+  let offset = 1;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
+}
+
+test('a gzip completion decodes to the message the device sent', async () => {
+  const frame = await gzipFrame({ type: 'complete', commandId: 'c9', ok: true, result: { n: 1 } });
+  const parsed = await parseDeviceFrame(frame);
+
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.message.type, 'complete');
+  assert.equal(parsed.message.commandId, 'c9');
+});
+
+test('a gzip frame with the wrong version is refused, not misparsed', async () => {
+  const frame = await gzipFrame({ type: 'complete', commandId: 'c9', ok: true }, 99);
+  const parsed = await parseDeviceFrame(frame);
+
+  assert.equal(parsed.ok, false);
+});
+
+test('a gzip bomb is refused before it can exhaust memory', async () => {
+  assert.ok(MAX_DECOMPRESSED_BYTES >= MAX_RESULT_BYTES * 2,
+    'the decompressed cap must clear the largest legal result with room');
+  const frame = await gzipFrame({ type: 'complete', commandId: 'c9', ok: true, result: { blob: 'y'.repeat(100) } });
+  const parsed = await parseDeviceFrame(frame, MAX_FRAME_BYTES, 10);
+
+  assert.equal(parsed.ok, false);
+});
+
+test('binary garbage that is not gzip is refused, not thrown', async () => {
+  const parsed = await parseDeviceFrame(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
+
+  assert.equal(parsed.ok, false);
 });

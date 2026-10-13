@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from './browsers.js';
 import { createCdpClient } from './cdp.js';
 import { createPrimitives } from './primitives.js';
-import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTabWebSocket, waitForPage } from './transport.js';
+import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTab, pageWebSocketById, waitForPage } from './transport.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({
@@ -55,6 +55,7 @@ export async function openSession({
   id,
   port = 9333,
   tabUrl = null,
+  targetId = null,
   platform = process.platform,
   exists = existsSync,
   env = process.env,
@@ -67,7 +68,10 @@ export async function openSession({
   let target = null;
 
   if (tabUrl) {
-    target = await openTabWebSocket(port, tabUrl);
+    target = (await openTab(port, tabUrl)).webSocketDebuggerUrl;
+    reused = true;
+  } else if (targetId) {
+    target = (await pageWebSocketById(port, targetId)).url;
     reused = true;
   } else {
     try {
@@ -86,7 +90,10 @@ export async function openSession({
     child = spawnBrowser(entry.binary, args, { detached: false, stdio: 'ignore' });
   }
 
-  if (!target) target = await waitForPage(port, { timeoutMs });
+  if (!target) {
+    const chosen = await pageWebSocketById(port, targetId, { timeoutMs });
+    target = chosen.url;
+  }
   const transport = await connect(target, { timeoutMs });
   const cdp = createCdpClient(transport);
 

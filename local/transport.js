@@ -36,6 +36,48 @@ export async function discoverWebSocket(port, { fetch = globalThis.fetch } = {})
   return url;
 }
 
+// WHY THE TARGET MUST BE NAMED
+//
+// discoverPageWebSocket returns whichever page happens to be first, and a drive
+// that targets "the first page" writes into whatever the person happens to have
+// open. That is how a latency test once left a run of x characters in the title
+// of an unrelated document. A tab is therefore chosen by id, or by asking, never
+// by position.
+
+export async function listPageWebSockets(port, { fetch = globalThis.fetch } = {}) {
+  let list = [];
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+    if (response?.ok) list = await response.json();
+  } catch (cause) {
+    throw new Error(`Browser on port ${port} is not reachable: ${cause.message}`);
+  }
+
+  return (list || [])
+    .filter((entry) => entry.type === 'page' && entry.webSocketDebuggerUrl)
+    .map((entry) => ({
+      id: entry.id,
+      url: entry.url,
+      title: entry.title,
+      webSocketDebuggerUrl: entry.webSocketDebuggerUrl
+    }));
+}
+
+export async function pageWebSocketById(port, targetId, options = {}) {
+  const pages = await listPageWebSockets(port, options);
+  if (!pages.length) throw new Error(`Browser on port ${port} has no page target to drive.`);
+  if (targetId === undefined || targetId === null || targetId === '') {
+    return { url: pages[0].webSocketDebuggerUrl, targetId: pages[0].id, pages };
+  }
+
+  const match = pages.find((page) => page.id === targetId);
+  if (!match) {
+    const known = pages.map((page) => `${page.id} ${page.title ?? ''}`.trim()).join(' | ');
+    throw new Error(`No page target ${targetId}. Open pages: ${known}`);
+  }
+  return { url: match.webSocketDebuggerUrl, targetId: match.id, pages };
+}
+
 export async function waitForBrowser(port, {
   timeoutMs = 10000,
   intervalMs = 100,
@@ -120,7 +162,7 @@ export async function discoverPageWebSocket(port, { fetch = globalThis.fetch } =
 // looking at. A new target leaves that page alone. The endpoint takes PUT and
 // refuses GET, so a driver built on GET reports every open as a failure.
 
-export async function openTabWebSocket(port, url, { fetch = globalThis.fetch } = {}) {
+export async function openTab(port, url, { fetch = globalThis.fetch } = {}) {
   let created;
   try {
     created = await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' });
@@ -132,10 +174,23 @@ export async function openTabWebSocket(port, url, { fetch = globalThis.fetch } =
   }
 
   const page = await created.json();
-  if (!page?.webSocketDebuggerUrl) {
-    throw new Error(`Browser on port ${port} opened a tab without a websocket url.`);
+  if (!page?.webSocketDebuggerUrl || !page?.id) {
+    throw new Error(`Browser on port ${port} opened a tab without an addressable target.`);
   }
-  return page.webSocketDebuggerUrl;
+  return { id: page.id, webSocketDebuggerUrl: page.webSocketDebuggerUrl };
+}
+
+export async function closeTab(port, targetId, { fetch = globalThis.fetch } = {}) {
+  let closed;
+  try {
+    closed = await fetch(`http://127.0.0.1:${port}/json/close/${encodeURIComponent(targetId)}`, { method: 'PUT' });
+  } catch (cause) {
+    throw new Error(`Browser on port ${port} is not reachable: ${cause.message}`);
+  }
+  if (!closed?.ok) {
+    throw new Error(`Browser on port ${port} would not close tab ${targetId}: HTTP ${closed?.status ?? 'none'}.`);
+  }
+  return { id: targetId, closed: true };
 }
 
 export async function waitForPage(port, options = {}) {

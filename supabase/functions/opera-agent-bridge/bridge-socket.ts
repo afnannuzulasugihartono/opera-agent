@@ -31,6 +31,93 @@ const HANDSHAKE_TIMEOUT_MS = 8000;
 // asserts the relation still holds.
 
 export const MAX_FRAME_BYTES = 1024 * 1024;
+
+// WHY the decompressed cap is separate from the frame cap. A 40-byte gzip bomb
+// expands to gigabytes, so bounding the wire bytes bounds nothing. Eight
+// megabytes clears the largest legal completion sixteen times over and still
+// fits comfortably in an isolate's memory next to everything else it holds.
+
+export const MAX_DECOMPRESSED_BYTES = 8 * 1024 * 1024;
+
+const GZIP_FRAME_VERSION = 1;
+
+// WHY the pump carries a no-op catch the moment it starts. On garbage input the
+// reader rejects, and if the writer already threw first nothing awaits the pump
+// anymore — leaving that rejection unhandled, which outlives the test and fails
+// the file. The catch marks it handled; the await below still surfaces whatever
+// the pump decided whenever it is reached.
+
+async function gunzipCapped(bytes, maxBytes) {
+  const stream = new DecompressionStream('gzip');
+  const writer = stream.writable.getWriter();
+  const reader = stream.readable.getReader();
+  const chunks = [];
+  let total = 0;
+  const pump = (async () => {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return true;
+      total += value.length;
+      if (total > maxBytes) return false;
+      chunks.push(value);
+    }
+  })();
+  pump.catch(() => false);
+  await writer.write(bytes);
+  await writer.close();
+  if (!await pump) return null;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return new TextDecoder().decode(out);
+}
+
+async function bytesOf(raw) {
+  if (raw instanceof Uint8Array) return raw;
+  if (raw instanceof ArrayBuffer) return new Uint8Array(raw);
+  if (typeof Blob !== 'undefined' && raw instanceof Blob) {
+    if (raw.size > MAX_FRAME_BYTES + 1) return null;
+    return new Uint8Array(await raw.arrayBuffer());
+  }
+  return null;
+}
+
+export async function parseDeviceFrame(raw, maxBytes = MAX_FRAME_BYTES, maxDecompressed = MAX_DECOMPRESSED_BYTES) {
+  if (typeof raw === 'string') {
+    if (raw.length > maxBytes) return { ok: false, error: 'Frame too large.' };
+    return parseTextFrame(raw);
+  }
+
+  const bytes = await bytesOf(raw);
+  if (!bytes) return { ok: false, error: 'Frame must be text or binary.' };
+  if (bytes.length > maxBytes + 1) return { ok: false, error: 'Frame too large.' };
+  if (bytes.length < 2 || bytes[0] !== GZIP_FRAME_VERSION) {
+    return { ok: false, error: 'Unknown binary frame.' };
+  }
+
+  let text;
+  try {
+    text = await gunzipCapped(bytes.slice(1), maxDecompressed);
+  } catch {
+    return { ok: false, error: 'Frame is not valid gzip.' };
+  }
+  if (text === null) return { ok: false, error: 'Frame too large.' };
+  return parseTextFrame(text);
+}
+
+function parseTextFrame(raw) {
+  let message;
+  try {
+    message = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: 'Frame must be JSON.' };
+  }
+  if (!message || typeof message.type !== 'string') return { ok: false, error: 'Frame needs a type.' };
+  return { ok: true, message };
+}
 export const KEEPALIVE_MS = 20000;
 
 // WHY a keepalive exists, and why it is not polling. An MV3 service worker with a
@@ -103,19 +190,6 @@ export function frameForCommand(command, serverTime) {
     },
     serverTime
   });
-}
-
-export function parseDeviceFrame(raw, maxBytes = MAX_FRAME_BYTES) {
-  if (typeof raw !== "string") return { ok: false, error: "Frame must be text." };
-  if (raw.length > maxBytes) return { ok: false, error: "Frame too large." };
-  let message;
-  try {
-    message = JSON.parse(raw);
-  } catch {
-    return { ok: false, error: "Frame must be JSON." };
-  }
-  if (!message || typeof message.type !== "string") return { ok: false, error: "Frame needs a type." };
-  return { ok: true, message };
 }
 
 // WHY the runtime is told to wait. After the upgrade response is returned, the
@@ -240,7 +314,7 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log 
   };
 
   socket.onmessage = async (event) => {
-    const parsed = parseDeviceFrame(event.data);
+    const parsed = await parseDeviceFrame(event.data);
     if (!parsed.ok) {
       socket.send(JSON.stringify({ type: "error", error: parsed.error }));
       return;

@@ -34,6 +34,36 @@ Node 20 or newer, and a Chromium browser already running with a debugging port:
 "C:\Program Files\Google Chrome\Application\chrome.exe" --remote-debugging-port=9333
 ```
 
+## Persistent setup (Windows)
+
+Opening Chrome normally first makes a second launch join the running process and
+silently drop the debugging port, and an unpacked extension loaded by hand
+vanishes with a temporary profile. The launcher below fixes both: a dedicated
+persistent profile, the debugging port, and the extension on every start.
+
+```bat
+local\bin\opera-chrome.cmd
+```
+
+Sign in to Google once inside it; the profile at
+`%LOCALAPPDATA%\OperaAgent\ChromeProfile` keeps the login, and
+`--load-extension` keeps `extension/` loaded no matter how often Chrome closes.
+Browse in this window whenever the agent is driving: a normally-opened Chrome
+window cannot be driven and blocks this one from starting.
+
+### Your everyday Chrome instead
+
+To drive the Chrome already full of your tabs instead of a separate window:
+
+```bat
+local\bin\opera-chrome-main.cmd
+```
+
+It starts your Default profile with the debugging port and the extension. Close
+every Chrome window first or the flags die silently. Trade-off, stated plainly:
+a debugging port lets any program on this machine drive those tabs, so use the
+dedicated window above for anything sensitive and this one for daily driving.
+
 Point a client at it:
 
 ```json

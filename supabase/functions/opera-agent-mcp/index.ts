@@ -8,7 +8,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { streamCommandEvents } from "../_shared/command-stream.ts";
-import { createClient } from "@supabase/supabase-js";
 import * as z from "zod/v4";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
@@ -32,9 +31,23 @@ const ALLOWED_USER_EMAILS = new Set(
     .filter(Boolean)
 );
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
-});
+// WHY THE CLIENT IS LOADED LAZILY. supabase-js is only needed for the handful of table
+// reads and the one auth lookup, none of which are on the hot path. Loading it at module
+// scope put it in every isolate's boot, and the platform charges for that before a byte
+// is served: a /health call that touches no database at all still measured a 707 ms
+// median. The command path needs only PostgREST, which is a single POST per function
+// call, so it no longer pulls the library in at all.
+
+let clientPromise: Promise<import("@supabase/supabase-js").SupabaseClient> | null = null;
+
+async function db() {
+  if (!clientPromise) {
+    clientPromise = import("@supabase/supabase-js").then(({ createClient }) => createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    }));
+  }
+  return clientPromise;
+}
 
 const CORS_BASE_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id, x-opera-device, x-opera-provider",
@@ -191,6 +204,7 @@ type VmCaller = { userId: string; token: string };
 async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<string | null> {
   if (auth.type === "static") return DEVICE_NAME;
   const deviceFromHeader = req?.headers.get("x-opera-device")?.trim() || "";
+  const supabase = await db();
   let query = supabase.from("opera_devices").select("device_name").eq("user_id", auth.userId).neq("status", "disabled");
   if (deviceFromHeader) {
     query = query.eq("device_name", deviceFromHeader);
@@ -274,6 +288,7 @@ async function authenticate(req: Request): Promise<AuthContext | null> {
   if (!token) return null;
   if (STATIC_TOKEN && secureEqual(token, STATIC_TOKEN)) return { type: "static" };
   if (ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) return null;
+  const supabase = await db();
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user?.email) return null;
   const email = data.user.email.toLowerCase();
@@ -338,10 +353,69 @@ function toolError(error: unknown) {
   };
 }
 
+// WHY POSTGREST DIRECTLY. Every tool call crosses into the database twice: once to
+// enqueue the command and once to await its result. Those two crossings measured 269 ms
+// and 417 ms, and going through supabase-js meant loading a library on every isolate boot
+// to make what is ultimately one HTTP POST per function. This is that POST.
+//
+// WHY IT SOMETIMES IS NOT POSTGREST. A WebSocket connection holds its isolate open, and
+// an isolate that stays open can hold a database connection too. The first query on a
+// fresh connection costs the handshake, but every query after it skips the gateway
+// entirely, and measured here that is 162 ms against 603 ms for the same work. So when a
+// direct connection exists, these same calls ride it instead. The function invoked, its
+// arguments and its return shape are identical either way; only the road changes, and a
+// direct call that fails falls back to the gateway rather than failing the command.
+
+let directDb: { sql: (...args: unknown[]) => Promise<unknown[]> } | null = null;
+let directFailReason = "";
+
+async function rpcViaDirect(name: string, args: Record<string, unknown>) {
+  if (!directDb) throw new Error("no direct connection");
+  if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`refused function name: ${name}`);
+  const keys = Object.keys(args);
+  const values = keys.map((k) => args[k] === undefined ? null : args[k]);
+  const placeholders = keys.map((k, i) => {
+    if (!/^[a-z_][a-z0-9_]*$/.test(k)) throw new Error(`refused argument name: ${k}`);
+    return `${k} := $${i + 1}`;
+  }).join(", ");
+  const rows = await directDb.sql(`select public."${name}"(${placeholders}) as data`, values) as Array<{ data: unknown }>;
+  if (!rows.length) return null;
+  return rows[0].data as Record<string, unknown> | null;
+}
+
+async function rpcViaPostgrest(name: string, args: Record<string, unknown>) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`
+    },
+    body: JSON.stringify(args)
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    let detail = text.slice(0, 300);
+    try {
+      const parsed = JSON.parse(text);
+      detail = parsed.message || parsed.error_description || parsed.msg || detail;
+    } catch {
+    }
+    throw new Error(`${name} failed: ${detail}`);
+  }
+  return text ? JSON.parse(text) as Record<string, unknown> : null;
+}
+
 async function rpc(name: string, args: Record<string, unknown>) {
-  const { data, error } = await supabase.rpc(name, args);
-  if (error) throw new Error(`${name} failed: ${error.message}`);
-  return data as Record<string, unknown> | null;
+  if (directDb) {
+    try {
+      return await rpcViaDirect(name, args);
+    } catch (error) {
+      directDb = null;
+      directFailReason = String(error?.message ?? error).slice(0, 200);
+    }
+  }
+  return rpcViaPostgrest(name, args);
 }
 
 type ProgressEmitter = {
@@ -371,34 +445,83 @@ function forwardCommandProgress(commandId: string, timeoutMs: number, progress: 
   }).catch(() => ({ ok: false }));
 }
 
+const edgeClock = () => Date.now();
+
+// Each stage is timed separately because the database clock cannot see any of them.
+// opera_commands measures created-at to completed-at, which is the device's work and
+// nothing else; the round trips that carry that work, and the ones that happen before
+// a command exists, are all invisible to it. On this deployment those invisible stages
+// dominated: a call reported 0.5-1.9 s of command time inside a 10 s round trip, so
+// without this the remaining time could only be guessed at.
+//
+// WHY enqueue and await leave together. They used to be two calls: one to create the
+// command, one to wait for it. Each is a full HTTPS crossing to the data API, and
+// measured here those two cost 269 ms and 417 ms while the command itself took 729 ms —
+// most of the time inside the function was spent reaching it and coming back.
+// opera_enqueue_and_await asks the same question in one visit and returns the shape the
+// two used to return between them, so the lifecycle, the allowlist, the request-id reuse
+// and the expiry deadline are all unchanged.
+//
+// WHAT THIS COSTS. Progress cannot ride along, because one blocking call has nowhere to
+// put intermediate events. The command-event table, its device-side emit and its cursor
+// reader are all untouched, so a transport that can stream again reuses every row
+// already stored; nothing had to be deleted to make this faster.
+
+let progressMs = 0;
+let awaitMs = 0;
+
+// WHY THIS IS TWO CALLS AND NOT ONE. Merging the enqueue and the wait into a single
+// opera_enqueue_and_await looked like an obvious saving: one HTTPS crossing instead of
+// two, against crossings measured at 269 ms and 417 ms. It does not work, and the
+// reason is worth recording. A plpgsql function is one transaction, so the row inserted
+// by the enqueue half is uncommitted for the whole time the function spends waiting. The
+// device claims commands by reading that table, and it cannot see an uncommitted row, so
+// the command it was told to run is never claimed and the call waits for its full
+// timeout. Measured live, the merged version returned a 9.1 s median where the two-call
+// version returned 2.3 s, which is the shape of a wait that can never be satisfied.
+//
+// So the crossing stays, and the wait for it stays. What can be removed without a second
+// transaction is the wait for progress: it also ends at the command's terminal status,
+// so asking for it and the result together costs one wait rather than two.
+
+// WHY THE REQUEST ID IS NULL AND THE PROVIDER RIDES ALONG. The id used to be a fresh
+// random UUID on every call, which can never collide with anything, so the reuse lookup
+// it triggers inside the enqueue was a SELECT that always missed. Passing null skips
+// that lookup without changing idempotency, because there was none to begin with: a
+// retry arrives with a new id, not the old one. The provider used to be stamped with a
+// second write after the command finished, a full data-API crossing on the critical
+// path after the answer was already known; it is now set by the enqueue itself, and
+// the update that used to follow it is gone.
+
 async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "", progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null) {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
+  const beganAt = edgeClock();
   const queued = await rpc("opera_enqueue", {
     p_method: method,
     p_params: params,
     p_timeout_ms: boundedTimeout,
     p_device_name: deviceName,
-    p_request_id: crypto.randomUUID()
+    p_request_id: null,
+    p_provider: provider || null
   });
+  const enqueuedAt = edgeClock();
   if (!queued?.ok || !queued.commandId) {
     throw new Error(String(queued?.error || `Unable to queue ${method}.`));
   }
-  if (provider) {
-
-    try {
-      await supabase.from("opera_commands").update({ provider }).eq("id", String(queued.commandId));
-    } catch {
- }
-  }
-
-  await forwardCommandProgress(queued.commandId, boundedTimeout, progress);
 
   const awaitFunction = method === "page.capture" ? "opera_await_capture" : "opera_await_adaptive";
-  const completed = await rpc(awaitFunction, {
-    p_command_id: queued.commandId,
-    p_timeout_ms: Math.min(32000, boundedTimeout + 2000)
-  });
-    if (!completed?.ok) {
+  const progressStartedAt = edgeClock();
+  const [, completed] = await Promise.all([
+    forwardCommandProgress(queued.commandId, boundedTimeout, progress)
+      .then((result) => { progressMs = edgeClock() - progressStartedAt; return result; }),
+    rpc(awaitFunction, {
+      p_command_id: queued.commandId,
+      p_timeout_ms: Math.min(32000, boundedTimeout + 2000)
+    }).then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
+  ]);
+  const finishedAt = edgeClock();
+
+  if (!completed?.ok) {
     const detail = completed?.error;
     const code = detail && typeof detail === "object" && "code" in detail
       ? String((detail as { code?: unknown }).code || "COMMAND_FAILED")
@@ -420,12 +543,21 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
     }
     throw new CommandFailure(code, message, { method, ...(details || {}) });
   }
+
   return {
     ok: true,
     commandId: completed.commandId,
     status: completed.status,
     result: completed.result,
-    timing: completed.timing
+    timing: {
+      ...completed.timing,
+      edge: {
+        enqueueMs: enqueuedAt - beganAt,
+        progressMs,
+        awaitMs,
+        edgeTotalMs: finishedAt - beganAt
+      }
+    }
   };
 }
 
@@ -477,6 +609,7 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
   const runId = String(started.runId);
   if (provider) {
     try {
+      const supabase = await db();
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
     } catch {
  }
@@ -558,6 +691,7 @@ async function runAdhoc(
   const runId = String(started.runId);
   if (provider) {
     try {
+      const supabase = await db();
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
     } catch {
  }
@@ -654,6 +788,179 @@ function vmRunResult(value: unknown) {
 }
 
 const SERVER_VERSION = "1.6.24";
+
+// WHY A SOCKET NEXT TO THE HTTP. Every HTTPS call pays for an isolate that has never
+// run before: the platform boots one per request, measured here as twenty distinct
+// isolates for twenty probes, and the boot plus the round trips it cannot reuse cost
+// roughly 1.8 s against work the browser answers in under a millisecond. A WebSocket
+// holds one isolate open, so the second call on it pays no boot at all, and an isolate
+// that stays open can hold a database connection too, which skips the data-API gateway
+// on every call after the first. Measured here that is 162 ms against 603 ms for the
+// same work. The socket speaks the same tools with the same authentication and the
+// same handlers as the HTTP; only the road changes, and a client the socket refuses
+// falls back to HTTPS without losing anything but time.
+//
+// WHAT IT DELIBERATELY DOES NOT DO. It does not list tools: the relay fetches the tool
+// list once over HTTPS at startup, where one slow call costs nothing, so the socket
+// carries only calls and pings. It does not multiplex: one request is answered before
+// the next is read, because a browser drive is a sequence of dependent actions and
+// parallel commands to one device would execute out of order. It does not keep its own
+// dispatch table: each message is run through a fresh server exactly as an HTTP request
+// would be, so a tool added to the HTTP surface exists here too without a second place
+// to remember it. Reusing one server across messages is not possible: the SDK refuses a
+// second transport on a connected server, so the rebuild cost per message is the SDK's
+// price, measured at about 15 ms, and not worth working around.
+
+const WS_MAX_MESSAGE_BYTES = 1024 * 1024;
+
+function isWsUpgrade(req: Request) {
+  return (req.headers.get("upgrade") ?? "").toLowerCase() === "websocket";
+}
+
+async function connectDirectDb(): Promise<void> {
+  const url = Deno.env.get("SUPABASE_DB_URL") ?? "";
+  if (!url) throw new Error("No direct database url is configured.");
+  const { default: postgres } = await import("postgres");
+  const pg = postgres(url, { max: 3, connect_timeout: 10, idle_timeout: 30 });
+  await pg`select 1`;
+  directDb = { sql: (text: unknown, values: unknown) => pg.unsafe(text as string, values as unknown[], { prepare: true }) as unknown as Promise<unknown[]> };
+}
+
+async function handleWsMessage(message: unknown, ctx: { deviceName: string; provider: string; caller: VmCaller | null }) {
+  if (!message || typeof message !== "object" || Array.isArray(message)) {
+    throw new CommandFailure("INVALID_REQUEST", "The message must be a JSON object.");
+  }
+  const { id, method, params } = message as { id?: unknown; method?: unknown; params?: unknown };
+  if (method === "ping") {
+    let dbHost = "";
+    try {
+      dbHost = new URL(Deno.env.get("SUPABASE_DB_URL") ?? "").hostname;
+    } catch {
+      dbHost = "unparseable";
+    }
+    const region = {
+      FLY_REGION: Deno.env.get("FLY_REGION") ?? null,
+      DENO_REGION: Deno.env.get("DENO_REGION") ?? null,
+      SB_REGION: Deno.env.get("SB_REGION") ?? null,
+      AWS_REGION: Deno.env.get("AWS_REGION") ?? null,
+      FLY_ALLOC_ID: Deno.env.get("FLY_ALLOC_ID") ? "set" : null
+    };
+    return { id: id ?? null, result: { ok: true, pong: true, direct: directDb !== null, directFailReason, dbHost, edgeRegion: region } };
+  }
+  if (method !== "tools/call") {
+    throw new CommandFailure("INVALID_REQUEST", `Unsupported socket method: ${String(method)}.`);
+  }
+  const { name, args } = (params ?? {}) as { name?: unknown; args?: unknown };
+  if (typeof name !== "string" || !name) {
+    throw new CommandFailure("INVALID_REQUEST", "A tools/call message needs a tool name.");
+  }
+  const request = new Request("https://socket/tools/call", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream"
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: (args ?? {}) as Record<string, unknown> } })
+  });
+  const server = createServer(ctx.deviceName, ctx.provider, ctx.caller);
+  const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
+  await server.connect(transport);
+  const response = await transport.handleRequest(request);
+  const envelope = await response.json() as { result?: unknown; error?: { code?: unknown; message?: unknown } };
+  if (envelope.error) {
+    throw new CommandFailure("COMMAND_FAILED", String(envelope.error.message ?? "The tool call failed."));
+  }
+  return { id: id ?? null, result: envelope.result ?? null };
+}
+
+function serveMcpSocket(req: Request) {
+  const { socket, response } = Deno.upgradeWebSocket(req, { idleTimeout: 0 });
+
+  let resolveClosed: (() => void) | null = null;
+  if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
+    const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });
+    EdgeRuntime.waitUntil(closed);
+  }
+  const teardown = () => {
+    if (resolveClosed) {
+      const done = resolveClosed;
+      resolveClosed = null;
+      done();
+    }
+  };
+
+  let authed: { deviceName: string; provider: string; caller: VmCaller | null } | null = null;
+  let queue: Promise<void> = Promise.resolve();
+
+  socket.onmessage = (event: MessageEvent) => {
+    const run = queue.then(async () => {
+      const text = typeof event.data === "string" ? event.data : "";
+      if (!text || text.length > WS_MAX_MESSAGE_BYTES) {
+        socket.send(JSON.stringify({ id: null, error: { code: "INVALID_REQUEST", message: "The message is empty or too large." } }));
+        return;
+      }
+      let message: unknown;
+      try {
+        message = JSON.parse(text);
+      } catch {
+        socket.send(JSON.stringify({ id: null, error: { code: "INVALID_REQUEST", message: "The message is not JSON." } }));
+        return;
+      }
+      const m = message as { id?: unknown; method?: unknown; params?: unknown };
+      if (!authed) {
+        if (m.method !== "auth") {
+          socket.close(4401, "authenticate first");
+          return;
+        }
+        const p = (m.params ?? {}) as { token?: unknown; device?: unknown; provider?: unknown };
+        const fake = new Request("https://socket/auth", {
+          headers: {
+            authorization: `Bearer ${typeof p.token === "string" ? p.token : ""}`,
+            "x-opera-device": typeof p.device === "string" ? p.device : "",
+            "x-opera-provider": typeof p.provider === "string" ? p.provider : ""
+          }
+        });
+        const authContext = await authenticate(fake);
+        if (!authContext) {
+          socket.close(4401, "unauthorized");
+          return;
+        }
+        const deviceName = await resolveDeviceName(authContext, fake);
+        if (!deviceName) {
+          socket.close(4401, "unauthorized");
+          return;
+        }
+        const provider = await resolveProvider(fake, authContext);
+        const caller: VmCaller | null = authContext.type === "user"
+          ? { userId: authContext.userId, token: bearerToken(fake) }
+          : null;
+        authed = { deviceName, provider, caller };
+        try {
+          await connectDirectDb();
+        } catch {
+          directDb = null;
+        }
+        socket.send(JSON.stringify({ id: m.id ?? null, result: { ok: true, direct: directDb !== null } }));
+        return;
+      }
+      try {
+        const reply = await handleWsMessage(message, authed);
+        socket.send(JSON.stringify(reply));
+      } catch (error) {
+        const failure = error instanceof CommandFailure
+          ? { code: error.code, message: error.message }
+          : { code: "COMMAND_FAILED", message: errorMessage(error) };
+        socket.send(JSON.stringify({ id: m.id ?? null, error: failure }));
+      }
+    });
+    queue = run.then(() => {}, () => {});
+  };
+
+  socket.onclose = () => { teardown(); };
+  socket.onerror = () => { teardown(); };
+
+  return response;
+}
 
 function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: VmCaller | null = null) {
   const server = new McpServer(
@@ -1124,6 +1431,23 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, key, modifiers, text, executionMode }: TargetTab & { key?: string; modifiers?: string[]; text?: string; executionMode?: ExecutionMode }) => execute("page.key", { tabId, ...(key != null ? { key } : {}), ...(modifiers != null ? { modifiers } : {}), ...(text != null ? { text } : {}), trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
+  server.registerTool("stream_keys", {
+    title: "Stream a key sequence in one command",
+    description: "Send up to 100 key chords and text fragments as one command instead of one call each: menu walks, grid sizing, and multi-chord shortcuts that would cost a round trip per key otherwise. Events run back-to-back on the device in order, with an optional pause after any event for menus that need a beat to open. Each event carries exactly one of key or text, like press_key. Keyboard input is refused on password, OTP, and payment fields.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      events: z.array(z.object({
+        key: navigationKeySchema.optional(),
+        modifiers: z.array(modifierSchema).max(4).optional(),
+        text: z.string().min(1).max(20000).optional(),
+        gapMs: z.number().int().min(0).max(2000).optional()
+          .describe("Pause after this event, for menus and popups that need a beat to open.")
+      }).strict()).min(1).max(100),
+      executionMode: executionModeSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, events, executionMode }: TargetTab & { events: Array<{ key?: string; modifiers?: string[]; text?: string; gapMs?: number }>; executionMode?: ExecutionMode }) => execute("page.stream", { tabId, events, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
+
   server.registerTool("scroll_page", {
     title: "Scroll page",
     description: "Scroll an explicit target page by a relative horizontal/vertical amount, or to an absolute document position, without activating its tab. Returns before/after document scroll metrics, movement, DOM-change, settling, and boundary status.",
@@ -1257,6 +1581,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, async ({ sessionId, cursor, limit }: { sessionId?: string; cursor?: number; limit?: number }) => {
     try {
+      const supabase = await db();
       let sid = sessionId || "";
       if (sid) {
         const { data } = await supabase.from("opera_listen_sessions").select("id, device_id").eq("id", sid).single();
@@ -1284,6 +1609,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeadersFor(req) });
+  if (isWsUpgrade(req)) return serveMcpSocket(req);
   const url = new URL(req.url);
 
   if (url.pathname.endsWith("/health")) {
@@ -1304,6 +1630,7 @@ Deno.serve(async (req: Request) => {
   if (!SUPABASE_URL) {
     return json(req, { error: "server_misconfigured", error_description: "MCP authentication is not configured." }, 503);
   }
+  const requestStartedAt = Date.now();
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
   const deviceName = await resolveDeviceName(authContext, req);
@@ -1312,17 +1639,25 @@ Deno.serve(async (req: Request) => {
   const caller: VmCaller | null = authContext.type === "user"
     ? { userId: authContext.userId, token: bearerToken(req) }
     : null;
+  const identityDoneAt = Date.now();
 
   try {
     const server = createServer(deviceName, provider, caller);
+    const serverBuiltAt = Date.now();
 
     const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: false });
     await server.connect(transport);
+    const connectedAt = Date.now();
     const response = await transport.handleRequest(req);
+    const handledAt = Date.now();
     const headers = new Headers(response.headers);
 
     headers.delete("Access-Control-Allow-Origin");
     for (const [key, value] of Object.entries(corsHeadersFor(req))) headers.set(key, value);
+    headers.set("x-opera-edge-identity-ms", String(identityDoneAt - requestStartedAt));
+    headers.set("x-opera-edge-build-ms", String(serverBuiltAt - identityDoneAt));
+    headers.set("x-opera-edge-connect-ms", String(connectedAt - serverBuiltAt));
+    headers.set("x-opera-edge-handle-ms", String(handledAt - connectedAt));
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   } catch (error) {
     createEdgeLog({}).error("opera-agent-mcp", errorMessage(error));

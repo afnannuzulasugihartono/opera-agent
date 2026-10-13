@@ -30,11 +30,16 @@ function fakeDriver() {
     calls,
     tabs: async () => [{ id: 't1', url: 'https://docs.google.com/', title: 'Docs' }],
     open: async (url) => { calls.push(['open', url]); return { id: 't2', url, title: '' }; },
+    close: async (tabId) => { calls.push(['close', tabId]); return { id: tabId, closed: true }; },
     read: async () => ({ url: 'https://docs.google.com/document/d/1', title: 'Paper', text: 'canvas text' }),
     find: async () => [{ ref: 'r1', text: 'Click to add title', x: 482, y: 396 }],
     click: async (x, y) => { calls.push(['click', x, y]); return { x, y }; },
+    hover: async (x, y) => { calls.push(['hover', x, y]); return { x, y }; },
+    clickRow: async (role, name) => { calls.push(['clickRow', role, name]); return { role, name, x: 1, y: 2 }; },
     key: async (name, mods) => { calls.push(['key', name, mods]); return { key: name }; },
     type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
+    keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
+    snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
     capture: async () => 'BASE64JPEG'
   };
 }
@@ -68,7 +73,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'list_tabs', 'read_page', 'find_elements', 'click', 'press_key', 'type', 'capture_page']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -83,6 +88,76 @@ test('a call runs the tool and returns its result as text content', async () => 
 
   assert.ok(res.result.content[0].text.includes('sheets.google.com'));
   assert.deepEqual(c.driver.calls[0], ['open', 'https://sheets.google.com/']);
+});
+
+test('a stream reaches the driver as one call with its events intact', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  const events = [{ key: '1', modifiers: ['Control', 'Alt'] }, { text: 'Hi' }];
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 9, method: 'tools/call',
+    params: { name: 'stream_keys', arguments: { events } }
+  });
+
+  assert.match(res.result.content[0].text, /"events": 2/);
+  assert.deepEqual(c.driver.calls[0], ['keys', events]);
+});
+
+test('a snapshot reaches the driver and comes back as readable text', async () => {
+  const server = createMcpServer(ctx());
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 10, method: 'tools/call',
+    params: { name: 'ax_snapshot', arguments: {} }
+  });
+
+  assert.match(res.result.content[0].text, /Insert/);
+  assert.match(res.result.content[0].text, /204/);
+});
+
+test('a capture comes back as image content a model can see, not base64 text', async () => {
+  const server = createMcpServer(ctx());
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 11, method: 'tools/call',
+    params: { name: 'capture_page', arguments: {} }
+  });
+
+  assert.deepEqual(res.result.content, [{ type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' }]);
+});
+
+test('a row click resolves and clicks in one call', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 12, method: 'tools/call',
+    params: { name: 'click_row', arguments: { role: 'menuitem', name: 'Insert' } }
+  });
+
+  assert.match(res.result.content[0].text, /Insert/);
+  assert.deepEqual(c.driver.calls[0], ['clickRow', 'menuitem', 'Insert']);
+});
+
+test('a hover reaches the driver without pressing anything', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 13, method: 'tools/call',
+    params: { name: 'hover', arguments: { x: 10, y: 20 } }
+  });
+
+  assert.match(res.result.content[0].text, /10/);
+  assert.deepEqual(c.driver.calls[0], ['hover', 10, 20]);
+});
+
+test('closing a tab drives the browser and drops the cached session', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 14, method: 'tools/call',
+    params: { name: 'close_tab', arguments: { tabId: 't9' } }
+  });
+
+  assert.match(res.result.content[0].text, /t9/);
+  assert.deepEqual(c.driver.calls[0], ['close', 't9']);
 });
 
 test('an unknown tool is an error, not a crash, because a model will ask for one', async () => {
