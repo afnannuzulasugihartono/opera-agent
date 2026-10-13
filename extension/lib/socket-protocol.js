@@ -143,6 +143,12 @@ export function isReady(message) {
   return Boolean(message && message.type === 'ready');
 }
 
+// WHY only the refusal is fatal. A 4001 means the credentials are wrong, so
+// retrying is hammering with no future. A 4002 means the handshake was slow —
+// a cold isolate, a delayed hello — which a retry answers in half a second.
+// Treating it as fatal wedged a live device for hours on one slow handshake
+// while its heartbeat stayed green, so every command queued and none ran.
+
 export function isFatalClose(code) {
-  return code === 4001 || code === 4002;
+  return code === 4001;
 }

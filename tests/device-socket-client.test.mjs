@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-11 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: device-socket-client — one socket, driven by a fake, with no bridge and no browser present.
 // @state: 8 locks; handshake gate, command dispatch, completion, backoff, and the fatal close.
 // @dependencies: node:test, strict, ../extension/lib/socket-client.js.
@@ -165,6 +165,27 @@ test('a rejected handshake stops the device for good instead of retrying forever
   sockets[0].drop(4001);
   assert.equal(timers.length, 0, 'no retry after the bridge refuses this device');
   assert.ok(states.some((s) => s.status === 'rejected'));
+});
+
+// WHY a timeout reconnects. One slow handshake closed with 4002 used to stop the
+// device permanently while its heartbeat stayed green, so every command queued
+// and none ever ran. A timeout answers to a retry; only a refusal stops the
+// device, because only a refusal says the credentials are wrong.
+
+test('a timed out handshake reconnects with backoff instead of stopping the device', () => {
+  const { client, sockets, timers, states } = harness();
+  client.start();
+  sockets[0].open();
+
+  sockets[0].drop(4002, 'handshake timeout');
+  assert.equal(timers.length, 1, 'a timed out handshake scheduled no retry');
+  assert.ok(states.some((s) => s.status === 'reconnecting'));
+
+  timers[0].fn();
+  assert.equal(sockets.length, 2, 'the retry never opened a new socket');
+  sockets[1].open();
+  const hello = JSON.parse(sockets[1].sent[0]);
+  assert.equal(hello.type, 'hello');
 });
 
 test('a malformed frame is ignored rather than allowed to throw inside the socket', async () => {
