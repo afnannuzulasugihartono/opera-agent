@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: mcp-surface.test — surface.test — Test.
 // @state: three more places claimed the background pointer was invisible.
 // @dependencies: node:test, strict, node:fs, promises, node:crypto, canonical-source-hash, protocol.
@@ -41,11 +41,11 @@ const screenshot = fs.readFileSync(
 );
 
 const FROZEN_MCP_TOOLS = [
-  'activate_tab', 'browser_status', 'capture_page', 'click_at', 'click_element',
-  'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
+  'activate_tab', 'browser_status', 'capture_page', 'click_element',
+  'close_tab', 'fill_element', 'find_elements', 'list_tabs',
   'media_pause', 'media_play', 'media_seek', 'media_state',
-  'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page', 'stream_keys',
-  'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save', 'wheel_at',
+  'navigate_tab', 'open_url', 'pointer', 'press_key', 'read_page', 'stream_keys',
+  'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save',
   'media_stream_start', 'media_stream_stop', 'media_listen_read'
 ];
 
@@ -92,10 +92,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   press_key: 'e4b0dcdca29f6450',
   stream_keys: '9487610ec1707601',
   scroll_page: '49c584144a526142',
-  move_pointer: 'd13a06fe00a47847',
-  click_at: '0d0a269d88f73068',
-  drag_pointer: '4fd6791950121bbd',
-  wheel_at: 'a24a25677ba41390',
+  pointer: 'a07a0e1b5843bfb4',
   media_state: 'dd36328bc7f5eaad',
   media_play: 'be8f1ff4460c156e',
   media_pause: '733cd49a0e0bea0a',
@@ -208,7 +205,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.deepEqual(tools, [
     'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
-    'move_pointer', 'click_at', 'drag_pointer', 'wheel_at',
+    'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read'
   ]);
@@ -222,9 +219,9 @@ test('R4 keeps the protocol inventory frozen at 29 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 40 tools (stream_keys added: one command replays up to 100 key/text events back-to-back)', async () => {
+test('R10 merges the four coordinate tools into pointer, so the public MCP tool inventory is 37 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 40);
+  assert.equal(registered.length, 37);
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop'].sort());
 });
 
@@ -242,11 +239,11 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
   assert.doesNotMatch(schema, /view:/);
 });
 
-test('the tool count and names are unchanged', () => {
+test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 40);
+  assert.equal(registered.length, 37);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 40);
+  assert.equal(contract.toolCount, 37);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -325,7 +322,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 40, 'the public tool count grows only by reviewed decision (stream_keys added)');
+  assert.equal(blocks.length, 37, 'the public tool count changes only by reviewed decision (pointer merged)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -593,7 +590,7 @@ test('MCP instructions make browser usage discoverable without mentioning Supaba
   assert.match(source, /Never use activate_tab as an implicit recovery step/);
   assert.match(source, /Coordinate actions default to background CDP input and draw a visible cursor marker/);
   assert.match(source, /Use capture_page adaptively only/);
-  assert.match(source, /For lazy result lists, call wheel_at/);
+  assert.match(source, /For lazy result lists, call pointer with pointerAction wheel/);
   assert.match(source, /stableKey\/href values/);
   assert.match(source, /pass previousHash to avoid retransmitting unchanged images/);
   assert.match(source, /If a tool returns FOREGROUND_REQUIRED/);

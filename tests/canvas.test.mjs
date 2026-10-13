@@ -149,7 +149,7 @@ test('the driver passes tools through untouched and times every call', async () 
 
   assert.deepEqual(seen[0], ["press_key", { tabId: "t1", key: "Enter", modifiers: ["control"] }]);
   assert.deepEqual(seen[1], ["press_key", { tabId: "t1", text: "hello" }]);
-  assert.deepEqual(seen[2], ["click_at", { tabId: "t1", x: 10, y: 20 }]);
+  assert.deepEqual(seen[2], ["pointer", { tabId: "t1", pointerAction: "click", x: 10, y: 20 }]);
 
   const summary = driver.summary();
   assert.equal(summary.steps, 3);

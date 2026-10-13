@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-06 16:20 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: landing-visual — the site looks finished on every screen.
 // @state: red first: gibberish hero copy, nested sections, overflowing nav and code pills.
 // @dependencies: test, assert, fs.
@@ -22,7 +22,7 @@ const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'und
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
-  assert.match(html, /40 tool/, 'the tool count is stated as a number');
+  assert.match(html, /37 tool/, 'the tool count is stated as a number');
   assert.match(html, /class="eyebrow"/, 'an eyebrow names the release above the headline');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');

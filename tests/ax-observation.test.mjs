@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: ax-observation.test — Test..
 // @state: Test..
 // @dependencies: node:fs, node:test, strict, ax-summary, extension-source.
@@ -149,5 +149,5 @@ test('MCP guidance documents the accessibility surface without new tools', () =>
   assert.doesNotMatch(mcp, /registerTool\("(?:read_ax|ax_summary|accessibility)/);
 
   const tools = [...mcp.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(tools.length, 40);
+  assert.equal(tools.length, 37);
 });

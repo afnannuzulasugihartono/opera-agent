@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: background — the thin MV3 entry: dispatch's own state and dispatch.
 // @state: holds two constants dispatch reads, the role-reconcile bridge, and the one load-time listener; every other region of the original 2646-line file moved to worker/ and lib/.
 // @dependencies: protocol, watch, loop, role-reconcile, log, popup-events,
@@ -407,7 +407,11 @@ export async function dispatch(method, params = {}, context = {}) {
     }
     case 'page.pointer': {
       const tabId = await resolveTabId(params);
-      const result = await runActionPipeline(tabId, 'page.pointer', params, context, () => trustedPointer(tabId, params, context));
+      if (String(params.action || '') === 'hover' && (typeof params.ref !== 'string' || !params.ref)) {
+        throw new Error('Pointer hover requires a ref target.');
+      }
+      const runPointer = String(params.action || '') === 'hover' ? trustedHover : trustedPointer;
+      const result = await runActionPipeline(tabId, 'page.pointer', params, context, () => runPointer(tabId, params, context));
       return { ...result, tabId };
     }
     case 'page.hover': {
