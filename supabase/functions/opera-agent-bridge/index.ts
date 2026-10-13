@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: index — Repository file.
 // @state: retry Chrome's transient tab-drag refusal on all tab mutations.
 // @dependencies: edge-runtime, supabase-js, edge-log.
@@ -408,6 +408,13 @@ function subscribe(identity: { deviceName: string; token: string }, onCommand: (
 // handshake that claims discards the result. The device then sits connected and
 // silent while the one command waiting for it has been marked as somebody else's.
 // opera_auth_device answers exactly the question a handshake asks, and nothing more.
+//
+// WHY the direct connection warms in the background instead of blocking the
+// handshake. Loading the driver plus a TCP connect and a round trip costs
+// hundreds of milliseconds on a cold isolate, and the handshake does not need
+// any of it: the verify already answered over HTTPS, and a completion that
+// arrives before the warm finishes simply takes the same HTTPS road. Warming
+// only starts after the token verified, so a guess never buys a connection.
 
 async function verifyDeviceSocket(identity: { token: string; deviceName: string }) {
   if (!validToken(identity.token) || !validDeviceName(identity.deviceName)) {
@@ -418,11 +425,7 @@ async function verifyDeviceSocket(identity: { token: string; deviceName: string 
     p_token_hash: await sha256(identity.token.toLowerCase())
   });
   if (!deviceId) return { ok: false };
-  try {
-    await connectDirectDb();
-  } catch {
-    directDb = null;
-  }
+  connectDirectDb().catch(() => { directDb = null; });
   return { ok: true, deviceId };
 }
 
