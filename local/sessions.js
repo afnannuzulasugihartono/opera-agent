@@ -57,7 +57,7 @@ export function asDriver(session) {
     type: (text) => session.type(text),
     keys: (events) => session.keys(events),
     snapshot: (limit) => session.snapshot(limit === undefined ? {} : { limit }),
-    capture: () => session.capture(),
+    capture: (options) => session.capture(options),
     front: () => session.front(),
     close: () => session.close()
   };

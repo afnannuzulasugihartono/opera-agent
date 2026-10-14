@@ -107,8 +107,8 @@ const driver = {
     return (await attach()).snapshot(limit);
   },
 
-  async capture() {
-    return (await attach()).capture();
+  async capture(options) {
+    return (await attach()).capture(options);
   }
 };
 

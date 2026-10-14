@@ -309,7 +309,21 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return result?.value ?? { width: 0, height: 0, dpr: 1 };
     },
 
-    async capture({ format = 'jpeg', quality = 60 } = {}) {
+    async capture({ format = 'jpeg', quality = 60, fullPage = false } = {}) {
+      if (fullPage) {
+        const metrics = await cdp.send('Page.getLayoutMetrics', {});
+        const content = metrics?.contentSize ?? {};
+        const width = Number(content.width);
+        const height = Number(content.height);
+        if (!(width > 0 && height > 0)) throw new Error('Full-page capture needs a content size the page did not report.');
+        const { data } = await cdp.send('Page.captureScreenshot', {
+          format,
+          quality,
+          captureBeyondViewport: true,
+          clip: { x: 0, y: 0, width, height, scale: 1 }
+        });
+        return data;
+      }
       const { width, height } = await primitives.viewport();
       const { data } = await cdp.send('Page.captureScreenshot', {
         format,

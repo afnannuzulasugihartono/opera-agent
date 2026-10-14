@@ -124,8 +124,8 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'capture_page',
-    description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Returns image content the caller can see.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg } }
+    description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Pass fullPage to span the whole scrollable document past the viewport instead. Returns image content the caller can see.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
   },
   {
     name: 'ax_snapshot',
@@ -201,7 +201,7 @@ export function createMcpServer(context) {
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
       case 'capture_page': {
-        const data = await driver.capture();
+        const data = await driver.capture(args.fullPage === true ? { fullPage: true } : {});
         return { content: [{ type: 'image', data, mimeType: 'image/jpeg' }] };
       }
       default:

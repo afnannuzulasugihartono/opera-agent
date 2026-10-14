@@ -257,7 +257,7 @@ export function validateCommand(command) {
   }
   if (command.method === 'page.capture') {
     const params = command.params || {};
-    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash']);
+    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash', 'fullPage']);
     const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
     if (unexpectedKey) return { ok: false, error: `Capture params do not allow ${unexpectedKey}.` };
     if (params.crop != null) {
@@ -283,6 +283,9 @@ export function validateCommand(command) {
     }
     if (params.previousHash != null && !/^[a-f0-9]{64}$/i.test(String(params.previousHash))) {
       return { ok: false, error: 'Capture previousHash must be a SHA-256 hex digest.' };
+    }
+    if (params.fullPage != null && typeof params.fullPage !== 'boolean') {
+      return { ok: false, error: 'Capture fullPage must be a boolean.' };
     }
   }
   if (command.method === 'page.fill') {

@@ -79,7 +79,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   navigate_tab: '4947602daae152c1',
   close_tab: '7fba21a3f036f380',
   read_page: '7724641fbfc8270a',
-  capture_page: '744f0230732b9e89',
+  capture_page: '288795a580c4c54a',
   find_elements: '5ee494a2286bfe19',
   click_element: '524bbdcd910efb97',
   fill_element: '299f17ba1498cd96',

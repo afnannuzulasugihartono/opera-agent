@@ -46,6 +46,9 @@ function recordingCdp() {
         return { result: { value: { title: 't', url: 'u', text: 'body text' } } };
       }
       if (method === 'Page.captureScreenshot') return { data: 'BASE64' };
+      if (method === 'Page.getLayoutMetrics') {
+        return { cssVisualViewport: { pageX: 0, pageY: 0 }, contentSize: { x: 0, y: 0, width: 1136, height: 2400 } };
+      }
       return { result: {} };
     }
   };
@@ -471,6 +474,15 @@ test('a capture is clipped to the clickable viewport at one to one, or every vis
   const shot = cdp.calls.find((c) => c.method === 'Page.captureScreenshot');
   assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 1136, height: 770, scale: 1 },
     'a pixel in the picture must be a coordinate clickAt accepts');
+});
+
+test('a full-page capture spans the content size beyond the viewport', async () => {
+  const cdp = recordingCdp();
+  await createPrimitives(cdp).capture({ fullPage: true });
+
+  const shot = cdp.calls.find((c) => c.method === 'Page.captureScreenshot');
+  assert.equal(shot.params.captureBeyondViewport, true);
+  assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 1136, height: 2400, scale: 1 });
 });
 
 test('the viewport reports the device pixel ratio, so a scaled screen is not mistaken for a scaled picture', async () => {

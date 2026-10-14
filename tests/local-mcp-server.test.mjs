@@ -40,7 +40,7 @@ function fakeDriver() {
     type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
     keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
-    capture: async () => 'BASE64JPEG'
+    capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; }
   };
 }
 
@@ -121,6 +121,18 @@ test('a capture comes back as image content a model can see, not base64 text', a
     params: { name: 'capture_page', arguments: {} }
   });
 
+  assert.deepEqual(res.result.content, [{ type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' }]);
+});
+
+test('a full-page capture reaches the driver as a flag, not a second tool', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 12, method: 'tools/call',
+    params: { name: 'capture_page', arguments: { fullPage: true } }
+  });
+
+  assert.deepEqual(c.driver.calls[0], ['capture', { fullPage: true }]);
   assert.deepEqual(res.result.content, [{ type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' }]);
 });
 
