@@ -256,6 +256,16 @@ export function splitText(text, size) {
   return out;
 }
 
+// WHY A HOVER WAITS FOR THE MOVE IT DISPATCHED. It used to fire the move and
+// forget it, which reported a hover that had not happened yet while a
+// five-second command sat in the worker's queue — and the next command's
+// liveness proof then queued behind that move and failed, so one lie became two
+// failures. Measured on the user's own browser: Input.dispatchMouseEvent costs
+// 2 ms for a press and a release, and about five seconds for a move or a
+// wheel, because those wait on a compositor that is not running when the window
+// is not in front. That cost is real either way, and the caller now finds out
+// from the hover rather than from whatever it calls next.
+
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   const spot = (x, y, color) => {
     const px = Math.round(Number(x) || 0);
@@ -384,8 +394,8 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     async hover(x, y) {
       const mark = spot(x, y, 'rgb(66,133,244)');
-      cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 }).catch(() => null);
-      await mark;
+      const moved = cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
+      await Promise.all([mark, moved]);
       return { x, y };
     },
 

@@ -268,3 +268,24 @@ test('a notification is answered with nothing at all, because JSON-RPC says so',
 
   assert.equal(res, undefined);
 });
+
+// WHY THIS CLAIM EXISTS. A Chrome tab id is a number, the tool schema says
+// string, and an agent copies the id straight out of the tab list it was just
+// handed. Comparing with === refused the id the product itself printed — so a
+// drive that could see six tabs decided none of them was real.
+
+test('a tab id is found whether the caller sends a number or a string', async () => {
+  for (const tabId of ['1', 1]) {
+    const c = ctx();
+    c.resolveTab = async () => ['1', '8'];
+    c.open = async () => c.driver;
+    const server = createMcpServer(c);
+
+    const res = await server.handle({
+      jsonrpc: '2.0', id: 12, method: 'tools/call',
+      params: { name: 'ax_snapshot', arguments: { tabId } }
+    });
+
+    assert.ok(res.result, `an id sent as ${typeof tabId} was refused: ${res.error?.message ?? ''}`);
+  }
+});

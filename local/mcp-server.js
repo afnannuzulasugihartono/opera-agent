@@ -174,6 +174,12 @@ const afterAction = async (driver, action, limit) => {
   return asText({ action, elements: seen });
 };
 
+// WHY THE TAB LOOKUP COMPARES TEXTUALLY. A Chrome tab id is a number, the tool
+// schema says string, and an agent copies the id straight out of the tab list
+// it was just handed. Comparing with === refused the id the product itself
+// printed, which is how a drive that can see six tabs decides none of them is
+// real. Ids are compared as text everywhere they cross a boundary.
+
 export function createMcpServer(context) {
   const sessions = new Map();
   const fallback = context.driver ?? null;
@@ -181,7 +187,7 @@ export function createMcpServer(context) {
   const driverFor = async (tabId) => {
     if (!tabId) return fallback;
     const known = context.resolveTab ? await context.resolveTab() : [];
-    if (known.length && !known.includes(tabId)) {
+    if (known.length && !known.some((id) => String(id) === String(tabId))) {
       throw new Error(`No page target ${tabId}. Open pages: ${known.join(' | ')}`);
     }
     if (!sessions.has(tabId)) {

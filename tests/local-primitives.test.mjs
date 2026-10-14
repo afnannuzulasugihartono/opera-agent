@@ -446,7 +446,14 @@ test('a refused spotlight never breaks the click it decorates', async () => {
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
 });
 
-test('a hover dispatches its move without awaiting the page-timed reply', async () => {
+// WHY THIS USED TO BE THE OTHER WAY ROUND. This test once asserted that a hover
+// must NOT wait for the page's reply, and it proved that with a promise that
+// never settles. That was measured as a hover that returned in one millisecond
+// while its move sat in the worker's queue for five, and the next command's
+// liveness proof then queued behind it and failed — so one lie became two
+// failures. A page that never answers is now visible from this call.
+
+test('a hover waits for the move it dispatched, or it has not hovered', async () => {
   let moves = 0;
   const cdp = {
     send: (method) => {
@@ -458,13 +465,13 @@ test('a hover dispatches its move without awaiting the page-timed reply', async 
     }
   };
 
-  const t0 = Date.now();
-  const out = await createPrimitives(cdp).hover(10, 20);
-  const ms = Date.now() - t0;
+  const settled = await Promise.race([
+    createPrimitives(cdp).hover(10, 20).then(() => 'returned'),
+    new Promise((resolve) => setTimeout(() => resolve('still waiting'), 150))
+  ]);
 
-  assert.deepEqual(out, { x: 10, y: 20 });
+  assert.equal(settled, 'still waiting', 'a hover cannot claim success while its move is unanswered');
   assert.equal(moves, 1, 'the move is sent exactly once');
-  assert.ok(ms < 1000, `hover waited ${ms} ms for a reply it must not wait for`);
 });
 
 test('a capture is clipped to the clickable viewport at one to one, or every visual click misses', async () => {
