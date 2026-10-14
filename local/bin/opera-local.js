@@ -138,7 +138,11 @@ await bridgeReachable().catch(() => false);
 // only visible result was a dead MCP with a stack trace instead of a server
 // that starts and names the conflict on the first tool call.
 
-const pipedToBridge = await bridged().catch(() => false);
+// WHY THE PORT IS A FUNCTION AND NOT A VALUE. The pipe is chosen per call,
+// because a worker that was asleep at startup picks itself up thirty seconds
+// later. A port read once at startup reports the debugging port long after the
+// drive has moved to the bridge — which is a wrong answer about a port nothing
+// is listening on.
 
 startStdio({
   context: {
@@ -146,7 +150,7 @@ startStdio({
     open,
     resolveTab,
     sessionOptions: {},
-    port: pipedToBridge ? bridgePort() : PORT,
+    port: async () => (await bridged()) ? bridgePort() : PORT,
     version: pkg.version,
     browsers: installedBrowsers(),
     reachable

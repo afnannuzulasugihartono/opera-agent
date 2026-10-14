@@ -180,6 +180,15 @@ const afterAction = async (driver, action, limit) => {
 // printed, which is how a drive that can see six tabs decides none of them is
 // real. Ids are compared as text everywhere they cross a boundary.
 
+// WHY THE PORT IS ASKED FOR, NOT STORED. The pipe is chosen per call because a
+// worker can wake up late, so a port captured at startup is a lie the moment
+// after it. Measured on the user's own machine: the drive was already on the
+// bridge, list_tabs returned the real tabs, and browser_status still named the
+// debugging port nothing was listening on — the kind of wrong answer that sends
+// someone off to debug a port that was never in the way.
+
+const livePort = (context) => (typeof context.port === 'function' ? context.port() : context.port);
+
 export function createMcpServer(context) {
   const sessions = new Map();
   const fallback = context.driver ?? null;
@@ -202,7 +211,7 @@ export function createMcpServer(context) {
 
     switch (name) {
       case 'browser_status':
-        return asText({ browsers: context.browsers, port: context.port });
+        return asText({ browsers: context.browsers, port: livePort(context) });
       case 'list_tabs':
         return asText(await driver.tabs());
       case 'open_url':
