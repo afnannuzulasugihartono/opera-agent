@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-14 UTC+7.
 // @title: ws-server.test — the loopback socket speaks RFC 6455 well enough to be trusted.
-// @state: unit pins the handshake, the three length forms, and split-frame decoding.
+// @state: unit pins the handshake, the three length forms, split-frame decoding, and fragmented messages.
 // @dependencies: node:test, strict, ../local/ws-server.js.
 
 // WHY THIS IS TESTED BEFORE IT IS WIRED. The device is the other half of a
@@ -15,19 +15,25 @@ import assert from 'node:assert/strict';
 
 import { acceptKey, encodeText, createFrameReader, isWebSocketUpgrade } from '../local/ws-server.js';
 
-function maskedFrame(opcode, text) {
+function maskedFrame(opcode, text, { fin = true } = {}) {
   const payload = Buffer.from(text, 'utf8');
   const mask = Buffer.from([0x12, 0x34, 0x56, 0x78]);
   const masked = Buffer.from(payload);
   for (let i = 0; i < masked.length; i += 1) masked[i] ^= mask[i % 4];
+  const first = (fin ? 0x80 : 0x00) | opcode;
   let header;
   if (payload.length < 126) {
-    header = Buffer.from([0x80 | opcode, 0x80 | payload.length]);
-  } else {
+    header = Buffer.from([first, 0x80 | payload.length]);
+  } else if (payload.length < 65536) {
     header = Buffer.alloc(4);
-    header[0] = 0x80 | opcode;
+    header[0] = first;
     header[1] = 0x80 | 126;
     header.writeUInt16BE(payload.length, 2);
+  } else {
+    header = Buffer.alloc(10);
+    header[0] = first;
+    header[1] = 0x80 | 127;
+    header.writeBigUInt64BE(BigInt(payload.length), 2);
   }
   return Buffer.concat([header, mask, masked]);
 }
@@ -94,4 +100,65 @@ test('a binary frame is refused by name instead of parsed as text', () => {
   const controls = [];
   createFrameReader(() => {}, (kind) => controls.push(kind))(maskedFrame(0x2, 'x'));
   assert.deepEqual(controls, ['binary']);
+});
+
+// WHY FRAGMENTS ARE PINNED. Small messages always arrive whole, so a reader
+// that drops continuations passes every small test and fails exactly where it
+// hurts: a screenshot-sized completion that fragments leaves the server
+// waiting on half a message until the caller gives up, while snapshots on the
+// same link answer in milliseconds. That was measured live as captures failing
+// on whichever tab happened to fragment.
+
+test('a message in three fragments arrives whole', () => {
+  const seen = [];
+  const read = createFrameReader((text) => seen.push(text));
+
+  read(maskedFrame(0x1, '{"a":1,', { fin: false }));
+  assert.deepEqual(seen, [], 'an opening fragment is not a message yet');
+  read(maskedFrame(0x0, '"b":2,', { fin: false }));
+  assert.deepEqual(seen, [], 'nor is a middle one');
+  read(maskedFrame(0x0, '"c":3}', { fin: true }));
+
+  assert.deepEqual(JSON.parse(seen[0]), { a: 1, b: 2, c: 3 });
+});
+
+test('a ping between fragments is answered without losing the message', () => {
+  const seen = [];
+  const controls = [];
+  const read = createFrameReader((text) => seen.push(text), (kind) => controls.push(kind));
+
+  read(maskedFrame(0x1, 'half-', { fin: false }));
+  read(maskedFrame(0x9, ''));
+  read(maskedFrame(0x0, 'whole', { fin: true }));
+
+  assert.deepEqual(controls, ['ping']);
+  assert.deepEqual(seen, ['half-whole']);
+});
+
+test('a completion-sized frame decodes where screenshots travel', () => {
+  const seen = [];
+
+  createFrameReader((text) => seen.push(text))(maskedFrame(0x1, 'x'.repeat(300000)));
+
+  assert.equal(seen[0].length, 300000);
+});
+
+test('a fragment flood closes instead of buffering forever', () => {
+  const seen = [];
+  const controls = [];
+  const read = createFrameReader((text) => seen.push(text), (kind, code) => controls.push([kind, code]));
+
+  read(maskedFrame(0x1, 'x'.repeat(600000), { fin: false }));
+  read(maskedFrame(0x0, 'x'.repeat(600000), { fin: true }));
+
+  assert.deepEqual(seen, []);
+  assert.deepEqual(controls, [['close', 1009]]);
+});
+
+test('a continuation without a start closes as a protocol error', () => {
+  const controls = [];
+
+  createFrameReader(() => {}, (kind, code) => controls.push([kind, code]))(maskedFrame(0x0, 'orphan'));
+
+  assert.deepEqual(controls, [['close', 1002]]);
 });

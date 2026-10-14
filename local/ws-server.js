@@ -49,9 +49,26 @@ export function encodePong() {
 // A client frame is masked and may be split across TCP reads, so decoding keeps
 // a remainder: the next chunk continues the same frame rather than becoming a
 // second, malformed one.
+//
+// WHY FRAGMENTS ARE REASSEMBLED. A large message may also arrive split across
+// WebSocket frames — FIN off, continuations after — and the reader used to
+// drop every continuation on the floor. Small messages always arrive whole,
+// so everything worked until a screenshot-sized completion fragmented: the
+// server waited on half a message until the caller gave up, while snapshots
+// on the same link answered in milliseconds. Measured live as captures
+// failing on whichever tab happened to fragment while reads flew everywhere.
+// Reassembly is per RFC 6455: buffer data frames until FIN, let control
+// frames interleave, refuse what overflows or violates.
 
 export function createFrameReader(onText, onControl = () => {}) {
   let buffer = Buffer.alloc(0);
+  let fragments = null;
+
+  const fail = (code) => {
+    fragments = null;
+    buffer = Buffer.alloc(0);
+    onControl('close', code);
+  };
 
   return (chunk) => {
     buffer = Buffer.concat([buffer, chunk]);
@@ -59,6 +76,7 @@ export function createFrameReader(onText, onControl = () => {}) {
       if (buffer.length < 2) return;
       const first = buffer[0];
       const second = buffer[1];
+      const fin = (first & 0x80) === 0x80;
       const opcode = first & 0x0f;
       const masked = (second & 0x80) === 0x80;
       let length = second & 0x7f;
@@ -72,9 +90,9 @@ export function createFrameReader(onText, onControl = () => {}) {
         length = Number(buffer.readBigUInt64BE(offset));
         offset += 8;
       }
-      if (length > MAX_FRAME_BYTES) {
-        onControl('close', 1009);
-        buffer = Buffer.alloc(0);
+      const held = fragments ? fragments.length : 0;
+      if (length > MAX_FRAME_BYTES || held + length > MAX_FRAME_BYTES) {
+        fail(1009);
         return;
       }
       let mask = null;
@@ -90,8 +108,29 @@ export function createFrameReader(onText, onControl = () => {}) {
       if (opcode === 0x8) { onControl('close', 1000); return; }
       if (opcode === 0x9) { onControl('ping'); continue; }
       if (opcode === 0xa) continue;
-      if (opcode === 0x2) { onControl('binary'); continue; }
-      if (opcode === 0x1) onText(payload.toString('utf8'));
+      if (opcode === 0x0) {
+        if (!fragments) { fail(1002); return; }
+        fragments.parts.push(payload);
+        fragments.length += payload.length;
+        if (fin) {
+          const whole = Buffer.concat(fragments.parts);
+          const was = fragments.opcode;
+          fragments = null;
+          if (was === 0x2) { onControl('binary'); continue; }
+          onText(whole.toString('utf8'));
+        }
+        continue;
+      }
+      if (fragments) { fail(1002); return; }
+      if (opcode === 0x2) {
+        if (!fin) { fragments = { opcode, parts: [payload], length: payload.length }; continue; }
+        onControl('binary');
+        continue;
+      }
+      if (opcode === 0x1) {
+        if (!fin) { fragments = { opcode, parts: [payload], length: payload.length }; continue; }
+        onText(payload.toString('utf8'));
+      }
     }
   };
 }
