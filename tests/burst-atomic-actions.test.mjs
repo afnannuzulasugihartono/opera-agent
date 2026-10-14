@@ -118,3 +118,11 @@ test('burst file steps reach the content file setter', () => {
   assert.match(content, /case 'page\.set_files'/);
   assert.match(content, /new DataTransfer\(\)/);
 });
+
+test('burst grid expansion matches the canvas grid picker key for key', async () => {
+  const { gridPick } = await import('../lib/canvas.js');
+  for (const [rows, cols] of [[1, 1], [2, 3], [5, 4]]) {
+    const expanded = expandGridSteps([{ action: 'grid', rows, cols }]).map((s) => s.key);
+    assert.deepEqual(expanded, gridPick(cols, rows), `${cols}x${rows} must match`);
+  }
+});

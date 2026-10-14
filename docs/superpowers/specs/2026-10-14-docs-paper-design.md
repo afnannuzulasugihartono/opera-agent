@@ -36,12 +36,18 @@ One engine, three layers over the frozen 29 primitives:
    (["Insert", "Table"]) plus optional target. Prefers the keyboard road
    (Alt-letter, arrows, Enter); falls back to hover chains (hover, settle,
    hover, settle, click/press). Menu paths are data, never code.
+2. AX road (local harness, bridge CDP): ax-menu plus agent-drive read full
+   AX trees and walk named rows with exact boxes. Same no-blind contract;
+   serves E2E, calibration, and local drives. Server workflows keep hover
+   chains (no AX snapshot exists on relay).
 2. Structure workflows — versioned, one hop each: docs.apply_heading,
    docs.make_list, docs.insert_table, docs.insert_image, docs.footnote,
    docs.header_footer, docs.page_setup, docs.toc_insert,
    docs.export_pdf. Each declares parameters and its expected end state.
 3. Model orchestration — the model composes outline to sections to
-   structures and verifies; it decides, never aims.
+   structures and verifies; it decides, never aims. Thesis input uses the
+   docplan spec format (title, subtitle, body, table, image blocks); the
+   batchUpdate compiler stays parked under the no-API decision.
 
 ## Components
 

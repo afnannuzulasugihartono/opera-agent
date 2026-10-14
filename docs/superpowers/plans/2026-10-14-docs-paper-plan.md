@@ -547,3 +547,51 @@ Expected: PASS.
 git add supabase/functions/_shared/docs-ui-map.js lib/docs-ui-map.js tests/docs-ui-map.test.mjs
 git commit -m "Add the Docs UI button map behind the paper workflows"
 ```
+
+## Task 9: AX road integration and spec-driven E2E
+
+**Files:**
+- Modify: `tests/paper_e2e.py` (read a docplan spec, drive blocks through workflows)
+- Modify: `tests/docs-ui-map.test.mjs` (ax-menu row names match map labels)
+- Create: `tests/fixtures/mini-thesis.spec.json` (docplan-format mini thesis)
+
+**Interfaces:**
+- Consumes: docplan spec block kinds (title, subtitle, body, table, image); ax-menu row-name reads over bridge CDP.
+- Produces: E2E input as data (not hardcoded STEPS); proof that live AX row names equal map labels.
+
+- [ ] **Step 1: Write the failing tests**
+
+```js
+test('live AX menu rows use the mapped English labels', async () => {
+  // Manual gate: needs the bridge up with a Docs tab. Asserts the AX road
+  // reads the same row names the map carries, so the two roads agree.
+});
+```
+
+```python
+# paper_e2e reads tests/fixtures/mini-thesis.spec.json (blocks) instead of
+# hardcoded STEPS; unknown block kinds fail loudly naming the kind.
+```
+
+- [ ] **Step 2: Run to verify they fail**
+
+Run: `node --test tests/docs-ui-map.test.mjs` (new test fails: no AX comparison yet); `py tests/paper_e2e.py` (fails: no fixture).
+Expected: FAIL, missing pieces named.
+
+- [ ] **Step 3: Implement**
+
+Add the mini-thesis fixture (one block per structure kind), teach
+paper_e2e to map kinds to workflow calls, and assert live AX row names
+against map labels for the walked menus.
+
+- [ ] **Step 4: Run to verify**
+
+Run: `node --test tests/docs-ui-map.test.mjs` and `py tests/paper_e2e.py`
+Expected: PASS (or loud SKIP without a Google session).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add tests/fixtures/mini-thesis.spec.json tests/paper_e2e.py tests/docs-ui-map.test.mjs
+git commit -m "Drive E2E from a docplan spec and lock AX rows to the map"
+```
