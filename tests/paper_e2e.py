@@ -128,7 +128,7 @@ def open_doc(mcp, attempts=3):
     last = ''
     for attempt in range(attempts):
         try:
-            opened = mcp.tool('open_url', {'url': 'https://docs.new/'}, timeout=60)
+            opened = mcp.tool('open_url', {'url': 'https://docs.new/', 'timeoutMs': 30000}, timeout=90)
             raw = tool_text(opened)
         except Exception as error:
             last = str(error)
@@ -139,7 +139,7 @@ def open_doc(mcp, attempts=3):
         url = str(tab.get('url', ''))
         if 'accounts.google.com' in raw:
             raise RuntimeError('NO_GOOGLE_SESSION')
-        if tab_id:
+        if tab_id and '/edit' in url:
             return tab_id, url
         last = raw[:200]
     raise RuntimeError('could not open a doc tab: %s' % last)

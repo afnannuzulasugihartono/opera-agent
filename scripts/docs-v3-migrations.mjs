@@ -21,6 +21,16 @@ const ref = (path) => ({ $ref: path });
 const CONCAT = (...parts) => ({ $concat: parts });
 
 const downs = (n) => Array.from({ length: n }, () => KEY('ArrowDown'));
+const CLOSE = [KEY('Escape'), KEY('Escape'), KEY('Escape')];
+
+// WHY EVERY WALK OPENS BY CLOSING FIRST. A menubar click toggles: with a menu
+// already open, clicking the bar closes it and the walk then hunts a row that
+// never appeared. Measured live as the same burst returning Table zero times
+// on a dirty tab and one time on a clean one. Three Escapes cost one command
+// inside the burst and remove the difference entirely.
+
+const opensMenu = (steps) => [BURST('closeMenus', CLOSE), ...steps];
+
 const esc = (value) => value.replace(/\$/g, '$$');
 
 function migration(name, description, steps, output) {
@@ -43,7 +53,7 @@ const OUTLINE_WAIT = {
 };
 const COUNT_DIALOG = { selector: "div[role='dialog'], .docs-ui-gb-button, [aria-label*='Word']", text: 'Words', timeoutMs: 8000 };
 
-const heading = [
+const heading = opensMenu([
   BURST('styleBurst', [KEY(ref('input.level'), ['control', 'alt'])]),
   IF('writeBlock', { op: 'exists', left: ref('input.text') }, [
     BURST('typeBurst', [TEXT(ref('input.text')), TEXT('\n'), KEY('0', ['control', 'alt'])]),
@@ -57,7 +67,7 @@ const heading = [
     BURST('styleRow', [...downs(2), KEY('ArrowRight'), FIND('Heading 1', true)]),
     SET('applied', false)
   ])
-];
+]);
 
 const makeList = [
   IF('wordsRequired', { op: 'not_exists', left: ref('input.expectedWords') }, [
@@ -82,7 +92,7 @@ const makeList = [
   ])
 ];
 
-const insertTable = [
+const insertTable = opensMenu([
   BURST('openInsert', [FIND('Insert', true), CLICK(0), ...downs(1), FIND('Table', true)]),
   BURST('openGrid', [KEY('ArrowRight'), FIND('1 x 1', true)]),
   BURST('gridDown', [KEY('ArrowDown')]),
@@ -91,9 +101,9 @@ const insertTable = [
   BURST('gridPick', [KEY('Enter')]),
   WAIT('tableWait', { selector: "[role='grid'], .kix-table, .docs-table, .kix-table-container", timeoutMs: 8000 }),
   SET('verified', true)
-];
+]);
 
-const insertImage = [
+const insertImage = opensMenu([
   BURST('openInsert', [FIND('Insert', true), CLICK(0), FIND('Image', true)]),
   BURST('openImageMenu', [KEY('ArrowRight'), FIND('Upload from computer')]),
   BURST('pickUpload', [KEY('ArrowDown'), FIND('Upload from computer')]),
@@ -101,7 +111,7 @@ const insertImage = [
   BURST('sendFile', [{ action: 'file', filename: ref('input.filename'), data: ref('input.data') }]),
   WAIT('imageWait', { selector: "img, [role='img'], .kix-image, .image-container", timeoutMs: 12000 }),
   SET('placed', true)
-];
+]);
 
 const footnote = [
   BURST('insertNote', [KEY('f', ['control', 'alt'])]),
@@ -112,7 +122,7 @@ const footnote = [
   ], [SET('noteId', 'footnote-inserted')])
 ];
 
-const headerFooter = [
+const headerFooter = opensMenu([
   BURST('openInsert', [FIND('Insert', true), CLICK(0), ...downs(6), FIND('Headers & footers', true)]),
   BURST('openRegions', [KEY('ArrowRight'), FIND('Header')]),
   BURST('typeHeader', [TEXT('\n'), TEXT(ref('input.header')), TEXT('\n')]),
@@ -120,9 +130,9 @@ const headerFooter = [
   WAIT('numbersWait', { selector: "[role='dialog'], .docs-ui-gb-button, [aria-label*='Page number']", timeoutMs: 8000 }),
   BURST('closeNumbers', [KEY('Escape'), KEY('Escape'), KEY('Escape')]),
   SET('pageNumbers', true)
-];
+]);
 
-const pageSetup = [
+const pageSetup = opensMenu([
   BURST('openFile', [FIND('File', true), CLICK(0), ...downs(17), FIND('Page setup', true)]),
   BURST('openDialog', [KEY('ArrowRight'), FIND('Page setup', true)]),
   WAIT('dialogWait', { selector: "[role='dialog'], .docs-ui-gb-button, [aria-label*='margin']", timeoutMs: 8000 }),
@@ -132,24 +142,24 @@ const pageSetup = [
   ]),
   BURST('confirmDialog', [KEY('Enter')]),
   SET('applied', true)
-];
+]);
 
-const tocInsert = [
+const tocInsert = opensMenu([
   BURST('openInsert', [FIND('Insert', true), CLICK(0), FIND('Table of contents', true)]),
   BURST('openToc', [KEY('ArrowRight'), FIND('Automatic 1')]),
   BURST('insertToc', [KEY('Enter')]),
   WAIT('tocWait', { selector: "[role='doc-toc'], .doc-outline-inner, .kix-toc, [class*='toc']", timeoutMs: 10000 }),
   SET('entries', ref('input.headings'))
-];
+]);
 
-const exportPdf = [
+const exportPdf = opensMenu([
   BURST('openFile', [FIND('File', true), CLICK(0), ...downs(5), FIND('Download', true)]),
   BURST('openDownload', [KEY('ArrowRight'), FIND('PDF Document (.pdf)', true)]),
   BURST('pickPdf', [KEY('ArrowDown'), FIND('PDF Document (.pdf)', true)]),
   BURST('confirmPdf', [KEY('Enter')]),
   WAIT('downloadWait', { selector: "[role='alert'], [role='status'], .docs-ui-gb-toast, .aria-live", timeoutMs: 15000 }),
   SET('downloaded', true)
-];
+]);
 
 const files = [
   ['20261014120000_docs_apply_heading_v3.sql', 'docs.apply_heading', 'Style a heading by shortcut, type it as key events, prove the exact text in the outline with one wait.', heading,

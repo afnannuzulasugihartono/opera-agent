@@ -119,10 +119,20 @@ test('burst file steps reach the content file setter', () => {
   assert.match(content, /new DataTransfer\(\)/);
 });
 
-test('burst grid expansion matches the canvas grid picker key for key', async () => {
-  const { gridPick } = await import('../lib/canvas.js');
-  for (const [rows, cols] of [[1, 1], [2, 3], [5, 4]]) {
+// The picker opens focused on 1x1, Down enters the grid, Right crosses columns
+// and Down crosses rows, Enter picks. Measured against the live Docs grid on
+// 2026-10-14: one ArrowDown left the label at 1 x 1, ArrowRight moved it to
+// 2 x 1, so the sequence below is the observed one, written out rather than
+// compared against a helper that nothing but this test imports.
+
+test('burst grid expansion walks the measured picker sequence exactly', () => {
+  for (const [rows, cols] of [[1, 1], [2, 1], [2, 3], [5, 4]]) {
     const expanded = expandGridSteps([{ action: 'grid', rows, cols }]).map((s) => s.key);
-    assert.deepEqual(expanded, gridPick(cols, rows), `${cols}x${rows} must match`);
+    const expected = [
+      ...Array.from({ length: cols - 1 }, () => 'ArrowRight'),
+      ...Array.from({ length: rows - 1 }, () => 'ArrowDown'),
+      'Enter'
+    ];
+    assert.deepEqual(expanded, expected, `${cols}x${rows} must match the measured walk`);
   }
 });
