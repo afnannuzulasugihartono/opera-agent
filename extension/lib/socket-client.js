@@ -261,18 +261,26 @@ export function createSocketClient({
     try {
       while (takeQueue.length) {
         const command = takeQueue.shift();
+        if (!command || typeof command !== 'object') {
+          onState({ status: 'skipped', reason: 'queue entry was not a command' });
+          continue;
+        }
         let outcome;
         try {
           outcome = await withExecuteTimeout(execute, command);
         } catch (error) {
           outcome = { ok: false, error: { code: 'EXECUTION_ERROR', message: String(error?.message || error).slice(0, 300) } };
         }
-        sendFrame(completionFrame(
-          command.id,
-          outcome?.ok !== false,
-          outcome?.result ?? outcome,
-          outcome?.error
-        ));
+        try {
+          sendFrame(completionFrame(
+            command.id,
+            outcome?.ok !== false,
+            outcome?.result ?? outcome,
+            outcome?.error
+          ));
+        } catch (error) {
+          onState({ status: 'unsent', id: command.id, message: String(error?.message || error).slice(0, 200) });
+        }
       }
     } finally {
       draining = false;
@@ -328,7 +336,8 @@ export function createSocketClient({
       if (!isRunnableCommand(message)) return;
       if (!ready) return;
 
-      takeQueue.push(normalizeCommand(message));
+      const command = normalizeCommand(message);
+      if (command?.id) takeQueue.push(command);
       void drain();
     };
 
