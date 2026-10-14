@@ -185,6 +185,18 @@ const SNAPSHOT_ROLES = new Set([
 // instead of the most recent ones. Matched by ARIA role, never by site: a
 // class name here would be per-site code wearing a generic primitive's name.
 
+// WHY THE CARET RIDES THE SNAPSHOT. Every keystroke lands wherever the caret
+// is, and until now the agent tracked that in its head: after a click or an
+// arrow key, the caret's new home was a guess. A wrong guess types into the
+// wrong paragraph. The caret therefore rides every snapshot as a final row,
+// so the next keystroke's landing is read, not remembered. A collapsed
+// selection reports its point; a ranged one reports nothing, because a
+// selection's focus end has no honest single point and reads collapse
+// selections anyway. Docs draws its caret as an element the page exposes,
+// which is the one per-site selector this generic expression is allowed: a
+// canvas caret has no other API, and the test below holds that exception to
+// exactly one name.
+
 const SNAPSHOT_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
   const ROLES = new Set(__ROLES__);
@@ -262,6 +274,23 @@ const SNAPSHOT_EXPRESSION = `(() => {
     });
   };
 
+  const caretOf = () => {
+    const usable = (r) => (r && (r.x !== 0 || r.y !== 0 || r.width !== 0 || r.height !== 0)) ? r : null;
+    const kix = document.querySelector('.kix-cursor-caret');
+    if (kix) {
+      const r = usable(kix.getBoundingClientRect());
+      if (!r) return null;
+      return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
+    }
+    try {
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return null;
+      const r = usable(sel.getRangeAt(0).getBoundingClientRect());
+      if (!r) return null;
+      return { x: Math.round(r.x), y: Math.round(r.y) };
+    } catch { return null; }
+  };
+
   for (const box of document.querySelectorAll(OVERLAYS)) {
     if (box.parentElement && box.parentElement.closest(OVERLAYS)) continue;
     tryRow(box);
@@ -276,6 +305,8 @@ const SNAPSHOT_EXPRESSION = `(() => {
     if (el.closest(OVERLAYS)) continue;
     tryRow(el);
   }
+  const caret = caretOf();
+  if (caret) out.push({ role: 'caret', name: 'text caret', x: caret.x, y: caret.y });
   return out;
 })()`;
 

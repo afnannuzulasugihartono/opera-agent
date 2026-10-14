@@ -61,7 +61,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'read_page',
-    description: 'Read one tab: url, title and text. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
+    description: 'Read one tab: url, title and text. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines, and the caret ends up at the end of the document. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {
@@ -143,7 +143,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'ax_snapshot',
-    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look.',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look. The text caret rides as a final caret row when visible, so the next keystroke lands knowingly.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
   }
 ]);
@@ -201,7 +201,7 @@ const SETTLE_MS = 120;
 // The first look at a tab reports null: there is no previous page, and the
 // elements it carries ARE the baseline. Keyed by driver object in a WeakMap,
 // so a closed tab's last look is garbage instead of a leak.
-//
+
 // WHY THE LOOK WAITS A BEAT FIRST. The snapshot used to run the instant the
 // action's reply landed — and a menu that opens a frame later was already
 // missed: proven live, the auto-page after clicking Insert held no menu rows

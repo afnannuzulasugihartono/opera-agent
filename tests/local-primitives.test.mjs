@@ -706,7 +706,15 @@ test('overlay rows come first, matched by role and never by site', () => {
 
   assert.ok(expression.includes('[role~="menu"]'), 'menus come before document order');
   assert.ok(expression.includes('OVERLAYS'), 'one list names every overlay container');
-  assert.ok(!expression.includes('kix'), 'no per-site selectors in a generic primitive');
+  assert.ok(!/kix-(?!cursor-caret)/.test(expression), 'no per-site selectors except the one caret exception below');
+});
+
+test('the text caret rides the snapshot so the next keystroke lands knowingly', () => {
+  const expression = snapshotExpression(120);
+
+  assert.ok(expression.includes('kix-cursor-caret'), 'the canvas caret Docs exposes');
+  assert.ok(expression.includes("role: 'caret'"), 'rides as a final row, past the limit');
+  assert.ok(expression.includes('isCollapsed'), 'a ranged selection reports nothing rather than a dishonest point');
 });
 
 // WHY THE BEAT IS PINNED, NOT THE TIMING. Docs drops a keyDown and keyUp that
