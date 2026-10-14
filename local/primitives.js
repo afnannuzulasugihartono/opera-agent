@@ -192,10 +192,12 @@ const SNAPSHOT_ROLES = new Set([
 // so the next keystroke's landing is read, not remembered. A collapsed
 // selection reports its point; a ranged one reports nothing, because a
 // selection's focus end has no honest single point and reads collapse
-// selections anyway. Docs draws its caret as an element the page exposes,
-// which is the one per-site selector this generic expression is allowed: a
-// canvas caret has no other API, and the test below holds that exception to
-// exactly one name.
+// selections anyway. Docs draws its caret as an element the page exposes, and
+// mirrors its text in a hidden frame the selection API can read: those two
+// narrowly named selectors are the per-site exception this generic expression
+// allows, because a canvas caret and its line have no other API, and the test
+// below holds that exception to exactly these names. The row carries the line
+// the caret stands on, so moving between lines is verified by text, not pixels.
 
 const SNAPSHOT_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
@@ -274,20 +276,48 @@ const SNAPSHOT_EXPRESSION = `(() => {
     });
   };
 
+  const cleanLine = (s) => {
+    let out = '';
+    for (const ch of String(s || '')) {
+      const code = ch.codePointAt(0);
+      if ((code < 8203 || code > 8205) && code !== 65279) out += ch;
+    }
+    return out.trim().slice(0, 120);
+  };
+
+  const caretLineOf = (doc, win) => {
+    try {
+      const focus = doc.activeElement;
+      if (focus && (focus.tagName === 'INPUT' || focus.tagName === 'TEXTAREA')) {
+        const kind = (focus.type || 'text').toLowerCase();
+        if (kind === 'password' || kind === 'hidden') return '';
+        if (focus.getAttribute('autocomplete') === 'one-time-code') return '';
+        return cleanLine(focus.value);
+      }
+      const sel = win.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.anchorNode) return '';
+      const node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+      const block = node && node.closest ? node.closest('p,div,li,td,th,h1,h2,h3,h4,h5,h6,pre,blockquote') : null;
+      return cleanLine((block || node || {}).textContent);
+    } catch { return ''; }
+  };
+
   const caretOf = () => {
     const usable = (r) => (r && (r.x !== 0 || r.y !== 0 || r.width !== 0 || r.height !== 0)) ? r : null;
+    const frame = document.querySelector('.docs-texteventtarget-iframe');
+    const doc = frame && frame.contentDocument ? frame.contentDocument : document;
+    const win = frame && frame.contentWindow ? frame.contentWindow : window;
     const kix = document.querySelector('.kix-cursor-caret');
     if (kix) {
       const r = usable(kix.getBoundingClientRect());
-      if (!r) return null;
-      return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
+      if (r) return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), line: caretLineOf(doc, win) };
     }
     try {
       const sel = document.getSelection();
       if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return null;
       const r = usable(sel.getRangeAt(0).getBoundingClientRect());
       if (!r) return null;
-      return { x: Math.round(r.x), y: Math.round(r.y) };
+      return { x: Math.round(r.x), y: Math.round(r.y), line: caretLineOf(document, window) };
     } catch { return null; }
   };
 
@@ -306,7 +336,9 @@ const SNAPSHOT_EXPRESSION = `(() => {
     tryRow(el);
   }
   const caret = caretOf();
-  if (caret) out.push({ role: 'caret', name: 'text caret', x: caret.x, y: caret.y });
+  if (caret) {
+    out.push({ role: 'caret', name: 'text caret', x: caret.x, y: caret.y, ...(caret.line ? { value: caret.line } : {}) });
+  }
   return out;
 })()`;
 

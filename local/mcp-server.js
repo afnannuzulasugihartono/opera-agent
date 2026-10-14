@@ -143,7 +143,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'ax_snapshot',
-    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look. The text caret rides as a final caret row when visible, so the next keystroke lands knowingly.',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look. The text caret rides as a final caret row carrying the line it stands on, so the next keystroke lands knowingly.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
   }
 ]);

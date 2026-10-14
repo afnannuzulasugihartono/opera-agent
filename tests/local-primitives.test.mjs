@@ -713,8 +713,11 @@ test('the text caret rides the snapshot so the next keystroke lands knowingly', 
   const expression = snapshotExpression(120);
 
   assert.ok(expression.includes('kix-cursor-caret'), 'the canvas caret Docs exposes');
+  assert.ok(expression.includes('docs-texteventtarget-iframe'), 'the mirror that holds the line text');
   assert.ok(expression.includes("role: 'caret'"), 'rides as a final row, past the limit');
   assert.ok(expression.includes('isCollapsed'), 'a ranged selection reports nothing rather than a dishonest point');
+  assert.ok(expression.includes('anchorNode'), 'the line comes from the selection, not a guess');
+  assert.ok(expression.includes('caret.line'), 'and rides the row for the agent to read');
 });
 
 // WHY THE BEAT IS PINNED, NOT THE TIMING. Docs drops a keyDown and keyUp that
