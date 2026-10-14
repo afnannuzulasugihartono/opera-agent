@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: burst-atomic-actions.test — Test..
 // @state: Test..
 // @dependencies: node:fs, node:test, strict, protocol, extension-source.
@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { BURST_STEP_KEYS, validateBurst } from '../extension/lib/protocol.js';
+import { BURST_STEP_KEYS, validateBurst, expandGridSteps } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 
 test('burst click/fill steps accept refFromStep passthrough keys', () => {
@@ -85,4 +85,36 @@ test('version bumped to 1.6.26 for the loopback poll release', () => {
   assert.match(protocol, /PRODUCT_VERSION = '1.6.26'/);
   const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
   assert.equal(manifest.version, '1.6.26');
+});
+
+test('validateBurst accepts grid and file macro steps with tight params', () => {
+  const grid = validateBurst({ steps: [{ action: 'grid', rows: 3, cols: 4 }] });
+  assert.equal(grid.ok, true, JSON.stringify(grid));
+  assert.equal(validateBurst({ steps: [{ action: 'grid', rows: 0, cols: 4 }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'grid', rows: 3, cols: 21 }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'grid', rows: 3 }] }).ok, false);
+  const file = validateBurst({ steps: [{ action: 'file', filename: 'fig.png', data: 'data:image/png;base64,AA' }] });
+  assert.equal(file.ok, true, JSON.stringify(file));
+  assert.equal(validateBurst({ steps: [{ action: 'file', filename: 'fig.png' }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{ action: 'file', filename: 'fig.png', data: 'x'.repeat(3000000) }] }).ok, false);
+});
+
+test('expandGridSteps unrolls a grid into arrow keys plus Enter', () => {
+  const steps = expandGridSteps([{ action: 'grid', rows: 2, cols: 3 }]);
+  assert.deepEqual(steps.map((s) => s.key), ['ArrowRight', 'ArrowRight', 'ArrowDown', 'Enter']);
+  assert.ok(steps.every((s) => s.action === 'key'));
+  assert.deepEqual(expandGridSteps([{ action: 'grid', rows: 1, cols: 1 }]), [{ action: 'key', key: 'Enter' }]);
+  const passthrough = [{ action: 'click', ref: 'r1' }];
+  assert.equal(expandGridSteps(passthrough)[0], passthrough[0], 'non-grid steps pass through untouched');
+  const mixed = expandGridSteps([{ action: 'grid', rows: 1, cols: 2 }, { action: 'find', text: 'x' }, { action: 'click', refFromStep: 1 }]);
+  assert.equal(mixed[3].refFromStep, 2, 'a ref keeps pointing at its find step after expansion');
+});
+
+test('burst file steps reach the content file setter', () => {
+  const burst = fs.readFileSync(new URL('../extension/worker/burst.js', import.meta.url), 'utf8');
+  const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
+  assert.match(burst, /page\.set_files/);
+  assert.match(burst, /expandGridSteps\(params\.steps\)/);
+  assert.match(content, /case 'page\.set_files'/);
+  assert.match(content, /new DataTransfer\(\)/);
 });

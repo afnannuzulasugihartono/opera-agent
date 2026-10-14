@@ -1,3 +1,8 @@
+// @last-edited: 2026-10-13 UTC+7.
+// @title: docs-structure.test — structure workflow migrations embed valid, proven JSON.
+// @state: locks heading, list, table, and image workflow shapes and proofs.
+// @dependencies: node:test, strict, node:fs.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,4 +26,16 @@ test('make_list types items and proves the count', () => {
   const def = read('20261014030000_docs_make_list.sql');
   assert.ok(JSON.stringify(def.steps).includes('foreach'), 'items are typed one per step');
   assert.ok(def.output.count, 'output proves the item count');
+});
+
+test('insert_table walks Insert menu and proves dimensions', () => {
+  const def = read('20261014040000_docs_insert_table.sql');
+  assert.ok(JSON.stringify(def.steps).includes('Table'), 'table path is walked, not typed');
+  assert.ok(def.output.rows && def.output.cols && def.output.verified, 'output proves dimensions');
+});
+
+test('insert_image uploads and leaves the caption paragraph ready', () => {
+  const def = read('20261014050000_docs_insert_image.sql');
+  assert.ok(JSON.stringify(def.steps).includes('Image'), 'image path is walked');
+  assert.ok(def.output.placed, 'output proves placement');
 });

@@ -1250,6 +1250,21 @@
     return result;
   }
 
+  async function setFiles(args) {
+    const name = String(args.filename || '');
+    const dataUrl = String(args.data || '');
+    if (!name || !dataUrl.startsWith('data:')) throw new Error('set_files needs a filename and a data: URL.');
+    const input = document.querySelector('input[type="file"]');
+    if (!input) throw new Error('No file input on this page.');
+    const blob = await (await fetch(dataUrl)).blob();
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([blob], name.slice(0, 300), { type: blob.type || 'application/octet-stream' }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: true, files: input.files.length };
+  }
+
   function fillInfo(args) {
     const el = resolveRef(args.ref);
     assertEditableSafe(el);
@@ -1884,6 +1899,7 @@
       case 'page.capture_policy': return capturePolicy();
       case 'page.fill': return fill(args);
       case 'page.fill_info': return fillInfo(args);
+      case 'page.set_files': return setFiles(args);
       case 'page.focus': return focus(args);
       case 'page.scroll': return scroll(args);
       case 'page.key': return key(args);

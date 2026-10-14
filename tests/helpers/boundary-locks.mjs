@@ -28,7 +28,7 @@
 // would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'f0acb1c0661a46e823655ebcd7e0a7d3ced4d599'],
+  ['../extension/content.js', '67a3f0aa0e3ebf73165b5fe078b8b842de261f60'],
   ['../extension/background.js', 'ff1811e8c7d5fce3ae5bb167a1f50db78c9be3ff'],
   ['../extension/manifest.json', '6fa62e7eeb7b53650b6ea661d351611bd98c5ced'],
   ['../supabase/functions/opera-agent-mcp/index.ts', 'ed5b895fe846c67663d44e9ac7fa19dc757e124c'],

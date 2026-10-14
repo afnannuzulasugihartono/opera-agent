@@ -95,6 +95,8 @@ function validRef(value) {
 function validateBurstStep(step) {
   if (!isPlainObject(step)) return 'Each burst step must be an object.';
   const action = String(step.action || '');
+  if (action === 'grid') return validateGridStep(step);
+  if (action === 'file') return validateFileStep(step);
   if (!BURST_ACTION_METHODS[action]) return 'Burst action is not allowlisted.';
   const allowedKeys = new Set(BURST_STEP_KEYS[action]);
   const unexpectedKey = Object.keys(step).find((key) => !allowedKeys.has(key));
@@ -136,6 +138,49 @@ function validateBurstStep(step) {
 
   if (action === 'navigate' && (typeof step.url !== 'string' || !step.url)) return 'Burst navigate requires a URL.';
   return null;
+}
+
+const BURST_GRID_MAX = 20;
+const BURST_FILE_DATA_MAX = 2000000;
+
+function validateGridStep(step) {
+  const unexpectedKey = Object.keys(step).find((key) => !['action', 'rows', 'cols', 'tabId'].includes(key));
+  if (unexpectedKey) return `Burst grid does not allow ${unexpectedKey}.`;
+  for (const key of ['rows', 'cols']) {
+    const value = Number(step[key]);
+    if (!Number.isInteger(value) || value < 1 || value > BURST_GRID_MAX) return `Invalid burst grid ${key}.`;
+  }
+  return null;
+}
+
+function validateFileStep(step) {
+  const unexpectedKey = Object.keys(step).find((key) => !['action', 'filename', 'data', 'tabId'].includes(key));
+  if (unexpectedKey) return `Burst file does not allow ${unexpectedKey}.`;
+  if (typeof step.filename !== 'string' || !step.filename || step.filename.length > 300) return 'Burst file requires a filename.';
+  if (typeof step.data !== 'string' || !step.data || step.data.length > BURST_FILE_DATA_MAX) return 'Burst file requires data within the byte cap.';
+  return null;
+}
+
+export function expandGridSteps(steps) {
+  const out = [];
+  const startOf = [];
+  for (const step of steps) {
+    startOf.push(out.length);
+    if (!step || step.action !== 'grid') {
+      out.push(step);
+      continue;
+    }
+    const at = step.tabId === undefined || step.tabId === null ? {} : { tabId: step.tabId };
+    for (let c = 1; c < Number(step.cols); c += 1) out.push({ action: 'key', key: 'ArrowRight', ...at });
+    for (let r = 1; r < Number(step.rows); r += 1) out.push({ action: 'key', key: 'ArrowDown', ...at });
+    out.push({ action: 'key', key: 'Enter', ...at });
+  }
+  return out.map((step) => {
+    if (step == null || typeof step !== 'object' || step.refFromStep === undefined || step.refFromStep === null) return step;
+    const from = Number(step.refFromStep);
+    if (!Number.isInteger(from) || from < 0 || from >= startOf.length) return step;
+    return { ...step, refFromStep: startOf[from] };
+  });
 }
 
 export function validateBurst(params) {

@@ -1,3 +1,8 @@
+// @last-edited: 2026-10-13 UTC+7.
+// @title: docs-menu-walk.test — the menu walk migration embeds keyboard-first shape.
+// @state: locks keyboard road, hover fallback, ref-only refs, output contract.
+// @dependencies: node:test, strict, node:fs.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
