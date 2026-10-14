@@ -480,3 +480,70 @@ Expected: green.
 git add docs/api.md docs/handoff.md
 git commit -m "Document the paper workflow surface"
 ```
+
+## Task 8: Docs UI button map
+
+**Files:**
+- Create: `supabase/functions/_shared/docs-ui-map.js`
+- Create: `lib/docs-ui-map.js`
+- Create: `tests/docs-ui-map.test.mjs`
+
+**Interfaces:**
+- Consumes: menu labels used by the 10 workflow migrations.
+- Produces: `resolveMenuTarget(path, locale)` returning `{ labels, verify }`; every workflow label present in the map (test-enforced).
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { resolveMenuTarget, MENU_MAP } from '../lib/docs-ui-map.js';
+
+test('every menu label the workflows use exists in the map', () => {
+  const dir = new URL('../supabase/migrations/', import.meta.url);
+  const texts = new Set();
+  for (const file of fs.readdirSync(dir)) {
+    if (!/_docs_/.test(file)) continue;
+    const src = fs.readFileSync(new URL(`../supabase/migrations/${file}`, import.meta.url), 'utf8');
+    for (const m of src.matchAll(/"(?:find|hover|click)".*?"text":"([^"]+)"/g)) texts.add(m[1]);
+    for (const m of src.matchAll(/"text":"([A-Z][^"]*)"/g)) texts.add(m[1]);
+  }
+  assert.ok(texts.size > 5, 'expected several menu labels across workflows');
+  for (const label of texts) {
+    assert.ok(resolveMenuTarget([label]), `map covers ${label}`);
+  }
+});
+
+test('resolveMenuTarget serves both locales with verify selectors', () => {
+  const en = resolveMenuTarget(['Insert', 'Table'], 'en');
+  assert.deepEqual(en.labels, ['Insert', 'Table']);
+  assert.ok(en.verify && en.verify.selector.includes('menu'));
+  const id = resolveMenuTarget(['Insert', 'Table'], 'id');
+  assert.deepEqual(id.labels, ['Sisipkan', 'Tabel']);
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `node --test tests/docs-ui-map.test.mjs`
+Expected: FAIL with ENOENT (module missing).
+
+- [ ] **Step 3: Write the map module and re-export**
+
+`_shared/docs-ui-map.js` holds MENU_MAP (canonical English path segments
+with Indonesian translations, verify selectors, shortcuts where measured)
+plus resolveMenuTarget(path, locale). `lib/docs-ui-map.js` re-exports it
+for the Node suite (established duo pattern).
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `node --test tests/docs-ui-map.test.mjs`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add supabase/functions/_shared/docs-ui-map.js lib/docs-ui-map.js tests/docs-ui-map.test.mjs
+git commit -m "Add the Docs UI button map behind the paper workflows"
+```
