@@ -99,6 +99,8 @@ const KEY_CODES = Object.freeze({
   Escape: { windowsVirtualKeyCode: 27, code: 'Escape', key: 'Escape' },
   ArrowDown: { windowsVirtualKeyCode: 40, code: 'ArrowDown', key: 'ArrowDown' },
   ArrowUp: { windowsVirtualKeyCode: 38, code: 'ArrowUp', key: 'ArrowUp' },
+  ArrowLeft: { windowsVirtualKeyCode: 37, code: 'ArrowLeft', key: 'ArrowLeft' },
+  ArrowRight: { windowsVirtualKeyCode: 39, code: 'ArrowRight', key: 'ArrowRight' },
   Home: { windowsVirtualKeyCode: 36, code: 'Home', key: 'Home' },
   End: { windowsVirtualKeyCode: 35, code: 'End', key: 'End' },
   Space: { windowsVirtualKeyCode: 32, code: 'Space', key: ' ', text: ' ' }

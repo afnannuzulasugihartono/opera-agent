@@ -351,7 +351,7 @@ test('key vocabularies are enumerated so a misspelling fails before the browser'
 
   assert.deepEqual(byName.press_key.inputSchema.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
   assert.deepEqual(byName.stream_keys.inputSchema.properties.events.items.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
-  assert.match(byName.press_key.inputSchema.properties.key.description, /Enter.*single printable ASCII/s);
+  assert.match(byName.press_key.inputSchema.properties.key.description, /Enter.*ArrowLeft.*ArrowRight.*single printable ASCII/s);
 });
 
 // WHY THE CHANGE SET IS TESTED AS A HINT, NOT A TRUTH. The full page rides

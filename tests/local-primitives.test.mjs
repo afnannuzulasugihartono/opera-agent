@@ -734,3 +734,18 @@ test('chords in a stream breathe between them, texts do not need to', async () =
 
   assert.deepEqual(slept, [50, 50, 50, 50], 'each chord beats inside and after; the text passes through');
 });
+
+// WHY ALL FOUR ARROWS ARE PINNED. The table grid in Google Docs expands right
+// and down; with only Up and Down known, a drive that needed Right died on an
+// "Unknown key" in the middle of a live thesis. Directions come in fours.
+
+test('all four arrows dispatch with their virtual key codes', async () => {
+  for (const [name, vk, code] of [['ArrowLeft', 37, 'ArrowLeft'], ['ArrowRight', 39, 'ArrowRight'], ['ArrowUp', 38, 'ArrowUp'], ['ArrowDown', 40, 'ArrowDown']]) {
+    const cdp = recordingCdp();
+    await createPrimitives(cdp).key(name);
+
+    const down = cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'rawKeyDown');
+    assert.equal(down.params.windowsVirtualKeyCode, vk, name);
+    assert.equal(down.params.code, code, name);
+  }
+});

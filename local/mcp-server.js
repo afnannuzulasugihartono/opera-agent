@@ -101,7 +101,7 @@ export const TOOLS = Object.freeze([
     description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow. Returns the page as it now stands, so you see what the key did without a second call.',
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, key: stringArg('Enter, Tab, Escape, ArrowUp, ArrowDown, Home, End, Space, Backspace, Delete, or a single printable ASCII character'), modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] }, description: 'held while the key goes down' } },
+      properties: { tabId: tabArg, key: stringArg('Enter, Tab, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Home, End, Space, Backspace, Delete, or a single printable ASCII character'), modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] }, description: 'held while the key goes down' } },
       required: ['key']
     }
   },
