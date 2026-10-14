@@ -28,6 +28,7 @@ import { createServer, request as httpRequest } from 'node:http';
 
 import {
   bridgeAddress,
+  bridgeReachable,
   closeBridge,
   closeBridgeTarget,
   connectBridgeTarget,
@@ -352,5 +353,25 @@ test('a trusted window skips the proof ping, and zero trust proves every call', 
   } finally {
     if (previous === undefined) delete process.env.OPERA_BRIDGE_TRUST_MS;
     else process.env.OPERA_BRIDGE_TRUST_MS = previous;
+  }
+});
+
+// WHY THE PORT CONFLICT HAS TO BE LOUD. A live extension was once sent
+// silently back to the debugging port, because the real cause was not a
+// missing extension but another process holding the loopback port. The drive
+// carried on against a profile with nothing signed in, with no sign of why —
+// which is the exact stuck-with-no-explanation this file exists to prevent.
+
+test('a port another driver owns is named, not swallowed into a wrong pipe', async () => {
+  const squatter = createServer((req, res) => res.end());
+  await new Promise((resolve) => squatter.listen(0, '127.0.0.1', resolve));
+  const taken = squatter.address().port;
+  process.env.OPERA_BRIDGE_PORT = String(taken);
+  try {
+    await assert.rejects(() => bridgeReachable(), /already owned by another driver/,
+      'a conflict must name itself instead of answering "no extension"');
+  } finally {
+    await new Promise((resolve) => squatter.close(resolve));
+    process.env.OPERA_BRIDGE_PORT = '0';
   }
 });

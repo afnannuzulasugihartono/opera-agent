@@ -123,15 +123,18 @@ export async function waitForBridgeLink({ timeoutMs = 15000 } = {}) {
 // and the driver stayed on a debugging port that opens a profile nobody is
 // logged into — for the rest of the process's life, with no way out but a
 // restart. The link is a live socket, so asking is one field read, and a
-// worker that wakes up thirty seconds late is simply picked up.
+// worker that wakes up thirty seconds later is simply picked up.
+//
+// WHY A CONFLICT IS NOT SWALLOWED. Swallowing every error here once sent a
+// live extension silently back to the debugging port, because the real cause
+// was not a missing extension but another process holding the port — so the
+// drive carried on against a profile with nothing signed in and no sign of
+// why. There is no version of a silent wrong answer to "can you reach the
+// browser I am signed into".
 
 export async function bridgeReachable() {
-  try {
-    const srv = await ensureServer();
-    return srv.linked();
-  } catch {
-    return false;
-  }
+  const srv = await ensureServer();
+  return srv.linked();
 }
 
 export async function closeBridge() {
