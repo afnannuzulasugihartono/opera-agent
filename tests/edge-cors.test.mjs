@@ -49,7 +49,6 @@ test('env list overrides defaults', () => {
 const EDGE_FUNCTIONS = [
   'opera-agent-auth',
   'opera-agent-bridge',
-  'opera-agent-ledger',
   'opera-agent-listen',
   'opera-agent-runner',
   'opera-agent-vm'

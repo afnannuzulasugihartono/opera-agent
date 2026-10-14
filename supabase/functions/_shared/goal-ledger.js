@@ -53,11 +53,6 @@ const CONSTRAINT_FIELDS = new Set([
 const AUTHORIZATION_FIELDS = new Set(['authorizationId', 'operationClass', 'scopeId', 'expiresAt']);
 const CLAIM_FIELDS = new Set(['claimId', 'scopeId', 'predicate', 'evidenceRequirementIds']);
 const REQUIREMENT_FIELDS = new Set(['requirementId', 'categories', 'minimumCount', 'maximumAgeSeconds']);
-const REVISION_FIELDS = new Set(['expectedRevision', 'expectedDigest', 'freshUserAuthorization', 'changes']);
-const CHANGE_FIELDS = new Set([
-  'objective', 'scope', 'constraints', 'authorizations', 'claims', 'evidenceRequirements', 'nonGoals', 'expiresAt',
-]);
-const TERMINAL_REQUEST_FIELDS = new Set(['expectedRevision', 'expectedDigest']);
 const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv)/i;
 
 export class LedgerError extends Error {
@@ -372,78 +367,6 @@ export async function validateLedger(input, options = {}) {
   const expected = await digestCanonical(normalized);
   if (expected !== input.ledgerDigest) fail('INVALID_DIGEST', 'ledger.ledgerDigest does not match canonical content.');
   return deepFreeze({ ...normalized, ledgerDigest: expected });
-}
-
-function validateHeadRequest(current, request, allowedFields) {
-  assertAllowedFields(request, allowedFields, 'request');
-  if (!Number.isSafeInteger(request.expectedRevision) || request.expectedRevision < 1) fail('INVALID_VALUE', 'request.expectedRevision is invalid.');
-  if (!SHA256_HEX.test(request.expectedDigest || '')) fail('INVALID_DIGEST', 'request.expectedDigest is invalid.');
-  if (request.expectedRevision < current.revision) fail('STALE_REVISION', 'The submitted revision is stale.');
-  if (request.expectedRevision > current.revision) fail('FORKED_REVISION', 'The submitted revision is ahead of the current head.');
-  if (request.expectedDigest !== current.ledgerDigest) fail('FORKED_REVISION', 'The submitted digest does not match the current head.');
-  if (TERMINAL_STATUSES.has(current.status)) fail('TERMINAL_LEDGER', 'A terminal ledger cannot be revised.');
-}
-
-function authorizationBroadens(previous, next) {
-  const prior = new Map(previous.map((item) => [item.authorizationId, item]));
-  for (const authorization of next) {
-    const existing = prior.get(authorization.authorizationId);
-    if (!existing) return true;
-    if (authorization.operationClass !== existing.operationClass || authorization.scopeId !== existing.scopeId) return true;
-    if (Date.parse(authorization.expiresAt) > Date.parse(existing.expiresAt)) return true;
-  }
-  return false;
-}
-
-export async function reviseLedger(input, request, options = {}) {
-  const current = await validateLedger(input);
-  validateHeadRequest(current, request, REVISION_FIELDS);
-  assertAllowedFields(request.changes, CHANGE_FIELDS, 'request.changes');
-  if (!Object.keys(request.changes).length) fail('INVALID_VALUE', 'request.changes must not be empty.');
-  if (request.freshUserAuthorization !== undefined && typeof request.freshUserAuthorization !== 'boolean') {
-    fail('INVALID_TYPE', 'request.freshUserAuthorization must be boolean.');
-  }
-
-  const base = withoutDigest(current);
-  const candidate = {
-    ...base,
-    ...request.changes,
-    revision: current.revision + 1,
-    parentDigest: current.ledgerDigest,
-    status: 'OPEN',
-  };
-  if (candidate.revision > LEDGER_LIMITS.maximumRevision) fail('OVER_LIMIT', 'Ledger revision exceeds its cap.');
-  const normalized = normalizeLedgerShape(candidate);
-  assertNowWithinLedger(normalized, options.now);
-
-  if (authorizationBroadens(current.authorizations, normalized.authorizations)) {
-    if (request.freshUserAuthorization !== true) fail('IMPLICIT_AUTHORITY_BROADENING', 'Authorization cannot broaden implicitly.');
-    if (options.authoritySource !== 'USER') fail('UNTRUSTED_INTENT_SOURCE', 'Fresh authorization must come from the user.');
-  }
-  return attachDigest(normalized);
-}
-
-async function terminalTransition(input, request, options, status) {
-  const current = await validateLedger(input);
-  validateHeadRequest(current, request, TERMINAL_REQUEST_FIELDS);
-  const normalizedNow = normalizeTimestamp(options.now, 'options.now');
-  if (status === 'EXPIRED' && Date.parse(normalizedNow) < Date.parse(current.expiresAt)) fail('NOT_EXPIRED', 'The ledger has not reached its expiry.');
-  const candidate = {
-    ...withoutDigest(current),
-    revision: current.revision + 1,
-    parentDigest: current.ledgerDigest,
-    status,
-  };
-  if (candidate.revision > LEDGER_LIMITS.maximumRevision) fail('OVER_LIMIT', 'Ledger revision exceeds its cap.');
-  return attachDigest(normalizeLedgerShape(candidate));
-}
-
-export function cancelLedger(input, request, options = {}) {
-  return terminalTransition(input, request, options, 'CANCELLED');
-}
-
-export function expireLedger(input, request, options = {}) {
-  return terminalTransition(input, request, options, 'EXPIRED');
 }
 
 export function inspectLedger(ledger) {
