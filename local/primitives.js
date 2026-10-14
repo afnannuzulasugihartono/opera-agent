@@ -147,6 +147,103 @@ const SNAPSHOT_ROLES = new Set([
   'table', 'grid', 'row', 'gridcell', 'cell', 'columnheader', 'rowheader'
 ]);
 
+// WHY THE SNAPSHOT IS ONE CALL AND NOT ONE PER ELEMENT. It used to read the
+// accessibility tree and then ask for the box of every node it liked, which on
+// a Google Doc is up to a hundred and twenty round trips. The extension runs
+// one command at a time on purpose — two browser actions racing leave the page
+// in neither state anyone asked for — so those were sequential no matter that
+// the caller said Promise.all, and a snapshot cost about two seconds before
+// anything had decided anything. Chrome has no batch API for element boxes, so
+// the only way down to one round trip is to compute the boxes where the
+// elements live: one evaluate inside the page walks the DOM once and returns
+// role, name and centre for everything worth clicking.
+//
+// WHY THE ROLES ARE DERIVED IN THE PAGE. Dropping the accessibility tree is
+// only safe because the role is recoverable: an explicit role attribute is
+// what Google Docs itself puts on its menus, and the tag table below covers
+// the plain-HTML remainder. A widget whose role only an assistive technology
+// would compute would be missing, which is why the attribute is read first and
+// the tag table is deliberately short.
+
+const SNAPSHOT_EXPRESSION = `(() => {
+  const LIMIT = __LIMIT__;
+  const ROLES = new Set(__ROLES__);
+  const TAG_ROLE = {
+    A: 'link', BUTTON: 'button', SELECT: 'combobox', TEXTAREA: 'textbox',
+    TABLE: 'table', TR: 'row', TD: 'cell', TH: 'columnheader'
+  };
+  const INPUT_ROLE = {
+    button: 'button', submit: 'button', reset: 'button', checkbox: 'checkbox',
+    radio: 'radio', range: 'slider', search: 'searchbox', text: 'textbox',
+    email: 'textbox', tel: 'textbox', url: 'textbox', password: 'textbox',
+    number: 'textbox'
+  };
+
+  const roleOf = (el) => {
+    const stated = (el.getAttribute('role') || '').split(' ')[0].toLowerCase();
+    if (stated && ROLES.has(stated)) return stated;
+    const tag = el.tagName;
+    if (tag === 'INPUT') return INPUT_ROLE[(el.type || 'text').toLowerCase()] || null;
+    if (tag === 'TH') return el.scope === 'row' ? 'rowheader' : 'columnheader';
+    return TAG_ROLE[tag] || null;
+  };
+
+  const nameOf = (el) => {
+    const label = el.getAttribute('aria-label');
+    if (label) return label;
+    const labelledBy = el.getAttribute('aria-labelledby');
+    if (labelledBy) {
+      const text = labelledBy.split(' ')
+        .map((id) => { const n = document.getElementById(id); return n ? (n.textContent || '') : ''; })
+        .join(' ').trim();
+      if (text) return text;
+    }
+    const alt = el.getAttribute('alt');
+    if (alt) return alt;
+    const placeholder = el.getAttribute('placeholder');
+    if (placeholder) return placeholder;
+    const title = el.getAttribute('title');
+    if (title) return title;
+    return (el.innerText || el.textContent || '').trim();
+  };
+
+  const valueOf = (el) => {
+    const tag = el.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      return typeof el.value === 'string' ? el.value : '';
+    }
+    const marked = el.querySelector('[aria-selected="true"], [aria-checked="true"]');
+    return marked ? (marked.innerText || marked.textContent || '').trim() : '';
+  };
+
+  const out = [];
+  const candidates = document.querySelectorAll('button, a[href], input, select, textarea, table, tr, td, th, [role], [tabindex], [contenteditable]');
+  for (const el of candidates) {
+    if (out.length >= LIMIT) break;
+    const role = roleOf(el);
+    if (!role || !ROLES.has(role)) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+    const style = getComputedStyle(el);
+    if (style.visibility === 'hidden' || style.display === 'none') continue;
+    const value = valueOf(el);
+    out.push({
+      role,
+      name: nameOf(el).slice(0, 80),
+      x: Math.round(rect.left + rect.width / 2),
+      y: Math.round(rect.top + rect.height / 2),
+      ...(value ? { value: value.slice(0, 80) } : {})
+    });
+  }
+  return out;
+})()`;
+
+export function snapshotExpression(limit) {
+  return SNAPSHOT_EXPRESSION
+    .replace('__LIMIT__', String(limit))
+    .replace('__ROLES__', JSON.stringify([...SNAPSHOT_ROLES]));
+}
+
 export function modifierMask(modifiers = []) {
   return modifiers.reduce((mask, name) => mask | (MODIFIER_BITS[name] ?? 0), 0);
 }
@@ -336,36 +433,12 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     async snapshot({ limit = 120 } = {}) {
       const capped = Math.min(Math.max(1, Number(limit) || 120), 500);
-      const [, tree] = await Promise.all([
-        cdp.send('Accessibility.enable', {}),
-        cdp.send('Accessibility.getFullAXTree', {})
-      ]);
-      const nodes = tree?.nodes ?? [];
-      const wanted = [];
-      for (const node of nodes) {
-        if (wanted.length >= capped) break;
-        const role = node?.role?.value ?? node?.role;
-        if (!SNAPSHOT_ROLES.has(role)) continue;
-        if (node?.backendDOMNodeId == null) continue;
-        wanted.push(node);
-      }
-      const boxes = await Promise.all(wanted.map((node) =>
-        cdp.send('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId }).catch(() => null)
-      ));
-      const out = [];
-      for (const [i, node] of wanted.entries()) {
-        const quad = boxes[i]?.model?.content;
-        if (!Array.isArray(quad) || quad.length < 8) continue;
-        const value = node?.value?.value ?? node?.value ?? '';
-        out.push({
-          role: node?.role?.value ?? node?.role,
-          name: String(node?.name?.value ?? node?.name ?? '').slice(0, 80),
-          x: Math.round((Math.min(quad[0], quad[4]) + Math.max(quad[0], quad[4])) / 2),
-          y: Math.round((Math.min(quad[1], quad[5]) + Math.max(quad[1], quad[5])) / 2),
-          ...(value ? { value: String(value).slice(0, 80) } : {})
-        });
-      }
-      return out;
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: snapshotExpression(capped),
+        returnByValue: true,
+        awaitPromise: false
+      });
+      return Array.isArray(result?.value) ? result.value : [];
     },
 
     async waitForIdle({ timeoutMs = 10000, intervalMs = 100, readyState = 'complete' } = {}) {

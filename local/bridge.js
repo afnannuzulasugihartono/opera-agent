@@ -118,6 +118,22 @@ export async function waitForBridgeLink({ timeoutMs = 15000 } = {}) {
   return srv.linked();
 }
 
+// WHY THIS IS ASKED EVERY TIME AND NOT DECIDED ONCE. A driver that chose its
+// pipe at startup kept that pipe: the extension was asleep, the probe said no,
+// and the driver stayed on a debugging port that opens a profile nobody is
+// logged into — for the rest of the process's life, with no way out but a
+// restart. The link is a live socket, so asking is one field read, and a
+// worker that wakes up thirty seconds late is simply picked up.
+
+export async function bridgeReachable() {
+  try {
+    const srv = await ensureServer();
+    return srv.linked();
+  } catch {
+    return false;
+  }
+}
+
 export async function closeBridge() {
   if (!server) return false;
   const srv = server;

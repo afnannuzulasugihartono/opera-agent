@@ -30,7 +30,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPrimitives, modifierMask, splitText } from '../local/primitives.js';
+import { createPrimitives, modifierMask, snapshotExpression, splitText } from '../local/primitives.js';
 
 function recordingCdp() {
   const calls = [];
@@ -199,24 +199,28 @@ test('a stream preserves order, counts its work, and refuses what it cannot carr
   await assert.rejects(() => p.keys([{}]), /needs text or a key/);
 });
 
-test('a snapshot maps clickable nodes to centers with names an agent can read', async () => {
+// WHY THIS CLAIM EXISTS. The snapshot used to read the accessibility tree and
+// then ask for one box per element it liked, up to a hundred and twenty of
+// them. The extension runs one command at a time on purpose, so those were
+// sequential however the caller wrote them, and a snapshot on a Google Doc cost
+// about two seconds before anything had decided anything. Chrome has no batch
+// API for element boxes, so the work moved into the page. If this test ever
+// needs more than one call again, that is the regression worth catching.
+
+test('a snapshot costs one round trip, whatever the page holds', async () => {
+  const calls = [];
   const cdp = {
-    calls: [],
     send: async (method, params = {}) => {
-      if (method === 'Accessibility.getFullAXTree') {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate') {
         return {
-          nodes: [
-            { nodeId: '1', role: { value: 'menuitem' }, name: { value: 'Table t ►' }, backendDOMNodeId: 7 },
-            { nodeId: '2', role: { value: 'StaticText' }, name: { value: 'Table' }, backendDOMNodeId: 8 },
-            { nodeId: '3', role: { value: 'button' }, name: { value: 'Share' } },
-            { nodeId: '4', role: { value: 'textbox' }, name: { value: 'Formula' }, value: { value: '=SUM(A1)' }, backendDOMNodeId: 9 }
-          ]
+          result: {
+            value: [
+              { role: 'menuitem', name: 'Table t ►', x: 200, y: 220 },
+              { role: 'textbox', name: 'Formula', x: 200, y: 220, value: '=SUM(A1)' }
+            ]
+          }
         };
-      }
-      if (method === 'DOM.getBoxModel') {
-        assert.deepEqual(Object.keys(params), ['backendNodeId'], 'the AX property is backendDOMNodeId but the CDP param is backendNodeId, and Chrome rejects anything else');
-        assert.ok([7, 9].includes(params.backendNodeId), 'only clickable boxed nodes are resolved');
-        return { model: { content: [100, 200, 300, 200, 300, 240, 100, 240] } };
       }
       return {};
     }
@@ -224,55 +228,54 @@ test('a snapshot maps clickable nodes to centers with names an agent can read', 
 
   const snap = await createPrimitives(cdp).snapshot();
 
+  assert.deepEqual(calls.map((call) => call.method), ['Runtime.evaluate'],
+    'one call decides the whole snapshot');
+  assert.equal(calls[0].params.returnByValue, true, 'the list comes back as a value, not a handle');
   assert.deepEqual(snap, [
     { role: 'menuitem', name: 'Table t ►', x: 200, y: 220 },
     { role: 'textbox', name: 'Formula', x: 200, y: 220, value: '=SUM(A1)' }
   ]);
 });
 
-test('a snapshot honors its limit, because a tree can hold thousands of nodes', async () => {
+test('the page expression keeps every role the old tree filter kept', () => {
+  const expression = snapshotExpression(120);
+  for (const role of [
+    'button', 'link', 'menuitem', 'menu', 'toolbar', 'textbox', 'searchbox', 'combobox',
+    'listbox', 'option', 'checkbox', 'radio', 'tab', 'switch', 'slider',
+    'table', 'grid', 'row', 'gridcell', 'cell', 'columnheader', 'rowheader'
+  ]) {
+    assert.ok(expression.includes(`"${role}"`), `the page still recognises ${role}`);
+  }
+  assert.match(expression, /getAttribute\('role'\)/,
+    'an explicit role attribute is read first, which is what Google Docs puts on its menus');
+});
+
+test('a snapshot carries its limit into the page, because the page does the filtering', async () => {
+  let expression = '';
   const cdp = {
-    send: async (method) => {
-      if (method === 'Accessibility.getFullAXTree') {
-        return {
-          nodes: Array.from({ length: 5 }, (_, i) => ({
-            nodeId: String(i), role: { value: 'button' }, name: { value: `b${i}` }, backendDOMNodeId: i
-          }))
-        };
-      }
-      if (method === 'DOM.getBoxModel') return { model: { content: [0, 0, 10, 0, 10, 10, 0, 10] } };
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate') { expression = params.expression; return { result: { value: [] } }; }
       return {};
     }
   };
 
-  const snap = await createPrimitives(cdp).snapshot({ limit: 2 });
-
-  assert.equal(snap.length, 2);
+  await createPrimitives(cdp).snapshot({ limit: 2 });
+  assert.match(expression, /LIMIT = 2;/);
 });
 
-test('a snapshot clamps its limit, so a wild request cannot ask for ten thousand boxes', async () => {
-  const boxes = [];
+test('a snapshot clamps its limit, so a wild request cannot walk the whole document', async () => {
+  const limits = [];
   const cdp = {
     send: async (method, params = {}) => {
-      if (method === 'Accessibility.getFullAXTree') {
-        return {
-          nodes: Array.from({ length: 5 }, (_, i) => ({
-            nodeId: String(i), role: { value: 'button' }, name: { value: `b${i}` }, backendDOMNodeId: i
-          }))
-        };
-      }
-      if (method === 'DOM.getBoxModel') {
-        boxes.push(params.backendNodeId);
-        return { model: { content: [0, 0, 10, 0, 10, 10, 0, 10] } };
-      }
+      if (method === 'Runtime.evaluate') { limits.push(params.expression); return { result: { value: [] } }; }
       return {};
     }
   };
 
   await createPrimitives(cdp).snapshot({ limit: 99999 });
-  assert.equal(boxes.length, 5, 'five nodes resolve even when the cap is huge');
+  assert.match(limits.at(-1), /LIMIT = 500;/, 'a huge request is capped');
   await createPrimitives(cdp).snapshot({ limit: 1 });
-  assert.equal(boxes.length, 6, 'and a limit of one resolves exactly one more');
+  assert.match(limits.at(-1), /LIMIT = 1;/);
 });
 
 test('a gapless run fires together, so ten keys cost one round trip', async () => {
@@ -309,23 +312,20 @@ test('a click fires move, press and release together', async () => {
   assert.equal(cdp.stats().max, 4, 'spotlight and three mouse events overlap');
 });
 
-test('a snapshot resolves its boxes together', async () => {
-  const cdp = pipelinedCdp((method) => {
-    if (method === 'Accessibility.getFullAXTree') {
-      return {
-        nodes: Array.from({ length: 3 }, (_, i) => ({
-          nodeId: String(i), role: { value: 'button' }, name: { value: `b${i}` }, backendDOMNodeId: i
-        }))
-      };
-    }
-    if (method === 'DOM.getBoxModel') return { model: { content: [0, 0, 10, 0, 10, 10, 0, 10] } };
-    return {};
-  });
+// WHY A SNAPSHOT MUST NOT SEND A STALE SHAPE BACK. The page expression returns
+// the list itself, so anything that is not a list means the page answered with
+// something else — an exception object, a string from a transpiler shim. An
+// empty list is the honest answer: an agent that gets [] will look again, and an
+// agent that gets null will read it as a page with nothing on it.
 
-  const snap = await createPrimitives(cdp).snapshot();
+test('a snapshot answers with a list, or with nothing at all', async () => {
+  const cdp = {
+    send: async () => ({ result: { value: null } })
+  };
+  assert.deepEqual(await createPrimitives(cdp).snapshot(), []);
 
-  assert.equal(snap.length, 3);
-  assert.equal(cdp.stats().max, 3);
+  const throwing = { send: async () => ({ result: {} }) };
+  assert.deepEqual(await createPrimitives(throwing).snapshot(), []);
 });
 
 test('type chunks fire together', async () => {
