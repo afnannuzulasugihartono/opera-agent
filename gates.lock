@@ -161,7 +161,7 @@ scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs ebe324e5a2fbc6e093caf07915585ce9d966faee
+tests/helpers/boundary-locks.mjs 9dbc688e01123f1f609a27fff4ab1732f617fc25
 tests/helpers/comment-spacing.mjs e9d8a61eaccdedf7018fe64acdfe9c8159f75d0c
 tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
 
@@ -176,7 +176,7 @@ lib/secret-pattern.js 8a7ad9fdde6457b2a26f17cad0c9582f92e55625
 supabase/functions/_shared/cors.js 03a97007d61329edc1377de25e13fcde6a49b0ff
 
 # --- surfaces an owner, not an agent, should have to look at ---
-extension/manifest.json 244b9782e31f4de0fd7d42d9b0db1426828ffbc1
+extension/manifest.json 6fa62e7eeb7b53650b6ea661d351611bd98c5ced
 .gitleaks.toml 0e65aabf1cc06121b4ad4272c8bf5d434133f4f3
 .github/CODEOWNERS 018189b06335b26f42cd4a072bc59383d7700250
 .github/workflows/ci.yml d2aed40dcbf066982c0ccc15ee6b366d2082747c
