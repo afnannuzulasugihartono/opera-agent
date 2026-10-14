@@ -119,18 +119,30 @@ PROOFS = {
 }
 
 
-def open_doc(mcp):
-    opened = mcp.tool('open_url', {'url': 'https://docs.new/'}, timeout=60)
-    raw = tool_text(opened)
-    info = json.loads(raw or '{}')
-    tab = info.get('result', {}).get('tab', {}) if isinstance(info.get('result'), dict) else {}
-    tab_id = tab.get('id')
-    url = str(tab.get('url', ''))
-    if 'accounts.google.com' in raw:
-        raise RuntimeError('NO_GOOGLE_SESSION')
-    if not tab_id:
-        raise RuntimeError('could not open a doc tab: %s' % raw[:200])
-    return tab_id, url
+# WHY open_doc RETRIES. One command can be claimed and lost in transit, and one
+# tabs.open can time out while the tab it opened stays open. Both leave the run
+# recoverable, so opening a doc tries three times before it ends the run.
+
+
+def open_doc(mcp, attempts=3):
+    last = ''
+    for attempt in range(attempts):
+        try:
+            opened = mcp.tool('open_url', {'url': 'https://docs.new/'}, timeout=60)
+            raw = tool_text(opened)
+        except Exception as error:
+            last = str(error)
+            continue
+        info = json.loads(raw or '{}')
+        tab = info.get('result', {}).get('tab', {}) if isinstance(info.get('result'), dict) else {}
+        tab_id = tab.get('id')
+        url = str(tab.get('url', ''))
+        if 'accounts.google.com' in raw:
+            raise RuntimeError('NO_GOOGLE_SESSION')
+        if tab_id:
+            return tab_id, url
+        last = raw[:200]
+    raise RuntimeError('could not open a doc tab: %s' % last)
 
 
 def step_input(name, args, words):
