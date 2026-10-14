@@ -150,7 +150,29 @@ export function isWebSocketUpgrade(request) {
   return upgrade === 'websocket' && connection.includes('upgrade');
 }
 
+// WHY THE HOST IS COMPARED, NOT THE STRING. This used to accept any origin
+// ending in an allowed one, which meant `https://notlocalhost` — a domain
+// anybody can register — was allowed to drive the browser sitting on this
+// machine. An origin is a scheme, a host and a port, so the only part worth
+// matching is the host, and the whole string is matched exactly so that a
+// scheme cannot smuggle a host in.
+//
+// WHY A MISSING ORIGIN IS ALLOWED. Node's own WebSocket client sends none, and
+// so does any other non-browser process on this machine. The server is bound
+// to 127.0.0.1, so an absent Origin means "something local", which is the
+// population this server exists for.
+
 export function isOriginAllowed(origin, allowed) {
   if (!origin) return true;
-  return allowed.some((entry) => origin === entry || origin.endsWith(entry));
+  const host = hostOf(origin);
+  if (host === null) return false;
+  return allowed.some((entry) => origin === entry || host === entry);
+}
+
+function hostOf(origin) {
+  try {
+    return new URL(origin).hostname || null;
+  } catch {
+    return null;
+  }
 }

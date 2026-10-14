@@ -23,11 +23,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from './browsers.js';
-import { createCdpClient } from './cdp.js';
 import { createPrimitives } from './primitives.js';
+import { createCdpClient } from './cdp.js';
 import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTab, pageWebSocketById, waitForPage } from './transport.js';
-import { closeBridgeTarget, connectBridgeTarget, listBridgeTargets, openBridgeTarget, waitForBridgeLink } from './bridge.js';
-import { LINK_ERROR } from './poll-server.js';
+import {
+  closeBridgeTarget,
+  connectBridgeTarget,
+  listBridgeTargets,
+  openBridgeTarget,
+  waitForBridgeLink,
+  LINK_ERROR
+} from './bridge.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({
@@ -75,8 +81,7 @@ async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOption
     if (!pages.length) throw new Error('bridge: the browser has no page to drive');
     numericId = pages[0].id;
   }
-  const transport = connectBridgeTarget(numericId);
-  const cdp = createCdpClient(transport);
+  const cdp = createCdpClient(connectBridgeTarget(numericId));
   return {
     port: null,
     reused: true,

@@ -32,10 +32,50 @@ const IDLE_SOCKET_MS = 120000;
 // answers fails at the caller, named by method and budget, instead of inside a
 // held request that nobody is reading and nobody can cancel.
 
+// WHY THE EXTENSION ORIGINS ARE NAMED HERE. Chrome sends
+// `chrome-extension://<id>` as the Origin of a WebSocket opened from an MV3
+// service worker. A server that allows only localhost therefore refuses the
+// one client that is meant to connect, and nothing notices: a Node client sends
+// no Origin at all, so every test stays green while the browser is dead. These
+// two ids are the whole installed fleet - the CRX signing key moved, so an
+// install that has not been replaced still presents the old one - and
+// tests/local-bridge.test.mjs asserts the real header against this list.
+//
+// WHY NO WILDCARD. Any page on this machine can open a socket to 127.0.0.1,
+// and one that gets through drives the browser as if the person asked it to.
+// The list is the whole boundary.
+
+export const BRIDGE_ORIGINS = Object.freeze([
+  'localhost',
+  '127.0.0.1',
+  'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
+  'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick'
+]);
+
+// WHY THE SERVER KEEPS A LIST OF ITS OWN SOCKETS. Node detaches an upgraded
+// socket from its connection tracking, so `server.close()` keeps waiting on a
+// socket it can no longer see and `closeAllConnections()` cannot reach it.
+// Measured: an upgraded socket whose peer vanished left the server counting one
+// connection forever, and close never called back — a driver shutdown hanging
+// on a bridge nobody is using. This server accepts these sockets, so this
+// server ends them, by destroying rather than ending: a polite end waits for a
+// FIN the peer may never send. It also ends the socket a reconnect replaced —
+// one device, one socket is the design, and an orphan left counting against
+// the listener is enough to make a shutdown hang with nothing left to drive.
+//
+// WHY NOTHING IS PUSHED BEFORE THE HANDSHAKE. The device refuses a command it
+// has not been given a `ready` for — deliberately, so work never runs against
+// an unproven identity — and it refuses it by dropping the frame in silence. A
+// server that pushed the moment the socket attached lost the first command of
+// every connection, in a window a few milliseconds wide and invisible from the
+// caller's side: the call simply never answered. Measured as one failed test in
+// three full-suite runs. The queue is the honest place for that command, and
+// `flush` sends it the instant the handshake lands.
+
 export function createBridgeServer({
   port = 9451,
   host = '127.0.0.1',
-  allowedOrigins = ['localhost', '127.0.0.1'],
+  allowedOrigins = BRIDGE_ORIGINS,
   heartbeatMs = HEARTBEAT_MS,
   now = () => Date.now()
 } = {}) {
@@ -43,7 +83,9 @@ export function createBridgeServer({
   const devices = new Map();
   const waiting = new Map();
   const queue = [];
+  const attached = new Set();
   let socket = null;
+  let handshaken = false;
   let connectedAt = 0;
   let lastHeardAt = 0;
   let timer = null;
@@ -53,14 +95,17 @@ export function createBridgeServer({
   }
 
   function deliver(command) {
-    if (!socket || socket.closed) return false;
+    if (!socket || socket.closed || !handshaken) return false;
     return send(JSON.stringify({ type: 'command', command }));
   }
 
   function attach(next, request) {
+    if (socket && socket !== next) socket.close(1000);
     socket = next;
+    handshaken = false;
     connectedAt = now();
     lastHeardAt = now();
+    attached.add(next);
     devices.set(next.id, { id: next.id, connectedAt });
 
     next.on('text', (raw) => {
@@ -69,6 +114,7 @@ export function createBridgeServer({
       if (!parsed.ok) return;
       const message = parsed.message;
       if (message.type === 'hello') {
+        handshaken = true;
         send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
         flush();
         return;
@@ -85,13 +131,15 @@ export function createBridgeServer({
     });
 
     next.on('close', () => {
+      attached.delete(next);
       if (socket !== next) return;
       socket = null;
+      handshaken = false;
       connectedAt = 0;
       devices.delete(next.id);
       state.emit('state', { status: 'disconnected' });
       for (const entry of waiting.values()) {
-        entry.reject(new Error('device disconnected before it answered'));
+        entry.reject(new Error(`${entry.method} was still in flight when the device disconnected`));
       }
       waiting.clear();
     });
@@ -171,7 +219,9 @@ export function createBridgeServer({
     },
     async close() {
       clearTimeout(timer);
-      if (socket) socket.close(1001);
+      for (const open of attached) open.socket.destroy();
+      attached.clear();
+      socket = null;
       await new Promise((resolve) => server.close(resolve));
     },
     linked() {
@@ -181,7 +231,7 @@ export function createBridgeServer({
       const id = `${now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
       const command = { id, method, params, timeoutMs };
       return new Promise((resolve, reject) => {
-        const entry = { resolve, reject, sentAt: now() };
+        const entry = { resolve, reject, method, sentAt: now() };
         waiting.set(id, entry);
         queue.push(command);
         flush();

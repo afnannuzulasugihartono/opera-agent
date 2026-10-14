@@ -12,12 +12,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { connect as netConnect } from 'node:net';
+import { request as httpRequest } from 'node:http';
 
 import { createBridgeServer } from '../local/bridge-server.js';
 import { acceptKey, encodeText } from '../local/ws-server.js';
 import { parseFrame } from '../extension/lib/socket-protocol.js';
 
-function connect(port) {
+function connect(port, origin) {
   return new Promise((resolve, reject) => {
     const socket = netConnect(port, '127.0.0.1');
     const key = Buffer.from(`opera-${Date.now()}-${Math.random()}`).toString('base64');
@@ -34,6 +35,7 @@ function connect(port) {
         'Connection: Upgrade',
         `Sec-WebSocket-Key: ${key}`,
         'Sec-WebSocket-Version: 13',
+        ...(origin === undefined ? [] : [`Origin: ${origin}`]),
         '', ''
       ].join('\r\n'));
     });
@@ -43,8 +45,8 @@ function connect(port) {
         buffer = Buffer.concat([buffer, chunk]);
         const end = buffer.indexOf('\r\n\r\n');
         if (end < 0) return;
-        upgraded = true;
         const head = buffer.subarray(0, end).toString();
+        upgraded = true;
         buffer = buffer.subarray(end + 4);
         chunk = Buffer.alloc(0);
         resolve({
@@ -54,6 +56,7 @@ function connect(port) {
           push: (text) => socket.write(encodeText(text)),
           close: () => socket.destroy()
         });
+        return;
       }
       buffer = Buffer.concat([buffer, chunk]);
       for (;;) {
@@ -137,4 +140,97 @@ test('a device that never answers fails the caller instead of hanging forever', 
     device.close();
     await bridge.close();
   }
+});
+
+// WHY THIS ONE EXISTS. The device refuses any command it has not been given a
+// `ready` for, and it refuses it by dropping the frame without a word. The
+// server used to push the moment the socket attached, so the first command of
+// every connection was thrown away in a window a few milliseconds wide — and
+// the caller saw a call that simply never answered. It cost one test in three
+// full-suite runs, and in a browser it would have cost one lost command in a
+// hundred connections, which is a bug nobody ever reports.
+
+test('a command raised before the handshake is held, not lost', async () => {
+  const bridge = createBridgeServer({ port: 0, heartbeatMs: 1000 });
+  await bridge.listen();
+  const port = bridge.address().port;
+  const device = await connect(port);
+  try {
+    const attachedBy = Date.now() + 2000;
+    while (!bridge.linked() && Date.now() < attachedBy) await new Promise((r) => setTimeout(r, 10));
+    assert.equal(bridge.linked(), true, 'a socket is attached before it has said hello');
+
+    const pending = bridge.send('tabs.list', {}, { timeoutMs: 5000 });
+    pending.catch(() => {});
+    await new Promise((r) => setTimeout(r, 150));
+    assert.equal(device.frames.filter((f) => f.ok && f.message.type === 'command').length, 0,
+      'nothing is pushed to a device that has not proved itself');
+
+    device.push(JSON.stringify({ type: 'hello', token: 't', deviceName: 'opera' }));
+
+    const commandAt = Date.now() + 3000;
+    while (!device.frames.some((f) => f.ok && f.message.type === 'command') && Date.now() < commandAt) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    const command = device.frames.find((f) => f.ok && f.message.type === 'command')?.message;
+    assert.ok(command, 'the held command is delivered the instant the handshake lands');
+    assert.equal(command.command.method, 'tabs.list');
+
+    device.push(JSON.stringify({ type: 'complete', commandId: command.command.id, ok: true, result: { tabs: [] } }));
+    const answer = await pending;
+    assert.equal(answer.ok, true, 'and it still settles its caller');
+  } finally {
+    device.close();
+    await bridge.close();
+  }
+});
+
+// WHY THIS HELPER EXISTS SEPARATELY. A socket driven by `node:http` is what a
+// real WebSocket client looks like to this server, and it is the only client
+// that reproduces the bug below: it destroys an upgraded connection without the
+// server ever seeing a close. The raw socket above closes cleanly on destroy, so
+// it cannot show the failure and would leave the test proving nothing.
+
+function upgradeOnce(port, origin) {
+  return new Promise((resolve, reject) => {
+    const headers = {
+      Connection: 'Upgrade',
+      Upgrade: 'websocket',
+      'Sec-WebSocket-Version': '13',
+      'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ=='
+    };
+    if (origin !== undefined) headers.Origin = origin;
+    const req = httpRequest({ host: '127.0.0.1', port, path: '/', headers });
+    req.on('upgrade', (res, socket) => { socket.destroy(); resolve(101); });
+    req.on('response', (res) => { res.resume(); resolve(res.statusCode); });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+// WHY THIS ONE EXISTS. Node detaches an upgraded socket from the tracking
+// `server.close()` waits on, so a device whose socket was destroyed without a
+// close handshake left the server counting a connection that never ended.
+// Measured: `server.close()` never called back, and a driver shutdown hung on
+// a bridge nobody was using. A device that reconnects is how it happens in
+// production — the worker is killed, comes back, and the socket it left behind
+// is still counted.
+
+test('a reconnecting device leaves nothing behind that closing waits on', async () => {
+  const bridge = createBridgeServer({ port: 0, heartbeatMs: 1000 });
+  await bridge.listen();
+  const port = bridge.address().port;
+
+  assert.equal(await upgradeOnce(port, 'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl'), 101);
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal(await upgradeOnce(port, 'http://127.0.0.1'), 101);
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal(await upgradeOnce(port, 'https://notlocalhost'), 400, 'a lookalike host is turned away');
+  await new Promise((r) => setTimeout(r, 300));
+
+  const settled = await Promise.race([
+    bridge.close().then(() => 'closed'),
+    new Promise((resolve) => setTimeout(() => resolve('hung'), 3000))
+  ]);
+  assert.equal(settled, 'closed', 'close ends the sockets it accepted rather than waiting on them');
 });
