@@ -34,3 +34,16 @@ test('page_setup applies margins and proves them', () => {
   assert.ok(def.output.applied, 'output proves application');
   assert.ok(JSON.stringify(def.steps).includes('page.wait_for'), 'dialog settle is waited, never slept');
 });
+
+test('toc_insert walks Insert menu and proves entries', () => {
+  const def = read('20261014090000_docs_toc_insert.sql');
+  assert.ok(JSON.stringify(def.steps).includes('Table of contents'), 'TOC path is walked');
+  assert.ok(def.output.entries, 'output proves entry count');
+});
+
+test('export_pdf downloads and proves UI feedback', () => {
+  const def = read('20261014100000_docs_export_pdf.sql');
+  assert.ok(JSON.stringify(def.steps).includes('Download'), 'download path is walked');
+  assert.ok(def.output.downloaded, 'output proves the feedback signal');
+  assert.ok(JSON.stringify(def.steps).includes('page.wait_for'), 'download feedback is waited, never slept');
+});
