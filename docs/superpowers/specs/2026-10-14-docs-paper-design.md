@@ -27,6 +27,9 @@ JPEG + pHash only for paint asserts (20-80ms).
 
 ## Architecture
 
+v1 executes over the local bridge (1-6ms per call); the relay stays a
+fallback for remote drives, never the primary road for paper work.
+
 One engine, three layers over the frozen 29 primitives:
 
 1. menu.walk — one server-side workflow. Input: path array
