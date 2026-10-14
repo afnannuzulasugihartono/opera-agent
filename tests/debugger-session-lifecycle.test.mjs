@@ -188,3 +188,48 @@ test('withDebugger recovers from a stale attach instead of failing forever', asy
   const nonMatching = fn.match(/if \(!\/already attached\/i\.test\(error\?\.message \|\| ''\)\) throw error;/);
   assert.ok(nonMatching, 'a foreign error must propagate, not trigger a detach');
 });
+
+// WHY the idle release is pinned twice. The sweep is the only thing standing
+// between a driven tab and a permanent debugging bar, so its logic is proven
+// by running it and its wiring by reading the call sites. Either half missing
+// reverts to a bar that never leaves.
+
+test('an idle debugger session is released while a fresh one is kept', async () => {
+  const { registerDebuggerSession, releaseIdleDebuggerSessions, getDebuggerSessions } = await import(
+    '../extension/lib/debugger-session.js'
+  );
+  const detached = [];
+  const previous = globalThis.chrome;
+  globalThis.chrome = { debugger: { detach: async (target) => { detached.push(target.tabId); } } };
+  try {
+    const old = { tabId: 5101, attached: true, lastUsedAt: 1000 };
+    const fresh = { tabId: 5102, attached: true, lastUsedAt: 9000 };
+    const down = { tabId: 5103, attached: false, lastUsedAt: 1000 };
+    registerDebuggerSession(old);
+    registerDebuggerSession(fresh);
+    registerDebuggerSession(down);
+
+    const released = await releaseIdleDebuggerSessions({ maxIdleMs: 5000, now: 10000 });
+
+    assert.equal(released, 1);
+    assert.equal(old.attached, false);
+    assert.deepEqual(detached, [5101]);
+    assert.equal(getDebuggerSessions().get(5101), undefined);
+    assert.equal(fresh.attached, true);
+    assert.equal(getDebuggerSessions().get(5102), fresh);
+  } finally {
+    if (previous === undefined) delete globalThis.chrome;
+    else globalThis.chrome = previous;
+    getDebuggerSessions().clear();
+  }
+});
+
+test('every shared debugger use stamps the session, and the bridge alarm sweeps idle ones', async () => {
+  const fs = await import('node:fs');
+  const capture = fs.readFileSync(new URL('../extension/worker/capture.js', import.meta.url), 'utf8');
+  const withDebugger = capture.slice(capture.indexOf('export async function withDebugger('));
+  assert.match(withDebugger, /touchDebuggerSession\(shared\)/, 'a shared use that stamps nothing looks idle while working');
+
+  const link = fs.readFileSync(new URL('../extension/worker/bridge-link.js', import.meta.url), 'utf8');
+  assert.match(link, /releaseIdleDebuggerSessions\(\{ maxIdleMs: DEBUGGER_IDLE_MS \}\)/, 'nothing sweeps the held sessions');
+});

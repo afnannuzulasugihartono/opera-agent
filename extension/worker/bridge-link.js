@@ -39,7 +39,7 @@
 import { log } from '../lib/log.js';
 import { fetchJson } from './tab-content.js';
 import { withDebugger } from './capture.js';
-import { releaseDebuggerSession } from '../lib/debugger-session.js';
+import { releaseDebuggerSession, releaseIdleDebuggerSessions } from '../lib/debugger-session.js';
 
 // WHY the origin is read from the global rather than written in. One machine,
 // one address, no setting to get wrong — and a test process that imports the
@@ -52,6 +52,7 @@ const BRIDGE_ALARM = 'opera-bridge-link';
 const BACKOFF_MS = [400, 1000, 3000, 5000, 15000];
 const POLL_HOLD_MS = 20000;
 const REPLY_TIMEOUT_MS = 10000;
+const DEBUGGER_IDLE_MS = 60000;
 
 let running = false;
 let generation = 0;
@@ -263,6 +264,9 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm?.name !== BRIDGE_ALARM) return;
   stats.alarms += 1;
+  void releaseIdleDebuggerSessions({ maxIdleMs: DEBUGGER_IDLE_MS }).then((released) => {
+    if (released) note(`debugger idle-released x${released}`);
+  });
   if (running) nudge();
   else ensureBridgeLink();
 });

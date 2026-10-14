@@ -5,7 +5,7 @@
 
 import { log } from '../lib/log.js';
 import { buildAxSummary } from '../lib/ax-summary.js';
-import { registerDebuggerSession, releaseDebuggerSession } from '../lib/debugger-session.js';
+import { registerDebuggerSession, releaseDebuggerSession, touchDebuggerSession } from '../lib/debugger-session.js';
 
 const SCREENSHOT_CACHE_MS = 750;
 const SCREENSHOT_CACHE_LIMIT = 8;
@@ -94,6 +94,7 @@ export async function withDebugger(tabId, context, work) {
       shared.attached = true;
       registerDebuggerSession(shared);
     }
+    touchDebuggerSession(shared);
     return work({ tabId });
   }
 

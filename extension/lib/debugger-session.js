@@ -10,6 +10,13 @@
 // attached to the tab and Chrome's "started debugging this browser" bar stuck
 // on it.
 //
+// WHY an idle session is released instead of held. The bridge holds one session
+// per driven tab so repeat calls skip the attach, which left the debugging bar
+// pinned on every tab the agent ever touched. Every shared use stamps the
+// session, and anything quiet past the caller's bound is detached: the bar
+// shows while the agent works and leaves when it stops, and the next command
+// re-attaches for the price of one round trip.
+//
 // The registry also exists so an *unexpected* detach can invalidate the cache.
 // Nothing listened to `chrome.debugger.onDetach`, so when the user opened
 // DevTools on the tab, or the tab closed, a cached `attached: true` survived
@@ -47,4 +54,20 @@ export function handleDebuggerDetach(source) {
   const session = sessions.get(tabId);
   if (session) session.attached = false;
   sessions.delete(tabId);
+}
+
+export function touchDebuggerSession(session, now = Date.now()) {
+  if (!session || typeof session.tabId !== 'number') return;
+  session.lastUsedAt = now;
+}
+
+export async function releaseIdleDebuggerSessions({ maxIdleMs = 60000, now = Date.now(), log } = {}) {
+  let released = 0;
+  for (const session of [...sessions.values()]) {
+    if (!session?.attached) continue;
+    if (now - (session.lastUsedAt ?? 0) < maxIdleMs) continue;
+    await releaseDebuggerSession(session, log);
+    released += 1;
+  }
+  return released;
 }
