@@ -108,6 +108,9 @@ export function resolveChord(key, modifiers) {
   const spec = namedKeySpec(name);
   if (!spec) throw new Error('Key is not allowlisted.');
   const { mask, names } = resolveModifiers(modifiers);
+  if (spec.requiresShift && names.length > 0 && !(mask & MODIFIER_BITS.shift)) {
+    throw new Error(`Key ${name} with modifiers needs lowercase ${name.toLowerCase()} (uppercase adds shift).`);
+  }
   const shifted = withImplicitShift(spec, mask, names);
   return {
     kind: 'chord',
