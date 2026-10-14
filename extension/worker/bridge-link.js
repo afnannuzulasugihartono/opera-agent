@@ -160,6 +160,24 @@ async function runCommand(command) {
 // the one thing the local side cannot tell from a command that never arrived,
 // which is how a two-second error turns into a thirty-second mystery. So
 // whatever the command did, something comes back carrying it.
+//
+// WHY a hung command is abandoned instead of wedging the queue. Commands run
+// one at a time, so one CDP call that never settles would hold every later
+// command behind it forever. Sixty seconds is past any honest browser call and
+// far short of forever; the late answer is dropped by a server that already
+// moved on, and the queue walks free.
+
+function handleTimeoutMs() {
+  return Number(globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS ?? 60000);
+}
+
+function withHandleTimeout(promise) {
+  let timer = null;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`bridge: no answer from the tab within ${handleTimeoutMs()} ms`)), handleTimeoutMs());
+  });
+  return Promise.race([promise.finally(() => clearTimeout(timer)), timeout]);
+}
 
 async function handle(command) {
   if (!command || typeof command !== 'object' || command.id === undefined) return;
@@ -167,7 +185,7 @@ async function handle(command) {
   note(`in ${command.id}`);
   let answer;
   try {
-    answer = { result: await runCommand(command) };
+    answer = { result: await withHandleTimeout(runCommand(command)) };
   } catch (error) {
     answer = { error: { message: error?.message || String(error) } };
   }

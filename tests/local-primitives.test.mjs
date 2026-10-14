@@ -485,6 +485,24 @@ test('a full-page capture spans the content size beyond the viewport', async () 
   assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 1136, height: 2400, scale: 1 });
 });
 
+test('a huge document scales the full page down instead of hanging the capture', async () => {
+  const calls = [];
+  const cdp = {
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Page.getLayoutMetrics') {
+        return { contentSize: { x: 0, y: 0, width: 800, height: 4800 } };
+      }
+      if (method === 'Page.captureScreenshot') return { data: 'BASE64' };
+      return { result: {} };
+    }
+  };
+  await createPrimitives(cdp).capture({ fullPage: true });
+
+  const shot = calls.find((c) => c.method === 'Page.captureScreenshot');
+  assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 800, height: 4800, scale: 0.5 });
+});
+
 test('the viewport reports the device pixel ratio, so a scaled screen is not mistaken for a scaled picture', async () => {
   const cdp = recordingCdp();
   const view = await createPrimitives(cdp).viewport();

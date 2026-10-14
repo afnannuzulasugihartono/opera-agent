@@ -138,6 +138,30 @@ test('the module registers the listeners that restart it', () => {
   assert.ok(listeners['runtime.onStartup'].length >= 1);
 });
 
+test('a hung CDP call fails loud and fast instead of wedging later commands', async () => {
+  const realSend = globalThis.chrome.debugger.sendCommand;
+  globalThis.chrome.debugger.sendCommand = () => new Promise(() => {});
+  globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS = '150';
+  try {
+    const reply = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('no timeout reply within 3s')), 3000);
+      bridge.settleWhen('hung', (out) => { clearTimeout(timer); resolve(out); });
+      bridge.enqueue({ id: 'hung', tab: 5, method: 'Page.captureScreenshot', params: {} });
+    });
+    assert.match(String(reply.error?.message ?? ''), /no answer from the tab/);
+  } finally {
+    globalThis.chrome.debugger.sendCommand = realSend;
+    delete globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS;
+  }
+
+  const after = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('queue still wedged after 3s')), 3000);
+    bridge.settleWhen('after', (out) => { clearTimeout(timer); resolve(out); });
+    bridge.enqueue({ id: 'after', tabs: { op: 'list' } });
+  });
+  assert.ok(Array.isArray(after.result), 'the queue walked free behind the abandoned call');
+});
+
 test('the local server closes last, so no poll arrives after the tests', async () => {
   stopBridgeLink();
   await bridge.close();

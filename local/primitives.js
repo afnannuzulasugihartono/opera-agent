@@ -316,11 +316,12 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         const width = Number(content.width);
         const height = Number(content.height);
         if (!(width > 0 && height > 0)) throw new Error('Full-page capture needs a content size the page did not report.');
+        const scale = Math.min(1, 1600 / width, 2400 / height);
         const { data } = await cdp.send('Page.captureScreenshot', {
           format,
           quality,
           captureBeyondViewport: true,
-          clip: { x: 0, y: 0, width, height, scale: 1 }
+          clip: { x: 0, y: 0, width, height, scale }
         });
         return data;
       }
