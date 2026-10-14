@@ -89,7 +89,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'hover',
-    description: 'Move the pointer over a coordinate without pressing, and mark the spot blue for the watcher. Dropdown menus and submenus open on hover and close on click, so hover first, then read ax_snapshot to see what appeared. Returns after dispatch: the reply is page-timed and proves nothing, the follow-up snapshot proves everything.',
+    description: 'Move the pointer over a coordinate without pressing, and mark the spot blue. Dropdown menus and submenus open on hover and close on click, so hover first — the page comes back with the reply, showing what appeared. Waits for the move it dispatched. A move to a window that is not in front costs about five seconds on the compositor; press and release stay at milliseconds.',
     inputSchema: {
       type: 'object',
       properties: { tabId: tabArg, x: numberArg('viewport x'), y: numberArg('viewport y') },
@@ -112,7 +112,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'stream_keys',
-    description: 'Send up to 100 keys and texts in one call, in order, with optional gaps. One round trip however many events, so a menu walk costs one call instead of twenty.',
+    description: 'Send up to 100 keys and texts in order, with optional gaps. Events go out one at a time in the order written, so a chord never overtakes its own key and a menu walk takes the branch you meant — about three milliseconds apart on loopback.',
     inputSchema: {
       type: 'object',
       properties: {
