@@ -674,3 +674,17 @@ test('only document pages take the document path', () => {
   assert.equal(isDocsDocument('https://example.com/'), false);
   assert.equal(isDocsDocument(null), false);
 });
+
+// WHY THIS IS PINNED AS TEXT, NOT BEHAVIOR. There is no DOM in a unit test,
+// so the only thing checkable here is that the page expression carries the
+// guards. A password value that reaches model context is exfiltration wearing
+// a snapshot's clothes; ordinary values still ride along, because a formula
+// bar the agent cannot see is a formula bar it cannot use.
+
+test('secret field values never leave the page', () => {
+  const expression = snapshotExpression(120);
+
+  assert.ok(expression.includes("kind === 'password'"), 'password values stay in the page');
+  assert.ok(expression.includes('one-time-code'), 'one-time codes stay in the page');
+  assert.ok(expression.includes('el.value'), 'ordinary values still ride along');
+});

@@ -121,7 +121,8 @@ test('a capture comes back as image content a model can see, not base64 text', a
     params: { name: 'capture_page', arguments: {} }
   });
 
-  assert.deepEqual(res.result.content, [{ type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' }]);
+  assert.deepEqual(res.result.content[0], { type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' });
+  assert.match(res.result.content.at(-1).text, /^[0-9]+ ms$/);
 });
 
 test('a full-page capture reaches the driver as a flag, not a second tool', async () => {
@@ -133,7 +134,8 @@ test('a full-page capture reaches the driver as a flag, not a second tool', asyn
   });
 
   assert.deepEqual(c.driver.calls[0], ['capture', { fullPage: true }]);
-  assert.deepEqual(res.result.content, [{ type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' }]);
+  assert.deepEqual(res.result.content[0], { type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' });
+  assert.match(res.result.content.at(-1).text, /^[0-9]+ ms$/);
 });
 
 test('a row click resolves and clicks in one call', async () => {
@@ -288,4 +290,66 @@ test('a tab id is found whether the caller sends a number or a string', async ()
 
     assert.ok(res.result, `an id sent as ${typeof tabId} was refused: ${res.error?.message ?? ''}`);
   }
+});
+
+// WHY A WAIT IS TESTED AGAINST READS, NOT TIME. The contract is evidential:
+// the wait ends on the same text a read would show, and a wait that runs out
+// of budget reports instead of failing — found:false with the page as it
+// stands, which is what the next decision needs.
+
+test('a wait ends on the same evidence a read would show', async () => {
+  const c = ctx();
+  const texts = ['nothing yet', 'nothing yet', 'the outline now holds Heading'];
+  c.driver.read = async () => ({ url: 'https://x/', title: 't', text: texts.shift() ?? '' });
+  const server = createMcpServer(c);
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 20, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 2000, intervalMs: 100 } } });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.equal(payload.action.found, true);
+  assert.ok(Array.isArray(payload.elements), 'the page comes back with the verdict');
+});
+
+test('a wait that runs out of budget reports instead of failing', async () => {
+  const c = ctx();
+  c.driver.read = async () => ({ url: 'https://x/', title: 't', text: 'never the text' });
+  const server = createMcpServer(c);
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 21, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 500, intervalMs: 100 } } });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.equal(payload.action.found, false);
+  assert.ok(payload.action.ms >= 500, 'the full budget was spent before admitting it');
+  assert.ok(Array.isArray(payload.elements));
+});
+
+test('a wait with nothing to wait for is refused before the first read', async () => {
+  const c = ctx();
+  let reads = 0;
+  c.driver.read = async () => { reads += 1; return { url: 'u', title: 't', text: '' }; };
+  const server = createMcpServer(c);
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 22, method: 'tools/call', params: { name: 'wait_for', arguments: {} } });
+
+  assert.ok(res.error);
+  assert.equal(reads, 0, 'a refused wait touches nothing');
+});
+
+test('every call reports how long the browser took', async () => {
+  const server = createMcpServer(ctx());
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 23, method: 'tools/call', params: { name: 'ax_snapshot', arguments: {} } });
+  const last = res.result.content.at(-1);
+
+  assert.match(last.text, /^[0-9]+ ms$/, 'the final block names the cost');
+});
+
+test('key vocabularies are enumerated so a misspelling fails before the browser', async () => {
+  const server = createMcpServer(ctx());
+  const { result } = await server.handle({ jsonrpc: '2.0', id: 24, method: 'tools/list', params: {} });
+  const byName = Object.fromEntries(result.tools.map((t) => [t.name, t]));
+
+  assert.deepEqual(byName.press_key.inputSchema.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
+  assert.deepEqual(byName.stream_keys.inputSchema.properties.events.items.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
+  assert.match(byName.press_key.inputSchema.properties.key.description, /Enter.*single printable ASCII/s);
 });

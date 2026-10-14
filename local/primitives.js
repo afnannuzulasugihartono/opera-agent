@@ -165,6 +165,13 @@ const SNAPSHOT_ROLES = new Set([
 // would compute would be missing, which is why the attribute is read first and
 // the tag table is deliberately short.
 
+// WHY SECRET VALUES NEVER LEAVE THE PAGE. The snapshot carries a field's
+// current value so the agent can see what is already typed — a formula bar, a
+// name box. A password field would ride along the same way, straight into
+// model context, which is exfiltration wearing a snapshot's clothes. Password,
+// hidden and one-time-code fields keep their role and their box and lose their
+// value, decided where the value is read so no caller has to remember.
+
 const SNAPSHOT_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
   const ROLES = new Set(__ROLES__);
@@ -210,6 +217,11 @@ const SNAPSHOT_EXPRESSION = `(() => {
   const valueOf = (el) => {
     const tag = el.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      if (el.getAttribute('autocomplete') === 'one-time-code') return '';
+      if (tag === 'INPUT') {
+        const kind = (el.type || 'text').toLowerCase();
+        if (kind === 'password' || kind === 'hidden') return '';
+      }
       return typeof el.value === 'string' ? el.value : '';
     }
     const marked = el.querySelector('[aria-selected="true"], [aria-checked="true"]');

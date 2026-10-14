@@ -101,7 +101,7 @@ export const TOOLS = Object.freeze([
     description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow. Returns the page as it now stands, so you see what the key did without a second call.',
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, key: stringArg('key name'), modifiers: { type: 'array', items: { type: 'string' }, description: 'Control, Alt, Shift, Meta' } },
+      properties: { tabId: tabArg, key: stringArg('Enter, Tab, Escape, ArrowUp, ArrowDown, Home, End, Space, Backspace, Delete, or a single printable ASCII character'), modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] }, description: 'held while the key goes down' } },
       required: ['key']
     }
   },
@@ -117,9 +117,23 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        events: { type: 'array', items: { type: 'object' }, description: 'in order: { key, modifiers?, gapMs? } or { text, gapMs? }' }
+        events: { type: 'array', items: { type: 'object', properties: { key: { type: 'string', description: 'a named key or a single printable ASCII character' }, modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] } }, text: { type: 'string' }, gapMs: { type: 'number' } } }, description: 'in order: { key, modifiers?, gapMs? } or { text, gapMs? }' }
       },
       required: ['events']
+    }
+  },
+  {
+    name: 'wait_for',
+    description: 'Wait until a tab shows a text, then return the page as it now stands. Polls the same read an agent would do — including the document on a Google Doc — so the wait ends on the same evidence. Returns found:false with the current page instead of failing when the budget runs out.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        text: stringArg('text to wait for'),
+        timeoutMs: { type: 'number', description: 'budget, default 8000, capped at 30000' },
+        intervalMs: { type: 'number', description: 'gap between checks, default 250' }
+      },
+      required: ['text']
     }
   },
   {
@@ -153,6 +167,14 @@ function asText(value) {
 // job pays for it fifteen times. The near half of a page is usually what did
 // not move, and unchanged elements are exactly what an agent should not spend
 // its attention on.
+
+// WHY A WAIT POLLS THE FULL READ. The point of waiting is to end on the same
+// evidence an agent would read by hand — including the document on a Google
+// Doc, which the bare page text does not hold. A wait that runs out of budget
+// throws nothing: found:false comes back with the page as it stands, which is
+// what the next decision needs. Bounds are clamped, not refused, because a
+// wait budget is a safety property and the snapshot limit already set that
+// precedent.
 
 const AUTO_PAGE_LIMIT = 60;
 
@@ -238,6 +260,23 @@ export function createMcpServer(context) {
         return afterAction(driver, await driver.type(args.text));
       case 'stream_keys':
         return afterAction(driver, await driver.keys(args.events));
+      case 'wait_for': {
+        const started = Date.now();
+        const rawTimeout = Number(args.timeoutMs ?? 8000);
+        const timeoutMs = Number.isFinite(rawTimeout) ? Math.min(30000, Math.max(500, rawTimeout)) : 8000;
+        const rawGap = Number(args.intervalMs ?? 250);
+        const intervalMs = Number.isFinite(rawGap) ? Math.min(5000, Math.max(100, rawGap)) : 250;
+        for (;;) {
+          const state = await driver.read();
+          if ((state.text || '').includes(args.text)) {
+            return afterAction(driver, { found: true, ms: Date.now() - started });
+          }
+          if (Date.now() - started >= timeoutMs) {
+            return afterAction(driver, { found: false, ms: Date.now() - started });
+          }
+          await new Promise((r) => setTimeout(r, intervalMs));
+        }
+      }
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
       case 'capture_page': {
@@ -268,7 +307,12 @@ export function createMcpServer(context) {
           });
         }
         if (method === 'tools/list') return reply({ tools: TOOLS });
-        if (method === 'tools/call') return reply(await run(params?.name, params?.arguments ?? {}));
+        if (method === 'tools/call') {
+          const started = Date.now();
+          const out = await run(params?.name, params?.arguments ?? {});
+          out.content.push({ type: 'text', text: `${Date.now() - started} ms` });
+          return reply(out);
+        }
 
         if (method?.startsWith('notifications/')) return undefined;
         return fail(`Unknown method: ${method}`);
