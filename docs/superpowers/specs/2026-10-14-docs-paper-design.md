@@ -77,8 +77,10 @@ refFromStep; a stale ref is refused with candidates, never re-aimed blind.
   browser_extension_test.py): walked for real, effect verified for real.
 - Anti-blind tests: scrambled/hidden menus must fail honestly, never click
   blindly.
-- E2E v1: build one sample thesis chapter (outline, headings, table,
-  image, footnote, TOC, PDF export) and verify every artefact exists.
+- E2E v1: from a user idea, build one representative mini-thesis
+  (multi-chapter, all 9 structures, exported PDF) and verify every artefact
+  exists. The product bar is a real thesis from real ideas, proven at small
+  scale first.
 - Budgets locked: <50ms per menu level steady-state, proof mandatory.
 
 ## Phases
