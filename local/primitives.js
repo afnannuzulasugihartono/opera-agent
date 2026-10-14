@@ -172,6 +172,17 @@ const SNAPSHOT_ROLES = new Set([
 // hidden and one-time-code fields keep their role and their box and lose their
 // value, decided where the value is read so no caller has to remember.
 
+// WHY OVERLAY ROWS COME FIRST. Menus, dialogs and popups render at the end of
+// the document but sit on top of it — and they are usually what the agent just
+// caused. A snapshot that walks document order buries fifteen fresh menu rows
+// past a sixty-row cap, so the menu the agent opened is missing from the page
+// it gets back. Proven live: with a stable open menu, a sixty-row snapshot
+// held zero menu rows and the same menu sat visible past the cap. The
+// expression collects overlay descendants first and everything else after,
+// skipping what it already took, so the cap cuts the least surprising rows
+// instead of the most recent ones. Matched by ARIA role, never by site: a
+// class name here would be per-site code wearing a generic primitive's name.
+
 const SNAPSHOT_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
   const ROLES = new Set(__ROLES__);
@@ -228,16 +239,17 @@ const SNAPSHOT_EXPRESSION = `(() => {
     return marked ? (marked.innerText || marked.textContent || '').trim() : '';
   };
 
+  const CANDIDATES = 'button, a[href], input, select, textarea, table, tr, td, th, [role], [tabindex], [contenteditable]';
+  const OVERLAYS = '[role~="menu"],[role~="dialog"],[role~="listbox"]';
   const out = [];
-  const candidates = document.querySelectorAll('button, a[href], input, select, textarea, table, tr, td, th, [role], [tabindex], [contenteditable]');
-  for (const el of candidates) {
-    if (out.length >= LIMIT) break;
+
+  const tryRow = (el) => {
     const role = roleOf(el);
-    if (!role || !ROLES.has(role)) continue;
+    if (!role || !ROLES.has(role)) return;
     const rect = el.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) continue;
+    if (rect.width <= 0 || rect.height <= 0) return;
     const style = getComputedStyle(el);
-    if (style.visibility === 'hidden' || style.display === 'none') continue;
+    if (style.visibility === 'hidden' || style.display === 'none') return;
     const value = valueOf(el);
     out.push({
       role,
@@ -246,6 +258,21 @@ const SNAPSHOT_EXPRESSION = `(() => {
       y: Math.round(rect.top + rect.height / 2),
       ...(value ? { value: value.slice(0, 80) } : {})
     });
+  };
+
+  for (const box of document.querySelectorAll(OVERLAYS)) {
+    if (box.parentElement && box.parentElement.closest(OVERLAYS)) continue;
+    tryRow(box);
+    for (const el of box.querySelectorAll(CANDIDATES)) {
+      if (out.length >= LIMIT) return out;
+      tryRow(el);
+    }
+    if (out.length >= LIMIT) return out;
+  }
+  for (const el of document.querySelectorAll(CANDIDATES)) {
+    if (out.length >= LIMIT) break;
+    if (el.closest(OVERLAYS)) continue;
+    tryRow(el);
   }
   return out;
 })()`;

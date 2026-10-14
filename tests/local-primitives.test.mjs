@@ -692,3 +692,17 @@ test('secret field values never leave the page', () => {
 test('a document read trims trailing blank lines', () => {
   assert.ok(DOCS_COPY_EXPRESSION.includes('trimEnd'), 'layout air is not content');
 });
+
+// WHY OVERLAY ORDER IS PINNED HERE. Menus render at the end of the document
+// but sit on top of it; a snapshot that walks document order buries fresh
+// menu rows past its cap. The expression takes overlay descendants first by
+// ARIA role — matched generically, never by site, because a class name here
+// would be per-site code wearing a generic primitive's name.
+
+test('overlay rows come first, matched by role and never by site', () => {
+  const expression = snapshotExpression(120);
+
+  assert.ok(expression.includes('[role~="menu"]'), 'menus come before document order');
+  assert.ok(expression.includes('OVERLAYS'), 'one list names every overlay container');
+  assert.ok(!expression.includes('kix'), 'no per-site selectors in a generic primitive');
+});
