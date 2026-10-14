@@ -688,3 +688,7 @@ test('secret field values never leave the page', () => {
   assert.ok(expression.includes('one-time-code'), 'one-time codes stay in the page');
   assert.ok(expression.includes('el.value'), 'ordinary values still ride along');
 });
+
+test('a document read trims trailing blank lines', () => {
+  assert.ok(DOCS_COPY_EXPRESSION.includes('trimEnd'), 'layout air is not content');
+});

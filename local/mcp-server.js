@@ -143,7 +143,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'ax_snapshot',
-    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did.',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
   }
 ]);
@@ -191,9 +191,41 @@ const AUTO_PAGE_LIMIT = 60;
 // for "what did that do", and the near half of the page that did not move is
 // noise on every single turn.
 
+// WHY ACTIONS REPORT WHAT CHANGED. The full page rides every action so the
+// agent is never stranded, but sixty rows a turn buries the three that moved.
+// The change set is a hint computed against the last look at the same tab:
+// rows that appeared, rows that moved, and a count of rows that left. Rows
+// match by value — role, name and position — so duplicates collapse and a
+// reshaped page reports itself as reshaped instead of listing sixty new rows.
+// The first look at a tab reports null: there is no previous page, and the
+// elements it carries ARE the baseline. Keyed by driver object in a WeakMap,
+// so a closed tab's last look is garbage instead of a leak.
+
+function diffElements(prev, curr) {
+  const key = (r) => `${r.role}|${r.name}|${r.x}|${r.y}`;
+  const name = (r) => `${r.role}|${r.name}`;
+  const prevExact = new Set(prev.map(key));
+  const currExact = new Set(curr.map(key));
+  const prevNames = new Set(prev.map(name));
+  const currNames = new Set(curr.map(name));
+  const addedAll = curr.filter((r) => !prevExact.has(key(r)) && !prevNames.has(name(r)));
+  const movedAll = curr.filter((r) => !prevExact.has(key(r)) && prevNames.has(name(r)));
+  const removed = prev.filter((r) => !currExact.has(key(r)) && !currNames.has(name(r))).length;
+  if (prev.length === 0) return { added: curr.slice(0, 20), moved: [], removed: 0, reshaped: false };
+  const total = Math.max(prev.length, curr.length);
+  if ((addedAll.length + removed) / total > 0.5) {
+    return { added: [], moved: [], removed, reshaped: true };
+  }
+  return { added: addedAll.slice(0, 20), moved: movedAll.slice(0, 20), removed, reshaped: false };
+}
+
+const lastAuto = new WeakMap();
+
 const afterAction = async (driver, action, limit) => {
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
-  return asText({ action, elements: seen });
+  const prev = lastAuto.get(driver) ?? null;
+  lastAuto.set(driver, seen);
+  return asText({ action, elements: seen, changed: prev ? diffElements(prev, seen) : null });
 };
 
 // WHY THE TAB LOOKUP COMPARES TEXTUALLY. A Chrome tab id is a number, the tool

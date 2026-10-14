@@ -274,7 +274,8 @@ export function snapshotExpression(limit) {
 // with a period instead would corrupt the text it claims to report —
 // abbreviations, decimals and version numbers all contain periods that are not
 // separators. textContent stays as the fallback for a frame that renders
-// nothing.
+// nothing. Trailing blank lines are trimmed on the way out: they are
+// layout air, not content.
 //
 // WHY THE SELECTION IS BORROWED AND RETURNED. The copy path reads whatever is
 // selected, so a full read selects all first — and anything the person had
@@ -308,7 +309,7 @@ export const DOCS_COPY_EXPRESSION = `(() => {
       const code = ch.codePointAt(0);
       if ((code < ZW_FIRST || code > ZW_LAST) && code !== BOM) text += ch;
     }
-    return text;
+    return text.trimEnd();
   } catch { return null; }
 })()`;
 

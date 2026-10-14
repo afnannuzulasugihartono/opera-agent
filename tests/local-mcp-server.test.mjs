@@ -73,7 +73,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -352,4 +352,86 @@ test('key vocabularies are enumerated so a misspelling fails before the browser'
   assert.deepEqual(byName.press_key.inputSchema.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
   assert.deepEqual(byName.stream_keys.inputSchema.properties.events.items.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
   assert.match(byName.press_key.inputSchema.properties.key.description, /Enter.*single printable ASCII/s);
+});
+
+// WHY THE CHANGE SET IS TESTED AS A HINT, NOT A TRUTH. The full page rides
+// every action so the agent is never stranded; changed names what moved since
+// the last look at the same tab. Rows match by value — role, name, position —
+// and the first look reports null, because its elements ARE the baseline.
+
+const ROW_FILE = { role: 'menuitem', name: 'File', x: 73, y: 46 };
+const ROW_INSERT = { role: 'menuitem', name: 'Insert', x: 204, y: 46 };
+const ROW_TABLE = { role: 'menuitem', name: 'Table', x: 312, y: 180 };
+
+async function actOn(server, pages) {
+  const res = await server.handle({ jsonrpc: '2.0', id: 30, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+  return JSON.parse(res.result.content[0].text);
+}
+
+test('the first look at a tab carries no change set, because it is the baseline', async () => {
+  const c = ctx();
+  c.driver.snapshot = async () => [ROW_FILE];
+  const out = await actOn(createMcpServer(c));
+
+  assert.equal(out.changed, null);
+  assert.equal(out.elements.length, 1);
+});
+
+test('an unchanged page reports nothing changed', async () => {
+  const c = ctx();
+  c.driver.snapshot = async () => [ROW_FILE, ROW_INSERT];
+  const server = createMcpServer(c);
+  await actOn(server);
+
+  const out = await actOn(server);
+
+  assert.deepEqual(out.changed, { added: [], moved: [], removed: 0, reshaped: false });
+});
+
+test('added and moved rows are named', async () => {
+  const c = ctx();
+  const pages = [
+    [ROW_FILE, ROW_INSERT, { role: 'button', name: 'Share', x: 1386, y: 30 }],
+    [ROW_FILE, ROW_INSERT, { role: 'button', name: 'Share', x: 1390, y: 30 }, ROW_TABLE]
+  ];
+  c.driver.snapshot = async () => pages.shift() ?? [];
+  const server = createMcpServer(c);
+  await actOn(server);
+
+  const out = await actOn(server);
+
+  assert.deepEqual(out.changed.added, [ROW_TABLE]);
+  assert.deepEqual(out.changed.moved, [{ role: 'button', name: 'Share', x: 1390, y: 30 }]);
+  assert.equal(out.changed.removed, 0);
+  assert.equal(out.changed.reshaped, false);
+});
+
+test('removed rows count without riding along', async () => {
+  const c = ctx();
+  const pages = [[ROW_FILE, ROW_TABLE], [ROW_FILE]];
+  c.driver.snapshot = async () => pages.shift() ?? [];
+  const server = createMcpServer(c);
+  await actOn(server);
+
+  const out = await actOn(server);
+
+  assert.equal(out.changed.removed, 1);
+  assert.deepEqual(out.changed.added, []);
+});
+
+test('a replaced page says reshaped instead of listing sixty new rows', async () => {
+  const c = ctx();
+  const pages = [
+    [ROW_FILE, ROW_INSERT, ROW_TABLE],
+    [{ role: 'button', name: 'Unrelated', x: 1, y: 1 }, { role: 'link', name: 'Other', x: 2, y: 2 }]
+  ];
+  c.driver.snapshot = async () => pages.shift() ?? [];
+  const server = createMcpServer(c);
+  await actOn(server);
+
+  const out = await actOn(server);
+
+  assert.equal(out.changed.reshaped, true);
+  assert.deepEqual(out.changed.added, [], 'read elements instead: everything moved');
+  assert.equal(out.elements.length, 2, 'the full page still rides along');
 });
