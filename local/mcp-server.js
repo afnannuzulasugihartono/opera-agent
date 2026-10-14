@@ -177,6 +177,7 @@ function asText(value) {
 // precedent.
 
 const AUTO_PAGE_LIMIT = 60;
+const SETTLE_MS = 120;
 
 // WHY AN ACTION RETURNS THE PAGE WITH IT. An agent that has to ask for the
 // page after every action spends two round trips on one decision — act, then
@@ -200,6 +201,15 @@ const AUTO_PAGE_LIMIT = 60;
 // The first look at a tab reports null: there is no previous page, and the
 // elements it carries ARE the baseline. Keyed by driver object in a WeakMap,
 // so a closed tab's last look is garbage instead of a leak.
+//
+// WHY THE LOOK WAITS A BEAT FIRST. The snapshot used to run the instant the
+// action's reply landed — and a menu that opens a frame later was already
+// missed: proven live, the auto-page after clicking Insert held no menu rows
+// while a snapshot a moment later held fifteen. A hundred and twenty
+// milliseconds is frames, not networks — seven of them, enough for any handler
+// to place its DOM — and twenty-five times less than one model turn, so the
+// tax framing is wrong: settling is part of seeing, and a page read before it
+// stands is a page misread.
 
 function diffElements(prev, curr) {
   const key = (r) => `${r.role}|${r.name}|${r.x}|${r.y}`;
@@ -222,6 +232,7 @@ function diffElements(prev, curr) {
 const lastAuto = new WeakMap();
 
 const afterAction = async (driver, action, limit) => {
+  await new Promise((r) => setTimeout(r, SETTLE_MS));
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
   const prev = lastAuto.get(driver) ?? null;
   lastAuto.set(driver, seen);

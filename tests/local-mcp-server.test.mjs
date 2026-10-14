@@ -435,3 +435,17 @@ test('a replaced page says reshaped instead of listing sixty new rows', async ()
   assert.deepEqual(out.changed.added, [], 'read elements instead: everything moved');
   assert.equal(out.elements.length, 2, 'the full page still rides along');
 });
+
+// WHY THE FLOOR IS ASSERTED, NOT THE CEILING. setTimeout fires at or after its
+// delay, never before, so "took at least a hundred" cannot flake under load —
+// and it is the floor that matters, because the point is the page getting its
+// beat before the snapshot, not the call being fast.
+
+test('an action lets the page stand before looking at it', async () => {
+  const server = createMcpServer(ctx());
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 31, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+  const ms = Number(res.result.content.at(-1).text.replace(' ms', ''));
+
+  assert.ok(ms >= 100, `the page gets its beat before the snapshot (took ${ms} ms)`);
+});
