@@ -7,7 +7,7 @@ import { log } from '../lib/log.js';
 import { METHOD_SPECS, clamp } from '../lib/protocol.js';
 import { pollDelays, classifyResolve, makeNotReady, attachResolution } from '../lib/action-pipeline.js';
 import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from '../lib/focus-gate.js';
-import { resolveKeyInput, resolveKeyStream } from '../lib/keyboard.js';
+import { resolveKeyInput, resolveKeyStream, resolveTextKeys, MODIFIER_BITS } from '../lib/keyboard.js';
 import { recordPopup, resolvePopupOpener, POPUP_LOG_LIMIT } from '../lib/popup-events.js';
 import { sleep } from './utils.js';
 import { contentCall } from './tab-content.js';
@@ -315,6 +315,23 @@ export async function trustedPointer(tabId, params, context) {
   })));
 }
 
+// WHY TEXT SOMETIMES TRAVELS ONE CHARACTER AT A TIME. An IME insert carries
+// no key events, and canvas editors commit off key-event sequences, so the
+// insert reports success and paints nothing. One keyDown carrying text plus
+// keyUp per character is the shape such editors accept; the caller opts in
+// per call because native inputs are faster and correct on plain inserts.
+
+async function sendTextAsKeys(target, text) {
+  const keys = resolveTextKeys(text);
+  for (const spec of keys) {
+    const modifiers = spec.shift ? { modifiers: MODIFIER_BITS.shift } : {};
+    const codes = { key: spec.key, code: spec.code, windowsVirtualKeyCode: spec.vk, nativeVirtualKeyCode: spec.vk };
+    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', text: spec.text, ...codes, ...modifiers });
+    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...codes, ...modifiers });
+  }
+  return { ok: true, method: 'debugger', input: 'text-keys', valueLength: keys.length, keys: keys.length };
+}
+
 export async function trustedKey(tabId, params, context, mode = 'background') {
   const request = resolveKeyInput({
     key: params?.key,
@@ -326,6 +343,9 @@ export async function trustedKey(tabId, params, context, mode = 'background') {
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
     withForegroundFocusGate(tabId, mode, async () => {
     if (request.kind === 'text') {
+      if (params?.keyEvents === true) {
+        return sendTextAsKeys(target, request.text);
+      }
       for (const chunk of request.chunks) {
         await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
       }
@@ -361,10 +381,15 @@ export async function trustedKeyStream(tabId, params, context, mode = 'backgroun
     let chars = 0;
     for (const event of events) {
       if (event.kind === 'text') {
-        for (const chunk of event.chunks) {
-          await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
+        if (params?.keyEvents === true) {
+          const sent = await sendTextAsKeys(target, event.text);
+          chars += sent.keys;
+        } else {
+          for (const chunk of event.chunks) {
+            await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
+          }
+          chars += event.chars;
         }
-        chars += event.chars;
       } else {
         const spec = {
           key: event.key,

@@ -36,7 +36,7 @@ export const BURST_STEP_KEYS = Object.freeze({
   find: ['action', 'text', 'role', 'tag', 'exact', 'limit', 'tabId'],
   click: ['action', 'ref', 'refFromStep', 'refIndex', 'tabId'],
   fill: ['action', 'ref', 'value', 'refFromStep', 'refIndex', 'tabId'],
-  key: ['action', 'key', 'modifiers', 'text', 'tabId'],
+  key: ['action', 'key', 'modifiers', 'text', 'keyEvents', 'tabId'],
   scroll: ['action', 'x', 'y', 'absolute', 'smooth', 'tabId'],
   wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs', 'tabId'],
   hover: ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId'],
@@ -113,6 +113,9 @@ function validateBurstStep(step) {
     return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
   }
   if (action === 'key') {
+    if (step.keyEvents !== undefined && typeof step.keyEvents !== 'boolean') {
+      return 'Burst key keyEvents must be a boolean.';
+    }
 
     try {
       resolveKeyInput({ key: step.key, modifiers: step.modifiers, text: step.text });
