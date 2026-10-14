@@ -112,7 +112,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'stream_keys',
-    description: 'Send up to 100 keys and texts in order, with optional gaps. Events go out one at a time in the order written, so a chord never overtakes its own key and a menu walk takes the branch you meant — about three milliseconds apart on loopback.',
+    description: 'Send up to 100 keys and texts in order, with optional gaps. Events go out one at a time in the order written, and keys keep a fifty-millisecond beat Docs can hear, so a chord never overtakes its own key and a menu walk takes the branch you meant.',
     inputSchema: {
       type: 'object',
       properties: {

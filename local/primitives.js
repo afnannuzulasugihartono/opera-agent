@@ -370,15 +370,20 @@ export function splitText(text, size) {
 // is not in front. That cost is real either way, and the caller now finds out
 // from the hover rather than from whatever it calls next.
 
-// WHY A GAPLESS RUN IS ORDERED RATHER THAN OVERLAPPED. The two chords here are
-//   sent one edge at a time and a run holds the next event as something to do
-//   rather than work already started, because a promise pushed into a run is a
-//   promise already running: awaiting those in order afterwards ordered
-//   nothing. Measured on a live Google Doc, Ctrl+1 typed a literal "1" instead
-//   of making a heading — a modifier that is not genuinely held is not a
-//   shortcut. The overlap this gave up was worth about three milliseconds a key
-//   on loopback, which is nothing; over the relay it was worth twenty seconds
-//   each, which is why it existed at all.
+// WHY A RUN HOLDS WORK, NOT PROMISES, AND KEYS KEEP A BEAT. A promise pushed
+// into a run is work already begun: awaiting those in order afterwards ordered
+// nothing, measured as a chord's keyUp landing after the next event's keyDown.
+// So a run holds what to do and each event only starts when reached; the
+// overlap given up was three milliseconds a key on loopback against twenty
+// seconds each over the relay, which is why it existed at all. Order is only
+// half of it: Docs drops edges that land in the same tick — three Enter
+// presses vanished while typed characters beside them all survived — and the
+// trust window hides this by spacing early calls with proof round trips while
+// trusted ones fire back-to-back. So a key holds its down edge fifty
+// milliseconds before the up, and chords in a stream breathe the same between
+// them. Fifty is past any coalescing window and a sixtieth of one model turn.
+
+const KEY_BEAT_MS = 50;
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   const spot = (x, y, color) => {
@@ -442,6 +447,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           nativeVirtualKeyCode: descriptor.windowsVirtualKeyCode
         };
         await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', modifiers: mask, ...chord });
+        await sleep(KEY_BEAT_MS);
         await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...chord });
         return { key: name, modifiers: mask };
       }
@@ -451,13 +457,12 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         ? { type: 'keyDown', modifiers: mask, ...descriptor }
         : { type: 'rawKeyDown', modifiers: mask, key: descriptor.key, code: descriptor.code, windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode };
 
-      await Promise.all([
-        cdp.send('Input.dispatchKeyEvent', frame),
-        cdp.send('Input.dispatchKeyEvent', {
-          type: 'keyUp', modifiers: mask, key: descriptor.key, code: descriptor.code,
-          windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode
-        })
-      ]);
+      await cdp.send('Input.dispatchKeyEvent', frame);
+      await sleep(KEY_BEAT_MS);
+      await cdp.send('Input.dispatchKeyEvent', {
+        type: 'keyUp', modifiers: mask, key: descriptor.key, code: descriptor.code,
+        windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode
+      });
 
       return { key: name, modifiers: mask };
     },
@@ -480,7 +485,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         for (const job of run) {
           const out = await job.go();
           if (job.kind === 'text') chars += out.chars;
-          else chords += 1;
+          else {
+            chords += 1;
+            await sleep(KEY_BEAT_MS);
+          }
         }
         run = [];
       };

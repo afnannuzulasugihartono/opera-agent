@@ -205,7 +205,8 @@ test('a stream preserves order, counts its work, and refuses what it cannot carr
   assert.equal(out.chords, 2);
   assert.equal(out.chars, 2);
   assert.ok(out.execMs >= 0);
-  assert.deepEqual(slept, [50]);
+  assert.deepEqual(slept, [50, 50, 50, 50, 50],
+    'each chord keeps its beat twice — inside the key and after it in the stream — then the asked gap');
   assert.deepEqual(
     cdp.calls.map((c) => c.method),
     ['Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent']
@@ -630,7 +631,8 @@ test('a read on a Google Doc borrows the selection and returns the document', as
   const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.deepEqual(keys.map((k) => k.params.modifiers), [2, 2, 0, 0],
     'the select-all carries Control on both edges and the collapse carries none');
-  assert.deepEqual(slept, [150], 'the selection settles before the copy forces it out');
+  assert.deepEqual(slept, [50, 150, 50],
+    'each borrowed key keeps its beat, and the selection settles before the copy forces it out');
 });
 
 test('a read that finds no document structure keeps the page text', async () => {
@@ -705,4 +707,30 @@ test('overlay rows come first, matched by role and never by site', () => {
   assert.ok(expression.includes('[role~="menu"]'), 'menus come before document order');
   assert.ok(expression.includes('OVERLAYS'), 'one list names every overlay container');
   assert.ok(!expression.includes('kix'), 'no per-site selectors in a generic primitive');
+});
+
+// WHY THE BEAT IS PINNED, NOT THE TIMING. Docs drops a keyDown and keyUp that
+// land in the same tick — three Enter presses vanished live while typed
+// characters beside them survived — so a key holds its down edge fifty
+// milliseconds before the up, and chords in a stream breathe the same between
+// them. Fake sleep makes the beats observable without waiting for them.
+
+test('a key holds its down edge a beat before the up', async () => {
+  for (const modifiers of [['Control'], []]) {
+    const slept = [];
+    const cdp = recordingCdp();
+    await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).key('a', modifiers);
+
+    assert.deepEqual(slept, [50], 'down, beat, up — chord and bare key alike');
+  }
+});
+
+test('chords in a stream breathe between them, texts do not need to', async () => {
+  const slept = [];
+  const cdp = recordingCdp();
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  await p.keys([{ key: 'a', modifiers: ['Control'] }, { text: 'hi' }, { key: 'b', modifiers: ['Control'] }]);
+
+  assert.deepEqual(slept, [50, 50, 50, 50], 'each chord beats inside and after; the text passes through');
 });
