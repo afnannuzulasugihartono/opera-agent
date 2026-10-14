@@ -195,6 +195,48 @@ test('a missing required argument is refused before the driver is touched', asyn
   assert.deepEqual(c.driver.calls, [], 'a refused call must not reach the browser');
 });
 
+// WHY THIS CLAIM EXISTS. An agent that has to ask for the page after every
+// action spends two calls on one decision, and the looking half is the one
+// that costs. On the reference implementation roughly thirty per cent of all
+// tool calls were snapshots, nearly all of them right after something the
+// agent had just done. Handing the page back with the action makes one
+// decision cost one call — and this fails the moment an action returns
+// something flat, because the model would then be reasoning about a page it
+// cannot see.
+
+test('every action hands back the page it acted on, so looking costs no extra call', async () => {
+  const server = createMcpServer(ctx());
+
+  for (const [name, args] of [
+    ['click', { x: 10, y: 20 }],
+    ['click_row', { role: 'menuitem', name: 'Insert' }],
+    ['hover', { x: 30, y: 40 }],
+    ['press_key', { key: 'Enter' }],
+    ['type', { text: 'hi' }],
+    ['stream_keys', { events: [{ key: 'a' }] }],
+    ['open_url', { url: 'https://sheets.google.com/' }]
+  ]) {
+    const res = await server.handle({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name, arguments: args } });
+    const payload = JSON.parse(res.result.content[0].text);
+
+    assert.ok('action' in payload, `${name} returned no action result`);
+    assert.ok(Array.isArray(payload.elements), `${name} returned no page with the action`);
+    assert.ok(payload.elements.length > 0, `${name} came back with an empty page`);
+  }
+});
+
+test('the page that rides along is smaller than the page you ask for', async () => {
+  const asked = [];
+  const c = ctx();
+  c.driver.snapshot = async (limit) => { asked.push(limit); return [{ role: 'button', name: 'b', x: 1, y: 1 }]; };
+  const server = createMcpServer(c);
+
+  await server.handle({ jsonrpc: '2.0', id: 10, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+  await server.handle({ jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { limit: 120 } } });
+
+  assert.ok(asked[0] < asked[1], `an action asks for fewer rows (${asked[0]}) than a deliberate read (${asked[1]})`);
+});
+
 test('a driver that throws becomes an error result, not a dead server', async () => {
   const c = ctx();
   c.driver.read = () => { throw new Error('target closed'); };

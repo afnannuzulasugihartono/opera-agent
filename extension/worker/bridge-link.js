@@ -92,8 +92,17 @@ function publicBridgeTab(tab) {
   return { id: tab.id, url: tab.url ?? '', title: tab.title ?? '' };
 }
 
+// WHY THE BOUND SITS UNDER THE CALLER'S TIMEOUT. The local side gives a
+// command ten seconds and then stops listening. This side used to hold a
+// command for a minute before giving up on it, so one hung call did not just
+// fail — it kept the worker busy long after the caller had walked away, and
+// every command queued behind it died too. A loopback round trip has no
+// network in it: a browser that needs eight seconds to answer one call is not
+// slow, it is stuck, and saying so in eight seconds is worth more than being
+// patient for a minute. Raising it back is one environment variable.
+
 function handleTimeoutMs() {
-  return Number(globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS ?? 60000);
+  return Number(globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS ?? 8000);
 }
 
 function withHandleTimeout(promise) {

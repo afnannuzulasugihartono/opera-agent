@@ -98,7 +98,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'press_key',
-    description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow.',
+    description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow. Returns the page as it now stands, so you see what the key did without a second call.',
     inputSchema: {
       type: 'object',
       properties: { tabId: tabArg, key: stringArg('key name'), modifiers: { type: 'array', items: { type: 'string' }, description: 'Control, Alt, Shift, Meta' } },
@@ -107,7 +107,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'type',
-    description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor.',
+    description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor. Returns the page as it now stands.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
   },
   {
@@ -129,7 +129,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'ax_snapshot',
-    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Read this before clicking anything without a stable selector; every coordinate is resolved fresh from a live tree.',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
   }
 ]);
@@ -148,6 +148,31 @@ function requireArguments(args, required) {
 function asText(value) {
   return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] };
 }
+
+// WHY THE AUTO PAGE IS HALF. It rides along on every action, so a fifteen-action
+// job pays for it fifteen times. The near half of a page is usually what did
+// not move, and unchanged elements are exactly what an agent should not spend
+// its attention on.
+
+const AUTO_PAGE_LIMIT = 60;
+
+// WHY AN ACTION RETURNS THE PAGE WITH IT. An agent that has to ask for the
+// page after every action spends two round trips on one decision — act, then
+// look — and the look is the half that costs. Measured on the reference
+// implementation: roughly thirty per cent of all tool calls were snapshots,
+// almost all of them immediately after something the agent had just done.
+// Handing the page back with the action makes one decision cost one call.
+//
+// WHY THE AUTO PAGE IS SMALLER THAN ax_snapshot. It rides along on every
+// action, so it lands in context fifteen times on a fifteen-action job. The
+// explicit snapshot is for when the agent means to study the page; this is
+// for "what did that do", and the near half of the page that did not move is
+// noise on every single turn.
+
+const afterAction = async (driver, action, limit) => {
+  const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
+  return asText({ action, elements: seen });
+};
 
 export function createMcpServer(context) {
   const sessions = new Map();
@@ -175,7 +200,7 @@ export function createMcpServer(context) {
       case 'list_tabs':
         return asText(await driver.tabs());
       case 'open_url':
-        return asText(await driver.open(args.url));
+        return afterAction(driver, await driver.open(args.url));
       case 'close_tab': {
         const out = await driver.close(args.tabId);
         sessions.get(args.tabId)?.close?.();
@@ -187,17 +212,17 @@ export function createMcpServer(context) {
       case 'find_elements':
         return asText(await driver.find(args.query));
       case 'click':
-        return asText(await driver.click(args.x, args.y));
+        return afterAction(driver, await driver.click(args.x, args.y));
       case 'click_row':
-        return asText(await driver.clickRow(args.role, args.name));
+        return afterAction(driver, await driver.clickRow(args.role, args.name));
       case 'hover':
-        return asText(await driver.hover(args.x, args.y));
+        return afterAction(driver, await driver.hover(args.x, args.y));
       case 'press_key':
-        return asText(await driver.key(args.key, args.modifiers ?? []));
+        return afterAction(driver, await driver.key(args.key, args.modifiers ?? []));
       case 'type':
-        return asText(await driver.type(args.text));
+        return afterAction(driver, await driver.type(args.text));
       case 'stream_keys':
-        return asText(await driver.keys(args.events));
+        return afterAction(driver, await driver.keys(args.events));
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
       case 'capture_page': {

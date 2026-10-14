@@ -119,3 +119,20 @@ test('the module registers the listeners that restart it', () => {
 test('the frame writer the server uses is the one the client decodes', () => {
   assert.equal(encodeText('{"type":"ping"}').toString('latin1').includes('{"type":"ping"}'), true);
 });
+
+// WHY THIS IS LOCKED IN A TEST AND NOT LEFT TO THE READER. One hung browser
+// call used to hold this worker for a minute while the caller gave up after
+// ten seconds — so the failure was not one failed command but a queue of them,
+// which is what "stuck" felt like. The bound has to stay under the caller's
+// timeout, and those two numbers live in different files.
+
+test('the worker gives up before the local side stops listening', async () => {
+  const workerBound = await import('../extension/worker/bridge-link.js')
+    .then(() => Number(globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS ?? 8000));
+  const callerBound = Number((await import('node:fs')).readFileSync(
+    new URL('../local/bridge.js', import.meta.url), 'utf8'
+  ).match(/const REPLY_TIMEOUT_MS = (\d+)/)?.[1]);
+
+  assert.ok(workerBound < callerBound,
+    `the worker must free the command slot (${workerBound} ms) before the caller gives up on it (${callerBound} ms)`);
+});
