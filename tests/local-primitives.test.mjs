@@ -82,6 +82,12 @@ test('a long document is sent as several inserts so one failure cannot lose all 
   assert.deepEqual(inserts.map((i) => i.params.text.length), [10, 10, 10, 5]);
 });
 
+// WHY THE CHORD IS ORDERED, NOT MERGED. Two sends racing in a Promise.all do
+// not keep their order on the wire, because every send proves the link alive
+// first and that proof is its own await. Chrome was handed a keyUp before its
+// keyDown, so Ctrl+1 typed a literal "1" into a live Google Doc instead of
+// making a heading. The order is the shortcut.
+
 test('a chord is two masked events with codes and no text, because separate modifier presses leaked under rapid fire', async () => {
   const cdp = recordingCdp();
   const p = createPrimitives(cdp);
@@ -90,7 +96,7 @@ test('a chord is two masked events with codes and no text, because separate modi
 
   const events = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.equal(events.length, 2, 'key down, key up, nothing else');
-  assert.equal(events[0].params.type, 'keyDown');
+  assert.equal(events[0].params.type, 'rawKeyDown');
   assert.equal(events[0].params.key, 'a');
   assert.equal(events[0].params.modifiers, 2);
   assert.equal(events[0].params.text, undefined);
@@ -99,6 +105,18 @@ test('a chord is two masked events with codes and no text, because separate modi
   assert.equal(events[1].params.type, 'keyUp');
   assert.equal(events[1].params.modifiers, 2);
   assert.deepEqual(out, { key: 'a', modifiers: 2 });
+});
+
+// WHY A MISSPELLED MODIFIER MAY NOT BECOME A PLAIN KEY. 'control' in lower
+// case used to sum to zero, which turned Ctrl+1 into the keystroke "1" and
+// looked like the page ignoring a shortcut. The name is either right or it is
+// an error; there is no third answer that quietly presses something else.
+
+test('a modifier nobody recognises is an error, not a keypress', async () => {
+  const cdp = recordingCdp();
+  await assert.rejects(() => createPrimitives(cdp).key('a', ['control']), /Unknown modifier.*Control/s);
+  await assert.rejects(() => createPrimitives(cdp).key('a', ['Ctrl']), /Unknown modifier/);
+  assert.deepEqual(cdp.calls, [], 'nothing reached the browser');
 });
 
 test('a bare key carries no modifier bits', async () => {
@@ -278,16 +296,36 @@ test('a snapshot clamps its limit, so a wild request cannot walk the whole docum
   assert.match(limits.at(-1), /LIMIT = 1;/);
 });
 
-test('a gapless run fires together, so ten keys cost one round trip', async () => {
+// WHY A GAPLESS RUN IS NO LONGER ASSERTED AS "FIRED TOGETHER". It used to be,
+// and the overlap was real — but it bought almost nothing here and cost the one
+// thing that mattered. A round trip over loopback is about three milliseconds,
+// so ten keys cost thirty; over the relay they cost twenty seconds, which is
+// why the overlap existed at all. What it actually cost was order: every send
+// proves the link alive before it goes out, so two sends racing reach the wire
+// in the order they finish proving. Measured on a live Google Doc, Ctrl+1 typed
+// a literal "1" instead of making a heading. A run is now a list of things to
+// do, in order, and only becomes work when it is reached.
+
+test('a run reaches the wire in the order it was written', async () => {
   const cdp = pipelinedCdp();
-  const p = createPrimitives(cdp);
 
-  const out = await p.keys([{ text: 'a' }, { text: 'b' }, { key: 'Enter' }]);
+  await createPrimitives(cdp, { sleep: async () => {} }).keys([
+    { key: '1', modifiers: ['Control'] },
+    { text: 'Hi' },
+    { key: 'Enter' }
+  ]);
 
-  assert.equal(out.events, 3);
-  assert.equal(out.chars, 2);
-  assert.equal(out.chords, 1);
-  assert.equal(cdp.stats().max, 4, 'two inserts and a down/up pair overlap');
+  assert.deepEqual(
+    cdp.calls.map((c) => `${c.method}:${c.params.type ?? ''}`),
+    [
+      'Input.dispatchKeyEvent:rawKeyDown',
+      'Input.dispatchKeyEvent:keyUp',
+      'Input.insertText:',
+      'Input.dispatchKeyEvent:keyDown',
+      'Input.dispatchKeyEvent:keyUp'
+    ],
+    'a chord closes before the next event starts, and the text lands between them'
+  );
 });
 
 test('a gap splits the run, so a beat for the UI is a real beat', async () => {
@@ -369,7 +407,7 @@ test('a modified key sends no text, because text under a modifier is typed liter
   const cdp = recordingCdp();
   await createPrimitives(cdp).key('2', ['Control', 'Alt']);
 
-  const downs = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'keyDown');
+  const downs = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'rawKeyDown');
   assert.equal(downs.length, 1, 'one keyDown carries the whole chord');
   assert.equal(downs[0].params.key, '2');
   assert.equal(downs[0].params.text, undefined, 'sending text here types a literal 2 into the document');
@@ -389,7 +427,7 @@ test('a modified letter sends no text either, or Ctrl+A would type an a', async 
   const cdp = recordingCdp();
   await createPrimitives(cdp).key('a', ['Control']);
 
-  const downs = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'keyDown');
+  const downs = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'rawKeyDown');
   assert.equal(downs.length, 1);
   assert.equal(downs[0].params.key, 'a');
   assert.equal(downs[0].params.text, undefined);
@@ -400,7 +438,7 @@ test('every keyUp carries the same mask as its keyDown, so the chord reads whole
   await createPrimitives(cdp).key('2', ['Control', 'Alt']);
 
   const events = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
-  assert.deepEqual(events.map((e) => e.params.type), ['keyDown', 'keyUp']);
+  assert.deepEqual(events.map((e) => e.params.type), ['rawKeyDown', 'keyUp']);
   assert.equal(events[1].params.modifiers, 3);
   assert.equal(events[1].params.text, undefined);
 });

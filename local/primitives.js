@@ -245,7 +245,11 @@ export function snapshotExpression(limit) {
 }
 
 export function modifierMask(modifiers = []) {
-  return modifiers.reduce((mask, name) => mask | (MODIFIER_BITS[name] ?? 0), 0);
+  return modifiers.reduce((mask, name) => {
+    const bit = MODIFIER_BITS[name];
+    if (bit === undefined) throw new Error(`Unknown modifier: ${JSON.stringify(name)}. Use one of ${Object.keys(MODIFIER_BITS).join(', ')}.`);
+    return mask | bit;
+  }, 0);
 }
 
 export function splitText(text, size) {
@@ -265,6 +269,16 @@ export function splitText(text, size) {
 // wheel, because those wait on a compositor that is not running when the window
 // is not in front. That cost is real either way, and the caller now finds out
 // from the hover rather than from whatever it calls next.
+
+// WHY A GAPLESS RUN IS ORDERED RATHER THAN OVERLAPPED. The two chords here are
+//   sent one edge at a time and a run holds the next event as something to do
+//   rather than work already started, because a promise pushed into a run is a
+//   promise already running: awaiting those in order afterwards ordered
+//   nothing. Measured on a live Google Doc, Ctrl+1 typed a literal "1" instead
+//   of making a heading — a modifier that is not genuinely held is not a
+//   shortcut. The overlap this gave up was worth about three milliseconds a key
+//   on loopback, which is nothing; over the relay it was worth twenty seconds
+//   each, which is why it existed at all.
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
   const spot = (x, y, color) => {
@@ -324,10 +338,8 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode,
           nativeVirtualKeyCode: descriptor.windowsVirtualKeyCode
         };
-        await Promise.all([
-          cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', modifiers: mask, ...chord }),
-          cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...chord })
-        ]);
+        await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', modifiers: mask, ...chord });
+        await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...chord });
         return { key: name, modifiers: mask };
       }
 
@@ -362,16 +374,16 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       let chars = 0;
       let run = [];
       const flush = async () => {
-        const done = await Promise.all(run.map((job) => job.promise));
-        for (const [i, out] of done.entries()) {
-          if (run[i].kind === 'text') chars += out.chars;
+        for (const job of run) {
+          const out = await job.go();
+          if (job.kind === 'text') chars += out.chars;
           else chords += 1;
         }
         run = [];
       };
       for (const event of events) {
-        if (event.text != null) run.push({ kind: 'text', promise: primitives.type(String(event.text)) });
-        else run.push({ kind: 'chord', promise: primitives.key(event.key, event.modifiers ?? []) });
+        if (event.text != null) run.push({ kind: 'text', go: () => primitives.type(String(event.text)) });
+        else run.push({ kind: 'chord', go: () => primitives.key(event.key, event.modifiers ?? []) });
         if ((event.gapMs ?? 0) > 0) {
           await flush();
           await sleep(event.gapMs);
