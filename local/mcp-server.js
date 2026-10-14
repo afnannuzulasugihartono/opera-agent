@@ -61,7 +61,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'read_page',
-    description: 'Read one tab: url, title and visible text. A canvas-rendered page returns little or no text, so pair this with capture_page when the task needs to see content.',
+    description: 'Read one tab: url, title and text. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {

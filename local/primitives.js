@@ -244,6 +244,66 @@ export function snapshotExpression(limit) {
     .replace('__ROLES__', JSON.stringify([...SNAPSHOT_ROLES]));
 }
 
+// WHY A GOOGLE DOC IS READ THROUGH ITS OWN COPY PATH. Docs draws the document
+// on a canvas, so body.innerText holds the toolbar chrome and none of the
+// content: read_page on a Doc reported an empty document that was not empty,
+// and the only thing that could see the text was a screenshot. Docs keeps a
+// hidden iframe for text events, and dispatching a copy event there makes Docs
+// itself populate a div with the selected text — Zotero's production
+// technique, proven on this machine at thirteen milliseconds for a full
+// document read. One adaptation: Zotero clears with innerHTML, which this
+// document's Trusted Types policy refuses outright, so the div is emptied with
+// replaceChildren instead. Same clearing, no string sink.
+//
+// WHY THE READ PREFERS INNERTEXT. The populated div keeps the document's block
+// structure, and innerText renders it back as lines: headings, paragraphs and
+// list items stay separated the way the person sees them. textContent would
+// weld every paragraph into one run with no boundary at all, and joining blocks
+// with a period instead would corrupt the text it claims to report —
+// abbreviations, decimals and version numbers all contain periods that are not
+// separators. textContent stays as the fallback for a frame that renders
+// nothing.
+//
+// WHY THE SELECTION IS BORROWED AND RETURNED. The copy path reads whatever is
+// selected, so a full read selects all first — and anything the person had
+// selected is replaced the moment Ctrl+A lands. End collapses the selection
+// back to a caret at the end of the document, which is the one position a read
+// can honestly promise: the content is untouched, the caret is not where it
+// was. A read that left the whole document selected would turn the agent's
+// next keystroke into a deletion.
+//
+// WHY AN EMPTY COPY EARNS ONE RETRY. Ctrl+A selects nothing when the editor
+// never had focus, and the cleared box then reads as an empty document that is
+// not empty. One click in the canvas tile focuses the editor for the second
+// attempt; the retry is the only path that can pay the background-window mouse
+// penalty, and only when the fast path came back with nothing.
+
+export const DOCS_COPY_EXPRESSION = `(() => {
+  try {
+    const frame = document.querySelector('.docs-texteventtarget-iframe');
+    if (!frame || !frame.contentDocument) return null;
+    const target = frame.contentDocument.querySelector('[contenteditable]');
+    if (!target) return null;
+    target.replaceChildren();
+    target.dispatchEvent(new CustomEvent('copy'));
+    const body = frame.contentDocument.body;
+    const raw = target.innerText || (body ? body.textContent : '') || '';
+    const ZW_FIRST = 8203;
+    const ZW_LAST = 8205;
+    const BOM = 65279;
+    let text = '';
+    for (const ch of raw) {
+      const code = ch.codePointAt(0);
+      if ((code < ZW_FIRST || code > ZW_LAST) && code !== BOM) text += ch;
+    }
+    return text;
+  } catch { return null; }
+})()`;
+
+export function isDocsDocument(url) {
+  return String(url || '').includes('docs.google.com/document/d/');
+}
+
 export function modifierMask(modifiers = []) {
   return modifiers.reduce((mask, name) => {
     const bit = MODIFIER_BITS[name];
@@ -311,7 +371,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     },
 
     async read() {
-      return readState();
+      const state = await readState();
+      if (!isDocsDocument(state.url)) return state;
+      const text = await readDocsText();
+      return { ...state, text: text ?? state.text };
     },
 
     async evaluate(expression) {
@@ -481,6 +544,46 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         if (Date.now() >= deadline) return state;
         await sleep(intervalMs);
       }
+    }
+  };
+
+  const copyDocsText = async () => {
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: DOCS_COPY_EXPRESSION,
+      returnByValue: true
+    });
+    return typeof result?.value === 'string' ? result.value : null;
+  };
+
+  const focusDocsCanvas = async () => {
+    const point = await primitives.evaluate(`(() => {
+      const tile = document.querySelector('.kix-canvas-tile-content');
+      if (!tile) return null;
+      const r = tile.getBoundingClientRect();
+      return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + Math.min(150, r.height / 2)) };
+    })()`);
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      await primitives.clickAt(point.x, point.y);
+    } else {
+      const { width } = await primitives.viewport();
+      await primitives.clickAt(Math.round(width * 0.45), 200);
+    }
+  };
+
+  const readDocsText = async () => {
+    try {
+      await primitives.key('a', ['Control']);
+      await sleep(150);
+      let text = await copyDocsText();
+      if (text === '') {
+        await focusDocsCanvas();
+        await primitives.key('a', ['Control']);
+        await sleep(150);
+        text = await copyDocsText();
+      }
+      return text;
+    } finally {
+      await primitives.key('End').catch(() => null);
     }
   };
 

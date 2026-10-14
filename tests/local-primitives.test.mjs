@@ -30,7 +30,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPrimitives, modifierMask, snapshotExpression, splitText } from '../local/primitives.js';
+import { DOCS_COPY_EXPRESSION, createPrimitives, isDocsDocument, modifierMask, snapshotExpression, splitText } from '../local/primitives.js';
 
 function recordingCdp() {
   const calls = [];
@@ -567,4 +567,110 @@ test('clear selects all and then deletes, because typing does not replace a sele
   assert.ok(selectAll, 'clear must select all');
   assert.ok(del, 'clear must then delete, because insertText would only insert at the caret');
   assert.ok(cdp.calls.findIndex((c) => c.params?.key === 'a') < cdp.calls.findIndex((c) => c.params?.key === 'Delete'));
+});
+
+// WHY THESE CLAIMS EXIST. Google Docs draws the document on a canvas, so the
+// page text a read used to return held the toolbar chrome and none of the
+// content. The document is read through its own copy path instead: select all,
+// dispatch a copy event at the hidden text iframe, and take what Docs itself
+// populated. Proven on a live document at thirteen milliseconds for a full
+// read; these hold the wiring so the proof stays true.
+
+const DOC_URL = 'https://docs.google.com/document/d/abc/edit';
+
+function docsCdp(copyAnswers) {
+  const calls = [];
+  const pending = [...copyAnswers];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate') {
+        if (params.expression.includes('texteventtarget')) {
+          return pending.shift() ?? { result: { value: null } };
+        }
+        if (params.expression.includes('kix-canvas-tile')) {
+          return { result: { value: { x: 700, y: 200 } } };
+        }
+        if (params.expression.includes('document.title')) {
+          return { result: { value: { title: 'Doc', url: DOC_URL, text: 'chrome' } } };
+        }
+      }
+      return { result: {} };
+    }
+  };
+}
+
+test('a read on an ordinary page costs one call and keeps its shape', async () => {
+  const cdp = recordingCdp();
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.deepEqual(out, { title: 't', url: 'u', text: 'body text' });
+  assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate']);
+});
+
+test('a read on a Google Doc borrows the selection and returns the document', async () => {
+  const slept = [];
+  const cdp = docsCdp([{ result: { value: 'First line\nSecond line' } }]);
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.read();
+
+  assert.deepEqual(out, {
+    title: 'Doc',
+    url: DOC_URL,
+    text: 'First line\nSecond line'
+  });
+  assert.deepEqual(
+    cdp.calls.map((c) => c.method),
+    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent',
+      'Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent']
+  );
+  const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
+  assert.deepEqual(keys.map((k) => k.params.modifiers), [2, 2, 0, 0],
+    'the select-all carries Control on both edges and the collapse carries none');
+  assert.deepEqual(slept, [150], 'the selection settles before the copy forces it out');
+});
+
+test('a read that finds no document structure keeps the page text', async () => {
+  const cdp = docsCdp([{ result: { value: null } }]);
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.equal(out.text, 'chrome', 'a null copy is a page without the editor, not an empty document');
+  assert.ok(!cdp.calls.some((c) => c.params?.type === 'mousePressed'),
+    'no structure means nothing to focus, so no retry click goes out');
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent').length, 4,
+    'the selection is still collapsed even when the copy found nothing');
+});
+
+test('an empty copy earns one focused retry before the read admits empty', async () => {
+  const cdp = docsCdp([{ result: { value: '' } }, { result: { value: 'Retried text' } }]);
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.equal(out.text, 'Retried text');
+  const pressed = cdp.calls.filter((c) => c.params?.type === 'mousePressed');
+  assert.equal(pressed.length, 1, 'exactly one focusing click, on the retry only');
+  assert.deepEqual(pressed[0].params.x, 700, 'the click lands where the canvas tile is, not on a guess');
+  const chords = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent' && c.params.modifiers === 2);
+  assert.equal(chords.length, 4, 'select-all runs twice: the fast attempt and the focused retry');
+});
+
+test('the document copy reads through the editor without touching a string sink', () => {
+  assert.ok(DOCS_COPY_EXPRESSION.includes('replaceChildren'));
+  assert.ok(!DOCS_COPY_EXPRESSION.includes('innerHTML'),
+    'Trusted Types refuses innerHTML on this document, which is how the first live proof failed');
+  assert.ok(DOCS_COPY_EXPRESSION.includes("CustomEvent('copy')"));
+  assert.ok(DOCS_COPY_EXPRESSION.includes('[contenteditable]'));
+  assert.ok(DOCS_COPY_EXPRESSION.includes('innerText'),
+    'paragraphs stay separated as lines instead of welded into one run');
+});
+
+test('only document pages take the document path', () => {
+  assert.equal(isDocsDocument('https://docs.google.com/document/d/abc/edit'), true);
+  assert.equal(isDocsDocument('https://docs.google.com/spreadsheets/d/abc/edit'), false);
+  assert.equal(isDocsDocument('https://example.com/'), false);
+  assert.equal(isDocsDocument(null), false);
 });
