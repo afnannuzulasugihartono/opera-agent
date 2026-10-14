@@ -98,39 +98,112 @@ def fail(message):
     return 1
 
 
+def words_of(name, args):
+    if name == 'docs.apply_heading':
+        return len(str(args.get('text', '')).split())
+    if name == 'docs.make_list':
+        return sum(len(str(item).split()) for item in args.get('items', []))
+    return 0
+
+
+PROOFS = {
+    'docs.apply_heading': lambda o: o.get('applied') is True,
+    'docs.make_list': lambda o: o.get('verified') is True,
+    'docs.insert_table': lambda o: o.get('verified') is True,
+    'docs.insert_image': lambda o: bool(o.get('placed')),
+    'docs.footnote': lambda o: bool(o.get('noteId')),
+    'docs.header_footer': lambda o: bool(o.get('header')) and bool(o.get('pageNumbers')),
+    'docs.page_setup': lambda o: bool(o.get('applied')),
+    'docs.toc_insert': lambda o: bool(o.get('entries')),
+    'docs.export_pdf': lambda o: bool(o.get('downloaded')),
+}
+
+
+def open_doc(mcp):
+    opened = mcp.tool('open_url', {'url': 'https://docs.new/'}, timeout=60)
+    raw = tool_text(opened)
+    info = json.loads(raw or '{}')
+    tab = info.get('result', {}).get('tab', {}) if isinstance(info.get('result'), dict) else {}
+    tab_id = tab.get('id')
+    url = str(tab.get('url', ''))
+    if 'accounts.google.com' in raw:
+        raise RuntimeError('NO_GOOGLE_SESSION')
+    if not tab_id:
+        raise RuntimeError('could not open a doc tab: %s' % raw[:200])
+    return tab_id, url
+
+
+def step_input(name, args, words):
+    if name == 'docs.make_list':
+        return dict(args, expectedWords='Words %d' % (words + words_of(name, args)))
+    return dict(args)
+
+
+def run_step(mcp, name, args, tab_id):
+    started = __import__('time').time()
+    reply = mcp.tool('run_workflow', {'name': name, 'input': dict(args, tabId=tab_id),
+                                      'timeoutMs': 100000}, timeout=140)
+    elapsed = int((__import__('time').time() - started) * 1000)
+    try:
+        body = json.loads(tool_text(reply) or '{}')
+    except ValueError:
+        return False, {}, 'unparseable output: %s' % tool_text(reply)[:200]
+    ok = body.get('ok') is True and body.get('status') in (None, 'completed', 'ok', True)
+    result = body.get('result', {})
+    output = result.get('output', result) if isinstance(result, dict) else {}
+    if not ok:
+        return False, output, '%s failed: %s' % (name, json.dumps(body)[:400])
+    proof = PROOFS.get(name)
+    if proof is not None and not proof(output if isinstance(output, dict) else {}):
+        return False, output, '%s proof missing: output=%s' % (name, json.dumps(output)[:300])
+    return True, output, '%5dms output=%s' % (elapsed, json.dumps(output)[:160])
+
+
 def main():
     if not os.environ.get('OPERA_AGENT_MCP_TOKEN'):
         print('paper_e2e SKIP: OPERA_AGENT_MCP_TOKEN is not set.')
         return 2
     mcp = Mcp()
     try:
-        opened = mcp.tool('open_url', {'url': 'https://docs.new/'}, timeout=60)
-        raw = tool_text(opened)
-        info = json.loads(raw or '{}')
-        tab = info.get('result', {}).get('tab', {}) if isinstance(info.get('result'), dict) else {}
-        tab_id = tab.get('id')
-        url = str(tab.get('url', ''))
-        if 'accounts.google.com' in raw:
-            print('paper_e2e SKIP: no Google session (docs.new did not land in a document).')
-            return 2
-        if not tab_id:
-            return fail('could not open a doc tab: %s' % raw[:200])
+        try:
+            tab_id, url = open_doc(mcp)
+        except RuntimeError as error:
+            if str(error) == 'NO_GOOGLE_SESSION':
+                print('paper_e2e SKIP: no Google session (docs.new did not land in a document).')
+                return 2
+            return fail(str(error))
         print('paper_e2e doc tab %s: %s' % (tab_id, url[:80]))
-        for name, args in STEPS:
-            started = __import__('time').time()
-            reply = mcp.tool('run_workflow', {'name': name, 'input': dict(args, tabId=tab_id),
-                                              'timeoutMs': 100000}, timeout=140)
-            try:
-                body = json.loads(tool_text(reply) or '{}')
-            except ValueError:
-                return fail('%s returned unparseable output: %s' % (name, tool_text(reply)[:200]))
-            ok = body.get('ok') is True and body.get('status') in (None, 'completed', 'ok', True)
-            result = body.get('result', {})
-            output = result.get('output', result) if isinstance(result, dict) else {}
-            if not ok:
-                return fail('%s failed: %s' % (name, json.dumps(body)[:400]))
-            print('ok %-22s %5dms output=%s' % (name, int((__import__('time').time() - started) * 1000),
-                                                json.dumps(output)[:160]))
+        words = 0
+        for index, (name, args) in enumerate(STEPS):
+            passed = False
+            for attempt in (1, 2, 3):
+                if attempt > 1:
+                    try:
+                        tab_id, url = open_doc(mcp)
+                    except RuntimeError as error:
+                        print('retry %s attempt %d: %s' % (name, attempt, error))
+                        continue
+                    words = 0
+                    replayed = True
+                    for pname, pargs in STEPS[:index]:
+                        ok, _, detail = run_step(mcp, pname, step_input(pname, pargs, words), tab_id)
+                        if not ok:
+                            print('retry %s attempt %d replay %s failed: %s' % (name, attempt, pname, detail[:160]))
+                            replayed = False
+                            break
+                        words += words_of(pname, pargs)
+                    if not replayed:
+                        continue
+                    print('retry %s attempt %d on fresh tab %s' % (name, attempt, tab_id))
+                ok, _, detail = run_step(mcp, name, step_input(name, args, words), tab_id)
+                if ok:
+                    words += words_of(name, args)
+                    print('ok %-22s %s' % (name, detail))
+                    passed = True
+                    break
+                print('retry %s attempt %d failed: %s' % (name, attempt, detail[:200]))
+            if not passed:
+                return fail('%s failed after 3 attempts (fresh doc plus prefix replay each).' % name)
         print('paper_e2e PASS: mini-thesis built, every workflow completed ok.')
         print('doc tab left open: %s' % url[:100])
         return 0
