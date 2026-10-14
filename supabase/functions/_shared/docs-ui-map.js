@@ -12,6 +12,7 @@
 
 const MENU_SELECTOR = "[role='menu'], [role='menuitem']";
 const DIALOG_SELECTOR = "[role='dialog']";
+const PICKER_SELECTOR = "[role='menuitem'][aria-label], [role='gridcell'], [role='menu'] [role='menuitem']";
 
 const ENTRIES = {
   File: { id: 'File', verify: MENU_SELECTOR },
@@ -33,6 +34,13 @@ const ENTRIES = {
   'Paragraph styles': { id: 'Gaya paragraf', verify: MENU_SELECTOR },
   Download: { id: 'Download', verify: MENU_SELECTOR },
   PDF: { id: 'Dokumen PDF (.pdf)', verify: MENU_SELECTOR },
+  'Heading 1': { id: 'Heading 1', verify: MENU_SELECTOR },
+  'Heading 2': { id: 'Heading 2', verify: MENU_SELECTOR },
+  'Heading 3': { id: 'Heading 3', verify: MENU_SELECTOR },
+  'Automatic 1': { id: 'Otomatis 1', verify: MENU_SELECTOR },
+  'Upload from computer': { id: 'Unggah dari komputer', verify: MENU_SELECTOR },
+  'PDF Document (.pdf)': { id: 'Dokumen PDF (.pdf)', verify: MENU_SELECTOR },
+  '1 x 1': { id: '1 x 1', verify: PICKER_SELECTOR },
   Top: { id: 'Atas', verify: DIALOG_SELECTOR },
   Bottom: { id: 'Bawah', verify: DIALOG_SELECTOR },
   Left: { id: 'Kiri', verify: DIALOG_SELECTOR },
