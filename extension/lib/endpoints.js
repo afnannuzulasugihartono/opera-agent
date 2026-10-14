@@ -25,7 +25,7 @@ export const CONSENT_CONFIG_URL = `${SUPABASE_URL}/functions/v1/opera-agent-auth
 // query parameter on sockets, where no header can be set; any gateway that does
 // not understand it ignores it.
 
-export const EDGE_REGION = 'ap-southeast-1';
+const EDGE_REGION = 'ap-southeast-1';
 
 export function socketUrl(bridgeUrl) {
   const raw = String(bridgeUrl || '').trim();
