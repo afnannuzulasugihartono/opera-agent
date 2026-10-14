@@ -130,13 +130,23 @@ const driver = {
 
 await bridgeReachable().catch(() => false);
 
+// WHY THE STARTUP PROBE MAY NOT KILL THE SERVER. Asking which pipe is right is
+// asking whether a port is free, and the honest answer to "another driver owns
+// it" is to say so. Dying here instead said it by refusing to start at all,
+// which is what happened when the person toggled the server on while a previous
+// instance was still holding the loopback port: the conflict was real and the
+// only visible result was a dead MCP with a stack trace instead of a server
+// that starts and names the conflict on the first tool call.
+
+const pipedToBridge = await bridged().catch(() => false);
+
 startStdio({
   context: {
     driver,
     open,
     resolveTab,
     sessionOptions: {},
-    port: (await bridged()) ? bridgePort() : PORT,
+    port: pipedToBridge ? bridgePort() : PORT,
     version: pkg.version,
     browsers: installedBrowsers(),
     reachable
