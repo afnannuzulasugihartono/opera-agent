@@ -381,6 +381,12 @@ test('a port held by a stranger is named, not swallowed into a wrong pipe', asyn
   }
 });
 
+// WHY THE GUEST IS ASKED RATHER THAN REMEMBERED, PROVEN IN THE SAME TEST. Its
+// link flag remembers the last word it heard, so a guest that trusted it would
+// push a command into a bridge with no device behind it and hang until the
+// command budget ran out. Asking turns that into the one sentence that names
+// the real problem, now.
+//
 // WHY A SECOND DRIVER DRIVES THE SAME BROWSER. Two sessions on one machine
 // each spawn their own driver, and only one of them can own the loopback port.
 // The loser used to exit at startup with "another dev shim owns this machine",
@@ -403,6 +409,12 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
     assert.equal(await bridgeReachable(), true, 'the loser sees the link the winner holds');
     const tabs = await listBridgeTargets();
     assert.deepEqual(tabs, [{ id: 11, url: 'https://y/', title: 'Y' }], 'and drives it');
+
+    await device.stop();
+    const started = Date.now();
+    await assert.rejects(() => listBridgeTargets(), /extension is not connected|liveness proof/,
+      'a dead device is named instead of waited out');
+    assert.ok(Date.now() - started < 5000, 'and named without burning the command budget');
   } finally {
     await closeBridge();
     await owner.close();

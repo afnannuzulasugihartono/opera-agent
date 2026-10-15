@@ -151,9 +151,19 @@ async function prove(srv) {
 // process now owns. One retry, so a command that merely failed is never run
 // twice — command failures come back as answers, not as transport errors.
 
+// WHY AN ADOPTED BRIDGE IS ASKED, NOT REMEMBERED. The link flag on a guest is a
+// memory of the last word it heard, and a session that pauses long enough for
+// the owner's extension to drop comes back to a flag that still says "linked"
+// long after the socket went. A guest asks the owner instead — one round trip
+// on a path that already pays one — and a live owner says yes. The owner's own
+// server keeps its in-process truth.
+
 async function attempt(method, params, timeoutMs, takeover = true) {
   const srv = await ensureServer();
-  if (!srv.linked()) throw new Error(LINK_ERROR);
+  if (!srv.linked()) {
+    const alive = srv.adopted ? await srv.probe().catch(() => false) : false;
+    if (!alive) throw new Error(LINK_ERROR);
+  }
   if (!trustedRecently() && !(await prove(srv))) {
     throw new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
   }
