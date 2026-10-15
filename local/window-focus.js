@@ -36,6 +36,15 @@ const lines = (text) => String(text ?? '')
   .map((line) => line.trim())
   .filter(Boolean);
 
+// WHY A NO-OP ALT GOES OUT BEFORE THE WINDOW IS BROUGHT FORWARD. Windows refuses a
+// foreground change while another application is taking input, and a drive that
+// only calls SetForegroundWindow loses every time the user is typing somewhere
+// else — measured live on this machine, with a typing app in another browser in
+// front: the window came forward and the answer said it had. The operating
+// system's own documented way round that is a no-op ALT, which makes the calling
+// process eligible to come forward; it presses nothing and types nothing. With it,
+// focus_window answered focused true while the typing app was still running.
+
 const WINDOWS_SCRIPT = (match) => `
 $ErrorActionPreference = 'Stop'
 Add-Type @"
@@ -50,6 +59,7 @@ public class OperaWindow {
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
   public static string Read() {
     var sb = new StringBuilder();
     sb.AppendLine("FOREGROUND " + Title(GetForegroundWindow()));
@@ -69,6 +79,8 @@ public class OperaWindow {
       if (t.Length == 0) return true;
       if (match.Length > 0 && t.IndexOf(match, StringComparison.OrdinalIgnoreCase) < 0) return true;
       ShowWindow(h, 9);
+      keybd_event(0x12, 0, 0, UIntPtr.Zero);
+      keybd_event(0x12, 0, 2, UIntPtr.Zero);
       SetForegroundWindow(h);
       sb.AppendLine(t);
       return false;
