@@ -91,12 +91,23 @@ const EMPTY_FILE_INPUT = [
 const EDIT_GONE = [
   'click({x, y}) where the text should go, then type again \u2014 the page has nothing focused to receive it',
   'caret_line() to see where the caret is, or read_page() to see what the page holds',
-  'focus_window({match: \u201cthe tab title\u201d}) if the browser window is minimized, because a page under the taskbar hears nothing'
+  'focus_window({match: \u201cthe tab title\u201d}) if the browser window is minimized, because a page under the taskbar hears nothing',
+  'read_page() before typing again on a canvas page - the text may have landed after the check, and retyping duplicates it'
 ];
 
 const READ_ONLY = [
   'guide("ask") for the roads to what you were trying to do',
   'anything that changes the page is a named tool, not a question'
+];
+
+// WHY AN EXTENSION PAGE GETS ITS OWN MOVES. Measured live: a drive named the
+// Extensions tab and the bridge refused it with "Cannot access a chrome:// URL".
+// That is a wall, not a failure - no move on that tab can ever succeed - so the
+// moves point at the tabs that can be driven instead of at the one that cannot.
+
+const EXTENSION_PAGE = [
+  'list_tabs() for the tabs that can be driven - a chrome:// page refuses every move',
+  'open_url() if the page belongs in a new tab instead'
 ];
 
 // WHY THE FIRST RULE THAT FITS WINS. A refusal and a missing row can both be
@@ -124,6 +135,10 @@ export const RULES = Object.freeze([
   {
     when: (error) => /No page target/.test(error),
     next: NO_TARGET
+  },
+  {
+    when: (error) => /chrome:\/\//.test(error),
+    next: EXTENSION_PAGE
   },
   {
     when: (error) => /is not an element handle/.test(error),

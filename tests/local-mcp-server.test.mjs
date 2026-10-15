@@ -17,7 +17,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMcpServer } from '../local/mcp-server.js';
+import { createMcpServer, TOOLS } from '../local/mcp-server.js';
 
 // WHY every method here is async. The real driver is async on every call, and a
 // synchronous fake made the server's missing await invisible: it serialised a
@@ -96,6 +96,26 @@ test('the surface covers what the driver can actually do', async () => {
   for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
+});
+
+// WHY THE CAPTURE SAYS WHAT IT CANNOT DO. Measured live on a Google Doc: fullPage
+// answered 2000x937 pixels for an 18-page document - one viewport, not the page -
+// while its own note claimed the whole document. An agent that reads that note plans
+// a one-shot review of a thesis and gets a screenshot of page one. The description
+// states the boundary so the plan is paging, not hoping.
+
+test('the capture says fullPage stops at the viewport on canvas pages', () => {
+  const capture = TOOLS.find((tool) => tool.name === 'capture_page');
+
+  assert.match(capture.description, /canvas/i);
+  assert.match(capture.description, /viewport/i);
+});
+
+test('type says where the proof lives when its own placement check cannot see it', () => {
+  const type = TOOLS.find((tool) => tool.name === 'type');
+
+  assert.match(type.description, /placed/);
+  assert.match(type.description, /read_page\(\)/);
 });
 
 test('a call runs the tool and returns its result as text content', async () => {

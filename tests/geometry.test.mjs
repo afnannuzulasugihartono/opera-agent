@@ -82,7 +82,7 @@ test('a click that carries no fraction is unchanged', async () => {
 
   const out = await p.clickAt(120, 240);
 
-  assert.deepEqual(out, { x: 120, y: 240 });
+  assert.deepEqual(out, { x: 120, y: 240, hit: null });
   const moved = cdp.calls.filter((c) => c.params?.type === 'mouseMoved').at(-1);
   assert.deepEqual([moved.params.x, moved.params.y], [120, 240]);
 });

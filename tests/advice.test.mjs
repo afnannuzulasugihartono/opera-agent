@@ -28,6 +28,7 @@ test('every move names a call the server actually has', () => {
       '"nope" is not an element handle.': {},
       'handle opera-7 is no longer in the page - resolve the row again': {},
       'inputFound: false': {},
+      'Cannot access a chrome:// URL': {},
       'typed 5 characters and nothing on the page changed: there is no caret here to receive them': {},
       'no menuitem matching "Image". Visible: Insert | Table': {}
     };
@@ -106,6 +107,18 @@ test('an input that could not be filled is sent to the drop', () => {
   assert.match(out, /no file input/i);
 });
 
+// WHY AN EXTENSION PAGE IS SENT TO THE TAB LIST. Measured live: a drive named the
+// Extensions tab and the bridge refused it with "Cannot access a chrome:// URL",
+// which is a wall, not a failure - no move on that tab can ever succeed. The only
+// useful next step is the list of tabs that can be driven.
+
+test('an extension page refusal is sent to the tab list, which is all an agent can do about it', () => {
+  const out = withAdvice(new Error('Cannot access a chrome:// URL'), { rows: [] });
+
+  assert.match(out, /list_tabs\(\)/);
+  assert.match(out, /chrome:\/\//);
+});
+
 // WHY TEXT THAT WENT NOWHERE IS SENT TO THE CARET AND NOT BACK TO THE TOOLBOX.
 // Measured live: five characters typed into a document that had lost its caret, and
 // the call answered as if it had worked. Retrying the type would fail identically,
@@ -117,6 +130,7 @@ test('text the page did not take is sent to the caret', () => {
 
   assert.match(out, /click\(/);
   assert.match(out, /caret_line\(\)/);
+  assert.match(out, /read_page\(\) before typing again/, 'because on a canvas page the text may have landed after the check');
 });
 
 test('a page with nothing to type into gets the same two moves', () => {

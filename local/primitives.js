@@ -758,6 +758,48 @@ const imageSize = async (data, format) => {
 // field a failure. Measured live: the caret in Google Docs lives in an iframe and the
 // document text is in the body, while a text field lives in the element itself - so
 // both are compared and either one moving counts as the text landing.
+//
+// WHY PLACEMENT IS ASKED AFTER EVERY EDIT. Measured live on a Google Doc: a batch
+// reported landed:true from inside a table cell, and nothing in the answer said
+// where. landed proves the page changed; it cannot prove where, because the page
+// changes the same way wherever the caret happens to be. So the page is asked for
+// the index and neighbours of what was just inserted: one evaluation, the last
+// occurrence of the opening words, whitespace folded because innerText renders
+// rather than stores. A probe that matches nothing is found:false, not a failure -
+// the page moved, and the proof is weaker than the verdict.
+//
+// WHY THE CLICK ASKS WHAT IT HIT. The same reason from the other side: a click
+// answers with the element under the point - tag, role, name - so a drive can tell
+// a button from the void around it. On a canvas page elementFromPoint sees only the
+// canvas, and the answer says canvas:true rather than inventing a name for a pixel.
+
+export const locateExpression = (probe) => `(() => {
+  const t = document.body ? String(document.body.innerText || '').replace(/\\s+/g, ' ') : '';
+  const el = document.activeElement;
+  const tag = el ? el.tagName : '';
+  const editable = Boolean(el) && (el.isContentEditable === true || /^(INPUT|TEXTAREA)$/i.test(tag));
+  const v = editable ? String(el.value != null ? el.value : el.textContent || '').replace(/\\s+/g, ' ') : '';
+  const probe = ${JSON.stringify(probe)}.replace(/\\s+/g, ' ');
+  const inBody = t.lastIndexOf(probe);
+  const inValue = inBody >= 0 ? -1 : v.lastIndexOf(probe);
+  const at = inBody >= 0 ? inBody : inValue;
+  const hay = inBody >= 0 ? t : v;
+  return {
+    index: at,
+    field: inBody < 0 && inValue >= 0,
+    before: at < 0 ? t.slice(-40) : hay.slice(Math.max(0, at - 40), at),
+    after: at < 0 ? '' : hay.slice(at + probe.length, at + probe.length + 40),
+    len: t.length
+  };
+})() /*opera-locate*/`;
+
+export const hitExpression = (x, y) => `(() => {
+  const el = document.elementFromPoint(${Math.round(Number(x) || 0)}, ${Math.round(Number(y) || 0)});
+  if (!el) return null;
+  const get = (name) => (el.getAttribute ? el.getAttribute(name) : null);
+  const name = get('aria-label') || (typeof el.value === 'string' ? el.value : '') || el.innerText || el.textContent || '';
+  return { tag: el.tagName || '', role: get('role') || '', name: String(name).trim().slice(0, 60) };
+})() /*opera-hit*/`;
 
 export const EDIT_SIGNATURE_EXPRESSION = `(() => {
   const el = document.activeElement;
@@ -774,14 +816,21 @@ export const EDIT_SIGNATURE_EXPRESSION = `(() => {
 
 // WHY THE CHECK ASKS A FIXED NUMBER OF TIMES INSTEAD OF WAITING ON A CLOCK. A page
 // that has taken the text usually shows it on the next evaluation, and one that
-// debounces - a document editor, a sheet formula - shows it a few frames later. So
-// the page is asked again, a handful of times, which costs one evaluation when the
-// page is quick and never more than three beats when it is slow. The count is a
+// debounces - a document editor, a sheet formula - shows it later. The count is a
 // count rather than a deadline so that the cost of the check is the same everywhere
 // and can be reasoned about instead of measured.
+//
+// WHY THE TAIL IS LONG. Measured live on a Google Doc: two consecutive batches,
+// the second reported "nothing on the page changed" while its text sat in the
+// document - and the retry duplicated it. The canvas mirrors into the DOM on Docs
+// time, and the outline lags saves by seconds, so a short budget mistakes a slow
+// mirror for a dead page. Twelve asks at 150ms cost one evaluation when the page
+// is quick - the loop exits on the first move - and a slow page gets the better
+// part of two seconds before the verdict. A false failure writes the text twice;
+// a slow verdict only arrives late.
 
-const EDIT_POLL_MS = 60;
-const EDIT_POLLS = 4;
+const EDIT_POLL_MS = 150;
+const EDIT_POLLS = 12;
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
@@ -942,6 +991,38 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
   };
 
   const moved = (before, after) => after.body !== before.body || after.value !== before.value;
+
+  const sigLen = (sig) => Number(String(sig ?? '').split(':')[0]) || 0;
+
+  const probeOf = (text) => String(text ?? '').replace(/^\s+/, '').slice(0, 32);
+
+  const locateInsertion = async (text, before, after) => {
+    const delta = (sigLen(after?.body) - sigLen(before?.body)) + (sigLen(after?.value) - sigLen(before?.value));
+    const probe = probeOf(text);
+    if (!probe) return { found: false, index: -1, field: false, before: '', after: '', delta };
+    try {
+      const { result } = await cdp.send('Runtime.evaluate', { expression: locateExpression(probe), returnByValue: true });
+      const at = result?.value;
+      if (!at || typeof at.index !== 'number' || at.index < 0) {
+        return { found: false, index: -1, field: false, before: String(at?.before ?? ''), after: '', delta };
+      }
+      return { found: true, index: at.index, field: at.field === true, before: String(at.before ?? ''), after: String(at.after ?? ''), delta };
+    } catch {
+      return { found: false, index: -1, field: false, before: '', after: '', delta };
+    }
+  };
+
+  const hitAt = async (x, y) => {
+    try {
+      const { result } = await cdp.send('Runtime.evaluate', { expression: hitExpression(x, y), returnByValue: true });
+      const el = result?.value;
+      if (!el) return null;
+      const tag = String(el.tag ?? '');
+      return { tag, role: String(el.role ?? ''), name: String(el.name ?? ''), canvas: tag === 'CANVAS' };
+    } catch {
+      return null;
+    }
+  };
 
   const waitForEdit = async (before) => {
     for (let ask = 0; ask < EDIT_POLLS; ask += 1) {
@@ -1182,7 +1263,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           ? `typed ${out.chars} characters and nothing on the page changed: there is no caret here, or the browser window is minimized`
           : `typed ${out.chars} characters into a page that holds no text and no field to receive them`);
       }
-      return { ...out, landed: true };
+      return { ...out, landed: true, placed: await locateInsertion(text, before, seen.after) };
     },
 
     async key(name, modifiers = []) {
@@ -1286,7 +1367,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...common }),
         cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...common })
       ]);
-      return { x, y };
+      return { x, y, hit: await hitAt(x, y) };
     },
 
     // WHY A SUBMENU IS HOVERED AND NOT CLICKED. Clicking a row that turns out to be

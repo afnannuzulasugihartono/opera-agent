@@ -36,7 +36,7 @@ const numberArg = (name) => ({ type: 'number', description: name });
 // pretending a local stdio process has them would advertise something it cannot
 // honour. Coordinates and a fresh read per action are honest and sufficient.
 
-const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes.' };
+const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes. A chrome:// page (extensions, settings) refuses every move - name a tab the bridge can drive instead.' };
 
 // WHY THIS SURFACE IS ALLOWLISTED AND READ-ONLY. An agent's fastest route from
 // confused to knowing is asking the browser a structured question: which frames
@@ -182,7 +182,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'type',
-    description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor. Returns the page as it now stands.',
+    description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor. Returns the page as it now stands, plus where the text landed: placed carries the index and neighbours of the inserted words on DOM pages, and found:false on canvas pages where the mirror lags - there read_page() is the proof, and a failure always deserves a read before any retry, because a slow mirror looks exactly like a dead page.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
   },
   {
@@ -332,7 +332,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'capture_page',
-    description: 'Capture one tab as a JPEG image, and say what space it is in: the viewport size, the device scale factor, and the image size read from the picture itself. The picture is the viewport times that factor, and both move when a window is resized or dragged to a monitor with another scale - measured live, the viewport went 1144x714 to 1186x670 with the scale steady at 1.25 - so convert through the numbers returned here rather than by dividing pixels by eye. Pass fullPage to span the whole document instead; then the picture is the page, not the window, and the answer says so.',
+    description: 'Capture one tab as a JPEG image, and say what space it is in: the viewport size, the device scale factor, and the image size read from the picture itself. The picture is the viewport times that factor, and both move when a window is resized or dragged to a monitor with another scale - measured live, the viewport went 1144x714 to 1186x670 with the scale steady at 1.25 - so convert through the numbers returned here rather than by dividing pixels by eye. Pass fullPage to span the whole document instead; then the picture is the page, not the window, and the answer says so. On canvas-rendered pages (Google Docs is one) fullPage still stops at the viewport - measured live, an 18-page document answered 2000x937 pixels - so page through with End/PageDown and capture again rather than expecting the whole document at once.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
   },
   {

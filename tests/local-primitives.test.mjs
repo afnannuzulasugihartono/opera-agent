@@ -50,7 +50,7 @@ import {
 function recordingCdp() {
   const calls = [];
 
-  const page = { body: '7:body text', value: '', holds: true };
+  const page = { body: '9:body text', value: '', holds: true };
   return {
     calls,
     page,
@@ -66,7 +66,22 @@ function recordingCdp() {
         if (params.expression.includes('devicePixelRatio')) {
           return { result: { value: { width: 1136, height: 770, dpr: 1.25 } } };
         }
+        if (params.expression.includes('opera-locate')) {
+          const held = page.body.slice(page.body.indexOf(':') + 1).replace(/\s+/g, ' ');
+          const probe = JSON.parse(/const probe = ("(?:[^"\\]|\\.)*")/.exec(params.expression)[1]).replace(/\s+/g, ' ');
+          const at = held.lastIndexOf(probe);
+          return { result: { value: {
+            index: at,
+            field: false,
+            before: at < 0 ? held.slice(-40) : held.slice(Math.max(0, at - 40), at),
+            after: at < 0 ? '' : held.slice(at + probe.length, at + probe.length + 40),
+            len: held.length
+          } } };
+        }
         if (params.expression.includes('isContentEditable')) return { result: { value: { ...page } } };
+        if (params.expression.includes('opera-hit')) {
+          return { result: { value: { tag: 'BUTTON', role: 'button', name: 'Bold' } } };
+        }
         return { result: { value: { title: 't', url: 'u', text: 'body text' } } };
       }
       if (method === 'Page.captureScreenshot') return { data: 'BASE64' };
@@ -104,6 +119,129 @@ test('a long document is sent as several inserts so one failure cannot lose all 
 
   const inserts = cdp.calls.filter((c) => c.method === 'Input.insertText');
   assert.deepEqual(inserts.map((i) => i.params.text.length), [10, 10, 10, 5]);
+});
+
+// WHY PLACEMENT IS PROVED AND NOT TRUSTED. Measured live on a Google Doc: a batch
+// reported landed:true from inside a table cell, and nothing in the answer said
+// where. So type answers with the index and neighbours of what it inserted, and a
+// click answers with the element under the point - and both say so when they cannot.
+
+test('type answers where the text landed, not just that it did', async () => {
+  const cdp = recordingCdp();
+
+  const out = await createPrimitives(cdp).type('Hello');
+
+  assert.equal(out.landed, true);
+  assert.equal(out.placed.found, true);
+  assert.equal(out.placed.field, false);
+  assert.ok(out.placed.before.endsWith('body text'), `the neighbours come back with the index: ${JSON.stringify(out.placed)}`);
+  assert.equal(out.placed.delta, 5);
+});
+
+test('text typed into a field is found in the field, because a field never touches the body text', async () => {
+  const sigs = [
+    { body: '9:body text', value: '0:', holds: true },
+    { body: '9:body text', value: '5:hello', holds: true }
+  ];
+  let asks = 0;
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
+        return { result: { value: { index: 0, field: true, before: '', after: '', len: 9 } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: sigs[Math.min(asks++, sigs.length - 1)] } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).type('hello');
+
+  assert.equal(out.landed, true);
+  assert.equal(out.placed.found, true);
+  assert.equal(out.placed.field, true);
+  assert.equal(out.placed.delta, 5);
+});
+
+// WHY A SLOW MIRROR IS WAITED OUT. Measured live on a Google Doc: the second of two
+// consecutive batches reported "nothing on the page changed" while its text sat in
+// the document, and the retry duplicated it. The canvas mirrors into the DOM on Docs
+// time with the outline lagging saves by seconds, so the check outlasts the lag
+// instead of racing it.
+
+test('type outlasts a slow mirror instead of failing over text that landed', async () => {
+  let reads = 0;
+  const slept = [];
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        reads += 1;
+        const moved = reads >= 7;
+        return { result: { value: moved
+          ? { body: '14:body textHello', value: '', holds: true }
+          : { body: '9:body text', value: '', holds: true } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
+        return { result: { value: { index: 9, before: 'body text', after: '', len: 14 } } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).type('Hello');
+
+  assert.equal(out.landed, true);
+  assert.ok(reads > 4, `a four-ask budget would have failed this: ${reads} reads`);
+  assert.deepEqual(slept, new Array(slept.length).fill(150), 'and every beat of the wait is the same length');
+});
+
+test('type survives an unfindable probe, because the page moved even if the probe did not match', async () => {
+  const sigs = [
+    { body: '9:body text', value: '', holds: true },
+    { body: '14:body textHello', value: '', holds: true }
+  ];
+  let asks = 0;
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
+        return { result: { value: { index: -1, before: 'body textHello', after: '', len: 14 } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: sigs[Math.min(asks++, sigs.length - 1)] } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).type('Hello');
+
+  assert.equal(out.landed, true);
+  assert.equal(out.placed.found, false);
+});
+
+test('a click answers with the element under the point', async () => {
+  const cdp = recordingCdp();
+
+  const out = await createPrimitives(cdp).clickAt(384, 46);
+
+  assert.deepEqual(out.hit, { tag: 'BUTTON', role: 'button', name: 'Bold', canvas: false });
+});
+
+test('a click on canvas says canvas, because elementFromPoint cannot see through it', async () => {
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-hit')) {
+        return { result: { value: { tag: 'CANVAS', role: '', name: '' } } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).clickAt(500, 600);
+
+  assert.equal(out.hit.canvas, true);
+  assert.equal(out.hit.tag, 'CANVAS');
 });
 
 // WHY THE CHORD IS ORDERED, NOT MERGED. Two sends racing in a Promise.all do
@@ -345,8 +483,10 @@ test('text that lands is reported as landed, and the page is asked once on the w
   const out = await createPrimitives(cdp).type('Hi');
 
   assert.equal(out.landed, true);
-  const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate' && String(c.params.expression).includes('isContentEditable'));
+  const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate' && String(c.params.expression).includes('isContentEditable') && !String(c.params.expression).includes('opera-locate'));
   assert.equal(asks.length, 2, 'one question before, one after, and the page answered the first time');
+  const locates = cdp.calls.filter((c) => c.method === 'Runtime.evaluate' && String(c.params.expression).includes('opera-locate'));
+  assert.equal(locates.length, 1, 'and one question about where it landed');
 });
 
 test('a page with no caret fails the edit instead of counting the characters it inserted', async () => {
@@ -474,7 +614,7 @@ function pipelinedCdp(handler = () => ({})) {
   const calls = [];
   let inflight = 0;
   let max = 0;
-  const page = { body: '7:body text', value: '', holds: true };
+  const page = { body: '9:body text', value: '', holds: true };
   return {
     calls,
     page,
@@ -491,6 +631,12 @@ function pipelinedCdp(handler = () => ({})) {
       await Promise.resolve();
       await Promise.resolve();
       inflight -= 1;
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
+        const held = page.body.slice(page.body.indexOf(':') + 1).replace(/\s+/g, ' ');
+        const probe = JSON.parse(/const probe = ("(?:[^"\\]|\\.)*")/.exec(params.expression)[1]).replace(/\s+/g, ' ');
+        const at = held.lastIndexOf(probe);
+        return { result: { value: { index: at, field: false, before: '', after: '', len: held.length } } };
+      }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
         return { result: { value: { ...page } } };
       }
@@ -587,7 +733,7 @@ test('a refused spotlight never breaks the click it decorates', async () => {
 
   const out = await createPrimitives(cdp).clickAt(10, 20);
 
-  assert.deepEqual(out, { x: 10, y: 20 });
+  assert.deepEqual(out, { x: 10, y: 20, hit: null });
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
 });
 
@@ -1407,7 +1553,9 @@ test('a handle is measured from the node at the moment of the click', async () =
   assert.deepEqual(at, { x: 200, y: 230, handle: 'opera-4321' });
   const measured = cdp.calls.find((c) => c.method === 'DOM.getBoxModel');
   assert.deepEqual(measured.params, { backendNodeId: 4321 });
-  assert.deepEqual(cdp.calls.at(-1).method, 'Input.dispatchMouseEvent');
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3, 'move, press and release still go out');
+  assert.equal(cdp.calls.at(-1).method, 'Runtime.evaluate', 'and the click asks what it hit last');
+  assert.match(cdp.calls.at(-1).params.expression, /opera-hit/);
 });
 
 test('a handle that is gone says so instead of clicking a stale point', async () => {
