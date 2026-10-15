@@ -403,7 +403,17 @@ function diffElements(prev, curr) {
   return { added: addedAll.slice(0, 20), moved: movedAll.slice(0, 20), removed, reshaped: false };
 }
 
+import { withAdvice } from './advice.js';
+
 const lastAuto = new WeakMap();
+
+// WHY THE ROWS ARE KEPT ONCE. Advice is written against the page as it stood a
+// moment ago, not against one session's private cache: an agent that asked for a
+// row on the tab it is driving is asking about the page it can see. Most recent
+// read wins, and a failure before any read at all simply gets no advice about
+// what was there.
+
+let lastSeen = [];
 
 // WHY A TAB THAT POINTS AT THE DROPPED FILE IS CLOSED. Chrome answers a drop no
 // page accepted by doing the default thing: it opens the file. Measured live —
@@ -434,6 +444,7 @@ const afterAction = async (driver, action, limit) => {
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
   const prev = lastAuto.get(driver) ?? null;
   lastAuto.set(driver, seen);
+  lastSeen = seen;
   return asText({ action, elements: seen, changed: prev ? diffElements(prev, seen) : null });
 };
 
@@ -451,6 +462,13 @@ const afterAction = async (driver, action, limit) => {
 // someone off to debug a port that was never in the way.
 
 const livePort = (context) => (typeof context.port === 'function' ? context.port() : context.port);
+
+// WHY A FAILURE CARRIES THE NEXT MOVE. A message that only names the problem
+// sends an agent looking for the problem again, usually while the thing that
+// caused it is closing. Measured on this product's own author: every one of these
+// failures had the same two or three next moves, and they were rediscovered every
+// single time. The rows the advice reads are the page as it stood a moment ago,
+// so "what was there" is answered with evidence rather than a guess.
 
 export function createMcpServer(context) {
   const sessions = new Map();
@@ -618,7 +636,7 @@ export function createMcpServer(context) {
         if (method?.startsWith('notifications/')) return undefined;
         return fail(`Unknown method: ${method}`);
       } catch (error) {
-        return fail(error.message);
+        return fail(withAdvice(error, { rows: lastSeen }));
       }
     }
   };
