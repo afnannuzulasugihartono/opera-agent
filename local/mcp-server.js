@@ -156,6 +156,18 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'intercept_file_chooser',
+    description: 'Suppress the native file picker so uploads complete without OS UI: enable, walk the menu to Upload, call upload, then disable. While enabled, Upload clicks show nothing; forgetting to disable leaves later Upload clicks silent.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        enabled: { type: 'boolean', description: 'true to suppress the picker, false to restore it' }
+      },
+      required: ['enabled']
+    }
+  },
+  {
     name: 'capture_page',
     description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Pass fullPage to span the whole scrollable document past the viewport instead. Returns image content the caller can see.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
@@ -345,6 +357,8 @@ export function createMcpServer(context) {
         return asText({ line: await driver.caretLine() });
       case 'upload':
         return afterAction(driver, await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null }));
+      case 'intercept_file_chooser':
+        return asText(await driver.interceptFileChooser(args.enabled === true));
       case 'capture_page': {
         const data = await driver.capture(args.fullPage === true ? { fullPage: true } : {});
         return { content: [{ type: 'image', data, mimeType: 'image/jpeg' }] };

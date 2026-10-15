@@ -74,7 +74,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -469,4 +469,14 @@ test('upload carries a file without touching the native dialog', async () => {
 
   assert.deepEqual(payload.action, { inputFound: true, filename: 'pic.png', bytes: 5 });
   assert.ok(Array.isArray(payload.elements), 'the page comes back with the result');
+});
+
+test('intercept_file_chooser toggles without touching the page', async () => {
+  const c = ctx();
+  c.driver.interceptFileChooser = async (enabled) => ({ intercepting: enabled });
+  const server = createMcpServer(c);
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 34, method: 'tools/call', params: { name: 'intercept_file_chooser', arguments: { enabled: true } } });
+
+  assert.deepEqual(JSON.parse(res.result.content[0].text), { intercepting: true });
 });

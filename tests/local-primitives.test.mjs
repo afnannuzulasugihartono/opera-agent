@@ -910,3 +910,15 @@ test('the input finder pierces shadow roots and same-origin frames', () => {
   assert.ok(UPLOAD_INPUT_EXPRESSION.includes('contentDocument'), 'same-origin frames are entered');
   assert.ok(UPLOAD_INPUT_EXPRESSION.includes("input[type=file]"), 'the quarry never changed');
 });
+
+test('intercepting the file chooser is one page call either way', async () => {
+  const cdp = recordingCdp();
+  const p = createPrimitives(cdp);
+
+  assert.deepEqual(await p.interceptFileChooser(true), { intercepting: true });
+  assert.deepEqual(await p.interceptFileChooser(false), { intercepting: false });
+  assert.deepEqual(
+    cdp.calls.filter((c) => c.method === 'Page.setInterceptFileChooserDialog').map((c) => c.params.enabled),
+    [true, false]
+  );
+});

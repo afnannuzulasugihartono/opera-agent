@@ -488,6 +488,15 @@ export function splitText(text, size) {
 
 const KEY_BEAT_MS = 50;
 
+// WHY THE PICKER IS INTERCEPTED, NOT CLICKED THROUGH. The file input only
+// exists once the upload flow starts it — measured live as inputFound:false on
+// a page whose Upload menu item works fine — and starting that flow opens the
+// native picker, which is OS chrome no CDP call can dismiss. Intercepting the
+// chooser suppresses its UI while leaving the input behind for upload to fill,
+// so the agent enables, walks the menu, uploads, and disables, and no dialog
+// ever appears. Forgetting the last step leaves later Upload clicks silent,
+// which is why the description says the dance out loud.
+
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const spot = (x, y, color) => {
     const px = Math.round(Number(x) || 0);
@@ -578,6 +587,11 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         if (cleanup) cleanup();
         await cdp.send('Runtime.releaseObjectGroup', { objectGroup: 'opera-upload' }).catch(() => null);
       }
+    },
+
+    async interceptFileChooser(enabled) {
+      await cdp.send('Page.setInterceptFileChooserDialog', { enabled: enabled === true });
+      return { intercepting: enabled === true };
     },
 
     async evaluate(expression) {

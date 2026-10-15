@@ -59,6 +59,7 @@ export function asDriver(session) {
     snapshot: (limit) => session.snapshot(limit === undefined ? {} : { limit }),
     caretLine: () => session.caretLine(),
     upload: (options) => session.upload(options),
+    interceptFileChooser: (enabled) => session.interceptFileChooser(enabled),
     capture: (options) => session.capture(options),
     front: () => session.front(),
     close: () => session.close()
