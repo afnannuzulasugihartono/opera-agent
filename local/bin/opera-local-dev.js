@@ -47,11 +47,7 @@ const supervisor = createSupervisor({
   },
   input: stdin,
   output: stdout,
-  log,
-  onDead: () => {
-    log('worker keeps dying, exiting');
-    void shutdown(1);
-  }
+  log
 });
 
 async function shutdown(code) {

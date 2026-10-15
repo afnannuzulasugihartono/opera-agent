@@ -115,7 +115,6 @@ test('a reload replays the handshake to the new worker and swallows its answer',
   const init = { jsonrpc: '2.0', id: 0, method: 'initialize', params: {} };
   h.input.emit(frame(init));
   h.children[0].emitStdout(frame({ jsonrpc: '2.0', id: 0, result: { ok: true } }));
-  const before = h.output.written.join('').length;
 
   h.fireWatch();
   await h.sleep(80);
@@ -123,7 +122,10 @@ test('a reload replays the handshake to the new worker and swallows its answer',
   assert.equal(h.children.length, 2, 'the old worker is replaced');
   assert.deepEqual(bodies({ written: h.children[1].written })[0], init, 'the new worker is shaken hands');
   h.children[1].emitStdout(frame({ jsonrpc: '2.0', id: 0, result: { ok: true } }));
-  assert.equal(h.output.written.join('').length, before, 'the client never sees the second hello');
+  const seen = bodies(h.output);
+  assert.equal(seen.filter((line) => line.id === 0).length, 1, 'the client sees the first hello once, never a second');
+  assert.ok(seen.some((line) => line.method === 'notifications/tools/list_changed'),
+    'and is told its tools moved, so a new tool needs no toggle');
   assert.ok(h.logs.some((line) => line.includes('swapping')), 'the reload is announced on stderr');
   await h.server.stop();
 });
@@ -171,19 +173,37 @@ test('an unexpected death fails the in-flight by name and rebuilds', async () =>
   await h.server.stop();
 });
 
-test('a worker that keeps dying ends the shim instead of looping forever', async () => {
-  let at = 0;
-  let dead = 0;
-  const h = harness({ now: () => at, onDead: () => { dead += 1; } });
+// WHY THE POISON NO LONGER ENDS THE SHIM. Ending it handed the client a dead
+// MCP and flipped its switch off, so a person editing code watched the server
+// toggle itself off and had to toggle it back by hand — the round trip the
+// shim exists to remove. A poisoned worker now keeps the pipe and names itself
+// on every call, and saving a file rebuilds it.
 
+test('a worker that keeps dying names itself on every call and a save rebuilds it', async () => {
+  let at = 0;
+  const h = harness({ now: () => at });
+
+  h.input.emit(frame({ jsonrpc: '2.0', id: 0, method: 'initialize', params: {} }));
   for (let round = 0; round < 4; round++) {
     h.children.at(-1).exit(1);
     at += 1000;
     await h.sleep(5);
   }
 
-  assert.equal(h.children.length, 4, 'three rebuilds, then no fourth');
-  assert.equal(dead, 1, 'the give-up is announced once');
+  assert.equal(h.children.length, 4, 'three rebuilds, then it stops spending processes');
+  h.input.emit(frame({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'list_tabs' } }));
+  const answered = bodies(h.output).filter((line) => line.id === 7);
+  assert.equal(answered.length, 1, 'the client still gets an answer');
+  assert.match(answered[0].error?.message ?? '', /keeps dying/);
+  assert.match(answered[0].error?.message ?? '', /save a file/, 'and is told how to fix it');
+  assert.equal(h.children.length, 4, 'answering did not start a rebuild loop');
+
+  h.fireWatch();
+  await h.sleep(80);
+  assert.equal(h.children.length, 5, 'saving the fix rebuilds the worker');
+  h.input.emit(frame({ jsonrpc: '2.0', id: 8, method: 'tools/call', params: { name: 'list_tabs' } }));
+  assert.equal(bodies({ written: h.children[4].written }).some((line) => line.id === 8), true,
+    'and the tools work again without a toggle');
   at += 31000;
   await h.server.stop();
 });

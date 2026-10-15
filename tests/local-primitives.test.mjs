@@ -943,6 +943,45 @@ test('a frame the browser refuses to pierce is still found by the page script', 
   assert.deepEqual(set.params, { files: ['/files/pic.png'], objectId: 'o1' }, 'the second road still fills');
 });
 
+// WHY THE CHILD FRAME IS ITS OWN CASE. `pierce` answers for a document and
+// stops at the frame boundary, and Google Docs keeps its image input in a
+// picker frame: every road that looked at the top document reported nothing
+// while the input was there. A frame is reached by its owner, the owner names
+// its content document, and the same pierced query runs there.
+
+test('an input inside a child frame is found through the frame owner', async () => {
+  const fs = fakeUploadFs();
+  const calls = [];
+  const cdp = {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'DOM.getDocument') return { root: { nodeId: 1 } };
+      if (method === 'Page.getFrameTree') return { frameTree: { frame: { id: 'F1' }, childFrames: [{ frame: { id: 'F2' } }] } };
+      if (method === 'DOM.getFrameOwner') return params.frameId === 'F2' ? { backendNodeId: 'owner-2' } : {};
+      if (method === 'DOM.describeNode') {
+        if (params.backendNodeId === 'owner-2') return { node: { contentDocument: 99 } };
+        return { node: { backendNodeId: 'b9' } };
+      }
+      if (method === 'DOM.querySelectorAll') {
+        return params.nodeId === 99 ? { nodeIds: [7] } : { nodeIds: [] };
+      }
+      if (method === 'Runtime.evaluate') return { result: { subtype: 'null' } };
+      return { result: {} };
+    }
+  };
+  const p = createPrimitives(cdp, { fs, os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out, { inputFound: true, filename: 'pic.png', bytes: 42 });
+  const query = calls.filter((c) => c.method === 'DOM.querySelectorAll').pop();
+  assert.deepEqual(query.params, { nodeId: 99, selector: 'input[type=file]', pierce: true },
+    'the frame document is asked with the same pierced query');
+  const set = calls.find((c) => c.method === 'DOM.setFileInputFiles');
+  assert.deepEqual(set.params, { files: ['/files/pic.png'], backendNodeId: 'b9' });
+});
+
 test('a page with no file input is reported, not filled', async () => {
   const fs = fakeUploadFs();
   const cdp = uploadCdp();
@@ -1009,6 +1048,6 @@ test('a late input is caught by looking again', async () => {
   const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
 
   assert.deepEqual(out.inputFound, true);
-  assert.deepEqual(slept, [400, 400, 400, 400, 400, 400],
-    'a beat between looks on both roads, none after the hit');
+  assert.deepEqual(slept, [400, 400],
+    'a beat between looks, none after the hit, and one pass over every road each time');
 });

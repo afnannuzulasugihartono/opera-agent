@@ -583,28 +583,50 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         };
       }
 
-      // WHY THE FINDER ASKS CDP BEFORE ASKING THE PAGE. A page script can only
-      // walk shadow roots it is allowed to see, and Google Docs keeps its file
-      // input in a closed one: the script reported no input while the input was
-      // demonstrably there. `DOM.querySelectorAll` with `pierce` answers for the
-      // whole tree, closed roots included, and returns only the matches — the
-      // whole pierced tree fetched at once timed out live on a heavy page. The
-      // page script stays as the second try, because a site that hides its
-      // input behind a frame the browser will not pierce still needs it.
+      // WHY THE FINDER ASKS CDP BEFORE ASKING THE PAGE, AND SWEEPS THE FRAMES.
+      // A page script can only walk shadow roots it is allowed to see, and
+      // Google Docs keeps its image input in a closed one inside its picker
+      // frame: the script reported no input while the input was demonstrably
+      // there. `DOM.querySelectorAll` with `pierce` answers for a whole document,
+      // closed roots included, and returns only the matches — the entire pierced
+      // tree fetched at once timed out live on a heavy page. `pierce` does not
+      // cross into a child frame, though, so each frame is asked for its owner,
+      // its owner's content document, and then the same pierced query. The page
+      // script stays as the last road: it is the only one that can follow a
+      // frame the browser will not describe.
 
+      const FILE_INPUT_SELECTOR = 'input[type=file]';
+
+      const piercedInputIn = async (nodeId) => {
+        const found = await cdp.send('DOM.querySelectorAll', { nodeId, selector: FILE_INPUT_SELECTOR, pierce: true });
+        const hit = found?.nodeIds?.[0];
+        if (!hit) return null;
+        const described = await cdp.send('DOM.describeNode', { nodeId: hit });
+        return described?.node?.backendNodeId ?? null;
+      };
       const findInputNode = async () => {
         const document_ = await cdp.send('DOM.getDocument', { depth: 0, pierce: true });
         const rootNodeId = document_?.root?.nodeId;
-        if (!rootNodeId) return null;
-        const found = await cdp.send('DOM.querySelectorAll', {
-          nodeId: rootNodeId,
-          selector: 'input[type=file]',
-          pierce: true
-        });
-        const nodeId = found?.nodeIds?.[0];
-        if (!nodeId) return null;
-        const described = await cdp.send('DOM.describeNode', { nodeId });
-        return described?.node?.backendNodeId ?? null;
+        return rootNodeId ? piercedInputIn(rootNodeId) : null;
+      };
+      const findInputInFrames = async () => {
+        const tree = await cdp.send('Page.getFrameTree');
+        const frames = [];
+        const collect = (node) => {
+          if (node?.frame?.id) frames.push(node.frame.id);
+          for (const child of node?.childFrames ?? []) collect(child);
+        };
+        collect(tree?.frameTree);
+        for (const frameId of frames) {
+          const owner = await cdp.send('DOM.getFrameOwner', { frameId }).catch(() => null);
+          if (!owner?.backendNodeId) continue;
+          const described = await cdp.send('DOM.describeNode', { backendNodeId: owner.backendNodeId }).catch(() => null);
+          const documentNodeId = described?.node?.contentDocument;
+          if (!documentNodeId) continue;
+          const hit = await piercedInputIn(documentNodeId).catch(() => null);
+          if (hit) return hit;
+        }
+        return null;
       };
       const findInputScript = async () => {
         const found = await cdp.send('Runtime.evaluate', {
@@ -616,20 +638,16 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       };
       try {
         let node = null;
-        for (let attempt = 0; attempt < UPLOAD_FIND_ATTEMPTS; attempt++) {
+        let objectId = null;
+        for (let attempt = 0; attempt < UPLOAD_FIND_ATTEMPTS && !node && !objectId; attempt++) {
           node = await findInputNode().catch(() => null);
-          if (node) break;
-          if (attempt + 1 < UPLOAD_FIND_ATTEMPTS) await sleep(UPLOAD_FIND_GAP_MS);
+          if (!node) node = await findInputInFrames().catch(() => null);
+          if (!node) objectId = await findInputScript().catch(() => null);
+          if (!node && !objectId && attempt + 1 < UPLOAD_FIND_ATTEMPTS) await sleep(UPLOAD_FIND_GAP_MS);
         }
         if (node) {
           await cdp.send('DOM.setFileInputFiles', { files: [target], backendNodeId: node });
           return { inputFound: true, filename, bytes };
-        }
-        let objectId = null;
-        for (let attempt = 0; attempt < UPLOAD_FIND_ATTEMPTS; attempt++) {
-          objectId = await findInputScript();
-          if (objectId) break;
-          if (attempt + 1 < UPLOAD_FIND_ATTEMPTS) await sleep(UPLOAD_FIND_GAP_MS);
         }
         if (!objectId) return { inputFound: false, filename };
         await cdp.send('DOM.setFileInputFiles', { files: [target], objectId });
