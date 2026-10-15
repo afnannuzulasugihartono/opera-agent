@@ -24,16 +24,21 @@ if (!files.length) {
   process.exit(2);
 }
 
-// WHY THE TRIM IS TWO REPLACES. One alternation over both ends reads as a pattern that
-// can match a run and walk back into it; two linear passes cannot, and the result is
-// the same string.
+// WHY THE TRIM IS A LOOP AND NOT TWO PATTERNS. SonarCloud flagged the trim as a
+// pattern that can walk back into a run it has already matched (S8786), which is a
+// fair thing to be suspicious of in a script that names migrations. Walking the string
+// says exactly what it does, and the output is the same string: the folded name with
+// no leading or trailing underscore, cut to sixty characters.
 
-const slug = (name) => name
-  .replace(/[^a-z0-9]+/gi, '_')
-  .replace(/^_+/, '')
-  .replace(/_+$/, '')
-  .toLowerCase()
-  .slice(0, 60);
+const trimUnderscores = (text) => {
+  let start = 0;
+  let end = text.length;
+  while (start < end && text[start] === '_') start += 1;
+  while (end > start && text[end - 1] === '_') end -= 1;
+  return text.slice(start, end);
+};
+
+const slug = (name) => trimUnderscores(name.replace(/[^a-z0-9]+/gi, '_').toLowerCase()).slice(0, 60);
 
 for (const file of files) {
   const query = await readFile(file, 'utf8');
