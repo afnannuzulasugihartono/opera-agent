@@ -90,7 +90,8 @@ const EMPTY_FILE_INPUT = [
 
 const EDIT_GONE = [
   'click({x, y}) where the text should go, then type again \u2014 the page has nothing focused to receive it',
-  'caret_line() to see where the caret is, or read_page() to see what the page holds'
+  'caret_line() to see where the caret is, or read_page() to see what the page holds',
+  'focus_window({match: \u201cthe tab title\u201d}) if the browser window is minimized, because a page under the taskbar hears nothing'
 ];
 
 const READ_ONLY = [

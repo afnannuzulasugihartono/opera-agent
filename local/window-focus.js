@@ -54,6 +54,7 @@ public class OperaWindow {
   public delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowTextW(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
@@ -65,7 +66,7 @@ public class OperaWindow {
     EnumWindows((h, l) => {
       if (!IsWindowVisible(h)) return true;
       var t = Title(h);
-      if (t.Length > 0) sb.AppendLine(t);
+      if (t.Length > 0) sb.AppendLine((IsIconic(h) ? "MINIMIZED " : "") + t);
       return true;
     }, IntPtr.Zero);
     return sb.ToString();
@@ -81,9 +82,10 @@ public class OperaWindow {
       keybd_event(0x12, 0, 0, UIntPtr.Zero);
       keybd_event(0x12, 0, 2, UIntPtr.Zero);
       SetForegroundWindow(h);
-      sb.AppendLine(t);
+      sb.AppendLine("BROUGHT " + t);
       return false;
     }, IntPtr.Zero);
+    sb.AppendLine(Read());
     return sb.ToString();
   }
   static string Title(IntPtr h) {
@@ -105,29 +107,39 @@ const APPLE_FOCUS = (match) => [
   'end tell'
 ].join('\n');
 
-const unsupported = (platform, why) => ({ platform, foreground: '', windows: [], focused: false, why });
+const unsupported = (platform, why) => ({ platform, foreground: '', windows: [], minimized: [], focused: false, why });
+
+const readWindows = (all) => {
+  const rest = [...all];
+  const foreground = (rest.shift() ?? '').replace(/^FOREGROUND\s*/, '');
+  const minimized = rest.filter((line) => line.startsWith('MINIMIZED ')).map((line) => line.slice('MINIMIZED '.length));
+  return {
+    platform: 'win32',
+    foreground,
+    windows: rest.filter((line) => !line.startsWith('MINIMIZED ')),
+    minimized
+  };
+};
 
 async function windows(run_) {
   const read = await run_('powershell', ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_SCRIPT(null)]);
-  const all = lines(read.stdout);
-  const foreground = (all.shift() ?? '').replace(/^FOREGROUND\s*/, '');
-  return { platform: 'win32', foreground, windows: all };
+  return readWindows(lines(read.stdout));
 }
 
 async function apple(match, run_) {
   const read = await run_('osascript', ['-e', APPLE_READ]);
   const foreground = lines(read.stdout)[0] ?? '';
-  if (match === null) return { platform: 'darwin', foreground, windows: [] };
+  if (match === null) return { platform: 'darwin', foreground, windows: [], minimized: [] };
   const out = await run_('osascript', ['-e', APPLE_FOCUS(match)]);
-  return { platform: 'darwin', foreground: lines(out.stdout)[0] ?? '', windows: [] };
+  return { platform: 'darwin', foreground: lines(out.stdout)[0] ?? '', windows: [], minimized: [] };
 }
 
 async function x11(match, run_) {
   const active = await run_('xdotool', ['getactivewindow', 'getwindowname']);
   const foreground = lines(active.stdout)[0] ?? '';
-  if (match === null) return { platform: 'linux', foreground, windows: [] };
+  if (match === null) return { platform: 'linux', foreground, windows: [], minimized: [] };
   const out = await run_('xdotool', ['search', '--name', match, 'windowactivate', '--sync']);
-  return { platform: 'linux', foreground: lines(out.stdout)[0] ?? foreground, windows: [] };
+  return { platform: 'linux', foreground: lines(out.stdout)[0] ?? foreground, windows: [], minimized: [] };
 }
 
 // WHY THE READ ANSWERS INSTEAD OF GUESSING. windowFocused is the difference between
@@ -161,9 +173,10 @@ export async function focusWindow(match = '', { platform = process.platform, exe
           ? await exec('xdotool', ['search', '--name', wanted, 'windowactivate', '--sync'])
           : null;
     if (out === null) return unsupported(platform, `window focus is not implemented on ${platform}`);
-    const titles = lines(out.stdout);
-    const after = await windowState({ platform, exec });
-    const title = titles[titles.length - 1] ?? '';
+    const all = lines(out.stdout);
+    const brought = all.filter((line) => line.startsWith('BROUGHT ')).map((line) => line.slice('BROUGHT '.length));
+    const title = brought[brought.length - 1] ?? '';
+    const after = all.length ? readWindows(all) : await windowState({ platform, exec });
     const focused = Boolean(title) && after.foreground.toLowerCase().includes(title.toLowerCase().slice(0, 24));
     return {
       platform,
@@ -172,6 +185,7 @@ export async function focusWindow(match = '', { platform = process.platform, exe
       title,
       foreground: after.foreground,
       windows: after.windows,
+      minimized: after.minimized,
       why: focused
         ? ''
         : title

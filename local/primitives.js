@@ -1171,7 +1171,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const seen = await waitForEdit(before);
       if (!seen.moved) {
         throw new Error(seen.after.holds
-          ? `typed ${out.chars} characters and nothing on the page changed: there is no caret here to receive them`
+          ? `typed ${out.chars} characters and nothing on the page changed: there is no caret here, or the browser window is minimized`
           : `typed ${out.chars} characters into a page that holds no text and no field to receive them`);
       }
       return { ...out, landed: true };
