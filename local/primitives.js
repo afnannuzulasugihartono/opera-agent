@@ -321,19 +321,21 @@ const SNAPSHOT_EXPRESSION = `(() => {
     } catch { return null; }
   };
 
-  for (const box of document.querySelectorAll(OVERLAYS)) {
-    if (box.parentElement && box.parentElement.closest(OVERLAYS)) continue;
-    tryRow(box);
-    for (const el of box.querySelectorAll(CANDIDATES)) {
-      if (out.length >= LIMIT) return out;
+  collect: {
+    for (const box of document.querySelectorAll(OVERLAYS)) {
+      if (box.parentElement && box.parentElement.closest(OVERLAYS)) continue;
+      tryRow(box);
+      for (const el of box.querySelectorAll(CANDIDATES)) {
+        if (out.length >= LIMIT) break collect;
+        tryRow(el);
+      }
+      if (out.length >= LIMIT) break collect;
+    }
+    for (const el of document.querySelectorAll(CANDIDATES)) {
+      if (out.length >= LIMIT) break;
+      if (el.closest(OVERLAYS)) continue;
       tryRow(el);
     }
-    if (out.length >= LIMIT) return out;
-  }
-  for (const el of document.querySelectorAll(CANDIDATES)) {
-    if (out.length >= LIMIT) break;
-    if (el.closest(OVERLAYS)) continue;
-    tryRow(el);
   }
   const caret = caretOf();
   if (caret) {
