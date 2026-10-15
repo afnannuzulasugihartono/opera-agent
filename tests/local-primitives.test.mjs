@@ -960,7 +960,7 @@ test('an input inside a child frame is found through the frame owner', async () 
       if (method === 'Page.getFrameTree') return { frameTree: { frame: { id: 'F1' }, childFrames: [{ frame: { id: 'F2' } }] } };
       if (method === 'DOM.getFrameOwner') return params.frameId === 'F2' ? { backendNodeId: 'owner-2' } : {};
       if (method === 'DOM.describeNode') {
-        if (params.backendNodeId === 'owner-2') return { node: { contentDocument: 99 } };
+        if (params.backendNodeId === 'owner-2') return { node: { contentDocument: { nodeId: 99 } } };
         return { node: { backendNodeId: 'b9' } };
       }
       if (method === 'DOM.querySelectorAll') {

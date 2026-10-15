@@ -621,7 +621,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           const owner = await cdp.send('DOM.getFrameOwner', { frameId }).catch(() => null);
           if (!owner?.backendNodeId) continue;
           const described = await cdp.send('DOM.describeNode', { backendNodeId: owner.backendNodeId }).catch(() => null);
-          const documentNodeId = described?.node?.contentDocument;
+          const documentNodeId = described?.node?.contentDocument?.nodeId ?? null;
           if (!documentNodeId) continue;
           const hit = await piercedInputIn(documentNodeId).catch(() => null);
           if (hit) return hit;
