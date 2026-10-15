@@ -440,6 +440,8 @@ const lastAuto = new WeakMap();
 
 const windowSaid = new WeakMap();
 
+const tabSaid = new WeakMap();
+
 // WHY THE ROWS ARE KEPT ONCE. Advice is written against the page as it stood a
 // moment ago, not against one session's private cache: an agent that asked for a
 // row on the tab it is driving is asking about the page it can see. Most recent
@@ -478,8 +480,10 @@ const afterAction = async (driver, action, limit) => {
   const prev = lastAuto.get(driver) ?? null;
   lastAuto.set(driver, seen);
   lastSeen = seen;
+  const tab = tabSaid.get(driver) ?? null;
   return asText({
     action,
+    ...(tab ? { tab } : {}),
     window: windowSaid.get(driver) ?? null,
     elements: seen,
     changed: prev ? diffElements(prev, seen) : null
@@ -528,6 +532,10 @@ const windowTruth = (window, browsers, tabs = []) => {
 
 const livePort = (context) => (typeof context.port === 'function' ? context.port() : context.port);
 
+// WHY EVERY ANSWER NAMES THE TAB IT HIT. An agent that named a tab rather than
+// numbering it has to be told which tab that turned out to be, because the name it
+// wrote is not an id and the answer is where the id belongs.
+
 // WHY A FAILURE CARRIES THE NEXT MOVE. A message that only names the problem
 // sends an agent looking for the problem again, usually while the thing that
 // caused it is closing. Measured on this product's own author: every one of these
@@ -555,6 +563,14 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // title is the piece that identifies its window, and the call is best-effort: a
 // driver that cannot see windows says so and the action still goes out.
 
+// WHY A TAB MAY BE NAMED AS WELL AS NUMBERED. Measured live on this product's own
+// author: an agent that copies an eight-digit id wrong is told "No page target", and
+// the number is the one thing it cannot check - it cannot read a digit back off a
+// screenshot, but it can read a title. So a tabId that is not a number is looked for
+// by title or address, and a name that fits two tabs is refused with both of them,
+// because picking one and saying nothing is how a drive ends up typing into the wrong
+// document.
+
 const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu']);
 
 export function createMcpServer(context) {
@@ -573,24 +589,41 @@ export function createMcpServer(context) {
     return sessions.get(tabId);
   };
 
-  const windowMatch = async (driver, args) => {
-    const tabId = args?.tabId;
-    if (tabId === undefined || tabId === null) return '';
-    try {
-      const pages = await fallback.tabs();
-      return String(pages.find((page) => String(page.id) === String(tabId))?.title ?? '');
-    } catch {
-      return '';
-    }
-  };
+const namedTab = async (wanted) => {
+  const text = String(wanted ?? '').trim().toLowerCase();
+  if (text === '') return null;
+  const pages = await fallback.tabs().catch(() => []);
+  const hits = pages.filter((page) => String(page.title ?? '').toLowerCase().includes(text)
+    || String(page.url ?? '').toLowerCase().includes(text));
+  if (hits.length === 1) return hits[0];
+  if (hits.length > 1) {
+    throw new Error(`"${wanted}" is ${hits.length} tabs: ${hits.map((page) => `${page.id} ${page.title}`).join(' | ')}. Name it more closely, or use its id.`);
+  }
+  return null;
+};
+
+const resolvedTab = async (tabId) => {
+  if (tabId === undefined || tabId === null || tabId === '') return null;
+  const asText_ = String(tabId);
+  const pages = await fallback.tabs().catch(() => []);
+  const exact = pages.find((page) => String(page.id) === asText_);
+  if (exact) return { id: asText_, title: String(exact.title ?? ''), named: false };
+  if (/^\d+$/.test(asText_)) return null;
+  const hit = await namedTab(asText_);
+  return hit ? { id: String(hit.id), title: String(hit.title ?? ''), named: true } : null;
+};
+
+const windowMatch = async (tab) => (tab?.named ? tab.title : '');
 
   const run = async (name, args) => {
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
-    const driver = name === 'close_tab' ? fallback : await driverFor(args?.tabId);
+    const tab = name === 'close_tab' ? null : await resolvedTab(args?.tabId);
+    const driver = name === 'close_tab' ? fallback : await driverFor(tab ? tab.id : args?.tabId);
     const front = INPUT_TOOLS.has(name) && typeof driver.ensureFront === 'function'
-      ? await driver.ensureFront({ match: await windowMatch(driver, args) })
+      ? await driver.ensureFront({ match: windowMatch(tab) })
       : null;
     windowSaid.set(driver, front);
+    tabSaid.set(driver, tab);
 
     switch (name) {
       case 'browser_status': {

@@ -217,6 +217,83 @@ test('an application that is not a browser says what is in front instead of gues
   assert.match(window.why, /another window is in front/);
 });
 
+// WHY THESE CLAIMS EXIST. An agent holds an eight-digit id it copied from a list and
+// cannot read it back off anything; it can read a title. So a tab may be named, an
+// answer says which tab that turned out to be, and a name that fits two tabs is
+// refused with both - because typing into the wrong document while saying nothing is
+// the worst thing this product can do.
+
+const namedCtx = (tabs) => {
+  const driver = fakeDriver();
+  driver.tabs = async () => tabs;
+  return {
+    driver,
+    browsers: [{ id: 'chrome', name: 'Google Chrome' }],
+    port: 9450,
+    resolveTab: async () => tabs.map((page) => page.id),
+    open: async () => driver
+  };
+};
+
+const PAGES = [
+  { id: '111', url: 'https://opera-agent.pages.dev/beranda', title: 'Opera Agent' },
+  { id: '222', url: 'https://docs.google.com/document/d/one', title: 'Thesis - Google Docs' },
+  { id: '333', url: 'https://docs.google.com/document/d/two', title: 'Notes - Google Docs' }
+];
+
+const clickOn = async (context, tabId) => {
+  const server = createMcpServer(context);
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 95, method: 'tools/call',
+    params: { name: 'click', arguments: { tabId, x: 10, y: 20 } }
+  });
+  if (res.error) return { failed: String(res.error.message) };
+  return JSON.parse(res.result.content[0].text);
+};
+
+test('a tab named by its title is found, and the answer says which tab it was', async () => {
+  const c = namedCtx(PAGES);
+
+  const out = await clickOn(c, 'Thesis');
+
+  assert.deepEqual(out.tab, { id: '222', title: 'Thesis - Google Docs', named: true });
+  assert.ok(c.driver.calls.some(([name]) => name === 'ensureFront'), 'and the click went through the window check with that tab in hand');
+});
+
+test('a tab named by part of its address is found too, because urls are what a list shows', async () => {
+  const c = namedCtx(PAGES);
+
+  const out = await clickOn(c, 'document/d/two');
+
+  assert.equal(out.tab.id, '333');
+});
+
+test('a name that fits two tabs is refused with both, rather than one of them', async () => {
+  const c = namedCtx(PAGES);
+
+  const out = await clickOn(c, 'Google Docs');
+
+  assert.match(out.failed, /"Google Docs" is 2 tabs: 222 Thesis - Google Docs \| 333 Notes - Google Docs/);
+  assert.match(out.failed, /Name it more closely, or use its id/);
+  assert.ok(!c.driver.calls.some(([name]) => name === 'click'), 'and nothing was clicked in either of them');
+});
+
+test('a number that is not a tab fails as a number, because a wrong id is not a name', async () => {
+  const c = namedCtx(PAGES);
+
+  const out = await clickOn(c, '999');
+
+  assert.match(out.failed, /No page target 999\. Open pages: 111 \| 222 \| 333/);
+});
+
+test('a number that is a tab is used as itself and says nothing about names', async () => {
+  const c = namedCtx(PAGES);
+
+  const out = await clickOn(c, '333');
+
+  assert.deepEqual(out.tab, { id: '333', title: 'Notes - Google Docs', named: false });
+});
+
 test('a capture comes back as image content a model can see, not base64 text', async () => {
   const server = createMcpServer(ctx());
   const res = await server.handle({
