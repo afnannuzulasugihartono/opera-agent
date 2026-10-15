@@ -1123,3 +1123,100 @@ test('a drop types the file by its name, and admits what it does not know', () =
   assert.equal(dragMimeType('mystery.zzz'), 'application/octet-stream');
   assert.equal(dragMimeType('noextension'), 'application/octet-stream');
 });
+
+// WHY A HANDLE IS PROVEN BY WHAT IT HOLDS. The point of a handle is that the
+// click lands on the element, not on the point it once occupied, so these tests
+// read the row, read the node behind it, and read the box the browser reports
+// for that node at the moment of the click.
+
+function handleCdp(rows) {
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate') {
+        if (/^window\.__operaNodes\[\d+\]$/.test(params.expression)) return { result: { objectId: 'o-1' } };
+        return { result: { value: rows } };
+      }
+      if (method === 'DOM.describeNode') return { node: { backendNodeId: 4321 } };
+      if (method === 'DOM.getBoxModel') {
+        return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+      }
+      return { result: {} };
+    }
+  };
+}
+
+test('a row resolves to the node behind it and the handle is that node', async () => {
+  const cdp = handleCdp([
+    { role: 'menu', name: 'Upload from computer\nSearch the web', x: 630, y: 87, node: 0 },
+    { role: 'menuitem', name: 'Upload from computer', x: 630, y: 175, node: 1 }
+  ]);
+  const p = createPrimitives(cdp);
+
+  const row = await p.resolveRow({ role: 'menuitem', name: 'Upload from computer' });
+
+  assert.equal(row.handle, 'opera-4321');
+  const asked = cdp.calls.find((c) => c.method === 'Runtime.evaluate' && c.params.expression.startsWith('window.__operaNodes['));
+  assert.match(asked.params.expression, /__operaNodes\[1\]/, 'the second row, not the container around it');
+});
+
+test('a row with no element behind it is returned without a handle', async () => {
+  const cdp = handleCdp([{ role: 'caret', name: 'text caret', x: 4, y: 5 }]);
+  const p = createPrimitives(cdp);
+
+  const row = await p.resolveRow({ role: 'caret', name: 'text caret' });
+
+  assert.deepEqual(row, { role: 'caret', name: 'text caret', x: 4, y: 5, handle: null });
+});
+
+test('a missing row names what is visible instead of guessing', async () => {
+  const cdp = handleCdp([
+    { role: 'menuitem', name: 'Insert', x: 1, y: 2, node: 0 },
+    { role: 'menuitem', name: 'Image', x: 3, y: 4, node: 1 }
+  ]);
+  const p = createPrimitives(cdp);
+
+  await assert.rejects(() => p.resolveRow({ role: 'menuitem', name: 'Footnote' }), (error) => {
+    assert.match(error.message, /no menuitem matching "Footnote"/);
+    assert.match(error.message, /Insert \| Image/);
+    return true;
+  });
+});
+
+// WHY THE BOX IS RE-MEASURED. The snapshot said where the row stood a moment
+// ago; this is what the browser says about that node now. Clicking the older
+// point is the bug that made a menu click land on the button underneath it.
+
+test('a handle is measured from the node at the moment of the click', async () => {
+  const cdp = handleCdp([{ role: 'menuitem', name: 'Image', x: 630, y: 175, node: 0 }]);
+  const p = createPrimitives(cdp);
+
+  const at = await p.clickHandle('opera-4321');
+
+  assert.deepEqual(at, { x: 200, y: 230, handle: 'opera-4321' });
+  const measured = cdp.calls.find((c) => c.method === 'DOM.getBoxModel');
+  assert.deepEqual(measured.params, { backendNodeId: 4321 });
+  assert.deepEqual(cdp.calls.at(-1).method, 'Input.dispatchMouseEvent');
+});
+
+test('a handle that is gone says so instead of clicking a stale point', async () => {
+  const cdp = handleCdp([]);
+  cdp.send = async (method, params = {}) => {
+    cdp.calls.push({ method, params });
+    if (method === 'Runtime.evaluate') return { result: { value: [{ role: 'menuitem', name: 'Gone', x: 1, y: 1, node: 0 }] } };
+    if (method === 'DOM.describeNode') return { node: { backendNodeId: 4321 } };
+    return {};
+  };
+  const p = createPrimitives(cdp);
+
+  await assert.rejects(() => p.clickHandle('opera-4321'), /no longer in the page/);
+  assert.ok(!cdp.calls.some((c) => c.method === 'Input.dispatchMouseEvent'), 'nothing was clicked');
+});
+
+test('a handle that is not a handle is refused by name', async () => {
+  const p = createPrimitives(handleCdp([]));
+
+  await assert.rejects(() => p.clickHandle('not-a-handle'), /is not an element handle/);
+});

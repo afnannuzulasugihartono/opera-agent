@@ -262,6 +262,7 @@ const SNAPSHOT_EXPRESSION = `(() => {
   const CANDIDATES = 'button, a[href], input, select, textarea, table, tr, td, th, [role], [tabindex], [contenteditable]';
   const OVERLAYS = '[role~="menu"],[role~="dialog"],[role~="listbox"]';
   const out = [];
+  const nodes = [];
 
   const tryRow = (el) => {
     const role = roleOf(el);
@@ -271,11 +272,13 @@ const SNAPSHOT_EXPRESSION = `(() => {
     const style = getComputedStyle(el);
     if (style.visibility === 'hidden' || style.display === 'none') return;
     const value = valueOf(el);
+    nodes.push(el);
     out.push({
       role,
       name: nameOf(el).slice(0, 80),
       x: Math.round(rect.left + rect.width / 2),
       y: Math.round(rect.top + rect.height / 2),
+      node: nodes.length - 1,
       ...(value ? { value: value.slice(0, 80) } : {})
     });
   };
@@ -314,8 +317,47 @@ const SNAPSHOT_EXPRESSION = `(() => {
   }
   const caret = caretOf();
   if (caret) out.push({ role: 'caret', name: 'text caret', x: caret.x, y: caret.y });
+
+  // WHY THE ROWS KEEP THEIR ELEMENTS. A snapshot reports where things were; by
+  // the time an agent acts on it the page has moved, a menu has closed, a list
+  // has scrolled — and the coordinate is a point in the past. The elements stay
+  // here beside their rows so a row can be resolved to the node itself and
+  // measured again at the moment of the click. The caret row has no element: it
+  // is a range in a document, and its coordinates are the only honest answer.
+  window.__operaNodes = nodes;
   return out;
 })()`;
+
+// WHY A ROW IS RESOLVED TO A NODE AND MEASURED AGAIN. A menu lives about two
+// seconds: a snapshot taken in one tool call and a click in the next hits dead
+// background or, measured live, the button underneath it. So a row is resolved to
+// the element it came from, and that element is measured at the moment of the
+// click — the page may scroll, the row may move, and the click still lands on the
+// thing that was asked for. The handle is the node's backend id, which the
+// browser keeps for the life of that node and refuses the moment it is gone.
+
+export const HANDLE_PREFIX = 'opera-';
+
+const DROPPED_HANDLE = 'is no longer in the page';
+
+// WHY THE ROWS CARRY THEIR NODE INTERNAL. The index that ties a row to its
+// element means nothing to a caller — it is not a handle and it does not survive
+// the next snapshot — so it never leaves the snapshot. A caller that wants to
+// hold on to a row asks for a handle, which is the browser's own name for the
+// element and stays good for the element's life.
+
+const centreOf = (quad) => {
+  const xs = [];
+  const ys = [];
+  for (let i = 0; i + 1 < quad.length; i += 2) {
+    xs.push(quad[i]);
+    ys.push(quad[i + 1]);
+  }
+  return {
+    x: Math.round(xs.reduce((a, b) => a + b, 0) / xs.length),
+    y: Math.round(ys.reduce((a, b) => a + b, 0) / ys.length)
+  };
+};
 
 export function snapshotExpression(limit) {
   return SNAPSHOT_EXPRESSION
@@ -552,6 +594,17 @@ const KEY_BEAT_MS = 50;
 // which is why the description says the dance out loud.
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
+  const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
+
+  const readRows = async (limit) => {
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: snapshotExpression(limit),
+      returnByValue: true,
+      awaitPromise: false
+    });
+    return Array.isArray(result?.value) ? result.value : [];
+  };
+
   const spot = (x, y, color) => {
     const px = Math.round(Number(x) || 0);
     const py = Math.round(Number(y) || 0);
@@ -909,14 +962,46 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return data;
     },
 
-    async snapshot({ limit = 120 } = {}) {
-      const capped = Math.min(Math.max(1, Number(limit) || 120), 500);
+    async handleBox(handle) {
+      const backendNodeId = Number(String(handle ?? '').replace(HANDLE_PREFIX, ''));
+      if (!Number.isInteger(backendNodeId)) throw new Error(`"${handle}" is not an element handle.`);
+      const { model } = await cdp.send('DOM.getBoxModel', { backendNodeId });
+      const quad = model?.content ?? model?.border;
+      if (!Array.isArray(quad) || quad.length < 4) {
+        throw new Error(`handle ${handle} is no longer in the page — resolve the row again`);
+      }
+      return centreOf(quad);
+    },
+
+    async resolveRow({ role, name, limit = 120 } = {}) {
+      const rows = await readRows(capped(limit));
+      const want = String(name ?? '').toLowerCase();
+      const row = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
+        ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
+      if (!row) {
+        const visible = rows.filter((r) => r.role === role).map((r) => r.name).slice(0, 12).join(' | ');
+        throw new Error(`no ${role} matching "${name}". Visible: ${visible}`);
+      }
+      if (row.node === undefined) return { ...row, handle: null };
       const { result } = await cdp.send('Runtime.evaluate', {
-        expression: snapshotExpression(capped),
-        returnByValue: true,
-        awaitPromise: false
+        expression: `window.__operaNodes[${row.node}]`,
+        returnByValue: false
       });
-      return Array.isArray(result?.value) ? result.value : [];
+      if (!result?.objectId) return { ...row, handle: null };
+      const described = await cdp.send('DOM.describeNode', { objectId: result.objectId });
+      const backendNodeId = described?.node?.backendNodeId;
+      return { ...row, handle: backendNodeId ? HANDLE_PREFIX + backendNodeId : null };
+    },
+
+    async clickHandle(handle) {
+      const at = await primitives.handleBox(handle);
+      await primitives.clickAt(at.x, at.y);
+      return { ...at, handle: String(handle) };
+    },
+
+    async snapshot({ limit = 120 } = {}) {
+      const rows = await readRows(capped(limit));
+      return rows.map(({ node, ...row }) => row);
     },
 
     async waitForIdle({ timeoutMs = 10000, intervalMs = 100, readyState = 'complete' } = {}) {

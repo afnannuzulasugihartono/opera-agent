@@ -48,19 +48,17 @@ export function asDriver(session) {
     read: () => session.read(),
     evaluate: (expression) => session.evaluate(expression),
     find: (query) => findOn(session, query),
-    click: (x, y) => session.clickAt(x, y),
+    click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
+    resolve: (role, name) => session.resolveRow({ role, name }),
     hover: (x, y) => session.hover(x, y),
     clickRow: async (role, name) => {
-      const rows = await session.snapshot();
-      const want = String(name ?? '').toLowerCase();
-      const row = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
-        ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
-      if (!row) {
-        const visible = rows.filter((r) => r.role === role).map((r) => r.name).slice(0, 12).join(' | ');
-        throw new Error(`no ${role} matching "${name}". Visible: ${visible}`);
+      const row = await session.resolveRow({ role, name });
+      if (!row.handle) {
+        await session.clickAt(row.x, row.y);
+        return { role: row.role, name: row.name, x: row.x, y: row.y };
       }
-      await session.clickAt(row.x, row.y);
-      return { role: row.role, name: row.name, x: row.x, y: row.y };
+      const at = await session.clickHandle(row.handle);
+      return { role: row.role, name: row.name, x: at.x, y: at.y, handle: row.handle };
     },
     key: (name, modifiers) => session.key(name, modifiers),
     type: (text) => session.type(text),

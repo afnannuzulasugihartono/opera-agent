@@ -89,8 +89,12 @@ const driver = {
     return (await attach()).find(query);
   },
 
-  async click(x, y) {
-    return (await attach()).click(x, y);
+  async click(x, y, handle) {
+    return (await attach()).click(x, y, handle);
+  },
+
+  async resolve(role, name) {
+    return (await attach()).resolve(role, name);
   },
 
   async hover(x, y) {

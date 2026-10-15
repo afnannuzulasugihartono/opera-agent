@@ -71,11 +71,24 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'click',
-    description: 'Click a coordinate in one tab. The coordinate space is the viewport in CSS pixels, which is what capture_page is clipped to.',
+    description: 'Click in one tab. Give x and y for a point in the viewport (CSS pixels, what capture_page is clipped to), or a handle to click that element wherever it is by then. A handle is what resolve_row and click_row hand back, and it cannot go stale: the box is measured from the node at the moment of the click, so a row that moved is still the row that gets clicked.',
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, x: numberArg('viewport x'), y: numberArg('viewport y') },
-      required: ['x', 'y']
+      properties: {
+        tabId: tabArg,
+        x: numberArg('viewport x'),
+        y: numberArg('viewport y'),
+        handle: { type: 'string', description: 'element handle from resolve_row or click_row, instead of x and y' }
+      }
+    }
+  },
+  {
+    name: 'resolve_row',
+    description: 'Find a row by role and name in a fresh snapshot and hold on to the element itself, without clicking it. Returns the handle, the row, and where it stands right now — for when the gap between looking and acting is longer than one tool call: hover a submenu, wait for a dialog, then click the thing you already chose. The name matches exactly first and as a substring after.',
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: tabArg, role: stringArg('row role, e.g. menuitem'), name: stringArg('row name') },
+      required: ['role', 'name']
     }
   },
   {
@@ -348,7 +361,9 @@ export function createMcpServer(context) {
       case 'find_elements':
         return asText(await driver.find(args.query));
       case 'click':
-        return afterAction(driver, await driver.click(args.x, args.y));
+        return afterAction(driver, await driver.click(args.x, args.y, args.handle ?? null));
+      case 'resolve_row':
+        return asText({ action: await driver.resolve(args.role, args.name) });
       case 'click_row':
         return afterAction(driver, await driver.clickRow(args.role, args.name));
       case 'hover':
