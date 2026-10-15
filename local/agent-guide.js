@@ -99,6 +99,7 @@ export const RECIPES = Object.freeze([
 
 export const SIDE_EFFECTS = Object.freeze({
   browser_status: [],
+  focus_window: ['brings a browser window to the front of the machine, which takes the keyboard away from whatever was in front'],
   guide: [],
   list_menus: [],
   open_menu: ['opens menus by hovering and clicking levels on the way to the path you gave'],
@@ -142,7 +143,8 @@ export function guide(topic) {
     refusals: [
       'A native operating-system dialog cannot be opened, closed or filled from here — it is outside the browser.',
       'ask_page refuses anything that could change the page; the list is in its description.',
-      'A tool that reports success is not proof. The page saying so is.'
+      'A tool that reports success is not proof. The page saying so is.',
+      'A page cannot see whether the window in front of it is the one the machine has in front. Clicks and keys go nowhere while browser_status says the window is not focused.'
     ]
   };
 }

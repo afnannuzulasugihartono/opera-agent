@@ -76,14 +76,16 @@ test('an unknown topic is an empty answer, not a wrong one', () => {
 // WHY THE REFUSALS TRAVEL WITH THE GUIDE. An agent that has not yet hit a
 // boundary should not have to hit it first. The three lines are the ones that
 // cost real time today: a native dialog that cannot be touched, a read-only
-// question that looks like a free script, and a tool reporting success when the
-// page says otherwise.
+// question that looks like a free script, a tool reporting success when the page
+// says otherwise, and a drive that cannot tell a page which ignored it from a
+// window that was behind something the whole time.
 
-test('the guide names the three things it will not pretend to do', () => {
+test('the guide names the four things it will not pretend to do', () => {
   const { refusals } = guide();
 
-  assert.equal(refusals.length, 3);
+  assert.equal(refusals.length, 4);
   assert.ok(refusals.some((line) => /native operating-system dialog/i.test(line)));
   assert.ok(refusals.some((line) => /ask_page refuses/i.test(line)));
   assert.ok(refusals.some((line) => /not proof/i.test(line)));
+  assert.ok(refusals.some((line) => /cannot see whether the window in front/i.test(line)));
 });

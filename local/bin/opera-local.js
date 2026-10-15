@@ -22,6 +22,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
+import { windowState, focusWindow } from '../window-focus.js';
 import { createSessionStore } from '../sessions.js';
 import { listPageWebSockets, openTab, closeTab } from '../transport.js';
 import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
@@ -140,6 +141,14 @@ const driver = {
 
   async caretLine() {
     return (await attach()).caretLine();
+  },
+
+  async windowState() {
+    return windowState();
+  },
+
+  async focusWindow(match) {
+    return focusWindow(match);
   },
 
   async waitForRow(options) {

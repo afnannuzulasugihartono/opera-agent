@@ -83,8 +83,13 @@ const STRAY_FILE_TAB = 'file://';
 export const TOOLS = Object.freeze([
   {
     name: 'browser_status',
-    description: 'Report which Chromium browsers are installed and which debugging port is live, before any action.',
+    description: 'Report which Chromium browsers are installed, which debugging port is live, and whether a browser window is in front on this machine. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
     inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'focus_window',
+    description: 'Bring a browser window to the front of the machine, so the page can take clicks and keys. Give the piece of the window title to bring forward ("Google Docs", "Google Chrome") - with two browser windows open, no match brings an arbitrary one forward. Answers the title it brought, and whether the operating system let it.',
+    inputSchema: { type: 'object', properties: { match: stringArg('piece of the window title to bring forward') } }
   },
   {
     name: 'list_tabs',
@@ -448,6 +453,19 @@ const afterAction = async (driver, action, limit) => {
   return asText({ action, elements: seen, changed: prev ? diffElements(prev, seen) : null });
 };
 
+// WHY A WINDOW IN FRONT IS ANSWERED AS YES OR NO, AND NOT AS A LIST. A page cannot
+// see whether the window in front of it is the one the operating system has in
+// front, so clicks and keys go nowhere while every tool reports success. Measured
+// live: a whole drill failed on this, and nothing in the answer said why. A browser
+// window in front is the difference between "the page ignored my click" and "the
+// page was never listening".
+
+const browserInFront = (window, browsers) => {
+  if (!window?.foreground) return false;
+  const title = String(window.foreground).toLowerCase();
+  return browsers.some((entry) => title.includes(entry.name.toLowerCase()));
+};
+
 // WHY THE TAB LOOKUP COMPARES TEXTUALLY. A Chrome tab id is a number, the tool
 // schema says string, and an agent copies the id straight out of the tab list
 // it was just handed. Comparing with === refused the id the product itself
@@ -491,8 +509,21 @@ export function createMcpServer(context) {
     const driver = name === 'close_tab' ? fallback : await driverFor(args?.tabId);
 
     switch (name) {
-      case 'browser_status':
-        return asText({ browsers: context.browsers, port: livePort(context) });
+      case 'browser_status': {
+        const window = await driver.windowState();
+        return asText({
+          browsers: context.browsers,
+          port: livePort(context),
+          window: {
+            focused: browserInFront(window, context.browsers),
+            foreground: window.foreground,
+            title: window.windows.find((title) => browserInFront({ foreground: title }, context.browsers)) ?? '',
+            why: window.why ?? ''
+          }
+        });
+      }
+      case 'focus_window':
+        return asText(await driver.focusWindow(args.match ?? ''));
       case 'list_tabs':
         return asText(await driver.tabs());
       case 'open_url':

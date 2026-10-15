@@ -71,6 +71,8 @@ export function asDriver(session) {
     keys: (events) => session.keys(events),
     snapshot: (limit) => session.snapshot(limit === undefined ? {} : { limit }),
     caretLine: () => session.caretLine(),
+    windowState: () => session.windowState(),
+    focusWindow: (match) => session.focusWindow(match),
     waitForRow: (options) => session.waitForRow(options),
     waitForStill: (options) => session.waitForStill(options),
     upload: (options) => session.upload(options),
