@@ -153,14 +153,19 @@ export async function focusWindow(match = '', { platform = process.platform, exe
     const titles = lines(out.stdout);
     const after = await windowState({ platform, exec });
     const title = titles[titles.length - 1] ?? '';
+    const focused = Boolean(title) && after.foreground.toLowerCase().includes(title.toLowerCase().slice(0, 24));
     return {
       platform,
       match: wanted,
-      focused: Boolean(title) && after.foreground.toLowerCase().includes(title.toLowerCase().slice(0, 24)),
+      focused,
       title,
       foreground: after.foreground,
       windows: after.windows,
-      why: title ? '' : `no window on this machine has ${JSON.stringify(wanted)} in its title`
+      why: focused
+        ? ''
+        : title
+          ? `the machine brought ${JSON.stringify(title)} forward and then left ${JSON.stringify(after.foreground)} in front of it — something is taking the focus back`
+          : `no window on this machine has ${JSON.stringify(wanted)} in its title`
     };
   } catch (error) {
     return unsupported(platform, String(error?.message ?? error).split('\n')[0]);

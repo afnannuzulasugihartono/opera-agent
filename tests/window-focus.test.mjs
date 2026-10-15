@@ -33,6 +33,9 @@ test('focusing names the window it brought and whether the machine allowed it', 
   assert.equal(typeof out.why, 'string');
   if (out.focused) assert.equal(out.why, '', 'a focus that happened has nothing left to explain');
   else assert.ok(out.why.length > 0, 'a focus that did not happen says why');
+  if (!out.focused && out.title) {
+    assert.match(out.why, /left .* in front/, 'a focus something else took back names what took it');
+  }
 });
 
 test('a platform with no implementation refuses in words rather than answering false', async () => {
