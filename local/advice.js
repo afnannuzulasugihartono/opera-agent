@@ -83,6 +83,16 @@ const EMPTY_FILE_INPUT = [
   'capture_page() after the drop to see whether the page took it'
 ];
 
+// WHY TEXT THAT WENT NOWHERE GETS ITS OWN MOVES. Measured live: five characters were
+// typed into a document that had lost its caret, and the call answered with the
+// number of characters it had inserted. The next move is always the same two - put a
+// caret in the page, then type again - and both are one call each.
+
+const EDIT_GONE = [
+  'click({x, y}) where the text should go, then type again \u2014 the page has nothing focused to receive it',
+  'caret_line() to see where the caret is, or read_page() to see what the page holds'
+];
+
 const READ_ONLY = [
   'guide("ask") for the roads to what you were trying to do',
   'anything that changes the page is a named tool, not a question'
@@ -125,6 +135,10 @@ export const RULES = Object.freeze([
   {
     when: (error) => /inputFound|found no file input/.test(error),
     next: EMPTY_FILE_INPUT
+  },
+  {
+    when: (error) => /nothing on the page changed|holds no text and no field/.test(error),
+    next: EDIT_GONE
   },
   {
     when: (error) => /^no \w+ matching/.test(error),

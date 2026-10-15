@@ -741,6 +741,48 @@ const imageSize = async (data, format) => {
   return { width: 0, height: 0 };
 };
 
+// WHY AN EDIT CHECKS THE PAGE INSTEAD OF TRUSTING ITS OWN SUCCESS. Measured live on
+// this machine, against a Google Docs document whose window had been minimized: five
+// characters were typed, the call answered with the number of characters it had
+// inserted, and the document did not hold one of them. A page with no caret takes
+// text and drops it, and the protocol has no answer for that - so the page is asked
+// what it holds, before and after, and the two answers are compared.
+//
+// WHY THE SIGNATURE IS A LENGTH AND A TAIL, NOT THE TEXT. A document can be hundreds
+// of kilobytes, and an edit that reads the whole of it twice costs more than the edit.
+// The tail changes whenever anything near the caret changes, and the length catches
+// everything else, so a few hundred characters carry the whole claim.
+//
+// WHY THE FOCUSED ELEMENT IS IN IT AS WELL. Text typed into a field does not change
+// the text of the page, so a page-only comparison would call every correctly typed
+// field a failure. Measured live: the caret in Google Docs lives in an iframe and the
+// document text is in the body, while a text field lives in the element itself - so
+// both are compared and either one moving counts as the text landing.
+
+export const EDIT_SIGNATURE_EXPRESSION = `(() => {
+  const el = document.activeElement;
+  const tag = el ? el.tagName : '';
+  const editable = Boolean(el) && (el.isContentEditable === true || /^(INPUT|TEXTAREA)$/i.test(tag));
+  const body = document.body ? String(document.body.innerText || '') : '';
+  const value = editable ? String(el.value != null ? el.value : el.textContent || '') : '';
+  return {
+    body: body.length + ':' + body.slice(-160),
+    value: value.length + ':' + value.slice(-80),
+    holds: editable || body.trim().length > 0
+  };
+})()`;
+
+// WHY THE CHECK ASKS A FIXED NUMBER OF TIMES INSTEAD OF WAITING ON A CLOCK. A page
+// that has taken the text usually shows it on the next evaluation, and one that
+// debounces - a document editor, a sheet formula - shows it a few frames later. So
+// the page is asked again, a handful of times, which costs one evaluation when the
+// page is quick and never more than three beats when it is slow. The count is a
+// count rather than a deadline so that the cost of the check is the same everywhere
+// and can be reasoned about instead of measured.
+
+const EDIT_POLL_MS = 60;
+const EDIT_POLLS = 4;
+
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
 
@@ -876,6 +918,31 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
   };
 
   const lost = (caretWhy, viewRestored = false) => ({ caretRestored: false, viewRestored, caretWhy });
+
+  const insertText = async (text) => {
+    const parts = splitText(text, chunkSize);
+    await Promise.all(parts.map((part) => cdp.send('Input.insertText', { text: part })));
+    return { chunks: parts.length, chars: String(text ?? '').length };
+  };
+
+  const editSignature = async () => {
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: EDIT_SIGNATURE_EXPRESSION,
+      returnByValue: true
+    });
+    return result?.value ?? { body: '', value: '', holds: false };
+  };
+
+  const moved = (before, after) => after.body !== before.body || after.value !== before.value;
+
+  const waitForEdit = async (before) => {
+    for (let ask = 0; ask < EDIT_POLLS; ask += 1) {
+      if (ask > 0) await sleep(EDIT_POLL_MS);
+      const now = await editSignature();
+      if (moved(before, now)) return { moved: true, after: now };
+    }
+    return { moved: false, after: await editSignature() };
+  };
 
   const readState = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {
@@ -1099,9 +1166,15 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     },
 
     async type(text) {
-      const parts = splitText(text, chunkSize);
-      await Promise.all(parts.map((part) => cdp.send('Input.insertText', { text: part })));
-      return { chunks: parts.length, chars: String(text ?? '').length };
+      const before = await editSignature();
+      const out = await insertText(text);
+      const seen = await waitForEdit(before);
+      if (!seen.moved) {
+        throw new Error(seen.after.holds
+          ? `typed ${out.chars} characters and nothing on the page changed: there is no caret here to receive them`
+          : `typed ${out.chars} characters into a page that holds no text and no field to receive them`);
+      }
+      return { ...out, landed: true };
     },
 
     async key(name, modifiers = []) {
@@ -1152,9 +1225,12 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         if (event?.key != null) describeKey(event.key);
       }
       const started = Date.now();
+      const before = await editSignature();
       let chords = 0;
       let chars = 0;
       let run = [];
+      const reportMoved = async () => (await waitForEdit(before)).moved;
+
       const flush = async () => {
         for (const job of run) {
           const out = await job.go();
@@ -1167,7 +1243,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         run = [];
       };
       for (const event of events) {
-        if (event.text != null) run.push({ kind: 'text', go: () => primitives.type(String(event.text)) });
+        if (event.text != null) run.push({ kind: 'text', go: () => insertText(String(event.text)) });
         else run.push({ kind: 'chord', go: () => primitives.key(event.key, event.modifiers ?? []) });
         if ((event.gapMs ?? 0) > 0) {
           await flush();
@@ -1175,7 +1251,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         }
       }
       await flush();
-      return { events: events.length, chords, chars, execMs: Date.now() - started };
+      return { events: events.length, chords, chars, moved: await reportMoved(), execMs: Date.now() - started };
     },
 
     // WHY A CLICK TAKES A FRACTION AS WELL AS A PIXEL. Measured live by resizing

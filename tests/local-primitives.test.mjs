@@ -42,17 +42,31 @@ import {
   splitText
 } from '../local/primitives.js';
 
+  // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED. The runtime asks the page what it
+// holds before and after an edit and fails the edit when nothing moved, so a fake
+// whose page never changes would call every correctly typed character a failure -
+// and the tests would be checking a browser that eats text.
+
 function recordingCdp() {
   const calls = [];
+
+  const page = { body: '7:body text', value: '', holds: true };
   return {
     calls,
+    page,
     send: async (method, params = {}) => {
       calls.push({ method, params });
+      if (method === 'Input.insertText') {
+        const held = page.body.slice(page.body.indexOf(':') + 1);
+        const grown = held + String(params.text ?? '');
+        page.body = `${grown.length}:${grown}`;
+      }
       if (method === 'Runtime.evaluate') {
         if (params.expression.includes('readyState')) return { result: { value: 'complete' } };
         if (params.expression.includes('devicePixelRatio')) {
           return { result: { value: { width: 1136, height: 770, dpr: 1.25 } } };
         }
+        if (params.expression.includes('isContentEditable')) return { result: { value: { ...page } } };
         return { result: { value: { title: 't', url: 'u', text: 'body text' } } };
       }
       if (method === 'Page.captureScreenshot') return { data: 'BASE64' };
@@ -219,7 +233,8 @@ test('a stream preserves order, counts its work, and refuses what it cannot carr
     'each chord keeps its beat twice — inside the key and after it in the stream — then the asked gap');
   assert.deepEqual(
     cdp.calls.map((c) => c.method),
-    ['Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent']
+    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Runtime.evaluate'],
+    'the run is what was written, bracketed by the two questions that prove the text landed'
   );
   await assert.rejects(() => p.keys([]), /non-empty/);
   await assert.rejects(() => p.keys(new Array(101).fill({ key: 'a' })), /at most 100/);
@@ -317,6 +332,74 @@ test('a snapshot clamps its limit, so a wild request cannot walk the whole docum
 // a literal "1" instead of making a heading. A run is now a list of things to
 // do, in order, and only becomes work when it is reached.
 
+// WHY THESE CLAIMS EXIST. Measured live on this machine, against a Google Docs
+// document whose window had been minimized: five characters were typed, the call
+// answered with the number of characters it had inserted, and the document held
+// none of them. The page had no caret to receive them, and nothing in the answer said
+// so - so the runtime asks the page what it holds before and after, and fails the
+// edit when nothing moved.
+
+test('text that lands is reported as landed, and the page is asked once on the way in and once on the way out', async () => {
+  const cdp = recordingCdp();
+
+  const out = await createPrimitives(cdp).type('Hi');
+
+  assert.equal(out.landed, true);
+  const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate' && String(c.params.expression).includes('isContentEditable'));
+  assert.equal(asks.length, 2, 'one question before, one after, and the page answered the first time');
+});
+
+test('a page with no caret fails the edit instead of counting the characters it inserted', async () => {
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: { body: '19:Untitled document\n\n', value: '', holds: true } } };
+      }
+      return {};
+    }
+  };
+
+  await assert.rejects(() => createPrimitives(cdp).type('GUARD'), /typed 5 characters and nothing on the page changed: there is no caret here/);
+});
+
+test('a page with nothing to type into says so in the words of that fact', async () => {
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: { body: '0:', value: '', holds: false } } };
+      }
+      return {};
+    }
+  };
+
+  await assert.rejects(() => createPrimitives(cdp).type('GUARD'), /holds no text and no field to receive them/);
+});
+
+test('text typed into a field counts as landed, because a field does not change the page text', async () => {
+  let value = '';
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Input.insertText') value += params.text;
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: { body: '9:no change', value: `${value.length}:${value}`, holds: true } } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).type('q');
+
+  assert.equal(out.landed, true, 'the field moved, so the text landed');
+});
+
+test('a stream reports whether the page moved, because a shortcut in it can move the page on its own', async () => {
+  const cdp = pipelinedCdp();
+
+  const out = await createPrimitives(cdp).keys([{ key: 'a', modifiers: ['Control'] }, { text: 'Hi' }]);
+
+  assert.equal(out.moved, true, 'the text moved the page, and the stream says so');
+});
+
 test('a run reaches the wire in the order it was written', async () => {
   const cdp = pipelinedCdp();
 
@@ -329,11 +412,13 @@ test('a run reaches the wire in the order it was written', async () => {
   assert.deepEqual(
     cdp.calls.map((c) => `${c.method}:${c.params.type ?? ''}`),
     [
+      'Runtime.evaluate:',
       'Input.dispatchKeyEvent:rawKeyDown',
       'Input.dispatchKeyEvent:keyUp',
       'Input.insertText:',
       'Input.dispatchKeyEvent:keyDown',
-      'Input.dispatchKeyEvent:keyUp'
+      'Input.dispatchKeyEvent:keyUp',
+      'Runtime.evaluate:'
     ],
     'a chord closes before the next event starts, and the text lands between them'
   );
@@ -389,16 +474,26 @@ function pipelinedCdp(handler = () => ({})) {
   const calls = [];
   let inflight = 0;
   let max = 0;
+  const page = { body: '7:body text', value: '', holds: true };
   return {
     calls,
+    page,
     stats: () => ({ max }),
     send: async (method, params = {}) => {
       calls.push({ method, params });
+      if (method === 'Input.insertText') {
+        const held = page.body.slice(page.body.indexOf(':') + 1);
+        const grown = held + String(params.text ?? '');
+        page.body = `${grown.length}:${grown}`;
+      }
       inflight += 1;
       max = Math.max(max, inflight);
       await Promise.resolve();
       await Promise.resolve();
       inflight -= 1;
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: { ...page } } };
+      }
       return handler(method, params);
     }
   };

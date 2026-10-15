@@ -28,6 +28,7 @@ test('every move names a call the server actually has', () => {
       '"nope" is not an element handle.': {},
       'handle opera-7 is no longer in the page - resolve the row again': {},
       'inputFound: false': {},
+      'typed 5 characters and nothing on the page changed: there is no caret here to receive them': {},
       'no menuitem matching "Image". Visible: Insert | Table': {}
     };
     for (const text of Object.keys(asked)) {
@@ -103,6 +104,26 @@ test('an input that could not be filled is sent to the drop', () => {
 
   assert.match(out, /drop_file\(/);
   assert.match(out, /no file input/i);
+});
+
+// WHY TEXT THAT WENT NOWHERE IS SENT TO THE CARET AND NOT BACK TO THE TOOLBOX.
+// Measured live: five characters typed into a document that had lost its caret, and
+// the call answered as if it had worked. Retrying the type would fail identically,
+// so the moves are the two that change the page: put a caret in it, and see where
+// the caret is.
+
+test('text the page did not take is sent to the caret', () => {
+  const out = withAdvice(new Error('typed 5 characters and nothing on the page changed: there is no caret here to receive them'), { rows: [] });
+
+  assert.match(out, /click\(/);
+  assert.match(out, /caret_line\(\)/);
+});
+
+test('a page with nothing to type into gets the same two moves', () => {
+  const out = withAdvice(new Error('typed 5 characters into a page that holds no text and no field to receive them'), { rows: [] });
+
+  assert.match(out, /click\(/);
+  assert.match(out, /caret_line\(\)/);
 });
 
 // WHY THE LINK RULES ARE SEPARATE. "The extension is not connected" and "the
