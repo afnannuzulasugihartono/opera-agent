@@ -234,3 +234,45 @@ test('a reconnecting device leaves nothing behind that closing waits on', async 
   ]);
   assert.equal(settled, 'closed', 'close ends the sockets it accepted rather than waiting on them');
 });
+
+// WHY TIME IS FAKE HERE. The reap line sits at two minutes, and a test that
+// waits it out is a test nobody runs. The server takes its clock injected, so
+// fake time jumps past the line while real timers run the heartbeats —
+// silence gets reaped, traffic never does, all in under a second.
+
+test('a busy socket survives its second minute and a silent one does not', async () => {
+  let at = 1000000;
+  const bridge = createBridgeServer({ port: 0, heartbeatMs: 30, now: () => at });
+  await bridge.listen();
+  const port = bridge.address().port;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const link = async (device) => {
+    device.push(JSON.stringify({ type: 'hello', token: 't', deviceName: 'opera' }));
+    const deadline = Date.now() + 2000;
+    while (!bridge.linked() && Date.now() < deadline) await sleep(10);
+    assert.equal(bridge.linked(), true, 'the device linked');
+    while (!device.frames.some((f) => f.ok && f.message.type === 'ready') && Date.now() < deadline) await sleep(10);
+    assert.ok(device.frames.some((f) => f.ok && f.message.type === 'ready'), 'the handshake completed before the clock moves');
+  };
+
+  try {
+    const quiet = await connect(port);
+    await link(quiet);
+    at += 125000;
+    await sleep(120);
+    assert.equal(bridge.linked(), false, 'two silent minutes reap the socket');
+    quiet.close();
+
+    const busy = await connect(port);
+    await link(busy);
+    for (let i = 0; i < 5; i++) {
+      at += 30000;
+      busy.push(JSON.stringify({ type: 'pong' }));
+      await sleep(60);
+    }
+    assert.equal(bridge.linked(), true, 'a talking socket is never reaped');
+    busy.close();
+  } finally {
+    await bridge.close();
+  }
+});

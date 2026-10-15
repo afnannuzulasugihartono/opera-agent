@@ -19,6 +19,15 @@ import { BridgeSocket, acceptKey, encodeText, isOriginAllowed, isWebSocketUpgrad
 const DEVICE_PROTOCOL_VERSION = 1;
 const HEARTBEAT_MS = 20000;
 const HEARTBEAT_PAYLOAD = JSON.stringify({ type: 'ping' });
+
+// WHY IDLENESS IS MEASURED FROM THE LAST WORD, NOT THE HELLO. The reap used
+// to read the connection clock: any socket older than two minutes died whether
+// it was mid-drive or long gone, and whatever call was in flight died with it
+// as "still in flight when the device disconnected". Measured live as
+// disconnects striking busy workers at random. The last-heard clock was
+// already maintained for the health report; the reap reads it now, so only
+// silence is reaped and traffic never is.
+
 const IDLE_SOCKET_MS = 120000;
 
 // WHY LISTEN BEFORE THE 101. A device can send its hello in the same tick it
@@ -156,7 +165,7 @@ export function createBridgeServer({
 
   const heartbeat = () => {
     if (socket && !socket.closed) send(HEARTBEAT_PAYLOAD);
-    if (socket && connectedAt && now() - connectedAt > IDLE_SOCKET_MS) {
+    if (socket && lastHeardAt && now() - lastHeardAt > IDLE_SOCKET_MS) {
       socket.close(1001);
       return;
     }
