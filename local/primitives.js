@@ -832,6 +832,13 @@ export const EDIT_SIGNATURE_EXPRESSION = `(() => {
 const EDIT_POLL_MS = 150;
 const EDIT_POLLS = 12;
 
+// WHY THE APPEND WAITS A BEAT AFTER THE END KEY. The end key asks the editor to move
+// its caret and scroll to it; a document that scrolls answers the next insert before
+// the view has caught up, and text lands where the caret used to be. One beat is the
+// cheapest way to let the view arrive, and it costs nothing when the view already has.
+
+const APPEND_SETTLE_MS = 120;
+
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
 
@@ -1264,6 +1271,40 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           : `typed ${out.chars} characters into a page that holds no text and no field to receive them`);
       }
       return { ...out, landed: true, placed: await locateInsertion(text, before, seen.after) };
+    },
+
+    // WHY AN APPEND AND NOT A TYPE. Measured live while building a thesis: the road to
+    // the end of a document was click somewhere, press Ctrl+End, and trust the caret -
+    // and once it did not go where it was told, a whole batch landed inside a table
+    // cell and recovering cost four extra calls and an undo. An append is that promise
+    // with the positioning inside it.
+    //
+    // WHY "AT THE END" IS READ AND NOT AIMED FOR. Moving a caret to the end of a long
+    // canvas document and reading the caret back is several round trips against a
+    // surface that mirrors into the DOM on the editor's own schedule. What one
+    // evaluation can answer is whether anything follows the text that was just
+    // inserted: at the end, nothing does. So atEnd is measured, and when the mirror is
+    // too stale to tell, the answer says found:false instead of claiming it. Measured
+    // live on a Google Doc: five appends in a row each reported atEnd false, because
+    // what followed the inserted text was the editor's own chrome ("Banner hidden new
+    // line 1 by 1") rather than document text. The appends were at the end; a strict
+    // measure cannot see past a canvas editor's chrome, so it names what followed
+    // rather than guessing either way.
+
+    async append(text) {
+      const chars = String(text ?? '').length;
+      await primitives.key('End', ['Control']);
+      await sleep(APPEND_SETTLE_MS);
+      const typed = await primitives.type(text);
+      const atEnd = typed.placed.found && String(typed.placed.after ?? '').trim() === '';
+      return {
+        ...typed,
+        chars,
+        atEnd,
+        atEndWhy: typed.placed.found
+          ? (atEnd ? 'nothing follows the inserted text' : `text follows it: "${String(typed.placed.after).trim().slice(0, 40)}"`)
+          : 'the page could not say where the text went - read_page() is the proof on a canvas page'
+      };
     },
 
     async key(name, modifiers = []) {

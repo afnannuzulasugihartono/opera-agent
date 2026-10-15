@@ -93,7 +93,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -116,6 +116,35 @@ test('type says where the proof lives when its own placement check cannot see it
 
   assert.match(type.description, /placed/);
   assert.match(type.description, /read_page\(\)/);
+});
+
+// WHY THE APPEND'S DESCRIPTION CARRIES ITS OWN SCAR. An agent reads descriptions to
+// decide whether to call a tool, and this one exists because a batch landed in a table
+// cell: the measured failure is the argument for calling append instead of the
+// click-then-End road, and a description without it is a description nobody trusts.
+
+test('the append says how it decides it reached the end, and when it cannot know', () => {
+  const append = TOOLS.find((tool) => tool.name === 'append');
+
+  assert.match(append.description, /atEnd is measured, not assumed/);
+  assert.match(append.description, /found:false/);
+  assert.match(append.description, /table cell/);
+  assert.deepEqual(Object.keys(append.inputSchema.properties).sort(), ['tabId', 'text']);
+  assert.deepEqual(append.inputSchema.required, ['text']);
+});
+
+test('append reaches the driver as one call with the text intact', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  c.driver.append = async (text) => { c.driver.calls.push(['append', text]); return { chars: text.length, landed: true, atEnd: true, placed: { found: true, index: 9 } }; };
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 97, method: 'tools/call',
+    params: { name: 'append', arguments: { text: 'one more line' } }
+  });
+
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'append'), [['append', 'one more line']]);
+  assert.match(res.result.content[0].text, /"atEnd": true/);
 });
 
 test('a call runs the tool and returns its result as text content', async () => {

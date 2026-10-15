@@ -50,7 +50,7 @@ import {
 function recordingCdp() {
   const calls = [];
 
-  const page = { body: '9:body text', value: '', holds: true };
+  const page = { body: '9:body text', value: '', holds: true, tail: '' };
   return {
     calls,
     page,
@@ -70,11 +70,12 @@ function recordingCdp() {
           const held = page.body.slice(page.body.indexOf(':') + 1).replace(/\s+/g, ' ');
           const probe = JSON.parse(/const probe = ("(?:[^"\\]|\\.)*")/.exec(params.expression)[1]).replace(/\s+/g, ' ');
           const at = held.lastIndexOf(probe);
+          const tail = page.tail ?? '';
           return { result: { value: {
             index: at,
             field: false,
             before: at < 0 ? held.slice(-40) : held.slice(Math.max(0, at - 40), at),
-            after: at < 0 ? '' : held.slice(at + probe.length, at + probe.length + 40),
+            after: at < 0 ? '' : held.slice(at + probe.length, at + probe.length + 40) + tail,
             len: held.length
           } } };
         }
@@ -249,6 +250,60 @@ test('a click on canvas says canvas, because elementFromPoint cannot see through
 // first and that proof is its own await. Chrome was handed a keyUp before its
 // keyDown, so Ctrl+1 typed a literal "1" into a live Google Doc instead of
 // making a heading. The order is the shortcut.
+
+// WHY AN APPEND ANSWERS WHERE IT PUT THE TEXT. Measured live while building a thesis:
+// the road to the end of a document was click, Ctrl+End, and trust - and once the caret
+// did not go where it was told, a whole batch landed inside a table cell and four extra
+// calls plus an undo were spent recovering. So the append carries the positioning, and
+// its answer measures "at the end" instead of assuming it.
+
+test('append puts the text at the end and proves nothing follows it', async () => {
+  const cdp = recordingCdp();
+
+  const out = await createPrimitives(cdp).append('tail text');
+
+  assert.equal(out.landed, true);
+  assert.equal(out.atEnd, true);
+  assert.match(out.atEndWhy, /nothing follows/);
+  const endKey = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
+  assert.ok(endKey.length >= 2, 'the caret is asked for the end before anything is typed');
+  assert.match(cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent').params.key, /End/);
+});
+
+test('append says so when text follows it, because "at the end" is a claim to prove', async () => {
+  const cdp = recordingCdp();
+  cdp.page.tail = 'text the page already held after it';
+
+  const out = await createPrimitives(cdp).append('tail text');
+
+  assert.equal(out.atEnd, false);
+  assert.match(out.atEndWhy, /text follows it/);
+});
+
+test('append admits it cannot see where the text went rather than claiming the end', async () => {
+  const sigs = [
+    { body: '9:body text', value: '', holds: true },
+    { body: '18:body texttail text', value: '', holds: true }
+  ];
+  let asks = 0;
+  const cdp = {
+    send: async (method, params = {}) => {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
+        return { result: { value: { index: -1, field: false, before: 'body texttail text', after: '', len: 18 } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: sigs[Math.min(asks++, sigs.length - 1)] } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).append('tail text');
+
+  assert.equal(out.landed, true);
+  assert.equal(out.atEnd, false, 'a page that cannot be seen into cannot be claimed for');
+  assert.match(out.atEndWhy, /read_page\(\) is the proof/);
+});
 
 test('a chord is two masked events with codes and no text, because separate modifier presses leaked under rapid fire', async () => {
   const cdp = recordingCdp();

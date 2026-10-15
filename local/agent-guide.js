@@ -117,6 +117,8 @@ export const SIDE_EFFECTS = Object.freeze({
   hover: ['moves the pointer'],
   press_key: ['sends a key to whatever is focused'],
   type: ['inserts text into whatever is focused'],
+  append: ['moves the caret to the end before inserting, so text lands at the end instead of wherever the caret was left'],
+
   stream_keys: ['sends a key sequence to whatever is focused'],
   wait_for: [],
   ask_page: [],

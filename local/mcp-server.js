@@ -186,6 +186,11 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
   },
   {
+    name: 'append',
+    description: 'Add text at the very end of one tab: the caret is asked for the end, the text goes in, and the answer says whether anything follows it. atEnd is measured, not assumed - it is true only when the page shows no text after what was inserted, and it is found:false on canvas pages that mirror late, where read_page() is the proof. Use this instead of clicking and pressing End yourself: that road put a whole batch inside a table cell once, measured live. On a canvas editor atEnd is usually false for a good reason - the text the page reports ends with the editor chrome rather than with the document - so atEndWhy names what followed, and read_page() is the proof that the append reached the end of the document.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to add at the end') }, required: ['text'] }
+  },
+  {
     name: 'stream_keys',
     description: 'Send up to 100 keys and texts in order, with optional gaps. Events go out one at a time in the order written, and keys keep a fifty-millisecond beat Docs can hear, so a chord never overtakes its own key and a menu walk takes the branch you meant.',
     inputSchema: {
@@ -679,6 +684,8 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         return afterAction(driver, await driver.key(args.key, args.modifiers ?? []));
       case 'type':
         return afterAction(driver, await driver.type(args.text));
+      case 'append':
+        return afterAction(driver, await driver.append(args.text));
       case 'stream_keys':
         return afterAction(driver, await driver.keys(args.events));
       case 'wait_for': {
