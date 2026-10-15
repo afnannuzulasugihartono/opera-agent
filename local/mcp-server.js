@@ -383,7 +383,7 @@ export function createMcpServer(context) {
       case 'upload':
         return afterAction(driver, await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null }));
       case 'drop_file': {
-        const before = new Set((await driver.tabs()).map((tab) => String(tab.id)));
+        const before = new Set((await fallback.tabs()).map((tab) => String(tab.id)));
         const dropped = await driver.dropFile({
           x: args.x,
           y: args.y,
@@ -391,12 +391,12 @@ export function createMcpServer(context) {
           data: args.data ?? null,
           path: args.path ?? null
         });
-        const strays = (await driver.tabs()).filter((tab) => !before.has(String(tab.id)));
+        const strays = (await fallback.tabs()).filter((tab) => !before.has(String(tab.id)));
         let openedInstead = false;
         for (const tab of strays) {
           if (!String(tab.url ?? '').startsWith(STRAY_FILE_TAB)) continue;
           openedInstead = true;
-          await driver.close(String(tab.id)).catch(() => null);
+          await fallback.close(String(tab.id)).catch(() => null);
         }
         return afterAction(driver, { ...dropped, openedInstead });
       }
