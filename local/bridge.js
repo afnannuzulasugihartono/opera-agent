@@ -58,16 +58,75 @@ function trustedRecently() {
   return trustMs > 0 && Date.now() - lastProofAt < trustMs;
 }
 
+// WHY A LOST PORT IS A DOOR, NOT A DEAD END. The bridge is the one thing on
+// this machine that may only exist once: one device socket, one command queue,
+// one browser. A second driver used to read that as a fatal conflict, threw on
+// every call, and took a whole session's tools down with it — measured as
+// `another dev shim owns this machine` followed by an MCP that never connects,
+// while a perfectly good bridge sat one port away holding the browser. So the
+// loser of the bind becomes a client of the winner: same commands, same
+// results, same signed-in profile, and the lock that used to enforce one driver
+// per machine has nothing left to enforce.
+
+function adoptedBridge(port) {
+  let linked = false;
+  const call = async (method, params = {}, { timeoutMs = 60000 } = {}) => {
+    let body;
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/command`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ method, params, timeoutMs }),
+        signal: AbortSignal.timeout(timeoutMs + 2000)
+      });
+      if (!response.ok) throw new Error(`the bridge answered ${response.status}`);
+      body = await response.json();
+    } catch (error) {
+      linked = false;
+      throw new Error(`bridge: the driver holding port ${port} is gone (${error?.message ?? error})`);
+    }
+    linked = true;
+    return body;
+  };
+  const probe = async () => {
+    let body = null;
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(2000) });
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    if (body?.ok !== true) {
+      throw new Error(`bridge: port ${port} is held by another process that is not a bridge`);
+    }
+    linked = body.linked === true;
+    return linked;
+  };
+  return {
+    adopted: true,
+    address: () => ({ port, host: '127.0.0.1' }),
+    listen: async () => ({ port, host: '127.0.0.1' }),
+    close: async () => { server = null; },
+    probe,
+    linked: () => linked,
+    send: (method, params, options) => call(method, params, options),
+    on: () => {},
+    state: () => ({ linked, deviceId: null, queued: null, waiting: null, lastHeardMsAgo: null })
+  };
+}
+
 async function ensureServer() {
   if (!server) {
     const fresh = createBridgeServer({ port: bridgePort() });
     try {
       await fresh.listen();
+      server = fresh;
     } catch (error) {
-      if (error?.code === 'EADDRINUSE') throw new Error(`bridge: port ${bridgePort()} is already owned by another driver`);
-      throw error;
+      if (error?.code !== 'EADDRINUSE') throw error;
+      const adopted = adoptedBridge(bridgePort());
+      await adopted.probe();
+      server = adopted;
     }
-    server = fresh;
   }
   return server;
 }
@@ -85,13 +144,27 @@ async function prove(srv) {
   return false;
 }
 
-async function attempt(method, params, timeoutMs) {
+// WHY A TAKEOVER IS ONE RETRY. An adopted bridge is a guest of a process that
+// can die, and a guest whose host left keeps reporting a dead port forever.
+// The failure names the host, so the retry is the obvious move: drop the guest,
+// let `ensureServer` bind a port nobody holds, and answer from the bridge this
+// process now owns. One retry, so a command that merely failed is never run
+// twice — command failures come back as answers, not as transport errors.
+
+async function attempt(method, params, timeoutMs, takeover = true) {
   const srv = await ensureServer();
   if (!srv.linked()) throw new Error(LINK_ERROR);
   if (!trustedRecently() && !(await prove(srv))) {
     throw new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
   }
-  const answer = await srv.send(method, params, { timeoutMs });
+  let answer;
+  try {
+    answer = await srv.send(method, params, { timeoutMs });
+  } catch (error) {
+    if (!srv.adopted || !takeover) throw error;
+    server = null;
+    return attempt(method, params, timeoutMs, false);
+  }
   if (!answer.ok) {
     throw new Error(String(answer.error?.message ?? `${label(method)} failed`));
   }

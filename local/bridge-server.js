@@ -81,6 +81,20 @@ export const BRIDGE_ORIGINS = Object.freeze([
 // three full-suite runs. The queue is the honest place for that command, and
 // `flush` sends it the instant the handshake lands.
 
+// WHY THERE IS A DOOR IN THE LOOPBACK WALL. One server owns the device socket,
+// and a second driver on this machine had nowhere to go: it lost the port, and
+// the whole session's tools failed by name on every call. The command door lets
+// a second process drive the same browser instead of refusing to live. It binds
+// to 127.0.0.1 only, exactly like the socket beside it: whoever is already on
+// this machine may drive this machine's browser, which is what that socket
+// already allowed.
+//
+// WHY THE ANSWER OVER THE DOOR IS THE SETTLED ENVELOPE, UNWRAPPED. A door that
+// re-wrapped `{ ok, result }` inside another `{ ok, result }` made every
+// adopted caller read a proof ping as a failed ping, so a second driver could
+// never talk to a bridge it had reached. Over the door the answer is the answer
+// in process, byte for byte.
+
 export function createBridgeServer({
   port = 9451,
   host = '127.0.0.1',
@@ -163,6 +177,24 @@ export function createBridgeServer({
     }
   }
 
+  function command(method, params = {}, { timeoutMs = 60000 } = {}) {
+    const id = `${now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const frame = { id, method, params, timeoutMs };
+    return new Promise((resolve, reject) => {
+      const entry = { resolve, reject, method, sentAt: now() };
+      waiting.set(id, entry);
+      queue.push(frame);
+      flush();
+      setTimeout(() => {
+        if (!waiting.has(id)) return;
+        waiting.delete(id);
+        const index = queue.findIndex((item) => item.id === id);
+        if (index >= 0) queue.splice(index, 1);
+        reject(new Error(`no answer for ${method} within ${timeoutMs} ms`));
+      }, timeoutMs + 500).unref?.();
+    });
+  }
+
   const heartbeat = () => {
     if (socket && !socket.closed) send(HEARTBEAT_PAYLOAD);
     if (socket && lastHeardAt && now() - lastHeardAt > IDLE_SOCKET_MS) {
@@ -170,6 +202,23 @@ export function createBridgeServer({
       return;
     }
     timer = setTimeout(heartbeat, heartbeatMs);
+  };
+
+  const readJson = (req) => new Promise((resolve) => {
+    let body = '';
+    req.on('data', (piece) => { body += piece; });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body || '{}'));
+      } catch {
+        resolve(null);
+      }
+    });
+  });
+
+  const json = (res, status, payload) => {
+    res.writeHead(status, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(payload));
   };
 
   const server = createServer((req, res) => {
@@ -183,6 +232,22 @@ export function createBridgeServer({
         waiting: waiting.size,
         lastHeardMsAgo: lastHeardAt ? now() - lastHeardAt : null
       }));
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/command') {
+      void (async () => {
+        const body = await readJson(req);
+        if (!body?.method) {
+          json(res, 400, { ok: false, error: { message: 'a command needs a method' } });
+          return;
+        }
+                const timeoutMs = Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : 60000;
+        try {
+          json(res, 200, await command(body.method, body.params ?? {}, { timeoutMs }));
+        } catch (error) {
+          json(res, 200, { ok: false, error: { message: String(error?.message ?? error) } });
+        }
+      })();
       return;
     }
     res.writeHead(404);
@@ -236,23 +301,7 @@ export function createBridgeServer({
     linked() {
       return Boolean(socket && !socket.closed);
     },
-    send(method, params = {}, { timeoutMs = 60000 } = {}) {
-      const id = `${now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-      const command = { id, method, params, timeoutMs };
-      return new Promise((resolve, reject) => {
-        const entry = { resolve, reject, method, sentAt: now() };
-        waiting.set(id, entry);
-        queue.push(command);
-        flush();
-        setTimeout(() => {
-          if (!waiting.has(id)) return;
-          waiting.delete(id);
-          const index = queue.findIndex((item) => item.id === id);
-          if (index >= 0) queue.splice(index, 1);
-          reject(new Error(`no answer for ${method} within ${timeoutMs} ms`));
-        }, timeoutMs + 500).unref?.();
-      });
-    },
+    send: (method, params, options) => command(method, params, options),
     on: (event, handler) => state.on(event, handler),
     state: () => ({
       linked: Boolean(socket && !socket.closed),

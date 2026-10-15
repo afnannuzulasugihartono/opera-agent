@@ -276,3 +276,80 @@ test('a busy socket survives its second minute and a silent one does not', async
     await bridge.close();
   }
 });
+
+// WHY THE DOOR IS PINNED AT THE SERVER, NOT ONLY AT THE CLIENT. The client
+// test proves a second driver can drive; this proves the door itself settles a
+// command against the device and reports a device failure as a failure rather
+// than as an empty success. A door that answered `ok` with nothing in it would
+// make every adopted call look like it worked.
+
+test('the command door settles against the device and names a device failure', async () => {
+  const bridge = createBridgeServer({ port: 0, heartbeatMs: 50 });
+  await bridge.listen();
+  const port = bridge.address().port;
+  const device = await connect(port);
+  const post = (body) => new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body);
+    const req = httpRequest({
+      host: '127.0.0.1',
+      port,
+      path: '/command',
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) }
+    }, (res) => {
+      let out = '';
+      res.on('data', (piece) => { out += piece; });
+      res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(out) }));
+    });
+    req.on('error', reject);
+    req.end(payload);
+  });
+  const nextCommand = async (seen) => {
+    const until = Date.now() + 2000;
+    while (Date.now() < until) {
+      const hit = device.frames
+        .map((f) => (f.ok && f.message.type === 'command' ? f.message.command : null))
+        .find((c) => c && !seen.has(c.id));
+      if (hit) {
+        seen.add(hit.id);
+        return hit;
+      }
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    throw new Error('the command never arrived');
+  };
+
+  try {
+    device.push(JSON.stringify({ type: 'hello', token: 't', deviceName: 'opera' }));
+    const deadline = Date.now() + 2000;
+    while (!bridge.linked() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 20));
+
+    const seen = new Set();
+    const answered = post({ method: 'tabs.list', params: {}, timeoutMs: 5000 });
+    const first = await nextCommand(seen);
+    device.push(JSON.stringify({ type: 'complete', commandId: first.id, ok: true, result: { tabs: [{ id: '7' }] } }));
+
+    const good = await answered;
+    assert.equal(good.status, 200);
+    assert.equal(good.body.ok, true);
+    assert.deepEqual(good.body.result, { tabs: [{ id: '7' }] }, 'the settled envelope crosses the door unwrapped');
+
+    const failing = post({ method: 'tabs.list', params: {}, timeoutMs: 5000 });
+    const second = await nextCommand(seen);
+    device.push(JSON.stringify({
+      type: 'complete',
+      commandId: second.id,
+      ok: false,
+      error: { code: 'X', message: 'no such tab' }
+    }));
+    const bad = await failing;
+    assert.equal(bad.body.ok, false, 'a device failure is a failure, not an empty success');
+    assert.equal(bad.body.error.message, 'no such tab');
+
+    const malformed = await post({ params: {} });
+    assert.equal(malformed.status, 400, 'a nameless command is refused');
+  } finally {
+    device.close();
+    await bridge.close();
+  }
+});

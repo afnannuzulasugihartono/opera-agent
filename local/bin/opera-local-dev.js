@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createSupervisor, acquireShimLock } from '../dev-shim.js';
+import { createSupervisor } from '../dev-shim.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
@@ -23,12 +23,6 @@ const WATCHED = [
 ];
 
 const log = (message) => stderr.write(`[opera-local-dev] ${message}\n`);
-
-const lock = acquireShimLock();
-if (!lock) {
-  log('another dev shim owns this machine, exiting');
-  exit(1);
-}
 
 const supervisor = createSupervisor({
   spawnWorker: () => spawn(execPath, [join(here, 'opera-local.js')], {
@@ -62,7 +56,6 @@ const supervisor = createSupervisor({
 
 async function shutdown(code) {
   await supervisor.stop();
-  lock.release();
   exit(code);
 }
 

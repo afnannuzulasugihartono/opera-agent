@@ -22,49 +22,12 @@
 // seconds the worker is poisoned — a syntax error restarts forever — so the
 // shim ends loudly instead of hiding the crash in a respawn loop.
 
-// WHY ONLY ONE SHIM LIVES PER MACHINE. Two servers cannot share the loopback
-// port, so a second pair degrades into per-call port conflicts while looking
-// connected — measured live as a toggle that spawned a twin and broke the
-// original's bridge. The lock is an atomic file holding a PID: a live holder
-// refuses newcomers loudly, a dead holder's lock is stolen. Stale locks cannot
-// accumulate because only a dead process leaves one behind.
-
-import nodeFs from 'node:fs';
-import nodeOs from 'node:os';
-import nodePath from 'node:path';
-
-export function shimLockPath() {
-  return nodePath.join(nodeOs.tmpdir(), 'opera-local-shim.lock');
-}
-
-export function acquireShimLock(lockPath = shimLockPath()) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const fd = nodeFs.openSync(lockPath, 'wx');
-      nodeFs.writeFileSync(fd, String(process.pid));
-      nodeFs.closeSync(fd);
-      return {
-        release: () => {
-          try {
-            nodeFs.unlinkSync(lockPath);
-          } catch {}
-        }
-      };
-    } catch (error) {
-      if (error?.code !== 'EEXIST') throw error;
-    }
-    try {
-      const holder = Number(nodeFs.readFileSync(lockPath, 'utf8'));
-      process.kill(holder, 0);
-      return null;
-    } catch {
-      try {
-        nodeFs.unlinkSync(lockPath);
-      } catch {}
-    }
-  }
-  return null;
-}
+// WHY NO SINGLETON LOCK SURVIVES HERE. One shim per machine was enforced by an
+// atomic PID file, and the second shim was told to exit — which took a whole
+// session's tools down while a healthy bridge sat one port away holding the
+// browser. The bridge is now shareable (a driver that loses the port adopts the
+// one that won it), so there is nothing left to enforce and nothing left to
+// refuse: two shims, two sets of tools, one signed-in browser.
 
 export function createSupervisor({
   spawnWorker,

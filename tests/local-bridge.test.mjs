@@ -37,6 +37,7 @@ import {
   waitForBridgeLink
 } from '../local/bridge.js';
 import { createCdpClient } from '../local/cdp.js';
+import { createBridgeServer } from '../local/bridge-server.js';
 import { completionFrame, handshakeFrame, normalizeCommand, pongFrame } from '../extension/lib/socket-protocol.js';
 
 process.env.OPERA_BRIDGE_PORT = '0';
@@ -314,15 +315,17 @@ test('a lookalike host and an ordinary site are both refused', async () => {
 // fight over the same loopback port, and the loser used to fail with a bare
 // system error while keeping the dead server — so freeing the port healed
 // nothing. The name tells the loser what happened; forgetting the dead server
-// lets the next try listen.
+// lets the next try listen. The name now says the holder is not a bridge,
+// which is the only case that still refuses: a real bridge next door is
+// adopted, not fought over.
 
-test('a port owned by another driver is named, and freeing it heals the next try', async () => {
+test('a port held by something that is not a bridge is named, and freeing it heals the next try', async () => {
   const squatter = createServer((req, res) => res.end());
   await new Promise((resolve) => squatter.listen(0, '127.0.0.1', resolve));
   const taken = squatter.address().port;
   process.env.OPERA_BRIDGE_PORT = String(taken);
   try {
-    await assert.rejects(() => bridgeAddress(), /already owned by another driver/);
+    await assert.rejects(() => bridgeAddress(), /held by another process that is not a bridge/);
   } finally {
     await new Promise((resolve) => squatter.close(resolve));
     process.env.OPERA_BRIDGE_PORT = '0';
@@ -361,17 +364,48 @@ test('a trusted window skips the proof ping, and zero trust proves every call', 
 // missing extension but another process holding the loopback port. The drive
 // carried on against a profile with nothing signed in, with no sign of why —
 // which is the exact stuck-with-no-explanation this file exists to prevent.
+// Adopting a real bridge does not weaken it: adoption is proven only against a
+// server that answers as a bridge, so a stranger on the port is still refused.
 
-test('a port another driver owns is named, not swallowed into a wrong pipe', async () => {
+test('a port held by a stranger is named, not swallowed into a wrong pipe', async () => {
   const squatter = createServer((req, res) => res.end());
   await new Promise((resolve) => squatter.listen(0, '127.0.0.1', resolve));
   const taken = squatter.address().port;
   process.env.OPERA_BRIDGE_PORT = String(taken);
   try {
-    await assert.rejects(() => bridgeReachable(), /already owned by another driver/,
+    await assert.rejects(() => bridgeReachable(), /held by another process that is not a bridge/,
       'a conflict must name itself instead of answering "no extension"');
   } finally {
     await new Promise((resolve) => squatter.close(resolve));
+    process.env.OPERA_BRIDGE_PORT = '0';
+  }
+});
+
+// WHY A SECOND DRIVER DRIVES THE SAME BROWSER. Two sessions on one machine
+// each spawn their own driver, and only one of them can own the loopback port.
+// The loser used to exit at startup with "another dev shim owns this machine",
+// which took a whole session's tools down while a healthy bridge held the
+// browser a second away. This drives the real thing: a bridge server with a
+// scripted device behind it, reached only through the door.
+
+test('a driver that loses the port adopts the bridge that won it', async () => {
+  const owner = createBridgeServer({ port: 0, heartbeatMs: 50 });
+  const { port } = await owner.listen();
+  const device = scriptedDevice(`ws://127.0.0.1:${port}/`, () => [{ id: 11, url: 'https://y/', title: 'Y' }]);
+  live.push(device);
+  await device.connected;
+  const until = Date.now() + 3000;
+  while (!owner.linked() && Date.now() < until) await sleep(25);
+  assert.equal(owner.linked(), true, 'the owner has a device');
+
+  process.env.OPERA_BRIDGE_PORT = String(port);
+  try {
+    assert.equal(await bridgeReachable(), true, 'the loser sees the link the winner holds');
+    const tabs = await listBridgeTargets();
+    assert.deepEqual(tabs, [{ id: 11, url: 'https://y/', title: 'Y' }], 'and drives it');
+  } finally {
+    await closeBridge();
+    await owner.close();
     process.env.OPERA_BRIDGE_PORT = '0';
   }
 });
