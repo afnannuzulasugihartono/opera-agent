@@ -281,6 +281,14 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'guide',
+    description: 'Read what this server can do, written as tasks rather than a tool list: for each task, the calls that do it and the road that is known to work. Pass a topic to get only the roads for that task. Also returns what each tool does to the page before you call it — which reads move the caret, which bring the tab forward, which can make an operating-system dialog appear — and the three things this server will not pretend to do. Start here when you do not know which tool to reach for.',
+    inputSchema: {
+      type: 'object',
+      properties: { topic: stringArg('a word or two: upload, menu, wait, verify') }
+    }
+  },
+  {
     name: 'capture_page',
     description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Pass fullPage to span the whole scrollable document past the viewport instead. Returns image content the caller can see.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
@@ -511,6 +519,8 @@ export function createMcpServer(context) {
           quietMs: budgetOf(args.quietMs, 400),
           intervalMs: gapOf(args.intervalMs, 120)
         }));
+      case 'guide':
+        return asText(await driver.guide(args.topic));
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
       case 'caret_line':

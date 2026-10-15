@@ -25,6 +25,7 @@ import { openSession, installedBrowsers } from '../driver.js';
 import { createSessionStore } from '../sessions.js';
 import { listPageWebSockets, openTab, closeTab } from '../transport.js';
 import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
+import { guide } from '../agent-guide.js';
 import { startStdio } from '../mcp-server.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -83,6 +84,10 @@ const driver = {
 
   async ask(method, params) {
     return (await attach()).ask(method, params);
+  },
+
+  async guide(topic) {
+    return guide(topic);
   },
 
   async read() {

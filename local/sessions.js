@@ -43,6 +43,8 @@ export function findOn(page, query) {
 // which dismisses the menu and looks exactly like a missed click. The exact
 // row is tried first; the substring stays as the fallback it always was.
 
+import { guide } from './agent-guide.js';
+
 export function asDriver(session) {
   return {
     read: () => session.read(),
@@ -51,6 +53,7 @@ export function asDriver(session) {
     find: (query) => findOn(session, query),
     click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
     resolve: (role, name) => session.resolveRow({ role, name }),
+    guide: async (topic) => guide(topic),
     hover: (x, y) => session.hover(x, y),
     clickRow: async (role, name) => {
       const row = await session.resolveRow({ role, name });
