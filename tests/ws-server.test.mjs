@@ -143,16 +143,29 @@ test('a completion-sized frame decodes where screenshots travel', () => {
   assert.equal(seen[0].length, 300000);
 });
 
-test('a fragment flood closes instead of buffering forever', () => {
+test('an oversized message is skipped while the link carries on', () => {
   const seen = [];
   const controls = [];
   const read = createFrameReader((text) => seen.push(text), (kind, code) => controls.push([kind, code]));
 
-  read(maskedFrame(0x1, 'x'.repeat(600000), { fin: false }));
-  read(maskedFrame(0x0, 'x'.repeat(600000), { fin: true }));
+  read(maskedFrame(0x1, 'x'.repeat(17 * 1024 * 1024)));
+  read(maskedFrame(0x1, 'still here'));
 
-  assert.deepEqual(seen, []);
-  assert.deepEqual(controls, [['close', 1009]]);
+  assert.deepEqual(seen, ['still here'], 'the giant is dropped by its own declared length');
+  assert.deepEqual(controls, [], 'and nothing closes over it');
+});
+
+test('a fragment flood is skipped the same way', () => {
+  const seen = [];
+  const controls = [];
+  const read = createFrameReader((text) => seen.push(text), (kind, code) => controls.push([kind, code]));
+
+  read(maskedFrame(0x1, 'x'.repeat(10 * 1024 * 1024), { fin: false }));
+  read(maskedFrame(0x0, 'x'.repeat(10 * 1024 * 1024), { fin: true }));
+  read(maskedFrame(0x1, 'after the flood'));
+
+  assert.deepEqual(seen, ['after the flood']);
+  assert.deepEqual(controls, []);
 });
 
 test('a continuation without a start closes as a protocol error', () => {
@@ -161,4 +174,24 @@ test('a continuation without a start closes as a protocol error', () => {
   createFrameReader(() => {}, (kind, code) => controls.push([kind, code]))(maskedFrame(0x0, 'orphan'));
 
   assert.deepEqual(controls, [['close', 1002]]);
+});
+
+test('frame sizes are visible on request and silent otherwise', () => {
+  const errors = [];
+  const real = console.error;
+  console.error = (line) => errors.push(line);
+  const previous = process.env.OPERA_BRIDGE_DEBUG_FRAMES;
+  try {
+    process.env.OPERA_BRIDGE_DEBUG_FRAMES = '1';
+    createFrameReader(() => {})(maskedFrame(0x1, 'hi'));
+    assert.ok(errors.some((line) => line.includes('length=2')), 'sizes go to stderr when asked');
+    errors.length = 0;
+    delete process.env.OPERA_BRIDGE_DEBUG_FRAMES;
+    createFrameReader(() => {})(maskedFrame(0x1, 'hi'));
+    assert.deepEqual(errors, [], 'and stay quiet otherwise');
+  } finally {
+    console.error = real;
+    if (previous === undefined) delete process.env.OPERA_BRIDGE_DEBUG_FRAMES;
+    else process.env.OPERA_BRIDGE_DEBUG_FRAMES = previous;
+  }
 });
