@@ -125,6 +125,10 @@ const driver = {
     return (await attach()).upload(options);
   },
 
+  async dropFile(options) {
+    return (await attach()).dropFile(options);
+  },
+
   async interceptFileChooser(enabled) {
     return (await attach()).interceptFileChooser(enabled);
   },

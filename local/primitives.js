@@ -406,6 +406,51 @@ export const DOCS_COPY_EXPRESSION = `(() => {
 const UPLOAD_FIND_ATTEMPTS = 5;
 const UPLOAD_FIND_GAP_MS = 400;
 
+// WHY A DROP EXISTS BESIDE AN UPLOAD. The upload fills a file input, which is
+// the whole story on a site that has one. Google Docs' image picker has none:
+// it opens the operating system's own dialog through the File System Access
+// API, so there is no input to fill, nothing to suppress, and nothing to click
+// once it is open. A drop is the road that is left, and it is the one the web
+// itself offers — Chrome's drag events carry files, so a page that accepts a
+// dropped image accepts this one. Measured live: the image landed in a
+// document, with no dialog and no input anywhere in sight.
+
+const DROP_PHASE_GAP_MS = 120;
+const DROP_FRONT_SETTLE_MS = 700;
+const DROP_SETTLE_MS = 900;
+const DRAG_MIME_TYPES = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.bmp': 'image/bmp',
+  '.pdf': 'application/pdf',
+  '.txt': 'text/plain',
+  '.csv': 'text/csv',
+  '.json': 'application/json'
+};
+
+// WHY THE TYPE COMES FROM THE NAME. A drop tells the page what it is being
+// offered through one mime type, and a wrong one is a file the page refuses.
+// The name is the only thing the caller carries, so it decides; a type with no
+// entry is still dropped, honestly typed as bytes.
+
+export function dragMimeType(filename) {
+  const name = String(filename ?? '');
+  const dot = name.lastIndexOf('.');
+  return (dot < 0 ? null : DRAG_MIME_TYPES[name.slice(dot).toLowerCase()]) ?? 'application/octet-stream';
+}
+
+// WHY DRAGOVER IS SENT TWICE. Chrome decides whether a target accepts a drop
+// from the dragover it just received, so a drop sent straight after a single
+// dragover is refused with the event accepted and nothing delivered. Measured
+// live: one dragover brought the page to "enter" and no file; a second one, and
+// the same page reported the file name and size it had been handed.
+
+export const DROP_PHASES = Object.freeze(['dragEnter', 'dragOver', 'dragOver', 'drop']);
+
 export const UPLOAD_INPUT_EXPRESSION = `(() => {
   const seen = new Set();
   const scan = (root) => {
@@ -655,6 +700,65 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       } finally {
         if (cleanup) cleanup();
         await cdp.send('Runtime.releaseObjectGroup', { objectGroup: 'opera-upload' }).catch(() => null);
+      }
+    },
+
+    async dropFile({ x, y, filename, data = null, path: filePath = null } = {}) {
+      if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) {
+        throw new Error('drop_file needs x and y in the viewport.');
+      }
+      if (!filename || typeof filename !== 'string') throw new Error('drop_file needs a filename.');
+      const hasData = data !== null && data !== undefined;
+      const hasPath = filePath !== null && filePath !== undefined;
+      if (hasData === hasPath) throw new Error('drop_file needs exactly one of data or path.');
+      let target;
+      let bytes;
+      let cleanup = null;
+      if (hasPath) {
+        if (!fs.existsSync(filePath)) throw new Error(`drop_file: no such file ${JSON.stringify(filePath)}`);
+        target = filePath;
+        bytes = fs.statSync(target).size;
+      } else {
+        const decoded = Buffer.from(String(data), 'base64');
+        if (decoded.length === 0) throw new Error('drop_file: data carries no bytes.');
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-drop-'));
+        target = path.join(dir, path.basename(filename));
+        fs.writeFileSync(target, decoded);
+        bytes = decoded.length;
+        cleanup = () => {
+          try {
+            fs.unlinkSync(target);
+          } catch {}
+          try {
+            fs.rmdirSync(dir);
+          } catch {}
+        };
+      }
+      const mimeType = dragMimeType(filename);
+      const payload = {
+        items: [{ mimeType, title: filename, data: '' }],
+        files: [target],
+        dragOperationsMask: 1
+      };
+
+      // WHY DRAGS ARE INTERCEPTED FIRST AND RELEASED ON EVERY WAY OUT. Chrome
+      // only accepts a dispatched drag while interception is on, and a page left
+      // in that state stops believing real ones — the pointer would do nothing on
+      // this tab until it was released, which is worse than the problem being
+      // solved. So the release is in the finally, where a failure still reaches.
+      try {
+        await cdp.send('Page.bringToFront');
+        await sleep(DROP_FRONT_SETTLE_MS);
+        await cdp.send('Input.setInterceptDrags', { enabled: true });
+        for (const phase of DROP_PHASES) {
+          await cdp.send('Input.dispatchDragEvent', { type: phase, x: Number(x), y: Number(y), data: payload });
+          await sleep(DROP_PHASE_GAP_MS);
+        }
+        await sleep(DROP_SETTLE_MS);
+        return { dropped: true, filename, bytes, x: Number(x), y: Number(y), mimeType };
+      } finally {
+        await cdp.send('Input.setInterceptDrags', { enabled: false }).catch(() => null);
+        if (cleanup) cleanup();
       }
     },
 

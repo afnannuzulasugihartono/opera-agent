@@ -30,7 +30,17 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DOCS_COPY_EXPRESSION, UPLOAD_INPUT_EXPRESSION, createPrimitives, isDocsDocument, modifierMask, snapshotExpression, splitText } from '../local/primitives.js';
+import {
+  DOCS_COPY_EXPRESSION,
+  DROP_PHASES,
+  UPLOAD_INPUT_EXPRESSION,
+  createPrimitives,
+  dragMimeType,
+  isDocsDocument,
+  modifierMask,
+  snapshotExpression,
+  splitText
+} from '../local/primitives.js';
 
 function recordingCdp() {
   const calls = [];
@@ -1050,4 +1060,66 @@ test('a late input is caught by looking again', async () => {
   assert.deepEqual(out.inputFound, true);
   assert.deepEqual(slept, [400, 400],
     'a beat between looks, none after the hit, and one pass over every road each time');
+});
+
+// WHY THE DROP IS PINNED IN ORDER, WITH ITS RELEASE. The drop is the road into a
+// page whose file chooser has no input behind it, and it only works while Chrome
+// is intercepting drags; a tab left intercepting would stop believing a person
+// dragging anything onto it, which is worse than the problem being solved. So
+// the phases are sent in the order a drag happens and the release is asserted
+// on the happy road and on the road where the page refuses the file.
+
+test('a drop walks the drag phases in order and releases interception after', async () => {
+  const cdp = recordingCdp();
+  const p = createPrimitives(cdp, { fs: fakeUploadFs(), os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.dropFile({ x: 750, y: 440, filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out, { dropped: true, filename: 'pic.png', bytes: 42, x: 750, y: 440, mimeType: 'image/png' });
+  assert.deepEqual(
+    cdp.calls.map((c) => (c.method === 'Input.dispatchDragEvent' ? c.params.type : c.method)),
+    ['Page.bringToFront', 'Input.setInterceptDrags', ...DROP_PHASES, 'Input.setInterceptDrags'],
+    'front tab, interception on, the drag phases, interception off'
+  );
+  const last = cdp.calls.at(-1);
+  assert.equal(last.params.enabled, false, 'and the tab is handed back its real pointer');
+  const dropped = cdp.calls.find((c) => c.params.type === 'drop');
+  assert.deepEqual(dropped.params.data.files, ['/files/pic.png']);
+  assert.deepEqual(dropped.params.data.items, [{ mimeType: 'image/png', title: 'pic.png', data: '' }]);
+});
+
+test('a refused drop still hands the tab its pointer back', async () => {
+  const cdp = recordingCdp();
+  const original = cdp.send;
+  cdp.send = async (method, params = {}) => {
+    if (method === 'Input.dispatchDragEvent') throw new Error('the page said no');
+    return original(method, params);
+  };
+  const p = createPrimitives(cdp, { fs: fakeUploadFs(), os: fakeUploadOs, path: fakeUploadPath });
+
+  await assert.rejects(() => p.dropFile({ x: 1, y: 2, filename: 'pic.png', path: '/files/pic.png' }), /page said no/);
+  assert.equal(cdp.calls.at(-1).method, 'Input.setInterceptDrags');
+  assert.equal(cdp.calls.at(-1).params.enabled, false, 'a failure does not leave drags intercepted');
+});
+
+test('a drop refuses anything but one source and a place to drop it', async () => {
+  const p = createPrimitives(recordingCdp(), { fs: fakeUploadFs(), os: fakeUploadOs, path: fakeUploadPath });
+
+  await assert.rejects(() => p.dropFile({ x: 1, y: 2, filename: 'a.png' }), /exactly one/);
+  await assert.rejects(() => p.dropFile({ x: 1, y: 2, filename: 'a.png', data: 'eA==', path: '/files/a.png' }), /exactly one/);
+  await assert.rejects(() => p.dropFile({ x: 1, y: 2, filename: 'a.png', data: '' }), /no bytes/);
+  await assert.rejects(() => p.dropFile({ x: 1, y: 2, filename: 'a.png', path: '/files/missing.png' }), /no such file/);
+  await assert.rejects(() => p.dropFile({ filename: 'a.png', path: '/files/pic.png' }), /x and y/);
+});
+
+// WHY THE TYPE IS PINNED BY NAME. A drop tells the page what it is being
+// offered, and a wrong type is a file the page refuses — the difference between
+// an image landing and nothing happening at all.
+
+test('a drop types the file by its name, and admits what it does not know', () => {
+  assert.equal(dragMimeType('thesis-test.png'), 'image/png');
+  assert.equal(dragMimeType('photo.JPEG'), 'image/jpeg', 'case is the caller spelling, not the page');
+  assert.equal(dragMimeType('report.pdf'), 'application/pdf');
+  assert.equal(dragMimeType('mystery.zzz'), 'application/octet-stream');
+  assert.equal(dragMimeType('noextension'), 'application/octet-stream');
 });

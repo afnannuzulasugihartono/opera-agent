@@ -156,6 +156,22 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'drop_file',
+    description: 'Drop a file onto a point in the page, the way a person drags one in: bytes or a local path, a viewport point, and the page uploads it on the drop it already listens for. This is the road into a site whose file chooser has no input behind it — Google Docs opens the operating system dialog through the File System Access API, where upload finds nothing to fill and no CDP command can reach the dialog.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        x: { type: 'number', description: 'viewport x to drop on' },
+        y: { type: 'number', description: 'viewport y to drop on' },
+        filename: stringArg('file name, which also decides the dropped type'),
+        data: { type: 'string', description: 'base64 file bytes' },
+        path: stringArg('absolute local path instead of bytes')
+      },
+      required: ['x', 'y', 'filename']
+    }
+  },
+  {
     name: 'intercept_file_chooser',
     description: 'Suppress the native file picker so uploads complete without OS UI: enable, walk the menu to Upload, call upload, then disable. While enabled, Upload clicks show nothing; forgetting to disable leaves later Upload clicks silent.',
     inputSchema: {
@@ -357,6 +373,14 @@ export function createMcpServer(context) {
         return asText({ line: await driver.caretLine() });
       case 'upload':
         return afterAction(driver, await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null }));
+      case 'drop_file':
+        return afterAction(driver, await driver.dropFile({
+          x: args.x,
+          y: args.y,
+          filename: args.filename,
+          data: args.data ?? null,
+          path: args.path ?? null
+        }));
       case 'intercept_file_chooser':
         return asText(await driver.interceptFileChooser(args.enabled === true));
       case 'capture_page': {
