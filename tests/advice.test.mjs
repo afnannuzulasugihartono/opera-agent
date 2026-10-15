@@ -29,6 +29,7 @@ test('every move names a call the server actually has', () => {
       'handle opera-7 is no longer in the page - resolve the row again': {},
       'inputFound: false': {},
       'Cannot access a chrome:// URL': {},
+      'click refused: 150,-139 is outside the 1136x770 viewport - scroll({text}) or scroll({y}) to bring it into view, then click again': {},
       'typed 5 characters and nothing on the page changed: there is no caret here to receive them': {},
       'no menuitem matching "Image". Visible: Insert | Table': {}
     };
@@ -111,6 +112,24 @@ test('an input that could not be filled is sent to the drop', () => {
 // Extensions tab and the bridge refused it with "Cannot access a chrome:// URL",
 // which is a wall, not a failure - no move on that tab can ever succeed. The only
 // useful next step is the list of tabs that can be driven.
+
+test('a click off the page is sent to the scroll that reaches it', () => {
+  const out = withAdvice(new Error('click refused: 150,-139 is outside the 1136x770 viewport - scroll to bring it into view'), { rows: [] });
+
+  assert.match(out, /scroll\(\{text\}\)/);
+  assert.match(out, /click_row\(\)/);
+});
+
+// WHY AN OFF-PAGE CLICK IS PINNED HERE. It is the one failure measured as a success:
+// a click at y -139 was reported as delivered. A failure like that teaches an agent to
+// trust an answer that is not true, which is worse than any failure it can name.
+
+test('an off-page click names the scroll that would reach the point', () => {
+  const out = withAdvice(new Error('click refused: 150,-139 is outside the 1136x770 viewport'), { rows: [] });
+
+  assert.match(out, /scroll\(\{y\}\)/);
+  assert.match(out, /click_row\(\) answers coordinates/, 'because the row is where an off-viewport coordinate comes from');
+});
 
 test('an extension page refusal is sent to the tab list, which is all an agent can do about it', () => {
   const out = withAdvice(new Error('Cannot access a chrome:// URL'), { rows: [] });

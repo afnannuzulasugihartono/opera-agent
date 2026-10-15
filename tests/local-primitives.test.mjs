@@ -522,6 +522,34 @@ test('a computed read without a target is refused before it costs a round trip',
   assert.equal(cdp.calls.length, 0, 'and nothing went to the page');
 });
 
+// WHY A CLICK OFF THE PAGE IS REFUSED. Measured live: a click_row on an outline row
+// below the fold answered with a click at x 150, y -139. A success, on a coordinate
+// no pixel holds - the click landed in nothing and the answer said it landed. That is
+// the one class of silence this product cannot be allowed to have, so the click is
+// refused and the refusal names the road that reaches the row.
+
+test('a click outside the viewport is refused, with the road that would reach the point', async () => {
+  const cdp = recordingCdp();
+
+  await assert.rejects(
+    () => createPrimitives(cdp).clickAt(150, -139),
+    /click refused: 150,-139 is outside the 1136x770 viewport.*scroll\(\{text\}\)/s
+  );
+  assert.equal(
+    cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length,
+    0,
+    'and nothing was pressed against a coordinate no pixel holds'
+  );
+});
+
+test('a click on the edge of the viewport is still allowed', async () => {
+  const cdp = recordingCdp();
+
+  await createPrimitives(cdp).clickAt(1136, 770);
+
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
+});
+
 test('a chord is two masked events with codes and no text, because separate modifier presses leaked under rapid fire', async () => {
   const cdp = recordingCdp();
   const p = createPrimitives(cdp);

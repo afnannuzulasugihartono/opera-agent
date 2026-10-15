@@ -78,6 +78,16 @@ const NO_TARGET = [
   'open_url() if the page is not open yet'
 ];
 
+// WHY A CLICK OFF THE PAGE GETS ITS OWN MOVES. Measured live: a click_row on a row
+// below the fold answered with a click at y -139 - success, on a coordinate no pixel
+// holds. The only roads that change the outcome are scrolling the thing into view and
+// clicking it again, and each is one call.
+
+const CLICK_OFF_PAGE = [
+  'scroll({text}) or scroll({y}) to bring it into the viewport, then click again',
+  'click_row() answers coordinates: a row above the fold is clickable as it is, one below it is not'
+];
+
 const EMPTY_FILE_INPUT = [
   'the page has no file input to fill — drop_file({x, y, filename, path}) instead, which is the road into a picker with no input behind it',
   'capture_page() after the drop to see whether the page took it'
@@ -139,6 +149,10 @@ export const RULES = Object.freeze([
   {
     when: (error) => /chrome:\/\//.test(error),
     next: EXTENSION_PAGE
+  },
+  {
+    when: (error) => /click refused: .* is outside the /.test(error),
+    next: CLICK_OFF_PAGE
   },
   {
     when: (error) => /is not an element handle/.test(error),

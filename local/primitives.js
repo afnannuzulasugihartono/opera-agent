@@ -920,6 +920,18 @@ export const scrollExpression = (probe) => `(() => {
 // element it belongs to is a number nobody can act on. This replaces a format-specific
 // reader: nothing here knows what a document is.
 
+// WHY A POINT OFF THE PAGE IS REFUSED RATHER THAN SENT. Measured live: a click_row on
+// an outline row below the fold answered with a click at x 150, y -139 - a success, on
+// a coordinate no pixel holds. The click lands in nothing and the answer says it
+// landed, which is the worst kind of answer this product can give. A row outside the
+// viewport now names the road that reaches it: scroll({text}) or scroll({y}), then
+// click again.
+//
+// WHY A PAGE THAT CANNOT SAY ITS VIEWPORT IS LEFT ALONE. A viewport of zero, or no
+// answer at all, is not a small viewport - it is an unknown one, and refusing every
+// click on a page whose scripts we could not read would break the one job this call
+// has. The refusal is for a viewport we actually measured.
+
 export const computedExpression = (probe) => `(() => {
   const probe = ${JSON.stringify(probe ?? {})};
   let el = null;
@@ -1634,7 +1646,14 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     },
 
     async clickAt(x, y) {
-      const common = { x, y, button: 'left', clickCount: 1, buttons: 1 };
+      const px = Number(x);
+      const py = Number(y);
+      const view = await primitives.viewport().catch(() => null);
+      if (view && view.width > 0 && view.height > 0
+        && (px < 0 || py < 0 || px > view.width || py > view.height)) {
+        throw new Error(`click refused: ${Math.round(px)},${Math.round(py)} is outside the ${view.width}x${view.height} viewport - scroll({text}) or scroll({y}) to bring it into view, then click again`);
+      }
+      const common = { x: px, y: py, button: 'left', clickCount: 1, buttons: 1 };
       await Promise.all([
         spot(x, y, 'rgb(255,60,60)'),
         cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 }),
