@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-12 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: content — MV3 browser runtime..
 // @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
 // @dependencies: none.
@@ -1250,6 +1250,21 @@
     return result;
   }
 
+  async function setFiles(args) {
+    const name = String(args.filename || '');
+    const dataUrl = String(args.data || '');
+    if (!name || !dataUrl.startsWith('data:')) throw new Error('set_files needs a filename and a data: URL.');
+    const input = document.querySelector('input[type="file"]');
+    if (!input) throw new Error('No file input on this page.');
+    const blob = await (await fetch(dataUrl)).blob();
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([blob], name.slice(0, 300), { type: blob.type || 'application/octet-stream' }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: true, files: input.files.length };
+  }
+
   function fillInfo(args) {
     const el = resolveRef(args.ref);
     assertEditableSafe(el);
@@ -1884,6 +1899,7 @@
       case 'page.capture_policy': return capturePolicy();
       case 'page.fill': return fill(args);
       case 'page.fill_info': return fillInfo(args);
+      case 'page.set_files': return setFiles(args);
       case 'page.focus': return focus(args);
       case 'page.scroll': return scroll(args);
       case 'page.key': return key(args);
@@ -1917,20 +1933,6 @@
     disposed = true;
     mutationObserver.disconnect();
   }
-
-  const STATE_EVENT_TYPES = ['duck-end', 'duck-start', 'game-over', 'heartbeat', 'jump', 'started', 'stopped'];
-
-  window.addEventListener('message', (event) => {
-    if (event.source !== window) return;
-    if (event.origin !== location.origin) return;
-    const data = event.data;
-    if (!data || data.source !== 'opera-agent-state' || !STATE_EVENT_TYPES.includes(data.type)) return;
-    try {
-      chrome.runtime.sendMessage({ scope: 'opera-agent-state-event', type: data.type, detail: { ticks: data.ticks, jumps: data.jumps, speed: data.speed, reader: data.reader, reason: data.reason, obs: data.obs, near: data.near } })?.catch?.(() => {});
-    } catch (error) {
-      globalThis.OperaAgentLog?.debug?.('STATE_EVENT_FORWARD_FAILED', error?.message || String(error));
-    }
-  });
 
   window.addEventListener('pagehide', () => {
     disposed = true;

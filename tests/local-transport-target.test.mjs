@@ -78,7 +78,7 @@ test('a session that names its tab connects to that tab, never the first page', 
   const sockets = [];
   const restore = stubBrowser(sockets);
   try {
-    const session = await openSession({ port: 1, targetId: 'BBB', launch: false });
+    const session = await openSession({ port: 1, targetId: 'BBB', launch: false, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } });
     assert.deepEqual(sockets, ['ws://x/bbb']);
     assert.equal(session.reused, true);
     session.close();
@@ -91,7 +91,7 @@ test('a session that names nothing keeps the first page', async () => {
   const sockets = [];
   const restore = stubBrowser(sockets);
   try {
-    const session = await openSession({ port: 1, launch: false });
+    const session = await openSession({ port: 1, launch: false, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } });
     assert.deepEqual(sockets, ['ws://x/aaa']);
     session.close();
   } finally {
@@ -105,7 +105,7 @@ test('a session that names an unknown tab fails without launching anything', asy
   let spawned = 0;
   try {
     await assert.rejects(
-      () => openSession({ port: 1, targetId: 'NOPE', launch: true, spawnBrowser: () => { spawned += 1; } }),
+      () => openSession({ port: 1, targetId: 'NOPE', launch: true, spawnBrowser: () => { spawned += 1; }, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } }),
       /No page target NOPE/
     );
     assert.equal(spawned, 0);

@@ -128,6 +128,19 @@ test('modifiers OR into the CDP bitmask and accept their common aliases', () => 
   assert.equal(resolveModifiers(undefined).mask, 0);
 });
 
+// WHY UPPERCASE PLUS MODIFIERS IS REFUSED. An uppercase letter implies shift,
+// so resolveChord('F', ['control', 'alt']) silently became Ctrl+Alt+Shift+F —
+// a chord Docs ignores — while the caller meant the footnote shortcut
+// Ctrl+Alt+F. Lowercase with explicit modifiers is the only honest shape.
+
+test('an uppercase letter with shiftless modifiers fails naming lowercase', () => {
+  assert.throws(() => resolveChord('F', ['control', 'alt']), /lowercase f/);
+  assert.throws(() => resolveChord('F', ['alt']), /lowercase f/);
+  assert.equal(resolveChord('f', ['control', 'alt']).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.alt);
+  assert.equal(resolveChord('A').modifiers, MODIFIER_BITS.shift);
+  assert.equal(resolveChord('C', ['control', 'shift']).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.shift);
+});
+
 test('the chords an editor requires now resolve', () => {
   for (const [key, modifiers, expected] of [
     ['a', ['control'], 2],

@@ -198,7 +198,8 @@
       "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
       "headers": {
         "X-Opera-Device": "opera",
-        "X-Opera-Provider": "opencode"
+        "X-Opera-Provider": "opencode",
+        "x-region": "ap-southeast-1"
       }
     }
   }
@@ -215,7 +216,8 @@
       "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
       "headers": {
         "X-Opera-Device": "opera",
-        "X-Opera-Provider": "kilo"
+        "X-Opera-Provider": "kilo",
+        "x-region": "ap-southeast-1"
       }
     }
   }
@@ -226,7 +228,7 @@
     <h3>Claude Code</h3>
     <p data-i18n-html="mcp.claude">Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
     <div class="copybox">
-      <pre><code id="cfg-claude">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude"</code></pre>
+      <pre><code id="cfg-claude">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
       <button type="button" data-copy="cfg-claude" data-i18n="copy">Salin</button>
     </div>
 

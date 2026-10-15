@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:50 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: usability-media-sampling — internal media sampling with local seek.
 // @state: media.sample_at is registered with versioned local seek semantics, off the public surface.
 // @dependencies: node:fs, node:test, strict.
@@ -52,7 +52,7 @@ test('advertised media capabilities are invocable tools (decision superseded by 
   const registered = [
     ...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)
   ].map((match) => match[1]);
-  assert.equal(registered.length, 40);
+  assert.equal(registered.length, 31);
   for (const name of ['media_state', 'media_play', 'media_pause', 'media_seek']) {
     assert.ok(registered.includes(name), `${name} is exposed`);
   }

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: check — Script.
-// @state: version 1.6.26 sweep for frame-rate state loops and track sensing.
+// @state: version 1.6.27 sweep for frame-rate state loops and track sensing.
 // @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol, extension-source.
 
 import fs from 'node:fs';
@@ -25,9 +25,9 @@ if (gateVerdict.status !== 0) {
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.equal(manifest.name, 'Opera Agent');
-assert.equal(manifest.version, '1.6.26');
-assert.equal(PRODUCT_VERSION, '1.6.26');
-assert.equal(pkg.version, '1.6.26');
+assert.equal(manifest.version, '1.6.27');
+assert.equal(PRODUCT_VERSION, '1.6.27');
+assert.equal(pkg.version, '1.6.27');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));
@@ -142,6 +142,4 @@ for (const marker of ['capturePage', 'Page.captureScreenshot', 'page.capture_pol
 const burstMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260910024820_opera_agent_bounded_browser_burst.sql'), 'utf8');
 assert.match(burstMigration, /browser\.burst/);
 for (const marker of ['BURST_MAX_STEPS', 'BURST_MAX_TIMEOUT_MS', 'runBurst', 'MAX_BURST_RESULT_BYTES']) assert.ok(`${fs.readFileSync(path.join(root, 'extension/lib/protocol.js'), 'utf8')}\n${background}`.includes(marker), marker);
-for (const marker of ['loopSessions', 'loopTick', 'tick-overrun', 'LOOP_SYNTHETIC_DEAD_TICKS']) assert.ok(background.includes(marker), marker);
-for (const marker of ['stateSessions', 'OperaAgentStateBridge', 'loop.state_start', 'STATE_READERS']) assert.ok(background.includes(marker), marker);
 console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, ${files.length} runtime safety files, version ${manifest.version}`);

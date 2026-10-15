@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-07 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: index — Repository file.
 // @state: three more places claimed the background pointer was invisible.
 // @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
@@ -171,30 +171,6 @@ const burstStepSchema = z.discriminatedUnion("action", [
     url: z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed.").describe("HTTP/HTTPS URL to navigate to. A navigation replaces the document: refs minted before it cannot be used after it.")
   }).strict()
 ]);
-
-const loopSensorSchema = z.object({
-  id: z.string().min(1).max(80),
-  kind: z.enum(["regionHash", "pixelDiff", "templateMatch", "timer", "stillness", "track"]),
-  region: z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() }).optional(),
-  threshold: z.number().min(0).max(1).optional(),
-  template: z.string().min(1).max(32768).optional(),
-  everyMs: z.number().int().min(50).max(60000).optional(),
-  stillTicks: z.number().int().min(2).max(600).optional(),
-  leadMs: z.number().int().min(50).max(5000).optional(),
-  pad: z.number().min(0).max(2000).optional()
-});
-const loopProgramSchema = z.object({
-  tickMs: z.number().int().min(1).max(360000).optional(),
-  maxTicks: z.number().int().min(1).max(3600).optional(),
-  maxDurationMs: z.number().int().min(50).max(120000).optional(),
-  sensors: z.array(loopSensorSchema).min(1).max(8),
-  rules: z.array(z.object({
-    when: z.object({ sensor: z.string().min(1).max(80) }),
-    do: z.record(z.string(), z.unknown())
-  })).min(1).max(32),
-  stopWhen: z.array(z.object({ sensor: z.string().min(1).max(80) })).optional(),
-  trusted: z.boolean().optional()
-});
 
 type AuthContext = { type: "static" } | { type: "user"; userId: string };
 type TargetTab = { tabId: number };
@@ -787,7 +763,7 @@ function vmRunResult(value: unknown) {
   return textResult(value);
 }
 
-const SERVER_VERSION = "1.6.26";
+const SERVER_VERSION = "1.6.27";
 
 // WHY A SOCKET NEXT TO THE HTTP. Every HTTPS call pays for an isolate that has never
 // run before: the platform boots one per request, measured here as twenty distinct
@@ -966,7 +942,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
   const server = new McpServer(
     { name: "opera-agent", version: SERVER_VERSION },
     {
-      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. For dynamic or fast-changing UIs (video players, ad overlays, countdown controls) run find, click, and a wait verification inside ONE run_browser_burst call, passing the found ref to the click step via refFromStep so the reference is consumed within milliseconds of being minted; do not split find and click into separate round trips there. The same rule applies to MENUS and DIALOGS, which re-render their own DOM every time they open: a ref for a menu entry or a dialog control is usually stale by the next round trip. Open a menu, then immediately find the entry and click it by refFromStep inside one burst rather than reading it in a separate call. For multi-level menus, use a hover burst step with the found ref via refFromStep, passing text for the submenu entry you expect it to reveal, so each level is one step that hovers and settles, and then find the submenu entry by text in the next step of the same burst; chain the levels in a single burst rather than hovering by coordinate across separate calls. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Treat coordinates as stale when documentId, viewport, zoomFactor, visualScale, or screenshot hash changes. For lazy result lists, call wheel_at inside the intended list, inspect scroll.after, moved, contentChanged, and reachedBoundary, collect stableKey/href values, and repeat only with an explicit bound until the boundary is reached and no new stable keys appear. Coordinate actions default to background CDP input and draw a visible cursor marker; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Surfaces rendered as canvas, editors, games, or remote screens expose little or no DOM: when read_page returns little or no useful text while the task needs visual content, use capture_page and reason from the screenshot. Icon-only controls expose a computed accessibleName that find_elements matches; when a text-poor canvas-class page still returns almost no text, read_page also includes a read-only axSummary accessibility snapshot (role and name facts only, never field values; entries are not clickable refs). If find_elements returns nothing while read_page shows the text, target an ancestor clickable element or capture the page instead of retrying the same query. Maps search results are viewport-scoped: after panning or zooming, re-read or re-search rather than trusting the earlier list, and re-find targets after any large page redraw before clicking them. When a tool reports a timeout or an unknown outcome, verify the page state before repeating the action. For OAuth/login/SSO flows, click the login control and read openedTabs in the click result: if a popup tab opened, continue inside that popup by passing its exact tabId to every later page tool — never activate it as an implicit recovery step, and ask before bringing it to the foreground. Verification on state-changing clicks and fills is expect-based: a result with verified:false means the expectation did not pass within the bounded post-action window, so re-check the page instead of immediately repeating the action; a slow SPA or OAuth redirect may still be settling. In a rich editor or canvas surface, click the editing surface first so it takes focus, then use press_key with key \"a\" and modifiers [\"control\"] to select all, key \"Delete\" to clear that selection, and only then pass text to type into the surface. Typed text is inserted at the caret and does NOT replace an active selection: selecting all and then typing appends instead of overwriting, duplicating the content silently with no error to notice. Use key \"v\" and modifiers [\"control\"] to paste, key \"Enter\" with modifiers [\"shift\"] for a line break, and capture_page to confirm the result rather than assuming the keystroke landed, because a canvas surface returns little or no DOM text to re-read. Two further rules were measured against a live Google Docs canvas and both return success while doing nothing, so neither is visible without a capture: a paragraph break must be carried as a newline INSIDE the text payload, because press_key with key \"Enter\" is ignored by that editor and merges every paragraph into one; and a paragraph style must be applied to the EMPTY paragraph before its text is written (press_key the digit with modifiers [\"control\",\"alt\"] first, then pass the heading text), because styling a paragraph that already holds text does not take. Style the paragraph, type its heading, pass a newline, reset with press_key key \"0\" modifiers [\"control\",\"alt\"], then type the body. Two more were measured the same way, one per surface. In a sheet a cell ignores inserted text until a character keystroke opens the editor, and the opening character joins the value, so press a letter, press key \"Backspace\" to erase it, then pass the value; clicking the next cell commits the last one, and reading the cell reference from the name box before each write is the only way to know the click landed. In a deck a placeholder takes text straight after a click with no such trick, press_key key \"m\" modifiers [\"control\"] adds a slide, and key \"Escape\" leaves the box so the next placeholder can be clicked. Three traps are shared by all three. The first key event after a write is swallowed, so send one harmless key before the real one: a dispatched Enter never breaks a paragraph and a toggle never switches off until something has absorbed that event. Clearing a surface removes its text but NOT its formatting, so the next paragraph inherits the old bullets; clear, then send the formatting toggle once, then write. And a menu item that owns a submenu opens on hover, so move the pointer and settle there rather than pressing, because the press closes the menu instead. If a click reports that the ref moved beyond its geometry tolerance, that stale ref is refused on purpose; the error carries candidates, each entry holding a freshRef that already passed validation, so act on one of those freshRef values directly instead of re-running find_elements. For a page that changes on its own — video players, ad overlays, countdown controls, live lists — prefer start_watch to arm a device-local trigger and then wait_events to collect what it fired. The device acts locally, so no model round trip sits between the page changing and the action happening, and you learn of it once in a single wait_events result instead of re-reading the page to notice. Arm a trigger you expect to fire later, then wait, rather than polling. For an intent you run repeatedly on a known site, prefer run_workflow, which executes the whole versioned sequence server-side, including its own re-queries and retries, instead of hand-driving each click and risking a stale reference. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
+      instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. For dynamic or fast-changing UIs (video players, ad overlays, countdown controls) run find, click, and a wait verification inside ONE run_browser_burst call, passing the found ref to the click step via refFromStep so the reference is consumed within milliseconds of being minted; do not split find and click into separate round trips there. The same rule applies to MENUS and DIALOGS, which re-render their own DOM every time they open: a ref for a menu entry or a dialog control is usually stale by the next round trip. Open a menu, then immediately find the entry and click it by refFromStep inside one burst rather than reading it in a separate call. For multi-level menus, use a hover burst step with the found ref via refFromStep, passing text for the submenu entry you expect it to reveal, so each level is one step that hovers and settles, and then find the submenu entry by text in the next step of the same burst; chain the levels in a single burst rather than hovering by coordinate across separate calls. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Treat coordinates as stale when documentId, viewport, zoomFactor, visualScale, or screenshot hash changes. For lazy result lists, call pointer with pointerAction wheel inside the intended list, inspect scroll.after, moved, contentChanged, and reachedBoundary, collect stableKey/href values, and repeat only with an explicit bound until the boundary is reached and no new stable keys appear. Coordinate actions default to background CDP input and draw a visible cursor marker; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Surfaces rendered as canvas, editors, games, or remote screens expose little or no DOM: when read_page returns little or no useful text while the task needs visual content, use capture_page and reason from the screenshot. Icon-only controls expose a computed accessibleName that find_elements matches; when a text-poor canvas-class page still returns almost no text, read_page also includes a read-only axSummary accessibility snapshot (role and name facts only, never field values; entries are not clickable refs). If find_elements returns nothing while read_page shows the text, target an ancestor clickable element or capture the page instead of retrying the same query. Maps search results are viewport-scoped: after panning or zooming, re-read or re-search rather than trusting the earlier list, and re-find targets after any large page redraw before clicking them. When a tool reports a timeout or an unknown outcome, verify the page state before repeating the action. For OAuth/login/SSO flows, click the login control and read openedTabs in the click result: if a popup tab opened, continue inside that popup by passing its exact tabId to every later page tool — never activate it as an implicit recovery step, and ask before bringing it to the foreground. Verification on state-changing clicks and fills is expect-based: a result with verified:false means the expectation did not pass within the bounded post-action window, so re-check the page instead of immediately repeating the action; a slow SPA or OAuth redirect may still be settling. In a rich editor or canvas surface, click the editing surface first so it takes focus, then use press_key with key \"a\" and modifiers [\"control\"] to select all, key \"Delete\" to clear that selection, and only then pass text to type into the surface. Typed text is inserted at the caret and does NOT replace an active selection: selecting all and then typing appends instead of overwriting, duplicating the content silently with no error to notice. Use key \"v\" and modifiers [\"control\"] to paste, key \"Enter\" with modifiers [\"shift\"] for a line break, and capture_page to confirm the result rather than assuming the keystroke landed, because a canvas surface returns little or no DOM text to re-read. Two further rules were measured against a live Google Docs canvas and both return success while doing nothing, so neither is visible without a capture: a paragraph break must be carried as a newline INSIDE the text payload, because press_key with key \"Enter\" is ignored by that editor and merges every paragraph into one; and a paragraph style must be applied to the EMPTY paragraph before its text is written (press_key the digit with modifiers [\"control\",\"alt\"] first, then pass the heading text), because styling a paragraph that already holds text does not take. Style the paragraph, type its heading, pass a newline, reset with press_key key \"0\" modifiers [\"control\",\"alt\"], then type the body. Two more were measured the same way, one per surface. In a sheet a cell ignores inserted text until a character keystroke opens the editor, and the opening character joins the value, so press a letter, press key \"Backspace\" to erase it, then pass the value; clicking the next cell commits the last one, and reading the cell reference from the name box before each write is the only way to know the click landed. In a deck a placeholder takes text straight after a click with no such trick, press_key key \"m\" modifiers [\"control\"] adds a slide, and key \"Escape\" leaves the box so the next placeholder can be clicked. Three traps are shared by all three. The first key event after a write is swallowed, so send one harmless key before the real one: a dispatched Enter never breaks a paragraph and a toggle never switches off until something has absorbed that event. Clearing a surface removes its text but NOT its formatting, so the next paragraph inherits the old bullets; clear, then send the formatting toggle once, then write. And a menu item that owns a submenu opens on hover, so use pointer hover and settle there rather than pressing, because the press closes the menu instead. If a click reports that the ref moved beyond its geometry tolerance, that stale ref is refused on purpose; the error carries candidates, each entry holding a freshRef that already passed validation, so act on one of those freshRef values directly instead of re-running find_elements. For a page that changes on its own — video players, ad overlays, countdown controls, live lists — prefer start_watch to arm a device-local trigger and then wait_events to collect what it fired. The device acts locally, so no model round trip sits between the page changing and the action happening, and you learn of it once in a single wait_events result instead of re-reading the page to notice. Arm a trigger you expect to fire later, then wait, rather than polling. For an intent you run repeatedly on a known site, prefer run_workflow, which executes the whole versioned sequence server-side, including its own re-queries and retries, instead of hand-driving each click and risking a stale reference. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
     }
   );
@@ -1200,111 +1176,6 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
       ? execute("watch.stop_all", {}, timeoutMs, deviceName, provider)
       : execute("watch.stop", { watcherId }, timeoutMs, deviceName, provider));
 
-  server.registerTool("loop_start", {
-    title: "Start sense-act loop",
-    description: "Start a device-local sense-act loop on an Opera tab for real-time tasks (games): the device senses pixels on a 50-100ms tick and acts locally with no model round trip per action, returning a loopId immediately. Calibrate once with capture_page (identify sprites/controls), then read the text trace with loop_read and send a revised program when the trace shows a new state. tickMs below 50 is clamped by the device.",
-    inputSchema: {
-      tabId: tabIdSchema,
-      program: loopProgramSchema,
-      timeoutMs: timeoutSchema
-    },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, program, timeoutMs }: TargetTab & { program: Record<string, unknown>; timeoutMs?: number }) => execute("loop.start", { tabId, program }, timeoutMs, deviceName, provider));
-
-  server.registerTool("loop_read", {
-    title: "Read sense-act loop",
-    description: "Read a running or finished sense-act loop: tick count, fired totals, tick-band trace (green/yellow/orange/red), degrade mode, and stop reason. Cheap text — prefer this over capture_page every outer-loop turn; capture only when the trace reports an unfamiliar state.",
-    inputSchema: {
-      loopId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
-      timeoutMs: timeoutSchema
-    },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ loopId, timeoutMs }: { loopId: string; timeoutMs?: number }) => execute("loop.read", { loopId }, timeoutMs, deviceName, provider));
-
-  server.registerTool("loop_stop", {
-    title: "Stop sense-act loop",
-    description: "Stop a sense-act loop and return its final trace. Loops also stop on their own at maxTicks, maxDurationMs, a stopWhen condition, repeated tick overruns, a closed tab, or a sensitive surface.",
-    inputSchema: {
-      loopId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
-      timeoutMs: timeoutSchema
-    },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ loopId, timeoutMs }: { loopId: string; timeoutMs?: number }) => execute("loop.stop", { loopId }, timeoutMs, deviceName, provider));
-
-  server.registerTool("loop_state_start", {
-    title: "Start frame-rate state loop",
-    description: "Start a MAIN-world frame-rate game loop on an Opera tab (currently only the t-rex reader): the device reads exact game state and acts every animation frame locally with no screenshots and no model round trip, returning a loopId immediately. Calibrate leadMs (milliseconds of jump lead time) from observed play; read jumps and game-over events with loop_state_read.",
-    inputSchema: {
-      tabId: tabIdSchema,
-      reader: z.enum(["trex"]),
-      leadMs: z.number().int().min(50).max(2000).optional(),
-      timeoutMs: timeoutSchema
-    },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, reader, leadMs, timeoutMs }: TargetTab & { reader: string; leadMs?: number; timeoutMs?: number }) => execute("loop.state_start", { tabId, reader, leadMs }, timeoutMs, deviceName, provider));
-
-  server.registerTool("loop_state_read", {
-    title: "Read frame-rate state loop",
-    description: "Read a running or finished state loop: tick and jump counters plus the compact event trail (started, jump, duck-start/end, heartbeat, game-over, stopped). Cheap text; use it to supervise instead of screenshots.",
-    inputSchema: {
-      loopId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
-      timeoutMs: timeoutSchema
-    },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ loopId, timeoutMs }: { loopId: string; timeoutMs?: number }) => execute("loop.state_read", { loopId }, timeoutMs, deviceName, provider));
-
-  server.registerTool("loop_state_stop", {
-    title: "Stop frame-rate state loop",
-    description: "Stop a state loop and return its final counters. Loops also stop on game-over, a closed tab, or a sensitive surface.",
-    inputSchema: {
-      loopId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
-      timeoutMs: timeoutSchema
-    },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ loopId, timeoutMs }: { loopId: string; timeoutMs?: number }) => execute("loop.state_stop", { loopId }, timeoutMs, deviceName, provider));
-
   server.registerTool("list_tabs", {
     description: "List open Opera tabs, including tab IDs, titles, URLs, and active state.",
     inputSchema: { currentWindow: z.boolean().optional().describe("Only return tabs in the current Opera window.") },
@@ -1376,17 +1247,19 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
       maxWidth: z.number().int().min(320).max(1600).optional().describe("Maximum returned image width. Defaults to 1280."),
       maxHeight: z.number().int().min(240).max(1200).optional().describe("Maximum returned image height. Defaults to 900."),
       previousHash: z.string().regex(/^[a-f0-9]{64}$/i).optional().describe("SHA-256 from the prior capture; matching images return metadata without duplicate image bytes."),
+      fullPage: z.boolean().optional().describe("Span the whole scrollable document past the viewport instead of the visible area. Exclusive with crop."),
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, crop, quality, maxWidth, maxHeight, previousHash, timeoutMs }: TargetTab & {
+  }, ({ tabId, crop, quality, maxWidth, maxHeight, previousHash, fullPage, timeoutMs }: TargetTab & {
     crop?: { x: number; y: number; width: number; height: number };
     quality?: number;
     maxWidth?: number;
     maxHeight?: number;
     previousHash?: string;
+    fullPage?: boolean;
     timeoutMs?: number;
-  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}) }, timeoutMs, deviceName, provider));
+  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}), ...(fullPage === true ? { fullPage: true } : {}) }, timeoutMs, deviceName, provider));
 
   server.registerTool("find_elements", {
     title: "Find page elements",
@@ -1462,44 +1335,43 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, x, y, absolute, smooth, executionMode }: TargetTab & { x?: number; y: number; absolute?: boolean; smooth?: boolean; executionMode?: ExecutionMode }) => execute("page.scroll", { tabId, x: x ?? 0, y, absolute: absolute ?? false, behavior: smooth ? "smooth" : "instant", executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
-  server.registerTool("move_pointer", {
-    title: "Move pointer",
-    description: "Move CDP pointer coordinates on an explicit target. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user.",
-    inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "move", x, y, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
-
-  server.registerTool("click_at", {
-    title: "Click at coordinates",
-    description: "Click CDP viewport coordinates. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user. Prefer click_element and verify page state.",
-    inputSchema: { tabId: tabIdSchema, x: z.number().nonnegative(), y: z.number().nonnegative(), executionMode: executionModeSchema },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, executionMode }: TargetTab & { x: number; y: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "click", x, y, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
-
-  server.registerTool("drag_pointer", {
-    title: "Drag at coordinates",
-    description: "Drag between CDP viewport coordinates. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. Foreground mode additionally requires an already active/focused target explicitly permitted by the user.",
+  server.registerTool("pointer", {
+    title: "Pointer input",
+    description: "One pointer for every pointer job: move, click, drag, and wheel by viewport coordinates, or hover by element ref. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. A hover settles on the ref and reports what it revealed, which is how a menu entry that owns a submenu is opened. Coordinate actions need x and y (a drag also needs endX and endY, a wheel needs deltaY); a hover needs a ref from find_elements instead. Prefer click_element for plain clicks and verify page state.",
     inputSchema: {
       tabId: tabIdSchema,
-      x: z.number().nonnegative(), y: z.number().nonnegative(),
-      endX: z.number().nonnegative(), endY: z.number().nonnegative(),
-      executionMode: executionModeSchema
-    },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, endX, endY, executionMode }: TargetTab & { x: number; y: number; endX: number; endY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "drag", x, y, endX, endY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
-
-  server.registerTool("wheel_at", {
-    title: "Wheel at coordinates",
-    description: "Wheel at viewport coordinates and report the actual scroll container, before/after metrics, movement, lazy DOM changes, settling, and reachedBoundary. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab and uses a deterministic DOM fallback only when the debugger event cannot move an available scroll container. Foreground mode requires an already active/focused target explicitly permitted by the user.",
-    inputSchema: {
-      tabId: tabIdSchema,
-      x: z.number().nonnegative(), y: z.number().nonnegative(),
+      pointerAction: z.enum(["move", "click", "drag", "wheel", "hover"])
+        .describe("Which pointer job: a coordinate move, click, drag, or wheel, or a ref hover that settles."),
+      x: z.number().nonnegative().optional(),
+      y: z.number().nonnegative().optional(),
+      endX: z.number().nonnegative().optional(),
+      endY: z.number().nonnegative().optional(),
       deltaX: z.number().min(-1200).max(1200).optional(),
-      deltaY: z.number().min(-1200).max(1200),
+      deltaY: z.number().min(-1200).max(1200).optional(),
+      ref: z.string().min(1).max(300).optional()
+        .describe("Element ref from find_elements. Required for a hover, ignored by coordinate actions."),
+      text: z.string().min(1).max(300).optional()
+        .describe("Submenu entry a hover is expected to reveal. Only a hover reads it."),
       executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-  }, ({ tabId, x, y, deltaX, deltaY, executionMode }: TargetTab & { x: number; y: number; deltaX?: number; deltaY: number; executionMode?: ExecutionMode }) => execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
+  }, ({ tabId, pointerAction, x, y, endX, endY, deltaX, deltaY, ref, text, executionMode }: TargetTab & { pointerAction: "move" | "click" | "drag" | "wheel" | "hover"; x?: number; y?: number; endX?: number; endY?: number; deltaX?: number; deltaY?: number; ref?: string; text?: string; executionMode?: ExecutionMode }) => {
+    const mode = executionMode ?? "background";
+    if (pointerAction === "hover") {
+      if (!ref) throw new Error("pointer hover requires a ref target.");
+      return execute("page.pointer", { tabId, action: "hover", ref, ...(text != null ? { text } : {}), executionMode: mode }, undefined, deviceName, provider);
+    }
+    if (x == null || y == null) throw new Error(`pointer ${pointerAction} requires x and y coordinates.`);
+    if (pointerAction === "drag") {
+      if (endX == null || endY == null) throw new Error("pointer drag requires endX and endY coordinates.");
+      return execute("page.pointer", { tabId, action: "drag", x, y, endX, endY, showCursor: true, executionMode: mode }, undefined, deviceName, provider);
+    }
+    if (pointerAction === "wheel") {
+      if (deltaY == null) throw new Error("pointer wheel requires deltaY.");
+      return execute("page.pointer", { tabId, action: "wheel", x, y, deltaX: deltaX ?? 0, deltaY, showCursor: true, executionMode: mode }, undefined, deviceName, provider);
+    }
+    return execute("page.pointer", { tabId, action: pointerAction, x, y, showCursor: true, executionMode: mode }, undefined, deviceName, provider);
+  });
 
   server.registerTool("media_state", {
     title: "Read media playback state",

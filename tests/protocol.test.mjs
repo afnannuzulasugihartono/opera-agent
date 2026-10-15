@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: protocol.test — Test.
 // @state: lock the page.fill value rule on the real site and in the protocol test.
 // @dependencies: node:test, strict, protocol.
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
 
 test('version and protocol are stable', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.26');
+  assert.equal(PRODUCT_VERSION, '1.6.27');
   assert.equal(PROTOCOL_VERSION, 1);
 });
 
@@ -59,10 +59,15 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'drag', x: 5, y: 6, endX: 7, endY: 8 } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'click', x: 5, y: 6, executionMode: 'auto' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'hover', ref: 'oa_1_1' } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'hover' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.pointer', params: { action: 'hover', x: 5, y: 6 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, quality: 60, maxWidth: 1280, maxHeight: 900 } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, crop: { x: 0, y: 0, width: 320, height: 240 }, previousHash: 'a'.repeat(64) } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { quality: 90 } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { crop: { x: 0, y: 0, width: -1, height: 2 } } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, fullPage: true } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, fullPage: 'yes' } }).ok, false);
 
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', text: 'typo' } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1' } }).ok, false);
@@ -71,7 +76,7 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: 'kucing' } }).ok, true);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: 'x'.repeat(20001) } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { previousHash: 'not-a-hash' } }).ok, false);
-  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { fullPage: true } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { bogusKey: true } }).ok, false);
 });
 
 test('burst fill checks its value even when the ref comes from refFromStep', () => {

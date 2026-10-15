@@ -9,9 +9,21 @@ import { clamp } from '../lib/protocol.js';
 
 export const HTTP_URL_RE = /^https?:\/\//i;
 
-export async function fetchJson(url, body, timeoutMs = 30000) {
+// WHY the signal is a parameter. A caller that must be able to walk away from a
+// request it no longer wants has no way to do it otherwise: a held poll kept
+// answering a loop that had already been superseded, and every such request was
+// one more consumer of the single command queue.
+
+export async function fetchJson(url, body, timeoutMs = 30000, signal = undefined) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const relay = signal
+    ? () => controller.abort(signal.reason ?? new Error('request abandoned'))
+    : null;
+  if (relay) {
+    if (signal.aborted) relay();
+    else signal.addEventListener('abort', relay, { once: true });
+  }
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -27,6 +39,7 @@ export async function fetchJson(url, body, timeoutMs = 30000) {
     return data;
   } finally {
     clearTimeout(timer);
+    if (relay) signal.removeEventListener('abort', relay);
   }
 }
 

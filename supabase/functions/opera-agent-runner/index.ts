@@ -6,6 +6,7 @@
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";
+import { commandFailure } from "../_shared/command-result.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -469,10 +470,9 @@ async function executeSteps(steps: unknown, ctx: WorkflowCtx, run: { device_name
       const result = await runCommand(run, method, params, timeoutMs, deadline, step?.requestId ? String(step.requestId) : null);
       ctx.steps[id] = result;
       recordCommandMetrics(ctx.metrics, method, result);
-      if (!result.ok && !step?.continueOnError) {
-        const error = result.error || { code: "COMMAND_FAILED", message: "Workflow command failed." };
-        const failure = error && typeof error === "object" ? error as { code?: unknown; message?: unknown } : {};
-        throw new WorkflowError(String(failure.code || "COMMAND_FAILED"), String(failure.message || "Workflow command failed."), error);
+      const failure = commandFailure(result);
+      if (failure && !step?.continueOnError) {
+        throw new WorkflowError(failure.code, failure.message, failure.details);
       }
       continue;
     }

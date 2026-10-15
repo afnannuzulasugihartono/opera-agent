@@ -23,11 +23,18 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from './browsers.js';
-import { createCdpClient } from './cdp.js';
 import { createPrimitives } from './primitives.js';
+import { createCdpClient } from './cdp.js';
 import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTab, pageWebSocketById, waitForPage } from './transport.js';
-import { closeBridgeTarget, connectBridgeTarget, listBridgeTargets, openBridgeTarget, waitForBridgeLink } from './bridge.js';
-import { LINK_ERROR } from './poll-server.js';
+import {
+  bridgeReachable,
+  closeBridgeTarget,
+  connectBridgeTarget,
+  listBridgeTargets,
+  openBridgeTarget,
+  waitForBridgeLink,
+  LINK_ERROR
+} from './bridge.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({
@@ -75,8 +82,7 @@ async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOption
     if (!pages.length) throw new Error('bridge: the browser has no page to drive');
     numericId = pages[0].id;
   }
-  const transport = connectBridgeTarget(numericId);
-  const cdp = createCdpClient(transport);
+  const cdp = createCdpClient(connectBridgeTarget(numericId));
   return {
     port: null,
     reused: true,
@@ -90,6 +96,14 @@ async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOption
     }
   };
 }
+
+// WHY THE PIPE IS ASKED, NOT SETTLED. The extension reaches the profile the
+// person is actually logged into, and a debugging port cannot — it opens a
+// fresh profile with nothing signed in. So the link is asked for on every
+// session and the debugging port is what is left when there is no extension,
+// which is the one case where it is the only thing that can work at all.
+// `OPERA_LOCAL_TRANSPORT=cdp` still forces the port for a machine with no
+// extension, and nothing else has to be configured anywhere.
 
 export async function openSession({
   id,
@@ -105,7 +119,7 @@ export async function openSession({
   primitives: primitivesOptions = {},
   viaBridge = null
 } = {}) {
-  const bridged = viaBridge ?? env.OPERA_LOCAL_TRANSPORT === 'bridge';
+  const bridged = viaBridge ?? (env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable());
   if (bridged) return openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions });
 
   let reused = false;

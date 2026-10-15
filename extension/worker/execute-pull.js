@@ -1,9 +1,10 @@
-// @last-edited: 2026-10-12 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: execute-pull — command execution, pairing and the device socket.
 // @state: owns WAKE_ALARM and socketClient; every statement here that runs at load time is listed in tests/background-load.test.mjs.
-// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, loop-engine, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
+// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
 
 import { log } from '../lib/log.js';
+import { socketUrl } from '../lib/endpoints.js';
 import {
   PRODUCT_VERSION,
   PROTOCOL_VERSION,
@@ -20,7 +21,6 @@ import { fetchJson, publicTab, requireTabId, contentCall, HTTP_URL_RE } from './
 import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './private-tabs.js';
 import { readListenSession, listenStop, postListenChunk } from './listen.js';
 import { notReadyError } from './action-focus.js';
-import { handleStateEvent } from './loop-engine.js';
 import { createSocketClient, connectionPatch } from '../lib/socket-client.js';
 import { completionFrame } from '../lib/socket-protocol.js';
 import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
@@ -160,15 +160,6 @@ async function flushPendingCompletion(cfg) {
 // silently, and the caller would wait out its timeout for a device that had
 // already finished. Reconnecting is also the moment that owed completion is resent.
 
-function socketUrl(bridgeUrl) {
-  const raw = String(bridgeUrl || '').trim();
-  if (!raw) return '';
-  if (raw.startsWith('wss://')) return raw;
-  if (raw.startsWith('https://')) return `wss://${raw.slice('https://'.length)}`;
-  if (raw.startsWith('http://')) return `ws://${raw.slice('http://'.length)}`;
-  return raw;
-}
-
 // WHY there is one way to start, and no generation counter. The old loop was
 // generation guarded so a restart could not fight an in-flight poll, and that
 // guard lost a wake-up: bumping the generation made the in-flight loop exit
@@ -290,16 +281,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     Promise.resolve(postListenChunk(tabId, message.seq, message.audio, message.mime))
       .then(() => sendResponse({ ok: true }))
       .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) }));
-    return true;
-  }
-  if (message && message.scope === 'opera-agent-state-event') {
-    const tabId = sender?.tab?.id;
-    if (tabId == null) { sendResponse({ ok: false, error: 'No sender tab.' }); return true; }
-    try {
-      sendResponse({ ok: true, ...handleStateEvent(tabId, String(message.type || ''), message.detail || {}) });
-    } catch (error) {
-      sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) });
-    }
     return true;
   }
   if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {    const tabId = sender?.tab?.id;

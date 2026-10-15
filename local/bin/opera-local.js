@@ -22,9 +22,13 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
+import { windowState, focusWindow } from '../window-focus.js';
+import { dialogState, dialogType, dialogPress } from '../dialog.js';
+import { ensureFront } from '../focus-guard.js';
 import { createSessionStore } from '../sessions.js';
 import { listPageWebSockets, openTab, closeTab } from '../transport.js';
-import { bridgePort, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
+import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
+import { guide } from '../agent-guide.js';
 import { startStdio } from '../mcp-server.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -32,18 +36,28 @@ const pkg = createRequire(join(here, '..', 'package.json'))('./package.json');
 
 const PORT = Number(process.env.OPERA_LOCAL_PORT || 9333);
 const BROWSER = process.env.OPERA_LOCAL_BROWSER || undefined;
-const BRIDGED = process.env.OPERA_LOCAL_TRANSPORT === 'bridge';
 
-const store = createSessionStore({ openSession, port: PORT, browserId: BROWSER, viaBridge: BRIDGED || null });
+// WHY THE LINK IS ASKED PER CALL. One `BRIDGED` constant decided the pipe at
+// startup and then decided it for good: an extension that was asleep at that
+// moment lost the run to a debugging port, which opens a profile nobody is
+// logged into. Asking each time costs one field read and means a worker that
+// wakes up late is simply used.
+
+async function bridged() {
+  return process.env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable();
+}
+
+const store = createSessionStore({ openSession, port: PORT, browserId: BROWSER, viaBridge: null });
 const open = (options) => store.open(options);
 const attach = () => store.attach();
 
 async function resolveTab() {
-  if (BRIDGED) return (await listBridgeTargets()).map((page) => String(page.id));
+  if (await bridged()) return (await listBridgeTargets()).map((page) => String(page.id));
   return (await listPageWebSockets(PORT)).map((page) => page.id);
 }
 
 async function reachable() {
+  if (await bridged()) return true;
   try {
     const response = await fetch(`http://127.0.0.1:${PORT}/json/version`);
     return response.ok;
@@ -54,12 +68,12 @@ async function reachable() {
 
 const driver = {
   async tabs() {
-    if (BRIDGED) return listBridgeTargets();
+    if (await bridged()) return listBridgeTargets();
     return (await listPageWebSockets(PORT)).map(({ id, url, title }) => ({ id, url, title }));
   },
 
   async open(url) {
-    if (BRIDGED) {
+    if (await bridged()) {
       const tab = await openBridgeTarget(url);
       return { url, id: tab.id, port: bridgePort() };
     }
@@ -68,7 +82,23 @@ const driver = {
   },
 
   async close(tabId) {
-    return store.closeTab(tabId, (id) => BRIDGED ? closeBridgeTarget(id) : closeTab(PORT, id));
+    return store.closeTab(tabId, async (id) => await bridged() ? closeBridgeTarget(id) : closeTab(PORT, id));
+  },
+
+  async ask(method, params) {
+    return (await attach()).ask(method, params);
+  },
+
+  async guide(topic) {
+    return guide(topic);
+  },
+
+  async menuTree(options) {
+    return (await attach()).menuTree(options);
+  },
+
+  async openMenu(options) {
+    return (await attach()).openMenu(options);
   },
 
   async read() {
@@ -79,8 +109,16 @@ const driver = {
     return (await attach()).find(query);
   },
 
-  async click(x, y) {
-    return (await attach()).click(x, y);
+  async clickFraction(at) {
+    return (await attach()).clickFraction(at);
+  },
+
+  async click(x, y, handle) {
+    return (await attach()).click(x, y, handle);
+  },
+
+  async resolve(role, name) {
+    return (await attach()).resolve(role, name);
   },
 
   async hover(x, y) {
@@ -107,10 +145,84 @@ const driver = {
     return (await attach()).snapshot(limit);
   },
 
-  async capture() {
-    return (await attach()).capture();
+  async caretLine() {
+    return (await attach()).caretLine();
+  },
+
+  async windowState() {
+    return windowState();
+  },
+
+  async focusWindow(match) {
+    return focusWindow(match);
+  },
+
+  async ensureFront(options) {
+    return ensureFront({ ...(options ?? {}), hasFocus: () => attach().hasFocus() });
+  },
+
+  async captureSized(options) {
+    return (await attach()).captureSized(options);
+  },
+
+  async dialogState() {
+    return dialogState();
+  },
+
+  async dialogType(text) {
+    return dialogType(text);
+  },
+
+  async dialogPress(name) {
+    return dialogPress(name);
+  },
+
+  async waitForRow(options) {
+    return (await attach()).waitForRow(options);
+  },
+
+  async waitForStill(options) {
+    return (await attach()).waitForStill(options);
+  },
+
+  async upload(options) {
+    return (await attach()).upload(options);
+  },
+
+  async dropFile(options) {
+    return (await attach()).dropFile(options);
+  },
+
+  async interceptFileChooser(enabled) {
+    return (await attach()).interceptFileChooser(enabled);
+  },
+
+  async capture(options) {
+    return (await attach()).capture(options);
   }
 };
+
+// WHY the bridge listens before the first tool call. A lazy server makes the
+// first command pay the whole link wait, and leaves the extension polling a
+// dead port until then. Listening here links the worker while the client is
+// still shaking hands. A failure is swallowed on purpose: the port may belong
+// to another session, and every tool call retries with a named error anyway.
+
+await bridgeReachable().catch(() => false);
+
+// WHY THE STARTUP PROBE MAY NOT KILL THE SERVER. Asking which pipe is right is
+// asking whether a port is free, and the honest answer to "another driver owns
+// it" is to say so. Dying here instead said it by refusing to start at all,
+// which is what happened when the person toggled the server on while a previous
+// instance was still holding the loopback port: the conflict was real and the
+// only visible result was a dead MCP with a stack trace instead of a server
+// that starts and names the conflict on the first tool call.
+
+// WHY THE PORT IS A FUNCTION AND NOT A VALUE. The pipe is chosen per call,
+// because a worker that was asleep at startup picks itself up thirty seconds
+// later. A port read once at startup reports the debugging port long after the
+// drive has moved to the bridge — which is a wrong answer about a port nothing
+// is listening on.
 
 startStdio({
   context: {
@@ -118,7 +230,7 @@ startStdio({
     open,
     resolveTab,
     sessionOptions: {},
-    port: BRIDGED ? bridgePort() : PORT,
+    port: async () => (await bridged()) ? bridgePort() : PORT,
     version: pkg.version,
     browsers: installedBrowsers(),
     reachable

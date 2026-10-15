@@ -108,6 +108,9 @@ export function resolveChord(key, modifiers) {
   const spec = namedKeySpec(name);
   if (!spec) throw new Error('Key is not allowlisted.');
   const { mask, names } = resolveModifiers(modifiers);
+  if (spec.requiresShift && names.length > 0 && !(mask & MODIFIER_BITS.shift)) {
+    throw new Error(`Key ${name} with modifiers needs lowercase ${name.toLowerCase()} (uppercase adds shift).`);
+  }
   const shifted = withImplicitShift(spec, mask, names);
   return {
     kind: 'chord',
@@ -179,4 +182,70 @@ export function resolveKeyStream(events) {
     }
     return { ...resolved, gapMs };
   });
+}
+
+// WHY TEXT ALSO TRAVELS AS KEY EVENTS. Input.insertText is an IME insert with
+// no key events, and editors that commit off key-event sequences drop it
+// without a trace: success reported, nothing painted. One resolved spec per
+// character — keyDown carrying text plus keyUp — is what such editors commit.
+// The map is US ASCII plus newline; anything else fails naming its code
+// point, so the caller picks insertText for it instead of guessing a layout.
+
+const TEXT_KEY_EXTRA = Object.freeze({
+  '.': { key: '.', code: 'Period', vk: 190, shift: false },
+  ',': { key: ',', code: 'Comma', vk: 188, shift: false },
+  '/': { key: '/', code: 'Slash', vk: 191, shift: false },
+  '-': { key: '-', code: 'Minus', vk: 189, shift: false },
+  '=': { key: '=', code: 'Equal', vk: 187, shift: false },
+  ';': { key: ';', code: 'Semicolon', vk: 186, shift: false },
+  "'": { key: "'", code: 'Quote', vk: 222, shift: false },
+  '[': { key: '[', code: 'BracketLeft', vk: 219, shift: false },
+  ']': { key: ']', code: 'BracketRight', vk: 221, shift: false },
+  '\\': { key: '\\', code: 'Backslash', vk: 220, shift: false },
+  '`': { key: '`', code: 'Backquote', vk: 192, shift: false },
+  '!': { key: '!', code: 'Digit1', vk: 49, shift: true },
+  '@': { key: '@', code: 'Digit2', vk: 50, shift: true },
+  '#': { key: '#', code: 'Digit3', vk: 51, shift: true },
+  $: { key: '$', code: 'Digit4', vk: 52, shift: true },
+  '%': { key: '%', code: 'Digit5', vk: 53, shift: true },
+  '^': { key: '^', code: 'Digit6', vk: 54, shift: true },
+  '&': { key: '&', code: 'Digit7', vk: 55, shift: true },
+  '*': { key: '*', code: 'Digit8', vk: 56, shift: true },
+  '(': { key: '(', code: 'Digit9', vk: 57, shift: true },
+  ')': { key: ')', code: 'Digit0', vk: 48, shift: true },
+  _: { key: '_', code: 'Minus', vk: 189, shift: true },
+  '+': { key: '+', code: 'Equal', vk: 187, shift: true },
+  ':': { key: ':', code: 'Semicolon', vk: 186, shift: true },
+  '"': { key: '"', code: 'Quote', vk: 222, shift: true },
+  '<': { key: '<', code: 'Comma', vk: 188, shift: true },
+  '>': { key: '>', code: 'Period', vk: 190, shift: true },
+  '?': { key: '?', code: 'Slash', vk: 191, shift: true },
+  '{': { key: '{', code: 'BracketLeft', vk: 219, shift: true },
+  '}': { key: '}', code: 'BracketRight', vk: 221, shift: true },
+  '|': { key: '|', code: 'Backslash', vk: 220, shift: true },
+  '~': { key: '~', code: 'Backquote', vk: 192, shift: true }
+});
+
+function charKeySpec(char) {
+  if (char === '\n') return { key: 'Enter', code: 'Enter', vk: 13, shift: false, text: '\r' };
+  if (char === ' ') return { key: ' ', code: 'Space', vk: 32, shift: false, text: ' ' };
+  if (/^[a-z]$/.test(char)) {
+    return { key: char, code: `Key${char.toUpperCase()}`, vk: char.toUpperCase().charCodeAt(0), shift: false, text: char };
+  }
+  if (/^[A-Z]$/.test(char)) {
+    return { key: char, code: `Key${char}`, vk: char.charCodeAt(0), shift: true, text: char };
+  }
+  if (/^[0-9]$/.test(char)) {
+    return { key: char, code: `Digit${char}`, vk: char.charCodeAt(0), shift: false, text: char };
+  }
+  const extra = TEXT_KEY_EXTRA[char];
+  if (extra) return { ...extra, text: char };
+  const point = char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+  throw new Error(`Text key event not allowlisted: U+${point}.`);
+}
+
+export function resolveTextKeys(text) {
+  const value = String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  if (value.length > MAX_TEXT_CHARS) throw new Error(`Text must be at most ${MAX_TEXT_CHARS} characters.`);
+  return [...value].map((char) => charKeySpec(char));
 }

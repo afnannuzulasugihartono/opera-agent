@@ -36,28 +36,61 @@ export function findOn(page, query) {
   })()`);
 }
 
+// WHY EXACT MATCHES WIN OVER SUBSTRING ONES. A submenu container carries the
+// concatenated names of everything inside it, so a substring search for an
+// item also matches its own container — and overlay-first ordering puts that
+// container first. Clicking it hits dead menu background instead of the row,
+// which dismisses the menu and looks exactly like a missed click. The exact
+// row is tried first; the substring stays as the fallback it always was.
+
+import { guide } from './agent-guide.js';
+import { ensureFront } from './focus-guard.js';
+
 export function asDriver(session) {
   return {
     read: () => session.read(),
     evaluate: (expression) => session.evaluate(expression),
+    ask: (method, params) => session.ask(method, params),
     find: (query) => findOn(session, query),
-    click: (x, y) => session.clickAt(x, y),
+    click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
+    resolve: (role, name) => session.resolveRow({ role, name }),
+    clickFraction: (at) => session.clickFraction(at),
+    hasFocus: () => session.hasFocus(),
+    ensureFront: (options) => ensureFront({ ...(options ?? {}), hasFocus: () => session.hasFocus() }),
+    captureSized: (options) => session.captureSized(options ?? {}),
+    navigate: (url) => session.navigate(url),
+    guide: async (topic) => guide(topic),
+    menuTree: (options) => session.menuTree(options ?? {}),
+    openMenu: (options) => session.openMenu(options ?? {}),
     hover: (x, y) => session.hover(x, y),
     clickRow: async (role, name) => {
-      const rows = await session.snapshot();
-      const row = rows.find((r) => r.role === role && (r.name ?? '').toLowerCase().includes(String(name ?? '').toLowerCase()));
-      if (!row) {
-        const visible = rows.filter((r) => r.role === role).map((r) => r.name).slice(0, 12).join(' | ');
-        throw new Error(`no ${role} matching "${name}". Visible: ${visible}`);
+      const row = await session.resolveRow({ role, name });
+      if (!row.handle) {
+        await session.clickAt(row.x, row.y);
+        return { role: row.role, name: row.name, x: row.x, y: row.y };
       }
-      await session.clickAt(row.x, row.y);
-      return { role: row.role, name: row.name, x: row.x, y: row.y };
+      const at = await session.clickHandle(row.handle);
+      return { role: row.role, name: row.name, x: at.x, y: at.y, handle: row.handle };
     },
     key: (name, modifiers) => session.key(name, modifiers),
     type: (text) => session.type(text),
+    append: (text) => session.append(text),
+    scroll: (options) => session.scroll(options ?? {}),
+    computed: (options) => session.computed(options ?? {}),
     keys: (events) => session.keys(events),
     snapshot: (limit) => session.snapshot(limit === undefined ? {} : { limit }),
-    capture: () => session.capture(),
+    caretLine: () => session.caretLine(),
+    windowState: () => session.windowState(),
+    focusWindow: (match) => session.focusWindow(match),
+    dialogState: () => session.dialogState(),
+    dialogType: (text) => session.dialogType(text),
+    dialogPress: (name) => session.dialogPress(name),
+    waitForRow: (options) => session.waitForRow(options),
+    waitForStill: (options) => session.waitForStill(options),
+    upload: (options) => session.upload(options),
+    dropFile: (options) => session.dropFile(options),
+    interceptFileChooser: (enabled) => session.interceptFileChooser(enabled),
+    capture: (options) => session.capture(options),
     front: () => session.front(),
     close: () => session.close()
   };

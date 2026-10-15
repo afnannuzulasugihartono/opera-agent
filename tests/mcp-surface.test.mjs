@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: mcp-surface.test — surface.test — Test.
 // @state: three more places claimed the background pointer was invisible.
 // @dependencies: node:test, strict, node:fs, promises, node:crypto, canonical-source-hash, protocol.
@@ -41,11 +41,11 @@ const screenshot = fs.readFileSync(
 );
 
 const FROZEN_MCP_TOOLS = [
-  'activate_tab', 'browser_status', 'capture_page', 'click_at', 'click_element',
-  'close_tab', 'drag_pointer', 'fill_element', 'find_elements', 'list_tabs',
+  'activate_tab', 'browser_status', 'capture_page', 'click_element',
+  'close_tab', 'fill_element', 'find_elements', 'list_tabs',
   'media_pause', 'media_play', 'media_seek', 'media_state',
-  'move_pointer', 'navigate_tab', 'open_url', 'press_key', 'read_page', 'stream_keys',
-  'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save', 'wheel_at',
+  'navigate_tab', 'open_url', 'pointer', 'press_key', 'read_page', 'stream_keys',
+  'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save',
   'media_stream_start', 'media_stream_stop', 'media_listen_read'
 ];
 
@@ -73,29 +73,20 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   start_watch: '6080c4ec1568b132',
   wait_events: '5edbf05fabbb14c8',
   stop_watch: '5133e82aa7a83fb1',
-  loop_start: '212649bff3efff47',
-  loop_read: '42112d0c11c4347d',
-  loop_stop: 'ab504dfa4d3a4b53',
-  loop_state_start: '520af840e35a5023',
-  loop_state_read: '25aa53b167aa6a02',
-  loop_state_stop: '9d5a19a9bd910269',
   list_tabs: '0ded59ff6c5f1b0c',
   open_url: '9b68095958a8242f',
   activate_tab: '39a762c1732bee92',
   navigate_tab: '4947602daae152c1',
   close_tab: '7fba21a3f036f380',
   read_page: '7724641fbfc8270a',
-  capture_page: '744f0230732b9e89',
+  capture_page: '288795a580c4c54a',
   find_elements: '5ee494a2286bfe19',
   click_element: '524bbdcd910efb97',
   fill_element: '299f17ba1498cd96',
   press_key: 'e4b0dcdca29f6450',
   stream_keys: '9487610ec1707601',
   scroll_page: '49c584144a526142',
-  move_pointer: 'd13a06fe00a47847',
-  click_at: '0d0a269d88f73068',
-  drag_pointer: '4fd6791950121bbd',
-  wheel_at: 'a24a25677ba41390',
+  pointer: 'a07a0e1b5843bfb4',
   media_state: 'dd36328bc7f5eaad',
   media_play: 'be8f1ff4460c156e',
   media_pause: '733cd49a0e0bea0a',
@@ -206,9 +197,9 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
+    'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
-    'move_pointer', 'click_at', 'drag_pointer', 'wheel_at',
+    'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read'
   ]);
@@ -216,16 +207,16 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
 });
 
-test('R4 keeps the protocol inventory frozen at 29 allowlisted primitives for release 1.6.26 (page.stream added)', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.26');
+test('R4 keeps the protocol inventory frozen at 29 allowlisted primitives for release 1.6.27 (page.stream added)', () => {
+  assert.equal(PRODUCT_VERSION, '1.6.27');
   assert.equal(ALLOWED_METHODS.length, 29);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R4 keeps the public MCP tool inventory frozen at 40 tools (stream_keys added: one command replays up to 100 key/text events back-to-back)', async () => {
+test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 31 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 40);
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'loop_start', 'loop_read', 'loop_stop', 'loop_state_start', 'loop_state_read', 'loop_state_stop'].sort());
+  assert.equal(registered.length, 31);
+  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events'].sort());
 });
 
 test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
@@ -242,11 +233,11 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
   assert.doesNotMatch(schema, /view:/);
 });
 
-test('the tool count and names are unchanged', () => {
+test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 40);
+  assert.equal(registered.length, 31);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 40);
+  assert.equal(contract.toolCount, 31);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -325,7 +316,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 40, 'the public tool count grows only by reviewed decision (stream_keys added)');
+  assert.equal(blocks.length, 31, 'the public tool count changes only by reviewed decision (loop tools removed)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -579,8 +570,7 @@ test('MCP delegates only known Opera Agent methods', () => {
     'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
     'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer', 'page.stream',
     'media.state', 'media.play', 'media.pause', 'media.seek',
-    'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list',
-    'loop.start', 'loop.read', 'loop.stop'
+    'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list'
   ]);
   assert.ok(methods.length >= 16);
   for (const method of methods) assert.ok(allowed.has(method), `unexpected method ${method}`);
@@ -593,7 +583,7 @@ test('MCP instructions make browser usage discoverable without mentioning Supaba
   assert.match(source, /Never use activate_tab as an implicit recovery step/);
   assert.match(source, /Coordinate actions default to background CDP input and draw a visible cursor marker/);
   assert.match(source, /Use capture_page adaptively only/);
-  assert.match(source, /For lazy result lists, call wheel_at/);
+  assert.match(source, /For lazy result lists, call pointer with pointerAction wheel/);
   assert.match(source, /stableKey\/href values/);
   assert.match(source, /pass previousHash to avoid retransmitting unchanged images/);
   assert.match(source, /If a tool returns FOREGROUND_REQUIRED/);

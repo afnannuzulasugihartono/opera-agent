@@ -164,6 +164,27 @@ const WATCHDOG_MS = 10000;
 
 const RECYCLE_AGE_MS = 120000;
 
+// WHY A BOUND ON EXECUTION. The drain runs one command at a time, so a CDP
+// call that never settled held the queue for good and no completion ever went
+// out: the caller waited its whole budget and learned nothing. The bound is
+// past any honest browser call, short of the command TTL the server applies,
+// and a function so a test can shorten it instead of waiting a minute.
+
+const DEFAULT_EXECUTE_TIMEOUT_MS = 45000;
+
+export function executeBoundMs() {
+  return Number(globalThis.OPERA_SOCKET_EXECUTE_TIMEOUT_MS ?? DEFAULT_EXECUTE_TIMEOUT_MS);
+}
+
+export async function withExecuteTimeout(run, command) {
+  const ms = executeBoundMs();
+  let timer = null;
+  const bound = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer from the tab within ${ms} ms`)), ms);
+  });
+  return Promise.race([Promise.resolve(run(command)).finally(() => clearTimeout(timer)), bound]);
+}
+
 export function createSocketClient({
   url,
   token,
@@ -240,18 +261,26 @@ export function createSocketClient({
     try {
       while (takeQueue.length) {
         const command = takeQueue.shift();
+        if (!command || typeof command !== 'object') {
+          onState({ status: 'skipped', reason: 'queue entry was not a command' });
+          continue;
+        }
         let outcome;
         try {
-          outcome = await execute(command);
+          outcome = await withExecuteTimeout(execute, command);
         } catch (error) {
           outcome = { ok: false, error: { code: 'EXECUTION_ERROR', message: String(error?.message || error).slice(0, 300) } };
         }
-        sendFrame(completionFrame(
-          command.id,
-          outcome?.ok !== false,
-          outcome?.result ?? outcome,
-          outcome?.error
-        ));
+        try {
+          sendFrame(completionFrame(
+            command.id,
+            outcome?.ok !== false,
+            outcome?.result ?? outcome,
+            outcome?.error
+          ));
+        } catch (error) {
+          onState({ status: 'unsent', id: command.id, message: String(error?.message || error).slice(0, 200) });
+        }
       }
     } finally {
       draining = false;
@@ -307,7 +336,8 @@ export function createSocketClient({
       if (!isRunnableCommand(message)) return;
       if (!ready) return;
 
-      takeQueue.push(normalizeCommand(message));
+      const command = normalizeCommand(message);
+      if (command?.id) takeQueue.push(command);
       void drain();
     };
 

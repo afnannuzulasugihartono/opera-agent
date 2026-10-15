@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: index — Repository file.
 // @state: retry Chrome's transient tab-drag refusal on all tab mutations.
 // @dependencies: edge-runtime, supabase-js, edge-log.
@@ -139,24 +139,10 @@ async function heartbeat(body: Record<string, unknown>) {
   return json(result || { ok: false }, result?.ok ? 200 : 401);
 }
 
-async function pull(body: Record<string, unknown>) {
-  if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
-    return json({ ok: false, error: "Unauthorized device." }, 401);
-  }
-  const waitMs = clamp(body.waitMs, 0, 25000, 12000);
-
-  const claimed = await claimForDevice(
-    { deviceName: body.deviceName, token: body.token },
-    {
-      extensionVersion: String(body.extensionVersion || ""),
-      protocolVersion: body.protocolVersion,
-      capabilities: body.capabilities,
-      waitMs
-    }
-  );
-  if (!claimed) return json({ ok: false }, 401);
-  return json({ ...claimed.raw, serverTime: new Date().toISOString() }, 200);
-}
+// WHY completion is a socket call, not an HTTP action. The pull client is gone —
+// the device learns work over its socket and answers over the same one — so the
+// HTTP pull and complete actions were deleted with it. This function stays
+// because the socket still needs exactly what it does.
 
 async function complete(body: Record<string, unknown>) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName) || typeof body.commandId !== "string") {
@@ -277,8 +263,6 @@ async function handle(req: Request) {
     const body = JSON.parse(raw) as Record<string, unknown>;
     const action = String(body.action || "");
     if (action === "pair") return await pair(body);
-    if (action === "pull") return await pull(body);
-    if (action === "complete") return await complete(body);
     if (action === "heartbeat") return await heartbeat(body);
     if (action === "watch_event") return await watchEvent(body);
     if (action === "command_event") return await commandEvent(body);
@@ -408,6 +392,13 @@ function subscribe(identity: { deviceName: string; token: string }, onCommand: (
 // handshake that claims discards the result. The device then sits connected and
 // silent while the one command waiting for it has been marked as somebody else's.
 // opera_auth_device answers exactly the question a handshake asks, and nothing more.
+//
+// WHY the direct connection warms in the background instead of blocking the
+// handshake. Loading the driver plus a TCP connect and a round trip costs
+// hundreds of milliseconds on a cold isolate, and the handshake does not need
+// any of it: the verify already answered over HTTPS, and a completion that
+// arrives before the warm finishes simply takes the same HTTPS road. Warming
+// only starts after the token verified, so a guess never buys a connection.
 
 async function verifyDeviceSocket(identity: { token: string; deviceName: string }) {
   if (!validToken(identity.token) || !validDeviceName(identity.deviceName)) {
@@ -418,11 +409,7 @@ async function verifyDeviceSocket(identity: { token: string; deviceName: string 
     p_token_hash: await sha256(identity.token.toLowerCase())
   });
   if (!deviceId) return { ok: false };
-  try {
-    await connectDirectDb();
-  } catch {
-    directDb = null;
-  }
+  connectDirectDb().catch(() => { directDb = null; });
   return { ok: true, deviceId };
 }
 

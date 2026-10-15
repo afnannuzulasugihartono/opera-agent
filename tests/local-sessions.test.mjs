@@ -23,6 +23,14 @@ function fakeSession() {
       calls.push(['snapshot', options]);
       return [{ role: 'menuitem', name: 'Insert', x: 1, y: 2 }];
     },
+    resolveRow: async ({ role, name }) => {
+      calls.push(['resolveRow', role, name]);
+      return { role, name: 'Insert', x: 1, y: 2, handle: 'opera-77' };
+    },
+    clickHandle: async (handle) => {
+      calls.push(['clickHandle', handle]);
+      return { x: 9, y: 8, handle };
+    },
     capture: async () => { calls.push(['capture']); return 'JPG'; },
     front: async () => { calls.push(['front']); return true; },
     close: () => { calls.push(['close']); }
@@ -46,16 +54,42 @@ test('the adapter speaks driver verbs over primitive nouns', async () => {
   assert.deepEqual(verbs, ['read', 'clickAt', 'hover', 'key', 'type', 'keys', 'capture', 'front']);
 });
 
-test('a row click resolves fresh and clicks the center', async () => {
+// WHY THE ADAPTER RESOLVES THEN CLICKS A HANDLE. The row is found and held
+// before anything is pressed, and the click is aimed at that node rather than
+// at the point the snapshot reported — which is the whole difference between
+// clicking the row that was asked for and clicking whatever slid under it.
+
+test('a row click resolves the element, then clicks the handle', async () => {
   const session = fakeSession();
   const out = await asDriver(session).clickRow('menuitem', 'inse');
 
-  assert.deepEqual(out, { role: 'menuitem', name: 'Insert', x: 1, y: 2 });
-  assert.deepEqual(session.calls.at(-1), ['clickAt', 1, 2]);
+  assert.deepEqual(out, { role: 'menuitem', name: 'Insert', x: 9, y: 8, handle: 'opera-77' });
+  assert.deepEqual(session.calls.slice(-2), [['resolveRow', 'menuitem', 'inse'], ['clickHandle', 'opera-77']]);
+  assert.ok(!session.calls.some((c) => c[0] === 'clickAt'), 'no point was clicked');
+});
+
+test('a row with no element behind it is clicked at the point it reported', async () => {
+  const session = fakeSession();
+  session.resolveRow = async ({ role }) => ({ role, name: 'text caret', x: 4, y: 5, handle: null });
+
+  const out = await asDriver(session).clickRow('caret', 'text caret');
+
+  assert.deepEqual(out, { role: 'caret', name: 'text caret', x: 4, y: 5 });
+  assert.deepEqual(session.calls.at(-1), ['clickAt', 4, 5], 'the caret is a range, not an element');
+});
+
+test('a click with a handle never touches a coordinate', async () => {
+  const session = fakeSession();
+  const driver = asDriver(session);
+
+  await driver.click(null, null, 'opera-12');
+
+  assert.deepEqual(session.calls.at(-1), ['clickHandle', 'opera-12']);
 });
 
 test('a missing row names what is visible instead of clicking blind', async () => {
   const session = fakeSession();
+  session.resolveRow = async () => { throw new Error('no menuitem matching "Footnote". Visible: Insert'); };
 
   await assert.rejects(
     () => asDriver(session).clickRow('menuitem', 'Footnote'),

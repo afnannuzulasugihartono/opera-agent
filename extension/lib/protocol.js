@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: protocol — the wire contract: primitive allowlist, parameter schemas, burst vocabulary.
 // @state: exports the method spec table, the allowlist derived from it, and the burst and command validators; npm run check reads this file for the primitive count.
 // @dependencies: keyboard.
@@ -10,7 +10,7 @@
 // WHY one file: the service worker, the MCP server, and the Node tests must agree on
 // exactly which primitives exist. A second copy of the list would eventually disagree.
 
-export const PRODUCT_VERSION = '1.6.26';
+export const PRODUCT_VERSION = '1.6.27';
 export const PROTOCOL_VERSION = 1;
 
 import { resolveKeyInput } from './keyboard.js';
@@ -36,7 +36,7 @@ export const BURST_STEP_KEYS = Object.freeze({
   find: ['action', 'text', 'role', 'tag', 'exact', 'limit', 'tabId'],
   click: ['action', 'ref', 'refFromStep', 'refIndex', 'tabId'],
   fill: ['action', 'ref', 'value', 'refFromStep', 'refIndex', 'tabId'],
-  key: ['action', 'key', 'modifiers', 'text', 'tabId'],
+  key: ['action', 'key', 'modifiers', 'text', 'keyEvents', 'tabId'],
   scroll: ['action', 'x', 'y', 'absolute', 'smooth', 'tabId'],
   wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs', 'tabId'],
   hover: ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId'],
@@ -95,6 +95,8 @@ function validRef(value) {
 function validateBurstStep(step) {
   if (!isPlainObject(step)) return 'Each burst step must be an object.';
   const action = String(step.action || '');
+  if (action === 'grid') return validateGridStep(step);
+  if (action === 'file') return validateFileStep(step);
   if (!BURST_ACTION_METHODS[action]) return 'Burst action is not allowlisted.';
   const allowedKeys = new Set(BURST_STEP_KEYS[action]);
   const unexpectedKey = Object.keys(step).find((key) => !allowedKeys.has(key));
@@ -111,6 +113,9 @@ function validateBurstStep(step) {
     return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
   }
   if (action === 'key') {
+    if (step.keyEvents !== undefined && typeof step.keyEvents !== 'boolean') {
+      return 'Burst key keyEvents must be a boolean.';
+    }
 
     try {
       resolveKeyInput({ key: step.key, modifiers: step.modifiers, text: step.text });
@@ -136,6 +141,49 @@ function validateBurstStep(step) {
 
   if (action === 'navigate' && (typeof step.url !== 'string' || !step.url)) return 'Burst navigate requires a URL.';
   return null;
+}
+
+const BURST_GRID_MAX = 20;
+const BURST_FILE_DATA_MAX = 2000000;
+
+function validateGridStep(step) {
+  const unexpectedKey = Object.keys(step).find((key) => !['action', 'rows', 'cols', 'tabId'].includes(key));
+  if (unexpectedKey) return `Burst grid does not allow ${unexpectedKey}.`;
+  for (const key of ['rows', 'cols']) {
+    const value = Number(step[key]);
+    if (!Number.isInteger(value) || value < 1 || value > BURST_GRID_MAX) return `Invalid burst grid ${key}.`;
+  }
+  return null;
+}
+
+function validateFileStep(step) {
+  const unexpectedKey = Object.keys(step).find((key) => !['action', 'filename', 'data', 'tabId'].includes(key));
+  if (unexpectedKey) return `Burst file does not allow ${unexpectedKey}.`;
+  if (typeof step.filename !== 'string' || !step.filename || step.filename.length > 300) return 'Burst file requires a filename.';
+  if (typeof step.data !== 'string' || !step.data || step.data.length > BURST_FILE_DATA_MAX) return 'Burst file requires data within the byte cap.';
+  return null;
+}
+
+export function expandGridSteps(steps) {
+  const out = [];
+  const startOf = [];
+  for (const step of steps) {
+    startOf.push(out.length);
+    if (!step || step.action !== 'grid') {
+      out.push(step);
+      continue;
+    }
+    const at = step.tabId === undefined || step.tabId === null ? {} : { tabId: step.tabId };
+    for (let c = 1; c < Number(step.cols); c += 1) out.push({ action: 'key', key: 'ArrowRight', ...at });
+    for (let r = 1; r < Number(step.rows); r += 1) out.push({ action: 'key', key: 'ArrowDown', ...at });
+    out.push({ action: 'key', key: 'Enter', ...at });
+  }
+  return out.map((step) => {
+    if (step == null || typeof step !== 'object' || step.refFromStep === undefined || step.refFromStep === null) return step;
+    const from = Number(step.refFromStep);
+    if (!Number.isInteger(from) || from < 0 || from >= startOf.length) return step;
+    return { ...step, refFromStep: startOf[from] };
+  });
 }
 
 export function validateBurst(params) {
@@ -201,14 +249,18 @@ export function validateCommand(command) {
   if (command.method === 'page.pointer') {
     const params = command.params || {};
     const action = String(params.action || 'click');
-    if (!['move', 'click', 'drag', 'wheel'].includes(action)) return { ok: false, error: 'Invalid pointer action.' };
-    for (const key of ['x', 'y']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
-    if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
-    if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
+    if (!['move', 'click', 'drag', 'wheel', 'hover'].includes(action)) return { ok: false, error: 'Invalid pointer action.' };
+    if (action === 'hover') {
+      if (typeof params.ref !== 'string' || !params.ref) return { ok: false, error: 'Invalid pointer ref.' };
+    } else {
+      for (const key of ['x', 'y']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+      if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+      if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
+    }
   }
   if (command.method === 'page.capture') {
     const params = command.params || {};
-    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash']);
+    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash', 'fullPage']);
     const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
     if (unexpectedKey) return { ok: false, error: `Capture params do not allow ${unexpectedKey}.` };
     if (params.crop != null) {
@@ -234,6 +286,9 @@ export function validateCommand(command) {
     }
     if (params.previousHash != null && !/^[a-f0-9]{64}$/i.test(String(params.previousHash))) {
       return { ok: false, error: 'Capture previousHash must be a SHA-256 hex digest.' };
+    }
+    if (params.fullPage != null && typeof params.fullPage !== 'boolean') {
+      return { ok: false, error: 'Capture fullPage must be a boolean.' };
     }
   }
   if (command.method === 'page.fill') {

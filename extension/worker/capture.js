@@ -5,7 +5,7 @@
 
 import { log } from '../lib/log.js';
 import { buildAxSummary } from '../lib/ax-summary.js';
-import { registerDebuggerSession, releaseDebuggerSession } from '../lib/debugger-session.js';
+import { registerDebuggerSession, releaseDebuggerSession, touchDebuggerSession, getDebuggerSessions } from '../lib/debugger-session.js';
 
 const SCREENSHOT_CACHE_MS = 750;
 const SCREENSHOT_CACHE_LIMIT = 8;
@@ -66,6 +66,27 @@ export async function assertCaptureFramesSafe(tabId) {
 // re-attach fails again with the truthful error instead of a stale one. A failure that
 // is not already-attached propagates untouched and never triggers a detach.
 
+// WHY A SEND-SIDE HEAL EXISTS. Shared sessions cache attached:true so repeat
+// calls skip the attach. Anything else that detaches this tab — the relay road
+// in this same extension, a DevTools window, a browser restart — leaves the
+// cache lying, and every later send then fails "not attached" for good:
+// observed live as one tab permanently dead on the bridge while the relay drove
+// the same tab happily. Healing on attach cannot catch it, because the attach
+// was skipped and the failure belongs to the call itself. So the call heals
+// once: correct the flag, re-attach, and try again; a second failure is the
+// honest answer, and a foreign error never triggers a detach at all.
+
+export async function withAttachHeal(tabId, work, heal) {
+  try {
+    return await work();
+  } catch (error) {
+    if (!/not attached/i.test(error?.message || '')) throw error;
+    log.warn('DEBUGGER_RECOVERING', `stale attach on tab ${tabId}, healing before the retry`);
+  }
+  await heal();
+  return work();
+}
+
 async function attachResilient(target) {
   try {
     await chrome.debugger.attach(target, '1.3');
@@ -94,7 +115,14 @@ export async function withDebugger(tabId, context, work) {
       shared.attached = true;
       registerDebuggerSession(shared);
     }
-    return work({ tabId });
+    touchDebuggerSession(shared);
+    return withAttachHeal(tabId, () => work({ tabId }), async () => {
+      shared.attached = false;
+      getDebuggerSessions().delete(tabId);
+      await attachResilient({ tabId });
+      shared.attached = true;
+      registerDebuggerSession(shared);
+    });
   }
 
   const target = { tabId };

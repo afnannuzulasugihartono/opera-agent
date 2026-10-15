@@ -38,12 +38,16 @@ export async function capturePage(tabId, params, context) {
   const viewportWidth = Number(policy.viewport?.width);
   const viewportHeight = Number(policy.viewport?.height);
   if (!(viewportWidth > 0 && viewportHeight > 0)) throw codedError('CAPTURE_FAILED', 'The page has no capturable viewport.', { tabId });
+  const fullPage = params.fullPage === true;
+  if (fullPage && params.crop != null) {
+    throw codedError('INVALID_CAPTURE_REGION', 'Capture fullPage and crop are exclusive: pick one.', { tabId });
+  }
   const crop = params.crop || { x: 0, y: 0, width: viewportWidth, height: viewportHeight };
   const x = Number(crop.x);
   const y = Number(crop.y);
   const width = Number(crop.width);
   const height = Number(crop.height);
-  if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > viewportWidth + 0.5 || y + height > viewportHeight + 0.5) {
+  if (!fullPage && (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > viewportWidth + 0.5 || y + height > viewportHeight + 0.5)) {
     throw codedError('INVALID_CAPTURE_REGION', 'Capture crop must stay inside the visible viewport.', {
       tabId,
       viewport: { width: viewportWidth, height: viewportHeight }
@@ -54,7 +58,7 @@ export async function capturePage(tabId, params, context) {
   const maxWidth = clamp(params.maxWidth, 320, 1600, 1280);
   const maxHeight = clamp(params.maxHeight, 240, 1200, 900);
   const previousHash = typeof params.previousHash === 'string' ? params.previousHash.toLowerCase() : '';
-  const cacheKey = JSON.stringify([policy.documentId, x, y, width, height, quality, maxWidth, maxHeight]);
+  const cacheKey = JSON.stringify([policy.documentId, fullPage ? 'full' : [x, y, width, height], quality, maxWidth, maxHeight]);
   const cached = cachedScreenshot(tabId, cacheKey, previousHash);
   if (cached) return { ok: true, tabId, page: { title: tab.title || '', url: tab.url || '' }, screenshot: cached };
 
@@ -63,7 +67,21 @@ export async function capturePage(tabId, params, context) {
     const viewport = metrics?.cssVisualViewport || metrics?.cssLayoutViewport || metrics?.layoutViewport || {};
     const pageX = Number(viewport.pageX ?? 0);
     const pageY = Number(viewport.pageY ?? 0);
-    const baseScale = Math.min(1, maxWidth / width, maxHeight / height);
+    let clipX = pageX + x;
+    let clipY = pageY + y;
+    let clipW = width;
+    let clipH = height;
+    let beyond = false;
+    if (fullPage) {
+      const content = metrics?.contentSize ?? {};
+      clipW = Number(content.width);
+      clipH = Number(content.height);
+      if (!(clipW > 0 && clipH > 0)) throw codedError('CAPTURE_FAILED', 'The page reported no content size to capture.', { tabId });
+      clipX = Number(content.x ?? 0);
+      clipY = Number(content.y ?? 0);
+      beyond = true;
+    }
+    const baseScale = Math.min(1, maxWidth / clipW, maxHeight / clipH);
     const attempts = [
       { quality, scale: baseScale },
       { quality: 40, scale: baseScale },
@@ -79,9 +97,9 @@ export async function capturePage(tabId, params, context) {
         format: 'jpeg',
         quality: attempt.quality,
         fromSurface: true,
-        captureBeyondViewport: false,
+        captureBeyondViewport: beyond,
         optimizeForSpeed: true,
-        clip: { x: pageX + x, y: pageY + y, width, height, scale: attempt.scale }
+        clip: { x: clipX, y: clipY, width: clipW, height: clipH, scale: attempt.scale }
       });
       const data = String(response?.data || '');
       const bytes = screenshotBytes(data);

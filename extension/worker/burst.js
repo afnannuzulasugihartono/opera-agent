@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: burst — run a burst of actions against a tab, bounded by time and result size.
 // @state: owns MAX_BURST_RESULT_BYTES; background.js reads runBurst through this export.
 // @dependencies: action-focus, tab-content, background, log, protocol, debugger-session.
@@ -9,10 +9,11 @@ import {
   BURST_MAX_TIMEOUT_MS,
   burstCrossTabRef,
   burstStaleRef,
+  expandGridSteps,
   normalizeError,
 } from '../lib/protocol.js';
 import { releaseDebuggerSession } from '../lib/debugger-session.js';
-import { resolveTabId } from './tab-content.js';
+import { resolveTabId, contentCall } from './tab-content.js';
 import { executionMode, burstStepParams, notReadyError } from './action-focus.js';
 import { dispatch } from '../background.js';
 
@@ -44,9 +45,10 @@ export async function runBurst(params, outerContext = {}) {
 
   let activeTabId = tabId;
 
+  const runSteps = expandGridSteps(params.steps);
   try {
-    for (let index = 0; index < params.steps.length; index += 1) {
-      const step = params.steps[index];
+    for (let index = 0; index < runSteps.length; index += 1) {
+      const step = runSteps[index];
       const stepTabId = step.tabId === undefined || step.tabId === null ? activeTabId : step.tabId;
       const switched = stepTabId !== activeTabId;
       if (switched) activeTabId = stepTabId;
@@ -81,7 +83,9 @@ export async function runBurst(params, outerContext = {}) {
         });
       }
       try {
-        const result = await dispatch(method, burstStepParams(step, stepTabId, remainingMs, mode, results), context);
+        const result = step.action === 'file'
+          ? await contentCall(stepTabId, 'page.set_files', { filename: step.filename, data: step.data })
+          : await dispatch(method, burstStepParams(step, stepTabId, remainingMs, mode, results), context);
         if ((step.action === 'click' || step.action === 'fill') && step.refFromStep !== undefined && step.refFromStep !== null
           && result && typeof result === 'object' && result.ok === true) {
           result.resolvedFrom = `step:${step.refFromStep}`;

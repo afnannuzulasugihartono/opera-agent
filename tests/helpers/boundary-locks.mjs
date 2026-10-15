@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: boundary-locks — locks — Frozen public-boundary locks shared by the checkpoint tests.
 // @state: nine pins over four stacks; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
@@ -28,10 +28,10 @@
 // would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'e809ee82b67048fe9a970d02fc641eb77e9a4a8a'],
-  ['../extension/background.js', '94c76881349b6be3064122fc06c5cfb5d6bd8620'],
-  ['../extension/manifest.json', '6fa62e7eeb7b53650b6ea661d351611bd98c5ced'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '7217545db2b72c51f82771e88fadfb828296cc9f'],
+  ['../extension/content.js', '67a3f0aa0e3ebf73165b5fe078b8b842de261f60'],
+  ['../extension/background.js', 'ff1811e8c7d5fce3ae5bb167a1f50db78c9be3ff'],
+  ['../extension/manifest.json', '689cd3077a0c1383fd050830076b70c6b02b47a9'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '5cb394d96bfae0fa16dd1f2558f9028fa2d3e96d'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

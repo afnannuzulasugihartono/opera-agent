@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-11 UTC+7.
+// @last-edited: 2026-10-13 UTC+7.
 // @title: socket-protocol — the push protocol, checked without a socket, a bridge, or a browser.
 // @state: 8 locks; handshake, runnable commands, completion frames, and what must be refused.
 // @dependencies: node:test, strict, ../extension/lib/socket-protocol.js.
@@ -83,9 +83,9 @@ test('only the ready frame unlocks work, because an open socket has not proven t
   assert.equal(isReady(null), false);
 });
 
-test('an unauthorized or timed out handshake is fatal, so the device stops rather than hammering', () => {
+test('only an unauthorized handshake is fatal, because a timeout is answered by one retry', () => {
   assert.equal(isFatalClose(4001), true);
-  assert.equal(isFatalClose(4002), true);
+  assert.equal(isFatalClose(4002), false);
   assert.equal(isFatalClose(1006), false);
 });
 
