@@ -582,7 +582,31 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           } catch {}
         };
       }
-      const findInput = async () => {
+
+      // WHY THE FINDER ASKS CDP BEFORE ASKING THE PAGE. A page script can only
+      // walk shadow roots it is allowed to see, and Google Docs keeps its file
+      // input in a closed one: the script reported no input while the input was
+      // demonstrably there. `DOM.querySelectorAll` with `pierce` answers for the
+      // whole tree, closed roots included, and returns only the matches — the
+      // whole pierced tree fetched at once timed out live on a heavy page. The
+      // page script stays as the second try, because a site that hides its
+      // input behind a frame the browser will not pierce still needs it.
+
+      const findInputNode = async () => {
+        const document_ = await cdp.send('DOM.getDocument', { depth: 0, pierce: true });
+        const rootNodeId = document_?.root?.nodeId;
+        if (!rootNodeId) return null;
+        const found = await cdp.send('DOM.querySelectorAll', {
+          nodeId: rootNodeId,
+          selector: 'input[type=file]',
+          pierce: true
+        });
+        const nodeId = found?.nodeIds?.[0];
+        if (!nodeId) return null;
+        const described = await cdp.send('DOM.describeNode', { nodeId });
+        return described?.node?.backendNodeId ?? null;
+      };
+      const findInputScript = async () => {
         const found = await cdp.send('Runtime.evaluate', {
           expression: UPLOAD_INPUT_EXPRESSION,
           returnByValue: false,
@@ -591,9 +615,19 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         return found?.result?.objectId ?? null;
       };
       try {
+        let node = null;
+        for (let attempt = 0; attempt < UPLOAD_FIND_ATTEMPTS; attempt++) {
+          node = await findInputNode().catch(() => null);
+          if (node) break;
+          if (attempt + 1 < UPLOAD_FIND_ATTEMPTS) await sleep(UPLOAD_FIND_GAP_MS);
+        }
+        if (node) {
+          await cdp.send('DOM.setFileInputFiles', { files: [target], backendNodeId: node });
+          return { inputFound: true, filename, bytes };
+        }
         let objectId = null;
         for (let attempt = 0; attempt < UPLOAD_FIND_ATTEMPTS; attempt++) {
-          objectId = await findInput();
+          objectId = await findInputScript();
           if (objectId) break;
           if (attempt + 1 < UPLOAD_FIND_ATTEMPTS) await sleep(UPLOAD_FIND_GAP_MS);
         }

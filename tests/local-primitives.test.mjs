@@ -845,6 +845,27 @@ function uploadCdp() {
   };
 }
 
+// WHY THE FINDER HAS TWO ROADS. The pierced query is what finds a closed
+// shadow root; the page script is what finds a frame the browser refuses to
+// pierce. Each is proven on its own: a cdp that answers the DOM road proves the
+// pierced path, a cdp that answers only the script proves the fallback, and a
+// cdp that answers neither proves the honest `inputFound: false`.
+
+function piercedUploadCdp() {
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'DOM.getDocument') return { root: { nodeId: 1 } };
+      if (method === 'DOM.querySelectorAll') return { nodeIds: [42] };
+      if (method === 'DOM.describeNode') return { node: { backendNodeId: 'b7' } };
+      if (method === 'Runtime.evaluate') return { result: { subtype: 'null' } };
+      return { result: {} };
+    }
+  };
+}
+
 test('an upload refuses anything but exactly one source', async () => {
   const p = createPrimitives(uploadCdp());
 
@@ -880,6 +901,46 @@ test('a path uploads in place with no staging', async () => {
   assert.deepEqual(fs.calls.map((c) => c[0]), ['exists', 'stat']);
   const set = cdp.calls.find((c) => c.method === 'DOM.setFileInputFiles');
   assert.deepEqual(set.params.files, ['/files/pic.png']);
+});
+
+// WHY THE CLOSED SHADOW ROOT IS PROVEN HERE. Google Docs keeps its file input
+// where a page script cannot see it, so the script road reported no input while
+// the input was demonstrably there. The pierced query is asked first and names
+// the closed root by backend node id.
+
+test('an input inside a closed shadow root is found and filled', async () => {
+  const fs = fakeUploadFs();
+  const cdp = piercedUploadCdp();
+  const p = createPrimitives(cdp, { fs, os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out, { inputFound: true, filename: 'pic.png', bytes: 42 });
+  const query = cdp.calls.find((c) => c.method === 'DOM.querySelectorAll');
+  assert.deepEqual(query.params, { nodeId: 1, selector: 'input[type=file]', pierce: true },
+    'the tree is pierced and only the matches come back');
+  const set = cdp.calls.find((c) => c.method === 'DOM.setFileInputFiles');
+  assert.deepEqual(set.params, { files: ['/files/pic.png'], backendNodeId: 'b7' });
+  assert.ok(!cdp.calls.some((c) => c.method === 'Runtime.evaluate'),
+    'a pierced hit never falls through to the page script');
+});
+
+test('a frame the browser refuses to pierce is still found by the page script', async () => {
+  const fs = fakeUploadFs();
+  const cdp = piercedUploadCdp();
+  const original = cdp.send;
+  cdp.send = async (method, params = {}) => {
+    if (method === 'DOM.querySelectorAll') return { nodeIds: [] };
+    if (method === 'Runtime.evaluate') return { result: { objectId: 'o1' } };
+    return original(method, params);
+  };
+  const p = createPrimitives(cdp, { fs, os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out, { inputFound: true, filename: 'pic.png', bytes: 42 });
+  const set = cdp.calls.find((c) => c.method === 'DOM.setFileInputFiles');
+  assert.deepEqual(set.params, { files: ['/files/pic.png'], objectId: 'o1' }, 'the second road still fills');
 });
 
 test('a page with no file input is reported, not filled', async () => {
@@ -948,5 +1009,6 @@ test('a late input is caught by looking again', async () => {
   const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
 
   assert.deepEqual(out.inputFound, true);
-  assert.deepEqual(slept, [400, 400], 'a beat between looks, none after the hit');
+  assert.deepEqual(slept, [400, 400, 400, 400, 400, 400],
+    'a beat between looks on both roads, none after the hit');
 });
