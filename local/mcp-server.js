@@ -150,6 +150,35 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'wait_for_row',
+    description: 'Wait until a row is there - or, with absent, until it is gone. Menus, dialogs, buttons and spinners are not text, and reading the page cannot see them: this reads the same rows an agent sees and ends on the first one that matches. Returns found:false with the page as it stands when the budget runs out, instead of failing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        role: stringArg('row role, e.g. menuitem'),
+        name: stringArg('row name, matched exactly first and as a substring after'),
+        absent: { type: 'boolean', description: 'wait for the row to go away instead of to arrive' },
+        timeoutMs: { type: 'number', description: 'budget, default 10000' },
+        intervalMs: { type: 'number', description: 'gap between checks, default 150' }
+      },
+      required: ['role', 'name']
+    }
+  },
+  {
+    name: 'wait_still',
+    description: 'Wait until the page stops changing. Two identical reads in a row is the signal, so this ends on evidence rather than on a guess: use it after anything that moves on its own - a menu opening, a save running, an upload landing - and then act on what is actually there.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        timeoutMs: { type: 'number', description: 'budget, default 8000' },
+        quietMs: { type: 'number', description: 'how long the page must hold still, default 400' },
+        intervalMs: { type: 'number', description: 'gap between reads, default 120' }
+      }
+    }
+  },
+  {
     name: 'caret_line',
     description: 'Report the text of the line the caret stands on. Selects its own line to read it, then collapses back to the line end, which is where the caret ends up. Dismiss any menu first; with one open the keys walk the menu instead of the text.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
@@ -298,6 +327,21 @@ const lastAuto = new WeakMap();
 // It is closed and named, never hidden: a drop that did not land says so
 // instead of leaving litter on the person's screen.
 
+// WHY THE BUDGETS ARE CLAMPED WHERE THEY ARE. A wait that is asked for in
+// milliseconds and a wait that is asked for in hours both have to come back:
+// an agent that asks for a minute and waits ten is not measuring the page, it
+// is measuring its own typing. Bounds keep a wait a wait.
+
+const budgetOf = (value, fallback) => {
+  const asked = Number(value ?? fallback);
+  return Number.isFinite(asked) ? Math.min(30000, Math.max(500, asked)) : fallback;
+};
+
+const gapOf = (value, fallback) => {
+  const asked = Number(value ?? fallback);
+  return Number.isFinite(asked) ? Math.min(5000, Math.max(100, asked)) : fallback;
+};
+
 const STRAY_FILE_TAB = 'file://';
 
 const afterAction = async (driver, action, limit) => {
@@ -391,6 +435,20 @@ export function createMcpServer(context) {
           await new Promise((r) => setTimeout(r, intervalMs));
         }
       }
+      case 'wait_for_row':
+        return afterAction(driver, await driver.waitForRow({
+          role: args.role,
+          name: args.name,
+          absent: args.absent === true,
+          timeoutMs: budgetOf(args.timeoutMs, 10000),
+          intervalMs: gapOf(args.intervalMs, 150)
+        }));
+      case 'wait_still':
+        return afterAction(driver, await driver.waitForStill({
+          timeoutMs: budgetOf(args.timeoutMs, 8000),
+          quietMs: budgetOf(args.quietMs, 400),
+          intervalMs: gapOf(args.intervalMs, 120)
+        }));
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
       case 'caret_line':

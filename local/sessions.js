@@ -65,6 +65,8 @@ export function asDriver(session) {
     keys: (events) => session.keys(events),
     snapshot: (limit) => session.snapshot(limit === undefined ? {} : { limit }),
     caretLine: () => session.caretLine(),
+    waitForRow: (options) => session.waitForRow(options),
+    waitForStill: (options) => session.waitForStill(options),
     upload: (options) => session.upload(options),
     dropFile: (options) => session.dropFile(options),
     interceptFileChooser: (enabled) => session.interceptFileChooser(enabled),

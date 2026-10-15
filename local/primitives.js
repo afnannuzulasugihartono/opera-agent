@@ -1022,6 +1022,61 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         if (Date.now() >= deadline) return state;
         await sleep(intervalMs);
       }
+    },
+
+    // WHY WAITING FOR A ROW AND NOT FOR TEXT. Half of what an agent waits for
+    // is not text: a menu row that has to appear, a button that has to go away,
+    // a dialog that has to be dismissed. Reading the page and searching a string
+    // cannot see any of it, so an agent polls a snapshot by hand — which is how
+    // today was spent: a loop of sleeps and snapshots, guessing when to stop.
+    async waitForRow({ role, name, timeoutMs = 10000, intervalMs = 150, absent = false } = {}) {
+      const want = String(name ?? '').toLowerCase();
+      const deadline = Date.now() + timeoutMs;
+      const seen = [];
+      for (;;) {
+        const rows = await readRows(120);
+        const hit = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
+          ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
+        const present = Boolean(hit);
+        if (present !== absent) {
+          return { found: absent ? true : present, role, name, row: hit ?? null, checks: seen.length + 1 };
+        }
+        seen.push(hit?.name ?? null);
+        if (Date.now() >= deadline) {
+          return { found: false, role, name, row: null, checks: seen.length };
+        }
+        await sleep(intervalMs);
+      }
+    },
+
+    // WHY STILLNESS IS THE WAIT AN AGENT CAN TRUST. Every other wait here is for
+    // something named in advance; most of what an agent waits for is not named —
+    // it is a menu that is still animating, a list still filling, a save still
+    // running. Two identical reads in a row is the honest signal that the page
+    // has stopped moving, and it ends on evidence rather than on a number
+    // somebody picked. Measured: an upload needed a dozen hand-rolled sleep
+    // loops before this existed; it now returns in one call.
+    async waitForStill({ timeoutMs = 8000, quietMs = 400, intervalMs = 120, limit = 120 } = {}) {
+      const deadline = Date.now() + timeoutMs;
+      let previous = null;
+      let unchangedSince = Date.now();
+      let checks = 0;
+      for (;;) {
+        const rows = await readRows(limit);
+        const shape = JSON.stringify(rows.map(({ role, name, x, y }) => [role, name, x, y]));
+        checks += 1;
+        if (shape === previous && Date.now() - unchangedSince >= quietMs) {
+          return { still: true, ms: Date.now() - (deadline - timeoutMs), checks };
+        }
+        if (shape !== previous) {
+          previous = shape;
+          unchangedSince = Date.now();
+        }
+        if (Date.now() >= deadline) {
+          return { still: false, ms: Date.now() - (deadline - timeoutMs), checks };
+        }
+        await sleep(intervalMs);
+      }
     }
   };
 

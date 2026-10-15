@@ -1220,3 +1220,94 @@ test('a handle that is not a handle is refused by name', async () => {
 
   await assert.rejects(() => p.clickHandle('not-a-handle'), /is not an element handle/);
 });
+
+// WHY THESE TWO WAITS ARE PINNED ON WHAT THEY OBSERVE. The row wait ends on the
+// first read that matches, names what it saw, and gives up with found:false
+// rather than hanging. The stillness wait ends on two identical reads in a row,
+// which is the only signal that a page which was never named in advance has
+// actually stopped moving — and it must be able to say it never went still.
+
+function rowsCdp(reads) {
+  const queue = [...reads];
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      const next = queue.length > 1 ? queue.shift() : queue[0];
+      return { result: { value: next } };
+    }
+  };
+}
+
+test('a row wait ends on the first read that has the row', async () => {
+  const cdp = rowsCdp([[], [], [{ role: 'menuitem', name: 'Upload from computer', x: 5, y: 6, node: 0 }]]);
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForRow({ role: 'menuitem', name: 'Upload from computer' });
+
+  assert.equal(out.found, true);
+  assert.equal(out.checks, 3, 'it stopped looking the moment the row was there');
+  assert.equal(out.row.name, 'Upload from computer');
+});
+
+test('a row wait can wait for a row to go away', async () => {
+  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Upload', x: 1, y: 1, node: 0 }], []]);
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForRow({ role: 'menuitem', name: 'Upload', absent: true });
+
+  assert.equal(out.found, true, 'gone is what was asked for');
+  assert.equal(out.row, null);
+});
+
+test('a row wait that runs out says so and hands back the page', async () => {
+  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Other', x: 1, y: 1, node: 0 }]]);
+  const p = createPrimitives(cdp, { sleep: async () => {}, now: () => clock });
+
+  let clock = 0;
+  const result = await p.waitForRow({ role: 'menuitem', name: 'Upload', timeoutMs: 200, intervalMs: 100 });
+
+  assert.equal(result.found, false);
+  assert.equal(result.row, null);
+  assert.ok(result.checks >= 2, 'it looked more than once before saying no');
+});
+
+test('stillness ends on two identical reads and names how long it took', async () => {
+  const still = [{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }];
+  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }], still, still]);
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1, timeoutMs: 5000 });
+
+  assert.equal(out.still, true);
+  assert.ok(out.checks >= 2, 'one matching pair is what stillness means');
+});
+
+test('a page that never settles says so instead of pretending', async () => {
+  let tick = 0;
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      tick += 1;
+      return { result: { value: [{ role: 'menuitem', name: 'Image', x: tick, y: 4, node: 0 }] } };
+    }
+  };
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1, timeoutMs: 1 });
+
+  assert.equal(out.still, false);
+  assert.ok(out.checks >= 2, 'a page moving every read is not still');
+});
+
+test('stillness watches the rows an agent acts on, not the whole document', async () => {
+  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }]]);
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  await p.waitForStill({ quietMs: 0, intervalMs: 1, timeoutMs: 2000 });
+
+  const asked = cdp.calls.find((c) => c.method === 'Runtime.evaluate');
+  assert.match(asked.params.expression, /__LIMIT__|getBoundingClientRect/, 'the read is the snapshot the agent already uses');
+});
