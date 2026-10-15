@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
 import { windowState, focusWindow } from '../window-focus.js';
+import { dialogState, dialogType, dialogPress } from '../dialog.js';
 import { createSessionStore } from '../sessions.js';
 import { listPageWebSockets, openTab, closeTab } from '../transport.js';
 import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
@@ -149,6 +150,18 @@ const driver = {
 
   async focusWindow(match) {
     return focusWindow(match);
+  },
+
+  async dialogState() {
+    return dialogState();
+  },
+
+  async dialogType(text) {
+    return dialogType(text);
+  },
+
+  async dialogPress(name) {
+    return dialogPress(name);
   },
 
   async waitForRow(options) {

@@ -92,6 +92,21 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { match: stringArg('piece of the window title to bring forward') } }
   },
   {
+    name: 'dialog_state',
+    description: "Report the operating system's own dialog if one is open - its title, its buttons, and the text in its field. A file picker opened by a page lives outside the browser: no capture, no snapshot and no tab sees it, so this is the only way to know what it is asking for.",
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'dialog_type',
+    description: 'Type text into the open operating system dialog\'s field - a full path into a file picker is the one that matters. This is outside the browser: the text goes to the dialog itself, not to a page.',
+    inputSchema: { type: 'object', properties: { text: stringArg('text to put in the dialog field, usually a full path') }, required: ['text'] }
+  },
+  {
+    name: 'dialog_press',
+    description: "Press a button on the open operating system dialog by name - \"Open\", \"Save\", \"Cancel\". A page that opened a file picker cannot be answered from the browser; this answers it from the machine. Answer with the button it found, so a call that pressed the wrong thing says so.",
+    inputSchema: { type: 'object', properties: { name: stringArg('button on the dialog, e.g. Open or Cancel') }, required: ['name'] }
+  },
+  {
     name: 'list_tabs',
     description: 'List the page targets the browser currently has open, each with an id. Pass that id as tabId to drive a specific tab.',
     inputSchema: { type: 'object', properties: {}, required: [] }
@@ -530,6 +545,12 @@ export function createMcpServer(context) {
       }
       case 'focus_window':
         return asText(await driver.focusWindow(args.match ?? ''));
+      case 'dialog_state':
+        return asText(await driver.dialogState());
+      case 'dialog_type':
+        return asText(await driver.dialogType(args.text ?? ''));
+      case 'dialog_press':
+        return asText(await driver.dialogPress(args.name ?? ''));
       case 'list_tabs':
         return asText(await driver.tabs());
       case 'open_url':

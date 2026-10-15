@@ -78,7 +78,7 @@ export const RECIPES = Object.freeze([
   {
     task: 'Put a file into a page whose chooser has no input',
     do: ['drop_file'],
-    note: 'Google Docs opens the operating system dialog through the File System Access API: there is no input to fill and no CDP command that suppresses it. A drop is the road in, and the page takes it on the drop it already listens for.'
+    note: 'A drop needs no dialog at all: the page takes the file on the drop it already listens for. If the chooser is already open - Google Docs opens it through the File System Access API - answer it with dialog_state, dialog_type and dialog_press, which reach it from the machine.'
   },
   {
     task: 'Ask the page a question instead of guessing',
@@ -100,6 +100,9 @@ export const RECIPES = Object.freeze([
 export const SIDE_EFFECTS = Object.freeze({
   browser_status: [],
   focus_window: ['brings a browser window to the front of the machine, which takes the keyboard away from whatever was in front'],
+  dialog_state: [],
+  dialog_type: ['writes text into an operating system dialog outside the browser'],
+  dialog_press: ['presses a button on an operating system dialog outside the browser'],
   guide: [],
   list_menus: [],
   open_menu: ['opens menus by hovering and clicking levels on the way to the path you gave'],
