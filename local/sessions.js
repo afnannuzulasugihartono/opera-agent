@@ -58,6 +58,7 @@ export function asDriver(session) {
     hasFocus: () => session.hasFocus(),
     ensureFront: (options) => ensureFront({ ...(options ?? {}), hasFocus: () => session.hasFocus() }),
     captureSized: (options) => session.captureSized(options ?? {}),
+    navigate: (url) => session.navigate(url),
     guide: async (topic) => guide(topic),
     menuTree: (options) => session.menuTree(options ?? {}),
     openMenu: (options) => session.openMenu(options ?? {}),

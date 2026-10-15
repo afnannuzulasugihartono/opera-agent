@@ -549,6 +549,12 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // in, a drop, was nowhere in the answer. The page is perfectly reachable; it simply
 // has no input to fill. So it fails, names that, and carries the drop with it.
 
+      // WHY A NAMED TAB IS NAVIGATED AND NOT OPENED. Measured live on this machine:
+      // `open_url` with a tabId answered "driver.open is not a function", because a
+      // per-tab driver has no way to open anything - and a caller who names a tab
+      // means "this tab goes here", not "open one more". So a named tab is navigated
+      // and says which tab it moved.
+
 // WHY THESE TOOLS CHECK THE WINDOW AND THE OTHERS DO NOT. A click, a key, text
 // typed, a file dropped and a menu walked all have to reach a page that is
 // listening, and a page behind another window is not listening - measured live, with
@@ -646,7 +652,9 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
       case 'list_tabs':
         return asText(await driver.tabs());
       case 'open_url':
-        return afterAction(driver, await driver.open(args.url));
+        return afterAction(driver, tab
+          ? { navigated: await driver.navigate(args.url), tab: args.tabId }
+          : await driver.open(args.url));
       case 'close_tab': {
         const out = await driver.close(args.tabId);
         sessions.get(args.tabId)?.close?.();

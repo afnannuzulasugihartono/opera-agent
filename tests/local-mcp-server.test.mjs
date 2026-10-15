@@ -42,6 +42,7 @@ function fakeDriver() {
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
     caretLine: async () => ({ line: 'Kajian pustaka mencakup', caretMoved: true, caretRestored: true }),
     capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; },
+    navigate: async (url) => { calls.push(['navigate', url]); return { url, waited: true }; },
     ensureFront: async (opts) => {
       calls.push(['ensureFront', opts]);
       return { window: 'the page hears input', checked: 'page' };
@@ -292,6 +293,27 @@ test('a number that is a tab is used as itself and says nothing about names', as
   const out = await clickOn(c, '333');
 
   assert.deepEqual(out.tab, { id: '333', title: 'Notes - Google Docs', named: false });
+});
+
+// WHY A NAMED TAB IS NAVIGATED. Measured live on this machine: `open_url` with a tabId
+// answered "driver.open is not a function", because a per-tab driver cannot open
+// anything - and a caller who names a tab means "this tab goes here", not "open one
+// more". So a named tab is navigated in place and the answer names the tab it moved.
+
+test('open_url with a named tab navigates that tab instead of opening another one', async () => {
+  const c = namedCtx(PAGES);
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 96, method: 'tools/call',
+    params: { name: 'open_url', arguments: { tabId: '333', url: 'https://example.com/beranda' } }
+  });
+
+  const out = JSON.parse(res.result.content[0].text);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'navigate'), [['navigate', 'https://example.com/beranda']]);
+  assert.equal(out.action.navigated.url, 'https://example.com/beranda');
+  assert.equal(out.action.tab, '333', 'and the answer says which tab it moved');
+  assert.ok(!c.driver.calls.some(([name]) => name === 'open'), 'no second tab was opened');
 });
 
 test('a capture comes back as image content a model can see, not base64 text', async () => {
