@@ -13,10 +13,19 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - `main` = `origin/main`, and it is the sole remote branch again. Nine stale branches were
   removed on 2026-10-10 after each was measured: `main` was 1 to 277 commits ahead of every
   one, and none held a file `main` lacks. Every merge `--ff-only`.
-- Version `1.6.26` in [`extension/manifest.json`](../extension/manifest.json) is the source
+- Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth. [`check.mjs`](../scripts/check.mjs) also asserts the version the MCP server
   reports, the store form's four-part version, and that no module redeclares the secret regex.
-- Gates: `npm test`, `npm run check` — 29 primitives, 176 runtime safety files, 1236 unit
+- **1.6.27 shipped on 2026-10-15; `main` has not taken it yet.** Released from tag
+  `v1.6.27` on commit `c35b20c`, which lives on `handoff-bridge`. Measured after the
+  release: the signed CRX answers 200 at the update endpoint with 117,594 bytes and an
+  ETag equal to its own sha256, `update.xml` offers 1.6.27 for
+  `ofgemipoobcnbjkfanmofjbdonjapmgl`, `opera-agent-mcp` is deployed (version 95), and the
+  GitHub Release carries the extension zip, the source zip, the CRX and SHA256SUMS. Pull
+  request #86 passed unit, secret-scan, browser and SonarCloud with zero open issues, and
+  is `blocked` by the base-branch policy: it needs an owner approval, which an agent
+  cannot give itself. Squash it and `main` carries the same tree.
+- Gates: `npm test`, `npm run check` — 29 primitives, 176 runtime safety files, 1239 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 73 `opera_*`
   functions (62 `SECURITY DEFINER`), 17 `opera_*` tables, 10 deployed edge functions.
