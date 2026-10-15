@@ -35,7 +35,12 @@ const MENU_LIMIT = 200;
 // submenu; the number is a reach, and a miss here costs a wrong answer about what
 // an application can do.
 
-export const SUBMENU_REACH_PX = 360;
+// WHY THE ROUNDS ARE CAPPED. A round that changes nothing ends the walk; this cap
+// is what ends a page that keeps opening menus into itself.
+
+const MENU_ROUNDS = 8;
+
+const SUBMENU_REACH_PX = 360;
 
 const BAR = '[role~="menubar"]';
 const MENU = '[role~="menu"]';
@@ -160,32 +165,62 @@ export const MENU_TREE_EXPRESSION = `(() => {
   const claimed = new Set();
 
   const ownerJob = new Map();
-  for (const job of queue) {
-    const child = job.el.querySelector(MENU);
-    if (child) {
-      claimed.add(child);
-      ownerJob.set(child, job);
+  const rounds = __ROUNDS__;
+
+  // WHY OWNERSHIP IS RESOLVED IN ROUNDS, TOP DOWN, AND LEFTOVERS LAST. Measured
+  // live on Google Docs with the Image submenu already open: the submenu's rows came
+  // back at depth 0, as though the submenu were a top-level menu of its own, and a
+  // walk for ["Insert", "Image", "Upload from computer"] gave up at the third step
+  // with nothing visible. The cause is order, not geometry. The Image item is only
+  // in the queue after the Insert menu has been walked into, so in the very first
+  // pass nobody owns the submenu; and if the menus nobody owns are handed out then,
+  // the submenu is taken as a top-level menu before the item that owns it is ever
+  // seen. So: items claim their menus, the menus they claimed are walked into rows,
+  // the items in those rows claim theirs, and only when a round changes nothing are
+  // the menus nobody claimed treated as top-level ones.
+  const pushClaimed = () => {
+    let pushedNew = false;
+    for (const [menu, job] of ownerJob) {
+      if (pushed.has(menu) || rows.length >= LIMIT) continue;
+      pushed.add(menu);
+      push(menu, job ? job.depth + 1 : 0, job ? job.parent : null);
+      pushedNew = true;
     }
-  }
+    return pushedNew;
+  };
 
-  const jobs = [...queue];
-  for (const job of queue) {
-    if (claimed.has(job.el)) continue;
-    const owned = ownerOf(job.el, visibleMenus());
-    if (!owned) continue;
-    claimed.add(owned);
-    ownerJob.set(owned, job);
-  }
+  const claimOwned = () => {
+    const before = ownerJob.size;
+    for (const job of queue) {
+      if (claimed.has(job.el)) continue;
+      const owned = job.el.querySelector(MENU) ?? ownerOf(job.el, visibleMenus());
+      if (!owned || claimed.has(owned)) continue;
+      claimed.add(owned);
+      ownerJob.set(owned, job);
+    }
+    return ownerJob.size !== before;
+  };
 
-  for (const menu of visibleMenus()) {
-    if (claimed.has(menu.box)) continue;
-    claimed.add(menu.box);
-    ownerJob.set(menu.box, null);
-  }
+  const claimLeftOvers = () => {
+    let grew = false;
+    for (const menu of visibleMenus()) {
+      if (claimed.has(menu.box)) continue;
+      claimed.add(menu.box);
+      ownerJob.set(menu.box, null);
+      grew = true;
+    }
+    return grew;
+  };
 
-  for (const [menu, job] of ownerJob) {
-    if (rows.length >= LIMIT) break;
-    push(menu, job ? job.depth + 1 : 0, job ? job.parent : null);
+  const pushed = new Set();
+
+  for (let round = 0; round < rounds; round += 1) {
+    const owned = claimOwned();
+    const walked = pushClaimed();
+    if (owned || walked) continue;
+    const left = claimLeftOvers();
+    const walkedLeft = pushClaimed();
+    if (!left && !walkedLeft) break;
   }
 
   // WHY THE MENU KEEPS ITS ELEMENTS TOO. A menu row is a place on the screen
@@ -206,7 +241,8 @@ export function menuTreeExpression(limit) {
   const rows = Number.isFinite(asked) ? Math.min(MENU_LIMIT, Math.max(1, Math.trunc(asked))) : MENU_LIMIT;
   return MENU_TREE_EXPRESSION
     .replace('__LIMIT__', String(rows))
-    .replace('__REACH__', String(SUBMENU_REACH_PX));
+    .replace('__REACH__', String(SUBMENU_REACH_PX))
+    .replace('__ROUNDS__', String(MENU_ROUNDS));
 }
 
 // WHY THE STATE IS DECIDED HERE AND NOT IN THE CALLER. Three facts decide a

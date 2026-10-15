@@ -131,3 +131,26 @@ test('the walk reads menus and menubars, and never the document behind them', ()
   assert.match(expression, /job\.el\.querySelector\(MENU\)/, 'a menu inside an item is that item menu');
   assert.match(expression, /ownerOf\(job\.el/, 'and one beside an item is claimed by position');
 });
+
+// WHY THE ROUNDS ARE PINNED HERE AND NOT ONLY LIVE. Measured live on Google Docs
+// with the Image submenu already open: its rows came back at depth 0, so a walk for
+// ["Insert", "Image", "Upload from computer"] gave up at the third step with nothing
+// visible - the submenu looked like a top-level menu. The cause was order, not
+// geometry: the Image item is only in the queue after the Insert menu has been
+// walked into, so in the first pass nobody owns the submenu - and handing the menus
+// nobody owns out then took it as a top-level menu before the item that owns it was
+// ever seen. So ownership is resolved in rounds, and the leftovers are last.
+
+test('ownership is resolved in rounds, and the menus nobody owns are taken last', () => {
+  const expression = menuTreeExpression();
+
+  assert.match(expression, /const claimOwned = \(\) =>/, 'items claim the menus they own');
+  assert.match(expression, /const claimLeftOvers = \(\) =>/, 'and the menus nobody owns are a separate pass');
+  assert.match(expression, /round < rounds/, 'the walk keeps claiming while a round changes something');
+  assert.match(expression, /const rounds = 8/, 'the rounds are capped, so a page that loops cannot spin the walk');
+  const loop = expression.slice(expression.indexOf('for (let round = 0'));
+  assert.ok(loop.indexOf('claimOwned()') < loop.indexOf('claimLeftOvers()'),
+    'a menu nobody owns yet is not handed out before the items that could own it are in the queue');
+  assert.doesNotMatch(expression, /MENU_ROUNDS/, 'a name that exists only in the driver throws inside the page, and the tree comes back empty');
+  assert.doesNotMatch(expression, /const jobs = \[\.\.\.queue\]/, 'the queue is walked every round, not once');
+});
