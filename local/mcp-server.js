@@ -488,6 +488,12 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // single time. The rows the advice reads are the page as it stood a moment ago,
 // so "what was there" is answered with evidence rather than a guess.
 
+// WHY A PAGE WITH NO FILE INPUT IS A FAILURE AND NOT AN ANSWER. Measured live on
+// Google Docs: upload returned inputFound: false as a successful tool call, so an
+// agent reading it as "done" moved on with nothing in the document - and the road
+// in, a drop, was nowhere in the answer. The page is perfectly reachable; it simply
+// has no input to fill. So it fails, names that, and carries the drop with it.
+
 export function createMcpServer(context) {
   const sessions = new Map();
   const fallback = context.driver ?? null;
@@ -607,8 +613,13 @@ export function createMcpServer(context) {
         return asText(await driver.snapshot(args.limit));
       case 'caret_line':
         return asText(await driver.caretLine());
-      case 'upload':
-        return afterAction(driver, await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null }));
+      case 'upload': {
+        const uploaded = await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null });
+        if (uploaded && uploaded.inputFound === false) {
+          throw new Error(`upload: inputFound: false - ${args.filename} went nowhere: the page has no file input to fill`);
+        }
+        return afterAction(driver, uploaded);
+      }
       case 'drop_file': {
         const before = new Set((await fallback.tabs()).map((tab) => String(tab.id)));
         const dropped = await driver.dropFile({

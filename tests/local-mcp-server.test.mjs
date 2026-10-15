@@ -45,7 +45,11 @@ function fakeDriver() {
   };
 }
 
-const ctx = () => ({ driver: fakeDriver(), browsers: [{ id: 'chrome', binary: 'C:/chrome.exe' }], port: 9450 });
+const ctx = (driver = fakeDriver()) => ({
+  driver,
+  browsers: [{ id: 'chrome', binary: 'C:/chrome.exe' }],
+  port: 9450
+});
 
 test('initialize answers with a protocol version and who this server is', async () => {
   const server = createMcpServer(ctx());
@@ -461,6 +465,27 @@ test('caret_line reports the line without moving past it', async () => {
     caretMoved: true,
     caretRestored: true
   });
+});
+
+// WHY A PAGE WITH NO FILE INPUT IS A FAILURE. Measured live on Google Docs:
+// upload answered inputFound: false as a successful tool call, so an agent reading
+// it as done moved on with nothing in the document, and the road in - a drop - was
+// fill. So it fails, names that, and carries the drop with it.
+
+test('upload on a page with no file input fails and says which road is left', async () => {
+  const without = fakeDriver();
+  without.upload = async () => ({ inputFound: false, filename: 'a.png' });
+  const server = createMcpServer(ctx(without));
+
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 71,
+    method: 'tools/call',
+    params: { name: 'upload', arguments: { filename: 'a.png', data: 'x' } }
+  });
+
+  assert.match(res.error.message, /inputFound: false/);
+  assert.match(res.error.message, /drop_file/, 'and the road that does work is in the answer');
 });
 
 test('upload carries a file without touching the native dialog', async () => {
