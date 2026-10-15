@@ -81,6 +81,10 @@ const driver = {
     return store.closeTab(tabId, async (id) => await bridged() ? closeBridgeTarget(id) : closeTab(PORT, id));
   },
 
+  async ask(method, params) {
+    return (await attach()).ask(method, params);
+  },
+
   async read() {
     return (await attach()).read();
   },

@@ -38,6 +38,48 @@ const numberArg = (name) => ({ type: 'number', description: name });
 
 const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes.' };
 
+// WHY THIS SURFACE IS ALLOWLISTED AND READ-ONLY. An agent's fastest route from
+// confused to knowing is asking the browser a structured question: which frames
+// exist, which node is behind a row, what is in a frame's document. Doing that
+// today means finding the loopback door by accident — and a product that offers
+// no way to ask is a product that teaches guessing instead. So the door is
+// promoted to a tool, with the answer to "how much power does this hand out"
+// written into the list: only these methods, only reads. No Runtime.evaluate, so
+// no free script in the page and no way around the redaction a snapshot applies
+// to a password; no Input, no Page navigation, no storage. Anything that changes
+// the page stays a named primitive, where it can be described, bounded and
+// tested. A method not on this list is not refused by a shrug: it is refused by
+// name, with the list, because "no" that explains itself is worth more than a
+// "no" the agent has to guess at.
+
+const ASKABLE = Object.freeze([
+  'Page.getFrameTree',
+  'Page.getNavigationHistory',
+  'Page.captureScreenshot',
+  'DOM.getDocument',
+  'DOM.describeNode',
+  'DOM.getFrameOwner',
+  'DOM.getAttributes',
+  'DOM.getBoxModel',
+  'DOM.getOuterHTML',
+  'DOM.querySelector',
+  'DOM.querySelectorAll',
+  'DOM.resolveNode',
+  'DOM.requestNode'
+]);
+
+// WHY SCREENSHOTS ARE INCLUDED AND JPEG IS NOT FORCED. A picture is the one
+// answer an agent cannot get wrong by reading too much, and asking for png is
+// how a test image gets made for a page that will not take files.
+
+const askParams = (args) => {
+  const params = args.params && typeof args.params === 'object' ? args.params : {};
+  if (args.method === 'Page.captureScreenshot') return { format: 'png', ...params };
+  return params;
+};
+
+const STRAY_FILE_TAB = 'file://';
+
 export const TOOLS = Object.freeze([
   {
     name: 'browser_status',
@@ -147,6 +189,19 @@ export const TOOLS = Object.freeze([
         intervalMs: { type: 'number', description: 'gap between checks, default 250' }
       },
       required: ['text']
+    }
+  },
+  {
+    name: 'ask_page',
+    description: `Ask the browser a structured, read-only question about one tab and get the raw answer: the frame tree, the node behind a row, what a frame's document holds, a selector's matches, an element's box or outer HTML, a screenshot as png. This is how an agent finds out what a page actually is instead of inferring it from behaviour. Methods are allowlisted to reads only — ${ASKABLE.join(', ')} — so nothing here can change the page; anything that acts stays a named tool.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        method: { type: 'string', enum: [...ASKABLE], description: 'one of the read-only CDP methods' },
+        params: { type: 'object', description: 'the method\'s own parameters, passed through' }
+      },
+      required: ['method']
     }
   },
   {
@@ -342,7 +397,7 @@ const gapOf = (value, fallback) => {
   return Number.isFinite(asked) ? Math.min(5000, Math.max(100, asked)) : fallback;
 };
 
-const STRAY_FILE_TAB = 'file://';
+
 
 const afterAction = async (driver, action, limit) => {
   await new Promise((r) => setTimeout(r, SETTLE_MS));
@@ -434,6 +489,13 @@ export function createMcpServer(context) {
           }
           await new Promise((r) => setTimeout(r, intervalMs));
         }
+      }
+      case 'ask_page': {
+        const method = String(args.method ?? '');
+        if (!ASKABLE.includes(method)) {
+          throw new Error(`ask_page is read-only. Allowed: ${ASKABLE.join(', ')}. Asked for: ${method || '(none)'}`);
+        }
+        return asText({ method, result: await driver.ask(method, askParams(args)) });
       }
       case 'wait_for_row':
         return afterAction(driver, await driver.waitForRow({

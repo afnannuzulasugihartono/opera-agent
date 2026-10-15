@@ -338,6 +338,12 @@ const SNAPSHOT_EXPRESSION = `(() => {
 
 export const HANDLE_PREFIX = 'opera-';
 
+// WHY ASKING IS A PRIMITIVE AND NOT A LEAK. The list of methods that may be
+// asked is decided by the surface, not by the caller: reads of structure, no
+// script, no input, no navigation. An agent confused about what a page is can
+// ask the browser the question directly instead of inferring it from behaviour,
+// and cannot turn the question into an action.
+
 const DROPPED_HANDLE = 'is no longer in the page';
 
 // WHY THE ROWS CARRY THEIR NODE INTERNAL. The index that ties a row to its
@@ -818,6 +824,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async interceptFileChooser(enabled) {
       await cdp.send('Page.setInterceptFileChooserDialog', { enabled: enabled === true });
       return { intercepting: enabled === true };
+    },
+
+    async ask(method, params = {}) {
+      return cdp.send(method, params);
     },
 
     async evaluate(expression) {

@@ -534,3 +534,60 @@ test('a drop the page took leaves no tab and reports a clean drop', async () => 
   assert.equal(payload.action.openedInstead, false);
   assert.ok(!c.driver.calls.some((call) => call[0] === 'close'), 'nothing to close, nothing closed');
 });
+
+// WHY THE ALLOWLIST IS PINNED AS A REFUSAL. The whole value of asking the
+// browser a question is lost the moment the question can also be an action, so
+// the boundary is tested by what it refuses: no script in the page, no input, no
+// navigation, no storage. A method outside the list must be refused by name and
+// with the list, because an agent that is told "no" can act on it and an agent
+// that is told "unknown" can only guess.
+
+test('ask_page returns a raw read and hands the method its own params', async () => {
+  const c = ctx();
+  c.driver.ask = async (method, params) => ({ asked: method, params });
+  c.resolveTab = async () => ['t1'];
+  c.open = async () => c.driver;
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 51, method: 'tools/call',
+    params: { name: 'ask_page', arguments: { tabId: 't1', method: 'Page.getFrameTree' } }
+  });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.deepEqual(payload, { method: 'Page.getFrameTree', result: { asked: 'Page.getFrameTree', params: {} } });
+});
+
+test('ask_page defaults a screenshot to png, which is how a test image is made', async () => {
+  const c = ctx();
+  c.driver.ask = async (method, params) => ({ asked: method, params });
+  c.resolveTab = async () => ['t1'];
+  c.open = async () => c.driver;
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 52, method: 'tools/call',
+    params: { name: 'ask_page', arguments: { tabId: 't1', method: 'Page.captureScreenshot' } }
+  });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.equal(payload.result.params.format, 'png');
+});
+
+test('ask_page refuses anything that could act, and says what it may ask', async () => {
+  const c = ctx();
+  c.driver.ask = async () => ({ never: true });
+  c.resolveTab = async () => ['t1'];
+  c.open = async () => c.driver;
+  const server = createMcpServer(c);
+
+  for (const method of ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Page.navigate', 'DOM.setFileInputFiles']) {
+    const res = await server.handle({
+      jsonrpc: '2.0', id: 53, method: 'tools/call',
+      params: { name: 'ask_page', arguments: { tabId: 't1', method } }
+    });
+    assert.match(res.error?.message ?? '', /read-only/, `${method} must be refused as an action`);
+    assert.match(res.error?.message ?? '', /Page.getFrameTree/, 'and the refusal lists what is allowed');
+  }
+  assert.ok(!c.driver.calls.some((call) => call[0] === 'ask'), 'nothing reached the browser');
+});
