@@ -898,3 +898,76 @@ test('a page with no file input is reported, not filled', async () => {
   assert.ok(!cdp.calls.some((c) => c.method === 'DOM.setFileInputFiles'), 'nothing to fill, nothing sent');
   assert.ok(fs.calls.some((c) => c[0] === 'unlink'), 'the staging is still cleaned');
 });
+
+// WHY THE DEEP SEARCH IS PINNED WITH A FIXTURE TREE. A file input rarely sits
+// in the open: upload widgets hide it in an iframe or a shadow root. The
+// fixture below mirrors that shape — top frame clean, input nested one frame
+// deep with an uppercase type — so the test proves the search pierces, matches
+// case-insensitively, and hands over a backend id instead of giving up.
+
+function uploadDeepCdp(tree) {
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate') return { result: { subtype: 'null' } };
+      if (method === 'DOM.getDocument') return { result: { root: tree } };
+      return { result: {} };
+    }
+  };
+}
+
+test('an input hidden in an iframe is found by backend id', async () => {
+  const tree = {
+    nodeName: '#document',
+    children: [{
+      nodeName: 'HTML',
+      children: [{
+        nodeName: 'IFRAME',
+        backendNodeId: 3,
+        contentDocument: {
+          nodeName: '#document',
+          children: [{ nodeName: 'INPUT', backendNodeId: 77, attributes: ['type', 'FILE', 'name', 'upload'] }]
+        }
+      }]
+    }]
+  };
+  const cdp = uploadDeepCdp(tree);
+  const p = createPrimitives(cdp, { fs: fakeUploadFs(), os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out.inputFound, true);
+  const set = cdp.calls.find((c) => c.method === 'DOM.setFileInputFiles');
+  assert.deepEqual(set.params, { files: ['/files/pic.png'], backendNodeId: 77 });
+});
+
+test('an input inside shadow roots is found the same way', async () => {
+  const tree = {
+    nodeName: '#document',
+    children: [{
+      nodeName: 'DIV',
+      backendNodeId: 5,
+      shadowRoots: [{ nodeName: '#shadow-root', children: [{ nodeName: 'INPUT', backendNodeId: 78, attributes: ['type', 'file'] }] }]
+    }]
+  };
+  const cdp = uploadDeepCdp(tree);
+
+  const out = await createPrimitives(cdp, { fs: fakeUploadFs(), os: fakeUploadOs, path: fakeUploadPath }).upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.equal(out.inputFound, true);
+  const set = cdp.calls.find((c) => c.method === 'DOM.setFileInputFiles');
+  assert.equal(set.params.backendNodeId, 78);
+});
+
+test('a page with no file input anywhere reports it after looking everywhere', async () => {
+  const tree = { nodeName: '#document', children: [{ nodeName: 'DIV', backendNodeId: 5, children: [] }] };
+  const cdp = uploadDeepCdp(tree);
+
+  const out = await createPrimitives(cdp, { fs: fakeUploadFs(), os: fakeUploadOs, path: fakeUploadPath }).upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out, { inputFound: false, filename: 'pic.png' });
+  assert.ok(cdp.calls.some((c) => c.method === 'DOM.getDocument'), 'the deep search ran before giving up');
+  assert.ok(!cdp.calls.some((c) => c.method === 'DOM.setFileInputFiles'), 'nothing to fill, nothing sent');
+});
