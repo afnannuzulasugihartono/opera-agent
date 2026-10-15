@@ -810,3 +810,91 @@ test('an unreadable line is empty, and the caret still collapses', async () => {
   assert.equal(keys.at(-1).params.key, 'End', 'the collapse is not skipped on failure');
   assert.equal(keys.at(-1).params.modifiers, 0);
 });
+
+// WHY UPLOADS ARE TESTED AGAINST A FAKE FILESYSTEM. The bytes rest briefly in
+// a temp file only CDP can name, because the protocol takes paths, not bytes —
+// and a test that wrote real temp files would pass while littering the disk it
+// ran on. The fake records every touch, so the test pins the whole lifecycle:
+// stage, hand over, clean up.
+
+function fakeUploadFs() {
+  const calls = [];
+  return {
+    calls,
+    existsSync: (p) => { calls.push(['exists', p]); return p === '/files/pic.png'; },
+    statSync: (p) => { calls.push(['stat', p]); return { size: 42 }; },
+    mkdtempSync: (prefix) => { calls.push(['mkdtemp', prefix]); return '/tmp/opera-upload-x'; },
+    writeFileSync: (p, bytes) => { calls.push(['write', p, bytes.length]); },
+    unlinkSync: (p) => { calls.push(['unlink', p]); },
+    rmdirSync: (p) => { calls.push(['rmdir', p]); }
+  };
+}
+
+const fakeUploadOs = { tmpdir: () => '/tmp' };
+const fakeUploadPath = { join: (...parts) => parts.join('/'), basename: (p) => p.split('/').pop() };
+
+function uploadCdp() {
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate') return { result: { objectId: 'o1' } };
+      return { result: {} };
+    }
+  };
+}
+
+test('an upload refuses anything but exactly one source', async () => {
+  const p = createPrimitives(uploadCdp());
+
+  await assert.rejects(() => p.upload({}), /filename/);
+  await assert.rejects(() => p.upload({ filename: 'a.png' }), /exactly one/);
+  await assert.rejects(() => p.upload({ filename: 'a.png', data: 'eA==', path: '/files/pic.png' }), /exactly one/);
+  await assert.rejects(() => p.upload({ filename: 'a.png', data: '' }), /no bytes/);
+  await assert.rejects(() => p.upload({ filename: 'a.png', path: '/files/missing.png' }), /no such file/);
+});
+
+test('bytes are staged, handed over, and cleaned up', async () => {
+  const fs = fakeUploadFs();
+  const cdp = uploadCdp();
+  const p = createPrimitives(cdp, { fs, os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.upload({ filename: 'pic.png', data: Buffer.from('bytes').toString('base64') });
+
+  assert.deepEqual(out, { inputFound: true, filename: 'pic.png', bytes: 5 });
+  const set = cdp.calls.find((c) => c.method === 'DOM.setFileInputFiles');
+  assert.deepEqual(set.params, { files: ['/tmp/opera-upload-x/pic.png'], objectId: 'o1' });
+  assert.deepEqual(fs.calls.map((c) => c[0]), ['mkdtemp', 'write', 'unlink', 'rmdir'], 'stage, hand over, clean up, in that order');
+  assert.ok(cdp.calls.some((c) => c.method === 'Runtime.releaseObjectGroup'), 'the handle is released, not leaked');
+});
+
+test('a path uploads in place with no staging', async () => {
+  const fs = fakeUploadFs();
+  const cdp = uploadCdp();
+  const p = createPrimitives(cdp, { fs, os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out, { inputFound: true, filename: 'pic.png', bytes: 42 });
+  assert.deepEqual(fs.calls.map((c) => c[0]), ['exists', 'stat']);
+  const set = cdp.calls.find((c) => c.method === 'DOM.setFileInputFiles');
+  assert.deepEqual(set.params.files, ['/files/pic.png']);
+});
+
+test('a page with no file input is reported, not filled', async () => {
+  const fs = fakeUploadFs();
+  const cdp = uploadCdp();
+  cdp.send = async (method, params = {}) => {
+    cdp.calls.push({ method, params });
+    if (method === 'Runtime.evaluate') return { result: { subtype: 'null' } };
+    return { result: {} };
+  };
+  const p = createPrimitives(cdp, { fs, os: fakeUploadOs, path: fakeUploadPath });
+
+  const out = await p.upload({ filename: 'pic.png', data: Buffer.from('bytes').toString('base64') });
+
+  assert.deepEqual(out, { inputFound: false, filename: 'pic.png' });
+  assert.ok(!cdp.calls.some((c) => c.method === 'DOM.setFileInputFiles'), 'nothing to fill, nothing sent');
+  assert.ok(fs.calls.some((c) => c[0] === 'unlink'), 'the staging is still cleaned');
+});

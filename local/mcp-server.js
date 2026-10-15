@@ -142,6 +142,20 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {
+    name: 'upload',
+    description: 'Upload a file into the page without touching the native file dialog: bytes or a local path go straight into the first file input, and the page uploads on the change it already listens for. Give exactly one of data or path.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        filename: stringArg('file name'),
+        data: { type: 'string', description: 'base64 file bytes' },
+        path: stringArg('absolute local path instead of bytes')
+      },
+      required: ['filename']
+    }
+  },
+  {
     name: 'capture_page',
     description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Pass fullPage to span the whole scrollable document past the viewport instead. Returns image content the caller can see.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
@@ -329,6 +343,8 @@ export function createMcpServer(context) {
         return asText(await driver.snapshot(args.limit));
       case 'caret_line':
         return asText({ line: await driver.caretLine() });
+      case 'upload':
+        return afterAction(driver, await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null }));
       case 'capture_page': {
         const data = await driver.capture(args.fullPage === true ? { fullPage: true } : {});
         return { content: [{ type: 'image', data, mimeType: 'image/jpeg' }] };

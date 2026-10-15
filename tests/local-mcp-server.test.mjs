@@ -74,7 +74,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -457,4 +457,16 @@ test('caret_line reports the line without moving past it', async () => {
   const res = await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'caret_line', arguments: {} } });
 
   assert.deepEqual(JSON.parse(res.result.content[0].text), { line: 'Kajian pustaka mencakup' });
+});
+
+test('upload carries a file without touching the native dialog', async () => {
+  const c = ctx();
+  c.driver.upload = async (options) => ({ inputFound: true, filename: options.filename, bytes: 5 });
+  const server = createMcpServer(c);
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 33, method: 'tools/call', params: { name: 'upload', arguments: { filename: 'pic.png', path: '/files/pic.png' } } });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.deepEqual(payload.action, { inputFound: true, filename: 'pic.png', bytes: 5 });
+  assert.ok(Array.isArray(payload.elements), 'the page comes back with the result');
 });

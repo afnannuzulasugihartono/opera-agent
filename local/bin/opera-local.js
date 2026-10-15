@@ -121,6 +121,10 @@ const driver = {
     return (await attach()).caretLine();
   },
 
+  async upload(options) {
+    return (await attach()).upload(options);
+  },
+
   async capture(options) {
     return (await attach()).capture(options);
   }

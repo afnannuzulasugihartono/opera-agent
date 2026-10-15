@@ -91,6 +91,10 @@
 // that follows every hover, which is also what makes a dead tab fail loudly one
 // call later instead of silently now.
 
+import nodeFs from 'node:fs';
+import nodeOs from 'node:os';
+import nodePath from 'node:path';
+
 const KEY_CODES = Object.freeze({
   Enter: { windowsVirtualKeyCode: 13, code: 'Enter', key: 'Enter', text: '\r' },
   Tab: { windowsVirtualKeyCode: 9, code: 'Tab', key: 'Tab' },
@@ -376,6 +380,16 @@ export const DOCS_COPY_EXPRESSION = `(() => {
   } catch { return null; }
 })()`;
 
+// WHY AN UPLOAD NEVER OPENS THE FILE DIALOG. The native picker is OS chrome:
+// CDP cannot see it, click it, or dismiss it, so a drive that opens one is
+// stuck until a human intervenes. The file input behind it takes files
+// directly instead — setFileInputFiles names local paths the way a dialog
+// would have, the page uploads on the change event it already listens for,
+// and no dialog ever appears. Bytes ride in as base64 and rest briefly in a
+// temp file only CDP can name, because the protocol takes paths, not bytes.
+
+export const UPLOAD_INPUT_EXPRESSION = `(() => document.querySelector('input[type=file]'))()`;
+
 export function isDocsDocument(url) {
   return String(url || '').includes('docs.google.com/document/d/');
 }
@@ -439,7 +453,7 @@ export function splitText(text, size) {
 
 const KEY_BEAT_MS = 50;
 
-export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const spot = (x, y, color) => {
     const px = Math.round(Number(x) || 0);
     const py = Math.round(Number(y) || 0);
@@ -485,6 +499,50 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const line = isDocsDocument(url) ? await copyDocsText() : await primitives.evaluate(SELECTION_TEXT_EXPRESSION);
       await primitives.key('End').catch(() => null);
       return typeof line === 'string' ? line : '';
+    },
+
+    async upload({ filename, data = null, path: filePath = null } = {}) {
+      if (!filename || typeof filename !== 'string') throw new Error('upload needs a filename.');
+      const hasData = data !== null && data !== undefined;
+      const hasPath = filePath !== null && filePath !== undefined;
+      if (hasData === hasPath) throw new Error('upload needs exactly one of data or path.');
+      let target;
+      let bytes;
+      let cleanup = null;
+      if (hasPath) {
+        if (!fs.existsSync(filePath)) throw new Error(`upload: no such file ${JSON.stringify(filePath)}`);
+        target = filePath;
+        bytes = fs.statSync(target).size;
+      } else {
+        const decoded = Buffer.from(String(data), 'base64');
+        if (decoded.length === 0) throw new Error('upload: data carries no bytes.');
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-upload-'));
+        target = path.join(dir, path.basename(filename));
+        fs.writeFileSync(target, decoded);
+        bytes = decoded.length;
+        cleanup = () => {
+          try {
+            fs.unlinkSync(target);
+          } catch {}
+          try {
+            fs.rmdirSync(dir);
+          } catch {}
+        };
+      }
+      try {
+        const found = await cdp.send('Runtime.evaluate', {
+          expression: UPLOAD_INPUT_EXPRESSION,
+          returnByValue: false,
+          objectGroup: 'opera-upload'
+        });
+        const objectId = found?.result?.objectId;
+        if (!objectId) return { inputFound: false, filename };
+        await cdp.send('DOM.setFileInputFiles', { files: [target], objectId });
+        return { inputFound: true, filename, bytes };
+      } finally {
+        if (cleanup) cleanup();
+        await cdp.send('Runtime.releaseObjectGroup', { objectGroup: 'opera-upload' }).catch(() => null);
+      }
     },
 
     async evaluate(expression) {
