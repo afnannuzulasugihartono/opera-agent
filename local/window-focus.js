@@ -5,12 +5,11 @@
 
 // WHY THIS FILE EXISTS
 //
-// Measured live, repeatedly, on this product's own author: with the browser window
-// behind another window, clicking and typing go nowhere. Google Docs took the keys
-// and dropped them, the caret never appeared, and every drill failed in a way that
-// looked like a bug in the page. It is not the page: a page cannot tell whether the
-// window in front of it is the one the operating system has in front. So the driver
-// asks the operating system, and the agent is told the truth before it wonders.
+// Measured live on this machine, with the drive typing into a Google Docs document:
+// a browser window that is behind another application still takes the keys, and a
+// browser window that has been minimized does not - text typed after it came back
+// went nowhere. So the operating system is asked about the window, and the agent is
+// told which of those two situations it is in before it wonders.
 //
 // WHY FOCUSING ONE WINDOW AND NOT ALL OF THEM. The machine had two browser windows
 // open, and a script that walked every one of them ended with the wrong window in

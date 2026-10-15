@@ -427,6 +427,19 @@ import { withAdvice } from './advice.js';
 
 const lastAuto = new WeakMap();
 
+// WHY THE WINDOW LINE IS HELD PER DRIVER AND NOT PER CALL. afterAction builds the
+// answer and the run that produced it are two different places; a driver is the one
+// thing they share, and a tab's driver is exactly the scope where "what did this
+// action do about the window" is a question with one answer.
+// WHY THE ANSWER SAYS SO. An action that silently brought the user's window forward
+// would be an action that changed something nobody asked for; an action that
+// silently could not would be one that reports a click nobody received. So every
+// input answer carries one line - already in front, or the window it brought, or why
+// it could not - and reading, capturing and asking carry nothing, because they did
+// nothing to where the machine's attention was.
+
+const windowSaid = new WeakMap();
+
 // WHY THE ROWS ARE KEPT ONCE. Advice is written against the page as it stood a
 // moment ago, not against one session's private cache: an agent that asked for a
 // row on the tab it is driving is asking about the page it can see. Most recent
@@ -465,20 +478,39 @@ const afterAction = async (driver, action, limit) => {
   const prev = lastAuto.get(driver) ?? null;
   lastAuto.set(driver, seen);
   lastSeen = seen;
-  return asText({ action, elements: seen, changed: prev ? diffElements(prev, seen) : null });
+  return asText({
+    action,
+    window: windowSaid.get(driver) ?? null,
+    elements: seen,
+    changed: prev ? diffElements(prev, seen) : null
+  });
 };
 
-// WHY A WINDOW IN FRONT IS ANSWERED AS YES OR NO, AND NOT AS A LIST. A page cannot
-// see whether the window in front of it is the one the operating system has in
-// front, so clicks and keys go nowhere while every tool reports success. Measured
-// live: a whole drill failed on this, and nothing in the answer said why. A browser
-// window in front is the difference between "the page ignored my click" and "the
-// page was never listening".
+// WHY "SOME BROWSER IS IN FRONT" WAS A LIE. This machine has Chrome and Brave on it,
+// and the answer said focused true with Brave in front while the drive was on a
+// Chrome tab - an agent that reads that would never learn that the window it is
+// driving is somewhere else entirely. So the answer names which browser has the
+// machine, and "focused" means the window in front is one holding a tab of ours.
+//
+// WHY THE TITLES ARE THE EVIDENCE. Nothing in the bridge says which browser a tab
+// belongs to, but the window in front carries the title of the page in it, and the
+// tabs we drive carry their titles too. The one case this cannot tell is two windows
+// showing the same page title, and it answers that with what it knows - the browser
+// in front - rather than a yes it cannot back.
 
-const browserInFront = (window, browsers) => {
-  if (!window?.foreground) return false;
-  const title = String(window.foreground).toLowerCase();
-  return browsers.some((entry) => title.includes(entry.name.toLowerCase()));
+const windowTruth = (window, browsers, tabs = []) => {
+  const foreground = String(window?.foreground ?? '');
+  const lower = foreground.toLowerCase();
+  const browser = browsers.find((entry) => lower.endsWith(`- ${String(entry.name).toLowerCase()}`))?.name ?? '';
+  const ours = foreground !== '' && tabs.some((page) => String(page?.title ?? '').length > 3 && lower.includes(String(page.title).toLowerCase()));
+  return {
+    focused: ours,
+    browser,
+    title: ours ? foreground : '',
+    why: window?.why || (foreground === ''
+      ? 'the machine did not say which window is in front'
+      : ours ? '' : `${browser || 'another window'} is in front${browser ? `, and this tab is not in ${browser}` : ''}`)
+  };
 };
 
 // WHY THE TAB LOOKUP COMPARES TEXTUALLY. A Chrome tab id is a number, the tool
@@ -509,6 +541,22 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // in, a drop, was nowhere in the answer. The page is perfectly reachable; it simply
 // has no input to fill. So it fails, names that, and carries the drop with it.
 
+// WHY THESE TOOLS CHECK THE WINDOW AND THE OTHERS DO NOT. A click, a key, text
+// typed, a file dropped and a menu walked all have to reach a page that is
+// listening, and a page behind another window is not listening - measured live, with
+// Google Docs taking the keys and dropping them while every answer said the click was
+// delivered. Reading, capturing and asking change nothing about where the machine's
+// attention is, so they do not pay for the check, and a drive that is only looking
+// never steals the human's focus.
+
+  // WHY THE WINDOW THAT GETS BROUGHT FORWARD IS THE ONE HOLDING THE TAB. With two
+// browser windows open, a check that brings an arbitrary one forward leaves the tab
+// in the same place as before and the answer says it fixed something. The tab's own
+// title is the piece that identifies its window, and the call is best-effort: a
+// driver that cannot see windows says so and the action still goes out.
+
+const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu']);
+
 export function createMcpServer(context) {
   const sessions = new Map();
   const fallback = context.driver ?? null;
@@ -525,22 +573,33 @@ export function createMcpServer(context) {
     return sessions.get(tabId);
   };
 
+  const windowMatch = async (driver, args) => {
+    const tabId = args?.tabId;
+    if (tabId === undefined || tabId === null) return '';
+    try {
+      const pages = await fallback.tabs();
+      return String(pages.find((page) => String(page.id) === String(tabId))?.title ?? '');
+    } catch {
+      return '';
+    }
+  };
+
   const run = async (name, args) => {
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
     const driver = name === 'close_tab' ? fallback : await driverFor(args?.tabId);
+    const front = INPUT_TOOLS.has(name) && typeof driver.ensureFront === 'function'
+      ? await driver.ensureFront({ match: await windowMatch(driver, args) })
+      : null;
+    windowSaid.set(driver, front);
 
     switch (name) {
       case 'browser_status': {
         const window = await driver.windowState();
+        const pages = await fallback.tabs().catch(() => []);
         return asText({
           browsers: context.browsers,
           port: livePort(context),
-          window: {
-            focused: browserInFront(window, context.browsers),
-            foreground: window.foreground,
-            title: window.windows.find((title) => browserInFront({ foreground: title }, context.browsers)) ?? '',
-            why: window.why ?? ''
-          }
+          window: windowTruth(window, context.browsers, pages)
         });
       }
       case 'focus_window':

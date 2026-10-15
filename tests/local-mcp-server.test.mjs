@@ -42,6 +42,10 @@ function fakeDriver() {
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
     caretLine: async () => ({ line: 'Kajian pustaka mencakup', caretMoved: true, caretRestored: true }),
     capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; },
+    ensureFront: async (opts) => {
+      calls.push(['ensureFront', opts]);
+      return { window: 'the page hears input', checked: 'page' };
+    },
     captureSized: async (opts) => {
       calls.push(['capture', opts]);
       return {
@@ -115,7 +119,7 @@ test('a stream reaches the driver as one call with its events intact', async () 
   });
 
   assert.match(res.result.content[0].text, /"events": 2/);
-  assert.deepEqual(c.driver.calls[0], ['keys', events]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name !== 'ensureFront'), [['keys', events]]);
 });
 
 test('a snapshot reaches the driver and comes back as readable text', async () => {
@@ -133,6 +137,85 @@ test('a snapshot reaches the driver and comes back as readable text', async () =
   // window: viewport 1144x714 -> 1186x670, capture 1430x963 -> 1483x838, scale
   // steady at 1.25. An agent handed a picture and nothing else divides by eye and
   // clicks the wrong thing while every answer says the click landed.
+
+// WHY AN INPUT ACTION BRINGS ITS OWN WINDOW. Measured live on this product's own
+// author, repeatedly: with the browser behind another window, clicks and typing went
+// nowhere, Google Docs took the keys and dropped them, and every answer said the
+// click was delivered. Asking the human to press a key in the middle of a drive is the
+// one thing this product promised not to need - so the check happens where the action
+// happens, and every input answer says which of the two things happened.
+
+test('an input action brings the window forward and says so', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 81, method: 'tools/call',
+    params: { name: 'click', arguments: { x: 100, y: 200 } }
+  });
+
+  assert.ok(c.driver.calls.some(([name]) => name === 'ensureFront'), 'the click asked about the window first');
+  const out = JSON.parse(res.result.content[0].text);
+  assert.equal(out.window.window, 'the page hears input', 'and the answer says what it found');
+});
+
+test('a read pays nothing for the window, because it changes nothing about it', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  await server.handle({
+    jsonrpc: '2.0', id: 82, method: 'tools/call',
+    params: { name: 'read_page', arguments: {} }
+  });
+
+  assert.ok(!c.driver.calls.some(([name]) => name === 'ensureFront'), 'reading does not steal the human attention');
+});
+
+// WHY THESE CLAIMS EXIST. Measured live on this machine: browser_status answered
+// focused true with Brave in front while the drive was on a Chrome tab, because the
+// answer asked "is any browser in front" and the machine had three browsers on it.
+// An agent that reads that never learns the window it is driving is somewhere else,
+// so the answer now names the browser in front and means "ours" by the titles of the
+// tabs we actually drive.
+
+const statusCtx = (foreground, titles) => {
+  const driver = fakeDriver();
+  driver.windowState = async () => ({ platform: 'win32', foreground, windows: [foreground, 'Paper - Google Chrome'], focused: false, why: '' });
+  driver.tabs = async () => titles.map((title, index) => ({ id: `t${index}`, url: `https://docs.google.com/${index}`, title }));
+  return { driver, browsers: [{ id: 'chrome', name: 'Google Chrome' }, { id: 'brave', name: 'Brave' }], port: 9450 };
+};
+
+const statusOf = async (context) => {
+  const server = createMcpServer(context);
+  const res = await server.handle({ jsonrpc: '2.0', id: 90, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
+  return JSON.parse(res.result.content[0].text).window;
+};
+
+test('another browser in front is not our window, and the answer says which one it is', async () => {
+  const window = await statusOf(statusCtx('syarat franchise gacoan - Brave', ['Untitled document - Google Docs']));
+
+  assert.equal(window.focused, false, 'a browser we are not driving does not count');
+  assert.equal(window.browser, 'Brave', 'and the answer names it instead of saying yes');
+  assert.match(window.why, /Brave is in front/);
+  assert.equal(window.title, '', 'a window that is not ours names no title');
+});
+
+test('the window holding the tab we are driving is the one that counts', async () => {
+  const window = await statusOf(statusCtx('Untitled document - Google Docs - Google Chrome', ['Untitled document - Google Docs']));
+
+  assert.equal(window.focused, true);
+  assert.equal(window.browser, 'Google Chrome');
+  assert.equal(window.title, 'Untitled document - Google Docs - Google Chrome');
+  assert.equal(window.why, '', 'a window that is ours has nothing left to explain');
+});
+
+test('an application that is not a browser says what is in front instead of guessing', async () => {
+  const window = await statusOf(statusCtx('Project 1 - Visual Studio Code', ['Untitled document - Google Docs']));
+
+  assert.equal(window.focused, false);
+  assert.equal(window.browser, '', 'there is no browser to name');
+  assert.match(window.why, /another window is in front/);
+});
 
 test('a capture comes back as image content a model can see, not base64 text', async () => {
   const server = createMcpServer(ctx());
@@ -171,7 +254,7 @@ test('a row click resolves and clicks in one call', async () => {
   });
 
   assert.match(res.result.content[0].text, /Insert/);
-  assert.deepEqual(c.driver.calls[0], ['clickRow', 'menuitem', 'Insert']);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name !== 'ensureFront'), [['clickRow', 'menuitem', 'Insert']]);
 });
 
 test('a hover reaches the driver without pressing anything', async () => {
@@ -183,7 +266,7 @@ test('a hover reaches the driver without pressing anything', async () => {
   });
 
   assert.match(res.result.content[0].text, /10/);
-  assert.deepEqual(c.driver.calls[0], ['hover', 10, 20]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name !== 'ensureFront'), [['hover', 10, 20]]);
 });
 
 test('closing a tab drives the browser and drops the cached session', async () => {

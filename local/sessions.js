@@ -44,6 +44,7 @@ export function findOn(page, query) {
 // row is tried first; the substring stays as the fallback it always was.
 
 import { guide } from './agent-guide.js';
+import { ensureFront } from './focus-guard.js';
 
 export function asDriver(session) {
   return {
@@ -54,6 +55,8 @@ export function asDriver(session) {
     click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
     resolve: (role, name) => session.resolveRow({ role, name }),
     clickFraction: (at) => session.clickFraction(at),
+    hasFocus: () => session.hasFocus(),
+    ensureFront: (options) => ensureFront({ ...(options ?? {}), hasFocus: () => session.hasFocus() }),
     captureSized: (options) => session.captureSized(options ?? {}),
     guide: async (topic) => guide(topic),
     menuTree: (options) => session.menuTree(options ?? {}),

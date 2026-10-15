@@ -1136,6 +1136,11 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return { key: name, modifiers: mask };
     },
 
+    // WHY A STREAM REPORTS THE COMPARISON INSTEAD OF A VERDICT. A shortcut in the
+    // middle of a stream can change the page without the text ever landing, so "the
+    // page changed" is the strongest thing a stream can honestly say - and it is the
+    // thing an agent needs to decide whether to look again.
+
     async keys(events) {
       if (!Array.isArray(events) || events.length === 0) throw new Error('keys needs a non-empty event array.');
       if (events.length > 100) throw new Error('keys holds at most 100 events.');
@@ -1315,6 +1320,20 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async clear() {
       await primitives.selectAll();
       await primitives.key('Delete');
+    },
+
+    // WHY THE PAGE IS ASKED BEFORE THE MACHINE, AND WHY IT IS ENOUGH. Measured live
+    // on this machine, twice, with the drive typing into a Google Docs document: a
+    // browser behind another application still reported focus here and took the text,
+    // and a minimized browser reported no focus and dropped it. So this one
+    // evaluation answers the only case that costs anything to be wrong about, and
+    // the machine is asked only when it says the page is deaf.
+    async hasFocus() {
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: 'document.hasFocus()',
+        returnByValue: true
+      });
+      return result?.value === true;
     },
 
     async viewport() {
