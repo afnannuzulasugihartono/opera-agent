@@ -24,7 +24,16 @@ if (!files.length) {
   process.exit(2);
 }
 
-const slug = (name) => name.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').toLowerCase().slice(0, 60);
+// WHY THE TRIM IS TWO REPLACES. One alternation over both ends reads as a pattern that
+// can match a run and walk back into it; two linear passes cannot, and the result is
+// the same string.
+
+const slug = (name) => name
+  .replace(/[^a-z0-9]+/gi, '_')
+  .replace(/^_+/, '')
+  .replace(/_+$/, '')
+  .toLowerCase()
+  .slice(0, 60);
 
 for (const file of files) {
   const query = await readFile(file, 'utf8');

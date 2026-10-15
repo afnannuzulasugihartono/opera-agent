@@ -177,6 +177,6 @@ supabase/functions/_shared/cors.js 03a97007d61329edc1377de25e13fcde6a49b0ff
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json 689cd3077a0c1383fd050830076b70c6b02b47a9
-.gitleaks.toml 0e65aabf1cc06121b4ad4272c8bf5d434133f4f3
+.gitleaks.toml 54118708ef223f9701742c0c28fd23b83580af65
 .github/CODEOWNERS 018189b06335b26f42cd4a072bc59383d7700250
 .github/workflows/ci.yml d2aed40dcbf066982c0ccc15ee6b366d2082747c

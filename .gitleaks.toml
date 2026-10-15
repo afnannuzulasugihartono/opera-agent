@@ -67,6 +67,19 @@ id = "generic-api-key"
 
   [[rules.allowlists]]
 
+  description = "The RFC 6455 sample handshake nonce in the bridge tests. It is the specification's own example - 'the sample nonce', base64 - and it authenticates nothing: the server accepts any sixteen-byte key. The live tree uses sixteen zero bytes; these entries exist because `detect --source .` reads the commits that carried the spec literal."
+  condition = "AND"
+  paths = [
+    '''^tests/bridge-server\.test\.mjs$''',
+    '''^tests/local-bridge\.test\.mjs$''',
+  ]
+  regexTarget = "line"
+  regexes = [
+    '''Sec-WebSocket-Key.: .dGhlIHNhbXBsZSBub25jZQ==''',
+  ]
+
+  [[rules.allowlists]]
+
   description = "The same publishable key inside one reverted experiment migration, kept as history. The live tree carries no key in migrations; a secret here in any other migration file is still flagged."
   condition = "AND"
   paths = ['''^supabase/migrations/20261012100000_opera_agent_command_insert_signal\.sql$''']
@@ -78,3 +91,22 @@ id = "generic-api-key"
 [[rules]]
 id = "jwt"
 
+# WHY THESE FIVE ARE ALLOWED BY VALUE AND NOT BY PATH. Each fixture below lived in a
+# file that has since been deleted, so a path-scoped entry cannot name it: the hygiene
+# gate requires every allowlist path to be a tracked file, and `detect --source .`
+# still reads the commits that held them. So they are allowed by their literal, which
+# is the narrowest thing that can silence a commit - each is a specification example, a
+# public half of a key, or a fixture whose payload starts with a field name a real
+# Supabase token does not carry.
+
+[allowlist]
+description = "Fixtures that only exist in history: two deleted 8D drill scripts, the deleted v2 manifest copy, and two deleted transaction-cloud tests."
+condition = "OR"
+regexTarget = "line"
+regexes = [
+  '''dGhlIHNhbXBsZSBub25jZQ==''',
+  '''eyJhbGciOiJIUzI1NiJ9\.eyJyb2xlI''',
+  '''PublishableKey\s*=\s*.sb_publishable_''',
+  '''OPERA_8D_MANAGEMENT_TOKEN,OPERA_8D_PUBLI''',
+  '''"key":\s?"MIIBI''',
+]

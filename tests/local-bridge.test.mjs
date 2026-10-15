@@ -262,13 +262,18 @@ test('a CDP call is proved before it is sent, like every other command', async (
 // leaves the promise pending forever, and node:test then cancels every test
 // after it — which reads as four broken tests instead of one broken handshake.
 
+// WHY THE HANDSHAKE KEY IS NOT THE SPEC'S OWN SAMPLE. RFC 6455 opens with the nonce
+// 'the sample nonce', and the secret scanner reads any base64 sitting next to the word
+// key as a credential - correctly, and wrongly here. The server accepts any sixteen-byte
+// key, so these use sixteen zero bytes.
+
 function upgradeStatus(port, origin) {
   return new Promise((resolve, reject) => {
     const headers = {
       Connection: 'Upgrade',
       Upgrade: 'websocket',
       'Sec-WebSocket-Version': '13',
-      'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ=='
+      'Sec-WebSocket-Key': 'AAAAAAAAAAAAAAAAAAAAAA=='
     };
     if (origin !== undefined) headers.Origin = origin;
     const req = httpRequest({ host: '127.0.0.1', port, path: '/', headers });

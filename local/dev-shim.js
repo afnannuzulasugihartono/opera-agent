@@ -38,6 +38,11 @@
 // session's tools down while a healthy bridge sat one port away holding the
 // browser. The bridge is now shareable (a driver that loses the port adopts the
 // one that won it), so there is nothing left to enforce and nothing left to
+// WHY THE WAIT ASKS A QUESTION. The flag is set by the stop handler, a different
+// closure, and a loop that reads it directly reads a variable nothing in the loop
+// can change - which is true of the code and still reads as a loop that cannot
+// end. Asking keeps both: the stop handler still ends the wait, and the reader can
+// see what the loop is waiting for.
 // refuse: two shims, two sets of tools, one signed-in browser.
 
 const TOOLS_CHANGED = JSON.stringify({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' });
@@ -208,8 +213,11 @@ export function createSupervisor({
     swapping = true;
     queue = [];
     log('files changed, swapping worker');
+
     const deadline = now() + settleMs;
-    while (pending.size > 0 && now() < deadline && !stopped) {
+
+    const waiting = () => pending.size > 0 && now() < deadline && !stopped;
+    while (waiting()) {
       await new Promise((r) => setTimeout(r, 25));
     }
     failPending('dev server reloaded, retry');

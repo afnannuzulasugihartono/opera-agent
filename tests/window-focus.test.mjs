@@ -45,6 +45,27 @@ test('a platform with no implementation refuses in words rather than answering f
   assert.match(state.why, /not implemented/);
 });
 
+// WHY THE REFUSAL IS HELD TO THE SAME SHAPE. Measured on CI: the Linux runner took the
+// refusal path and the answer had no `title` key at all, so a caller reading the title
+// of a refusal found undefined where a caller on Windows found an empty string. The
+// keys a caller reads have to exist whether the machine answered or refused.
+
+test('a refusal carries every key a real answer carries', async () => {
+  const real = await windowState();
+  const refused = await windowState({ platform: 'sunos' });
+  const refusedFocus = await focusWindow('', { platform: 'sunos' });
+
+  for (const key of ['platform', 'foreground', 'windows', 'minimized', 'focused', 'why']) {
+    assert.ok(key in refused, `windowState refusal is missing ${key}`);
+    assert.ok(key in refusedFocus, `focusWindow refusal is missing ${key}`);
+  }
+  for (const key of ['title', 'match', 'focused', 'why', 'foreground', 'windows', 'minimized']) {
+    assert.ok(key in refusedFocus, `focusWindow refusal is missing ${key}`);
+  }
+  assert.equal(typeof refusedFocus.title, 'string', 'and the title is a string, not nothing');
+  assert.ok(Array.isArray(real.windows), 'the real answer still answers');
+});
+
 // WHY THE READ AND THE WRITE ARE BOTH OFFERED. An agent that cannot type needs to
 // know whether the window is behind something before it starts clicking, and an
 // agent that has just been told needs one call that fixes it \u2014 not a paragraph

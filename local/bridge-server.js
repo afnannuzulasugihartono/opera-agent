@@ -10,6 +10,7 @@
 // to the browser sitting on this machine and must never be reachable from the
 // network.
 
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 
@@ -178,7 +179,7 @@ export function createBridgeServer({
   }
 
   function command(method, params = {}, { timeoutMs = 60000 } = {}) {
-    const id = `${now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const id = `${now().toString(36)}-${randomUUID().slice(0, 13)}`;
     const frame = { id, method, params, timeoutMs };
     return new Promise((resolve, reject) => {
       const entry = { resolve, reject, method, sentAt: now() };

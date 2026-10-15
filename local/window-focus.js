@@ -107,7 +107,22 @@ const APPLE_FOCUS = (match) => [
   'end tell'
 ].join('\n');
 
-const unsupported = (platform, why) => ({ platform, foreground: '', windows: [], minimized: [], focused: false, why });
+// WHY THE REFUSAL HAS THE SAME SHAPE AS THE ANSWER. Measured on CI: a Linux runner
+// took the refusal path and the answer came back without a `title` at all, because the
+// refusal never had one - so a caller that reads the title of a refusal finds nothing
+// where a caller on Windows finds an empty string. A shape that depends on the
+// platform is a shape a caller has to guess.
+
+const unsupported = (platform, why) => ({
+  platform,
+  match: '',
+  foreground: '',
+  windows: [],
+  minimized: [],
+  focused: false,
+  title: '',
+  why
+});
 
 const readWindows = (all) => {
   const rest = [...all];
