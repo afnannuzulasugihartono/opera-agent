@@ -186,6 +186,19 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
   },
   {
+    name: 'get_computed',
+    description: 'Read one element the way the page renders it: tag, role, name, its box and whether it is on screen, plus font, size, weight, colour, background, display, visibility and opacity. Name it by selector or by the x and y inside the viewport. This is how an agent without eyes checks a page: a button that turned blue, a modal that opened, text running past the viewport. It reads; it never changes anything.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        selector: { type: 'string', description: 'CSS selector for the element' },
+        x: { type: 'number', description: 'x inside the viewport, with y' },
+        y: { type: 'number', description: 'y inside the viewport, with x' }
+      }
+    }
+  },
+  {
     name: 'scroll',
     description: 'Move the view: {y: pixels} for a relative scroll, {end: true} for the bottom, {text: "..."} or {selector: "..."} to bring something on screen. The answer carries what the page measured - which scroll container moved (a window or a panel, named), from and to, travelPx (how far the page can still go), and for a target whether it is now on screen. Without it a 21-page document is only its first screen, a lazy list never loads, and a click can answer success on coordinates that are above the viewport and hit nothing. It sets the scroll offset rather than sending a wheel, because a synthetic mouseWheel over a canvas editor got no answer at all from the tab - still outstanding after eight seconds, on two documents - and a scroll that hangs is worse than one that does nothing.',
     inputSchema: {
@@ -700,6 +713,8 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         return afterAction(driver, await driver.type(args.text));
       case 'append':
         return afterAction(driver, await driver.append(args.text));
+      case 'get_computed':
+        return asText(await driver.computed({ x: args.x, y: args.y, selector: args.selector }));
       case 'scroll':
         return afterAction(driver, await driver.scroll({
           y: args.y,

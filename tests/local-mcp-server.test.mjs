@@ -93,7 +93,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -137,6 +137,35 @@ test('the append says how it decides it reached the end, and when it cannot know
 // things - how far to move, that it wants the end, and the thing it wants to see - and
 // merging them into one string argument would make every one of them a guess about
 // which form was meant. Four optional arguments, each unambiguous.
+
+// WHY THE COMPUTED READ IS DESCRIBED BY WHAT IT ANSWERS. An agent reads a tool
+// description to decide whether a call can settle a question, so the description names
+// the questions it settles - a button that turned blue, a modal that opened, text past
+// the viewport - rather than the properties it returns.
+
+test('the computed read is described by the questions it settles, not by its fields', () => {
+  const tool = TOOLS.find((one) => one.name === 'get_computed');
+
+  assert.match(tool.description, /turned blue/);
+  assert.match(tool.description, /on screen/);
+  assert.match(tool.description, /never changes anything/);
+  assert.deepEqual(Object.keys(tool.inputSchema.properties).sort(), ['selector', 'tabId', 'x', 'y']);
+  assert.equal(tool.inputSchema.required, undefined);
+});
+
+test('the computed read reaches the driver and answers what it read', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  c.driver.computed = async (options) => { c.driver.calls.push(['computed', options]); return { found: true, tag: 'BUTTON', name: 'Bold', background: 'rgb(26, 115, 232)', rect: { onScreen: true } }; };
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 99, method: 'tools/call',
+    params: { name: 'get_computed', arguments: { selector: 'button.bold' } }
+  });
+
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'computed'), [['computed', { selector: 'button.bold', x: undefined, y: undefined }]]);
+  assert.match(res.result.content[0].text, /"name": "Bold"/);
+});
 
 test('scroll takes pixels, the end, a target text or a selector, and nothing is required', () => {
   const scroll = TOOLS.find((tool) => tool.name === 'scroll');

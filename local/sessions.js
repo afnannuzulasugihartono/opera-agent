@@ -76,6 +76,7 @@ export function asDriver(session) {
     type: (text) => session.type(text),
     append: (text) => session.append(text),
     scroll: (options) => session.scroll(options ?? {}),
+    computed: (options) => session.computed(options ?? {}),
     keys: (events) => session.keys(events),
     snapshot: (limit) => session.snapshot(limit === undefined ? {} : { limit }),
     caretLine: () => session.caretLine(),

@@ -912,6 +912,46 @@ export const scrollExpression = (probe) => `(() => {
   });
 })() /*opera-scroll*/`;
 
+// WHY ONE READ OF COMPUTED STYLE INSTEAD OF ONE READ PER PROPERTY. Measured live: an
+// agent verifying a page without eyes needs facts like "did this button turn blue",
+// "is this modal open", "is this text clipped by a line clamp" - and each of those is
+// three properties on one element. So one evaluation returns the handful that decide
+// those questions, and names the element it read, because a style read without the
+// element it belongs to is a number nobody can act on. This replaces a format-specific
+// reader: nothing here knows what a document is.
+
+export const computedExpression = (probe) => `(() => {
+  const probe = ${JSON.stringify(probe ?? {})};
+  let el = null;
+  if (probe.selector) el = document.querySelector(probe.selector);
+  else if (typeof probe.x === 'number' && typeof probe.y === 'number') el = document.elementFromPoint(probe.x, probe.y);
+  if (!el) return null;
+  const style = window.getComputedStyle(el);
+  const box = el.getBoundingClientRect();
+  const name = el.getAttribute('aria-label') || (typeof el.value === 'string' ? el.value : '') || el.innerText || el.textContent || '';
+  const rect = {
+    x: Math.round(box.left), y: Math.round(box.top),
+    w: Math.round(box.width), h: Math.round(box.height),
+    onScreen: box.bottom > 0 && box.top < window.innerHeight && box.right > 0 && box.left < window.innerWidth,
+    clipped: box.bottom > window.innerHeight || box.right > window.innerWidth
+  };
+  return {
+    tag: el.tagName || '',
+    role: el.getAttribute('role') || '',
+    name: String(name).replace(/\s+/g, ' ').trim().slice(0, 60),
+    rect,
+    font: style.fontFamily ? style.fontFamily.split(',')[0].replace(/["']/g, '').trim() : '',
+    size: style.fontSize || '',
+    weight: style.fontWeight || '',
+    color: style.color || '',
+    background: style.backgroundColor || '',
+    display: style.display || '',
+    visibility: style.visibility || '',
+    opacity: style.opacity || '',
+    disabled: el.disabled === true || el.getAttribute('aria-disabled') === 'true'
+  };
+})() /*opera-computed*/`;
+
 export const EDIT_SIGNATURE_EXPRESSION = `(() => {
   const el = document.activeElement;
   const tag = el ? el.tagName : '';
@@ -1559,6 +1599,38 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
                   ? `nothing moved: ${seen.root} had no room to move (travelPx ${seen.travelPx ?? 'unknown'})`
                   : ''))
       };
+    },
+
+    // WHY THE ANSWER NAMES THE ELEMENT IT READ. A style value without its element is a
+    // number nobody can act on, and two elements can share a colour and mean opposite
+    // things. So tag, role, name and the box come back with the values, and rect says
+    // whether the element is on screen or running past the viewport - which is the
+    // difference between "the page shows a blue button" and "a blue button exists
+    // somewhere below".
+
+    async computed({ x, y, selector } = {}) {
+      const probe = {
+        selector: selector ?? undefined,
+        x: Number.isFinite(Number(x)) ? Number(x) : undefined,
+        y: Number.isFinite(Number(y)) ? Number(y) : undefined
+      };
+      if (!probe.selector && (probe.x === undefined || probe.y === undefined)) {
+        throw new Error('computed needs a selector, or an x and a y inside the viewport');
+      }
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: computedExpression(probe),
+        returnByValue: true
+      });
+      const seen = result?.value ?? null;
+      if (!seen) {
+        return {
+          found: false,
+          why: probe.selector
+            ? `no element on this page matches ${JSON.stringify(String(selector).slice(0, 40))}`
+            : `nothing at ${probe.x},${probe.y} - ax_snapshot() to see what is on screen`
+        };
+      }
+      return { found: true, ...seen };
     },
 
     async clickAt(x, y) {

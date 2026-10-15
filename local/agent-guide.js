@@ -119,6 +119,7 @@ export const SIDE_EFFECTS = Object.freeze({
   type: ['inserts text into whatever is focused'],
   append: ['moves the caret to the end before inserting, so text lands at the end instead of wherever the caret was left'],
   scroll: ['moves the view, which can load more of a lazy page and move the page out from under coordinates you already hold'],
+  get_computed: [],
 
 
   stream_keys: ['sends a key sequence to whatever is focused'],

@@ -448,6 +448,80 @@ test('a scroll that finds nothing says so, rather than reporting a scroll that w
   assert.match(out.why, /found nothing/);
 });
 
+// WHY A COMPUTED-STYLE READ AND NOT A FORMAT READER. The first draft of the missing
+// piece was a format reader - font, size, spacing - and it was wrong twice over: it
+// knew what a document is, and it could not tell an agent that a button turned blue.
+// What an agent actually needs is the element it read, the handful of values that
+// decide what a page is showing, and whether that element is even on screen.
+
+const COMPUTED_CDP = (answer) => {
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-computed')) {
+        return { result: { value: answer } };
+      }
+      return {};
+    }
+  };
+};
+
+const BLUE_BUTTON = {
+  tag: 'BUTTON',
+  role: 'button',
+  name: 'Bold',
+  rect: { x: 12, y: 30, w: 40, h: 30, onScreen: true, clipped: false },
+  font: 'Arial',
+  size: '13px',
+  weight: '700',
+  color: 'rgb(255, 255, 255)',
+  background: 'rgb(26, 115, 232)',
+  display: 'inline-block',
+  visibility: 'visible',
+  opacity: '1',
+  disabled: false
+};
+
+test('a computed read names the element it read and the values that decide what the page shows', async () => {
+  const cdp = COMPUTED_CDP(BLUE_BUTTON);
+
+  const out = await createPrimitives(cdp).computed({ selector: 'button.bold' });
+
+  assert.equal(out.found, true);
+  assert.equal(out.tag, 'BUTTON');
+  assert.equal(out.name, 'Bold');
+  assert.equal(out.background, 'rgb(26, 115, 232)', 'a turned-blue button is a fact, not a guess');
+  assert.equal(out.rect.onScreen, true);
+  assert.match(cdp.calls[0].params.expression, /button\.bold/);
+});
+
+test('a computed read by point answers about whatever is under that point', async () => {
+  const cdp = COMPUTED_CDP({ ...BLUE_BUTTON, tag: 'CANVAS', role: '', name: '', rect: { x: 0, y: 0, w: 1430, h: 893, onScreen: true, clipped: true } });
+
+  const out = await createPrimitives(cdp).computed({ x: 500, y: 300 });
+
+  assert.equal(out.tag, 'CANVAS');
+  assert.equal(out.rect.clipped, true, 'an element that runs past the viewport says so');
+});
+
+test('a computed read that finds nothing says so, with the call that would find something', async () => {
+  const cdp = COMPUTED_CDP(null);
+
+  const out = await createPrimitives(cdp).computed({ x: 5, y: 5 });
+
+  assert.equal(out.found, false);
+  assert.match(out.why, /ax_snapshot\(\)/);
+});
+
+test('a computed read without a target is refused before it costs a round trip', async () => {
+  const cdp = COMPUTED_CDP(BLUE_BUTTON);
+
+  await assert.rejects(() => createPrimitives(cdp).computed({}), /needs a selector, or an x and a y/);
+  assert.equal(cdp.calls.length, 0, 'and nothing went to the page');
+});
+
 test('a chord is two masked events with codes and no text, because separate modifier presses leaked under rapid fire', async () => {
   const cdp = recordingCdp();
   const p = createPrimitives(cdp);
