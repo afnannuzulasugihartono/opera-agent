@@ -187,3 +187,30 @@ test('a worker that keeps dying ends the shim instead of looping forever', async
   at += 31000;
   await h.server.stop();
 });
+
+// WHY THE LOCK IS TESTED WITH REAL FILES. An exclusive create is an atomicity
+// claim about the filesystem, and no fake honors it. Tmp paths keep parallel
+// runs apart; each case cleans its own file.
+
+test('one shim per machine: a second holder is refused, a dead one is stolen from', async () => {
+  const { mkdtempSync, writeFileSync, existsSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { acquireShimLock } = await import('../local/dev-shim.js');
+  const dir = mkdtempSync(join(tmpdir(), 'shim-lock-'));
+  const lockPath = join(dir, 'test.lock');
+
+  const first = acquireShimLock(lockPath);
+  assert.ok(first, 'the first holder wins');
+  assert.equal(acquireShimLock(lockPath), null, 'a live holder refuses newcomers');
+  first.release();
+  assert.equal(existsSync(lockPath), false, 'a clean exit removes the lock');
+  const second = acquireShimLock(lockPath);
+  assert.ok(second, 'and the next holder takes it');
+  second.release();
+
+  writeFileSync(lockPath, '2147483647');
+  const stolen = acquireShimLock(lockPath);
+  assert.ok(stolen, 'a dead holder cannot squat the machine forever');
+  stolen.release();
+});
