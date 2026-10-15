@@ -108,7 +108,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'read_page',
-    description: 'Read one tab: url, title and text. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines, and the caret ends up at the end of the document. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
+    description: 'Read one tab: url, title and text. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines; the read borrows the selection and puts the caret back where it was, answering caretMoved and caretRestored so a caret it could not restore is known rather than guessed. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {
@@ -240,7 +240,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'caret_line',
-    description: 'Report the text of the line the caret stands on. Selects its own line to read it, then collapses back to the line end, which is where the caret ends up. Dismiss any menu first; with one open the keys walk the menu instead of the text.',
+    description: 'Report the text of the line the caret stands on. Selects its own line to read it, then puts the caret back where it was and answers caretRestored so a caret it could not put back is known. Dismiss any menu first; with one open the keys walk the menu instead of the text.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {
@@ -606,7 +606,7 @@ export function createMcpServer(context) {
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
       case 'caret_line':
-        return asText({ line: await driver.caretLine() });
+        return asText(await driver.caretLine());
       case 'upload':
         return afterAction(driver, await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null }));
       case 'drop_file': {

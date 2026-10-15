@@ -205,6 +205,27 @@ const SNAPSHOT_ROLES = new Set([
 // from only holds what a selection put there, so a line is read by selecting
 // it first, and that dance lives in caret_line rather than in every map.
 
+// WHY THE CARET IS CHOSEN BY ITS COLOUR AND NOT BY ITS PLACE. Measured live on a
+// shared Google Doc: the page holds two carets, this client's drawn in the text
+// colour and a collaborator's painted green and labelled with their name. Taking
+// the last caret in the document measured and clicked somebody else's cursor —
+// which never moves — so every restore reported success while the real caret went
+// to the end of the document. The caret of this client is the one drawn in the
+// text colour; the name and the colour of the others are how the page marks them.
+
+const LOCAL_CARET_EXPRESSION = `
+  const live = [...document.querySelectorAll('.kix-cursor-caret')].filter((el) => {
+    if (!el.isConnected) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 || r.height > 0;
+  });
+  if (!live.length) return null;
+  const ink = getComputedStyle(document.body).color;
+  const mine = live.find((el) => (el.getAttribute('style') || '').includes(ink))
+    ?? live.find((el) => !(el.parentElement && el.parentElement.textContent || '').trim())
+    ?? live[0];
+  return mine;`;
+
 const SNAPSHOT_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
   const ROLES = new Set(__ROLES__);
@@ -287,7 +308,7 @@ const SNAPSHOT_EXPRESSION = `(() => {
 
   const caretOf = () => {
     const usable = (r) => (r && (r.x !== 0 || r.y !== 0 || r.width !== 0 || r.height !== 0)) ? r : null;
-    const kix = document.querySelector('.kix-cursor-caret');
+    const kix = (() => { ${LOCAL_CARET_EXPRESSION} })();
     if (kix) {
       const r = usable(kix.getBoundingClientRect());
       if (r) return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
@@ -471,7 +492,42 @@ const UPLOAD_FIND_GAP_MS = 400;
 // both are the point where a slow machine fails, and neither is a guess about
 // how long an application "usually" takes.
 
+// WHY A CARET IS REMEMBERED AS A POINT IN THE VIEWPORT AND PUT BACK WITH A CLICK.
+// Reading a Google Doc means selecting the document and copying it, because a
+// canvas holds no text to read — and that leaves the caret at the end, so the next
+// click lands where the agent has already been. Measured on this product's own
+// author: the caret was lost on a read and the loss went unnoticed until a click
+// landed in the wrong place.
+//
+// WHY A POINT AND NOT A SELECTION. What has to survive is where the caret will be
+// next. Restoring a selection too would mean restoring offsets, and a read that
+// restored the wrong selection would leave the next keystroke overwriting text
+// nobody chose. A point, put back with a click, is what the page already
+// understands: Docs draws its own caret as an element, and clicking it is how a
+// person moves it.
+//
+// WHY THE RESTORE IS REPORTED RATHER THAN ASSUMED, AND WHY IT IS LEFT ALONE FOR A
+// BEAT. A caret that cannot be put back is not a failure of the read — the text came
+// — but it is the difference between an agent that knows where it is and one that
+// clicks blind, so the answer says which happened. And a canvas redraws its caret
+// asynchronously, so a click and an immediate read can still see the old one.
+
+const CARET_RESTORE_GAP_MS = 180;
+const CARET_TOLERANCE_PX = 12;
+
+// WHY THE VIEW IS PUT BACK TWICE AND THE CLICK WAITS FOR THE SECOND. Measured
+// live: the read scrolls the document to the caret, and the page finishes that
+// scroll on its own frame — after the first write. A click that goes out in
+// between lands on whatever happens to be under it, and on the thesis document
+// that was an image: the caret was restored onto a picture. So the scroll is
+// written, the page is given a beat to argue, and the click only goes out once a
+// second write held.
+
+const CARET_SCROLL_SETTLE_MS = 120;
+const CARET_SCROLL_ATTEMPTS = 3;
+const SCROLL_MARK = 'data-opera-scroll';
 const MENU_HOVER_GAP_MS = 90;
+
 const MENU_OPEN_GAP_MS = 260;
 
 // WHY A MENU IS POLLED UNTIL IT IS DRAWN. Measured live, the Insert dropdown was
@@ -655,6 +711,121 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     }).catch(() => null);
   };
 
+  const caretHostExpression = `
+    const drawn = (() => { ${LOCAL_CARET_EXPRESSION} })();
+    if (drawn) return drawn;
+    try {
+      const sel = document.getSelection();
+      if (sel && sel.rangeCount === 1 && sel.isCollapsed) return sel.getRangeAt(0).startContainer.parentElement;
+    } catch { /* a range that will not hand over its node is simply no host */ }
+    return null;`;
+
+  const scrollChainExpression = `
+    const chain = [];
+    for (let el = host.parentElement; el; el = el.parentElement) {
+      chain.push(el);
+      if (el === document.documentElement) break;
+    }
+    return chain;`;
+
+  // WHY THE BOXES THAT SCROLL ARE FOUND BY A MARK AND NOT BY THE CARET. Measured
+  // live: while the whole document is selected the page draws no caret at all, so
+  // anything that walks up from the caret has nothing to walk up from — and the
+  // view stayed at the end of the document, putting the caret onto a picture. The
+  // boxes are marked while the caret is still there to be measured, and the marks
+  // are taken off again as soon as the restore is done with them.
+  const markedChainExpression = `
+    return [...document.querySelectorAll('[${SCROLL_MARK}]')]
+      .sort((a, b) => Number(a.getAttribute('${SCROLL_MARK}')) - Number(b.getAttribute('${SCROLL_MARK}')));`;
+
+  const clearMarkExpression = `
+    document.querySelectorAll('[${SCROLL_MARK}]').forEach((el) => el.removeAttribute('${SCROLL_MARK}'));`;
+
+  const scrollSumExpression = `
+    return chain.reduce((acc, el) => ({ x: acc.x + el.scrollLeft, y: acc.y + el.scrollTop }), { x: 0, y: 0 });`;
+
+  const rememberCaret = async () => primitives.evaluate(`(() => {
+    const host = (() => { ${caretHostExpression} })();
+    if (!host) return null;
+    const box = host.getBoundingClientRect();
+    if (!box || (!box.width && !box.height)) return null;
+    const chain = (() => { ${scrollChainExpression} })();
+    (() => { ${clearMarkExpression} })();
+    chain.forEach((el, i) => el.setAttribute('${SCROLL_MARK}', String(i)));
+    const sum = (() => { ${scrollSumExpression} })();
+    const y = Math.round(box.top + box.height / 2);
+    return {
+      x: Math.round(box.left),
+      y,
+      absX: Math.round(box.left + sum.x),
+      absY: Math.round(y + sum.y),
+      scroll: chain.map((el) => [el.scrollLeft, el.scrollTop])
+    };
+  })()`);
+
+  const putCaretBack = async (mark) => {
+    if (!mark || !Array.isArray(mark.scroll)) return lost('the page showed no caret to remember');
+    const pairs = JSON.stringify(mark.scroll.map(([x, y]) => [Number(x) || 0, Number(y) || 0]));
+    const where = JSON.stringify([Number(mark.absX) || 0, Number(mark.absY) || 0]);
+    let point = null;
+    for (let attempt = 1; attempt <= CARET_SCROLL_ATTEMPTS; attempt += 1) {
+      point = await primitives.evaluate(`(() => {
+        const chain = (() => { ${markedChainExpression} })();
+        const want = ${pairs};
+        if (!chain.length || chain.length !== want.length) return { why: 'the page no longer has the boxes that were scrolling, so the place is not the one that was measured' };
+        chain.forEach((el, i) => { el.scrollLeft = want[i][0]; el.scrollTop = want[i][1]; });
+        const settled = chain.every((el, i) => el.scrollLeft === want[i][0] && el.scrollTop === want[i][1]);
+        const now = (() => { ${scrollSumExpression} })();
+        const mark = ${where};
+        let x = Math.round(mark[0] - now.x);
+        let y = Math.round(mark[1] - now.y);
+        const inner = chain[0];
+        if (inner && (y < 0 || y > window.innerHeight || x < 0 || x > window.innerWidth)) {
+          const dy = y < 0 ? y - 8 : Math.max(0, y - window.innerHeight + 8);
+          const dx = x < 0 ? x - 8 : Math.max(0, x - window.innerWidth + 8);
+          inner.scrollTop += dy;
+          inner.scrollLeft += dx;
+          x -= dx;
+          y -= dy;
+        }
+        return { x, y, settled };
+      })()`);
+      if (point?.why) return lost(point.why);
+      if (attempt > 1 && point.settled) break;
+      await sleep(CARET_SCROLL_SETTLE_MS);
+    }
+    if (point.settled) await primitives.clickAt(point.x, point.y).catch(() => null);
+    await sleep(CARET_RESTORE_GAP_MS);
+    const seen = await primitives.evaluate(`(() => {
+      const chain = (() => { ${markedChainExpression} })();
+      const want = ${pairs};
+      if (chain.length === want.length) {
+        chain.forEach((el, i) => { el.scrollLeft = want[i][0]; el.scrollTop = want[i][1]; });
+      }
+      (() => { ${clearMarkExpression} })();
+      const host = (() => { ${caretHostExpression} })();
+      if (!host) return { why: 'the page showed no caret after the click' };
+      const box = host.getBoundingClientRect();
+      const sum = (() => { ${scrollSumExpression} })();
+      return {
+        absX: Math.round(box.left + sum.x),
+        absY: Math.round(box.top + box.height / 2 + sum.y),
+        settled: chain.every((el, i) => el.scrollLeft === want[i][0] && el.scrollTop === want[i][1])
+      };
+    })()`);
+    if (!seen || seen.why) return lost(seen?.why ?? 'the page lost the caret again', point.settled);
+    const same = Math.abs(seen.absX - mark.absX) <= CARET_TOLERANCE_PX
+      && Math.abs(seen.absY - mark.absY) <= CARET_TOLERANCE_PX;
+    if (!same) {
+      return lost(point.settled
+        ? 'the caret is not where it was left, so the click did not take'
+        : 'the view did not go back where it was, so the place no longer holds the caret', point.settled && seen.settled);
+    }
+    return { caretRestored: true, viewRestored: seen.settled, caretWhy: '' };
+  };
+
+  const lost = (caretWhy, viewRestored = false) => ({ caretRestored: false, viewRestored, caretWhy });
+
   const readState = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {
       expression: '({ title: document.title, url: location.href, text: document.body ? document.body.innerText : "" })',
@@ -677,20 +848,24 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     async read() {
       const state = await readState();
-      if (!isDocsDocument(state.url)) return state;
+      if (!isDocsDocument(state.url)) return { ...state, caretMoved: false, caretRestored: true, viewRestored: true, caretWhy: '' };
+      const mark = await rememberCaret();
       const text = await readDocsText();
-      return { ...state, text: text ?? state.text };
+      const back = await putCaretBack(mark);
+      return { ...state, text: text ?? state.text, caretMoved: true, ...back };
     },
 
     async caretLine() {
       const { url } = await readState();
+      const mark = await rememberCaret();
       await primitives.key('Home');
       await sleep(CARET_LINE_GAP_MS);
       await primitives.key('End', ['Shift']);
       await sleep(CARET_LINE_GAP_MS);
       const line = isDocsDocument(url) ? await copyDocsText() : await primitives.evaluate(SELECTION_TEXT_EXPRESSION);
       await primitives.key('End').catch(() => null);
-      return typeof line === 'string' ? line : '';
+      const back = await putCaretBack(mark);
+      return { line: typeof line === 'string' ? line : '', caretMoved: true, ...back };
     },
 
     async upload({ filename, data = null, path: filePath = null } = {}) {

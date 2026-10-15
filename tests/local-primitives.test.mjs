@@ -589,7 +589,19 @@ test('clear selects all and then deletes, because typing does not replace a sele
 
 const DOC_URL = 'https://docs.google.com/document/d/abc/edit';
 
-function docsCdp(copyAnswers) {
+// WHY THE FAKE ANSWERS THREE CARET QUESTIONS AND NOT ONE. A read writes the caret
+// down, puts the view back so the click lands on that spot, and then looks again to
+// see whether the caret came back. One answer cannot serve all three, because the
+// third is the measurement the whole claim rests on.
+//
+// WHY THE MEASUREMENT IS IN CONTENT COORDINATES. Measured live: after a read the
+// caret sat below the visible page, at y=1649 in a 1215-tall viewport, so the
+// viewport point before and after matched while the caret was nowhere near where it
+// started. Content coordinates — the viewport point plus the scroll of every box
+// around it — do not move when the page scrolls, so they can tell the truth about a
+// caret that is off the screen.
+
+function docsCdp(copyAnswers, caret = null) {
   const calls = [];
   const pending = [...copyAnswers];
   return {
@@ -599,6 +611,15 @@ function docsCdp(copyAnswers) {
       if (method === 'Runtime.evaluate') {
         if (params.expression.includes('texteventtarget')) {
           return pending.shift() ?? { result: { value: null } };
+        }
+        if (params.expression.includes('scroll: chain.map(')) {
+          return { result: { value: caret?.mark ?? null } };
+        }
+        if (params.expression.includes('const now =')) {
+          return { result: { value: caret?.point ?? null } };
+        }
+        if (params.expression.includes('absX: Math.round')) {
+          return { result: { value: caret?.seen ?? null } };
         }
         if (params.expression.includes('kix-canvas-tile')) {
           return { result: { value: { x: 700, y: 200 } } };
@@ -617,7 +638,15 @@ test('a read on an ordinary page costs one call and keeps its shape', async () =
 
   const out = await createPrimitives(cdp).read();
 
-  assert.deepEqual(out, { title: 't', url: 'u', text: 'body text' });
+  assert.deepEqual(out, {
+    title: 't',
+    url: 'u',
+    text: 'body text',
+    caretMoved: false,
+    caretRestored: true,
+    viewRestored: true,
+    caretWhy: ''
+  });
   assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate']);
 });
 
@@ -631,11 +660,15 @@ test('a read on a Google Doc borrows the selection and returns the document', as
   assert.deepEqual(out, {
     title: 'Doc',
     url: DOC_URL,
-    text: 'First line\nSecond line'
+    text: 'First line\nSecond line',
+    caretMoved: true,
+    caretRestored: false,
+    viewRestored: false,
+    caretWhy: 'the page showed no caret to remember'
   });
   assert.deepEqual(
     cdp.calls.map((c) => c.method),
-    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent',
+    ['Runtime.evaluate', 'Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent',
       'Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent']
   );
   const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
@@ -643,6 +676,86 @@ test('a read on a Google Doc borrows the selection and returns the document', as
     'the select-all carries Control on both edges and the collapse carries none');
   assert.deepEqual(slept, [50, 150, 50],
     'each borrowed key keeps its beat, and the selection settles before the copy forces it out');
+});
+
+// WHY THE READ PUTS THE CARET BACK. Reading a Doc borrows the selection, and a
+// borrowed selection leaves the caret at the end of the document, so the next click
+// lands where the agent has already been. Measured live: a read followed by a click
+// typed into the wrong place because of exactly that, twice.
+//
+// WHY THE POINT IS TAKEN RELATIVE TO THE SCROLLING BOX, NOT THE WINDOW. The read
+// scrolls the document to the caret, so a viewport point measured before the read
+// points at different text after it. The place that survives is the caret's offset
+// inside the box that scrolls, so that is what is written down, together with the
+// scroll the view was at — which is put back before the click, so the click lands
+// on the text the caret was on and the caller gets the view back too.
+//
+// WHY THE ANSWER IS A MEASUREMENT. A read that reports a restore it did not check is
+// an assertion, and the first time the page does not oblige it teaches the agent to
+// trust it. The caret is looked at again after the click and compared, and a caret
+// that did not come back is reported as one that did not come back.
+
+test('a read on a Doc puts the caret back where it found it', async () => {
+  const cdp = docsCdp([{ result: { value: 'First line' } }], {
+    mark: { x: 660, y: 300, absX: 660, absY: 420, scroll: [[0, 120]] },
+    point: { x: 660, y: 300, settled: true },
+    seen: { absX: 661, absY: 421, settled: true }
+  });
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.equal(out.caretMoved, true, 'the read does move the caret, and says so');
+  assert.equal(out.caretRestored, true, 'and the caret was measured back within a line');
+  assert.equal(out.viewRestored, true, 'and the scroll the read caused was put back');
+  assert.equal(out.caretWhy, '', 'and nothing is left to explain');
+  const press = cdp.calls.find((c) => c.params?.type === 'mousePressed');
+  assert.ok(press, 'a caret with a place on it gets a click');
+  assert.equal(press.params.x, 660);
+  assert.equal(press.params.y, 300);
+  const ask = cdp.calls.findIndex((c) => String(c.params?.expression ?? '').includes('scroll: chain.map('));
+  const copy = cdp.calls.findIndex((c) => c.method === 'Input.dispatchKeyEvent');
+  assert.ok(ask < copy, 'the caret is written down before the selection is borrowed');
+  const looks = (c) => String(c.params?.expression ?? '').includes('kix-cursor-caret')
+    && !String(c.params?.expression ?? '').includes('scroll: chain.map(');
+  const check = cdp.calls.map((c, i) => (looks(c) ? i : -1)).filter((i) => i >= 0).at(-1);
+  const click = cdp.calls.findIndex((c) => c.params?.type === 'mousePressed');
+  assert.ok(check > click, 'the caret is looked at again after the click, not before');
+});
+
+test('a caret that did not come back is reported as one that did not', async () => {
+  const cdp = docsCdp([{ result: { value: 'First line' } }], {
+    mark: { x: 660, y: 300, absX: 660, absY: 420, scroll: [[0, 120]] },
+    point: { x: 660, y: 300, settled: true },
+    seen: { absX: 660, absY: 880, settled: true }
+  });
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.equal(out.caretRestored, false, 'the click landed and the caret is elsewhere: that is false');
+  assert.equal(out.viewRestored, true, 'the view still came back, and is not confused with the caret');
+  assert.match(out.caretWhy, /not where it was left/, 'and it says so rather than leaving a bare false');
+});
+
+// WHY NO CLICK GOES OUT WHEN THE VIEW DID NOT COME BACK. The point was measured in
+// the view as it was before the read, so with the view somewhere else the same
+// numbers point at other text. Clicking there would move the caret and the
+// selection to whatever happens to be under them, which is the very damage the
+// restore exists to prevent.
+
+test('a view that did not go back is not clicked into', async () => {
+  const cdp = docsCdp([{ result: { value: 'First line' } }], {
+    mark: { x: 660, y: 300, absX: 660, absY: 420, scroll: [[0, 120]] },
+    point: { x: 660, y: 300, settled: false },
+    seen: { absX: 660, absY: 1180, settled: true }
+  });
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.equal(out.caretRestored, false);
+  assert.equal(out.viewRestored, false);
+  assert.match(out.caretWhy, /view did not go back/);
+  assert.ok(!cdp.calls.some((c) => c.params?.type === 'mousePressed'),
+    'a place that is no longer the place must not be clicked');
 });
 
 test('a read that finds no document structure keeps the page text', async () => {
@@ -780,9 +893,9 @@ test('a caret line on a Doc selects, copies, and ends at the line end', async ()
   const cdp = docsCdp([{ result: { value: 'Kajian pustaka mencakup' } }]);
   const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
 
-  const line = await p.caretLine();
+  const out = await p.caretLine();
 
-  assert.equal(line, 'Kajian pustaka mencakup');
+  assert.equal(out.line, 'Kajian pustaka mencakup');
   const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.deepEqual(keys.map((k) => [k.params.key, k.params.modifiers ?? 0]), [
     ['Home', 0], ['Home', 0], ['End', 8], ['End', 8], ['End', 0], ['End', 0]
@@ -803,9 +916,9 @@ test('a caret line outside Docs reads the selection instead of the mirror', asyn
     }
   };
 
-  const line = await createPrimitives(cdp).caretLine();
+  const out = await createPrimitives(cdp).caretLine();
 
-  assert.equal(line, 'plain line');
+  assert.equal(out.line, 'plain line');
   assert.ok(!calls.some((c) => c.method === 'Runtime.evaluate' && String(c.params.expression).includes('texteventtarget')),
     'no mirror on a plain page');
 });
@@ -813,9 +926,9 @@ test('a caret line outside Docs reads the selection instead of the mirror', asyn
 test('an unreadable line is empty, and the caret still collapses', async () => {
   const cdp = docsCdp([{ result: { value: null } }]);
 
-  const line = await createPrimitives(cdp).caretLine();
+  const out = await createPrimitives(cdp).caretLine();
 
-  assert.equal(line, '');
+  assert.equal(out.line, '');
   const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.equal(keys.at(-1).params.key, 'End', 'the collapse is not skipped on failure');
   assert.equal(keys.at(-1).params.modifiers, 0);

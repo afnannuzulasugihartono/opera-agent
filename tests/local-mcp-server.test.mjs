@@ -40,7 +40,7 @@ function fakeDriver() {
     type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
     keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
-    caretLine: async () => 'Kajian pustaka mencakup',
+    caretLine: async () => ({ line: 'Kajian pustaka mencakup', caretMoved: true, caretRestored: true }),
     capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; }
   };
 }
@@ -456,7 +456,11 @@ test('caret_line reports the line without moving past it', async () => {
 
   const res = await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'caret_line', arguments: {} } });
 
-  assert.deepEqual(JSON.parse(res.result.content[0].text), { line: 'Kajian pustaka mencakup' });
+  assert.deepEqual(JSON.parse(res.result.content[0].text), {
+    line: 'Kajian pustaka mencakup',
+    caretMoved: true,
+    caretRestored: true
+  });
 });
 
 test('upload carries a file without touching the native dialog', async () => {
