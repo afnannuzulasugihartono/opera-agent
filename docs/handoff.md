@@ -16,7 +16,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - Version `1.6.26` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth. [`check.mjs`](../scripts/check.mjs) also asserts the version the MCP server
   reports, the store form's four-part version, and that no module redeclares the secret regex.
-- Gates: `npm test`, `npm run check` — 29 primitives, 176 runtime safety files, 1199 unit
+- Gates: `npm test`, `npm run check` — 29 primitives, 176 runtime safety files, 1236 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 73 `opera_*`
   functions (62 `SECURITY DEFINER`), 17 `opera_*` tables, 10 deployed edge functions.
@@ -25,6 +25,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   hop. Measured on that profile: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms,
   `read_page` 20 ms after seventy idle seconds, and a burst of eight at 23 ms mean, 66 ms
   max.
+- **On the heaviest real page — a Google Docs canvas — the loop still holds.** Measured on
+  this machine, 2026-10-15, over the bridge: `click` 160 ms, `press_key` 205 ms,
+  `ax_snapshot` 19 ms, `capture_page` 349 ms, `find_elements` 14 ms, `browser_status`
+  476 ms, `read_page` 713 ms, `caret_line` 1171 ms. The last two are the price of the
+  truth they carry: each has to put the caret back and read the canvas, so an agent that
+  only needs to act pays a fifth of a second and an agent that needs to know pays a
+  second.
 - **The bridge transport is a held `POST /poll`, not a WebSocket.** The WebSocket version
   never delivered a command on this Chrome: the worker's counters read `messages 0` after
   hundreds of frames sent, the same server's frames reached a real WebSocket client every
