@@ -713,11 +713,9 @@ test('the text caret rides the snapshot so the next keystroke lands knowingly', 
   const expression = snapshotExpression(120);
 
   assert.ok(expression.includes('kix-cursor-caret'), 'the canvas caret Docs exposes');
-  assert.ok(expression.includes('docs-texteventtarget-iframe'), 'the mirror that holds the line text');
   assert.ok(expression.includes("role: 'caret'"), 'rides as a final row, past the limit');
   assert.ok(expression.includes('isCollapsed'), 'a ranged selection reports nothing rather than a dishonest point');
-  assert.ok(expression.includes('anchorNode'), 'the line comes from the selection, not a guess');
-  assert.ok(expression.includes('caret.line'), 'and rides the row for the agent to read');
+  assert.ok(!expression.includes('docs-texteventtarget-iframe'), 'the line lives behind caret_line, which selects first; the map carries coordinates only');
 });
 
 // WHY THE BEAT IS PINNED, NOT THE TIMING. Docs drops a keyDown and keyUp that
@@ -759,4 +757,56 @@ test('all four arrows dispatch with their virtual key codes', async () => {
     assert.equal(down.params.windowsVirtualKeyCode, vk, name);
     assert.equal(down.params.code, code, name);
   }
+});
+
+// WHY READING A LINE SELECTS IT FIRST. The mirror a copy reads from only
+// holds what a selection put there: measured live as an empty line beside a
+// perfectly visible caret. So the read selects its own line, copies, and
+// collapses back to the line end. Steps breathe because injected keys land
+// late; without the beats the copy runs before the selection exists.
+
+test('a caret line on a Doc selects, copies, and ends at the line end', async () => {
+  const slept = [];
+  const cdp = docsCdp([{ result: { value: 'Kajian pustaka mencakup' } }]);
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const line = await p.caretLine();
+
+  assert.equal(line, 'Kajian pustaka mencakup');
+  const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
+  assert.deepEqual(keys.map((k) => [k.params.key, k.params.modifiers ?? 0]), [
+    ['Home', 0], ['Home', 0], ['End', 8], ['End', 8], ['End', 0], ['End', 0]
+  ], 'home, shift-end, copy between, then collapse');
+  assert.deepEqual(slept.filter((ms) => ms === 300).length, 2, 'a beat after each move');
+});
+
+test('a caret line outside Docs reads the selection instead of the mirror', async () => {
+  const calls = [];
+  const cdp = {
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate') {
+        if (params.expression.includes('getSelection')) return { result: { value: 'plain line' } };
+        return { result: { value: { title: 't', url: 'https://example.com/', text: 'body' } } };
+      }
+      return { result: {} };
+    }
+  };
+
+  const line = await createPrimitives(cdp).caretLine();
+
+  assert.equal(line, 'plain line');
+  assert.ok(!calls.some((c) => c.method === 'Runtime.evaluate' && String(c.params.expression).includes('texteventtarget')),
+    'no mirror on a plain page');
+});
+
+test('an unreadable line is empty, and the caret still collapses', async () => {
+  const cdp = docsCdp([{ result: { value: null } }]);
+
+  const line = await createPrimitives(cdp).caretLine();
+
+  assert.equal(line, '');
+  const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
+  assert.equal(keys.at(-1).params.key, 'End', 'the collapse is not skipped on failure');
+  assert.equal(keys.at(-1).params.modifiers, 0);
 });

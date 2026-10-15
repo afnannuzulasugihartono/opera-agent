@@ -137,13 +137,18 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'caret_line',
+    description: 'Report the text of the line the caret stands on. Selects its own line to read it, then collapses back to the line end, which is where the caret ends up. Dismiss any menu first; with one open the keys walk the menu instead of the text.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg } }
+  },
+  {
     name: 'capture_page',
     description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Pass fullPage to span the whole scrollable document past the viewport instead. Returns image content the caller can see.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
   },
   {
     name: 'ax_snapshot',
-    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look. The text caret rides as a final caret row carrying the line it stands on, so the next keystroke lands knowingly.',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look. The text caret rides as a final caret row when visible; read its line with caret_line.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
   }
 ]);
@@ -322,6 +327,8 @@ export function createMcpServer(context) {
       }
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
+      case 'caret_line':
+        return asText({ line: await driver.caretLine() });
       case 'capture_page': {
         const data = await driver.capture(args.fullPage === true ? { fullPage: true } : {});
         return { content: [{ type: 'image', data, mimeType: 'image/jpeg' }] };

@@ -192,12 +192,12 @@ const SNAPSHOT_ROLES = new Set([
 // so the next keystroke's landing is read, not remembered. A collapsed
 // selection reports its point; a ranged one reports nothing, because a
 // selection's focus end has no honest single point and reads collapse
-// selections anyway. Docs draws its caret as an element the page exposes, and
-// mirrors its text in a hidden frame the selection API can read: those two
-// narrowly named selectors are the per-site exception this generic expression
-// allows, because a canvas caret and its line have no other API, and the test
-// below holds that exception to exactly these names. The row carries the line
-// the caret stands on, so moving between lines is verified by text, not pixels.
+// selections anyway. Docs draws its caret as an element the page exposes,
+// which is the one per-site selector this generic expression is allowed: a
+// canvas caret has no other API, and the test below holds that exception to
+// exactly one name. The row carries no line text: the mirror a copy reads
+// from only holds what a selection put there, so a line is read by selecting
+// it first, and that dance lives in caret_line rather than in every map.
 
 const SNAPSHOT_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
@@ -276,48 +276,19 @@ const SNAPSHOT_EXPRESSION = `(() => {
     });
   };
 
-  const cleanLine = (s) => {
-    let out = '';
-    for (const ch of String(s || '')) {
-      const code = ch.codePointAt(0);
-      if ((code < 8203 || code > 8205) && code !== 65279) out += ch;
-    }
-    return out.trim().slice(0, 120);
-  };
-
-  const caretLineOf = (doc, win) => {
-    try {
-      const focus = doc.activeElement;
-      if (focus && (focus.tagName === 'INPUT' || focus.tagName === 'TEXTAREA')) {
-        const kind = (focus.type || 'text').toLowerCase();
-        if (kind === 'password' || kind === 'hidden') return '';
-        if (focus.getAttribute('autocomplete') === 'one-time-code') return '';
-        return cleanLine(focus.value);
-      }
-      const sel = win.getSelection();
-      if (!sel || sel.rangeCount === 0 || !sel.anchorNode) return '';
-      const node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
-      const block = node && node.closest ? node.closest('p,div,li,td,th,h1,h2,h3,h4,h5,h6,pre,blockquote') : null;
-      return cleanLine((block || node || {}).textContent);
-    } catch { return ''; }
-  };
-
   const caretOf = () => {
     const usable = (r) => (r && (r.x !== 0 || r.y !== 0 || r.width !== 0 || r.height !== 0)) ? r : null;
-    const frame = document.querySelector('.docs-texteventtarget-iframe');
-    const doc = frame && frame.contentDocument ? frame.contentDocument : document;
-    const win = frame && frame.contentWindow ? frame.contentWindow : window;
     const kix = document.querySelector('.kix-cursor-caret');
     if (kix) {
       const r = usable(kix.getBoundingClientRect());
-      if (r) return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), line: caretLineOf(doc, win) };
+      if (r) return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
     }
     try {
       const sel = document.getSelection();
       if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return null;
       const r = usable(sel.getRangeAt(0).getBoundingClientRect());
       if (!r) return null;
-      return { x: Math.round(r.x), y: Math.round(r.y), line: caretLineOf(document, window) };
+      return { x: Math.round(r.x), y: Math.round(r.y) };
     } catch { return null; }
   };
 
@@ -338,9 +309,7 @@ const SNAPSHOT_EXPRESSION = `(() => {
     }
   }
   const caret = caretOf();
-  if (caret) {
-    out.push({ role: 'caret', name: 'text caret', x: caret.x, y: caret.y, ...(caret.line ? { value: caret.line } : {}) });
-  }
+  if (caret) out.push({ role: 'caret', name: 'text caret', x: caret.x, y: caret.y });
   return out;
 })()`;
 
@@ -410,6 +379,24 @@ export const DOCS_COPY_EXPRESSION = `(() => {
 export function isDocsDocument(url) {
   return String(url || '').includes('docs.google.com/document/d/');
 }
+
+// WHY READING A LINE SELECTS IT FIRST. The mirror a copy reads from only
+// holds what a selection put there: measured live as an empty line beside a
+// perfectly visible caret. So the read selects its own line — Home,
+// Shift+End — copies, and collapses back to the line end, which is the
+// documented end state: the caret moves within its line and never past it.
+// Steps breathe between them because injected keys land late; without the
+// beats the copy runs before the selection exists.
+
+const CARET_LINE_GAP_MS = 300;
+
+export const SELECTION_TEXT_EXPRESSION = `(() => {
+  try {
+    const sel = document.getSelection();
+    if (!sel || sel.rangeCount === 0) return '';
+    return String(sel.toString()).slice(0, 500);
+  } catch { return ''; }
+})()`;
 
 export function modifierMask(modifiers = []) {
   return modifiers.reduce((mask, name) => {
@@ -487,6 +474,17 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       if (!isDocsDocument(state.url)) return state;
       const text = await readDocsText();
       return { ...state, text: text ?? state.text };
+    },
+
+    async caretLine() {
+      const { url } = await readState();
+      await primitives.key('Home');
+      await sleep(CARET_LINE_GAP_MS);
+      await primitives.key('End', ['Shift']);
+      await sleep(CARET_LINE_GAP_MS);
+      const line = isDocsDocument(url) ? await copyDocsText() : await primitives.evaluate(SELECTION_TEXT_EXPRESSION);
+      await primitives.key('End').catch(() => null);
+      return typeof line === 'string' ? line : '';
     },
 
     async evaluate(expression) {

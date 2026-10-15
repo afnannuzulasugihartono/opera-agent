@@ -40,6 +40,7 @@ function fakeDriver() {
     type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
     keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
+    caretLine: async () => 'Kajian pustaka mencakup',
     capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; }
   };
 }
@@ -73,7 +74,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -448,4 +449,12 @@ test('an action lets the page stand before looking at it', async () => {
   const ms = Number(res.result.content.at(-1).text.replace(' ms', ''));
 
   assert.ok(ms >= 100, `the page gets its beat before the snapshot (took ${ms} ms)`);
+});
+
+test('caret_line reports the line without moving past it', async () => {
+  const server = createMcpServer(ctx());
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'caret_line', arguments: {} } });
+
+  assert.deepEqual(JSON.parse(res.result.content[0].text), { line: 'Kajian pustaka mencakup' });
 });
