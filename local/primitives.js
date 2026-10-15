@@ -388,7 +388,42 @@ export const DOCS_COPY_EXPRESSION = `(() => {
 // and no dialog ever appears. Bytes ride in as base64 and rest briefly in a
 // temp file only CDP can name, because the protocol takes paths, not bytes.
 
-export const UPLOAD_INPUT_EXPRESSION = `(() => document.querySelector('input[type=file]'))()`;
+// WHY THE SEARCH PIERCES FROM INSIDE. A file input rarely sits in the open:
+// upload widgets hide it in an iframe or a shadow root, where a top-frame
+// query finds nothing. Fetching a whole pierced tree to look for it timed out
+// live on a heavy page instead, so the search walks from inside the page and
+// returns the first input it meets — one call, one node back, however deep it
+// hides. What it cannot find is an input that does not exist yet: some pages
+// only create theirs on the way to the picker, and for those the agent walks
+// the menu first and calls upload after.
+
+export const UPLOAD_INPUT_EXPRESSION = `(() => {
+  const seen = new Set();
+  const scan = (root) => {
+    if (!root || seen.has(root)) return null;
+    seen.add(root);
+    const direct = root.querySelector ? root.querySelector('input[type=file]') : null;
+    if (direct) return direct;
+    const elements = root.querySelectorAll ? root.querySelectorAll('*') : [];
+    for (const el of elements) {
+      if (el.shadowRoot) {
+        const hit = scan(el.shadowRoot);
+        if (hit) return hit;
+      }
+      if (el.tagName === 'IFRAME') {
+        try {
+          const inner = el.contentDocument;
+          if (inner) {
+            const hit = scan(inner);
+            if (hit) return hit;
+          }
+        } catch {}
+      }
+    }
+    return null;
+  };
+  return scan(document);
+})()`;
 
 export function isDocsDocument(url) {
   return String(url || '').includes('docs.google.com/document/d/');
@@ -452,40 +487,6 @@ export function splitText(text, size) {
 // them. Fifty is past any coalescing window and a sixtieth of one model turn.
 
 const KEY_BEAT_MS = 50;
-
-// WHY THE SEARCH GOES DEEP WHEN THE SURFACE IS EMPTY. A file input rarely
-// sits in the open: upload widgets hide it in an iframe or a shadow root,
-// where a top-frame querySelector finds nothing and an honest tool would stop.
-// A pierced document fetch sees through both, and backend node ids work
-// across every frame of the tab, so the deep search names the input the fast
-// path cannot see. It runs only when the fast path misses, because fetching a
-// whole pierced tree for every upload would tax the common case for the rare
-// one.
-
-function domAttribute(node, name) {
-  const attrs = node.attributes ?? [];
-  for (let i = 0; i + 1 < attrs.length; i += 2) {
-    if (String(attrs[i]).toLowerCase() === name) return String(attrs[i + 1]);
-  }
-  return null;
-}
-
-async function findUploadInputEverywhere(cdp) {
-  const { result } = await cdp.send('DOM.getDocument', { depth: -1, pierce: true });
-  if (!result?.root) return null;
-  const stack = [result.root];
-  while (stack.length > 0) {
-    const node = stack.pop();
-    if (!node || typeof node !== 'object') continue;
-    if (node.nodeName === 'INPUT' && (domAttribute(node, 'type') || '').toLowerCase() === 'file') {
-      return node.backendNodeId ?? null;
-    }
-    for (const child of node.children ?? []) stack.push(child);
-    for (const shadow of node.shadowRoots ?? []) stack.push(shadow);
-    if (node.contentDocument) stack.push(node.contentDocument);
-  }
-  return null;
-}
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const spot = (x, y, color) => {
@@ -570,13 +571,8 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           objectGroup: 'opera-upload'
         });
         const objectId = found?.result?.objectId;
-        if (objectId) {
-          await cdp.send('DOM.setFileInputFiles', { files: [target], objectId });
-        } else {
-          const backendNodeId = await findUploadInputEverywhere(cdp);
-          if (backendNodeId == null) return { inputFound: false, filename };
-          await cdp.send('DOM.setFileInputFiles', { files: [target], backendNodeId });
-        }
+        if (!objectId) return { inputFound: false, filename };
+        await cdp.send('DOM.setFileInputFiles', { files: [target], objectId });
         return { inputFound: true, filename, bytes };
       } finally {
         if (cleanup) cleanup();
