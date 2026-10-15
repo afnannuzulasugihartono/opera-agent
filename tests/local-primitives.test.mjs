@@ -33,6 +33,7 @@ import assert from 'node:assert/strict';
 import {
   DOCS_COPY_EXPRESSION,
   DROP_PHASES,
+  scrollExpression,
   UPLOAD_INPUT_EXPRESSION,
   createPrimitives,
   dragMimeType,
@@ -303,6 +304,148 @@ test('append admits it cannot see where the text went rather than claiming the e
   assert.equal(out.landed, true);
   assert.equal(out.atEnd, false, 'a page that cannot be seen into cannot be claimed for');
   assert.match(out.atEndWhy, /read_page\(\) is the proof/);
+});
+
+// WHY A SCROLL TOOL AND NOT A KEY. Measured live on a Google Doc with 21 pages: the
+// only way to move the view was a key chord aimed at a guess, and an outline row the
+// agent wanted to click answered with coordinates above the viewport - a click that
+// reported success and hit nothing. Scroll is also the only road to an infinite feed
+// and to anything that lazy-loads, so without it most of a web page does not exist.
+// The answer carries the scroll it actually performed and where the view came to rest,
+// because a scroll that moved the page and a scroll that moved the right thing look
+// identical from the outside otherwise.
+
+const SCROLL_CDP = (answer) => {
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-scroll')) {
+        return { result: { value: answer } };
+      }
+      return {};
+    }
+  };
+};
+
+test('a scroll by pixels answers how far the view actually moved', async () => {
+  const cdp = SCROLL_CDP({ from: { x: 0, y: 1200 }, to: { x: 0, y: 2600 }, scroller: { name: 'document', from: 1200, to: 2600 }, movedPx: 1400, atEnd: false, root: 'document' });
+
+  const out = await createPrimitives(cdp).scroll({ y: 1400 });
+
+  assert.equal(out.movedPx, 1400);
+  assert.equal(out.scroller.from, 1200);
+  assert.equal(out.scroller.to, 2600);
+  assert.equal(out.atEnd, false);
+  assert.equal(out.root, 'document');
+});
+
+// WHY THE SCROLLER IS NAMED AND NOT ASSUMED. Measured live on a Google Doc with 21
+// pages: an end scroll moved the document element by 56 pixels and answered atEnd
+// true. A canvas editor scrolls a container of its own, so a tool that reports the
+// window's offset is describing a page that did not move - and claiming its end.
+
+test('a scroll that reached no end says so, and names what it moved instead', async () => {
+  const cdp = SCROLL_CDP({
+    from: { x: 0, y: 0 },
+    to: { x: 0, y: 0 },
+    scroller: { name: 'div.kix-canvas-tile-content', from: 0, to: 0 },
+    movedPx: 0,
+    atEnd: false,
+    exhausted: true,
+    root: 'div.kix-canvas-tile-content',
+    target: { found: false, visible: false, y: 0, text: '' }
+  });
+
+  const out = await createPrimitives(cdp).scroll({ end: true });
+
+  assert.equal(out.atEnd, false, 'an end that was not reached is never claimed');
+  assert.equal(out.movedPx, 0);
+  assert.equal(out.root, 'div.kix-canvas-tile-content', 'and the scroller it found is named');
+  assert.match(out.why, /as far as it goes/);
+  assert.match(out.why, /capture_page\(\) or read_page\(\) is the proof/, 'and it names the call that can actually confirm the end');
+});
+
+test('an exhausted scroller is not a page that is finished', async () => {
+  const cdp = SCROLL_CDP({
+    from: { x: 0, y: 0 },
+    to: { x: 0, y: 0 },
+    scroller: { name: 'div.feed', from: 0, to: 0 },
+    movedPx: 0,
+    atEnd: false,
+    exhausted: true,
+    travelPx: 0,
+    root: 'div.feed',
+    target: { found: false, visible: false, y: 0, text: '' }
+  });
+
+  const out = await createPrimitives(cdp).scroll({ end: true });
+
+  assert.equal(out.atEnd, false, 'the scroller had nothing left, but the page did');
+  assert.match(out.why, /cannot show that its last words are on screen/, 'and it says exactly which claim it cannot make');
+});
+
+// WHY THE WINDOW DOES NOT WIN BY BEING FIRST. Measured live on a Google Doc: the
+// window carries 56 pixels of travel and the document below it carries 21,874, so a
+// tool that prefers the window scrolls 56 pixels and reports a page that barely
+// moved. The expression is what decides this, so the expression is what is read here.
+
+test('the scroll expression prefers the container with the most room over the window', () => {
+  const expression = scrollExpression({ y: 900 });
+
+  assert.match(expression, /docRoom >= bestRoom/, 'the window wins only when it has more room');
+  assert.match(expression, /querySelectorAll\('div, main, section'\)/, 'and candidates are found by scroll height, not by guessing an ancestor');
+});
+
+test('a scroll whose scroller moved reports that scroller, not the window', async () => {
+  const cdp = SCROLL_CDP({
+    from: { x: 0, y: 0 },
+    to: { x: 0, y: 0 },
+    scroller: { name: 'div.feed', from: 900, to: 26400 },
+    movedPx: 25500,
+    atEnd: true,
+    root: 'div.feed',
+    target: { found: false, visible: false, y: 0, text: '' }
+  });
+
+  const out = await createPrimitives(cdp).scroll({ end: true });
+
+  assert.equal(out.root, 'div.feed');
+  assert.equal(out.scroller.to, 26400);
+  assert.equal(out.atEnd, true);
+  assert.equal(out.from.y, 0, 'the window did not move, and the answer says so');
+});
+
+test('a scroll to the end says the end was reached, in pixels the page measured', async () => {
+  const cdp = SCROLL_CDP({ from: { x: 0, y: 0 }, to: { x: 0, y: 26400 }, scroller: { name: 'document', from: 0, to: 26400 }, movedPx: 26400, atEnd: true, root: 'document' });
+
+  const out = await createPrimitives(cdp).scroll({ end: true });
+
+  assert.equal(out.atEnd, true);
+  assert.equal(out.scroller.to, 26400);
+  assert.match(cdp.calls[0].params.expression, /opera-scroll/);
+});
+
+test('a scroll to a text reports whether that text is now on screen', async () => {
+  const cdp = SCROLL_CDP({ from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, scroller: { name: 'target', from: 0, to: 0 }, movedPx: 1, atEnd: false, root: 'target', target: { found: true, visible: true, y: 420, text: 'BAB V KESIMPULAN DAN SARAN' } });
+
+  const out = await createPrimitives(cdp).scroll({ text: 'BAB V KESIMPULAN DAN SARAN' });
+
+  assert.equal(out.target.found, true);
+  assert.equal(out.target.visible, true);
+  assert.equal(out.target.y, 420);
+  assert.match(cdp.calls[0].params.expression, /BAB V KESIMPULAN/);
+});
+
+test('a scroll that finds nothing says so, rather than reporting a scroll that went nowhere', async () => {
+  const cdp = SCROLL_CDP({ from: { x: 0, y: 500 }, to: { x: 0, y: 500 }, scroller: { name: 'document', from: 500, to: 500 }, movedPx: 0, atEnd: false, root: 'document', target: { found: false, visible: false, y: 0, text: '' } });
+
+  const out = await createPrimitives(cdp).scroll({ text: 'a heading that is not on this page' });
+
+  assert.equal(out.movedPx, 0);
+  assert.equal(out.target.found, false);
+  assert.match(out.why, /found nothing/);
 });
 
 test('a chord is two masked events with codes and no text, because separate modifier presses leaked under rapid fire', async () => {

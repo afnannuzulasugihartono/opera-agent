@@ -186,6 +186,20 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
   },
   {
+    name: 'scroll',
+    description: 'Move the view: {y: pixels} for a relative scroll, {end: true} for the bottom, {text: "..."} or {selector: "..."} to bring something on screen. The answer carries what the page measured - which scroll container moved (a window or a panel, named), from and to, travelPx (how far the page can still go), and for a target whether it is now on screen. Without it a 21-page document is only its first screen, a lazy list never loads, and a click can answer success on coordinates that are above the viewport and hit nothing. It sets the scroll offset rather than sending a wheel, because a synthetic mouseWheel over a canvas editor got no answer at all from the tab - still outstanding after eight seconds, on two documents - and a scroll that hangs is worse than one that does nothing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        y: { type: 'number', description: 'pixels to move the view; negative moves up' },
+        end: { type: 'boolean', description: 'scroll to the bottom of the page or panel' },
+        text: { type: 'string', description: 'scroll the text named here into view' },
+        selector: { type: 'string', description: 'scroll the element matching this CSS selector into view' }
+      }
+    }
+  },
+  {
     name: 'append',
     description: 'Add text at the very end of one tab: the caret is asked for the end, the text goes in, and the answer says whether anything follows it. atEnd is measured, not assumed - it is true only when the page shows no text after what was inserted, and it is found:false on canvas pages that mirror late, where read_page() is the proof. Use this instead of clicking and pressing End yourself: that road put a whole batch inside a table cell once, measured live. On a canvas editor atEnd is usually false for a good reason - the text the page reports ends with the editor chrome rather than with the document - so atEndWhy names what followed, and read_page() is the proof that the append reached the end of the document.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to add at the end') }, required: ['text'] }
@@ -686,6 +700,13 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         return afterAction(driver, await driver.type(args.text));
       case 'append':
         return afterAction(driver, await driver.append(args.text));
+      case 'scroll':
+        return afterAction(driver, await driver.scroll({
+          y: args.y,
+          end: args.end === true,
+          text: args.text,
+          selector: args.selector
+        }));
       case 'stream_keys':
         return afterAction(driver, await driver.keys(args.events));
       case 'wait_for': {

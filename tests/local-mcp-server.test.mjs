@@ -93,7 +93,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -131,6 +131,35 @@ test('the append says how it decides it reached the end, and when it cannot know
   assert.match(append.description, /table cell/);
   assert.deepEqual(Object.keys(append.inputSchema.properties).sort(), ['tabId', 'text']);
   assert.deepEqual(append.inputSchema.required, ['text']);
+});
+
+// WHY THE SCROLL'S ARGUMENTS ARE FOUR AND NOT ONE. An agent knows three different
+// things - how far to move, that it wants the end, and the thing it wants to see - and
+// merging them into one string argument would make every one of them a guess about
+// which form was meant. Four optional arguments, each unambiguous.
+
+test('scroll takes pixels, the end, a target text or a selector, and nothing is required', () => {
+  const scroll = TOOLS.find((tool) => tool.name === 'scroll');
+
+  assert.deepEqual(Object.keys(scroll.inputSchema.properties).sort(), ['end', 'selector', 'tabId', 'text', 'y']);
+  assert.equal(scroll.inputSchema.required, undefined, 'a scroll needs no argument to be refused: it must be answerable either way');
+  assert.match(scroll.description, /which scroll container moved/);
+  assert.match(scroll.description, /travelPx/);
+  assert.match(scroll.description, /no answer at all/, 'and it carries the measured reason the wheel road is not used');
+});
+
+test('scroll reaches the driver with the arguments it was given', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  c.driver.scroll = async (options) => { c.driver.calls.push(['scroll', options]); return { movedPx: 1400, from: { x: 0, y: 0 }, to: { x: 0, y: 1400 }, atEnd: false, root: 'document', target: { found: false, visible: false, y: 0, text: '' }, why: '' }; };
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 98, method: 'tools/call',
+    params: { name: 'scroll', arguments: { y: 1400 } }
+  });
+
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'scroll'), [['scroll', { y: 1400, end: false, text: undefined, selector: undefined }]]);
+  assert.match(res.result.content[0].text, /"movedPx": 1400/);
 });
 
 test('append reaches the driver as one call with the text intact', async () => {

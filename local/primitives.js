@@ -801,6 +801,117 @@ export const hitExpression = (x, y) => `(() => {
   return { tag: el.tagName || '', role: get('role') || '', name: String(name).trim().slice(0, 60) };
 })() /*opera-hit*/`;
 
+// WHY THE SCROLLER IS FOUND BY ITS SCROLL HEIGHT. Measured live on a Google Doc with
+// 21 pages: the document scroller is div.kix-appview-editor with 21,874 pixels of
+// travel, and the first version of this found it by walking up from a text node and
+// therefore missed it, because a canvas editor holds its content as pixels and the text
+// nodes around it belong to the chrome. A scroller is anything with room to move; the
+// tallest room wins, the document itself comes first when it has room of its own, and
+// the answer names which one moved - because the one that moved is not the one a caller
+// would have guessed.
+//
+// WHY THE WHEEL IS NOT USED HERE. Measured live: a synthetic mouseWheel over the Docs
+// canvas gets no answer at all from the tab - the command was still outstanding after
+// eight seconds - on both documents tried. A scroll that hangs is worse than a scroll
+// that does nothing, so the offset is set directly and the result is measured after.
+//
+// WHY "AT THE END" MEANS THE LAST TEXT IS ON SCREEN. An offset can sit at the bottom of
+// a scroller while the content the caller came for lives in another. The only end that
+// means anything is the one where the last words of the page are visible, and that is a
+// question about the viewport, not about a number.
+
+export const scrollExpression = (probe) => `(() => {
+  const wanted = ${JSON.stringify(probe ?? null)};
+  const doc = document.scrollingElement || document.documentElement;
+  const viewport = { w: window.innerWidth, h: window.innerHeight };
+  const onScreen = (box) => box.bottom > 0 && box.top < viewport.h && box.right > 0 && box.left < viewport.w;
+  const canMove = (el) => el && el.scrollHeight - el.clientHeight > 40 && el.clientHeight > 80;
+  const nameOf = (el) => el === doc
+    ? 'document'
+    : String(el.tagName || '').toLowerCase() + (el.className ? '.' + String(el.className).split(' ').slice(0, 2).join('.') : '');
+  const lastText = (() => {
+    const walker = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT);
+    let last = null;
+    let node = walker.nextNode();
+    while (node) {
+      if ((node.nodeValue || '').trim()) last = node;
+      node = walker.nextNode();
+    }
+    return last ? last.parentElement : null;
+  })();
+  const pickScroller = () => {
+    const all = document.querySelectorAll('div, main, section');
+    const rooms = [];
+    for (const el of all) {
+      if (canMove(el)) rooms.push(el);
+    }
+    rooms.sort((a, b) => (b.scrollHeight - b.clientHeight) - (a.scrollHeight - a.clientHeight));
+    // WHY THE DOCUMENT DOES NOT WIN BY BEING FIRST. Measured live on a Google Doc:
+    // the window itself has 56 pixels of travel - the toolbar strip - and the
+    // document below it has 21,874, so preferring the window scrolls 56 pixels and
+    // reports a page that barely moved. The container with the most room is the page
+    // the caller meant; the window only wins by having more of it.
+    const best = rooms[0];
+    const docRoom = canMove(doc) ? doc.scrollHeight - doc.clientHeight : 0;
+    const bestRoom = best ? best.scrollHeight - best.clientHeight : 0;
+    if (canMove(doc) && docRoom >= bestRoom) return doc;
+    return best ?? doc;
+  };
+  const before = { x: Math.round(window.scrollX), y: Math.round(window.scrollY) };
+  let root = doc;
+  let target = { found: false, visible: false, y: 0, text: '' };
+  const finish = (extra) => ({
+    from: before,
+    to: { x: Math.round(window.scrollX), y: Math.round(window.scrollY) },
+    root: nameOf(root),
+    target,
+    ...extra
+  });
+  if (wanted && typeof wanted === 'object' && wanted.selector) {
+    const el = document.querySelector(wanted.selector);
+    if (el) {
+      root = pickScroller();
+      el.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const box = el.getBoundingClientRect();
+      target = { found: true, visible: onScreen(box), y: Math.round(box.top), text: (el.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 60) };
+    }
+    return finish({ scroller: { name: nameOf(root), from: 0, to: 0 }, movedPx: target.visible ? 1 : 0, atEnd: false });
+  }
+  if (wanted && typeof wanted === 'object' && wanted.text) {
+    const needle = String(wanted.text).replace(/\\s+/g, ' ').trim();
+    const walker = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT);
+    let hit = null;
+    let node = walker.nextNode();
+    while (node && !hit) {
+      const one = (node.nodeValue || '').replace(/\\s+/g, ' ').trim();
+      if (one && (one === needle || one.includes(needle))) hit = node.parentElement;
+      node = walker.nextNode();
+    }
+    if (hit) {
+      root = pickScroller();
+      hit.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const box = hit.getBoundingClientRect();
+      target = { found: true, visible: onScreen(box), y: Math.round(box.top), text: (hit.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 60) };
+    }
+    return finish({ scroller: { name: nameOf(root), from: 0, to: 0 }, movedPx: target.visible ? 1 : 0, atEnd: false });
+  }
+  root = pickScroller();
+  const from = Math.round(root.scrollTop);
+  if (wanted && typeof wanted === 'object' && wanted.end) root.scrollTop = root.scrollHeight;
+  else root.scrollTop = from + (Number(wanted && wanted.y) || 0);
+  const to = Math.round(root.scrollTop);
+  const endVisible = lastText ? onScreen(lastText.getBoundingClientRect()) : false;
+  const exhausted = to + root.clientHeight >= root.scrollHeight - 8;
+  const atEnd = wanted && typeof wanted === 'object' && wanted.end ? endVisible : false;
+  return finish({
+    scroller: { name: nameOf(root), from, to },
+    movedPx: Math.abs(to - from),
+    atEnd,
+    exhausted,
+    travelPx: Math.round(root.scrollHeight - root.clientHeight)
+  });
+})() /*opera-scroll*/`;
+
 export const EDIT_SIGNATURE_EXPRESSION = `(() => {
   const el = document.activeElement;
   const tag = el ? el.tagName : '';
@@ -1398,6 +1509,56 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const y = Math.round(Math.min(1, Math.max(0, asked.y)) * view.height);
       await primitives.clickAt(x, y);
       return { x, y, of: asked, viewport: { width: view.width, height: view.height }, dpr: view.dpr };
+    },
+
+    // WHY ONE CALL, AND WHY IT ANSWERS WHAT IT DID. A scroll that moved the page and a
+    // scroll that moved the right thing look identical from outside, so the answer
+    // carries the scroller that moved and by how much, and - for a target - whether
+    // that target is on screen now. Nothing here is aimed for: every fact is read
+    // after the fact.
+    //
+    // WHY "AT THE END" CAN BE FALSE AND MEANS NOTHING MOVED. Measured live on a Google
+    // Doc: an end scroll moved the document element 56 pixels and answered atEnd true,
+    // because the document is not what scrolls on a canvas editor. So atEnd is true only
+    // when the page reports its last text on screen, and the scroller that answers is
+    // named - a refusal to claim an end it did not reach is the whole value here.
+
+    async scroll({ y, end = false, text, selector } = {}) {
+      const probe = { y: Number.isFinite(Number(y)) ? Number(y) : undefined, end: end === true, text, selector };
+      void end;
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: scrollExpression(probe),
+        returnByValue: true
+      });
+      const seen = result?.value ?? {
+        from: { x: 0, y: 0 },
+        to: { x: 0, y: 0 },
+        scroller: { name: 'unknown', from: 0, to: 0 },
+        movedPx: 0,
+        atEnd: false,
+        root: 'unknown',
+        target: { found: false, visible: false, y: 0, text: '' }
+      };
+      const wanted = text ?? selector;
+      return {
+        from: seen.from,
+        to: seen.to,
+        scroller: seen.scroller,
+        movedPx: seen.movedPx,
+        atEnd: seen.atEnd === true,
+        travelPx: seen.travelPx ?? null,
+        root: seen.root,
+        target: seen.target,
+        why: wanted && !seen.target?.found
+          ? `found nothing on this page for ${JSON.stringify(String(wanted).slice(0, 40))} - read_page() to see what the page holds`
+          : (end && !seen.atEnd
+              ? (seen.exhausted
+                  ? `${seen.root} is as far as it goes, and this page cannot show that its last words are on screen - the text it reports is not the text it draws, so capture_page() or read_page() is the proof`
+                  : `moved ${seen.movedPx} of the way and the page still has text below`)
+              : (!seen.movedPx && !seen.target?.visible
+                  ? `nothing moved: ${seen.root} had no room to move (travelPx ${seen.travelPx ?? 'unknown'})`
+                  : ''))
+      };
     },
 
     async clickAt(x, y) {
