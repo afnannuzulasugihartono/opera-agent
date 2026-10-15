@@ -795,11 +795,19 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     return Array.isArray(result?.value) ? result.value : [];
   };
 
+  // WHY THE SPOT TAKES ITSELF AWAY. Measured live on this product's own author: a
+  // click marker that never goes leaves a red ring sitting on the page for the rest
+  // of the session, and every capture after it carries that ring - so the picture an
+  // agent reads its own click out of has a 26-pixel circle drawn on top of the thing
+  // it just clicked. The mark is worth having for the beat in which the person
+  // watching sees where the drive went; it is not worth leaving on the page.
+  const SPOT_MS = 700;
+
   const spot = (x, y, color) => {
     const px = Math.round(Number(x) || 0);
     const py = Math.round(Number(y) || 0);
     return cdp.send('Runtime.evaluate', {
-      expression: `(() => { const d = document; if (!d || !d.documentElement) return false; let el = d.getElementById('opera-spot'); if (!el) { el = d.createElement('div'); el.id = 'opera-spot'; el.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;border:3px solid;border-radius:50%;width:26px;height:26px;margin:0;padding:0;box-sizing:border-box;'; d.documentElement.appendChild(el); } el.style.left = '${px - 13}px'; el.style.top = '${py - 13}px'; el.style.borderColor = '${color}'; return true; })()`,
+      expression: `(() => { const d = document; if (!d || !d.documentElement) return false; let el = d.getElementById('opera-spot'); if (!el) { el = d.createElement('div'); el.id = 'opera-spot'; el.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;border:3px solid;border-radius:50%;width:26px;height:26px;margin:0;padding:0;box-sizing:border-box;transition:opacity 120ms linear;'; d.documentElement.appendChild(el); } clearTimeout(d.defaultView.__operaSpot); el.style.opacity = '1'; el.style.left = '${px - 13}px'; el.style.top = '${py - 13}px'; el.style.borderColor = '${color}'; d.defaultView.__operaSpot = d.defaultView.setTimeout(() => { el.remove(); }, ${SPOT_MS}); return true; })()`,
       returnByValue: true
     }).catch(() => null);
   };

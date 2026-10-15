@@ -79,12 +79,12 @@ test('skip_ads workflow migration registers a re-querying loop workflow', () => 
   assert.match(sql, /ad-showing/, 'must poll the ad-state post-condition');
 });
 
-test('version bumped to 1.6.26 for the loopback poll release', () => {
+test('version bumped to 1.6.27 for the local loop release', () => {
   assert.equal(BURST_STEP_KEYS && true, true);
   const protocol = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
-  assert.match(protocol, /PRODUCT_VERSION = '1.6.26'/);
+  assert.match(protocol, /PRODUCT_VERSION = '1.6.27'/);
   const manifest = JSON.parse(fs.readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
-  assert.equal(manifest.version, '1.6.26');
+  assert.equal(manifest.version, '1.6.27');
 });
 
 test('validateBurst accepts grid and file macro steps with tight params', () => {

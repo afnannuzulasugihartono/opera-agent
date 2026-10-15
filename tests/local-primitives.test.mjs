@@ -572,6 +572,7 @@ test('every pointer action marks its spot for the watcher, red for click and blu
   assert.match(marks[0].params.expression, /87px.*87px/);
   assert.match(marks[1].params.expression, /255,60,60/);
   assert.match(marks[1].params.expression, /187px.*207px/);
+  assert.match(marks[1].params.expression, /el\.remove\(\)/, 'and the mark takes itself off the page, because a mark that stays is a ring over the next picture');
 });
 
 test('a refused spotlight never breaks the click it decorates', async () => {

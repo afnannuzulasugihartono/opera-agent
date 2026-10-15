@@ -8,12 +8,22 @@
   },
   "files": [
     "bin",
+    "advice.js",
+    "agent-guide.js",
+    "bridge-server.js",
+    "bridge.js",
     "browsers.js",
     "cdp.js",
+    "dialog.js",
     "driver.js",
+    "focus-guard.js",
     "mcp-server.js",
+    "menu-tree.js",
     "primitives.js",
-    "transport.js"
+    "sessions.js",
+    "transport.js",
+    "window-focus.js",
+    "ws-server.js"
   ],
   "engines": {
     "node": ">=20"
