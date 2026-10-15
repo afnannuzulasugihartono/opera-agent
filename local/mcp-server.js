@@ -278,6 +278,15 @@ function diffElements(prev, curr) {
 
 const lastAuto = new WeakMap();
 
+// WHY A TAB THAT POINTS AT THE DROPPED FILE IS CLOSED. Chrome answers a drop no
+// page accepted by doing the default thing: it opens the file. Measured live —
+// every rejected drop left a `file://` tab behind, and every accepted drop left
+// none — so a stray tab is also the honest signal that the page took the drop.
+// It is closed and named, never hidden: a drop that did not land says so
+// instead of leaving litter on the person's screen.
+
+const STRAY_FILE_TAB = 'file://';
+
 const afterAction = async (driver, action, limit) => {
   await new Promise((r) => setTimeout(r, SETTLE_MS));
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
@@ -373,14 +382,24 @@ export function createMcpServer(context) {
         return asText({ line: await driver.caretLine() });
       case 'upload':
         return afterAction(driver, await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null }));
-      case 'drop_file':
-        return afterAction(driver, await driver.dropFile({
+      case 'drop_file': {
+        const before = new Set((await driver.tabs()).map((tab) => String(tab.id)));
+        const dropped = await driver.dropFile({
           x: args.x,
           y: args.y,
           filename: args.filename,
           data: args.data ?? null,
           path: args.path ?? null
-        }));
+        });
+        const strays = (await driver.tabs()).filter((tab) => !before.has(String(tab.id)));
+        let openedInstead = false;
+        for (const tab of strays) {
+          if (!String(tab.url ?? '').startsWith(STRAY_FILE_TAB)) continue;
+          openedInstead = true;
+          await driver.close(String(tab.id)).catch(() => null);
+        }
+        return afterAction(driver, { ...dropped, openedInstead });
+      }
       case 'intercept_file_chooser':
         return asText(await driver.interceptFileChooser(args.enabled === true));
       case 'capture_page': {

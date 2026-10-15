@@ -74,7 +74,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -479,4 +479,58 @@ test('intercept_file_chooser toggles without touching the page', async () => {
   const res = await server.handle({ jsonrpc: '2.0', id: 34, method: 'tools/call', params: { name: 'intercept_file_chooser', arguments: { enabled: true } } });
 
   assert.deepEqual(JSON.parse(res.result.content[0].text), { intercepting: true });
+});
+
+// WHY THE STRAY TAB IS CLOSED AND NAMED, NOT LEFT. A drop the page refused is
+// answered by Chrome the only way it can be: the file opens in a tab. Every
+// rejected drop in the live drill left one behind and every accepted drop left
+// none, so the tab is the failure signal as well as the litter — and the answer
+// says so instead of quietly opening windows on the person screen.
+
+// WHY THE TAB APPEARS ONLY AFTER THE DROP. Chrome opens the file when the page
+// refuses the drop, so the stray tab exists between the look before and the
+// look after, and not one moment earlier — a stub that had it from the start
+// would prove nothing about which look found it.
+
+test('a drop Chrome answered by opening the file closes that tab and says so', async () => {
+  const c = ctx();
+  let refused = false;
+  const base = [{ id: 't1', url: 'https://docs.google.com/', title: 'Docs' }];
+  c.driver.tabs = async () => (refused
+    ? [...base, { id: 't9', url: 'file:///files/pic.png', title: 'pic.png' }]
+    : base);
+  c.driver.dropFile = async () => {
+    refused = true;
+    return { dropped: true, filename: 'pic.png', bytes: 5, x: 1, y: 2, mimeType: 'image/png' };
+  };
+  c.resolveTab = async () => ['t1'];
+  c.open = async () => c.driver;
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 41, method: 'tools/call',
+    params: { name: 'drop_file', arguments: { tabId: 't1', x: 1, y: 2, filename: 'pic.png', path: '/files/pic.png' } }
+  });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.equal(payload.action.dropped, true);
+  assert.equal(payload.action.openedInstead, true, 'the drop did not land and says so');
+  assert.deepEqual(c.driver.calls.filter((call) => call[0] === 'close'), [['close', 't9']], 'and the tab it opened is closed');
+});
+
+test('a drop the page took leaves no tab and reports a clean drop', async () => {
+  const c = ctx();
+  c.resolveTab = async () => ['t1'];
+  c.open = async () => c.driver;
+  c.driver.dropFile = async () => ({ dropped: true, filename: 'pic.png', bytes: 5, x: 1, y: 2, mimeType: 'image/png' });
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 42, method: 'tools/call',
+    params: { name: 'drop_file', arguments: { tabId: 't1', x: 1, y: 2, filename: 'pic.png', path: '/files/pic.png' } }
+  });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.equal(payload.action.openedInstead, false);
+  assert.ok(!c.driver.calls.some((call) => call[0] === 'close'), 'nothing to close, nothing closed');
 });
