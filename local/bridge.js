@@ -215,8 +215,18 @@ export async function waitForBridgeLink({ timeoutMs = 15000 } = {}) {
 // why. There is no version of a silent wrong answer to "can you reach the
 // browser I am signed into".
 
+// WHY THE GUEST IS ASKED WHENEVER IT IS ASKED. `linked` on an adopted bridge
+// remembers the last word it heard, and the very first question a new driver
+// asks is whether the bridge is reachable — a guest that adopted while the
+// extension was between sockets answered "no" forever after, because only a
+// command could set the flag true and every command asks this first. Measured
+// live: the second driver fell back to a debugging port nobody is signed into
+// while a healthy bridge held the browser. So a guest asks the owner, every
+// time, and an owner that is there answers in about a millisecond.
+
 export async function bridgeReachable() {
   const srv = await ensureServer();
+  if (srv.adopted) return srv.probe().catch(() => false);
   return srv.linked();
 }
 

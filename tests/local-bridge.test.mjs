@@ -387,6 +387,11 @@ test('a port held by a stranger is named, not swallowed into a wrong pipe', asyn
 // command budget ran out. Asking turns that into the one sentence that names
 // the real problem, now.
 //
+// WHY THE GUEST COMES BACK WITH THE DEVICE. The device reconnects and the
+// guest's own answer was asked fresh, so the driver that adopted during the gap
+// believes the bridge is gone for the rest of its life — and drives a debugging
+// port nobody is signed into instead.
+
 // WHY A SECOND DRIVER DRIVES THE SAME BROWSER. Two sessions on one machine
 // each spawn their own driver, and only one of them can own the loopback port.
 // The loser used to exit at startup with "another dev shim owns this machine",
@@ -415,6 +420,14 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
     await assert.rejects(() => listBridgeTargets(), /extension is not connected|liveness proof/,
       'a dead device is named instead of waited out');
     assert.ok(Date.now() - started < 5000, 'and named without burning the command budget');
+
+    const revived = scriptedDevice(`ws://127.0.0.1:${port}/`, () => [{ id: 12, url: 'https://z/', title: 'Z' }]);
+    live.push(revived);
+    await revived.connected;
+    const until = Date.now() + 3000;
+    while (!owner.linked() && Date.now() < until) await sleep(25);
+    assert.equal(await bridgeReachable(), true, 'the guest sees the link come back');
+    assert.deepEqual(await listBridgeTargets(), [{ id: 12, url: 'https://z/', title: 'Z' }], 'and drives again');
   } finally {
     await closeBridge();
     await owner.close();
