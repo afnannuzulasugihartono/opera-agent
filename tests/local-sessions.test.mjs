@@ -54,6 +54,24 @@ test('a row click resolves fresh and clicks the center', async () => {
   assert.deepEqual(session.calls.at(-1), ['clickAt', 1, 2]);
 });
 
+// WHY EXACT BEATS SUBSTRING HERE. A submenu container carries the concatenated
+// names of everything inside it, so searching for an item also matches its
+// own container — and overlay-first ordering puts that container first.
+// Clicking it hits dead menu background and dismisses the menu instead of the
+// row. The exact row wins; the substring stays as fallback.
+
+test('an exact row beats its own submenu container', async () => {
+  const session = fakeSession();
+  session.snapshot = async () => [
+    { role: 'menu', name: 'Upload from computer\nSearch the web\nDrive', x: 630, y: 87 },
+    { role: 'menuitem', name: 'Upload from computer', x: 630, y: 175 }
+  ];
+
+  const out = await asDriver(session).clickRow('menuitem', 'Upload from computer');
+
+  assert.deepEqual([out.x, out.y], [630, 175], 'the row, not the container around it');
+});
+
 test('a missing row names what is visible instead of clicking blind', async () => {
   const session = fakeSession();
 

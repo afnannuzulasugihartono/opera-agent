@@ -36,6 +36,13 @@ export function findOn(page, query) {
   })()`);
 }
 
+// WHY EXACT MATCHES WIN OVER SUBSTRING ONES. A submenu container carries the
+// concatenated names of everything inside it, so a substring search for an
+// item also matches its own container — and overlay-first ordering puts that
+// container first. Clicking it hits dead menu background instead of the row,
+// which dismisses the menu and looks exactly like a missed click. The exact
+// row is tried first; the substring stays as the fallback it always was.
+
 export function asDriver(session) {
   return {
     read: () => session.read(),
@@ -45,7 +52,9 @@ export function asDriver(session) {
     hover: (x, y) => session.hover(x, y),
     clickRow: async (role, name) => {
       const rows = await session.snapshot();
-      const row = rows.find((r) => r.role === role && (r.name ?? '').toLowerCase().includes(String(name ?? '').toLowerCase()));
+      const want = String(name ?? '').toLowerCase();
+      const row = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
+        ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
       if (!row) {
         const visible = rows.filter((r) => r.role === role).map((r) => r.name).slice(0, 12).join(' | ');
         throw new Error(`no ${role} matching "${name}". Visible: ${visible}`);
