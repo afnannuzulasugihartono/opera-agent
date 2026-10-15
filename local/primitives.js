@@ -205,6 +205,14 @@ const SNAPSHOT_ROLES = new Set([
 // from only holds what a selection put there, so a line is read by selecting
 // it first, and that dance lives in caret_line rather than in every map.
 
+// WHY A SUBMENU IS HOVERED AGAIN WHILE IT IS WAITED FOR. Measured live: a submenu
+// opened by hover came and went with where the pointer was, and a walk that hovered
+// once and then read was answered with an empty level often enough to matter. A
+// menu bar item is a toggle that opens on the click and stays open, so it is never
+// hovered again; a submenu is, because the pointer leaving it is what closes it
+// and hovering is the only thing that opens it. Clicking it instead would run
+// whatever it holds.
+
 // WHY THE CARET IS CHOSEN BY ITS COLOUR AND NOT BY ITS PLACE. Measured live on a
 // shared Google Doc: the page holds two carets, this client's drawn in the text
 // colour and a collaborator's painted green and labelled with their name. Taking
@@ -1197,27 +1205,41 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         at.push(node.name);
         const row = await primitives.resolveHandle(node);
         const alreadyOpen = Boolean(node.expanded) && here.some((r) => r.depth === index + 1);
+        let acted = false;
         if (!alreadyOpen) {
-          const box = node.branch ? await primitives.hoverRow(row) : row;
-          await primitives.clickAt(box.x, box.y);
+          // WHY A TOP-LEVEL MENU IS CLICKED AND EVERYTHING BELOW IT IS HOVERED.
+          // Measured live on Google Docs: a menu on the bar is a toggle - hover does
+          // nothing and it only opens on a click - while a submenu opens on hover.
+          // And a leaf that turns out to be a command is never clicked on the way to
+          // anywhere else: "Upload from computer" opens the operating system's own
+          // file dialog, which nothing here can close again. So a click goes out for
+          // the bar item that opens the menu, and for a leaf only when the caller
+          // said this item is the command to run.
+          if (index === 0) {
+            await primitives.clickAt(row.x, row.y);
+            acted = true;
+          } else if (node.branch) {
+            await primitives.hoverRow(row);
+          } else if (last && clickLeaf) {
+            await primitives.clickAt(row.x, row.y);
+            acted = true;
+          }
+          const hoverAgain = index > 0 && node.branch;
           const childDeadline = Date.now() + timeoutMs;
           for (;;) {
             rows = await primitives.menuTree({ limit });
             if (rows.some((found) => found.depth === index + 1) || Date.now() >= childDeadline) break;
+            if (hoverAgain) await primitives.hoverRow(row);
             await sleep(MENU_OPEN_POLL_MS);
           }
         } else {
           rows = await primitives.menuTree({ limit });
         }
         if (last) {
-          if (!clickLeaf) {
-            const fresh = findNode(name, rows.filter((r) => r.depth === index));
-            return { opened: true, at, acted: false, row: fresh ?? node, tree: rows };
-          }
-          return { opened: true, at, acted: !alreadyOpen, tree: rows };
+          return { opened: true, at, acted, row: findNode(name, rows.filter((r) => r.depth === index)) ?? node, tree: rows };
         }
       }
-      return { opened: true, at, acted: true, tree: rows };
+      return { opened: true, at, acted, tree: rows };
     },
 
     async hover(x, y) {

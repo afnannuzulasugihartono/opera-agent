@@ -16,7 +16,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - Version `1.6.26` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth. [`check.mjs`](../scripts/check.mjs) also asserts the version the MCP server
   reports, the store form's four-part version, and that no module redeclares the secret regex.
-- Gates: `npm test`, `npm run check` — 29 primitives, 162 runtime safety files, 1100 unit
+- Gates: `npm test`, `npm run check` — 29 primitives, 176 runtime safety files, 1199 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 73 `opera_*`
   functions (62 `SECURITY DEFINER`), 17 `opera_*` tables, 10 deployed edge functions.
