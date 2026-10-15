@@ -1284,6 +1284,11 @@ test('stillness ends on two identical reads and names how long it took', async (
   assert.ok(out.checks >= 2, 'one matching pair is what stillness means');
 });
 
+// WHY THE CLOCK MOVES INSTEAD OF THE SLEEP. The wait measures quiet time against
+// the wall clock, so a one-millisecond budget is over before a second read can be
+// reached and the wait would answer "still" having read once — the opposite of
+// what a page that never stops moving deserves.
+
 test('a page that never settles says so instead of pretending', async () => {
   let tick = 0;
   const cdp = {
@@ -1294,12 +1299,15 @@ test('a page that never settles says so instead of pretending', async () => {
       return { result: { value: [{ role: 'menuitem', name: 'Image', x: tick, y: 4, node: 0 }] } };
     }
   };
-  const p = createPrimitives(cdp, { sleep: async () => {} });
+  let at = 1000;
+  const p = createPrimitives(cdp, {
+    sleep: async (ms) => { at += ms; }
+  });
 
-  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1, timeoutMs: 1 });
+  const out = await p.waitForStill({ quietMs: 50, intervalMs: 10, timeoutMs: 100 });
 
   assert.equal(out.still, false);
-  assert.ok(out.checks >= 2, 'a page moving every read is not still');
+  assert.ok(out.checks >= 5, `a page moving every read is not still (read ${out.checks} times)`);
 });
 
 test('stillness watches the rows an agent acts on, not the whole document', async () => {

@@ -90,6 +90,14 @@ const driver = {
     return guide(topic);
   },
 
+  async menuTree(options) {
+    return (await attach()).menuTree(options);
+  },
+
+  async openMenu(options) {
+    return (await attach()).openMenu(options);
+  },
+
   async read() {
     return (await attach()).read();
   },

@@ -95,6 +95,8 @@ import nodeFs from 'node:fs';
 import nodeOs from 'node:os';
 import nodePath from 'node:path';
 
+import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from './menu-tree.js';
+
 const KEY_CODES = Object.freeze({
   Enter: { windowsVirtualKeyCode: 13, code: 'Enter', key: 'Enter', text: '\r' },
   Tab: { windowsVirtualKeyCode: 9, code: 'Tab', key: 'Tab' },
@@ -463,6 +465,22 @@ const UPLOAD_FIND_GAP_MS = 400;
 // dropped image accepts this one. Measured live: the image landed in a
 // document, with no dialog and no input anywhere in sight.
 
+// WHY A SUBMENU NEEDS TWO GAPS AND NOT ONE NUMBER. The pointer has to be sent
+// away and come back before a menu will treat it as entering, and then the
+// submenu has to be rendered before it is worth reading. Both waits are short,
+// both are the point where a slow machine fails, and neither is a guess about
+// how long an application "usually" takes.
+
+const MENU_HOVER_GAP_MS = 90;
+const MENU_OPEN_GAP_MS = 260;
+
+// WHY A MENU IS POLLED UNTIL IT IS DRAWN. Measured live, the Insert dropdown was
+// still absent five seconds after the click; a fixed gap of any honest size is
+// either slow on a good machine or early on a slow one. Polling the tree until
+// the children are there costs nothing when they arrive immediately and is the
+// only thing that works when they do not.
+
+const MENU_OPEN_POLL_MS = 150;
 const DROP_PHASE_GAP_MS = 120;
 const DROP_FRONT_SETTLE_MS = 700;
 const DROP_SETTLE_MS = 900;
@@ -598,6 +616,23 @@ const KEY_BEAT_MS = 50;
 // so the agent enables, walks the menu, uploads, and disables, and no dialog
 // ever appears. Forgetting the last step leaves later Upload clicks silent,
 // which is why the description says the dance out loud.
+
+// WHY A STEP THAT IS ALREADY OPEN IS NOT OPENED AGAIN. A top-level menu is a
+// toggle: measured live, walking the path twice in a row left the first walk
+// with the dropdown open and the second one clicking it shut. So each step
+// reads the level first, and only opens what is not already there: already open
+// means the level has its children on screen, so clicking it again would close
+// it, which is what made the second walk of one path fail.
+//
+// WHY A LEVEL IS WAITED FOR RATHER THAN ASSUMED. The page has not finished
+// when the click returns — the Insert dropdown was still absent five seconds
+// later in one measurement — so a tree read on a fixed gap reads a menu bar
+// with no children and calls it a broken path. Every level waits for the
+// rows it is looking for, and only a budget running out may report a break.
+//
+// WHY A BREAK NAMES THE LEVEL AND THE CONTENTS. "Upload from computer is not
+// in the menu" sends an agent back to guessing. "the path broke at Image, and
+// Insert holds: Table, Bookmark, Chart" hands it a map.
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
@@ -923,6 +958,93 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return { x, y };
     },
 
+    // WHY A SUBMENU IS HOVERED AND NOT CLICKED. Clicking a row that turns out to be
+
+// a branch runs whatever it was — Delete, Remove, Send. Hover opens the same
+// submenu and activates nothing, so it is what the walker uses, and only a
+// click is used when the caller says the item is a command.
+//
+// WHY THE POINTER LEAVES FIRST. Measured live: a submenu that would not open on
+// hover opened once the pointer was sent somewhere else first and came back. A
+// menu that has never seen the pointer arrive from outside does not treat the
+// hover as entering it, so the away-and-back is not politeness, it is the enter
+// transition the menu is waiting for.
+
+    async hoverRow(row) {
+      const away = row.y > 200 ? { x: row.x, y: Math.max(2, row.y - 160) } : { x: row.x, y: row.y + 160 };
+      await primitives.hover(away.x, away.y);
+      await sleep(MENU_HOVER_GAP_MS);
+      const here = await primitives.handleBox(row.handle);
+      await primitives.hover(here.x, here.y);
+      await sleep(MENU_OPEN_GAP_MS);
+      return here;
+    },
+
+    async menuTree({ limit } = {}) {
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: menuTreeExpression(limit),
+        returnByValue: true,
+        awaitPromise: false
+      });
+      const rows = Array.isArray(result?.value) ? result.value : [];
+      return rows.map((row) => ({ ...row, state: stateOf(row), revealedBy: revealOf(row), handle: null }));
+    },
+
+    async openMenu({ path = [], clickLeaf = false, limit, timeoutMs = 8000 } = {}) {
+      const wanted = path.map((step) => String(step ?? '').trim()).filter(Boolean);
+      if (wanted.length === 0) return { opened: false, at: [], tree: await primitives.menuTree({ limit }) };
+      let rows = await primitives.menuTree({ limit });
+      const at = [];
+      for (let index = 0; index < wanted.length; index += 1) {
+        const name = wanted[index];
+        const last = index + 1 === wanted.length;
+        const deadline = Date.now() + timeoutMs;
+        let node = findNode(name, rows.filter((row) => row.depth === index));
+        let here = rows.filter((row) => row.depth === index);
+        while (!node && Date.now() < deadline) {
+          await primitives.waitForRow({ role: 'menuitem', name, timeoutMs: 400, intervalMs: 120 });
+          rows = await primitives.menuTree({ limit });
+          here = rows.filter((row) => row.depth === index);
+          node = findNode(name, here);
+        }
+        if (!node) {
+          const levelNames = [...new Set(here.map((row) => row.name))];
+          return {
+            opened: false,
+            at,
+            brokeAt: name,
+            level: index,
+            visible: levelNames.slice(0, 20),
+            nearest: nearestNames(name, levelNames),
+            tree: rows
+          };
+        }
+        at.push(node.name);
+        const row = await primitives.resolveHandle(node);
+        const alreadyOpen = Boolean(node.expanded) && here.some((r) => r.depth === index + 1);
+        if (!alreadyOpen) {
+          const box = node.branch ? await primitives.hoverRow(row) : row;
+          await primitives.clickAt(box.x, box.y);
+          const childDeadline = Date.now() + timeoutMs;
+          for (;;) {
+            rows = await primitives.menuTree({ limit });
+            if (rows.some((found) => found.depth === index + 1) || Date.now() >= childDeadline) break;
+            await sleep(MENU_OPEN_POLL_MS);
+          }
+        } else {
+          rows = await primitives.menuTree({ limit });
+        }
+        if (last) {
+          if (!clickLeaf) {
+            const fresh = findNode(name, rows.filter((r) => r.depth === index));
+            return { opened: true, at, acted: false, row: fresh ?? node, tree: rows };
+          }
+          return { opened: true, at, acted: !alreadyOpen, tree: rows };
+        }
+      }
+      return { opened: true, at, acted: true, tree: rows };
+    },
+
     async hover(x, y) {
       const mark = spot(x, y, 'rgb(66,133,244)');
       const moved = cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
@@ -970,6 +1092,21 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         clip: { x: 0, y: 0, width, height, scale: 1 }
       });
       return data;
+    },
+
+    // WHY A MENU ROW RESOLVES THE SAME WAY A SNAPSHOT ROW DOES. Both are places
+    // on the screen that stop being true when the menu closes, so both are held
+    // on to as elements and measured again at the moment of the click.
+    async resolveHandle(row) {
+      if (row.handle || row.node === undefined) return row;
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: `window.__operaMenuNodes[${row.node}]`,
+        returnByValue: false
+      });
+      if (!result?.objectId) return row;
+      const described = await cdp.send('DOM.describeNode', { objectId: result.objectId });
+      const backendNodeId = described?.node?.backendNodeId;
+      return backendNodeId ? { ...row, handle: HANDLE_PREFIX + backendNodeId } : row;
     },
 
     async handleBox(handle) {

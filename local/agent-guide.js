@@ -26,9 +26,13 @@
 // where the agent reads before calling, not in a document it reads after being
 // surprised.
 
-// WHY THESE RECIPES AND NOT OTHERS. Every line here is a road that was driven,
-// with the number it took written down, because an untested road is a guess
-// wearing a recipe's clothes.
+// WHY A DOCUMENT OUTLINE IS NOT A MENU. Google Docs renders the document's own
+// headings as role=menuitem, so a walk that trusts roles alone descends into the
+// document — measured live: a menu probe on an open Docs menu returned "BAB I
+// PENDAHULUAN" and every paragraph as menu items. The walk therefore treats a
+// menu as a menu only while it hangs off a menubar or a menu that a manu item
+// owns, and a whole branch that grows into document text is refused by name
+// rather than walked to the end of the document.
 
 export const RECIPES = Object.freeze([
   {
@@ -96,6 +100,8 @@ export const RECIPES = Object.freeze([
 export const SIDE_EFFECTS = Object.freeze({
   browser_status: [],
   guide: [],
+  list_menus: [],
+  open_menu: ['opens menus by hovering and clicking levels on the way to the path you gave'],
   list_tabs: [],
   open_url: ['opens a new tab in the same browser'],
   close_tab: ['closes a tab the caller may still be holding'],

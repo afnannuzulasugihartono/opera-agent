@@ -281,6 +281,28 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'list_menus',
+    description: "Read what this page's application can do, from its own menu markup, without clicking anything. Every node carries its state - leaf, branch, disabled, or unrevealed - and an unrevealed node carries how it would be revealed, so a command one hover away is never reported as one that does not exist. Read this before guessing at a menu.",
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: tabArg, limit: numberArg('most rows to return, default 200') }
+    }
+  },
+  {
+    name: 'open_menu',
+    description: 'Walk a menu path and stop there, opening each level on the way: path ["Insert","Image"] brings the Image submenu open and leaves the choice to you. Set clickLeaf to also activate the last item. Branches are hovered, never clicked into blindly, because clicking a row that turns out to be a branch runs whatever it was. A path that breaks returns the level it broke on, what that level actually contained, and the nearest names to what you asked for - a map, not a dead end.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        path: { type: 'array', items: { type: 'string' }, description: 'menu names from the bar down, e.g. ["Insert","Image"]' },
+        clickLeaf: { type: 'boolean', description: 'also activate the last item, default false' },
+        limit: numberArg('most rows to read per level, default 200')
+      },
+      required: ['path']
+    }
+  },
+  {
     name: 'guide',
     description: 'Read what this server can do, written as tasks rather than a tool list: for each task, the calls that do it and the road that is known to work. Pass a topic to get only the roads for that task. Also returns what each tool does to the page before you call it — which reads move the caret, which bring the tab forward, which can make an operating-system dialog appear — and the three things this server will not pretend to do. Start here when you do not know which tool to reach for.',
     inputSchema: {
@@ -521,6 +543,17 @@ export function createMcpServer(context) {
         }));
       case 'guide':
         return asText(await driver.guide(args.topic));
+      case 'list_menus':
+        return asText(await driver.menuTree({ limit: args.limit }));
+      case 'open_menu': {
+        const path = Array.isArray(args.path) ? args.path : [];
+        if (path.length === 0) throw new Error('open_menu needs a path of menu names, e.g. ["Insert","Image"]');
+        return afterAction(driver, await driver.openMenu({
+          path,
+          clickLeaf: args.clickLeaf === true,
+          limit: args.limit
+        }));
+      }
       case 'ax_snapshot':
         return asText(await driver.snapshot(args.limit));
       case 'caret_line':

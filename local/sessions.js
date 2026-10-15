@@ -54,6 +54,8 @@ export function asDriver(session) {
     click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
     resolve: (role, name) => session.resolveRow({ role, name }),
     guide: async (topic) => guide(topic),
+    menuTree: (options) => session.menuTree(options ?? {}),
+    openMenu: (options) => session.openMenu(options ?? {}),
     hover: (x, y) => session.hover(x, y),
     clickRow: async (role, name) => {
       const row = await session.resolveRow({ role, name });
