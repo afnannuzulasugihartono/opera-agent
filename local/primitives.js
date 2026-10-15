@@ -397,6 +397,15 @@ export const DOCS_COPY_EXPRESSION = `(() => {
 // only create theirs on the way to the picker, and for those the agent walks
 // the menu first and calls upload after.
 
+// WHY THE INPUT IS LOOKED FOR FIVE TIMES. Clicking Upload creates the file
+// input, but creation lands on the page's own time: the first look routinely
+// finds nothing a second after the click. Five looks across two seconds cost
+// nothing when the input is already there and catch it when it arrives late;
+// still nothing after that is an honest inputFound:false, not a race lost.
+
+const UPLOAD_FIND_ATTEMPTS = 5;
+const UPLOAD_FIND_GAP_MS = 400;
+
 export const UPLOAD_INPUT_EXPRESSION = `(() => {
   const seen = new Set();
   const scan = (root) => {
@@ -573,13 +582,21 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           } catch {}
         };
       }
-      try {
+      const findInput = async () => {
         const found = await cdp.send('Runtime.evaluate', {
           expression: UPLOAD_INPUT_EXPRESSION,
           returnByValue: false,
           objectGroup: 'opera-upload'
         });
-        const objectId = found?.result?.objectId;
+        return found?.result?.objectId ?? null;
+      };
+      try {
+        let objectId = null;
+        for (let attempt = 0; attempt < UPLOAD_FIND_ATTEMPTS; attempt++) {
+          objectId = await findInput();
+          if (objectId) break;
+          if (attempt + 1 < UPLOAD_FIND_ATTEMPTS) await sleep(UPLOAD_FIND_GAP_MS);
+        }
         if (!objectId) return { inputFound: false, filename };
         await cdp.send('DOM.setFileInputFiles', { files: [target], objectId });
         return { inputFound: true, filename, bytes };

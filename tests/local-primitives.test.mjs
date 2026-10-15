@@ -922,3 +922,31 @@ test('intercepting the file chooser is one page call either way', async () => {
     [true, false]
   );
 });
+
+// WHY THE RETRY IS PINNED BY COUNT, NOT TIME. Clicking Upload creates the
+// input on the page's own schedule; the first look routinely finds nothing a
+// second after the click. Five looks with sleeps between them cost nothing
+// when the input is already there.
+
+test('a late input is caught by looking again', async () => {
+  const slept = [];
+  let calls = 0;
+  const cdp = {
+    send: async (method) => {
+      if (method === 'Runtime.evaluate') {
+        calls += 1;
+        return calls < 3 ? { result: {} } : { result: { objectId: 'late' } };
+      }
+      return { result: {} };
+    }
+  };
+  const p = createPrimitives(cdp, {
+    sleep: async (ms) => { slept.push(ms); },
+    fs: fakeUploadFs(), os: fakeUploadOs, path: fakeUploadPath
+  });
+
+  const out = await p.upload({ filename: 'pic.png', path: '/files/pic.png' });
+
+  assert.deepEqual(out.inputFound, true);
+  assert.deepEqual(slept, [400, 400], 'a beat between looks, none after the hit');
+});
