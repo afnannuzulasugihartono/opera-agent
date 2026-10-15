@@ -53,6 +53,8 @@ export function asDriver(session) {
     find: (query) => findOn(session, query),
     click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
     resolve: (role, name) => session.resolveRow({ role, name }),
+    clickFraction: (at) => session.clickFraction(at),
+    captureSized: (options) => session.captureSized(options ?? {}),
     guide: async (topic) => guide(topic),
     menuTree: (options) => session.menuTree(options ?? {}),
     openMenu: (options) => session.openMenu(options ?? {}),

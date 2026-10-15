@@ -41,7 +41,17 @@ function fakeDriver() {
     keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
     caretLine: async () => ({ line: 'Kajian pustaka mencakup', caretMoved: true, caretRestored: true }),
-    capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; }
+    capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; },
+    captureSized: async (opts) => {
+      calls.push(['capture', opts]);
+      return {
+        data: 'BASE64JPEG',
+        viewport: { width: 1186, height: 670 },
+        dpr: 1.25,
+        image: { width: 1483, height: 838 },
+        note: 'image pixels are css pixels times 1.25'
+      };
+    },
   };
 }
 
@@ -119,6 +129,11 @@ test('a snapshot reaches the driver and comes back as readable text', async () =
   assert.match(res.result.content[0].text, /204/);
 });
 
+  // WHY THE CAPTURE SAYS WHAT SPACE IT IS IN. Measured live by resizing the
+  // window: viewport 1144x714 -> 1186x670, capture 1430x963 -> 1483x838, scale
+  // steady at 1.25. An agent handed a picture and nothing else divides by eye and
+  // clicks the wrong thing while every answer says the click landed.
+
 test('a capture comes back as image content a model can see, not base64 text', async () => {
   const server = createMcpServer(ctx());
   const res = await server.handle({
@@ -128,6 +143,10 @@ test('a capture comes back as image content a model can see, not base64 text', a
 
   assert.deepEqual(res.result.content[0], { type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' });
   assert.match(res.result.content.at(-1).text, /^[0-9]+ ms$/);
+  const geometry = JSON.parse(res.result.content.at(-2).text);
+  assert.deepEqual(geometry.viewport, { width: 1186, height: 670 });
+  assert.equal(geometry.dpr, 1.25);
+  assert.deepEqual(geometry.image, { width: 1483, height: 838 });
 });
 
 test('a full-page capture reaches the driver as a flag, not a second tool', async () => {

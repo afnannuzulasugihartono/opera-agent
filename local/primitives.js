@@ -94,6 +94,7 @@
 import nodeFs from 'node:fs';
 import nodeOs from 'node:os';
 import nodePath from 'node:path';
+import { Buffer } from 'node:buffer';
 
 import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from './menu-tree.js';
 
@@ -520,6 +521,15 @@ const UPLOAD_FIND_GAP_MS = 400;
 // clicks blind, so the answer says which happened. And a canvas redraws its caret
 // asynchronously, so a click and an immediate read can still see the old one.
 
+// WHY A CLICK TAKES A FRACTION AS WELL AS A PIXEL. Measured live by resizing
+
+    // this machine's browser window: the viewport went 1144x714 to 1186x670 while
+    // the device scale stayed at 1.25, so the same CSS pixel stopped meaning the
+    // same place. A fraction is resolved against the viewport as it is at the
+    // moment of the click, which survives that, and the answer says which pixels it
+    // became and in what space - so a caller that meant a fixed pixel still gets the
+    // truth about the space it landed in.
+
 const CARET_RESTORE_GAP_MS = 180;
 const CARET_TOLERANCE_PX = 12;
 
@@ -697,6 +707,39 @@ const KEY_BEAT_MS = 50;
 // WHY A BREAK NAMES THE LEVEL AND THE CONTENTS. "Upload from computer is not
 // in the menu" sends an agent back to guessing. "the path broke at Image, and
 // Insert holds: Table, Bookmark, Chart" hands it a map.
+
+// WHY THE IMAGE SIZE IS READ FROM THE PICTURE AND NOT ASSUMED FROM THE VIEWPORT.
+// A capture answers with bytes; a caller that is told "1430 by 963" can convert
+// pixels to CSS without running anything, and a capture that was scaled to fit a
+// size limit says so. The header is read where it is - a JPEG starts with a frame
+// header that carries the size, a PNG with an IHDR chunk - because a size guessed
+// from the viewport is wrong exactly when the agent needs it.
+
+// WHY THOSE FOUR MARKERS ARE EXCLUDED. A JPEG frame header is SOF0 through SOF15,
+// except the three that carry no frame at all - DHT, JPG and DAC - and those three
+// have no size to read. Reading the first header that has one is why a caller gets
+// 1430 by 963 rather than the width of a Huffman table.
+
+const SOF = [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf];
+
+const imageSize = async (data, format) => {
+  const bytes = Buffer.from(String(data ?? ''), 'base64');
+  if (format === 'png' && bytes.length > 24) {
+    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+  }
+  if (format === 'jpeg') {
+    let at = 2;
+    while (at + 9 < bytes.length) {
+      if (bytes[at] !== 0xff) break;
+      const marker = bytes[at + 1];
+      const length = bytes.readUInt16BE(at + 2);
+      const frame = SOF.includes(marker);
+      if (frame) return { height: bytes.readUInt16BE(at + 5), width: bytes.readUInt16BE(at + 7) };
+      at += 2 + length;
+    }
+  }
+  return { width: 0, height: 0 };
+};
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
@@ -1130,6 +1173,22 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return { events: events.length, chords, chars, execMs: Date.now() - started };
     },
 
+    // WHY A CLICK TAKES A FRACTION AS WELL AS A PIXEL. Measured live by resizing
+    // this machine's browser window: the viewport went 1144x714 to 1186x670 while
+    // the device scale stayed at 1.25, so the same CSS pixel stopped meaning the
+    // same place. A fraction is resolved against the viewport as it is at the
+    // moment of the click, which survives that, and the answer says which pixels it
+    // became and in what space - so a caller that meant a fixed pixel still gets the
+    // truth about the space it landed in.
+    async clickFraction(at) {
+      const view = await primitives.viewport();
+      const asked = { x: Number(at?.x) || 0, y: Number(at?.y) || 0 };
+      const x = Math.round(Math.min(1, Math.max(0, asked.x)) * view.width);
+      const y = Math.round(Math.min(1, Math.max(0, asked.y)) * view.height);
+      await primitives.clickAt(x, y);
+      return { x, y, of: asked, viewport: { width: view.width, height: view.height }, dpr: view.dpr };
+    },
+
     async clickAt(x, y) {
       const common = { x, y, button: 'left', clickCount: 1, buttons: 1 };
       await Promise.all([
@@ -1264,6 +1323,29 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         returnByValue: true
       });
       return result?.value ?? { width: 0, height: 0, dpr: 1 };
+    },
+
+    // WHY A CAPTURE ANSWERS WITH THE SPACE IT WAS TAKEN IN. Measured live by
+    // resizing this machine's browser window: the viewport went 1144x714 -> 1186x670
+    // and the capture went 1430x963 -> 1483x838, with the scale factor constant at
+    // 1.25. So the picture is the CSS viewport times the device's scale, and both
+    // move under the agent's feet: a window resized, a window dragged to a monitor
+    // with another scale. An agent given a picture and nothing else has to guess
+    // that number, and it guesses wrong - which is how a click lands on the wrong
+    // thing while every answer says the click was delivered.
+    async captureSized({ format = 'jpeg', quality = 60, fullPage = false } = {}) {
+      const view = await primitives.viewport();
+      const data = await primitives.capture({ format, quality, fullPage });
+      const pixels = await imageSize(data, format);
+      return {
+        data,
+        viewport: { width: view.width, height: view.height },
+        dpr: view.dpr,
+        image: pixels,
+        note: fullPage
+          ? 'a full-page capture is the whole document, not the window: convert through the page, not the viewport'
+          : `image pixels are css pixels times ${view.dpr}`
+      };
     },
 
     async capture({ format = 'jpeg', quality = 60, fullPage = false } = {}) {

@@ -108,6 +108,10 @@ const driver = {
     return (await attach()).find(query);
   },
 
+  async clickFraction(at) {
+    return (await attach()).clickFraction(at);
+  },
+
   async click(x, y, handle) {
     return (await attach()).click(x, y, handle);
   },
@@ -150,6 +154,10 @@ const driver = {
 
   async focusWindow(match) {
     return focusWindow(match);
+  },
+
+  async captureSized(options) {
+    return (await attach()).captureSized(options);
   },
 
   async dialogState() {

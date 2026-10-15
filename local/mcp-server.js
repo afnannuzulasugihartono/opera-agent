@@ -133,7 +133,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'click',
-    description: 'Click in one tab. Give x and y for a point in the viewport (CSS pixels, what capture_page is clipped to), or a handle to click that element wherever it is by then. A handle is what resolve_row and click_row hand back, and it cannot go stale: the box is measured from the node at the moment of the click, so a row that moved is still the row that gets clicked.',
+    description: 'Click in one tab. Give x and y for a point in the viewport (CSS pixels), at with fractions of the viewport (0 to 1) when the window may be resized between looking and clicking, or a handle to click that element wherever it is by then. A fraction is resolved against the viewport as it is at the moment of the click, so a window that changed size between turns does not move the aim; a handle cannot go stale at all, because the box is measured from the node at the click.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -332,7 +332,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'capture_page',
-    description: 'Capture one tab as a JPEG image, clipped to the viewport at one pixel per clickable coordinate. Pass fullPage to span the whole scrollable document past the viewport instead. Returns image content the caller can see.',
+    description: 'Capture one tab as a JPEG image, and say what space it is in: the viewport size, the device scale factor, and the image size read from the picture itself. The picture is the viewport times that factor, and both move when a window is resized or dragged to a monitor with another scale - measured live, the viewport went 1144x714 to 1186x670 with the scale steady at 1.25 - so convert through the numbers returned here rather than by dividing pixels by eye. Pass fullPage to span the whole document instead; then the picture is the page, not the window, and the answer says so.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
   },
   {
@@ -566,7 +566,9 @@ export function createMcpServer(context) {
       case 'find_elements':
         return asText(await driver.find(args.query));
       case 'click':
-        return afterAction(driver, await driver.click(args.x, args.y, args.handle ?? null));
+        return afterAction(driver, args.at
+          ? await driver.clickFraction(args.at)
+          : await driver.click(args.x, args.y, args.handle ?? null));
       case 'resolve_row':
         return asText({ action: await driver.resolve(args.role, args.name) });
       case 'click_row':
@@ -662,8 +664,13 @@ export function createMcpServer(context) {
       case 'intercept_file_chooser':
         return asText(await driver.interceptFileChooser(args.enabled === true));
       case 'capture_page': {
-        const data = await driver.capture(args.fullPage === true ? { fullPage: true } : {});
-        return { content: [{ type: 'image', data, mimeType: 'image/jpeg' }] };
+        const shot = await driver.captureSized(args.fullPage === true ? { fullPage: true } : {});
+        return {
+          content: [
+            { type: 'image', data: shot.data, mimeType: 'image/jpeg' },
+            { type: 'text', text: JSON.stringify({ viewport: shot.viewport, dpr: shot.dpr, image: shot.image, note: shot.note }) }
+          ]
+        };
       }
       default:
         throw new Error(`Unknown tool: ${name}`);
