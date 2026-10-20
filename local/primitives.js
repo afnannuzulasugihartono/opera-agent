@@ -368,6 +368,29 @@ const SNAPSHOT_EXPRESSION = `(() => {
 // thing that was asked for. The handle is the node's backend id, which the
 // browser keeps for the life of that node and refuses the moment it is gone.
 
+// WHY THE FAILURE NAMES WHAT HAD FOCUS. Measured live on YouTube: a type inserted
+// nothing and the answer offered two guesses - "there is no caret here, or the browser
+// window is minimized" - when the page was already saying that focus sat on a button
+// belonging to a cookie wall. The element that holds focus is one evaluation away, and
+// a name is worth more than two branches of a guess.
+
+const FOCUS_EXPRESSION = `(() => {
+  let deep = document.activeElement;
+  const trail = [];
+  while (deep) {
+    trail.push(deep.tagName.toLowerCase()
+      + (deep.id ? '#' + deep.id : '')
+      + (deep.getAttribute && deep.getAttribute('role') ? '[' + deep.getAttribute('role') + ']' : ''));
+    if (deep.shadowRoot && deep.shadowRoot.activeElement) deep = deep.shadowRoot.activeElement;
+    else break;
+  }
+  return {
+    trail: trail.join(' > ') || 'nothing',
+    tag: deep ? deep.tagName : null,
+    editable: deep ? (deep.isContentEditable === true || deep.tagName === 'INPUT' || deep.tagName === 'TEXTAREA') : false
+  };
+})()`;
+
 const HANDLE_PREFIX = 'opera-';
 
 // WHY ASKING IS A PRIMITIVE AND NOT A LEAK. The list of methods that may be
@@ -1212,6 +1235,58 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     return { moved: false, after: await editSignature() };
   };
 
+  const focusNow = async () => {
+    try {
+      const { result } = await cdp.send('Runtime.evaluate', { expression: FOCUS_EXPRESSION, returnByValue: true });
+      return result?.value ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  // WHY A CLICK ASKS WHO OWNS THE POINT BEFORE IT PRESSES. Measured live on YouTube: a
+  // cookie wall covered the page, click_row on the search box answered with the row's
+  // name and its point as if the click had reached it, focus never left the wall's
+  // button, and the type that followed had nothing to say but a guess. The point
+  // either belongs to the row or to something laid over it, and that is one question
+  // with one answer. When the page cannot answer, nothing is claimed.
+
+  const ownershipAt = async (handle, point) => {
+    const raw = String(handle ?? '');
+    if (!raw.startsWith(HANDLE_PREFIX)) return {};
+    const backendNodeId = Number(raw.slice(HANDLE_PREFIX.length));
+    if (!Number.isFinite(backendNodeId)) return {};
+    try {
+      // WHY THE DOM AGENT IS SWITCHED ON FIRST. Measured live: without it resolveNode
+      // answers an error, the catch below swallowed it, and the click reported no fact
+      // at all - a silent fallback that looks the same as a page that cannot answer.
+      await cdp.send('DOM.enable').catch(() => null);
+      const resolved = await cdp.send('DOM.resolveNode', { backendNodeId });
+      const objectId = resolved?.object?.objectId;
+      if (!objectId) return {};
+      const { result } = await cdp.send('Runtime.callFunctionOn', {
+        objectId,
+        functionDeclaration: `function (x, y) {
+          const at = document.elementFromPoint(x, y);
+          if (!at) return {};
+          if (at === this || this.contains(at)) return { covered: false };
+          const label = (at.getAttribute('aria-label') || at.innerText || at.textContent || '')
+            .replace(/\s+/g, ' ').trim().slice(0, 60);
+          return {
+            covered: true,
+            coveredBy: at.tagName.toLowerCase() + (at.getAttribute('role') ? '[' + at.getAttribute('role') + ']' : ''),
+            coveredText: label
+          };
+        }`,
+        arguments: [{ value: Number(point.x) }, { value: Number(point.y) }],
+        returnByValue: true
+      });
+      return result?.value ?? {};
+    } catch {
+      return {};
+    }
+  };
+
   const readState = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {
       expression: '({ title: document.title, url: location.href, text: document.body ? document.body.innerText : "", ready: document.readyState })',
@@ -1467,8 +1542,12 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const out = await insertText(text);
       const seen = await waitForEdit(before);
       if (!seen.moved) {
+        const focus = await focusNow();
+        const where = focus?.tag
+          ? `focus was on ${focus.trail}${focus.editable ? '' : ', which takes no text'}`
+          : 'nothing on the page held focus';
         throw new Error(seen.after.holds
-          ? `typed ${out.chars} characters and nothing on the page changed: there is no caret here, or the browser window is minimized`
+          ? `typed ${out.chars} characters and nothing on the page changed: ${where} - click_row the field that should receive it, or press Escape if a dialog is over it`
           : `typed ${out.chars} characters into a page that holds no text and no field to receive them`);
       }
       return { ...out, landed: true, placed: await locateInsertion(text, before, seen.after) };
@@ -1936,8 +2015,9 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     async clickHandle(handle) {
       const at = await primitives.handleBox(handle);
+      const owner = await ownershipAt(handle, at);
       await primitives.clickAt(at.x, at.y);
-      return { ...at, handle: String(handle) };
+      return { ...at, handle: String(handle), ...owner };
     },
 
     async snapshot({ limit = 120 } = {}) {

@@ -99,9 +99,9 @@ const EMPTY_FILE_INPUT = [
 // caret in the page, then type again - and both are one call each.
 
 const EDIT_GONE = [
-  'click({x, y}) where the text should go, then type again \u2014 the page has nothing focused to receive it',
+  'the failure names the element that had focus: if it is not a field, click_row({role, name}) that field and type again',
+  'if a dialog or overlay is over the page, press_key({key: \u201cEscape\u201d}) or click its dismiss button first - measured live, a cookie wall sat over a search box and swallowed the click',
   'caret_line() to see where the caret is, or read_page() to see what the page holds',
-  'focus_window({match: \u201cthe tab title\u201d}) if the browser window is minimized, because a page under the taskbar hears nothing',
   'read_page() before typing again on a canvas page - the text may have landed after the check, and retyping duplicates it'
 ];
 

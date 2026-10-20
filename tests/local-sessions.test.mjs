@@ -59,11 +59,17 @@ test('the adapter speaks driver verbs over primitive nouns', async () => {
 // at the point the snapshot reported — which is the whole difference between
 // clicking the row that was asked for and clicking whatever slid under it.
 
-test('a row click resolves the element, then clicks the handle', async () => {
+// WHY THE CLICK'S PROOF IS PINNED HERE. The row is what was asked for; what the click
+// hit belongs to the click. Measured live: a click_row answered with its row and its
+// point while a dialog owned the point and took the click, and the adapter's rebuilt
+// answer had thrown that fact away before anyone could read it.
+
+test('a row click carries what the click itself reported', async () => {
   const session = fakeSession();
+  session.clickHandle = async (handle) => { session.calls.push(['clickHandle', handle]); return { x: 9, y: 8, handle, covered: true, coveredBy: 'div[dialog]' }; };
   const out = await asDriver(session).clickRow('menuitem', 'inse');
 
-  assert.deepEqual(out, { role: 'menuitem', name: 'Insert', x: 9, y: 8, handle: 'opera-77' });
+  assert.deepEqual(out, { role: 'menuitem', name: 'Insert', x: 9, y: 8, handle: 'opera-77', covered: true, coveredBy: 'div[dialog]' });
   assert.deepEqual(session.calls.slice(-2), [['resolveRow', 'menuitem', 'inse'], ['clickHandle', 'opera-77']]);
   assert.ok(!session.calls.some((c) => c[0] === 'clickAt'), 'no point was clicked');
 });
@@ -74,7 +80,7 @@ test('a row with no element behind it is clicked at the point it reported', asyn
 
   const out = await asDriver(session).clickRow('caret', 'text caret');
 
-  assert.deepEqual(out, { role: 'caret', name: 'text caret', x: 4, y: 5 });
+  assert.deepEqual(out, { role: 'caret', name: 'text caret', x: 4, y: 5, hit: undefined });
   assert.deepEqual(session.calls.at(-1), ['clickAt', 4, 5], 'the caret is a range, not an element');
 });
 
