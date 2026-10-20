@@ -147,17 +147,25 @@ browser, download the statement, name it `client-bank-period.pdf`, file it, and 
 manifest with proof: file exists, size, page count, period read from the page, and the
 statement's own closing balance.
 
-## The gap between that sentence and the code
+## The gap between that sentence and the code, and how it closed
 
-There is **no download primitive today**. Twenty-nine tools, none of them saves a file. The
-extension already holds the `debugger` permission, so the fix is one generic primitive:
+There was **no download primitive**. Twenty-nine tools, none of them saved a file. The
+extension already held the `debugger` permission, so the fix was one generic primitive:
 
-- `Page.setDownloadBehavior` / `Browser.setDownloadBehavior` into a named directory,
-- listen for `Browser.downloadWillBegin` and `Browser.downloadProgress`,
-- return `{ path, bytes, state, suggestedFilename }` or a named failure.
+- arm the folder with `Browser.setDownloadBehavior`,
+- click the control the caller named,
+- read the directory until a new file stops growing,
+- return `{ path, bytes, file }` or a named failure.
 
-Generic, no site knowledge, and it unlocks invoices, exports and reports for every later job.
-It is the highest-value primitive not yet written.
+It was written on 2026-10-21 and measured live against the signed-in Chrome, served by a
+local HTTP server: `statement-2026-09.pdf`, 69 bytes, **462 ms**, `clicked.covered:false`.
+A link that navigated instead of downloading answered `downloaded:false` in 3060 ms with
+the URL it went to. The event-based version was rejected on purpose: the extension bridge
+forwards commands and not CDP events, so it would pass on a debugging port and hang on the
+profile that matters.
+
+Generic, no site knowledge, and it unlocks invoices, exports and reports for every later
+job. It is pull request #89.
 
 ## Two-week test, kill criteria fixed in advance
 
