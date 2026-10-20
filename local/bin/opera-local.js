@@ -201,6 +201,10 @@ const driver = {
     return (await attach()).download(options);
   },
 
+  async pageState() {
+    return (await attach()).pageState();
+  },
+
   async capture(options) {
     return (await attach()).capture(options);
   }

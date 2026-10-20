@@ -1295,6 +1295,40 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     return result?.value ?? { title: '', url: '', text: '' };
   };
 
+  // WHY AN ACTION'S PAGE STATE IS MEASURED AND NOT COPIED. Measured on a real job:
+  // eight calls spent 34,974 characters, most of it the same sixty rows and the same
+  // page text riding along after every click. An agent does not read that; it pays
+  // for it in tokens and in attention. So an action reports where the page is and
+  // what moved - url, title, how much text it holds, which element has focus - and
+  // the rows that changed. The rest stays one deliberate ax_snapshot away.
+  //
+  // WHY THE TEXT IS COUNTED AND NOT RETURNED. The count answers "did this action
+  // change what the page says", which is the question an action's answer owes. The
+  // words themselves belong to read_page, where the caller asked for them.
+  const PAGE_STATE_EXPRESSION = `(() => {
+    const body = document.body ? document.body.innerText : '';
+    const active = document.activeElement;
+    let focus = null;
+    if (active && active !== document.body) {
+      const name = (active.getAttribute('aria-label')
+        || active.getAttribute('placeholder')
+        || active.getAttribute('title')
+        || active.innerText
+        || active.textContent
+        || '').trim();
+      focus = { tag: active.tagName, role: active.getAttribute('role') || '', name: name.slice(0, 60) };
+    }
+    return { url: location.href, title: document.title, textChars: body.length, focus };
+  })()`;
+
+  const pageState = async () => {
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: PAGE_STATE_EXPRESSION,
+      returnByValue: true
+    });
+    return result?.value ?? { url: '', title: '', textChars: 0, focus: null };
+  };
+
   const primitives = {
     async navigate(url) {
       await cdp.send('Page.enable');
@@ -2139,6 +2173,8 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const rows = await readRows(capped(limit));
       return rows.map(({ node, ...row }) => row);
     },
+
+    pageState,
 
     async waitForIdle({ timeoutMs = 10000, intervalMs = 100, readyState = 'complete' } = {}) {
       const deadline = Date.now() + timeoutMs;
