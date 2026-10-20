@@ -81,6 +81,11 @@ export const RECIPES = Object.freeze([
     note: 'A drop needs no dialog at all: the page takes the file on the drop it already listens for. If the chooser is already open - Google Docs opens it through the File System Access API - answer it with dialog_state, dialog_type and dialog_press, which reach it from the machine.'
   },
   {
+    task: 'Take a file out of a page',
+    do: ['resolve_row', 'download'],
+    note: 'Resolve the control that starts the download, then hand its handle to download with the folder you want. The file landing and stopping growing is the proof; a still-writing file, a viewer that opened instead, and a click that produced nothing each come back downloaded:false with the reason.'
+  },
+  {
     task: 'Ask the page a question instead of guessing',
     do: ['ask_page'],
     note: 'Frames, the node behind a row, a frame document, a selector, a box, a screenshot as png. Reads only — anything that acts stays a named tool.'
@@ -131,6 +136,7 @@ export const SIDE_EFFECTS = Object.freeze({
   upload: ['fills a file input, which fires the change the page listens for'],
   drop_file: ['brings the tab to front and drops a file on it'],
   intercept_file_chooser: ['changes whether the native file picker appears on this tab'],
+  download: ['brings the tab to front, clicks, and writes a file into the download folder it names'],
   capture_page: [],
   ax_snapshot: []
 });

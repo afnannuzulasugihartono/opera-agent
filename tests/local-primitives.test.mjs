@@ -30,6 +30,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import {
   DOCS_COPY_EXPRESSION,
   DROP_PHASES,
@@ -2096,4 +2097,102 @@ test('stillness watches the rows an agent acts on, not the whole document', asyn
 
   const asked = cdp.calls.find((c) => c.method === 'Runtime.evaluate');
   assert.match(asked.params.expression, /__LIMIT__|getBoundingClientRect/, 'the read is the snapshot the agent already uses');
+});
+
+// WHY A DOWNLOAD IS TESTED AGAINST A DISK AND NOT AN EVENT. The bridge road carries
+// commands and not CDP events, so an implementation that waited for
+// downloadProgress would pass on a debugging port and hang on the signed-in
+// profile. These tests therefore give the primitive a fake filesystem and check
+// what an observer would check: a file appeared, it stopped growing, the folder
+// was armed before the click, and the browser-wide behavior was handed back.
+
+function fakeDisk() {
+  const files = new Map();
+  return {
+    files,
+    mkdirSync() {},
+    readdirSync(dir) {
+      return [...files.keys()].filter((f) => path.dirname(f) === dir).map((f) => path.basename(f));
+    },
+    statSync(file) {
+      const hit = files.get(file);
+      if (!hit) throw new Error('ENOENT ' + file);
+      return { size: hit.bytes, mtimeMs: hit.mtimeMs };
+    },
+    put(file, bytes) { files.set(file, { bytes, mtimeMs: Date.now() }); }
+  };
+}
+
+function downloadCdp(disk, { onRelease = null } = {}) {
+  const calls = [];
+  return {
+    calls,
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Input.dispatchMouseEvent' && params.type === 'mouseReleased' && onRelease) onRelease();
+      if (method === 'Runtime.evaluate') {
+        const expression = String(params.expression);
+        if (expression.includes('devicePixelRatio')) return { result: { value: { width: 1136, height: 770, dpr: 1 } } };
+        if (expression.includes('opera-hit')) return { result: { value: { tag: 'A', role: 'link', name: 'download' } } };
+        return { result: { value: { title: 'statements', url: 'https://bank.example/statements', text: '' } } };
+      }
+      return { result: {} };
+    }
+  };
+}
+
+test('a download is proven by the file on disk, and the folder is armed before the click', async () => {
+  const disk = fakeDisk();
+  const dir = path.resolve('opera-download-test');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(dir, 'statement-2026-09.pdf'), 1234)
+  });
+  const p = createPrimitives(cdp, { fs: disk, sleep: async () => {} });
+
+  const out = await p.download({ x: 10, y: 10, dir, settleMs: 0 });
+
+  assert.equal(out.downloaded, true);
+  assert.equal(out.file, 'statement-2026-09.pdf');
+  assert.equal(out.bytes, 1234);
+  const armed = cdp.calls.findIndex((c) => c.method === 'Browser.setDownloadBehavior' && c.params.behavior === 'allow');
+  const released = cdp.calls.findIndex((c) => c.method === 'Input.dispatchMouseEvent' && c.params.type === 'mouseReleased');
+  assert.ok(armed >= 0 && armed < released, 'the folder is armed before the click that fills it');
+  const last = cdp.calls.filter((c) => c.method === 'Browser.setDownloadBehavior').at(-1);
+  assert.equal(last.params.behavior, 'default', 'the browser-wide behavior is handed back, or later downloads vanish into it');
+});
+
+test('a click that downloads nothing says what it saw, and names the next move', async () => {
+  const disk = fakeDisk();
+  const dir = path.resolve('opera-download-test-empty');
+  const cdp = downloadCdp(disk);
+  const p = createPrimitives(cdp, { fs: disk, sleep: async () => {} });
+
+  const out = await p.download({ x: 5, y: 5, dir, timeoutMs: 500, settleMs: 0 });
+
+  assert.equal(out.downloaded, false);
+  assert.match(out.why, /no file appeared/);
+  assert.match(out.why, /dialog_state/);
+  assert.ok(out.clicked, 'the answer still says where the click landed');
+});
+
+test('a file still being written is not a delivered file', async () => {
+  const disk = fakeDisk();
+  const dir = path.resolve('opera-download-test-partial');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(dir, 'statement.pdf.crdownload'), 50)
+  });
+  const p = createPrimitives(cdp, { fs: disk, sleep: async () => {} });
+
+  const out = await p.download({ x: 5, y: 5, dir, timeoutMs: 500, settleMs: 0 });
+
+  assert.equal(out.downloaded, false);
+  assert.match(out.why, /still being written/);
+  assert.equal(out.partial, 'statement.pdf.crdownload');
+});
+
+test('download refuses to guess what to click', async () => {
+  const p = createPrimitives(downloadCdp(fakeDisk()), { sleep: async () => {} });
+  await assert.rejects(() => p.download({}), /exactly one of/);
+  await assert.rejects(() => p.download({ role: 'link' }), /also needs a name/);
+  await assert.rejects(() => p.download({ handle: 'opera-1', x: 1, y: 2 }), /exactly one of/);
 });
