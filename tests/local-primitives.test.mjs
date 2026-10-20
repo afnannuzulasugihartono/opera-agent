@@ -63,6 +63,9 @@ function recordingCdp() {
         page.body = `${grown.length}:${grown}`;
       }
       if (method === 'Runtime.evaluate') {
+        if (params.expression.includes('document.title')) {
+          return { result: { value: { title: 't', url: 'u', text: 'body text', ready: 'complete' } } };
+        }
         if (params.expression.includes('readyState')) return { result: { value: 'complete' } };
         if (params.expression.includes('devicePixelRatio')) {
           return { result: { value: { width: 1136, height: 770, dpr: 1.25 } } };
@@ -799,7 +802,87 @@ test('a page with no caret fails the edit instead of counting the characters it 
     }
   };
 
-  await assert.rejects(() => createPrimitives(cdp).type('GUARD'), /typed 5 characters and nothing on the page changed: there is no caret here/);
+  await assert.rejects(() => createPrimitives(cdp).type('GUARD'), /typed 5 characters and nothing on the page changed: nothing on the page held focus - click_row the field that should receive it/);
+});
+
+// WHY A TYPE THAT LANDS NOWHERE MUST NAME WHAT HAD FOCUS. Measured live on YouTube:
+// a cookie wall sat over the page, the type inserted nothing, and the answer offered
+// two guesses - no caret, or a minimized window. The page was already saying the third
+// thing: focus sat on the wall's button. A name costs one evaluation and ends the
+// guessing, so the failure carries it.
+
+test('a type that lands nowhere names the element that had focus', async () => {
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('trail')) {
+        return { result: { value: { trail: 'button#button', tag: 'BUTTON', editable: false } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: { body: '19:Untitled document\n\n', value: '', holds: true } } };
+      }
+      return {};
+    }
+  };
+
+  await assert.rejects(
+    () => createPrimitives(cdp).type('GUARD'),
+    /nothing on the page changed: focus was on button#button, which takes no text - click_row the field that should receive it, or press Escape if a dialog is over it/
+  );
+});
+
+// WHY A CLICK ASKS WHO OWNS THE POINT. A cookie wall over a page turns a click_row into
+// a success report for a click that reached nothing: measured live, the row answered
+// with its own name and point while focus never left the wall's button. The point has
+// one owner, and saying which is cheaper than the guess that follows.
+
+test('a click_row says when something else owns the point it clicked', async () => {
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+      if (method === 'DOM.resolveNode') return { object: { objectId: 'o-9' } };
+      if (method === 'Runtime.callFunctionOn') {
+        return { result: { value: { covered: true, coveredBy: 'div[button]', coveredText: 'Reject the use of cookies and other data' } } };
+      }
+      return { result: {} };
+    }
+  };
+
+  const out = await createPrimitives(cdp).clickHandle('opera-4321');
+
+  assert.equal(out.covered, true, 'the point belongs to something else');
+  assert.equal(out.coveredBy, 'div[button]');
+  assert.match(out.coveredText, /Reject the use of cookies/);
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3,
+    'the click still goes out - the caller decides, and now with a fact');
+});
+
+test('a click_row whose point belongs to the row says so, and one that belongs to nothing claims nothing', async () => {
+  const owned = {
+    calls: [],
+    send: async (method, params = {}) => {
+      owned.calls.push({ method, params });
+      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+      if (method === 'DOM.resolveNode') return { object: { objectId: 'o-9' } };
+      if (method === 'Runtime.callFunctionOn') return { result: { value: { covered: false } } };
+      return { result: {} };
+    }
+  };
+  assert.equal((await createPrimitives(owned).clickHandle('opera-4321')).covered, false);
+
+  const silent = {
+    calls: [],
+    send: async (method, params = {}) => {
+      silent.calls.push({ method, params });
+      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+      return { result: {} };
+    }
+  };
+  const out = await createPrimitives(silent).clickHandle('opera-4321');
+  assert.equal('covered' in out, false, 'a page that cannot answer is not given an invented verdict');
 });
 
 test('a page with nothing to type into says so in the words of that fact', async () => {
@@ -1175,7 +1258,7 @@ function docsCdp(copyAnswers, caret = null) {
   };
 }
 
-test('a read on an ordinary page costs one call and keeps its shape', async () => {
+test('a read on a settled page takes two samples and says the text stood still', async () => {
   const cdp = recordingCdp();
 
   const out = await createPrimitives(cdp).read();
@@ -1184,12 +1267,47 @@ test('a read on an ordinary page costs one call and keeps its shape', async () =
     title: 't',
     url: 'u',
     text: 'body text',
+    ready: 'complete',
+    settled: true,
+    grewBy: 0,
     caretMoved: false,
     caretRestored: true,
     viewRestored: true,
     caretWhy: ''
   });
-  assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate']);
+  assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate', 'Runtime.evaluate'],
+    'two cheap samples, not a guess');
+});
+
+// WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS. Measured live on
+// YouTube: at 1.9 seconds readyState said complete with 871 characters; by 2.4 seconds
+// the page held 8,478. One read there is not wrong about what it saw - it is wrong
+// about what it implies, because nothing in the answer says the page was still filling
+// in. The second sample turns that into a fact the caller can act on.
+
+test('a read on a page still filling in says so, and answers with the later sample', async () => {
+  const samples = [
+    { title: 'YouTube', url: 'https://www.youtube.com/', text: 'x'.repeat(871), ready: 'complete' },
+    { title: 'YouTube', url: 'https://www.youtube.com/', text: 'x'.repeat(8478), ready: 'complete' }
+  ];
+  let ask = 0;
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
+        return { result: { value: samples[Math.min(ask++, samples.length - 1)] } };
+      }
+      return { result: {} };
+    }
+  };
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.equal(out.ready, 'complete', 'readyState said complete, and that is exactly why it cannot be the only signal');
+  assert.equal(out.settled, false, 'the page had not stopped moving');
+  assert.equal(out.grewBy, 7607, 'and it says by how much');
+  assert.equal(out.text.length, 8478, 'the answer is the later sample, not the one already stale');
 });
 
 test('a read on a Google Doc borrows the selection and returns the document', async () => {
@@ -1203,6 +1321,9 @@ test('a read on a Google Doc borrows the selection and returns the document', as
     title: 'Doc',
     url: DOC_URL,
     text: 'First line\nSecond line',
+    ready: null,
+    settled: null,
+    settledWhy: 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof',
     caretMoved: true,
     caretRestored: false,
     viewRestored: false,

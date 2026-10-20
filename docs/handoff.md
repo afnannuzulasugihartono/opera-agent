@@ -25,7 +25,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   request #86 passed unit, secret-scan, browser and SonarCloud with zero open issues, and
   is `blocked` by the base-branch policy: it needs an owner approval, which an agent
   cannot give itself. Squash it and `main` carries the same tree.
-- Gates: `npm test`, `npm run check` - 29 primitives, 176 runtime safety files, 1249 unit
+- Gates: `npm test`, `npm run check` - 29 primitives, 176 runtime safety files, 1278 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 73 `opera_*`
   functions (62 `SECURITY DEFINER`), 17 `opera_*` tables, 10 deployed edge functions.
