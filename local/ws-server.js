@@ -54,13 +54,13 @@ export function encodeText(text) {
   return Buffer.concat([header, payload]);
 }
 
-export function encodeClose(code = 1000) {
+function encodeClose(code = 1000) {
   const payload = Buffer.alloc(2);
   payload.writeUInt16BE(code, 0);
   return Buffer.concat([Buffer.from([0x88, 0x02]), payload]);
 }
 
-export function encodePong() {
+function encodePong() {
   return Buffer.from([0x8a, 0x00]);
 }
 
