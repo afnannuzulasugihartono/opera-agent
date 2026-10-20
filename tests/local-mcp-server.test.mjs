@@ -40,6 +40,7 @@ function fakeDriver() {
     type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
     keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
+    pageState: async () => ({ url: 'https://docs.google.com/document/d/1', title: 'Paper', textChars: 11, focus: null }),
     caretLine: async () => ({ line: 'Kajian pustaka mencakup', caretMoved: true, caretRestored: true }),
     capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; },
     navigate: async (url) => { calls.push(['navigate', url]); return { url, waited: true }; },
@@ -535,9 +536,29 @@ test('every action hands back the page it acted on, so looking costs no extra ca
     const payload = JSON.parse(res.result.content[0].text);
 
     assert.ok('action' in payload, `${name} returned no action result`);
-    assert.ok(Array.isArray(payload.elements), `${name} returned no page with the action`);
-    assert.ok(payload.elements.length > 0, `${name} came back with an empty page`);
+    assert.ok(payload.page, `${name} returned no page state with the action`);
+    assert.equal(payload.page.url, 'https://docs.google.com/document/d/1', `${name} lost the url`);
+    assert.equal(payload.page.rows, 1, `${name} lost the row count`);
+    assert.ok(payload.changed, `${name} returned no change set`);
   }
+});
+
+test('an action on a sixty-row page answers in a thousand characters, not five thousand', async () => {
+  const c = ctx();
+  const rows = Array.from({ length: 60 }, (_, i) => ({
+    role: 'button', name: `Row number ${i} with a name`, x: 10, y: 20 + i * 30
+  }));
+  c.driver.snapshot = async () => rows;
+  const server = createMcpServer(c);
+
+  const res = await server.handle({ jsonrpc: '2.0', id: 91, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+  const text = res.result.content[0].text;
+  const out = JSON.parse(text);
+
+  assert.ok(text.length < 1500, `an action answered with ${text.length} characters`);
+  assert.equal(out.page.rows, 60, 'the count still says how much the page holds');
+  assert.equal(out.changed.added.length, 8, 'eight rows ride along; the rest are one snapshot away');
+  assert.equal(out.changed.baseline, true);
 });
 
 test('the page that rides along is smaller than the page you ask for', async () => {
@@ -620,7 +641,7 @@ test('a wait ends on the same evidence a read would show', async () => {
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.action.found, true);
-  assert.ok(Array.isArray(payload.elements), 'the page comes back with the verdict');
+  assert.ok(payload.page && payload.changed, 'the page state comes back with the verdict');
 });
 
 test('a wait that runs out of budget reports instead of failing', async () => {
@@ -633,7 +654,7 @@ test('a wait that runs out of budget reports instead of failing', async () => {
 
   assert.equal(payload.action.found, false);
   assert.ok(payload.action.ms >= 500, 'the full budget was spent before admitting it');
-  assert.ok(Array.isArray(payload.elements));
+  assert.ok(payload.page && payload.changed, 'the page state comes back with the verdict');
 });
 
 test('a wait with nothing to wait for is refused before the first read', async () => {
@@ -681,13 +702,14 @@ async function actOn(server, pages) {
   return JSON.parse(res.result.content[0].text);
 }
 
-test('the first look at a tab carries no change set, because it is the baseline', async () => {
+test('the first look at a tab carries the baseline rows, because there is nothing to compare', async () => {
   const c = ctx();
   c.driver.snapshot = async () => [ROW_FILE];
   const out = await actOn(createMcpServer(c));
 
-  assert.equal(out.changed, null);
-  assert.equal(out.elements.length, 1);
+  assert.equal(out.changed.baseline, true);
+  assert.deepEqual(out.changed.added, [ROW_FILE]);
+  assert.equal(out.page.rows, 1);
 });
 
 test('an unchanged page reports nothing changed', async () => {
@@ -698,7 +720,11 @@ test('an unchanged page reports nothing changed', async () => {
 
   const out = await actOn(server);
 
-  assert.deepEqual(out.changed, { added: [], moved: [], removed: 0, reshaped: false });
+  assert.deepEqual(out.changed.added, []);
+  assert.deepEqual(out.changed.moved, []);
+  assert.equal(out.changed.removed, 0);
+  assert.equal(out.changed.reshaped, false);
+  assert.equal(out.changed.baseline, false);
 });
 
 test('added and moved rows are named', async () => {
@@ -745,8 +771,8 @@ test('a replaced page says reshaped instead of listing sixty new rows', async ()
   const out = await actOn(server);
 
   assert.equal(out.changed.reshaped, true);
-  assert.deepEqual(out.changed.added, [], 'read elements instead: everything moved');
-  assert.equal(out.elements.length, 2, 'the full page still rides along');
+  assert.deepEqual(out.changed.added, [], 'read the rows instead: everything moved');
+  assert.equal(out.page.rows, 2, 'the count says what the page holds now');
 });
 
 // WHY THE FLOOR IS ASSERTED, NOT THE CEILING. setTimeout fires at or after its
@@ -805,7 +831,7 @@ test('upload carries a file without touching the native dialog', async () => {
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.deepEqual(payload.action, { inputFound: true, filename: 'pic.png', bytes: 5 });
-  assert.ok(Array.isArray(payload.elements), 'the page comes back with the result');
+  assert.ok(payload.page && payload.changed, 'the page state comes back with the result');
 });
 
 test('intercept_file_chooser toggles without touching the page', async () => {
@@ -928,3 +954,4 @@ test('ask_page refuses anything that could act, and says what it may ask', async
   }
   assert.ok(!c.driver.calls.some((call) => call[0] === 'ask'), 'nothing reached the browser');
 });
+
