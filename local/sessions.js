@@ -96,6 +96,7 @@ export function asDriver(session) {
     upload: (options) => session.upload(options),
     dropFile: (options) => session.dropFile(options),
     interceptFileChooser: (enabled) => session.interceptFileChooser(enabled),
+    download: (options) => session.download(options),
     capture: (options) => session.capture(options),
     front: () => session.front(),
     close: () => session.close()
