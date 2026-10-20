@@ -333,6 +333,23 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'download',
+    description: 'Click the control that starts a file download and wait until the file is on disk, then return its path and byte count. Arms the folder before the click, so the file lands where the caller says instead of the default downloads folder, and resets the browser-wide behavior afterwards. Point it at a handle from resolve_row, a role and name, or an x and y. The file itself is the proof: a download still writing, a click that opened a viewer instead, and a click that produced nothing each come back downloaded:false with the reason and the next move.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        handle: { type: 'string', description: 'element handle from resolve_row or click_row' },
+        role: stringArg('row role to click, e.g. link or button'),
+        name: stringArg('row name for that role'),
+        x: numberArg('viewport x, instead of a handle or a row'),
+        y: numberArg('viewport y, instead of a handle or a row'),
+        dir: stringArg('folder to download into; defaults to Downloads/opera-agent'),
+        timeoutMs: numberArg('how long to wait for the file, default 30000')
+      }
+    }
+  },
+  {
     name: 'list_menus',
     description: "Read what this page's application can do, from its own menu markup, without clicking anything. Every node carries its state - leaf, branch, disabled, or unrevealed - and an unrevealed node carries how it would be revealed, so a command one hover away is never reported as one that does not exist. Read this before guessing at a menu.",
     inputSchema: {
@@ -609,7 +626,7 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // because picking one and saying nothing is how a drive ends up typing into the wrong
 // document.
 
-const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu']);
+const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu', 'download']);
 
 export function createMcpServer(context) {
   const sessions = new Map();
@@ -806,6 +823,16 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
       }
       case 'intercept_file_chooser':
         return asText(await driver.interceptFileChooser(args.enabled === true));
+      case 'download':
+        return asText(await driver.download({
+          handle: args.handle ?? null,
+          role: args.role ?? null,
+          name: args.name ?? null,
+          x: args.x,
+          y: args.y,
+          dir: args.dir ?? null,
+          timeoutMs: args.timeoutMs
+        }));
       case 'capture_page': {
         const shot = await driver.captureSized(args.fullPage === true ? { fullPage: true } : {});
         return {

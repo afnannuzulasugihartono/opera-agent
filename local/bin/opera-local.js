@@ -158,7 +158,7 @@ const driver = {
   },
 
   async ensureFront(options) {
-    return ensureFront({ ...(options ?? {}), hasFocus: () => attach().hasFocus() });
+    return ensureFront({ ...(options ?? {}), hasFocus: async () => (await attach()).hasFocus() });
   },
 
   async captureSized(options) {
@@ -195,6 +195,10 @@ const driver = {
 
   async interceptFileChooser(enabled) {
     return (await attach()).interceptFileChooser(enabled);
+  },
+
+  async download(options) {
+    return (await attach()).download(options);
   },
 
   async capture(options) {

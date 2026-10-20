@@ -1526,6 +1526,121 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return { intercepting: enabled === true };
     },
 
+    // WHY THE FILE ON DISK IS THE PROOF, NOT THE PROTOCOL EVENT. The bridge road
+    // forwards commands and not events, so a listener here would fire on a debugging
+    // port and stay silent on the signed-in profile - the one road that matters. The
+    // directory is therefore read until a new file stops growing, which is true on
+    // every road and survives a browser that lies about finishing.
+    //
+    // WHY THE DOWNLOAD BEHAVIOR IS ARMED BEFORE THE CLICK AND RESET AFTER IT. A click
+    // that starts a download has already chosen where the file goes; arming afterwards
+    // would only redirect the next one. The reset is best effort, and it matters: the
+    // behavior is browser-wide, so leaving it armed would silently swallow every later
+    // download the person makes into this folder.
+    //
+    // WHY A PARTIAL FILE IS NOT A RESULT. Chrome writes `name.pdf.crdownload` while it
+    // works and renames on completion, so a directory scan that accepted either would
+    // report a truncated statement as delivered - the exact failure the proof layer
+    // exists to prevent.
+    async download({
+      handle = null, role = null, name = null, x = null, y = null,
+      dir = null, timeoutMs = 30000, settleMs = 250, intervalMs = 100
+    } = {}) {
+      const hasPoint = Number.isFinite(x) && Number.isFinite(y);
+      const hasRow = role !== null && role !== undefined;
+      const ways = [handle !== null && handle !== undefined, hasRow, hasPoint].filter(Boolean).length;
+      if (ways !== 1) throw new Error('download needs exactly one of: a handle, a role and name, or an x and a y.');
+      if (hasRow && (name === null || name === undefined || String(name) === '')) {
+        throw new Error('download with a role also needs a name, because the role alone does not say which row.');
+      }
+      const target = dir ? path.resolve(String(dir)) : path.join(os.homedir(), 'Downloads', 'opera-agent');
+      fs.mkdirSync(target, { recursive: true });
+      const before = new Set(fs.readdirSync(target));
+
+      let armedVia = 'browser';
+      try {
+        await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
+      } catch (browserError) {
+        try {
+          await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
+          armedVia = 'page';
+        } catch (pageError) {
+          throw new Error(`download could not arm a folder: Browser said "${browserError?.message}", Page said "${pageError?.message}"`);
+        }
+      }
+
+      const started = Date.now();
+      const pageBefore = await readState().catch(() => ({ url: '' }));
+      try {
+        let clicked;
+        if (handle !== null && handle !== undefined) {
+          clicked = await primitives.clickHandle(handle);
+        } else if (hasRow) {
+          const row = await primitives.resolveRow({ role, name });
+          clicked = row.handle ? await primitives.clickHandle(row.handle) : await primitives.clickAt(row.x, row.y);
+        } else {
+          clicked = await primitives.clickAt(Number(x), Number(y));
+        }
+
+        const limit = Math.max(500, Number.isFinite(Number(timeoutMs)) ? Number(timeoutMs) : 30000);
+        const deadline = started + limit;
+        let growing = null;
+        let stableAt = 0;
+        for (;;) {
+          const fresh = fs.readdirSync(target).filter((file) => !before.has(file));
+          const finished = fresh.filter((file) => !file.endsWith('.crdownload') && !file.endsWith('.tmp'));
+          if (finished.length) {
+            const newest = finished
+              .map((file) => ({ file, at: fs.statSync(path.join(target, file)).mtimeMs }))
+              .sort((a, b) => b.at - a.at)[0].file;
+            const full = path.join(target, newest);
+            const size = fs.statSync(full).size;
+            if (size > 0) {
+              if (!growing || growing.size !== size || growing.file !== newest) {
+                growing = { file: newest, size };
+                stableAt = Date.now();
+              } else if (Date.now() - stableAt >= settleMs) {
+                return {
+                  downloaded: true,
+                  file: newest,
+                  path: full,
+                  bytes: size,
+                  dir: target,
+                  ms: Date.now() - started,
+                  armedVia,
+                  clicked
+                };
+              }
+            }
+          }
+
+          if (Date.now() >= deadline) {
+            const partial = fs.readdirSync(target).find((file) => file.endsWith('.crdownload'));
+            const after = await readState().catch(() => ({ url: pageBefore.url }));
+            const navigated = after.url && after.url !== pageBefore.url;
+            const why = partial
+              ? `a download started but ${partial} was still being written after ${limit} ms; call again with a longer timeoutMs`
+              : navigated
+                ? `the click navigated to ${after.url} instead of downloading; that page may render the file, so capture_page() it or use the page's own download control`
+                : `no file appeared in ${target} within ${limit} ms; the clicked control may open a viewer or a menu, or Chrome may be showing a save dialog - dialog_state() says which`;
+            return {
+              downloaded: false,
+              why,
+              dir: target,
+              ms: Date.now() - started,
+              armedVia,
+              partial: partial ?? null,
+              clicked
+            };
+          }
+          await sleep(intervalMs);
+        }
+      } finally {
+        await cdp.send('Browser.setDownloadBehavior', { behavior: 'default' }).catch(() => null);
+        await cdp.send('Page.setDownloadBehavior', { behavior: 'default' }).catch(() => null);
+      }
+    },
+
     async ask(method, params = {}) {
       return cdp.send(method, params);
     },
