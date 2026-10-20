@@ -1,25 +1,23 @@
 # What people actually try, and pay for
 
-Research note, 2026-10-20. Companion to `agent-surface.md`. That one asked how an agent
-chooses a tool; this one asks what a *person* chooses to try.
+Research note, 2026-10-20, revised 2026-10-21 after reading the forums. Companion to
+`agent-surface.md`. That one asked how an agent chooses a tool; this one asks what a person
+chooses to try, and what they already pay someone to do.
 
-## Method, and its limits
+## Method
 
-The search engine returned nothing, so this is built from primary sources that answer
-directly: competitor pricing pages, a competitor's own task-mix telemetry, and Hacker News
-threads (via the Algolia API) where buyers and builders argue in public.
+- DuckDuckGo HTML and Lite endpoints, because the configured search tool returned nothing.
+- Reddit archive API (PullPush) for threads and comments, because reddit.com itself answers 403.
+- Competitor pricing pages, fetched directly.
+- Quora returns 403 behind a challenge; X and Threads need a login to read threads. **No
+  evidence in this note comes from X, Threads or Quora**, and none is invented to fill the gap.
 
-Limits, stated up front:
-
-- **No Indonesian market data.** Local claims below are marked `[UNVERIFIED]` and need
-  five conversations, not more browsing.
-- **Competitor telemetry is marketing.** Browser Use's task mix is self-reported; direction
-  is usable, precision is not.
-- **n is small.** One pricing page, one task mix, two threads.
+Limits: competitor telemetry is marketing, Reddit is self-selected, and Indonesian demand is
+inferred from what is *sold*, not from what is discussed.
 
 ## What the work actually is
 
-Browser Use publishes how its 30 kinds of task are distributed. The largest slices:
+Browser Use publishes the distribution of its 30 task kinds:
 
 | Task | Share |
 |---|---|
@@ -32,146 +30,184 @@ Browser Use publishes how its 30 kinds of task are distributed. The largest slic
 | Booking and buying | 3% |
 | Filling in a form | 1% |
 
-Two things fall out of that table.
+Nearly a fifth of all browser-agent work is a login wall, and the industry's answer is
+credential vaults, MFA handling, captcha solving, residential proxies and "digital personas" —
+Notte advertises all five. That is a large, fragile machine built to *become* someone else.
 
-1. **Nearly a fifth of all browser-agent work is a login wall.** The industry's answer is
-   to build credential vaults, MFA handling, captcha solving, residential proxies and
-   "digital personas" — Notte lists all five as features. That is a large, fragile,
-   expensive machine built to *become* someone.
-2. **The second and third largest tasks are "there is no API for this".** Reading a page,
-   clicking through a site. Not glamorous, but that is where the volume is.
-
-Opera Agent's structural advantage lands exactly on the top row: the browser is already
-logged in. No vault, no MFA, no captcha, no proxy, no persona. The user's own session is
-the credential. That is cheaper to run, safer to sell, and impossible to copy by a headless
-cloud.
+Our browser is already logged in. No vault, no captcha, no persona. That is a structural cost
+and risk advantage, not a feature.
 
 ## What buyers complain about
 
-From the Notte launch thread (Hacker News, 2025-08), the loudest complaint was not speed or
-accuracy. It was **paying for failure**:
+From the Notte launch thread (Hacker News, 2025-08), the loudest complaint was not speed:
 
 > "Credit based pricing is broken. No way u produce sh*t then user get out of credit to get
 > nothing done."
 
-> "I pay $xxxx for the Claude API, half of the time it breaks it's own code... So you pay
-> credits and you get 'stuff' that 'might work'."
+> "you pay credits and you get 'stuff' that 'might work'."
 
 The founder conceded and promised the fix:
 
 > "We're working on fail-credit refunds so charges only apply to successful runs."
 
-That is the single most useful sentence in this research. **The market has already asked
-for success-only pricing, and nobody can deliver it cleanly, because nobody can prove
-success.** Our whole recent line of work — `settled`, `covered`, `placed`, per-step proof —
-is the machinery that makes a verified-completion invoice possible.
+The market has asked for success-only pricing. Nobody delivers it cleanly, because nobody can
+prove success. `settled`, `covered` and `placed` are that proof.
 
-The second complaint was trust in the *result*: it looked finished and was not. Same
-family of problem. Same machinery answers it.
+## What the forums said, in their words
 
-## What the market charges
+**1. Pulling statements from portals is a chore, done by professionals, every month.**
 
-| Player | Model | Anchor |
+> "I've been growing my book of clients and one of the pain points is pulling the bank
+> statements. From the start, getting access to their bank is a pain to try and explain the
+> process. From there, the manual process of logging in and downloading the statements is a
+> chore."
+> — r/Bookkeeping, "How to avoid pulling bank statements?"
+> https://www.reddit.com/r/Bookkeeping/comments/1bniiz4/
+
+> "It finding it is very tedious having to go to my various banks' website every month and
+> search out the PDF statements to download."
+> — r/personalfinance
+> https://www.reddit.com/r/personalfinance/comments/179amov/
+
+**2. These professionals already keep the logins. The login is their workflow.**
+
+> "I require a login from all my clients. It's a part of my process that has made life much
+> easier."
+> — r/Bookkeeping, same thread
+
+> "I consider this to be routine, and I far prefer having account access than asking clients to
+> provide."
+
+That is the single most useful finding in this note. Our model — drive the session the user
+already has — is not a workaround for a security problem. It is **what bookkeepers already do
+by hand**, formalised.
+
+**3. They reject services that store credentials.**
+
+> "This sub isn't for farming info for your lame little scripts. None of these clients want to
+> connect their bank accounts to your service. These already exist. Stop."
+
+Every competitor in this space asks for the credential or the connection. We are the only
+shape that answers this objection with architecture: the password never leaves the browser,
+and there is no server that could hold it.
+
+**4. Agencies are already served, and do not need us.** From r/agency "Too Many Client
+Reports":
+
+> "You gotta automate reports. If you're data is making it into BI dashboards you can automate
+> report generation and sending with Rollstack."
+
+> "I use Make.com & keep a Google Sheet updated... Still, it takes me ~30 min to edit an email."
+
+Rollstack starts at **$833/month** billed yearly. The reporting wedge is real money, already
+automated through APIs, and our browser advantage adds nothing there. I withdraw it as the
+first product.
+
+**5. Consumers do not have the pain we imagined.** In the same r/personalfinance thread the
+majority say they never download statements at all. Consumer export is a bad first market.
+
+## What Indonesia already pays for
+
+The local market is small-ticket but real, and it is priced per unit of work:
+
+| Seller | Offer | Price |
 |---|---|---|
-| Browserbase | infra, per browser-hour | $20 / $99 / custom; $0.10–0.12 per browser hour; captcha and stealth included |
-| Browser Use | pay-as-you-go | $0.02 per browser hour, model + 20%; a hard task ≈ $0.15 |
-| Notte | credits | $79/mo for 10k credits; ~$0.21 for a 10-step, 1-minute task |
+| Fastwork | jasa input / entri data | from Rp 50.000 |
+| Sribu | jasa input data | from Rp 99.000, 1 day |
+| Jasaketikin | input data Excel/website | Rp 150–500 **per cell**, by turnaround |
+| Desainpromosi, Sketsaemas, PAKAR | jasa admin marketplace | monthly retainer |
+| Shopee sellers | "Price List Jasa Input Data & Laporan Keuangan" | listed publicly |
 
-Infrastructure is cheap and commoditising. The money is in **outcomes**, and the
-willingness to pay collapses the moment the outcome is uncertain. That is why per-task
-pricing is unpopular and per-success pricing is being promised.
+Two readings, both true:
 
-## Six candidate products, scored
+- Willingness to pay exists, but it is anchored at tens of thousands of rupiah per job. A
+  product priced per job in that market is a freelancer, not a company.
+- **The people selling those services are the best first buyers.** They already have the
+  volume, the pain, and the client list; they would buy a tool that halves their hours. They
+  are reachable on the same marketplaces where they advertise.
 
-Scored 1–5 on: frequency (does it repeat), session-only (does it need the user's login),
-artifact (is there a file/table at the end), payer (is there someone with budget), build
-(can our generic primitives do it this month), risk (legal, ethical, account safety).
+## Revised shortlist
 
-| Candidate | Freq | Session | Artifact | Payer | Build | Risk | Total |
-|---|---|---|---|---|---|---|---|
-| Agency reporting from ad/analytics dashboards | 4 | 5 | 5 | 5 | 4 | 2 | **25** |
-| Marketplace seller ops (upload, reconcile, reply) `[UNVERIFIED]` | 5 | 5 | 5 | 4 | 3 | 3 | **25** |
-| Bureaucracy forms (tax, visa, permits) `[UNVERIFIED]` | 2 | 5 | 5 | 5 | 2 | 4 | **23** |
-| Personal data export (bank statements, invoices) | 3 | 5 | 5 | 3 | 3 | 4 | **23** |
-| Insurance/claims portal work (US B2B) | 5 | 5 | 5 | 5 | 2 | 4 | **26** |
-| Job applications | 4 | 5 | 3 | 2 | 4 | 5 | **23** |
+| Candidate | Verdict |
+|---|---|
+| **Pulling client statements and documents from bank and vendor portals** | **First product.** Professional buyer, monthly, login-walled, already paid in hours, and hostile to credential storage — which is our shape |
+| Marketplace seller/admin ops | Second. Reachable, but anchored at Rp 50–99k per job and exposed to marketplace terms |
+| Agency reporting | Withdrawn. Already automated by BI and Rollstack |
+| Consumer data export | Withdrawn. The pain is not there |
+| Job applications | Rejected. Ethics and spam |
+| Insurance/claims portals | Real money, unreachable without a US sales motion |
 
-The top two are tied on score but not on reachability. Insurance pays best and is
-unreachable from here without a US sales motion and compliance. Agency reporting is
-reachable this week, has a clean artifact, and repeats monthly.
+## The product, one sentence
 
-## Recommendation
+> **Every client's statement, downloaded and filed from your own browser — and not one
+> password stored anywhere.**
 
-**First product: a monthly report, assembled from dashboards the client is already logged
-into, priced per delivered report, free if it fails.**
+Concretely: for each client and period, open the portal, use the session already in the
+browser, download the statement, name it `client-bank-period.pdf`, file it, and return a
+manifest with proof: file exists, size, page count, period read from the page, and the
+statement's own closing balance.
 
-Why this one:
+## The gap between that sentence and the code
 
-- The artifact is obvious: a spreadsheet or deck in the client's own format.
-- The login is the moat: ad platforms and analytics hold the numbers behind accounts.
-- The buyer is a business, not a consumer, and already pays for reporting time.
-- It exercises the generic engine end to end — navigate, read, extract, compose — with no
-  per-site code in the extension.
-- Failure is visible and cheap to refund, which is exactly the pricing promise the market
-  asked for.
+There is **no download primitive today**. Twenty-nine tools, none of them saves a file. The
+extension already holds the `debugger` permission, so the fix is one generic primitive:
 
-Positioning sentence, one line:
+- `Page.setDownloadBehavior` / `Browser.setDownloadBehavior` into a named directory,
+- listen for `Browser.downloadWillBegin` and `Browser.downloadProgress`,
+- return `{ path, bytes, state, suggestedFilename }` or a named failure.
 
-> Your monthly report, built from your own logged-in dashboards. You pay when it is
-> delivered and verified — not when the agent tries.
+Generic, no site knowledge, and it unlocks invoices, exports and reports for every later job.
+It is the highest-value primitive not yet written.
 
-## The two-week test, with kill criteria
+## Two-week test, kill criteria fixed in advance
 
-Week 1 — do it by hand, with the tool as an assistant:
+Week 1:
 
-1. Find three agencies or small businesses that send a monthly report to clients.
-2. Do one report each, live, on their machine or with their screen shared.
-3. Measure: minutes for a human, minutes for us, defects found by the client, and whether
-   they ask for the next month.
+1. Find three bookkeepers or accounting-service owners who pull statements by hand. Sources:
+   r/Bookkeeping and r/taxpros (read the rules; answer the existing thread, do not advertise),
+   Indonesian "jasa pembukuan" groups, and Fastwork/Sribu sellers of data-entry services.
+2. Ask for one client-month, live, on their machine. Record minutes, mistakes, and whether the
+   file names match their own convention.
+3. Give the result free. Ask only: "would you run this next month?"
 
-Week 2 — automate the steps that repeated:
+Week 2:
 
-1. Turn the repeated path into one job card over the existing primitives.
-2. Run it for the same three clients, unattended.
-3. Compare: time, defect rate, cost per report.
+1. Build `download`, then the job card over the existing primitives.
+2. Run the same three clients unattended.
+3. Compare minutes, defects, and cost per client-month.
 
-**Kill criteria, decided now so the result cannot be rationalised later:**
+**Kill criteria:**
 
-- If no client will pay Rp 300k per report after seeing one, the wedge is wrong.
-- If a human takes under 45 minutes, the saving is too small to sell.
-- If defect rate is above 1 in 5, the proof layer is not good enough to promise success.
-- If two of three clients do not ask for month two, stop and pick another candidate.
+- No bookkeeper lets the tool run on their machine after a ten-minute demo → the trust story is
+  wrong, stop.
+- Saving under ten minutes per client-month → the job is too small to sell.
+- More than one wrong file in twenty (wrong period, wrong client, empty PDF) → the proof layer
+  is not good enough to promise success.
+- Nobody asks for month two → stop and take the second candidate.
 
-## What to build only after that
+## Pricing hypothesis, to be tested not assumed
 
-- Success-only billing, backed by the proof fields (this is the pricing moat).
-- A job card format: input, steps, verification, artifact.
-- Audit log per run, because the buyer is handing over a logged-in session.
+Per client-month, with the first month free: **Rp 20.000 per client-month**, or
+**Rp 500.000/month up to 30 clients**. Free if a statement fails to arrive. The number is a
+hypothesis; the kill test is whether anyone renews without being asked.
 
 ## What not to do
 
-- **Do not sell browser access.** It is $0.02 an hour and falling.
-- **Do not build credential storage.** That is the machine we do not need, and the
-  liability we should not carry.
-- **Do not launch a self-serve chat first.** The first ten users must be talked to, not
-  acquired.
-- **Do not trust a landing page test.** A click is not a payment.
-
-## Open evidence gaps
-
-1. Indonesian willingness to pay for report automation `[UNVERIFIED]`.
-2. Whether agencies will hand over a logged-in session, or insist on screen-sharing.
-3. The real defect rate of a report assembled by the current primitives. Unknown until run.
-4. Whether browser-native agents (Claude in Chrome, Gemini in Chrome, Comet) make a
-   separate extension unnecessary. The defence is cross-agent neutrality plus audit; it is
-   not yet proven.
+- Do not sell browser access. It is $0.02 an hour and falling.
+- Do not build credential storage. It is the machine we do not need and the liability we should
+  not carry — and the forums show buyers refuse it.
+- Do not launch a self-serve chat. The first ten users are talked to, not acquired.
+- Do not treat a landing-page click as demand. Only a renewal is demand.
 
 ## Sources
 
 - Browser Use pricing and task landscape: https://browser-use.com/pricing ,
   https://browser-use.com/showcase/landscape
-- Browserbase pricing and stated verticals: https://www.browserbase.com/pricing
-- Hacker News, Notte launch thread (credit pricing complaints):
-  https://news.ycombinator.com/item?id=44827216
-- Hacker News, browser-agent thread index (demand signal):
-  https://hn.algolia.com/api/v1/search?query=browser%20agent&tags=story
+- Browserbase pricing: https://www.browserbase.com/pricing
+- Hacker News, Notte launch thread: https://news.ycombinator.com/item?id=44827216
+- r/Bookkeeping, pulling bank statements: https://www.reddit.com/r/Bookkeeping/comments/1bniiz4/
+- r/personalfinance, downloading statements: https://www.reddit.com/r/personalfinance/comments/179amov/
+- r/agency, too many client reports: https://www.reddit.com/r/agency/comments/1d77l2o/
+- Rollstack pricing: https://www.rollstack.com/pricing
+- Indonesian service prices: https://fastwork.id/data-entry ,
+  https://www.sribu.com/id/entry-data/website , https://jasaketikin.com/jasa-input-data/
