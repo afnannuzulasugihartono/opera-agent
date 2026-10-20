@@ -368,7 +368,7 @@ const SNAPSHOT_EXPRESSION = `(() => {
 // thing that was asked for. The handle is the node's backend id, which the
 // browser keeps for the life of that node and refuses the moment it is gone.
 
-export const HANDLE_PREFIX = 'opera-';
+const HANDLE_PREFIX = 'opera-';
 
 // WHY ASKING IS A PRIMITIVE AND NOT A LEAK. The list of methods that may be
 // asked is decided by the surface, not by the caller: reads of structure, no
@@ -633,7 +633,7 @@ export function isDocsDocument(url) {
 
 const CARET_LINE_GAP_MS = 300;
 
-export const SELECTION_TEXT_EXPRESSION = `(() => {
+const SELECTION_TEXT_EXPRESSION = `(() => {
   try {
     const sel = document.getSelection();
     if (!sel || sel.rangeCount === 0) return '';
@@ -773,7 +773,7 @@ const imageSize = async (data, format) => {
 // a button from the void around it. On a canvas page elementFromPoint sees only the
 // canvas, and the answer says canvas:true rather than inventing a name for a pixel.
 
-export const locateExpression = (probe) => `(() => {
+const locateExpression = (probe) => `(() => {
   const t = document.body ? String(document.body.innerText || '').replace(/\\s+/g, ' ') : '';
   const el = document.activeElement;
   const tag = el ? el.tagName : '';
@@ -793,7 +793,7 @@ export const locateExpression = (probe) => `(() => {
   };
 })() /*opera-locate*/`;
 
-export const hitExpression = (x, y) => `(() => {
+const hitExpression = (x, y) => `(() => {
   const el = document.elementFromPoint(${Math.round(Number(x) || 0)}, ${Math.round(Number(y) || 0)});
   if (!el) return null;
   const get = (name) => (el.getAttribute ? el.getAttribute(name) : null);
@@ -932,7 +932,7 @@ export const scrollExpression = (probe) => `(() => {
 // click on a page whose scripts we could not read would break the one job this call
 // has. The refusal is for a viewport we actually measured.
 
-export const computedExpression = (probe) => `(() => {
+const computedExpression = (probe) => `(() => {
   const probe = ${JSON.stringify(probe ?? {})};
   let el = null;
   if (probe.selector) el = document.querySelector(probe.selector);
@@ -964,7 +964,7 @@ export const computedExpression = (probe) => `(() => {
   };
 })() /*opera-computed*/`;
 
-export const EDIT_SIGNATURE_EXPRESSION = `(() => {
+const EDIT_SIGNATURE_EXPRESSION = `(() => {
   const el = document.activeElement;
   const tag = el ? el.tagName : '';
   const editable = Boolean(el) && (el.isContentEditable === true || /^(INPUT|TEXTAREA)$/i.test(tag));

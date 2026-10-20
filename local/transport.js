@@ -211,12 +211,6 @@ export async function waitForPage(port, options = {}) {
   }
 }
 
-export async function attachToBrowser(port, { timeoutMs = 10000, Socket, fetch } = {}) {
-  const url = await waitForBrowser(port, { timeoutMs, fetch });
-  const transport = await connect(url, { Socket });
-  return { url, transport };
-}
-
 export async function attachToPage(port, { timeoutMs = 10000, Socket, fetch } = {}) {
   const url = await waitForPage(port, { timeoutMs, fetch });
   const transport = await connect(url, { Socket });
