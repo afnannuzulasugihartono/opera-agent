@@ -995,6 +995,15 @@ const EDIT_SIGNATURE_EXPRESSION = `(() => {
 const EDIT_POLL_MS = 150;
 const EDIT_POLLS = 12;
 
+// WHY A READ TAKES TWO SAMPLES A BEAT APART. Measured live on YouTube: readyState said
+// "complete" at 1.9s with 871 characters of text, and the text reached 8,478 by 2.4s.
+// readyState is about the network, not about a page that renders itself afterwards, so
+// an agent that read once had a tenth of the page and no way to know it. 100ms is the
+// gap that caught every growth step in that trace (871 -> 4,008 -> 8,428 -> 8,478),
+// and on a settled page it costs one extra read and nothing else.
+
+const READ_SETTLE_MS = 100;
+
 // WHY THE APPEND WAITS A BEAT AFTER THE END KEY. The end key asks the editor to move
 // its caret and scroll to it; a document that scrolls answers the next insert before
 // the view has caught up, and text lands where the caret used to be. One beat is the
@@ -1205,7 +1214,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
   const readState = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {
-      expression: '({ title: document.title, url: location.href, text: document.body ? document.body.innerText : "" })',
+      expression: '({ title: document.title, url: location.href, text: document.body ? document.body.innerText : "", ready: document.readyState })',
       returnByValue: true
     });
     return result?.value ?? { title: '', url: '', text: '' };
@@ -1225,11 +1234,40 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     async read() {
       const state = await readState();
-      if (!isDocsDocument(state.url)) return { ...state, caretMoved: false, caretRestored: true, viewRestored: true, caretWhy: '' };
+      if (!isDocsDocument(state.url)) {
+        await sleep(READ_SETTLE_MS);
+        const again = await readState();
+        return {
+          title: again.title,
+          url: again.url,
+          text: again.text,
+          ready: again.ready ?? null,
+          settled: again.text === state.text,
+          grewBy: again.text.length - state.text.length,
+          caretMoved: false,
+          caretRestored: true,
+          viewRestored: true,
+          caretWhy: ''
+        };
+      }
       const mark = await rememberCaret();
       const text = await readDocsText();
       const back = await putCaretBack(mark);
-      return { ...state, text: text ?? state.text, caretMoved: true, ...back };
+
+      // WHY settled IS UNKNOWN HERE RATHER THAN GUESSED. This text comes from a
+      // selection copy, and asking whether it has stopped changing would mean a second
+      // copy - another select-all and another caret move, on the one path where a caret
+      // move is the expensive thing. So the read reports what it did not measure, and
+      // names the cost of measuring it.
+      return {
+        ...state,
+        text: text ?? state.text,
+        ready: state.ready ?? null,
+        settled: null,
+        settledWhy: 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof',
+        caretMoved: true,
+        ...back
+      };
     },
 
     async caretLine() {
