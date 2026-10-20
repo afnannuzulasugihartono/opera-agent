@@ -802,7 +802,87 @@ test('a page with no caret fails the edit instead of counting the characters it 
     }
   };
 
-  await assert.rejects(() => createPrimitives(cdp).type('GUARD'), /typed 5 characters and nothing on the page changed: there is no caret here/);
+  await assert.rejects(() => createPrimitives(cdp).type('GUARD'), /typed 5 characters and nothing on the page changed: nothing on the page held focus - click_row the field that should receive it/);
+});
+
+// WHY A TYPE THAT LANDS NOWHERE MUST NAME WHAT HAD FOCUS. Measured live on YouTube:
+// a cookie wall sat over the page, the type inserted nothing, and the answer offered
+// two guesses - no caret, or a minimized window. The page was already saying the third
+// thing: focus sat on the wall's button. A name costs one evaluation and ends the
+// guessing, so the failure carries it.
+
+test('a type that lands nowhere names the element that had focus', async () => {
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('trail')) {
+        return { result: { value: { trail: 'button#button', tag: 'BUTTON', editable: false } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
+        return { result: { value: { body: '19:Untitled document\n\n', value: '', holds: true } } };
+      }
+      return {};
+    }
+  };
+
+  await assert.rejects(
+    () => createPrimitives(cdp).type('GUARD'),
+    /nothing on the page changed: focus was on button#button, which takes no text - click_row the field that should receive it, or press Escape if a dialog is over it/
+  );
+});
+
+// WHY A CLICK ASKS WHO OWNS THE POINT. A cookie wall over a page turns a click_row into
+// a success report for a click that reached nothing: measured live, the row answered
+// with its own name and point while focus never left the wall's button. The point has
+// one owner, and saying which is cheaper than the guess that follows.
+
+test('a click_row says when something else owns the point it clicked', async () => {
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+      if (method === 'DOM.resolveNode') return { object: { objectId: 'o-9' } };
+      if (method === 'Runtime.callFunctionOn') {
+        return { result: { value: { covered: true, coveredBy: 'div[button]', coveredText: 'Reject the use of cookies and other data' } } };
+      }
+      return { result: {} };
+    }
+  };
+
+  const out = await createPrimitives(cdp).clickHandle('opera-4321');
+
+  assert.equal(out.covered, true, 'the point belongs to something else');
+  assert.equal(out.coveredBy, 'div[button]');
+  assert.match(out.coveredText, /Reject the use of cookies/);
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3,
+    'the click still goes out - the caller decides, and now with a fact');
+});
+
+test('a click_row whose point belongs to the row says so, and one that belongs to nothing claims nothing', async () => {
+  const owned = {
+    calls: [],
+    send: async (method, params = {}) => {
+      owned.calls.push({ method, params });
+      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+      if (method === 'DOM.resolveNode') return { object: { objectId: 'o-9' } };
+      if (method === 'Runtime.callFunctionOn') return { result: { value: { covered: false } } };
+      return { result: {} };
+    }
+  };
+  assert.equal((await createPrimitives(owned).clickHandle('opera-4321')).covered, false);
+
+  const silent = {
+    calls: [],
+    send: async (method, params = {}) => {
+      silent.calls.push({ method, params });
+      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+      return { result: {} };
+    }
+  };
+  const out = await createPrimitives(silent).clickHandle('opera-4321');
+  assert.equal('covered' in out, false, 'a page that cannot answer is not given an invented verdict');
 });
 
 test('a page with nothing to type into says so in the words of that fact', async () => {
