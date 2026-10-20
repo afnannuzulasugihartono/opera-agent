@@ -43,7 +43,7 @@ export function installedBrowsers({ platform = process.platform, exists = exists
   }));
 }
 
-export function resolveBinary({ id, platform = process.platform, exists = existsSync, env = process.env } = {}) {
+function resolveBinary({ id, platform = process.platform, exists = existsSync, env = process.env } = {}) {
   if (!id) {
     const [first] = installedBrowsers({ platform, exists, env });
     if (!first) throw new Error('No Chromium browser was found on this machine.');
