@@ -93,7 +93,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
