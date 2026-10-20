@@ -30,7 +30,7 @@ test('every move names a call the server actually has', () => {
       'inputFound: false': {},
       'Cannot access a chrome:// URL': {},
       'click refused: 150,-139 is outside the 1136x770 viewport - scroll({text}) or scroll({y}) to bring it into view, then click again': {},
-      'typed 5 characters and nothing on the page changed: there is no caret here to receive them': {},
+      'typed 5 characters and nothing on the page changed: focus was on button#button, which takes no text - click_row the field that should receive it, or press Escape if a dialog is over it': {},
       'no menuitem matching "Image". Visible: Insert | Table': {}
     };
     for (const text of Object.keys(asked)) {
@@ -138,24 +138,25 @@ test('an extension page refusal is sent to the tab list, which is all an agent c
   assert.match(out, /chrome:\/\//);
 });
 
-// WHY TEXT THAT WENT NOWHERE IS SENT TO THE CARET AND NOT BACK TO THE TOOLBOX.
-// Measured live: five characters typed into a document that had lost its caret, and
-// the call answered as if it had worked. Retrying the type would fail identically,
-// so the moves are the two that change the page: put a caret in it, and see where
-// the caret is.
+// WHY TEXT THAT WENT NOWHERE LEADS WITH THE ELEMENT THAT HAD FOCUS. Measured live on
+// YouTube: a type inserted nothing and the answer offered two guesses - no caret, or a
+// minimized window. The truth was a third thing the page was already telling: focus sat
+// on a cookie wall's button. The failure now names that element, so the first move is
+// the field itself, and an overlay gets its own move.
 
-test('text the page did not take is sent to the caret', () => {
-  const out = withAdvice(new Error('typed 5 characters and nothing on the page changed: there is no caret here to receive them'), { rows: [] });
+test('text the page did not take leads with the element that had focus', () => {
+  const out = withAdvice(new Error('typed 5 characters and nothing on the page changed: focus was on button#button, which takes no text - click_row the field that should receive it, or press Escape if a dialog is over it'), { rows: [] });
 
-  assert.match(out, /click\(/);
+  assert.match(out, /click_row/);
+  assert.match(out, /Escape/, 'because a dialog over the field is the case that looks like a lost caret');
   assert.match(out, /caret_line\(\)/);
   assert.match(out, /read_page\(\) before typing again/, 'because on a canvas page the text may have landed after the check');
 });
 
-test('a page with nothing to type into gets the same two moves', () => {
+test('a page with nothing to type into gets the same moves', () => {
   const out = withAdvice(new Error('typed 5 characters into a page that holds no text and no field to receive them'), { rows: [] });
 
-  assert.match(out, /click\(/);
+  assert.match(out, /click_row/);
   assert.match(out, /caret_line\(\)/);
 });
 
