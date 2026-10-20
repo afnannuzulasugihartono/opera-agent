@@ -55,7 +55,7 @@ const IDLE_SOCKET_MS = 120000;
 // and one that gets through drives the browser as if the person asked it to.
 // The list is the whole boundary.
 
-export const BRIDGE_ORIGINS = Object.freeze([
+const BRIDGE_ORIGINS = Object.freeze([
   'localhost',
   '127.0.0.1',
   'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',

@@ -46,6 +46,12 @@ export function findOn(page, query) {
 import { guide } from './agent-guide.js';
 import { ensureFront } from './focus-guard.js';
 
+// WHY THE CLICK'S OWN ANSWER IS PASSED THROUGH RATHER THAN REBUILT. The row is what the
+// caller asked for; the proof of what the click hit belongs to the click. Rebuilding the
+// answer here threw that proof away - measured live, a click_row reported its row and its
+// point while a dialog owned that point and took the click, and the answer could not say
+// so. Anything the click measured now travels with the row it was aimed at.
+
 export function asDriver(session) {
   return {
     read: () => session.read(),
@@ -66,11 +72,11 @@ export function asDriver(session) {
     clickRow: async (role, name) => {
       const row = await session.resolveRow({ role, name });
       if (!row.handle) {
-        await session.clickAt(row.x, row.y);
-        return { role: row.role, name: row.name, x: row.x, y: row.y };
+        const at = await session.clickAt(row.x, row.y);
+        return { role: row.role, name: row.name, x: row.x, y: row.y, hit: at.hit };
       }
       const at = await session.clickHandle(row.handle);
-      return { role: row.role, name: row.name, x: at.x, y: at.y, handle: row.handle };
+      return { role: row.role, name: row.name, ...at };
     },
     key: (name, modifiers) => session.key(name, modifiers),
     type: (text) => session.type(text),

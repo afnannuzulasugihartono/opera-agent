@@ -368,7 +368,30 @@ const SNAPSHOT_EXPRESSION = `(() => {
 // thing that was asked for. The handle is the node's backend id, which the
 // browser keeps for the life of that node and refuses the moment it is gone.
 
-export const HANDLE_PREFIX = 'opera-';
+// WHY THE FAILURE NAMES WHAT HAD FOCUS. Measured live on YouTube: a type inserted
+// nothing and the answer offered two guesses - "there is no caret here, or the browser
+// window is minimized" - when the page was already saying that focus sat on a button
+// belonging to a cookie wall. The element that holds focus is one evaluation away, and
+// a name is worth more than two branches of a guess.
+
+const FOCUS_EXPRESSION = `(() => {
+  let deep = document.activeElement;
+  const trail = [];
+  while (deep) {
+    trail.push(deep.tagName.toLowerCase()
+      + (deep.id ? '#' + deep.id : '')
+      + (deep.getAttribute && deep.getAttribute('role') ? '[' + deep.getAttribute('role') + ']' : ''));
+    if (deep.shadowRoot && deep.shadowRoot.activeElement) deep = deep.shadowRoot.activeElement;
+    else break;
+  }
+  return {
+    trail: trail.join(' > ') || 'nothing',
+    tag: deep ? deep.tagName : null,
+    editable: deep ? (deep.isContentEditable === true || deep.tagName === 'INPUT' || deep.tagName === 'TEXTAREA') : false
+  };
+})()`;
+
+const HANDLE_PREFIX = 'opera-';
 
 // WHY ASKING IS A PRIMITIVE AND NOT A LEAK. The list of methods that may be
 // asked is decided by the surface, not by the caller: reads of structure, no
@@ -633,7 +656,7 @@ export function isDocsDocument(url) {
 
 const CARET_LINE_GAP_MS = 300;
 
-export const SELECTION_TEXT_EXPRESSION = `(() => {
+const SELECTION_TEXT_EXPRESSION = `(() => {
   try {
     const sel = document.getSelection();
     if (!sel || sel.rangeCount === 0) return '';
@@ -773,7 +796,7 @@ const imageSize = async (data, format) => {
 // a button from the void around it. On a canvas page elementFromPoint sees only the
 // canvas, and the answer says canvas:true rather than inventing a name for a pixel.
 
-export const locateExpression = (probe) => `(() => {
+const locateExpression = (probe) => `(() => {
   const t = document.body ? String(document.body.innerText || '').replace(/\\s+/g, ' ') : '';
   const el = document.activeElement;
   const tag = el ? el.tagName : '';
@@ -793,7 +816,7 @@ export const locateExpression = (probe) => `(() => {
   };
 })() /*opera-locate*/`;
 
-export const hitExpression = (x, y) => `(() => {
+const hitExpression = (x, y) => `(() => {
   const el = document.elementFromPoint(${Math.round(Number(x) || 0)}, ${Math.round(Number(y) || 0)});
   if (!el) return null;
   const get = (name) => (el.getAttribute ? el.getAttribute(name) : null);
@@ -932,7 +955,7 @@ export const scrollExpression = (probe) => `(() => {
 // click on a page whose scripts we could not read would break the one job this call
 // has. The refusal is for a viewport we actually measured.
 
-export const computedExpression = (probe) => `(() => {
+const computedExpression = (probe) => `(() => {
   const probe = ${JSON.stringify(probe ?? {})};
   let el = null;
   if (probe.selector) el = document.querySelector(probe.selector);
@@ -964,7 +987,7 @@ export const computedExpression = (probe) => `(() => {
   };
 })() /*opera-computed*/`;
 
-export const EDIT_SIGNATURE_EXPRESSION = `(() => {
+const EDIT_SIGNATURE_EXPRESSION = `(() => {
   const el = document.activeElement;
   const tag = el ? el.tagName : '';
   const editable = Boolean(el) && (el.isContentEditable === true || /^(INPUT|TEXTAREA)$/i.test(tag));
@@ -994,6 +1017,15 @@ export const EDIT_SIGNATURE_EXPRESSION = `(() => {
 
 const EDIT_POLL_MS = 150;
 const EDIT_POLLS = 12;
+
+// WHY A READ TAKES TWO SAMPLES A BEAT APART. Measured live on YouTube: readyState said
+// "complete" at 1.9s with 871 characters of text, and the text reached 8,478 by 2.4s.
+// readyState is about the network, not about a page that renders itself afterwards, so
+// an agent that read once had a tenth of the page and no way to know it. 100ms is the
+// gap that caught every growth step in that trace (871 -> 4,008 -> 8,428 -> 8,478),
+// and on a settled page it costs one extra read and nothing else.
+
+const READ_SETTLE_MS = 100;
 
 // WHY THE APPEND WAITS A BEAT AFTER THE END KEY. The end key asks the editor to move
 // its caret and scroll to it; a document that scrolls answers the next insert before
@@ -1203,9 +1235,61 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     return { moved: false, after: await editSignature() };
   };
 
+  const focusNow = async () => {
+    try {
+      const { result } = await cdp.send('Runtime.evaluate', { expression: FOCUS_EXPRESSION, returnByValue: true });
+      return result?.value ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  // WHY A CLICK ASKS WHO OWNS THE POINT BEFORE IT PRESSES. Measured live on YouTube: a
+  // cookie wall covered the page, click_row on the search box answered with the row's
+  // name and its point as if the click had reached it, focus never left the wall's
+  // button, and the type that followed had nothing to say but a guess. The point
+  // either belongs to the row or to something laid over it, and that is one question
+  // with one answer. When the page cannot answer, nothing is claimed.
+
+  const ownershipAt = async (handle, point) => {
+    const raw = String(handle ?? '');
+    if (!raw.startsWith(HANDLE_PREFIX)) return {};
+    const backendNodeId = Number(raw.slice(HANDLE_PREFIX.length));
+    if (!Number.isFinite(backendNodeId)) return {};
+    try {
+      // WHY THE DOM AGENT IS SWITCHED ON FIRST. Measured live: without it resolveNode
+      // answers an error, the catch below swallowed it, and the click reported no fact
+      // at all - a silent fallback that looks the same as a page that cannot answer.
+      await cdp.send('DOM.enable').catch(() => null);
+      const resolved = await cdp.send('DOM.resolveNode', { backendNodeId });
+      const objectId = resolved?.object?.objectId;
+      if (!objectId) return {};
+      const { result } = await cdp.send('Runtime.callFunctionOn', {
+        objectId,
+        functionDeclaration: `function (x, y) {
+          const at = document.elementFromPoint(x, y);
+          if (!at) return {};
+          if (at === this || this.contains(at)) return { covered: false };
+          const label = (at.getAttribute('aria-label') || at.innerText || at.textContent || '')
+            .replace(/\s+/g, ' ').trim().slice(0, 60);
+          return {
+            covered: true,
+            coveredBy: at.tagName.toLowerCase() + (at.getAttribute('role') ? '[' + at.getAttribute('role') + ']' : ''),
+            coveredText: label
+          };
+        }`,
+        arguments: [{ value: Number(point.x) }, { value: Number(point.y) }],
+        returnByValue: true
+      });
+      return result?.value ?? {};
+    } catch {
+      return {};
+    }
+  };
+
   const readState = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {
-      expression: '({ title: document.title, url: location.href, text: document.body ? document.body.innerText : "" })',
+      expression: '({ title: document.title, url: location.href, text: document.body ? document.body.innerText : "", ready: document.readyState })',
       returnByValue: true
     });
     return result?.value ?? { title: '', url: '', text: '' };
@@ -1225,11 +1309,40 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     async read() {
       const state = await readState();
-      if (!isDocsDocument(state.url)) return { ...state, caretMoved: false, caretRestored: true, viewRestored: true, caretWhy: '' };
+      if (!isDocsDocument(state.url)) {
+        await sleep(READ_SETTLE_MS);
+        const again = await readState();
+        return {
+          title: again.title,
+          url: again.url,
+          text: again.text,
+          ready: again.ready ?? null,
+          settled: again.text === state.text,
+          grewBy: again.text.length - state.text.length,
+          caretMoved: false,
+          caretRestored: true,
+          viewRestored: true,
+          caretWhy: ''
+        };
+      }
       const mark = await rememberCaret();
       const text = await readDocsText();
       const back = await putCaretBack(mark);
-      return { ...state, text: text ?? state.text, caretMoved: true, ...back };
+
+      // WHY settled IS UNKNOWN HERE RATHER THAN GUESSED. This text comes from a
+      // selection copy, and asking whether it has stopped changing would mean a second
+      // copy - another select-all and another caret move, on the one path where a caret
+      // move is the expensive thing. So the read reports what it did not measure, and
+      // names the cost of measuring it.
+      return {
+        ...state,
+        text: text ?? state.text,
+        ready: state.ready ?? null,
+        settled: null,
+        settledWhy: 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof',
+        caretMoved: true,
+        ...back
+      };
     },
 
     async caretLine() {
@@ -1429,8 +1542,12 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const out = await insertText(text);
       const seen = await waitForEdit(before);
       if (!seen.moved) {
+        const focus = await focusNow();
+        const where = focus?.tag
+          ? `focus was on ${focus.trail}${focus.editable ? '' : ', which takes no text'}`
+          : 'nothing on the page held focus';
         throw new Error(seen.after.holds
-          ? `typed ${out.chars} characters and nothing on the page changed: there is no caret here, or the browser window is minimized`
+          ? `typed ${out.chars} characters and nothing on the page changed: ${where} - click_row the field that should receive it, or press Escape if a dialog is over it`
           : `typed ${out.chars} characters into a page that holds no text and no field to receive them`);
       }
       return { ...out, landed: true, placed: await locateInsertion(text, before, seen.after) };
@@ -1898,8 +2015,9 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     async clickHandle(handle) {
       const at = await primitives.handleBox(handle);
+      const owner = await ownershipAt(handle, at);
       await primitives.clickAt(at.x, at.y);
-      return { ...at, handle: String(handle) };
+      return { ...at, handle: String(handle), ...owner };
     },
 
     async snapshot({ limit = 120 } = {}) {

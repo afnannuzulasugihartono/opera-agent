@@ -54,7 +54,7 @@ const ITEM = '[role~="menuitem"],[role~="menuitemcheckbox"],[role~="menuitemradi
 // pointer was sent away first, because the menu had never seen it arrive from
 // outside.
 
-export const MENU_TREE_EXPRESSION = `(() => {
+const MENU_TREE_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
   const REACH = __REACH__;
   const BAR = '[role~="menubar"]';
