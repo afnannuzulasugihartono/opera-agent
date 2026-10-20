@@ -63,6 +63,9 @@ function recordingCdp() {
         page.body = `${grown.length}:${grown}`;
       }
       if (method === 'Runtime.evaluate') {
+        if (params.expression.includes('document.title')) {
+          return { result: { value: { title: 't', url: 'u', text: 'body text', ready: 'complete' } } };
+        }
         if (params.expression.includes('readyState')) return { result: { value: 'complete' } };
         if (params.expression.includes('devicePixelRatio')) {
           return { result: { value: { width: 1136, height: 770, dpr: 1.25 } } };
@@ -1175,7 +1178,7 @@ function docsCdp(copyAnswers, caret = null) {
   };
 }
 
-test('a read on an ordinary page costs one call and keeps its shape', async () => {
+test('a read on a settled page takes two samples and says the text stood still', async () => {
   const cdp = recordingCdp();
 
   const out = await createPrimitives(cdp).read();
@@ -1184,12 +1187,47 @@ test('a read on an ordinary page costs one call and keeps its shape', async () =
     title: 't',
     url: 'u',
     text: 'body text',
+    ready: 'complete',
+    settled: true,
+    grewBy: 0,
     caretMoved: false,
     caretRestored: true,
     viewRestored: true,
     caretWhy: ''
   });
-  assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate']);
+  assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate', 'Runtime.evaluate'],
+    'two cheap samples, not a guess');
+});
+
+// WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS. Measured live on
+// YouTube: at 1.9 seconds readyState said complete with 871 characters; by 2.4 seconds
+// the page held 8,478. One read there is not wrong about what it saw - it is wrong
+// about what it implies, because nothing in the answer says the page was still filling
+// in. The second sample turns that into a fact the caller can act on.
+
+test('a read on a page still filling in says so, and answers with the later sample', async () => {
+  const samples = [
+    { title: 'YouTube', url: 'https://www.youtube.com/', text: 'x'.repeat(871), ready: 'complete' },
+    { title: 'YouTube', url: 'https://www.youtube.com/', text: 'x'.repeat(8478), ready: 'complete' }
+  ];
+  let ask = 0;
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
+        return { result: { value: samples[Math.min(ask++, samples.length - 1)] } };
+      }
+      return { result: {} };
+    }
+  };
+
+  const out = await createPrimitives(cdp).read();
+
+  assert.equal(out.ready, 'complete', 'readyState said complete, and that is exactly why it cannot be the only signal');
+  assert.equal(out.settled, false, 'the page had not stopped moving');
+  assert.equal(out.grewBy, 7607, 'and it says by how much');
+  assert.equal(out.text.length, 8478, 'the answer is the later sample, not the one already stale');
 });
 
 test('a read on a Google Doc borrows the selection and returns the document', async () => {
@@ -1203,6 +1241,9 @@ test('a read on a Google Doc borrows the selection and returns the document', as
     title: 'Doc',
     url: DOC_URL,
     text: 'First line\nSecond line',
+    ready: null,
+    settled: null,
+    settledWhy: 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof',
     caretMoved: true,
     caretRestored: false,
     viewRestored: false,

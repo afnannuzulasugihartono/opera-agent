@@ -123,7 +123,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'read_page',
-    description: 'Read one tab: url, title and text. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines; the read borrows the selection and puts the caret back where it was, answering caretMoved and caretRestored so a caret it could not restore is known rather than guessed. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
+    description: 'Read one tab: url, title and text, plus whether that text had stopped moving. settled and grewBy come from two reads a beat apart, because readyState lies: measured live, a page reported complete with a tenth of its text and reached the rest 600 ms later - a read that says settled:false is a page still filling in, so read again or wait_still() before acting. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines; that read borrows the selection and puts the caret back where it was, answering caretMoved and caretRestored so a caret it could not restore is known rather than guessed, and settled is null there with settledWhy, because a second copy would move the caret twice. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {
