@@ -54,7 +54,7 @@ const tracked = () => {
   return [...new Set([...listed, ...untracked])].filter(known);
 };
 
-export function findComments(source, language) {
+function findComments(source, language) {
   const spec = LANGUAGES[language];
   const found = [];
   let i = 0;
