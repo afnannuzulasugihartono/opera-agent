@@ -9,7 +9,7 @@ const KINDS = new Set(['PROGRAM', 'CHECKPOINT', 'RESULT']);
 const MAX_PLAINTEXT_BYTES = 132096;
 const MAX_TOKEN_BYTES = 196608;
 
-export class VmHostTokenError extends Error {
+class VmHostTokenError extends Error {
   constructor(code, message) {
     super(message);
     this.name = 'VmHostTokenError';
