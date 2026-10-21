@@ -49,7 +49,7 @@ export function slug(text) {
 // knows where Downloads is, the manifest sits beside the files it describes, and a
 // job that crashes leaves nothing behind in a working tree.
 
-export function statementsRoot() {
+function statementsRoot() {
   return path.join(os.homedir(), 'Downloads', 'opera-statements');
 }
 
