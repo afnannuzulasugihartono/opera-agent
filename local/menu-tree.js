@@ -303,5 +303,3 @@ export function looseMatch(name, rows) {
 export function findNode(name, rows) {
   return exactMatch(name, rows) ?? looseMatch(name, rows);
 }
-
-export const MENU_ROLES = Object.freeze([BAR, MENU, ITEM]);

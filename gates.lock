@@ -161,13 +161,13 @@ scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs d5d0f392d95aa7505e639472e92529fb3bd4a94e
+tests/helpers/boundary-locks.mjs a8ce6f205220ede381596d7c1514e655ffe112f9
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 1e061e7b785f8d26caed7c39161aae88d7274bc4
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs 1a5dd8a5cb15f2d50e29e254cb696aea60ee204c
+tests/hygiene.test.mjs 47a104f4270afc6ebc0408fe52144f02bef6ac54
 tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs 3a9ae9e36aec03a4470ce2f9cf0971f66724ecf8
 

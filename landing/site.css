@@ -70,7 +70,7 @@ header nav a,
 header nav .brand { white-space: nowrap; flex: 0 0 auto; }
 
 @container (max-width: 420px) {
-  .card, .panel { padding: 16px; }
+  .card { padding: 16px; }
 }
 
 .hero--full {
@@ -94,6 +94,6 @@ header nav .brand { white-space: nowrap; flex: 0 0 auto; }
 }
 
 @media print {
-  header, footer, .no-print { display: none !important; }
+  header, footer { display: none !important; }
   body { background: #fff; color: #000; }
 }

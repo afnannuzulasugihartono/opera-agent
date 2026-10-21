@@ -28,20 +28,11 @@ const EVIDENCE_FIELDS = new Set([
   'supports', 'exhaustive', 'dependencies', 'evidenceDigest',
 ]);
 const DEPENDENCY_FIELDS = new Set(['evidenceId', 'evidenceDigest']);
-const PROOF_FIELDS = new Set([
-  'schemaVersion', 'goalId', 'goalRevision', 'claimId', 'status', 'scope',
-  'evidenceRefs', 'rejectedEvidenceRefs', 'contradictions', 'limits', 'unresolved',
-  'evaluatedAt', 'evaluatorVersion', 'proofDigest',
-]);
-const SCOPE_FIELDS = new Set(['kind', 'resourceId']);
-const REJECTION_FIELDS = new Set(['evidenceId', 'reason']);
-const CONTRADICTION_FIELDS = new Set(['predicate', 'evidenceRefs']);
 const EVIDENCE_CATEGORIES = new Set([
   'USER_ASSERTION', 'USER_AUTHORIZATION', 'DIRECT_OBSERVATION',
   'DERIVED_OBSERVATION', 'ACTION_RECEIPT', 'BOUNDARY_OBSERVATION',
   'EXTERNAL_ATTESTATION',
 ]);
-const PROOF_STATUSES = new Set(['PROVED', 'BOUNDED_COMPLETE', 'PARTIAL', 'BLOCKED', 'UNKNOWN']);
 const EXPECTED_TRUST = Object.freeze({
   USER_ASSERTION: 'AUTHENTICATED_USER',
   USER_AUTHORIZATION: 'AUTHENTICATED_USER',
