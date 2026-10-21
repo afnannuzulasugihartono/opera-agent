@@ -42,10 +42,9 @@ globalThis.chrome = {
   },
 };
 
-// WHY the loop is stopped before the file ends. Importing the worker graph is
-// what starts the bridge poll, and a poll that keeps asking a port nobody is
-// listening on keeps this process alive forever. The production loop is the
-// point; in a test it is only something to switch off again.
+// WHY the loop is stopped before the file ends.
+// Importing the worker graph is what starts the bridge poll, and a poll that keeps asking a port nobody is listening on keeps this process alive forever.
+// The production loop is the point; in a test it is only something to switch off again.
 
 const { stopBridgeLink } = await import('../extension/worker/bridge-link.js');
 

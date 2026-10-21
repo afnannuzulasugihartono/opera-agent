@@ -4,11 +4,9 @@
 // @dependencies: node:test, strict, promises, protocol, extension-source.
 
 // Hover-as-a-first-class-step contracts.
-//
-// Root cause under test: multi-level menus needed a hand-built
-// hover -> wait -> hover -> wait burst because hovering and settling were
-// separate unbounded steps. These tests lock the policy, the burst contract,
-// and — most importantly — the safety property that a hover never clicks.
+
+// Root cause under test: multi-level menus needed a hand-built hover -> wait -> hover -> wait burst because hovering and settling were separate unbounded steps.
+// These tests lock the policy, the burst contract, and — most importantly — the safety property that a hover never clicks.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

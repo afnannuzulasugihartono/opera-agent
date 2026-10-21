@@ -3,15 +3,12 @@
 // @state: 12 locks, one harness; it replaces the three files that each built their own.
 // @dependencies: node:test, node:assert, node:fs, node:vm.
 
-// A page whose markup is perfect and whose script throws renders nothing, and the failures
-// that mattered on this site were all invisible in the source: the device list came up
-// empty under a correct status line, the permission screen named the wrong application, and
-// a renewal that could not reach Auth deleted a working session. Reading HTML cannot see any
-// of them. So each page's own module is executed here against a stub Auth and a stub DOM.
-//
-// WHY one file and three: the render, consent-flow and session locks each built the same
-// harness. Three copies of a stub is three places for a stub to be wrong, which is the same
-// rule the repository applies to every other mechanism.
+// A page whose markup is perfect and whose script throws renders nothing, and the failures that mattered on this site were all invisible in the source: the device list came up empty under a correct status line, the permission screen named the wrong application, and a renewal that could not reach Auth deleted a working session.
+// Reading HTML cannot see any of them.
+// So each page's own module is executed here against a stub Auth and a stub DOM.
+
+// WHY one file and three: the render, consent-flow and session locks each built the same harness.
+// Three copies of a stub is three places for a stub to be wrong, which is the same rule the repository applies to every other mechanism.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

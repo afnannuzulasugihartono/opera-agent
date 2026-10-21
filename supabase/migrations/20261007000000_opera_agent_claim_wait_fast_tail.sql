@@ -1,42 +1,27 @@
 -- Server-side command discovery for the extension pull path (2026-10-07).
---
--- This migration replaces 20261002090000_opera_agent_claim_wait with the
--- same logic but an idle tail of 100ms instead of 250ms — the ramp that
--- kept the early window under 50ms is unchanged, only the tail a device
--- waits between pushes after the burst window now polls at roughly 10/s
--- rather than 4/s. Migrations are not edited in place, so the prior
--- version stays intact.
+
+-- This migration replaces 20261002090000_opera_agent_claim_wait with the same logic but an idle tail of 100ms instead of 250ms — the ramp that kept the early window under 50ms is unchanged, only the tail a device waits between pushes after the burst window now polls at roughly 10/s rather than 4/s.
+-- Migrations are not edited in place, so the prior version stays intact.
 
 -- Server-side command discovery for the extension pull path (2026-10-02).
---
--- The bridge used to sleep between `opera_claim_next` calls, which cost one
--- HTTP round trip per poll: 14 per 12s window per idle device. Phase A
--- measured the resulting queue wait at p50 830ms and p95 1910ms, because the
--- device only asks again every 2000ms once the fast window has closed.
---
--- This function moves the wait next to the data. The bridge makes exactly one
--- call per window and the database decides when a command arrived.
---
+
+-- The bridge used to sleep between `opera_claim_next` calls, which cost one HTTP round trip per poll: 14 per 12s window per idle device.
+-- Phase A measured the resulting queue wait at p50 830ms and p95 1910ms, because the device only asks again every 2000ms once the fast window has closed.
+
+-- This function moves the wait next to the data.
+-- The bridge makes exactly one call per window and the database decides when a command arrived.
+
 -- Two properties are deliberate and load-bearing:
---
--- 1. The device heartbeat, the expiry sweep and the audit INSERT are written
---    ONCE, before the cycle opens. Running the full `opera_claim_next` body
---    per iteration would issue five statements per poll, which at a 5ms
---    cadence is roughly 21 calls per second -- about 18x the current database
---    load, which would trade egress for a larger problem. The cycle body is a
---    single index-served lookup on opera_commands_queue_idx
---    (device_id, status, created_at).
---
--- 2. The ramp stays under 50ms for the first 720ms of an idle window. The
---    2026-09-24 egress note records that follow-up commands arrive right
---    behind the previous HTTP round trip, so that is the window where
---    responsiveness is actually felt. The tail coarsens to 100ms (owner decision: p95 near 1000 ms, at 10 idle
---    polls/s instead of 4), because after that point a human is no longer
---    waiting on the next action.
---
--- `opera_claim_next` is intentionally left in place: it remains the
--- single-shot, non-waiting claim, and removing it would change a public RPC
--- contract beyond this task.
+
+-- 1. The device heartbeat, the expiry sweep and the audit INSERT are written ONCE, before the cycle opens.
+--    Running the full `opera_claim_next` body per iteration would issue five statements per poll, which at a 5ms cadence is roughly 21 calls per second -- about 18x the current database load, which would trade egress for a larger problem.
+--    The cycle body is a single index-served lookup on opera_commands_queue_idx (device_id, status, created_at).
+
+-- 2. The ramp stays under 50ms for the first 720ms of an idle window.
+--    The 2026-09-24 egress note records that follow-up commands arrive right behind the previous HTTP round trip, so that is the window where responsiveness is actually felt.
+--    The tail coarsens to 100ms (owner decision: p95 near 1000 ms, at 10 idle polls/s instead of 4), because after that point a human is no longer waiting on the next action.
+
+-- `opera_claim_next` is intentionally left in place: it remains the single-shot, non-waiting claim, and removing it would change a public RPC contract beyond this task.
 
 create or replace function public.opera_claim_next_wait(
   p_device_name text,

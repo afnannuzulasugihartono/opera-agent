@@ -3,18 +3,13 @@
 // @state: 8 locks green; the separate deployment it replaced is still on disk until the production site URL moves.
 // @dependencies: node:test, node:assert, node:fs.
 
-// The consent screen is the page where a person decides whether an application may drive
-// their browser. Two things were wrong with the version it replaced, and both are the
-// kind that only show up when someone reads the screen carefully:
-//   1. it imported supabase-js from esm.sh, adding a second origin and a third party to
-//      the one page whose job is asking for browser control;
-//   2. it hardcoded the application name as "ChatGPT", so every person was told the
-//      wrong application was asking, no matter which one it was.
-// It also asked for a password of ours, which this site never does anywhere else.
-//
-// It lives on the site now rather than as its own deployment, because GoTrue validates
-// the origin of every consent call against its configured site URL: a screen on another
-// host can render, but it can never approve anything.
+// The consent screen is the page where a person decides whether an application may drive their browser.
+// Two things were wrong with the version it replaced, and both are the kind that only show up when someone reads the screen carefully:
+// 1. it imported supabase-js from esm.sh, adding a second origin and a third party to the one page whose job is asking for browser control;
+// 2. it hardcoded the application name as "ChatGPT", so every person was told the wrong application was asking, no matter which one it was.
+//    It also asked for a password of ours, which this site never does anywhere else.
+
+// It lives on the site now rather than as its own deployment, because GoTrue validates the origin of every consent call against its configured site URL: a screen on another host can render, but it can never approve anything.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

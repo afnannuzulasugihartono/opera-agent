@@ -23,9 +23,8 @@ const idempotency = (over = {}) => ({
   requestDigest: OTHER, attemptClass: 'FIRST_ATTEMPT', ...over
 });
 
-// Assembled at runtime: no credential-shaped literal appears in this file, so gitleaks
-// has nothing to object to, and each sample stays exactly the string the runtime scan
-// must recognise. Mangling them to dodge a gate would break the thing under test.
+// Assembled at runtime: no credential-shaped literal appears in this file, so gitleaks has nothing to object to, and each sample stays exactly the string the runtime scan must recognise.
+// Mangling them to dodge a gate would break the thing under test.
 
 const BODY = '0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklm';
 const NUM = '012345678901';

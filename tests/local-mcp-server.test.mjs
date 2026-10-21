@@ -4,25 +4,21 @@
 // @dependencies: node:test, strict, ../local/mcp-server.js.
 
 // WHY THIS FILE EXISTS
-//
-// The driver runs in a process with no stdio contract, which makes it unusable by
-// anything that speaks MCP. This file is that contract, and it is the difference
-// between "works on the machine it was written on" and "npx opera-local".
-//
-// WHY the server is built around a plain function. A stdio server that only runs
-// as a process cannot be tested without spawning one, and a test that spawns a
-// real browser is a test that fails on someone else's machine. handle() takes a
-// request and a context and returns a response, so every rule below is checked
-// against a fake driver, and the stdio wrapper stays thin enough to be obvious.
+
+// The driver runs in a process with no stdio contract, which makes it unusable by anything that speaks MCP.
+// This file is that contract, and it is the difference between "works on the machine it was written on" and "npx opera-local".
+
+// WHY the server is built around a plain function.
+// A stdio server that only runs as a process cannot be tested without spawning one, and a test that spawns a real browser is a test that fails on someone else's machine.
+// handle() takes a request and a context and returns a response, so every rule below is checked against a fake driver, and the stdio wrapper stays thin enough to be obvious.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMcpServer, TOOLS } from '../local/mcp-server.js';
 
-// WHY every method here is async. The real driver is async on every call, and a
-// synchronous fake made the server's missing await invisible: it serialised a
-// promise as {} and the lock still passed. A fake that is shaped like the thing it
-// stands in for is the only kind that can catch a bug in the real one.
+// WHY every method here is async.
+// The real driver is async on every call, and a synchronous fake made the server's missing await invisible: it serialised a promise as {} and the lock still passed.
+// A fake that is shaped like the thing it stands in for is the only kind that can catch a bug in the real one.
 
 function fakeDriver() {
   const calls = [];
@@ -99,11 +95,10 @@ test('the surface covers what the driver can actually do', async () => {
   }
 });
 
-// WHY THE CAPTURE SAYS WHAT IT CANNOT DO. Measured live on a Google Doc: fullPage
-// answered 2000x937 pixels for an 18-page document - one viewport, not the page -
-// while its own note claimed the whole document. An agent that reads that note plans
-// a one-shot review of a thesis and gets a screenshot of page one. The description
-// states the boundary so the plan is paging, not hoping.
+// WHY THE CAPTURE SAYS WHAT IT CANNOT DO.
+// Measured live on a Google Doc: fullPage answered 2000x937 pixels for an 18-page document - one viewport, not the page - while its own note claimed the whole document.
+// An agent that reads that note plans a one-shot review of a thesis and gets a screenshot of page one.
+// The description states the boundary so the plan is paging, not hoping.
 
 test('the capture says fullPage stops at the viewport on canvas pages', () => {
   const capture = TOOLS.find((tool) => tool.name === 'capture_page');
@@ -119,10 +114,8 @@ test('type says where the proof lives when its own placement check cannot see it
   assert.match(type.description, /read_page\(\)/);
 });
 
-// WHY THE APPEND'S DESCRIPTION CARRIES ITS OWN SCAR. An agent reads descriptions to
-// decide whether to call a tool, and this one exists because a batch landed in a table
-// cell: the measured failure is the argument for calling append instead of the
-// click-then-End road, and a description without it is a description nobody trusts.
+// WHY THE APPEND'S DESCRIPTION CARRIES ITS OWN SCAR.
+// An agent reads descriptions to decide whether to call a tool, and this one exists because a batch landed in a table cell: the measured failure is the argument for calling append instead of the click-then-End road, and a description without it is a description nobody trusts.
 
 test('the append says how it decides it reached the end, and when it cannot know', () => {
   const append = TOOLS.find((tool) => tool.name === 'append');
@@ -134,15 +127,12 @@ test('the append says how it decides it reached the end, and when it cannot know
   assert.deepEqual(append.inputSchema.required, ['text']);
 });
 
-// WHY THE SCROLL'S ARGUMENTS ARE FOUR AND NOT ONE. An agent knows three different
-// things - how far to move, that it wants the end, and the thing it wants to see - and
-// merging them into one string argument would make every one of them a guess about
-// which form was meant. Four optional arguments, each unambiguous.
+// WHY THE SCROLL'S ARGUMENTS ARE FOUR AND NOT ONE.
+// An agent knows three different things - how far to move, that it wants the end, and the thing it wants to see - and merging them into one string argument would make every one of them a guess about which form was meant.
+// Four optional arguments, each unambiguous.
 
-// WHY THE COMPUTED READ IS DESCRIBED BY WHAT IT ANSWERS. An agent reads a tool
-// description to decide whether a call can settle a question, so the description names
-// the questions it settles - a button that turned blue, a modal that opened, text past
-// the viewport - rather than the properties it returns.
+// WHY THE COMPUTED READ IS DESCRIBED BY WHAT IT ANSWERS.
+// An agent reads a tool description to decide whether a call can settle a question, so the description names the questions it settles - a button that turned blue, a modal that opened, text past the viewport - rather than the properties it returns.
 
 test('the computed read is described by the questions it settles, not by its fields', () => {
   const tool = TOOLS.find((one) => one.name === 'get_computed');
@@ -242,17 +232,13 @@ test('a snapshot reaches the driver and comes back as readable text', async () =
   assert.match(res.result.content[0].text, /204/);
 });
 
-  // WHY THE CAPTURE SAYS WHAT SPACE IT IS IN. Measured live by resizing the
-  // window: viewport 1144x714 -> 1186x670, capture 1430x963 -> 1483x838, scale
-  // steady at 1.25. An agent handed a picture and nothing else divides by eye and
-  // clicks the wrong thing while every answer says the click landed.
+  // WHY THE CAPTURE SAYS WHAT SPACE IT IS IN.
+  // Measured live by resizing the window: viewport 1144x714 -> 1186x670, capture 1430x963 -> 1483x838, scale steady at 1.25.
+  // An agent handed a picture and nothing else divides by eye and clicks the wrong thing while every answer says the click landed.
 
-// WHY AN INPUT ACTION BRINGS ITS OWN WINDOW. Measured live on this product's own
-// author, repeatedly: with the browser behind another window, clicks and typing went
-// nowhere, Google Docs took the keys and dropped them, and every answer said the
-// click was delivered. Asking the human to press a key in the middle of a drive is the
-// one thing this product promised not to need - so the check happens where the action
-// happens, and every input answer says which of the two things happened.
+// WHY AN INPUT ACTION BRINGS ITS OWN WINDOW.
+// Measured live on this product's own author, repeatedly: with the browser behind another window, clicks and typing went nowhere, Google Docs took the keys and dropped them, and every answer said the click was delivered.
+// Asking the human to press a key in the middle of a drive is the one thing this product promised not to need - so the check happens where the action happens, and every input answer says which of the two things happened.
 
 test('an input action brings the window forward and says so', async () => {
   const c = ctx();
@@ -280,12 +266,9 @@ test('a read pays nothing for the window, because it changes nothing about it', 
   assert.ok(!c.driver.calls.some(([name]) => name === 'ensureFront'), 'reading does not steal the human attention');
 });
 
-// WHY THESE CLAIMS EXIST. Measured live on this machine: browser_status answered
-// focused true with Brave in front while the drive was on a Chrome tab, because the
-// answer asked "is any browser in front" and the machine had three browsers on it.
-// An agent that reads that never learns the window it is driving is somewhere else,
-// so the answer now names the browser in front and means "ours" by the titles of the
-// tabs we actually drive.
+// WHY THESE CLAIMS EXIST.
+// Measured live on this machine: browser_status answered focused true with Brave in front while the drive was on a Chrome tab, because the answer asked "is any browser in front" and the machine had three browsers on it.
+// An agent that reads that never learns the window it is driving is somewhere else, so the answer now names the browser in front and means "ours" by the titles of the tabs we actually drive.
 
 const statusCtx = (foreground, titles) => {
   const driver = fakeDriver();
@@ -326,11 +309,9 @@ test('an application that is not a browser says what is in front instead of gues
   assert.match(window.why, /another window is in front/);
 });
 
-// WHY THESE CLAIMS EXIST. An agent holds an eight-digit id it copied from a list and
-// cannot read it back off anything; it can read a title. So a tab may be named, an
-// answer says which tab that turned out to be, and a name that fits two tabs is
-// refused with both - because typing into the wrong document while saying nothing is
-// the worst thing this product can do.
+// WHY THESE CLAIMS EXIST.
+// An agent holds an eight-digit id it copied from a list and cannot read it back off anything; it can read a title.
+// So a tab may be named, an answer says which tab that turned out to be, and a name that fits two tabs is refused with both - because typing into the wrong document while saying nothing is the worst thing this product can do.
 
 const namedCtx = (tabs) => {
   const driver = fakeDriver();
@@ -403,10 +384,9 @@ test('a number that is a tab is used as itself and says nothing about names', as
   assert.deepEqual(out.tab, { id: '333', title: 'Notes - Google Docs', named: false });
 });
 
-// WHY A NAMED TAB IS NAVIGATED. Measured live on this machine: `open_url` with a tabId
-// answered "driver.open is not a function", because a per-tab driver cannot open
-// anything - and a caller who names a tab means "this tab goes here", not "open one
-// more". So a named tab is navigated in place and the answer names the tab it moved.
+// WHY A NAMED TAB IS NAVIGATED.
+// Measured live on this machine: `open_url` with a tabId answered "driver.open is not a function", because a per-tab driver cannot open anything - and a caller who names a tab means "this tab goes here", not "open one more".
+// So a named tab is navigated in place and the answer names the tab it moved.
 
 test('open_url with a named tab navigates that tab instead of opening another one', async () => {
   const c = namedCtx(PAGES);
@@ -511,14 +491,10 @@ test('a missing required argument is refused before the driver is touched', asyn
   assert.deepEqual(c.driver.calls, [], 'a refused call must not reach the browser');
 });
 
-// WHY THIS CLAIM EXISTS. An agent that has to ask for the page after every
-// action spends two calls on one decision, and the looking half is the one
-// that costs. On the reference implementation roughly thirty per cent of all
-// tool calls were snapshots, nearly all of them right after something the
-// agent had just done. Handing the page back with the action makes one
-// decision cost one call — and this fails the moment an action returns
-// something flat, because the model would then be reasoning about a page it
-// cannot see.
+// WHY THIS CLAIM EXISTS.
+// An agent that has to ask for the page after every action spends two calls on one decision, and the looking half is the one that costs.
+// On the reference implementation roughly thirty per cent of all tool calls were snapshots, nearly all of them right after something the agent had just done.
+// Handing the page back with the action makes one decision cost one call — and this fails the moment an action returns something flat, because the model would then be reasoning about a page it cannot see.
 
 test('every action hands back the page it acted on, so looking costs no extra call', async () => {
   const server = createMcpServer(ctx());
@@ -605,10 +581,9 @@ test('a notification is answered with nothing at all, because JSON-RPC says so',
   assert.equal(res, undefined);
 });
 
-// WHY THIS CLAIM EXISTS. A Chrome tab id is a number, the tool schema says
-// string, and an agent copies the id straight out of the tab list it was just
-// handed. Comparing with === refused the id the product itself printed — so a
-// drive that could see six tabs decided none of them was real.
+// WHY THIS CLAIM EXISTS.
+// A Chrome tab id is a number, the tool schema says string, and an agent copies the id straight out of the tab list it was just handed.
+// Comparing with === refused the id the product itself printed — so a drive that could see six tabs decided none of them was real.
 
 test('a tab id is found whether the caller sends a number or a string', async () => {
   for (const tabId of ['1', 1]) {
@@ -626,10 +601,8 @@ test('a tab id is found whether the caller sends a number or a string', async ()
   }
 });
 
-// WHY A WAIT IS TESTED AGAINST READS, NOT TIME. The contract is evidential:
-// the wait ends on the same text a read would show, and a wait that runs out
-// of budget reports instead of failing — found:false with the page as it
-// stands, which is what the next decision needs.
+// WHY A WAIT IS TESTED AGAINST READS, NOT TIME.
+// The contract is evidential: the wait ends on the same text a read would show, and a wait that runs out of budget reports instead of failing — found:false with the page as it stands, which is what the next decision needs.
 
 test('a wait ends on the same evidence a read would show', async () => {
   const c = ctx();
@@ -688,10 +661,9 @@ test('key vocabularies are enumerated so a misspelling fails before the browser'
   assert.match(byName.press_key.inputSchema.properties.key.description, /Enter.*ArrowLeft.*ArrowRight.*single printable ASCII/s);
 });
 
-// WHY THE CHANGE SET IS TESTED AS A HINT, NOT A TRUTH. The full page rides
-// every action so the agent is never stranded; changed names what moved since
-// the last look at the same tab. Rows match by value — role, name, position —
-// and the first look reports null, because its elements ARE the baseline.
+// WHY THE CHANGE SET IS TESTED AS A HINT, NOT A TRUTH.
+// The full page rides every action so the agent is never stranded; changed names what moved since the last look at the same tab.
+// Rows match by value — role, name, position — and the first look reports null, because its elements ARE the baseline.
 
 const ROW_FILE = { role: 'menuitem', name: 'File', x: 73, y: 46 };
 const ROW_INSERT = { role: 'menuitem', name: 'Insert', x: 204, y: 46 };
@@ -775,10 +747,8 @@ test('a replaced page says reshaped instead of listing sixty new rows', async ()
   assert.equal(out.page.rows, 2, 'the count says what the page holds now');
 });
 
-// WHY THE FLOOR IS ASSERTED, NOT THE CEILING. setTimeout fires at or after its
-// delay, never before, so "took at least a hundred" cannot flake under load —
-// and it is the floor that matters, because the point is the page getting its
-// beat before the snapshot, not the call being fast.
+// WHY THE FLOOR IS ASSERTED, NOT THE CEILING.
+// setTimeout fires at or after its delay, never before, so "took at least a hundred" cannot flake under load — and it is the floor that matters, because the point is the page getting its beat before the snapshot, not the call being fast.
 
 test('an action lets the page stand before looking at it', async () => {
   const server = createMcpServer(ctx());
@@ -801,10 +771,9 @@ test('caret_line reports the line without moving past it', async () => {
   });
 });
 
-// WHY A PAGE WITH NO FILE INPUT IS A FAILURE. Measured live on Google Docs:
-// upload answered inputFound: false as a successful tool call, so an agent reading
-// it as done moved on with nothing in the document, and the road in - a drop - was
-// fill. So it fails, names that, and carries the drop with it.
+// WHY A PAGE WITH NO FILE INPUT IS A FAILURE.
+// Measured live on Google Docs: upload answered inputFound: false as a successful tool call, so an agent reading it as done moved on with nothing in the document, and the road in - a drop - was fill.
+// So it fails, names that, and carries the drop with it.
 
 test('upload on a page with no file input fails and says which road is left', async () => {
   const without = fakeDriver();
@@ -844,16 +813,12 @@ test('intercept_file_chooser toggles without touching the page', async () => {
   assert.deepEqual(JSON.parse(res.result.content[0].text), { intercepting: true });
 });
 
-// WHY THE STRAY TAB IS CLOSED AND NAMED, NOT LEFT. A drop the page refused is
-// answered by Chrome the only way it can be: the file opens in a tab. Every
-// rejected drop in the live drill left one behind and every accepted drop left
-// none, so the tab is the failure signal as well as the litter — and the answer
-// says so instead of quietly opening windows on the person screen.
+// WHY THE STRAY TAB IS CLOSED AND NAMED, NOT LEFT.
+// A drop the page refused is answered by Chrome the only way it can be: the file opens in a tab.
+// Every rejected drop in the live drill left one behind and every accepted drop left none, so the tab is the failure signal as well as the litter — and the answer says so instead of quietly opening windows on the person screen.
 
-// WHY THE TAB APPEARS ONLY AFTER THE DROP. Chrome opens the file when the page
-// refuses the drop, so the stray tab exists between the look before and the
-// look after, and not one moment earlier — a stub that had it from the start
-// would prove nothing about which look found it.
+// WHY THE TAB APPEARS ONLY AFTER THE DROP.
+// Chrome opens the file when the page refuses the drop, so the stray tab exists between the look before and the look after, and not one moment earlier — a stub that had it from the start would prove nothing about which look found it.
 
 test('a drop Chrome answered by opening the file closes that tab and says so', async () => {
   const c = ctx();
@@ -898,12 +863,9 @@ test('a drop the page took leaves no tab and reports a clean drop', async () => 
   assert.ok(!c.driver.calls.some((call) => call[0] === 'close'), 'nothing to close, nothing closed');
 });
 
-// WHY THE ALLOWLIST IS PINNED AS A REFUSAL. The whole value of asking the
-// browser a question is lost the moment the question can also be an action, so
-// the boundary is tested by what it refuses: no script in the page, no input, no
-// navigation, no storage. A method outside the list must be refused by name and
-// with the list, because an agent that is told "no" can act on it and an agent
-// that is told "unknown" can only guess.
+// WHY THE ALLOWLIST IS PINNED AS A REFUSAL.
+// The whole value of asking the browser a question is lost the moment the question can also be an action, so the boundary is tested by what it refuses: no script in the page, no input, no navigation, no storage.
+// A method outside the list must be refused by name and with the list, because an agent that is told "no" can act on it and an agent that is told "unknown" can only guess.
 
 test('ask_page returns a raw read and hands the method its own params', async () => {
   const c = ctx();

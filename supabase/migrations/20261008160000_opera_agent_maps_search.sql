@@ -1,7 +1,7 @@
--- Maps search flow v1 (2026-10-08): open a Maps search URL and return the results-list text in one run, so restaurant search costs a single model round trip. Same resilient shape as youtube.watch_summarize (open, tolerant wait, bounded chunked read, tab metadata); the model ranks and summarizes from the text payload.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- Maps search flow v1 (2026-10-08): open a Maps search URL and return the results-list text in one run, so restaurant search costs a single model round trip.
+-- Same resilient shape as youtube.watch_summarize (open, tolerant wait, bounded chunked read, tab metadata); the model ranks and summarizes from the text payload.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'maps.search',

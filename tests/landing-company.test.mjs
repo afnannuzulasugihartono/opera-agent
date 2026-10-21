@@ -3,12 +3,8 @@
 // @state: red first: no favicon, mismatched footer, no crawler files, stale invite-only copy.
 // @dependencies: test, assert, fs.
 
-// A company site is trusted before it is read: every tab shows its mark, every
-// footer offers the same doors, crawlers are told what exists, shared links
-// carry a title, and the legal pages match the live product. This site failed
-// all five: nine heads with no icon, unduh's footer missing two links, no
-// robots.txt or sitemap, no share tags, and three pages claiming invite-only
-// access while Auth answers disable_signup:false.
+// A company site is trusted before it is read: every tab shows its mark, every footer offers the same doors, crawlers are told what exists, shared links carry a title, and the legal pages match the live product.
+// This site failed all five: nine heads with no icon, unduh's footer missing two links, no robots.txt or sitemap, no share tags, and three pages claiming invite-only access while Auth answers disable_signup:false.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

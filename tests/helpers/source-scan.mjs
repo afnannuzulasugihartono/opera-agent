@@ -4,30 +4,21 @@
 // @dependencies: none.
 
 // Source-text scanning helpers for drift locks.
-//
-// WHY THIS EXISTS: several locks assert something about code that comments and
-// documentation also discuss in prose. Without neutralising comments those locks
-// fire on a sentence that merely *describes* the behaviour, which makes them
-// noisy and trains reviewers to ignore them.
-//
-// WHY A STATE MACHINE INSTEAD OF REGEXES: the first version of this file removed
-// comment text with regular expressions, which had two failure modes that both
-// produce a FALSE PASS on a security-relevant lock -- exactly the wrong direction
-// to fail. A `/*` inside a string literal started a block comment that swallowed
-// the rest of the file, and a `//` line inside a template literal blanked real
-// code. This scanner is a small character-level state machine so that comment and
-// string states are mutually exclusive and neither can delete live code.
 
-// KNOWN LIMITS. The SQL side does not model dollar-quoted bodies as a distinct
-// state, so a `$$`-quoted function body that contains a bare `--` or `/*` outside
-// any string literal would be treated as a comment. No migration in this
-// repository uses that shape. Inside `$$` bodies, quoted strings containing those
-// markers are handled correctly, which is the realistic case.
+// WHY THIS EXISTS: several locks assert something about code that comments and documentation also discuss in prose.
+// Without neutralising comments those locks fire on a sentence that merely *describes* the behaviour, which makes them noisy and trains reviewers to ignore them.
+
+// WHY A STATE MACHINE INSTEAD OF REGEXES: the first version of this file removed comment text with regular expressions, which had two failure modes that both produce a FALSE PASS on a security-relevant lock -- exactly the wrong direction to fail.
+// A `/*` inside a string literal started a block comment that swallowed the rest of the file, and a `//` line inside a template literal blanked real code.
+// This scanner is a small character-level state machine so that comment and string states are mutually exclusive and neither can delete live code.
+
+// KNOWN LIMITS.
+// The SQL side does not model dollar-quoted bodies as a distinct state, so a `$$`-quoted function body that contains a bare `--` or `/*` outside any string literal would be treated as a comment.
+// No migration in this repository uses that shape.
+// Inside `$$` bodies, quoted strings containing those markers are handled correctly, which is the realistic case.
 
 /**
- * Replace comment text with equivalent whitespace, preserving offsets and line
- * structure so that a caller scanning the result cannot accidentally join two
- * previously-separate tokens.
+ * Replace comment text with equivalent whitespace, preserving offsets and line structure so that a caller scanning the result cannot accidentally join two previously-separate tokens.
  *
  * @param {string} src
  * @param {'sql'|'javascript'} kind

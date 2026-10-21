@@ -1,11 +1,8 @@
 -- Pre-8E repair R6/T031: prefer local SPA recommendation navigation.
--- Historical workflow migrations remain untouched. This versions
--- youtube.play_recommendation so a freshly queried recommendation ref is clicked
--- locally first; direct tabs.navigate to the same href is only a bounded fallback
--- when the SPA watch transition does not materialize.
---
--- No public MCP tool/schema, protocol, primitive, production schema, VM, signing,
--- auth, or transport boundary changes are introduced here.
+-- Historical workflow migrations remain untouched.
+-- This versions youtube.play_recommendation so a freshly queried recommendation ref is clicked locally first; direct tabs.navigate to the same href is only a bounded fallback when the SPA watch transition does not materialize.
+
+-- No public MCP tool/schema, protocol, primitive, production schema, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'youtube.play_recommendation',

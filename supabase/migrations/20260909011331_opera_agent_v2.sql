@@ -1,10 +1,8 @@
 -- Historical production migration snapshot.
---
--- This experiment registered a future generic local-plan primitive and a small
--- set of workflows that depended on it. The stable Opera Agent 1.0.1 extension
--- never advertised browser.plan, so the immediately-following quarantine
--- migration disables the method and workflows. Keep this file immutable as
--- migration/history evidence; do not treat it as a shipped extension feature.
+
+-- This experiment registered a future generic local-plan primitive and a small set of workflows that depended on it.
+-- The stable Opera Agent 1.0.1 extension never advertised browser.plan, so the immediately-following quarantine migration disables the method and workflows.
+-- Keep this file immutable as migration/history evidence; do not treat it as a shipped extension feature.
 
 insert into public.opera_methods(method, default_timeout_ms, enabled, description)
 values (

@@ -3,11 +3,8 @@
 // @state: allowlists both extension ids and both site origins during the host move.
 // @dependencies: none.
 
-// WHY both extension ids: the CRX signing key produced a new one, so an install
-// that has not been replaced yet still presents the old id and would be refused
-// if only the new one were listed. WHY both site origins: the Cloudflare host
-// is the product's front door and the Vercel one stays while installs in the
-// wild still point at it, so neither origin is refused mid-migration.
+// WHY both extension ids: the CRX signing key produced a new one, so an install that has not been replaced yet still presents the old id and would be refused if only the new one were listed.
+// WHY both site origins: the Cloudflare host is the product's front door and the Vercel one stays while installs in the wild still point at it, so neither origin is refused mid-migration.
 
 const FALLBACK_ORIGINS = Object.freeze([
   'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',

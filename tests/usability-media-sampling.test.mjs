@@ -3,13 +3,9 @@
 // @state: media.sample_at is registered with versioned local seek semantics, off the public surface.
 // @dependencies: node:fs, node:test, strict.
 
-// Why source-text pins, stated per AGENTS.md: an internal workflow is added here, so
-// the lockable claim is where it is reachable and where it is not. These
-// assertions read the migration to prove media.sample_at is registered with
-// versioned local seek semantics, never seeks by navigation or reload, and
-// stays off the public MCP surface -- the tool count is checked against the
-// live source, so adding a public media tool would fail here. Runtime behavior
-// for the workflow itself is exercised by the live suites, not here.
+// Why source-text pins, stated per AGENTS.md: an internal workflow is added here, so the lockable claim is where it is reachable and where it is not.
+// These assertions read the migration to prove media.sample_at is registered with versioned local seek semantics, never seeks by navigation or reload, and stays off the public MCP surface -- the tool count is checked against the live source, so adding a public media tool would fail here.
+// Runtime behavior for the workflow itself is exercised by the live suites, not here.
 
 import fs from 'node:fs';
 import test from 'node:test';

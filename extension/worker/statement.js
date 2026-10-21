@@ -3,22 +3,17 @@
 // @state: owns the per-device manifest and the two commands that fill it and read it.
 // @dependencies: utils, log, tab-content, statement-file.
 
-// WHY THE DEVICE IS THE ONE THAT DELIVERS. A bookkeeper's statements live in the
-// bookkeeper's own browser, and the file has to land in the bookkeeper's own folder:
-// a delivery that is copied somewhere else is a copy, not a delivery. So the device
-// downloads the file with the name the card asked for, waits until the browser says
-// it is whole, and writes one line into a manifest that lives on the machine.
-//
-// WHY THE MANIFEST IS ON THE DEVICE. The manifest is the proof a bookkeeper hands to
-// a client and the counter an operator bills from, so it belongs next to the files it
-// describes. It is stored per device, in the browser's own storage, and it survives a
-// restart.
-//
-// WHY THE BYTES ARE READ IN THE PAGE. A service worker cannot read the file it just
-// downloaded, so the page fetches the same URL - with the person's own session - and
-// answers with the kind and the page count, read from the bytes. What the page cannot
-// do is see the disk, so the disk fact comes from the browser's own download record and
-// the byte facts come from the page: two sources, one row.
+// WHY THE DEVICE IS THE ONE THAT DELIVERS.
+// A bookkeeper's statements live in the bookkeeper's own browser, and the file has to land in the bookkeeper's own folder: a delivery that is copied somewhere else is a copy, not a delivery.
+// So the device downloads the file with the name the card asked for, waits until the browser says it is whole, and writes one line into a manifest that lives on the machine.
+
+// WHY THE MANIFEST IS ON THE DEVICE.
+// The manifest is the proof a bookkeeper hands to a client and the counter an operator bills from, so it belongs next to the files it describes.
+// It is stored per device, in the browser's own storage, and it survives a restart.
+
+// WHY THE BYTES ARE READ IN THE PAGE.
+// A service worker cannot read the file it just downloaded, so the page fetches the same URL - with the person's own session - and answers with the kind and the page count, read from the bytes.
+// What the page cannot do is see the disk, so the disk fact comes from the browser's own download record and the byte facts come from the page: two sources, one row.
 
 import { log } from '../lib/log.js';
 import { resolveTabId } from './tab-content.js';
@@ -36,11 +31,10 @@ const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30000;
 
 const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
-// WHY THE FILE NAME IS CHECKED HERE. The name comes from the caller, and a name with a
-// folder in it would write outside the download folder - which is the one place the
-// device may write. The rule is the operating system's, said out loud. The double
-// quote is written as an escape so the scanners that read this file do not mistake it
-// for the start of a string.
+// WHY THE FILE NAME IS CHECKED HERE.
+// The name comes from the caller, and a name with a folder in it would write outside the download folder - which is the one place the device may write.
+// The rule is the operating system's, said out loud.
+// The double quote is written as an escape so the scanners that read this file do not mistake it for the start of a string.
 
 const FILENAME = /^[^\/:*?<>|\x22]+$/;
 
@@ -85,10 +79,9 @@ export async function statementManifest() {
   };
 }
 
-// WHY THE BROWSER IS POLLED AND NOT LISTENED FOR. chrome.downloads reports a
-// download through a change event, and a service worker can be asleep when it fires.
-// Polling the browser's own record asks the one authority that cannot be asleep, and
-// the cost is a quarter of a second.
+// WHY THE BROWSER IS POLLED AND NOT LISTENED FOR.
+// chrome.downloads reports a download through a change event, and a service worker can be asleep when it fires.
+// Polling the browser's own record asks the one authority that cannot be asleep, and the cost is a quarter of a second.
 
 async function waitForDownload(downloadId, timeoutMs) {
 
@@ -108,11 +101,9 @@ async function waitForDownload(downloadId, timeoutMs) {
   }
 }
 
-// WHY THE PAGE IS ASKED FOR THE BYTES. The page is the only side that can read them
-// with the person's own session, so the worker injects the shared helpers and then
-// asks the page to fetch the URL and answer with the kind, the page count and the
-// size. The function below is serialised into the page, so it may not close over
-// anything here: it reads the helpers from globalThis.
+// WHY THE PAGE IS ASKED FOR THE BYTES.
+// The page is the only side that can read them with the person's own session, so the worker injects the shared helpers and then asks the page to fetch the URL and answer with the kind, the page count and the size.
+// The function below is serialised into the page, so it may not close over anything here: it reads the helpers from globalThis.
 
 async function verifyInPage(tabId, url) {
   await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/statement-file.js'] });

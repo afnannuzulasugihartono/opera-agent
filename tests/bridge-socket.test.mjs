@@ -4,16 +4,13 @@
 // @dependencies: node:test, strict, ../supabase/functions/opera-agent-bridge/bridge-socket.js.
 
 // WHY THIS FILE EXISTS
-//
-// The push transport is the piece that decides whether an action costs one round
-// trip or two, so it cannot be checked by driving it. WebSocket, Deno and Postgres
-// are all absent from a unit test, which is why the socket's decisions live in plain
-// functions here and Deno.upgradeWebSocket stays a single line.
-//
-// WHY the handshake is the load-bearing test. A socket that has not authenticated
-// must never receive a command, and a socket that sends garbage must be answered
-// rather than left to grow a buffer. Those are the two ways this design could leak
-// one device's commands to another.
+
+// The push transport is the piece that decides whether an action costs one round trip or two, so it cannot be checked by driving it.
+// WebSocket, Deno and Postgres are all absent from a unit test, which is why the socket's decisions live in plain functions here and Deno.upgradeWebSocket stays a single line.
+
+// WHY the handshake is the load-bearing test.
+// A socket that has not authenticated must never receive a command, and a socket that sends garbage must be answered rather than left to grow a buffer.
+// Those are the two ways this design could leak one device's commands to another.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,16 +34,13 @@ const upgradeRequest = (headers = {}) => new Request('https://bridge.example/', 
   headers: { upgrade: 'websocket', ...headers }
 });
 
-// WHY this lock exists. A service worker with a silent WebSocket is an idle
-// service worker, and Chrome ends idle workers after thirty seconds. Observed on
-// this extension against the deployed bridge: connected and ready, then closed
-// with "signal is aborted without reason" roughly every thirty seconds, which is
-// the worker being torn down rather than the bridge refusing anything.
-//
-// A frame the bridge sends on a timer is not polling. Polling is asking a question
-// and waiting for an answer, and nothing here waits: the frame says nothing and
-// expects nothing. It is what keeps the device alive, and it doubles as the check
-// that a peer which has gone away is noticed rather than written to forever.
+// WHY this lock exists.
+// A service worker with a silent WebSocket is an idle service worker, and Chrome ends idle workers after thirty seconds.
+// Observed on this extension against the deployed bridge: connected and ready, then closed with "signal is aborted without reason" roughly every thirty seconds, which is the worker being torn down rather than the bridge refusing anything.
+
+// A frame the bridge sends on a timer is not polling.
+// Polling is asking a question and waiting for an answer, and nothing here waits: the frame says nothing and expects nothing.
+// It is what keeps the device alive, and it doubles as the check that a peer which has gone away is noticed rather than written to forever.
 
 test('the keepalive is frequent enough to beat the worker idle timeout', () => {
   assert.ok(KEEPALIVE_MS > 0 && KEEPALIVE_MS < 30000,
@@ -67,13 +61,10 @@ test('a device ignores a keepalive rather than treating it as work', async () =>
   assert.notEqual(parsed.message.type, 'complete');
 });
 
-// WHY a missed pong closes the socket. Observed live: a device socket held for
-// twenty minutes across an edge instance being replaced, still receiving pings,
-// with a change subscription that had died with the old instance. Every signal
-// said healthy and no command ever arrived. A ping that is answered proves both
-// directions are alive; a ping that is not answered is the only evidence there is
-// that the peer is gone, so the socket is closed and the device reconnects to a
-// live instance.
+// WHY a missed pong closes the socket.
+// Observed live: a device socket held for twenty minutes across an edge instance being replaced, still receiving pings, with a change subscription that had died with the old instance.
+// Every signal said healthy and no command ever arrived.
+// A ping that is answered proves both directions are alive; a ping that is not answered is the only evidence there is that the peer is gone, so the socket is closed and the device reconnects to a live instance.
 
 test('a keepalive tick with no answer since the last one closes the socket', () => {
   assert.equal(keepaliveDecision({ pings: 2, pongs: 2 }), 'wait', 'an answered peer was closed anyway');
@@ -83,12 +74,10 @@ test('a keepalive tick with no answer since the last one closes the socket', () 
   assert.equal(keepaliveDecision({ pings: 0, pongs: 0 }), 'wait', 'the first tick has nothing to compare against');
 });
 
-// WHY the transport cap is locked against the product bound. Results up to
-// MAX_RESULT_BYTES are legal output, and a completion carries one, so any frame
-// cap below that refuses legal results. Observed live: a 64 KiB cap answered a
-// lawful page.read with "Frame too large" and stranded the command as claimed
-// forever. Both caps are stated twice because neither side can import the other,
-// which is exactly why the relation is asserted rather than trusted.
+// WHY the transport cap is locked against the product bound.
+// Results up to MAX_RESULT_BYTES are legal output, and a completion carries one, so any frame cap below that refuses legal results.
+// Observed live: a 64 KiB cap answered a lawful page.read with "Frame too large" and stranded the command as claimed forever.
+// Both caps are stated twice because neither side can import the other, which is exactly why the relation is asserted rather than trusted.
 
 test('both frame caps fit the largest legal completion with room to spare', () => {
   assert.ok(MAX_FRAME_BYTES >= MAX_RESULT_BYTES * 1.5,
@@ -163,11 +152,9 @@ test('a handshake needs both a token and a device name, and never accepts a part
   assert.equal(handshakePayload({ token: '   ', deviceName: 'opera' }), null);
 });
 
-// WHY the bridge accepts gzip frames. The device sends completions over 2 KiB
-// as versioned gzip, because page JSON shrinks five to fifty times and the
-// transfer dominates on a slow link. The bridge must read exactly what the
-// device writes — same version byte, same cap relation — or large results die
-// in transit with no error the device can act on.
+// WHY the bridge accepts gzip frames.
+// The device sends completions over 2 KiB as versioned gzip, because page JSON shrinks five to fifty times and the transfer dominates on a slow link.
+// The bridge must read exactly what the device writes — same version byte, same cap relation — or large results die in transit with no error the device can act on.
 
 async function gzipFrame(payload, version = 1) {
   const text = JSON.stringify(payload);
@@ -227,12 +214,9 @@ test('binary garbage that is not gzip is refused, not thrown', async () => {
   assert.equal(parsed.ok, false);
 });
 
-// WHY the handshake timing is driven, not trusted. The timer used to guard a
-// verified socket while verification itself awaited an RPC plus a database
-// connect, so a cold isolate timed out valid devices and closed them, then
-// kept verifying into the closed socket. These three drive the real socket
-// server with small budgets: arrival answers the first timer, absence still
-// closes, and a hung verify is still bounded.
+// WHY the handshake timing is driven, not trusted.
+// The timer used to guard a verified socket while verification itself awaited an RPC plus a database connect, so a cold isolate timed out valid devices and closed them, then kept verifying into the closed socket.
+// These three drive the real socket server with small budgets: arrival answers the first timer, absence still closes, and a hung verify is still bounded.
 
 const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

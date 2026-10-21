@@ -1,14 +1,9 @@
--- U-S burst atomic actions (2026-09-21): register a versioned youtube.skip_ads
--- workflow so ad handling runs as one retrying, self-verifying plan instead of
--- separate model round trips that let fast-changing ad controls go stale.
---
--- The loop re-queries the skip control on every iteration (locator-style
--- freshness) and polls the ad-state post-condition, so late-appearing controls
--- (countdown-gated skip buttons) are handled without stale refs. Historical
--- workflow migrations remain untouched; this adds a new version.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- U-S burst atomic actions (2026-09-21): register a versioned youtube.skip_ads workflow so ad handling runs as one retrying, self-verifying plan instead of separate model round trips that let fast-changing ad controls go stale.
+
+-- The loop re-queries the skip control on every iteration (locator-style freshness) and polls the ad-state post-condition, so late-appearing controls (countdown-gated skip buttons) are handled without stale refs.
+-- Historical workflow migrations remain untouched; this adds a new version.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'youtube.skip_ads',

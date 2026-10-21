@@ -3,15 +3,11 @@
 // @state: the download, the wait, the proof, the manifest, and the refusals.
 // @dependencies: node:test, strict, node:fs, node:os, node:path, ../extension/worker/statement.js.
 
-// WHY THIS FILE EXISTS. The device is the side that delivers: it downloads the file
-// with the name the card chose, waits until the browser says it is whole, and writes
-// one line into a manifest on the person's own machine. None of that had a test, and
-// the pieces that can be tested without a browser are exactly the pieces that decide
-// whether a delivery is honest: the name rule, the wait, the refusals, and the row.
-//
-// The fake is a browser that answers what Chrome answers: a download record with a
-// state and a size, a storage that keeps what it was given, and a scripting API that
-// runs the page verification and answers with the bytes it read.
+// WHY THIS FILE EXISTS.
+// The device is the side that delivers: it downloads the file with the name the card chose, waits until the browser says it is whole, and writes one line into a manifest on the person's own machine.
+// None of that had a test, and the pieces that can be tested without a browser are exactly the pieces that decide whether a delivery is honest: the name rule, the wait, the refusals, and the row.
+
+// The fake is a browser that answers what Chrome answers: a download record with a state and a size, a storage that keeps what it was given, and a scripting API that runs the page verification and answers with the bytes it read.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

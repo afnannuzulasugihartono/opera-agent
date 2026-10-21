@@ -1,11 +1,9 @@
 -- Let an account run one browser action on its own device from the dashboard.
---
--- WHY owner-scoped: the caller never names a device. The function resolves it
--- through auth.uid(), so one account cannot drive another account's browser by
--- guessing a device name. The underlying opera_enqueue/opera_run keep their
--- existing revoked signatures; this is a thin owner-scoped wrapper that composes
--- them exactly as the edge function does.
---
+
+-- WHY owner-scoped: the caller never names a device.
+-- The function resolves it through auth.uid(), so one account cannot drive another account's browser by guessing a device name.
+-- The underlying opera_enqueue/opera_run keep their existing revoked signatures; this is a thin owner-scoped wrapper that composes them exactly as the edge function does.
+
 -- APPLY: paste into the Supabase dashboard SQL editor.
 
 create or replace function public.opera_run_on_my_device(

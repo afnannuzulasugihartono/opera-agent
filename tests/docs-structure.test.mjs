@@ -40,10 +40,9 @@ test('insert_image uploads and leaves the caption paragraph ready', () => {
   assert.ok(def.output.placed, 'output proves placement');
 });
 
-// WHY v2 proofs poll instead of reading once. Canvas content reaches the DOM
-// mirrors on Docs time, not ours: the outline lags saves by seconds, so a
-// single read races the mirror and flakes. A bounded repeat exits early on
-// success and fails loudly on exhaustion, which is a wait with proof.
+// WHY v2 proofs poll instead of reading once.
+// Canvas content reaches the DOM mirrors on Docs time, not ours: the outline lags saves by seconds, so a single read races the mirror and flakes.
+// A bounded repeat exits early on success and fails loudly on exhaustion, which is a wait with proof.
 
 test('apply_heading v2 polls the outline for the exact text, then falls back by menu', () => {
   const def = read('20261014120000_docs_apply_heading_v2.sql');

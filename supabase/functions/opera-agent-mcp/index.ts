@@ -15,10 +15,9 @@ import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { registerTools } from "./tools.ts";
 
-// WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES. A hand-written type
-// beside a function is a second version of that function, and the two drift. Here
-// the type is taken from the function, so a change to the transport changes the
-// contract the tools are checked against.
+// WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
+// A hand-written type beside a function is a second version of that function, and the two drift.
+// Here the type is taken from the function, so a change to the transport changes the contract the tools are checked against.
 
 export type ToolDeps = {
   execute: typeof execute;
@@ -55,12 +54,10 @@ const ALLOWED_USER_EMAILS = new Set(
     .filter(Boolean)
 );
 
-// WHY THE CLIENT IS LOADED LAZILY. supabase-js is only needed for the handful of table
-// reads and the one auth lookup, none of which are on the hot path. Loading it at module
-// scope put it in every isolate's boot, and the platform charges for that before a byte
-// is served: a /health call that touches no database at all still measured a 707 ms
-// median. The command path needs only PostgREST, which is a single POST per function
-// call, so it no longer pulls the library in at all.
+// WHY THE CLIENT IS LOADED LAZILY.
+// supabase-js is only needed for the handful of table reads and the one auth lookup, none of which are on the hot path.
+// Loading it at module scope put it in every isolate's boot, and the platform charges for that before a byte is served: a /health call that touches no database at all still measured a 707 ms median.
+// The command path needs only PostgREST, which is a single POST per function call, so it no longer pulls the library in at all.
 
 let clientPromise: Promise<import("@supabase/supabase-js").SupabaseClient> | null = null;
 
@@ -241,18 +238,16 @@ function toolError(error: unknown) {
   };
 }
 
-// WHY POSTGREST DIRECTLY. Every tool call crosses into the database twice: once to
-// enqueue the command and once to await its result. Those two crossings measured 269 ms
-// and 417 ms, and going through supabase-js meant loading a library on every isolate boot
-// to make what is ultimately one HTTP POST per function. This is that POST.
-//
-// WHY IT SOMETIMES IS NOT POSTGREST. A WebSocket connection holds its isolate open, and
-// an isolate that stays open can hold a database connection too. The first query on a
-// fresh connection costs the handshake, but every query after it skips the gateway
-// entirely, and measured here that is 162 ms against 603 ms for the same work. So when a
-// direct connection exists, these same calls ride it instead. The function invoked, its
-// arguments and its return shape are identical either way; only the road changes, and a
-// direct call that fails falls back to the gateway rather than failing the command.
+// WHY POSTGREST DIRECTLY.
+// Every tool call crosses into the database twice: once to enqueue the command and once to await its result.
+// Those two crossings measured 269 ms and 417 ms, and going through supabase-js meant loading a library on every isolate boot to make what is ultimately one HTTP POST per function.
+// This is that POST.
+
+// WHY IT SOMETIMES IS NOT POSTGREST.
+// A WebSocket connection holds its isolate open, and an isolate that stays open can hold a database connection too.
+// The first query on a fresh connection costs the handshake, but every query after it skips the gateway entirely, and measured here that is 162 ms against 603 ms for the same work.
+// So when a direct connection exists, these same calls ride it instead.
+// The function invoked, its arguments and its return shape are identical either way; only the road changes, and a direct call that fails falls back to the gateway rather than failing the command.
 
 let directDb: { sql: (...args: unknown[]) => Promise<unknown[]> } | null = null;
 let directFailReason = "";
@@ -336,50 +331,34 @@ function forwardCommandProgress(commandId: string, timeoutMs: number, progress: 
 const edgeClock = () => Date.now();
 
 // Each stage is timed separately because the database clock cannot see any of them.
-// opera_commands measures created-at to completed-at, which is the device's work and
-// nothing else; the round trips that carry that work, and the ones that happen before
-// a command exists, are all invisible to it. On this deployment those invisible stages
-// dominated: a call reported 0.5-1.9 s of command time inside a 10 s round trip, so
-// without this the remaining time could only be guessed at.
-//
-// WHY enqueue and await leave together. They used to be two calls: one to create the
-// command, one to wait for it. Each is a full HTTPS crossing to the data API, and
-// measured here those two cost 269 ms and 417 ms while the command itself took 729 ms —
-// most of the time inside the function was spent reaching it and coming back.
-// opera_enqueue_and_await asks the same question in one visit and returns the shape the
-// two used to return between them, so the lifecycle, the allowlist, the request-id reuse
-// and the expiry deadline are all unchanged.
-//
-// WHAT THIS COSTS. Progress cannot ride along, because one blocking call has nowhere to
-// put intermediate events. The command-event table, its device-side emit and its cursor
-// reader are all untouched, so a transport that can stream again reuses every row
-// already stored; nothing had to be deleted to make this faster.
+// opera_commands measures created-at to completed-at, which is the device's work and nothing else; the round trips that carry that work, and the ones that happen before a command exists, are all invisible to it.
+// On this deployment those invisible stages dominated: a call reported 0.5-1.9 s of command time inside a 10 s round trip, so without this the remaining time could only be guessed at.
+
+// WHY enqueue and await leave together.
+// They used to be two calls: one to create the command, one to wait for it.
+// Each is a full HTTPS crossing to the data API, and measured here those two cost 269 ms and 417 ms while the command itself took 729 ms — most of the time inside the function was spent reaching it and coming back.
+// opera_enqueue_and_await asks the same question in one visit and returns the shape the two used to return between them, so the lifecycle, the allowlist, the request-id reuse and the expiry deadline are all unchanged.
+
+// WHAT THIS COSTS.
+// Progress cannot ride along, because one blocking call has nowhere to put intermediate events.
+// The command-event table, its device-side emit and its cursor reader are all untouched, so a transport that can stream again reuses every row already stored; nothing had to be deleted to make this faster.
 
 let progressMs = 0;
 let awaitMs = 0;
 
-// WHY THIS IS TWO CALLS AND NOT ONE. Merging the enqueue and the wait into a single
-// opera_enqueue_and_await looked like an obvious saving: one HTTPS crossing instead of
-// two, against crossings measured at 269 ms and 417 ms. It does not work, and the
-// reason is worth recording. A plpgsql function is one transaction, so the row inserted
-// by the enqueue half is uncommitted for the whole time the function spends waiting. The
-// device claims commands by reading that table, and it cannot see an uncommitted row, so
-// the command it was told to run is never claimed and the call waits for its full
-// timeout. Measured live, the merged version returned a 9.1 s median where the two-call
-// version returned 2.3 s, which is the shape of a wait that can never be satisfied.
-//
-// So the crossing stays, and the wait for it stays. What can be removed without a second
-// transaction is the wait for progress: it also ends at the command's terminal status,
-// so asking for it and the result together costs one wait rather than two.
+// WHY THIS IS TWO CALLS AND NOT ONE.
+// Merging the enqueue and the wait into a single opera_enqueue_and_await looked like an obvious saving: one HTTPS crossing instead of two, against crossings measured at 269 ms and 417 ms. It does not work, and the reason is worth recording.
+// A plpgsql function is one transaction, so the row inserted by the enqueue half is uncommitted for the whole time the function spends waiting.
+// The device claims commands by reading that table, and it cannot see an uncommitted row, so the command it was told to run is never claimed and the call waits for its full timeout.
+// Measured live, the merged version returned a 9.1 s median where the two-call version returned 2.3 s, which is the shape of a wait that can never be satisfied.
 
-// WHY THE REQUEST ID IS NULL AND THE PROVIDER RIDES ALONG. The id used to be a fresh
-// random UUID on every call, which can never collide with anything, so the reuse lookup
-// it triggers inside the enqueue was a SELECT that always missed. Passing null skips
-// that lookup without changing idempotency, because there was none to begin with: a
-// retry arrives with a new id, not the old one. The provider used to be stamped with a
-// second write after the command finished, a full data-API crossing on the critical
-// path after the answer was already known; it is now set by the enqueue itself, and
-// the update that used to follow it is gone.
+// So the crossing stays, and the wait for it stays.
+// What can be removed without a second transaction is the wait for progress: it also ends at the command's terminal status, so asking for it and the result together costs one wait rather than two.
+
+// WHY THE REQUEST ID IS NULL AND THE PROVIDER RIDES ALONG.
+// The id used to be a fresh random UUID on every call, which can never collide with anything, so the reuse lookup it triggers inside the enqueue was a SELECT that always missed.
+// Passing null skips that lookup without changing idempotency, because there was none to begin with: a retry arrives with a new id, not the old one.
+// The provider used to be stamped with a second write after the command finished, a full data-API crossing on the critical path after the answer was already known; it is now set by the enqueue itself, and the update that used to follow it is gone.
 
 async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "", progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null) {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
@@ -677,27 +656,17 @@ function vmRunResult(value: unknown) {
 
 const SERVER_VERSION = "1.6.27";
 
-// WHY A SOCKET NEXT TO THE HTTP. Every HTTPS call pays for an isolate that has never
-// run before: the platform boots one per request, measured here as twenty distinct
-// isolates for twenty probes, and the boot plus the round trips it cannot reuse cost
-// roughly 1.8 s against work the browser answers in under a millisecond. A WebSocket
-// holds one isolate open, so the second call on it pays no boot at all, and an isolate
-// that stays open can hold a database connection too, which skips the data-API gateway
-// on every call after the first. Measured here that is 162 ms against 603 ms for the
-// same work. The socket speaks the same tools with the same authentication and the
-// same handlers as the HTTP; only the road changes, and a client the socket refuses
-// falls back to HTTPS without losing anything but time.
-//
-// WHAT IT DELIBERATELY DOES NOT DO. It does not list tools: the relay fetches the tool
-// list once over HTTPS at startup, where one slow call costs nothing, so the socket
-// carries only calls and pings. It does not multiplex: one request is answered before
-// the next is read, because a browser drive is a sequence of dependent actions and
-// parallel commands to one device would execute out of order. It does not keep its own
-// dispatch table: each message is run through a fresh server exactly as an HTTP request
-// would be, so a tool added to the HTTP surface exists here too without a second place
-// to remember it. Reusing one server across messages is not possible: the SDK refuses a
-// second transport on a connected server, so the rebuild cost per message is the SDK's
-// price, measured at about 15 ms, and not worth working around.
+// WHY A SOCKET NEXT TO THE HTTP.
+// Every HTTPS call pays for an isolate that has never run before: the platform boots one per request, measured here as twenty distinct isolates for twenty probes, and the boot plus the round trips it cannot reuse cost roughly 1.8 s against work the browser answers in under a millisecond.
+// A WebSocket holds one isolate open, so the second call on it pays no boot at all, and an isolate that stays open can hold a database connection too, which skips the data-API gateway on every call after the first.
+// Measured here that is 162 ms against 603 ms for the same work.
+// The socket speaks the same tools with the same authentication and the same handlers as the HTTP; only the road changes, and a client the socket refuses falls back to HTTPS without losing anything but time.
+
+// WHAT IT DELIBERATELY DOES NOT DO.
+// It does not list tools: the relay fetches the tool list once over HTTPS at startup, where one slow call costs nothing, so the socket carries only calls and pings.
+// It does not multiplex: one request is answered before the next is read, because a browser drive is a sequence of dependent actions and parallel commands to one device would execute out of order.
+// It does not keep its own dispatch table: each message is run through a fresh server exactly as an HTTP request would be, so a tool added to the HTTP surface exists here too without a second place to remember it.
+// Reusing one server across messages is not possible: the SDK refuses a second transport on a connected server, so the rebuild cost per message is the SDK's price, measured at about 15 ms, and not worth working around.
 
 const WS_MAX_MESSAGE_BYTES = 1024 * 1024;
 

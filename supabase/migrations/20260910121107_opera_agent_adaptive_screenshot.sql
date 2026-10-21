@@ -1,8 +1,5 @@
 -- Register the bounded adaptive screenshot primitive shipped by Opera Agent 1.4.0.
--- Image bytes are returned once and atomically scrubbed from the command row;
--- the extension does not persist captures and performs its own URL, incognito,
--- private-tab, sensitive-surface,
--- crop, dimension, frequency, timeout, and result-size enforcement.
+-- Image bytes are returned once and atomically scrubbed from the command row; the extension does not persist captures and performs its own URL, incognito, private-tab, sensitive-surface, crop, dimension, frequency, timeout, and result-size enforcement.
 
 insert into public.opera_methods(method, default_timeout_ms, enabled, description)
 values (

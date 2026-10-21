@@ -1,21 +1,15 @@
 -- Report terminal command state from the streaming wait (2026-10-11).
---
--- opera_command_events_wait as first written could only say "events arrived". The
--- consumer that streams a command has two questions on every pass -- did
--- anything happen, and is this command finished -- and answering the second with
--- a separate call to opera_await_adaptive turns one round trip into two per tick.
---
--- The status is read on every pass, including the empty ones, so the consumer's
--- loop is a single call: read the events that exist, read whether the command has
--- reached a terminal status, and exit on either signal.
---
+
+-- opera_command_events_wait as first written could only say "events arrived".
+-- The consumer that streams a command has two questions on every pass -- did anything happen, and is this command finished -- and answering the second with a separate call to opera_await_adaptive turns one round trip into two per tick.
+
+-- The status is read on every pass, including the empty ones, so the consumer's loop is a single call: read the events that exist, read whether the command has reached a terminal status, and exit on either signal.
+
 -- The status column is exposed as a string the caller compares, not as a boolean.
--- 'completed', 'failed', 'expired' and 'cancelled' are terminal; 'queued' and
--- 'claimed' are not. Encoding that set in SQL would hide it from the caller, and
--- the set is exactly the one opera_await_adaptive already branches on.
---
--- This is a new file rather than an edit to 20261011140000 because migrations in
--- this repository are not edited in place.
+-- 'completed', 'failed', 'expired' and 'cancelled' are terminal; 'queued' and 'claimed' are not.
+-- Encoding that set in SQL would hide it from the caller, and the set is exactly the one opera_await_adaptive already branches on.
+
+-- This is a new file rather than an edit to 20261011140000 because migrations in this repository are not edited in place.
 
 create or replace function public.opera_command_events_wait(
   p_command_id uuid,

@@ -4,28 +4,20 @@
 // @dependencies: node:test, assert, fs.
 
 // WHY THIS FILE EXISTS
-//
-// The MCP edge function is stateless: every POST builds a fresh server and
-// transport, then blocks in opera_await_adaptive until a command finishes. The
-// device is the only thing that knows what happened in between, and it had no way
-// to say so. A burst of eight steps, or a workflow running for twenty seconds,
-// was one opaque wait for the model.
-//
-// The watch-event channel already solved this exact shape — a cursor long-poll
-// that returns the moment rows appear (opera_watch_events_wait, 5ms sleep). This
-// file locks the same discipline applied to command execution, where the rows
-// carry the consequence of typing into somebody's document.
-//
-// The security locks are the ones that matter. An event row reaches a model's
-// context, so an emit path that trusts its caller would be a prompt-injection
-// channel from any paired device to any owner. Emit therefore authenticates the
-// device the same way the claim path does, refuses a command that belongs to
-// another device, and refuses a kind outside the allowlist rather than storing
-// whatever string arrived.
-//
-// Retention is locked because nothing else prunes this table. Command rows are
-// swept; event rows are not, so without an explicit sweep the table grows by one
-// row per action for the life of the deployment.
+
+// The MCP edge function is stateless: every POST builds a fresh server and transport, then blocks in opera_await_adaptive until a command finishes.
+// The device is the only thing that knows what happened in between, and it had no way to say so.
+// A burst of eight steps, or a workflow running for twenty seconds, was one opaque wait for the model.
+
+// The watch-event channel already solved this exact shape — a cursor long-poll that returns the moment rows appear (opera_watch_events_wait, 5ms sleep).
+// This file locks the same discipline applied to command execution, where the rows carry the consequence of typing into somebody's document.
+
+// The security locks are the ones that matter.
+// An event row reaches a model's context, so an emit path that trusts its caller would be a prompt-injection channel from any paired device to any owner.
+// Emit therefore authenticates the device the same way the claim path does, refuses a command that belongs to another device, and refuses a kind outside the allowlist rather than storing whatever string arrived.
+
+// Retention is locked because nothing else prunes this table.
+// Command rows are swept; event rows are not, so without an explicit sweep the table grows by one row per action for the life of the deployment.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

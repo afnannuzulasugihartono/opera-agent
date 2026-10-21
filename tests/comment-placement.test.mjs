@@ -4,24 +4,21 @@
 // @dependencies: node:test, assert, fs, path, child_process.
 
 // A COMMENT DOCUMENTS A DECLARATION, SO IT STANDS OUTSIDE IT.
-//
-// Above a declaration or a top-level statement is fine: the file header, a function
-// above its signature, a config key above its value. Inside a body is not: between two
-// statements, inside a loop, in the middle of a stylesheet or a SQL statement.
-//
-// WHY, MEASURED: 4,036 comments in this repository before the rule, a large share inside
-// bodies. The cost was never the words — a comment three lines from the decision it
-// describes stops describing it when the code moves, and nothing notices, because a stale
-// comment is still syntactically a comment. A comment inside a body reads as permanent:
-// it looks like part of the algorithm, so nobody touches the block around it.
-//
-// WHY NO CARVE-OUT: the rule first said "runtime code, but not tests". That was true and
-// still wrong — "which files count" is the question a gate exists to stop having. So the
-// scope is every tracked and untracked file, in every language.
-//
-// WHAT IT COST: 705 lines of migration notes in supabase/migrations/, which recorded why
-// each migration exists. That history is now only in git. Recorded here rather than left
-// to be discovered.
+
+// Above a declaration or a top-level statement is fine: the file header, a function above its signature, a config key above its value.
+// Inside a body is not: between two statements, inside a loop, in the middle of a stylesheet or a SQL statement.
+
+// WHY, MEASURED: 4,036 comments in this repository before the rule, a large share inside bodies.
+// The cost was never the words — a comment three lines from the decision it describes stops describing it when the code moves, and nothing notices, because a stale comment is still syntactically a comment.
+// A comment inside a body reads as permanent: it looks like part of the algorithm, so nobody touches the block around it.
+
+// WHY NO CARVE-OUT: the rule first said "runtime code, but not tests".
+// That was true and still wrong — "which files count" is the question a gate exists to stop having.
+// So the scope is every tracked and untracked file, in every language.
+
+// WHAT IT COST: 705 lines of migration notes in supabase/migrations/, which recorded why each migration exists.
+// That history is now only in git.
+// Recorded here rather than left to be discovered.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -54,12 +51,9 @@ const tracked = () => {
   return [...new Set([...listed, ...untracked])].filter(known);
 };
 
-// WHY A TEMPLATE IS SKIPPED WHOLE, INTERPOLATIONS INCLUDED. A template spans lines,
-// and the code inside it is not this repository's code: it is the page's. Reading it
-// as code once put a block comment inside a page expression in the middle of a file,
-// and the scanner believed it until the next block-comment end somewhere else, which
-// is how the depth counter in the biggest file in the tree ended up negative and the
-// rule below it went unmeasured.
+// WHY A TEMPLATE IS SKIPPED WHOLE, INTERPOLATIONS INCLUDED.
+// A template spans lines, and the code inside it is not this repository's code: it is the page's.
+// Reading it as code once put a block comment inside a page expression in the middle of a file, and the scanner believed it until the next block-comment end somewhere else, which is how the depth counter in the biggest file in the tree ended up negative and the rule below it went unmeasured.
 
 function findComments(source, language) {
   const spec = LANGUAGES[language];
@@ -201,15 +195,11 @@ const insideABody = (comment, language) => {
   return comment.indent > 0 && !comment.aboveDeclaration;
 };
 
-// WHY A COMMENT MAY STAND INSIDE A BODY ONLY ABOVE THE CODE IT DOCUMENTS. A comment
-// that interrupts a sequence of statements splits one thought into two places, and
-// the reader has to guess which statement it belongs to. A comment that stands
-// directly above a block or a declaration - a const, a function, a method, a try -
-// documents that code and is read as part of it, which is the house style of every
-// file in this tree. The scanner could not tell the two apart before, because the
-// biggest file in the tree broke its brace count and every comment in it read as
-// outside a body. The rule is now the one the code was written to: above the code it
-// documents, never inside a statement.
+// WHY A COMMENT MAY STAND INSIDE A BODY ONLY ABOVE THE CODE IT DOCUMENTS.
+// A comment that interrupts a sequence of statements splits one thought into two places, and the reader has to guess which statement it belongs to.
+// A comment that stands directly above a block or a declaration - a const, a function, a method, a try - documents that code and is read as part of it, which is the house style of every file in this tree.
+// The scanner could not tell the two apart before, because the biggest file in the tree broke its brace count and every comment in it read as outside a body.
+// The rule is now the one the code was written to: above the code it documents, never inside a statement.
 
 const DECLARATION = [
   /^(export\s+)?(default\s+)?(async\s+)?(function|class)\b/,

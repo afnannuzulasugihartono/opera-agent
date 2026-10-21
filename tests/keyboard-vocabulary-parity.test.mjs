@@ -3,18 +3,11 @@
 // @state: drop the milestone prefix from the interaction test family.
 // @dependencies: node:test, strict, promises, keyboard.
 
-// The public MCP surface and the extension runtime keep two copies of the key
-// and modifier vocabularies. That duplication is architecturally forced — the
-// MCP is a Deno edge function and the runtime is a browser bundle, and neither
-// can import the other — but it can still DRIFT, and a drifted public schema
-// would reject calls the runtime happily accepts, or advertise keys that do not
-// resolve.
-//
-// The existing surface test pinned the expected list as a literal, so it
-// detected a CHANGE but never proved AGREEMENT with the implementation. This
-// test closes that gap: the public schema is checked against the real resolver
-// exports, so adding a key to lib/keyboard.js without adding it to the public
-// schema fails here.
+// The public MCP surface and the extension runtime keep two copies of the key and modifier vocabularies.
+// That duplication is architecturally forced — the MCP is a Deno edge function and the runtime is a browser bundle, and neither can import the other — but it can still DRIFT, and a drifted public schema would reject calls the runtime happily accepts, or advertise keys that do not resolve.
+
+// The existing surface test pinned the expected list as a literal, so it detected a CHANGE but never proved AGREEMENT with the implementation.
+// This test closes that gap: the public schema is checked against the real resolver exports, so adding a key to lib/keyboard.js without adding it to the public schema fails here.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

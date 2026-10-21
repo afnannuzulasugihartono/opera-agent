@@ -4,17 +4,12 @@
 // @dependencies: none.
 
 // User-facing error mapping for the popup and options page (page lang `id`).
-//
-// Background-supplied strings can carry raw internals (fetch TypeErrors,
-// `HTTP <status>`, gateway `data.error`, chrome tab errors, truncated
-// `lastError` payloads). Only exact static source strings are mapped; every
-// dynamic, unknown, or token-shaped input falls back to GENERIC so raw
-// internals never reach the popup label. The two options-page keys below are
-// client-side settings validation literals thrown by `lib/options-store.js`
-// (static, authored here, safe to surface), not backend internals.
-//
-// Source strings stay English because that is what the background throws; the
-// shown strings are Indonesian because that is what the reader reads.
+
+// Background-supplied strings can carry raw internals (fetch TypeErrors, `HTTP <status>`, gateway `data.error`, chrome tab errors, truncated `lastError` payloads).
+// Only exact static source strings are mapped; every dynamic, unknown, or token-shaped input falls back to GENERIC so raw internals never reach the popup label.
+// The two options-page keys below are client-side settings validation literals thrown by `lib/options-store.js` (static, authored here, safe to surface), not backend internals.
+
+// Source strings stay English because that is what the background throws; the shown strings are Indonesian because that is what the reader reads.
 
 const KNOWN = new Map([
   ['Pairing failed.', 'Pairing gagal. Periksa kode lalu coba lagi.'],

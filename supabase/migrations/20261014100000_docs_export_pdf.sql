@@ -1,6 +1,6 @@
--- docs.export_pdf v1: File > Download > PDF, then wait for the download
--- feedback signal. Proof is UI feedback, never the filesystem: the download
--- API sits outside the primitives.
+-- docs.export_pdf v1: File > Download > PDF, then wait for the download feedback signal.
+-- Proof is UI feedback, never the filesystem: the download API sits outside the primitives.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.export_pdf') THEN

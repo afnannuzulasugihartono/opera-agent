@@ -32,23 +32,18 @@
 
   <script>
 
-    // U-R: SPA-slow redirect — the URL changes well after the 400 ms settle
-    // window, so a single early expect evaluation would wrongly report
-    // verified:false and drive a re-click. The expect polling window must
-    // cover this.
+    // U-R: SPA-slow redirect — the URL changes well after the 400 ms settle window, so a single early expect evaluation would wrongly report verified:false and drive a re-click.
+    // The expect polling window must cover this.
     function slowRedirect() {
       setTimeout(() => { location.hash = '#ur-redirected'; }, 1200);
     }
 
-    // U-R: fill verification via characterData mutation (MutationObserver
-    // sees text changes; value-property changes are invisible to it).
+    // U-R: fill verification via characterData mutation (MutationObserver sees text changes; value-property changes are invisible to it).
     document.getElementById('ur-field').addEventListener('input', (event) => {
       document.getElementById('ur-mirror').textContent = 'mirror:' + event.target.value;
     });
 
-    // U-R: OAuth-style popup — opens synchronously inside the click handler
-    // (real OAuth/login buttons open the provider popup during the gesture),
-    // so the popup log records it before the action result returns.
+    // U-R: OAuth-style popup — opens synchronously inside the click handler (real OAuth/login buttons open the provider popup during the gesture), so the popup log records it before the action result returns.
     function openPopup() {
       window.open(location.origin + location.pathname + '?popup=1', '_blank');
     }

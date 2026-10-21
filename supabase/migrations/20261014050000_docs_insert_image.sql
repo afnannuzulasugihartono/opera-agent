@@ -1,5 +1,6 @@
--- docs.insert_image v1: By-URL road through Insert > Image, or upload road
--- that sets the hidden file input from bytes. Caption paragraph after.
+-- docs.insert_image v1: By-URL road through Insert > Image, or upload road that sets the hidden file input from bytes.
+-- Caption paragraph after.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.insert_image') THEN
