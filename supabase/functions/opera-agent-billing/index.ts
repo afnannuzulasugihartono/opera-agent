@@ -19,10 +19,21 @@
 // move the invoice. Without the key the callback refuses rather than trusting the
 // caller.
 //
+// WHY THE CALLBACK DOES NOT ASK FOR AN "action" FIELD. A provider posts its own body
+// to the URL it was given, so a notification is recognised by the order id and the
+// signature it carries, not by a field the provider never sends. The operator's own
+// calls still name their action, and the two shapes cannot be confused: one carries a
+// signature, the other carries a bearer token.
+//
 // WHY THE CALLBACK ALSO CHECKS THE AMOUNT. A signature proves the provider sent the
 // notification; it does not prove the invoice was for this much. So the gross amount in
 // the notification has to equal the invoice, or the invoice stays open and the
 // difference is somebody's problem to look at.
+//
+// WHY A PAID INVOICE IS NEVER REOPENED. Creating an invoice is idempotent so an operator
+// can correct a month before it is paid, but the same upsert run after the money landed
+// would turn a paid invoice back to open and ask the customer twice. So the paid state
+// is terminal here, and a later call is refused with the invoice's name.
 
 import "@supabase/edge-runtime";
 import { createEdgeLog } from "../_shared/edge-log.js";
@@ -31,6 +42,7 @@ import {
   amountFor,
   invoiceToken,
   isSettled,
+  linesFromDeliveries,
   notificationSignatureValid,
   verifyInvoiceToken
 } from "../_shared/billing.js";
@@ -138,6 +150,10 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       provider_ref = body.token || id;
     }
   }
+  const { data: existing } = await supabase.from("opera_invoices").select("status").eq("id", id).maybeSingle();
+  if (existing?.status === "paid") {
+    throw new HttpError(409, `${id} is paid; a later call does not reopen an invoice that has been paid.`);
+  }
   const { data, error } = await supabase.from("opera_invoices").upsert({
     id,
     customer_id,
@@ -217,7 +233,8 @@ Deno.serve(async (req: Request) => {
     }
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({})) as Record<string, unknown>;
-      if (body.action === "notify") {
+      const looksLikeNotification = body.action === "notify" || (!body.action && Boolean(body.order_id) && Boolean(body.signature));
+      if (looksLikeNotification) {
         const notification = body as Record<string, unknown>;
         if (!notificationSignatureValid(notification, MIDTRANS_SERVER_KEY)) {
           return json({ ok: false, error: "the notification was not signed by the provider" }, 400, cors);
@@ -235,7 +252,19 @@ Deno.serve(async (req: Request) => {
         if (!customerId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(period)) {
           return json({ error: "customer_id and a YYYY-MM period are required" }, 400, cors);
         }
-        const lines = (Array.isArray(body.lines) ? body.lines : []) as Line[];
+        const typed = Array.isArray(body.lines) ? body.lines as Line[] : [];
+        const deliveries = Array.isArray(body.deliveries) ? body.deliveries as Record<string, unknown>[] : [];
+        if (typed.length && deliveries.length) {
+          return json({ error: "send either the manifest rows or the lines, not both: the amount has one source" }, 400, cors);
+        }
+        let lines = typed;
+        if (deliveries.length) {
+          const derived = linesFromDeliveries(deliveries);
+          if (derived.refused.length) {
+            return json({ error: "some deliveries cannot be billed", refused: derived.refused.map((row) => row.reason) }, 400, cors);
+          }
+          lines = derived.lines;
+        }
         if (!lines.length) return json({ error: "no deliveries to charge for" }, 400, cors);
         const out = await createInvoice({ customer_id: customerId, period, lines });
         const link = `${SUPABASE_URL}/functions/v1/opera-agent-billing?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;

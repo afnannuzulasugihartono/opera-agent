@@ -95,8 +95,9 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_stream_start: '0c5fbfac4707448f',
   media_stream_stop: '5df002e4171733eb',
   media_listen_read: '9834f1ca13dbeae9',
-  statement_manifest: 'e3b0c44298fc1c14',
+  statement_manifest: 'c8e06f753d58ad98',
   statement_deliver: '7a4a87bc8e59884b',
+  invoice_create: '17f9342a25c0c011',
 });
 
 const R9B_CHANGED_TOOL = 'press_key';
@@ -207,7 +208,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read',
-    'statement_deliver', 'statement_manifest'
+    'statement_deliver', 'statement_manifest', 'invoice_create'
   ]);
   assert.equal(new Set(tools).size, tools.length);
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
@@ -219,10 +220,10 @@ test('R4 keeps the protocol inventory frozen at 31 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 33 tools', async () => {
+test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 34 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 33);
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest'].sort());
+  assert.equal(registered.length, 34);
+  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create'].sort());
 });
 
 test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
@@ -241,9 +242,9 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 33);
+  assert.equal(registered.length, 34);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 33);
+  assert.equal(contract.toolCount, 34);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -322,7 +323,7 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 33, 'the public tool count changes only by reviewed decision (loop tools removed)');
+  assert.equal(blocks.length, 34, 'the public tool count changes only by reviewed decision (loop tools removed)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
