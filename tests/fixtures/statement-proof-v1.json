@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "note": "The proof a delivered client-month carries. Another agent hands this to its own user, so every field and its type is frozen here and a test fails when the record drifts.",
+  "record": {
+    "client": "string",
+    "portal": "string",
+    "period": "YYYY-MM",
+    "file": "string",
+    "path": "string",
+    "bytes": "integer",
+    "kind": "pdf|zip|ole|other",
+    "pages": "integer|null",
+    "pagesFrom": "string",
+    "balance": "{ raw: string, digits: string|null }|null",
+    "balanceFrom": "string|null",
+    "deliveredAt": "ISO-8601"
+  },
+  "manifest": {
+    "path": "string",
+    "delivered": "integer",
+    "periods": "string[]",
+    "clients": "string[]"
+  }
+}
