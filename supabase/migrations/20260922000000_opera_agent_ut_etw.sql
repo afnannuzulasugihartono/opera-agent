@@ -1,8 +1,5 @@
--- U-T Event-Triggered Workflows (2026-09-22): device-local watch rules fire
--- page facts into an event stream the model subscribes to, eliminating the
--- observe->analyze->act model round trip. Also ships the universal fastpath:
--- opera_await_adaptive (sub-50ms ramp then the proven 50ms) and
--- opera_run_fast (enqueue+await in ONE SQL call) for the 1-hop gateway.
+-- U-T Event-Triggered Workflows (2026-09-22): device-local watch rules fire page facts into an event stream the model subscribes to, eliminating the observe->analyze->act model round trip.
+-- Also ships the universal fastpath: opera_await_adaptive (sub-50ms ramp then the proven 50ms) and opera_run_fast (enqueue+await in ONE SQL call) for the 1-hop gateway.
 
 create table if not exists public.opera_watch_events (
   id bigint generated always as identity primary key,

@@ -1,4 +1,5 @@
--- Checkpoint 7E hardening after contract review. Historical additive migration remains unchanged.
+-- Checkpoint 7E hardening after contract review.
+-- Historical additive migration remains unchanged.
 
 alter table opera_agent_private.vm_runs
   drop constraint if exists vm_runs_result_shape;

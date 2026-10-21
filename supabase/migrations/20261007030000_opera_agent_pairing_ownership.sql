@@ -1,27 +1,19 @@
 -- A device name belongs to the account that paired it, and pairing can no longer take it.
---
--- WHY: opera_pair_device upserted on device_name and kept user_id with
--- coalesce(existing, new), so a valid code for an owned name replaced the owner's
--- token_hash while the owner stayed the owner. Measured on this project in a
--- rolled-back transaction: the token changed and the row still read as owned. Any
--- confirmed account could mint such a code, because opera_create_pairing_code
--- never asked who owned the name. The commands queued for the owner then reach
--- another person's browser, and the results that come back are theirs to write.
---
--- WHY three guards and not one: the issuer check stops the request early with a
--- readable error, the ownership check at pairing stops a code that already exists,
--- and the WHERE on the upsert stops two pairings that race past both. The last is
--- the one that holds when the others are bypassed.
---
--- WHY the issuer comes from the session: p_issued_by was caller-supplied and the
--- function is executable by every signed-in account, so a caller could issue a code
--- in someone else's name, spend their hourly allowance, or plant a device on their
--- account. Only a caller with no session (service_role) may name an issuer.
---
--- WHY cancelling is scoped to the issuer: every new code cancelled the previous one
--- for the same name, whoever held it, so one account could keep cancelling another's
--- pairing. A code now cancels only its own issuer's earlier codes.
---
+
+-- WHY: opera_pair_device upserted on device_name and kept user_id with coalesce(existing, new), so a valid code for an owned name replaced the owner's token_hash while the owner stayed the owner.
+-- Measured on this project in a rolled-back transaction: the token changed and the row still read as owned.
+-- Any confirmed account could mint such a code, because opera_create_pairing_code never asked who owned the name.
+-- The commands queued for the owner then reach another person's browser, and the results that come back are theirs to write.
+
+-- WHY three guards and not one: the issuer check stops the request early with a readable error, the ownership check at pairing stops a code that already exists, and the WHERE on the upsert stops two pairings that race past both.
+-- The last is the one that holds when the others are bypassed.
+
+-- WHY the issuer comes from the session: p_issued_by was caller-supplied and the function is executable by every signed-in account, so a caller could issue a code in someone else's name, spend their hourly allowance, or plant a device on their account.
+-- Only a caller with no session (service_role) may name an issuer.
+
+-- WHY cancelling is scoped to the issuer: every new code cancelled the previous one for the same name, whoever held it, so one account could keep cancelling another's pairing.
+-- A code now cancels only its own issuer's earlier codes.
+
 -- Signatures, grants and the rate limit are unchanged.
 
 create or replace function public.opera_create_pairing_code(p_device_name text default 'opera', p_ttl_minutes integer default 10, p_issued_by uuid default null)

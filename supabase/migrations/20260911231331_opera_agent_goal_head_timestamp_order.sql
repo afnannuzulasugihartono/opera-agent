@@ -1,5 +1,4 @@
--- Preserve the goal_heads updated_at >= created_at invariant when an Edge
--- Function timestamp is a few milliseconds newer than the transaction start.
+-- Preserve the goal_heads updated_at >= created_at invariant when an Edge Function timestamp is a few milliseconds newer than the transaction start.
 
 create or replace function public.opera_goal_head_apply(
   p_tenant_id uuid,

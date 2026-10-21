@@ -1,7 +1,7 @@
 -- Refine YouTube transcript extraction after live Opera profiling.
 -- The v1 workflow remains in opera_workflow_versions for rollback.
--- Avoid a trusted CDP click when the transcript panel is already open, and try
--- a normal DOM click first when opening it. Trusted input remains the fallback.
+-- Avoid a trusted CDP click when the transcript panel is already open, and try a normal DOM click first when opening it.
+-- Trusted input remains the fallback.
 
 select public.opera_register_workflow(
   'youtube.get_transcript',

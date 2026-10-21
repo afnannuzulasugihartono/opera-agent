@@ -1,5 +1,5 @@
--- docs.toc_insert v1: Insert > Table of contents, pick the numbered style,
--- then prove entries rendered or fail naming the miss.
+-- docs.toc_insert v1: Insert > Table of contents, pick the numbered style, then prove entries rendered or fail naming the miss.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.toc_insert') THEN

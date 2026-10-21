@@ -11,11 +11,9 @@ import { TOOLS } from '../local/mcp-server.js';
 
 const names = new Set(TOOLS.map((tool) => tool.name));
 
-// WHY THE GUIDE IS PINNED AGAINST THE TOOL LIST AND NOT AGAINST ITSELF. A guide
-// that names a tool which no longer exists is worse than no guide: the agent
-// follows the road, the call fails, and the guide is the thing it stops
-// trusting. So the lock is between the guide and the real list, and a rename
-// breaks the build instead of surprising an agent in production.
+// WHY THE GUIDE IS PINNED AGAINST THE TOOL LIST AND NOT AGAINST ITSELF.
+// A guide that names a tool which no longer exists is worse than no guide: the agent follows the road, the call fails, and the guide is the thing it stops trusting.
+// So the lock is between the guide and the real list, and a rename breaks the build instead of surprising an agent in production.
 
 test('every tool named in a recipe exists on the server', () => {
   for (const recipe of RECIPES) {
@@ -41,11 +39,9 @@ test('a side effect says something or is honestly empty', () => {
   }
 });
 
-// WHY THE MOVING READS ARE DECLARED, PINNED HERE. Half of what an agent loses
-// is not a missing tool but an unannounced one: reading a Doc moves the caret,
-// so the next click lands where the agent has already been. The declaration is
-// the fix, and a declaration nobody reads is decoration — so this test fails if
-// the two moving reads ever lose theirs.
+// WHY THE MOVING READS ARE DECLARED, PINNED HERE.
+// Half of what an agent loses is not a missing tool but an unannounced one: reading a Doc moves the caret, so the next click lands where the agent has already been.
+// The declaration is the fix, and a declaration nobody reads is decoration — so this test fails if the two moving reads ever lose theirs.
 
 test('the reads that move the page say so', () => {
   assert.ok(SIDE_EFFECTS.read_page.some((effect) => /caret/i.test(effect)));
@@ -73,12 +69,9 @@ test('an unknown topic is an empty answer, not a wrong one', () => {
   assert.ok(nothing.sideEffects.length > 0, 'the side effects are still the whole surface');
 });
 
-// WHY THE REFUSALS TRAVEL WITH THE GUIDE. An agent that has not yet hit a
-// boundary should not have to hit it first. The three lines are the ones that
-// cost real time today: a native dialog that cannot be touched, a read-only
-// question that looks like a free script, a tool reporting success when the page
-// says otherwise, and a drive that cannot tell a page which ignored it from a
-// window that was behind something the whole time.
+// WHY THE REFUSALS TRAVEL WITH THE GUIDE.
+// An agent that has not yet hit a boundary should not have to hit it first.
+// The three lines are the ones that cost real time today: a native dialog that cannot be touched, a read-only question that looks like a free script, a tool reporting success when the page says otherwise, and a drive that cannot tell a page which ignored it from a window that was behind something the whole time.
 
 test('the guide names the four things it will not pretend to do', () => {
   const { refusals } = guide();

@@ -58,7 +58,7 @@ These predate this file and still carry most of the weight:
 | --- | --- |
 | `npm test` | behaviour, including contracts exercised end to end |
 | `tests/structure-gates.test.mjs` | `extension/lib` reaching for `chrome.*`, worker files with no reason to exist |
-| `tests/hygiene.test.mjs` | dead exports, dead files, comment spacing |
+| `tests/hygiene.test.mjs` | dead exports, dead files, a comment that is not in the canonical form |
 | `tests/boundary-locks.test.mjs` | a public contract changing without a re-pin |
 | `tests/konsol-tables.test.mjs` | SQL policy drift, string for string |
 | `scripts/check.mjs` | version drift, forbidden runtime constructs, generated-file drift |

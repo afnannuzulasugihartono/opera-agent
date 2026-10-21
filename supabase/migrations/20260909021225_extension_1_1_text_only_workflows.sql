@@ -1,7 +1,6 @@
 -- Opt text-oriented workflows into the protocol-1 text-only page.read mode.
 -- Existing workflow versions remain in opera_workflow_versions for rollback.
--- The migration intentionally derives from the active definitions established by
--- earlier migrations so site-specific orchestration is not duplicated here.
+-- The migration intentionally derives from the active definitions established by earlier migrations so site-specific orchestration is not duplicated here.
 
 do $$
 declare

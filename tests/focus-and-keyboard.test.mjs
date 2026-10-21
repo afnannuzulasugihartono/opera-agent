@@ -4,13 +4,9 @@
 // @dependencies: node:test, strict, promises, focus-gate, keyboard, extension-source.
 
 // Two halves:
-// 1. The pure policy modules (lib/focus-gate.js, lib/keyboard.js) are asserted
-//    directly as behavior, not as source text.
-// 2. The extension wiring is checked with a narrow safety assertion: the
-//    trusted input executors must never activate a tab or focus a window. That
-//    is a frozen product invariant (`userActiveTab != automationTargetTab`),
-//    which is exactly the case where a structural assertion is warranted
-//    instead of a behavioral one (the frozen-invariant case).
+// 1. The pure policy modules (lib/focus-gate.js, lib/keyboard.js) are asserted directly as behavior, not as source text.
+// 2. The extension wiring is checked with a narrow safety assertion: the trusted input executors must never activate a tab or focus a window.
+//    That is a frozen product invariant (`userActiveTab != automationTargetTab`), which is exactly the case where a structural assertion is warranted instead of a behavioral one (the frozen-invariant case).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -128,10 +124,8 @@ test('modifiers OR into the CDP bitmask and accept their common aliases', () => 
   assert.equal(resolveModifiers(undefined).mask, 0);
 });
 
-// WHY UPPERCASE PLUS MODIFIERS IS REFUSED. An uppercase letter implies shift,
-// so resolveChord('F', ['control', 'alt']) silently became Ctrl+Alt+Shift+F —
-// a chord Docs ignores — while the caller meant the footnote shortcut
-// Ctrl+Alt+F. Lowercase with explicit modifiers is the only honest shape.
+// WHY UPPERCASE PLUS MODIFIERS IS REFUSED.
+// An uppercase letter implies shift, so resolveChord('F', ['control', 'alt']) silently became Ctrl+Alt+Shift+F — a chord Docs ignores — while the caller meant the footnote shortcut Ctrl+Alt+F. Lowercase with explicit modifiers is the only honest shape.
 
 test('an uppercase letter with shiftless modifiers fails naming lowercase', () => {
   assert.throws(() => resolveChord('F', ['control', 'alt']), /lowercase f/);
@@ -190,9 +184,7 @@ test('text is a bounded, chunked, separate path from a key', () => {
   assert.throws(() => resolveKeyInput({ text: 'y'.repeat(MAX_TEXT_CHARS + 1) }), /at most 20000 characters/);
 });
 
-// A stream is validated event by event with the same rules as lone keys, plus bounds
-// of its own: at most a hundred events, gaps capped so a stream cannot pin the device,
-// and total text within the single-entry budget so bulk typing gains no new channel.
+// A stream is validated event by event with the same rules as lone keys, plus bounds of its own: at most a hundred events, gaps capped so a stream cannot pin the device, and total text within the single-entry budget so bulk typing gains no new channel.
 
 test('a key stream validates every event and carries its own bounds', () => {
   const events = resolveKeyStream([

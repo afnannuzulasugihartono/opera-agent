@@ -1,5 +1,6 @@
--- docs.page_setup v1: File > Page setup dialog, margins and orientation
--- filled by label, OK, dialog-gone proof. Margins travel as strings.
+-- docs.page_setup v1: File > Page setup dialog, margins and orientation filled by label, OK, dialog-gone proof.
+-- Margins travel as strings.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.page_setup') THEN

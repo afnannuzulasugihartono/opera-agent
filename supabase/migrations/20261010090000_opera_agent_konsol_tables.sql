@@ -1,26 +1,17 @@
 -- The table editor on the dashboard: sixteen tables read through three functions, zero grants.
---
--- WHY functions and not grants: isolation rests on two layers — the missing grant is
--- layer one and row policies are layer two, and tests/konsol-tables.test.mjs pins
--- both in this file while tests/landing-dashboard.test.mjs pins the page's calls.
--- Handing SELECT to authenticated would spend layer one on convenience. The reader is
--- SECURITY DEFINER instead: it filters by auth.uid() itself, masks secret columns before
--- they leave the database, and needs no table grant at all.
---
--- WHY opera_operator: signup is open (seventeen other accounts already exist here) and
--- seven tables carry no owner column — workflow definitions, skills, update telemetry,
--- the method registry, the installers. "Any signed-in account" is the wrong rule for
--- those, and pairing does not prove the caller is the operator: opera_create_pairing_code
--- asks no role, so any account can issue a code and pair a device to itself. The flag
--- table says it outright, seeded from the account behind the earliest paired device.
---
--- WHY the predicate text lives twice: a policy cannot call a lookup, and a SECURITY
--- DEFINER function bypasses policies by design, so opera_konsol_scope() and every USING
--- clause below repeat the same parenthesized qual. The repetition is not free-form:
--- tests/konsol-tables.test.mjs compares the two copies string for string, so they cannot
--- drift. (The live project already carried one silent drift: opera_workflow_runs_owner_read
--- was applied as d.device_name = d.device_name — a tautology granting every paired account
--- every run. This migration drops it and rebuilds the predicate from the map.)
+
+-- WHY functions and not grants: isolation rests on two layers — the missing grant is layer one and row policies are layer two, and tests/konsol-tables.test.mjs pins both in this file while tests/landing-dashboard.test.mjs pins the page's calls.
+-- Handing SELECT to authenticated would spend layer one on convenience.
+-- The reader is SECURITY DEFINER instead: it filters by auth.uid() itself, masks secret columns before they leave the database, and needs no table grant at all.
+
+-- WHY opera_operator: signup is open (seventeen other accounts already exist here) and seven tables carry no owner column — workflow definitions, skills, update telemetry, the method registry, the installers.
+-- "Any signed-in account" is the wrong rule for those, and pairing does not prove the caller is the operator: opera_create_pairing_code asks no role, so any account can issue a code and pair a device to itself.
+-- The flag table says it outright, seeded from the account behind the earliest paired device.
+
+-- WHY the predicate text lives twice: a policy cannot call a lookup, and a SECURITY DEFINER function bypasses policies by design, so opera_konsol_scope() and every USING clause below repeat the same parenthesized qual.
+-- The repetition is not free-form: tests/konsol-tables.test.mjs compares the two copies string for string, so they cannot drift.
+-- (The live project already carried one silent drift: opera_workflow_runs_owner_read was applied as d.device_name = d.device_name — a tautology granting every paired account every run.
+-- This migration drops it and rebuilds the predicate from the map.)
 
 create table if not exists public.opera_operator (
   user_id uuid primary key references auth.users (id) on delete cascade,

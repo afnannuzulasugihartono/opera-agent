@@ -3,12 +3,10 @@
 // @state: three named calls, honest refusals, the proof that a page's picker is reachable.
 // @dependencies: node:test, assert, ../local/dialog.js, ../local/mcp-server.js, ../local/agent-guide.js.
 
-// WHY THESE CLAIMS EXIST. Measured live on this product's own author: a drive
-// clicked "Upload from computer" in Google Docs, the operating system's file dialog
-// opened, and nothing in the browser could type into it, read it, or close it - a
-// walk that used to end there. The agent runs on the machine, so that dialog is an
-// ordinary window. These are the claims that it is: the dialog is found, its field
-// is read back, a path goes in, and a button answers.
+// WHY THESE CLAIMS EXIST.
+// Measured live on this product's own author: a drive clicked "Upload from computer" in Google Docs, the operating system's file dialog opened, and nothing in the browser could type into it, read it, or close it - a walk that used to end there.
+// The agent runs on the machine, so that dialog is an ordinary window.
+// These are the claims that it is: the dialog is found, its field is read back, a path goes in, and a button answers.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,9 +15,8 @@ import { dialogState, dialogType, dialogPress } from '../local/dialog.js';
 import { TOOLS } from '../local/mcp-server.js';
 import { guide } from '../local/agent-guide.js';
 
-// WHY EVERY CALL ANSWERS EVEN WHEN THERE IS NOTHING TO ANSWER ABOUT. A caller that
-// asked the machine a question gets words back when the machine has none to give,
-// because a bare false reads the same as a dialog that refused to answer.
+// WHY EVERY CALL ANSWERS EVEN WHEN THERE IS NOTHING TO ANSWER ABOUT.
+// A caller that asked the machine a question gets words back when the machine has none to give, because a bare false reads the same as a dialog that refused to answer.
 
 test('with no dialog open, every call says so in words', async () => {
   for (const call of [await dialogState(), await dialogType('C:\\\\nope.png'), await dialogPress('Open')]) {
@@ -29,11 +26,9 @@ test('with no dialog open, every call says so in words', async () => {
   }
 });
 
-// WHY THE FIELD IS READ AND NOT ASSUMED. Typed into a live file dialog and read
-// back empty the first time, which reads exactly like a field that never took the
-// text - and the write had gone through. WM_GETTEXT with a marshalled buffer is
-// what carries text across a process boundary, so the read is what says whether
-// the type landed.
+// WHY THE FIELD IS READ AND NOT ASSUMED.
+// Typed into a live file dialog and read back empty the first time, which reads exactly like a field that never took the text - and the write had gone through.
+// WM_GETTEXT with a marshalled buffer is what carries text across a process boundary, so the read is what says whether the type landed.
 
 test('a type that reports success also reads back what it typed', async () => {
   const typed = await dialogType('C:\\\\Users\\\\ASUS\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\thesis-test.png');
@@ -45,10 +40,8 @@ test('a type that reports success also reads back what it typed', async () => {
   }
 });
 
-// WHY THE THREE CALLS ARE NAMED IN THE CATALOGUE. Driving an operating system
-// dialog is the first thing this driver does outside the browser, so it is visible
-// by name rather than hidden behind a flag: a caller reading the catalogue can see
-// it before it happens, and an agent can find it without being told.
+// WHY THE THREE CALLS ARE NAMED IN THE CATALOGUE.
+// Driving an operating system dialog is the first thing this driver does outside the browser, so it is visible by name rather than hidden behind a flag: a caller reading the catalogue can see it before it happens, and an agent can find it without being told.
 
 test('the catalogue names the dialog road, and says it is outside the browser', () => {
   const names = ['dialog_state', 'dialog_type', 'dialog_press'].map((name) => TOOLS.find((tool) => tool.name === name));

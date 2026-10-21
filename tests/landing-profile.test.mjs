@@ -3,12 +3,8 @@
 // @state: 6 locks, green against google-after-magic-link, github-without-name, and email-only.
 // @dependencies: node:test, node:assert, node:fs, node:vm.
 
-// The account page is the first thing a stranger reads after signing in, and the
-// shape of a Supabase session is not something to guess: measured on this project, an
-// account that signed in with Google reports provider "email" because a magic link
-// created the row first, and a GitHub account may carry only a login with no full name.
-// Rendering the wrong provider on that data would tell the operator they signed in a
-// way they did not, so the card's own logic is executed here against those payloads.
+// The account page is the first thing a stranger reads after signing in, and the shape of a Supabase session is not something to guess: measured on this project, an account that signed in with Google reports provider "email" because a magic link created the row first, and a GitHub account may carry only a login with no full name.
+// Rendering the wrong provider on that data would tell the operator they signed in a way they did not, so the card's own logic is executed here against those payloads.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

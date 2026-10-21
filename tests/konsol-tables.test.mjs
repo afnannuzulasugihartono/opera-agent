@@ -3,13 +3,9 @@
 // @state: 14 locks, green; pins migration 20261010090000 and the #tabel section of dashboard.html.
 // @dependencies: test, assert, fs.
 
-// The console's isolation rests on two layers, and this file pins both copies of the
-// truth: the scope map inside opera_konsol_scope() decides what a table's rows mean,
-// and every USING clause repeats the same parenthesized qual. The repetition is the
-// risk, so the drift lock compares the two copies string for string — a policy edited
-// by hand fails here before it ships. The page side is pinned in landing-dashboard
-// test one; this file adds the locks only this feature needs: the mask list, the
-// clamps, the operator gate, and a grid that escapes and never writes.
+// The console's isolation rests on two layers, and this file pins both copies of the truth: the scope map inside opera_konsol_scope() decides what a table's rows mean, and every USING clause repeats the same parenthesized qual.
+// The repetition is the risk, so the drift lock compares the two copies string for string — a policy edited by hand fails here before it ships.
+// The page side is pinned in landing-dashboard test one; this file adds the locks only this feature needs: the mask list, the clamps, the operator gate, and a grid that escapes and never writes.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

@@ -10,11 +10,9 @@ import { windowState, focusWindow } from '../local/window-focus.js';
 import { createFocusGuard } from '../local/focus-guard.js';
 import { TOOLS } from '../local/mcp-server.js';
 
-// WHY THESE CLAIMS EXIST. Measured live on this machine, with the drive typing into a
-// Google Docs document: a browser window behind another application still took the
-// keys, and a minimized browser window did not. So the window is a thing the driver
-// reports and a thing a drive can bring forward \u2014 and a machine that cannot do it
-// says so instead of answering false and letting the drive wonder.
+// WHY THESE CLAIMS EXIST.
+// Measured live on this machine, with the drive typing into a Google Docs document: a browser window behind another application still took the keys, and a minimized browser window did not.
+// So the window is a thing the driver reports and a thing a drive can bring forward \u2014 and a machine that cannot do it says so instead of answering false and letting the drive wonder.
 
 test('the window state names the window in front and the ones behind it', async () => {
   const state = await windowState();
@@ -45,10 +43,9 @@ test('a platform with no implementation refuses in words rather than answering f
   assert.match(state.why, /not implemented/);
 });
 
-// WHY THE REFUSAL IS HELD TO THE SAME SHAPE. Measured on CI: the Linux runner took the
-// refusal path and the answer had no `title` key at all, so a caller reading the title
-// of a refusal found undefined where a caller on Windows found an empty string. The
-// keys a caller reads have to exist whether the machine answered or refused.
+// WHY THE REFUSAL IS HELD TO THE SAME SHAPE.
+// Measured on CI: the Linux runner took the refusal path and the answer had no `title` key at all, so a caller reading the title of a refusal found undefined where a caller on Windows found an empty string.
+// The keys a caller reads have to exist whether the machine answered or refused.
 
 test('a refusal carries every key a real answer carries', async () => {
   const real = await windowState();
@@ -66,16 +63,12 @@ test('a refusal carries every key a real answer carries', async () => {
   assert.ok(Array.isArray(real.windows), 'the real answer still answers');
 });
 
-// WHY THE READ AND THE WRITE ARE BOTH OFFERED. An agent that cannot type needs to
-// know whether the window is behind something before it starts clicking, and an
-// agent that has just been told needs one call that fixes it \u2014 not a paragraph
-// about window managers.
+// WHY THE READ AND THE WRITE ARE BOTH OFFERED.
+// An agent that cannot type needs to know whether the window is behind something before it starts clicking, and an agent that has just been told needs one call that fixes it \u2014 not a paragraph about window managers.
 
-// WHY THE GUARD IS MEASURED HERE, NOT ASSUMED. The two live measurements came out
-// opposite ways, and a guard built on either one alone would have been wrong: a
-// browser behind another application still hears input, and a minimized browser does
-// not. So the guard asks the page, which answers for free and gets both cases right,
-// and pays for the machine only when the page says it is deaf.
+// WHY THE GUARD IS MEASURED HERE, NOT ASSUMED.
+// The two live measurements came out opposite ways, and a guard built on either one alone would have been wrong: a browser behind another application still hears input, and a minimized browser does not.
+// So the guard asks the page, which answers for free and gets both cases right, and pays for the machine only when the page says it is deaf.
 
 test('a page that hears input costs one evaluation and never asks the machine', async () => {
   let asks = 0;
@@ -94,11 +87,10 @@ test('a page that hears input costs one evaluation and never asks the machine', 
   assert.equal(out.checked, 'page', 'the answer says which of the two ran');
 });
 
-// WHY THESE THREE CLAIMS ARE ONE CLAIM. Measured live: a background tab and a
-// minimized window report exactly the same thing to the page - no focus, not visible
-// - and need opposite answers, because text lands in the first and goes nowhere in
-// the second. Only the machine can tell them apart, so it is asked once, and only
-// when the page is deaf.
+// WHY THESE THREE CLAIMS ARE ONE CLAIM.
+// Measured live: a background tab and a minimized window report exactly the same thing to the page - no focus, not visible
+// - and need opposite answers, because text lands in the first and goes nowhere in the second.
+//   Only the machine can tell them apart, so it is asked once, and only when the page is deaf.
 
 test('a page that cannot hear asks the machine once and says what it found', async () => {
   let reads = 0;

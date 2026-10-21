@@ -3,11 +3,9 @@
 // @state: the real socket server pushes; this worker answers CDP over it.
 // @dependencies: node:test, strict, ../extension/worker/bridge-link.js, ../local/bridge-server.js.
 
-// WHY A REAL SERVER HERE. The whole point of the socket road is that the device
-// receives a command it never asked for, so a stubbed transport would prove
-// nothing that matters. This drives the same bridge-server.js that runs on the
-// machine, over a real socket, and asserts the push arrives, the CDP routing
-// works, and a CDP failure comes back as a named completion instead of silence.
+// WHY A REAL SERVER HERE.
+// The whole point of the socket road is that the device receives a command it never asked for, so a stubbed transport would prove nothing that matters.
+// This drives the same bridge-server.js that runs on the machine, over a real socket, and asserts the push arrives, the CDP routing works, and a CDP failure comes back as a named completion instead of silence.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -52,10 +50,8 @@ globalThis.chrome = {
   storage: { onChanged: event('storage.onChanged'), local: { get: async () => ({}), set: async () => {} } }
 };
 
-// Its own port, because another test process imports the same worker graph and
-// would otherwise fight this one for the device connection. The server and the
-// global exist before the import, because the worker dials out the moment it
-// loads: a test that connected it by hand would be testing its own wiring.
+// Its own port, because another test process imports the same worker graph and would otherwise fight this one for the device connection.
+// The server and the global exist before the import, because the worker dials out the moment it loads: a test that connected it by hand would be testing its own wiring.
 
 const PORT = 9471;
 globalThis.OPERA_BRIDGE_WS = `ws://127.0.0.1:${PORT}`;
@@ -120,11 +116,9 @@ test('the frame writer the server uses is the one the client decodes', () => {
   assert.equal(encodeText('{"type":"ping"}').toString('latin1').includes('{"type":"ping"}'), true);
 });
 
-// WHY THIS IS LOCKED IN A TEST AND NOT LEFT TO THE READER. One hung browser
-// call used to hold this worker for a minute while the caller gave up after
-// ten seconds — so the failure was not one failed command but a queue of them,
-// which is what "stuck" felt like. The bound has to stay under the caller's
-// timeout, and those two numbers live in different files.
+// WHY THIS IS LOCKED IN A TEST AND NOT LEFT TO THE READER.
+// One hung browser call used to hold this worker for a minute while the caller gave up after ten seconds — so the failure was not one failed command but a queue of them, which is what "stuck" felt like.
+// The bound has to stay under the caller's timeout, and those two numbers live in different files.
 
 test('the worker gives up before the local side stops listening', async () => {
   const workerBound = await import('../extension/worker/bridge-link.js')

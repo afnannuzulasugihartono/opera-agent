@@ -4,29 +4,21 @@
 // @dependencies: node:test, strict, ../local/primitives.js.
 
 // WHY THIS FILE EXISTS
-//
-// Every rule here was learned from a real surface rather than from the protocol
-// documentation, and each one costs nothing to state and a lot to rediscover.
-//
-// Typing inserts at the caret. Against Google Docs, selecting all and then typing
-// appended rather than overwrote: the document ended up holding every earlier
-// attempt, and the call still returned ok:true. That is why clear() is a separate
-// sequence of select-then-delete instead of one convenient replace, because at
-// the protocol level there is no replace.
-//
-// A chord is two masked events and nothing else. The previous shape — modifier
-// downs, a rawKeyDown, modifier ups — leaked its character into a Docs canvas
-// under rapid fire while this shape styled cleanly on the same document at the
-// same speed, measured 2026-10-13. Two events are also three round trips fewer,
-// which compounds over every menu walk an agent drives.
-//
-// Newlines are paragraph breaks. Verified in the same document: text inserted
-// with \n produced separately styled paragraphs, which is what makes a whole
-// paper one call instead of hundreds.
-//
-// Synthetic clicks do not drive canvas surfaces, so the click is dispatched at
-// the browser level with the full press/release sequence rather than through
-// element.click().
+
+// Every rule here was learned from a real surface rather than from the protocol documentation, and each one costs nothing to state and a lot to rediscover.
+
+// Typing inserts at the caret.
+// Against Google Docs, selecting all and then typing appended rather than overwrote: the document ended up holding every earlier attempt, and the call still returned ok:true.
+// That is why clear() is a separate sequence of select-then-delete instead of one convenient replace, because at the protocol level there is no replace.
+
+// A chord is two masked events and nothing else.
+// The previous shape — modifier downs, a rawKeyDown, modifier ups — leaked its character into a Docs canvas under rapid fire while this shape styled cleanly on the same document at the same speed, measured 2026-10-13.
+// Two events are also three round trips fewer, which compounds over every menu walk an agent drives.
+
+// Newlines are paragraph breaks.
+// Verified in the same document: text inserted with \n produced separately styled paragraphs, which is what makes a whole paper one call instead of hundreds.
+
+// Synthetic clicks do not drive canvas surfaces, so the click is dispatched at the browser level with the full press/release sequence rather than through element.click().
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,10 +36,9 @@ import {
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 
-  // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED. The runtime asks the page what it
-// holds before and after an edit and fails the edit when nothing moved, so a fake
-// whose page never changes would call every correctly typed character a failure -
-// and the tests would be checking a browser that eats text.
+  // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED.
+  // The runtime asks the page what it
+// holds before and after an edit and fails the edit when nothing moved, so a fake whose page never changes would call every correctly typed character a failure - and the tests would be checking a browser that eats text.
 
 function recordingCdp() {
   const calls = [];
@@ -127,10 +118,9 @@ test('a long document is sent as several inserts so one failure cannot lose all 
   assert.deepEqual(inserts.map((i) => i.params.text.length), [10, 10, 10, 5]);
 });
 
-// WHY PLACEMENT IS PROVED AND NOT TRUSTED. Measured live on a Google Doc: a batch
-// reported landed:true from inside a table cell, and nothing in the answer said
-// where. So type answers with the index and neighbours of what it inserted, and a
-// click answers with the element under the point - and both say so when they cannot.
+// WHY PLACEMENT IS PROVED AND NOT TRUSTED.
+// Measured live on a Google Doc: a batch reported landed:true from inside a table cell, and nothing in the answer said where.
+// So type answers with the index and neighbours of what it inserted, and a click answers with the element under the point - and both say so when they cannot.
 
 test('type answers where the text landed, not just that it did', async () => {
   const cdp = recordingCdp();
@@ -170,11 +160,9 @@ test('text typed into a field is found in the field, because a field never touch
   assert.equal(out.placed.delta, 5);
 });
 
-// WHY A SLOW MIRROR IS WAITED OUT. Measured live on a Google Doc: the second of two
-// consecutive batches reported "nothing on the page changed" while its text sat in
-// the document, and the retry duplicated it. The canvas mirrors into the DOM on Docs
-// time with the outline lagging saves by seconds, so the check outlasts the lag
-// instead of racing it.
+// WHY A SLOW MIRROR IS WAITED OUT.
+// Measured live on a Google Doc: the second of two consecutive batches reported "nothing on the page changed" while its text sat in the document, and the retry duplicated it.
+// The canvas mirrors into the DOM on Docs time with the outline lagging saves by seconds, so the check outlasts the lag instead of racing it.
 
 test('type outlasts a slow mirror instead of failing over text that landed', async () => {
   let reads = 0;
@@ -250,17 +238,14 @@ test('a click on canvas says canvas, because elementFromPoint cannot see through
   assert.equal(out.hit.tag, 'CANVAS');
 });
 
-// WHY THE CHORD IS ORDERED, NOT MERGED. Two sends racing in a Promise.all do
-// not keep their order on the wire, because every send proves the link alive
-// first and that proof is its own await. Chrome was handed a keyUp before its
-// keyDown, so Ctrl+1 typed a literal "1" into a live Google Doc instead of
-// making a heading. The order is the shortcut.
+// WHY THE CHORD IS ORDERED, NOT MERGED.
+// Two sends racing in a Promise.all do not keep their order on the wire, because every send proves the link alive first and that proof is its own await.
+// Chrome was handed a keyUp before its keyDown, so Ctrl+1 typed a literal "1" into a live Google Doc instead of making a heading.
+// The order is the shortcut.
 
-// WHY AN APPEND ANSWERS WHERE IT PUT THE TEXT. Measured live while building a thesis:
-// the road to the end of a document was click, Ctrl+End, and trust - and once the caret
-// did not go where it was told, a whole batch landed inside a table cell and four extra
-// calls plus an undo were spent recovering. So the append carries the positioning, and
-// its answer measures "at the end" instead of assuming it.
+// WHY AN APPEND ANSWERS WHERE IT PUT THE TEXT.
+// Measured live while building a thesis: the road to the end of a document was click, Ctrl+End, and trust - and once the caret did not go where it was told, a whole batch landed inside a table cell and four extra calls plus an undo were spent recovering.
+// So the append carries the positioning, and its answer measures "at the end" instead of assuming it.
 
 test('append puts the text at the end and proves nothing follows it', async () => {
   const cdp = recordingCdp();
@@ -310,14 +295,10 @@ test('append admits it cannot see where the text went rather than claiming the e
   assert.match(out.atEndWhy, /read_page\(\) is the proof/);
 });
 
-// WHY A SCROLL TOOL AND NOT A KEY. Measured live on a Google Doc with 21 pages: the
-// only way to move the view was a key chord aimed at a guess, and an outline row the
-// agent wanted to click answered with coordinates above the viewport - a click that
-// reported success and hit nothing. Scroll is also the only road to an infinite feed
-// and to anything that lazy-loads, so without it most of a web page does not exist.
-// The answer carries the scroll it actually performed and where the view came to rest,
-// because a scroll that moved the page and a scroll that moved the right thing look
-// identical from the outside otherwise.
+// WHY A SCROLL TOOL AND NOT A KEY.
+// Measured live on a Google Doc with 21 pages: the only way to move the view was a key chord aimed at a guess, and an outline row the agent wanted to click answered with coordinates above the viewport - a click that reported success and hit nothing.
+// Scroll is also the only road to an infinite feed and to anything that lazy-loads, so without it most of a web page does not exist.
+// The answer carries the scroll it actually performed and where the view came to rest, because a scroll that moved the page and a scroll that moved the right thing look identical from the outside otherwise.
 
 const SCROLL_CDP = (answer) => {
   const calls = [];
@@ -345,10 +326,9 @@ test('a scroll by pixels answers how far the view actually moved', async () => {
   assert.equal(out.root, 'document');
 });
 
-// WHY THE SCROLLER IS NAMED AND NOT ASSUMED. Measured live on a Google Doc with 21
-// pages: an end scroll moved the document element by 56 pixels and answered atEnd
-// true. A canvas editor scrolls a container of its own, so a tool that reports the
-// window's offset is describing a page that did not move - and claiming its end.
+// WHY THE SCROLLER IS NAMED AND NOT ASSUMED.
+// Measured live on a Google Doc with 21 pages: an end scroll moved the document element by 56 pixels and answered atEnd true.
+// A canvas editor scrolls a container of its own, so a tool that reports the window's offset is describing a page that did not move - and claiming its end.
 
 test('a scroll that reached no end says so, and names what it moved instead', async () => {
   const cdp = SCROLL_CDP({
@@ -390,10 +370,9 @@ test('an exhausted scroller is not a page that is finished', async () => {
   assert.match(out.why, /cannot show that its last words are on screen/, 'and it says exactly which claim it cannot make');
 });
 
-// WHY THE WINDOW DOES NOT WIN BY BEING FIRST. Measured live on a Google Doc: the
-// window carries 56 pixels of travel and the document below it carries 21,874, so a
-// tool that prefers the window scrolls 56 pixels and reports a page that barely
-// moved. The expression is what decides this, so the expression is what is read here.
+// WHY THE WINDOW DOES NOT WIN BY BEING FIRST.
+// Measured live on a Google Doc: the window carries 56 pixels of travel and the document below it carries 21,874, so a tool that prefers the window scrolls 56 pixels and reports a page that barely moved.
+// The expression is what decides this, so the expression is what is read here.
 
 test('the scroll expression prefers the container with the most room over the window', () => {
   const expression = scrollExpression({ y: 900 });
@@ -452,11 +431,9 @@ test('a scroll that finds nothing says so, rather than reporting a scroll that w
   assert.match(out.why, /found nothing/);
 });
 
-// WHY A COMPUTED-STYLE READ AND NOT A FORMAT READER. The first draft of the missing
-// piece was a format reader - font, size, spacing - and it was wrong twice over: it
-// knew what a document is, and it could not tell an agent that a button turned blue.
-// What an agent actually needs is the element it read, the handful of values that
-// decide what a page is showing, and whether that element is even on screen.
+// WHY A COMPUTED-STYLE READ AND NOT A FORMAT READER.
+// The first draft of the missing piece was a format reader - font, size, spacing - and it was wrong twice over: it knew what a document is, and it could not tell an agent that a button turned blue.
+// What an agent actually needs is the element it read, the handful of values that decide what a page is showing, and whether that element is even on screen.
 
 const COMPUTED_CDP = (answer) => {
   const calls = [];
@@ -526,11 +503,10 @@ test('a computed read without a target is refused before it costs a round trip',
   assert.equal(cdp.calls.length, 0, 'and nothing went to the page');
 });
 
-// WHY A CLICK OFF THE PAGE IS REFUSED. Measured live: a click_row on an outline row
-// below the fold answered with a click at x 150, y -139. A success, on a coordinate
-// no pixel holds - the click landed in nothing and the answer said it landed. That is
-// the one class of silence this product cannot be allowed to have, so the click is
-// refused and the refusal names the road that reaches the row.
+// WHY A CLICK OFF THE PAGE IS REFUSED.
+// Measured live: a click_row on an outline row below the fold answered with a click at x 150, y -139.
+// A success, on a coordinate no pixel holds - the click landed in nothing and the answer said it landed.
+// That is the one class of silence this product cannot be allowed to have, so the click is refused and the refusal names the road that reaches the row.
 
 test('a click outside the viewport is refused, with the road that would reach the point', async () => {
   const cdp = recordingCdp();
@@ -573,10 +549,9 @@ test('a chord is two masked events with codes and no text, because separate modi
   assert.deepEqual(out, { key: 'a', modifiers: 2 });
 });
 
-// WHY A MISSPELLED MODIFIER MAY NOT BECOME A PLAIN KEY. 'control' in lower
-// case used to sum to zero, which turned Ctrl+1 into the keystroke "1" and
-// looked like the page ignoring a shortcut. The name is either right or it is
-// an error; there is no third answer that quietly presses something else.
+// WHY A MISSPELLED MODIFIER MAY NOT BECOME A PLAIN KEY.
+// 'control' in lower case used to sum to zero, which turned Ctrl+1 into the keystroke "1" and looked like the page ignoring a shortcut.
+// The name is either right or it is an error; there is no third answer that quietly presses something else.
 
 test('a modifier nobody recognises is an error, not a keypress', async () => {
   const cdp = recordingCdp();
@@ -685,13 +660,11 @@ test('a stream preserves order, counts its work, and refuses what it cannot carr
   await assert.rejects(() => p.keys([{}]), /needs text or a key/);
 });
 
-// WHY THIS CLAIM EXISTS. The snapshot used to read the accessibility tree and
-// then ask for one box per element it liked, up to a hundred and twenty of
-// them. The extension runs one command at a time on purpose, so those were
-// sequential however the caller wrote them, and a snapshot on a Google Doc cost
-// about two seconds before anything had decided anything. Chrome has no batch
-// API for element boxes, so the work moved into the page. If this test ever
-// needs more than one call again, that is the regression worth catching.
+// WHY THIS CLAIM EXISTS.
+// The snapshot used to read the accessibility tree and then ask for one box per element it liked, up to a hundred and twenty of them.
+// The extension runs one command at a time on purpose, so those were sequential however the caller wrote them, and a snapshot on a Google Doc cost about two seconds before anything had decided anything.
+// Chrome has no batch API for element boxes, so the work moved into the page.
+// If this test ever needs more than one call again, that is the regression worth catching.
 
 test('a snapshot costs one round trip, whatever the page holds', async () => {
   const calls = [];
@@ -764,22 +737,16 @@ test('a snapshot clamps its limit, so a wild request cannot walk the whole docum
   assert.match(limits.at(-1), /LIMIT = 1;/);
 });
 
-// WHY A GAPLESS RUN IS NO LONGER ASSERTED AS "FIRED TOGETHER". It used to be,
-// and the overlap was real — but it bought almost nothing here and cost the one
-// thing that mattered. A round trip over loopback is about three milliseconds,
-// so ten keys cost thirty; over the relay they cost twenty seconds, which is
-// why the overlap existed at all. What it actually cost was order: every send
-// proves the link alive before it goes out, so two sends racing reach the wire
-// in the order they finish proving. Measured on a live Google Doc, Ctrl+1 typed
-// a literal "1" instead of making a heading. A run is now a list of things to
-// do, in order, and only becomes work when it is reached.
+// WHY A GAPLESS RUN IS NO LONGER ASSERTED AS "FIRED TOGETHER".
+// It used to be, and the overlap was real — but it bought almost nothing here and cost the one thing that mattered.
+// A round trip over loopback is about three milliseconds, so ten keys cost thirty; over the relay they cost twenty seconds, which is why the overlap existed at all.
+// What it actually cost was order: every send proves the link alive before it goes out, so two sends racing reach the wire in the order they finish proving.
+// Measured on a live Google Doc, Ctrl+1 typed a literal "1" instead of making a heading.
+// A run is now a list of things to do, in order, and only becomes work when it is reached.
 
-// WHY THESE CLAIMS EXIST. Measured live on this machine, against a Google Docs
-// document whose window had been minimized: five characters were typed, the call
-// answered with the number of characters it had inserted, and the document held
-// none of them. The page had no caret to receive them, and nothing in the answer said
-// so - so the runtime asks the page what it holds before and after, and fails the
-// edit when nothing moved.
+// WHY THESE CLAIMS EXIST.
+// Measured live on this machine, against a Google Docs document whose window had been minimized: five characters were typed, the call answered with the number of characters it had inserted, and the document held none of them.
+// The page had no caret to receive them, and nothing in the answer said so - so the runtime asks the page what it holds before and after, and fails the edit when nothing moved.
 
 test('text that lands is reported as landed, and the page is asked once on the way in and once on the way out', async () => {
   const cdp = recordingCdp();
@@ -806,11 +773,10 @@ test('a page with no caret fails the edit instead of counting the characters it 
   await assert.rejects(() => createPrimitives(cdp).type('GUARD'), /typed 5 characters and nothing on the page changed: nothing on the page held focus - click_row the field that should receive it/);
 });
 
-// WHY A TYPE THAT LANDS NOWHERE MUST NAME WHAT HAD FOCUS. Measured live on YouTube:
-// a cookie wall sat over the page, the type inserted nothing, and the answer offered
-// two guesses - no caret, or a minimized window. The page was already saying the third
-// thing: focus sat on the wall's button. A name costs one evaluation and ends the
-// guessing, so the failure carries it.
+// WHY A TYPE THAT LANDS NOWHERE MUST NAME WHAT HAD FOCUS.
+// Measured live on YouTube: a cookie wall sat over the page, the type inserted nothing, and the answer offered two guesses - no caret, or a minimized window.
+// The page was already saying the third thing: focus sat on the wall's button.
+// A name costs one evaluation and ends the guessing, so the failure carries it.
 
 test('a type that lands nowhere names the element that had focus', async () => {
   const cdp = {
@@ -833,10 +799,9 @@ test('a type that lands nowhere names the element that had focus', async () => {
   );
 });
 
-// WHY A CLICK ASKS WHO OWNS THE POINT. A cookie wall over a page turns a click_row into
-// a success report for a click that reached nothing: measured live, the row answered
-// with its own name and point while focus never left the wall's button. The point has
-// one owner, and saying which is cheaper than the guess that follows.
+// WHY A CLICK ASKS WHO OWNS THE POINT.
+// A cookie wall over a page turns a click_row into a success report for a click that reached nothing: measured live, the row answered with its own name and point while focus never left the wall's button.
+// The point has one owner, and saying which is cheaper than the guess that follows.
 
 test('a click_row says when something else owns the point it clicked', async () => {
   const cdp = {
@@ -970,11 +935,9 @@ test('a click fires move, press and release together', async () => {
   assert.equal(cdp.stats().max, 4, 'spotlight and three mouse events overlap');
 });
 
-// WHY A SNAPSHOT MUST NOT SEND A STALE SHAPE BACK. The page expression returns
-// the list itself, so anything that is not a list means the page answered with
-// something else — an exception object, a string from a transpiler shim. An
-// empty list is the honest answer: an agent that gets [] will look again, and an
-// agent that gets null will read it as a page with nothing on it.
+// WHY A SNAPSHOT MUST NOT SEND A STALE SHAPE BACK.
+// The page expression returns the list itself, so anything that is not a list means the page answered with something else — an exception object, a string from a transpiler shim.
+// An empty list is the honest answer: an agent that gets [] will look again, and an agent that gets null will read it as a page with nothing on it.
 
 test('a snapshot answers with a list, or with nothing at all', async () => {
   const cdp = {
@@ -1121,12 +1084,10 @@ test('a refused spotlight never breaks the click it decorates', async () => {
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
 });
 
-// WHY THIS USED TO BE THE OTHER WAY ROUND. This test once asserted that a hover
-// must NOT wait for the page's reply, and it proved that with a promise that
-// never settles. That was measured as a hover that returned in one millisecond
-// while its move sat in the worker's queue for five, and the next command's
-// liveness proof then queued behind it and failed — so one lie became two
-// failures. A page that never answers is now visible from this call.
+// WHY THIS USED TO BE THE OTHER WAY ROUND.
+// This test once asserted that a hover must NOT wait for the page's reply, and it proved that with a promise that never settles.
+// That was measured as a hover that returned in one millisecond while its move sat in the worker's queue for five, and the next command's liveness proof then queued behind it and failed — so one lie became two failures.
+// A page that never answers is now visible from this call.
 
 test('a hover waits for the move it dispatched, or it has not hovered', async () => {
   let moves = 0;
@@ -1206,26 +1167,20 @@ test('clear selects all and then deletes, because typing does not replace a sele
   assert.ok(cdp.calls.findIndex((c) => c.params?.key === 'a') < cdp.calls.findIndex((c) => c.params?.key === 'Delete'));
 });
 
-// WHY THESE CLAIMS EXIST. Google Docs draws the document on a canvas, so the
-// page text a read used to return held the toolbar chrome and none of the
-// content. The document is read through its own copy path instead: select all,
-// dispatch a copy event at the hidden text iframe, and take what Docs itself
-// populated. Proven on a live document at thirteen milliseconds for a full
-// read; these hold the wiring so the proof stays true.
+// WHY THESE CLAIMS EXIST.
+// Google Docs draws the document on a canvas, so the page text a read used to return held the toolbar chrome and none of the content.
+// The document is read through its own copy path instead: select all, dispatch a copy event at the hidden text iframe, and take what Docs itself populated.
+// Proven on a live document at thirteen milliseconds for a full read; these hold the wiring so the proof stays true.
 
 const DOC_URL = 'https://docs.google.com/document/d/abc/edit';
 
-// WHY THE FAKE ANSWERS THREE CARET QUESTIONS AND NOT ONE. A read writes the caret
-// down, puts the view back so the click lands on that spot, and then looks again to
-// see whether the caret came back. One answer cannot serve all three, because the
-// third is the measurement the whole claim rests on.
-//
-// WHY THE MEASUREMENT IS IN CONTENT COORDINATES. Measured live: after a read the
-// caret sat below the visible page, at y=1649 in a 1215-tall viewport, so the
-// viewport point before and after matched while the caret was nowhere near where it
-// started. Content coordinates — the viewport point plus the scroll of every box
-// around it — do not move when the page scrolls, so they can tell the truth about a
-// caret that is off the screen.
+// WHY THE FAKE ANSWERS THREE CARET QUESTIONS AND NOT ONE.
+// A read writes the caret down, puts the view back so the click lands on that spot, and then looks again to see whether the caret came back.
+// One answer cannot serve all three, because the third is the measurement the whole claim rests on.
+
+// WHY THE MEASUREMENT IS IN CONTENT COORDINATES.
+// Measured live: after a read the caret sat below the visible page, at y=1649 in a 1215-tall viewport, so the viewport point before and after matched while the caret was nowhere near where it started.
+// Content coordinates — the viewport point plus the scroll of every box around it — do not move when the page scrolls, so they can tell the truth about a caret that is off the screen.
 
 function docsCdp(copyAnswers, caret = null) {
   const calls = [];
@@ -1280,11 +1235,10 @@ test('a read on a settled page takes two samples and says the text stood still',
     'two cheap samples, not a guess');
 });
 
-// WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS. Measured live on
-// YouTube: at 1.9 seconds readyState said complete with 871 characters; by 2.4 seconds
-// the page held 8,478. One read there is not wrong about what it saw - it is wrong
-// about what it implies, because nothing in the answer says the page was still filling
-// in. The second sample turns that into a fact the caller can act on.
+// WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS.
+// Measured live on YouTube: at 1.9 seconds readyState said complete with 871 characters; by 2.4 seconds the page held 8,478.
+// One read there is not wrong about what it saw - it is wrong about what it implies, because nothing in the answer says the page was still filling in.
+// The second sample turns that into a fact the caller can act on.
 
 test('a read on a page still filling in says so, and answers with the later sample', async () => {
   const samples = [
@@ -1342,22 +1296,17 @@ test('a read on a Google Doc borrows the selection and returns the document', as
     'each borrowed key keeps its beat, and the selection settles before the copy forces it out');
 });
 
-// WHY THE READ PUTS THE CARET BACK. Reading a Doc borrows the selection, and a
-// borrowed selection leaves the caret at the end of the document, so the next click
-// lands where the agent has already been. Measured live: a read followed by a click
-// typed into the wrong place because of exactly that, twice.
-//
-// WHY THE POINT IS TAKEN RELATIVE TO THE SCROLLING BOX, NOT THE WINDOW. The read
-// scrolls the document to the caret, so a viewport point measured before the read
-// points at different text after it. The place that survives is the caret's offset
-// inside the box that scrolls, so that is what is written down, together with the
-// scroll the view was at — which is put back before the click, so the click lands
-// on the text the caret was on and the caller gets the view back too.
-//
-// WHY THE ANSWER IS A MEASUREMENT. A read that reports a restore it did not check is
-// an assertion, and the first time the page does not oblige it teaches the agent to
-// trust it. The caret is looked at again after the click and compared, and a caret
-// that did not come back is reported as one that did not come back.
+// WHY THE READ PUTS THE CARET BACK.
+// Reading a Doc borrows the selection, and a borrowed selection leaves the caret at the end of the document, so the next click lands where the agent has already been.
+// Measured live: a read followed by a click typed into the wrong place because of exactly that, twice.
+
+// WHY THE POINT IS TAKEN RELATIVE TO THE SCROLLING BOX, NOT THE WINDOW.
+// The read scrolls the document to the caret, so a viewport point measured before the read points at different text after it.
+// The place that survives is the caret's offset inside the box that scrolls, so that is what is written down, together with the scroll the view was at — which is put back before the click, so the click lands on the text the caret was on and the caller gets the view back too.
+
+// WHY THE ANSWER IS A MEASUREMENT.
+// A read that reports a restore it did not check is an assertion, and the first time the page does not oblige it teaches the agent to trust it.
+// The caret is looked at again after the click and compared, and a caret that did not come back is reported as one that did not come back.
 
 test('a read on a Doc puts the caret back where it found it', async () => {
   const cdp = docsCdp([{ result: { value: 'First line' } }], {
@@ -1400,11 +1349,9 @@ test('a caret that did not come back is reported as one that did not', async () 
   assert.match(out.caretWhy, /not where it was left/, 'and it says so rather than leaving a bare false');
 });
 
-// WHY NO CLICK GOES OUT WHEN THE VIEW DID NOT COME BACK. The point was measured in
-// the view as it was before the read, so with the view somewhere else the same
-// numbers point at other text. Clicking there would move the caret and the
-// selection to whatever happens to be under them, which is the very damage the
-// restore exists to prevent.
+// WHY NO CLICK GOES OUT WHEN THE VIEW DID NOT COME BACK.
+// The point was measured in the view as it was before the read, so with the view somewhere else the same numbers point at other text.
+// Clicking there would move the caret and the selection to whatever happens to be under them, which is the very damage the restore exists to prevent.
 
 test('a view that did not go back is not clicked into', async () => {
   const cdp = docsCdp([{ result: { value: 'First line' } }], {
@@ -1464,11 +1411,9 @@ test('only document pages take the document path', () => {
   assert.equal(isDocsDocument(null), false);
 });
 
-// WHY THIS IS PINNED AS TEXT, NOT BEHAVIOR. There is no DOM in a unit test,
-// so the only thing checkable here is that the page expression carries the
-// guards. A password value that reaches model context is exfiltration wearing
-// a snapshot's clothes; ordinary values still ride along, because a formula
-// bar the agent cannot see is a formula bar it cannot use.
+// WHY THIS IS PINNED AS TEXT, NOT BEHAVIOR.
+// There is no DOM in a unit test, so the only thing checkable here is that the page expression carries the guards.
+// A password value that reaches model context is exfiltration wearing a snapshot's clothes; ordinary values still ride along, because a formula bar the agent cannot see is a formula bar it cannot use.
 
 test('secret field values never leave the page', () => {
   const expression = snapshotExpression(120);
@@ -1482,11 +1427,9 @@ test('a document read trims trailing blank lines', () => {
   assert.ok(DOCS_COPY_EXPRESSION.includes('trimEnd'), 'layout air is not content');
 });
 
-// WHY OVERLAY ORDER IS PINNED HERE. Menus render at the end of the document
-// but sit on top of it; a snapshot that walks document order buries fresh
-// menu rows past its cap. The expression takes overlay descendants first by
-// ARIA role — matched generically, never by site, because a class name here
-// would be per-site code wearing a generic primitive's name.
+// WHY OVERLAY ORDER IS PINNED HERE.
+// Menus render at the end of the document but sit on top of it; a snapshot that walks document order buries fresh menu rows past its cap.
+// The expression takes overlay descendants first by ARIA role — matched generically, never by site, because a class name here would be per-site code wearing a generic primitive's name.
 
 test('overlay rows come first, matched by role and never by site', () => {
   const expression = snapshotExpression(120);
@@ -1505,11 +1448,9 @@ test('the text caret rides the snapshot so the next keystroke lands knowingly', 
   assert.ok(!expression.includes('docs-texteventtarget-iframe'), 'the line lives behind caret_line, which selects first; the map carries coordinates only');
 });
 
-// WHY THE BEAT IS PINNED, NOT THE TIMING. Docs drops a keyDown and keyUp that
-// land in the same tick — three Enter presses vanished live while typed
-// characters beside them survived — so a key holds its down edge fifty
-// milliseconds before the up, and chords in a stream breathe the same between
-// them. Fake sleep makes the beats observable without waiting for them.
+// WHY THE BEAT IS PINNED, NOT THE TIMING.
+// Docs drops a keyDown and keyUp that land in the same tick — three Enter presses vanished live while typed characters beside them survived — so a key holds its down edge fifty milliseconds before the up, and chords in a stream breathe the same between them.
+// Fake sleep makes the beats observable without waiting for them.
 
 test('a key holds its down edge a beat before the up', async () => {
   for (const modifiers of [['Control'], []]) {
@@ -1531,9 +1472,9 @@ test('chords in a stream breathe between them, texts do not need to', async () =
   assert.deepEqual(slept, [50, 50, 50, 50], 'each chord beats inside and after; the text passes through');
 });
 
-// WHY ALL FOUR ARROWS ARE PINNED. The table grid in Google Docs expands right
-// and down; with only Up and Down known, a drive that needed Right died on an
-// "Unknown key" in the middle of a live thesis. Directions come in fours.
+// WHY ALL FOUR ARROWS ARE PINNED.
+// The table grid in Google Docs expands right and down; with only Up and Down known, a drive that needed Right died on an "Unknown key" in the middle of a live thesis.
+// Directions come in fours.
 
 test('all four arrows dispatch with their virtual key codes', async () => {
   for (const [name, vk, code] of [['ArrowLeft', 37, 'ArrowLeft'], ['ArrowRight', 39, 'ArrowRight'], ['ArrowUp', 38, 'ArrowUp'], ['ArrowDown', 40, 'ArrowDown']]) {
@@ -1546,11 +1487,10 @@ test('all four arrows dispatch with their virtual key codes', async () => {
   }
 });
 
-// WHY READING A LINE SELECTS IT FIRST. The mirror a copy reads from only
-// holds what a selection put there: measured live as an empty line beside a
-// perfectly visible caret. So the read selects its own line, copies, and
-// collapses back to the line end. Steps breathe because injected keys land
-// late; without the beats the copy runs before the selection exists.
+// WHY READING A LINE SELECTS IT FIRST.
+// The mirror a copy reads from only holds what a selection put there: measured live as an empty line beside a perfectly visible caret.
+// So the read selects its own line, copies, and collapses back to the line end.
+// Steps breathe because injected keys land late; without the beats the copy runs before the selection exists.
 
 test('a caret line on a Doc selects, copies, and ends at the line end', async () => {
   const slept = [];
@@ -1598,11 +1538,9 @@ test('an unreadable line is empty, and the caret still collapses', async () => {
   assert.equal(keys.at(-1).params.modifiers, 0);
 });
 
-// WHY UPLOADS ARE TESTED AGAINST A FAKE FILESYSTEM. The bytes rest briefly in
-// a temp file only CDP can name, because the protocol takes paths, not bytes —
-// and a test that wrote real temp files would pass while littering the disk it
-// ran on. The fake records every touch, so the test pins the whole lifecycle:
-// stage, hand over, clean up.
+// WHY UPLOADS ARE TESTED AGAINST A FAKE FILESYSTEM.
+// The bytes rest briefly in a temp file only CDP can name, because the protocol takes paths, not bytes — and a test that wrote real temp files would pass while littering the disk it ran on.
+// The fake records every touch, so the test pins the whole lifecycle: stage, hand over, clean up.
 
 function fakeUploadFs() {
   const calls = [];
@@ -1632,11 +1570,9 @@ function uploadCdp() {
   };
 }
 
-// WHY THE FINDER HAS TWO ROADS. The pierced query is what finds a closed
-// shadow root; the page script is what finds a frame the browser refuses to
-// pierce. Each is proven on its own: a cdp that answers the DOM road proves the
-// pierced path, a cdp that answers only the script proves the fallback, and a
-// cdp that answers neither proves the honest `inputFound: false`.
+// WHY THE FINDER HAS TWO ROADS.
+// The pierced query is what finds a closed shadow root; the page script is what finds a frame the browser refuses to pierce.
+// Each is proven on its own: a cdp that answers the DOM road proves the pierced path, a cdp that answers only the script proves the fallback, and a cdp that answers neither proves the honest `inputFound: false`.
 
 function piercedUploadCdp() {
   const calls = [];
@@ -1690,10 +1626,9 @@ test('a path uploads in place with no staging', async () => {
   assert.deepEqual(set.params.files, ['/files/pic.png']);
 });
 
-// WHY THE CLOSED SHADOW ROOT IS PROVEN HERE. Google Docs keeps its file input
-// where a page script cannot see it, so the script road reported no input while
-// the input was demonstrably there. The pierced query is asked first and names
-// the closed root by backend node id.
+// WHY THE CLOSED SHADOW ROOT IS PROVEN HERE.
+// Google Docs keeps its file input where a page script cannot see it, so the script road reported no input while the input was demonstrably there.
+// The pierced query is asked first and names the closed root by backend node id.
 
 test('an input inside a closed shadow root is found and filled', async () => {
   const fs = fakeUploadFs();
@@ -1730,11 +1665,9 @@ test('a frame the browser refuses to pierce is still found by the page script', 
   assert.deepEqual(set.params, { files: ['/files/pic.png'], objectId: 'o1' }, 'the second road still fills');
 });
 
-// WHY THE CHILD FRAME IS ITS OWN CASE. `pierce` answers for a document and
-// stops at the frame boundary, and Google Docs keeps its image input in a
-// picker frame: every road that looked at the top document reported nothing
-// while the input was there. A frame is reached by its owner, the owner names
-// its content document, and the same pierced query runs there.
+// WHY THE CHILD FRAME IS ITS OWN CASE.
+// `pierce` answers for a document and stops at the frame boundary, and Google Docs keeps its image input in a picker frame: every road that looked at the top document reported nothing while the input was there.
+// A frame is reached by its owner, the owner names its content document, and the same pierced query runs there.
 
 test('an input inside a child frame is found through the frame owner', async () => {
   const fs = fakeUploadFs();
@@ -1786,11 +1719,9 @@ test('a page with no file input is reported, not filled', async () => {
   assert.ok(fs.calls.some((c) => c[0] === 'unlink'), 'the staging is still cleaned');
 });
 
-// WHY THE PIERCING IS PINNED AS TEXT. There is no DOM in a unit test, so the
-// only thing checkable here is that the finder walks into shadow roots and
-// same-origin frames instead of stopping at the top document. Fetching a whole
-// pierced tree to do the same timed out live on a heavy page; the walk answers
-// with one node back.
+// WHY THE PIERCING IS PINNED AS TEXT.
+// There is no DOM in a unit test, so the only thing checkable here is that the finder walks into shadow roots and same-origin frames instead of stopping at the top document.
+// Fetching a whole pierced tree to do the same timed out live on a heavy page; the walk answers with one node back.
 
 test('the input finder pierces shadow roots and same-origin frames', () => {
   assert.ok(UPLOAD_INPUT_EXPRESSION.includes('shadowRoot'), 'shadow trees are entered');
@@ -1810,10 +1741,9 @@ test('intercepting the file chooser is one page call either way', async () => {
   );
 });
 
-// WHY THE RETRY IS PINNED BY COUNT, NOT TIME. Clicking Upload creates the
-// input on the page's own schedule; the first look routinely finds nothing a
-// second after the click. Five looks with sleeps between them cost nothing
-// when the input is already there.
+// WHY THE RETRY IS PINNED BY COUNT, NOT TIME.
+// Clicking Upload creates the input on the page's own schedule; the first look routinely finds nothing a second after the click.
+// Five looks with sleeps between them cost nothing when the input is already there.
 
 test('a late input is caught by looking again', async () => {
   const slept = [];
@@ -1839,12 +1769,9 @@ test('a late input is caught by looking again', async () => {
     'a beat between looks, none after the hit, and one pass over every road each time');
 });
 
-// WHY THE DROP IS PINNED IN ORDER, WITH ITS RELEASE. The drop is the road into a
-// page whose file chooser has no input behind it, and it only works while Chrome
-// is intercepting drags; a tab left intercepting would stop believing a person
-// dragging anything onto it, which is worse than the problem being solved. So
-// the phases are sent in the order a drag happens and the release is asserted
-// on the happy road and on the road where the page refuses the file.
+// WHY THE DROP IS PINNED IN ORDER, WITH ITS RELEASE.
+// The drop is the road into a page whose file chooser has no input behind it, and it only works while Chrome is intercepting drags; a tab left intercepting would stop believing a person dragging anything onto it, which is worse than the problem being solved.
+// So the phases are sent in the order a drag happens and the release is asserted on the happy road and on the road where the page refuses the file.
 
 test('a drop walks the drag phases in order and releases interception after', async () => {
   const cdp = recordingCdp();
@@ -1889,9 +1816,8 @@ test('a drop refuses anything but one source and a place to drop it', async () =
   await assert.rejects(() => p.dropFile({ filename: 'a.png', path: '/files/pic.png' }), /x and y/);
 });
 
-// WHY THE TYPE IS PINNED BY NAME. A drop tells the page what it is being
-// offered, and a wrong type is a file the page refuses — the difference between
-// an image landing and nothing happening at all.
+// WHY THE TYPE IS PINNED BY NAME.
+// A drop tells the page what it is being offered, and a wrong type is a file the page refuses — the difference between an image landing and nothing happening at all.
 
 test('a drop types the file by its name, and admits what it does not know', () => {
   assert.equal(dragMimeType('thesis-test.png'), 'image/png');
@@ -1901,10 +1827,8 @@ test('a drop types the file by its name, and admits what it does not know', () =
   assert.equal(dragMimeType('noextension'), 'application/octet-stream');
 });
 
-// WHY A HANDLE IS PROVEN BY WHAT IT HOLDS. The point of a handle is that the
-// click lands on the element, not on the point it once occupied, so these tests
-// read the row, read the node behind it, and read the box the browser reports
-// for that node at the moment of the click.
+// WHY A HANDLE IS PROVEN BY WHAT IT HOLDS.
+// The point of a handle is that the click lands on the element, not on the point it once occupied, so these tests read the row, read the node behind it, and read the box the browser reports for that node at the moment of the click.
 
 function handleCdp(rows) {
   const calls = [];
@@ -1962,9 +1886,9 @@ test('a missing row names what is visible instead of guessing', async () => {
   });
 });
 
-// WHY THE BOX IS RE-MEASURED. The snapshot said where the row stood a moment
-// ago; this is what the browser says about that node now. Clicking the older
-// point is the bug that made a menu click land on the button underneath it.
+// WHY THE BOX IS RE-MEASURED.
+// The snapshot said where the row stood a moment ago; this is what the browser says about that node now.
+// Clicking the older point is the bug that made a menu click land on the button underneath it.
 
 test('a handle is measured from the node at the moment of the click', async () => {
   const cdp = handleCdp([{ role: 'menuitem', name: 'Image', x: 630, y: 175, node: 0 }]);
@@ -2000,11 +1924,9 @@ test('a handle that is not a handle is refused by name', async () => {
   await assert.rejects(() => p.clickHandle('not-a-handle'), /is not an element handle/);
 });
 
-// WHY THESE TWO WAITS ARE PINNED ON WHAT THEY OBSERVE. The row wait ends on the
-// first read that matches, names what it saw, and gives up with found:false
-// rather than hanging. The stillness wait ends on two identical reads in a row,
-// which is the only signal that a page which was never named in advance has
-// actually stopped moving — and it must be able to say it never went still.
+// WHY THESE TWO WAITS ARE PINNED ON WHAT THEY OBSERVE.
+// The row wait ends on the first read that matches, names what it saw, and gives up with found:false rather than hanging.
+// The stillness wait ends on two identical reads in a row, which is the only signal that a page which was never named in advance has actually stopped moving — and it must be able to say it never went still.
 
 function rowsCdp(reads) {
   const queue = [...reads];
@@ -2063,10 +1985,8 @@ test('stillness ends on two identical reads and names how long it took', async (
   assert.ok(out.checks >= 2, 'one matching pair is what stillness means');
 });
 
-// WHY THE CLOCK MOVES INSTEAD OF THE SLEEP. The wait measures quiet time against
-// the wall clock, so a one-millisecond budget is over before a second read can be
-// reached and the wait would answer "still" having read once — the opposite of
-// what a page that never stops moving deserves.
+// WHY THE CLOCK MOVES INSTEAD OF THE SLEEP.
+// The wait measures quiet time against the wall clock, so a one-millisecond budget is over before a second read can be reached and the wait would answer "still" having read once — the opposite of what a page that never stops moving deserves.
 
 test('a page that never settles says so instead of pretending', async () => {
   let tick = 0;
@@ -2099,12 +2019,9 @@ test('stillness watches the rows an agent acts on, not the whole document', asyn
   assert.match(asked.params.expression, /__LIMIT__|getBoundingClientRect/, 'the read is the snapshot the agent already uses');
 });
 
-// WHY A DOWNLOAD IS TESTED AGAINST A DISK AND NOT AN EVENT. The bridge road carries
-// commands and not CDP events, so an implementation that waited for
-// downloadProgress would pass on a debugging port and hang on the signed-in
-// profile. These tests therefore give the primitive a fake filesystem and check
-// what an observer would check: a file appeared, it stopped growing, the folder
-// was armed before the click, and the browser-wide behavior was handed back.
+// WHY A DOWNLOAD IS TESTED AGAINST A DISK AND NOT AN EVENT.
+// The bridge road carries commands and not CDP events, so an implementation that waited for downloadProgress would pass on a debugging port and hang on the signed-in profile.
+// These tests therefore give the primitive a fake filesystem and check what an observer would check: a file appeared, it stopped growing, the folder was armed before the click, and the browser-wide behavior was handed back.
 
 function fakeDisk() {
   const files = new Map();
@@ -2204,10 +2121,9 @@ test('download refuses to guess what to click', async () => {
   await assert.rejects(() => p.download({ handle: 'opera-1', x: 1, y: 2 }), /exactly one of/);
 });
 
-// WHY THE NAME IS GIVEN AFTER THE FILE LANDS. A portal decides what it calls its own
-// statement ("statement.pdf", "download (3).pdf"), and a bookkeeper cannot bill a
-// folder of those. Renaming mid-write would leave Chrome writing to a name that no
-// longer exists, so the new name is applied at the only moment the file is whole.
+// WHY THE NAME IS GIVEN AFTER THE FILE LANDS.
+// A portal decides what it calls its own statement ("statement.pdf", "download (3).pdf"), and a bookkeeper cannot bill a folder of those.
+// Renaming mid-write would leave Chrome writing to a name that no longer exists, so the new name is applied at the only moment the file is whole.
 
 test('a download can be named as it lands, and a path is refused before the click', async () => {
   const disk = fakeDisk();

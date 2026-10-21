@@ -3,19 +3,14 @@
 // @state: 5 locks; reuse before launch, profile isolation, and a browser that is actually reachable before it is driven.
 // @dependencies: ./browsers.js, ./cdp.js, ./transport.js, ./primitives.js.
 
-// Why this file exists: the parts below are individually tested and individually
-// correct, and the failure that matters happens between them. A browser launched
-// with a profile that is already in use opens a second window, ignores the
-// debugging port, and reports a connection refused with nothing to suggest why.
-// So the profile is always isolated, and the driver never returns until it has
-// spoken to the browser it claims to have started.
-//
-// Launching is not the default path. If something is already answering on the
-// port, that browser is reused, which is what makes a second run cheap instead of
-// opening another window every time.
-//
-// The session is closed by the caller rather than by a signal handler here, so
-// that a script can decide whether a browser it launched should outlive it.
+// Why this file exists: the parts below are individually tested and individually correct, and the failure that matters happens between them.
+// A browser launched with a profile that is already in use opens a second window, ignores the debugging port, and reports a connection refused with nothing to suggest why.
+// So the profile is always isolated, and the driver never returns until it has spoken to the browser it claims to have started.
+
+// Launching is not the default path.
+// If something is already answering on the port, that browser is reused, which is what makes a second run cheap instead of opening another window every time.
+
+// The session is closed by the caller rather than by a signal handler here, so that a script can decide whether a browser it launched should outlive it.
 
 import { spawn } from 'node:child_process';
 import { existsSync, mkdtempSync } from 'node:fs';
@@ -56,14 +51,11 @@ function resolveBinary({ id, platform = process.platform, exists = existsSync, e
   return { ...entry, binary };
 }
 
-// A named tab is always a NEW tab. Driving a document, a sheet and a deck in
-// one session means three targets, and reusing whichever page happened to be in
-// front would navigate away whatever the person was reading.
+// A named tab is always a NEW tab.
+// Driving a document, a sheet and a deck in one session means three targets, and reusing whichever page happened to be in front would navigate away whatever the person was reading.
 
-// A bridged session is a CDP session whose wire runs through the extension
-// instead of a debugging port: same client, same primitives, numeric tab ids.
-// There is nothing to launch and nothing to reuse; either the link is up or the
-// call fails loudly naming the one fix that exists.
+// A bridged session is a CDP session whose wire runs through the extension instead of a debugging port: same client, same primitives, numeric tab ids.
+// There is nothing to launch and nothing to reuse; either the link is up or the call fails loudly naming the one fix that exists.
 
 async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions }) {
   const linked = await waitForBridgeLink({ timeoutMs });
@@ -97,13 +89,10 @@ async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOption
   };
 }
 
-// WHY THE PIPE IS ASKED, NOT SETTLED. The extension reaches the profile the
-// person is actually logged into, and a debugging port cannot — it opens a
-// fresh profile with nothing signed in. So the link is asked for on every
-// session and the debugging port is what is left when there is no extension,
-// which is the one case where it is the only thing that can work at all.
-// `OPERA_LOCAL_TRANSPORT=cdp` still forces the port for a machine with no
-// extension, and nothing else has to be configured anywhere.
+// WHY THE PIPE IS ASKED, NOT SETTLED.
+// The extension reaches the profile the person is actually logged into, and a debugging port cannot — it opens a fresh profile with nothing signed in.
+// So the link is asked for on every session and the debugging port is what is left when there is no extension, which is the one case where it is the only thing that can work at all.
+// `OPERA_LOCAL_TRANSPORT=cdp` still forces the port for a machine with no extension, and nothing else has to be configured anywhere.
 
 export async function openSession({
   id,

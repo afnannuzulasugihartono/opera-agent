@@ -1,7 +1,8 @@
--- YT watch flow v7 (2026-10-08): re-query the expander after scrolling; live evidence showed the pre-scroll ref goes stale and the trusted click fails while the synthetic one silently no-ops. v6 note kept: flattened open cascade, every post-watch wait tolerated; live evidence showed the transcript hunt dying on caption-less videos and one await outliving the statement timeout. Worst case degrades to page-text chunks, never a hard failure past the watch waits.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- YT watch flow v7 (2026-10-08): re-query the expander after scrolling; live evidence showed the pre-scroll ref goes stale and the trusted click fails while the synthetic one silently no-ops.
+-- v6 note kept: flattened open cascade, every post-watch wait tolerated; live evidence showed the transcript hunt dying on caption-less videos and one await outliving the statement timeout.
+-- Worst case degrades to page-text chunks, never a hard failure past the watch waits.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'youtube.watch_summarize',

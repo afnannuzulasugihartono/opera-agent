@@ -52,9 +52,8 @@ test('a browser with no page target fails loudly', async () => {
   );
 });
 
-// A session that names its tab must land on that tab's socket, not the first
-// page's. Measured live: every tabId call before this fix drove the same first
-// tab, because the session resolved before it looked at the name.
+// A session that names its tab must land on that tab's socket, not the first page's.
+// Measured live: every tabId call before this fix drove the same first tab, because the session resolved before it looked at the name.
 
 function stubBrowser(sockets) {
   const realFetch = globalThis.fetch;

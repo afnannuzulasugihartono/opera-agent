@@ -4,23 +4,17 @@
 // @dependencies: node:test, strict, ../local/cdp.js.
 
 // WHY THIS FILE EXISTS
-//
-// The local path is the fast one, and the measurement that justifies it is small:
-// a CDP command on loopback answered in 0.52ms at p50 over 240 commands, against
-// roughly 380ms for the same work through the cloud, which is two 190ms round
-// trips. Everything the local driver can do is bounded above by that transport.
-//
-// That number is worthless if the client above it is wrong. A CDP client that
-// mismatches concurrent responses would attribute one command's result to
-// another, and on a browser driving someone else's session that is not a
-// cosmetic bug: it types into the wrong place. So the client is built around an
-// injected transport and tested with none, because a test that needs a browser
-// installed is a test that does not run on every machine that checks the repo.
-//
-// The concurrency lock is the one that matters. Real driving interleaves: a read
-// that finds a stale ref is followed by a re-find while the first is still in
-// flight. Firing two commands and matching replies by arrival order rather than
-// by id would silently swap them under exactly that load.
+
+// The local path is the fast one, and the measurement that justifies it is small: a CDP command on loopback answered in 0.52ms at p50 over 240 commands, against roughly 380ms for the same work through the cloud, which is two 190ms round trips.
+// Everything the local driver can do is bounded above by that transport.
+
+// That number is worthless if the client above it is wrong.
+// A CDP client that mismatches concurrent responses would attribute one command's result to another, and on a browser driving someone else's session that is not a cosmetic bug: it types into the wrong place.
+// So the client is built around an injected transport and tested with none, because a test that needs a browser installed is a test that does not run on every machine that checks the repo.
+
+// The concurrency lock is the one that matters.
+// Real driving interleaves: a read that finds a stale ref is followed by a re-find while the first is still in flight.
+// Firing two commands and matching replies by arrival order rather than by id would silently swap them under exactly that load.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

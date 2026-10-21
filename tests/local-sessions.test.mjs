@@ -54,15 +54,12 @@ test('the adapter speaks driver verbs over primitive nouns', async () => {
   assert.deepEqual(verbs, ['read', 'clickAt', 'hover', 'key', 'type', 'keys', 'capture', 'front']);
 });
 
-// WHY THE ADAPTER RESOLVES THEN CLICKS A HANDLE. The row is found and held
-// before anything is pressed, and the click is aimed at that node rather than
-// at the point the snapshot reported — which is the whole difference between
-// clicking the row that was asked for and clicking whatever slid under it.
+// WHY THE ADAPTER RESOLVES THEN CLICKS A HANDLE.
+// The row is found and held before anything is pressed, and the click is aimed at that node rather than at the point the snapshot reported — which is the whole difference between clicking the row that was asked for and clicking whatever slid under it.
 
-// WHY THE CLICK'S PROOF IS PINNED HERE. The row is what was asked for; what the click
-// hit belongs to the click. Measured live: a click_row answered with its row and its
-// point while a dialog owned the point and took the click, and the adapter's rebuilt
-// answer had thrown that fact away before anyone could read it.
+// WHY THE CLICK'S PROOF IS PINNED HERE.
+// The row is what was asked for; what the click hit belongs to the click.
+// Measured live: a click_row answered with its row and its point while a dialog owned the point and took the click, and the adapter's rebuilt answer had thrown that fact away before anyone could read it.
 
 test('a row click carries what the click itself reported', async () => {
   const session = fakeSession();

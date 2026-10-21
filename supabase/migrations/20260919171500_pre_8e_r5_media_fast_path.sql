@@ -1,15 +1,10 @@
 -- Pre-8E repair R5: internal media sampling fast path.
--- This adds no public MCP tool and does not change Protocol 1 / the 26 browser
--- primitives. It registers a generic server-side workflow that seeks an
--- existing media element locally instead of encoding time into a URL or
--- reloading/navigating the tab.
---
--- Playback-state rule:
---   paused before -> remain paused after seek
---   playing before -> pause, seek, then resume play
---
--- Historical workflows remain versioned/rollbackable through
--- opera_register_workflow.
+-- This adds no public MCP tool and does not change Protocol 1 / the 26 browser primitives.
+-- It registers a generic server-side workflow that seeks an existing media element locally instead of encoding time into a URL or reloading/navigating the tab.
+
+-- Playback-state rule: paused before -> remain paused after seek playing before -> pause, seek, then resume play
+
+-- Historical workflows remain versioned/rollbackable through opera_register_workflow.
 
 select public.opera_register_workflow(
   'media.sample_at',
