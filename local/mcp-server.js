@@ -133,7 +133,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'click',
-    description: 'Click in one tab. Give x and y for a point in the viewport (CSS pixels), at with fractions of the viewport (0 to 1) when the window may be resized between looking and clicking, or a handle to click that element wherever it is by then. A fraction is resolved against the viewport as it is at the moment of the click, so a window that changed size between turns does not move the aim; a handle cannot go stale at all, because the box is measured from the node at the click.',
+    description: 'Click in one tab. Give x and y for a point in the viewport (CSS pixels), at with fractions of the viewport (0 to 1) when the window may be resized between looking and clicking, or a handle to click that element wherever it is by then. A fraction is resolved against the viewport as it is at the moment of the click, so a window that changed size between turns does not move the aim; a handle cannot go stale at all, because the box is measured from the node at the click. The reply carries where the page now stands - url, title, text length, focus - and the rows that changed; ax_snapshot() lists every row when the next move needs more than the change set.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -173,7 +173,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'press_key',
-    description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow. Returns the page as it now stands, so you see what the key did without a second call.',
+    description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow. Returns where the page now stands and what changed, so what the key did is visible without a second call.',
     inputSchema: {
       type: 'object',
       properties: { tabId: tabArg, key: stringArg('Enter, Tab, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Home, End, Space, Backspace, Delete, or a single printable ASCII character'), modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] }, description: 'held while the key goes down' } },
@@ -182,7 +182,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'type',
-    description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor. Returns the page as it now stands, plus where the text landed: placed carries the index and neighbours of the inserted words on DOM pages, and found:false on canvas pages where the mirror lags - there read_page() is the proof, and a failure always deserves a read before any retry, because a slow mirror looks exactly like a dead page.',
+    description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor. Returns where the page now stands and what changed, plus where the text landed: placed carries the index and neighbours of the inserted words on DOM pages, and found:false on canvas pages where the mirror lags - there read_page() is the proof, and a failure always deserves a read before any retry, because a slow mirror looks exactly like a dead page.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
   },
   {
@@ -406,10 +406,13 @@ function asText(value) {
   return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] };
 }
 
-// WHY THE AUTO PAGE IS HALF. It rides along on every action, so a fifteen-action
-// job pays for it fifteen times. The near half of a page is usually what did
-// not move, and unchanged elements are exactly what an agent should not spend
-// its attention on.
+// WHY THE AUTO PAGE IS A STATE LINE AND NOT THE ROWS. Measured on a real eight-call
+// job: the actions alone spent 25,089 characters, because sixty rows and the page text
+// rode along after every click, and most of that text was the part that did not move.
+// An agent pays for that in tokens and in attention, and re-reads it a turn later. So
+// the answer carries where the page is (url, title, how much text it holds, what has
+// focus), how many rows it has, and the rows that changed. The rest is one deliberate
+// ax_snapshot away, which is a look the agent chose to take.
 
 // WHY A WAIT POLLS THE FULL READ. The point of waiting is to end on the same
 // evidence an agent would read by hand — including the document on a Google
@@ -420,30 +423,24 @@ function asText(value) {
 // precedent.
 
 const AUTO_PAGE_LIMIT = 60;
+const AUTO_ROWS = 8;
 const SETTLE_MS = 120;
 
-// WHY AN ACTION RETURNS THE PAGE WITH IT. An agent that has to ask for the
-// page after every action spends two round trips on one decision — act, then
-// look — and the look is the half that costs. Measured on the reference
-// implementation: roughly thirty per cent of all tool calls were snapshots,
-// almost all of them immediately after something the agent had just done.
-// Handing the page back with the action makes one decision cost one call.
-//
-// WHY THE AUTO PAGE IS SMALLER THAN ax_snapshot. It rides along on every
-// action, so it lands in context fifteen times on a fifteen-action job. The
-// explicit snapshot is for when the agent means to study the page; this is
-// for "what did that do", and the near half of the page that did not move is
-// noise on every single turn.
+// WHY AN ACTION REPORTS THE PAGE IT LEFT BEHIND. An agent that has to ask for the
+// page after every action spends two round trips on one decision — act, then look —
+// and the look is the half that costs. Measured on the reference implementation:
+// roughly thirty per cent of all tool calls were snapshots, almost all of them
+// immediately after something the agent had just done. The reply therefore says
+// where the page is, what changed, and how many rows are still one call away, so a
+// decision costs one call without the answer carrying the whole page.
 
-// WHY ACTIONS REPORT WHAT CHANGED. The full page rides every action so the
-// agent is never stranded, but sixty rows a turn buries the three that moved.
-// The change set is a hint computed against the last look at the same tab:
-// rows that appeared, rows that moved, and a count of rows that left. Rows
-// match by value — role, name and position — so duplicates collapse and a
-// reshaped page reports itself as reshaped instead of listing sixty new rows.
-// The first look at a tab reports null: there is no previous page, and the
-// elements it carries ARE the baseline. Keyed by driver object in a WeakMap,
-// so a closed tab's last look is garbage instead of a leak.
+// WHY ACTIONS REPORT WHAT CHANGED. The change set is computed against the last look
+// at the same tab: rows that appeared, rows that moved, and a count of rows that
+// left. Rows match by value — role, name and position — so duplicates collapse and
+// a reshaped page reports itself as reshaped instead of listing sixty new rows.
+// Only the first eight added or moved rows ride along: they are the ones worth
+// acting on, and the count says what was held back. Keyed by driver object in a
+// WeakMap, so a closed tab's last look is garbage instead of a leak.
 
 // WHY THE LOOK WAITS A BEAT FIRST. The snapshot used to run the instant the
 // action's reply landed — and a menu that opens a frame later was already
@@ -475,6 +472,7 @@ function diffElements(prev, curr) {
 import { withAdvice } from './advice.js';
 
 const lastAuto = new WeakMap();
+const lastPage = new WeakMap();
 
 // WHY THE WINDOW LINE IS HELD PER DRIVER AND NOT PER CALL. afterAction builds the
 // answer and the run that produced it are two different places; a driver is the one
@@ -526,16 +524,36 @@ const gapOf = (value, fallback) => {
 const afterAction = async (driver, action, limit) => {
   await new Promise((r) => setTimeout(r, SETTLE_MS));
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
+  const state = typeof driver.pageState === 'function'
+    ? await driver.pageState().catch(() => null)
+    : null;
   const prev = lastAuto.get(driver) ?? null;
+  const prevState = lastPage.get(driver) ?? null;
   lastAuto.set(driver, seen);
+  lastPage.set(driver, state);
   lastSeen = seen;
   const tab = tabSaid.get(driver) ?? null;
+  const diff = diffElements(prev ?? [], seen);
   return asText({
     action,
     ...(tab ? { tab } : {}),
     window: windowSaid.get(driver) ?? null,
-    elements: seen,
-    changed: prev ? diffElements(prev, seen) : null
+    page: {
+      url: state?.url ?? null,
+      title: state?.title ?? null,
+      textChars: state?.textChars ?? null,
+      rows: seen.length,
+      focus: state?.focus ?? null
+    },
+    changed: {
+      added: diff.added.slice(0, AUTO_ROWS),
+      moved: diff.moved.slice(0, AUTO_ROWS),
+      removed: diff.removed,
+      reshaped: diff.reshaped,
+      baseline: prev === null,
+      url: prevState && state ? (prevState.url === state.url ? 'same' : state.url) : null,
+      textGrew: prevState && state ? state.textChars - prevState.textChars : null
+    }
   });
 };
 
