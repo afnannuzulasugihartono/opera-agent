@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPlanRequest } from '../lib/goal-plan.js';
+import { buildPlanRequest } from '../extension/lib/goal-plan.js';
 import { ALLOWED_METHODS } from '../extension/lib/protocol.js';
 
 const PAGE = {
@@ -60,7 +60,7 @@ test('an empty goal is refused rather than turned into a guess', () => {
 });
 
 test('the model may return a reason, and the refusal carries it', async () => {
-  const { compileGoalPlan } = await import('../lib/goal-plan.js');
+  const { compileGoalPlan } = await import('../extension/lib/goal-plan.js');
   const result = compileGoalPlan('{"root": null, "reason": "no primitive can book a flight"}', {
     target: { deviceId: 'd', tabId: 1, documentGeneration: 'g' },
     budgets: { astDepth: 12, browserCommandLeavesPerRun: 4 }

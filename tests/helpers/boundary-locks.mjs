@@ -29,9 +29,9 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', 'dc07e016fb48fe96d8ff84b64a9430c123ea3002'],
-  ['../lib/reactive-vm-control-flow.js', 'afea3635ed3ef69ecfb2728cc57561d18c8d6de1'],
-  ['../lib/reactive-vm-collect.js', 'ff6167f7fdf2b014825b18a3a0350a8df3ec9623'],
+  ['../lib/reactive-vm.js', 'adb646c71fd033593bdbef264179b9877d569371'],
+  ['../lib/reactive-vm-control-flow.js', '266dbfb47714b8cdc913410ac94402482def5dfe'],
+  ['../lib/reactive-vm-collect.js', 'f687f4cd3088788b02291c64a12860d0fa5742e1'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
