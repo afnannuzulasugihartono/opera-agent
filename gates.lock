@@ -161,14 +161,14 @@ scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs a61b1039de2f2a6d638024ce79b7b8701318a9ec
+tests/helpers/boundary-locks.mjs c0356a4f278aade707cd80b87eea9eeedaa51283
 tests/helpers/comment-spacing.mjs e9d8a61eaccdedf7018fe64acdfe9c8159f75d0c
 tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
 
 # --- structural rules a human reviewer would otherwise have to remember ---
 tests/hygiene.test.mjs 285389e61fdcd8c57e22bb7a4511ed5db8c3181a
 tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
-tests/boundary-locks.test.mjs 07e6f83bb80e6dadd212e1dbb3294d0cf33a028f
+tests/boundary-locks.test.mjs 3a9ae9e36aec03a4470ce2f9cf0971f66724ecf8
 
 # --- controls that decide what the product accepts at runtime ---
 extension/lib/protocol.js 3b972a0971d8f9be29230ddbf86f5d966793532c
