@@ -33,12 +33,15 @@ in the invoice.
 ## How the money moves
 
 ```
-deliveries (the manifest)  ->  priced lines (the price list)  ->  an invoice
-                                                                  |
-                                        the customer opens a signed link, sees the lines,
-                                        the amount and the way to pay
-                                                                  |
-                                        the provider's signed notification  ->  paid
+delivered client-months (the manifest on the device)
+        |
+        |  invoice_create: the manifest rows, not a typed number
+        v
+priced lines (the price list)  ->  an invoice (one per customer per month)
+        |
+        |  the customer opens the signed link: the lines, the amount, the way to pay
+        v
+the provider's signed notification  ->  paid (terminal; a later call cannot reopen it)
 ```
 
 - `supabase/migrations/20261015090000_opera_billing.sql` — `opera_price_list` (what a
@@ -46,24 +49,52 @@ deliveries (the manifest)  ->  priced lines (the price list)  ->  an invoice
   the priced lines inside). The tables are readable by the server only: a customer
   reaches their invoice through a signed link, not through the table.
 - `supabase/functions/_shared/billing.js` — the rules, and nothing else: the amount of
-  an invoice, the invoice token, the provider's signature check, and the rule that only
-  a settled transaction is a payment.
+  an invoice, the manifest rows turned into lines, the invoice token, the provider's
+  signature check, and the rule that only a settled transaction is a payment.
 - `supabase/functions/opera-agent-billing/index.ts` — the function: it opens an
   invoice, serves the invoice page, and closes the invoice from a signed notification.
-- `tests/billing.test.mjs` — the money rules, proved.
+- `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
+  agent that delivered the statements can hand the operator the bill for them.
+- `tests/billing.test.mjs` — the money rules, proved (12 tests).
+
+## Measured live, in production
+
+The whole path was driven against the deployed functions, not simulated:
+
+| What was driven | What came back |
+|---|---|
+| `invoice_create` through the MCP protocol, two manifest rows | invoice `Toko Sinar Jaya:2026-08`, two lines, **1,000,000 cents**, link returned |
+| the link, opened as the customer | HTTP 200, both deliveries listed at Rp 5.000 each, **Total Rp 10.000** |
+| a link with a wrong token | **401** `that link does not open that invoice.` |
+| the same client-month twice | refused: `Toko Sinar Jaya 2026-06 is in the list twice; one client-month is one line` |
+| a row with no client | refused by the tool schema before any write |
+| a signed notification for 1,000 instead of 500,000 | **400** `the paid amount (1000) is not the invoice amount (500000)` |
+| a signed notification with status `pending` | **400** `the transaction is not settled` |
+| a signed `settlement` notification for the right amount | **200** `{"ok":true}`; the page then says `status paid` and `Paid. Thank you.` |
+| the same notification replayed after the provider key was removed | **400** `the notification was not signed by the provider` |
+| re-creating a paid invoice | refused: `... is paid; a later call does not reopen an invoice that has been paid.` |
+
+Two lessons are now tests instead of comments. The first deploy created invoices and
+then answered `Buffer is not defined` to every customer who opened one, because the
+edge runtime has no Node `Buffer`; the comparison is now character by character and
+a test deletes `globalThis.Buffer` to prove the rules still run. Midtrans spells a
+settled transfer `settlement`, not `settled`, so the settled rule accepts the
+provider's spellings and refuses a card capture under `challenge`.
 
 ## What the owner sets (three environment values)
 
 | Value | What it is | Without it |
 |---|---|---|
 | `BILLING_SECRET` | the key that signs invoice links | no invoice can be opened; the function refuses |
-| `OPERA_BILLING_TOKEN` | the operator's token for opening invoices | nobody can open an invoice |
+| `OPERA_BILLING_TOKEN` | the operator's token for opening invoices | the `invoice_create` tool refuses |
 | `MIDTRANS_SERVER_KEY` | the payment provider's server key | invoices are created and served, but the pay button is replaced by a transfer instruction, and no notification is believed |
 
-The provider is one column on the invoice (`provider`), and the signature check is
-written against the provider's documented rule, so swapping providers is a row and a
-function, not a rewrite. The seeds are a pilot: the first month is free, and the price
-that follows is an anchor until three customers have paid it.
+The first two are set in the project's secrets already; the third is not, because
+there is no provider account yet. The provider is one column on the invoice
+(`provider`), and the signature check follows the provider's documented rule, so
+swapping providers is a row and a function, not a rewrite. A provider's webhook URL
+is the function itself: it recognises a notification by the order id and signature
+it carries, not by a field the provider never sends.
 
 ## What is not decided
 
@@ -71,5 +102,5 @@ that follows is an anchor until three customers have paid it.
   outreach sheet names, not a price anyone has agreed to.
 - Whether a customer is billed per client or per statement. The unit today is the
   client-month, because that is what a bookkeeper's own price list looks like.
-- Whether the provider is Midtrans, Xendit, Stripe, or a transfer. The seam is built;
-  the choice is the owner's.
+- Whether the provider is Midtrans, Xendit, Stripe, or a transfer. The seam is built
+  and drilled with a signed test notification; the choice is the owner's.
