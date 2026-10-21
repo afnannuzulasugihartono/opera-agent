@@ -370,6 +370,104 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
   assert.deepEqual(noCaller, [], 'these extension/ and lib/ exports have no caller in another file');
 });
 
+// WHY A MODULE ONLY ITS OWN TEST IMPORTS IS DEAD.
+// A test that imports the module it was written for proves the module works, and nothing runs it.
+// The unit is the module, so the claim the test makes is about code the product never loads.
+// Two modules are staged for the one open task of the paper plan, and they are named here with that reason.
+
+const STAGED_FOR_THE_OPEN_TASK = new Map([
+  ['lib/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road compares live row names to the label map'],
+  ['supabase/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
+]);
+
+test('a module with its own code is reached by the product, not only by its own test', async () => {
+  const dir = fileURLToPath(new URL('..', import.meta.url));
+  const tracked = execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8' }).split('\n').filter(Boolean);
+  const codeFiles = tracked.filter((file) => /\.(js|mjs|cjs|ts)$/.test(file));
+  const edgeFiles = tracked.filter((file) => /\.(js|mjs|cjs|ts|html)$/.test(file));
+  const textOf = new Map(edgeFiles.map((file) => [file, fsSync.readFileSync(path.join(dir, file), 'utf8')]));
+
+  const resolve = (from, spec) => {
+    if (!spec.startsWith('.')) return null;
+    const base = path.posix.normalize(path.posix.join(path.posix.dirname(from), spec));
+    for (const candidate of [base, `${base}.js`, `${base}.mjs`, `${base}.ts`, `${base}/index.js`]) {
+      if (textOf.has(candidate)) return candidate;
+    }
+    return null;
+  };
+
+  const edges = new Map();
+  for (const [file, text] of textOf) {
+    const targets = new Set();
+    for (const match of text.matchAll(/from\s*['"](\.[^'"]+)['"]/g)) {
+      const hit = resolve(file, match[1]);
+      if (hit) targets.add(hit);
+    }
+    for (const match of text.matchAll(/(?:^|\n)\s*import\s*['"](\.[^'"]+)['"]/g)) {
+      const hit = resolve(file, match[1]);
+      if (hit) targets.add(hit);
+    }
+    for (const match of text.matchAll(/import\(\s*['"](\.[^'"]+)['"]\s*\)/g)) {
+      const hit = resolve(file, match[1]);
+      if (hit) targets.add(hit);
+    }
+    for (const match of text.matchAll(/importScripts\(\s*['"](\.[^'"]+)['"]\s*\)/g)) {
+      const hit = resolve(file, match[1]);
+      if (hit) targets.add(hit);
+    }
+    for (const match of text.matchAll(/<script[^>]+src=["']([^"']+)["']/g)) {
+      const spec = match[1];
+      const hit = resolve(file, spec.startsWith('.') ? spec : `./${spec}`);
+      if (hit) targets.add(hit);
+    }
+    edges.set(file, [...targets]);
+  }
+
+  // The entry points: what the product actually runs.
+  const roots = new Set();
+  for (const file of tracked) {
+    if (/^supabase\/functions\/[^/]+\/index\.ts$/.test(file)) roots.add(file);
+    if (/^scripts\/.*\.(mjs|py)$/.test(file)) roots.add(file);
+    if (/^local\/bin\/.*\.js$/.test(file)) roots.add(file);
+  }
+  roots.add('local/mcp-server.js');
+  const manifest = JSON.parse(fsSync.readFileSync(path.join(dir, 'extension/manifest.json'), 'utf8'));
+  for (const script of manifest.content_scripts || []) for (const js of script.js || []) roots.add(`extension/${js}`);
+  if (manifest.background?.service_worker) roots.add(`extension/${manifest.background.service_worker}`);
+  if (manifest.action?.default_popup) roots.add(`extension/${manifest.action.default_popup}`);
+  if (manifest.options_page) roots.add(`extension/${manifest.options_page}`);
+  for (const file of tracked) if (/^landing\/.*\.html$/.test(file)) roots.add(file);
+
+  const reached = new Set();
+  const queue = [...roots];
+  while (queue.length) {
+    const current = queue.pop();
+    if (reached.has(current)) continue;
+    reached.add(current);
+    for (const target of edges.get(current) || []) if (!reached.has(target)) queue.push(target);
+  }
+
+  // A file that only re-exports another module is a bridge to live code, not dead code.
+  const isShim = (text) => {
+    const code = text.split('\n').filter((line) => !/^\s*(\/\/|\/\*|\*|#)/.test(line)).join('\n');
+    const withoutReexports = code.replace(/export\s*\*\s*from\s*['"][^'"]+['"];?/g, '').replace(/export\s*\{[^}]*\}\s*from\s*['"][^'"]+['"];?/g, '').trim();
+    return withoutReexports === '';
+  };
+
+  const runtimeFiles = tracked.filter((file) => /^(extension|lib|local|supabase\/functions|scripts)\//.test(file)
+    && /\.(js|mjs|cjs|ts)$/.test(file));
+  const unreachable = runtimeFiles.filter((file) => !reached.has(file) && !isShim(textOf.get(file)));
+  const unexpected = unreachable.filter((file) => !STAGED_FOR_THE_OPEN_TASK.has(file));
+  assert.deepEqual(unexpected, [],
+    `these modules are reached by nothing but their own test:\n${unexpected.join('\n')}`);
+  const staleAllowance = [...STAGED_FOR_THE_OPEN_TASK.keys()].filter((file) => !unreachable.includes(file));
+  assert.deepEqual(staleAllowance, [],
+    `these modules are reached by the product now, so the staged list must drop them:\n${staleAllowance.join('\n')}`);
+  for (const file of unreachable) {
+    assert.ok(STAGED_FOR_THE_OPEN_TASK.get(file).length > 20, `${file} must say why it is staged`);
+  }
+});
+
 test('every lib header states what is actually in the file', async () => {
   const boilerplate = 'MV3 runtime library, shared with the Node suite..';
   const dir = new URL('../extension/lib/', import.meta.url);

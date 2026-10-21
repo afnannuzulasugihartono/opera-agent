@@ -216,11 +216,6 @@ function normalizeRequirement(value, path) {
   };
 }
 
-function withoutDigest(value) {
-  const { ledgerDigest: _ignored, ...rest } = value;
-  return rest;
-}
-
 function normalizeLedgerShape(input, { creation = false } = {}) {
   assertNoSecretLikeValues(input);
   assertAllowedFields(input, ROOT_FIELDS, 'ledger');
