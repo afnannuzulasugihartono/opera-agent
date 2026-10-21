@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: edge-token-hygiene.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: edge-token-hygiene.test — no edge function logs a token, a body or a header.
+// @state: the sources of the four functions, the token-shaped words, and the console calls it refuses.
 // @dependencies: node:test, strict, promises.
 
 import test from 'node:test';

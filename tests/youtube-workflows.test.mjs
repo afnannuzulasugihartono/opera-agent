@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: youtube-workflows.test — Test.
-// @state: locks the watch-and-summarize workflow contract.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: youtube-workflows.test — the watch and summarise workflow keeps its contract.
+// @state: the steps it takes, the transcript it reads, and the output it names.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

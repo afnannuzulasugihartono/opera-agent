@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: source-scan — scan — Source-text scanning helpers for drift locks.
+// @title: source-scan — the source-text helpers the drift locks read.
 // @state: docs and test: correct the final review's overclaims and audit-request errors.
 // @dependencies: none.
 

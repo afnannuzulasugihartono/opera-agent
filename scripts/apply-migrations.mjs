@@ -1,4 +1,7 @@
-// apply-migrations.mjs — apply SQL migration files through the Supabase Management API, because `supabase db push` needs a direct Postgres route that this machine does not have, and pasting multi-kilobyte dollar-quoted JSON through a tool call loses quoting.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: apply-migrations — apply SQL migration files through the Supabase Management API.
+// @state: the files it reads and the token it needs; the bytes in the tree are the bytes the database receives.
+// @dependencies: none.
 // It reads files, so the exact bytes in the tree are what the database receives.
 
 // Usage: node scripts/apply-migrations.mjs <file-or-glob> [...] Needs SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF.

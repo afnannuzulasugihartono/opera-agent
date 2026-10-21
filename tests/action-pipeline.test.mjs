@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: action-pipeline.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: action-pipeline.test — the action ramp, the poll delays and the resolve states.
+// @state: the frozen 25..400 ms ramp, the poll delay it produces, and how a resolve is classified.
 // @dependencies: node:test, strict, action-pipeline, extension-source.
 
 import test from 'node:test';

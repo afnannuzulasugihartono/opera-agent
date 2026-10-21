@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: proof-engine — engine — Repository file.
-// @state: remove unwired modules, dead exports; WHY-only comments (owner-ordered).
+// @last-edited: 2026-10-21 UTC+7.
+// @title: proof-engine — the scoped proof: what the evidence supports, and what it does not.
+// @state: the evidence rules, the claim it answers, and the status a proof may carry.
 // @dependencies: goal-ledger, canonical-order.
 
 import {

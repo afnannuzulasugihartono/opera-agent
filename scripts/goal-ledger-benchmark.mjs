@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: goal-ledger-benchmark — ledger-benchmark — Script.
-// @state: implement goal ledger core.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: goal-ledger-benchmark — how long the ledger takes, measured over a replay.
+// @state: the replay fixture, the run count, and the percentiles it prints.
 // @dependencies: node:fs, node:perf_hooks, goal-ledger.
 
 import fs from 'node:fs';

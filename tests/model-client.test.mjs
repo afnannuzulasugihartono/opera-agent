@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: model-client.test — Test.
-// @state: locks the device-local model compiler: config gate, single destination, bounded call, key never leaks.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: model-client.test — the device-local model compiler holds its gate and its bounds.
+// @state: the config gate, the single destination, the call bound, and the key that never leaves.
 // @dependencies: node:test, strict, extension-source.
 
 import test from 'node:test';

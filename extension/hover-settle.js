@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: hover-settle — settle —: hover settle policy, as a classic content script.
+// @title: hover-settle — the hover settle policy, as a classic content script.
 // @state: hygiene pass over this file.
 // @dependencies: none.
 

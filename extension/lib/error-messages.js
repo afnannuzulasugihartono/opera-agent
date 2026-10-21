@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 09:58 UTC+7.
-// @title: error-messages — messages — User-facing error mapping for the popup and options page (page lang `id`).
-// @state: lock store error strings against mapper drift.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: error-messages — the Indonesian labels the popup and the options page show.
+// @state: the English source string and its Indonesian label live here, so the mapper and the store cannot drift apart.
 // @dependencies: none.
 
 // User-facing error mapping for the popup and options page (page lang `id`).

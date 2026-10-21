@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: edge-log — log — Repository file.
-// @state: structured edge log helper, convert 3 ad-hoc sites.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: edge-log — the structured log line every edge function writes.
+// @state: the fields it carries, the message cap, and the level each call writes at.
 // @dependencies: none.
 
 const MAX_LOG_MESSAGE = 1000;

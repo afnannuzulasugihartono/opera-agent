@@ -1,5 +1,5 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: content — MV3 browser runtime..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: content — the content script: the page half of every browser primitive.
 // @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
 // @dependencies: none.
 
