@@ -70,10 +70,9 @@ for (const file of files) {
 }
 const background = await extensionSource();
 
-// `completeWithRetry` used to be pinned here. It is gone because it is dead: the
-// device no longer POSTs completions, so the retry ladder had no caller left and
-// only pretended to be a safety net. What must be pinned instead is that a
-// completion still has somewhere to go, and that it goes out on the socket.
+// `completeWithRetry` used to be pinned here.
+// It is gone because it is dead: the device no longer POSTs completions, so the retry ladder had no caller left and only pretended to be a safety net.
+// What must be pinned instead is that a completion still has somewhere to go, and that it goes out on the socket.
 
 for (const marker of ['pendingCompletion', 'flushPendingCompletion', 'createSocketClient', 'completionFrame']) {
   assert.ok(background.includes(marker), marker);

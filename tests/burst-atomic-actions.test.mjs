@@ -120,11 +120,8 @@ test('burst file steps reach the content file setter', () => {
   assert.match(content, /new DataTransfer\(\)/);
 });
 
-// The picker opens focused on 1x1, Down enters the grid, Right crosses columns
-// and Down crosses rows, Enter picks. Measured against the live Docs grid on
-// 2026-10-14: one ArrowDown left the label at 1 x 1, ArrowRight moved it to
-// 2 x 1, so the sequence below is the observed one, written out rather than
-// compared against a helper that nothing but this test imports.
+// The picker opens focused on 1x1, Down enters the grid, Right crosses columns and Down crosses rows, Enter picks.
+// Measured against the live Docs grid on 2026-10-14: one ArrowDown left the label at 1 x 1, ArrowRight moved it to 2 x 1, so the sequence below is the observed one, written out rather than compared against a helper that nothing but this test imports.
 
 test('burst grid expansion walks the measured picker sequence exactly', () => {
   for (const [rows, cols] of [[1, 1], [2, 1], [2, 3], [5, 4]]) {

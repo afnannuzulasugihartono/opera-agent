@@ -1,21 +1,15 @@
 -- WHY THE PROVIDER RIDES ALONG.
---
--- Every tool call recorded which client made it with a second write after the command
--- finished: the edge function enqueued, waited, then issued an UPDATE to stamp the
--- provider column. That UPDATE is a full HTTPS crossing to the data API on the critical
--- path, after the answer is already known, and measured at roughly 250 ms against a
--- command the browser answers in under a millisecond. It also forced the hot path to
--- load the database client library for a single statement it otherwise never needs.
---
--- The provider is known before the command exists, so it is set at INSERT instead. The
--- separate UPDATE is gone and nothing reads differently: the column holds the same
--- value it always held, only written once. Callers that do not pass a provider keep the
--- column default exactly as before, so this is backward compatible with every existing
--- caller.
 
--- The old five-argument overload must go explicitly: create or replace with a new
--- signature adds an overload instead of replacing, and two overloads leave PostgREST
--- unable to resolve calls that omit the new argument.
+-- Every tool call recorded which client made it with a second write after the command finished: the edge function enqueued, waited, then issued an UPDATE to stamp the provider column.
+-- That UPDATE is a full HTTPS crossing to the data API on the critical path, after the answer is already known, and measured at roughly 250 ms against a command the browser answers in under a millisecond.
+-- It also forced the hot path to load the database client library for a single statement it otherwise never needs.
+
+-- The provider is known before the command exists, so it is set at INSERT instead.
+-- The separate UPDATE is gone and nothing reads differently: the column holds the same value it always held, only written once.
+-- Callers that do not pass a provider keep the column default exactly as before, so this is backward compatible with every existing caller.
+
+-- The old five-argument overload must go explicitly: create or replace with a new signature adds an overload instead of replacing, and two overloads leave PostgREST unable to resolve calls that omit the new argument.
+
 drop function if exists public.opera_enqueue(text, jsonb, integer, text, text);
 
 create or replace function public.opera_enqueue(
@@ -45,8 +39,8 @@ begin
       return jsonb_build_object('ok',true,'commandId',v_cmd.id,'status',v_cmd.status,'reused',true);
     end if;
   end if;
-  -- Unchanged in meaning: this is the "nobody ever claims it" deadline. The
-  -- claim below restarts the clock for the command's actual execution budget.
+  -- Unchanged in meaning: this is the "nobody ever claims it" deadline.
+  -- The claim below restarts the clock for the command's actual execution budget.
   insert into public.opera_commands(device_id,request_id,method,params,status,timeout_ms,expires_at,provider) values(v_device.id,case when p_request_id is null then null else left(p_request_id,128) end,p_method,coalesce(p_params,'{}'::jsonb),'queued',v_timeout,clock_timestamp()+make_interval(secs=>(v_timeout/1000.0)+5),case when p_provider is null then '' else left(p_provider,64) end) returning * into v_cmd;
   insert into public.opera_audit(event_type,device_id,command_id,details) values('command.queued',v_device.id,v_cmd.id,jsonb_build_object('method',v_cmd.method,'timeoutMs',v_timeout));
   return jsonb_build_object('ok',true,'commandId',v_cmd.id,'status',v_cmd.status,'reused',false);

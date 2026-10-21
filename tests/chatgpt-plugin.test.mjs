@@ -3,10 +3,7 @@
 // @state: Test..
 // @dependencies: node:test, strict, promises.
 
-// The ChatGPT plugin bundle lets any ChatGPT user drive their own paired
-// browser through OAuth: the manifest points at the hosted OpenAPI file, and
-// the gateway accepts a Supabase user JWT alongside the device token,
-// resolving the caller's own device by user_id.
+// The ChatGPT plugin bundle lets any ChatGPT user drive their own paired browser through OAuth: the manifest points at the hosted OpenAPI file, and the gateway accepts a Supabase user JWT alongside the device token, resolving the caller's own device by user_id.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

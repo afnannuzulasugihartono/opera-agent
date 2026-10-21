@@ -1,20 +1,18 @@
-# @last-edited: 2026-10-10 UTC+7.
+# @last-edited: 2026-10-21 UTC+7.
 # @title: _headers — the CSP and cache policy every path of the site answers with.
 # @state: restates vercel.json per path; tests/landing-hosting.test.mjs fails on drift.
 # @dependencies: none.
 
-# WHY this file exists: the site is served by Cloudflare Pages as well as Vercel, and
-# Pages configures headers with this file instead of vercel.json. One path per block:
-# a comma-joined path line matches nothing on Cloudflare, so every rule silently
-# went unapplied and the edge served its defaults instead of this policy. Measured
-# live: no CSP and the wrong referrer policy on every page until this shape.
+# WHY this file exists: the site is served by Cloudflare Pages as well as Vercel, and Pages configures headers with this file instead of vercel.json.
+# One path per block: a comma-joined path line matches nothing on Cloudflare, so every rule silently went unapplied and the edge served its defaults instead of this policy.
+# Measured live: no CSP and the wrong referrer policy on every page until this shape.
 # tests/landing-hosting.test.mjs fails on any drift.
 
 /
 # from vercel.json /
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-E28NeJN6iECrZMsgtTPdB+mIPbsXtPXhXFSa7NUVlhk='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-P6qQDe8Bs6opUA3vteF/bwZOUnmH+nkF7hV/PvKhvzk='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -27,7 +25,7 @@
 # from vercel.json /index.html
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-E28NeJN6iECrZMsgtTPdB+mIPbsXtPXhXFSa7NUVlhk='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-P6qQDe8Bs6opUA3vteF/bwZOUnmH+nkF7hV/PvKhvzk='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -40,7 +38,7 @@
 # from vercel.json /beranda
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-mKdxh0RdMx6LiU+6+ekeWdioorexa4UHtul9oncN+wY='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-yiEig5muYPedy1v1wDeYFvPmcnVSYIhIubVuItbhX+Y='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -53,7 +51,7 @@
 # from vercel.json /beranda.html
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-mKdxh0RdMx6LiU+6+ekeWdioorexa4UHtul9oncN+wY='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-yiEig5muYPedy1v1wDeYFvPmcnVSYIhIubVuItbhX+Y='; connect-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -235,7 +233,7 @@
 # from vercel.json /akun
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-BIZ4KvaQqLzxhK1OccRtpMPeOJlfhhlaQQJFvehI4i0='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-/kEE0nbbhSPKezq2FYSoFPrfYc9VQK8+RGZMTU31sFc='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -248,7 +246,7 @@
 # from vercel.json /akun.html
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-BIZ4KvaQqLzxhK1OccRtpMPeOJlfhhlaQQJFvehI4i0='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-/kEE0nbbhSPKezq2FYSoFPrfYc9VQK8+RGZMTU31sFc='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -261,7 +259,7 @@
 # from vercel.json /dashboard
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-7z0TM8/Q466Fjv/sWOJXT21XOCXSvrDgn8WBpFSvYsY='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-dUJXudF4kcZsVtxua4kRvy3N+THxuqgZJA+KxtIJZFM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -274,7 +272,7 @@
 # from vercel.json /dashboard.html
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-7z0TM8/Q466Fjv/sWOJXT21XOCXSvrDgn8WBpFSvYsY='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-dUJXudF4kcZsVtxua4kRvy3N+THxuqgZJA+KxtIJZFM='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -287,7 +285,7 @@
 # from vercel.json /oauth/consent — the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-eQiznq0xWrD9ji9MYjUV5DcP7x9tlqgjGoFoGqC7P28='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-ZTYE82beAxp0QVGecx00ifCspvRobzcN3TPEJUGqcbI='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -300,7 +298,7 @@
 # from vercel.json /oauth/consent.html — the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-eQiznq0xWrD9ji9MYjUV5DcP7x9tlqgjGoFoGqC7P28='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-ZTYE82beAxp0QVGecx00ifCspvRobzcN3TPEJUGqcbI='; connect-src https://*.supabase.co; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

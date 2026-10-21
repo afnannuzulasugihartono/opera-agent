@@ -1,9 +1,11 @@
--- Audited 8D additive dark journal. Default OFF; no browser dispatch.
--- CLI generated initial version 20260913143147; filename aligned to actual
--- MCP-applied migration history version 20260913143306. SQL body unchanged.
--- Native PostgreSQL journal/CAS primitives. No browser/agent dispatch authority.
--- Authenticated admission, actual ledger/source adapters and token verification
--- must be connected by a separately audited host before production use.
+-- Audited 8D additive dark journal.
+-- Default OFF; no browser dispatch.
+-- CLI generated initial version 20260913143147; filename aligned to actual MCP-applied migration history version 20260913143306.
+-- SQL body unchanged.
+-- Native PostgreSQL journal/CAS primitives.
+-- No browser/agent dispatch authority.
+-- Authenticated admission, actual ledger/source adapters and token verification must be connected by a separately audited host before production use.
+
 begin;
 create schema opera_agent_tx_candidate;
 revoke all on schema opera_agent_tx_candidate from public, anon, authenticated;

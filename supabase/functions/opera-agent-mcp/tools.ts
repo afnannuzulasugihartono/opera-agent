@@ -4,23 +4,17 @@
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
 // WHY THIS FILE EXISTS
-//
-// A tool list is the surface. Everything else in this function - the device, the
-// command stream, the workflow runner, the VM host - is machinery behind it, and
-// machinery changes for reasons the surface never hears about. When the two live in
-// one file, a change to how a command is sent rewrites the file that also says what
-// the caller may ask for, and the two get reviewed as if they were one thing.
-//
-// Splitting them is also what makes the surface countable: the tools are one file
-// with one job, and the machinery is another, and a reviewer can read the contract
-// without reading the transport.
-//
-// WHY THE TOOLS TAKE THEIR DEPENDENCIES AS ARGUMENTS. The tool bodies call the
-// command runner, the workflow runner and the VM host by name. Those functions live
-// with the transport that owns them, so the tools receive them instead of importing
-// them, and the direction of the dependency stays one way: the surface knows the
-// machinery, never the other way round. The types come from the same place, so a
-// tool cannot call a function with a shape the machinery does not have.
+
+// A tool list is the surface.
+// Everything else in this function - the device, the command stream, the workflow runner, the VM host - is machinery behind it, and machinery changes for reasons the surface never hears about.
+// When the two live in one file, a change to how a command is sent rewrites the file that also says what the caller may ask for, and the two get reviewed as if they were one thing.
+
+// Splitting them is also what makes the surface countable: the tools are one file with one job, and the machinery is another, and a reviewer can read the contract without reading the transport.
+
+// WHY THE TOOLS TAKE THEIR DEPENDENCIES AS ARGUMENTS.
+// The tool bodies call the command runner, the workflow runner and the VM host by name.
+// Those functions live with the transport that owns them, so the tools receive them instead of importing them, and the direction of the dependency stays one way: the surface knows the machinery, never the other way round.
+// The types come from the same place, so a tool cannot call a function with a shape the machinery does not have.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
@@ -669,11 +663,9 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     }
   });
 
-  // WHY THE DELIVERY IS ONE TOOL AND NOT FOUR CALLS. A client-month is the unit that
-  // is delivered and the unit that is billed, so the agent that sells it should spend
-  // one call per client-month: name the file, let the device fetch and name it, and
-  // read back the proof. The proof is what makes the sale defensible, so it travels
-  // with the answer instead of being assembled from three other calls.
+  // WHY THE DELIVERY IS ONE TOOL AND NOT FOUR CALLS.
+  // A client-month is the unit that is delivered and the unit that is billed, so the agent that sells it should spend one call per client-month: name the file, let the device fetch and name it, and read back the proof.
+  // The proof is what makes the sale defensible, so it travels with the answer instead of being assembled from three other calls.
   server.registerTool("statement_deliver", {
     title: "Deliver a client statement",
     description: "Download one client's statement for one month to the user's own disk, under a name you choose, and return the proof: bytes, the kind of file read from its own bytes, the page count, and the closing balance with the page named as its source. The file lands in the user's download folder; nothing is uploaded. A second delivery of the same client-month is refused, because a second line would bill the same month twice.",

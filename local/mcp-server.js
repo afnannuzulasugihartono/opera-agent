@@ -4,62 +4,47 @@
 // @dependencies: ./driver.js.
 
 // WHY THIS FILE EXISTS
-//
-// The driver runs in a process with no stdio contract, so nothing that speaks MCP
-// can use it. This is that contract, and it is the whole difference between a
-// driver that works on the machine it was written on and one that anyone can run
-// with npx.
-//
-// WHY there are no dependencies. The repository runs on stock Node with an empty
-// dependency list, and a driver meant for other people's machines is the worst
-// place to introduce an install step that can fail on someone else's network. MCP
-// over stdio is newline-delimited JSON-RPC, which Node can do unaided.
-//
-// WHY handle() is a plain function. A server that only exists as a process cannot
-// be tested without spawning one, and a test that spawns a real browser fails on
-// whoever else's machine runs it. So the protocol lives in a function that takes a
-// request and returns a response, and the stdio wrapper below it stays thin enough
-// to be obvious by reading.
-//
-// WHY closing goes through the fallback driver. Routing close_tab by its tab id
-// would open a websocket to the tab being closed just to tear it down, and fail
-// on a tab already half-dead. The fallback closes by id with no session at all,
-// and both caches still drop what they hold for it.
+
+// The driver runs in a process with no stdio contract, so nothing that speaks MCP can use it.
+// This is that contract, and it is the whole difference between a driver that works on the machine it was written on and one that anyone can run with npx.
+
+// WHY there are no dependencies.
+// The repository runs on stock Node with an empty dependency list, and a driver meant for other people's machines is the worst place to introduce an install step that can fail on someone else's network.
+// MCP over stdio is newline-delimited JSON-RPC, which Node can do unaided.
+
+// WHY handle() is a plain function.
+// A server that only exists as a process cannot be tested without spawning one, and a test that spawns a real browser fails on whoever else's machine runs it.
+// So the protocol lives in a function that takes a request and returns a response, and the stdio wrapper below it stays thin enough to be obvious by reading.
+
+// WHY closing goes through the fallback driver.
+// Routing close_tab by its tab id would open a websocket to the tab being closed just to tear it down, and fail on a tab already half-dead.
+// The fallback closes by id with no session at all, and both caches still drop what they hold for it.
 
 const PROTOCOL_VERSION = '2024-11-05';
 
-// WHY THE STATEMENT JOB IS IMPORTED HERE AND NOT ROUTED THROUGH A DRIVER. A card and
-// a manifest are disk work: they open no tab, read no page and need no browser to be
-// running. Asking a driver for them would mean a statement job fails on a machine
-// where the browser is closed, which is exactly when a bookkeeper wants to see what
-// was delivered last month. For the same reason those two calls answer before a tab is
-// resolved inside run(): opening a session would touch a browser the job does not need.
+// WHY THE STATEMENT JOB IS IMPORTED HERE AND NOT ROUTED THROUGH A DRIVER.
+// A card and a manifest are disk work: they open no tab, read no page and need no browser to be running.
+// Asking a driver for them would mean a statement job fails on a machine where the browser is closed, which is exactly when a bookkeeper wants to see what was delivered last month.
+// For the same reason those two calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
 
 import { statementCard, statementDelivered } from './statements.js';
 
 const stringArg = (name) => ({ type: 'string', description: name });
 const numberArg = (name) => ({ type: 'number', description: name });
 
-// The surface is only what the driver does well. There is no run_browser_burst and
-// no reusable element refs here: those are the cloud server's affordances, and
-// pretending a local stdio process has them would advertise something it cannot
-// honour. Coordinates and a fresh read per action are honest and sufficient.
+// The surface is only what the driver does well.
+// There is no run_browser_burst and no reusable element refs here: those are the cloud server's affordances, and pretending a local stdio process has them would advertise something it cannot honour.
+// Coordinates and a fresh read per action are honest and sufficient.
 
 const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes. A chrome:// page (extensions, settings) refuses every move - name a tab the bridge can drive instead.' };
 
-// WHY THIS SURFACE IS ALLOWLISTED AND READ-ONLY. An agent's fastest route from
-// confused to knowing is asking the browser a structured question: which frames
-// exist, which node is behind a row, what is in a frame's document. Doing that
-// today means finding the loopback door by accident — and a product that offers
-// no way to ask is a product that teaches guessing instead. So the door is
-// promoted to a tool, with the answer to "how much power does this hand out"
-// written into the list: only these methods, only reads. No Runtime.evaluate, so
-// no free script in the page and no way around the redaction a snapshot applies
-// to a password; no Input, no Page navigation, no storage. Anything that changes
-// the page stays a named primitive, where it can be described, bounded and
-// tested. A method not on this list is not refused by a shrug: it is refused by
-// name, with the list, because "no" that explains itself is worth more than a
-// "no" the agent has to guess at.
+// WHY THIS SURFACE IS ALLOWLISTED AND READ-ONLY.
+// An agent's fastest route from confused to knowing is asking the browser a structured question: which frames exist, which node is behind a row, what is in a frame's document.
+// Doing that today means finding the loopback door by accident — and a product that offers no way to ask is a product that teaches guessing instead.
+// So the door is promoted to a tool, with the answer to "how much power does this hand out" written into the list: only these methods, only reads.
+// No Runtime.evaluate, so no free script in the page and no way around the redaction a snapshot applies to a password; no Input, no Page navigation, no storage.
+// Anything that changes the page stays a named primitive, where it can be described, bounded and tested.
+// A method not on this list is not refused by a shrug: it is refused by name, with the list, because "no" that explains itself is worth more than a "no" the agent has to guess at.
 
 const ASKABLE = Object.freeze([
   'Page.getFrameTree',
@@ -77,9 +62,8 @@ const ASKABLE = Object.freeze([
   'DOM.requestNode'
 ]);
 
-// WHY SCREENSHOTS ARE INCLUDED AND JPEG IS NOT FORCED. A picture is the one
-// answer an agent cannot get wrong by reading too much, and asking for png is
-// how a test image gets made for a page that will not take files.
+// WHY SCREENSHOTS ARE INCLUDED AND JPEG IS NOT FORCED.
+// A picture is the one answer an agent cannot get wrong by reading too much, and asking for png is how a test image gets made for a page that will not take files.
 
 const askParams = (args) => {
   const params = args.params && typeof args.params === 'object' ? args.params : {};
@@ -442,57 +426,41 @@ function requireArguments(args, required) {
   }
 }
 
-// A browser that closed mid-call must not take the server with it, because the
-// next tool call is still worth trying.
+// A browser that closed mid-call must not take the server with it, because the next tool call is still worth trying.
 
 function asText(value) {
   return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] };
 }
 
-// WHY THE AUTO PAGE IS A STATE LINE AND NOT THE ROWS. Measured on a real eight-call
-// job: the actions alone spent 25,089 characters, because sixty rows and the page text
-// rode along after every click, and most of that text was the part that did not move.
-// An agent pays for that in tokens and in attention, and re-reads it a turn later. So
-// the answer carries where the page is (url, title, how much text it holds, what has
-// focus), how many rows it has, and the rows that changed. The rest is one deliberate
-// ax_snapshot away, which is a look the agent chose to take.
+// WHY THE AUTO PAGE IS A STATE LINE AND NOT THE ROWS.
+// Measured on a real eight-call job: the actions alone spent 25,089 characters, because sixty rows and the page text rode along after every click, and most of that text was the part that did not move.
+// An agent pays for that in tokens and in attention, and re-reads it a turn later.
+// So the answer carries where the page is (url, title, how much text it holds, what has focus), how many rows it has, and the rows that changed.
+// The rest is one deliberate ax_snapshot away, which is a look the agent chose to take.
 
-// WHY A WAIT POLLS THE FULL READ. The point of waiting is to end on the same
-// evidence an agent would read by hand — including the document on a Google
-// Doc, which the bare page text does not hold. A wait that runs out of budget
-// throws nothing: found:false comes back with the page as it stands, which is
-// what the next decision needs. Bounds are clamped, not refused, because a
-// wait budget is a safety property and the snapshot limit already set that
-// precedent.
+// WHY A WAIT POLLS THE FULL READ.
+// The point of waiting is to end on the same evidence an agent would read by hand — including the document on a Google Doc, which the bare page text does not hold.
+// A wait that runs out of budget throws nothing: found:false comes back with the page as it stands, which is what the next decision needs.
+// Bounds are clamped, not refused, because a wait budget is a safety property and the snapshot limit already set that precedent.
 
 const AUTO_PAGE_LIMIT = 60;
 const AUTO_ROWS = 8;
 const SETTLE_MS = 120;
 
-// WHY AN ACTION REPORTS THE PAGE IT LEFT BEHIND. An agent that has to ask for the
-// page after every action spends two round trips on one decision — act, then look —
-// and the look is the half that costs. Measured on the reference implementation:
-// roughly thirty per cent of all tool calls were snapshots, almost all of them
-// immediately after something the agent had just done. The reply therefore says
-// where the page is, what changed, and how many rows are still one call away, so a
-// decision costs one call without the answer carrying the whole page.
+// WHY AN ACTION REPORTS THE PAGE IT LEFT BEHIND.
+// An agent that has to ask for the page after every action spends two round trips on one decision — act, then look — and the look is the half that costs.
+// Measured on the reference implementation: roughly thirty per cent of all tool calls were snapshots, almost all of them immediately after something the agent had just done.
+// The reply therefore says where the page is, what changed, and how many rows are still one call away, so a decision costs one call without the answer carrying the whole page.
 
-// WHY ACTIONS REPORT WHAT CHANGED. The change set is computed against the last look
-// at the same tab: rows that appeared, rows that moved, and a count of rows that
-// left. Rows match by value — role, name and position — so duplicates collapse and
-// a reshaped page reports itself as reshaped instead of listing sixty new rows.
-// Only the first eight added or moved rows ride along: they are the ones worth
-// acting on, and the count says what was held back. Keyed by driver object in a
-// WeakMap, so a closed tab's last look is garbage instead of a leak.
+// WHY ACTIONS REPORT WHAT CHANGED.
+// The change set is computed against the last look at the same tab: rows that appeared, rows that moved, and a count of rows that left.
+// Rows match by value — role, name and position — so duplicates collapse and a reshaped page reports itself as reshaped instead of listing sixty new rows.
+// Only the first eight added or moved rows ride along: they are the ones worth acting on, and the count says what was held back.
+// Keyed by driver object in a WeakMap, so a closed tab's last look is garbage instead of a leak.
 
-// WHY THE LOOK WAITS A BEAT FIRST. The snapshot used to run the instant the
-// action's reply landed — and a menu that opens a frame later was already
-// missed: proven live, the auto-page after clicking Insert held no menu rows
-// while a snapshot a moment later held fifteen. A hundred and twenty
-// milliseconds is frames, not networks — seven of them, enough for any handler
-// to place its DOM — and twenty-five times less than one model turn, so the
-// tax framing is wrong: settling is part of seeing, and a page read before it
-// stands is a page misread.
+// WHY THE LOOK WAITS A BEAT FIRST.
+// The snapshot used to run the instant the action's reply landed — and a menu that opens a frame later was already missed: proven live, the auto-page after clicking Insert held no menu rows while a snapshot a moment later held fifteen.
+// A hundred and twenty milliseconds is frames, not networks — seven of them, enough for any handler to place its DOM — and twenty-five times less than one model turn, so the tax framing is wrong: settling is part of seeing, and a page read before it stands is a page misread.
 
 function diffElements(prev, curr) {
   const key = (r) => `${r.role}|${r.name}|${r.x}|${r.y}`;
@@ -517,40 +485,30 @@ import { withAdvice } from './advice.js';
 const lastAuto = new WeakMap();
 const lastPage = new WeakMap();
 
-// WHY THE WINDOW LINE IS HELD PER DRIVER AND NOT PER CALL. afterAction builds the
-// answer and the run that produced it are two different places; a driver is the one
-// thing they share, and a tab's driver is exactly the scope where "what did this
-// action do about the window" is a question with one answer.
-// WHY THE ANSWER SAYS SO. An action that silently brought the user's window forward
-// would be an action that changed something nobody asked for; an action that
-// silently could not would be one that reports a click nobody received. So every
-// input answer carries one line - already in front, or the window it brought, or why
-// it could not - and reading, capturing and asking carry nothing, because they did
-// nothing to where the machine's attention was.
+// WHY THE WINDOW LINE IS HELD PER DRIVER AND NOT PER CALL.
+// afterAction builds the answer and the run that produced it are two different places; a driver is the one thing they share, and a tab's driver is exactly the scope where "what did this action do about the window" is a question with one answer.
+// WHY THE ANSWER SAYS SO.
+// An action that silently brought the user's window forward would be an action that changed something nobody asked for; an action that silently could not would be one that reports a click nobody received.
+// So every input answer carries one line - already in front, or the window it brought, or why it could not - and reading, capturing and asking carry nothing, because they did nothing to where the machine's attention was.
 
 const windowSaid = new WeakMap();
 
 const tabSaid = new WeakMap();
 
-// WHY THE ROWS ARE KEPT ONCE. Advice is written against the page as it stood a
-// moment ago, not against one session's private cache: an agent that asked for a
-// row on the tab it is driving is asking about the page it can see. Most recent
-// read wins, and a failure before any read at all simply gets no advice about
-// what was there.
+// WHY THE ROWS ARE KEPT ONCE.
+// Advice is written against the page as it stood a moment ago, not against one session's private cache: an agent that asked for a row on the tab it is driving is asking about the page it can see.
+// Most recent read wins, and a failure before any read at all simply gets no advice about what was there.
 
 let lastSeen = [];
 
-// WHY A TAB THAT POINTS AT THE DROPPED FILE IS CLOSED. Chrome answers a drop no
-// page accepted by doing the default thing: it opens the file. Measured live —
-// every rejected drop left a `file://` tab behind, and every accepted drop left
-// none — so a stray tab is also the honest signal that the page took the drop.
-// It is closed and named, never hidden: a drop that did not land says so
-// instead of leaving litter on the person's screen.
+// WHY A TAB THAT POINTS AT THE DROPPED FILE IS CLOSED.
+// Chrome answers a drop no page accepted by doing the default thing: it opens the file.
+// Measured live — every rejected drop left a `file://` tab behind, and every accepted drop left none — so a stray tab is also the honest signal that the page took the drop.
+// It is closed and named, never hidden: a drop that did not land says so instead of leaving litter on the person's screen.
 
-// WHY THE BUDGETS ARE CLAMPED WHERE THEY ARE. A wait that is asked for in
-// milliseconds and a wait that is asked for in hours both have to come back:
-// an agent that asks for a minute and waits ten is not measuring the page, it
-// is measuring its own typing. Bounds keep a wait a wait.
+// WHY THE BUDGETS ARE CLAMPED WHERE THEY ARE.
+// A wait that is asked for in milliseconds and a wait that is asked for in hours both have to come back: an agent that asks for a minute and waits ten is not measuring the page, it is measuring its own typing.
+// Bounds keep a wait a wait.
 
 const budgetOf = (value, fallback) => {
   const asked = Number(value ?? fallback);
@@ -600,17 +558,13 @@ const afterAction = async (driver, action, limit) => {
   });
 };
 
-// WHY "SOME BROWSER IS IN FRONT" WAS A LIE. This machine has Chrome and Brave on it,
-// and the answer said focused true with Brave in front while the drive was on a
-// Chrome tab - an agent that reads that would never learn that the window it is
-// driving is somewhere else entirely. So the answer names which browser has the
-// machine, and "focused" means the window in front is one holding a tab of ours.
-//
-// WHY THE TITLES ARE THE EVIDENCE. Nothing in the bridge says which browser a tab
-// belongs to, but the window in front carries the title of the page in it, and the
-// tabs we drive carry their titles too. The one case this cannot tell is two windows
-// showing the same page title, and it answers that with what it knows - the browser
-// in front - rather than a yes it cannot back.
+// WHY "SOME BROWSER IS IN FRONT" WAS A LIE.
+// This machine has Chrome and Brave on it, and the answer said focused true with Brave in front while the drive was on a Chrome tab - an agent that reads that would never learn that the window it is driving is somewhere else entirely.
+// So the answer names which browser has the machine, and "focused" means the window in front is one holding a tab of ours.
+
+// WHY THE TITLES ARE THE EVIDENCE.
+// Nothing in the bridge says which browser a tab belongs to, but the window in front carries the title of the page in it, and the tabs we drive carry their titles too.
+// The one case this cannot tell is two windows showing the same page title, and it answers that with what it knows - the browser in front - rather than a yes it cannot back.
 
 const windowTruth = (window, browsers, tabs = []) => {
   const foreground = String(window?.foreground ?? '');
@@ -627,65 +581,46 @@ const windowTruth = (window, browsers, tabs = []) => {
   };
 };
 
-// WHY THE TAB LOOKUP COMPARES TEXTUALLY. A Chrome tab id is a number, the tool
-// schema says string, and an agent copies the id straight out of the tab list
-// it was just handed. Comparing with === refused the id the product itself
-// printed, which is how a drive that can see six tabs decides none of them is
-// real. Ids are compared as text everywhere they cross a boundary.
+// WHY THE TAB LOOKUP COMPARES TEXTUALLY.
+// A Chrome tab id is a number, the tool schema says string, and an agent copies the id straight out of the tab list it was just handed.
+// Comparing with === refused the id the product itself printed, which is how a drive that can see six tabs decides none of them is real.
+// Ids are compared as text everywhere they cross a boundary.
 
-// WHY THE PORT IS ASKED FOR, NOT STORED. The pipe is chosen per call because a
-// worker can wake up late, so a port captured at startup is a lie the moment
-// after it. Measured on the user's own machine: the drive was already on the
-// bridge, list_tabs returned the real tabs, and browser_status still named the
-// debugging port nothing was listening on — the kind of wrong answer that sends
-// someone off to debug a port that was never in the way.
+// WHY THE PORT IS ASKED FOR, NOT STORED.
+// The pipe is chosen per call because a worker can wake up late, so a port captured at startup is a lie the moment after it.
+// Measured on the user's own machine: the drive was already on the bridge, list_tabs returned the real tabs, and browser_status still named the debugging port nothing was listening on — the kind of wrong answer that sends someone off to debug a port that was never in the way.
 
 const livePort = (context) => (typeof context.port === 'function' ? context.port() : context.port);
 
-// WHY EVERY ANSWER NAMES THE TAB IT HIT. An agent that named a tab rather than
-// numbering it has to be told which tab that turned out to be, because the name it
-// wrote is not an id and the answer is where the id belongs.
+// WHY EVERY ANSWER NAMES THE TAB IT HIT.
+// An agent that named a tab rather than numbering it has to be told which tab that turned out to be, because the name it wrote is not an id and the answer is where the id belongs.
 
-// WHY A FAILURE CARRIES THE NEXT MOVE. A message that only names the problem
-// sends an agent looking for the problem again, usually while the thing that
-// caused it is closing. Measured on this product's own author: every one of these
-// failures had the same two or three next moves, and they were rediscovered every
-// single time. The rows the advice reads are the page as it stood a moment ago,
-// so "what was there" is answered with evidence rather than a guess.
+// WHY A FAILURE CARRIES THE NEXT MOVE.
+// A message that only names the problem sends an agent looking for the problem again, usually while the thing that caused it is closing.
+// Measured on this product's own author: every one of these failures had the same two or three next moves, and they were rediscovered every single time.
+// The rows the advice reads are the page as it stood a moment ago, so "what was there" is answered with evidence rather than a guess.
 
-// WHY A PAGE WITH NO FILE INPUT IS A FAILURE AND NOT AN ANSWER. Measured live on
-// Google Docs: upload returned inputFound: false as a successful tool call, so an
-// agent reading it as "done" moved on with nothing in the document - and the road
-// in, a drop, was nowhere in the answer. The page is perfectly reachable; it simply
-// has no input to fill. So it fails, names that, and carries the drop with it.
+// WHY A PAGE WITH NO FILE INPUT IS A FAILURE AND NOT AN ANSWER.
+// Measured live on Google Docs: upload returned inputFound: false as a successful tool call, so an agent reading it as "done" moved on with nothing in the document - and the road in, a drop, was nowhere in the answer.
+// The page is perfectly reachable; it simply has no input to fill.
+// So it fails, names that, and carries the drop with it.
 
-      // WHY A NAMED TAB IS NAVIGATED AND NOT OPENED. Measured live on this machine:
-      // `open_url` with a tabId answered "driver.open is not a function", because a
-      // per-tab driver has no way to open anything - and a caller who names a tab
-      // means "this tab goes here", not "open one more". So a named tab is navigated
-      // and says which tab it moved.
+      // WHY A NAMED TAB IS NAVIGATED AND NOT OPENED.
+      // Measured live on this machine: `open_url` with a tabId answered "driver.open is not a function", because a per-tab driver has no way to open anything - and a caller who names a tab means "this tab goes here", not "open one more".
+      // So a named tab is navigated and says which tab it moved.
 
-// WHY THESE TOOLS CHECK THE WINDOW AND THE OTHERS DO NOT. A click, a key, text
-// typed, a file dropped and a menu walked all have to reach a page that is
-// listening, and a page behind another window is not listening - measured live, with
-// Google Docs taking the keys and dropping them while every answer said the click was
-// delivered. Reading, capturing and asking change nothing about where the machine's
-// attention is, so they do not pay for the check, and a drive that is only looking
-// never steals the human's focus.
+// WHY THESE TOOLS CHECK THE WINDOW AND THE OTHERS DO NOT.
+// A click, a key, text typed, a file dropped and a menu walked all have to reach a page that is listening, and a page behind another window is not listening - measured live, with Google Docs taking the keys and dropping them while every answer said the click was delivered.
+// Reading, capturing and asking change nothing about where the machine's attention is, so they do not pay for the check, and a drive that is only looking never steals the human's focus.
 
-  // WHY THE WINDOW THAT GETS BROUGHT FORWARD IS THE ONE HOLDING THE TAB. With two
-// browser windows open, a check that brings an arbitrary one forward leaves the tab
-// in the same place as before and the answer says it fixed something. The tab's own
-// title is the piece that identifies its window, and the call is best-effort: a
-// driver that cannot see windows says so and the action still goes out.
+  // WHY THE WINDOW THAT GETS BROUGHT FORWARD IS THE ONE HOLDING THE TAB.
+  // With two
+// browser windows open, a check that brings an arbitrary one forward leaves the tab in the same place as before and the answer says it fixed something.
+// The tab's own title is the piece that identifies its window, and the call is best-effort: a driver that cannot see windows says so and the action still goes out.
 
-// WHY A TAB MAY BE NAMED AS WELL AS NUMBERED. Measured live on this product's own
-// author: an agent that copies an eight-digit id wrong is told "No page target", and
-// the number is the one thing it cannot check - it cannot read a digit back off a
-// screenshot, but it can read a title. So a tabId that is not a number is looked for
-// by title or address, and a name that fits two tabs is refused with both of them,
-// because picking one and saying nothing is how a drive ends up typing into the wrong
-// document.
+// WHY A TAB MAY BE NAMED AS WELL AS NUMBERED.
+// Measured live on this product's own author: an agent that copies an eight-digit id wrong is told "No page target", and the number is the one thing it cannot check - it cannot read a digit back off a screenshot, but it can read a title.
+// So a tabId that is not a number is looked for by title or address, and a name that fits two tabs is refused with both of them, because picking one and saying nothing is how a drive ends up typing into the wrong document.
 
 const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu', 'download']);
 
@@ -967,16 +902,13 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
   };
 }
 
-// WHY the loop is line based and never awaits a parse. MCP stdio frames are
-// newline-delimited JSON, so a line that is not yet complete is not a frame, and a
-// malformed one must be reported rather than thrown, because a throwing read loop
-// ends the session over one bad message.
-//
-// WHY the dispatch carries a rejection handler and a void. Without the handler a
-// single rejected handle ends the process on an unhandled rejection, taking down a
-// whole session over one bad call. SonarCloud caught that on this file and it was
-// right: the handler is not decoration. The void then says the reply is deliberately
-// not awaited, because an event loop has nothing else to wait for.
+// WHY the loop is line based and never awaits a parse.
+// MCP stdio frames are newline-delimited JSON, so a line that is not yet complete is not a frame, and a malformed one must be reported rather than thrown, because a throwing read loop ends the session over one bad message.
+
+// WHY the dispatch carries a rejection handler and a void.
+// Without the handler a single rejected handle ends the process on an unhandled rejection, taking down a whole session over one bad call.
+// SonarCloud caught that on this file and it was right: the handler is not decoration.
+// The void then says the reply is deliberately not awaited, because an event loop has nothing else to wait for.
 
 export function startStdio({ input = process.stdin, output = process.stdout, context }) {
   const server = createMcpServer(context);

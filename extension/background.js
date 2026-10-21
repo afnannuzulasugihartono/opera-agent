@@ -1,9 +1,7 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: background — the thin MV3 entry: dispatch's own state and dispatch.
 // @state: holds two constants dispatch reads, the role-reconcile bridge, and the one load-time listener; every other region of the original 2646-line file moved to worker/ and lib/.
-// @dependencies: protocol, watch, role-reconcile, log, popup-events,
-// debugger-session, serialize, utils, capture, tab-content, listen, capture-page,
-// action-focus, burst, watch-registry, execute-pull.
+// @dependencies: protocol, watch, role-reconcile, log, popup-events, debugger-session, serialize, utils, capture, tab-content, listen, capture-page, action-focus, burst, watch-registry, execute-pull.
 
 import {
   PRODUCT_VERSION,

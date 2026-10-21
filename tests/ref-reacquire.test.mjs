@@ -4,18 +4,12 @@
 // @dependencies: node:test, strict, promises.
 
 // Bounded ref re-acquisition contracts.
-//
-// The design decision this file locks is a NEGATIVE one, and it is the point of
-// the checkpoint: the mint-time geometry guard is NOT relaxed. It exists because
-// a same-place successor can be a DIFFERENT control (the recorded Street-View
-// mis-click), so widening it would reintroduce that failure mode.
-//
-// What was actually broken was the cost of recovery: after a legitimate
-// re-render moved a control, the model had to run a whole new page.find just to
-// obtain a usable ref. The fix hands back fresh refs for candidates that have
-// already passed uniqueness, intrinsic identity, actionability, and the
-// non-sensitive check — which is exactly what a find would have granted — while
-// still refusing the stale ref.
+
+// The design decision this file locks is a NEGATIVE one, and it is the point of the checkpoint: the mint-time geometry guard is NOT relaxed.
+// It exists because a same-place successor can be a DIFFERENT control (the recorded Street-View mis-click), so widening it would reintroduce that failure mode.
+
+// What was actually broken was the cost of recovery: after a legitimate re-render moved a control, the model had to run a whole new page.find just to obtain a usable ref.
+// The fix hands back fresh refs for candidates that have already passed uniqueness, intrinsic identity, actionability, and the non-sensitive check — which is exactly what a find would have granted — while still refusing the stale ref.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

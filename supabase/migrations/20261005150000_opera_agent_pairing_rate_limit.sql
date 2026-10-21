@@ -1,13 +1,10 @@
 -- Rate-limit pairing code issuance per account.
---
--- WHY this file: ROADMAP lists a pairing rate limit as a precondition for mass
--- distribution. Without it, anyone with an account can mint codes as fast as the
--- endpoint allows, and every code invalidates the previous one, so a hostile
--- account can lock a legitimate user out of pairing by racing them.
---
--- The cap is per issuing account over a rolling window, measured in the same
--- table the codes already live in, so it needs no new table and no scheduler.
---
+
+-- WHY this file: ROADMAP lists a pairing rate limit as a precondition for mass distribution.
+-- Without it, anyone with an account can mint codes as fast as the endpoint allows, and every code invalidates the previous one, so a hostile account can lock a legitimate user out of pairing by racing them.
+
+-- The cap is per issuing account over a rolling window, measured in the same table the codes already live in, so it needs no new table and no scheduler.
+
 -- APPLY: paste into the Supabase dashboard SQL editor.
 
 create or replace function public.opera_create_pairing_code(

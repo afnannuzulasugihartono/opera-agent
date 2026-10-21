@@ -21,8 +21,9 @@
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh-berkas" />
   <meta property="og:locale" content="id_ID" />
   <style>
-    /* WHY the same single-file shape as the rest of the site: no build step and
-       no external origin, so the archive link is the only way out of this page. */
+    /*
+     * WHY the same single-file shape as the rest of the site: no build step and no external origin, so the archive link is the only way out of this page.
+     */
     :root {
       --bg: #0b0d10;
       --surface: #16191e;
@@ -76,12 +77,12 @@
 
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
-   748px together, and the container is the viewport minus 48, so the row stops
-   fitting at 796px. The band used to read 640px, which left every window between
-   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
-   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
-   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    /*
+     * WHY the row scrolls at 800px and not at 390px: the ten nav children measure 748px together, and the container is the viewport minus 48, so the row stops fitting at 796px.
+     * The band used to read 640px, which left every window between 641 and 796 overflowing with no rule to catch it — a 155px dead band where the last item sat past the right edge.
+     * Measured, then rounded up.
+     * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
+     */
     @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
@@ -113,29 +114,28 @@
     code, .hash {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12.5px;
-      /* WHY the wrap: the checksum command on this page is fifty-four characters with a path
-         in the middle of it, and a reader on a phone should not have to scroll sideways to
-         read the command they are about to paste. */
+      /*
+       * WHY the wrap: the checksum command on this page is fifty-four characters with a path in the middle of it, and a reader on a phone should not have to scroll sideways to read the command they are about to paste.
+       */
       overflow-wrap: anywhere;
       word-break: break-word;
       background: var(--surface-soft);
       border: 1px solid var(--line);
       border-radius: 7px;
       padding: 2px 6px;
-      /* WHY no break-all: it snapped tokens mid-word even when the line had room.
-         anywhere still wraps a 64-hex digest on a phone, but a short token like
-         chrome://policy only breaks when it truly overflows — and both halves
-         stay boxed. */
+      /*
+       * WHY no break-all: it snapped tokens mid-word even when the line had room.
+       * anywhere still wraps a 64-hex digest on a phone, but a short token like chrome://policy only breaks when it truly overflows — and both halves stay boxed.
+       */
       box-decoration-break: clone;
       -webkit-box-decoration-break: clone;
     }
 
-    /* WHY pre-wrap and not just the wrap above: `pre` is white-space: pre, and that
-       outranks the overflow-wrap on the code inside it, so the 118-character curl
-       line ran 662px past a 320px screen and the reader could not reach the tail of
-       the command they were told to paste. pre-wrap keeps the author's line breaks
-       and adds one where the screen ends. The box keeps the command's own padding
-       instead of inheriting the inline code pill. */
+    /*
+     * WHY pre-wrap and not just the wrap above: `pre` is white-space: pre, and that outranks the overflow-wrap on the code inside it, so the 118-character curl line ran 662px past a 320px screen and the reader could not reach the tail of the command they were told to paste.
+     * pre-wrap keeps the author's line breaks and adds one where the screen ends.
+     * The box keeps the command's own padding instead of inheriting the inline code pill.
+     */
     pre {
       margin: 0 0 14px;
       padding: 12px 14px;
@@ -154,17 +154,18 @@
     dl.facts dt { color: var(--text); font-weight: 600; }
     dl.facts dd { margin: 0; }
 
-    /* WHY stacked under 420px: the label column is max-content and never shrinks, so on a
-       phone the value is left in a sliver. Every settings page a reader already knows puts
-       the value under its label at this width. */
+    /*
+     * WHY stacked under 420px: the label column is max-content and never shrinks, so on a phone the value is left in a sliver.
+     * Every settings page a reader already knows puts the value under its label at this width.
+     */
     @media (max-width: 420px) {
       dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
       dl.facts dd { margin: 0 0 10px; }
     }
 
-    /* WHY a table and not a list: the reader is asking one question per browser, and a
-       table lets each answer sit in the same column so the shape of the answer is
-       visible before any text is read. */
+    /*
+     * WHY a table and not a list: the reader is asking one question per browser, and a table lets each answer sit in the same column so the shape of the answer is visible before any text is read.
+     */
     table.support { width: 100%; border-collapse: collapse; margin: 14px 0 8px; font-size: 14px; }
     table.support th, table.support td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
     table.support th { color: var(--muted); font-weight: 600; font-size: 13px; }
@@ -172,8 +173,9 @@
     table.support td.no { color: var(--muted); }
     table.support tr:last-child td { border-bottom: 0; }
     .meta { color: var(--muted); font-size: 13px; }
-    /* WHY one grid for five browsers: the reader asks "which one is mine", and
-       the matching card answers before any prose is read. */
+    /*
+     * WHY one grid for five browsers: the reader asks "which one is mine", and the matching card answers before any prose is read.
+     */
     .wrap.wide { max-width: 1120px; }
     .hero { text-align: center; margin: 8px auto 6px; max-width: 640px; }
     .hero h1 { font-size: clamp(36px, 4.6vw, 52px); line-height: 1.08; margin: 0 0 12px; }
@@ -183,21 +185,17 @@
     .browser.yours { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent), 0 18px 44px rgba(0, 0, 0, .4); }
     .browser .glyph { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 24px; font-weight: 700; }
     .browser h3 { margin: 0 0 12px; font-size: 18px; }
-    /* WHY one filled button above one closed list: this is the shape
-       code.visualstudio.com/download uses, and the principle behind it is that a
-       reader who lands here wants the file that works — only someone rolling the
-       extension out to a fleet wants the signed one. Two equal buttons gave the
-       home path and the enterprise path the same visual weight, which is the one
-       thing this page must not do: the .crx is REFUSED on an unmanaged machine,
-       so a reader who picks it by shape loses ten minutes to learn that. */
+    /*
+     * WHY one filled button above one closed list: this is the shape code.visualstudio.com/download uses, and the principle behind it is that a reader who lands here wants the file that works — only someone rolling the extension out to a fleet wants the signed one.
+     * Two equal buttons gave the home path and the enterprise path the same visual weight, which is the one thing this page must not do: the .crx is REFUSED on an unmanaged machine, so a reader who picks it by shape loses ten minutes to learn that.
+     */
     .browser .btn-row { display: flex; justify-content: center; }
     .browser .btn { margin: 4px 0; padding: 13px 24px; font-size: 15px; width: 100%; }
 
-    /* WHY details and not a select: a select fires navigation on change, hides its
-       choices from the keyboard and from the page's own text, and needs script to
-       restore the closed state on load. details is native, focusable, open by
-       keyboard alone, and reads correctly with the page's script blocked — which
-       is this page's whole posture, connect-src 'none' included. */
+    /*
+     * WHY details and not a select: a select fires navigation on change, hides its choices from the keyboard and from the page's own text, and needs script to restore the closed state on load.
+     * details is native, focusable, open by keyboard alone, and reads correctly with the page's script blocked — which is this page's whole posture, connect-src 'none' included.
+     */
     .browser .more { margin: 2px 0 0; border: 1px solid var(--line-strong); border-radius: 12px; }
     .browser .more[open] { border-color: var(--accent); }
     .browser .more > summary {
@@ -221,10 +219,10 @@
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    /* WHY the gap and not a margin: the six footer doors are written with no
-       whitespace between the tags, so an inline row of anchors has no break
-       opportunity and pushed the footer 32px past a 320px screen. A flex gap
-       breaks between items wherever the line runs out. */
+    /*
+     * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
+     * A flex gap breaks between items wherever the line runs out.
+     */
     footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }

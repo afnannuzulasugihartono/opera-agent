@@ -1,56 +1,37 @@
 -- Command execution budget and wait-ramp corrections (2026-10-02).
---
--- Four independent defects found while measuring the AI command path. No
--- response contract changes: every function keeps its signature, its envelope,
--- and its grants.
---
+
+-- Four independent defects found while measuring the AI command path.
+-- No response contract changes: every function keeps its signature, its envelope, and its grants.
+
 -- 1. The execution budget started at enqueue.
---
---    `expires_at` was set to now() + timeout_ms + 5s when the command was
---    enqueued, so time spent queued was charged against the command's own
---    execution budget. Two functions then act on that column:
---    `opera_claim_next` sweeps any `queued`/`claimed` row past `expires_at` into
---    `expired`, and `opera_complete_command` refuses to complete anything that is
---    not `claimed` or `queued`.
---
---    The reachable failure: a command enqueued while the device is offline sits
---    queued for minutes, is claimed on reconnect with almost nothing left, and
---    the very next poll flips it to `expired` while the extension is still
---    executing it. The completion is then rejected as "no longer completable"
---    and the work is silently lost. With the server-side wait installed on
---    2026-10-02 the normal queue wait is ~118ms p50, but an offline device is
---    still minutes, so the bug remains reachable.
---
---    The claim now restarts the clock from `timeout_ms`, so a command always gets
---    its full execution budget once the device actually takes it. Enqueue keeps
---    its own expiry so a command that nobody ever claims is still swept; that
---    value now bounds "never claimed" rather than "queued plus executed".
---
--- 2. `opera_watch_events_wait` polled at a flat 5ms for up to 32 seconds, which
---    Phase A measured at 6400 loop iterations per full-length call. It now uses
---    the same ramp `opera_await_adaptive` already uses: 5/5/5/5/10/10/10/10/20/
---    20 then 50ms. Measured at 648 iterations for the same 32 seconds, a 9.9x
---    reduction, with the first 100ms exactly as fine as before. That opening
---    window is the one that matters, because a watch fires in response to the
---    `start_watch` that armed it.
---
--- 3. `created_at` defaulted to `now()`, which in Postgres is
---    `transaction_timestamp()` and therefore constant for a whole transaction.
---    The claim orders by `created_at`, so rows inserted together had a
---    non-deterministic order and `for update skip locked limit 1` could pick any
---    of them. `clock_timestamp()` varies within a transaction, so the queue
---    index (device_id, status, created_at) now yields a strict order. Existing
---    rows keep their recorded timestamps.
---
--- 4. `opera_run_fast` is dropped. It enqueues and awaits inside one transaction,
---    so the INSERT is not visible to the device's `opera_claim_next` until the
---    function commits, and `opera_await_adaptive` therefore always timed out.
---    No caller existed, yet it was granted to service_role, which made it a live
---    trap for the next person who found the name. The definition remains in
---    `20260922000000_opera_agent_ut_etw.sql`, so the drop is reversible by
---    replaying that migration.
+
+-- `expires_at` was set to now() + timeout_ms + 5s when the command was enqueued, so time spent queued was charged against the command's own execution budget.
+-- Two functions then act on that column: `opera_claim_next` sweeps any `queued`/`claimed` row past `expires_at` into `expired`, and `opera_complete_command` refuses to complete anything that is not `claimed` or `queued`.
+
+-- The reachable failure: a command enqueued while the device is offline sits queued for minutes, is claimed on reconnect with almost nothing left, and the very next poll flips it to `expired` while the extension is still executing it.
+-- The completion is then rejected as "no longer completable" and the work is silently lost.
+-- With the server-side wait installed on 2026-10-02 the normal queue wait is ~118ms p50, but an offline device is still minutes, so the bug remains reachable.
+
+-- The claim now restarts the clock from `timeout_ms`, so a command always gets its full execution budget once the device actually takes it.
+-- Enqueue keeps its own expiry so a command that nobody ever claims is still swept; that value now bounds "never claimed" rather than "queued plus executed".
+
+-- 2. `opera_watch_events_wait` polled at a flat 5ms for up to 32 seconds, which Phase A measured at 6400 loop iterations per full-length call.
+--    It now uses the same ramp `opera_await_adaptive` already uses: 5/5/5/5/10/10/10/10/20/ 20 then 50ms.
+--    Measured at 648 iterations for the same 32 seconds, a 9.9x reduction, with the first 100ms exactly as fine as before.
+--    That opening window is the one that matters, because a watch fires in response to the `start_watch` that armed it.
+
+-- 3. `created_at` defaulted to `now()`, which in Postgres is `transaction_timestamp()` and therefore constant for a whole transaction.
+--    The claim orders by `created_at`, so rows inserted together had a non-deterministic order and `for update skip locked limit 1` could pick any of them.
+--    `clock_timestamp()` varies within a transaction, so the queue index (device_id, status, created_at) now yields a strict order.
+--    Existing rows keep their recorded timestamps.
+
+-- 4. `opera_run_fast` is dropped.
+--    It enqueues and awaits inside one transaction, so the INSERT is not visible to the device's `opera_claim_next` until the function commits, and `opera_await_adaptive` therefore always timed out.
+--    No caller existed, yet it was granted to service_role, which made it a live trap for the next person who found the name.
+--    The definition remains in `20260922000000_opera_agent_ut_etw.sql`, so the drop is reversible by replaying that migration.
 
 -- 1. The execution budget starts when the command is claimed.
+
 create or replace function public.opera_enqueue(p_method text,p_params jsonb default '{}'::jsonb,p_timeout_ms integer default null,p_device_name text default 'opera',p_request_id text default null) returns jsonb
 language plpgsql security definer set search_path=public as $$
 declare v_device public.opera_devices%rowtype; v_default_timeout integer; v_timeout integer; v_cmd public.opera_commands%rowtype;

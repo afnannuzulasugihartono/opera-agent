@@ -1,29 +1,22 @@
 -- Verify and enqueue in one round trip (2026-10-12).
---
+
 -- WHY THIS FILE EXISTS
---
--- The gateway verified the device token and enqueued the command as two
--- sequential RPCs: two edge-to-database round trips on every single command.
--- Each hop measures tens of milliseconds same-region, so the split costs
--- roughly a hundred milliseconds per command for no behavioral reason. This
--- function does both checks and the enqueue in one call.
---
--- WHY it delegates instead of duplicating. The allowlist check, the timeout
--- clamp, the request-id dedup, and the audit write already exist inside
--- opera_enqueue, tested and pinned. Authentication already exists inside
--- opera_verify_device — including the seven-day idle expiry, which the older
--- opera_auth_device does not enforce. Copying any of that logic here would
--- create places for it to drift, so this function authenticates, checks
--- freshness, and hands off. opera_enqueue itself is untouched and still serves
--- the OAuth path, which has no device token to verify.
---
--- WHY the offline check lives inside rather than with the caller. An offline
--- device must never produce a row: the bridge would claim it, push to a dead
--- socket, and strand it as claimed until expiry. Returning before the enqueue
--- keeps that invariant exactly where the gateway kept it.
---
--- Error shapes mirror what the gateway produced from the split calls, so the
--- only observable change is one fewer round trip.
+
+-- The gateway verified the device token and enqueued the command as two sequential RPCs: two edge-to-database round trips on every single command.
+-- Each hop measures tens of milliseconds same-region, so the split costs roughly a hundred milliseconds per command for no behavioral reason.
+-- This function does both checks and the enqueue in one call.
+
+-- WHY it delegates instead of duplicating.
+-- The allowlist check, the timeout clamp, the request-id dedup, and the audit write already exist inside opera_enqueue, tested and pinned.
+-- Authentication already exists inside opera_verify_device — including the seven-day idle expiry, which the older opera_auth_device does not enforce.
+-- Copying any of that logic here would create places for it to drift, so this function authenticates, checks freshness, and hands off.
+-- opera_enqueue itself is untouched and still serves the OAuth path, which has no device token to verify.
+
+-- WHY the offline check lives inside rather than with the caller.
+-- An offline device must never produce a row: the bridge would claim it, push to a dead socket, and strand it as claimed until expiry.
+-- Returning before the enqueue keeps that invariant exactly where the gateway kept it.
+
+-- Error shapes mirror what the gateway produced from the split calls, so the only observable change is one fewer round trip.
 
 create or replace function public.opera_verify_enqueue(
   p_token_hash text,

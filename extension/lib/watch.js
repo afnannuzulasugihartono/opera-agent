@@ -3,20 +3,11 @@
 // @state: exports TRIGGER_KINDS, validateRule and evaluateRules; no DOM, no chrome — the caller supplies fact snapshots, once-mode rules retire after firing, every rule retires past deadline or maxEvents.
 // @dependencies: none.
 
-// Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact
-// snapshots, so it stays deterministic and testable in Node.
-//
-// WHY local evaluation: the model compiles intent into rules ONCE and the device
-// evaluates them against page facts, so reaction speed follows the page instead
-// of the model round trip.
-//
-// Locked by tests/etw-watch-engine.test.mjs: already-true-at-arm fires
-// immediately (an ad on screen when the watcher installs must be acted on, not
-// swallowed); repeat rules re-fire on every match, throttled by debounce;
-// selectorGone needs a real presence->absent transition; urlChange and
-// navigation fire against a first-sight baseline; mediaTime fires on crossing
-// atSeconds; once rules retire after their first fire, and every rule retires
-// past its deadline or maxEvents budget.
+// Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact snapshots, so it stays deterministic and testable in Node.
+
+// WHY local evaluation: the model compiles intent into rules ONCE and the device evaluates them against page facts, so reaction speed follows the page instead of the model round trip.
+
+// Locked by tests/etw-watch-engine.test.mjs: already-true-at-arm fires immediately (an ad on screen when the watcher installs must be acted on, not swallowed); repeat rules re-fire on every match, throttled by debounce; selectorGone needs a real presence->absent transition; urlChange and navigation fire against a first-sight baseline; mediaTime fires on crossing atSeconds; once rules retire after their first fire, and every rule retires past its deadline or maxEvents budget.
 
 export const TRIGGER_KINDS = new Set([
   'selectorPresence',

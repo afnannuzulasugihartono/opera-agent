@@ -1,7 +1,6 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: bridge-body-cap.test — Test.
-// @state: pins the bridge bounded body read: chunked bodies without
-//   content-length are measured, not just the header.
+// @state: pins the bridge bounded body read: chunked bodies without content-length are measured, not just the header.
 // @dependencies: node:test, strict, node:fs, node:module, node:vm.
 
 import test from 'node:test';
@@ -15,10 +14,8 @@ import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera
 const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
 
-// The upgrade path is stripped out of the harness source so a body test cannot be
-// dragged into socket territory, and is supplied here instead. The real symbols
-// are used rather than a stand-in: a fake upgrade detector would pass these tests
-// while the production one still hijacked a normal POST.
+// The upgrade path is stripped out of the harness source so a body test cannot be dragged into socket territory, and is supplied here instead.
+// The real symbols are used rather than a stand-in: a fake upgrade detector would pass these tests while the production one still hijacked a normal POST.
 
 const bodySource = source.replace(/^\/\/ WHY the socket is checked[\s\S]*?^Deno\.serve\(\(req: Request\) => \{/m, 'Deno.serve((req: Request) => {');
 

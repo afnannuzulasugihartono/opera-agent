@@ -3,9 +3,8 @@
 # @state: the site is served as static files; AGENTS.md is repo governance, not a page.
 # @dependencies: none stated.
 
-# WHY this file exists: an auto-detected framework replaced the root document, so
-# the alias served 404 while the deployment URL served a dashboard. These three
-# lines, plus framework null in vercel.json, keep the site static.
+# WHY this file exists: an auto-detected framework replaced the root document, so the alias served 404 while the deployment URL served a dashboard.
+# These three lines, plus framework null in vercel.json, keep the site static.
 
 .vercel
 .env*

@@ -3,11 +3,9 @@
 // @state: round trips, init replay, queued swap, named reload failures, crash budget.
 // @dependencies: node:test, strict, ../local/dev-shim.js.
 
-// WHY EVERYTHING IS FAKE HERE. A supervisor test that spawns real processes
-// and watches real files tests the operating system's timing, not the
-// supervisor: flaky where it should be exact. The seams are the contract —
-// spawn, watch, pipes — so fakes behind those seams prove the behavior and a
-// live drill below the tests proves the wiring.
+// WHY EVERYTHING IS FAKE HERE.
+// A supervisor test that spawns real processes and watches real files tests the operating system's timing, not the supervisor: flaky where it should be exact.
+// The seams are the contract — spawn, watch, pipes — so fakes behind those seams prove the behavior and a live drill below the tests proves the wiring.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -173,11 +171,9 @@ test('an unexpected death fails the in-flight by name and rebuilds', async () =>
   await h.server.stop();
 });
 
-// WHY THE POISON NO LONGER ENDS THE SHIM. Ending it handed the client a dead
-// MCP and flipped its switch off, so a person editing code watched the server
-// toggle itself off and had to toggle it back by hand — the round trip the
-// shim exists to remove. A poisoned worker now keeps the pipe and names itself
-// on every call, and saving a file rebuilds it.
+// WHY THE POISON NO LONGER ENDS THE SHIM.
+// Ending it handed the client a dead MCP and flipped its switch off, so a person editing code watched the server toggle itself off and had to toggle it back by hand — the round trip the shim exists to remove.
+// A poisoned worker now keeps the pipe and names itself on every call, and saving a file rebuilds it.
 
 test('a worker that keeps dying names itself on every call and a save rebuilds it', async () => {
   let at = 0;

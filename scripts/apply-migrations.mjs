@@ -1,11 +1,7 @@
-// apply-migrations.mjs — apply SQL migration files through the Supabase
-// Management API, because `supabase db push` needs a direct Postgres route
-// that this machine does not have, and pasting multi-kilobyte dollar-quoted
-// JSON through a tool call loses quoting. It reads files, so the exact bytes
-// in the tree are what the database receives.
-//
-// Usage: node scripts/apply-migrations.mjs <file-or-glob> [...]
-// Needs SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF.
+// apply-migrations.mjs — apply SQL migration files through the Supabase Management API, because `supabase db push` needs a direct Postgres route that this machine does not have, and pasting multi-kilobyte dollar-quoted JSON through a tool call loses quoting.
+// It reads files, so the exact bytes in the tree are what the database receives.
+
+// Usage: node scripts/apply-migrations.mjs <file-or-glob> [...] Needs SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF.
 
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
@@ -24,11 +20,9 @@ if (!files.length) {
   process.exit(2);
 }
 
-// WHY THE TRIM IS A LOOP AND NOT TWO PATTERNS. SonarCloud flagged the trim as a
-// pattern that can walk back into a run it has already matched (S8786), which is a
-// fair thing to be suspicious of in a script that names migrations. Walking the string
-// says exactly what it does, and the output is the same string: the folded name with
-// no leading or trailing underscore, cut to sixty characters.
+// WHY THE TRIM IS A LOOP AND NOT TWO PATTERNS.
+// SonarCloud flagged the trim as a pattern that can walk back into a run it has already matched (S8786), which is a fair thing to be suspicious of in a script that names migrations.
+// Walking the string says exactly what it does, and the output is the same string: the folded name with no leading or trailing underscore, cut to sixty characters.
 
 const trimUnderscores = (text) => {
   let start = 0;

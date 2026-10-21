@@ -1,7 +1,7 @@
--- Browse recon flow v1 (2026-10-08): detect-then-map-then-act-then-verify for unknown sites; strong CAPTCHA patterns stop the run alone while weak consent patterns stop it only in pairs, and every stop or miss fails with an honest code instead of acting blind. Bounded generic-first finds (exact:false); the click chains straight off its find ref with no scroll between.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- Browse recon flow v1 (2026-10-08): detect-then-map-then-act-then-verify for unknown sites; strong CAPTCHA patterns stop the run alone while weak consent patterns stop it only in pairs, and every stop or miss fails with an honest code instead of acting blind.
+-- Bounded generic-first finds (exact:false); the click chains straight off its find ref with no scroll between.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'browse.recon',

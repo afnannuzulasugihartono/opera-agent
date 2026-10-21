@@ -1,13 +1,10 @@
 -- Skill memory RPCs v1 (2026-10-09): manual save/recall over public.opera_skills.
---
--- Manual path first, per the table header: after a task the caller saves what
--- worked, what failed, and what recovered it; before a task it recalls
--- matching lessons into context. No automatic extraction here, no MCP tool,
--- no extension dependency, and no pg_trgm: recall matches with ILIKE.
---
--- Lengths are truncated, never rejected: an overlong field is clipped with
--- left(...) so a save always lands. Only empty task/lesson is refused, with
--- an INVALID_INPUT envelope.
+
+-- Manual path first, per the table header: after a task the caller saves what worked, what failed, and what recovered it; before a task it recalls matching lessons into context.
+-- No automatic extraction here, no MCP tool, no extension dependency, and no pg_trgm: recall matches with ILIKE.
+
+-- Lengths are truncated, never rejected: an overlong field is clipped with left(...) so a save always lands.
+-- Only empty task/lesson is refused, with an INVALID_INPUT envelope.
 
 create or replace function public.opera_skill_save(
   p_task text,

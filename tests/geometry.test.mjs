@@ -3,13 +3,10 @@
 // @state: the capture's own size, the fraction resolved at click time, the answer that says which.
 // @dependencies: node:test, assert, ../local/primitives.js.
 
-// WHY THESE CLAIMS EXIST. Measured live on this product's own author, by resizing
-// this machine's browser window: the viewport went 1144x714 to 1186x670, the
-// capture went 1430x963 to 1483x838, and the device scale stayed at 1.25. So the
-// picture is the viewport times that scale, and both move under the agent's feet -
-// a window resized, a window dragged to a monitor with another scale. The cost is
-// not the division, it is the guessing: an agent that divides pixels by eye clicks
-// the wrong thing while every answer says the click was delivered.
+// WHY THESE CLAIMS EXIST.
+// Measured live on this product's own author, by resizing this machine's browser window: the viewport went 1144x714 to 1186x670, the capture went 1430x963 to 1483x838, and the device scale stayed at 1.25.
+// So the picture is the viewport times that scale, and both move under the agent's feet - a window resized, a window dragged to a monitor with another scale.
+// The cost is not the division, it is the guessing: an agent that divides pixels by eye clicks the wrong thing while every answer says the click was delivered.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -34,10 +31,8 @@ const sizedCdp = (viewport = VIEWPORT) => {
   };
 };
 
-// WHY THE SIZE COMES FROM THE PICTURE AND NOT FROM THE VIEWPORT. A capture that was
-// scaled to fit a limit, or a device whose scale the caller does not know, makes a
-// size worked out from the viewport wrong - and wrong in the one case where the
-// number is needed to turn a pixel into a click.
+// WHY THE SIZE COMES FROM THE PICTURE AND NOT FROM THE VIEWPORT.
+// A capture that was scaled to fit a limit, or a device whose scale the caller does not know, makes a size worked out from the viewport wrong - and wrong in the one case where the number is needed to turn a pixel into a click.
 
 test('a sized capture reports the viewport, the scale and the picture it took', async () => {
   const shot = await createPrimitives(sizedCdp()).captureSized();
@@ -48,9 +43,8 @@ test('a sized capture reports the viewport, the scale and the picture it took', 
   assert.ok(shot.data, 'the picture itself is still there for a model to look at');
 });
 
-// WHY A FRACTION IS RESOLVED AT CLICK TIME AND NOT AT CAPTURE TIME. This is the
-// whole point: the window resized between the look and the click, and the aim is
-// still the aim.
+// WHY A FRACTION IS RESOLVED AT CLICK TIME AND NOT AT CAPTURE TIME.
+// This is the whole point: the window resized between the look and the click, and the aim is still the aim.
 
 test('a fraction is resolved against the viewport as it is at the click', async () => {
   const before = createPrimitives(sizedCdp({ width: 1144, height: 714, dpr: 1.25 }));
@@ -72,9 +66,9 @@ test('a fraction outside the page is clamped to the page, not sent off it', asyn
   assert.deepEqual([out.x, out.y], [1186, 0]);
 });
 
-// WHY A HANDLE STILL WINS. A fraction aims at a place in a space; a handle names the
-// thing, and the box is measured from the node at the moment of the click. Nothing
-// an agent does to the window can make the handle mean somewhere else.
+// WHY A HANDLE STILL WINS.
+// A fraction aims at a place in a space; a handle names the thing, and the box is measured from the node at the moment of the click.
+// Nothing an agent does to the window can make the handle mean somewhere else.
 
 test('a click that carries no fraction is unchanged', async () => {
   const cdp = sizedCdp();

@@ -21,9 +21,9 @@
   <meta property="og:locale" content="id_ID" />
   <meta name="robots" content="noindex" />
   <style>
-    /* WHY the site palette and not the old consent screen's: this page is part of the
-       site now, and a reader who was on the home page must not land somewhere that
-       looks like a different product asking for browser control. */
+    /*
+     * WHY the site palette and not the old consent screen's: this page is part of the site now, and a reader who was on the home page must not land somewhere that looks like a different product asking for browser control.
+     */
     :root {
       --bg: #0b0d10;
       --surface: #16191e;
@@ -77,12 +77,12 @@
     nav a:hover { color: var(--text); }
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
-   748px together, and the container is the viewport minus 48, so the row stops
-   fitting at 796px. The band used to read 640px, which left every window between
-   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
-   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
-   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    /*
+     * WHY the row scrolls at 800px and not at 390px: the ten nav children measure 748px together, and the container is the viewport minus 48, so the row stops fitting at 796px.
+     * The band used to read 640px, which left every window between 641 and 796 overflowing with no rule to catch it — a 155px dead band where the last item sat past the right edge.
+     * Measured, then rounded up.
+     * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
+     */
     @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
@@ -108,9 +108,10 @@
     .card h2 { margin: 0 0 4px; font-size: 17px; }
     .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 
-    /* WHY a definition list and not prose: the things a person must judge before
-       granting browser control are who is asking, where the code goes, and how much.
-       Naming them in a column makes each one impossible to skim past. */
+    /*
+     * WHY a definition list and not prose: the things a person must judge before granting browser control are who is asking, where the code goes, and how much.
+     * Naming them in a column makes each one impossible to skim past.
+     */
     dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
     dl.facts dt { color: var(--muted); }
     dl.facts dd { margin: 0; overflow-wrap: anywhere; }
@@ -133,9 +134,10 @@
     ul.consents .when { color: var(--muted); font-size: 12.5px; }
     ul.consents button { margin-left: auto; }
 
-    /* WHY stacked under 420px: the label column is max-content and never shrinks, so on a
-       phone the value is left in a sliver. Every settings page a reader already knows puts
-       the value under its label at this width. */
+    /*
+     * WHY stacked under 420px: the label column is max-content and never shrinks, so on a phone the value is left in a sliver.
+     * Every settings page a reader already knows puts the value under its label at this width.
+     */
     @media (max-width: 420px) {
       dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
       dl.facts dd { margin: 0 0 10px; }
@@ -148,9 +150,10 @@
       border: 1px solid var(--line);
       border-radius: 6px;
       padding: 1px 5px;
-      /* WHY the wrap: a device id, an account id and a localhost callback are the
-         three unbreakable strings on these pages, and a token with no spaces scrolls a
-         phone sideways. This is the page an operator opens when something is wrong. */
+      /*
+       * WHY the wrap: a device id, an account id and a localhost callback are the three unbreakable strings on these pages, and a token with no spaces scrolls a phone sideways.
+       * This is the page an operator opens when something is wrong.
+       */
       overflow-wrap: anywhere;
       word-break: break-word;
     }
@@ -181,10 +184,10 @@
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    /* WHY the gap and not a margin: the six footer doors are written with no
-       whitespace between the tags, so an inline row of anchors has no break
-       opportunity and pushed the footer 32px past a 320px screen. A flex gap
-       breaks between items wherever the line runs out. */
+    /*
+     * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
+     * A flex gap breaks between items wherever the line runs out.
+     */
     footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
@@ -257,11 +260,9 @@
   <script src="/i18n.js"></script>
   <script type="module">
 
-    // WHY plain fetch and not the Supabase SDK from a CDN: every page here may reach one
-    // origin, pinned in vercel.json and _headers. The old consent screen imported
-    // supabase-js from esm.sh, which added a second origin and a third party to a page
-    // whose entire job is asking for browser control. The two REST calls it needed are
-    // written out here instead, so the page reaches Supabase and nothing else.
+    // WHY plain fetch and not the Supabase SDK from a CDN: every page here may reach one origin, pinned in vercel.json and _headers.
+    // The old consent screen imported supabase-js from esm.sh, which added a second origin and a third party to a page whose entire job is asking for browser control.
+    // The two REST calls it needed are written out here instead, so the page reaches Supabase and nothing else.
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
 
@@ -281,12 +282,9 @@
 
     const headersFor = (token) => ({ apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
 
-    // WHY the session renews itself: a Supabase access token lasts about an hour and this
-    // page holds no SDK to renew it, so an expired token used to read as "signed out" and
-    // the stored copy was deleted. A person pressing a permission toggle after an hour was
-    // therefore asked to sign in again with no explanation, which is what made this look
-    // like the site forgetting them. The refresh token is the same one the sign-in page
-    // stored, and renewing it is one POST to the Auth host this page already reaches.
+    // WHY the session renews itself: a Supabase access token lasts about an hour and this page holds no SDK to renew it, so an expired token used to read as "signed out" and the stored copy was deleted.
+    // A person pressing a permission toggle after an hour was therefore asked to sign in again with no explanation, which is what made this look like the site forgetting them.
+    // The refresh token is the same one the sign-in page stored, and renewing it is one POST to the Auth host this page already reaches.
     const forget = () => {
       localStorage.removeItem('opera-agent-access-token');
       localStorage.removeItem('opera-agent-refresh-token');
@@ -295,11 +293,8 @@
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
 
-      // WHY the three outcomes and not a boolean: "the refresh token was refused" and
-      // "we could not reach Auth" look identical to a caller that only sees null, and
-      // treating the second as the first deletes a working session over a dropped packet.
-      // Every other user on a phone loses signal, so this distinction is the difference
-      // between a session that survives a tunnel and one that does not.
+      // WHY the three outcomes and not a boolean: "the refresh token was refused" and "we could not reach Auth" look identical to a caller that only sees null, and treating the second as the first deletes a working session over a dropped packet.
+      // Every other user on a phone loses signal, so this distinction is the difference between a session that survives a tunnel and one that does not.
       if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
       let response;
       try {
@@ -325,20 +320,15 @@
       return { ok: true, token: renewed.access_token };
     }
 
-    // WHY the token is proven before it is used, and renewed once if it has aged: this
-    // page is the one place where an expired session silently became a fresh sign-in
-    // request, so the retry lives here rather than only on the sign-in page.
-    // WHY the token is proven before it is used, and renewed once if it has aged. The
-    // result carries whether the session is truly gone, so a network failure shows a
-    // message instead of pretending the reader signed out.
+    // WHY the token is proven before it is used, and renewed once if it has aged: this page is the one place where an expired session silently became a fresh sign-in request, so the retry lives here rather than only on the sign-in page.
+    // WHY the token is proven before it is used, and renewed once if it has aged.
+    // The result carries whether the session is truly gone, so a network failure shows a message instead of pretending the reader signed out.
     async function usableToken() {
       const token = localStorage.getItem('opera-agent-access-token');
       if (!token) return { token: null, dead: false };
       const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
 
-      // WHY a failed probe is offline rather than usable: we learned nothing about the
-      // token, and reporting it as working would let the page fail one call later with a
-      // message that looks like a refusal.
+      // WHY a failed probe is offline rather than usable: we learned nothing about the token, and reporting it as working would let the page fail one call later with a message that looks like a refusal.
       if (!probe) return { token: null, dead: false, offline: true };
       if (probe.ok) return { token, dead: false };
       const renewed = await renewAccessToken();
@@ -350,16 +340,13 @@
       return { token: null, dead: false, offline: true };
     }
 
-    // WHY the return path carries the id: the sign-in page drops the query string when it
-    // swaps a token out of the URL fragment, so the request must be carried in ?next.
+    // WHY the return path carries the id: the sign-in page drops the query string when it swaps a token out of the URL fragment, so the request must be carried in ?next.
     $('signInButton').href = `/index.html?next=${encodeURIComponent(`./oauth/consent.html?authorization_id=${authorizationId || ''}`)}`;
 
     const REST = AUTH_HOST.replace('/auth/v1', '/rest/v1');
 
-    // WHY words instead of the raw string: "openid email offline_access" tells a
-    // person nothing, and offline_access is the one scope that keeps working after
-    // they leave. Each scope is named in plain language, and the lasting one is
-    // marked so the grant is understood, not just clicked through.
+    // WHY words instead of the raw string: "openid email offline_access" tells a person nothing, and offline_access is the one scope that keeps working after they leave.
+    // Each scope is named in plain language, and the lasting one is marked so the grant is understood, not just clicked through.
     const SCOPE_TEXT = {
       openid: 'Identitas dasar — ID akun unik Anda, tanpa data lain.',
       email: 'Alamat email Anda.',
@@ -375,9 +362,8 @@
     function renderDetails(details, user) {
       const name = details.client?.name?.trim() || '';
 
-      // WHY no invented name: the separate screen hardcoded "ChatGPT", so a person
-      // granting browser control was told the wrong application was asking. If the name
-      // is missing, say so plainly rather than guessing.
+      // WHY no invented name: the separate screen hardcoded "ChatGPT", so a person granting browser control was told the wrong application was asking.
+      // If the name is missing, say so plainly rather than guessing.
       $('clientName').textContent = name || 'Nama aplikasi tidak diberikan';
       $('factClient').textContent = name || '—';
       const redirect = details.redirect_uri || '';
@@ -442,9 +428,8 @@
     });
 
     async function load() {
-      // WHY consents load before the request check: this page is also where a signed-in
-      // reader comes to see and cut old grants. A missing authorization_id only means
-      // there is nothing new to decide, not that the management section must hide.
+      // WHY consents load before the request check: this page is also where a signed-in reader comes to see and cut old grants.
+      // A missing authorization_id only means there is nothing new to decide, not that the management section must hide.
       const early = await usableToken();
       if (early.token) loadConsents(early.token);
       if (!authorizationId) {
@@ -461,13 +446,11 @@
       }
       const session = early.token ? early : await usableToken();
       if (!session.token) {
-        // WHY two different answers: telling a reader whose session is intact that they are
-        // signed out is the bug this page had. Offline, the stored session is untouched.
+        // WHY two different answers: telling a reader whose session is intact that they are signed out is the bug this page had.
+        // Offline, the stored session is untouched.
         setStatus(session.offline ? 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman.' : 'Masuk dulu untuk memberi izin ini.', 'warn');
 
-        // WHY the card is hidden only when offline: offering a sign-in form to a reader
-        // whose session is intact is the wrong answer, and hiding it from a reader who
-        // genuinely has no session leaves them with nothing to do.
+        // WHY the card is hidden only when offline: offering a sign-in form to a reader whose session is intact is the wrong answer, and hiding it from a reader who genuinely has no session leaves them with nothing to do.
         $('signedOutCard').hidden = Boolean(session.offline);
         return;
       }
@@ -479,17 +462,14 @@
         if (!response.ok) throw Object.assign(new Error('refused'), { message: (await response.json().catch(() => ({}))).msg || `http ${response.status}` });
         details = await response.json();
       } catch (error) {
-        // WHY the token is cleared only when renewal also failed: usableToken already
-        // renewed once, so reaching here means the session really is gone rather than
-        // merely old.
+        // WHY the token is cleared only when renewal also failed: usableToken already renewed once, so reaching here means the session really is gone rather than merely old.
         if (/jwt|bad_jwt|expired/i.test(String(error.message))) forget();
         setStatus(say(error), 'warn');
         $('signedOutCard').hidden = /jwt|expired/i.test(String(error.message)) ? false : true;
         return;
       }
 
-      // An authorization that is already decided comes back with a redirect to follow,
-      // which is how a repeat consent request resolves without asking again.
+      // An authorization that is already decided comes back with a redirect to follow, which is how a repeat consent request resolves without asking again.
       if (details.redirect_url) {
         globalThis.location.assign(details.redirect_url);
         return;
@@ -499,8 +479,8 @@
         const response = await fetch(`${AUTH_HOST}/user`, { headers: headersFor(token) });
         if (response.ok) user = await response.json();
       } catch (error) {
-        // WHY tolerate this: the account line is a comfort, not the decision. Refusing to
-        // show the screen because an optional field could not be read would be worse.
+        // WHY tolerate this: the account line is a comfort, not the decision.
+        // Refusing to show the screen because an optional field could not be read would be worse.
       }
       renderDetails(details, user);
       setStatus('Tinjau dan pilih izin.');

@@ -1,4 +1,5 @@
 -- docs.footnote v1: Insert > Footnote, type the note, prove the marker ref.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.footnote') THEN

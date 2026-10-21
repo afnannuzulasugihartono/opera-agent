@@ -3,11 +3,10 @@
 // @state: red first: popup dan options masih berbahasa Inggris.
 // @dependencies: test, assert, fs.
 
-// The site promises Indonesian copy, and the download page ends with "tempel di
-// popup extension". The popup is where that promise is kept or broken: it was
-// English, and its pairing hint named no place to get a code. A stranger stalls
-// there. These locks read the same sources the browser runs, because popup.js
-// needs chrome.* and cannot be imported in node.
+// The site promises Indonesian copy, and the download page ends with "tempel di popup extension".
+// The popup is where that promise is kept or broken: it was English, and its pairing hint named no place to get a code.
+// A stranger stalls there.
+// These locks read the same sources the browser runs, because popup.js needs chrome.* and cannot be imported in node.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

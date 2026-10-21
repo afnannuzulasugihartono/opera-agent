@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 
 import { axChildren, axFind, axRowIndex, axSubmenu, clickMenuRow, menuAccel, menuWalkPlan, openSubmenu, pressMenuAccel, waitAx } from '../lib/ax-menu.js';
 
-// A reduced fixture from the live Insert menu: node ids, roles, names, and the one
-// open submenu. Shaped exactly like CDP Accessibility.getFullAXTree nodes.
+// A reduced fixture from the live Insert menu: node ids, roles, names, and the one open submenu.
+// Shaped exactly like CDP Accessibility.getFullAXTree nodes.
 
 function fixture() {
   return [

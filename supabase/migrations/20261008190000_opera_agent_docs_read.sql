@@ -1,7 +1,8 @@
--- Docs read flow v1 (2026-10-08): open a Google Doc and return one bounded canvas screenshot for the MODEL to read. The device captures (cheap, local); interpretation spends the caller model tokens, never server vision budget. Canvas body text is invisible to DOM and AX by construction.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- Docs read flow v1 (2026-10-08): open a Google Doc and return one bounded canvas screenshot for the MODEL to read.
+-- The device captures (cheap, local); interpretation spends the caller model tokens, never server vision budget.
+-- Canvas body text is invisible to DOM and AX by construction.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'docs.read_page',

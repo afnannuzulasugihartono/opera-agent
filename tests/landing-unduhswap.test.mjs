@@ -3,12 +3,9 @@
 // @state: 6 locks; the card/detection/hash pins live on the merged page, the hub keeps only the door pins.
 // @dependencies: test, assert, fs, crypto.
 
-// The hub opens with one giant door and an also-available row, while the merged
-// page answers "which one is mine" with one card per browser. Each card fills the
-// archive button — the file that installs on an unmanaged machine — and closes the
-// signed file and the update manifest behind a details, before the shared steps.
-// The download URLs and the compatibility facts are out of scope and stay pinned in
-// landing-download and landing-unduh-hub.
+// The hub opens with one giant door and an also-available row, while the merged page answers "which one is mine" with one card per browser.
+// Each card fills the archive button — the file that installs on an unmanaged machine — and closes the signed file and the update manifest behind a details, before the shared steps.
+// The download URLs and the compatibility facts are out of scope and stay pinned in landing-download and landing-unduh-hub.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

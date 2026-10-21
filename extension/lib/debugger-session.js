@@ -3,27 +3,18 @@
 // @state: module headers say what a module is, not which task added it.
 // @dependencies: none.
 
-// A "shared session" is the `{ tabId, attached }` object a caller puts on its
-// context so that several CDP operations inside one logical operation reuse a
-// single attach. `runBurst` creates one; until this module existed, so did the
-// watch-fired click path, which had no matching release. That left the debugger
-// attached to the tab and Chrome's "started debugging this browser" bar stuck
-// on it.
-//
-// WHY an idle session is released instead of held. The bridge holds one session
-// per driven tab so repeat calls skip the attach, which left the debugging bar
-// pinned on every tab the agent ever touched. Every shared use stamps the
-// session, and anything quiet past the caller's bound is detached: the bar
-// shows while the agent works and leaves when it stops, and the next command
-// re-attaches for the price of one round trip.
-//
+// A "shared session" is the `{ tabId, attached }` object a caller puts on its context so that several CDP operations inside one logical operation reuse a single attach.
+// `runBurst` creates one; until this module existed, so did the watch-fired click path, which had no matching release.
+// That left the debugger attached to the tab and Chrome's "started debugging this browser" bar stuck on it.
+
+// WHY an idle session is released instead of held.
+// The bridge holds one session per driven tab so repeat calls skip the attach, which left the debugging bar pinned on every tab the agent ever touched.
+// Every shared use stamps the session, and anything quiet past the caller's bound is detached: the bar shows while the agent works and leaves when it stops, and the next command re-attaches for the price of one round trip.
+
 // The registry also exists so an *unexpected* detach can invalidate the cache.
-// Nothing listened to `chrome.debugger.onDetach`, so when the user opened
-// DevTools on the tab, or the tab closed, a cached `attached: true` survived
-// and every later CDP call in that session failed against a dead debugger.
-//
-// `chrome` is referenced lazily inside the functions so this module can be
-// imported, and its no-op paths exercised, outside a browser.
+// Nothing listened to `chrome.debugger.onDetach`, so when the user opened DevTools on the tab, or the tab closed, a cached `attached: true` survived and every later CDP call in that session failed against a dead debugger.
+
+// `chrome` is referenced lazily inside the functions so this module can be imported, and its no-op paths exercised, outside a browser.
 
 const sessions = new Map();
 

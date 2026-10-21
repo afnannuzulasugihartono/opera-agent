@@ -3,10 +3,9 @@
 // @state: Pure Resolve-Wait-Heal-Verify policy; refusals carry the ref state.
 // @dependencies: none.
 
-// Action pipeline: pure policy engine for Resolve -> Wait -> Heal -> Verify. NO DOM and NO chrome dependency: the host supplies resolve
-// snapshots and executes decisions, so the engine stays deterministic and
-// testable in Node (pattern of lib/watch.js).
-//
+// Action pipeline: pure policy engine for Resolve -> Wait -> Heal -> Verify.
+// NO DOM and NO chrome dependency: the host supplies resolve snapshots and executes decisions, so the engine stays deterministic and testable in Node (pattern of lib/watch.js).
+
 // Semantics locked by tests/action-pipeline.test.mjs:
 // - poll ramp 25 -> 400 ms adaptive, last step repeating, clipped to budget
 // - classification ready / not-found / not-actionable / ambiguous

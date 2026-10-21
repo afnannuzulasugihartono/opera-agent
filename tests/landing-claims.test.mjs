@@ -3,9 +3,8 @@
 // @state: 8 locks, all green; the audit that wrote them found the permission count unstated.
 // @dependencies: node:test, node:assert, node:fs, extension-source.
 
-// The site's copy must never claim what the runtime cannot do. The numbers drift
-// silently otherwise: bump the manifest version or the tool count and the site keeps
-// advertising the old figure until a reader notices it.
+// The site's copy must never claim what the runtime cannot do.
+// The numbers drift silently otherwise: bump the manifest version or the tool count and the site keeps advertising the old figure until a reader notices it.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

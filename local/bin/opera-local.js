@@ -7,16 +7,15 @@
 
 // WHY THIS FILE EXISTS
 //
-// The server speaks MCP and the driver speaks CDP; this is the only place the two
-// are joined. It is separate so the protocol stays testable without a browser.
+// The server speaks MCP and the driver speaks CDP; this is the only place the two are joined.
+// It is separate so the protocol stays testable without a browser.
 //
-// WHY the session is made lazily. browser_status has to answer on a machine where
-// no browser is listening, which is exactly when someone needs to be told that.
+// WHY the session is made lazily.
+// browser_status has to answer on a machine where no browser is listening, which is exactly when someone needs to be told that.
 // Connecting eagerly would turn a useful diagnosis into a crash.
 //
-// WHY the port comes from the environment. npx must work without a config file, so
-// the two things a user may need to override, which port and which browser, are
-// environment variables rather than arguments a client would have to know about.
+// WHY the port comes from the environment.
+// npx must work without a config file, so the two things a user may need to override, which port and which browser, are environment variables rather than arguments a client would have to know about.
 
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -37,11 +36,9 @@ const pkg = createRequire(join(here, '..', 'package.json'))('./package.json');
 const PORT = Number(process.env.OPERA_LOCAL_PORT || 9333);
 const BROWSER = process.env.OPERA_LOCAL_BROWSER || undefined;
 
-// WHY THE LINK IS ASKED PER CALL. One `BRIDGED` constant decided the pipe at
-// startup and then decided it for good: an extension that was asleep at that
-// moment lost the run to a debugging port, which opens a profile nobody is
-// logged into. Asking each time costs one field read and means a worker that
-// wakes up late is simply used.
+// WHY THE LINK IS ASKED PER CALL.
+// One `BRIDGED` constant decided the pipe at startup and then decided it for good: an extension that was asleep at that moment lost the run to a debugging port, which opens a profile nobody is logged into.
+// Asking each time costs one field read and means a worker that wakes up late is simply used.
 
 async function bridged() {
   return process.env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable();
@@ -210,27 +207,20 @@ const driver = {
   }
 };
 
-// WHY the bridge listens before the first tool call. A lazy server makes the
-// first command pay the whole link wait, and leaves the extension polling a
-// dead port until then. Listening here links the worker while the client is
-// still shaking hands. A failure is swallowed on purpose: the port may belong
-// to another session, and every tool call retries with a named error anyway.
+// WHY the bridge listens before the first tool call.
+// A lazy server makes the first command pay the whole link wait, and leaves the extension polling a dead port until then.
+// Listening here links the worker while the client is still shaking hands.
+// A failure is swallowed on purpose: the port may belong to another session, and every tool call retries with a named error anyway.
 
 await bridgeReachable().catch(() => false);
 
-// WHY THE STARTUP PROBE MAY NOT KILL THE SERVER. Asking which pipe is right is
-// asking whether a port is free, and the honest answer to "another driver owns
-// it" is to say so. Dying here instead said it by refusing to start at all,
-// which is what happened when the person toggled the server on while a previous
-// instance was still holding the loopback port: the conflict was real and the
-// only visible result was a dead MCP with a stack trace instead of a server
-// that starts and names the conflict on the first tool call.
+// WHY THE STARTUP PROBE MAY NOT KILL THE SERVER.
+// Asking which pipe is right is asking whether a port is free, and the honest answer to "another driver owns it" is to say so.
+// Dying here instead said it by refusing to start at all, which is what happened when the person toggled the server on while a previous instance was still holding the loopback port: the conflict was real and the only visible result was a dead MCP with a stack trace instead of a server that starts and names the conflict on the first tool call.
 
-// WHY THE PORT IS A FUNCTION AND NOT A VALUE. The pipe is chosen per call,
-// because a worker that was asleep at startup picks itself up thirty seconds
-// later. A port read once at startup reports the debugging port long after the
-// drive has moved to the bridge — which is a wrong answer about a port nothing
-// is listening on.
+// WHY THE PORT IS A FUNCTION AND NOT A VALUE.
+// The pipe is chosen per call, because a worker that was asleep at startup picks itself up thirty seconds later.
+// A port read once at startup reports the debugging port long after the drive has moved to the bridge — which is a wrong answer about a port nothing is listening on.
 
 startStdio({
   context: {
