@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-09 UTC+7.
-// @title: options-store.test — store.test — Test.
-// @state: close the Phase 5 review follow-ups.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: options-store.test — the options the person set are the options the extension uses.
+// @state: the stored defaults, the provider list, and the reset that returns them.
 // @dependencies: node:test, strict, options-store, endpoints.
 
 import test from 'node:test';

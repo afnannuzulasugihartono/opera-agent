@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: protocol.test — Test.
-// @state: lock the page.fill value rule on the real site and in the protocol test.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: protocol.test — the primitive surface the extension and the MCP server agree on.
+// @state: the allowlist, the burst steps, the fill value rule, and the schemas the server sends.
 // @dependencies: node:test, strict, protocol.
 
 import test from 'node:test';

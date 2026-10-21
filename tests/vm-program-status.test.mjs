@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: vm-program-status.test — Test.
-// @state: locks honest partial status on the VM host.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: vm-program-status.test — the VM host reports an honest status, never a green one.
+// @state: the terminal states, the tenant scope of a lookup, and the fail-closed answers.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

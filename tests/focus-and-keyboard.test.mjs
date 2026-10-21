@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: focus-and-keyboard.test — and-keyboard.test — Focus stability + keyboard chord/text contracts.
-// @state: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: focus-and-keyboard.test — focus stays stable, and a trusted input never moves the page.
+// @state: the focus gate as behaviour, the keyboard chords as behaviour, and the frozen invariant that a trusted click never activates a tab.
 // @dependencies: node:test, strict, promises, focus-gate, keyboard, extension-source.
 
 // Two halves:

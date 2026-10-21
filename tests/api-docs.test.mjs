@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: api-docs.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: api-docs.test — the documented API is the API the gateway serves.
+// @state: the tool table in docs/api.md against the gateway source, so the document cannot drift from the code.
 // @dependencies: node:test, strict, promises, endpoints, source-scan.
 
 import test from 'node:test';

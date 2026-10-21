@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: semantic-engine.test — engine.test — Semantic engine surface, consolidated 2026-10-03.
-// @state: consolidate the semantic engine cluster into one file.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: semantic-engine.test — the semantic engine: identity, views, relevance and the delta it sends.
+// @state: the identity rules, the view bounds, the relevance decision, and the digest of the MCP surface it locks.
 // @dependencies: strict, node:fs, node:test, canonical-source-hash.
 
 import assert from 'node:assert/strict';

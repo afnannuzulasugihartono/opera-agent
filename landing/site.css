@@ -1,5 +1,8 @@
 /*
- * site.css — dynamic width and height, shared by every page.
+ * @last-edited: 2026-10-21 UTC+7.
+ * @title: site.css — the width and height rules every page of the site shares.
+ * @state: the viewport rules and the print rules; colour, type and chrome stay in each page.
+ * @dependencies: none.
  *
  * WHY here and not in twelve pages: these rules are the site answering its own viewport, so they are the same rule everywhere.
  * Per-page copies are how the ID|EN toggle ended up dead on three pages at once.

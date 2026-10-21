@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 02:41 UTC+7.
-// @title: edge-cors.test — cors.test — Test.
-// @state: shared CORS origin resolver with fail-closed defaults, and every edge function locked to it.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: edge-cors.test — every edge function answers the same origin rule, and nothing else.
+// @state: the allowlist, the fail-closed answer for an unknown origin, and the function that must use it.
 // @dependencies: node:test, strict, fs, module, vm, cors.
 
 import test from 'node:test';

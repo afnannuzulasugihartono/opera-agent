@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-07 UTC+7.
-// @title: listen-transcribe.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: listen-transcribe.test — one live listen session per device, transcribed as it arrives.
+// @state: the second start it refuses, the transcript it returns, and the transcriber it uses.
 // @dependencies: node:test, strict, node:fs, node:module, node:vm.
 
 // The listen function turns tab audio into timestamped segments: device-token auth per action, one live session per device, 10-second windows to Gemini, segments stored, audio deleted (retention 0 for voice).

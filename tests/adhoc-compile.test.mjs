@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: adhoc-compile.test — Test.
-// @state: locks the ad-hoc graph compiler: allowlists, label plus confirm rules, budgets.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: adhoc-compile.test — the ad-hoc graph compiler holds its allowlists, its labels and its budgets.
+// @state: which methods pass, which label a write must carry, and the bounds the compiler refuses to cross.
 // @dependencies: node:test, strict.
 
 import test from 'node:test';

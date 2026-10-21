@@ -1,4 +1,7 @@
-// dev-shim — a stdio proxy that holds the client's pipe while the worker behind it restarts: edit, save, and the new code is live without a toggle.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: dev-shim — the stdio proxy that swaps the worker behind the pipe without dropping the client.
+// @state: the supervisor, the rebuild budget, and the notification that tells the client its tools moved.
+// @dependencies: none.
 
 // WHY A PROXY AND NOT A RESTART.
 // The client owns the pipe and does not reconnect: killing the server to reload its code leaves a dead MCP behind a human round trip.

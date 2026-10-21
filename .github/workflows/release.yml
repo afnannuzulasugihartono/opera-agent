@@ -1,6 +1,6 @@
-# @last-edited: 2026-10-09 UTC+7.
-# @title: release — Repository file.
-# @state: verify current signed release identity (#14).
+# @last-edited: 2026-10-21 UTC+7.
+# @title: release — the signed CRX and the extension zip, published when a tag is pushed.
+# @state: the version it resolves, the build it validates, the CRX it verifies, the checksums it writes and the release it creates.
 # @dependencies: none stated.
 
 name: Release

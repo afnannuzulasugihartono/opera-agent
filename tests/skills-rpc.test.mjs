@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-09 UTC+7.
-// @title: skills-rpc.test — Test.
-// @state: pins the skill save/recall RPC migration text: names, ILIKE escape, clamps, service_role-only grants.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: skills-rpc.test — the skill save and recall RPCs take names, escape them, and grant nothing else.
+// @state: the migration text: the names, the ILIKE escape, the clamps, and the service-role-only grants.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

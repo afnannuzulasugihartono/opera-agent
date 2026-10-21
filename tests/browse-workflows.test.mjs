@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: browse-workflows.test — Test.
-// @state: locks the generic find-in-list crawler contract.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: browse-workflows.test — the find-in-list crawler checks first and crawls boundedly.
+// @state: the order of the steps, the crawl bound, and the ref the workflow hands back.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

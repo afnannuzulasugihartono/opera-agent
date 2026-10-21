@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: ref-reacquire.test — reacquire.test — Bounded ref re-acquisition contracts.
-// @state: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: ref-reacquire.test — a stale ref is re-acquired inside a bound, or the call fails by name.
+// @state: the attempts it takes, the deadline it holds, and the error it raises.
 // @dependencies: node:test, strict, promises.
 
 // Bounded ref re-acquisition contracts.

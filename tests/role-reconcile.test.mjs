@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-10 UTC+7.
-// @title: role-reconcile.test — reconcile.test — Role reconciliation contracts.
-// @state: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: role-reconcile.test — a control role is read from the page, and a missing one says so.
+// @state: the roles it reconciles, the empty role it returns, and the shape the page sees.
 // @dependencies: node:test, strict, promises, extension-source.
 
 // Role reconciliation contracts.

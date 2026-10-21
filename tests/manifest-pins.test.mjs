@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: manifest-pins.test — Test.
-// @state: locks the extension CSP shape the compiler needs.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: manifest-pins.test — the extension manifest keeps the shape the compiler needs.
+// @state: the content security policy, the permissions, and the version the manifest carries.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

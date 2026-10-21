@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: etw-watch-engine.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: etw-watch-engine.test — the watch engine fires on the trigger kinds it documents.
+// @state: the trigger set, the rule shape, and the fail-closed answer for an unknown kind.
 // @dependencies: node:fs, node:test, strict, extension-source.
 
 import fs from 'node:fs';

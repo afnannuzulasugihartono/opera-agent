@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-// opera-local-dev — development front door for the local MCP server.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-local-dev — the development front door for the local MCP server.
+// @state: the watched files, the supervisor behind the pipe, and the reload it performs on a save.
+// @dependencies: none.
 
 // Same tools as opera-local.js, reached through the dev shim: edit a watched file, save, and the worker behind the pipe rebuilds itself within a second, without a toggle.
 // Production spawns opera-local.js directly.
