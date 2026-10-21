@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 14:45 UTC+7.
-// @title: mcp-connection-diagnostics — Script..
-// @state: Script..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: mcp-connection-diagnostics — what the MCP endpoint says when a client cannot reach it.
+// @state: the probe sequence, the events it records, and the verdict it prints.
 // @dependencies: node:url.
 
 import { pathToFileURL } from 'node:url';

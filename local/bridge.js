@@ -1,4 +1,7 @@
-// bridge — the local driver's side of the loopback conversation.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: bridge — the local driver's side of the loopback conversation.
+// @state: the transport it hands the driver, so the drive runs the same over CDP and over the extension.
+// @dependencies: none.
 
 // WHY THIS FILE EXISTS
 

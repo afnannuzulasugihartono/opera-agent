@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: vm-token — Deno edge function..
-// @state: Deno edge function..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: vm-token — the sealed token that carries a program, a checkpoint or a result.
+// @state: the token shape, its size bound, and the failure it raises when one is broken.
 // @dependencies: none.
 
 const TOKEN_PREFIX = 'oavm1';

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: proof-engine-benchmark — engine-benchmark — Script.
-// @state: implement scoped proof engine.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: proof-engine-benchmark — how long a proof takes, measured over a replay.
+// @state: the replay fixture, the run count, and the percentiles it prints.
 // @dependencies: node:fs, node:perf_hooks, goal-ledger, proof-engine.
 
 import fs from 'node:fs';

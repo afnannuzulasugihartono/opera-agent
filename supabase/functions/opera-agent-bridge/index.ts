@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: index — Repository file.
-// @state: retry Chrome's transient tab-drag refusal on all tab mutations.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-bridge — the cloud bridge: the device socket and the command queue it serves.
+// @state: the socket upgrade, the CORS answer, and the enqueue a device claims from.
 // @dependencies: edge-runtime, supabase-js, edge-log.
 
 import "@supabase/edge-runtime";

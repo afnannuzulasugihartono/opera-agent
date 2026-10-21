@@ -1,6 +1,6 @@
-# @last-edited: 2026-10-11 UTC+7.
-# @title: browser_extension_test — Test.
-# @state: a steal must end with something focused, which is what CI proved; the bridge speaks the push socket the device now uses.
+# @last-edited: 2026-10-21 UTC+7.
+# @title: browser_extension_test — the extension driven in a real page, under a real browser.
+# @state: the actions, the tab state and the popup, driven against a live Chromium and reported as a JSON verdict.
 # @dependencies: asyncio, base64, hashlib, io, json, queue, tempfile, threading, time, uuid, wave, http.server, pathlib, playwright.async_api.
 
 import asyncio

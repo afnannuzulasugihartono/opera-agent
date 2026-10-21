@@ -1,5 +1,6 @@
-// @last-edited: 2026-10-07 UTC+7.
-// @title: index — ingest audio windows, transcribe, store segments, delete audio.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-listen — the listen edge: audio in, transcripts out, audio deleted behind them.
+// @state: the live session it holds, the segments it stores, and the window it transcribes.
 // @dependencies: edge-runtime, supabase-js, edge-log.
 
 import "@supabase/edge-runtime";

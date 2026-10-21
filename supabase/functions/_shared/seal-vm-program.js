@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: seal-vm-program — seal — Repository file.
-// @state: run_program sealing extracted from the MCP entrypoint, unchanged behavior.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: seal-vm-program — the pre-filter every VM program passes before it is sealed.
+// @state: the method allowlists, the budgets, and the digest the sealed program carries.
 // @dependencies: goal-ledger.
 
 import { digestCanonical } from './goal-ledger.js';

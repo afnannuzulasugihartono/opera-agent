@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: efficiency.test — Test.
-// @state: consolidate the latency cluster into one file.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: efficiency.test — the round trips the device spends, counted in the source.
+// @state: the workflows that parallelise, the pull endpoint that is gone, and the page helper that degrades instead of throwing.
 // @dependencies: node:test, strict, node:fs, extension-source.
 
 import test from 'node:test';

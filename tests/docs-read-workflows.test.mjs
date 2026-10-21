@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: docs-read-workflows.test — Test.
-// @state: locks the docs read workflow contract.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: docs-read-workflows.test — the docs read workflow opens the doc and returns one bounded screenshot.
+// @state: the open step, the capture step, and the bound on what the model may read.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

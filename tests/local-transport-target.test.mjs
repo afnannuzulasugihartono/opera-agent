@@ -1,5 +1,6 @@
-// @last-edited: 2026-10-12 UTC+7.
-// @title: transport tests — a drive names its tab, because "the first page" is not a target.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: local-transport-target.test — a drive names its tab, because the first page is not a target.
+// @state: the tab a target names, and the socket it is looked up in.
 // @dependencies: none.
 
 import test from 'node:test';

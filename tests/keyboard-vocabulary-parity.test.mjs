@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: keyboard-vocabulary-parity.test — vocabulary-parity.test — Keyboard vocabulary parity.
-// @state: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: keyboard-vocabulary-parity.test — the key names the extension sends are the names the schema accepts.
+// @state: the key list and the modifier aliases, held equal on both sides.
 // @dependencies: node:test, strict, promises, keyboard.
 
 // The public MCP surface and the extension runtime keep two copies of the key and modifier vocabularies.

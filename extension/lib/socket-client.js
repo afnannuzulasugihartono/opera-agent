@@ -1,5 +1,6 @@
+// @last-edited: 2026-10-21 UTC+7.
 // @title: socket-client — one persistent connection to the bridge, reconnected on its own, never polled.
-// @state: 12 locks; handshake gate, ordered dispatch, backoff, fatal close, and the stored-completion resend.
+// @state: the handshake gate, the ordered dispatch, the backoff, the fatal close, and the stored-completion resend.
 // @dependencies: ./socket-protocol.js.
 
 // WHY THIS FILE EXISTS

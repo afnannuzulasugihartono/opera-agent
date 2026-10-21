@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: workflow-dsl.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: workflow-dsl.test — the workflow DSL parses the shapes a workflow may take.
+// @state: the steps, the conditions, the output contract, and the shapes it refuses.
 // @dependencies: node:test, strict, node:fs, extension-source.
 
 // Why source-text pins, stated per AGENTS.md: the deliverable here is a migration DSL boundary, and the hazards are all about what the SQL must NOT do -- no legacy table modification, no generic escape hatch in the registry, no site-specific logic leaking into the extension, no per-run project secret writes.
