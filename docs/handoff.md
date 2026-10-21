@@ -34,11 +34,19 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   every exported function in `local/` exercised by the suite. The comment rule was
   unenforced where it mattered - the scanner miscounted one template literal - and it is
   enforced now.
-- Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1322 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 184 runtime safety files, 1334 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
-  functions (65 `SECURITY DEFINER`), 18 `opera_*` tables, **8 deployed edge functions** -
-  bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14.
+  functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
+  bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
+  billing (one invoice page, one notification callback).
+- **Somebody can pay for a delivered client-month.** `invoice_create` takes the manifest
+  rows - not a typed number - prices them from `opera_price_list`, writes one invoice per
+  customer per month, and returns a signed link the customer opens. Drilled live: two
+  client-months became 1,000,000 cents and a page reading `Total Rp 10.000`; a forged
+  signature, a wrong amount, an unsettled status and a replay after the key was removed
+  were all refused, and a signed `settlement` marked the invoice paid. A paid invoice is
+  terminal. The provider key is not set, so the page asks for a transfer today.
 - **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge` runs
   the whole MCP surface over it: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms.
 - **The statement job is the first product, and it is local.** `statement_card` names the
