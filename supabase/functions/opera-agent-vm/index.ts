@@ -7,7 +7,7 @@ import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 
-import { canonicalJson, digestCanonical } from "../../../lib/goal-ledger.js";
+import { canonicalJson, digestCanonical } from "../_shared/goal-ledger.js";
 import {
   advanceCollectVm,
   createCollectVm,
