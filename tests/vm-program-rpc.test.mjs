@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: vm-program-rpc.test — Test.
-// @state: locks EXECUTE-only grants plus owner RLS on program-run RPCs.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: vm-program-rpc.test — the program-run RPCs are EXECUTE-only and stay with their owner.
+// @state: the grants, the row-level security, and the tenant the run belongs to.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

@@ -1,4 +1,7 @@
-// bridge-server — the loopback command server, speaking the same frames the cloud bridge speaks, so the device runs one client and one drain instead of a socket road plus a long-poll road with its own wedge and its own failures.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: bridge-server — the loopback command server, speaking the frames the cloud bridge speaks.
+// @state: the heartbeat that keeps the worker alive, the idle reap, and the origin check.
+// @dependencies: none.
 
 // WHY THE HEARTBEAT IS THE WHOLE POINT.
 // Chrome ends an idle service worker after about thirty seconds and an inbound frame does not wake it, which is why the first loopback socket read as OPEN and heard nothing.

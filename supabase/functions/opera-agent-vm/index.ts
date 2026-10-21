@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: index — Repository file.
-// @state: edge-runtime imports via deno.json import maps, restore SBOM gate.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-vm — the VM host: one program, one run, one result.
+// @state: the collection it advances, the tokens it seals, and the status it reports.
 // @dependencies: edge-runtime, supabase-js, goal-ledger, reactive-vm-collect, reactive-vm-host, vm-token.
 
 import "@supabase/edge-runtime";

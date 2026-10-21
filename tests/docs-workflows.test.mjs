@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: docs-workflows.test — Test.
-// @state: locks the docs append workflow contract.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: docs-workflows.test — the docs append workflow navigates and types without vision.
+// @state: the navigation step, the typing it does, and the proof it carries back.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

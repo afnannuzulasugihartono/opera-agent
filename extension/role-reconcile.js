@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: role-reconcile — reconcile —: role reconciliation, as a classic content script.
+// @title: role-reconcile — role reconciliation, as a classic content script.
 // @state: hygiene pass over this file.
 // @dependencies: none.
 

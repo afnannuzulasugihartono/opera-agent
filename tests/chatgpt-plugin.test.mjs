@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-07 UTC+7.
-// @title: chatgpt-plugin.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: chatgpt-plugin.test — the ChatGPT plugin bundle names the hosted files it serves.
+// @state: the manifest, the OpenAPI file and the OAuth authorization URL, all same-origin.
 // @dependencies: node:test, strict, promises.
 
 // The ChatGPT plugin bundle lets any ChatGPT user drive their own paired browser through OAuth: the manifest points at the hosted OpenAPI file, and the gateway accepts a Supabase user JWT alongside the device token, resolving the caller's own device by user_id.

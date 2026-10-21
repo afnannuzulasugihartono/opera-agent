@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: index — Repository file.
-// @state: edge-runtime imports via deno.json import maps, restore SBOM gate.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-runner — the runner: the edge that waits for one command to finish.
+// @state: the enqueue it makes, the command result it returns, and the CORS answer it gives.
 // @dependencies: edge-runtime, supabase-js, edge-log.
 
 import "@supabase/edge-runtime";

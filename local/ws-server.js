@@ -1,4 +1,7 @@
-// ws-server — the smallest RFC 6455 text server this product needs.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: ws-server — the smallest RFC 6455 text server this product needs.
+// @state: the upgrade handshake, masked text frames, ping and pong, close, and the frame cap.
+// @dependencies: none.
 
 // Node ships a WebSocket client and no server, and a dependency for one endpoint is heavier than the endpoint.
 // This handles exactly what the device uses: the upgrade handshake, masked text frames, ping/pong, and close.

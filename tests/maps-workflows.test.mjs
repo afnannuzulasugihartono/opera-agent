@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: maps-workflows.test — Test.
-// @state: locks the restaurant search workflow contract.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: maps-workflows.test — the restaurant search workflow finds the place and reads it back.
+// @state: the search step, the bound on how many results it takes, and the fields it returns.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

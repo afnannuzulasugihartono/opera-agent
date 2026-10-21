@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 09:58 UTC+7.
-// @title: ui-surface.test — surface.test — Extension UI surface, consolidated 2026-10-03.
-// @state: consolidate the extension UI cluster into one file.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: ui-surface.test — the popup and the find results, as the person sees them.
+// @state: the controls that stay usable in a narrow panel, and the descriptors a candidate carries back.
 // @dependencies: node:test, strict, node:fs, promises.
 
 import test from 'node:test';

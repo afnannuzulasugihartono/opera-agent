@@ -1,5 +1,6 @@
+// @last-edited: 2026-10-21 UTC+7.
 // @title: socket-protocol — the frames a device and a bridge exchange over one persistent socket.
-// @state: 8 locks; handshake, command frame, completion frame, and the frames that must be refused.
+// @state: the handshake, the command frame, the completion frame, and the frames that must be refused.
 // @dependencies: none.
 
 // WHY THIS FILE EXISTS

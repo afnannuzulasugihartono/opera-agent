@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: deadline-race — race — Deadline race for command execution.
+// @title: deadline-race — the deadline one command execution races against.
 // @state: module headers say what a module is, not which task added it.
 // @dependencies: none.
 
