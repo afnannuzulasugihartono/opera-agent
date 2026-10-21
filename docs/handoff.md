@@ -20,8 +20,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   on commit `c35b20c`, which lives on `handoff-bridge`. Measured after the release: the
   signed CRX answers 200 at the update endpoint with an ETag equal to its own sha256, and the
   GitHub Release carries the extension zip, the source zip, the CRX and SHA256SUMS. Pull
-  request #86 passed every gate and is `blocked` by the base-branch policy: it needs an owner
-  approval, which an agent cannot give itself.
+  request #86 passed every gate and is `blocked` by the base-branch policy: it needs an
+  owner approval, which an agent cannot give itself.
 - **Twelve pull requests are stacked and all wait for that one approval.** #87
   `handoff-bridge` -> #89 `download-clean` -> #90 `payload-trim` -> #91 `statement-job` ->
   #92 `first-bookkeepers` -> #94 `pilot-runbook` -> #95 `audit-tree-truth` -> #96
@@ -35,22 +35,24 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - **The comment rule is a formatter, not a scanner.** A comment block at column zero is a
   section header and gets a blank line before and after it; an indented block documents the
   code under it; a sentence is one line, so a wrapped one is joined and a two-sentence one is
-  split; a bare `//` between paragraphs is a blank line, not a comment line. The gate is
-  `format(file) === file` over the whole tree, 392 files with the migrations included, and
-  the corpus that pins it is `tests/comment-format.test.mjs`.
+  split; a bare `//` between paragraphs is a blank line. The gate is `format(file) === file`
+  over the whole tree, and the corpus that pins it is `tests/comment-format.test.mjs`.
 - **The dead code is gone, and a gate holds it.** The audit from the product's entry points
   found 277 lines of code nothing reached: a VM engine left behind when the control flow
   moved to `lib/reactive-vm-control-flow.js`, five unused field sets, an orphan fixture, two
   dead CSS selectors. The gate in `tests/hygiene.test.mjs` now fails when a module with its
-  own code is reached by nothing but its own test.
-- **Every file says what it is.** The four header fields are on all 280 source files: the title
+  own code is reached by nothing but its own test.- **Every file says what it is.** The four header fields are on all 280 source files: the title
   names the file and what it is, the state says what it holds rather than what a past commit
   did. The gate in `tests/hygiene.test.mjs` fails on a scaffold word, a doubled name, a commit
   message in the state, or a missing field.
 - **One home for each shared module.** The eight `lib/` files that only re-exported another
   module are gone: the edge and the extension now import the shared file directly, and the
   Node suite reaches the same file rather than a pointer to it.
-- Gates: `npm test`, `npm run check` - 31 primitives, 177 runtime safety files, 1355 unit tests, green.
+- **A number a comment quotes has to exist.** 216 comment lines quote a number, and every
+  one of them is held by the code, a test or a file name. The gate in
+  `tests/comment-claims.test.mjs` refuses a number nothing holds, so a measurement cannot
+  be invented; a real measurement is allowed when the comment says where it was taken.
+- Gates: `npm test`, `npm run check` - 31 primitives, 177 runtime safety files, 1359 unit tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
   functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
   bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
@@ -64,20 +66,19 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   (under Rp 100.000) opens straight into QRIS, because a fixed fee would eat it; a larger
   one offers the provider's list. The transaction carries a derived order id, because the
   readable invoice id has characters Midtrans refuses. The provider key is not set, so the
-  page asks for a transfer today; the Snap request itself is `[UNVERIFIED]` until a real
-  key exists. Fees and the foreign-client paths are in [`product/billing.md`](product/billing.md).
+  Snap request itself is `[UNVERIFIED]` until a real key exists. Fees and the foreign-client
+  paths are in [`product/billing.md`](product/billing.md).
 - **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge` runs
   the whole MCP surface over it: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms.
 - **Prose is 14% of the bytes and 7% of the lines**, and no comment repeats the code under
-  it. The formatter reflowed 2,149 comment lines into 32% fewer lines without losing a word.
-  A cap on comment volume would reward deleting the reason, not writing it better.
+  it. A cap on comment volume would reward deleting the reason, not writing it better.
 - **The statement job is the first product, and it is local.** `statement_card` names the
   file and the folder before the drive; `statement_delivered` verifies the file on disk -
   kind sniffed from the bytes, PDF pages counted from the file's own structure, closing
   balance recorded with the page named as its source - and appends the client-month to a
   manifest, refusing a second line for the same client-month. Measured on a local portal
   that asks for a password: the gate was detected, the drive stopped, the download landed
-  renamed in 464 ms, the manifest held one row. See [`jobs/statements.md`](jobs/statements.md).
+  renamed in 464 ms. See [`jobs/statements.md`](jobs/statements.md).
 - **The device can now deliver a statement without a person watching.** `statement.download`
   lets the extension download the file under the card's name, wait until the browser says it
   is whole, read the kind and the page count from the bytes the page fetched, and write one
@@ -91,7 +92,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   portal: only a fixture has been driven, so a pilot runs on the client's own machine.
 - **One CORS policy and one credential-shape check.** Every edge function resolves the origin
   per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules import
-  [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any module declares the pattern again.
+  [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any module declares it again.
 - No management token or secret key in the tree; the signed-in pages carry the Supabase publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`, `lastInputMs` - so the model can tell whether the person is looking at the tab. Fails open.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
@@ -106,7 +107,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every
   path enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named
-  `script-src` in place of `unsafe-inline`. Re-hash after an inline script changes.
+  `script-src` in place of `unsafe-inline`.
 ## Measured, not assumed
 
 - **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte argument limit, so `node` died with "Argument list too long" and curl sent no body; the run went green having published nothing. `publish-crx.yml` now fails unless the status is 2xx.
@@ -120,14 +121,10 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    `Account API Tokens Write`. The owner has chosen to leave it for now.
 2. **The migration ledger and the tree disagree on names.** Production holds 109 applied
    rows; the tree holds 101 files and only 42 share a version with a row, because files were
-   renamed after they were applied (`yt_watch_v1` applied, `opera_agent_youtube_watch_summarize`
-   in the tree). The schema matches the tree's last state - both private schemas exist, all
-   13 `docs.*` workflows are registered, and `opera_signal_device` is absent because a later
-   migration drops it - but a fresh rebuild replays renamed files, so the tree cannot prove
-   which SQL produced the live schema. Owner decision: re-align, or accept the drift.
+   renamed after they were applied. A fresh rebuild replays renamed files, so the tree cannot
+   prove which SQL produced the live schema. Owner decision: re-align, or accept the drift.
 3. **1.6.25 and 1.6.26 shipped to the update service but were never tagged**, never got a
-   GitHub Release, and have no note under `docs/releases/`; the release notes jump from
-   1.6.24 to 1.6.27.
+   GitHub Release, and have no note under `docs/releases/`.
 4. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
    code exchanges for a one-hour token, and a tool call completes. Google sign-in is
    unverified.
