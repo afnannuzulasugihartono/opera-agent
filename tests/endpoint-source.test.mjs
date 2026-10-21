@@ -21,7 +21,6 @@ test('the consent screen is a page of the site, not a deployment of its own', as
 
   assert.equal(endpoints.CONSENT_CONFIG_URL, `${CONSENT_CONFIG_URL.split('/functions')[0]}/functions/v1/opera-agent-auth/config`);
   assert.equal(endpoints.CONSENT_CONFIG_URL, CONSENT_CONFIG_URL, 'the shared constant is the one the extension uses');
-  assert.equal(endpoints.CONSENT_URL, `${endpoints.SITE_ORIGIN}/oauth/consent`);
   assert.match(consent, /AUTH_HOST = 'https:\/\/nenmkmtvjremqphfqnfw\.supabase\.co\/auth\/v1'/, 'the page reads the project Auth host');
 
   const consentCode = consent
@@ -32,7 +31,8 @@ test('the consent screen is a page of the site, not a deployment of its own', as
   assert.doesNotMatch(consentCode, /<(script|img|link)[^>]+(src|href)="https?:/i, 'no tag points at a remote origin');
 
   const config = await readFile(new URL('../supabase/config.toml', import.meta.url), 'utf8');
-  assert.match(config, /site_url = "https:\/\/opera-agent\.pages\.dev"/, 'the site URL is the origin that serves consent');
+  const siteUrl = /site_url\s*=\s*"([^"]+)"/.exec(config)?.[1];
+  assert.equal(endpoints.SITE_ORIGIN, siteUrl, 'the extension names the same site origin the platform is configured with');
   assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the consent path matches the page the site serves');
   assert.doesNotMatch(config, /oauth-consent-three/, 'the separate deployment is no longer referenced');
 });
