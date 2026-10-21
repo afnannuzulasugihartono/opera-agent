@@ -32,10 +32,9 @@ import {
 
 export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }) {
 
-  // WHY THE FILE IS PREPARED IN ONE PLACE. Upload and drop take the same two inputs - a
-  // base64 payload or a path - and must answer the same three questions: where the bytes
-  // are, how many there are, and how to remove the temporary copy. Two copies of that
-  // answer drift the moment one gains a guard the other lacks, so it lives here.
+  // WHY THE FILE IS PREPARED IN ONE PLACE.
+  // Upload and drop take the same two inputs - a base64 payload or a path - and must answer the same three questions: where the bytes are, how many there are, and how to remove the temporary copy.
+  // Two copies of that answer drift the moment one gains a guard the other lacks, so it lives here.
 
   const materialize = ({ data, filePath, filename, verb, prefix }) => {
     const hasData = data !== null && data !== undefined;
