@@ -382,9 +382,20 @@ const STAGED_FOR_THE_OPEN_TASK = new Map([
 
 test('a module with its own code is reached by the product, not only by its own test', async () => {
   const dir = fileURLToPath(new URL('..', import.meta.url));
-  const tracked = execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8' }).split('\n').filter(Boolean);
-  const codeFiles = tracked.filter((file) => /\.(js|mjs|cjs|ts)$/.test(file));
-  const edgeFiles = tracked.filter((file) => /\.(js|mjs|cjs|ts|html)$/.test(file));
+  const skipDirs = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp', 'coverage', '__pycache__', '.vercel', '.next']);
+  const walk = (relative) => {
+    const out = [];
+    for (const entry of fsSync.readdirSync(path.join(dir, relative), { withFileTypes: true })) {
+      if (skipDirs.has(entry.name)) continue;
+      const next = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) out.push(...walk(next));
+      else out.push(next);
+    }
+    return out;
+  };
+  const present = ['extension', 'lib', 'local', 'scripts', 'supabase', 'tests', 'landing'].flatMap(walk);
+  const codeFiles = present.filter((file) => /\.(js|mjs|cjs|ts)$/.test(file));
+  const edgeFiles = present.filter((file) => /\.(js|mjs|cjs|ts|html)$/.test(file));
   const textOf = new Map(edgeFiles.map((file) => [file, fsSync.readFileSync(path.join(dir, file), 'utf8')]));
 
   const resolve = (from, spec) => {
@@ -425,7 +436,7 @@ test('a module with its own code is reached by the product, not only by its own 
 
   // The entry points: what the product actually runs.
   const roots = new Set();
-  for (const file of tracked) {
+  for (const file of present) {
     if (/^supabase\/functions\/[^/]+\/index\.ts$/.test(file)) roots.add(file);
     if (/^scripts\/.*\.(mjs|py)$/.test(file)) roots.add(file);
     if (/^local\/bin\/.*\.js$/.test(file)) roots.add(file);
@@ -436,7 +447,7 @@ test('a module with its own code is reached by the product, not only by its own 
   if (manifest.background?.service_worker) roots.add(`extension/${manifest.background.service_worker}`);
   if (manifest.action?.default_popup) roots.add(`extension/${manifest.action.default_popup}`);
   if (manifest.options_page) roots.add(`extension/${manifest.options_page}`);
-  for (const file of tracked) if (/^landing\/.*\.html$/.test(file)) roots.add(file);
+  for (const file of present) if (/^landing\/.*\.html$/.test(file)) roots.add(file);
 
   const reached = new Set();
   const queue = [...roots];
@@ -454,8 +465,7 @@ test('a module with its own code is reached by the product, not only by its own 
     return withoutReexports === '';
   };
 
-  const runtimeFiles = tracked.filter((file) => /^(extension|lib|local|supabase\/functions|scripts)\//.test(file)
-    && /\.(js|mjs|cjs|ts)$/.test(file));
+  const runtimeFiles = codeFiles.filter((file) => /^(extension|lib|local|supabase\/functions|scripts)\//.test(file));
   const unreachable = runtimeFiles.filter((file) => !reached.has(file) && !isShim(textOf.get(file)));
   const unexpected = unreachable.filter((file) => !STAGED_FOR_THE_OPEN_TASK.has(file));
   assert.deepEqual(unexpected, [],
