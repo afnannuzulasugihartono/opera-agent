@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: edge-syntax.test — syntax.test — Frozen contract: every edge-function entrypoint must parse under Deno.
+// @title: edge-syntax.test — every edge-function entrypoint parses under Deno.
 // @state: escape quotes in mcp instructions literal, add parse regression test.
 // @dependencies: node:test, strict, promises.
 

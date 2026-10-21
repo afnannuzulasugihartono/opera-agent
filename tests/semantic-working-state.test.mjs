@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: semantic-working-state.test — working-state.test — semantic working state, consolidated 2026-10-03.
-// @state: consolidate the working-state cluster into one file.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: semantic-working-state.test — the working state holds the change, and the change is bounded.
+// @state: the entities, the views, the classifications, and the limits that keep them finite.
 // @dependencies: node:test, strict, semantic-working-state.
 
 import test from 'node:test';

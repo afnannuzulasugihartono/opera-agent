@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: goal-ledger — ledger — Repository file.
-// @state: clear deno require-await and no-unused-vars in edge functions.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: goal-ledger — the secure ledger: the goal, its claims, and the evidence that answers them.
+// @state: the ledger shape, its limits, and the canonical digest every revision carries.
 // @dependencies: none.
 
 import { SECRET_VALUE } from '../../../lib/secret-pattern.js';

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 12:20 UTC+7.
-// @title: index — Repository file.
-// @state: serves update.xml and the signed CRX per extension id, plus the newest build under two version-less download paths for the site.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-update — the update service: the manifest, the signed CRX and the newest build.
+// @state: the two extension ids it answers, the update.xml it writes, and the CRX it serves.
 // @dependencies: edge-runtime, supabase-js, cors.
 
 import "@supabase/edge-runtime";

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: recon-workflows.test — Test.
-// @state: locks the unknown-site recon order: detect, map, act, verify plus the CAPTCHA stop.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: recon-workflows.test — the unknown-site order: detect, map, act, verify, and the CAPTCHA stop.
+// @state: the steps in that order, the stop it takes on a CAPTCHA, and the proof it carries back.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

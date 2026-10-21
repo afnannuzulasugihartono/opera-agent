@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: skills-workflows.test — Test.
-// @state: locks the skill memory table and seed lessons.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: skills-workflows.test — the skill memory table and the lessons seeded into it.
+// @state: the table shape, the seed rows, and the workflow that reads them.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

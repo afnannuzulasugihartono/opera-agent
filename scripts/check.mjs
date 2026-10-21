@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: check — Script.
-// @state: version 1.6.27 sweep for frame-rate state loops and track sensing.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: check — the gate that runs before anything is shipped.
+// @state: the version, the primitive allowlist, the runtime safety scan and the secret-pattern check, in one verdict.
 // @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol, extension-source.
 
 import fs from 'node:fs';

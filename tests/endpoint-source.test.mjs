@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 02:41 UTC+7.
-// @title: endpoint-source.test — source.test — Test.
-// @state: activate the options tab before waiting on its async prefill.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: endpoint-source.test — the extension has one endpoint source, and the site serves the consent page.
+// @state: the derived function URLs, the site origin the platform is configured with, and the page that must load no foreign script.
 // @dependencies: node:test, strict, promises, endpoints, extension-source.
 
 import test from 'node:test';

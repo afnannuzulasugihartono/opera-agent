@@ -44,7 +44,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   moved to `lib/reactive-vm-control-flow.js`, five unused field sets, an orphan fixture, two
   dead CSS selectors. The gate in `tests/hygiene.test.mjs` now fails when a module with its
   own code is reached by nothing but its own test.
-- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1354 unit tests, green.
+- **Every file says what it is.** The four header fields are on all 280 source files: the title
+  names the file and what it is, the state says what it holds rather than what a past commit did.
+  The gate in `tests/hygiene.test.mjs` fails on a scaffold word, a doubled name, a commit
+  message in the state, or a missing field.
+- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1355 unit tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
   functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
   bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
@@ -86,14 +90,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - **One CORS policy and one credential-shape check.** Every edge function resolves the origin
   per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules import
   [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any module declares the pattern again.
-- No management token or secret key in the tree. The signed-in pages carry the Supabase
-  publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
+- No management token or secret key in the tree; the signed-in pages carry the Supabase publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`, `lastInputMs` - so the model can tell whether the person is looking at the tab. Fails open.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
   device runs it locally, so a task costs one round trip; [`lib/goal-plan.js`](../lib/goal-plan.js) is the gate that shares the allowlist.
 - **The bridge transport is a held `POST /poll`, not a WebSocket.** Chrome does not start a service worker for an inbound socket frame, so the socket stayed `OPEN` and heard nothing.
-- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
-  `vercel.app` stays in the CORS allowlist.
+- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and `vercel.app` stays in the CORS allowlist.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates. A push
   that does not deploy fails silently: CI is green and production keeps the old build. The
@@ -103,9 +105,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named `script-src` in place of `unsafe-inline`. Re-hash after an inline script changes.
 ## Measured, not assumed
 
-- **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte
-  argument limit, so `node` died with "Argument list too long" and curl sent no body; the run
-  went green having published nothing. `publish-crx.yml` now fails unless the status is 2xx.
+- **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte argument limit, so `node` died with "Argument list too long" and curl sent no body; the run went green having published nothing. `publish-crx.yml` now fails unless the status is 2xx.
 - **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so
   the function admits the static token or a named account and nobody else, and a test bars any wider rule.
 

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 02:41 UTC+7.
-// @title: index — Repository file.
-// @state: edge-runtime imports via deno.json import maps, restore SBOM gate.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-auth — the OAuth configuration the site and the extension read.
+// @state: the public config the consent page needs, and the CORS answer every edge function gives.
 // @dependencies: edge-runtime.
 
 import "@supabase/edge-runtime";

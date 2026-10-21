@@ -1,6 +1,6 @@
-# @last-edited: 2026-10-04 20:52 UTC+7.
-# @title: real_site_smoke — Test.
-# @state: cover comment typing, likes, transcripts, Docs, GitHub and Wikipedia live.
+# @last-edited: 2026-10-21 UTC+7.
+# @title: real_site_smoke — the extension against live sites: comment, like, transcript, Docs, GitHub and Wikipedia.
+# @state: the sites it drives by hand, and what it prints for each.
 # @dependencies: asyncio, hashlib, json, os, re.
 
 """Real-site smoke: opera-agent against live pages, opt-in.

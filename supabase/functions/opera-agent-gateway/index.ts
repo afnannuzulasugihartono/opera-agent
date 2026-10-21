@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: index — Deno edge function..
-// @state: Deno edge function..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-gateway — the gateway a browser reaches when the caller is a person, not a device.
+// @state: the CORS answer, the token it accepts, and the command it enqueues for the device.
 // @dependencies: edge-runtime, supabase-js, cors.
 
 import "@supabase/edge-runtime";

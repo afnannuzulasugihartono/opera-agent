@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-10 UTC+7.
-// @title: hover-settle.test — settle.test — Hover-as-a-first-class-step contracts.
-// @state: drop the milestone prefix from the interaction test family.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: hover-settle.test — a hover is a first-class step, settled before the next one runs.
+// @state: the settle budget, the sample the hover waits on, and the plan it returns.
 // @dependencies: node:test, strict, promises, protocol, extension-source.
 
 // Hover-as-a-first-class-step contracts.

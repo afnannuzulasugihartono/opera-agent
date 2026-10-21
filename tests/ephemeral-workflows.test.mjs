@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: ephemeral-workflows.test — Test.
-// @state: locks the ephemeral lifecycle migration: prefix guard, quota, sweep, grants.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: ephemeral-workflows.test — the ephemeral workflow lifecycle: register, delete, sweep.
+// @state: the prefix guard, the quota, the sweep, and the grants the migration sets.
 // @dependencies: node:test, strict, node:fs.
 
 import test from 'node:test';

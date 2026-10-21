@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: gateway-transactions.test — transactions.test — Test.
-// @state: fold the gateway offline check into the auth call.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: gateway-transactions.test — the gateway admits a signed-in person and a device, and nothing else.
+// @state: the token it accepts, the device it resolves, and the command it enqueues.
 // @dependencies: node:test, strict, node:fs, node:module, node:vm, cors.
 
 import test from 'node:test';

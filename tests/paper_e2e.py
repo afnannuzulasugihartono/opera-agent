@@ -1,4 +1,7 @@
-# paper_e2e: builds a mini-thesis in a real Google Doc via run_workflow.
+# @last-edited: 2026-10-21 UTC+7.
+# @title: paper_e2e — builds a mini-thesis in a real Google Doc through run_workflow.
+# @state: the blocks it types, the proofs it checks, and the loud SKIP it prints without a Google session.
+# @dependencies: none.
 # Manual gate (needs a Google session): prints SKIP loudly without one, never green.
 #   py tests/paper_e2e.py
 
