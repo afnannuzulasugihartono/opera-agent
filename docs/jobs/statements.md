@@ -105,3 +105,13 @@ The permission is part of the promise: without `downloads` the file can only be 
 under the name the portal gives it, and a delivery that cannot be seen on disk is a
 claim, not a delivery. The site says so in the permission list.
 
+## Then bill it
+
+The manifest is the record, so it is also the bill. `invoice_create` takes the rows the
+manifest returned and turns each delivered client-month into one line priced from
+`opera_price_list`; the customer gets a signed link to a page that lists those lines and
+the amount, and nothing is charged for a month that is not in the manifest. The same
+client-month twice is refused rather than billed twice, and a paid invoice cannot be
+reopened by a later call. The page, the signature and the drill that drove them are in
+[`docs/product/billing.md`](../product/billing.md).
+
