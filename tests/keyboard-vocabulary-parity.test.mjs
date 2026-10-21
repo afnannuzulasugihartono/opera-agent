@@ -27,8 +27,9 @@ import {
   resolveChord,
   resolveModifiers
 } from '../extension/lib/keyboard.js';
+import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
-const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+const mcp = await mcpSurfaceSource();
 
 function enumMembers(name) {
   const body = mcp.match(new RegExp(`const ${name} = z\\.enum\\(\\[([\\s\\S]*?)\\]\\)`))?.[1];
