@@ -53,7 +53,7 @@ const EXPECTED_TRUST = Object.freeze({
 });
 const VALIDATED_EVIDENCE = Symbol('validatedEvidenceDigest');
 
-export class ProofError extends Error {
+class ProofError extends Error {
   constructor(code, message, details = undefined) {
     super(message);
     this.name = 'ProofError';

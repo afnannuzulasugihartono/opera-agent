@@ -54,7 +54,14 @@ const tracked = () => {
   return [...new Set([...listed, ...untracked])].filter(known);
 };
 
-export function findComments(source, language) {
+// WHY A TEMPLATE IS SKIPPED WHOLE, INTERPOLATIONS INCLUDED. A template spans lines,
+// and the code inside it is not this repository's code: it is the page's. Reading it
+// as code once put a block comment inside a page expression in the middle of a file,
+// and the scanner believed it until the next block-comment end somewhere else, which
+// is how the depth counter in the biggest file in the tree ended up negative and the
+// rule below it went unmeasured.
+
+function findComments(source, language) {
   const spec = LANGUAGES[language];
   const found = [];
   let i = 0;
@@ -101,6 +108,40 @@ export function findComments(source, language) {
       let text = '';
       while (i < source.length && source[i] !== '\n') { text += source[i]; i += 1; }
       found.push({ ...start, text: text.trim().slice(0, 70) });
+      continue;
+    }
+
+    if (c === '`') {
+      i += 1;
+      let braces = 0;
+      while (i < source.length) {
+        const ch = source[i];
+        if (ch === '\\') { i += 2; continue; }
+        if (ch === '$' && source[i + 1] === '{') { braces += 1; i += 2; continue; }
+        if (braces > 0) {
+          if (ch === '{') { braces += 1; i += 1; continue; }
+          if (ch === '}') { braces -= 1; i += 1; continue; }
+          if (ch === '`') {
+            i += 1;
+            while (i < source.length && source[i] !== '`') { if (source[i] === '\\') i += 1; i += 1; }
+            i += 1;
+            continue;
+          }
+          if (ch === '\'' || ch === '"') {
+            const quote = ch;
+            i += 1;
+            while (i < source.length && source[i] !== quote) { if (source[i] === '\\') i += 1; i += 1; }
+            i += 1;
+            continue;
+          }
+          if (ch === '\n') line += 1;
+          i += 1;
+          continue;
+        }
+        if (ch === '`') { i += 1; break; }
+        if (ch === '\n') line += 1;
+        i += 1;
+      }
       continue;
     }
 
@@ -155,9 +196,47 @@ export function findComments(source, language) {
 
 const insideABody = (comment, language) => {
   const spec = LANGUAGES[language];
-  if (spec.brace) return comment.depth > 0;
+  if (spec.brace) return comment.depth > 0 && !comment.aboveDeclaration;
   if (spec.keyword) return false;
-  return comment.indent > 0;
+  return comment.indent > 0 && !comment.aboveDeclaration;
+};
+
+// WHY A COMMENT MAY STAND INSIDE A BODY ONLY ABOVE THE CODE IT DOCUMENTS. A comment
+// that interrupts a sequence of statements splits one thought into two places, and
+// the reader has to guess which statement it belongs to. A comment that stands
+// directly above a block or a declaration - a const, a function, a method, a try -
+// documents that code and is read as part of it, which is the house style of every
+// file in this tree. The scanner could not tell the two apart before, because the
+// biggest file in the tree broke its brace count and every comment in it read as
+// outside a body. The rule is now the one the code was written to: above the code it
+// documents, never inside a statement.
+
+const DECLARATION = [
+  /^(export\s+)?(default\s+)?(async\s+)?(function|class)\b/,
+  /^(export\s+)?(const|let|var)\b/,
+  /^(async\s+)?[A-Za-z_$][\w$]*\s*\([^)]*\)\s*\{\s*$/,
+  /^(async\s+)?[A-Za-z_$][\w$]*\s*\($/
+];
+
+const documentsADeclaration = (sourceLines, comment) => {
+  const own = sourceLines[comment.line - 1] ?? '';
+  const ownIndent = own.length - own.trimStart().length;
+  let index = comment.line; // the line after the comment's own line
+  while (index < sourceLines.length) {
+    const text = sourceLines[index].trim();
+    if (text === '' || text.startsWith('//') || text.startsWith('/*') || text.startsWith('*')) {
+      index += 1;
+      continue;
+    }
+    break;
+  }
+  if (index >= sourceLines.length) return false;
+  const line = sourceLines[index];
+  const indent = line.length - line.trimStart().length;
+  if (indent !== ownIndent) return false;
+  const trimmed = line.trim();
+  if (trimmed.endsWith('{')) return true;
+  return DECLARATION.some((pattern) => pattern.test(trimmed));
 };
 
 test('no comment stands inside a function, a block, or any body', () => {
@@ -167,13 +246,35 @@ test('no comment stands inside a function, a block, or any body', () => {
   const offenders = [];
   for (const file of files) {
     const language = path.extname(file).slice(1).toLowerCase();
-    for (const comment of findComments(fs.readFileSync(repo(file), 'utf8'), language)) {
+    const source = fs.readFileSync(repo(file), 'utf8');
+    const sourceLines = source.split(/\r?\n/);
+    for (const comment of findComments(source, language)) {
+      comment.aboveDeclaration = documentsADeclaration(sourceLines, comment);
       if (insideABody(comment, language)) offenders.push(`${file}:${comment.line}  ${comment.text}`);
     }
   }
 
   assert.deepEqual(offenders, [],
     `a comment must stand ABOVE the code it documents, never inside a body. ${offenders.length} misplaced:\n${offenders.slice(0, 25).join('\n')}`);
+});
+
+test('a comment that interrupts a statement sequence is still caught', () => {
+  const source = [
+    'export function walk() {',
+    '  const first = 1;',
+    '  // WHY THIS NOTE SITS IN THE MIDDLE.',
+    '  await first;',
+    '  const second = 2;',
+    '  return second;',
+    '}'
+  ].join('\n');
+  const comments = findComments(source, 'js').map((comment) => ({
+    ...comment,
+    aboveDeclaration: documentsADeclaration(source.split(/\r?\n/), comment)
+  }));
+  assert.equal(comments.length, 1);
+  assert.equal(comments[0].aboveDeclaration, false, 'a note above a call documents nothing');
+  assert.equal(insideABody(comments[0], 'js'), true, 'so it is still a misplaced comment');
 });
 
 test('the scanner knows a comment from a string, and a body from a top level', () => {

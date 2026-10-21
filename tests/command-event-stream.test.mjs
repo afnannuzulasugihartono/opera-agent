@@ -30,6 +30,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (p) => fs.readFileSync(new URL(p, root), 'utf8');
@@ -123,7 +124,7 @@ test('events are swept, because nothing else prunes this table', () => {
 });
 
 test('the MCP transport can actually carry a stream, so the channel is not dead code', () => {
-  const mcp = read('supabase/functions/opera-agent-mcp/index.ts');
+  const mcp = mcpSurfaceSourceSync();
   assert.ok(/enableJsonResponse:\s*false/.test(mcp),
     'enableJsonResponse:true answers with one JSON body at the end, so progress can never reach the model');
 });
