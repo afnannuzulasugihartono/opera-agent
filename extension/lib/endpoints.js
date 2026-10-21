@@ -36,4 +36,3 @@ export function socketUrl(bridgeUrl) {
 }
 
 export const SITE_ORIGIN = 'https://opera-agent.pages.dev';
-export const CONSENT_URL = `${SITE_ORIGIN}/oauth/consent`;
