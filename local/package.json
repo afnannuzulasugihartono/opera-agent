@@ -21,6 +21,7 @@
     "menu-tree.js",
     "primitives.js",
     "sessions.js",
+    "statements.js",
     "transport.js",
     "window-focus.js",
     "ws-server.js"
