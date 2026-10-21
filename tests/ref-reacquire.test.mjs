@@ -20,6 +20,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
 const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
 
@@ -95,7 +96,7 @@ test('sensitive targets are never offered a fresh ref', () => {
 });
 
 test('the model is told the fresh refs are directly actionable', async () => {
-  const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+  const mcp = await mcpSurfaceSource();
   assert.match(mcp, /that stale ref is refused on purpose/);
 
   assert.match(mcp, /the error carries candidates, each entry holding a freshRef/);

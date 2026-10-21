@@ -11,14 +11,14 @@ import { createHash } from 'node:crypto';
 
 import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
+import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
-const sourceUrl = new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url);
 const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', import.meta.url);
 const authUrl = new URL('../supabase/functions/opera-agent-mcp/../opera-agent-auth/index.ts', import.meta.url);
 const consentUrl = new URL('../landing/oauth/consent.html', import.meta.url);
 const supabaseConfigUrl = new URL('../supabase/config.toml', import.meta.url);
 const siteVercelConfigUrl = new URL('../landing/vercel.json', import.meta.url);
-const source = await readFile(sourceUrl, 'utf8');
+const source = await mcpSurfaceSource();
 const config = JSON.parse(await readFile(configUrl, 'utf8'));
 const authSource = await readFile(authUrl, 'utf8');
 const consentSource = await readFile(consentUrl, 'utf8');
@@ -93,7 +93,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_seek: 'b5e27995716abd38',
   media_stream_start: '0c5fbfac4707448f',
   media_stream_stop: '5df002e4171733eb',
-  media_listen_read: 'a2cb4790d87fc893',
+  media_listen_read: '9834f1ca13dbeae9',
 });
 
 const R9B_CHANGED_TOOL = 'press_key';
@@ -122,7 +122,9 @@ function toolBlocks() {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
   return starts.map((match, index) => {
     const from = source.indexOf('inputSchema:', match.index);
-    const end = index + 1 < starts.length ? starts[index + 1].index : source.length;
+    const end = index + 1 < starts.length
+      ? starts[index + 1].index
+      : source.indexOf('\n  });', match.index) + '\n  });'.length;
     return { name: match[1], schema: source.slice(from, end) };
   });
 }

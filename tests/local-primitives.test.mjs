@@ -36,13 +36,13 @@ import {
   DROP_PHASES,
   scrollExpression,
   UPLOAD_INPUT_EXPRESSION,
-  createPrimitives,
   dragMimeType,
   isDocsDocument,
   modifierMask,
   snapshotExpression,
   splitText
-} from '../local/primitives.js';
+} from '../local/page-expressions.js';
+import { createPrimitives } from '../local/primitives.js';
 
   // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED. The runtime asks the page what it
 // holds before and after an edit and fails the edit when nothing moved, so a fake

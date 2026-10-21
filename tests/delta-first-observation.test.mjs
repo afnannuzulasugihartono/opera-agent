@@ -12,6 +12,7 @@ import {
   createDeltaFirstObservationPipeline,
   reasoningPayloadBytes,
 } from '../lib/delta-first-observation.js';
+import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
 const identity = (overrides = {}) => ({
   tenantId: 'tenant-a',
@@ -559,7 +560,7 @@ test('keeps the R4-authorized read_page projection inside the frozen public MCP 
     const bytes = await readFile(new URL(relativePath, import.meta.url));
     assert.equal(sha1Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged in P2`);
   }
-  const mcp = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+  const mcp = await mcpSurfaceSource();
   assert.match(mcp, /server\.registerTool\("read_page"/);
   assert.match(mcp, /execute\("page\.read", \{ \.\.\.args, view: "compact" \}, undefined, deviceName, provider\)\);/);
   assert.doesNotMatch(mcp, /view:\s*z\./);
