@@ -24,10 +24,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   Release carries the extension zip, the source zip, the CRX and SHA256SUMS. Pull request
   #86 passed every gate with zero open issues and is `blocked` by the base-branch policy: it
   needs an owner approval, which an agent cannot give itself.
-- **Eight pull requests are stacked and all wait for that one approval.** #87
+- **Eleven pull requests are stacked and all wait for that one approval.** #87
   `handoff-bridge` -> #89 `download-clean` -> #90 `payload-trim` -> #91 `statement-job` ->
   #92 `first-bookkeepers` -> #94 `pilot-runbook` -> #95 `audit-tree-truth` -> #96
-  `code-standard` (which carries #93 `audit-dead-code`, now closed). Each is green.
+  `code-standard` -> #97 `monetization` -> #98 `device-delivery` -> #99 `money-path` ->
+  #100 `comment-structure`. Each is green; #93 `audit-dead-code` is closed.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` measures four
   things: no source file over 1,200 lines (one named exception, the content script Chrome
   loads as a unit), no leftover markers, no twelve-line block repeated inside one file, and
@@ -38,8 +39,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   split; a bare `//` between paragraphs is a blank line, not a comment line. The gate is
   `format(file) === file` over the whole tree, 392 files with the migrations included, and
   the corpus that pins it is `tests/comment-format.test.mjs`.
-- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1353 unit
-  tests, green.
+- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1353 unit tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
   functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
   bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
