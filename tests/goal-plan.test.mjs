@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compileGoalPlan } from '../lib/goal-plan.js';
+import { compileGoalPlan } from '../extension/lib/goal-plan.js';
 
 const TARGET = { deviceId: 'device-test', tabId: 7, documentGeneration: 'doc-gen-1' };
 const BUDGETS = { astNodes: 256, astDepth: 12, browserCommandLeavesPerRun: 4 };
