@@ -73,3 +73,35 @@ portal that asks for a password, lists two months, and serves an attachment:
 The synthetic portal is a fixture, not a claim about any real bank. What it proves is
 the loop: the card names the file before anything is clicked, the file that lands is the
 one the card asked for, and the manifest refuses what is not whole.
+
+## Two ways to deliver
+
+| | Local (the driver) | Device (the extension) |
+|---|---|---|
+| Where it runs | on the operator's machine, against a debug port | in the user's own browser, paired to a bridge |
+| Who downloads | the driver, over CDP | the device, with the `downloads` permission |
+| Where the file lands | the folder the card named | the browser's own download folder, under the card's name |
+| Where the proof is read | the file on disk | the same bytes, read by the page that fetched them, plus the browser's own download record |
+| Where the manifest lives | beside the files, on disk | the device's own storage, on the user's machine |
+
+The device path is the one that can run without a person watching, which is what turns
+this from a service into a product. It adds two commands:
+
+- `statement.download` — the device downloads the file under the name it is given, waits
+  until the browser says the file is whole, reads the kind and the page count from the
+  bytes the page fetched, and writes one line into the device's manifest
+- `statement.manifest` — the device reads that manifest back
+
+The two are exposed on the cloud surface as `statement_deliver` and `statement_manifest`.
+
+**What is proved and what is not.** The device path is unit-tested against a fake
+browser: the name rule, the wait, the refusals, the duplicate rule and the row are all
+covered ([`tests/statement-device.test.mjs`](../../tests/statement-device.test.mjs)). It has
+**not** been driven end to end in a real browser against a real portal — that needs the
+extension loaded in a browser with a portal serving a file, which is the next piece of
+work, and it is marked unverified until it is.
+
+The permission is part of the promise: without `downloads` the file can only be saved
+under the name the portal gives it, and a delivery that cannot be seen on disk is a
+claim, not a delivery. The site says so in the permission list.
+
