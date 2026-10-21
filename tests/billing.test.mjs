@@ -17,6 +17,7 @@ import {
   amountFor,
   invoiceToken,
   isSettled,
+  linesFromDeliveries,
   notificationSignatureValid,
   priceFor,
   verifyInvoiceToken
@@ -88,10 +89,63 @@ test('a payment notification is believed only when the provider signed it', () =
   assert.equal(notificationSignatureValid({ ...notification, signature }, ''), false, 'without a key nothing is verified');
 });
 
-test('only a settled notification is a payment', () => {
+test('the invoice is derived from the manifest: one line per delivered client-month', () => {
+  const deliveries = [
+    { client: 'Toko Sinar Jaya', portal: 'bank', period: '2026-08', pages: 2, bytes: 5120 },
+    { client: 'CV Melati', portal: 'bank', period: '2026-08', pages: 4, bytes: 9000 }
+  ];
+  const { lines, refused } = linesFromDeliveries(deliveries);
+  assert.equal(refused.length, 0);
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0].kind, 'statement.client_month');
+  assert.equal(lines[0].quantity, 1, 'one delivery is one client-month, not a page count');
+  assert.match(lines[0].description, /Toko Sinar Jaya — 2026-08 \(2 pages\)/);
+  const out = amountFor(lines, PRICE_LIST);
+  assert.equal(out.amountCents, 1000000, 'two delivered client-months are two units');
+});
+
+test('a client-month listed twice is refused, not billed twice and not dropped', () => {
+  const twice = [
+    { client: 'Toko Sinar Jaya', portal: 'bank', period: '2026-08' },
+    { client: 'Toko Sinar Jaya', portal: 'bank', period: '2026-08' }
+  ];
+  const { lines, refused } = linesFromDeliveries(twice);
+  assert.equal(lines.length, 1);
+  assert.equal(refused.length, 1);
+  assert.match(refused[0].reason, /twice/);
+});
+
+test('a row without a client or a month cannot be billed', () => {
+  const { lines, refused } = linesFromDeliveries([{ client: '', period: '2026-08' }, { client: 'CV Melati' }]);
+  assert.equal(lines.length, 0);
+  assert.equal(refused.length, 2);
+  assert.match(refused[0].reason, /client and a month/);
+});
+
+test('only a settled notification is a payment, in the spellings a provider uses', () => {
+  assert.equal(isSettled({ transaction_status: 'settlement' }), true, 'Midtrans calls a settled transfer settlement');
   assert.equal(isSettled({ transaction_status: 'settled' }), true);
   assert.equal(isSettled({ transaction_status: 'capture' }), true);
+  assert.equal(isSettled({ transaction_status: 'capture', fraud_status: 'accept' }), true);
+  assert.equal(isSettled({ transaction_status: 'capture', fraud_status: 'challenge' }), false, 'a card under challenge is not money yet');
   assert.equal(isSettled({ transaction_status: 'pending' }), false);
   assert.equal(isSettled({ transaction_status: 'deny' }), false);
   assert.equal(isSettled({}), false);
+});
+
+test('the money rules run where Buffer does not exist, which is where they failed first', () => {
+  const saved = globalThis.Buffer;
+  const token = invoiceToken('inv-1', 'secret');
+  const notification = { order_id: 'order-1', status_code: '200', gross_amount: '4000000' };
+  const payload = `${notification.order_id}${notification.status_code}${notification.gross_amount}`;
+  const signature = createHmac('sha512', 'server-key').update(payload).digest('hex');
+  try {
+    delete globalThis.Buffer;
+    assert.equal(verifyInvoiceToken('inv-1', token, 'secret'), true);
+    assert.equal(verifyInvoiceToken('inv-1', 'x'.repeat(32), 'secret'), false);
+    assert.equal(notificationSignatureValid({ ...notification, signature }, 'server-key'), true);
+    assert.equal(notificationSignatureValid({ ...notification, signature: 'wrong' }, 'server-key'), false);
+  } finally {
+    globalThis.Buffer = saved;
+  }
 });
