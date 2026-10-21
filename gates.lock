@@ -167,7 +167,7 @@ tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 1e061e7b785f8d26caed7c39161aae88d7274bc4
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs 94de67a33900f4d4e7af552c23bc85c08b139e99
+tests/hygiene.test.mjs 47a104f4270afc6ebc0408fe52144f02bef6ac54
 tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs 3a9ae9e36aec03a4470ce2f9cf0971f66724ecf8
 
