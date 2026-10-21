@@ -100,13 +100,26 @@ Point a client at it:
 
 ## Tools
 
-`browser_status`, `list_tabs`, `open_url`, `close_tab`, `read_page`,
-`find_elements`, `click`, `click_row`, `hover`, `press_key`, `type`,
-`stream_keys`, `capture_page`, `ax_snapshot`.
+The server advertises 36 tools; `guide()` returns them as tasks rather than a list.
+
+`browser_status`, `focus_window`, `dialog_state`, `dialog_type`, `dialog_press`,
+`list_tabs`, `open_url`, `close_tab`, `read_page`, `find_elements`, `click`,
+`resolve_row`, `click_row`, `hover`, `press_key`, `type`, `get_computed`, `scroll`,
+`append`, `stream_keys`, `wait_for`, `ask_page`, `wait_for_row`, `wait_still`,
+`caret_line`, `upload`, `drop_file`, `intercept_file_chooser`, `download`,
+`list_menus`, `open_menu`, `guide`, `capture_page`, `ax_snapshot`, `statement_card`,
+`statement_delivered`.
 
 `open_url` always opens its own tab, so a drive never navigates a page someone is
 already reading. `capture_page` is clipped to the viewport at one pixel per
 clickable coordinate, so a coordinate read off a screenshot can be clicked as-is.
+Actions answer with where the page stands and the rows that changed; `ax_snapshot`
+is the deliberate look at every row.
+
+`download` writes a file to the folder the caller names and proves it by the file on
+disk — a `.crdownload` is not a result. The last two tools are the statement job: a
+card that names the file before the drive, and a delivery that verifies it and adds the
+client-month to a manifest. See [`docs/jobs/statements.md`](../docs/jobs/statements.md).
 
 ## Recipes, measured
 

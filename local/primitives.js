@@ -1576,9 +1576,20 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     // works and renames on completion, so a directory scan that accepted either would
     // report a truncated statement as delivered - the exact failure the proof layer
     // exists to prevent.
+    //
+    // WHY THE NEW NAME IS A NAME AND NOT A PATH. A caller that can name the folder
+    // already has dir; letting saveAs carry a path would be a second, quieter way to
+    // write outside it, and a file name with a slash in it fails at the operating
+    // system with a message that says nothing about the rule that was broken.
+    //
+    // WHY THE FILE IS RENAMED ONLY AFTER IT STOPS GROWING. Renaming a download
+    // mid-write would leave Chrome writing to a path that no longer exists, so the new
+    // name is given at the only moment the file is whole. The old file goes first
+    // because Windows refuses a rename onto an existing file, and pulling the same
+    // client-month twice is the normal case - a re-download is a deliberate replace.
     async download({
       handle = null, role = null, name = null, x = null, y = null,
-      dir = null, timeoutMs = 30000, settleMs = 250, intervalMs = 100
+      dir = null, saveAs = null, timeoutMs = 30000, settleMs = 250, intervalMs = 100
     } = {}) {
       const hasPoint = Number.isFinite(x) && Number.isFinite(y);
       const hasRow = role !== null && role !== undefined;
@@ -1586,6 +1597,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       if (ways !== 1) throw new Error('download needs exactly one of: a handle, a role and name, or an x and a y.');
       if (hasRow && (name === null || name === undefined || String(name) === '')) {
         throw new Error('download with a role also needs a name, because the role alone does not say which row.');
+      }
+      const renameTo = saveAs === null || saveAs === undefined ? null : String(saveAs);
+      if (renameTo !== null && (renameTo === '' || path.basename(renameTo) !== renameTo || renameTo === '.' || renameTo === '..')) {
+        throw new Error(`download saveAs must be a file name, not a path: "${renameTo}". The folder is dir.`);
       }
       const target = dir ? path.resolve(String(dir)) : path.join(os.homedir(), 'Downloads', 'opera-agent');
       fs.mkdirSync(target, { recursive: true });
@@ -1620,6 +1635,31 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         const deadline = started + limit;
         let growing = null;
         let stableAt = 0;
+        const handOver = (newest, full, size) => {
+          let file = newest;
+          let where = full;
+          if (renameTo !== null && renameTo !== newest) {
+            file = renameTo;
+            where = path.join(target, renameTo);
+            fs.rmSync(where, { force: true });
+            try {
+              fs.renameSync(full, where);
+            } catch (error) {
+              throw new Error(`the file landed as ${newest} but could not be renamed to ${renameTo}: ${error.message}. It is still at ${full}`);
+            }
+          }
+          return {
+            downloaded: true,
+            file,
+            path: where,
+            bytes: size,
+            dir: target,
+            ms: Date.now() - started,
+            armedVia,
+            clicked,
+            ...(file === newest ? {} : { landedAs: newest })
+          };
+        };
         for (;;) {
           const fresh = fs.readdirSync(target).filter((file) => !before.has(file));
           const finished = fresh.filter((file) => !file.endsWith('.crdownload') && !file.endsWith('.tmp'));
@@ -1634,16 +1674,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
                 growing = { file: newest, size };
                 stableAt = Date.now();
               } else if (Date.now() - stableAt >= settleMs) {
-                return {
-                  downloaded: true,
-                  file: newest,
-                  path: full,
-                  bytes: size,
-                  dir: target,
-                  ms: Date.now() - started,
-                  armedVia,
-                  clicked
-                };
+                return handOver(newest, full, size);
               }
             }
           }

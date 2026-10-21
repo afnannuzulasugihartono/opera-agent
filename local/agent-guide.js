@@ -86,6 +86,11 @@ export const RECIPES = Object.freeze([
     note: 'Resolve the control that starts the download, then hand its handle to download with the folder you want. The file landing and stopping growing is the proof; a still-writing file, a viewer that opened instead, and a click that produced nothing each come back downloaded:false with the reason.'
   },
   {
+    task: 'Deliver a client statement',
+    do: ['statement_card', 'open_url', 'read_page', 'find_elements', 'download', 'statement_delivered'],
+    note: 'One client, one portal, one month. The card names the file and the folder before anything is clicked; the drive gets the file; statement_delivered checks it on disk and adds the client-month to the manifest. Never type a password: if the portal asks to sign in, the person signs in in their own browser and the same tab is used again.'
+  },
+  {
     task: 'Ask the page a question instead of guessing',
     do: ['ask_page'],
     note: 'Frames, the node behind a row, a frame document, a selector, a box, a screenshot as png. Reads only — anything that acts stays a named tool.'
@@ -137,6 +142,8 @@ export const SIDE_EFFECTS = Object.freeze({
   drop_file: ['brings the tab to front and drops a file on it'],
   intercept_file_chooser: ['changes whether the native file picker appears on this tab'],
   download: ['brings the tab to front, clicks, and writes a file into the download folder it names'],
+  statement_card: [],
+  statement_delivered: ['writes the client-month into the manifest on disk, replacing the record only when asked'],
   capture_page: [],
   ax_snapshot: []
 });
