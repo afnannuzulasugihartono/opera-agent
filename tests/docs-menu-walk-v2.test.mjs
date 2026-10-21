@@ -3,10 +3,9 @@
 // @state: locks the v2 walk shape against a return to hover-everything.
 // @dependencies: node:test, strict, node:fs.
 
-// WHY level one clicks. A menubar opens on click, never on hover: v1 hovered
-// every level and its level-one hover opened nothing, so the level-two find
-// died on every Docs menu. The click is proven by the next level's find, and
-// each deeper hover the same way, which is the whole chain of proof.
+// WHY level one clicks.
+// A menubar opens on click, never on hover: v1 hovered every level and its level-one hover opened nothing, so the level-two find died on every Docs menu.
+// The click is proven by the next level's find, and each deeper hover the same way, which is the whole chain of proof.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

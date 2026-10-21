@@ -1,48 +1,33 @@
-// dev-shim — a stdio proxy that holds the client's pipe while the worker behind
-// it restarts: edit, save, and the new code is live without a toggle.
-//
-// WHY A PROXY AND NOT A RESTART. The client owns the pipe and does not
-// reconnect: killing the server to reload its code leaves a dead MCP behind a
-// human round trip. The shim keeps one pipe for the whole session and swaps
-// the worker behind it, so a file save costs a second of reload instead of a
-// toggle. Development only; production spawns the worker directly.
-//
-// WHY THE SHIM PARSES ONLY IDS. It forwards bytes it never interprets, except
-// to learn which responses settle which requests: that table is what lets a
-// swap wait for the in-flight instead of dropping it, and fail it by name
-// when the wait runs out. Anything unparsable forwards blind in both
-// directions.
-//
-// WHY INITIALIZE IS REPLAYED. The client shakes hands once, with whichever
-// worker was alive first. The replay hands the stored handshake to the new
-// worker and swallows its answer, so the client never sees a second hello.
-//
-// WHY A CRASHED WORKER IS REBUILT WITH A BUDGET, AND WHY THE BUDGET DOES NOT
-// KILL THE CONNECTION. A worker that dies on its own comes back, because
-// transient deaths happen; past three rebuilds in thirty seconds it is poisoned
-// — a syntax error restarts forever. The old answer was to end the shim, which
-// handed the client a dead MCP and flipped its switch off: a person editing code
-// watched the server toggle itself off, and the only way back was a manual
-// toggle. So a poisoned worker now answers every request by name and keeps the
-// pipe open. Nothing is hidden — every call says the worker is broken — and the
-// client stays connected, so saving a fix brings the tools back on its own.
-//
-// WHY A RELOAD TELLS THE CLIENT ITS TOOLS MOVED. The client caches the tool
-// list from the handshake, so a new tool stayed invisible until somebody toggled
-// the server by hand — the exact round trip the shim was built to remove. The
-// protocol has a notification for exactly that, and the shim is the only party
-// that knows a swap happened, so the shim sends it.
+// dev-shim — a stdio proxy that holds the client's pipe while the worker behind it restarts: edit, save, and the new code is live without a toggle.
 
-// WHY NO SINGLETON LOCK SURVIVES HERE. One shim per machine was enforced by an
-// atomic PID file, and the second shim was told to exit — which took a whole
-// session's tools down while a healthy bridge sat one port away holding the
-// browser. The bridge is now shareable (a driver that loses the port adopts the
-// one that won it), so there is nothing left to enforce and nothing left to
-// WHY THE WAIT ASKS A QUESTION. The flag is set by the stop handler, a different
-// closure, and a loop that reads it directly reads a variable nothing in the loop
-// can change - which is true of the code and still reads as a loop that cannot
-// end. Asking keeps both: the stop handler still ends the wait, and the reader can
-// see what the loop is waiting for.
+// WHY A PROXY AND NOT A RESTART.
+// The client owns the pipe and does not reconnect: killing the server to reload its code leaves a dead MCP behind a human round trip.
+// The shim keeps one pipe for the whole session and swaps the worker behind it, so a file save costs a second of reload instead of a toggle.
+// Development only; production spawns the worker directly.
+
+// WHY THE SHIM PARSES ONLY IDS.
+// It forwards bytes it never interprets, except to learn which responses settle which requests: that table is what lets a swap wait for the in-flight instead of dropping it, and fail it by name when the wait runs out.
+// Anything unparsable forwards blind in both directions.
+
+// WHY INITIALIZE IS REPLAYED.
+// The client shakes hands once, with whichever worker was alive first.
+// The replay hands the stored handshake to the new worker and swallows its answer, so the client never sees a second hello.
+
+// WHY A CRASHED WORKER IS REBUILT WITH A BUDGET, AND WHY THE BUDGET DOES NOT KILL THE CONNECTION.
+// A worker that dies on its own comes back, because transient deaths happen; past three rebuilds in thirty seconds it is poisoned — a syntax error restarts forever.
+// The old answer was to end the shim, which handed the client a dead MCP and flipped its switch off: a person editing code watched the server toggle itself off, and the only way back was a manual toggle.
+// So a poisoned worker now answers every request by name and keeps the pipe open.
+// Nothing is hidden — every call says the worker is broken — and the client stays connected, so saving a fix brings the tools back on its own.
+
+// WHY A RELOAD TELLS THE CLIENT ITS TOOLS MOVED.
+// The client caches the tool list from the handshake, so a new tool stayed invisible until somebody toggled the server by hand — the exact round trip the shim was built to remove.
+// The protocol has a notification for exactly that, and the shim is the only party that knows a swap happened, so the shim sends it.
+
+// WHY NO SINGLETON LOCK SURVIVES HERE.
+// One shim per machine was enforced by an atomic PID file, and the second shim was told to exit — which took a whole session's tools down while a healthy bridge sat one port away holding the browser.
+// The bridge is now shareable (a driver that loses the port adopts the one that won it), so there is nothing left to enforce and nothing left to WHY THE WAIT ASKS A QUESTION.
+// The flag is set by the stop handler, a different closure, and a loop that reads it directly reads a variable nothing in the loop can change - which is true of the code and still reads as a loop that cannot end.
+// Asking keeps both: the stop handler still ends the wait, and the reader can see what the loop is waiting for.
 // refuse: two shims, two sets of tools, one signed-in browser.
 
 const TOOLS_CHANGED = JSON.stringify({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' });

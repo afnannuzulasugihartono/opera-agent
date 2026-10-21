@@ -3,12 +3,10 @@
 // @state: canonical English paths with Indonesian translations and verify selectors; workflows consume it instead of hardcoding labels.
 // @dependencies: none.
 
-// WHY a map instead of hardcoded labels. Menu text differs by locale, and a
-// label baked into a workflow is a workflow that only works in one language.
-// The map holds researched labels (Google support pages, id locale) keyed by
-// canonical English path segments; resolveMenuTarget localizes a path and
-// hands back the verify selector with it. Unresearched labels stay out until
-// live evidence promotes them — a miss fails loudly, never clicks blind.
+// WHY a map instead of hardcoded labels.
+// Menu text differs by locale, and a label baked into a workflow is a workflow that only works in one language.
+// The map holds researched labels (Google support pages, id locale) keyed by canonical English path segments; resolveMenuTarget localizes a path and hands back the verify selector with it.
+// Unresearched labels stay out until live evidence promotes them — a miss fails loudly, never clicks blind.
 
 const MENU_SELECTOR = "[role='menu'], [role='menuitem']";
 const DIALOG_SELECTOR = "[role='dialog']";

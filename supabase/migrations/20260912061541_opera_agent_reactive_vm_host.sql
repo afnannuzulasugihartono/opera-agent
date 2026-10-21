@@ -1,5 +1,6 @@
 -- Checkpoint 7E: durable Reactive Browser VM host.
--- Additive/private only. No extension, pairing, MCP, protocol, capability, or browser-method change.
+-- Additive/private only.
+-- No extension, pairing, MCP, protocol, capability, or browser-method change.
 
 create schema if not exists opera_agent_private;
 revoke all on schema opera_agent_private from public, anon, authenticated;

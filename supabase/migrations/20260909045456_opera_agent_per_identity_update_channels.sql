@@ -1,6 +1,5 @@
 -- Allow the legacy and replacement signing identities to publish independently.
--- A browser update request is always resolved by its extension ID; one identity
--- must never receive another identity's CRX.
+-- A browser update request is always resolved by its extension ID; one identity must never receive another identity's CRX.
 
 drop index if exists public.opera_releases_one_active_idx;
 

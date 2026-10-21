@@ -3,21 +3,14 @@
 // @state: six Chromium browsers on one protocol; paths normalised so a caller's separator does not matter.
 // @dependencies: none.
 
-// Scope is the Chromium family, and the reason is not tidiness: Chrome, Edge,
-// Brave, Opera, Vivaldi and Chromium are one engine speaking one protocol, so one
-// driver genuinely covers all six. Firefox and Safari are deliberately absent
-// rather than listed as partial. A browser named in a list is a promise, and a
-// partial entry would still be a promise this driver does not keep yet.
-//
-// Path comparison is normalised because the caller does not control the separator
-// it hands over: a config file on Windows carries forward slashes, the installed
-// binary path carries backslashes, and a driver that compared them literally
-// would report no browser on a machine that plainly has three.
-//
-// The launch flags are locked because getting them wrong is silent. A browser
-// started against a profile that already has a running instance opens a second
-// window and ignores the debugging port, and the only symptom is a connection
-// refused with no hint as to why.
+// Scope is the Chromium family, and the reason is not tidiness: Chrome, Edge, Brave, Opera, Vivaldi and Chromium are one engine speaking one protocol, so one driver genuinely covers all six.
+// Firefox and Safari are deliberately absent rather than listed as partial.
+// A browser named in a list is a promise, and a partial entry would still be a promise this driver does not keep yet.
+
+// Path comparison is normalised because the caller does not control the separator it hands over: a config file on Windows carries forward slashes, the installed binary path carries backslashes, and a driver that compared them literally would report no browser on a machine that plainly has three.
+
+// The launch flags are locked because getting them wrong is silent.
+// A browser started against a profile that already has a running instance opens a second window and ignores the debugging port, and the only symptom is a connection refused with no hint as to why.
 
 const CHROMIUM_FLAGS = Object.freeze([
   '--no-first-run',

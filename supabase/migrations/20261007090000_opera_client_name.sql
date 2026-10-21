@@ -1,6 +1,5 @@
--- Resolve an OAuth client's display name for provider stamping. The edge
--- functions call this with the client_id claim from an already-verified JWT;
--- it reveals nothing beyond the name, and only for a client that exists.
+-- Resolve an OAuth client's display name for provider stamping.
+-- The edge functions call this with the client_id claim from an already-verified JWT; it reveals nothing beyond the name, and only for a client that exists.
 
 create or replace function public.opera_client_name(p_client_id uuid)
 returns text

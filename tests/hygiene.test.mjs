@@ -1,13 +1,12 @@
-// @last-edited: 2026-10-06 14:45 UTC+7.
-// @title: hygiene — runtime properties, comment spacing, allowlist paths, logic gates.
-// @state: The memoized read path, the comment-spacing rule over untracked files, allowlist paths and four rule gates are locked.
-// @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, comment-spacing, extension-source.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: hygiene — runtime properties, the canonical comment form, allowlist paths, logic gates.
+// @state: The memoized read path, the comment form over every file in the tree, allowlist paths and four rule gates are locked.
+// @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, format-comments, extension-source.
 
-// Properties that keep the runtime code correct as it grows, and that the code
-// itself violated when first written.
-//
-// Each case here corresponds to a real defect found by audit, not a style
-// preference. They are cheap and they fail loudly.
+// Properties that keep the runtime code correct as it grows, and that the code itself violated when first written.
+
+// Each case here corresponds to a real defect found by audit, not a style preference.
+// They are cheap and they fail loudly.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +16,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { FOCUS_GATE_ATTEMPTS } from '../extension/lib/focus-gate.js';
-import { spacingViolations } from './helpers/comment-spacing.mjs';
+import { checkFormat } from '../scripts/format-comments.mjs';
 import { extensionSource } from './helpers/extension-source.mjs';
 
 const collectTests = async (dir) => {
@@ -39,33 +38,11 @@ await import('../extension/hover-settle.js');
 
 const background = await extensionSource();
 
-test('every comment block is spaced from the code it does not document', async () => {
-  const root = new URL('..', import.meta.url);
+test('every comment in the tree is in the canonical form the formatter writes', async () => {
 
-  const skip = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp']);
-  const walk = async (dir, prefix = '') => {
-    const out = [];
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      if (skip.has(entry.name)) continue;
-      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) out.push(...await walk(new URL(`${entry.name}/`, dir), relative));
-      else out.push(relative);
-    }
-    return out;
-  };
-  const files = (await walk(root))
-
-    .filter((f) => !f.startsWith('supabase/migrations/'))
-    .filter((f) => f !== 'LICENSE')
-    .filter((f) => !/\.(?:json|lock)$/.test(f))
-
-    .filter((f) => f !== 'landing/_headers');
-  const violations = [];
-  for (const file of files) {
-    const text = await readFile(new URL(file, root), 'utf8');
-    violations.push(...spacingViolations(file, text, path.extname(file).toLowerCase()));
-  }
-  assert.deepEqual(violations, [], violations.slice(0, 12).join('\n'));
+  const { total, changed } = await checkFormat();
+  assert.ok(total > 300, `the gate read ${total} files, so it is not reading the tree`);
+  assert.deepEqual(changed, [], `${changed.length} files are not canonical:\n${changed.slice(0, 12).join('\n')}`);
 });
 
 test('no document says Do X and another says Don\'t X', async () => {

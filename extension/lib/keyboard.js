@@ -3,17 +3,13 @@
 // @state: pure resolver with no chrome dependency; modifiers OR into a CDP bitmask, unknown keys are rejected, and text is a separate length-bounded chunked path.
 // @dependencies: none.
 
-// Keyboard chords and bounded text entry: pure resolution
-// from a declarative { key, modifiers } or { text } request to the exact CDP
-// event payload. NO chrome dependency, so it is deterministic and testable in
-// Node (pattern of lib/action-pipeline.js).
-//
-// Why this exists: the trusted key path carried a 12-entry table of unmodified
-// keys with no modifier support at all. No Ctrl+A, no Ctrl+V, no Shift+Enter —
-// which is why complex editors scored as "weak keyboard" next to Playwright.
-// This module is purely additive: every previously valid key still resolves to
-// byte-identical payloads, so existing callers and contracts are unchanged.
-//
+// Keyboard chords and bounded text entry: pure resolution from a declarative { key, modifiers } or { text } request to the exact CDP event payload.
+// NO chrome dependency, so it is deterministic and testable in Node (pattern of lib/action-pipeline.js).
+
+// Why this exists: the trusted key path carried a 12-entry table of unmodified keys with no modifier support at all.
+// No Ctrl+A, no Ctrl+V, no Shift+Enter — which is why complex editors scored as "weak keyboard" next to Playwright.
+// This module is purely additive: every previously valid key still resolves to byte-identical payloads, so existing callers and contracts are unchanged.
+
 // Semantics locked by tests/focus-and-keyboard.test.mjs:
 // - an unmodified named key resolves exactly as the historical KEY_MAP did
 // - modifiers OR into a CDP bitmask (alt 1, control 2, meta 4, shift 8)
@@ -147,13 +143,10 @@ export function resolveKeyInput({ key, modifiers, text } = {}) {
   return resolveChord(key, modifiers);
 }
 
-// WHY A STREAM IS ONE REQUEST, NOT MANY. Every lone key pays a full round trip of
-// roughly a second, so a twenty-key menu walk costs twenty seconds one key at a time
-// while the device itself absorbs twenty keys in nineteen milliseconds, measured. A
-// stream carries the whole walk in one command: one enqueue, one execution, one
-// completion. Events keep their order, gaps ride along for menus that need a beat to
-// open, and the total text stays within the same budget as a single text entry so a
-// stream cannot smuggle in more than typing allows.
+// WHY A STREAM IS ONE REQUEST, NOT MANY.
+// Every lone key pays a full round trip of roughly a second, so a twenty-key menu walk costs twenty seconds one key at a time while the device itself absorbs twenty keys in nineteen milliseconds, measured.
+// A stream carries the whole walk in one command: one enqueue, one execution, one completion.
+// Events keep their order, gaps ride along for menus that need a beat to open, and the total text stays within the same budget as a single text entry so a stream cannot smuggle in more than typing allows.
 
 const MAX_STREAM_EVENTS = 100;
 const MAX_STREAM_GAP_MS = 2000;
@@ -184,12 +177,10 @@ export function resolveKeyStream(events) {
   });
 }
 
-// WHY TEXT ALSO TRAVELS AS KEY EVENTS. Input.insertText is an IME insert with
-// no key events, and editors that commit off key-event sequences drop it
-// without a trace: success reported, nothing painted. One resolved spec per
-// character — keyDown carrying text plus keyUp — is what such editors commit.
-// The map is US ASCII plus newline; anything else fails naming its code
-// point, so the caller picks insertText for it instead of guessing a layout.
+// WHY TEXT ALSO TRAVELS AS KEY EVENTS.
+// Input.insertText is an IME insert with no key events, and editors that commit off key-event sequences drop it without a trace: success reported, nothing painted.
+// One resolved spec per character — keyDown carrying text plus keyUp — is what such editors commit.
+// The map is US ASCII plus newline; anything else fails naming its code point, so the caller picks insertText for it instead of guessing a layout.
 
 const TEXT_KEY_EXTRA = Object.freeze({
   '.': { key: '.', code: 'Period', vk: 190, shift: false },

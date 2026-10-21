@@ -3,12 +3,11 @@
 // @state: exports the method spec table, the allowlist derived from it, and the burst and command validators; npm run check reads this file for the primitive count.
 // @dependencies: keyboard.
 
-// The wire contract: the allowlist of browser primitives, their parameter schemas,
-// and the burst step vocabulary. This file is what `npm run check` reads to report the
-// primitive count, and it is frozen by tests/fixtures and the boundary locks.
-//
-// WHY one file: the service worker, the MCP server, and the Node tests must agree on
-// exactly which primitives exist. A second copy of the list would eventually disagree.
+// The wire contract: the allowlist of browser primitives, their parameter schemas, and the burst step vocabulary.
+// This file is what `npm run check` reads to report the primitive count, and it is frozen by tests/fixtures and the boundary locks.
+
+// WHY one file: the service worker, the MCP server, and the Node tests must agree on exactly which primitives exist.
+// A second copy of the list would eventually disagree.
 
 export const PRODUCT_VERSION = '1.6.27';
 export const PROTOCOL_VERSION = 1;
@@ -44,10 +43,9 @@ export const BURST_STEP_KEYS = Object.freeze({
   navigate: ['action', 'url', 'tabId']
 });
 
-// WHY THE DOWNLOAD IS A PRIMITIVE AND NOT A STEP. A statement is a file that has to
-// land on the person's own disk under a name the card chose, and a file that is still
-// being written is not a delivery. The device therefore owns the download, the wait
-// and the name, and answers with the proof; the manifest is read from the same place.
+// WHY THE DOWNLOAD IS A PRIMITIVE AND NOT A STEP.
+// A statement is a file that has to land on the person's own disk under a name the card chose, and a file that is still being written is not a delivery.
+// The device therefore owns the download, the wait and the name, and answers with the proof; the manifest is read from the same place.
 
 export const METHOD_SPECS = Object.freeze({
   'browser.ping': { timeoutMs: 3000 },

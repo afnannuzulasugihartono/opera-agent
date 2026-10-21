@@ -4,25 +4,20 @@
 // @dependencies: node:test, strict, ../local/browsers.js.
 
 // WHY THIS FILE EXISTS
-//
-// This driver is meant to be installed by people who have never seen this
-// repository, on machines that were not part of any measurement. Two properties
-// have to hold for that, and both failed the first time they were written.
-//
-// The first was the separator. The caller's config on Windows carries forward
-// slashes; the installed binary path carries backslashes. Compared literally,
-// the driver reported no browser at all on a machine that plainly had three.
-//
-// The second was the environment placeholder. Paths are listed as
-// %LOCALAPPDATA% so they are not this machine's profile, but Node does not
-// expand them, and an unexpanded placeholder is a path that exists nowhere on
-// any machine. Expansion has to happen inside the module, because a caller who
-// forgets it gets a silent miss rather than an error.
-//
-// Scope is the Chromium family and nothing else: Chrome, Edge, Brave, Opera,
-// Vivaldi and Chromium are one engine speaking one protocol, so one driver
-// genuinely covers all six. Firefox and Safari are absent rather than listed as
-// partial, because a browser named in a list is a promise.
+
+// This driver is meant to be installed by people who have never seen this repository, on machines that were not part of any measurement.
+// Two properties have to hold for that, and both failed the first time they were written.
+
+// The first was the separator.
+// The caller's config on Windows carries forward slashes; the installed binary path carries backslashes.
+// Compared literally, the driver reported no browser at all on a machine that plainly had three.
+
+// The second was the environment placeholder.
+// Paths are listed as %LOCALAPPDATA% so they are not this machine's profile, but Node does not expand them, and an unexpanded placeholder is a path that exists nowhere on any machine.
+// Expansion has to happen inside the module, because a caller who forgets it gets a silent miss rather than an error.
+
+// Scope is the Chromium family and nothing else: Chrome, Edge, Brave, Opera, Vivaldi and Chromium are one engine speaking one protocol, so one driver genuinely covers all six.
+// Firefox and Safari are absent rather than listed as partial, because a browser named in a list is a promise.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

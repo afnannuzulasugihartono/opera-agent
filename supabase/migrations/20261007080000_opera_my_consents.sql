@@ -1,13 +1,10 @@
--- Let a signed-in account see and revoke the OAuth consents it granted, so an
--- approved application can be cut off without asking the owner.
---
--- WHY revoke is three writes, not one: marking oauth_consents.revoked_at stops
--- future refreshes from being treated as consented, but live sessions and their
--- refresh tokens keep working until they are gone. All three are scoped by
--- auth.uid(), so one account cannot list or cut another account's access.
---
--- APPLY: paste into the Supabase dashboard SQL editor. CI never applies
--- migrations, and the dashboard is the only writer that matters here.
+-- Let a signed-in account see and revoke the OAuth consents it granted, so an approved application can be cut off without asking the owner.
+
+-- WHY revoke is three writes, not one: marking oauth_consents.revoked_at stops future refreshes from being treated as consented, but live sessions and their refresh tokens keep working until they are gone.
+-- All three are scoped by auth.uid(), so one account cannot list or cut another account's access.
+
+-- APPLY: paste into the Supabase dashboard SQL editor.
+-- CI never applies migrations, and the dashboard is the only writer that matters here.
 
 create or replace function public.opera_my_consents()
 returns jsonb

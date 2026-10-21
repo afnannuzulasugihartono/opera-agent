@@ -3,13 +3,9 @@
 // @state: red first: gibberish hero copy, nested sections, overflowing nav and code pills.
 // @dependencies: test, assert, fs.
 
-// Company grade is decided in five seconds on a phone: a hero that shows the
-// product, copy without a broken sentence, and nothing spilling out of its box.
-// Military grade adds validity underneath it. Measured in Chromium screenshots:
-// the hero was text-only with "Sembilan dua tool", the FAQ section opened inside
-// the privacy section without closing it, the seven-item nav wrapped into two
-// ragged lines at 390px, a code pill crossed its card border, and unduh broke
-// code mid-word with word-break:break-all.
+// Company grade is decided in five seconds on a phone: a hero that shows the product, copy without a broken sentence, and nothing spilling out of its box.
+// Military grade adds validity underneath it.
+// Measured in Chromium screenshots: the hero was text-only with "Sembilan dua tool", the FAQ section opened inside the privacy section without closing it, the seven-item nav wrapped into two ragged lines at 390px, a code pill crossed its card border, and unduh broke code mid-word with word-break:break-all.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

@@ -1,7 +1,6 @@
 -- Optional high-throughput crawl workflow.
 -- The default research.crawl_urls keeps its low-overhead one-tab sequential behavior.
--- This workflow uses bounded parallel foreach orchestration in the Edge runner and opens
--- separate background tabs so page network loading can overlap safely.
+-- This workflow uses bounded parallel foreach orchestration in the Edge runner and opens separate background tabs so page network loading can overlap safely.
 
 select public.opera_register_workflow(
   'research.crawl_urls_parallel',

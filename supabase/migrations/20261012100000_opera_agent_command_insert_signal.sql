@@ -1,33 +1,27 @@
 -- Signal the device channel from the insert itself, so every writer is fast (2026-10-12).
---
+
 -- WHY THIS FILE EXISTS
---
--- The bridge learns about new work through postgres_changes, measured 650-1000 ms
--- from insert to claim. A broadcast on the device channel lands in tens of
--- milliseconds, but signalling from the enqueue caller costs that caller a round
--- trip and only covers callers that were taught to signal. The insert is the one
--- thing every writer has in common — gateway, MCP, consoles, dashboards — so the
--- signal is emitted here, once, for all of them.
---
--- pg_net posts asynchronously: http_post queues and returns immediately, adding
--- single-digit milliseconds to the insert, and a background worker delivers it.
--- Measured after applying: direct SQL inserts claim in ~200-300 ms instead of
--- ~700 ms.
---
--- WHY failures are swallowed. The broadcast is an optimization, not the source of
--- truth: the row already exists, and the bridge still listens to postgres_changes
--- as backup. A trigger that threw would break every insert in the product, so any
--- failure returns NEW unchanged. Slow and correct always beats fast and broken.
---
--- WHY the publishable key. The broadcast endpoint authenticates on apikey alone,
--- and this key is public by design — it already ships in landing/*.html. No
--- secret lives in this function. A forged signal can only trigger an extra empty
--- claim, because claiming still requires the device token the bridge holds.
---
--- WHY the device name is validated. It becomes a URL path segment verbatim, and
--- the row reaching this trigger was written by pairing code, not by this
--- function. Anything outside the expected shape skips the signal rather than
--- addressing a channel the bridge never subscribed to.
+
+-- The bridge learns about new work through postgres_changes, measured 650-1000 ms from insert to claim.
+-- A broadcast on the device channel lands in tens of milliseconds, but signalling from the enqueue caller costs that caller a round trip and only covers callers that were taught to signal.
+-- The insert is the one thing every writer has in common — gateway, MCP, consoles, dashboards — so the signal is emitted here, once, for all of them.
+
+-- pg_net posts asynchronously: http_post queues and returns immediately, adding single-digit milliseconds to the insert, and a background worker delivers it.
+-- Measured after applying: direct SQL inserts claim in ~200-300 ms instead of ~700 ms.
+
+-- WHY failures are swallowed.
+-- The broadcast is an optimization, not the source of truth: the row already exists, and the bridge still listens to postgres_changes as backup.
+-- A trigger that threw would break every insert in the product, so any failure returns NEW unchanged.
+-- Slow and correct always beats fast and broken.
+
+-- WHY the publishable key.
+-- The broadcast endpoint authenticates on apikey alone, and this key is public by design — it already ships in landing/*.html.
+-- No secret lives in this function.
+-- A forged signal can only trigger an extra empty claim, because claiming still requires the device token the bridge holds.
+
+-- WHY the device name is validated.
+-- It becomes a URL path segment verbatim, and the row reaching this trigger was written by pairing code, not by this function.
+-- Anything outside the expected shape skips the signal rather than addressing a channel the bridge never subscribed to.
 
 create or replace function public.opera_signal_device()
 returns trigger

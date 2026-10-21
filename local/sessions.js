@@ -4,21 +4,17 @@
 // @dependencies: none.
 
 // WHY THIS FILE EXISTS
-//
-// The MCP server speaks in driver verbs and the CDP session speaks in primitives;
-// this is the only place the two are joined per tab, and it is separate from the
-// entry point so the joining is testable without a browser behind it.
-//
-// WHY each tab gets its own session and keeps it. A single shared session that
-// re-points at whichever page the browser lists first is how a latency run once
-// typed into an unrelated document. Naming the tab removes that, and caching the
-// session removes the websocket handshake from every later call.
-//
-// WHY the touched tab comes forward. The person watching has sixty tabs and the
-// agent works one of them; bringing it forward on the first touch of each tab is
-// the cheapest possible "the agent is here" sign. Only the switch fronts, never
-// every call, so a long drive on one tab never yanks the screen twice. A tab that
-// refuses still gets driven: the indicator must not break the drive.
+
+// The MCP server speaks in driver verbs and the CDP session speaks in primitives; this is the only place the two are joined per tab, and it is separate from the entry point so the joining is testable without a browser behind it.
+
+// WHY each tab gets its own session and keeps it.
+// A single shared session that re-points at whichever page the browser lists first is how a latency run once typed into an unrelated document.
+// Naming the tab removes that, and caching the session removes the websocket handshake from every later call.
+
+// WHY the touched tab comes forward.
+// The person watching has sixty tabs and the agent works one of them; bringing it forward on the first touch of each tab is the cheapest possible "the agent is here" sign.
+// Only the switch fronts, never every call, so a long drive on one tab never yanks the screen twice.
+// A tab that refuses still gets driven: the indicator must not break the drive.
 
 export function findOn(page, query) {
   return page.evaluate(`(() => {
@@ -36,21 +32,18 @@ export function findOn(page, query) {
   })()`);
 }
 
-// WHY EXACT MATCHES WIN OVER SUBSTRING ONES. A submenu container carries the
-// concatenated names of everything inside it, so a substring search for an
-// item also matches its own container — and overlay-first ordering puts that
-// container first. Clicking it hits dead menu background instead of the row,
-// which dismisses the menu and looks exactly like a missed click. The exact
-// row is tried first; the substring stays as the fallback it always was.
+// WHY EXACT MATCHES WIN OVER SUBSTRING ONES.
+// A submenu container carries the concatenated names of everything inside it, so a substring search for an item also matches its own container — and overlay-first ordering puts that container first.
+// Clicking it hits dead menu background instead of the row, which dismisses the menu and looks exactly like a missed click.
+// The exact row is tried first; the substring stays as the fallback it always was.
 
 import { guide } from './agent-guide.js';
 import { ensureFront } from './focus-guard.js';
 
-// WHY THE CLICK'S OWN ANSWER IS PASSED THROUGH RATHER THAN REBUILT. The row is what the
-// caller asked for; the proof of what the click hit belongs to the click. Rebuilding the
-// answer here threw that proof away - measured live, a click_row reported its row and its
-// point while a dialog owned that point and took the click, and the answer could not say
-// so. Anything the click measured now travels with the row it was aimed at.
+// WHY THE CLICK'S OWN ANSWER IS PASSED THROUGH RATHER THAN REBUILT.
+// The row is what the caller asked for; the proof of what the click hit belongs to the click.
+// Rebuilding the answer here threw that proof away - measured live, a click_row reported its row and its point while a dialog owned that point and took the click, and the answer could not say so.
+// Anything the click measured now travels with the row it was aimed at.
 
 export function asDriver(session) {
   return {

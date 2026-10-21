@@ -1,5 +1,4 @@
--- Track which AI harness issued each command and workflow run, so the dashboard
--- can show device + browser + provider per row (e.g. opera / Brave / opencode).
+-- Track which AI harness issued each command and workflow run, so the dashboard can show device + browser + provider per row (e.g. opera / Brave / opencode).
 -- The MCP server stamps provider after enqueue; unknown callers stay ''.
 
 alter table public.opera_commands add column if not exists provider text not null default '';

@@ -1,7 +1,8 @@
--- Browse find flow v1 (2026-10-08): bounded crawler over any scrollable list. Checks before scrolling so visible targets are never skipped, then scrolls and re-finds until the item appears or the iteration budget runs out, reporting found honestly instead of failing. Generic across sites: Docs lists, Maps results, YouTube comments.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- Browse find flow v1 (2026-10-08): bounded crawler over any scrollable list.
+-- Checks before scrolling so visible targets are never skipped, then scrolls and re-finds until the item appears or the iteration budget runs out, reporting found honestly instead of failing.
+-- Generic across sites: Docs lists, Maps results, YouTube comments.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'browse.find_in_list',

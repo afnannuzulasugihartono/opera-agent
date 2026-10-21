@@ -1,13 +1,7 @@
--- YT watch flow (2026-10-08): register a versioned youtube.watch_summarize
--- workflow that opens a URL and returns the transcript payload in one run,
--- so watching plus summarizing costs a single model round trip instead of a
--- hand-driven open/find/click/read chain. Adapted from the proven
--- youtube.get_transcript v5 fast path (panel probe, synthetic-then-trusted
--- open, render-ready activation with tab restore); the only structural
--- change is opening the tab from input.url instead of requiring one.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- YT watch flow (2026-10-08): register a versioned youtube.watch_summarize workflow that opens a URL and returns the transcript payload in one run, so watching plus summarizing costs a single model round trip instead of a hand-driven open/find/click/read chain.
+-- Adapted from the proven youtube.get_transcript v5 fast path (panel probe, synthetic-then-trusted open, render-ready activation with tab restore); the only structural change is opening the tab from input.url instead of requiring one.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'youtube.watch_summarize',

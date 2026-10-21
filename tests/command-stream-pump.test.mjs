@@ -4,20 +4,14 @@
 // @dependencies: node:test, strict, node:fs, node:module.
 
 // WHY THIS FILE EXISTS
-//
-// The streaming channel is proven at the database and the transport is proven to
-// carry progress, so the remaining risk is entirely in this loop: a pump that
-// never exits, that replays events, or that dies because a consumer threw.
-//
-// The trap worth naming is the empty pass. A loop that treats "no events this
-// slice" as "nothing is happening" either returns early with the command still
-// running, or keeps the model blind until the command finishes. The only legal
-// exits are a terminal status and a blown deadline, and every test below exists
-// to pin one of those two.
-//
-// The cursor is pinned because a replay is worse than a stall: the model would be
-// told the same step happened twice and would act on a document state it has
-// already left.
+
+// The streaming channel is proven at the database and the transport is proven to carry progress, so the remaining risk is entirely in this loop: a pump that never exits, that replays events, or that dies because a consumer threw.
+
+// The trap worth naming is the empty pass.
+// A loop that treats "no events this slice" as "nothing is happening" either returns early with the command still running, or keeps the model blind until the command finishes.
+// The only legal exits are a terminal status and a blown deadline, and every test below exists to pin one of those two.
+
+// The cursor is pinned because a replay is worse than a stall: the model would be told the same step happened twice and would act on a document state it has already left.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

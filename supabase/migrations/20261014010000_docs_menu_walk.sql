@@ -1,6 +1,7 @@
--- docs.menu_walk v1: keyboard channel probe, then a hover chain that walks
--- every level of input.path with proof. The walk OPENS the path; the caller
--- acts on the opened menu with a fresh ref. No raw coordinates anywhere.
+-- docs.menu_walk v1: keyboard channel probe, then a hover chain that walks every level of input.path with proof.
+-- The walk OPENS the path; the caller acts on the opened menu with a fresh ref.
+-- No raw coordinates anywhere.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.menu_walk') THEN

@@ -1,5 +1,5 @@
--- docs.header_footer v1: header and footer text plus optional page numbers,
--- each region walked, typed, escaped, and flagged in the output.
+-- docs.header_footer v1: header and footer text plus optional page numbers, each region walked, typed, escaped, and flagged in the output.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.header_footer') THEN

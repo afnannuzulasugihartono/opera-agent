@@ -4,14 +4,10 @@
 // @dependencies: node:test, strict, node:fs, node:path, node:child_process.
 
 // WHY THIS FILE EXISTS
-//
-// A standard that lives in a document is a promise; a standard that lives in a test is
-// a measurement. The rules below are the ones this tree was written to and could not
-// keep: the biggest file in the tree had grown to 2,327 lines because nothing said it
-// should not, the comment rule had been unenforced in the very files that needed it
-// because the scanner miscounted one template literal, and sixty exports sat in the
-// tree with no test naming them.
-//
+
+// A standard that lives in a document is a promise; a standard that lives in a test is a measurement.
+// The rules below are the ones this tree was written to and could not keep: the biggest file in the tree had grown to 2,327 lines because nothing said it should not, the comment rule had been unenforced in the very files that needed it because the scanner miscounted one template literal, and sixty exports sat in the tree with no test naming them.
+
 // Each gate below measures one thing, and each names the failure it prevents.
 
 import test from 'node:test';
@@ -34,18 +30,16 @@ const tracked = () => {
 const read = (file) => fs.readFileSync(repo(file), 'utf8');
 const lines = (file) => read(file).split(/\r?\n/);
 
-// WHY THE CAP IS TWELVE HUNDRED LINES. The file that broke it was 2,327 lines and
-// held three unrelated jobs: the expressions the page runs, the verbs that drive it,
-// and the file verbs. Split along those lines and the largest file is 1,112, so the
-// cap sits above the truth and below the accident. A file that grows past it has
-// usually grown a second job.
+// WHY THE CAP IS TWELVE HUNDRED LINES.
+// The file that broke it was 2,327 lines and held three unrelated jobs: the expressions the page runs, the verbs that drive it, and the file verbs.
+// Split along those lines and the largest file is 1,112, so the cap sits above the truth and below the accident.
+// A file that grows past it has usually grown a second job.
 
 const FILE_LINE_CAP = 1200;
 
-// WHY ONE FILE IS NAMED INSTEAD OF FIXED HERE. Chrome loads a content script as one
-// unit, so splitting extension/content.js means separate manifest entries and
-// separate isolated worlds, which is a project of its own and not a line count. The
-// exception is named, counted and visible, and the rest of the tree has no exceptions.
+// WHY ONE FILE IS NAMED INSTEAD OF FIXED HERE.
+// Chrome loads a content script as one unit, so splitting extension/content.js means separate manifest entries and separate isolated worlds, which is a project of its own and not a line count.
+// The exception is named, counted and visible, and the rest of the tree has no exceptions.
 
 const FILE_LINE_EXCEPTIONS = new Map([
   ['extension/content.js', 'Chrome loads a content script as one unit; splitting it means separate manifest entries.']

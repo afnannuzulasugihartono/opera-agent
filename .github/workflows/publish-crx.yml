@@ -94,14 +94,11 @@ jobs:
             const buf = fs.readFileSync(process.env.CRX_PATH);
             if (buf.subarray(0, 4).toString('latin1') !== 'Cr24') { console.error('not a CRX'); process.exit(1); }
 
-            // WHY no fallback to the stored .pem: a CRX is self-describing, and
-            // reading the header is the only check that cannot be satisfied by a
-            // file that merely looks right next to it.
+            // WHY no fallback to the stored .pem: a CRX is self-describing, and reading the header is the only check that cannot be satisfied by a file that merely looks right next to it.
             const headerLen = buf.readUInt32LE(8);
             const header = buf.subarray(12, 12 + headerLen);
 
-            // CrxFileHeader field 1 or 2 is an AsymmetricKeyProof whose field 1 is
-            // the DER public key; both are read because Chrome may sign with either.
+            // CrxFileHeader field 1 or 2 is an AsymmetricKeyProof whose field 1 is the DER public key; both are read because Chrome may sign with either.
             const readVarint = (b, i) => { let r = 0, s = 0; for (;;) {
               const x = b[i++]; r |= (x & 0x7f) << s; if (!(x & 0x80)) return [r, i]; s += 7; } };
             const readFields = (b) => { const out = []; let i = 0;

@@ -20,8 +20,9 @@
   <meta property="og:url" content="https://opera-agent.pages.dev/" />
   <meta property="og:locale" content="id_ID" />
   <style>
-    /* WHY the same single-file shape as the landing page: no build step, no
-       external origin, and the only network the CSP allows is the project Auth. */
+    /*
+     * WHY the same single-file shape as the landing page: no build step, no external origin, and the only network the CSP allows is the project Auth.
+     */
     :root {
       --bg: #0b0d10;
       --surface: #16191e;
@@ -76,12 +77,12 @@
 
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
-   748px together, and the container is the viewport minus 48, so the row stops
-   fitting at 796px. The band used to read 640px, which left every window between
-   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
-   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
-   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    /*
+     * WHY the row scrolls at 800px and not at 390px: the ten nav children measure 748px together, and the container is the viewport minus 48, so the row stops fitting at 796px.
+     * The band used to read 640px, which left every window between 641 and 796 overflowing with no rule to catch it — a 155px dead band where the last item sat past the right edge.
+     * Measured, then rounded up.
+     * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
+     */
     @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
@@ -94,9 +95,10 @@
     h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
     .sub { color: var(--muted); margin: 0 0 24px; }
 
-    /* WHY one grid for the split: the brand panel and the gate card are the
-       same decision side by side, so they share a row until 860px and stack
-       below it. House dark plus the green accent throughout; no Facebook blue. */
+    /*
+     * WHY one grid for the split: the brand panel and the gate card are the same decision side by side, so they share a row until 860px and stack below it.
+     * House dark plus the green accent throughout; no Facebook blue.
+     */
     .split { display: grid; grid-template-columns: 1fr 1.1fr; gap: 40px; align-items: start; }
 
     .brand { padding-top: 8px; }
@@ -137,8 +139,9 @@
 
     .provider:hover { border-color: var(--accent); }
 
-    /* WHY inline and currentColor-free: no external origin may serve an icon file,
-       and each mark keeps its brand colors so the button reads as the provider. */
+    /*
+     * WHY inline and currentColor-free: no external origin may serve an icon file, and each mark keeps its brand colors so the button reads as the provider.
+     */
     .provider svg { width: 16px; height: 16px; flex: none; }
 
     .or { text-align: center; color: var(--muted); font-size: 13px; margin: 16px 0; }
@@ -172,8 +175,9 @@
       cursor: pointer;
     }
 
-    /* WHY the tabs restyle the shared button: both post one email to the same
-       one-time-code endpoint, so they read as one control with two states. */
+    /*
+     * WHY the tabs restyle the shared button: both post one email to the same one-time-code endpoint, so they read as one control with two states.
+     */
     .tabs { display: flex; gap: 8px; margin: 0 0 20px; }
     .tabs button { flex: 1; width: auto; background: transparent; border-color: var(--line-strong); color: var(--muted); }
     .tabs button[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
@@ -192,9 +196,9 @@
     .btn.primary { background: var(--accent); border-color: var(--accent); color: #04211d; font-weight: 600; }
     button.btn { width: auto; background: transparent; }
 
-    /* WHY buttons and not links: the footer doors test pins every footer href,
-       while these write the shared oa-lang choice through the same
-       button[data-lang] mechanism the nav toggle uses. */
+    /*
+     * WHY buttons and not links: the footer doors test pins every footer href, while these write the shared oa-lang choice through the same button[data-lang] mechanism the nav toggle uses.
+     */
     .langlist { text-align: center; margin: 24px 0 0; font-size: 13px; color: var(--muted); }
     .langlist button { width: auto; background: none; border: 0; padding: 4px 6px; color: var(--muted); font-size: 13px; font-weight: 400; }
     .langlist button:hover { color: var(--text); }
@@ -207,10 +211,10 @@
     .note { font-size: 12.5px; color: var(--muted); margin: 16px 0 0; }
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    /* WHY the gap and not a margin: the six footer doors are written with no
-       whitespace between the tags, so an inline row of anchors has no break
-       opportunity and pushed the footer 32px past a 320px screen. A flex gap
-       breaks between items wherever the line runs out. */
+    /*
+     * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
+     * A flex gap breaks between items wherever the line runs out.
+     */
     footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
@@ -350,9 +354,8 @@
   <script src="./i18n.js"></script>
   <script type="module">
 
-    // WHY fetch is allowed exactly one destination here: the project Auth host. The
-    // page CSP forbids every other origin, and the lock test pins that split, so a
-    // second destination cannot be added without turning the suite red.
+    // WHY fetch is allowed exactly one destination here: the project Auth host.
+    // The page CSP forbids every other origin, and the lock test pins that split, so a second destination cannot be added without turning the suite red.
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
 
@@ -366,19 +369,15 @@
       $('sessionStatus').className = `status${kind ? ` ${kind}` : ''}`;
     };
 
-    // WHY a same-site relative path and nothing else: the sign-in page is the one page
-    // an attacker can send a stranger to with a query string, so ?next must not become
-    // an open redirect. A value that does not start with "./" is discarded, which leaves
-    // "./beranda.html" as the only reachable destination.
+    // WHY a same-site relative path and nothing else: the sign-in page is the one page an attacker can send a stranger to with a query string, so ?next must not become an open redirect.
+    // A value that does not start with "./" is discarded, which leaves "./beranda.html" as the only reachable destination.
     const RETURNABLE = /^\.\/[A-Za-z0-9._~/?=&%-]*$/;
     const returnTo = () => {
       const asked = new URLSearchParams(globalThis.location.search).get('next') || '';
       return RETURNABLE.test(asked) ? asked : './beranda.html';
     };
 
-    // WHY the provider buttons carry next in redirect_to: Supabase sends the browser
-    // back to that exact URL, so without it a person who followed an OAuth request would
-    // land on the home page with their authorization_id dropped on the floor.
+    // WHY the provider buttons carry next in redirect_to: Supabase sends the browser back to that exact URL, so without it a person who followed an OAuth request would land on the home page with their authorization_id dropped on the floor.
     function wireReturnPath() {
       const target = returnTo();
       for (const id of ['googleButton', 'githubButton']) {
@@ -393,11 +392,8 @@
 
     wireReturnPath();
 
-    // WHY the tabs swap copy and nothing else: registering is the same one-time
-    // code request as signing in — Auth creates the account for a new address —
-    // so both tabs share one form, one endpoint, and one handler. The two copies
-    // live in marked blocks the language swap translates; this only flips which
-    // block shows, so tabs and languages never fight over the same text.
+    // WHY the tabs swap copy and nothing else: registering is the same one-time code request as signing in — Auth creates the account for a new address — so both tabs share one form, one endpoint, and one handler.
+    // The two copies live in marked blocks the language swap translates; this only flips which block shows, so tabs and languages never fight over the same text.
     function selectTab(login) {
       $('loginTab').setAttribute('aria-selected', login ? 'true' : 'false');
       $('registerTab').setAttribute('aria-selected', login ? 'false' : 'true');
@@ -419,10 +415,8 @@
       if (!response.ok) return { error: response.status };
       const user = await response.json();
 
-      // WHY a refresh token is kept: a Supabase access token lasts about an hour, and this
-      // site holds no SDK to renew it, so storing only the access token signed the reader
-      // out roughly every hour with no warning. Renewal is one POST against the Auth host,
-      // which the page's CSP already allows and no other origin would need.
+      // WHY a refresh token is kept: a Supabase access token lasts about an hour, and this site holds no SDK to renew it, so storing only the access token signed the reader out roughly every hour with no warning.
+      // Renewal is one POST against the Auth host, which the page's CSP already allows and no other origin would need.
       const refreshed = user.session?.refresh_token;
       if (refreshed) localStorage.setItem('opera-agent-refresh-token', refreshed);
       if (!user?.email) return { error: 'tanpa-email' };
@@ -431,14 +425,12 @@
 
     // WHY a plain POST and not a client library: the site loads nothing from another origin,
 // so renewing the session is written out here rather than pulled from a CDN.
+
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
 
-      // WHY the three outcomes and not a boolean: "the refresh token was refused" and
-      // "we could not reach Auth" look identical to a caller that only sees null, and
-      // treating the second as the first deletes a working session over a dropped packet.
-      // Every other user on a phone loses signal, so this distinction is the difference
-      // between a session that survives a tunnel and one that does not.
+      // WHY the three outcomes and not a boolean: "the refresh token was refused" and "we could not reach Auth" look identical to a caller that only sees null, and treating the second as the first deletes a working session over a dropped packet.
+      // Every other user on a phone loses signal, so this distinction is the difference between a session that survives a tunnel and one that does not.
       if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
       let response;
       try {
@@ -465,11 +457,8 @@
     }
 
     function showSignedIn(email) {
-      // WHY the heading changes too: a signed-in visitor opening the account page
-      // must see an account page, not a login page wearing a status line.
-      // WHY the helper and not literals: literals pinned EN mode to Indonesian
-      // here, so the three strings render through the shared helper with the
-      // exact Indonesian as the fallback default.
+      // WHY the heading changes too: a signed-in visitor opening the account page must see an account page, not a login page wearing a status line.
+      // WHY the helper and not literals: literals pinned EN mode to Indonesian here, so the three strings render through the shared helper with the exact Indonesian as the fallback default.
       var t = window.OperaAgentI18n && typeof window.OperaAgentI18n.t === 'function'
         ? window.OperaAgentI18n.t.bind(window.OperaAgentI18n)
         : function (key, fallback) { return typeof fallback === 'string' ? fallback : key; };
@@ -481,20 +470,18 @@
       $('whoami').textContent = t('signedin.whoami', 'Masuk sebagai {email}.').replace('{email}', email);
     }
 
-    // A provider or magic-link login returns here with the session in the URL
-    // fragment. Read it, prove it against Auth, remember it across this browser's
-    // tabs like every other site, and hand the visitor back to the home page.
-    // Keluar forgets it. The token never leaves this browser except toward Auth.
+    // A provider or magic-link login returns here with the session in the URL fragment.
+    // Read it, prove it against Auth, remember it across this browser's tabs like every other site, and hand the visitor back to the home page.
+    // Keluar forgets it.
+    // The token never leaves this browser except toward Auth.
     async function completeReturningLogin() {
       const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ''));
       const accessToken = fragment.get('access_token');
       if (!accessToken) return proveStoredSession();
 
-      // WHY keep the search string: the OAuth consent sends the browser to this
-      // page with ?next=<the consent URL>, and a replaceState to location.pathname
-      // strips that query, so after a provider login the reader landed on the
-      // home page with their authorization_id on the floor. Strip only the
-      // fragment (the token). The next URL survives into returnTo().
+      // WHY keep the search string: the OAuth consent sends the browser to this page with ?next=<the consent URL>, and a replaceState to location.pathname strips that query, so after a provider login the reader landed on the home page with their authorization_id on the floor.
+      // Strip only the fragment (the token).
+      // The next URL survives into returnTo().
       globalThis.history.replaceState(null, '', `${globalThis.location.pathname}${globalThis.location.search}`);
       let proof = null;
       try {
@@ -508,17 +495,15 @@
       }
       localStorage.setItem('opera-agent-access-token', accessToken);
 
-      // WHY the refresh token is kept: a Supabase access token lasts about an hour and
-      // this site holds no SDK to renew it. Storing only the access token meant the
-      // reader was silently signed out roughly every hour, which is what "sering keluar
-      // sendiri" was. The refresh token is what turns that into a session that lasts.
+      // WHY the refresh token is kept: a Supabase access token lasts about an hour and this site holds no SDK to renew it.
+      // Storing only the access token meant the reader was silently signed out roughly every hour, which is what "sering keluar sendiri" was.
+      // The refresh token is what turns that into a session that lasts.
       const refreshToken = fragment.get('refresh_token');
       if (refreshToken) localStorage.setItem('opera-agent-refresh-token', refreshToken);
       globalThis.location.replace(returnTo());
     }
 
-    // A signed-in visitor who opens this page again sees their state, not a stranger's
-    // login form: the remembered token is proven again before anything is shown.
+    // A signed-in visitor who opens this page again sees their state, not a stranger's login form: the remembered token is proven again before anything is shown.
     async function proveStoredSession() {
       let accessToken = localStorage.getItem('opera-agent-access-token');
       if (!accessToken) return;
@@ -529,9 +514,8 @@
         proof = null;
       }
 
-      // WHY renew rather than sign out: an expired access token says nothing about the
-      // reader's account. Signing them out on the first 401 is what made this feel like
-      // the product forgot them, so the refresh token is tried before anything is cleared.
+      // WHY renew rather than sign out: an expired access token says nothing about the reader's account.
+      // Signing them out on the first 401 is what made this feel like the product forgot them, so the refresh token is tried before anything is cleared.
       if (!proof?.user && localStorage.getItem('opera-agent-refresh-token')) {
         const renewed = await renewAccessToken();
         if (renewed.ok) {
@@ -549,9 +533,8 @@
         localStorage.removeItem('opera-agent-refresh-token');
       }
 
-      // WHY the extra card: a person who arrived here from the OAuth consent page has a
-      // pending request. Telling them "you are signed in" and dropping them on the home
-      // page loses the request; offering the return path keeps it.
+      // WHY the extra card: a person who arrived here from the OAuth consent page has a pending request.
+      // Telling them "you are signed in" and dropping them on the home page loses the request; offering the return path keeps it.
       if (proof?.user && returnTo() !== './beranda.html') $('returning').hidden = false;
     }
 
