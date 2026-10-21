@@ -669,4 +669,38 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     }
   });
 
+  // WHY THE DELIVERY IS ONE TOOL AND NOT FOUR CALLS. A client-month is the unit that
+  // is delivered and the unit that is billed, so the agent that sells it should spend
+  // one call per client-month: name the file, let the device fetch and name it, and
+  // read back the proof. The proof is what makes the sale defensible, so it travels
+  // with the answer instead of being assembled from three other calls.
+  server.registerTool("statement_deliver", {
+    title: "Deliver a client statement",
+    description: "Download one client's statement for one month to the user's own disk, under a name you choose, and return the proof: bytes, the kind of file read from its own bytes, the page count, and the closing balance with the page named as its source. The file lands in the user's download folder; nothing is uploaded. A second delivery of the same client-month is refused, because a second line would bill the same month twice.",
+    inputSchema: {
+      client: z.string().min(1).max(200).describe("The client, as the person says it."),
+      portal: z.string().min(1).max(200).describe("The bank or vendor the statement comes from."),
+      period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The month being delivered, YYYY-MM."),
+      filename: z.string().min(1).max(200).describe("The file name to save it as, without a folder."),
+      url: z.string().url().describe("The http(s) url of the file on the portal."),
+      tabId: tabIdSchema,
+      balance: z.string().max(200).optional().describe("The closing balance, as the page printed it."),
+      replace: z.boolean().optional().describe("Replace an existing record for this client-month."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ client, portal, period, filename, url, tabId, balance, replace, timeoutMs }: {
+    client: string; portal: string; period: string; filename: string; url: string;
+    tabId?: number; balance?: string; replace?: boolean; timeoutMs?: number;
+  }) => execute("statement.download", { client, portal, period, filename, url, tabId, balance, replace }, timeoutMs, deviceName, provider));
+
+  server.registerTool("statement_manifest", {
+    title: "Read the statement manifest",
+    description: "Read the manifest the device keeps: one line per delivered client-month, with the file, its bytes, its kind, its page count and the closing balance with its source. The manifest lives on the user's own machine, beside the files it describes.",
+    inputSchema: {
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ timeoutMs }: { timeoutMs?: number }) => execute("statement.manifest", {}, timeoutMs, deviceName, provider));
+
 }
