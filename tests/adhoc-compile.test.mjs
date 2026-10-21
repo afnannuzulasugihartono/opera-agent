@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compileAdhocGraph, MAX_COMMAND_NODES } from '../lib/adhoc-compile.js';
+import { compileAdhocGraph, MAX_COMMAND_NODES } from '../supabase/functions/_shared/adhoc-compile.js';
 
 const click = (label, extra = {}) => ({ id: 'n1', type: 'command', method: 'page.click', params: { ref: 'r1' }, declaredLabel: label, ...extra });
 

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-14 UTC+7.
 // @title: runner-command-result.test — a device-reported failure fails the step, not just transport errors.
 // @state: unit pins for commandFailure plus the runner wiring pin.
-// @dependencies: node:test, strict, ../lib/command-result.js.
+// @dependencies: node:test, strict, ../supabase/functions/_shared/command-result.js.
 
 // WHY the runner unwraps one level.
 // A burst that fails in-page (a find with no match, a stale ref) comes back transport-ok carrying { ok: false } as its payload, and the runner used to record it and continue: every workflow walked blind past the miss until an end-check, if one existed.
@@ -11,7 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { commandFailure } from '../lib/command-result.js';
+import { commandFailure } from '../supabase/functions/_shared/command-result.js';
 
 test('a completed burst carrying ok:false fails with the device error', () => {
   const failure = commandFailure({

@@ -373,10 +373,10 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
 // WHY A MODULE ONLY ITS OWN TEST IMPORTS IS DEAD.
 // A test that imports the module it was written for proves the module works, and nothing runs it.
 // The unit is the module, so the claim the test makes is about code the product never loads.
-// Two modules are staged for the one open task of the paper plan, and they are named here with that reason.
+// One module is staged for the one open task of the paper plan, and it is named here with that reason.
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
-  ['lib/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road compares live row names to the label map'],
+  ['lib/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
   ['supabase/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
 ]);
 
