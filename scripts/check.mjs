@@ -31,7 +31,7 @@ assert.equal(pkg.version, '1.6.27');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));
-assert.equal(ALLOWED_METHODS.length, 29);
+assert.equal(ALLOWED_METHODS.length, 31);
 assert.match(manifest.update_url, /^https:\/\/.*\.supabase\.co\//);
 assert.ok(typeof manifest.key === 'string' && manifest.key.length > 100);
 const identityDigest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
