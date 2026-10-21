@@ -34,7 +34,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   every exported function in `local/` exercised by the suite. The comment rule was
   unenforced where it mattered - the scanner miscounted one template literal - and it is
   enforced now.
-- Gates: `npm test`, `npm run check` - 31 primitives, 184 runtime safety files, 1334 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1338 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
   functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
@@ -46,7 +46,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   client-months became 1,000,000 cents and a page reading `Total Rp 10.000`; a forged
   signature, a wrong amount, an unsettled status and a replay after the key was removed
   were all refused, and a signed `settlement` marked the invoice paid. A paid invoice is
-  terminal. The provider key is not set, so the page asks for a transfer today.
+  terminal. A small invoice (under Rp 100.000) opens straight into QRIS, because a fixed
+  fee would eat it; a larger one offers the provider's list. The transaction carries a
+  derived order id, because the readable invoice id has characters Midtrans refuses. The
+  provider key is not set, so the page asks for a transfer today; the Snap request itself
+  is `[UNVERIFIED]` until a real key exists. Fees and the foreign-client paths are in
+  [`product/billing.md`](product/billing.md).
 - **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge` runs
   the whole MCP surface over it: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms.
 - **The statement job is the first product, and it is local.** `statement_card` names the
