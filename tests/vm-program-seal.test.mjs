@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: vm-program-seal.test — Test.
-// @state: locks the run_program sealing pre-filter against future edits.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: vm-program-seal.test — the sealing pre-filter holds against a later edit of the program.
+// @state: the method allowlists, the budgets, and the digest the seal carries.
 // @dependencies: node:test, strict, seal-vm-program, goal-ledger, reactive-vm-collect.
 
 import test from 'node:test';

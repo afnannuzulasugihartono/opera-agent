@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-13 UTC+7.
-// @title: boundary-locks — locks — Frozen public-boundary locks shared by the checkpoint tests.
+// @title: boundary-locks — the frozen locks on the public boundary, shared by the checkpoint tests.
 // @state: nine pins over four stacks; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
 
@@ -21,20 +21,20 @@
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', '7ae83fa6636b00aa3c22f36420fc05c91591b997'],
+  ['../extension/content.js', 'b9094cb1c23d9c6b3781ebef498e098231f10f42'],
   ['../extension/background.js', 'bfa396f51b12a818a62a890a3573fe7186e24274'],
   ['../extension/manifest.json', 'edc35efcd7e1476ad5f4f8898988e48bce6cce8f'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '31a3eb2a855676c930094d08982c8c5532df71ec'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'b66ebb0f6c5f3f692fa6b6e5adad01a7f0e2c6bf'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', 'bc405082091bcbd8ed774171487292d3575c5f96'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', 'd503362cd8aab8d81000f6a6b961579a4523736b'],
-  ['../lib/reactive-vm-control-flow.js', '6a9bbeee0dd72cb35922bd7e991d2f6cbc9c7504'],
-  ['../lib/reactive-vm-collect.js', '9d2aa9e98a4ee2e61ff5e6c996cdfd2e984a81fb'],
+  ['../lib/reactive-vm.js', 'dc07e016fb48fe96d8ff84b64a9430c123ea3002'],
+  ['../lib/reactive-vm-control-flow.js', 'afea3635ed3ef69ecfb2728cc57561d18c8d6de1'],
+  ['../lib/reactive-vm-collect.js', 'ff6167f7fdf2b014825b18a3a0350a8df3ec9623'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../lib/multi-signal-relevance.js', 'fe7554b663fbd20d4ae3fed4d90d5efc99d28d9b'],
-  ['../lib/delta-first-observation.js', '534a3bb22b1e661a5799c3798196fcffa4764ae9'],
+  ['../lib/multi-signal-relevance.js', 'a1bf0e5f1702d50a41340fa553d3b5255f2876a1'],
+  ['../lib/delta-first-observation.js', '847cdf88ad9d6c410984f3b4c427370796ef84f1'],
 ]);

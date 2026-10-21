@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-10 UTC+7.
-// @title: timeout-retry-popup-parity.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: timeout-retry-popup-parity.test — the popup log and the command outcome say the same thing.
+// @state: the bounded log, the attribution of a popup to the tab that acted, and a timeout that reads as unknown rather than failed.
 // @dependencies: node:test, strict, popup-events, protocol, extension-source.
 
 import test from 'node:test';

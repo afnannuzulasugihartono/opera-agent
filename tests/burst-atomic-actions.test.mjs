@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: burst-atomic-actions.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: burst-atomic-actions.test — a burst may act on what an earlier step in the same burst found.
+// @state: the refFromStep keys each step allows, and the grid expansion the plan is measured against.
 // @dependencies: node:fs, node:test, strict, protocol, extension-source.
 
 import fs from 'node:fs';

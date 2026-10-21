@@ -491,3 +491,50 @@ test('every lib header states what is actually in the file', async () => {
   assert.deepEqual(offenders, [],
     `boilerplate header must be replaced with a description of the file: ${offenders.join(', ')}`);
 });
+
+// WHY A HEADER HAS TO SAY SOMETHING.
+// The header is the first thing a reader sees, and a scaffold word or a commit message says nothing about the file.
+// The title names the file and what it is; the state says what it holds right now, not what a past commit did to it.
+
+const SCAFFOLD_TITLE = /(?:—\s*)?(?:Test|Repository file|Script|Deno edge function|Shared pure module(?:\.js)?|Pure module|Source|Repository)\.*$/;
+const CHANGELOG_STATE = /^(?:fix|feat|refactor|chore|perf|test|docs|build|ci)\(|^(?:remove|add|drop|rename|generalize|centralize|move|delete|resolve|consolidate|lock|implement|restore|retry|serve|fold|activate|verify|clear|convert|cover)\b/i;
+
+test('every source file carries a header that says what the file is and what it holds', async () => {
+  const dir = fileURLToPath(new URL('..', import.meta.url));
+  const skipDirs = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp', 'coverage', '__pycache__', '.vercel', '.next', '.temp']);
+  const walk = (relative) => {
+    const out = [];
+    for (const entry of fsSync.readdirSync(path.join(dir, relative), { withFileTypes: true })) {
+      if (skipDirs.has(entry.name)) continue;
+      const next = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) out.push(...walk(next));
+      else out.push(next);
+    }
+    return out;
+  };
+  const roots = ['extension', 'lib', 'local', 'scripts', 'supabase', 'tests', 'landing', '.github'];
+  const files = roots.flatMap(walk)
+    .filter((file) => /\.(?:js|mjs|cjs|ts|py|html|css|yml|yaml|toml|cmd|example)$/.test(file))
+    .filter((file) => !file.startsWith('supabase/migrations/'));
+
+  const problems = [];
+  for (const file of files) {
+    const text = fsSync.readFileSync(path.join(dir, file), 'utf8');
+    const head = text.split('\n').slice(0, 8).join('\n');
+    const clean = (value) => (value ?? '').replace(/(-->|\*\/)\s*$/, '').trim();
+    const title = clean(/@title:\s*(.+)/.exec(head)?.[1]);
+    const state = clean(/@state:\s*(.+)/.exec(head)?.[1]);
+    if (!title || !state || !/@last-edited:/.test(head) || !/@dependencies:/.test(head)) {
+      problems.push(`${file}: the four header fields must all be there`);
+      continue;
+    }
+    if (SCAFFOLD_TITLE.test(title)) problems.push(`${file}: the title ends in a scaffold word: ${title}`);
+    if (/\.\.$/.test(title)) problems.push(`${file}: the title ends in two dots: ${title}`);
+    if (title.split('—').length > 2) problems.push(`${file}: the title names the file twice: ${title}`);
+    if (SCAFFOLD_TITLE.test(state)) problems.push(`${file}: the state is a scaffold word: ${state}`);
+    if (CHANGELOG_STATE.test(state)) problems.push(`${file}: the state is a commit message: ${state}`);
+    if (!state.endsWith('.')) problems.push(`${file}: the state is not a sentence: ${state}`);
+    if (state === title) problems.push(`${file}: the state repeats the title`);
+  }
+  assert.deepEqual(problems, [], problems.slice(0, 20).join('\n'));
+});

@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: semantic-identity — identity — MV3 runtime.
+// @title: semantic-identity — the stable identity of a page element, as a classic content script.
 // @state: log previously silent catches in background/popup/protocol/identity.
 // @dependencies: none.
 

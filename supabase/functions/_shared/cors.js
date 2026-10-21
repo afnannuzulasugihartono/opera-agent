@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 02:41 UTC+7.
-// @title: cors — Repository file.
-// @state: allowlists both extension ids and both site origins during the host move.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: cors — the one resolver every edge function asks which origin it may answer.
+// @state: the allowlist of extension ids and site origins, and the fail-closed answer for anything else.
 // @dependencies: none.
 
 // WHY both extension ids: the CRX signing key produced a new one, so an install that has not been replaced yet still presents the old id and would be refused if only the new one were listed.

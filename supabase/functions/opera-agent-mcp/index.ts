@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: index — Repository file.
-// @state: three more places claimed the background pointer was invisible.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: opera-agent-mcp — the MCP surface: the tools an agent calls, over the protocol it declares.
+// @state: the transport, the tool registry, and the program sealing every VM call passes through.
 // @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
 
 import "@supabase/edge-runtime";

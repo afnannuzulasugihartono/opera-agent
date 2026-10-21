@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-08 UTC+7.
-// @title: vm-program-intake.test — Test.
-// @state: locks that a sealed VM-true program passes the VM validator unchanged.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: vm-program-intake.test — a sealed program passes the validator unchanged.
+// @state: the seal, the validation, and the claim that the round trip changes nothing.
 // @dependencies: node:test, strict.
 
 import test from 'node:test';

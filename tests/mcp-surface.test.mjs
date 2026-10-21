@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: mcp-surface.test — surface.test — Test.
-// @state: three more places claimed the background pointer was invisible.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: mcp-surface.test — the MCP surface the cloud advertises is the one the tools register.
+// @state: the tool names, their count, the consent page, and the digest of the source that holds them.
 // @dependencies: node:test, strict, node:fs, promises, node:crypto, canonical-source-hash, protocol.
 
 import test from 'node:test';

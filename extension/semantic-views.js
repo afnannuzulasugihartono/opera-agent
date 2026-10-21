@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: semantic-views — views — MV3 runtime.
-// @state: add causal semantic proof metadata.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: semantic-views — the semantic views a page publishes: regions, items and completion status.
+// @state: the view builders, the bounds they hold, and the completion status a proof carries.
 // @dependencies: none.
 
 (() => {

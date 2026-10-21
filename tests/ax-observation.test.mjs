@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: ax-observation.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: ax-observation.test — the accessibility summary the model reads, and the bounds it holds.
+// @state: the node shape, the limits, and the rule that a screenshot never becomes a claim.
 // @dependencies: node:fs, node:test, strict, ax-summary, extension-source.
 
 import fs from 'node:fs';

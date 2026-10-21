@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
-// @title: semantic-baseline — baseline — Script.
-// @state: add causal semantic proof metadata.
+// @last-edited: 2026-10-21 UTC+7.
+// @title: semantic-baseline — the semantic replay corpus and the numbers it must not move.
+// @state: the corpus fingerprint, the thresholds, and the runner it starts.
 // @dependencies: node:crypto, node:fs, node:path, node:child_process, node:url.
 
 import crypto from 'node:crypto';

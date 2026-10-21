@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
-// @title: debugger-session-lifecycle.test — Test..
-// @state: Test..
+// @last-edited: 2026-10-21 UTC+7.
+// @title: debugger-session-lifecycle.test — a trusted click releases its debugger session on every outcome.
+// @state: the session is detached whether the click succeeded, failed or timed out.
 // @dependencies: node:test, strict, extension-source, deadline-race.
 
 import test from 'node:test';
