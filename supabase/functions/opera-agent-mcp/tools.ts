@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-21 UTC+7.
-// @title: tools — the 31 tools this MCP server offers, and the schemas they take.
+// @title: tools — the 34 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
@@ -702,5 +702,40 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ timeoutMs }: { timeoutMs?: number }) => execute("statement.manifest", {}, timeoutMs, deviceName, provider));
+
+  server.registerTool("invoice_create", {
+    title: "Bill a customer for delivered client-months",
+    description: "Turn delivered client-months into an invoice for one customer and one billing month. Pass the manifest rows this invoice charges for, or the client and period of each delivery; the amount is computed from the price list, never from a number in the call, and a month that was not delivered cannot be on the invoice. Returns the invoice and the link the customer opens to pay it. Read statement_manifest first: its rows are the proof the invoice is checked against.",
+    inputSchema: {
+      customer: z.string().min(1).max(200).describe("The customer being billed, as the operator names them."),
+      period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The billing month, YYYY-MM."),
+      deliveries: z.array(z.object({
+        client: z.string().min(1).max(200).describe("The client whose statement was delivered."),
+        period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The statement month that was delivered, YYYY-MM."),
+        portal: z.string().max(200).optional().describe("The bank or vendor the statement came from."),
+        pages: z.number().int().nonnegative().optional().describe("The page count the proof recorded.")
+      }).passthrough()).min(1).max(500).describe("The deliveries this invoice charges for, one entry per delivered client-month.")
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, async ({ customer, period, deliveries }: {
+    customer: string;
+    period: string;
+    deliveries: Array<{ client: string; period: string; portal?: string; pages?: number } & Record<string, unknown>>;
+  }) => {
+    const response = await fetch(`${Deno.env.get("SUPABASE_URL") || ""}/functions/v1/opera-agent-billing`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${Deno.env.get("OPERA_BILLING_TOKEN") || ""}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ action: "invoice", customer_id: customer, period, deliveries })
+    });
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      const refused = Array.isArray(body.refused) ? ` (${(body.refused as string[]).join("; ")})` : "";
+      throw new Error(`${String(body.error || `the billing function answered HTTP ${response.status}`)}${refused}`);
+    }
+    return deps.textResult({ ok: true, invoice: body.invoice, link: body.url });
+  });
 
 }
