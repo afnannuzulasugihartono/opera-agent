@@ -3,9 +3,8 @@
 // @state: failing first: the auth page does not exist yet.
 // @dependencies: test, assert, fs.
 
-// The marketing page carries no network promise; the auth page is the one place a
-// key-adjacent action happens. It follows the opencode pattern both sides agreed on:
-// provider buttons and a magic link, no password of ours anywhere.
+// The marketing page carries no network promise; the auth page is the one place a key-adjacent action happens.
+// It follows the opencode pattern both sides agreed on: provider buttons and a magic link, no password of ours anywhere.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

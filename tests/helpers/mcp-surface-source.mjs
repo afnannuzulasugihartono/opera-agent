@@ -6,12 +6,10 @@
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
-// WHY THE SURFACE IS READ FROM BOTH FILES. The tool list and the transport that
-// carries it were one file, and a test that read the file saw both. The list now
-// lives in its own module, so a test that reads only the transport would see a
-// surface with no tools in it, and a test that reads only the tools would see
-// schemas with no server behind them. Reading both keeps every one of those tests
-// saying what it was written to say.
+// WHY THE SURFACE IS READ FROM BOTH FILES.
+// The tool list and the transport that carries it were one file, and a test that read the file saw both.
+// The list now lives in its own module, so a test that reads only the transport would see a surface with no tools in it, and a test that reads only the tools would see schemas with no server behind them.
+// Reading both keeps every one of those tests saying what it was written to say.
 
 const FILES = [
   '../../supabase/functions/opera-agent-mcp/index.ts',

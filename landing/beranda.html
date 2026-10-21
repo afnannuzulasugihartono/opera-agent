@@ -20,9 +20,10 @@
   <meta property="og:url" content="https://opera-agent.pages.dev/beranda" />
   <meta property="og:locale" content="id_ID" />
   <style>
-    /* WHY inline and single file: this site has no build step, no framework and no
-       external origin. A marketing page that needs a bundler is a page that breaks
-       when the bundler changes. */
+    /*
+     * WHY inline and single file: this site has no build step, no framework and no external origin.
+     * A marketing page that needs a bundler is a page that breaks when the bundler changes.
+     */
     :root {
       --bg: #0b0d10;
       --surface: #16191e;
@@ -76,12 +77,12 @@
 
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
-   748px together, and the container is the viewport minus 48, so the row stops
-   fitting at 796px. The band used to read 640px, which left every window between
-   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
-   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
-   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    /*
+     * WHY the row scrolls at 800px and not at 390px: the ten nav children measure 748px together, and the container is the viewport minus 48, so the row stops fitting at 796px.
+     * The band used to read 640px, which left every window between 641 and 796 overflowing with no rule to catch it — a 155px dead band where the last item sat past the right edge.
+     * Measured, then rounded up.
+     * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
+     */
     @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
@@ -102,13 +103,15 @@
 
     .hero p { margin: 0 0 26px; color: var(--muted); font-size: 19px; line-height: 1.55; max-width: 58ch; }
 
-    /* WHY one phrase in the accent: a headline set entirely in one colour has
-       nowhere for the eye to land, and the reader skims the last clause anyway. */
+    /*
+     * WHY one phrase in the accent: a headline set entirely in one colour has nowhere for the eye to land, and the reader skims the last clause anyway.
+     */
     .accent { color: var(--accent); }
 
-    /* WHY the eyebrow: a company hero answers "is this alive" before the headline
-       is read. No version rides here — a named build goes stale, so this states
-       the offer, which does not change per release. */
+    /*
+     * WHY the eyebrow: a company hero answers "is this alive" before the headline is read.
+     * No version rides here — a named build goes stale, so this states the offer, which does not change per release.
+     */
     .eyebrow {
       display: inline-block;
       margin: 0 0 18px;
@@ -119,9 +122,11 @@
       text-transform: uppercase;
     }
 
-    /* WHY the grid: a wall of claims with no artefact reads as a pitch deck. The
-       demo is static markup, not a screenshot, so it never goes stale and costs
-       no request. It collapses under the copy on a phone instead of beside it. */
+    /*
+     * WHY the grid: a wall of claims with no artefact reads as a pitch deck.
+     * The demo is static markup, not a screenshot, so it never goes stale and costs no request.
+     * It collapses under the copy on a phone instead of beside it.
+     */
     .heroGrid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 32px; align-items: center; }
     @media (max-width: 760px) { .heroGrid { grid-template-columns: 1fr; } }
 
@@ -152,10 +157,10 @@
     .heroStats dd { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
     .row { display: flex; flex-wrap: wrap; gap: 12px; }
 
-    /* WHY this beats .row and .grid: author display:flex/grid outranks the UA
-       [hidden] rule, so toggling .hidden left both hero CTA rows visible at once
-       for signed-in readers — the "campur" the owner saw. Attribute plus class
-       wins without !important. */
+    /*
+     * WHY this beats .row and .grid: author display:flex/grid outranks the UA [hidden] rule, so toggling .hidden left both hero CTA rows visible at once for signed-in readers — the "campur" the owner saw.
+     * Attribute plus class wins without !important.
+     */
     .row[hidden], .grid[hidden] { display: none; }
 
     .btn {
@@ -187,16 +192,18 @@
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 13px;
-      /* WHY the wrap: the extension id and the MCP endpoint are unbreakable strings with no
-         spaces, and a reader copying them on a phone should not have to scroll sideways. */
+      /*
+       * WHY the wrap: the extension id and the MCP endpoint are unbreakable strings with no spaces, and a reader copying them on a phone should not have to scroll sideways.
+       */
       overflow-wrap: anywhere;
       word-break: break-word;
       background: var(--surface-soft);
       border: 1px solid var(--line);
       border-radius: 7px;
       padding: 2px 6px;
-      /* WHY the clone: a pill that wraps across two lines must box both halves, or the
-         second half reads as plain text spilling out of the card. */
+      /*
+       * WHY the clone: a pill that wraps across two lines must box both halves, or the second half reads as plain text spilling out of the card.
+       */
       box-decoration-break: clone;
       -webkit-box-decoration-break: clone;
     }
@@ -228,8 +235,10 @@
 
     .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
 
-    /* WHY the footnote: the eyebrow says free, and free-everything is not the
-       offer. One muted line where the click happens names the only money. */
+    /*
+     * WHY the footnote: the eyebrow says free, and free-everything is not the offer.
+     * One muted line where the click happens names the only money.
+     */
     .footnote { font-size: 12.5px; color: var(--muted); margin: 12px 0 0; }
     .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; }
     .status.ok { color: var(--accent); }
@@ -237,19 +246,20 @@
 
     .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
 
-    /* WHY gated on html.js: hiding before JS runs strands no-JS readers on a blank
-       page the tests still call green. One observer for the page, twelve percent
-       visibility to trigger, and the media query deletes the motion for those who
-       asked. The hero never hides — it is the largest paint. */
+    /*
+     * WHY gated on html.js: hiding before JS runs strands no-JS readers on a blank page the tests still call green.
+     * One observer for the page, twelve percent visibility to trigger, and the media query deletes the motion for those who asked.
+     * The hero never hides — it is the largest paint.
+     */
     html.js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
     html.js .reveal.in { opacity: 1; transform: none; }
     @media (prefers-reduced-motion: reduce) {
       html.js .reveal { opacity: 1; transform: none; transition: none; }
     }
-    /* WHY print deletes the entrance: nothing scrolls a print preview, so every
-       section below the first would print blank, and find-in-page skips text that
-       is transparent. A page that hides itself from being read or printed is not
-       motion worth having. */
+    /*
+     * WHY print deletes the entrance: nothing scrolls a print preview, so every section below the first would print blank, and find-in-page skips text that is transparent.
+     * A page that hides itself from being read or printed is not motion worth having.
+     */
     @media print {
       html.js .reveal { opacity: 1; transform: none; transition: none; }
     }
@@ -270,9 +280,10 @@
     dl.facts dt { color: var(--muted); }
     dl.facts dd { margin: 0; }
 
-    /* WHY stacked under 420px: the label column is max-content and never shrinks, so on a
-       phone the value is left in a sliver. Every settings page a reader already knows puts
-       the value under its label at this width. */
+    /*
+     * WHY stacked under 420px: the label column is max-content and never shrinks, so on a phone the value is left in a sliver.
+     * Every settings page a reader already knows puts the value under its label at this width.
+     */
     @media (max-width: 420px) {
       dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
       dl.facts dd { margin: 0 0 10px; }
@@ -280,10 +291,10 @@
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    /* WHY the gap and not a margin: the six footer doors are written with no
-       whitespace between the tags, so an inline row of anchors has no break
-       opportunity and pushed the footer 32px past a 320px screen. A flex gap
-       breaks between items wherever the line runs out. */
+    /*
+     * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
+     * A flex gap breaks between items wherever the line runs out.
+     */
     footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
@@ -545,9 +556,8 @@
   <script src="./i18n.js"></script>
   <script type="module">
 
-    // WHY the extension id is written here and pinned by a test: the page must be able
-    // to name the extension it configures. The id is derived from the manifest key and
-    // is already asserted in scripts/check.mjs, so the two cannot drift apart silently.
+    // WHY the extension id is written here and pinned by a test: the page must be able to name the extension it configures.
+    // The id is derived from the manifest key and is already asserted in scripts/check.mjs, so the two cannot drift apart silently.
     const EXTENSION_ID = 'ofgemipoobcnbjkfanmofjbdonjapmgl';
 
     const $ = (id) => document.getElementById(id);
@@ -556,10 +566,8 @@
       $('status').className = `status${kind ? ` ${kind}` : ''}`;
     };
 
-    // WHY localStorage and zero network: the key is typed on this page, so the
-    // no-network promise is load-bearing. Presence of a stored session is enough
-    // to swap acquisition actions for member actions; the name is never shown
-    // because it cannot be known without a request, and one must not be made.
+    // WHY localStorage and zero network: the key is typed on this page, so the no-network promise is load-bearing.
+    // Presence of a stored session is enough to swap acquisition actions for member actions; the name is never shown because it cannot be known without a request, and one must not be made.
     try {
       if (globalThis.localStorage?.getItem('opera-agent-access-token')) {
         document.body.classList.add('signed-in');
@@ -572,8 +580,7 @@
       // Private mode without storage keeps the acquisition hero, which is true.
     }
 
-    // WHY a provider map and not option values: the select names the provider and the
-    // map owns its endpoint plus its model list, so one choice fills both inputs.
+    // WHY a provider map and not option values: the select names the provider and the map owns its endpoint plus its model list, so one choice fills both inputs.
     const MODEL_PROVIDERS = {
       nvidia: {
         endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
@@ -642,9 +649,7 @@
     $('modelEndpoint').addEventListener('input', syncProviderSelect);
     $('modelName').addEventListener('input', syncProviderSelect);
 
-    // WHY match on load instead of filling for the default option: the inputs start
-    // empty, which matches no known provider, so the select must say Kustom from the
-    // first paint — showing NVIDIA against empty fields would name a lie.
+    // WHY match on load instead of filling for the default option: the inputs start empty, which matches no known provider, so the select must say Kustom from the first paint — showing NVIDIA against empty fields would name a lie.
     syncProviderSelect();
 
     function collect() {
@@ -667,8 +672,8 @@
         return;
       }
 
-      // One message, one destination: the installed extension. There is no fetch here
-      // on purpose, because a fetch is where a key would leak.
+      // One message, one destination: the installed extension.
+      // There is no fetch here on purpose, because a fetch is where a key would leak.
       globalThis.chrome.runtime.sendMessage(EXTENSION_ID, { type: 'applyModelConfig', ...config }, (response) => {
         const error = globalThis.chrome.runtime.lastError;
         if (error || !response?.ok) {
@@ -695,9 +700,8 @@
       }
     });
 
-    // WHY last and fenced: motion must never gate content. The js class goes on
-    // <html> first so every hiding rule requires it, and a reader without JS —
-    // or with reduced motion — gets the full page with no animation at all.
+    // WHY last and fenced: motion must never gate content.
+    // The js class goes on <html> first so every hiding rule requires it, and a reader without JS — or with reduced motion — gets the full page with no animation at all.
     try {
       document.documentElement.classList.add('js');
       const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;

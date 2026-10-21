@@ -1,8 +1,7 @@
 -- Let a signed-in account see its own listening sessions without transcript text.
---
--- WHY metadata only, never segment text: the dashboard doctrine is method and
--- status, never content — a screenshot of this page must not leak speech. The
--- full transcript travels only inside MCP tool results to the paired agent.
+
+-- WHY metadata only, never segment text: the dashboard doctrine is method and status, never content — a screenshot of this page must not leak speech.
+-- The full transcript travels only inside MCP tool results to the paired agent.
 
 create or replace function public.opera_my_listen()
 returns jsonb

@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 // opera-local-dev — development front door for the local MCP server.
-//
-// Same tools as opera-local.js, reached through the dev shim: edit a watched
-// file, save, and the worker behind the pipe rebuilds itself within a second,
-// without a toggle. Production spawns opera-local.js directly.
+
+// Same tools as opera-local.js, reached through the dev shim: edit a watched file, save, and the worker behind the pipe rebuilds itself within a second, without a toggle.
+// Production spawns opera-local.js directly.
 
 import { stdin, stdout, stderr, exit, execPath } from 'node:process';
 import { spawn } from 'node:child_process';

@@ -3,9 +3,8 @@
 // @state: exports EXTERNAL_CONFIG_ORIGINS and originAllowed; the site origin matches exactly, localhost matches by port prefix.
 // @dependencies: endpoints.
 
-// The origins allowed to push model config into the extension through
-// chrome.runtime.onMessageExternal (applyModelConfig). The official site is the
-// owner's own page; localhost stays for local development.
+// The origins allowed to push model config into the extension through chrome.runtime.onMessageExternal (applyModelConfig).
+// The official site is the owner's own page; localhost stays for local development.
 
 import { SITE_ORIGIN } from './endpoints.js';
 

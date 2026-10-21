@@ -1,7 +1,9 @@
--- Browse find flow v2 (2026-10-08): exact matching only; live evidence showed fuzzy fallback returning an unrelated filter button as found. Bounded crawler over any scrollable list. Checks before scrolling so visible targets are never skipped, then scrolls and re-finds until the item appears or the iteration budget runs out, reporting found honestly instead of failing. Generic across sites: Docs lists, Maps results, YouTube comments.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- Browse find flow v2 (2026-10-08): exact matching only; live evidence showed fuzzy fallback returning an unrelated filter button as found.
+-- Bounded crawler over any scrollable list.
+-- Checks before scrolling so visible targets are never skipped, then scrolls and re-finds until the item appears or the iteration budget runs out, reporting found honestly instead of failing.
+-- Generic across sites: Docs lists, Maps results, YouTube comments.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'browse.find_in_list',

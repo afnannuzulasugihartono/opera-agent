@@ -145,27 +145,21 @@ async function flushPendingCompletion(cfg) {
   if (sent) await chrome.storage.local.remove('pendingCompletion');
 }
 
-// WHY the poll loop is gone. It asked the bridge whether work existed, then asked
-// again to report the result, and every action paid two round trips plus a blocking
-// wait inside each. Measured here, a six step burst spent 238 ms in the browser and
-// 496 ms in transport. One socket carries work down and completions back up, so
-// nothing on the hot path asks a question.
-//
-// WHY there is no poll underneath to fall back to. A quiet fallback would restore
-// exactly the latency this replaces while looking perfectly healthy, which is worse
-// than an outage because it is invisible.
-//
-// WHY a stored completion is only cleared once the frame is written. A disconnect
-// between finishing a command and reporting it would otherwise lose the result
-// silently, and the caller would wait out its timeout for a device that had
-// already finished. Reconnecting is also the moment that owed completion is resent.
+// WHY the poll loop is gone.
+// It asked the bridge whether work existed, then asked again to report the result, and every action paid two round trips plus a blocking wait inside each.
+// Measured here, a six step burst spent 238 ms in the browser and 496 ms in transport.
+// One socket carries work down and completions back up, so nothing on the hot path asks a question.
 
-// WHY there is one way to start, and no generation counter. The old loop was
-// generation guarded so a restart could not fight an in-flight poll, and that
-// guard lost a wake-up: bumping the generation made the in-flight loop exit
-// without connecting and made its own reschedule refuse, so after a pairing
-// nothing ever started. A socket that owns its own reconnect needs no guard, only
-// one true shape: no client, then start one.
+// WHY there is no poll underneath to fall back to.
+// A quiet fallback would restore exactly the latency this replaces while looking perfectly healthy, which is worse than an outage because it is invisible.
+
+// WHY a stored completion is only cleared once the frame is written.
+// A disconnect between finishing a command and reporting it would otherwise lose the result silently, and the caller would wait out its timeout for a device that had already finished.
+// Reconnecting is also the moment that owed completion is resent.
+
+// WHY there is one way to start, and no generation counter.
+// The old loop was generation guarded so a restart could not fight an in-flight poll, and that guard lost a wake-up: bumping the generation made the in-flight loop exit without connecting and made its own reschedule refuse, so after a pairing nothing ever started.
+// A socket that owns its own reconnect needs no guard, only one true shape: no client, then start one.
 
 async function ensureSocket() {
   if (socketClient) return;
@@ -211,13 +205,10 @@ function restartSocket() {
   ensureSocket().catch((error) => { log.debug('SOCKET_START_FAILED', String(error?.message || error)); });
 }
 
-// WHY the heartbeat no longer reports a connection status. It used to, back when
-// it was the poll loop's status writer as well as its keepalive, and it went on
-// doing that job after the socket took ownership of it: every thirty seconds it
-// stamped lastConnectedAt over the socket's own state, and a heartbeat that failed
-// set the status to reconnecting while the socket was healthy and connected.
-// Observed live against the deployed bridge. The heartbeat's job is to keep the
-// device row's last_seen_at fresh, and that is all it does now.
+// WHY the heartbeat no longer reports a connection status.
+// It used to, back when it was the poll loop's status writer as well as its keepalive, and it went on doing that job after the socket took ownership of it: every thirty seconds it stamped lastConnectedAt over the socket's own state, and a heartbeat that failed set the status to reconnecting while the socket was healthy and connected.
+// Observed live against the deployed bridge.
+// The heartbeat's job is to keep the device row's last_seen_at fresh, and that is all it does now.
 
 async function heartbeat() {
   const cfg = await getConfig();

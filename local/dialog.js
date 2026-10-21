@@ -4,44 +4,32 @@
 // @dependencies: node:child_process, node:util.
 
 // WHY THIS FILE EXISTS
-//
-// Measured live on this product's own author: a drive inserted an image into Google
-// Docs with a drop, and a drive that clicked "Upload from computer" opened the
-// operating system's own file dialog - a window nothing inside the browser can
-// reach, type into, or close again. The guide has said so for weeks, and it is
-// true, and it was also the wrong conclusion: the agent is not in the cloud. It
-// runs on the machine, in the user's own session, and a file dialog there is an
-// ordinary window. So the road is closed, and this file is the road.
-//
-// WHY IT IS THREE NAMED CALLS AND NOT A FLAG ON THE OTHERS. Driving an operating
-// system dialog is the first thing this product does outside the browser, so it is
-// visible by name: an agent that types a path into a file picker has done something
-// a browser sandbox cannot, and a caller reading the catalogue can see that before
-// it happens rather than after.
-//
-// WHY EVERY CALL SAYS WHAT IT FOUND. A dialog belongs to no tab, has no tab id,
-// and does not survive being looked at twice: reading it, typing into it, pressing
-// its button are three separate turns, and the answer to each one is the only thing
-// that tells the agent what to do next. So each answers with what was on the screen
-// - title, controls, the text in the field - and a refusal says why instead of
-// returning false.
+
+// Measured live on this product's own author: a drive inserted an image into Google Docs with a drop, and a drive that clicked "Upload from computer" opened the operating system's own file dialog - a window nothing inside the browser can reach, type into, or close again.
+// The guide has said so for weeks, and it is true, and it was also the wrong conclusion: the agent is not in the cloud.
+// It runs on the machine, in the user's own session, and a file dialog there is an ordinary window.
+// So the road is closed, and this file is the road.
+
+// WHY IT IS THREE NAMED CALLS AND NOT A FLAG ON THE OTHERS.
+// Driving an operating system dialog is the first thing this product does outside the browser, so it is visible by name: an agent that types a path into a file picker has done something a browser sandbox cannot, and a caller reading the catalogue can see that before it happens rather than after.
+
+// WHY EVERY CALL SAYS WHAT IT FOUND.
+// A dialog belongs to no tab, has no tab id, and does not survive being looked at twice: reading it, typing into it, pressing its button are three separate turns, and the answer to each one is the only thing that tells the agent what to do next.
+// So each answers with what was on the screen
+// - title, controls, the text in the field - and a refusal says why instead of returning false.
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
 
-// WHY ONE SCRIPT WITH A MODE. Three scripts would mean three copies of the same
-// window-walking code, and the copies would drift the way copies do. The mode is
-// data; the walk is written once.
+// WHY ONE SCRIPT WITH A MODE.
+// Three scripts would mean three copies of the same window-walking code, and the copies would drift the way copies do.
+// The mode is data; the walk is written once.
 
-// WHY A DIALOG FIELD IS READ WITH WM_GETTEXT AND NOT GetWindowText. Typed into a
-// live file dialog and read back empty the first time, which reads exactly like a
-// field that never took the text - and the write had gone through. GetWindowText on
-// another process's edit returns the cached caption, which for an edit is nothing;
-// WM_GETTEXT with a marshalled buffer is the message that carries text across a
-// process boundary, so that is the one used, and it is what makes the answer worth
-// reading.
+// WHY A DIALOG FIELD IS READ WITH WM_GETTEXT AND NOT GetWindowText.
+// Typed into a live file dialog and read back empty the first time, which reads exactly like a field that never took the text - and the write had gone through.
+// GetWindowText on another process's edit returns the cached caption, which for an edit is nothing; WM_GETTEXT with a marshalled buffer is the message that carries text across a process boundary, so that is the one used, and it is what makes the answer worth reading.
 
 const SCRIPT = `
 $ErrorActionPreference = 'Stop'

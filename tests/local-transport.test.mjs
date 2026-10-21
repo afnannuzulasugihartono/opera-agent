@@ -4,25 +4,20 @@
 // @dependencies: node:test, strict, ../local/transport.js.
 
 // WHY THIS FILE EXISTS
-//
-// cdp.js is tested with a fake transport, which is the point of injecting one, but
-// it means nothing here has yet been run against an actual browser. This file is
-// the seam where that claim becomes checkable, and it carries two behaviours the
-// fake could never have needed.
-//
-// The first is ordering. A launch is asynchronous: the process exists well before
-// the debugging port answers. A driver that connects once and gives up reports
-// "cannot reach the browser" on every cold start, and the fix people reach for is
-// a fixed sleep, which is slow when the browser is quick and still flaky when it
-// is not.
-//
-// The second is what a failed wait says. Polling that gives up on a timeout with
-// an empty list makes a missing browser and a browser that is merely slow
-// indistinguishable. The wait reports how long it tried, because those two demand
-// different responses from the person installing this.
-//
-// Nothing here spawns a browser. Discovery and waiting are the parts with rules,
-// and they are the parts that decide whether a launch reads as fast or as broken.
+
+// cdp.js is tested with a fake transport, which is the point of injecting one, but it means nothing here has yet been run against an actual browser.
+// This file is the seam where that claim becomes checkable, and it carries two behaviours the fake could never have needed.
+
+// The first is ordering.
+// A launch is asynchronous: the process exists well before the debugging port answers.
+// A driver that connects once and gives up reports "cannot reach the browser" on every cold start, and the fix people reach for is a fixed sleep, which is slow when the browser is quick and still flaky when it is not.
+
+// The second is what a failed wait says.
+// Polling that gives up on a timeout with an empty list makes a missing browser and a browser that is merely slow indistinguishable.
+// The wait reports how long it tried, because those two demand different responses from the person installing this.
+
+// Nothing here spawns a browser.
+// Discovery and waiting are the parts with rules, and they are the parts that decide whether a launch reads as fast or as broken.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

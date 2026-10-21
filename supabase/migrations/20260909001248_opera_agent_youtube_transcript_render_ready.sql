@@ -1,8 +1,7 @@
 -- Refine YouTube transcript extraction after real-Opera background-tab testing.
 -- v1/v2 remain preserved in opera_workflow_versions for rollback.
--- YouTube can expose an expanded transcript engagement panel before transcript rows
--- are actually rendered in an inactive tab. Activate only as a bounded fallback,
--- then restore the previously active tab after extraction.
+-- YouTube can expose an expanded transcript engagement panel before transcript rows are actually rendered in an inactive tab.
+-- Activate only as a bounded fallback, then restore the previously active tab after extraction.
 
 select public.opera_register_workflow(
   'youtube.get_transcript',

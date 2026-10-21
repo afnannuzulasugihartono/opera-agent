@@ -1,36 +1,31 @@
 # @last-edited: 2026-10-10 UTC+7.
-# @title: CODEOWNERS — the root of trust. No hash in this repository outranks these entries.
+# @title: CODEOWNERS — the root of trust.
+# No hash in this repository outranks these entries.
 # @state: CI; release, migrations, extension, and the whole acceptance surface.
 # @dependencies: none stated.
 
-# WHY this file is the real gate. Everything else that keeps this tree honest —
-# the test suite, the byte pins in tests/helpers/boundary-locks.mjs, the
-# structure gates — lives in files an automated agent can edit in the same breath
-# as the code those gates judge. gates.lock makes that tampering loud instead of
-# silent, but loud is not prevented. THIS is what prevents it: with branch
-# protection on main, a change to any path below needs a human approver, and no
-# agent can grant itself that right or take it away.
-#
-# If you are setting this repository up, enable branch protection on `main` and
-# require at least one approving review on these paths. Without that setting,
-# this file is a suggestion and gates.lock is the only thing standing between an
-# agent and a green check that means nothing.
+# WHY this file is the real gate.
+# Everything else that keeps this tree honest — the test suite, the byte pins in tests/helpers/boundary-locks.mjs, the structure gates — lives in files an automated agent can edit in the same breath as the code those gates judge.
+# gates.lock makes that tampering loud instead of silent, but loud is not prevented.
+# THIS is what prevents it: with branch protection on main, a change to any path below needs a human approver, and no agent can grant itself that right or take it away.
 
-# The acceptance surface itself, named so it can never fall through to the
-# catch-all. tests/ and scripts/ are deliberately NOT wildcarded: an agent that
-# only ever edits a gate can weaken the gate and the tree at the same time, and
-# these are exactly the paths where that is possible.
+# If you are setting this repository up, enable branch protection on `main` and require at least one approving review on these paths.
+# Without that setting, this file is a suggestion and gates.lock is the only thing standing between an agent and a green check that means nothing.
+
+# The acceptance surface itself, named so it can never fall through to the catch-all.
+# tests/ and scripts/ are deliberately NOT wildcarded: an agent that only ever edits a gate can weaken the gate and the tree at the same time, and these are exactly the paths where that is possible.
 
 tests/
 scripts/
 gates.lock
 
-# The verifier. It cannot pin its own hash, so this entry is its only guard.
+# The verifier.
+# It cannot pin its own hash, so this entry is its only guard.
 
 /scripts/gates.mjs
 
-# Default owner for everything. Release automation paths get the same owner
-# explicitly so no path is ever unowned.
+# Default owner for everything.
+# Release automation paths get the same owner explicitly so no path is ever unowned.
 
 * @afnannuzulasugihartono
 /.github/workflows/release.yml @afnannuzulasugihartono

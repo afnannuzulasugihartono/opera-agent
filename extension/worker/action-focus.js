@@ -315,11 +315,9 @@ export async function trustedPointer(tabId, params, context) {
   })));
 }
 
-// WHY TEXT SOMETIMES TRAVELS ONE CHARACTER AT A TIME. An IME insert carries
-// no key events, and canvas editors commit off key-event sequences, so the
-// insert reports success and paints nothing. One keyDown carrying text plus
-// keyUp per character is the shape such editors accept; the caller opts in
-// per call because native inputs are faster and correct on plain inserts.
+// WHY TEXT SOMETIMES TRAVELS ONE CHARACTER AT A TIME.
+// An IME insert carries no key events, and canvas editors commit off key-event sequences, so the insert reports success and paints nothing.
+// One keyDown carrying text plus keyUp per character is the shape such editors accept; the caller opts in per call because native inputs are faster and correct on plain inserts.
 
 async function sendTextAsKeys(target, text) {
   const keys = resolveTextKeys(text);

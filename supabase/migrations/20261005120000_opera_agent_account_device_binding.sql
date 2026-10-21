@@ -1,12 +1,11 @@
 -- Bind devices to accounts so the dashboard shows a user only their own rows.
---
--- WHY additive only: the base migration withheld everything from anon and
--- authenticated and defined no policies. This file adds columns plus the first
--- policies, and changes no existing grant, function name, or table shape beyond
--- two nullable owner columns. Existing unowned rows keep working untouched.
---
--- APPLY: paste into the Supabase dashboard SQL editor. CI never applies
--- migrations, and the dashboard is the only writer that matters here.
+
+-- WHY additive only: the base migration withheld everything from anon and authenticated and defined no policies.
+-- This file adds columns plus the first policies, and changes no existing grant, function name, or table shape beyond two nullable owner columns.
+-- Existing unowned rows keep working untouched.
+
+-- APPLY: paste into the Supabase dashboard SQL editor.
+-- CI never applies migrations, and the dashboard is the only writer that matters here.
 
 alter table public.opera_devices
   add column if not exists user_id uuid references auth.users(id) on delete set null;

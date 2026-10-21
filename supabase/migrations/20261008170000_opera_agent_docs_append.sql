@@ -1,7 +1,7 @@
--- Docs append flow v1 (2026-10-08): open a Google Doc and type text into its canvas editor, verified by screenshot-hash change instead of vision. Click-then-type through the trusted path; the fixed canvas point is a v1 limitation.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- Docs append flow v1 (2026-10-08): open a Google Doc and type text into its canvas editor, verified by screenshot-hash change instead of vision.
+-- Click-then-type through the trusted path; the fixed canvas point is a v1 limitation.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'docs.append_text',

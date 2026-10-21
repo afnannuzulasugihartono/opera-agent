@@ -3,10 +3,9 @@
 // @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
 // @dependencies: node:test, node:assert, node:fs.
 
-// The site is served by Cloudflare Pages as well as Vercel, and the two configure
-// headers in different files: vercel.json on one, _headers on the other. Nothing makes
-// them agree, so this lock does. Without it the day someone adds a CSP for a new page
-// on one host, that page silently loses its policy on the other.
+// The site is served by Cloudflare Pages as well as Vercel, and the two configure headers in different files: vercel.json on one, _headers on the other.
+// Nothing makes them agree, so this lock does.
+// Without it the day someone adds a CSP for a new page on one host, that page silently loses its policy on the other.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

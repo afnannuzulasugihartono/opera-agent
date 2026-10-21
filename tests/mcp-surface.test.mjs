@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 
-import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
+import { sha256ContractSource } from './helpers/canonical-source-hash.mjs';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
@@ -665,6 +665,6 @@ test('Supabase OAuth config declares a hosted consent page and dynamic registrat
 });
 
 test('the whole-file digest fixture is re-frozen to the live file', () => {
-  assert.equal(sha256CanonicalLf(source), contract.sourceSha256);
+  assert.equal(sha256ContractSource(source), contract.sourceSha256);
 });
 

@@ -3,18 +3,14 @@
 // @state: The bridge URL, log level, and the user's own model endpoint, name and key, kept in local storage.
 // @dependencies: endpoints.
 
-// Validation and persistence for the Options page: the bridge URL override and the
-// log level, stored in chrome.storage.local.
-//
-// WHY https only: the bridge URL is where the device token is posted, so plain http to
-// a remote host is refused. Loopback is served over http and is handled by the caller,
-// not here.
-//
-// The model endpoint, key and model name are the user's own, entered here and kept in
-// chrome.storage.local so they never reach our server. Two consequences shape this file:
-// the endpoint is held to the same https rule as the bridge, because it receives page
-// content, and the key is never handed back to the page. The page is told whether a key
-// exists, not what it is, so opening Options cannot read it out of the DOM.
+// Validation and persistence for the Options page: the bridge URL override and the log level, stored in chrome.storage.local.
+
+// WHY https only: the bridge URL is where the device token is posted, so plain http to a remote host is refused.
+// Loopback is served over http and is handled by the caller, not here.
+
+// The model endpoint, key and model name are the user's own, entered here and kept in chrome.storage.local so they never reach our server.
+// Two consequences shape this file: the endpoint is held to the same https rule as the bridge, because it receives page content, and the key is never handed back to the page.
+// The page is told whether a key exists, not what it is, so opening Options cannot read it out of the DOM.
 
 import { DEFAULT_BRIDGE_URL } from './endpoints.js';
 

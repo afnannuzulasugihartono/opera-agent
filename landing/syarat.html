@@ -20,8 +20,10 @@
   <meta property="og:url" content="https://opera-agent.pages.dev/syarat" />
   <meta property="og:locale" content="id_ID" />
   <style>
-    /* WHY the same single-file shape as the rest of the site: no build step and
-       no external origin. This page makes no network call at all. */
+    /*
+     * WHY the same single-file shape as the rest of the site: no build step and no external origin.
+     * This page makes no network call at all.
+     */
     :root {
       --bg: #0b0d10;
       --surface: #16191e;
@@ -75,12 +77,12 @@
 
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the row scrolls at 800px and not at 390px: the ten nav children measure
-   748px together, and the container is the viewport minus 48, so the row stops
-   fitting at 796px. The band used to read 640px, which left every window between
-   641 and 796 overflowing with no rule to catch it — a 155px dead band where the
-   last item sat past the right edge. Measured, then rounded up. Wrapping instead of
-   scrolling is what this replaces: it stacks the brand into two ragged lines. */
+    /*
+     * WHY the row scrolls at 800px and not at 390px: the ten nav children measure 748px together, and the container is the viewport minus 48, so the row stops fitting at 796px.
+     * The band used to read 640px, which left every window between 641 and 796 overflowing with no rule to catch it — a 155px dead band where the last item sat past the right edge.
+     * Measured, then rounded up.
+     * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
+     */
     @media (max-width: 800px) {
       nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
@@ -96,19 +98,20 @@
     p strong, li strong { color: var(--text); }
     .updated { font-size: 13px; }
 
-    /* WHY the map: five sections with no way to jump is a wall of text. One list
-       of anchors, same muted voice as the rest, and a company policy reads
-       navigable instead of endless. */
+    /*
+     * WHY the map: five sections with no way to jump is a wall of text.
+     * One list of anchors, same muted voice as the rest, and a company policy reads navigable instead of endless.
+     */
     .toc { margin: 0 0 8px; padding: 0; list-style: none; font-size: 13.5px; }
     .toc li { margin: 0 0 4px; }
     section[id], h2[id] { scroll-margin-top: 70px; }
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    /* WHY the gap and not a margin: the six footer doors are written with no
-       whitespace between the tags, so an inline row of anchors has no break
-       opportunity and pushed the footer 32px past a 320px screen. A flex gap
-       breaks between items wherever the line runs out. */
+    /*
+     * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
+     * A flex gap breaks between items wherever the line runs out.
+     */
     footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }

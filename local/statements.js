@@ -3,17 +3,14 @@
 // @state: the card names the file before the drive starts; the manifest refuses a file that is not whole.
 // @dependencies: node:fs, node:os, node:path.
 
-// WHY THE CLIENT-MONTH IS THE UNIT. The product is sold per delivered client-month,
-// and a bookkeeper's month is a list of (client, portal, period) triples. Everything
-// here is keyed by that triple, so a delivery can be counted, repeated and billed
-// without asking anyone what "one statement" means.
-//
-// WHY THIS IS A CARD AND NOT A SCRIPT. A script that drives a bank portal would have
-// to encode that portal: which link says "Unduh", which frame holds the table, which
-// dialog asks for a month. That knowledge rots, and it is exactly the per-site code
-// the extension is forbidden to carry. So this module produces the part that does not
-// depend on the site - the name, the folder, the period, what must be true before the
-// file counts - and the agent does the part that does: look, decide, click, verify.
+// WHY THE CLIENT-MONTH IS THE UNIT.
+// The product is sold per delivered client-month, and a bookkeeper's month is a list of (client, portal, period) triples.
+// Everything here is keyed by that triple, so a delivery can be counted, repeated and billed without asking anyone what "one statement" means.
+
+// WHY THIS IS A CARD AND NOT A SCRIPT.
+// A script that drives a bank portal would have to encode that portal: which link says "Unduh", which frame holds the table, which dialog asks for a month.
+// That knowledge rots, and it is exactly the per-site code the extension is forbidden to carry.
+// So this module produces the part that does not depend on the site - the name, the folder, the period, what must be true before the file counts - and the agent does the part that does: look, decide, click, verify.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -22,10 +19,9 @@ import path from 'node:path';
 const PERIOD_SHAPE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const EXT_SHAPE = /^[a-z0-9]{2,5}$/;
 
-// WHY THE NAME IS DERIVED AND NOT TYPED. A person typing file names produces
-// "BCA Sept'26 (2).pdf" once and then never again the same way, and a manifest full of
-// near-duplicates cannot be billed. The slug keeps the client's own words, lowercased
-// and joined, so the file still reads as theirs and sorts as one family.
+// WHY THE NAME IS DERIVED AND NOT TYPED.
+// A person typing file names produces "BCA Sept'26 (2).pdf" once and then never again the same way, and a manifest full of near-duplicates cannot be billed.
+// The slug keeps the client's own words, lowercased and joined, so the file still reads as theirs and sorts as one family.
 
 export function slug(text) {
   const cleaned = String(text ?? '')
@@ -39,17 +35,16 @@ export function slug(text) {
   return cleaned || 'untitled';
 }
 
-// WHY THE DEFAULT FOLDER IS UNDER DOWNLOADS AND NOT IN THE REPO. The person already
-// knows where Downloads is, the manifest sits beside the files it describes, and a
-// job that crashes leaves nothing behind in a working tree.
+// WHY THE DEFAULT FOLDER IS UNDER DOWNLOADS AND NOT IN THE REPO.
+// The person already knows where Downloads is, the manifest sits beside the files it describes, and a job that crashes leaves nothing behind in a working tree.
 
 function statementsRoot() {
   return path.join(os.homedir(), 'Downloads', 'opera-statements');
 }
 
-// WHY THE PERIOD IS CHECKED BEFORE ANYTHING ELSE. A card for "September" or "2026-9"
-// would name a file that can never match the one from last month, and the error would
-// surface at billing time instead of here. The shape is the shape the manifest groups by.
+// WHY THE PERIOD IS CHECKED BEFORE ANYTHING ELSE.
+// A card for "September" or "2026-9" would name a file that can never match the one from last month, and the error would surface at billing time instead of here.
+// The shape is the shape the manifest groups by.
 
 function jobShape(job) {
   for (const field of ['client', 'portal', 'period']) {
@@ -103,10 +98,9 @@ export function statementCard({ client, portal, period, root = null, url = null,
   };
 }
 
-// WHY THE KIND IS SNIFFED AND NOT TRUSTED FROM THE EXTENSION. A portal that answers a
-// PDF request with an HTML error page and a .pdf name is common enough; trusting the
-// suffix would file an error page as a statement. Four magic numbers are enough to
-// tell a PDF, a workbook and "something else" apart without a parser.
+// WHY THE KIND IS SNIFFED AND NOT TRUSTED FROM THE EXTENSION.
+// A portal that answers a PDF request with an HTML error page and a .pdf name is common enough; trusting the suffix would file an error page as a statement.
+// Four magic numbers are enough to tell a PDF, a workbook and "something else" apart without a parser.
 
 function kindOf(head) {
   if (head.subarray(0, 5).toString('latin1') === '%PDF-') return 'pdf';
@@ -115,11 +109,9 @@ function kindOf(head) {
   return 'other';
 }
 
-// WHY PAGES ARE COUNTED FROM THE FILE AND NOT FROM A VIEWER. Opening a viewer would
-// mean another process, another window and a fresh way to be wrong. A PDF states each
-// page as /Type /Page; counting that token is honest about its own limit: a file that
-// packs its objects into a compressed stream shows none, and then the answer is null
-// with the reason, never a zero that reads as an empty statement.
+// WHY PAGES ARE COUNTED FROM THE FILE AND NOT FROM A VIEWER.
+// Opening a viewer would mean another process, another window and a fresh way to be wrong.
+// A PDF states each page as /Type /Page; counting that token is honest about its own limit: a file that packs its objects into a compressed stream shows none, and then the answer is null with the reason, never a zero that reads as an empty statement.
 
 function countPdfPages(bytes) {
   const text = bytes.toString('latin1');
@@ -127,11 +119,10 @@ function countPdfPages(bytes) {
   return found ? found.length : 0;
 }
 
-// WHY THE BALANCE KEEPS ITS RAW TEXT. "Rp 8.900.000" and "8.900.000,-" are the same
-// number to a person and different strings to a machine, and a bookkeeper checking the
-// manifest wants the one the portal printed. Digits are for comparing; the raw is for
-// reading. Cents are dropped only when they are written as cents, because in Indonesian
-// money the dot groups thousands and the comma groups sen.
+// WHY THE BALANCE KEEPS ITS RAW TEXT.
+// "Rp 8.900.000" and "8.900.000,-" are the same number to a person and different strings to a machine, and a bookkeeper checking the manifest wants the one the portal printed.
+// Digits are for comparing; the raw is for reading.
+// Cents are dropped only when they are written as cents, because in Indonesian money the dot groups thousands and the comma groups sen.
 
 export function balanceDigits(raw) {
   let text = String(raw ?? '').trim();

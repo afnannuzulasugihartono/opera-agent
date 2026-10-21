@@ -3,35 +3,28 @@
 // @state: the page asked every time, the machine asked once in a while and only when the page is deaf.
 // @dependencies: ./window-focus.js.
 
-// WHY AN INPUT ACTION CHECKS THE WINDOW ITSELF. Asking the human to press a key in
-// the middle of a drive is the one thing this product promised not to need, so the
-// check happens where the action happens, and every answer says what it found.
-//
-// WHY THE PAGE IS ASKED FIRST, EVERY TIME. Measured live on this machine, with the
-// drive typing into a Google Docs document:
-//
-//   - browser behind another application: the page reported focus, and the typed text
-//     landed. A window that is behind is not the problem.
-//   - browser minimized, caret in place: the page reported no focus, and four typed
-//     characters went nowhere. A window that is on the taskbar is the problem.
-//
-// The page answers the first case for one evaluation, so nothing is spent when there
-// is nothing to fix, and the machine is asked only when the page says it is deaf.
-//
-// WHY THE MACHINE IS ASKED AT ALL, GIVEN THE PAGE SAYS THE SAME THING FOR A
-// BACKGROUND TAB. Because that is the whole difficulty: a background tab and a
-// minimized window both report no focus and not visible, so the page cannot tell them
-// apart, and they need opposite answers - one goes ahead, the other has to have its
-// window brought back. Only the machine can tell, so it is asked, and the answer is
-// held for a beat because a shell launch is the most expensive thing in this file.
-//
-// WHY THE PAGE IS NOT HELD FOR A BEAT. It costs one evaluation, and it is the answer
-// that changes fastest: a human who brings the window back should not have to wait a
-// second for the drive to notice.
-//
-// WHY IT IS BUILT RATHER THAN WRITTEN. The rules are one closure over the two things
-// a test can hold still - the machine and the clock - so the claims below are checked
-// without launching a shell and without waiting a second.
+// WHY AN INPUT ACTION CHECKS THE WINDOW ITSELF.
+// Asking the human to press a key in the middle of a drive is the one thing this product promised not to need, so the check happens where the action happens, and every answer says what it found.
+
+// WHY THE PAGE IS ASKED FIRST, EVERY TIME.
+// Measured live on this machine, with the drive typing into a Google Docs document:
+
+// - browser behind another application: the page reported focus, and the typed text landed.
+//   A window that is behind is not the problem.
+// - browser minimized, caret in place: the page reported no focus, and four typed characters went nowhere.
+//   A window that is on the taskbar is the problem.
+
+// The page answers the first case for one evaluation, so nothing is spent when there is nothing to fix, and the machine is asked only when the page says it is deaf.
+
+// WHY THE MACHINE IS ASKED AT ALL, GIVEN THE PAGE SAYS THE SAME THING FOR A BACKGROUND TAB.
+// Because that is the whole difficulty: a background tab and a minimized window both report no focus and not visible, so the page cannot tell them apart, and they need opposite answers - one goes ahead, the other has to have its window brought back.
+// Only the machine can tell, so it is asked, and the answer is held for a beat because a shell launch is the most expensive thing in this file.
+
+// WHY THE PAGE IS NOT HELD FOR A BEAT.
+// It costs one evaluation, and it is the answer that changes fastest: a human who brings the window back should not have to wait a second for the drive to notice.
+
+// WHY IT IS BUILT RATHER THAN WRITTEN.
+// The rules are one closure over the two things a test can hold still - the machine and the clock - so the claims below are checked without launching a shell and without waiting a second.
 
 import { focusWindow, windowState } from './window-focus.js';
 
@@ -82,9 +75,7 @@ export function createFocusGuard({
   };
 }
 
-// WHY ONE GUARD FOR THE WHOLE PROCESS. Two guards would answer differently about the
-// same machine at the same moment - one would have asked the page, the other would
-// still be holding an old shell - and two answers about one window is the kind of
-// thing this product exists to stop.
+// WHY ONE GUARD FOR THE WHOLE PROCESS.
+// Two guards would answer differently about the same machine at the same moment - one would have asked the page, the other would still be holding an old shell - and two answers about one window is the kind of thing this product exists to stop.
 
 export const ensureFront = createFocusGuard();

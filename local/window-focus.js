@@ -4,45 +4,35 @@
 // @dependencies: node:child_process, node:util.
 
 // WHY THIS FILE EXISTS
-//
-// Measured live on this machine, with the drive typing into a Google Docs document:
-// a browser window that is behind another application still takes the keys, and a
-// browser window that has been minimized does not - text typed after it came back
-// went nowhere. So the operating system is asked about the window, and the agent is
-// told which of those two situations it is in before it wonders.
-//
-// WHY FOCUSING ONE WINDOW AND NOT ALL OF THEM. The machine had two browser windows
-// open, and a script that walked every one of them ended with the wrong window in
-// front \u2014 which looks exactly like nothing working at all. So the call takes the
-// piece of the title to bring forward, and answers with the title it actually
-// brought, so a drive can tell whether it got what it asked for.
-//
-// WHY THE ANSWER CARRIES WHY. A call that cannot focus a window on this machine says
-// so in words. Returning a bare false would leave the agent guessing between "the
-// window is behind something" and "this platform is not supported here".
+
+// Measured live on this machine, with the drive typing into a Google Docs document: a browser window that is behind another application still takes the keys, and a browser window that has been minimized does not - text typed after it came back went nowhere.
+// So the operating system is asked about the window, and the agent is told which of those two situations it is in before it wonders.
+
+// WHY FOCUSING ONE WINDOW AND NOT ALL OF THEM.
+// The machine had two browser windows open, and a script that walked every one of them ended with the wrong window in front \u2014 which looks exactly like nothing working at all.
+// So the call takes the piece of the title to bring forward, and answers with the title it actually brought, so a drive can tell whether it got what it asked for.
+
+// WHY THE ANSWER CARRIES WHY.
+// A call that cannot focus a window on this machine says so in words.
+// Returning a bare false would leave the agent guessing between "the window is behind something" and "this platform is not supported here".
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
 
-// WHY THE TITLES COME BACK AS LINES. Every one of these three tools answers with
-// plain text on stdout, and a window title is one line; a title with a newline in it
-// is not a thing a window manager shows.
+// WHY THE TITLES COME BACK AS LINES.
+// Every one of these three tools answers with plain text on stdout, and a window title is one line; a title with a newline in it is not a thing a window manager shows.
 
 const lines = (text) => String(text ?? '')
   .split('\n')
   .map((line) => line.trim())
   .filter(Boolean);
 
-// WHY A NO-OP ALT GOES OUT BEFORE THE WINDOW IS BROUGHT FORWARD. Windows refuses a
-// foreground change while another application is taking input, and a drive that
-// only calls SetForegroundWindow loses every time the user is typing somewhere
-// else — measured live on this machine, with a typing app in another browser in
-// front: the window came forward and the answer said it had. The operating
-// system's own documented way round that is a no-op ALT, which makes the calling
-// process eligible to come forward; it presses nothing and types nothing. With it,
-// focus_window answered focused true while the typing app was still running.
+// WHY A NO-OP ALT GOES OUT BEFORE THE WINDOW IS BROUGHT FORWARD.
+// Windows refuses a foreground change while another application is taking input, and a drive that only calls SetForegroundWindow loses every time the user is typing somewhere else — measured live on this machine, with a typing app in another browser in front: the window came forward and the answer said it had.
+// The operating system's own documented way round that is a no-op ALT, which makes the calling process eligible to come forward; it presses nothing and types nothing.
+// With it, focus_window answered focused true while the typing app was still running.
 
 const WINDOWS_SCRIPT = (match) => `
 $ErrorActionPreference = 'Stop'
@@ -107,11 +97,9 @@ const APPLE_FOCUS = (match) => [
   'end tell'
 ].join('\n');
 
-// WHY THE REFUSAL HAS THE SAME SHAPE AS THE ANSWER. Measured on CI: a Linux runner
-// took the refusal path and the answer came back without a `title` at all, because the
-// refusal never had one - so a caller that reads the title of a refusal finds nothing
-// where a caller on Windows finds an empty string. A shape that depends on the
-// platform is a shape a caller has to guess.
+// WHY THE REFUSAL HAS THE SAME SHAPE AS THE ANSWER.
+// Measured on CI: a Linux runner took the refusal path and the answer came back without a `title` at all, because the refusal never had one - so a caller that reads the title of a refusal finds nothing where a caller on Windows finds an empty string.
+// A shape that depends on the platform is a shape a caller has to guess.
 
 const unsupported = (platform, why) => ({
   platform,
@@ -157,10 +145,8 @@ async function x11(match, run_) {
   return { platform: 'linux', foreground: lines(out.stdout)[0] ?? foreground, windows: [], minimized: [] };
 }
 
-// WHY THE READ ANSWERS INSTEAD OF GUESSING. windowFocused is the difference between
-// "the page ignored my click" and "the page was never in front"; an agent that is
-// told which one it was can act, and one that is told neither spends the drive
-// re-clicking a page that was never listening.
+// WHY THE READ ANSWERS INSTEAD OF GUESSING.
+// windowFocused is the difference between "the page ignored my click" and "the page was never in front"; an agent that is told which one it was can act, and one that is told neither spends the drive re-clicking a page that was never listening.
 
 export async function windowState({ platform = process.platform, exec = run } = {}) {
   try {
@@ -173,9 +159,8 @@ export async function windowState({ platform = process.platform, exec = run } = 
   }
 }
 
-// WHY THE FOCUS ANSWER NAMES THE WINDOW IT BROUGHT. Windows can refuse to come
-// forward \u2014 the operating system says no \u2014 and a drive that cannot tell refusal
-// from success will go on driving a page that is still behind a spreadsheet.
+// WHY THE FOCUS ANSWER NAMES THE WINDOW IT BROUGHT.
+// Windows can refuse to come forward \u2014 the operating system says no \u2014 and a drive that cannot tell refusal from success will go on driving a page that is still behind a spreadsheet.
 
 export async function focusWindow(match = '', { platform = process.platform, exec = run } = {}) {
   const wanted = String(match ?? '').trim();
