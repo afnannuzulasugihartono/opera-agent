@@ -3,74 +3,54 @@
 // @state: the price of a unit, the amount of an invoice, and the two signatures that make a payment claim true.
 // @dependencies: node:crypto.
 
-// WHY THE MONEY IS DATA AND NOT CODE. The unit that is sold is the delivered
-// client-month, and its price changes between a pilot, a market and a country. So the
-// price lives in a table, and this module only knows how to read it: one rule that
-// turns a list of deliveries into an amount, and two rules that decide whether a
-// payment claim is worth believing.
-//
-// WHY THE AMOUNT IS COMPUTED FROM THE DELIVERIES, NOT STORED. An invoice that says
-// "Rp 25.000" and lists nothing cannot be checked by the person paying it. An
-// invoice that carries the deliveries it charges for can be checked line by line, and
-// a delivery that was not made is not charged: the rule is that only what the proof
-// says was delivered is priced.
-//
-// WHY A LINE WITH NO PRICE IS NOT CHARGED AND NOT HIDDEN. A delivery of a kind that
-// has no price yet is real work, and silently dropping it would be a lie; pricing it
-// at zero would be a discount nobody agreed to. So it comes back as an unpriced
-// line, and the invoice says so.
-//
-// WHY THE INVOICE IS DERIVED FROM THE MANIFEST AND NOT FROM A TYPED LIST. A list typed
-// by hand is a claim; the manifest is a record, and it already holds one row per
-// delivered client-month with the file, the bytes and the page count. So the invoice
-// takes those rows and gives each one a line, and it refuses the whole request when a
-// row has no client or when one client-month appears twice: a bill that quietly drops a
-// month, or charges it twice, is worse than a bill that was never sent.
-//
-// WHY THE TOKEN IS AN HMAC AND NOT A RANDOM STRING. A random token has to be looked
-// up, which means the server has to trust its own storage. An HMAC over the invoice
-// id carries the same authority in the link itself: the server can tell a token it
-// made from a token somebody guessed, without a lookup.
-//
-// WHY THE NOTIFICATION SIGNATURE IS OVER THE ORDER, NOT THE WHOLE BODY. The provider
-// computes a signature over the order id, the status code and the gross amount with
-// the server key. Checking exactly those three fields means a tampered body cannot
-// pass, and a different amount cannot pass.
-//
-// WHY ONLY A SETTLED STATUS COUNTS AS PAID. A provider sends many notifications for
-// one order, and most of them are not the payment. Only the settled one means the
-// money moved, and the invoice is marked paid from that one. Midtrans spells that
-// status "settlement", and a card payment arrives as "capture" only when the fraud
-// check accepted it, so both spellings are handled and neither is guessed at.
-//
-// WHY THE COMPARISON DOES NOT USE Buffer. The same rules run in the edge function,
-// where Node's Buffer does not exist: the first deploy built invoices fine and then
-// answered "Buffer is not defined" to every customer who opened one. Comparing two
-// hex strings character by character costs nothing and runs everywhere, and it still
-// takes the same time whether the first character is wrong or the last one is.
-//
-// WHY A SMALL INVOICE OFFERS ONLY QRIS. Midtrans charges a percentage for QRIS and a
-// fixed fee for a virtual account (Rp 4.000) or a card (Rp 2.000 plus a percentage).
-// On a Rp 10.000 invoice the fixed fee is 40% of the money, so offering every method
-// would let the customer choose to hand the margin to the bank. QRIS is the one method
-// with no fixed fee, and it is accepted by every Indonesian bank and e-wallet app, so
-// below Rp 100.000 the checkout opens straight into QRIS. Above it, a fixed fee is
-// small enough that choice is worth more than the fee, and the provider's own list is
-// used.
-//
-// WHY THE PROVIDER GETS ITS OWN ORDER ID. Midtrans accepts only letters, digits and
-// dash, underscore, tilde and dot in an order id, and refuses the whole transaction on
-// any other character. The invoice id is "<customer>:<period>" and a customer name has
-// spaces, so the id that a person reads cannot be the id the provider is given. The
-// provider id is derived from the invoice id, the amount and the currency: it is stable
-// for an unchanged invoice, it changes when the amount changes, and it is always legal.
-//
-// WHY THE PROVIDER AMOUNT IS NOT THE LEDGER AMOUNT. The ledger stores cents, because a
-// price can have a fractional unit; Midtrans charges whole rupiah, because the rupiah
-// has no subunit in a card transaction. Sending 500000 for a Rp 5.000 invoice would ask
-// the customer for Rp 500.000, so the conversion happens at the provider boundary in
-// both directions: out to the charge, and back from the notification before it is
-// compared. A notification for Rp 500.000 therefore cannot close a Rp 5.000 invoice.
+// WHY THE MONEY IS DATA AND NOT CODE.
+// The unit that is sold is the delivered client-month, and its price changes between a pilot, a market and a country.
+// So the price lives in a table, and this module only knows how to read it: one rule that turns a list of deliveries into an amount, and two rules that decide whether a payment claim is worth believing.
+
+// WHY THE AMOUNT IS COMPUTED FROM THE DELIVERIES, NOT STORED.
+// An invoice that says "Rp 25.000" and lists nothing cannot be checked by the person paying it.
+// An invoice that carries the deliveries it charges for can be checked line by line, and a delivery that was not made is not charged: the rule is that only what the proof says was delivered is priced.
+
+// WHY A LINE WITH NO PRICE IS NOT CHARGED AND NOT HIDDEN.
+// A delivery of a kind that has no price yet is real work, and silently dropping it would be a lie; pricing it at zero would be a discount nobody agreed to.
+// So it comes back as an unpriced line, and the invoice says so.
+
+// WHY THE INVOICE IS DERIVED FROM THE MANIFEST AND NOT FROM A TYPED LIST.
+// A list typed by hand is a claim; the manifest is a record, and it already holds one row per delivered client-month with the file, the bytes and the page count.
+// So the invoice takes those rows and gives each one a line, and it refuses the whole request when a row has no client or when one client-month appears twice: a bill that quietly drops a month, or charges it twice, is worse than a bill that was never sent.
+
+// WHY THE TOKEN IS AN HMAC AND NOT A RANDOM STRING.
+// A random token has to be looked up, which means the server has to trust its own storage.
+// An HMAC over the invoice id carries the same authority in the link itself: the server can tell a token it made from a token somebody guessed, without a lookup.
+
+// WHY THE NOTIFICATION SIGNATURE IS OVER THE ORDER, NOT THE WHOLE BODY.
+// The provider computes a signature over the order id, the status code and the gross amount with the server key.
+// Checking exactly those three fields means a tampered body cannot pass, and a different amount cannot pass.
+
+// WHY ONLY A SETTLED STATUS COUNTS AS PAID.
+// A provider sends many notifications for one order, and most of them are not the payment.
+// Only the settled one means the money moved, and the invoice is marked paid from that one.
+// Midtrans spells that status "settlement", and a card payment arrives as "capture" only when the fraud check accepted it, so both spellings are handled and neither is guessed at.
+
+// WHY THE COMPARISON DOES NOT USE Buffer.
+// The same rules run in the edge function, where Node's Buffer does not exist: the first deploy built invoices fine and then answered "Buffer is not defined" to every customer who opened one.
+// Comparing two hex strings character by character costs nothing and runs everywhere, and it still takes the same time whether the first character is wrong or the last one is.
+
+// WHY A SMALL INVOICE OFFERS ONLY QRIS.
+// Midtrans charges a percentage for QRIS and a fixed fee for a virtual account (Rp 4.000) or a card (Rp 2.000 plus a percentage).
+// On a Rp 10.000 invoice the fixed fee is 40% of the money, so offering every method would let the customer choose to hand the margin to the bank.
+// QRIS is the one method with no fixed fee, and it is accepted by every Indonesian bank and e-wallet app, so below Rp 100.000 the checkout opens straight into QRIS.
+// Above it, a fixed fee is small enough that choice is worth more than the fee, and the provider's own list is used.
+
+// WHY THE PROVIDER GETS ITS OWN ORDER ID.
+// Midtrans accepts only letters, digits and dash, underscore, tilde and dot in an order id, and refuses the whole transaction on any other character.
+// The invoice id is "<customer>:<period>" and a customer name has spaces, so the id that a person reads cannot be the id the provider is given.
+// The provider id is derived from the invoice id, the amount and the currency: it is stable for an unchanged invoice, it changes when the amount changes, and it is always legal.
+
+// WHY THE PROVIDER AMOUNT IS NOT THE LEDGER AMOUNT.
+// The ledger stores cents, because a price can have a fractional unit; Midtrans charges whole rupiah, because the rupiah has no subunit in a card transaction.
+// Sending 500000 for a Rp 5.000 invoice would ask the customer for Rp 500.000, so the conversion happens at the provider boundary in both directions: out to the charge, and back from the notification before it is compared.
+// A notification for Rp 500.000 therefore cannot close a Rp 5.000 invoice.
 
 import { createHash, createHmac } from 'node:crypto';
 

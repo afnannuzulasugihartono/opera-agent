@@ -4,21 +4,16 @@
 # @dependencies: none stated.
 
 # Path-scoped gitleaks allow exceptions.
-# Rules stay enabled globally. Every entry pairs an EXACT path that still exists
-# with the fixture pattern observed there, so a future real secret in the same
-# file is still flagged. `detect --source .` scans full history, hence entries
-# for paths that only appear in older commits.
-#
-# WHY the paths matter more than the patterns. This gate ran for the first time
-# in CI on 2026-10-04 and immediately failed: the jwt allowlist pointed at a test
-# file name that has since changed. An allowlist whose path is stale stops
-# matching, which turns a known synthetic fixture back into a red gate, and the
-# tempting fix -- editing the fixture to dodge the scanner -- is the wrong one.
-# The same applies to every pattern below: renaming a symbol without renaming it
-# here leaves the scanner blind to a real leak.
+# Rules stay enabled globally.
+# Every entry pairs an EXACT path that still exists with the fixture pattern observed there, so a future real secret in the same file is still flagged.
+# `detect --source .` scans full history, hence entries for paths that only appear in older commits.
 
-# Extend the built-in default config: default rules keep their regexes,
-# and the allowlists below are appended to them.
+# WHY the paths matter more than the patterns.
+# This gate ran for the first time in CI on 2026-10-04 and immediately failed: the jwt allowlist pointed at a test file name that has since changed.
+# An allowlist whose path is stale stops matching, which turns a known synthetic fixture back into a red gate, and the tempting fix -- editing the fixture to dodge the scanner -- is the wrong one.
+# The same applies to every pattern below: renaming a symbol without renaming it here leaves the scanner blind to a real leak.
+
+# Extend the built-in default config: default rules keep their regexes, and the allowlists below are appended to them.
 
 [extend]
 useDefault = true
@@ -91,13 +86,9 @@ id = "generic-api-key"
 [[rules]]
 id = "jwt"
 
-# WHY THESE FIVE ARE ALLOWED BY VALUE AND NOT BY PATH. Each fixture below lived in a
-# file that has since been deleted, so a path-scoped entry cannot name it: the hygiene
-# gate requires every allowlist path to be a tracked file, and `detect --source .`
-# still reads the commits that held them. So they are allowed by their literal, which
-# is the narrowest thing that can silence a commit - each is a specification example, a
-# public half of a key, or a fixture whose payload starts with a field name a real
-# Supabase token does not carry.
+# WHY THESE FIVE ARE ALLOWED BY VALUE AND NOT BY PATH.
+# Each fixture below lived in a file that has since been deleted, so a path-scoped entry cannot name it: the hygiene gate requires every allowlist path to be a tracked file, and `detect --source .` still reads the commits that held them.
+# So they are allowed by their literal, which is the narrowest thing that can silence a commit - each is a specification example, a public half of a key, or a fixture whose payload starts with a field name a real Supabase token does not carry.
 
 [allowlist]
 description = "Fixtures that only exist in history: two deleted 8D drill scripts, the deleted v2 manifest copy, and two deleted transaction-cloud tests."

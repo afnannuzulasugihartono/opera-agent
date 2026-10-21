@@ -1,15 +1,9 @@
 -- Gateway offline check folded into the auth call (2026-10-03).
---
--- The gateway issued two round trips before enqueue: opera_verify_device for
--- the token, then a REST read of opera_devices.last_seen_at for the 90s
--- offline rule. Both hit the same row, so the second trip is pure overhead:
--- verify already selects the whole device row and discards everything but the
--- name. Returning last_seen_at with the auth answer removes one HTTP round
--- trip per command (4 -> 3: verify, enqueue, await) with identical reachable
--- behavior: bad token still 401s at auth, a stale or missing last_seen_at
--- still refuses before enqueue, and the offline error keeps its lastSeenAt
--- field. Same signature, so the existing service_role grant is retained and
--- the old gateway (which ignores the extra key) keeps working until deploy.
+
+-- The gateway issued two round trips before enqueue: opera_verify_device for the token, then a REST read of opera_devices.last_seen_at for the 90s offline rule.
+-- Both hit the same row, so the second trip is pure overhead: verify already selects the whole device row and discards everything but the name.
+-- Returning last_seen_at with the auth answer removes one HTTP round trip per command (4 -> 3: verify, enqueue, await) with identical reachable behavior: bad token still 401s at auth, a stale or missing last_seen_at still refuses before enqueue, and the offline error keeps its lastSeenAt field.
+-- Same signature, so the existing service_role grant is retained and the old gateway (which ignores the extra key) keeps working until deploy.
 -- Additive only: no rows touched, no grants changed.
 
 create or replace function public.opera_verify_device(p_device_name text, p_token_hash text) returns jsonb

@@ -18,10 +18,8 @@ const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/2026
 const transcriptRenderMigration = fs.readFileSync(new URL('../supabase/migrations/20260909001248_opera_agent_youtube_transcript_render_ready.sql', import.meta.url), 'utf8');
 const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/20260909021225_extension_1_1_text_only_workflows.sql', import.meta.url), 'utf8');
 
-// The pull endpoint is gone: no client asked through it anymore — the device
-// learns work over its socket — so the deployed contract it was is deleted
-// rather than kept warm. What must not come back is the device asking for work,
-// which was two round trips per action.
+// The pull endpoint is gone: no client asked through it anymore — the device learns work over its socket — so the deployed contract it was is deleted rather than kept warm.
+// What must not come back is the device asking for work, which was two round trips per action.
 
 test('a missing page helper costs one feature, never the whole content script', () => {
   const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
@@ -34,11 +32,10 @@ test('a missing page helper costs one feature, never the whole content script', 
     'the missing helper is not reported anywhere');
 });
 
-// WHY this lock exists. Two popup buttons used to send a message to the worker
-// inside try/finally with no catch, so clicking either one while the worker was
-// restarting produced "Unchecked runtime.lastError: Could not establish
-// connection" on the extension errors page. Observed live. Every message a piece
-// of UI sends has to land somewhere the user can read it.
+// WHY this lock exists.
+// Two popup buttons used to send a message to the worker inside try/finally with no catch, so clicking either one while the worker was restarting produced "Unchecked runtime.lastError: Could not establish connection" on the extension errors page.
+// Observed live.
+// Every message a piece of UI sends has to land somewhere the user can read it.
 
 test('every popup message lands in a catch the user can read', () => {
   const popup = fs.readFileSync(new URL('../extension/popup.js', import.meta.url), 'utf8');
@@ -77,12 +74,9 @@ test('the device asks nothing, so there is no pull endpoint left', () => {
 });
 
 // The heartbeat used to be the poll loop's status writer as well as its keepalive.
-// Left alone, it kept doing that job after the socket took over: every thirty
-// seconds it stamped lastConnectedAt over the socket's own state, and a heartbeat
-// that failed set the status to reconnecting while the socket was sitting there
-// healthy. Observed live against the deployed bridge, where a perfectly connected
-// device reported itself reconnecting. The heartbeat now keeps the device row
-// fresh and says nothing about the connection.
+// Left alone, it kept doing that job after the socket took over: every thirty seconds it stamped lastConnectedAt over the socket's own state, and a heartbeat that failed set the status to reconnecting while the socket was sitting there healthy.
+// Observed live against the deployed bridge, where a perfectly connected device reported itself reconnecting.
+// The heartbeat now keeps the device row fresh and says nothing about the connection.
 
 test('the heartbeat keeps the device row fresh without claiming the connection status', () => {
   const body = background.slice(background.indexOf('async function heartbeat('));

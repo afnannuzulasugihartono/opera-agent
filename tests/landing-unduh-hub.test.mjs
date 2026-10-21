@@ -3,12 +3,9 @@
 // @state: 7 locks; the hub door navigates to the one merged page, whose cards fill one button and close the rest.
 // @dependencies: test, assert, fs, crypto.
 
-// The hub answers with one giant door and an also-available row, while the merged
-// page answers "which one is mine" with one card per browser. Each card fills the
-// archive button and closes its other two behind a details, the shape
-// code.visualstudio.com/download uses, before the shared steps. The download URLs
-// and the compatibility claims themselves are out of scope and stay pinned in
-// landing-download.
+// The hub answers with one giant door and an also-available row, while the merged page answers "which one is mine" with one card per browser.
+// Each card fills the archive button and closes its other two behind a details, the shape code.visualstudio.com/download uses, before the shared steps.
+// The download URLs and the compatibility claims themselves are out of scope and stay pinned in landing-download.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

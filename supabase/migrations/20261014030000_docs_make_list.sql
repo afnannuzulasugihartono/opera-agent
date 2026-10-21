@@ -1,5 +1,5 @@
--- docs.make_list v1: toggle bullets or numbers, type each item with its
--- newline inside the payload, then prove every item landed or fail naming it.
+-- docs.make_list v1: toggle bullets or numbers, type each item with its newline inside the payload, then prove every item landed or fail naming it.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.make_list') THEN

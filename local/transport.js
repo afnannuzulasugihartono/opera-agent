@@ -3,19 +3,14 @@
 // @state: discovery reads the version endpoint; waiting retries and reports its budget; connecting fails rather than hanging.
 // @dependencies: none.
 
-// cdp.js is tested against a fake transport on purpose, which is what makes it
-// checkable anywhere, but it also means nothing has yet run against a real
-// browser. This file is that seam.
-//
-// The waiting matters more than it looks. A browser process exists well before
-// its debugging port answers, so connecting once and reporting failure makes
-// every cold start look broken, and the usual repair is a fixed sleep that is
-// slow when the browser is quick and flaky when it is not. Polling to a deadline
-// is fast and repeatable.
-//
-// The deadline message carries the port and the budget, because "the browser is
-// slow" and "there is no browser" are different problems and the person
-// installing this needs to be able to tell them apart.
+// cdp.js is tested against a fake transport on purpose, which is what makes it checkable anywhere, but it also means nothing has yet run against a real browser.
+// This file is that seam.
+
+// The waiting matters more than it looks.
+// A browser process exists well before its debugging port answers, so connecting once and reporting failure makes every cold start look broken, and the usual repair is a fixed sleep that is slow when the browser is quick and flaky when it is not.
+// Polling to a deadline is fast and repeatable.
+
+// The deadline message carries the port and the budget, because "the browser is slow" and "there is no browser" are different problems and the person installing this needs to be able to tell them apart.
 
 const VERSION_PATH = '/json/version';
 
@@ -37,12 +32,10 @@ export async function discoverWebSocket(port, { fetch = globalThis.fetch } = {})
 }
 
 // WHY THE TARGET MUST BE NAMED
-//
-// discoverPageWebSocket returns whichever page happens to be first, and a drive
-// that targets "the first page" writes into whatever the person happens to have
-// open. That is how a latency test once left a run of x characters in the title
-// of an unrelated document. A tab is therefore chosen by id, or by asking, never
-// by position.
+
+// discoverPageWebSocket returns whichever page happens to be first, and a drive that targets "the first page" writes into whatever the person happens to have open.
+// That is how a latency test once left a run of x characters in the title of an unrelated document.
+// A tab is therefore chosen by id, or by asking, never by position.
 
 export async function listPageWebSockets(port, { fetch = globalThis.fetch } = {}) {
   let list = [];
@@ -157,10 +150,9 @@ export async function discoverPageWebSocket(port, { fetch = globalThis.fetch } =
   return page.webSocketDebuggerUrl;
 }
 
-// Opening a tab is the one thing a drive must never do to the person using the
-// browser: navigating the page they already had open destroys whatever they were
-// looking at. A new target leaves that page alone. The endpoint takes PUT and
-// refuses GET, so a driver built on GET reports every open as a failure.
+// Opening a tab is the one thing a drive must never do to the person using the browser: navigating the page they already had open destroys whatever they were looking at.
+// A new target leaves that page alone.
+// The endpoint takes PUT and refuses GET, so a driver built on GET reports every open as a failure.
 
 export async function openTab(port, url, { fetch = globalThis.fetch } = {}) {
   let created;

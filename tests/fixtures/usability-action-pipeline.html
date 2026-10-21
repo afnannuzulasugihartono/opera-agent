@@ -28,10 +28,8 @@
   <button id="uv-goner">Goner</button>
   <script>
 
-    // Test controller: arm sets t0 so the 2.5s delay is measured from the
-    // test's explicit arm click, not from page load (deterministic timing).
-    // Generous margin: relay latency between arm-click and the click command
-    // arriving must eat into the 8s deadline, not into the assertion margin.
+    // Test controller: arm sets t0 so the 2.5s delay is measured from the test's explicit arm click, not from page load (deterministic timing).
+    // Generous margin: relay latency between arm-click and the click command arriving must eat into the 8s deadline, not into the assertion margin.
     let uvArmedAt = 0;
     document.getElementById('uv-arm').addEventListener('click', () => { uvArmedAt = performance.now(); }, { once: true });
     setInterval(() => {
@@ -46,8 +44,7 @@
       document.body.appendChild(r);
     });
 
-    // (b) same-place successor: Kill destroys Victim and recreates an
-    // identical button at the same document position without an id.
+    // (b) same-place successor: Kill destroys Victim and recreates an identical button at the same document position without an id.
     document.getElementById('uv-kill').addEventListener('click', () => {
       const v = document.getElementById('uv-victim');
       const rect = v.getBoundingClientRect();

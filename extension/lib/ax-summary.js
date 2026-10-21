@@ -3,22 +3,14 @@
 // @state: exports AX_SUMMARY_LIMITS and buildAxSummary; drops value fields and whole editable subtrees so results carry only read-only role/name facts.
 // @dependencies: none.
 
-// Bounded, value-free accessibility
-// tree summary for semantically poor surfaces (canvas applications, hidden
-// DOM mirrors). The raw CDP Accessibility.getFullAXTree output is filtered by
-// this pure module before it is attached to a page.read result as
-// `page.axSummary`. Entries are read-only {role, name} facts: they are not
-// element refs and cannot be clicked directly.
-//
+// Bounded, value-free accessibility tree summary for semantically poor surfaces (canvas applications, hidden DOM mirrors).
+// The raw CDP Accessibility.getFullAXTree output is filtered by this pure module before it is attached to a page.read result as `page.axSummary`.
+// Entries are read-only {role, name} facts: they are not element refs and cannot be clicked directly.
+
 // Safety invariants (regression-locked in tests/ax-observation.test.mjs):
-// - AX node `value` fields are dropped unconditionally: CDP exposes input
-//   values (including unmasked non-password field content), and model-facing
-//   observations must never carry field values.
-// - Editable roles and their descendants are excluded entirely: CDP repeats
-//   editable values as descendant StaticText names, so exclusion must close
-//   over the parentId chain.
-// - Pseudo-nodes (InlineTextBox), ignored nodes, and the RootWebArea page
-//   title are dropped; the result is deduped and capped.
+// - AX node `value` fields are dropped unconditionally: CDP exposes input values (including unmasked non-password field content), and model-facing observations must never carry field values.
+// - Editable roles and their descendants are excluded entirely: CDP repeats editable values as descendant StaticText names, so exclusion must close over the parentId chain.
+// - Pseudo-nodes (InlineTextBox), ignored nodes, and the RootWebArea page title are dropped; the result is deduped and capped.
 
 export const AX_SUMMARY_LIMITS = Object.freeze({
   maxEntries: 60,

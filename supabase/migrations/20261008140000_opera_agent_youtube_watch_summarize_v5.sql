@@ -1,14 +1,7 @@
--- YT watch flow v5 (2026-10-08): tolerate caption-less videos end to end; live evidence showed Big Buck Bunny carries no transcript button, so the open cascade degrades to page-text chunks instead of dying
--- workflow that opens a URL and returns the transcript payload in one run,
--- so watching plus summarizing costs a single model round trip instead of a
--- hand-driven open/find/click/read chain. Adapted from the proven
--- youtube.get_transcript v5 fast path (panel probe, synthetic-then-trusted
--- open, render-ready activation with tab restore); v1 opened the tab from
--- input.url instead of requiring one, v2 adds a second 15s watch window
--- after a tolerated first miss (cold first render on a fresh tab).
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- YT watch flow v5 (2026-10-08): tolerate caption-less videos end to end; live evidence showed Big Buck Bunny carries no transcript button, so the open cascade degrades to page-text chunks instead of dying workflow that opens a URL and returns the transcript payload in one run, so watching plus summarizing costs a single model round trip instead of a hand-driven open/find/click/read chain.
+-- Adapted from the proven youtube.get_transcript v5 fast path (panel probe, synthetic-then-trusted open, render-ready activation with tab restore); v1 opened the tab from input.url instead of requiring one, v2 adds a second 15s watch window after a tolerated first miss (cold first render on a fresh tab).
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'youtube.watch_summarize',

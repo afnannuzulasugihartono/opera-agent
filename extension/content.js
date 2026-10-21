@@ -3,15 +3,11 @@
 // @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
 // @dependencies: none.
 
-// WHY the page helpers degrade rather than throw. A throw at module scope takes
-// down every capability on the page at once: no read, no find, no click, nothing.
-// Observed live on a Google Docs tab after a reload, where the extension reported
-// "Role reconcile runtime is unavailable" and the whole content script was gone
-// from that document. A missing helper is a missing feature, so it is recorded in
-// semanticRuntime and the rest of the page keeps working. Each helper then falls
-// back to a shape that answers rather than one that throws: implicitRole returns
-// an empty role, and the hover planner reports that it is off instead of breaking
-// the call.
+// WHY the page helpers degrade rather than throw.
+// A throw at module scope takes down every capability on the page at once: no read, no find, no click, nothing.
+// Observed live on a Google Docs tab after a reload, where the extension reported "Role reconcile runtime is unavailable" and the whole content script was gone from that document.
+// A missing helper is a missing feature, so it is recorded in semanticRuntime and the rest of the page keeps working.
+// Each helper then falls back to a shape that answers rather than one that throws: implicitRole returns an empty role, and the hover planner reports that it is off instead of breaking the call.
 
 (() => {
   'use strict';

@@ -1,51 +1,33 @@
--- WHY: opera_claim_next_wait opens ONE transaction and may then sit in its polling
--- loop for up to 25 seconds (the caller clamps wait_ms to 0..25000). Every time
--- reference inside that transaction that used now() -- which in PostgreSQL is
--- transaction_timestamp(), frozen at BEGIN -- therefore read a clock up to 25
--- seconds stale, while clock_timestamp() reads the real clock.
---
--- Proven on this database before changing anything: inside one transaction, after
--- pg_sleep(2.0), now() was 0.0000s past transaction_timestamp() and
--- clock_timestamp() was 2.0083s past it.
---
--- The function author already knew this. v_started, v_deadline, the loop's exit
--- condition and the returned waitedMs are all measured with clock_timestamp(),
--- because those are elapsed-time measurements a frozen clock would make wrong. Two
--- reads were left on now() anyway, and those are the two that decide what work runs:
---
---   1. claimed_at = now(). A command that arrived three seconds into the wait was
---      stamped as claimed three seconds BEFORE it was created. Measured on the live
---      table before this migration: 306 of 9732 rows (3.1%) had
---      claimed_at < created_at, the worst by 5029ms -- almost exactly the 5s wait
---      window the extension sends. Every latency figure derived from these columns
---      was wrong for exactly the fastest claims, which are the ones anyone looks at
---      when asking "is this fast?". The function's own waitedMs was already correct,
---      so the function knew the real wait while the table recorded a fiction.
---
---   2. expires_at > now() in the candidate SELECT, and expires_at <= now() in the
---      expiry sweep. These read as "not yet expired" for the whole transaction, so a
---      command that expired while the caller waited was still handed out. An agent
---      that receives an expired command runs work whose caller has already given up,
---      and the result lands nowhere.
---
--- WHAT: one change -- every now() in this function becomes clock_timestamp() -- so
--- the whole function reads one clock. There is no behavioural change for a call that
--- returns immediately, because clock_timestamp() and now() agree at that instant.
--- The change only removes drift that accumulates across a long wait.
---
--- WHY NOT A TRIGGER: a trigger would fix rows written from elsewhere but leave the
--- two comparisons inside this function still reading a stale clock, which is the
--- half that hands out expired work. The function is the defect.
+-- WHY: opera_claim_next_wait opens ONE transaction and may then sit in its polling loop for up to 25 seconds (the caller clamps wait_ms to 0..25000).
+-- Every time reference inside that transaction that used now() -- which in PostgreSQL is transaction_timestamp(), frozen at BEGIN -- therefore read a clock up to 25 seconds stale, while clock_timestamp() reads the real clock.
 
--- WHY this drop, and why it must stay: applying this fix with the wrong parameter
--- order does not replace the function, it ADDS a second overload, because PostgreSQL
--- matches create or replace on the argument TYPE LIST including order. With two
--- overloads PostgREST cannot choose one for a named-argument call, so the extension's
--- pull loop fails to resolve the function at all. That happened once during this
--- work: the fix was first written as (text,text,integer,text,integer,jsonb), which
--- left the original 7-now() body live and call-broken until it was dropped.
--- The signature below is the one opera-agent-bridge actually calls, and the test in
--- tests/postgres/ pins the overload count to one so a second copy cannot reappear.
+-- Proven on this database before changing anything: inside one transaction, after pg_sleep(2.0), now() was 0.0000s past transaction_timestamp() and clock_timestamp() was 2.0083s past it.
+
+-- The function author already knew this.
+-- v_started, v_deadline, the loop's exit condition and the returned waitedMs are all measured with clock_timestamp(), because those are elapsed-time measurements a frozen clock would make wrong.
+-- Two reads were left on now() anyway, and those are the two that decide what work runs:
+
+-- 1. claimed_at = now().
+--    A command that arrived three seconds into the wait was stamped as claimed three seconds BEFORE it was created.
+--    Measured on the live table before this migration: 306 of 9732 rows (3.1%) had claimed_at < created_at, the worst by 5029ms -- almost exactly the 5s wait window the extension sends.
+--    Every latency figure derived from these columns was wrong for exactly the fastest claims, which are the ones anyone looks at when asking "is this fast?".
+--    The function's own waitedMs was already correct, so the function knew the real wait while the table recorded a fiction.
+
+-- 2. expires_at > now() in the candidate SELECT, and expires_at <= now() in the expiry sweep.
+--    These read as "not yet expired" for the whole transaction, so a command that expired while the caller waited was still handed out.
+--    An agent that receives an expired command runs work whose caller has already given up, and the result lands nowhere.
+
+-- WHAT: one change -- every now() in this function becomes clock_timestamp() -- so the whole function reads one clock.
+-- There is no behavioural change for a call that returns immediately, because clock_timestamp() and now() agree at that instant.
+-- The change only removes drift that accumulates across a long wait.
+
+-- WHY NOT A TRIGGER: a trigger would fix rows written from elsewhere but leave the two comparisons inside this function still reading a stale clock, which is the half that hands out expired work.
+-- The function is the defect.
+
+-- WHY this drop, and why it must stay: applying this fix with the wrong parameter order does not replace the function, it ADDS a second overload, because PostgreSQL matches create or replace on the argument TYPE LIST including order.
+-- With two overloads PostgREST cannot choose one for a named-argument call, so the extension's pull loop fails to resolve the function at all.
+-- That happened once during this work: the fix was first written as (text,text,integer,text,integer,jsonb), which left the original 7-now() body live and call-broken until it was dropped.
+-- The signature below is the one opera-agent-bridge actually calls, and the test in tests/postgres/ pins the overload count to one so a second copy cannot reappear.
 
 drop function if exists public.opera_claim_next_wait(text, text, integer, text, integer, jsonb);
 

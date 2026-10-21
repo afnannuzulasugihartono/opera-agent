@@ -31,8 +31,7 @@
   <button id="rerender-trigger" aria-label="Re-render control">Re-render control</button>
   <script>
     document.getElementById('relocate-trigger').addEventListener('click', () => {
-      // Maps-style redraw: the original control is destroyed and an identical
-      // control appears at a different position.
+      // Maps-style redraw: the original control is destroyed and an identical control appears at a different position.
       const moved = document.getElementById('zoom-in');
       const rect = moved.getBoundingClientRect();
       moved.remove();
@@ -50,10 +49,8 @@
       result.textContent = 'Saved';
     });
     document.getElementById('rerender-trigger').addEventListener('click', () => {
-      // YouTube-style ad lifecycle: the original control (keyed by its DOM id)
-      // is destroyed and an identical successor is recreated WITHOUT any id,
-      // at the same position. The keyed pool empties; only a signature
-      // fallback can keep the ref alive.
+      // YouTube-style ad lifecycle: the original control (keyed by its DOM id) is destroyed and an identical successor is recreated WITHOUT any id, at the same position.
+      // The keyed pool empties; only a signature fallback can keep the ref alive.
       const original = document.getElementById('skip-ad');
       const rect = original.getBoundingClientRect();
       original.remove();
@@ -62,9 +59,7 @@
       successor.textContent = 'Skip';
       successor.style.position = 'absolute';
 
-      // Same DOCUMENT position as the original (convert viewport rect to
-      // document coordinates) — the ad lifecycle recreates the control in
-      // place, it does not move it.
+      // Same DOCUMENT position as the original (convert viewport rect to document coordinates) — the ad lifecycle recreates the control in place, it does not move it.
       successor.style.left = `${Math.round(rect.left + window.scrollX)}px`;
       successor.style.top = `${Math.round(rect.top + window.scrollY)}px`;
       successor.style.width = `${Math.round(rect.width)}px`;
@@ -82,8 +77,8 @@
 </html>
 <script>
 
-  // U-T (ETW): a delayed control appears 1.2s after load; clicking it appends
-  // the etw-result marker. The watch scenario arms before it exists.
+  // U-T (ETW): a delayed control appears 1.2s after load; clicking it appends the etw-result marker.
+  // The watch scenario arms before it exists.
   setTimeout(() => {
     const late = document.createElement('button');
     late.id = 'etw-late-save';

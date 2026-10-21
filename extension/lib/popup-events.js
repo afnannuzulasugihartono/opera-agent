@@ -3,11 +3,9 @@
 // @state: exports recordPopup, popupsSince and resolvePopupOpener; events key by openerTabId, keep 8 per opener, and an in-flight tab claims misattributed popups.
 // @dependencies: none.
 
-// Popup and redirect follow-through: pure policy helpers for the
-// background popup log. NO DOM and NO chrome dependency: the host supplies
-// tab-creation facts, so the engine stays deterministic and testable in Node
-// (pattern of lib/action-pipeline.js).
-//
+// Popup and redirect follow-through: pure policy helpers for the background popup log.
+// NO DOM and NO chrome dependency: the host supplies tab-creation facts, so the engine stays deterministic and testable in Node (pattern of lib/action-pipeline.js).
+
 // Semantics locked by tests/timeout-retry-popup-parity.test.mjs:
 // - events are keyed by openerTabId and bounded per opener (8 kept)
 // - popupsSince filters by timestamp (events at or after sinceMs)

@@ -3,19 +3,12 @@
 // @state: 39 locks, green; the page moved out of akun.html when the two split, and grew the read-only #tabel editor.
 // @dependencies: test, assert, fs.
 
-// The dashboard is the fulcrum of the full-stack site: the one page that reads the
-// user's own device rows and, since the table editor landed, one page of any table
-// the reader owns. Every call goes through an owner-scoped reader RPC — opera_my_
-// devices for devices, opera_konsol_* for the grid — never a raw table path, so the
-// filter, the page caps and the masking live server-side where a modified client
-// cannot reach past them. It shows method and status but never page content, and
-// sends a stranger back to sign-in instead of leaking an empty state that looks
-// broken.
-//
-// It is a separate page from the account page on purpose. Supabase splits profile
-// (/account/me) from resources, and opencode splits settings from projects; a reader
-// who opened "Akun" to check who they are should not land on a device list, and a
-// reader who opened "Dashboard" should not have to scroll past a profile card.
+// The dashboard is the fulcrum of the full-stack site: the one page that reads the user's own device rows and, since the table editor landed, one page of any table the reader owns.
+// Every call goes through an owner-scoped reader RPC — opera_my_ devices for devices, opera_konsol_* for the grid — never a raw table path, so the filter, the page caps and the masking live server-side where a modified client cannot reach past them.
+// It shows method and status but never page content, and sends a stranger back to sign-in instead of leaking an empty state that looks broken.
+
+// It is a separate page from the account page on purpose.
+// Supabase splits profile (/account/me) from resources, and opencode splits settings from projects; a reader who opened "Akun" to check who they are should not land on a device list, and a reader who opened "Dashboard" should not have to scroll past a profile card.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

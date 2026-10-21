@@ -3,9 +3,8 @@
 // @state: failing first: the download page does not exist yet.
 // @dependencies: test, assert, fs.
 
-// The install section currently ends in a manual sentence, which is where a
-// layperson stalls. The download page gives one archive link, the version it
-// came from, the checksum to verify it, and the three steps that follow.
+// The install section currently ends in a manual sentence, which is where a layperson stalls.
+// The download page gives one archive link, the version it came from, the checksum to verify it, and the three steps that follow.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

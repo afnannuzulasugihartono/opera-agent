@@ -3,14 +3,8 @@
 // @state: Test..
 // @dependencies: node:test, strict, node:fs, extension-source.
 
-// Why source-text pins, stated per AGENTS.md: the deliverable here is a
-// migration DSL boundary, and the hazards are all about what the SQL must NOT
-// do -- no legacy table modification, no generic escape hatch in the registry,
-// no site-specific logic leaking into the extension, no per-run project secret
-// writes. Those are claims about text in a migration, so they are asserted
-// against the migration text, and the operational half (an in-process engine
-// actually running command/condition/repeat/foreach steps) is covered by the
-// live suites that execute the functions.
+// Why source-text pins, stated per AGENTS.md: the deliverable here is a migration DSL boundary, and the hazards are all about what the SQL must NOT do -- no legacy table modification, no generic escape hatch in the registry, no site-specific logic leaking into the extension, no per-run project secret writes.
+// Those are claims about text in a migration, so they are asserted against the migration text, and the operational half (an in-process engine actually running command/condition/repeat/foreach steps) is covered by the live suites that execute the functions.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

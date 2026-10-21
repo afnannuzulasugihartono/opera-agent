@@ -1,6 +1,7 @@
 -- Checkpoint 8D independently reviewed operator fence, installed master-OFF.
--- Adds a service-only singleton lease epoch used to fence every trusted operator
--- mutation across process death/recovery. No browser dispatch or agent authority.
+-- Adds a service-only singleton lease epoch used to fence every trusted operator mutation across process death/recovery.
+-- No browser dispatch or agent authority.
+
 begin;
 
 create table opera_agent_tx_candidate.operator_control (

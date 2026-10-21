@@ -1,5 +1,5 @@
--- docs.insert_table v1: hover to Insert > Table, pick the grid by arrows,
--- then prove a table role in the snapshot or fail naming the size.
+-- docs.insert_table v1: hover to Insert > Table, pick the grid by arrows, then prove a table role in the snapshot or fail naming the size.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.insert_table') THEN

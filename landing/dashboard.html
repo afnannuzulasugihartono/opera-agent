@@ -21,8 +21,9 @@
   <meta property="og:locale" content="id_ID" />
   <style>
 
-    /* WHY the same single-file shape as the rest of the site: no build step, and
-       the only network the CSP allows is the project Auth plus its REST. */
+    /*
+     * WHY the same single-file shape as the rest of the site: no build step, and the only network the CSP allows is the project Auth plus its REST.
+     */
 
     :root {
       --bg: #0b0d10;
@@ -61,10 +62,10 @@
 
     .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
 
-    /* WHY the console goes wide while prose stays narrow: device cards stacked
-       full-width in a 720px column on a 1280px screen waste half the monitor.
-       Past ~70ch prose reads worse, so only this app surface breaks out — text
-       pages keep their measure. */
+    /*
+     * WHY the console goes wide while prose stays narrow: device cards stacked full-width in a 720px column on a 1280px screen waste half the monitor.
+     * Past ~70ch prose reads worse, so only this app surface breaks out — text pages keep their measure.
+     */
     .wrap.wide { max-width: 1120px; }
     #devices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
     #devices .card { margin: 0; }
@@ -89,9 +90,10 @@
     nav a:hover { color: var(--text); }
     nav a[aria-current="page"] { color: var(--text); }
 
-    /* WHY the header row scrolls on a phone: the rail already does, but this is
-       the site nav, and seven items never fit 390px without stacking the brand
-       into two ragged lines. Scoped to header nav so the rail keeps its own. */
+    /*
+     * WHY the header row scrolls on a phone: the rail already does, but this is the site nav, and seven items never fit 390px without stacking the brand into two ragged lines.
+     * Scoped to header nav so the rail keeps its own.
+     */
     @media (max-width: 800px) {
       header nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
         mask-image: linear-gradient(to right, #000 88%, transparent);
@@ -104,13 +106,15 @@
     h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -.01em; }
     .sub { color: var(--muted); margin: 0 0 22px; }
 
-    /* WHY the rail: a page with four unrelated jobs and no divider reads as a form
-
-       someone forgot to finish. The rail is the page's table of contents, so a
-       reader can jump to the one thing they came for and see what else exists.
-       It collapses to a horizontal strip on a phone, because a vertical rail at
-
-       320px would push the first control off the screen. */
+    /*
+     * WHY the rail: a page with four unrelated jobs and no divider reads as a form
+     *
+     * someone forgot to finish.
+     * The rail is the page's table of contents, so a reader can jump to the one thing they came for and see what else exists.
+     * It collapses to a horizontal strip on a phone, because a vertical rail at
+     *
+     * 320px would push the first control off the screen.
+     */
 
     .layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; align-items: start; }
     .rail { position: sticky; top: 78px; display: grid; gap: 2px; }
@@ -152,19 +156,23 @@
     .online { color: var(--accent); }
     .offline { color: var(--warn); }
 
-    /* WHY a grid of facts rather than a sentence: an operator comparing two devices
-
-       reads columns, not prose. The definition list keeps label and value paired so
-
-       a narrow screen does not turn "extension 1.6.16" into an orphaned number. */
+    /*
+     * WHY a grid of facts rather than a sentence: an operator comparing two devices
+     *
+     * reads columns, not prose.
+     * The definition list keeps label and value paired so
+     *
+     * a narrow screen does not turn "extension 1.6.16" into an orphaned number.
+     */
 
     dl.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 0 14px; font-size: 13.5px; }
     dl.facts dt { color: var(--muted); }
     dl.facts dd { margin: 0; min-width: 0; }
 
-    /* WHY the checklist: an empty device list plus three unexplained sections is
-       where a new reader stalls. The page already holds every signal, so progress
-       is computed from loaded data, never claimed. */
+    /*
+     * WHY the checklist: an empty device list plus three unexplained sections is where a new reader stalls.
+     * The page already holds every signal, so progress is computed from loaded data, never claimed.
+     */
     .checklist { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
     .checklist li { display: flex; gap: 9px; padding: 5px 0; color: var(--muted); }
     .checklist li.done { color: var(--text); }
@@ -182,9 +190,10 @@
     }
     .checklist li.done .box { background: var(--accent); border-color: var(--accent); color: #04211d; }
 
-    /* WHY the box: the code arrived as a sentence inside a status line, which a
-       reader had to pick apart and retype. Big, spaced, one click to copy, and a
-       countdown from the expiry the server returns. */
+    /*
+     * WHY the box: the code arrived as a sentence inside a status line, which a reader had to pick apart and retype.
+     * Big, spaced, one click to copy, and a countdown from the expiry the server returns.
+     */
     .pairCodeBox { margin: 14px 0 0; padding: 14px; border: 1px dashed var(--line); border-radius: 10px; }
     .pairCodeBox[hidden] { display: none; }
     .pairCode {
@@ -198,18 +207,20 @@
     .pairCodeBox .row { margin-top: 0; align-items: center; }
     #pairCountdown { margin: 0; }
 
-    /* WHY the summary is numbers: the card once repeated the device list in prose
-       ("2 device ter-pairing, 1 daring") while the list showed the same facts below.
-       Three blocks computed from the same payload answer at a glance. */
+    /*
+     * WHY the summary is numbers: the card once repeated the device list in prose ("2 device ter-pairing, 1 daring") while the list showed the same facts below.
+     * Three blocks computed from the same payload answer at a glance.
+     */
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 0; padding: 0; }
     .stats div { margin: 0; }
     .stats dt { font-size: 12px; color: var(--muted); }
     .stats dd { margin: 2px 0 0; font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
     @media (max-width: 420px) { .stats dd { font-size: 16px; } }
 
-    /* WHY the dot plus the chip: two stacked cards differed only in their third row,
-       so telling which device is down meant reading both. State, name and build on
-       the first line answer it before any row is read. */
+    /*
+     * WHY the dot plus the chip: two stacked cards differed only in their third row, so telling which device is down meant reading both.
+     * State, name and build on the first line answer it before any row is read.
+     */
     .cardHead { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; }
     .cardHead h3 { margin: 0; font-size: 15.5px; }
     .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
@@ -226,9 +237,10 @@
       white-space: nowrap;
     }
 
-    /* WHY the two verbs share a row: two tall, near-empty cards stacked left a full
-       screen of whitespace between input and outcome. They split on desktop and
-       stack on a phone, like every other pair on this site. */
+    /*
+     * WHY the two verbs share a row: two tall, near-empty cards stacked left a full screen of whitespace between input and outcome.
+     * They split on desktop and stack on a phone, like every other pair on this site.
+     */
     .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .duo section { margin-bottom: 14px; }
     @media (max-width: 640px) {
@@ -254,9 +266,10 @@
       border-top: 1px solid var(--line);
     }
     ul.commands li:first-child { border-top: 0; }
-    /* WHY the ink is named per row: every history row once read in the same muted
-       ink, so one failed click sat invisible among completions. The word stays —
-       colour never carries meaning alone. */
+    /*
+     * WHY the ink is named per row: every history row once read in the same muted ink, so one failed click sat invisible among completions.
+     * The word stays — colour never carries meaning alone.
+     */
     .commands li .online { color: var(--accent); }
     .commands li .offline { color: var(--warn); }
 
@@ -268,11 +281,14 @@
       border-radius: 6px;
       padding: 1px 5px;
 
-      /* WHY the wrap: a device id, an account id and a localhost callback are the
-
-         three unbreakable strings on these pages, and a token with no spaces scrolls a
-
-         phone sideways. This is the page an operator opens when something is wrong. */
+      /*
+       * WHY the wrap: a device id, an account id and a localhost callback are the
+       *
+       * three unbreakable strings on these pages, and a token with no spaces scrolls a
+       *
+       * phone sideways.
+       * This is the page an operator opens when something is wrong.
+       */
 
       overflow-wrap: anywhere;
       word-break: break-word;
@@ -280,8 +296,9 @@
 
     .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
-    /* WHY the id reads as code and is clickable: support asks for it first, and an
-       operator should never retype a UUID to report which browser is misbehaving. */
+    /*
+     * WHY the id reads as code and is clickable: support asks for it first, and an operator should never retype a UUID to report which browser is misbehaving.
+     */
 
     .deviceId { cursor: pointer; }
     .deviceId:hover { border-color: var(--accent); color: var(--accent); }
@@ -303,8 +320,9 @@
     .btn:disabled { opacity: .5; cursor: default; }
     .btn.ghost { background: transparent; }
 
-    /* WHY one danger colour, used once: the only irreversible action on this page is
-       revoking a device, and it is the one a reader must not hit by muscle memory. */
+    /*
+     * WHY one danger colour, used once: the only irreversible action on this page is revoking a device, and it is the one a reader must not hit by muscle memory.
+     */
 
     .btn.danger { border-color: var(--danger); color: var(--danger); }
     .btn.danger:hover { background: var(--danger); color: #0b0d10; }
@@ -327,12 +345,14 @@
     .status.warn { color: var(--warn); }
     .status.bad { color: var(--danger); }
 
-    /* WHY a tone-strip rather than a badge: a badge draws the eye with colour, and the
-
-       one thing a reader opens this page for is whether a device is reachable. The
-       dot carries the state and the words beside it carry the meaning, so the page
-
-       still works when colour does not. */
+    /*
+     * WHY a tone-strip rather than a badge: a badge draws the eye with colour, and the
+     *
+     * one thing a reader opens this page for is whether a device is reachable.
+     * The dot carries the state and the words beside it carry the meaning, so the page
+     *
+     * still works when colour does not.
+     */
 
     .tone { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; }
     .tone::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
@@ -343,17 +363,17 @@
 
     footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
     footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    /* WHY the gap and not a margin: the six footer doors are written with no
-       whitespace between the tags, so an inline row of anchors has no break
-       opportunity and pushed the footer 32px past a 320px screen. A flex gap
-       breaks between items wherever the line runs out. */
+    /*
+     * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
+     * A flex gap breaks between items wherever the line runs out.
+     */
     footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
     footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     footer a:hover { color: var(--text); }
 
-    /* WHY the shell overrides by later order: every rule above is pinned, so the
-       console look — icon rail, top tabs, one visible section, dense history —
-       lives here, never by editing a rule a test names. */
+    /*
+     * WHY the shell overrides by later order: every rule above is pinned, so the console look — icon rail, top tabs, one visible section, dense history — lives here, never by editing a rule a test names.
+     */
 
     .layout { grid-template-columns: 208px minmax(0, 1fr); }
     .content { min-width: 0; }
@@ -404,18 +424,19 @@
     .history td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
     .history tr:last-child td { border-bottom: 0; }
 
-    /* WHY the zebra: five columns of muted ink scan badly at speed, and the history
-       table is read while something is wrong. A faint second tone carries the row
-       the way every production table prints one. */
+    /*
+     * WHY the zebra: five columns of muted ink scan badly at speed, and the history table is read while something is wrong.
+     * A faint second tone carries the row the way every production table prints one.
+     */
     .history tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
     .history td .dot { display: inline-block; vertical-align: 1px; margin-right: 6px; }
     .history td .online { color: var(--accent); }
     .history td .offline { color: var(--warn); }
 
-    /* WHY the editor is one instrument, not a stack of cards: the list, the grid and
-       the pager answer one question — what is in this table — and a page change is a
-       query, not navigation. The grid scrolls inside its own pane, so the rail and
-       the tabs never move while someone pages through twenty-eight thousand rows. */
+    /*
+     * WHY the editor is one instrument, not a stack of cards: the list, the grid and the pager answer one question — what is in this table — and a page change is a query, not navigation.
+     * The grid scrolls inside its own pane, so the rail and the tabs never move while someone pages through twenty-eight thousand rows.
+     */
     .konsol { display: grid; grid-template-columns: 196px minmax(0, 1fr); gap: 16px; align-items: start; }
     .konsolSide { display: grid; gap: 2px; align-content: start; }
     .konsolSide button {
@@ -439,9 +460,10 @@
     .konsolSide button:disabled { opacity: .55; cursor: not-allowed; }
     .konsolSide .meta { font-variant-numeric: tabular-nums; }
 
-    /* WHY grouped and captioned: sixteen table names scan as a wall until the two
-       rules behind them are visible — nine belong to this account, seven to the
-       operator. The caption is the Studio sidebar's section label, nothing more. */
+    /*
+     * WHY grouped and captioned: sixteen table names scan as a wall until the two rules behind them are visible — nine belong to this account, seven to the operator.
+     * The caption is the Studio sidebar's section label, nothing more.
+     */
     .konsolSide .konsolGroup {
       color: var(--muted);
       font-size: 11px;
@@ -497,9 +519,10 @@
     }
     .konsolGrid th button:hover { color: var(--accent); }
 
-    /* WHY zebra, selection ink and right-aligned figures: the three signals every
-       production grid carries. The tinted row says which row the JSON pane below is
-       showing; the numeric class comes from the catalog type, never from the value. */
+    /*
+     * WHY zebra, selection ink and right-aligned figures: the three signals every production grid carries.
+     * The tinted row says which row the JSON pane below is showing; the numeric class comes from the catalog type, never from the value.
+     */
     .konsolGrid tbody tr { cursor: pointer; }
     .konsolGrid tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
     .konsolGrid tbody tr:hover { background: var(--surface-soft); }
@@ -707,11 +730,8 @@
   <script src="./i18n.js"></script>
   <script type="module">
 
-    // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices
-    // with their ten latest commands, method and status only, and the opera_konsol_*
-    // pair returns one page of one table with the ownership filter, the page caps and
-    // the masking already applied server-side. A page that queried raw tables would
-    // need grants the project deliberately never hands out.
+    // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices with their ten latest commands, method and status only, and the opera_konsol_* pair returns one page of one table with the ownership filter, the page caps and the masking already applied server-side.
+    // A page that queried raw tables would need grants the project deliberately never hands out.
     const REST = 'https://nenmkmtvjremqphfqnfw.supabase.co/rest/v1';
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
@@ -719,10 +739,8 @@
     const $ = (id) => document.getElementById(id);
     const headersFor = (token) => ({ apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
 
-    // WHY the session renews itself: a Supabase access token lasts about an hour and this
-    // page holds no SDK to renew it, so an expired token read as "signed out" and the stored
-    // copy was deleted. Renewing is one POST to the Auth host this page already reaches, so
-    // a reader who stays signed in is not asked to sign in again every hour.
+    // WHY the session renews itself: a Supabase access token lasts about an hour and this page holds no SDK to renew it, so an expired token read as "signed out" and the stored copy was deleted.
+    // Renewing is one POST to the Auth host this page already reaches, so a reader who stays signed in is not asked to sign in again every hour.
     const forgetSession = () => {
       localStorage.removeItem('opera-agent-access-token');
       localStorage.removeItem('opera-agent-refresh-token');
@@ -731,11 +749,8 @@
     async function renewAccessToken() {
       const refreshToken = localStorage.getItem('opera-agent-refresh-token');
 
-      // WHY the three outcomes and not a boolean: "the refresh token was refused" and
-      // "we could not reach Auth" look identical to a caller that only sees null, and
-      // treating the second as the first deletes a working session over a dropped packet.
-      // Every other user on a phone loses signal, so this distinction is the difference
-      // between a session that survives a tunnel and one that does not.
+      // WHY the three outcomes and not a boolean: "the refresh token was refused" and "we could not reach Auth" look identical to a caller that only sees null, and treating the second as the first deletes a working session over a dropped packet.
+      // Every other user on a phone loses signal, so this distinction is the difference between a session that survives a tunnel and one that does not.
       if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
       let response;
       try {
@@ -762,22 +777,17 @@
     }
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    // WHY relative time: a raw 2026-10-05T03:51:03 timestamp is a database leak
-    // into the UI. People read "2 jam lalu", not ISO strings.
+    // WHY relative time: a raw 2026-10-05T03:51:03 timestamp is a database leak into the UI.
+    // People read "2 jam lalu", not ISO strings.
     const relativeTime = (() => {
       try {
         const format = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
 
-        // WHY the English unit keys and not Indonesian words: format() takes CLDR
-        // unit identifiers and localises them through the locale itself. Passing
-        // "menit" throws "Invalid unit argument" at call time, and because the throw
-        // happened while building the device list, the live dashboard rendered zero
-        // device cards while its status line still said one was paired.
+        // WHY the English unit keys and not Indonesian words: format() takes CLDR unit identifiers and localises them through the locale itself.
+        // Passing "menit" throws "Invalid unit argument" at call time, and because the throw happened while building the device list, the live dashboard rendered zero device cards while its status line still said one was paired.
         const steps = [[60, 1, 'second'], [3600, 60, 'minute'], [86400, 3600, 'hour'], [2592000, 86400, 'day'], [31536000, 604800, 'week']];
         return (iso) => {
-          // WHY the empty check and not just the NaN check below: new Date(null)
-          // is the epoch, not NaN, so a device that never checked in rendered as
-          // "57 tahun yang lalu" instead of never.
+          // WHY the empty check and not just the NaN check below: new Date(null) is the epoch, not NaN, so a device that never checked in rendered as "57 tahun yang lalu" instead of never.
           if (iso === null || iso === undefined || iso === '') return 'belum pernah';
           const then = new Date(iso).getTime();
           if (Number.isNaN(then)) return 'belum pernah';
@@ -792,10 +802,8 @@
       }
     })();
 
-    // WHY the rail follows the scroll: a reader who jumped to "Pairing manual" and
-    // then scrolled to the device list should not still be told they are on pairing.
-    // IntersectionObserver rather than a scroll handler because this fires once per
-    // section change instead of once per pixel.
+    // WHY the rail follows the scroll: a reader who jumped to "Pairing manual" and then scrolled to the device list should not still be told they are on pairing.
+    // IntersectionObserver rather than a scroll handler because this fires once per section change instead of once per pixel.
     function markRail() {
       const links = [...document.querySelectorAll('.rail a')];
       const seen = new Map();
@@ -813,14 +821,12 @@
       for (const section of document.querySelectorAll('main section[id]')) observer.observe(section);
     }
 
-    // WHY the session is read here and not shown: this page is about devices, and
-    // the account itself lives on its own page. Only the address is echoed, so the
-    // reader can tell which account's devices they are looking at.
+    // WHY the session is read here and not shown: this page is about devices, and the account itself lives on its own page.
+    // Only the address is echoed, so the reader can tell which account's devices they are looking at.
     async function currentSession() {
       let token = localStorage.getItem('opera-agent-access-token');
 
-      // WHY the probe before the work: a token that aged out says nothing about the
-      // account, and treating it as signed out is what made the session feel temporary.
+      // WHY the probe before the work: a token that aged out says nothing about the account, and treating it as signed out is what made the session feel temporary.
       let temporary = null;
       if (token) {
         const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
@@ -828,17 +834,14 @@
           const renewed = await renewAccessToken();
           if (renewed.ok) token = renewed.token;
 
-          // WHY only a refused refresh clears the session: a failure to reach Auth is a
-          // dropped packet, not a signed-out reader, and clearing here would end sessions
-          // on a train. The answer is carried on, because the call that follows would
-          // otherwise clear the session for the very same dropped packet.
+          // WHY only a refused refresh clears the session: a failure to reach Auth is a dropped packet, not a signed-out reader, and clearing here would end sessions on a train.
+          // The answer is carried on, because the call that follows would otherwise clear the session for the very same dropped packet.
           else if (renewed.dead) forgetSession();
           else temporary = renewed.why;
         }
       }
 
-      // No token, no dashboard: a stranger gets the sign-in page, never an empty
-      // state that looks like a broken product.
+      // No token, no dashboard: a stranger gets the sign-in page, never an empty state that looks like a broken product.
       if (!token && !temporary) {
         globalThis.location.replace('./index.html');
         return null;
@@ -848,9 +851,7 @@
         if (!response.ok) throw new Error(`auth ${response.status}`);
         return { token, user: await response.json() };
       } catch (error) {
-        // WHY the temporary branch comes first: a renewal that could not reach Auth is a
-        // network problem, and answering it with a sign-out is what made every reader look
-        // like the product had forgotten them.
+        // WHY the temporary branch comes first: a renewal that could not reach Auth is a network problem, and answering it with a sign-out is what made every reader look like the product had forgotten them.
         if (temporary) {
           $('status').textContent = 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.';
           $('status').className = 'status warn';
@@ -875,15 +876,12 @@
       'That table belongs to the operator account.': 'Tabel itu hanya untuk akun operator.'
     };
 
-    // WHY the map: the server speaks English and the page speaks Indonesian. Showing a
-    // raw server string to an operator reads as a broken product, and the rate-limit
-    // refusal is the one message they will actually meet.
+    // WHY the map: the server speaks English and the page speaks Indonesian.
+    // Showing a raw server string to an operator reads as a broken product, and the rate-limit refusal is the one message they will actually meet.
     const say = (raw) => TRANSLATED[String(raw)] || String(raw);
 
-    // WHY the account facts live here and not only on akun.html: this page is where a
-    // reader lands to answer "is this the right account", and the address is the one
-    // fact that answers it. Nothing here is editable, so it cannot drift from the
-    // account page, which owns every write.
+    // WHY the account facts live here and not only on akun.html: this page is where a reader lands to answer "is this the right account", and the address is the one fact that answers it.
+    // Nothing here is editable, so it cannot drift from the account page, which owns every write.
     function renderAccountFacts(user, devices) {
       const online = devices.filter((device) => device.status === 'online').length;
       const facts = [
@@ -896,9 +894,8 @@
       $('accountFacts').innerHTML = facts.map(([term, value]) => `<dt>${esc(term)}</dt><dd>${value}</dd>`).join('');
     }
 
-    // WHY stored and re-rendered: the install marker can land after the device list
-    // has loaded, and step one must flip without refetching. The same payload feeds
-    // the stats, so one object carries all three.
+    // WHY stored and re-rendered: the install marker can land after the device list has loaded, and step one must flip without refetching.
+    // The same payload feeds the stats, so one object carries all three.
     let lastSeen = { installed: false, devices: [], total: 0, browser: '' };
     let liveToken = null;
     let liveUser = null;
@@ -966,15 +963,10 @@
       liveUser = user;
       $('whoami').textContent = `Device milik ${user.email}.`;
 
-      // WHY the marker is read before the device list, not after: the reader who has
-      // not installed anything should learn that first, and the device list alone
-      // cannot say it, because an empty list looks identical whether the extension is
-      // missing or merely not paired yet.
-      // WHY this is a function and not a single read: the content script runs at
-      // document_idle, so the marker can land after this module has already read the
-      // document. Reading once would show "not installed" on a browser that has it, and
-      // the reader would go and install a second copy. The attribute change is the one
-      // event that means the answer changed.
+      // WHY the marker is read before the device list, not after: the reader who has not installed anything should learn that first, and the device list alone cannot say it, because an empty list looks identical whether the extension is missing or merely not paired yet.
+      // WHY this is a function and not a single read: the content script runs at document_idle, so the marker can land after this module has already read the document.
+      // Reading once would show "not installed" on a browser that has it, and the reader would go and install a second copy.
+      // The attribute change is the one event that means the answer changed.
       const reportInstallState = () => {
         const installed = document.documentElement.dataset.operaAgent === 'installed';
         $('installState').textContent = installed
@@ -995,12 +987,9 @@
       }
       await refreshDevices();
 
-      // WHY polling and not a push channel: pairing completes in the extension
-      // popup, a separate context this page cannot hear, so a list read once
-      // stays frozen on "offline" after a successful pairing. Re-reading the
-      // owner-scoped list every 10 seconds (and on every return to the tab) is
-      // what makes the list move on its own. The capability check keeps
-      // environments without timers on the single-load path.
+      // WHY polling and not a push channel: pairing completes in the extension popup, a separate context this page cannot hear, so a list read once stays frozen on "offline" after a successful pairing.
+      // Re-reading the owner-scoped list every 10 seconds (and on every return to the tab) is what makes the list move on its own.
+      // The capability check keeps environments without timers on the single-load path.
       if (typeof setInterval !== 'undefined' && !livePoll) {
         livePoll = true;
         setInterval(() => { if (!document.hidden) refreshDevices(); }, 10000);
@@ -1010,9 +999,8 @@
 
     const commandInk = (status) => status === 'completed' ? 'online' : status === 'failed' ? 'offline' : '';
 
-    // WHY a duration and not two timestamps: "2 dtk" answers how long a command
-    // took; two ISO strings make the reader do the subtraction. Pending has no
-    // completed stamp, so it reads as an en dash, never as zero.
+    // WHY a duration and not two timestamps: "2 dtk" answers how long a command took; two ISO strings make the reader do the subtraction.
+    // Pending has no completed stamp, so it reads as an en dash, never as zero.
     function formatDuration(createdAt, completedAt) {
       if (!createdAt || !completedAt) return '–';
       const ms = new Date(completedAt).getTime() - new Date(createdAt).getTime();
@@ -1025,9 +1013,8 @@
       return `${Math.floor(minutes / 60)} jam ${minutes % 60} mnt`;
     }
 
-    // WHY the history flattens per-device lists: each device carries its ten
-    // latest, but the operator asks "what ran last" across all devices, newest
-    // first. Method, status and timestamps only — never a payload field.
+    // WHY the history flattens per-device lists: each device carries its ten latest, but the operator asks "what ran last" across all devices, newest first.
+    // Method, status and timestamps only — never a payload field.
     function renderHistory(devices) {
       const rows = [];
       for (const device of devices || []) {
@@ -1076,9 +1063,8 @@
       }
       renderAccountFacts(user, data.devices);
 
-      // WHY the numbers live here and not in a second fetch: they are sums over
-      // the same payload the list renders, so the summary can never disagree
-      // with it. The rail count rides along for the same reason.
+      // WHY the numbers live here and not in a second fetch: they are sums over the same payload the list renders, so the summary can never disagree with it.
+      // The rail count rides along for the same reason.
       const total = data.devices.length;
       const up = data.devices.filter((device) => device.status === 'online').length;
       const done = data.devices.reduce((n, device) => n + (device.completedCommands ?? 0), 0);
@@ -1092,9 +1078,8 @@
       document.querySelector('.rail a[href="#device"]').textContent = `Device (${total})`;
       renderHistory(data.devices);
 
-      // WHY metadata only: a screenshot of this page must not leak speech, so the
-      // section names sessions without quoting them. The text travels only in
-      // media_listen_read results to the paired agent.
+      // WHY metadata only: a screenshot of this page must not leak speech, so the section names sessions without quoting them.
+      // The text travels only in media_listen_read results to the paired agent.
       try {
         const listenResponse = await fetch(`${REST}/rpc/opera_my_listen`, { method: 'POST', headers: headersFor(token), body: '{}' });
         const listenData = await listenResponse.json();
@@ -1125,9 +1110,8 @@
       $('status').textContent = `${data.devices.length} device ter-pairing, ${online} daring.`;
       $('status').className = online ? 'status ok' : 'status warn';
 
-      // WHY the state rides the first line: two stacked cards once differed only in
-      // a middle row, so the down device hid in plain sight. The build moves up
-      // beside the name for the same reason; the facts below keep the rest.
+      // WHY the state rides the first line: two stacked cards once differed only in a middle row, so the down device hid in plain sight.
+      // The build moves up beside the name for the same reason; the facts below keep the rest.
       $('devices').innerHTML = data.devices.map((device) => `
         <div class="card">
           <div class="cardHead">
@@ -1311,10 +1295,8 @@
       }
       let response = await fetch(`${REST}/rpc/${name}`, { method: 'POST', headers: headersFor(konsolToken), body: JSON.stringify(body) }).catch(() => null);
 
-      // WHY the second pass through currentSession: an access token ages out in about
-      // an hour and this pane can be open across that hour. One renew here is the
-      // difference between a page that kept working and a console that signed the
-      // reader out mid-read over a token it could have refreshed itself.
+      // WHY the second pass through currentSession: an access token ages out in about an hour and this pane can be open across that hour.
+      // One renew here is the difference between a page that kept working and a console that signed the reader out mid-read over a token it could have refreshed itself.
       if (response && response.status === 401) {
         konsolToken = null;
         const session = await currentSession();
@@ -1333,9 +1315,7 @@
     async function konsolPage() {
       if (!konsol.table) return;
 
-      // WHY the sequence check: a fast reader can switch tables or pages while a
-      // response is still crossing the wire, and without it the older answer lands
-      // last and the grid shows page one of the table the reader just left.
+      // WHY the sequence check: a fast reader can switch tables or pages while a response is still crossing the wire, and without it the older answer lands last and the grid shows page one of the table the reader just left.
       const seq = ++konsol.seq;
       konsolSay('Memuat…');
       const data = await konsolRpc('opera_konsol_table', {
@@ -1349,9 +1329,8 @@
       if (seq !== konsol.seq) return;
       if (!data?.ok) {
 
-        // WHY the clear: the static header row says "Memuat…" only while the first
-        // load is in flight; a first load that fails must not leave it promising
-        // data that never arrived. A later failure keeps the last good grid.
+        // WHY the clear: the static header row says "Memuat…" only while the first load is in flight; a first load that fails must not leave it promising data that never arrived.
+        // A later failure keeps the last good grid.
         if (!$('konsolRows').children.length) $('konsolHead').innerHTML = '';
         konsolSay(say(data?.error || 'Konsol tidak bisa membaca tabel itu.'), 'warn');
         return;
@@ -1383,9 +1362,7 @@
       const pageNo = Math.floor(konsol.offset / konsol.limit) + 1;
       const pageCount = Math.max(1, Math.ceil(konsol.total / konsol.limit));
 
-      // WHY the page position and the row span together: "1–50 dari 28.745" says how
-      // much exists and "Halaman 2 dari 575" says where the reader stands — the
-      // footer of totals every production table closes with.
+      // WHY the page position and the row span together: "1–50 dari 28.745" says how much exists and "Halaman 2 dari 575" says where the reader stands — the footer of totals every production table closes with.
       $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `Halaman ${pageNo} dari ${pageCount} · ${konsolNf(from)}–${konsolNf(to)} dari ${konsolNf(konsol.total)} baris`;
       $('konsolPrev').disabled = konsol.offset <= 0;
       $('konsolNext').disabled = to >= konsol.total;
@@ -1412,18 +1389,15 @@
       const data = await konsolRpc('opera_konsol_tables', {});
       if (!data?.ok) {
 
-        // WHY the clear: the static header row exists only for the first-load state;
-        // a list that never arrived means no table ever will, and "Memuat…" would
-        // promise otherwise.
+        // WHY the clear: the static header row exists only for the first-load state; a list that never arrived means no table ever will, and "Memuat…" would promise otherwise.
         $('konsolHead').innerHTML = '';
         konsolSay('Konsol data belum bisa dimuat. Muat ulang halaman sebentar lagi.', 'warn');
         return;
       }
       const entries = data.tables || [];
 
-      // WHY grouped and not one flat wall: sixteen names read as a list of tables
-      // only when the two rules behind them are visible — nine belong to this
-      // account, seven to the operator. The server sends the scope; the page shows it.
+      // WHY grouped and not one flat wall: sixteen names read as a list of tables only when the two rules behind them are visible — nine belong to this account, seven to the operator.
+      // The server sends the scope; the page shows it.
       const groupOf = { owner: 'Milik akun ini', operator: 'Operator' };
       let lastScope = null;
       $('konsolList').innerHTML = entries.map((entry) => {
@@ -1467,9 +1441,8 @@
       const tr = event.target.closest('tr[data-row]');
       if (!tr) return;
 
-      // WHY a toggle and not a one-way open: the pane is the reader's magnifier, and
-      // a magnifier you cannot put down becomes the thing in the way. The tinted row
-      // says which row the pane is showing, so closing it never leaves a stale doubt.
+      // WHY a toggle and not a one-way open: the pane is the reader's magnifier, and a magnifier you cannot put down becomes the thing in the way.
+      // The tinted row says which row the pane is showing, so closing it never leaves a stale doubt.
       const open = tr.getAttribute('aria-selected') === 'true';
       for (const row of $('konsolRows').querySelectorAll('[aria-selected]')) row.removeAttribute('aria-selected');
       if (open) { $('konsolJson').hidden = true; return; }
@@ -1490,10 +1463,8 @@
       await konsolPage();
     });
 
-    // WHY debounced from the first keystroke: every character is a server round trip
-    // over a table that may hold twenty-eight thousand rows, and a search that starts
-    // from page four lands on nothing. 300ms sits past a fast typist's burst and
-    // still reads as immediate to the eye.
+    // WHY debounced from the first keystroke: every character is a server round trip over a table that may hold twenty-eight thousand rows, and a search that starts from page four lands on nothing.
+    // 300ms sits past a fast typist's burst and still reads as immediate to the eye.
     let konsolDebounce = null;
     $('konsolSearch').addEventListener('input', () => {
       clearTimeout(konsolDebounce);
@@ -1504,9 +1475,8 @@
       }, 300);
     });
 
-    // WHY escape: a search box that swallowed a keystroke mid-word leaves the grid
-    // filtered by something the reader can no longer see. Escape empties the box and
-    // returns the table to its own first page, the way every filter bar does.
+    // WHY escape: a search box that swallowed a keystroke mid-word leaves the grid filtered by something the reader can no longer see.
+    // Escape empties the box and returns the table to its own first page, the way every filter bar does.
     $('konsolSearch').addEventListener('keydown', (event) => {
       if (event.key !== 'Escape' || !$('konsolSearch').value) return;
       clearTimeout(konsolDebounce);
@@ -1516,10 +1486,8 @@
       konsolPage();
     });
 
-    // WHY the 5,000-row bound and pages of 200: the reader is a person, not a
-    // pipeline. An unbounded export would ask the browser to hold a file it cannot,
-    // and the server caps every page at 200 anyway — the loop just walks that cap
-    // until the filter drains or the bound is hit, one cell-masked row at a time.
+    // WHY the 5,000-row bound and pages of 200: the reader is a person, not a pipeline.
+    // An unbounded export would ask the browser to hold a file it cannot, and the server caps every page at 200 anyway — the loop just walks that cap until the filter drains or the bound is hit, one cell-masked row at a time.
     $('konsolCsv').addEventListener('click', async () => {
       if (!konsol.table) return;
       const cap = 5000;
@@ -1580,9 +1548,8 @@
         else link.removeAttribute('aria-current');
       }
 
-      // WHY lazy: the sidebar is sixteen counts over tables nobody who opens #riwayat
-      // asked about. The editor pays for them once, on first visit, and the rest of
-      // the session is local state plus one page per click.
+      // WHY lazy: the sidebar is sixteen counts over tables nobody who opens #riwayat asked about.
+      // The editor pays for them once, on first visit, and the rest of the session is local state plus one page per click.
       if (target === 'tabel') konsolInit();
     }
     if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);

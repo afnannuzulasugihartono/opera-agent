@@ -1,9 +1,7 @@
 -- Skill memory v1 (2026-10-08): a shared table for task experience.
--- After a task, save what worked, what failed, and what recovered it; before
--- a task, recall matching lessons into context. Manual save/recall first;
--- automatic extraction later, once there is data worth mining.
--- Seeds below are lessons already paid for in this repo's history, keyed by
--- short stable markers the tests pin so they cannot silently vanish.
+-- After a task, save what worked, what failed, and what recovered it; before a task, recall matching lessons into context.
+-- Manual save/recall first; automatic extraction later, once there is data worth mining.
+-- Seeds below are lessons already paid for in this repo's history, keyed by short stable markers the tests pin so they cannot silently vanish.
 
 create table if not exists public.opera_skills (
   id uuid primary key default gen_random_uuid(),

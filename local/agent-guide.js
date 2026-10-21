@@ -4,35 +4,23 @@
 // @dependencies: none.
 
 // WHY THIS FILE EXISTS
-//
-// An agent arriving cold does not know what to call first. Twenty-three tool
-// descriptions answer "what does this do" and never answer "I want to attach a
-// file, what do I do" — so an agent reads all of them, in order, every session,
-// and picks. Measured on this product's own author: an image upload took a dozen
-// calls and a submenu twenty seconds of polling because the road was never
-// written down anywhere the agent could read it.
-//
-// WHY THE RECIPES ARE DATA AND THE CHECKS ARE TESTS. A guide that drifts from
-// the product is worse than none: an agent follows a route to a tool that was
-// renamed and learns to distrust the guide. So the recipes name tools and the
-// test fails the moment a name stops existing, the moment a tool has no
-// declared side effect, and the moment a recipe points at a tool that is not on
-// the list. Rot is a build failure, not a surprise in production.
-//
-// WHY SIDE EFFECTS ARE DECLARED AND NOT IMPLIED. Half of what an agent loses
-// today is not a missing tool but an unannounced one: reading a Google Doc
-// moves the caret, so the next click lands somewhere the agent had already
-// visited. A tool that quietly moves something should say so in the tool list,
-// where the agent reads before calling, not in a document it reads after being
-// surprised.
 
-// WHY A DOCUMENT OUTLINE IS NOT A MENU. Google Docs renders the document's own
-// headings as role=menuitem, so a walk that trusts roles alone descends into the
-// document — measured live: a menu probe on an open Docs menu returned "BAB I
-// PENDAHULUAN" and every paragraph as menu items. The walk therefore treats a
-// menu as a menu only while it hangs off a menubar or a menu that a manu item
-// owns, and a whole branch that grows into document text is refused by name
-// rather than walked to the end of the document.
+// An agent arriving cold does not know what to call first.
+// Twenty-three tool descriptions answer "what does this do" and never answer "I want to attach a file, what do I do" — so an agent reads all of them, in order, every session, and picks.
+// Measured on this product's own author: an image upload took a dozen calls and a submenu twenty seconds of polling because the road was never written down anywhere the agent could read it.
+
+// WHY THE RECIPES ARE DATA AND THE CHECKS ARE TESTS.
+// A guide that drifts from the product is worse than none: an agent follows a route to a tool that was renamed and learns to distrust the guide.
+// So the recipes name tools and the test fails the moment a name stops existing, the moment a tool has no declared side effect, and the moment a recipe points at a tool that is not on the list.
+// Rot is a build failure, not a surprise in production.
+
+// WHY SIDE EFFECTS ARE DECLARED AND NOT IMPLIED.
+// Half of what an agent loses today is not a missing tool but an unannounced one: reading a Google Doc moves the caret, so the next click lands somewhere the agent had already visited.
+// A tool that quietly moves something should say so in the tool list, where the agent reads before calling, not in a document it reads after being surprised.
+
+// WHY A DOCUMENT OUTLINE IS NOT A MENU.
+// Google Docs renders the document's own headings as role=menuitem, so a walk that trusts roles alone descends into the document — measured live: a menu probe on an open Docs menu returned "BAB I PENDAHULUAN" and every paragraph as menu items.
+// The walk therefore treats a menu as a menu only while it hangs off a menubar or a menu that a manu item owns, and a whole branch that grows into document text is refused by name rather than walked to the end of the document.
 
 export const RECIPES = Object.freeze([
   {
@@ -102,10 +90,9 @@ export const RECIPES = Object.freeze([
   }
 ]);
 
-// WHY NO RECIPE FOR "FIND A FILE INPUT" ANYMORE. It was here for a day, written
-// while it was the only road, and every step of it was a guess: poll, retry,
-// hope. The two roads that replaced it are above, and a recipe that teaches
-// guessing is worse than no recipe.
+// WHY NO RECIPE FOR "FIND A FILE INPUT" ANYMORE.
+// It was here for a day, written while it was the only road, and every step of it was a guess: poll, retry, hope.
+// The two roads that replaced it are above, and a recipe that teaches guessing is worse than no recipe.
 
 export const SIDE_EFFECTS = Object.freeze({
   browser_status: [],
@@ -148,10 +135,9 @@ export const SIDE_EFFECTS = Object.freeze({
   ax_snapshot: []
 });
 
-// WHY THE GUIDE ANSWERS ONE QUESTION AND NOT SEVERAL. A caller with a topic
-// gets the roads for that task; a caller with none gets every road and every
-// side effect, which is the whole surface in one read. Anything else is a filter
-// that hides something and names nothing.
+// WHY THE GUIDE ANSWERS ONE QUESTION AND NOT SEVERAL.
+// A caller with a topic gets the roads for that task; a caller with none gets every road and every side effect, which is the whole surface in one read.
+// Anything else is a filter that hides something and names nothing.
 
 export function guide(topic) {
   const asked = String(topic ?? '').trim().toLowerCase();

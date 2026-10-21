@@ -1,7 +1,5 @@
--- The production database briefly contained an experimental browser.plan method
--- and four v2 workflows. Stable Opera Agent 1.0.1 does not advertise or execute
--- browser.plan, so keep the experiment in history but disable it until a future
--- same-signing-key extension release actually implements and verifies the method.
+-- The production database briefly contained an experimental browser.plan method and four v2 workflows.
+-- Stable Opera Agent 1.0.1 does not advertise or execute browser.plan, so keep the experiment in history but disable it until a future same-signing-key extension release actually implements and verifies the method.
 
 do $$
 declare

@@ -1,6 +1,4 @@
--- Opera Agent efficiency workflows
--- This migration intentionally versions workflows through opera_register_workflow
--- instead of editing historical seed migrations.
+-- Opera Agent efficiency workflows This migration intentionally versions workflows through opera_register_workflow instead of editing historical seed migrations.
 
 select public.opera_register_workflow(
   'research.read_url',
