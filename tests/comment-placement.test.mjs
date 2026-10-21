@@ -61,7 +61,7 @@ const tracked = () => {
 // is how the depth counter in the biggest file in the tree ended up negative and the
 // rule below it went unmeasured.
 
-export function findComments(source, language) {
+function findComments(source, language) {
   const spec = LANGUAGES[language];
   const found = [];
   let i = 0;
