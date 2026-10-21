@@ -27,8 +27,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - **Eight pull requests are stacked and all wait for that one approval.** #87
   `handoff-bridge` -> #89 `download-clean` -> #90 `payload-trim` -> #91 `statement-job` ->
   #92 `first-bookkeepers` -> #94 `pilot-runbook` -> #95 `audit-tree-truth` -> #96
-  `code-standard`, which also carries #93 `audit-dead-code` (its commits are merged in,
-  so #93 is closed). Each is green.
+  `code-standard` (which carries #93 `audit-dead-code`, now closed). Each is green.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` measures four
   things: no source file over 1,200 lines (one named exception, the content script Chrome
   loads as a unit), no leftover markers, no twelve-line block repeated inside one file, and
