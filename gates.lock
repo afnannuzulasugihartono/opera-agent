@@ -163,7 +163,7 @@ scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
 tests/helpers/boundary-locks.mjs c0356a4f278aade707cd80b87eea9eeedaa51283
 tests/helpers/comment-spacing.mjs e9d8a61eaccdedf7018fe64acdfe9c8159f75d0c
-tests/helpers/canonical-source-hash.mjs 323baedecb8ea98ad556286fff301e3a4e2832f8
+tests/helpers/canonical-source-hash.mjs 4e38c88fac32ab8ba8c8a94e90174973ce81a6e9
 
 # --- structural rules a human reviewer would otherwise have to remember ---
 tests/hygiene.test.mjs 285389e61fdcd8c57e22bb7a4511ed5db8c3181a
