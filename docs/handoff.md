@@ -121,15 +121,15 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    never leaves ([`security.md`](security.md)).
 8. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
 9. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with
-   total-stop CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); 3x recurrence becomes a
-   named-workflow candidate.
+   total-stop CAPTCHA policy ([`unknown-site.md`](unknown-site.md)).
 10. **The console dashboard's table editor is read-only by decision.** It reads sixteen
     tables through `SECURITY DEFINER` `opera_konsol_*` readers with zero table grants; a
     write side is the next move.
 11. **The update endpoint answers in a nested query string.** Chromium sends
     `?x=id%3D<id>%26v%3D<version>`, so ask with `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
 12. **The price for a delivered client-month is undecided.** The pilot is free; the anchor
-    in the outreach sheet is Rp 5.000 per client-month, or US$1.50 for the English market.
+    in [`monetization.md`](product/monetization.md) is Rp 5.000 per client-month, or
+    US$1.50 for the English market.
 
 ## CI
 

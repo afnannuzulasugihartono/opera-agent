@@ -88,7 +88,7 @@ export const RECIPES = Object.freeze([
   {
     task: 'Deliver a client statement',
     do: ['statement_card', 'open_url', 'read_page', 'find_elements', 'download', 'statement_delivered'],
-    note: 'One client, one portal, one month. The card names the file and the folder before anything is clicked; the drive gets the file; statement_delivered checks it on disk and adds the client-month to the manifest. Never type a password: if the portal asks to sign in, the person signs in in their own browser and the same tab is used again.'
+    note: 'One client, one portal, one month. The card names the file and the folder before anything is clicked; the drive gets the file; statement_delivered checks it on disk and adds the client-month to the manifest. Never type a password: if the portal asks to sign in, the person signs in in their own browser and the same tab is used again. The answer is the proof another agent can hand to its own user: bytes, the kind of file sniffed from its bytes, the page count, and the closing balance as the portal printed it with the page named as its source. A balance that was not read is reported missing, never invented.'
   },
   {
     task: 'Ask the page a question instead of guessing',
