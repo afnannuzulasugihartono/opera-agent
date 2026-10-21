@@ -28,6 +28,15 @@
 
 const PROTOCOL_VERSION = '2024-11-05';
 
+// WHY THE STATEMENT JOB IS IMPORTED HERE AND NOT ROUTED THROUGH A DRIVER. A card and
+// a manifest are disk work: they open no tab, read no page and need no browser to be
+// running. Asking a driver for them would mean a statement job fails on a machine
+// where the browser is closed, which is exactly when a bookkeeper wants to see what
+// was delivered last month. For the same reason those two calls answer before a tab is
+// resolved inside run(): opening a session would touch a browser the job does not need.
+
+import { statementCard, statementDelivered } from './statements.js';
+
 const stringArg = (name) => ({ type: 'string', description: name });
 const numberArg = (name) => ({ type: 'number', description: name });
 
@@ -334,7 +343,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'download',
-    description: 'Click the control that starts a file download and wait until the file is on disk, then return its path and byte count. Arms the folder before the click, so the file lands where the caller says instead of the default downloads folder, and resets the browser-wide behavior afterwards. Point it at a handle from resolve_row, a role and name, or an x and y. The file itself is the proof: a download still writing, a click that opened a viewer instead, and a click that produced nothing each come back downloaded:false with the reason and the next move.',
+    description: 'Click the control that starts a file download and wait until the file is on disk, then return its path and byte count. Arms the folder before the click, so the file lands where the caller says instead of the default downloads folder, and resets the browser-wide behavior afterwards. Point it at a handle from resolve_row, a role and name, or an x and y. saveAs names the file once it has stopped growing, which is how a portal\'s statement.pdf becomes klien-bank-periode.pdf. The file itself is the proof: a download still writing, a click that opened a viewer instead, and a click that produced nothing each come back downloaded:false with the reason and the next move.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -345,6 +354,7 @@ export const TOOLS = Object.freeze([
         x: numberArg('viewport x, instead of a handle or a row'),
         y: numberArg('viewport y, instead of a handle or a row'),
         dir: stringArg('folder to download into; defaults to Downloads/opera-agent'),
+        saveAs: stringArg('file name to give it once it has stopped growing, without a folder'),
         timeoutMs: numberArg('how long to wait for the file, default 30000')
       }
     }
@@ -386,8 +396,41 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'ax_snapshot',
-    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Every action already returns this for the page as it now stands, so call it when you want to study the whole page or the near rows the action left out, not to find out what your last click did. Actions also report what changed since their last look. The text caret rides as a final caret row when visible; read its line with caret_line.',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Call it when you want to study the whole page: an action answers with where the page stands and the rows that changed, not all of them. The text caret rides as a final caret row when visible; read its line with caret_line.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
+  },
+  {
+    name: 'statement_card',
+    description: 'Turn one client, one portal and one month into the card for a single delivery: the file name, the folder it belongs in, the manifest it will join, the page to open, and what must be true before the file counts. No browser is touched and nothing is downloaded. Name the client and the portal the way the person says them; the card derives a stable file name from both, so the same client-month always lands on the same name.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        client: stringArg('the client, as the person says it'),
+        portal: stringArg('the bank or vendor the statement comes from'),
+        period: stringArg('the month being delivered, YYYY-MM'),
+        url: stringArg('the portal or statement page, when the person gave one'),
+        root: stringArg('folder that holds the job; defaults to Downloads/opera-statements'),
+        ext: stringArg('file extension, default pdf')
+      },
+      required: ['client', 'portal', 'period']
+    }
+  },
+  {
+    name: 'statement_delivered',
+    description: 'Record a downloaded statement as delivered: check the file on disk, name what kind of file it really is, count a PDF\'s pages from its own structure, and append the client-month to the manifest. Refuses a file that is still being written, empty, missing, or already recorded for that client-month - a second line would bill it twice; replace:true is for a first file that was wrong. The balance is recorded as the page printed it, with the page named as its source, because the number a bookkeeper reconciles is the one the portal showed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        client: stringArg('the client, as the card named it'),
+        portal: stringArg('the bank or vendor'),
+        period: stringArg('the month being delivered, YYYY-MM'),
+        path: stringArg('the path download answered with'),
+        balance: stringArg('the closing balance, as the page printed it'),
+        manifest: stringArg('manifest file; defaults to one beside the statement'),
+        replace: { type: 'boolean', description: 'replace an existing record for this client-month' }
+      },
+      required: ['client', 'portal', 'period', 'path']
+    }
   }
 ]);
 
@@ -690,6 +733,29 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
 
   const run = async (name, args) => {
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
+
+    if (name === 'statement_card') {
+      return asText(statementCard({
+        client: args.client,
+        portal: args.portal,
+        period: args.period,
+        url: args.url ?? null,
+        root: args.root ?? null,
+        ext: args.ext ?? 'pdf'
+      }));
+    }
+    if (name === 'statement_delivered') {
+      return asText(statementDelivered({
+        client: args.client,
+        portal: args.portal,
+        period: args.period,
+        path: args.path,
+        balance: args.balance ?? null,
+        manifest: args.manifest ?? null,
+        replace: args.replace === true
+      }));
+    }
+
     const tab = name === 'close_tab' ? null : await resolvedTab(args?.tabId);
     const driver = name === 'close_tab' ? fallback : await driverFor(tab ? tab.id : args?.tabId);
     const front = INPUT_TOOLS.has(name) && typeof driver.ensureFront === 'function'
@@ -849,6 +915,7 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
           x: args.x,
           y: args.y,
           dir: args.dir ?? null,
+          saveAs: args.saveAs ?? null,
           timeoutMs: args.timeoutMs
         }));
       case 'capture_page': {

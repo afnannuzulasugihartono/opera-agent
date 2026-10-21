@@ -2119,6 +2119,13 @@ function fakeDisk() {
       if (!hit) throw new Error('ENOENT ' + file);
       return { size: hit.bytes, mtimeMs: hit.mtimeMs };
     },
+    rmSync(file) { files.delete(file); },
+    renameSync(from, to) {
+      const hit = files.get(from);
+      if (!hit) throw new Error('ENOENT ' + from);
+      files.delete(from);
+      files.set(to, hit);
+    },
     put(file, bytes) { files.set(file, { bytes, mtimeMs: Date.now() }); }
   };
 }
@@ -2195,4 +2202,31 @@ test('download refuses to guess what to click', async () => {
   await assert.rejects(() => p.download({}), /exactly one of/);
   await assert.rejects(() => p.download({ role: 'link' }), /also needs a name/);
   await assert.rejects(() => p.download({ handle: 'opera-1', x: 1, y: 2 }), /exactly one of/);
+});
+
+// WHY THE NAME IS GIVEN AFTER THE FILE LANDS. A portal decides what it calls its own
+// statement ("statement.pdf", "download (3).pdf"), and a bookkeeper cannot bill a
+// folder of those. Renaming mid-write would leave Chrome writing to a name that no
+// longer exists, so the new name is applied at the only moment the file is whole.
+
+test('a download can be named as it lands, and a path is refused before the click', async () => {
+  const disk = fakeDisk();
+  const dir = path.resolve('opera-download-named');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(dir, 'statement.pdf'), 99)
+  });
+  const p = createPrimitives(cdp, { fs: disk, sleep: async () => {} });
+
+  await assert.rejects(
+    () => p.download({ x: 1, y: 2, dir, saveAs: 'sub/klien.pdf' }),
+    /file name, not a path/
+  );
+
+  const out = await p.download({ x: 1, y: 2, dir, saveAs: 'klien-bca-2026-09.pdf' });
+
+  assert.equal(out.file, 'klien-bca-2026-09.pdf');
+  assert.equal(out.path, path.join(dir, 'klien-bca-2026-09.pdf'));
+  assert.equal(out.landedAs, 'statement.pdf', 'the answer says what the portal called it');
+  assert.ok(disk.files.has(out.path), 'the file is on disk under the name the caller chose');
+  assert.equal(disk.files.has(path.join(dir, 'statement.pdf')), false, 'the old name is gone, not duplicated');
 });
