@@ -165,6 +165,7 @@ tests/helpers/boundary-locks.mjs 2854a0f22a7e65db71ee591e89c3e8927a35a7f5
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
+tests/comment-claims.test.mjs 09b2944f3ca73f2304752df2423ab67a35a462e6
 
 # --- structural rules a human reviewer would otherwise have to remember ---
 tests/hygiene.test.mjs 0433fa39ac510e6cc103d607ad51299a257c314c
