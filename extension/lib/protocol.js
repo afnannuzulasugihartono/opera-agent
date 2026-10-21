@@ -44,6 +44,11 @@ export const BURST_STEP_KEYS = Object.freeze({
   navigate: ['action', 'url', 'tabId']
 });
 
+// WHY THE DOWNLOAD IS A PRIMITIVE AND NOT A STEP. A statement is a file that has to
+// land on the person's own disk under a name the card chose, and a file that is still
+// being written is not a delivery. The device therefore owns the download, the wait
+// and the name, and answers with the proof; the manifest is read from the same place.
+
 export const METHOD_SPECS = Object.freeze({
   'browser.ping': { timeoutMs: 3000 },
   'browser.burst': { timeoutMs: BURST_MAX_TIMEOUT_MS },
@@ -73,7 +78,9 @@ export const METHOD_SPECS = Object.freeze({
   'media.pause': { timeoutMs: 5000 },
   'media.seek': { timeoutMs: 5000 },
   'media.stream_start': { timeoutMs: 15000 },
-  'media.stream_stop': { timeoutMs: 15000 }
+  'media.stream_stop': { timeoutMs: 15000 },
+  'statement.download': { timeoutMs: 55000 },
+  'statement.manifest': { timeoutMs: 5000 }
 });
 
 export const ALLOWED_METHODS = Object.freeze(Object.keys(METHOD_SPECS));
