@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-21 UTC+7.
-// @title: tools — the 31 tools this MCP server offers, and the schemas they take.
+// @title: tools — the 34 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
@@ -667,6 +667,75 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     } catch (error) {
       return toolError(error);
     }
+  });
+
+  // WHY THE DELIVERY IS ONE TOOL AND NOT FOUR CALLS. A client-month is the unit that
+  // is delivered and the unit that is billed, so the agent that sells it should spend
+  // one call per client-month: name the file, let the device fetch and name it, and
+  // read back the proof. The proof is what makes the sale defensible, so it travels
+  // with the answer instead of being assembled from three other calls.
+  server.registerTool("statement_deliver", {
+    title: "Deliver a client statement",
+    description: "Download one client's statement for one month to the user's own disk, under a name you choose, and return the proof: bytes, the kind of file read from its own bytes, the page count, and the closing balance with the page named as its source. The file lands in the user's download folder; nothing is uploaded. A second delivery of the same client-month is refused, because a second line would bill the same month twice.",
+    inputSchema: {
+      client: z.string().min(1).max(200).describe("The client, as the person says it."),
+      portal: z.string().min(1).max(200).describe("The bank or vendor the statement comes from."),
+      period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The month being delivered, YYYY-MM."),
+      filename: z.string().min(1).max(200).describe("The file name to save it as, without a folder."),
+      url: z.string().url().describe("The http(s) url of the file on the portal."),
+      tabId: tabIdSchema,
+      balance: z.string().max(200).optional().describe("The closing balance, as the page printed it."),
+      replace: z.boolean().optional().describe("Replace an existing record for this client-month."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ client, portal, period, filename, url, tabId, balance, replace, timeoutMs }: {
+    client: string; portal: string; period: string; filename: string; url: string;
+    tabId?: number; balance?: string; replace?: boolean; timeoutMs?: number;
+  }) => execute("statement.download", { client, portal, period, filename, url, tabId, balance, replace }, timeoutMs, deviceName, provider));
+
+  server.registerTool("statement_manifest", {
+    title: "Read the statement manifest",
+    description: "Read the manifest the device keeps: one line per delivered client-month, with the file, its bytes, its kind, its page count and the closing balance with its source. The manifest lives on the user's own machine, beside the files it describes.",
+    inputSchema: {
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ timeoutMs }: { timeoutMs?: number }) => execute("statement.manifest", {}, timeoutMs, deviceName, provider));
+
+  server.registerTool("invoice_create", {
+    title: "Bill a customer for delivered client-months",
+    description: "Turn delivered client-months into an invoice for one customer and one billing month. Pass the manifest rows this invoice charges for, or the client and period of each delivery; the amount is computed from the price list, never from a number in the call, and a month that was not delivered cannot be on the invoice. Returns the invoice and the link the customer opens to pay it. Read statement_manifest first: its rows are the proof the invoice is checked against.",
+    inputSchema: {
+      customer: z.string().min(1).max(200).describe("The customer being billed, as the operator names them."),
+      period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The billing month, YYYY-MM."),
+      deliveries: z.array(z.object({
+        client: z.string().min(1).max(200).describe("The client whose statement was delivered."),
+        period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The statement month that was delivered, YYYY-MM."),
+        portal: z.string().max(200).optional().describe("The bank or vendor the statement came from."),
+        pages: z.number().int().nonnegative().optional().describe("The page count the proof recorded.")
+      }).passthrough()).min(1).max(500).describe("The deliveries this invoice charges for, one entry per delivered client-month.")
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, async ({ customer, period, deliveries }: {
+    customer: string;
+    period: string;
+    deliveries: Array<{ client: string; period: string; portal?: string; pages?: number } & Record<string, unknown>>;
+  }) => {
+    const response = await fetch(`${Deno.env.get("SUPABASE_URL") || ""}/functions/v1/opera-agent-billing`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${Deno.env.get("OPERA_BILLING_TOKEN") || ""}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ action: "invoice", customer_id: customer, period, deliveries })
+    });
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      const refused = Array.isArray(body.refused) ? ` (${(body.refused as string[]).join("; ")})` : "";
+      throw new Error(`${String(body.error || `the billing function answered HTTP ${response.status}`)}${refused}`);
+    }
+    return deps.textResult({ ok: true, invoice: body.invoice, link: body.url });
   });
 
 }

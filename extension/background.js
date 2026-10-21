@@ -51,6 +51,7 @@ import {
 } from './worker/watch-registry.js';
 import './worker/execute-pull.js';
 import { bridgeLinkState, ensureBridgeLink } from './worker/bridge-link.js';
+import { statementDownload, statementManifest } from './worker/statement.js';
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
@@ -303,6 +304,12 @@ export async function dispatch(method, params = {}, context = {}) {
       const result = await runActionPipeline(tabId, 'page.stream', params, context, () => trustedKeyStream(tabId, params, context, executionMode(params)));
       return { ...result, tabId };
     }
+    case 'statement.download': {
+      const tabId = await resolveTabId(params);
+      return { ...(await statementDownload({ ...params, tabId })), tabId };
+    }
+    case 'statement.manifest':
+      return statementManifest();
     default:
       throw new Error('Method is not implemented by this extension build.');
   }

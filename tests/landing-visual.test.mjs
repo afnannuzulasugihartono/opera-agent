@@ -23,7 +23,7 @@ const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'und
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
-  assert.match(html, /31 tool/, 'the tool count is stated as a number');
+  assert.match(html, /34 tool/, 'the tool count is stated as a number');
   assert.match(html, /class="eyebrow"/, 'an eyebrow names the release above the headline');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');

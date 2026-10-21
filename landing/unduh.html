@@ -255,8 +255,8 @@
         <p data-i18n="page.fresh">Kedua berkas selalu build terbaru.</p>
 
         <div class="stats" aria-label="Cakupan produk">
-          <div class="stat"><span class="stat-dot live"></span><span class="stat-label" data-i18n="stat.mcp">Perintah MCP</span><span class="stat-num">31</span></div>
-          <div class="stat"><span class="stat-dot safe"></span><span class="stat-label" data-i18n="stat.prims">Primitif browser</span><span class="stat-num">29</span></div>
+          <div class="stat"><span class="stat-dot live"></span><span class="stat-label" data-i18n="stat.mcp">Perintah MCP</span><span class="stat-num">34</span></div>
+          <div class="stat"><span class="stat-dot safe"></span><span class="stat-label" data-i18n="stat.prims">Primitif browser</span><span class="stat-num">31</span></div>
         </div>
 
         <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html" data-i18n="door">Unduh Opera Agent</a></p>
@@ -272,13 +272,14 @@
     </div>
 
     <h2 data-i18n="perms.title">Izin yang diminta, dan kenapa</h2>
-    <p data-i18n="perms.sub">Lima izin, satu per satu. Tidak ada izin yang tidak dijelaskan.</p>
+    <p data-i18n="perms.sub">Enam izin, satu per satu. Tidak ada izin yang tidak dijelaskan.</p>
     <dl class="facts">
       <dt><code>tabs</code></dt><dd data-i18n="perms.tabs">URL dan judul tab, untuk membuka dan navigasi tab yang kamu beri perintah.</dd>
       <dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Menyuntikkan ulang content script setelah worker berhenti, dan memeriksa frame tersembunyi sebelum screenshot.</dd>
       <dt><code>storage</code></dt><dd data-i18n="perms.storage">Menyimpan device token, kode pairing, dan setelanmu di browser ini.</dd>
       <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Menjaga loop polling hidup; MV3 mematikan worker saat idle.</dd>
       <dt><code>debugger</code></dt><dd data-i18n="perms.debugger">Input Klik-terpercaya, screenshot, pohon aksesibilitas, dan simulasi fokus. Tanpa ini, halaman bisa menolak klik.</dd>
+      <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Menyimpan statement yang kamu minta ke folder unduhan browser, dengan nama yang kamu tentukan, lalu membuktikannya dari berkas yang benar-benar ada di disk. Tanpa ini, berkas hanya bisa diunduh dengan nama bawaan portal dan tidak bisa dibuktikan.</dd>
     </dl>
     <p data-i18n-html="perms.host">Host permission <code>http://*/*</code> dan <code>https://*/*</code> karena kamu yang menentukan halaman tujuan saat runtime, jadi daftar asal tidak bisa diketahui lebih dulu. Batas sesungguhnya ditegakkan di kode: setiap primitive menolak tab non-http(s), screenshot ditolak di tab private, dan field password, OTP, PIN, kartu, serta CVV diblokir.</p>
 
@@ -314,12 +315,13 @@
     "door": "Download Opera Agent",
     "also": "also available: <a href=\"./unduh-berkas.html\">Format guide</a> &middot; <a href=\"./dashboard.html\">Dashboard</a>",
     "perms.title": "The permissions it asks for, and why",
-    "perms.sub": "Five permissions, one by one. No permission goes unexplained.",
+    "perms.sub": "Six permissions, one by one. No permission goes unexplained.",
     "perms.tabs": "Tab URLs and titles, for opening and navigating the tabs you command.",
     "perms.scripting": "Re-injects the content script after the worker stops, and checks hidden frames before a screenshot.",
     "perms.storage": "Stores the device token, the pairing code, and your settings in this browser.",
     "perms.alarms": "Keeps the polling loop alive; MV3 kills the worker when idle.",
     "perms.debugger": "Trusted-click input, screenshots, the accessibility tree, and focus simulation. Without it, pages can refuse clicks.",
+    "perms.downloads": "Saves a statement you asked for into the browser download folder under the name you chose, then proves it from the file that is actually on disk. Without it, a file can only be downloaded under the portal's own name and cannot be proven.",
     "perms.host": "Host permission <code>http://*/*</code> and <code>https://*/*</code> because you name the destination page at runtime, so the origin list cannot be known ahead. The real limit is enforced in code: every primitive refuses non-http(s) tabs, screenshots are refused in private tabs, and password, OTP, PIN, card, and CVV fields are blocked.",
     "review.title": "Why there is no one-click install button yet",
     "review.body": "An extension with <code>debugger</code> access must pass Chrome Web Store review. Until then the first users load it themselves, and the listing follows after review.",

@@ -34,14 +34,26 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   every exported function in `local/` exercised by the suite. The comment rule was
   unenforced where it mattered - the scanner miscounted one template literal - and it is
   enforced now.
-- Gates: `npm test`, `npm run check` - 29 primitives, 177 runtime safety files, 1311 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1338 unit
   tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
-  functions (65 `SECURITY DEFINER`), 18 `opera_*` tables, **8 deployed edge functions** -
-  bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14.
-- **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge`
-  runs the whole MCP surface over the everyday profile with no debugging flag and no cloud
-  hop: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms, a burst of eight at 23 ms.
+  functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
+  bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
+  billing (one invoice page, one notification callback).
+- **Somebody can pay for a delivered client-month.** `invoice_create` takes the manifest
+  rows - not a typed number - prices them from `opera_price_list`, writes one invoice per
+  customer per month, and returns a signed link the customer opens. Drilled live: two
+  client-months became 1,000,000 cents and a page reading `Total Rp 10.000`; a forged
+  signature, a wrong amount, an unsettled status and a replay after the key was removed
+  were all refused, and a signed `settlement` marked the invoice paid. A paid invoice is
+  terminal. A small invoice (under Rp 100.000) opens straight into QRIS, because a fixed
+  fee would eat it; a larger one offers the provider's list. The transaction carries a
+  derived order id, because the readable invoice id has characters Midtrans refuses. The
+  provider key is not set, so the page asks for a transfer today; the Snap request itself
+  is `[UNVERIFIED]` until a real key exists. Fees and the foreign-client paths are in
+  [`product/billing.md`](product/billing.md).
+- **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge` runs
+  the whole MCP surface over it: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms.
 - **The statement job is the first product, and it is local.** `statement_card` names the
   file and the folder before the drive; `statement_delivered` verifies the file on disk -
   kind sniffed from the bytes, PDF pages counted from the file's own structure, closing
@@ -50,27 +62,33 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   that asks for a password: the gate was detected, the drive stopped, the download landed
   renamed in 464 ms, the manifest held one row. See
   [`jobs/statements.md`](jobs/statements.md).
+- **The device can now deliver a statement without a person watching.** `statement.download`
+  lets the extension download the file under the card's name, wait until the browser says it
+  is whole, read the kind and the page count from the bytes the page fetched, and write one
+  line into a manifest in the browser's own storage; `statement.manifest` reads it back. The
+  cloud surface exposes them as `statement_deliver` and `statement_manifest`. Unit-tested
+  against a fake browser; **not yet driven end to end in a real browser against a real
+  portal** - that is the next piece of work, and it is unverified until it is.
 - **The pilot needs three bookkeepers, not more code.** The offer, the channel copy and the
   session checklist are written: [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md)
   and [`product/pilot-runbook.md`](product/pilot-runbook.md). The unproven part is a real
   bank portal: only a fixture has been driven, and the cloud surface has no `download` and
   no statement calls, so a pilot runs on the client's own machine.
 - **One CORS policy and one credential-shape check.** Every edge function resolves the
-  origin per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js), and
-  six modules import [`lib/secret-pattern.js`](../lib/secret-pattern.js); `check` fails if
-  any module declares the pattern again.
+  origin per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six
+  modules import [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any
+  module declares the pattern again.
 - No management token or secret key in the tree. The signed-in pages carry the Supabase
   publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`, `lastInputMs`
   - so the model can tell whether the person is looking at the tab. Fails open.
-- **The plan path exists; the model call does not.** The model composes a plan once, the
-  device executes it locally, so a task costs one round trip instead of one per step, and
-  [`lib/goal-plan.js`](../lib/goal-plan.js) is the gate that shares the allowlist.
+- **The plan path exists; the model call does not.** The model composes a plan once and the
+  device runs it locally, so a task costs one round trip; [`lib/goal-plan.js`](../lib/goal-plan.js)
+  is the gate that shares the allowlist.
 - **The bridge transport is a held `POST /poll`, not a WebSocket.** Chrome does not start a
-  service worker for an inbound socket frame, so the socket stayed `OPEN` and heard
-  nothing. Do not put a socket back on this road.
+  service worker for an inbound socket frame, so the socket stayed `OPEN` and heard nothing.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
-  `vercel.app` stays in the CORS allowlist and the redirect list.
+  `vercel.app` stays in the CORS allowlist.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates. A push
   that does not deploy fails silently: CI is green and production keeps the old build. The
@@ -79,8 +97,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every
   path enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named
-  `script-src` in place of `unsafe-inline`. Re-hash both files after an inline script
-  changes, or the page goes silent.
+  `script-src` in place of `unsafe-inline`. Re-hash after an inline script changes.
 ## Measured, not assumed
 
 - **A publish step must fail loudly.** The CRX base64 exceeds 131,072 bytes, the Linux limit
@@ -98,38 +115,34 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 2. **The migration ledger and the tree disagree on names.** Production holds 109 applied
    rows; the tree holds 101 files and only 42 share a version with a row, because files were
    renamed after they were applied (`yt_watch_v1` applied, `opera_agent_youtube_watch_summarize`
-   in the tree). The schema itself matches the tree's last state - both private schemas
-   exist, all 13 `docs.*` workflows are registered, `page.stream` is in `opera_methods`, and
-   `opera_signal_device` is absent because a later migration drops it. A fresh rebuild from
-   the tree replays renamed files, so the tree cannot prove which SQL produced the live
-   schema. Owner decision: re-align the file names to the ledger, or accept the drift in
-   writing.
+   in the tree). The schema matches the tree's last state - both private schemas exist, all
+   13 `docs.*` workflows are registered, and `opera_signal_device` is absent because a later
+   migration drops it - but a fresh rebuild replays renamed files, so the tree cannot prove
+   which SQL produced the live schema. Owner decision: re-align the names, or accept the
+   drift in writing.
 3. **1.6.25 and 1.6.26 shipped to the update service but were never tagged**, never got a
    GitHub Release, and have no note under `docs/releases/`; the release notes jump from
    1.6.24 to 1.6.27.
 4. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
-   code exchanges for a one-hour token, and a tool call completes. Sign-in by Google is
-   still unverified.
+   code exchanges for a one-hour token, and a tool call completes. Google sign-in is
+   unverified.
 5. **MCP resolves one device per account and stamps the harness provider.**
    `X-Opera-Device` picks among the caller's devices. A real second account still wants its
    own test before opening access.
 6. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands
-   is the device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms). Lower only after
-   fleet impact.
+   is the device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms).
 7. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
-   delete; lease plus sweeper bound every row. The compiler stays device-local and the key
-   never leaves ([`security.md`](security.md)).
+   delete; the compiler stays device-local and the key never leaves ([`security.md`](security.md)).
 8. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
 9. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with
-   total-stop CAPTCHA policy ([`unknown-site.md`](unknown-site.md)); 3x recurrence becomes a
-   named-workflow candidate.
+   total-stop CAPTCHA policy ([`unknown-site.md`](unknown-site.md)).
 10. **The console dashboard's table editor is read-only by decision.** It reads sixteen
-    tables through `SECURITY DEFINER` `opera_konsol_*` readers with zero table grants; a
-    write side is the next move.
+    tables through `SECURITY DEFINER` `opera_konsol_*` readers; a write side is next.
 11. **The update endpoint answers in a nested query string.** Chromium sends
-    `?x=id%3D<id>%26v%3D<version>`, so ask with `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
+    `?x=id%3D<id>%26v%3D<version>`; ask with `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
 12. **The price for a delivered client-month is undecided.** The pilot is free; the anchor
-    in the outreach sheet is Rp 5.000 per client-month, or US$1.50 for the English market.
+    in [`monetization.md`](product/monetization.md) is Rp 5.000 per client-month, or
+    US$1.50 for the English market.
 
 ## CI
 
