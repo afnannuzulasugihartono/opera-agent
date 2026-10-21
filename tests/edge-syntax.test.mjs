@@ -6,9 +6,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
 test('mcp instructions literal has no unescaped quotes', async () => {
-  const source = await readFile(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+  const source = await mcpSurfaceSource();
   const line = source.split('\n').find((l) => l.includes('instructions: "Use Opera Agent'));
   assert.ok(line, 'instructions literal not found');
   const first = line.indexOf('"Use Opera Agent');

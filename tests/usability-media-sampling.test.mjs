@@ -14,6 +14,8 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
+
 
 const migrationUrl = new URL(
   '../supabase/migrations/20260919171500_pre_8e_r5_media_fast_path.sql',
@@ -21,10 +23,7 @@ const migrationUrl = new URL(
 );
 const migrationExists = fs.existsSync(migrationUrl);
 const migration = migrationExists ? fs.readFileSync(migrationUrl, 'utf8') : '';
-const mcpSource = fs.readFileSync(
-  new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url),
-  'utf8'
-);
+const mcpSource = mcpSurfaceSourceSync();
 
 test('adds a versioned internal media.sample_at workflow with local seek semantics', () => {
   assert.equal(

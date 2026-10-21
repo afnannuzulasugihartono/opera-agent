@@ -11,6 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
@@ -19,7 +20,7 @@ const site = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html',
   .map(read).join('\n');
 
 const manifest = JSON.parse(read('extension/manifest.json'));
-const mcp = read('supabase/functions/opera-agent-mcp/index.ts');
+const mcp = mcpSurfaceSourceSync();
 const content = read('extension/content.js');
 const background = await extensionSource();
 
