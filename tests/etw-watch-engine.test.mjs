@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const { validateRule, evaluateRules, TRIGGER_KINDS } = await import('../extension/lib/watch.js');
@@ -150,7 +151,7 @@ test('gateway is one-hop universal ingress with GPT-Actions-compatible auth', ()
 });
 
 test('MCP gains start_watch/wait_events/stop_watch wired to the device path', () => {
-  const src = read('supabase/functions/opera-agent-mcp/index.ts');
+  const src = mcpSurfaceSourceSync();
   assert.match(src, /start_watch/);
   assert.match(src, /wait_events/);
   assert.match(src, /stop_watch/);
@@ -158,7 +159,7 @@ test('MCP gains start_watch/wait_events/stop_watch wired to the device path', ()
 
 test('MCP start_watch schema preserves adSelectors for adState rules', () => {
 
-  const src = read('supabase/functions/opera-agent-mcp/index.ts');
+  const src = mcpSurfaceSourceSync();
   assert.match(src, /adSelectors:\s*z\.array\(z\.string\(\)\.min\(1\)\.max\(500\)\)\.max\(8\)\.optional\(\)/, 'trigger schema must carry adSelectors');
 });
 

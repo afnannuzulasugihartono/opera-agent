@@ -14,6 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
@@ -31,7 +32,7 @@ test('the hero sells the product instead of apologizing for it', () => {
 test('the hero stats equal live source counts, never stale copy', () => {
 
   const html = read('beranda.html');
-  const mcp = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+  const mcp = mcpSurfaceSourceSync();
   const tools = (mcp.match(/registerTool\("/g) || []).length;
   const proto = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
   const specs = proto.slice(proto.indexOf('METHOD_SPECS = Object.freeze({'), proto.indexOf('});', proto.indexOf('METHOD_SPECS')));

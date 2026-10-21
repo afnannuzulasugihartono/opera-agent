@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 import { sha256CanonicalLf } from './helpers/canonical-source-hash.mjs';
+import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 await import('../extension/semantic-identity.js');
 await import('../extension/semantic-views.js');
@@ -532,7 +533,7 @@ test('stale tracking is bounded and resets cleanly', () => {
 });
 
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8'));
-const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
+const mcpSource = mcpSurfaceSourceSync();
 
 const gateElement = (key, overrides = {}) => {
   return {

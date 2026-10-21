@@ -8,11 +8,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAxSummary, AX_SUMMARY_LIMITS } from '../extension/lib/ax-summary.js';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 const content = read('../extension/content.js');
 const background = await extensionSource();
-const mcp = read('../supabase/functions/opera-agent-mcp/index.ts');
+const mcp = mcpSurfaceSourceSync();
 
 function axNode(partial = {}) {
   return {
