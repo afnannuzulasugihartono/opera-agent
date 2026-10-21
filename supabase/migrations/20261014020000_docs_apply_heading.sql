@@ -1,6 +1,5 @@
--- docs.apply_heading v1: style the current paragraph via Ctrl+Alt+level,
--- type optional text on the styled-empty paragraph, break, reset to Normal,
--- then prove a heading role in the snapshot; menu fallback on mismatch.
+-- docs.apply_heading v1: style the current paragraph via Ctrl+Alt+level, type optional text on the styled-empty paragraph, break, reset to Normal, then prove a heading role in the snapshot; menu fallback on mismatch.
+
 DO $body$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.opera_workflows WHERE name = 'docs.apply_heading') THEN

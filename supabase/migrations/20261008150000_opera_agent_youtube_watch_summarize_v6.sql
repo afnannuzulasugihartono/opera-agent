@@ -1,7 +1,7 @@
--- YT watch flow v6 (2026-10-08): flattened open cascade, every post-watch wait tolerated; live evidence showed the transcript hunt dying on caption-less videos and one await outliving the statement timeout. Worst case degrades to page-text chunks, never a hard failure past the watch waits.
---
--- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or
--- transport boundary changes are introduced here.
+-- YT watch flow v6 (2026-10-08): flattened open cascade, every post-watch wait tolerated; live evidence showed the transcript hunt dying on caption-less videos and one await outliving the statement timeout.
+-- Worst case degrades to page-text chunks, never a hard failure past the watch waits.
+
+-- No public MCP tool/schema, protocol, primitive, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'youtube.watch_summarize',

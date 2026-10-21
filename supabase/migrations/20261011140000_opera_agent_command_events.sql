@@ -1,40 +1,28 @@
 -- Streaming events for a running command (2026-10-11).
---
--- The MCP edge function is stateless. Every POST builds a fresh server and
--- transport, enqueues a command, and blocks in opera_await_adaptive until the
--- device finishes it. The device knows what happened in between and had no way
--- to say so, so an eight-step burst or a twenty-second workflow was one opaque
--- wait for the model.
---
--- This adds the channel the watch-event path already proved: a cursor long-poll
--- that returns the instant rows appear rather than at a deadline. The shape is
--- copied from opera_watch_events_wait on purpose -- same 5ms sleep, same
--- "return rows first, ask the deadline second" ordering.
---
--- An event envelope reaches a model's context, so this is treated as an
--- untrusted input surface rather than a log:
---
---   - emit authenticates the device through opera_auth_device, the same helper
---     the claim path uses, and refuses a command whose device_id is not that
---     device. Without the ownership check any paired device could write into any
---     owner's command stream.
---   - kind is matched against a fixed allowlist instead of being stored as sent.
---     The kind is the label the model switches on, so an unbounded one would let
---     a device invent a category the consumer treats as trusted.
---   - the table has row level security on, no policies, and no grants to anon or
---     authenticated. The streaming path runs as service_role. Unlike the watch
---     events there is deliberately no owner-read policy: no surface reads these
---     as a user today, and an unused policy is a wider door than a missing one.
---
--- Retention is stated here because nothing else prunes this table. Command rows
--- are swept elsewhere; event rows are not, so without the explicit delete below
--- the table would grow by one row per action for the life of the deployment.
---
+
+-- The MCP edge function is stateless.
+-- Every POST builds a fresh server and transport, enqueues a command, and blocks in opera_await_adaptive until the device finishes it.
+-- The device knows what happened in between and had no way to say so, so an eight-step burst or a twenty-second workflow was one opaque wait for the model.
+
+-- This adds the channel the watch-event path already proved: a cursor long-poll that returns the instant rows appear rather than at a deadline.
+-- The shape is copied from opera_watch_events_wait on purpose -- same 5ms sleep, same "return rows first, ask the deadline second" ordering.
+
+-- An event envelope reaches a model's context, so this is treated as an untrusted input surface rather than a log:
+
+-- - emit authenticates the device through opera_auth_device, the same helper the claim path uses, and refuses a command whose device_id is not that device.
+--   Without the ownership check any paired device could write into any owner's command stream.
+-- - kind is matched against a fixed allowlist instead of being stored as sent.
+--   The kind is the label the model switches on, so an unbounded one would let a device invent a category the consumer treats as trusted.
+-- - the table has row level security on, no policies, and no grants to anon or authenticated.
+--   The streaming path runs as service_role.
+--   Unlike the watch events there is deliberately no owner-read policy: no surface reads these as a user today, and an unused policy is a wider door than a missing one.
+
+-- Retention is stated here because nothing else prunes this table.
+-- Command rows are swept elsewhere; event rows are not, so without the explicit delete below the table would grow by one row per action for the life of the deployment.
+
 -- Both CREATE OR REPLACE statements carry the full argument type list in order.
--- A mismatched list does not replace a function, it creates a second overload,
--- and PostgREST then cannot resolve a named-argument call to either. That is not
--- hypothetical: opera_claim_next_wait was deployed with a reordered parameter
--- list and broke the extension's pull loop until pg_proc was read by hand.
+-- A mismatched list does not replace a function, it creates a second overload, and PostgREST then cannot resolve a named-argument call to either.
+-- That is not hypothetical: opera_claim_next_wait was deployed with a reordered parameter list and broke the extension's pull loop until pg_proc was read by hand.
 
 create table if not exists public.opera_command_events (
   id bigserial primary key,

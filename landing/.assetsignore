@@ -3,9 +3,9 @@
 # @state: mirrors .vercelignore; tests/landing-hosting.test.mjs fails on drift.
 # @dependencies: none stated.
 
-# WHY this file exists: Cloudflare Pages uploads the whole directory, where Vercel
-# reads .vercelignore. Without it the two hosts publish different file sets, and the
-# page that exists on one is a 404 on the other. Same exclusions, same order.
+# WHY this file exists: Cloudflare Pages uploads the whole directory, where Vercel reads .vercelignore.
+# Without it the two hosts publish different file sets, and the page that exists on one is a 404 on the other.
+# Same exclusions, same order.
 
 .vercel
 .env*

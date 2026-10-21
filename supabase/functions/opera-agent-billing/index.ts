@@ -3,37 +3,30 @@
 // @state: quotes a delivery into an amount, opens an invoice, serves it to its owner, and marks it paid from a signed notification.
 // @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/cors.js, ../_shared/edge-log.js.
 
-// WHY THIS FUNCTION EXISTS. The product sells a delivered client-month, and a sale
-// that nobody can pay for is a demo. So the deliveries the manifest recorded are
-// priced, the priced deliveries are written on an invoice, and the invoice is
-// reachable by the person who owes it through a link that carries its own authority.
-//
-// WHY THE INVOICE IS SERVED HERE AND NOT FROM THE SITE. The link a customer gets has
-// to keep working after the site is redeployed, and it has to work for a customer who
-// has never seen the site. So the function serves the page, and the page is the
-// invoice: the deliveries it charges for, the amount, and the way to pay.
-//
-// WHY THE NOTIFICATION IS THE ONLY WAY AN INVOICE BECOMES PAID. A browser could post
-// "this invoice is paid" to this function, and so could a stranger. The provider's
-// signature is computed with a key only the server holds, so only a real settlement can
-// move the invoice. Without the key the callback refuses rather than trusting the
-// caller.
-//
-// WHY THE CALLBACK DOES NOT ASK FOR AN "action" FIELD. A provider posts its own body
-// to the URL it was given, so a notification is recognised by the order id and the
-// signature it carries, not by a field the provider never sends. The operator's own
-// calls still name their action, and the two shapes cannot be confused: one carries a
-// signature, the other carries a bearer token.
-//
-// WHY THE CALLBACK ALSO CHECKS THE AMOUNT. A signature proves the provider sent the
-// notification; it does not prove the invoice was for this much. So the gross amount in
-// the notification has to equal the invoice once both are in cents, or the invoice stays
-// open and the difference is somebody's problem to look at.
-//
-// WHY A PAID INVOICE IS NEVER REOPENED. Creating an invoice is idempotent so an operator
-// can correct a month before it is paid, but the same upsert run after the money landed
-// would turn a paid invoice back to open and ask the customer twice. So the paid state
-// is terminal here, and a later call is refused with the invoice's name.
+// WHY THIS FUNCTION EXISTS.
+// The product sells a delivered client-month, and a sale that nobody can pay for is a demo.
+// So the deliveries the manifest recorded are priced, the priced deliveries are written on an invoice, and the invoice is reachable by the person who owes it through a link that carries its own authority.
+
+// WHY THE INVOICE IS SERVED HERE AND NOT FROM THE SITE.
+// The link a customer gets has to keep working after the site is redeployed, and it has to work for a customer who has never seen the site.
+// So the function serves the page, and the page is the invoice: the deliveries it charges for, the amount, and the way to pay.
+
+// WHY THE NOTIFICATION IS THE ONLY WAY AN INVOICE BECOMES PAID.
+// A browser could post "this invoice is paid" to this function, and so could a stranger.
+// The provider's signature is computed with a key only the server holds, so only a real settlement can move the invoice.
+// Without the key the callback refuses rather than trusting the caller.
+
+// WHY THE CALLBACK DOES NOT ASK FOR AN "action" FIELD.
+// A provider posts its own body to the URL it was given, so a notification is recognised by the order id and the signature it carries, not by a field the provider never sends.
+// The operator's own calls still name their action, and the two shapes cannot be confused: one carries a signature, the other carries a bearer token.
+
+// WHY THE CALLBACK ALSO CHECKS THE AMOUNT.
+// A signature proves the provider sent the notification; it does not prove the invoice was for this much.
+// So the gross amount in the notification has to equal the invoice once both are in cents, or the invoice stays open and the difference is somebody's problem to look at.
+
+// WHY A PAID INVOICE IS NEVER REOPENED.
+// Creating an invoice is idempotent so an operator can correct a month before it is paid, but the same upsert run after the money landed would turn a paid invoice back to open and ask the customer twice.
+// So the paid state is terminal here, and a later call is refused with the invoice's name.
 
 import "@supabase/edge-runtime";
 import { createEdgeLog } from "../_shared/edge-log.js";
@@ -94,9 +87,9 @@ const escapeHtml = (value: unknown): string => String(value ?? "")
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
   .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-// WHY THE PAGE IS BUILT HERE AND NOT IN A TEMPLATE FILE. A template is a file the
-// deploy has to carry, and this function is the thing that must never 500 on a
-// customer who opens a link. One function, one page, no moving parts.
+// WHY THE PAGE IS BUILT HERE AND NOT IN A TEMPLATE FILE.
+// A template is a file the deploy has to carry, and this function is the thing that must never 500 on a customer who opens a link.
+// One function, one page, no moving parts.
 
 function invoicePage(invoice: InvoiceRow): string {
   const lines = (invoice.lines?.priced || []).map((line: Line) => `<tr><td>${escapeHtml(line.description || line.unit || line.kind)}</td><td>${line.quantity}</td><td>${escapeHtml(money(line.amountCents, invoice.currency))}</td></tr>`).join("");
@@ -137,12 +130,10 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
   const id = `${customer_id}:${period}`;
   const token = invoiceToken(id, BILLING_SECRET);
 
-  // WHY THE PAID CHECK COMES BEFORE THE PROVIDER CALL. Creating a payment link is the
-  // moment money can move. If a paid invoice were priced and sent to the provider first,
-  // a later call would open a second payable transaction and then refuse to write it:
-  // the customer could pay twice and the database would never know. So the row is read
-  // first, a paid invoice is refused before any provider call, and an unchanged open
-  // invoice keeps the link its customer already has.
+  // WHY THE PAID CHECK COMES BEFORE THE PROVIDER CALL.
+  // Creating a payment link is the moment money can move.
+  // If a paid invoice were priced and sent to the provider first, a later call would open a second payable transaction and then refuse to write it: the customer could pay twice and the database would never know.
+  // So the row is read first, a paid invoice is refused before any provider call, and an unchanged open invoice keeps the link its customer already has.
   const { data: existing } = await supabase.from("opera_invoices").select("*").eq("id", id).maybeSingle();
   if (existing?.status === "paid") {
     throw new HttpError(409, `${id} is paid; a later call does not reopen an invoice that has been paid.`);
@@ -203,19 +194,17 @@ async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow
   return data;
 }
 
-// WHY THE CALLBACK RE-CHECKS THE AMOUNT. A signature proves the provider sent the
-// notification; it does not prove the invoice was for this much. So the gross
-// amount in the notification has to equal the invoice once both are in cents, or the
-// invoice stays open and the difference is somebody's problem to look at.
+// WHY THE CALLBACK RE-CHECKS THE AMOUNT.
+// A signature proves the provider sent the notification; it does not prove the invoice was for this much.
+// So the gross amount in the notification has to equal the invoice once both are in cents, or the invoice stays open and the difference is somebody's problem to look at.
 
 async function markPaid(notification: Record<string, unknown>): Promise<{ ok: boolean; why?: string; invoice?: string }> {
   const supabase = await db();
   const orderId = String(notification.order_id || "");
 
-  // WHY THE LOOKUP TRIES THE PROVIDER ID FIRST. The id a person reads ("Toko Sinar
-  // Jaya:2026-08") contains characters the provider refuses, so the transaction carries
-  // a derived id. The invoice id is still accepted for a notification signed by hand and
-  // for invoices written before the derived id existed.
+  // WHY THE LOOKUP TRIES THE PROVIDER ID FIRST.
+  // The id a person reads ("Toko Sinar Jaya:2026-08") contains characters the provider refuses, so the transaction carries a derived id.
+  // The invoice id is still accepted for a notification signed by hand and for invoices written before the derived id existed.
   const byProvider = await supabase.from("opera_invoices").select("*").eq("provider_order_id", orderId).maybeSingle();
   let invoice = byProvider.data;
   if (!invoice) {

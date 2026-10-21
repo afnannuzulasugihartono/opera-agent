@@ -4,25 +4,18 @@
 // @dependencies: node:test, strict, node:fs, node:module, node:vm.
 
 // WHY THIS FILE EXISTS
-//
-// The database half of the streaming channel is locked in
-// tests/command-event-stream.test.mjs and was proven against the live database.
-// This file covers the two hops on either side of it, because both can quietly
-// break the promise the SQL makes.
-//
-// The bridge is the device's only authenticated path. The device never sees a
-// token_hash, so an emit that skipped the bridge could not authenticate at all,
-// and one that trusted its body would let any paired device write arbitrary
-// labels into another owner's command stream. The envelope cap matters for the
-// same reason: events land in a model's context, so an unbounded envelope is a
-// way to spend someone's token budget without doing any work.
-//
-// The device rule is the one that is easiest to get wrong by accident. Emit is
-// best-effort telemetry: if the bridge is slow or down, the command must still
-// complete. An awaited emit inside the burst loop would add a network round trip
-// to every step of every burst, which is the exact latency the channel exists to
-// remove. It is therefore fire-and-forget, with the rejection swallowed rather
-// than propagated into the step result.
+
+// The database half of the streaming channel is locked in tests/command-event-stream.test.mjs and was proven against the live database.
+// This file covers the two hops on either side of it, because both can quietly break the promise the SQL makes.
+
+// The bridge is the device's only authenticated path.
+// The device never sees a token_hash, so an emit that skipped the bridge could not authenticate at all, and one that trusted its body would let any paired device write arbitrary labels into another owner's command stream.
+// The envelope cap matters for the same reason: events land in a model's context, so an unbounded envelope is a way to spend someone's token budget without doing any work.
+
+// The device rule is the one that is easiest to get wrong by accident.
+// Emit is best-effort telemetry: if the bridge is slow or down, the command must still complete.
+// An awaited emit inside the burst loop would add a network round trip to every step of every burst, which is the exact latency the channel exists to remove.
+// It is therefore fire-and-forget, with the rejection swallowed rather than propagated into the step result.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,10 +31,9 @@ const bridgeSource = stripTypeScriptTypes(readFileSync(
 
 const COMMAND_ID = 'a2f0f239-aa99-4d1c-a168-4a5ca51be777';
 
-// WHY the runtime is stubbed globally. serveDeviceSocket is the real module, not a
-// vm copy, so it reaches for the Deno global rather than the one this harness
-// hands the bridge source. A WebSocket cannot be constructed in a unit test, so
-// this stands in for the one call it makes.
+// WHY the runtime is stubbed globally.
+// serveDeviceSocket is the real module, not a vm copy, so it reaches for the Deno global rather than the one this harness hands the bridge source.
+// A WebSocket cannot be constructed in a unit test, so this stands in for the one call it makes.
 
 const upgradedSockets = [];
 const upgradeOptions = [];
@@ -62,10 +54,9 @@ globalThis.Deno = {
 };
 process.on('exit', () => { globalThis.Deno = realDeno; });
 
-// WHY the runtime is stubbed globally alongside Deno. serveDeviceSocket keeps one
-// promise pending through EdgeRuntime.waitUntil until the socket closes, which is
-// what stops the platform retiring the isolate while a device is connected. The
-// stub records the promise so a test can prove it is held and then released.
+// WHY the runtime is stubbed globally alongside Deno.
+// serveDeviceSocket keeps one promise pending through EdgeRuntime.waitUntil until the socket closes, which is what stops the platform retiring the isolate while a device is connected.
+// The stub records the promise so a test can prove it is held and then released.
 
 const waitedPromises = [];
 const realEdgeRuntime = globalThis.EdgeRuntime;
@@ -74,17 +65,13 @@ globalThis.EdgeRuntime = {
 };
 process.on('exit', () => { globalThis.EdgeRuntime = realEdgeRuntime; });
 
-// WHY the timers are stubbed globally too. serveDeviceSocket is the real module,
-// so its setInterval and setTimeout are the globals, exactly like its Deno. A
-// real keepalive interval holds the process open after the last test, so the suite
-// would never exit; recording the handles also makes it possible to prove the
-// interval is cleared when the socket closes.
+// WHY the timers are stubbed globally too.
+// serveDeviceSocket is the real module, so its setInterval and setTimeout are the globals, exactly like its Deno.
+// A real keepalive interval holds the process open after the last test, so the suite would never exit; recording the handles also makes it possible to prove the interval is cleared when the socket closes.
 
-// WHY the handles are plain numbers and not real timers. A stand-in built on
-// setInterval(fn, 0) is itself an interval that never stops, which holds the
-// process open after the last test and makes the whole suite look like it hung.
-// Nothing here needs a real timer; the assertions are about which handles were
-// created and which were released.
+// WHY the handles are plain numbers and not real timers.
+// A stand-in built on setInterval(fn, 0) is itself an interval that never stops, which holds the process open after the last test and makes the whole suite look like it hung.
+// Nothing here needs a real timer; the assertions are about which handles were created and which were released.
 
 let nextTimerId = 0;
 let activeTimers = null;
@@ -108,10 +95,8 @@ globalThis.clearTimeout = function stubbedClearTimeout(id) {
   activeTimers?.cleared.push(id);
 };
 
-// WHY the sandbox shares the stubbed timers. The bridge source runs inside the vm
-// context with its own globals, so the outer stubs are invisible to it — without
-// sharing, the drain poll would be a real interval the test can neither see nor
-// stop, and the suite would hang on exit.
+// WHY the sandbox shares the stubbed timers.
+// The bridge source runs inside the vm context with its own globals, so the outer stubs are invisible to it — without sharing, the drain poll would be a real interval the test can neither see nor stop, and the suite would hang on exit.
 
 function harness(emit = { ok: true, eventId: 7 }) {
   const calls = [];
@@ -174,10 +159,8 @@ function harness(emit = { ok: true, eventId: 7 }) {
   return { calls, post, openSocket, sockets, timers };
 }
 
-// Every socket test opens the same way and waits for the same settled state. The
-// wait is a turn loop rather than a fixed count because the handshake hashes on
-// the threadpool, which queues behind the rest of the suite when everything runs
-// at once, and a fixed count would make these locks flaky under load.
+// Every socket test opens the same way and waits for the same settled state.
+// The wait is a turn loop rather than a fixed count because the handshake hashes on the threadpool, which queues behind the rest of the suite when everything runs at once, and a fixed count would make these locks flaky under load.
 
 async function handshakenSocket(h) {
   const socket = await h.openSocket();
@@ -231,11 +214,9 @@ for (const [name, override, status] of REFUSALS) {
   });
 }
 
-// WHY this lock exists. Handshaking a device with the claim RPC looks like a free
-// way to reuse existing auth, and it is not free at all: the claim is what takes
-// ownership of a queued command, and a handshake that claims throws the result
-// away. The device then sits connected and silent while the one command waiting
-// for it has already been marked as somebody else's.
+// WHY this lock exists.
+// Handshaking a device with the claim RPC looks like a free way to reuse existing auth, and it is not free at all: the claim is what takes ownership of a queued command, and a handshake that claims throws the result away.
+// The device then sits connected and silent while the one command waiting for it has already been marked as somebody else's.
 
 test('the handshake authenticates without claiming, so no queued command is swallowed', async () => {
   const h = harness();
@@ -259,19 +240,14 @@ test('a socket that fails the handshake is closed unread and never receives work
     'a command went out before the bridge accepted this device');
 });
 
-// WHY this lock exists. The change channel is the only thing that claims a command
-// now that the device stopped polling, and a channel only exists while a socket is
-// connected. So work that queued while the device was away sat unclaimed until the
-// next command happened to arrive, which means the first command after any outage
-// could wait indefinitely. Claiming once on subscribe is what makes a reconnect
-// self-healing instead of dependent on luck.
+// WHY this lock exists.
+// The change channel is the only thing that claims a command now that the device stopped polling, and a channel only exists while a socket is connected.
+// So work that queued while the device was away sat unclaimed until the next command happened to arrive, which means the first command after any outage could wait indefinitely.
+// Claiming once on subscribe is what makes a reconnect self-healing instead of dependent on luck.
 
-// WHY the drain is given turns rather than a fixed count of microtasks. The drain
-// is deliberately not awaited by the handshake, and asserting on an exact number
-// of turns makes this lock itself flaky under load, which is worse than not having
-// it at all. The bound is generous because each turn is nearly free when idle and
-// the handshake's hashing runs on the threadpool, which queues behind the rest of
-// the suite when everything runs at once.
+// WHY the drain is given turns rather than a fixed count of microtasks.
+// The drain is deliberately not awaited by the handshake, and asserting on an exact number of turns makes this lock itself flaky under load, which is worse than not having it at all.
+// The bound is generous because each turn is nearly free when idle and the handshake's hashing runs on the threadpool, which queues behind the rest of the suite when everything runs at once.
 
 test('a fresh socket drains the backlog on arrival, so work queued while away still runs', async () => {
   const h = harness();
@@ -287,13 +263,11 @@ test('a fresh socket drains the backlog on arrival, so work queued while away st
   assert.equal(claims[0].args.p_wait_ms, 0, 'the drain must not block the handshake that triggered it');
 });
 
-// The keepalive is what keeps the device's worker alive, and an interval that
-// outlives its socket is a leak that grows with every reconnect and never shows
-// up in a log. Closing must clear it.
-//
-// The handshake carries two deadlines rather than one: arrival answers the first,
-// and verification is bounded by the second. Both must be answered on a socket
-// that became ready, or a live device leaks a timer per reconnect the same way.
+// The keepalive is what keeps the device's worker alive, and an interval that outlives its socket is a leak that grows with every reconnect and never shows up in a log.
+// Closing must clear it.
+
+// The handshake carries two deadlines rather than one: arrival answers the first, and verification is bounded by the second.
+// Both must be answered on a socket that became ready, or a live device leaks a timer per reconnect the same way.
 
 test('closing the socket stops the keepalive, so a gone device leaks no timer', async () => {
   const h = harness();
@@ -313,11 +287,9 @@ test('closing the socket stops the keepalive, so a gone device leaks no timer', 
     'both handshake deadlines, the keepalive and the poll must be cleared too, or they fire on a dead socket');
 });
 
-// WHY the worker is kept alive by a promise the test can see. Without an
-// unresolved waitUntil, the platform retires the isolate as idle and every device
-// socket dies at a consistent interval — observed live as code 1006 every
-// seventy-some seconds. Holding the promise is what keeps the socket's worker
-// alive, and resolving it on close is what lets the worker end.
+// WHY the worker is kept alive by a promise the test can see.
+// Without an unresolved waitUntil, the platform retires the isolate as idle and every device socket dies at a consistent interval — observed live as code 1006 every seventy-some seconds.
+// Holding the promise is what keeps the socket's worker alive, and resolving it on close is what lets the worker end.
 
 test('an upgraded socket holds the worker until it closes, or the platform retires it early', async () => {
   waitedPromises.length = 0;
@@ -335,12 +307,10 @@ test('an upgraded socket holds the worker until it closes, or the platform retir
   assert.equal(released, true, 'closing the socket never released the worker');
 });
 
-// WHY the drain runs on a fast poll instead of listening. Two event feeds were
-// tried and measured: postgres_changes delivered in 650-1000 ms, and a broadcast
-// fired 46 ms after insert still claimed anywhere between 200 and 1300 ms,
-// because the Realtime subscriber held by the edge isolate proved flaky. A 200 ms
-// poll is deterministic where both feeds were not. This test turns that crank by
-// hand and proves each tick claims.
+// WHY the drain runs on a fast poll instead of listening.
+// Two event feeds were tried and measured: postgres_changes delivered in 650-1000 ms, and a broadcast fired 46 ms after insert still claimed anywhere between 200 and 1300 ms, because the Realtime subscriber held by the edge isolate proved flaky.
+// A 200 ms poll is deterministic where both feeds were not.
+// This test turns that crank by hand and proves each tick claims.
 
 test('each poll tick claims, so a queued command waits one interval at most', async () => {
   const h = harness();
@@ -359,10 +329,9 @@ test('each poll tick claims, so a queued command waits one interval at most', as
   assert.ok(claimsAfter > claimsBefore, 'a poll tick ran and claimed nothing');
 });
 
-// WHY overlapping drains are refused rather than queued. Two drains in flight can
-// claim two commands and push the second before the first, which would execute
-// same-device commands out of order. A tick that arrives mid-drain is skipped;
-// the next tick picks up whatever is still queued 200 ms later.
+// WHY overlapping drains are refused rather than queued.
+// Two drains in flight can claim two commands and push the second before the first, which would execute same-device commands out of order.
+// A tick that arrives mid-drain is skipped; the next tick picks up whatever is still queued 200 ms later.
 
 test('a poll tick during a running drain is skipped, so commands stay ordered', async () => {
   const h = harness();
@@ -405,10 +374,9 @@ test('closing the socket stops the poll, so a gone device costs no queries', asy
   assert.ok(!h.timers.intervals.has(poll[0]), 'the poll survived the socket it belonged to');
 });
 
-// WHY the protocol idle timeout stays disabled. Deno's default closes a socket
-// whose peer misses a protocol-level pong, and observed live that killed a fully
-// healthy client. Liveness is decided by the application ping instead, so the
-// transport guess must stay off or the two verdicts fight.
+// WHY the protocol idle timeout stays disabled.
+// Deno's default closes a socket whose peer misses a protocol-level pong, and observed live that killed a fully healthy client.
+// Liveness is decided by the application ping instead, so the transport guess must stay off or the two verdicts fight.
 
 test('upgraded sockets disable the protocol idle timeout', async () => {
   upgradeOptions.length = 0;

@@ -4,39 +4,26 @@
 // @dependencies: none.
 
 // WHY THIS FILE EXISTS
-//
-// An agent that cannot see what an application can do, guesses. Guessing at a
-// menu is expensive in a way guessing at text is not: a menu item that is not
-// there costs a click that dismisses whatever was open, and the next click lands
-// somewhere else — measured live on this product's own author, where a menu row
-// resolved and clicked a second later landed on the button underneath it.
-//
-// WHY FOUR STATES AND NOT TWO. "Visible" and "absent" is the shape that makes a
-// tree lie: an item one hover away is reported as not there, and the agent
-// concludes the application cannot do it. So a node is a leaf, a branch, disabled,
-// or unrevealed — and unrevealed carries how it would be revealed, so an agent
-// knows the difference between "this app has no such command" and "one hover
-// away".
-//
-// WHY THE DOCUMENT IS NOT A MENU. Google Docs renders the document's own
-// headings as role=menuitem, so a walk that trusts roles alone descends into the
-// document: measured live, a menu probe on an open Docs menu returned "BAB I
-// PENDAHULUAN" and every paragraph as menu items. The reader here walks only what
-// hangs off a menubar or a menu that a menu item owns, and a branch that grows
-// into document text is reported as refused rather than walked to the end of the
-// document.
+
+// An agent that cannot see what an application can do, guesses.
+// Guessing at a menu is expensive in a way guessing at text is not: a menu item that is not there costs a click that dismisses whatever was open, and the next click lands somewhere else — measured live on this product's own author, where a menu row resolved and clicked a second later landed on the button underneath it.
+
+// WHY FOUR STATES AND NOT TWO.
+// "Visible" and "absent" is the shape that makes a tree lie: an item one hover away is reported as not there, and the agent concludes the application cannot do it.
+// So a node is a leaf, a branch, disabled, or unrevealed — and unrevealed carries how it would be revealed, so an agent knows the difference between "this app has no such command" and "one hover away".
+
+// WHY THE DOCUMENT IS NOT A MENU.
+// Google Docs renders the document's own headings as role=menuitem, so a walk that trusts roles alone descends into the document: measured live, a menu probe on an open Docs menu returned "BAB I PENDAHULUAN" and every paragraph as menu items.
+// The reader here walks only what hangs off a menubar or a menu that a menu item owns, and a branch that grows into document text is reported as refused rather than walked to the end of the document.
 
 const MENU_LIMIT = 200;
 
-// WHY THE REACH IS 360 AND NOT "ADJACENT". A submenu sits beside its parent's
-// menu, not beside its own item: measured on Google Docs, the item is 320 pixels
-// wide, so its submenu opens a full item-width away from the item's right edge
-// and never overlaps it. A rule that measures from the item alone misses every
-// submenu; the number is a reach, and a miss here costs a wrong answer about what
-// an application can do.
+// WHY THE REACH IS 360 AND NOT "ADJACENT".
+// A submenu sits beside its parent's menu, not beside its own item: measured on Google Docs, the item is 320 pixels wide, so its submenu opens a full item-width away from the item's right edge and never overlaps it.
+// A rule that measures from the item alone misses every submenu; the number is a reach, and a miss here costs a wrong answer about what an application can do.
 
-// WHY THE ROUNDS ARE CAPPED. A round that changes nothing ends the walk; this cap
-// is what ends a page that keeps opening menus into itself.
+// WHY THE ROUNDS ARE CAPPED.
+// A round that changes nothing ends the walk; this cap is what ends a page that keeps opening menus into itself.
 
 const MENU_ROUNDS = 8;
 
@@ -46,13 +33,10 @@ const BAR = '[role~="menubar"]';
 const MENU = '[role~="menu"]';
 const ITEM = '[role~="menuitem"],[role~="menuitemcheckbox"],[role~="menuitemradio"]';
 
-// WHY THE ARROW AND NOT A CLICK. A submenu opens on hover in most applications
-// and on click in some, and clicking to find out costs the menu: the click lands
-// on an item and runs it. Hover opens a submenu without activating anything, so
-// it is the first thing tried, always. The pointer also has to leave the parent
-// and come back — measured live, a submenu that would not open did open once the
-// pointer was sent away first, because the menu had never seen it arrive from
-// outside.
+// WHY THE ARROW AND NOT A CLICK.
+// A submenu opens on hover in most applications and on click in some, and clicking to find out costs the menu: the click lands on an item and runs it.
+// Hover opens a submenu without activating anything, so it is the first thing tried, always.
+// The pointer also has to leave the parent and come back — measured live, a submenu that would not open did open once the pointer was sent away first, because the menu had never seen it arrive from outside.
 
 const MENU_TREE_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
@@ -230,11 +214,9 @@ const MENU_TREE_EXPRESSION = `(() => {
   return rows;
 })()`;
 
-// WHY THE REACH IS INTERPOLATED RATHER THAN NAMED INSIDE. The expression runs
-// in the page, where a module constant does not exist: it came back
-// `SUBMENU_REACH_PX is not defined` and the tree answered with an empty list,
-// which reads exactly like "this menu has no children". A value the page needs
-// has to be written into the expression.
+// WHY THE REACH IS INTERPOLATED RATHER THAN NAMED INSIDE.
+// The expression runs in the page, where a module constant does not exist: it came back `SUBMENU_REACH_PX is not defined` and the tree answered with an empty list, which reads exactly like "this menu has no children".
+// A value the page needs has to be written into the expression.
 
 export function menuTreeExpression(limit) {
   const asked = limit === undefined || limit === null ? 200 : Number(limit);
@@ -245,11 +227,9 @@ export function menuTreeExpression(limit) {
     .replace('__ROUNDS__', String(MENU_ROUNDS));
 }
 
-// WHY THE STATE IS DECIDED HERE AND NOT IN THE CALLER. Three facts decide a
-// node's state and all three are in the page: whether it has a popup, whether it
-// is disabled, and whether it has been rendered at all. Deciding them in one
-// place is what keeps an unrevealed item from being reported as absent — the one
-// way a menu tree can lie to an agent that is trying to learn what an app does.
+// WHY THE STATE IS DECIDED HERE AND NOT IN THE CALLER.
+// Three facts decide a node's state and all three are in the page: whether it has a popup, whether it is disabled, and whether it has been rendered at all.
+// Deciding them in one place is what keeps an unrevealed item from being reported as absent — the one way a menu tree can lie to an agent that is trying to learn what an app does.
 
 export function stateOf(node) {
   if (node.disabled) return 'disabled';
@@ -258,10 +238,9 @@ export function stateOf(node) {
   return 'leaf';
 }
 
-// WHY A NODE CARRIES HOW IT WOULD BE REVEALED. An agent that knows a command
-// exists but not how to reach it can still choose: hover the parent, click the
-// parent, or use the application's own menu search. Naming the three is the
-// difference between a dead end and a decision.
+// WHY A NODE CARRIES HOW IT WOULD BE REVEALED.
+// An agent that knows a command exists but not how to reach it can still choose: hover the parent, click the parent, or use the application's own menu search.
+// Naming the three is the difference between a dead end and a decision.
 
 export function revealOf(node) {
   if (node.branch && !node.expanded) return 'hover the parent, then read the children';
@@ -269,11 +248,9 @@ export function revealOf(node) {
   return 'the children are open';
 }
 
-// WHY SIMILARITY IS A LEVENSON GAP AND NOT A SCORE. When a path fails, the most
-// useful thing an agent can be handed is the nearest thing that exists: the
-// difference in letters between what was asked for and what is really there.
-// "Upload from computer" against "Upload" is one word of difference; against
-// "Break" it is many, and the agent should not be shown that one first.
+// WHY SIMILARITY IS A LEVENSON GAP AND NOT A SCORE.
+// When a path fails, the most useful thing an agent can be handed is the nearest thing that exists: the difference in letters between what was asked for and what is really there.
+// "Upload from computer" against "Upload" is one word of difference; against "Break" it is many, and the agent should not be shown that one first.
 
 export function distanceBetween(wanted, offered) {
   const a = String(wanted ?? '').toLowerCase();
@@ -292,16 +269,13 @@ export function distanceBetween(wanted, offered) {
   return cost[rows - 1][cols - 1];
 }
 
-// WHY THE WALKER REPORTS THE LEVEL IT BROKE ON. A message like "Upload from
-// computer is not in the menu" sends an agent back to guessing. A message like
-// "the path broke at Insert, and Insert has: Image, Table, Bookmark" hands it a
-// map and lets it choose the next move without a single further click.
+// WHY THE WALKER REPORTS THE LEVEL IT BROKE ON.
+// A message like "Upload from computer is not in the menu" sends an agent back to guessing.
+// A message like "the path broke at Insert, and Insert has: Image, Table, Bookmark" hands it a map and lets it choose the next move without a single further click.
 
 // WHY A NAME THAT BEGINS WITH THE ASKED-FOR WORD WINS OVER LETTER COUNT.
-// "Upload" is six edits from "Break" and thirteen from "Upload from computer", so
-// distance alone hands back the wrong row first — and the wrong row here is the
-// one that costs a click. A name that starts with the caller's word is that word
-// with more detail on it, and it wins whatever the count says.
+// "Upload" is six edits from "Break" and thirteen from "Upload from computer", so distance alone hands back the wrong row first — and the wrong row here is the one that costs a click.
+// A name that starts with the caller's word is that word with more detail on it, and it wins whatever the count says.
 
 export function nearestNames(wanted, offered, count = 3) {
   const ask = String(wanted ?? '').toLowerCase();

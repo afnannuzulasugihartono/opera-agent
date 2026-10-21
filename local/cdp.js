@@ -3,18 +3,15 @@
 // @state: correlates replies by id, rejects CDP errors, dispatches events, and refuses to send once closed.
 // @dependencies: none.
 
-// A CDP client is a request/response multiplexer over one socket. Chrome keys
-// every reply on the id that was sent, so matching by id is the only correct
-// rule: matching by arrival order breaks the moment two commands are in flight,
-// which is exactly what driving a page does.
-//
-// The transport is injected rather than opened here. That is what makes this
-// testable without a browser installed, which in turn means the concurrency
-// rule is checked on every machine that runs the suite rather than only on one
-// that happens to have Chrome. The real socket lives in transport.js.
-//
-// Nothing in this file knows about Opera Agent. It speaks CDP and nothing else,
-// so it stays small enough to read in one sitting.
+// A CDP client is a request/response multiplexer over one socket.
+// Chrome keys every reply on the id that was sent, so matching by id is the only correct rule: matching by arrival order breaks the moment two commands are in flight, which is exactly what driving a page does.
+
+// The transport is injected rather than opened here.
+// That is what makes this testable without a browser installed, which in turn means the concurrency rule is checked on every machine that runs the suite rather than only on one that happens to have Chrome.
+// The real socket lives in transport.js.
+
+// Nothing in this file knows about Opera Agent.
+// It speaks CDP and nothing else, so it stays small enough to read in one sitting.
 
 const CLOSED = 'CDP client is closed';
 

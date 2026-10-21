@@ -3,11 +3,9 @@
 // @state: the amount of an invoice, the two signatures, and the rule that an undelivered month is not charged.
 // @dependencies: node:test, strict, node:crypto, ../lib/billing.js.
 
-// WHY THESE RULES ARE TESTED AND NOT ASSUMED. Money is the one place where being
-// wrong is not a bug report but a customer's trust. Every rule here is a promise to
-// the person paying: they are charged for what was delivered, they can open their
-// own invoice and nobody else's, and nobody can mark an invoice paid without the
-// provider's signature.
+// WHY THESE RULES ARE TESTED AND NOT ASSUMED.
+// Money is the one place where being wrong is not a bug report but a customer's trust.
+// Every rule here is a promise to the person paying: they are charged for what was delivered, they can open their own invoice and nobody else's, and nobody can mark an invoice paid without the provider's signature.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

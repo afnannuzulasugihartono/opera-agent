@@ -1,6 +1,6 @@
 -- Register the bounded, linear same-tab burst primitive shipped by Opera Agent 1.2.0.
--- The extension performs its own independent action/shape validation. This row only
--- allows the durable command queue to accept the named primitive.
+-- The extension performs its own independent action/shape validation.
+-- This row only allows the durable command queue to accept the named primitive.
 
 insert into public.opera_methods(method, default_timeout_ms, enabled, description)
 values (

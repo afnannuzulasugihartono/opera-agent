@@ -1,17 +1,20 @@
-/* site.css — dynamic width and height, shared by every page.
+/*
+ * site.css — dynamic width and height, shared by every page.
  *
- * WHY here and not in twelve pages: these rules are the site answering its own
- * viewport, so they are the same rule everywhere. Per-page copies are how the
- * ID|EN toggle ended up dead on three pages at once. i18n.js already proved this
- * site loads a same-origin asset under this CSP, so this needs no new permission.
+ * WHY here and not in twelve pages: these rules are the site answering its own viewport, so they are the same rule everywhere.
+ * Per-page copies are how the ID|EN toggle ended up dead on three pages at once.
+ * i18n.js already proved this site loads a same-origin asset under this CSP, so this needs no new permission.
  *
- * Scope: width and height only. Colour, type and chrome stay in each page. */
+ * Scope: width and height only.
+ * Colour, type and chrome stay in each page.
+ */
 
 /* ── height ─────────────────────────────────────────────────────────────── */
 
-/* dvh, not vh: on a phone the browser's own chrome eats the viewport, and 100vh
-   is measured before that happens, so the footer lands below the fold. The vh
-   line is the fallback and comes first so dvh wins where both exist. */
+/*
+ * dvh, not vh: on a phone the browser's own chrome eats the viewport, and 100vh is measured before that happens, so the footer lands below the fold.
+ * The vh line is the fallback and comes first so dvh wins where both exist.
+ */
 
 html { height: 100%; -webkit-text-size-adjust: 100%; }
 

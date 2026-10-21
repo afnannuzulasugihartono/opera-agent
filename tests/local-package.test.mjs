@@ -3,11 +3,10 @@
 // @state: one lock; the file list is read from the import graph, not from memory.
 // @dependencies: node:test, strict, ../local/package.json.
 
-// WHY THIS FILE EXISTS. The package published seven modules and imported sixteen: the
-// `files` list had never been touched since the first modules, so `npx opera-local`
-// would have installed a package that dies on its first import with ERR_MODULE_NOT_FOUND.
-// A release that ships that is worse than no release, because the error names a file
-// the user never heard of. So the list is derived from the imports and compared here.
+// WHY THIS FILE EXISTS.
+// The package published seven modules and imported sixteen: the `files` list had never been touched since the first modules, so `npx opera-local` would have installed a package that dies on its first import with ERR_MODULE_NOT_FOUND.
+// A release that ships that is worse than no release, because the error names a file the user never heard of.
+// So the list is derived from the imports and compared here.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,9 +32,8 @@ const reachable = (entry) => {
   return seen;
 };
 
-// WHY THE ENTRY POINT IS EXEMPT FROM THE MODULE LIST. npm ships a bin through the
-// `bin` directory, not as a module anyone imports, so the entry point is covered by
-// that name and every module below it is checked as a module.
+// WHY THE ENTRY POINT IS EXEMPT FROM THE MODULE LIST.
+// npm ships a bin through the `bin` directory, not as a module anyone imports, so the entry point is covered by that name and every module below it is checked as a module.
 
 test('every module the bin can reach is inside the published files', () => {
   const needed = [...reachable('bin/opera-local'), ...reachable('mcp-server')].map((name) => `${name}.js`);

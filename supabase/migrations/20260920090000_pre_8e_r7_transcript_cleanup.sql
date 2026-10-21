@@ -1,17 +1,10 @@
 -- Pre-8E repair R7/T034-T037: transcript-scoped YouTube transcript collection.
--- Historical workflow migrations remain untouched. This versions
--- youtube.get_transcript so the primary path collects transcript segments
--- directly (ytd-transcript-segment-renderer, bounded to 100 items, visibleOnly
--- false) instead of chunked full-page page.read loops, so the model-facing
--- output excludes description/comments/recommendations noise. The v4 chunked
--- text loop is preserved verbatim as the bounded fallback branch for DOM
--- variants where the segment query returns nothing. The unconditional
--- previousActive tabs.get moves into the activation branch (background-first
--- round-trip reduction); activation stays a bounded render fallback with
--- active-tab restore.
---
--- No public MCP tool/schema, protocol, primitive count, production schema, VM,
--- signing, auth, or transport boundary changes are introduced here.
+-- Historical workflow migrations remain untouched.
+-- This versions youtube.get_transcript so the primary path collects transcript segments directly (ytd-transcript-segment-renderer, bounded to 100 items, visibleOnly false) instead of chunked full-page page.read loops, so the model-facing output excludes description/comments/recommendations noise.
+-- The v4 chunked text loop is preserved verbatim as the bounded fallback branch for DOM variants where the segment query returns nothing.
+-- The unconditional previousActive tabs.get moves into the activation branch (background-first round-trip reduction); activation stays a bounded render fallback with active-tab restore.
+
+-- No public MCP tool/schema, protocol, primitive count, production schema, VM, signing, auth, or transport boundary changes are introduced here.
 
 select public.opera_register_workflow(
   'youtube.get_transcript',

@@ -9,10 +9,8 @@ import { clamp } from '../lib/protocol.js';
 
 export const HTTP_URL_RE = /^https?:\/\//i;
 
-// WHY the signal is a parameter. A caller that must be able to walk away from a
-// request it no longer wants has no way to do it otherwise: a held poll kept
-// answering a loop that had already been superseded, and every such request was
-// one more consumer of the single command queue.
+// WHY the signal is a parameter.
+// A caller that must be able to walk away from a request it no longer wants has no way to do it otherwise: a held poll kept answering a loop that had already been superseded, and every such request was one more consumer of the single command queue.
 
 export async function fetchJson(url, body, timeoutMs = 30000, signal = undefined) {
   const controller = new AbortController();

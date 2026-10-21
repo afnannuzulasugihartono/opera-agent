@@ -1,7 +1,9 @@
 @echo off
+
 REM Opera Agent dedicated Chrome: persistent profile, debugging port, extension always loaded.
-REM Run this instead of opening Chrome normally. Sign in to Google once; the
-REM profile keeps the login and the flag keeps the extension across restarts.
+REM Run this instead of opening Chrome normally.
+REM Sign in to Google once; the profile keeps the login and the flag keeps the extension across restarts.
+
 setlocal
 set PROFILE=%LOCALAPPDATA%\OperaAgent\ChromeProfile
 set EXTDIR=%~dp0..\..\extension

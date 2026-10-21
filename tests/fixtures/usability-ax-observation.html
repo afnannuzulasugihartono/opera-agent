@@ -32,8 +32,7 @@
   <div id="shadow-host"></div>
   <script>
 
-    // Canvas-class surface: controls live inside an open shadow root so flat
-    // document scans never see them, while the accessibility tree does.
+    // Canvas-class surface: controls live inside an open shadow root so flat document scans never see them, while the accessibility tree does.
     const host = document.getElementById('shadow-host');
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = '<style>button{width:180px;height:40px}</style>'

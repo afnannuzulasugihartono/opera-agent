@@ -1,16 +1,14 @@
 -- Dashboard v2: revoke, usage counts, and self-issuing pairing codes.
---
--- WHY a second file: the binding migration is already applied to production, and
--- an applied migration is never rewritten. Everything here is additive.
---
+
+-- WHY a second file: the binding migration is already applied to production, and an applied migration is never rewritten.
+-- Everything here is additive.
+
 -- APPLY: paste into the Supabase dashboard SQL editor, after the binding file.
 
--- Revocation rotates the token hash instead of setting status='disabled'. Two
--- reasons, both load-bearing: a disabled device is excluded from auth before the
--- status check, so the device could never pair again and the owner would brick
--- their own machine; and tests/device-status-truth.test.mjs exists precisely to
--- keep status='disabled' owner-only in SQL, because nothing else re-enables it.
+-- Revocation rotates the token hash instead of setting status='disabled'.
+-- Two reasons, both load-bearing: a disabled device is excluded from auth before the status check, so the device could never pair again and the owner would brick their own machine; and tests/device-status-truth.test.mjs exists precisely to keep status='disabled' owner-only in SQL, because nothing else re-enables it.
 -- A rotated hash is dead the same way and pairing always restores it.
+
 create or replace function public.opera_revoke_my_device(p_device_id uuid)
 returns jsonb
 language plpgsql security definer set search_path = public as $$

@@ -3,11 +3,8 @@
 // @state: Test..
 // @dependencies: node:test, strict, node:fs, node:module, node:vm.
 
-// The listen function turns tab audio into timestamped segments: device-token
-// auth per action, one live session per device, 10-second windows to Gemini,
-// segments stored, audio deleted (retention 0 for voice). The vm harness below
-// drives start, two appends and stop against an in-memory store with a canned
-// transcriber, proving offsets, deletion and session end without network.
+// The listen function turns tab audio into timestamped segments: device-token auth per action, one live session per device, 10-second windows to Gemini, segments stored, audio deleted (retention 0 for voice).
+// The vm harness below drives start, two appends and stop against an in-memory store with a canned transcriber, proving offsets, deletion and session end without network.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

@@ -3,11 +3,9 @@
 // @state: structural gate over every workflow migration in the tree.
 // @dependencies: node:test, strict, node:fs, node:fs/promises.
 
-// WHY THIS GATE IS PERMANENT. A burst step that names refFromStep equal to or
-// past its own index is refused by the device at run time, one workflow at a
-// time, which is the most expensive way to learn it. Two hand-written
-// migration blobs in one session died on a typo of exactly this shape, and a
-// JSON syntax error was worse still: the whole file parsed as a wall of text.
+// WHY THIS GATE IS PERMANENT.
+// A burst step that names refFromStep equal to or past its own index is refused by the device at run time, one workflow at a time, which is the most expensive way to learn it.
+// Two hand-written migration blobs in one session died on a typo of exactly this shape, and a JSON syntax error was worse still: the whole file parsed as a wall of text.
 // So the check runs here, over every migration, before any of it ships.
 
 import test from 'node:test';

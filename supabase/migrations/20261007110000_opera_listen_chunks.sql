@@ -1,7 +1,6 @@
--- Staging for raw audio windows awaiting transcription. Rows live only between
--- chunk upload and window transcription; the transcribe step deletes what it
--- consumed (retention 0 for voice). No grants and no policies: only service_role
--- edge code touches this table, never a signed-in account directly.
+-- Staging for raw audio windows awaiting transcription.
+-- Rows live only between chunk upload and window transcription; the transcribe step deletes what it consumed (retention 0 for voice).
+-- No grants and no policies: only service_role edge code touches this table, never a signed-in account directly.
 
 create table if not exists public.opera_listen_chunks (
   id uuid primary key default gen_random_uuid(),

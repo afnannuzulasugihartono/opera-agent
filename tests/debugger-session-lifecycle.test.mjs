@@ -167,11 +167,9 @@ test('releaseDebuggerSession tolerates a session that is not attached', async ()
   await assert.doesNotReject(releaseDebuggerSession({ tabId: 7, attached: false }));
 });
 
-// A detach that throws leaves Chrome holding an attachment the code believes is gone,
-// and every later attach then fails with "already attached" forever: one flaky detach
-// bricks the tab until the extension reloads. Observed live as a capture failing
-// minutes after a timed-out key press on the same tab. Recovery is detach-then-attach,
-// which only ever releases this extension's own attachment.
+// A detach that throws leaves Chrome holding an attachment the code believes is gone, and every later attach then fails with "already attached" forever: one flaky detach bricks the tab until the extension reloads.
+// Observed live as a capture failing minutes after a timed-out key press on the same tab.
+// Recovery is detach-then-attach, which only ever releases this extension's own attachment.
 
 test('withDebugger recovers from a stale attach instead of failing forever', async () => {
   const fs = await import('node:fs');
@@ -189,10 +187,9 @@ test('withDebugger recovers from a stale attach instead of failing forever', asy
   assert.ok(nonMatching, 'a foreign error must propagate, not trigger a detach');
 });
 
-// WHY the idle release is pinned twice. The sweep is the only thing standing
-// between a driven tab and a permanent debugging bar, so its logic is proven
-// by running it and its wiring by reading the call sites. Either half missing
-// reverts to a bar that never leaves.
+// WHY the idle release is pinned twice.
+// The sweep is the only thing standing between a driven tab and a permanent debugging bar, so its logic is proven by running it and its wiring by reading the call sites.
+// Either half missing reverts to a bar that never leaves.
 
 test('an idle debugger session is released while a fresh one is kept', async () => {
   const { registerDebuggerSession, releaseIdleDebuggerSessions, getDebuggerSessions } = await import(

@@ -1,15 +1,13 @@
 -- Live audio listening sessions and their transcript segments.
---
--- WHY two tables and not columns on opera_commands: a listening session outlives
--- any single command (tens of minutes, hundreds of segments), and the model polls
--- segments by cursor. Burying that in command rows would mix a stream with a queue.
---
--- WHY no table grants, like opera_devices: owners read their own rows through
--- policies; writers are service_role edge functions. The dashboard gets its own
--- RPC when its UI lands (phase 4), not a grant.
---
--- Privacy: raw audio is never stored here — only transcripts. The ingest path
--- deletes each chunk after transcription (retention 0 for voice).
+
+-- WHY two tables and not columns on opera_commands: a listening session outlives any single command (tens of minutes, hundreds of segments), and the model polls segments by cursor.
+-- Burying that in command rows would mix a stream with a queue.
+
+-- WHY no table grants, like opera_devices: owners read their own rows through policies; writers are service_role edge functions.
+-- The dashboard gets its own RPC when its UI lands (phase 4), not a grant.
+
+-- Privacy: raw audio is never stored here — only transcripts.
+-- The ingest path deletes each chunk after transcription (retention 0 for voice).
 
 create table if not exists public.opera_listen_sessions (
   id uuid primary key default gen_random_uuid(),

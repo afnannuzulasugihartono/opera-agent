@@ -3,12 +3,9 @@
 // @state: unit pins the handshake, the three length forms, split-frame decoding, and fragmented messages.
 // @dependencies: node:test, strict, ../local/ws-server.js.
 
-// WHY THIS IS TESTED BEFORE IT IS WIRED. The device is the other half of a
-// socket that only exists on this machine: if the handshake or a frame length
-// is wrong, the extension reports an offline device while the server reports
-// a live one. Decoding is the half that hides bugs, because a client frame is
-// masked and may arrive split across TCP reads, so a decoder that assumes
-// whole frames turns a working connection into silence.
+// WHY THIS IS TESTED BEFORE IT IS WIRED.
+// The device is the other half of a socket that only exists on this machine: if the handshake or a frame length is wrong, the extension reports an offline device while the server reports a live one.
+// Decoding is the half that hides bugs, because a client frame is masked and may arrive split across TCP reads, so a decoder that assumes whole frames turns a working connection into silence.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -102,12 +99,9 @@ test('a binary frame is refused by name instead of parsed as text', () => {
   assert.deepEqual(controls, ['binary']);
 });
 
-// WHY FRAGMENTS ARE PINNED. Small messages always arrive whole, so a reader
-// that drops continuations passes every small test and fails exactly where it
-// hurts: a screenshot-sized completion that fragments leaves the server
-// waiting on half a message until the caller gives up, while snapshots on the
-// same link answer in milliseconds. That was measured live as captures failing
-// on whichever tab happened to fragment.
+// WHY FRAGMENTS ARE PINNED.
+// Small messages always arrive whole, so a reader that drops continuations passes every small test and fails exactly where it hurts: a screenshot-sized completion that fragments leaves the server waiting on half a message until the caller gives up, while snapshots on the same link answer in milliseconds.
+// That was measured live as captures failing on whichever tab happened to fragment.
 
 test('a message in three fragments arrives whole', () => {
   const seen = [];
