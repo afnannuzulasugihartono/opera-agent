@@ -125,7 +125,7 @@ export function stripComments(src, kind) {
   return out.join('');
 }
 
-export async function collectSources(dir, extensions) {
+async function collectSources(dir, extensions) {
   const { readdir, readFile } = await import('node:fs/promises');
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {

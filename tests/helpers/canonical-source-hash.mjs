@@ -5,7 +5,7 @@
 
 import crypto from 'node:crypto';
 
-export function canonicalizeLfBytes(input) {
+function canonicalizeLfBytes(input) {
   const bytes = Buffer.isBuffer(input) ? input : Buffer.from(input);
   const output = [];
   for (let index = 0; index < bytes.length; index += 1) {

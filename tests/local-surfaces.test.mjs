@@ -25,7 +25,7 @@ import {
   locateExpression
 } from '../local/page-expressions.js';
 import { filePrimitives } from '../local/primitives-file.js';
-import { statementsRoot } from '../local/statements.js';
+import { statementCard } from '../local/statements.js';
 import { bridgePort, LINK_ERROR } from '../local/bridge.js';
 import { installedBrowsers } from '../local/driver.js';
 import { attachToPage, discoverPageWebSocket, waitForPage } from '../local/transport.js';
@@ -86,9 +86,11 @@ test('the file verbs are a driver of their own', () => {
 });
 
 test('the statements root is a folder the person already knows', () => {
-  const root = statementsRoot();
-  assert.ok(root.endsWith(path.join('Downloads', 'opera-statements')), `unexpected root: ${root}`);
-  assert.ok(path.isAbsolute(root), 'the root is absolute, so a job does not depend on the working directory');
+  const card = statementCard({ client: 'Toko Sinar Jaya', portal: 'BCA', period: '2026-09' });
+  assert.ok(card.dir.includes(path.join('Downloads', 'opera-statements')),
+    `the default folder must sit under Downloads: ${card.dir}`);
+  assert.ok(path.isAbsolute(card.dir), 'the root is absolute, so a job does not depend on the working directory');
+  assert.equal(card.saveAs, 'toko-sinar-jaya-bca-2026-09.pdf', 'the file name is derived, not typed');
 });
 
 test('the bridge port is the one the environment names', () => {
