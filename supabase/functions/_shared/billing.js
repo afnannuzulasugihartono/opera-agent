@@ -48,8 +48,31 @@
 // answered "Buffer is not defined" to every customer who opened one. Comparing two
 // hex strings character by character costs nothing and runs everywhere, and it still
 // takes the same time whether the first character is wrong or the last one is.
+//
+// WHY A SMALL INVOICE OFFERS ONLY QRIS. Midtrans charges a percentage for QRIS and a
+// fixed fee for a virtual account (Rp 4.000) or a card (Rp 2.000 plus a percentage).
+// On a Rp 10.000 invoice the fixed fee is 40% of the money, so offering every method
+// would let the customer choose to hand the margin to the bank. QRIS is the one method
+// with no fixed fee, and it is accepted by every Indonesian bank and e-wallet app, so
+// below Rp 100.000 the checkout opens straight into QRIS. Above it, a fixed fee is
+// small enough that choice is worth more than the fee, and the provider's own list is
+// used.
+//
+// WHY THE PROVIDER GETS ITS OWN ORDER ID. Midtrans accepts only letters, digits and
+// dash, underscore, tilde and dot in an order id, and refuses the whole transaction on
+// any other character. The invoice id is "<customer>:<period>" and a customer name has
+// spaces, so the id that a person reads cannot be the id the provider is given. The
+// provider id is derived from the invoice id, the amount and the currency: it is stable
+// for an unchanged invoice, it changes when the amount changes, and it is always legal.
+//
+// WHY THE PROVIDER AMOUNT IS NOT THE LEDGER AMOUNT. The ledger stores cents, because a
+// price can have a fractional unit; Midtrans charges whole rupiah, because the rupiah
+// has no subunit in a card transaction. Sending 500000 for a Rp 5.000 invoice would ask
+// the customer for Rp 500.000, so the conversion happens at the provider boundary in
+// both directions: out to the charge, and back from the notification before it is
+// compared. A notification for Rp 500.000 therefore cannot close a Rp 5.000 invoice.
 
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 
 function hmacSha512(secret, payload) {
   return createHmac('sha512', secret).update(payload).digest('hex');
@@ -105,6 +128,57 @@ export function amountFor(lines, priceList) {
     });
   }
   return { amountCents, currency, priced, unpriced };
+}
+
+export function providerAmount(amountCents, currency = 'IDR') {
+  if (String(currency || '').toUpperCase() !== 'IDR') return null;
+  const cents = Number(amountCents);
+  if (!Number.isFinite(cents) || cents < 100) return null;
+  return Math.round(cents / 100);
+}
+
+export function paidAmountCents(grossAmount, currency = 'IDR') {
+  const value = Number(grossAmount);
+  if (!Number.isFinite(value)) return null;
+  const unit = String(currency || '').toUpperCase();
+  if (unit !== 'IDR' && unit !== 'USD') return null;
+  return Math.round(value * 100);
+}
+
+export function providerOrderId(invoiceId, amountCents, currency = 'IDR') {
+  const stamp = createHash('sha256')
+    .update(`${invoiceId}\u0000${Number(amountCents) || 0}\u0000${currency || 'IDR'}`)
+    .digest('hex')
+    .slice(0, 10);
+  const readable = String(invoiceId || '')
+    .replace(/[^A-Za-z0-9._~-]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '')
+    .slice(0, 36);
+  return `oa-${stamp}-${readable}`.slice(0, 50);
+}
+
+export const SNAP_QRIS_ONLY_BELOW_CENTS = 10_000_000;
+
+export function snapPaymentMethods(amountCents, currency = 'IDR') {
+  const amount = Number(amountCents);
+  if (String(currency || '').toUpperCase() !== 'IDR') {
+    return {
+      chargeable: false,
+      enabled: null,
+      why: 'Midtrans charges rupiah only; an invoice in another currency needs a provider that settles it'
+    };
+  }
+  if (!(amount >= 100)) {
+    return { chargeable: false, enabled: null, why: 'a rupiah charge needs at least one whole rupiah' };
+  }
+  if (amount < SNAP_QRIS_ONLY_BELOW_CENTS) {
+    return {
+      chargeable: true,
+      enabled: ['other_qris'],
+      why: 'QRIS is the only method with no fixed fee, and a fixed fee would eat a small invoice'
+    };
+  }
+  return { chargeable: true, enabled: null, why: 'the amount can carry a fixed fee, so the provider lists the methods' };
 }
 
 export function linesFromDeliveries(deliveries, kind = 'statement.client_month') {

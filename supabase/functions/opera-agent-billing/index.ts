@@ -27,8 +27,8 @@
 //
 // WHY THE CALLBACK ALSO CHECKS THE AMOUNT. A signature proves the provider sent the
 // notification; it does not prove the invoice was for this much. So the gross amount in
-// the notification has to equal the invoice, or the invoice stays open and the
-// difference is somebody's problem to look at.
+// the notification has to equal the invoice once both are in cents, or the invoice stays
+// open and the difference is somebody's problem to look at.
 //
 // WHY A PAID INVOICE IS NEVER REOPENED. Creating an invoice is idempotent so an operator
 // can correct a month before it is paid, but the same upsert run after the money landed
@@ -44,6 +44,10 @@ import {
   isSettled,
   linesFromDeliveries,
   notificationSignatureValid,
+  paidAmountCents,
+  providerAmount,
+  providerOrderId,
+  snapPaymentMethods,
   verifyInvoiceToken
 } from "../_shared/billing.js";
 
@@ -58,6 +62,7 @@ type InvoiceRow = {
   currency: string;
   lines: { priced: Line[]; unpriced: Line[] };
   pay_url?: string | null;
+  provider_order_id?: string | null;
 };
 type BillingClient = Awaited<ReturnType<typeof db>>;
 
@@ -131,28 +136,47 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
   const out = amountFor(lines, prices);
   const id = `${customer_id}:${period}`;
   const token = invoiceToken(id, BILLING_SECRET);
-  let pay_url = null;
-  let provider = null;
-  let provider_ref = null;
-  if (MIDTRANS_SERVER_KEY && out.amountCents > 0) {
+
+  // WHY THE PAID CHECK COMES BEFORE THE PROVIDER CALL. Creating a payment link is the
+  // moment money can move. If a paid invoice were priced and sent to the provider first,
+  // a later call would open a second payable transaction and then refuse to write it:
+  // the customer could pay twice and the database would never know. So the row is read
+  // first, a paid invoice is refused before any provider call, and an unchanged open
+  // invoice keeps the link its customer already has.
+  const { data: existing } = await supabase.from("opera_invoices").select("*").eq("id", id).maybeSingle();
+  if (existing?.status === "paid") {
+    throw new HttpError(409, `${id} is paid; a later call does not reopen an invoice that has been paid.`);
+  }
+
+  const payment = snapPaymentMethods(out.amountCents, out.currency);
+  const unchanged = Boolean(existing)
+    && Number(existing.amount_cents) === out.amountCents
+    && existing.currency === out.currency;
+  let pay_url = unchanged ? existing?.pay_url || null : null;
+  let provider = unchanged ? existing?.provider || null : null;
+  let provider_ref = unchanged ? existing?.provider_ref || null : null;
+  let provider_order_id = unchanged ? existing?.provider_order_id || null : null;
+
+  if (MIDTRANS_SERVER_KEY && payment.chargeable && !pay_url) {
+    const orderId = providerOrderId(id, out.amountCents, out.currency);
+    const gross = providerAmount(out.amountCents, out.currency);
+    const request: Record<string, unknown> = {
+      transaction_details: { order_id: orderId, gross_amount: gross },
+      customer_details: { first_name: String(customer_id).slice(0, 50) }
+    };
+    if (payment.enabled) request.enabled_payments = payment.enabled;
     const response = await fetch("https://app.midtrans.com/snap/v1/transactions", {
       method: "POST",
       headers: { Authorization: `Basic ${btoa(`${MIDTRANS_SERVER_KEY}:`)}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        transaction_details: { order_id: id, gross_amount: out.amountCents },
-        customer_details: { first_name: customer_id }
-      })
+      body: JSON.stringify(request)
     });
     const body = await response.json().catch(() => ({}));
     if (response.ok && body.redirect_url) {
       pay_url = body.redirect_url;
       provider = "midtrans";
-      provider_ref = body.token || id;
+      provider_ref = body.token || orderId;
+      provider_order_id = orderId;
     }
-  }
-  const { data: existing } = await supabase.from("opera_invoices").select("status").eq("id", id).maybeSingle();
-  if (existing?.status === "paid") {
-    throw new HttpError(409, `${id} is paid; a later call does not reopen an invoice that has been paid.`);
   }
   const { data, error } = await supabase.from("opera_invoices").upsert({
     id,
@@ -164,6 +188,7 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
     lines: { priced: out.priced, unpriced: out.unpriced },
     provider,
     provider_ref,
+    provider_order_id,
     pay_url
   }, { onConflict: "id" }).select().single();
   if (error) throw new Error(`invoice not written: ${error.message}`);
@@ -180,18 +205,28 @@ async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow
 
 // WHY THE CALLBACK RE-CHECKS THE AMOUNT. A signature proves the provider sent the
 // notification; it does not prove the invoice was for this much. So the gross
-// amount in the notification has to equal the invoice, or the invoice stays open
-// and the difference is somebody's problem to look at.
+// amount in the notification has to equal the invoice once both are in cents, or the
+// invoice stays open and the difference is somebody's problem to look at.
 
 async function markPaid(notification: Record<string, unknown>): Promise<{ ok: boolean; why?: string; invoice?: string }> {
   const supabase = await db();
   const orderId = String(notification.order_id || "");
-  const { data: invoice, error } = await supabase.from("opera_invoices").select("*").eq("id", orderId).single();
-  if (error || !invoice) return { ok: false, why: "no invoice with that order id" };
+
+  // WHY THE LOOKUP TRIES THE PROVIDER ID FIRST. The id a person reads ("Toko Sinar
+  // Jaya:2026-08") contains characters the provider refuses, so the transaction carries
+  // a derived id. The invoice id is still accepted for a notification signed by hand and
+  // for invoices written before the derived id existed.
+  const byProvider = await supabase.from("opera_invoices").select("*").eq("provider_order_id", orderId).maybeSingle();
+  let invoice = byProvider.data;
+  if (!invoice) {
+    const byId = await supabase.from("opera_invoices").select("*").eq("id", orderId).maybeSingle();
+    invoice = byId.data;
+  }
+  if (!invoice) return { ok: false, why: "no invoice with that order id" };
   if (!isSettled(notification)) return { ok: false, why: "the transaction is not settled" };
-  const gross = Math.round(Number(notification.gross_amount || 0));
-  if (gross !== Number(invoice.amount_cents)) {
-    return { ok: false, why: `the paid amount (${gross}) is not the invoice amount (${invoice.amount_cents})` };
+  const paidCents = paidAmountCents(notification.gross_amount, invoice.currency);
+  if (paidCents === null || paidCents !== Number(invoice.amount_cents)) {
+    return { ok: false, why: `the paid amount (${String(notification.gross_amount)}) is not the invoice amount (${invoice.amount_cents} cents)` };
   }
   const { error: updateError } = await supabase.from("opera_invoices")
     .update({ status: "paid", paid_at: new Date().toISOString() })

@@ -19,7 +19,12 @@ import {
   isSettled,
   linesFromDeliveries,
   notificationSignatureValid,
+  paidAmountCents,
   priceFor,
+  providerAmount,
+  providerOrderId,
+  snapPaymentMethods,
+  SNAP_QRIS_ONLY_BELOW_CENTS,
   verifyInvoiceToken
 } from '../lib/billing.js';
 
@@ -131,6 +136,46 @@ test('only a settled notification is a payment, in the spellings a provider uses
   assert.equal(isSettled({ transaction_status: 'pending' }), false);
   assert.equal(isSettled({ transaction_status: 'deny' }), false);
   assert.equal(isSettled({}), false);
+});
+
+test('a small invoice opens straight into QRIS, because a fixed fee would eat it', () => {
+  const small = snapPaymentMethods(500000, 'IDR');
+  assert.equal(small.chargeable, true);
+  assert.deepEqual(small.enabled, ['other_qris'], 'Rp 5.000: QRIS only, because a Rp 4.000 VA fee is 80% of the bill');
+  assert.deepEqual(snapPaymentMethods(SNAP_QRIS_ONLY_BELOW_CENTS - 1, 'IDR').enabled, ['other_qris']);
+  const large = snapPaymentMethods(SNAP_QRIS_ONLY_BELOW_CENTS, 'IDR');
+  assert.equal(large.chargeable, true);
+  assert.equal(large.enabled, null, 'Rp 100.000: the provider may offer every method');
+});
+
+test('a rupiah-only provider is not asked to charge another currency', () => {
+  const usd = snapPaymentMethods(500000, 'USD');
+  assert.equal(usd.chargeable, false);
+  assert.equal(usd.enabled, null);
+  assert.match(usd.why, /rupiah/);
+  assert.equal(snapPaymentMethods(0, 'IDR').chargeable, false, 'nothing to charge');
+});
+
+test('the provider order id is legal, stable, and changes when the amount changes', () => {
+  const id = 'Toko Sinar Jaya:2026-08';
+  const orderId = providerOrderId(id, 500000, 'IDR');
+  assert.match(orderId, /^[A-Za-z0-9._~-]{1,50}$/, 'Midtrans refuses spaces and colons');
+  assert.ok(orderId.length <= 50);
+  assert.equal(orderId, providerOrderId(id, 500000, 'IDR'), 'the same invoice keeps the same order id');
+  assert.notEqual(orderId, providerOrderId(id, 1000000, 'IDR'), 'a corrected amount is a different transaction');
+  const long = providerOrderId('a'.repeat(200), 500000, 'IDR');
+  assert.ok(long.length <= 50);
+  assert.match(long, /^[A-Za-z0-9._~-]+$/);
+});
+
+test('the ledger is cents and the provider is rupiah, so the boundary converts both ways', () => {
+  assert.equal(providerAmount(500000, 'IDR'), 5000, 'Rp 5.000 is 5.000 rupiah, not 500.000');
+  assert.equal(providerAmount(500000, 'USD'), null, 'a rupiah provider cannot charge dollars');
+  assert.equal(providerAmount(99, 'IDR'), null, 'half a rupiah is not a charge');
+  assert.equal(paidAmountCents('5000.00', 'IDR'), 500000);
+  assert.equal(paidAmountCents('500000.00', 'IDR'), 50000000, 'the 100x amount is not the invoice');
+  assert.equal(paidAmountCents('nonsense', 'IDR'), null);
+  assert.equal(snapPaymentMethods(50, 'IDR').chargeable, false, 'nothing to charge below one rupiah');
 });
 
 test('the money rules run where Buffer does not exist, which is where they failed first', () => {
