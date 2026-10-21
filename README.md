@@ -31,7 +31,8 @@ A private, local-browser control bridge.
 | --- | --- |
 | Protocol | `1` |
 | Browser primitives | **29** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) plus device-local `watch.*`/`loop.*` async methods |
-| MCP surface | **31** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
+| Cloud MCP surface | **31** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
+| Local MCP surface | **36** tools ([`local/mcp-server.js`](local/mcp-server.js)) - the operator's own signed-in Chrome, no cloud hop |
 | Distribution | Signed CRX3 self-updates from the update service |
 
 ## Layout
@@ -40,9 +41,11 @@ A private, local-browser control bridge.
 |---|---|
 | `extension/` | MV3 runtime — background worker, content scripts, popup, options |
 | `lib/` | Shared pure modules the server and extension both read |
-| `supabase/functions/` | Deno edge: auth, bridge, gateway, ledger, listen, MCP, runner, update, VM (10 deployed) plus `_shared/` |
+| `local/` | The local MCP server: CDP straight to the browser on this machine, plus the statement job |
+| `supabase/functions/` | Deno edge: auth, bridge, gateway, listen, MCP, runner, update, VM (8 deployed) plus `_shared/` |
 | `supabase/migrations/` | SQL in timestamp order, never rewritten |
 | `tests/` | Fast suite is `npm test`; `cloud` and `postgres` are live-only |
+| `landing/` | The site Cloudflare Pages serves |
 | `store/` | Generated Chrome Web Store form: `scripts/build-store-package.py` writes the manifest and the zip from `extension/` |
 
 ## Commands
@@ -68,6 +71,8 @@ Local green is not acceptance. The acceptance rule is in [`AGENTS.md`](AGENTS.md
 | What primitives may the extension expose, and over what wire? | [`docs/api.md`](docs/api.md) |
 | What happens on a site nobody has a workflow for? | [`docs/unknown-site.md`](docs/unknown-site.md) |
 | How does this repo resist slop and silent drift? | [`docs/anti-drift.md`](docs/anti-drift.md) |
+| What is the statement job, and what does a delivery claim? | [`docs/jobs/statements.md`](docs/jobs/statements.md) |
+| How do the first bookkeepers get reached, and how does a session run? | [`docs/product/first-three-bookkeepers.md`](docs/product/first-three-bookkeepers.md) and [`docs/product/pilot-runbook.md`](docs/product/pilot-runbook.md) |
 | What did a release contain, and why? | [`docs/releases/`](docs/releases/) |
 | What design references informed this? | [`docs/design-references.md`](docs/design-references.md) |
 | What is the product aiming at? | [`docs/uec-north-star.md`](docs/uec-north-star.md) |
