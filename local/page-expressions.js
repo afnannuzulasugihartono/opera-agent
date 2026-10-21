@@ -286,8 +286,6 @@ export const HANDLE_PREFIX = 'opera-';
 // The list of methods that may be asked is decided by the surface, not by the caller: reads of structure, no script, no input, no navigation.
 // An agent confused about what a page is can ask the browser the question directly instead of inferring it from behaviour, and cannot turn the question into an action.
 
-const DROPPED_HANDLE = 'is no longer in the page';
-
 // WHY THE ROWS CARRY THEIR NODE INTERNAL.
 // The index that ties a row to its element means nothing to a caller — it is not a handle and it does not survive the next snapshot — so it never leaves the snapshot.
 // A caller that wants to hold on to a row asks for a handle, which is the browser's own name for the element and stays good for the element's life.

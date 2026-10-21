@@ -28,7 +28,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   `handoff-bridge` -> #89 `download-clean` -> #90 `payload-trim` -> #91 `statement-job` ->
   #92 `first-bookkeepers` -> #94 `pilot-runbook` -> #95 `audit-tree-truth` -> #96
   `code-standard` -> #97 `monetization` -> #98 `device-delivery` -> #99 `money-path` ->
-  #100 `comment-structure`. Each is green; #93 `audit-dead-code` is closed.
+  #100 `comment-structure` -> #101 `dead-code`. Each is green; #93 `audit-dead-code` is closed.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` measures four
   things: no source file over 1,200 lines (one named exception, the content script Chrome
   loads as a unit), no leftover markers, no twelve-line block repeated inside one file, and
@@ -39,7 +39,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   split; a bare `//` between paragraphs is a blank line, not a comment line. The gate is
   `format(file) === file` over the whole tree, 392 files with the migrations included, and
   the corpus that pins it is `tests/comment-format.test.mjs`.
-- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1353 unit tests, green.
+- **The dead code is gone, and a gate holds it.** The audit from the product's entry points
+  found 277 lines of code nothing reached: a VM engine left behind when the control flow
+  moved to `lib/reactive-vm-control-flow.js`, five unused field sets, an orphan fixture, two
+  dead CSS selectors. The gate in `tests/hygiene.test.mjs` now fails when a module with its
+  own code is reached by nothing but its own test.
+- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1354 unit tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
   functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
   bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
@@ -79,35 +84,30 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   bank portal: only a fixture has been driven, and the cloud surface has no `download` and
   no statement calls, so a pilot runs on the client's own machine.
 - **One CORS policy and one credential-shape check.** Every edge function resolves the origin
-  per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules
-  import [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any module
-  declares the pattern again.
+  per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules import
+  [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any module declares the pattern again.
 - No management token or secret key in the tree. The signed-in pages carry the Supabase
   publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`, `lastInputMs` - so the model can tell whether the person is looking at the tab. Fails open.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
   device runs it locally, so a task costs one round trip; [`lib/goal-plan.js`](../lib/goal-plan.js) is the gate that shares the allowlist.
-- **The bridge transport is a held `POST /poll`, not a WebSocket.** Chrome does not start a
-  service worker for an inbound socket frame, so the socket stayed `OPEN` and heard nothing.
+- **The bridge transport is a held `POST /poll`, not a WebSocket.** Chrome does not start a service worker for an inbound socket frame, so the socket stayed `OPEN` and heard nothing.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
   `vercel.app` stays in the CORS allowlist.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates. A push
   that does not deploy fails silently: CI is green and production keeps the old build. The
-  Vercel CLI cannot deploy this project: Root Directory is `landing`, so it resolves
-  `landing/landing` and refuses.
+  Vercel CLI cannot deploy this project: Root Directory is `landing`, so it resolves `landing/landing` and refuses.
 - `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, every
   path enumerated so no rule overlaps another. Every response carries HSTS, a locked-down
-  Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named
-  `script-src` in place of `unsafe-inline`. Re-hash after an inline script changes.
+  Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options: DENY`, and a hash-named `script-src` in place of `unsafe-inline`. Re-hash after an inline script changes.
 ## Measured, not assumed
 
 - **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte
   argument limit, so `node` died with "Argument list too long" and curl sent no body; the run
   went green having published nothing. `publish-crx.yml` now fails unless the status is 2xx.
 - **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so
-  the function admits the static token or a named account and nobody else. A rule admitting
-  any confirmed account once sat undeployed in the repo, and a test now bars it.
+  the function admits the static token or a named account and nobody else, and a test bars any wider rule.
 
 ## Still open
 
