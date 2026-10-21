@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extensionSource } from './helpers/extension-source.mjs';
-import { composeModelPlan, buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS, MODEL_MAX_TOKENS } from '../lib/model-client.js';
+import { composeModelPlan, buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS, MODEL_MAX_TOKENS } from '../extension/lib/model-client.js';
 
 const storageOf = (cfg) => ({ get: async () => cfg });
 const program = { root: { type: 'SEQUENCE', children: [{ type: 'COMMAND', method: 'page.find', arguments: { text: 'Skip' }, resultBinding: 'hit' }] } };

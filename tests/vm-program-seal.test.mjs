@@ -15,7 +15,7 @@ import {
   VM_READ_ONLY_METHODS,
   sealVmProgram
 } from '../supabase/functions/_shared/seal-vm-program.js';
-import { digestCanonical } from '../lib/goal-ledger.js';
+import { digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
 import { validateCollectProgram } from '../lib/reactive-vm-collect.js';
 
 const caller = { userId: 'caller-tenant' };

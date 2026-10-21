@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import { performance } from 'node:perf_hooks';
 
-import { createLedger, inspectLedger, validateLedger } from '../lib/goal-ledger.js';
+import { createLedger, inspectLedger, validateLedger } from '../supabase/functions/_shared/goal-ledger.js';
 
 const replay = JSON.parse(fs.readFileSync(new URL('../tests/fixtures/goal-ledger-replay-v1.json', import.meta.url), 'utf8'));
 const runsArg = process.argv.find((value) => value.startsWith('--runs='));

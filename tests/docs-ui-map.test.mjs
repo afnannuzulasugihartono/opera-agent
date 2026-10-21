@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: docs-ui-map.test — every menu label workflows use resolves in the map.
 // @state: locks EN+ID coverage and verify selectors per path.
-// @dependencies: node:test, strict, node:fs, ../lib/docs-ui-map.js.
+// @dependencies: node:test, strict, node:fs, ../supabase/functions/_shared/docs-ui-map.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { resolveMenuTarget, MENU_MAP } from '../lib/docs-ui-map.js';
+import { resolveMenuTarget, MENU_MAP } from '../supabase/functions/_shared/docs-ui-map.js';
 
 test('every menu label the workflows use exists in the map', () => {
   const dir = new URL('../supabase/migrations/', import.meta.url);

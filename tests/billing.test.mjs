@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: billing — what a delivery is worth, and what makes a payment claim true.
 // @state: the amount of an invoice, the two signatures, and the rule that an undelivered month is not charged.
-// @dependencies: node:test, strict, node:crypto, ../lib/billing.js.
+// @dependencies: node:test, strict, node:crypto, ../supabase/functions/_shared/billing.js.
 
 // WHY THESE RULES ARE TESTED AND NOT ASSUMED.
 // Money is the one place where being wrong is not a bug report but a customer's trust.
@@ -24,7 +24,7 @@ import {
   snapPaymentMethods,
   SNAP_QRIS_ONLY_BELOW_CENTS,
   verifyInvoiceToken
-} from '../lib/billing.js';
+} from '../supabase/functions/_shared/billing.js';
 
 const PRICE_LIST = [
   { kind: 'statement.client_month', unit: 'delivered client-month', amount_cents: 500000, currency: 'IDR', active: true }
