@@ -32,7 +32,7 @@ charged, and the proof is the reason the charge is defensible.
 ## What the proof object is for
 
 The proof is not a log line. It is an object another agent can hand to its own user
-and be believed, so it is frozen: [`tests/fixtures/statement-proof-v1.json`](../tests/fixtures/statement-proof-v1.json)
+and be believed, so it is frozen: [`tests/fixtures/statement-proof-v1.json`](../../tests/fixtures/statement-proof-v1.json)
 names every field and its type, and `tests/statement-proof.test.mjs` fails when the
 record drifts from it.
 
