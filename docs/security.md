@@ -1,40 +1,32 @@
-@last-edited: 2026-10-07 UTC+7.
-@related: [AGENTS.md](../AGENTS.md) - [handoff.md](handoff.md) - [api.md](api.md)
+@last-edited: 2026-10-22 UTC+7.
+@related: [AGENTS.md](../AGENTS.md) - [handoff.md](handoff.md) - [api.md](api.md) - [SECURITY.md](../SECURITY.md)
 
 # Security
 
-Opera Agent can interact with a local browser and therefore uses a strict allowlisted command model.
+Opera Agent can interact with a local browser and therefore uses a strict allowlisted command model. This page carries the detail; the short policy GitHub renders on the security tab is [`SECURITY.md`](../SECURITY.md).
 
 ## Security principles
 
 - No arbitrary `eval` or remote code execution.
 - Browser actions must use known, validated primitives.
-- A registered state reader (`extension/state-bridge.js` plus its pure
-  decision module) is pinned, reviewed, bundled code — not remote code. It
-  may run in the page's MAIN world to read whitelisted game fields and drive
-  frame-rate input, because content scripts cannot see page JavaScript. The
-  allowlist of readers lives in that one file; a new reader is a reviewed
-  addition, never a parameter.
+- A content script runs in the page's ISOLATED world, so it cannot read page JavaScript
+  and never tries to: every value it uses comes from the DOM the extension itself
+  rendered, or from a bounded accessibility summary built by
+  [`extension/lib/ax-summary.js`](../extension/lib/ax-summary.js). There is no
+  registered reader in the MAIN world, so there is no allowlist of readers to keep
+  reviewed, and no page script is ever consulted.
 - Passwords, PINs, OTP/2FA codes, CVV/CVC, and security-code fields remain blocked.
 - File uploads remain blocked unless explicitly designed and reviewed later.
 - Private extension signing keys must never be committed to the repository.
 - Production secrets belong in secure secret storage, not source code.
 - Commands should be auditable and bounded by timeouts and payload limits.
 
-## Supported versions
+## Supported versions and reporting
 
-Only the latest patch of the current minor line receives security fixes: 1.6.x is supported,
-anything below it is not. The version in [`extension/manifest.json`](../extension/manifest.json) is
-the source of truth.
-
-## Reporting a vulnerability
-
-- Do not open a public issue.
-- Report privately via the repository Security tab (Report a vulnerability) or direct
-  contact with the maintainer.
-- Include: affected version, reproduction steps, and impact.
-- Acknowledgement within 5 business days, and a critical fix or mitigation within 30 days. Both
-  targets are proposed, and the owner may adjust them during review.
+Which versions receive fixes, and the private route for reporting a vulnerability, are
+in [`SECURITY.md`](../SECURITY.md) at the repository root, where GitHub renders them
+on the security tab. They are stated there and not repeated here, so the two pages
+cannot disagree.
 
 ## Token transport
 

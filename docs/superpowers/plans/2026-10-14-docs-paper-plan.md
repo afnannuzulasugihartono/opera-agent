@@ -19,7 +19,7 @@ The ten workflow migrations, their tests, the E2E harness and the UI label map a
 - `supabase/migrations/20261014090000_docs_toc_insert.sql` and `20261014100000_docs_export_pdf.sql` — table of contents and PDF export.
 - `tests/docs-menu-walk.test.mjs`, `tests/docs-structure.test.mjs`, `tests/docs-chrome.test.mjs` — one structural test per workflow family, parsing the migration JSON.
 - `tests/paper_e2e.py` — the mini-thesis E2E over the local bridge.
-- `supabase/functions/_shared/docs-ui-map.js` with `lib/docs-ui-map.js` — the Docs menu labels in both locales.
+- `supabase/functions/_shared/docs-ui-map.js` - the Docs menu labels in both locales.
 
 ## Global Constraints
 

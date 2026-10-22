@@ -638,6 +638,32 @@ def assert_completed_ok(body):
         raise failure
     return body['result']
 
+
+# WHY THE SPA BUTTON IS FOUND AGAIN.
+# A ref dies with its document, its route, or the extension epoch, and the extension says exactly that when it refuses one: re-find it on the current page.
+# The ref from the earlier snapshot is long dead, so the click re-finds the button and claims the route change the click causes.
+
+async def find_spa_route_button(tab_id):
+    cid = STATE.push('page.find', {
+        'tabId': tab_id,
+        'role': 'button',
+        'text': 'Change SPA route',
+        'exact': True
+    })
+    return assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+
+
+# WHY THE TAB IS ACTIVATED TWICE.
+# The first activation may have to switch, and which tab was active before depends on what the run did earlier.
+# The second one is the reuse the claim is about, and it holds whatever the run did before it.
+
+async def activate_and_report_reuse(tab_id):
+    result = None
+    for _ in range(2):
+        cid = STATE.push('tabs.activate', {'tabId': tab_id, 'focusWindow': False})
+        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+    return result
+
 async def browser_focus_state(worker):
     return await worker.evaluate('''async () => {
         const windows = await chrome.windows.getAll({populate: true, windowTypes: ['normal']});
@@ -2316,7 +2342,7 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': listen_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
-        spa_route = next(item for item in rerendered_page['elements'] if item['label'] == 'Change SPA route')
+        spa_route = await find_spa_route_button(tab_id)
         cid = STATE.push('page.click', {'tabId': tab_id, 'ref': spa_route['ref']})
         spa_click = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         assert spa_click['postAction']['continuity'] == 'RESET_OR_ROUTE_CHANGE'
@@ -2407,8 +2433,7 @@ async def run(port, profile):
         assert final_chunk['nextOffset'] is None
         assert 'elements' not in final_chunk
 
-        cid = STATE.push('tabs.activate', {'tabId': tab_id, 'focusWindow': False})
-        result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        result = await activate_and_report_reuse(tab_id)
         assert result['reused'] is True
 
         cid = STATE.push('tabs.navigate', {'tabId': tab_id, 'url': f'http://{HOST}:{port}/page', 'wait': True})

@@ -29,7 +29,7 @@ extension, no new queue transport, no model key leaving the device.
 
 The graph is versioned JSON like a registered workflow
 (`opera_register_workflow`), but ad-hoc: no pre-registration. Flow:
-model text -> `lib/goal-plan.js` gate validates against the same allowlist
+model text -> `extension/lib/goal-plan.js` gate validates against the same allowlist
 as `extension/lib/protocol.js` -> one `execute(graph)` command enqueued ->
 device executes every node locally with existing burst/workflow primitives
 -> structured result plus per-node verification evidence returns once.
