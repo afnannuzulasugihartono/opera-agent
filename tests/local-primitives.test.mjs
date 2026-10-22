@@ -1262,8 +1262,9 @@ function docsCdp(copyAnswers, caret = null) {
 
 test('a read on a settled page takes two samples and says the text stood still', async () => {
   const cdp = recordingCdp();
+  const slept = [];
 
-  const out = await createPrimitives(cdp).read();
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).read();
 
   assert.deepEqual(out, {
     title: 't',
@@ -1277,8 +1278,10 @@ test('a read on a settled page takes two samples and says the text stood still',
     viewRestored: true,
     caretWhy: ''
   });
-  assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate', 'Runtime.evaluate'],
-    'two cheap samples, not a guess');
+  const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate').map((c) => c.params.expression);
+  assert.ok(asks.some((expression) => expression.includes('opera-settle-arm')), 'the read settles before its second sample');
+  assert.ok(asks.some((expression) => expression.includes('opera-settle-read')), 'and asks the page how quiet it is');
+  assert.deepEqual(slept, [SETTLE_POLL_MS], 'the settle is a beat, not a hundred milliseconds');
 });
 
 // WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS.
@@ -1299,11 +1302,20 @@ test('a read on a page still filling in says so, and answers with the later samp
       if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
         return { result: { value: samples[Math.min(ask++, samples.length - 1)] } };
       }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 1, quietMs: 0, elapsedMs: 8, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
       return { result: {} };
     }
   };
 
-  const out = await createPrimitives(cdp).read();
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).read();
 
   assert.equal(out.ready, 'complete', 'readyState said complete, and that is exactly why it cannot be the only signal');
   assert.equal(out.settled, false, 'the page had not stopped moving');
