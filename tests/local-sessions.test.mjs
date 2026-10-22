@@ -65,6 +65,31 @@ test('the adapter speaks driver verbs over primitive nouns', async () => {
 // The row is what was asked for; what the click hit belongs to the click.
 // Measured live: a click_row answered with its row and its point while a dialog owned the point and took the click, and the adapter's rebuilt answer had thrown that fact away before anyone could read it.
 
+test('a deaf page asks the session window, not the operating system shell', async () => {
+  const session = fakeSession();
+  session.hasFocus = async () => false;
+  session.windowState = async () => { session.calls.push(['windowState']); return { foreground: '', windows: [], minimized: [] }; };
+  session.focusWindow = async () => { session.calls.push(['focusWindow']); return { focused: true, title: 'x' }; };
+
+  const out = await asDriver(session).ensureFront({ match: 'Paper' });
+
+  assert.ok(session.calls.some((c) => c[0] === 'windowState'), 'the session was asked about the window');
+  assert.ok(!session.calls.some((c) => c[0] === 'focusWindow'), 'a background window is left where the human put it');
+  assert.match(out.window, /background and hears input anyway/);
+});
+
+test('a minimized session window is brought back through the session, not a shell', async () => {
+  const session = fakeSession();
+  session.hasFocus = async () => false;
+  session.windowState = async () => { session.calls.push(['windowState']); return { foreground: '', windows: [], minimized: ['Paper - Google Chrome'] }; };
+  session.focusWindow = async (match) => { session.calls.push(['focusWindow', match]); return { focused: true, title: 'Paper - Google Chrome' }; };
+
+  const out = await asDriver(session).ensureFront({ match: 'Paper' });
+
+  assert.deepEqual(session.calls.filter((c) => c[0] === 'focusWindow'), [['focusWindow', 'Paper - Google Chrome']]);
+  assert.match(out.window, /brought Paper - Google Chrome back/);
+});
+
 test('a row click carries what the click itself reported', async () => {
   const session = fakeSession();
   session.clickHandle = async (handle) => { session.calls.push(['clickHandle', handle]); return { x: 9, y: 8, handle, covered: true, coveredBy: 'div[dialog]' }; };
