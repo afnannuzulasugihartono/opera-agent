@@ -31,6 +31,8 @@ import {
   dragMimeType,
   isDocsDocument,
   modifierMask,
+  SETTLE_MAX_MS,
+  SETTLE_POLL_MS,
   snapshotExpression,
   splitText
 } from '../local/page-expressions.js';
@@ -76,6 +78,11 @@ function recordingCdp() {
           } } };
         }
         if (params.expression.includes('isContentEditable')) return { result: { value: { ...page } } };
+        if (params.expression.includes('opera-settle-arm')) return { result: { value: { ok: true } } };
+        if (params.expression.includes('opera-settle-read')) {
+          return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'hidden' } } };
+        }
+        if (params.expression.includes('opera-settle-disarm')) return { result: { value: true } };
         if (params.expression.includes('opera-hit')) {
           return { result: { value: { tag: 'BUTTON', role: 'button', name: 'Bold' } } };
         }
@@ -94,6 +101,45 @@ test('long text is chunked, because one oversized insert can be dropped without 
   assert.deepEqual(splitText('abcdef', 4), ['abcd', 'ef']);
   assert.deepEqual(splitText('', 4), []);
   assert.deepEqual(splitText('ab', 10), ['ab']);
+});
+
+test('settle watches the page from Node, so a hidden tab cannot clamp its timer', async () => {
+  const cdp = recordingCdp();
+  const slept = [];
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
+
+  const calls = cdp.calls.filter((call) => call.method === 'Runtime.evaluate');
+  const arm = calls.find((call) => call.params.expression.includes('opera-settle-arm'));
+  const read = calls.find((call) => call.params.expression.includes('opera-settle-read'));
+  const disarm = calls.find((call) => call.params.expression.includes('opera-settle-disarm'));
+
+  assert.ok(arm, 'settle installs a mutation watcher');
+  assert.match(arm.params.expression, /MutationObserver/);
+  assert.equal(arm.params.awaitPromise, undefined, 'no page-side promise waits on a throttled timer');
+  assert.ok(read, 'settle asks the watcher how quiet the page is');
+  assert.match(read.params.expression, /__operaSettle/);
+  assert.ok(disarm, 'settle removes its watcher');
+  assert.equal(out.why, 'quiet');
+  assert.equal(out.changes, 1);
+  assert.equal(out.maxMs, SETTLE_MAX_MS);
+  assert.deepEqual(slept, [SETTLE_POLL_MS]);
+});
+
+test('settle stops at the cap when the page never goes quiet', async () => {
+  const cdp = recordingCdp();
+  cdp.send = async (method, params = {}) => {
+    cdp.calls.push({ method, params });
+    if (params.expression.includes('opera-settle-read')) {
+      return { result: { value: { changes: 0, quietMs: 0, elapsedMs: 0, visibility: 'visible' } } };
+    }
+    return { result: { value: true } };
+  };
+  const slept = [];
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
+
+  assert.equal(out.why, 'deadline');
+  assert.equal(slept.length, SETTLE_MAX_MS / SETTLE_POLL_MS);
+  assert.ok(slept.every((ms) => ms === SETTLE_POLL_MS));
 });
 
 test('a newline is sent through untouched, because it is what produces a real paragraph break', async () => {

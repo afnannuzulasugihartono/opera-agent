@@ -102,6 +102,10 @@ const driver = {
     return (await attach()).read();
   },
 
+  async settle() {
+    return (await attach()).settle();
+  },
+
   async find(query) {
     return (await attach()).find(query);
   },
@@ -176,6 +180,10 @@ const driver = {
 
   async waitForRow(options) {
     return (await attach()).waitForRow(options);
+  },
+
+  async waitForText(text, options) {
+    return (await attach()).waitForText(text, options);
   },
 
   async waitForStill(options) {
