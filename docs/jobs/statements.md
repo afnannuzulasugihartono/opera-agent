@@ -94,12 +94,20 @@ this from a service into a product. It adds two commands:
 
 The two are exposed on the cloud surface as `statement_deliver` and `statement_manifest`.
 
-**What is proved and what is not.** The device path is unit-tested against a fake
-browser: the name rule, the wait, the refusals, the duplicate rule and the row are all
-covered ([`tests/statement-device.test.mjs`](../../tests/statement-device.test.mjs)). It has
-**not** been driven end to end in a real browser against a real portal — that needs the
-extension loaded in a browser with a portal serving a file, which is the next piece of
-work, and it is marked unverified until it is.
+**What is proved.** The device path is unit-tested against a fake browser, and driven end
+to end in a real one: the browser gate loads the extension, opens a portal that serves a
+two-page PDF under the portal's own name, and calls `statement.download` over the bridge.
+The file landed in the profile's download folder as `toko-sinar-jaya-bca-2026-09.pdf` -
+the card's name, not the portal's - at **266 bytes, 2 pages**, the page's `Rp 8.900.000`
+reached the manifest as `8900000`, a second call answered `duplicate:true` and left one
+row, and the whole drill cost **388.9 ms**
+([`tests/browser_extension_test.py`](../../tests/browser_extension_test.py)). That drill
+also found a bug the fake could not: the worker read `executeScript`'s `InjectionResult`
+wrapper instead of its `result`, so every delivered row carried no kind and no page count
+until the fix.
+
+What it still cannot claim is a real bank portal: the fixture says it is a fixture, and a
+pilot runs on the client's own machine.
 
 The permission is part of the promise: without `downloads` the file can only be saved
 under the name the portal gives it, and a delivery that cannot be seen on disk is a
