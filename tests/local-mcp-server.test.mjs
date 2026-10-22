@@ -14,6 +14,9 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createMcpServer, TOOLS } from '../local/mcp-server.js';
 
 // WHY every method here is async.
@@ -92,6 +95,41 @@ test('the surface covers what the driver can actually do', async () => {
 
   for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot']) {
     assert.ok(names.includes(required), `missing ${required}`);
+  }
+});
+
+// WHY THIS ONE IS DRIVEN WITHOUT A BROWSER.
+// A report that needs the browser open fails exactly when a bookkeeper wants it: at month end, on a laptop with no tab.
+// The tool answers from the file, so the test proves the server does not reach for a driver it does not need.
+
+test('report_build turns an exported sheet into a checked report without a browser', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-report-tool-'));
+  const source = path.join(dir, 'penjualan-2026-09.csv');
+  fs.writeFileSync(source, 'Tanggal,Kategori,Penjualan\r\n2026-09-01,Retail,1250000\r\n2026-09-02,Grosir,2000000\r\n');
+  try {
+    const server = createMcpServer(ctx());
+    const res = await server.handle({
+      jsonrpc: '2.0', id: 7, method: 'tools/call',
+      params: {
+        name: 'report_build',
+        arguments: {
+          source,
+          client: 'Toko Sinar Jaya',
+          title: 'Laporan Penjualan',
+          period: '2026-09',
+          periodColumn: 'Tanggal',
+          groupBy: 'Kategori',
+          valueColumn: 'Penjualan'
+        }
+      }
+    });
+    assert.equal(res.result.isError, undefined);
+    const payload = JSON.parse(res.result.content[0].text);
+    assert.equal(payload.verified.ok, true);
+    assert.equal(payload.report.figures.find((figure) => figure.id === 'total').cents, 325000000);
+    assert.ok(fs.existsSync(payload.out), 'the report file is written beside the source');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
