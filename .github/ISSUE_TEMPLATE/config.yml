@@ -1,0 +1,13 @@
+# @last-edited: 2026-10-22 UTC+7.
+# @title: config — where an issue goes.
+# @state: the routes a report takes.
+# @dependencies: none stated.
+
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/afnannuzulasugihartono/opera-agent/security/advisories/new
+    about: A private route for a security defect. Never open a public issue for one.
+  - name: The rules that bind a change
+    url: https://github.com/afnannuzulasugihartono/opera-agent/blob/main/AGENTS.md
+    about: What a change has to satisfy, and what the priorities are.
