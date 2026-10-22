@@ -13,6 +13,7 @@
     "bridge-server.js",
     "bridge.js",
     "browsers.js",
+    "burst.js",
     "cdp.js",
     "dialog.js",
     "driver.js",

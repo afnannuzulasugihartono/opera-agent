@@ -87,6 +87,12 @@ import {
   MENU_OPEN_GAP_MS,
   MENU_OPEN_POLL_MS,
   READ_SETTLE_MS,
+  SETTLE_ARM_EXPRESSION,
+  SETTLE_DISARM_EXPRESSION,
+  SETTLE_MAX_MS,
+  SETTLE_POLL_MS,
+  SETTLE_QUIET_MS,
+  SETTLE_READ_EXPRESSION,
   SCROLL_MARK,
   SELECTION_TEXT_EXPRESSION,
   centreOf,
@@ -915,6 +921,51 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     pageState,
 
+    // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
+    // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
+    // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
+    async settle() {
+      const started = Date.now();
+      let armed = false;
+      let last = null;
+      try {
+        await cdp.send('Runtime.evaluate', { expression: SETTLE_ARM_EXPRESSION, returnByValue: true });
+        armed = true;
+        const polls = Math.ceil(SETTLE_MAX_MS / SETTLE_POLL_MS);
+        for (let poll = 0; poll < polls; poll += 1) {
+          await sleep(SETTLE_POLL_MS);
+          const { result } = await cdp.send('Runtime.evaluate', { expression: SETTLE_READ_EXPRESSION, returnByValue: true });
+          const state = result?.value;
+          if (!state || state.missing) {
+            return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: 'the page lost the settle watcher' };
+          }
+          last = state;
+          if (state.quietMs >= SETTLE_QUIET_MS) {
+            return {
+              waitedMs: Date.now() - started,
+              quietMs: state.quietMs,
+              maxMs: SETTLE_MAX_MS,
+              changes: state.changes,
+              why: 'quiet',
+              visibility: state.visibility
+            };
+          }
+        }
+        return {
+          waitedMs: Date.now() - started,
+          quietMs: last?.quietMs ?? 0,
+          maxMs: SETTLE_MAX_MS,
+          changes: last?.changes ?? 0,
+          why: 'deadline',
+          visibility: last?.visibility ?? null
+        };
+      } catch (error) {
+        return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: error?.message || String(error) };
+      } finally {
+        if (armed) await cdp.send('Runtime.evaluate', { expression: SETTLE_DISARM_EXPRESSION, returnByValue: true }).catch(() => null);
+      }
+    },
+
     async waitForIdle({ timeoutMs = 10000, intervalMs = 100, readyState = 'complete' } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
@@ -925,11 +976,11 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       }
     },
 
-    async waitForText(text, { timeoutMs = 10000, intervalMs = 100 } = {}) {
+    async waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
         const state = await readState();
-        if (state.text.includes(text)) return state;
+        if (state.text.includes(text) !== absent) return state;
         if (Date.now() >= deadline) return state;
         await sleep(intervalMs);
       }

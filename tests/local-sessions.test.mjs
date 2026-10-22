@@ -19,6 +19,8 @@ function fakeSession() {
     key: async (name, modifiers) => { calls.push(['key', name, modifiers]); return { key: name }; },
     type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
     keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
+    settle: async (options) => { calls.push(['settle', options]); return { waitedMs: 1, why: 'quiet' }; },
+    waitForText: async (text, options) => { calls.push(['waitForText', text, options]); return { text }; },
     snapshot: async (options) => {
       calls.push(['snapshot', options]);
       return [{ role: 'menuitem', name: 'Insert', x: 1, y: 2 }];
@@ -47,11 +49,13 @@ test('the adapter speaks driver verbs over primitive nouns', async () => {
   await driver.key('a', ['Control']);
   await driver.type('hi');
   await driver.keys([{ text: 'x' }]);
+  await driver.settle();
+  await driver.waitForText('Total', { timeoutMs: 10 });
   await driver.capture();
   await driver.front();
 
   const verbs = session.calls.map((c) => c[0]);
-  assert.deepEqual(verbs, ['read', 'clickAt', 'hover', 'key', 'type', 'keys', 'capture', 'front']);
+  assert.deepEqual(verbs, ['read', 'clickAt', 'hover', 'key', 'type', 'keys', 'settle', 'waitForText', 'capture', 'front']);
 });
 
 // WHY THE ADAPTER RESOLVES THEN CLICKS A HANDLE.
