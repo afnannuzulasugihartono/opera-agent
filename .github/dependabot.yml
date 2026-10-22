@@ -1,0 +1,31 @@
+# @last-edited: 2026-10-22 UTC+7.
+# @title: dependabot — the dependencies that move on their own, so a person does not have to watch them.
+# @state: npm, GitHub Actions and the pip runtime.
+# @dependencies: none stated.
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies

@@ -1,0 +1,29 @@
+# @last-edited: 2026-10-22 UTC+7.
+# @title: .gitattributes — one line ending for the whole tree, and the files git must not touch.
+# @state: text is LF in the index and in the working tree, on every machine.
+# @dependencies: none stated.
+
+# WHY THIS FILE EXISTS.
+# The gates hash bytes, and a byte that differs by a line ending is a different byte.
+# Four files had crept in with CRLF while the rest of the tree was LF, and a Windows checkout would have rewritten them again on every clone, which moves a pin that says nothing about the contract it protects.
+
+# `text=auto` lets git detect text and store it with LF; `eol=lf` makes the working tree LF too, so a Windows editor cannot put CRLF back.
+
+* text=auto eol=lf
+
+# The files git must never touch: they are binary, and a line ending inside one changes what it is.
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.crx binary
+*.wav binary
+*.mp3 binary
+*.mp4 binary
+*.woff binary
+*.woff2 binary
