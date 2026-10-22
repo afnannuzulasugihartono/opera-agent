@@ -49,6 +49,7 @@ export function asDriver(session) {
   return {
     read: () => session.read(),
     evaluate: (expression) => session.evaluate(expression),
+    settle: () => session.settle(),
     ask: (method, params) => session.ask(method, params),
     find: (query) => findOn(session, query),
     click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
@@ -86,6 +87,7 @@ export function asDriver(session) {
     dialogType: (text) => session.dialogType(text),
     dialogPress: (name) => session.dialogPress(name),
     waitForRow: (options) => session.waitForRow(options),
+    waitForText: (text, options) => session.waitForText(text, options),
     waitForStill: (options) => session.waitForStill(options),
     upload: (options) => session.upload(options),
     dropFile: (options) => session.dropFile(options),

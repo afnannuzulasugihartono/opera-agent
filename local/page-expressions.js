@@ -807,6 +807,53 @@ export const EDIT_POLLS = 12;
 
 export const READ_SETTLE_MS = 100;
 
+// WHY THE SETTLE IS POLLED FROM NODE INSTEAD OF WAITING IN THE PAGE.
+// The first shape installed a MutationObserver and resolved from a page-side setTimeout(120).
+// Measured live on a hidden Google Docs tab, that timer was clamped by background-tab throttling: the call took 304ms, and repeated runs reached 1,009ms, while a snapshot of the same page took 4ms.
+// The observer still belongs to the page, but the clock that decides "quiet" now belongs to Node, whose timers are not throttled.
+// The page installs only the watcher; Node waits 8ms, asks the watcher how long the page has been still, and stops after 32ms of quiet or 120ms total.
+// Fifteen asks is the worst case, and four is the common one; no page-side timer is left for a hidden tab to clamp.
+
+export const SETTLE_QUIET_MS = 32;
+export const SETTLE_MAX_MS = 120;
+export const SETTLE_POLL_MS = 8;
+
+export const SETTLE_ARM_EXPRESSION = `(() => {
+  const key = '__operaSettle';
+  const old = window[key];
+  if (old?.observer) { try { old.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
+  const started = performance.now();
+  const state = { started, lastChange: started, changes: 0, observer: null };
+  state.observer = new MutationObserver(() => {
+    state.changes += 1;
+    state.lastChange = performance.now();
+  });
+  try {
+    state.observer.observe(document.documentElement || document, { subtree: true, childList: true, attributes: true, characterData: true });
+  } catch { /* settling a page that refuses observation is still cheaper than not looking */ }
+  window[key] = state;
+  return true;
+})() /*opera-settle-arm*/`;
+
+export const SETTLE_READ_EXPRESSION = `(() => {
+  const state = window.__operaSettle;
+  if (!state) return { missing: true };
+  const now = performance.now();
+  return {
+    changes: state.changes,
+    quietMs: Math.max(0, Math.round(now - state.lastChange)),
+    elapsedMs: Math.max(0, Math.round(now - state.started)),
+    visibility: document.visibilityState
+  };
+})() /*opera-settle-read*/`;
+
+export const SETTLE_DISARM_EXPRESSION = `(() => {
+  const state = window.__operaSettle;
+  if (state?.observer) { try { state.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
+  try { delete window.__operaSettle; } catch { /* a page that froze its globals still loses the observer */ }
+  return true;
+})() /*opera-settle-disarm*/`;
+
 // WHY THE APPEND WAITS A BEAT AFTER THE END KEY.
 // The end key asks the editor to move its caret and scroll to it; a document that scrolls answers the next insert before the view has caught up, and text lands where the caret used to be.
 // One beat is the cheapest way to let the view arrive, and it costs nothing when the view already has.
