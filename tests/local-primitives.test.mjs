@@ -659,6 +659,45 @@ test('a named key like Enter is dispatched with its virtual key code', async () 
   assert.equal(down.params.code, 'Enter');
 });
 
+test('the window state asks the browser, not the operating system, when it can', async () => {
+  const calls = [];
+  const cdp = {
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Browser.getWindowForTarget') {
+        return { windowId: 44, bounds: { windowState: 'minimized' } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).windowState();
+
+  assert.deepEqual(calls.map((c) => c.method), ['Browser.getWindowForTarget']);
+  assert.deepEqual(out.minimized, ['the browser window'], 'a minimized window is the one case that needs the machine');
+  assert.equal(out.platform, process.platform);
+});
+
+test('focusing a minimized window uses the browser bounds, not a shell', async () => {
+  const calls = [];
+  const cdp = {
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Browser.getWindowForTarget') return { windowId: 44, bounds: { windowState: 'minimized' } };
+      if (method === 'Browser.setWindowBounds') return {};
+      if (method === 'Browser.getWindowBounds') return { bounds: { windowState: 'normal' } };
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).focusWindow('Paper');
+
+  assert.deepEqual(calls.map((c) => c.method), ['Browser.getWindowForTarget', 'Browser.setWindowBounds', 'Browser.getWindowBounds']);
+  assert.deepEqual(calls[1].params, { windowId: 44, bounds: { windowState: 'normal' } });
+  assert.equal(out.focused, true);
+  assert.equal(out.title, 'the browser window');
+});
+
 test('front brings the tab forward so the watcher sees where the agent is', async () => {
   const cdp = recordingCdp();
 

@@ -107,6 +107,7 @@ import {
   splitText
 } from './page-expressions.js';
 import { filePrimitives } from './primitives-file.js';
+import { windowState as osWindowState, focusWindow as osFocusWindow } from './window-focus.js';
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath, now = Date.now } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
@@ -813,6 +814,44 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         returnByValue: true
       });
       return result?.value === true;
+    },
+
+    // WHY THE WINDOW IS ASKED THROUGH THE BROWSER FIRST.
+    // Measured on this machine: the OS read is a PowerShell enumeration and costs p50 1.14s, while Browser.getWindowForTarget on the same session costs p50 0.35ms and already answers the only question the focus guard has - is the window minimized.
+    // The OS read stays as the fallback for a browser or bridge that refuses the Browser domain, because a wrong "background" answer is how text goes nowhere.
+    async windowState() {
+      try {
+        const { bounds } = await cdp.send('Browser.getWindowForTarget', {});
+        return {
+          platform: process.platform,
+          foreground: '',
+          windows: [],
+          minimized: bounds?.windowState === 'minimized' ? ['the browser window'] : []
+        };
+      } catch {
+        return osWindowState();
+      }
+    },
+
+    async focusWindow(match = '') {
+      try {
+        const { windowId } = await cdp.send('Browser.getWindowForTarget', {});
+        await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'normal' } });
+        const { bounds } = await cdp.send('Browser.getWindowBounds', { windowId });
+        const focused = bounds?.windowState !== 'minimized';
+        return {
+          platform: process.platform,
+          match: String(match ?? ''),
+          focused,
+          title: focused ? 'the browser window' : '',
+          foreground: '',
+          windows: [],
+          minimized: focused ? [] : ['the browser window'],
+          why: focused ? '' : 'the browser would not leave the taskbar'
+        };
+      } catch {
+        return osFocusWindow(match);
+      }
     },
 
     async viewport() {
