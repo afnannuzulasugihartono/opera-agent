@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-22 UTC+7.
 // @title: monetization — what a delivery is worth, to whom, and what an agent hands over.
-// @state: the offer shape, the billing unit, the metering shape, and the three decisions still open.
+// @state: the offer shape, the decided price, the billing unit, and the two decisions still open.
 // @dependencies: none.
 
 // WHY THIS DOCUMENT EXISTS
@@ -25,9 +25,11 @@ One client, one portal, one month: a file with the right name, and a line of pro
   source.
 - The manifest: one line per client-month, refused twice for the same month.
 
-The unit of billing is the **delivered client-month**, and it is free when the
-delivery fails. That is the whole promise: a month that is not delivered is not
-charged, and the proof is the reason the charge is defensible.
+The unit is the **firm-month**: a plan of up to 15 client-months (Rp 99.000) or 50
+client-months (Rp 249.000), with each client-month above the cap at Rp 10.000. A
+client-month is one client, one portal, one month. A batch that is not delivered is
+not charged: the invoice is issued only after the firm accepts the first batch, and
+the proof is the reason the charge is defensible.
 
 ## What the proof object is for
 
@@ -68,23 +70,34 @@ tool call:
   for one client-month.
 - Failure is named: a cause and the next move, never a silent "ok".
 
-## The three decisions still open
+## The price, decided
 
-1. **The price.** Undecided, and it should stay undecided until a delivery happens.
-   The anchor in the outreach sheet is Rp 5.000 per client-month for Indonesia and
-   US$1.50 for the English market; those are anchors, not prices.
-2. **Unattended delivery.** Today the job needs an operator on the call, which makes
+The price is a row in `opera_price_list`, applied 2026-10-22:
+
+| Kind | Unit | Price |
+|---|---|---|
+| `plan.pilot` | firm-month, up to 15 client-months | Rp 99.000 |
+| `plan.firm` | firm-month, up to 50 client-months | Rp 249.000 |
+| `statement.client_month` | delivered client-month above the plan | Rp 10.000 |
+
+The first three firms get the pilot price locked, and there is no setup fee. The
+invoice is issued after the first batch is accepted, so a failed batch is Rp 0. This
+is a decision, not evidence: the first three payments are what will prove it.
+
+## Two decisions still open
+
+1. **Unattended delivery.** Today the job needs an operator on the call, which makes
    this a service with a ceiling of hours. For it to be income, the statement job has
-   to run on the client's own machine without a person watching - the extension and
-   the cloud bridge path - and leave the file and the manifest there. Acceptance:
+   to run on the client's own machine without a person watching — the extension and
+   the cloud bridge path — and leave the file and the manifest there. Acceptance:
    the client runs one command, the manifest gains a row, and nobody is on a call.
-3. **Whether the cloud surface grows the job.** The 31 cloud tools have no `download`
+2. **Whether the cloud surface grows the job.** The 31 cloud tools have no `download`
    and no statement calls, so an agent on rented infrastructure cannot deliver a file
    to the user's disk today. Either the job moves to the device, or the cloud surface
    grows a delivery call. The first is smaller and keeps the data on the machine.
 
-## What would settle the price
+## What proves the price
 
-Three bookkeepers, one client each, one month, free. Then the only number that
-matters is the one they answer: would you pay this for next month, and would you pay
-it per client or per month.
+Three firms, one batch each, paid at the pilot price after acceptance. The number
+that matters is not an opinion in a call; it is the first transfer that arrives, and
+the second month that is bought without a discount.

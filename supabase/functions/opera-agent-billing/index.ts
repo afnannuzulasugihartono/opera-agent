@@ -39,6 +39,7 @@ import {
   manualSettlement,
   notificationSignatureValid,
   paidAmountCents,
+  planInvoiceLines,
   providerAmount,
   providerOrderId,
   snapPaymentMethods,
@@ -136,6 +137,10 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
   const supabase = await db();
   const prices = await priceList(supabase);
   const out = amountFor(lines, prices);
+  // A plan is one price; if its row is missing, charging only the overage would undercharge the month and still look like a bill.
+  if (out.unpriced.length && lines.some((line) => String(line.kind).startsWith("plan."))) {
+    throw new HttpError(409, `the plan cannot be priced: ${out.unpriced.map((line) => line.kind).join(", ")}`);
+  }
   const id = `${customer_id}:${period}`;
   const token = invoiceToken(id, BILLING_SECRET);
 
@@ -328,11 +333,24 @@ Deno.serve(async (req: Request) => {
         }
         const typed = Array.isArray(body.lines) ? body.lines as Line[] : [];
         const deliveries = Array.isArray(body.deliveries) ? body.deliveries as Record<string, unknown>[] : [];
+        const plan = String(body.plan || "");
         if (typed.length && deliveries.length) {
           return json({ error: "send either the manifest rows or the lines, not both: the amount has one source" }, 400, cors);
         }
+        if (plan && typed.length) {
+          return json({ error: "send either a plan and its deliveries, or typed lines, not both" }, 400, cors);
+        }
+        if (plan && !deliveries.length) {
+          return json({ error: "a plan invoice needs at least one delivered client-month; a month nobody delivered is not charged" }, 400, cors);
+        }
         let lines = typed;
-        if (deliveries.length) {
+        if (plan) {
+          const derived = planInvoiceLines(deliveries, plan, period);
+          if (derived.refused.length) {
+            return json({ error: "the plan cannot be billed", refused: derived.refused.map((row) => row.reason) }, 400, cors);
+          }
+          lines = derived.lines;
+        } else if (deliveries.length) {
           const derived = linesFromDeliveries(deliveries);
           if (derived.refused.length) {
             return json({ error: "some deliveries cannot be billed", refused: derived.refused.map((row) => row.reason) }, 400, cors);

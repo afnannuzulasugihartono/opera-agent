@@ -142,8 +142,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     tables through `SECURITY DEFINER` `opera_konsol_*` readers; a write side is next.
 11. **The update endpoint answers in a nested query string.** Ask with
     `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
-12. **The price for a delivered client-month is undecided.** The pilot is free; the anchor in
-    [`monetization.md`](product/monetization.md) is Rp 5.000 per client-month.
+12. **The price is decided and applied.** `plan.pilot` is Rp 99.000 for up to 15
+    client-months, `plan.firm` is Rp 249.000 for up to 50, and an extra client-month is
+    Rp 10.000. The invoice is issued after the first batch is accepted, so a failed
+    batch is Rp 0. The first three transfers are the live proof; none has arrived yet.
+    The public `invoice_create` tool still bills per delivery, so a plan invoice is sent
+    to the function directly.
 
 ## CI
 
