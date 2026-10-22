@@ -697,8 +697,8 @@ test('a stream preserves order, counts its work, and refuses what it cannot carr
     'each chord keeps its beat once, inside the key; then the asked gap');
   assert.deepEqual(
     cdp.calls.map((c) => c.method),
-    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Runtime.evaluate'],
-    'the run is what was written, bracketed by the two questions that prove the text landed'
+    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Runtime.evaluate', 'Runtime.evaluate'],
+    'the run is what was written, bracketed by the signature before and the focus-plus-signature after'
   );
   await assert.rejects(() => p.keys([]), /non-empty/);
   await assert.rejects(() => p.keys(new Array(101).fill({ key: 'a' })), /at most 100/);
@@ -954,6 +954,7 @@ test('a run reaches the wire in the order it was written', async () => {
       'Input.insertText:',
       'Input.dispatchKeyEvent:keyDown',
       'Input.dispatchKeyEvent:keyUp',
+      'Runtime.evaluate:',
       'Runtime.evaluate:'
     ],
     'a chord closes before the next event starts, and the text lands between them'
@@ -1540,6 +1541,29 @@ test('a chord-only stream settles once instead of polling for an edit that never
 
   assert.equal(out.moved, false, 'a menu chord does not move the text signature');
   assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, SETTLE_POLL_MS], 'two key beats, then one settle — not twelve 150 ms polls');
+});
+
+test('a text stream with nothing focused fails fast instead of polling for text that cannot land', async () => {
+  const slept = [];
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('shadowRoot')) {
+        return { result: { value: { trail: 'button', tag: 'BUTTON', editable: false } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('document.body')) {
+        return { result: { value: { body: '9:body text', value: '', holds: true } } };
+      }
+      return {};
+    }
+  };
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.keys([{ text: 'abc' }]);
+
+  assert.equal(out.moved, false, 'text sent to a button moves no signature');
+  assert.deepEqual(slept, [], 'no edit poll runs when nothing can receive the text');
 });
 
 // WHY ALL FOUR ARROWS ARE PINNED.
