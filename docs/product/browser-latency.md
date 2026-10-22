@@ -143,7 +143,8 @@ Same machine, same 100-row fixture, same headless Chrome launch, same job. The
 `before` column is the immediately previous commit (`afd4638`); the `after`
 column is the current tree. The three-call job is `click_row` -> `press_key Tab`
 -> `hover`. The text-stream job focuses the fixture input first, so the signature
-actually moves; the chord-stream job is `Ctrl+A` then `Ctrl+B`.
+actually moves; the chord-stream job is `Ctrl+A` then `Ctrl+B`; the unfocused
+text-stream job clicks the Run button first, so nothing can receive the text.
 
 | Operation | Before p50 | Before p95 | After p50 | After p95 | What changed |
 |---|---:|---:|---:|---:|---|
@@ -153,6 +154,7 @@ actually moves; the chord-stream job is `Ctrl+A` then `Ctrl+B`.
 | MCP `press_key` | 107.24 ms | 108.39 ms | 76.43 ms | 77.88 ms | key beat is one frame, not fifty milliseconds |
 | MCP `stream_keys` text | 168.55 ms | 172.02 ms | 76.46 ms | 77.58 ms | one beat per chord, and the text wait ends on the first moved signature |
 | MCP `stream_keys` chords | 1,987.43 ms | 1,996.89 ms | 152.83 ms | 155.22 ms | a chord-only stream settles once instead of polling twelve times for text |
+| MCP `stream_keys` text unfocused | 1,857.97 ms | 1,867.83 ms | 76.22 ms | 79.69 ms | text sent to a non-editable focus fails fast instead of polling for a signature |
 | MCP `read_page` | 106.77 ms | 108.18 ms | 45.34 ms | 47.06 ms | second sample waits on settle, not `sleep(100)` |
 | three dependent MCP calls | 456.94 ms | 463.65 ms | 169.03 ms | 170.39 ms | each call now settles once, and the key step is shorter |
 | one `browser_burst` of those three steps | n/a | n/a | 76.83 ms | 78.78 ms | one settle and one page look at the end |
@@ -264,7 +266,9 @@ The bigger key win was in `stream_keys`: a chord-only stream used to wait twelve
 150 ms polls for a text signature that a menu chord never moves. It now settles
 once and reads the signature once. That stream fell from **p50 1,987.43 ms** to
 **p50 152.83 ms**. A text stream with the input focused fell from **p50 168.55
-ms** to **p50 76.46 ms**.
+ms** to **p50 76.46 ms**. A text stream with nothing focused used to pay the same
+1.8 s poll budget for text that could not land; it now reads focus once and fails
+fast, **p50 1,857.97 ms** to **p50 76.22 ms**.
 
 ### 4. Polling waits and a read inside each poll
 
