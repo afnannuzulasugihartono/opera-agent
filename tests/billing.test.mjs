@@ -16,6 +16,7 @@ import {
   invoiceToken,
   isSettled,
   linesFromDeliveries,
+  manualSettlement,
   notificationSignatureValid,
   paidAmountCents,
   priceFor,
@@ -191,4 +192,39 @@ test('the money rules run where Buffer does not exist, which is where they faile
   } finally {
     globalThis.Buffer = saved;
   }
+});
+
+// WHY A MANUAL SETTLEMENT IS A FIRST-CLASS ROAD AND NOT A BACKDOOR.
+// The first customers pay by transfer, because a provider account is not open yet, and an invoice that cannot record that money is a page that lies.
+// The rules are the same as the provider's: only an open invoice, only the amount it says, and a note naming who confirmed it - so the ledger can still be checked a year later.
+
+const OPEN = { id: 'Toko Sinar Jaya:2026-09', status: 'open', amount_cents: 9900000, currency: 'IDR' };
+
+test('an open invoice can be settled by a transfer that names who confirmed it', () => {
+  const out = manualSettlement(OPEN, { amountCents: 9900000, note: 'BCA 2026-10-22 Rp 99.000, confirmed by owner' });
+  assert.equal(out.ok, true);
+});
+
+test('a paid invoice is terminal, so a second transfer cannot settle it again', () => {
+  const out = manualSettlement({ ...OPEN, status: 'paid' }, { amountCents: 9900000, note: 'second transfer' });
+  assert.equal(out.ok, false);
+  assert.match(out.why, /paid/);
+});
+
+test('a manual settlement for another amount is refused, not rounded', () => {
+  const out = manualSettlement(OPEN, { amountCents: 9800000, note: 'underpaid' });
+  assert.equal(out.ok, false);
+  assert.match(out.why, /amount/);
+});
+
+test('a manual settlement without a note is refused, because nobody can check it later', () => {
+  const out = manualSettlement(OPEN, { amountCents: 9900000, note: '  ' });
+  assert.equal(out.ok, false);
+  assert.match(out.why, /note/);
+});
+
+test('a void invoice cannot be settled by hand', () => {
+  const out = manualSettlement({ ...OPEN, status: 'void' }, { amountCents: 9900000, note: 'called off' });
+  assert.equal(out.ok, false);
+  assert.match(out.why, /open/);
 });
