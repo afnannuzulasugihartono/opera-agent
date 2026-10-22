@@ -28,6 +28,7 @@ const PROTOCOL_VERSION = '2024-11-05';
 // For the same reason those two calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
 
 import { statementCard, statementDelivered } from './statements.js';
+import { reportFromFile } from './reports.js';
 
 const stringArg = (name) => ({ type: 'string', description: name });
 const numberArg = (name) => ({ type: 'number', description: name });
@@ -415,6 +416,24 @@ export const TOOLS = Object.freeze([
       },
       required: ['client', 'portal', 'period', 'path']
     }
+  },
+  {
+    name: 'report_build',
+    description: 'Turn a sheet exported to CSV into a report plan whose every figure names the column and the exact rows it came from, recheck the plan against those rows, and write it beside the source. Refuses a row outside the requested period, a value that is not money, a missing column, and a figure that disagrees with its source - so a wrong number stops the report instead of reaching a client. No browser is touched: month-end reports must not depend on a tab being open.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: stringArg('the CSV file exported from the workbook'),
+        client: stringArg('the client the report is for'),
+        title: stringArg('the report title, as the person wants it read'),
+        period: stringArg('the month the report covers, YYYY-MM'),
+        periodColumn: stringArg('the column that holds each row\'s date, when the sheet has one'),
+        groupBy: stringArg('the column whose values become the report lines'),
+        valueColumn: stringArg('the money column that is summed'),
+        out: stringArg('where to write the report; defaults beside the source')
+      },
+      required: ['source', 'client', 'title', 'period', 'groupBy', 'valueColumn']
+    }
   }
 ]);
 
@@ -688,6 +707,18 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         balance: args.balance ?? null,
         manifest: args.manifest ?? null,
         replace: args.replace === true
+      }));
+    }
+    if (name === 'report_build') {
+      return asText(reportFromFile({
+        source: args.source,
+        client: args.client,
+        title: args.title,
+        period: args.period,
+        periodColumn: args.periodColumn ?? null,
+        groupBy: args.groupBy,
+        valueColumn: args.valueColumn,
+        out: args.out ?? null
       }));
     }
 
