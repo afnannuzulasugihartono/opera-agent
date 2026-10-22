@@ -22,6 +22,7 @@
     "page-expressions.js",
     "primitives-file.js",
     "primitives.js",
+    "reports.js",
     "sessions.js",
     "statements.js",
     "transport.js",
