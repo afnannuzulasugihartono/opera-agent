@@ -22,12 +22,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   GitHub Release carries the extension zip, the source zip, the CRX and SHA256SUMS. Pull
   request #86 passed every gate and is `blocked` by the base-branch policy: it needs an
   owner approval, which an agent cannot give itself.
-- **Twelve pull requests are stacked and all wait for that one approval.** #87
+- **Seventeen pull requests are stacked and all wait for that one approval.** #87
   `handoff-bridge` -> #89 `download-clean` -> #90 `payload-trim` -> #91 `statement-job` ->
   #92 `first-bookkeepers` -> #94 `pilot-runbook` -> #95 `audit-tree-truth` -> #96
   `code-standard` -> #97 `monetization` -> #98 `device-delivery` -> #99 `money-path` ->
-  #100 `comment-structure` -> #101 `dead-code` -> #102 `file-headers`. Each is green; #93
-  `audit-dead-code` is closed.
+  #100 `comment-structure` -> #101 `dead-code` -> #102 `file-headers` -> #103 `one-home` ->
+  #104 `comment-claims` -> #105 `repo-standard`. Each is green; #93 `audit-dead-code` is
+  closed and #88 `research-agent-surface` stands apart.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` measures four
   things: no source file over 1,200 lines (one named exception, the content script Chrome
   loads as a unit), no leftover markers, no twelve-line block repeated inside one file, and
@@ -37,14 +38,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   code under it; a sentence is one line, so a wrapped one is joined and a two-sentence one is
   split; a bare `//` between paragraphs is a blank line. The gate is `format(file) === file`
   over the whole tree, and the corpus that pins it is `tests/comment-format.test.mjs`.
-- **The dead code is gone, and a gate holds it.** The audit from the product's entry points
-  found 277 lines of code nothing reached: a VM engine left behind when the control flow
-  moved to `lib/reactive-vm-control-flow.js`, five unused field sets, an orphan fixture, two
-  dead CSS selectors. The gate in `tests/hygiene.test.mjs` now fails when a module with its
-  own code is reached by nothing but its own test.- **Every file says what it is.** The four header fields are on all 280 source files: the title
-  names the file and what it is, the state says what it holds rather than what a past commit
-  did. The gate in `tests/hygiene.test.mjs` fails on a scaffold word, a doubled name, a commit
-  message in the state, or a missing field.
+- **The dead code is gone, and a gate holds it.** The gate in `tests/hygiene.test.mjs` fails
+  when a module with its own code is reached by nothing but its own test.
+- **Every file says what it is.** The four header fields are on all 280 source files: the
+  title names the file and what it is, the state says what it holds rather than what a past
+  commit did. The gate in `tests/hygiene.test.mjs` fails on a scaffold word, a doubled name, a
+  commit message in the state, or a missing field.
 - **One home for each shared module.** The eight `lib/` files that only re-exported another
   module are gone: the edge and the extension now import the shared file directly, and the
   Node suite reaches the same file rather than a pointer to it.
@@ -52,7 +51,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   one of them is held by the code, a test or a file name. The gate in
   `tests/comment-claims.test.mjs` refuses a number nothing holds, so a measurement cannot
   be invented; a real measurement is allowed when the comment says where it was taken.
-- Gates: `npm test`, `npm run check` - 31 primitives, 177 runtime safety files, 1359 unit tests, green.
+- **The repository carries what a reader and a reviewer need.** `tests/readme.test.mjs` reads
+  the README's numbers back out of the code, and `tests/professional.test.mjs` fails a missing
+  standard file, a pull request that skips CI, a CRLF file, or a document naming a dead path.
+- **The browser drive depends on nothing but the page it drives.** A ref dies with its
+  document, its route or the extension epoch, so the drive re-finds what it clicks.
+- Gates: `npm test`, `npm run check` - 31 primitives, 177 runtime safety files, 1369 unit tests, green.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
   functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
   bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
@@ -68,10 +72,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   readable invoice id has characters Midtrans refuses. The provider key is not set, so the
   Snap request itself is `[UNVERIFIED]` until a real key exists. Fees and the foreign-client
   paths are in [`product/billing.md`](product/billing.md).
-- **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge` runs
-  the whole MCP surface over it: `list_tabs` 7 ms, `read_page` 8 ms, `ax_snapshot` 95 ms.
-- **Prose is 14% of the bytes and 7% of the lines**, and no comment repeats the code under
-  it. A cap on comment volume would reward deleting the reason, not writing it better.
+- **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge` runs the whole MCP surface over it.
 - **The statement job is the first product, and it is local.** `statement_card` names the
   file and the folder before the drive; `statement_delivered` verifies the file on disk -
   kind sniffed from the bytes, PDF pages counted from the file's own structure, closing
@@ -90,13 +91,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   session checklist are written: [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md)
   and [`product/pilot-runbook.md`](product/pilot-runbook.md). The unproven part is a real bank
   portal: only a fixture has been driven, so a pilot runs on the client's own machine.
-- **One CORS policy and one credential-shape check.** Every edge function resolves the origin
-  per request through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules import
-  [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any module declares it again.
+- **One CORS policy and one credential-shape check.** Every edge function resolves the origin per request through
+  [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules import [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` fails if any module declares it again.
 - No management token or secret key in the tree; the signed-in pages carry the Supabase publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`, `lastInputMs` - so the model can tell whether the person is looking at the tab. Fails open.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
-  device runs it locally, so a task costs one round trip; [`lib/goal-plan.js`](../extension/lib/goal-plan.js) is the gate that shares the allowlist.
+  device runs it locally, so a task costs one round trip; [`extension/lib/goal-plan.js`](../extension/lib/goal-plan.js) is the gate that shares the allowlist.
 - **The bridge transport is a held `POST /poll`, not a WebSocket.** Chrome does not start a service worker for an inbound socket frame, so the socket stayed `OPEN` and heard nothing.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and `vercel.app` stays in the CORS allowlist.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
@@ -149,7 +149,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 - Three gates on `ubuntu-24.04`, Node pinned to `22.20.0`: unit, secret-scan, browser
   (headed under `xvfb-run`). The concurrency group cancels an in-flight run when a newer one
-  queues, so push, then wait.
+  queues, so push, then wait. Every pull request runs them, whatever it targets.
 - [`.gitleaks.toml`](../.gitleaks.toml) names paths and symbols that must exist. Re-point the
   allowlist when a file is renamed, never edit the fixture to dodge the scanner, and
   reproduce gitleaks 8.24.0 locally before a push.

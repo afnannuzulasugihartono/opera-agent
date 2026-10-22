@@ -1,15 +1,17 @@
-# @last-edited: 2026-10-04 22:52 UTC+7.
+# @last-edited: 2026-10-22 UTC+7.
 # @title: ci — three jobs, all on GitHub Linux runners.
-# @state: all three gates on GitHub Linux; the harness runs headed under xvfb on playwright chromium.
+# @state: all three gates run on every pull request, whatever it targets, and on a push to main.
 # @dependencies: none stated.
 
 name: CI
+
+# Every pull request, whatever branch it targets.
+# The stack in this repository is a chain of branches, and a gate that only runs against main runs for none of them: the pull requests that carry the work would show no gate at all, and the owner would be the only check.
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
