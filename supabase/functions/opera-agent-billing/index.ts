@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: opera-agent-billing — the invoice a customer opens, and the callback that closes it.
-// @state: quotes a delivery into an amount, opens an invoice, serves it to its owner, and marks it paid from a signed notification.
+// @state: quotes a delivery into an amount, opens an invoice, serves it to its owner, marks it paid from a signed notification, and records a transfer by hand.
 // @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/cors.js, ../_shared/edge-log.js.
 
 // WHY THIS FUNCTION EXISTS.
@@ -36,6 +36,7 @@ import {
   invoiceToken,
   isSettled,
   linesFromDeliveries,
+  manualSettlement,
   notificationSignatureValid,
   paidAmountCents,
   providerAmount,
@@ -53,7 +54,7 @@ type InvoiceRow = {
   status: string;
   amount_cents: number;
   currency: string;
-  lines: { priced: Line[]; unpriced: Line[] };
+  lines: { priced: Line[]; unpriced: Line[]; manual?: { note: string; at: string } };
   pay_url?: string | null;
   provider_order_id?: string | null;
 };
@@ -64,6 +65,10 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const BILLING_SECRET = Deno.env.get("BILLING_SECRET") || "";
 const BILLING_TOKEN = Deno.env.get("OPERA_BILLING_TOKEN") || "";
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY") || "";
+
+// The first customers pay by transfer; the account line is theirs to read, so it is configuration and never code.
+
+const BILLING_BANK = Deno.env.get("BILLING_BANK") || "";
 const log = createEdgeLog("opera-agent-billing");
 
 let clientPromise: Promise<import("@supabase/supabase-js").SupabaseClient> | null = null;
@@ -95,11 +100,15 @@ function invoicePage(invoice: InvoiceRow): string {
   const lines = (invoice.lines?.priced || []).map((line: Line) => `<tr><td>${escapeHtml(line.description || line.unit || line.kind)}</td><td>${line.quantity}</td><td>${escapeHtml(money(line.amountCents, invoice.currency))}</td></tr>`).join("");
   const unpriced = (invoice.lines?.unpriced || []).map((line: Line) => `<tr><td>${escapeHtml(line.description || line.kind)}</td><td colspan="2">not charged: ${escapeHtml(line.reason)}</td></tr>`).join("");
   const paid = invoice.status === 'paid';
+  const manual = invoice.lines?.manual;
+  const bank = !paid && !invoice.pay_url && BILLING_BANK
+    ? `<p><small>${escapeHtml(BILLING_BANK)}</small></p>`
+    : '';
   const pay = paid
-    ? '<p class="paid">Paid. Thank you.</p>'
+    ? `<p class="paid">Paid. Thank you.</p>${manual ? `<p><small>Recorded by hand: ${escapeHtml(manual.note)} (${escapeHtml(manual.at)})</small></p>` : ''}`
     : invoice.pay_url
       ? `<p><a class="pay" href="${escapeHtml(invoice.pay_url)}">Pay ${escapeHtml(money(invoice.amount_cents, invoice.currency))}</a></p>`
-      : `<p class="pay">Transfer ${escapeHtml(money(invoice.amount_cents, invoice.currency))} and quote invoice ${escapeHtml(invoice.id)}.</p>`;
+      : `<p class="pay">Transfer ${escapeHtml(money(invoice.amount_cents, invoice.currency))} and quote invoice ${escapeHtml(invoice.id)}.</p>${bank}`;
   return `<!doctype html><meta charset="utf-8"><title>Invoice ${escapeHtml(invoice.id)}</title>
 <style>
  body{font:16px/1.5 system-ui,sans-serif;max-width:44rem;margin:3rem auto;padding:0 1rem;color:#111}
@@ -186,6 +195,37 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
   return { invoice: data, token };
 }
 
+// WHY A TRANSFER IS RECORDED WITH THE SAME CARE AS A CALLBACK.
+// The money can arrive before a provider account exists, and the ledger still has to show who confirmed it and when.
+// The note is stored on the invoice itself, so the page the customer already holds shows the same record the operator sees.
+
+async function settleManual({ invoice_id, amount_cents, note }: { invoice_id: string; amount_cents?: unknown; note?: unknown }): Promise<InvoiceRow> {
+  const supabase = await db();
+  const { data: invoice, error } = await supabase.from("opera_invoices").select("*").eq("id", invoice_id).maybeSingle();
+  if (error) throw new Error(`invoice unreadable: ${error.message}`);
+  const check = manualSettlement(invoice, {
+    amountCents: amount_cents === undefined || amount_cents === null || amount_cents === "" ? null : Number(amount_cents),
+    note
+  });
+  if (!check.ok) throw new HttpError(409, check.why);
+  const text = String(note || "").trim();
+  const at = new Date().toISOString();
+  const { data, error: updateError } = await supabase.from("opera_invoices")
+    .update({
+      status: "paid",
+      paid_at: at,
+      provider: invoice.provider || "manual",
+      lines: { ...(invoice.lines || {}), manual: { note: text, at } }
+    })
+    .eq("id", invoice.id)
+    .eq("status", "open")
+    .select()
+    .maybeSingle();
+  if (updateError) throw new Error(`invoice not closed: ${updateError.message}`);
+  if (!data) throw new HttpError(409, "the invoice changed while it was being settled; check it and try again");
+  return data;
+}
+
 async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow> {
   if (!verifyInvoiceToken(invoiceId, token, BILLING_SECRET)) throw new HttpError(401, "that link does not open that invoice.");
   const supabase = await db();
@@ -265,6 +305,16 @@ Deno.serve(async (req: Request) => {
         }
         const out = await markPaid(notification);
         return json(out, out.ok ? 200 : 400, cors);
+      }
+      if (body.action === "settle-manual") {
+        const token = req.headers.get("authorization") || "";
+        if (!BILLING_TOKEN || token !== `Bearer ${BILLING_TOKEN}`) {
+          return json({ error: "the operator token is missing or wrong" }, 401, cors);
+        }
+        const invoiceId = String(body.invoice_id || "");
+        if (!invoiceId) return json({ error: "invoice_id is required" }, 400, cors);
+        const invoice = await settleManual({ invoice_id: invoiceId, amount_cents: body.amount_cents, note: body.note });
+        return json({ ok: true, invoice }, 200, cors);
       }
       if (body.action === "invoice") {
         const token = req.headers.get("authorization") || "";

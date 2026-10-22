@@ -189,6 +189,23 @@ export function linesFromDeliveries(deliveries, kind = 'statement.client_month')
   return { lines, refused };
 }
 
+// WHY A TRANSFER IS THE FIRST ROAD AND NOT A SPECIAL CASE.
+// The first customer pays before a provider account exists, and an invoice that cannot record that money is a page that lies.
+// So a transfer follows the same rules the provider does: only an open invoice, only the amount it says, and a note that names who confirmed it, because the ledger has to be checkable a year later.
+
+export function manualSettlement(invoice, { amountCents = null, note = '' } = {}) {
+  if (!invoice) return { ok: false, why: 'no invoice to settle' };
+  const status = String(invoice.status || '').toLowerCase();
+  if (status === 'paid') return { ok: false, why: 'this invoice is already paid, and a paid invoice is terminal' };
+  if (status !== 'open') return { ok: false, why: `only an open invoice can be settled, and this one is ${status || 'stateless'}` };
+  if (amountCents !== null && amountCents !== undefined && Number(amountCents) !== Number(invoice.amount_cents)) {
+    return { ok: false, why: `the amount does not match the invoice: expected ${invoice.amount_cents}, got ${amountCents}` };
+  }
+  const text = String(note || '').trim();
+  if (text.length < 3) return { ok: false, why: 'a manual settlement needs a note, so the ledger can be checked later' };
+  return { ok: true };
+}
+
 export function notificationSignatureValid(notification, serverKey) {
   if (!notification || !serverKey) return false;
   const orderId = String(notification.order_id || '');
