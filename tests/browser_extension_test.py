@@ -245,6 +245,35 @@ ACTION_PIPELINE_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-action-pipeline
 RETRY_POPUP_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-retry-popup.html').read_text(encoding='utf-8')
 INTERACTION_CONTROLS_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-interaction-controls.html').read_text(encoding='utf-8')
 
+# WHY THE PORTAL IS A FIXTURE AND THE STATEMENT IS REAL BYTES.
+# The device path is the one that turns a service into a product, and it had only ever been proved against a fake browser.
+# This portal is the smallest thing that behaves like one: an account, a month, a closing balance, and a file whose name the portal chooses.
+# The file is a real two-page PDF, because the device's whole claim is that it reads the file rather than the label.
+
+PORTAL_PAGE = '''<!doctype html><html><head><title>Portal Uji - Rekening Koran</title></head>
+<body>
+<h1>Portal Uji</h1>
+<p id="account">Toko Sinar Jaya - 123-456-789</p>
+<p id="month">Periode: September 2026</p>
+<p id="balance">Saldo akhir: Rp 8.900.000</p>
+<a id="download" href="/statement/2026-09.pdf">Unduh rekening koran September 2026</a>
+</body></html>'''
+
+STATEMENT_PDF = (
+    b'%PDF-1.4\n'
+    b'1 0 obj<</Type /Catalog/Pages 2 0 R>>endobj\n'
+    b'2 0 obj<</Type /Pages/Kids[3 0 R 4 0 R]/Count 2>>endobj\n'
+    b'3 0 obj<</Type /Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\n'
+    b'4 0 obj<</Type /Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\n'
+    b'trailer<</Root 1 0 R>>\n%%EOF\n'
+)
+
+STATEMENT_PORTAL_FILENAME = 'statement-2026-09.pdf'
+STATEMENT_CARD_FILENAME = 'toko-sinar-jaya-bca-2026-09.pdf'
+
+# WHY THE PORTAL SERVES A NAME THE CARD DOES NOT WANT.
+# A portal names its own file, and the delivery has to land under the name the card chose, so a portal that answers with a different name is what proves the rename.
+
 def build_r5_wav():
     buffer = io.BytesIO()
     with wave.open(buffer, 'wb') as wav:
@@ -548,6 +577,30 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
+        if self.path.startswith('/statement/2026-09.pdf'):
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/pdf')
+            self.send_header('Content-Disposition', f'attachment; filename="{STATEMENT_PORTAL_FILENAME}"')
+            self.send_header('Content-Length', str(len(STATEMENT_PDF)))
+            self.end_headers()
+            try:
+                self.wfile.write(STATEMENT_PDF)
+            except (BrokenPipeError, ConnectionError, OSError):
+                pass
+            return
+
+        if self.path.startswith('/portal'):
+            payload = PORTAL_PAGE.encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(payload)))
+            self.end_headers()
+            try:
+                self.wfile.write(payload)
+            except (BrokenPipeError, ConnectionError, OSError):
+                pass
+            return
+
         if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax'):
             if self.path.startswith('/pre8e-uv'):
                 document = ACTION_PIPELINE_PAGE
@@ -790,6 +843,100 @@ async def wait_stored(page, key, expected, timeout_ms=5000):
         f'storage[{key!r}] never became {expected!r}; last value was {value!r};'
         f' status line was {status!r}')
 
+# WHY THE DELIVERY IS DRIVEN AND NOT MOCKED.
+# The device path is the one that runs without a person watching, so it is the one the product is sold on, and it had only ever been proved against a fake browser.
+# This drives it through the same bridge a server would use: the agent reads the portal, the card names the file, the device downloads it, and the row is read back from the device's own storage.
+
+async def run_statement_drill(port, download_dir):
+    started = time.perf_counter()
+    cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/portal', 'active': True, 'wait': True})
+    tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+    cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 4000, 'includeElements': True, 'maxElements': 40})
+    portal = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+    assert 'Toko Sinar Jaya' in portal['text'], portal['text']
+    assert 'September 2026' in portal['text'], portal['text']
+    balance = next(line.strip() for line in portal['text'].splitlines() if 'Saldo akhir' in line)
+    assert 'Rp 8.900.000' in balance, balance
+
+    params = {
+        'tabId': tab_id,
+        'client': 'Toko Sinar Jaya',
+        'portal': 'Portal Uji',
+        'period': '2026-09',
+        'filename': STATEMENT_CARD_FILENAME,
+        'url': f'http://{HOST}:{port}/statement/2026-09.pdf',
+        'balance': balance,
+        'timeoutMs': 20000
+    }
+    cid = STATE.push('statement.download', params, timeout=40000, benchmark='statement.download')
+    first = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 45))
+    latency_ms = round((time.perf_counter() - started) * 1000, 1)
+    row = first['row']
+    assert first['duplicate'] is False, first
+    assert row['client'] == 'Toko Sinar Jaya' and row['period'] == '2026-09', row
+    assert row['kind'] == 'pdf', row
+    assert row['pages'] == 2, row
+    assert row['pagesFrom'] == 'counted from the file structure', row
+    assert row['bytes'] == len(STATEMENT_PDF), (row['bytes'], len(STATEMENT_PDF))
+    assert row['balance']['digits'] == '8900000', row['balance']
+
+    delivered = Path(row['path'])
+    assert delivered.name == STATEMENT_CARD_FILENAME, row['path']
+    assert delivered.resolve().parent == download_dir.resolve(), (row['path'], str(download_dir))
+    assert delivered.exists(), row['path']
+    assert delivered.read_bytes() == STATEMENT_PDF, 'the bytes on disk are not the bytes the portal served'
+    assert not Path(str(delivered) + '.crdownload').exists()
+
+    cid = STATE.push('statement.download', params, timeout=40000)
+    again = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 45))
+    assert again['duplicate'] is True, again
+    assert 'twice' in again['why'], again['why']
+
+    cid = STATE.push('statement.manifest')
+    manifest = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+    assert manifest['delivered'] == 1, manifest
+    assert manifest['clients'] == ['Toko Sinar Jaya'], manifest
+    assert manifest['periods'] == ['2026-09'], manifest
+
+    return {
+        'kind': row['kind'],
+        'pages': row['pages'],
+        'bytes': row['bytes'],
+        'latencyMs': latency_ms,
+        'manifestRows': manifest['delivered']
+    }
+
+# WHY THE DOWNLOAD BEHAVIOUR IS SET OVER CDP.
+# Playwright answers downloads with a generated name so its own API can hand them back, and a file called a GUID cannot prove the name the card chose.
+# Setting the browser's behaviour to allow, with the download folder named, keeps the name the download asked for.
+
+async def allow_named_downloads(context, download_dir):
+    page = context.pages[0] if context.pages else await context.new_page()
+    cdp = await context.new_cdp_session(page)
+    await cdp.send('Browser.setDownloadBehavior', {
+        'behavior': 'allow',
+        'downloadPath': str(download_dir),
+        'eventsEnabled': True
+    })
+    await cdp.detach()
+
+# WHY THE PROFILE CARRIES THE DOWNLOAD FOLDER.
+# A download the extension starts is saved to the profile's own download directory, and the behaviour that decides the file's name does not move it.
+# Writing the preference before the first launch is what keeps the drill's file inside the temporary profile instead of the person's Downloads folder.
+
+def set_download_directory(profile, download_dir):
+    default = profile / 'Default'
+    default.mkdir(parents=True, exist_ok=True)
+    (default / 'Preferences').write_text(json.dumps({
+        'download': {
+            'default_directory': str(download_dir),
+            'prompt_for_download': False,
+            'directory_upgrade': True
+        },
+        'savefile': {'default_directory': str(download_dir)}
+    }), encoding='utf-8')
+
 def managed_browser_resources(func):
     async def wrapped():
         server = ThreadingHTTPServer((HOST, 0), Handler)
@@ -808,6 +955,9 @@ def managed_browser_resources(func):
 @managed_browser_resources
 async def run(port, profile):
     check_focus_audit_verdicts()
+    download_dir = profile / 'downloads'
+    download_dir.mkdir(parents=True, exist_ok=True)
+    set_download_directory(profile, download_dir)
     async with async_playwright() as p:
         import os
         default_headless = '0' if os.name == 'nt' else '1'
@@ -832,6 +982,7 @@ async def run(port, profile):
                 '--autoplay-policy=no-user-gesture-required'
             ]
         )
+        await allow_named_downloads(context, download_dir)
         worker = await wait_worker(context)
         ext_id = worker.url.split('/')[2]
         assert ext_id == EXPECTED_EXTENSION_ID, ext_id
@@ -2989,6 +3140,8 @@ async def run(port, profile):
 
         assert all(item['focusPreserved'] for item in focus_audit), focus_audit
 
+        statement = await run_statement_drill(port, download_dir)
+
         dropped = STATE.drop_sockets()
         assert dropped >= 1, 'no live device socket to drop; the transport proved nothing'
         cid = STATE.push('browser.ping')
@@ -3059,6 +3212,7 @@ async def run(port, profile):
                 '--autoplay-policy=no-user-gesture-required'
             ]
         )
+        await allow_named_downloads(context, download_dir)
         worker2 = await wait_worker(context, 15000)
         assert worker2.url.split('/')[2] == ext_id
         await asyncio.sleep(0.8)
@@ -3124,6 +3278,11 @@ async def run(port, profile):
             'privateTabScreenshotBlocked': True,
             'foregroundPointerRejectedOnBackgroundTab': True,
             'liveGoogleMapsBackgroundInput': live_google_maps,
+            'statementDeviceDelivered': statement['manifestRows'] == 1,
+            'statementDeviceKind': statement['kind'],
+            'statementDevicePages': statement['pages'],
+            'statementDeviceBytes': statement['bytes'],
+            'statementDeviceLatencyMs': statement['latencyMs'],
             'sensitiveFillBlocked': True,
             'fileUploadBlocked': True,
             'networkReconnect': True,
