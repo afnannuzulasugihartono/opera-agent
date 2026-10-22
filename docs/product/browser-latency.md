@@ -1,9 +1,10 @@
 # Browser latency: architecture and measured bottlenecks
 
 Status: investigation, then implemented. The local burst, the Node-polled settle,
-the read second-sample settle, the shorter key beat, the cheaper text wait, and
-the event-driven stillness wait are in the tree and gated by tests. The OS focus
-tail and model-turn time are unchanged.
+the read second-sample settle, the shorter key beat, the cheaper text wait, the
+event-driven stillness wait, and the CDP window state are in the tree and gated
+by tests. The OS PowerShell path remains only as a fallback; model-turn time is
+unchanged.
 
 Measured: 2026-10-22, Windows, Node 22.22.2, headless Chrome 153, local CDP.
 The fixture is a synthetic page with 100 rows; a 5,000-row page is used for scaling.
@@ -40,8 +41,11 @@ them:
   settles on the page's own `MutationObserver` and proves row stability with a
   120 ms quiet window: **p50 182.62 ms** on the fixture, down from **p50 584.33
   ms** on the same requested job.
-- When the page reports no focus, the OS window query measured **p50 1.14 s**
-  (n=3, p95 1.74 s). That is the worst tail in the code path.
+- When the page reports no focus, the OS window query used to measure **p50
+  1.14 s** (n=3, p95 1.74 s). The input path now asks the browser instead:
+  `Browser.getWindowForTarget` on the real Chrome measured **p50 0.35 ms / p95
+  3.19 ms**. The PowerShell enumeration stays only as a fallback for a browser
+  or bridge that refuses the Browser domain.
 - The local path is much cheaper than the cloud path, but a tool call is not
   "under 1 ms": the README's `<1 ms` is per CDP primitive, not per MCP call.
 
@@ -165,6 +169,7 @@ text-stream job clicks the Run button first, so nothing can receive the text.
 | MCP `read_page` | 106.77 ms | 108.18 ms | 45.34 ms | 47.06 ms | second sample waits on settle, not `sleep(100)` |
 | MCP `wait_for` (found) | 92.09 ms | 94.15 ms | 46.15 ms | 47.01 ms | one cheap page read plus the final settle, not a full read per poll |
 | MCP `wait_still` | 584.33 ms | 587.48 ms | 182.62 ms | 184.15 ms | settle on mutations, then prove row stability, instead of fixed sleeps |
+| `driver.windowState()` | 1,139.55 ms | 1,740.17 ms | 0.35 ms | 3.19 ms | CDP `Browser.getWindowForTarget`, not PowerShell; real Chrome, n=20 |
 | three dependent MCP calls | 456.94 ms | 463.65 ms | 169.03 ms | 170.39 ms | each call now settles once, and the key step is shorter |
 | one `browser_burst` of those three steps | n/a | n/a | 76.83 ms | 78.78 ms | one settle and one page look at the end |
 
@@ -200,18 +205,21 @@ that timer. That intermediate shape measured **p50 998.93 ms / p95 1,009.30 ms**
 while `snapshot(120)` of the same page took **4.28 ms**. Moving the quiet clock
 to Node is what brought the same page to 46 ms.
 
-### OS focus tail
+### OS focus tail — replaced on the CDP path
 
 | Operation | p50 | p95 | n |
 |---|---:|---:|---:|
 | `document.hasFocus()` | 0.27 ms | 0.31 ms | 20 |
 | `windowState()` (PowerShell) | 1,139.55 ms | 1,740.17 ms | 3 |
+| `session.windowState()` via CDP | 0.35 ms | 3.19 ms | 20 |
 
-`ensureFront` asks the page first. When the page reports no focus, it runs a
-PowerShell window enumeration with `Add-Type`; that is the 1.1 s path. If the
-window is minimized, it also runs a second PowerShell script to focus it.
-`focusWindow` was not run in this investigation because it changes the user's
-desktop focus.
+`ensureFront` still asks the page first, because that is the cheap answer that
+changes fastest. When the page says no focus, the session now asks the browser
+with `Browser.getWindowForTarget`; the only question the guard needs is whether
+the window is minimized, and the bounds answer it. If the window is minimized,
+`Browser.setWindowBounds` restores it. The PowerShell enumeration remains as the
+fallback for a browser or bridge that refuses the Browser domain, because a
+wrong "background" answer is how text goes nowhere.
 
 ### Bridge
 
@@ -316,19 +324,18 @@ instead of polling. The cloud surface already has `start_watch` and
 **Expected saving:** the poll interval plus the read settle on every wait; the
 biggest win for pages that change quickly.
 
-### 5. OS focus query is a 1.1 s tail
+### 5. OS focus query is a 1.1 s tail — replaced on the CDP path
 
 `ensureFront` asks the page first, which is cheap (0.27 ms). If the page says
-no focus, it asks the OS (`local/focus-guard.js:39-60`), which runs PowerShell
-with `Add-Type` (`local/window-focus.js:127-129`) and measured p50 1.14 s.
-The machine answer is cached for only 1.5 s (`local/focus-guard.js:34`).
+no focus, it used to ask the OS with PowerShell and `Add-Type`, measured p50
+1.14 s. The session now asks the browser with `Browser.getWindowForTarget`,
+measured p50 0.35 ms on the real Chrome, and restores a minimized window with
+`Browser.setWindowBounds`. The PowerShell path remains only as a fallback.
 
-This is not on every action when the tab is fronted. It is a p95 problem for a
-minimized browser or a tab that lost focus mid-drive. A longer cache, or
-`Browser.getWindowBounds`, would remove most of it.
-
-**Expected saving:** up to ~1.1 s per input in the bad case; this is the tail
-that makes a job feel stuck even when p50 looks fine.
+This is not on every action when the tab is fronted. It was a p95 problem for a
+minimized browser or a tab that lost focus mid-drive; on the CDP path that tail
+is now sub-millisecond. The fallback tail still exists for a browser or bridge
+that refuses the Browser domain.
 
 ### 6. Duplicate tab listing and per-switch front
 
@@ -363,8 +370,9 @@ audit, not for the hot loop.
   re-run on Docs/Sheets.
 - **Live extension bridge.** The extension bridge was not connected; only the
   synthetic loopback frames were measured.
-- **Real minimized-window focus.** `focusWindow` was not run because it changes
-  the user's desktop.
+- **Real minimized-window focus.** The CDP window state was measured on a
+  maximized real Chrome; restoring an actually minimized window was not driven
+  because it changes the user's desktop.
 - **The absent-row wait gain.** `wait_for_row` now polls every 50 ms, but only
   its found case was measured on the fixture and real pages.
 - **A moving-page stillness regression.** `wait_still` was validated on settled
@@ -392,7 +400,9 @@ audit, not for the hot loop.
 5. **Reduce the key beat — done.** The beat is one 60 Hz frame, 16 ms, and a
    stream does not pay it twice. Docs and Sheets were driven with `Alt+/` and
    `Escape`; no text changed.
-6. **Focus cache / `Browser.getWindowBounds`**, only after the above.
+6. **Focus query — done on the CDP path.** The page is still asked first; the
+   machine question is now `Browser.getWindowForTarget`, with PowerShell only as
+   a fallback.
 7. **Bridge trust window during a burst**, and pass the resolved tab once.
 
 Guardrails stay: no raw CDP/eval tool, no stealth or OTP bypass, no credential
