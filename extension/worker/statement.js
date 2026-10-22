@@ -99,9 +99,13 @@ async function waitForDownload(downloadId, timeoutMs) {
 // The page is the only side that can read them with the person's own session, so the worker injects the shared helpers and then asks the page to fetch the URL and answer with the kind, the page count and the size.
 // The function below is serialised into the page, so it may not close over anything here: it reads the helpers from globalThis.
 
+// WHY THE ANSWER IS UNWRAPPED.
+// Chrome answers executeScript with one InjectionResult per frame, and the value the injected function returned is that result's `result`.
+// Reading the wrapper leaves every fact undefined, which is a delivery that cannot say what it delivered: the fake browser agreed with the bug until a real one was driven.
+
 async function verifyInPage(tabId, url) {
   await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/statement-file.js'] });
-  const [outcome] = await chrome.scripting.executeScript({
+  const [injection] = await chrome.scripting.executeScript({
     target: { tabId },
     func: async (target) => {
       const helpers = globalThis.OperaAgentStatementFile;
@@ -120,6 +124,7 @@ async function verifyInPage(tabId, url) {
     },
     args: [url]
   });
+  const outcome = injection?.result;
   if (!outcome) throw new Error('the page did not answer the file verification.');
   if (outcome.ok === false) throw new Error(outcome.error || 'the page could not read the file.');
   return outcome;

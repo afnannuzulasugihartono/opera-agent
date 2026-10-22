@@ -80,13 +80,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   manifest, refusing a second line for the same client-month. Measured on a local portal
   that asks for a password: the gate was detected, the drive stopped, the download landed
   renamed in 464 ms. See [`jobs/statements.md`](jobs/statements.md).
-- **The device can now deliver a statement without a person watching.** `statement.download`
+- **The device delivers a statement without a person watching, and it is proven.** `statement.download`
   lets the extension download the file under the card's name, wait until the browser says it
   is whole, read the kind and the page count from the bytes the page fetched, and write one
   line into a manifest in the browser's own storage; `statement.manifest` reads it back. The
-  cloud surface exposes them as `statement_deliver` and `statement_manifest`. Unit-tested
-  against a fake browser; **not yet driven end to end in a real browser against a real
-  portal** - that is the next piece of work, and it is unverified until it is.
+  cloud surface exposes them as `statement_deliver` and `statement_manifest`. Driven end to
+  end in a real Chromium by the browser gate: 266 bytes, 2 pages, 388.9 ms, the card's name
+  on disk, a second delivery refused.
 - **The pilot needs three bookkeepers, not more code.** The offer, the channel copy and the
   session checklist are written: [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md)
   and [`product/pilot-runbook.md`](product/pilot-runbook.md). The unproven part is a real bank
