@@ -82,7 +82,8 @@ waktunya jadi tidak bisa dibandingkan.
   Kalau nanti mau tanpa remote desktop, itu pekerjaan terpisah dan belum diuji.
 - Tidak menambah tool baru. Kalau sesi menunjukkan kebutuhan baru, catat dulu;
   jangan tambah di tengah sesi.
-- Tidak mengubah harga. Pilot gratis; angka ditetapkan sebelum bulan kedua.
+- Tidak mengubah harga. Pilot dibayar setelah batch pertama diterima; angka ada di
+  price list dan tidak diubah di tengah sesi.
 
 ## Ukuran keberhasilan
 
