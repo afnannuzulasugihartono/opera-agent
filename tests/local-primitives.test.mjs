@@ -30,6 +30,7 @@ import {
   UPLOAD_INPUT_EXPRESSION,
   dragMimeType,
   isDocsDocument,
+  KEY_BEAT_MS,
   modifierMask,
   SETTLE_MAX_MS,
   SETTLE_POLL_MS,
@@ -692,8 +693,8 @@ test('a stream preserves order, counts its work, and refuses what it cannot carr
   assert.equal(out.chords, 2);
   assert.equal(out.chars, 2);
   assert.ok(out.execMs >= 0);
-  assert.deepEqual(slept, [50, 50, 50, 50, 50],
-    'each chord keeps its beat twice — inside the key and after it in the stream — then the asked gap');
+  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, 50],
+    'each chord keeps its beat once, inside the key; then the asked gap');
   assert.deepEqual(
     cdp.calls.map((c) => c.method),
     ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Runtime.evaluate'],
@@ -1350,7 +1351,7 @@ test('a read on a Google Doc borrows the selection and returns the document', as
   const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.deepEqual(keys.map((k) => k.params.modifiers), [2, 2, 0, 0],
     'the select-all carries Control on both edges and the collapse carries none');
-  assert.deepEqual(slept, [50, 150, 50],
+  assert.deepEqual(slept, [KEY_BEAT_MS, 150, KEY_BEAT_MS],
     'each borrowed key keeps its beat, and the selection settles before the copy forces it out');
 });
 
@@ -1507,7 +1508,7 @@ test('the text caret rides the snapshot so the next keystroke lands knowingly', 
 });
 
 // WHY THE BEAT IS PINNED, NOT THE TIMING.
-// Docs drops a keyDown and keyUp that land in the same tick — three Enter presses vanished live while typed characters beside them survived — so a key holds its down edge fifty milliseconds before the up, and chords in a stream breathe the same between them.
+// Docs drops a keyDown and keyUp that land in the same tick — three Enter presses vanished live while typed characters beside them survived — so a key holds its down edge one frame before the up, and a stream does not pay that beat twice.
 // Fake sleep makes the beats observable without waiting for them.
 
 test('a key holds its down edge a beat before the up', async () => {
@@ -1516,18 +1517,29 @@ test('a key holds its down edge a beat before the up', async () => {
     const cdp = recordingCdp();
     await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).key('a', modifiers);
 
-    assert.deepEqual(slept, [50], 'down, beat, up — chord and bare key alike');
+    assert.deepEqual(slept, [KEY_BEAT_MS], 'down, beat, up — chord and bare key alike');
   }
 });
 
-test('chords in a stream breathe between them, texts do not need to', async () => {
+test('chords in a stream keep one beat, not two', async () => {
   const slept = [];
   const cdp = recordingCdp();
   const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
 
   await p.keys([{ key: 'a', modifiers: ['Control'] }, { text: 'hi' }, { key: 'b', modifiers: ['Control'] }]);
 
-  assert.deepEqual(slept, [50, 50, 50, 50], 'each chord beats inside and after; the text passes through');
+  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS], 'the beat lives inside key(); the stream adds no second beat');
+});
+
+test('a chord-only stream settles once instead of polling for an edit that never comes', async () => {
+  const slept = [];
+  const cdp = recordingCdp();
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.keys([{ key: 'a', modifiers: ['Control'] }, { key: 'b', modifiers: ['Control'] }]);
+
+  assert.equal(out.moved, false, 'a menu chord does not move the text signature');
+  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, SETTLE_POLL_MS], 'two key beats, then one settle — not twelve 150 ms polls');
 });
 
 // WHY ALL FOUR ARROWS ARE PINNED.

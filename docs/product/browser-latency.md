@@ -1,8 +1,8 @@
 # Browser latency: architecture and measured bottlenecks
 
 Status: investigation, then implemented. The local burst, the Node-polled settle,
-and the read second-sample settle are in the tree and gated by tests. The 50 ms key
-beat and the OS focus tail are unchanged.
+the read second-sample settle, and the shorter key beat are in the tree and gated
+by tests. The OS focus tail and the polling waits are unchanged.
 
 Measured: 2026-10-22, Windows, Node 22.22.2, headless Chrome 153, local CDP.
 The fixture is a synthetic page with 100 rows; a 5,000-row page is used for scaling.
@@ -24,7 +24,9 @@ them:
 - `read_page()` used to always sleep 100 ms for a second read. It measured
   **p50 106.77 ms** on the small page before, and **p50 45.34 ms** after the
   second sample began waiting on the same Node-polled settle.
-- Every chord pays `KEY_BEAT_MS = 50` ms. `Ctrl+A` measured **p50 61.5 ms**.
+- Every chord used to pay `KEY_BEAT_MS = 50` ms. `Ctrl+A` measured **p50 61.5 ms**.
+  The beat is now one 60 Hz frame, **16 ms**, because Docs drops edges that land in
+  the same tick and a frame is enough to separate them.
 - `wait_for` calls `read()` and then `afterAction`; even when the text is
   already present it measured **p50 230.4 ms** before the settle change. The
   read inside each poll is now a settle rather than a fixed 100 ms sleep, but
@@ -138,18 +140,22 @@ grows. The fixed sleeps still dominate both.
 ### Post-change: local settle and local burst
 
 Same machine, same 100-row fixture, same headless Chrome launch, same job. The
-`before` column is the tree at the investigation commit; the `after` column is
-the current tree. The three-call job is `click_row` -> `press_key Tab` -> `hover`.
+`before` column is the immediately previous commit (`afd4638`); the `after`
+column is the current tree. The three-call job is `click_row` -> `press_key Tab`
+-> `hover`. The text-stream job focuses the fixture input first, so the signature
+actually moves; the chord-stream job is `Ctrl+A` then `Ctrl+B`.
 
 | Operation | Before p50 | Before p95 | After p50 | After p95 | What changed |
 |---|---:|---:|---:|---:|---|
 | `driver.settle()` | n/a | n/a | 46.06 ms | 47.53 ms | Node polls a `MutationObserver`; 32 ms quiet, 120 ms cap |
 | MCP `click` | 136.82 ms | 139.34 ms | 45.73 ms | 47.40 ms | one settle instead of `sleep(120)` |
 | MCP `click_row` | 137.78 ms | 139.13 ms | 46.04 ms | 47.20 ms | same |
-| MCP `press_key` | 182.97 ms | 185.45 ms | 106.85 ms | 108.89 ms | 50 ms key beat still pays; settle no longer does |
+| MCP `press_key` | 107.24 ms | 108.39 ms | 76.43 ms | 77.88 ms | key beat is one frame, not fifty milliseconds |
+| MCP `stream_keys` text | 168.55 ms | 172.02 ms | 76.46 ms | 77.58 ms | one beat per chord, and the text wait ends on the first moved signature |
+| MCP `stream_keys` chords | 1,987.43 ms | 1,996.89 ms | 152.83 ms | 155.22 ms | a chord-only stream settles once instead of polling twelve times for text |
 | MCP `read_page` | 106.77 ms | 108.18 ms | 45.34 ms | 47.06 ms | second sample waits on settle, not `sleep(100)` |
-| three dependent MCP calls | 456.94 ms | 463.65 ms | 198.98 ms | 201.52 ms | each call now settles once |
-| one `browser_burst` of those three steps | n/a | n/a | 107.87 ms | 109.14 ms | one settle and one page look at the end |
+| three dependent MCP calls | 456.94 ms | 463.65 ms | 169.03 ms | 170.39 ms | each call now settles once, and the key step is shorter |
+| one `browser_burst` of those three steps | n/a | n/a | 76.83 ms | 78.78 ms | one settle and one page look at the end |
 
 A read-only `browser_burst` also passed on the real, already-open Google Docs
 and Google Sheets tabs (debugging port 9450, no click, no key, no navigation):
@@ -164,6 +170,11 @@ One non-destructive Docs menu burst was driven in a temporary tab: click
 completed, then the temporary tab was closed. The script's wall time was 2,031 ms
 because it also opened a tab and waited for the document to be idle; those are
 not action timings. No document text was edited.
+
+The shorter key beat was also driven on real pages in temporary tabs, with no
+text edited: Docs `Alt+/` -> `Escape` -> `Escape` completed in 29/34/26 ms and
+left the document text at 6,230 characters; Sheets completed the same burst in
+44/32/30 ms and left the page text unchanged. Both temporary tabs were closed.
 
 The hidden-tab trap is recorded because it cost real time: the first settle
 shape waited in the page with `setTimeout(120)`, and a hidden Google Doc clamped
@@ -236,18 +247,24 @@ Measured on the same fixture and machine: MCP `read_page` fell from **p50
 path still reports `settled: null`, because a second selection copy would move
 the caret twice; that is a correctness cost, not a latency one.
 
-### 3. Key chords pay 50 ms each
+### 3. Key chords pay 50 ms each — reduced to one frame
 
-`key()` sleeps `KEY_BEAT_MS = 50` between keyDown and keyUp
-(`local/primitives.js:520,531`; constant at
-`local/page-expressions.js:529`). `Ctrl+A` measured 61.5 ms. A 20-chord walk
-costs ~1.2 s of pure sleep.
+`key()` slept `KEY_BEAT_MS = 50` between keyDown and keyUp. The beat is real —
+Docs drops edges that land in the same tick — but fifty milliseconds was past any
+coalescing window, not the smallest thing past it. It is now **16 ms**, one 60 Hz
+frame, and a stream no longer pays that beat a second time.
 
-The comment in `primitives.js` says the two-event chord is already the fast,
-correct frame for Docs. The 50 ms beat is therefore a reliability tax that may
-be reducible to one frame or ~10 ms, with a Docs/Sheets regression test.
+Measured on the same fixture and machine against the previous commit: MCP
+`press_key` fell from **p50 107.24 ms** to **p50 76.43 ms**. A three-step burst
+that contains a key fell from **p50 107.40 ms** to **p50 76.83 ms**. Real Docs
+and Sheets bursts with `Alt+/` and `Escape` completed with 26-44 ms steps and no
+text change.
 
-**Expected saving:** ~50 ms per chord; ~1 s per 20-chord menu walk.
+The bigger key win was in `stream_keys`: a chord-only stream used to wait twelve
+150 ms polls for a text signature that a menu chord never moves. It now settles
+once and reads the signature once. That stream fell from **p50 1,987.43 ms** to
+**p50 152.83 ms**. A text stream with the input focused fell from **p50 168.55
+ms** to **p50 76.46 ms**.
 
 ### 4. Polling waits and a read inside each poll
 
@@ -310,6 +327,9 @@ audit, not for the hot loop.
   fixture and on read-only/menu checks on real Docs and Sheets; a real 20-step
   bookkeeping job was not driven.
 - **Bank portals and other real portals.** Only Docs and Sheets were touched.
+- **A full text-editing chord regression.** The shorter key beat was driven with
+  non-destructive `Alt+/` and `Escape`; a chord that styles or edits text was not
+  re-run on Docs/Sheets.
 - **Live extension bridge.** The extension bridge was not connected; only the
   synthetic loopback frames were measured.
 - **Real minimized-window focus.** `focusWindow` was not run because it changes
@@ -332,7 +352,9 @@ audit, not for the hot loop.
    the gap between them is the settle, not a fixed 100 ms sleep. A caller that
    wants one read can still take `ax_snapshot` or `read_page` and read the
    `settled` field it is given.
-5. **Reduce the key beat** to one frame or ~10 ms, with Docs/Sheets tests.
+5. **Reduce the key beat — done.** The beat is one 60 Hz frame, 16 ms, and a
+   stream does not pay it twice. Docs and Sheets were driven with `Alt+/` and
+   `Escape`; no text changed.
 6. **Focus cache / `Browser.getWindowBounds`**, only after the above.
 7. **Bridge trust window during a burst**, and pass the resolved tab once.
 
