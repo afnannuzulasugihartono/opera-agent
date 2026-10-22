@@ -8,6 +8,7 @@
 // None of that had a test, and the pieces that can be tested without a browser are exactly the pieces that decide whether a delivery is honest: the name rule, the wait, the refusals, and the row.
 
 // The fake is a browser that answers what Chrome answers: a download record with a state and a size, a storage that keeps what it was given, and a scripting API that runs the page verification and answers with the bytes it read.
+// The scripting answer is an InjectionResult per frame, wrapped the way Chrome wraps it, so the fake cannot agree with a worker that reads the wrapper instead of the value.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -69,7 +70,7 @@ function fakeBrowser({ bytes = PDF, state = 'complete', interrupted = null } = {
           const helpers = globalThis.OperaAgentStatementFile;
           const kind = helpers.kindOf(new Uint8Array(bytes));
           const pages = kind === 'pdf' ? helpers.countPages(new Uint8Array(bytes)) : null;
-          return [{ ok: true, bytes: bytes.length, kind, pages, pagesFrom: helpers.pagesFrom(kind, pages || 0) }];
+          return [{ frameId: 0, result: { ok: true, bytes: bytes.length, kind, pages, pagesFrom: helpers.pagesFrom(kind, pages || 0) } }];
         }
       },
       tabs: {
