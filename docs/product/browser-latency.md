@@ -1,9 +1,9 @@
 # Browser latency: architecture and measured bottlenecks
 
 Status: investigation, then implemented. The local burst, the Node-polled settle,
-the read second-sample settle, the shorter key beat, and the cheaper text wait are
-in the tree and gated by tests. `wait_still`, the OS focus tail, and model-turn
-time are unchanged.
+the read second-sample settle, the shorter key beat, the cheaper text wait, and
+the event-driven stillness wait are in the tree and gated by tests. The OS focus
+tail and model-turn time are unchanged.
 
 Measured: 2026-10-22, Windows, Node 22.22.2, headless Chrome 153, local CDP.
 The fixture is a synthetic page with 100 rows; a 5,000-row page is used for scaling.
@@ -35,8 +35,11 @@ them:
   Google Doc the wait still pays the document copy — **660 ms** for `References`
   — because the words live in a canvas; on Google Sheets it found the text
   immediately.
-- `wait_still` has a 400 ms quiet window plus 120 ms polling; it measured
-  **p50 512 ms** directly and **p50 632.6 ms** through MCP.
+- `wait_still` used to sleep a fixed 120 ms between snapshots and hold a 400 ms
+  quiet window, so even a settled page paid the whole window in sleeps. It now
+  settles on the page's own `MutationObserver` and proves row stability with a
+  120 ms quiet window: **p50 182.62 ms** on the fixture, down from **p50 584.33
+  ms** on the same requested job.
 - When the page reports no focus, the OS window query measured **p50 1.14 s**
   (n=3, p95 1.74 s). That is the worst tail in the code path.
 - The local path is much cheaper than the cloud path, but a tool call is not
@@ -161,6 +164,7 @@ text-stream job clicks the Run button first, so nothing can receive the text.
 | MCP `stream_keys` text unfocused | 1,857.97 ms | 1,867.83 ms | 76.22 ms | 79.69 ms | text sent to a non-editable focus fails fast instead of polling for a signature |
 | MCP `read_page` | 106.77 ms | 108.18 ms | 45.34 ms | 47.06 ms | second sample waits on settle, not `sleep(100)` |
 | MCP `wait_for` (found) | 92.09 ms | 94.15 ms | 46.15 ms | 47.01 ms | one cheap page read plus the final settle, not a full read per poll |
+| MCP `wait_still` | 584.33 ms | 587.48 ms | 182.62 ms | 184.15 ms | settle on mutations, then prove row stability, instead of fixed sleeps |
 | three dependent MCP calls | 456.94 ms | 463.65 ms | 169.03 ms | 170.39 ms | each call now settles once, and the key step is shorter |
 | one `browser_burst` of those three steps | n/a | n/a | 76.83 ms | 78.78 ms | one settle and one page look at the end |
 
@@ -186,8 +190,9 @@ left the document text at 6,230 characters; Sheets completed the same burst in
 The cheaper wait was driven on the already-open real tabs, with no text edited:
 Docs `wait_for` found `References` in 660 ms and `wait_for_row` found `Insert`
 on the first check; Sheets `wait_for` found `Sum: 34,974.00` immediately and the
-row wait also succeeded on the first check. Both pages read back with unchanged
-text.
+row wait also succeeded on the first check. The new `wait_still` returned
+`still:true` in 143 ms on Docs and 144 ms on Sheets. Both pages read back with
+unchanged text.
 
 The hidden-tab trap is recorded because it cost real time: the first settle
 shape waited in the page with `setTimeout(120)`, and a hidden Google Doc clamped
@@ -294,7 +299,14 @@ canvas; on Google Sheets it found the text immediately.
 `wait_for_row` now polls every 50 ms instead of 150 ms, because a snapshot is
 about 1 ms and a menu can appear late. Its found case was already one snapshot
 plus the final settle, so the gain is in the absent case, which was not measured
-here. `wait_still` still polls every 120 ms with a 400 ms quiet window.
+here.
+
+`wait_still` used to sleep a fixed 120 ms between snapshots and hold a 400 ms
+quiet window, so a settled page paid the whole window in sleeps. It now settles
+on the page's own `MutationObserver` and proves row stability with a 120 ms quiet
+window. Measured on the same requested job, it fell from **p50 584.33 ms** to
+**p50 182.62 ms**, and on real Docs/Sheets it returned `still:true` in 143/144 ms
+with text unchanged.
 
 A local event-driven wait (MutationObserver / `Page.lifecycleEvent` /
 `Network` idle, with a deadline) would return as soon as the condition is true
@@ -355,6 +367,9 @@ audit, not for the hot loop.
   the user's desktop.
 - **The absent-row wait gain.** `wait_for_row` now polls every 50 ms, but only
   its found case was measured on the fixture and real pages.
+- **A moving-page stillness regression.** `wait_still` was validated on settled
+  real Docs/Sheets and on a fixture; a page that keeps changing was not driven
+  through the new settle path on a real site.
 - **Cloud path.** Existing comments are cited, not re-measured.
 
 ## Recommended order
@@ -366,10 +381,10 @@ audit, not for the hot loop.
 2. **Event-driven settle — done.** The 120 ms sleep is replaced by a Node-polled
    `MutationObserver` settle. The clock must stay in Node; a hidden tab clamps a
    page-side timer.
-3. **Local watch/wait — partially done.** `wait_for` now uses the text-wait
-   primitive instead of a full read per poll, and `wait_for_row` polls every
-   50 ms. They are still timer polls, not one in-page mutation/lifecycle wait,
-   and `wait_still` is unchanged.
+3. **Local watch/wait — mostly done.** `wait_for` uses the text-wait primitive,
+   `wait_for_row` polls every 50 ms, and `wait_still` settles on mutations before
+   proving row stability. They are still per-primitive waits, not one shared
+   in-page watch, and the OS focus tail is unchanged.
 4. **Read second-sample settle — done.** `read()` still takes two samples, but
    the gap between them is the settle, not a fixed 100 ms sleep. A caller that
    wants one read can still take `ax_snapshot` or `read_page` and read the

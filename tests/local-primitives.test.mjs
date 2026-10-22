@@ -2040,6 +2040,15 @@ function rowsCdp(reads) {
     calls,
     send: async (method, params = {}) => {
       calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
       const next = queue.length > 1 ? queue.shift() : queue[0];
       return { result: { value: next } };
     }
@@ -2082,12 +2091,15 @@ test('a row wait that runs out says so and hands back the page', async () => {
 test('stillness ends on two identical reads and names how long it took', async () => {
   const still = [{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }];
   const cdp = rowsCdp([[{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }], still, still]);
-  const p = createPrimitives(cdp, { sleep: async () => {} });
+  const slept = [];
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
 
-  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1, timeoutMs: 5000 });
+  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1000, timeoutMs: 5000 });
 
   assert.equal(out.still, true);
   assert.ok(out.checks >= 2, 'one matching pair is what stillness means');
+  assert.ok(slept.every((ms) => ms === SETTLE_POLL_MS), 'the wait settles on the page instead of sleeping a fixed interval');
+  assert.ok(slept.length > 0, 'and it did wait for the page to be quiet');
 });
 
 // WHY THE CLOCK MOVES INSTEAD OF THE SLEEP.
@@ -2099,16 +2111,26 @@ test('a page that never settles says so instead of pretending', async () => {
     calls: [],
     send: async (method, params = {}) => {
       cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 1, quietMs: 0, elapsedMs: 8, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
       tick += 1;
       return { result: { value: [{ role: 'menuitem', name: 'Image', x: tick, y: 4, node: 0 }] } };
     }
   };
   let at = 1000;
   const p = createPrimitives(cdp, {
-    sleep: async (ms) => { at += ms; }
+    sleep: async (ms) => { at += ms; },
+    now: () => at
   });
 
-  const out = await p.waitForStill({ quietMs: 50, intervalMs: 10, timeoutMs: 100 });
+  const out = await p.waitForStill({ quietMs: 50, intervalMs: 10, timeoutMs: 1000 });
 
   assert.equal(out.still, false);
   assert.ok(out.checks >= 5, `a page moving every read is not still (read ${out.checks} times)`);

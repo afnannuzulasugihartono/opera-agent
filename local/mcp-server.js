@@ -314,8 +314,8 @@ export const TOOLS = Object.freeze([
       properties: {
         tabId: tabArg,
         timeoutMs: { type: 'number', description: 'budget, default 8000' },
-        quietMs: { type: 'number', description: 'how long the page must hold still, default 400' },
-        intervalMs: { type: 'number', description: 'gap between reads, default 120' }
+        quietMs: { type: 'number', description: 'how long the page must hold still, default 120' },
+        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
       }
     }
   },
@@ -585,6 +585,11 @@ const budgetOf = (value, fallback) => {
 const gapOf = (value, fallback, min = 100) => {
   const asked = Number(value ?? fallback);
   return Number.isFinite(asked) ? Math.min(5000, Math.max(min, asked)) : fallback;
+};
+
+const quietOf = (value, fallback) => {
+  const asked = Number(value ?? fallback);
+  return Number.isFinite(asked) ? Math.min(5000, Math.max(50, asked)) : fallback;
 };
 
 
@@ -885,8 +890,7 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
       case 'wait_still':
         return afterAction(driver, await driver.waitForStill({
           timeoutMs: budgetOf(args.timeoutMs, 8000),
-          quietMs: budgetOf(args.quietMs, 400),
-          intervalMs: gapOf(args.intervalMs, 120)
+          quietMs: quietOf(args.quietMs, 120)
         }));
       case 'guide':
         return asText(await driver.guide(args.topic));
