@@ -19,6 +19,7 @@ import {
   manualSettlement,
   notificationSignatureValid,
   paidAmountCents,
+  planInvoiceLines,
   priceFor,
   providerAmount,
   providerOrderId,
@@ -227,4 +228,52 @@ test('a void invoice cannot be settled by hand', () => {
   const out = manualSettlement({ ...OPEN, status: 'void' }, { amountCents: 9900000, note: 'called off' });
   assert.equal(out.ok, false);
   assert.match(out.why, /open/);
+});
+
+// WHY A PLAN IS PRICED IN ONE LINE AND THE CLIENTS ABOVE IT IN ANOTHER.
+// The offer is one number a firm can compare with the hours it saves, not fifteen downloads at a unit price.
+// So the plan line carries the month, and only the clients beyond the cap carry a second line: a firm never pays twice for the clients the plan already includes.
+
+const PLAN_PRICES = [
+  { kind: 'plan.pilot', unit: 'firm-month, up to 15 clients', amount_cents: 9900000, currency: 'IDR', active: true },
+  { kind: 'plan.firm', unit: 'firm-month, up to 50 clients', amount_cents: 24900000, currency: 'IDR', active: true },
+  { kind: 'statement.client_month', unit: 'delivered client-month above the plan', amount_cents: 1000000, currency: 'IDR', active: true }
+];
+
+const deliveriesFor = (count) => Array.from({ length: count }, (_, index) => ({
+  client: `Klien ${index + 1}`,
+  period: '2026-10',
+  portal: 'BCA'
+}));
+
+test('a pilot plan charges one plan line and only the clients above fifteen', () => {
+  const out = planInvoiceLines(deliveriesFor(18), 'plan.pilot', '2026-10');
+  assert.equal(out.refused.length, 0);
+  assert.equal(out.lines.length, 4);
+  assert.equal(out.lines[0].kind, 'plan.pilot');
+  assert.equal(out.lines[0].quantity, 1);
+  assert.match(out.lines[0].description, /up to 15 client-months/);
+  assert.deepEqual(out.lines.slice(1).map((line) => line.kind), ['statement.client_month', 'statement.client_month', 'statement.client_month']);
+  assert.match(out.lines[1].description, /Klien 16/);
+  assert.equal(amountFor(out.lines, PLAN_PRICES).amountCents, 9900000 + 3 * 1000000);
+});
+
+test('a firm plan includes fifty clients, so a batch inside the cap is one line', () => {
+  const out = planInvoiceLines(deliveriesFor(50), 'plan.firm', '2026-10');
+  assert.equal(out.refused.length, 0);
+  assert.equal(out.lines.length, 1);
+  assert.equal(amountFor(out.lines, PLAN_PRICES).amountCents, 24900000);
+});
+
+test('a plan nobody can price is refused instead of billed as zero', () => {
+  const out = planInvoiceLines(deliveriesFor(3), 'plan.enterprise', '2026-10');
+  assert.equal(out.lines.length, 0);
+  assert.match(out.refused[0].reason, /plan/);
+});
+
+test('a duplicate client-month is refused inside a plan too', () => {
+  const rows = deliveriesFor(2);
+  const out = planInvoiceLines([...rows, rows[0]], 'plan.pilot', '2026-10');
+  assert.equal(out.lines.length, 0);
+  assert.match(out.refused[0].reason, /twice/);
 });

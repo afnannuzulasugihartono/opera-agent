@@ -1,13 +1,14 @@
-@last-edited: 2026-10-21 UTC+7.
+@last-edited: 2026-10-22 UTC+7.
 @related: [monetization](monetization.md) - [statement job](../jobs/statements.md) - [handoff](../handoff.md)
 
 # The money: how somebody pays for this
 
 ## What is sold
 
-One **delivered client-month**: one client's statement for one month, on the client's
-own disk, with a line of proof. The month that was not delivered is not charged, and
-the proof that says so is the same object the manifest holds.
+A **firm-month**: up to 15 client-months for Rp 99.000, or up to 50 for Rp 249.000,
+with each client-month above the cap at Rp 10.000. A client-month is one client, one
+portal, one month. The month that was not delivered is not charged; the invoice is
+issued only after the firm accepts the first batch, and the proof is the manifest row.
 
 ## What makes people actually pay
 
@@ -22,7 +23,7 @@ be, because every one of them is a company that gets paid this way.
 | **A way to pay in one click** | "Every invoice includes a payment link, so clients pay in one click" | The invoice is a page with the amount and a pay button; the link carries its own authority, so it keeps working after a redeploy |
 | **An invoice you can check** | Invoicing guides insist the invoice names the work, the terms and the amount | The invoice lists every delivery it charges for, line by line, and says which month each line is for |
 | **Being chased, kindly** | Late payment is normal: 24-31% of invoices paid late (vendor platform data, 2026) | An open invoice is a query the operator can run; the amount is recomputed from the deliveries, never from memory |
-| **Small fees matter** | Fixed processing fees (0.30-0.60) dominate small invoices | The seeded price is 500,000 cents (Rp 5.000) per client-month, so a fee is noise; the provider is a row, not a hard-wired choice |
+| **Small fees matter** | Fixed processing fees (0.30-0.60) dominate small invoices | The pilot is Rp 99.000 and the firm plan Rp 249.000, so a fixed fee is small; below Rp 100.000 the checkout offers QRIS only, because a Rp 4.000 virtual-account fee is 4% of a Rp 99.000 bill |
 | **Trust before money** | "Trusted partner", "we'll clearly point it out" | The proof names what failed too: a delivery that was not made is not on the invoice, and the balance says where it was read from |
 
 The honest summary: **nobody pays for a browser agent.** They pay for a month of
@@ -41,24 +42,34 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
         |
         |  the customer opens the signed link: the lines, the amount, the way to pay
         v
-the provider's signed notification  ->  paid (terminal; a later call cannot reopen it)
+        +--> the provider's signed notification  ->  paid (terminal)
+        |
+        +--> a transfer recorded by the operator ->  paid (terminal)
 ```
 
+- A transfer is recorded by `settle-manual`: the operator token, the exact amount, and
+  a note naming who confirmed it. It writes the same terminal paid state as the
+  provider, and the invoice page shows the note and the time.
 - `supabase/migrations/20261015090000_opera_billing.sql` — `opera_price_list` (what a
   kind of delivery is worth) and `opera_invoices` (one per customer per month, with
   the priced lines inside). `20261021120000_opera_provider_order_id.sql` adds the
   provider's own order id, because the readable invoice id has characters Midtrans
-  refuses. The tables are readable by the server only: a customer reaches their invoice
+  refuses. `20261022090639_opera_price_decision.sql` sets the plan and overage prices.
+  The tables are readable by the server only: a customer reaches their invoice
   through a signed link, not through the table.
 - `supabase/functions/_shared/billing.js` — the rules, and nothing else: the amount of
-  an invoice, the manifest rows turned into lines, the invoice token, the provider's
-  signature check, the rule that only a settled transaction is a payment, the legal
-  provider order id, and the QRIS-only rule for small invoices.
+  an invoice, the plan line and its overage, the manifest rows turned into lines, the
+  invoice token, the provider's signature check, the rule that only a settled
+  transaction is a payment, the legal provider order id, and the QRIS-only rule for
+  small invoices.
 - `supabase/functions/opera-agent-billing/index.ts` — the function: it opens an
-  invoice, serves the invoice page, and closes the invoice from a signed notification.
+  invoice, serves the invoice page, closes it from a signed notification, and records
+  a transfer with the operator's note.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
-  agent that delivered the statements can hand the operator the bill for them.
-- `tests/billing.test.mjs` — the money rules, proved (16 tests).
+  agent that delivered the statements can hand the operator the bill for them. It
+  still bills per delivery; a plan invoice is sent to the function directly, with the
+  `plan` field, until that tool's frozen schema is reviewed.
+- `tests/billing.test.mjs` — the money rules, proved (25 tests).
 
 ## Measured live, in production
 
@@ -76,6 +87,8 @@ The whole path was driven against the deployed functions, not simulated:
 | a signed `settlement` for Rp 5.000, addressed to the derived provider order id `oa-de91a14853-Toko-Sinar-Jaya-2026-09`, not the invoice id | **200** `{"ok":true,"invoice":"Toko Sinar Jaya:2026-09"}`; the page then says `status paid` |
 | re-creating that paid invoice | **409** `... is paid; a later call does not reopen an invoice that has been paid.` |
 | the same notification replayed after the provider key was removed | **400** `the notification was not signed by the provider` |
+| `settle-manual` with no operator token, after the 2026-10-22 deploy | **401** `the operator token is missing or wrong` |
+| the price list after the price decision (read with SQL) | `plan.pilot` 9,900,000 cents; `plan.firm` 24,900,000; overage 1,000,000 |
 
 Three lessons are now tests instead of comments. The first deploy created invoices and
 then answered `Buffer is not defined` to every customer who opened one, because the
@@ -91,6 +104,11 @@ The one step still not driven is the Snap request itself: there is no Midtrans a
 so the QRIS-only body and the derived order id are proved by unit tests and by a signed
 notification, not by a real payment. That step is `[UNVERIFIED]` until a server key
 exists.
+
+The plan line and the positive manual settlement are proved by unit tests, not yet by
+a live invoice and a live transfer: the function is deployed and refuses an
+unauthenticated settlement, but the operator token is not in the agent's environment.
+The first real transfer is the live proof. `[UNVERIFIED]`
 
 ## What the provider charges (measured 2026-10-21)
 
@@ -110,10 +128,12 @@ fee except QRIS, GoPay and ShopeePay is quoted before VAT.
 | Minimarket (Indomaret, Alfamart) | Rp 5.000 + VAT | Rp 5.000 (50%) | Rp 5.000 (3,3%) |
 | Withdrawal to a bank account | Rp 5.000 per transfer | — | — |
 
-The conclusion is a rule, not a preference: **below Rp 100.000 the checkout offers QRIS
-only**. A virtual account costs Rp 4.000 whether the invoice is Rp 5.000 or Rp 500.000,
-so on a ten-thousand-rupiah bill the fixed fee is forty percent of the money; QRIS is the
-only method with no fixed fee and every Indonesian bank and e-wallet app can scan it.
+The current prices are Rp 99.000 and Rp 249.000; the columns above are measurement
+points, and the QRIS-only rule covers the pilot bill. The conclusion is a rule, not a
+preference: **below Rp 100.000 the checkout offers QRIS only**. A virtual account costs
+Rp 4.000 whether the invoice is Rp 99.000 or Rp 500.000, so on the pilot bill the fixed
+fee is four percent of the money; QRIS is the only method with no fixed fee and every
+Indonesian bank and e-wallet app can scan it.
 Above the threshold a fixed fee is small enough that choice is worth more, and the
 provider's own list is used. The rule lives in `snapPaymentMethods` and is tested at the
 boundary. The withdrawal fee is per transfer, not per invoice, so it is paid once a
@@ -139,30 +159,40 @@ So the choice is not "Midtrans or Stripe". For a domestic customer it is Midtran
 QRIS first. For a foreign customer the order is: Paddle if the offer is sold as software
 and the invoice is at least about $20; otherwise Midtrans card (simplest, but the bill is
 in rupiah) or Wise/manual for the first few clients. The price for a foreign customer
-must be set in USD with a monthly minimum, not converted from Rp 5.000: at that unit the
+must be set in USD with a monthly minimum, not converted from Rp 99.000: at that unit the
 $0.50 fixed fee alone is larger than the whole invoice.
 
-## What the owner sets (three environment values)
+## What the owner sets (four environment values)
 
 | Value | What it is | Without it |
 |---|---|---|
 | `BILLING_SECRET` | the key that signs invoice links | no invoice can be opened; the function refuses |
-| `OPERA_BILLING_TOKEN` | the operator's token for opening invoices | the `invoice_create` tool refuses |
+| `OPERA_BILLING_TOKEN` | the operator's token for opening invoices and recording a transfer | the `invoice_create` tool and `settle-manual` refuse |
 | `MIDTRANS_SERVER_KEY` | the payment provider's server key | invoices are created and served, but the pay button is replaced by a transfer instruction, and no notification is believed |
+| `BILLING_BANK` | the account line printed on an unpaid invoice | the invoice says to transfer but does not name the account |
 
 The first two are set in the project's secrets already; the third is not, because
-there is no provider account yet. The provider is one column on the invoice
-(`provider`), and the signature check follows the provider's documented rule, so
-swapping providers is a row and a function, not a rewrite. A provider's webhook URL
+there is no provider account yet; the fourth is the owner's own account line, and the
+invoice is honest without it but harder to pay. The provider is one column on the
+invoice (`provider`), and the signature check follows the provider's documented rule,
+so swapping providers is a row and a function, not a rewrite. A provider's webhook URL
 is the function itself: it recognises a notification by the order id and signature
 it carries, not by a field the provider never sends.
 
+## How a plan invoice is made
+
+The function accepts a `plan` field (`pilot` or `firm`) with the delivered rows. It
+prices one plan line and adds an overage line only for the rows above the cap; a plan
+with no delivered row is refused. The public MCP `invoice_create` tool does not expose
+`plan` yet, because its schema is frozen by the client contract, so the operator sends
+the plan invoice to the function directly. The command is in
+[`first-three-bookkeepers.md`](first-three-bookkeepers.md#8-perintah-operator).
+
 ## What is not decided
 
-- The price itself: 500,000 cents per delivered client-month is the anchor the
-  outreach sheet names, not a price anyone has agreed to.
-- Whether a customer is billed per client or per statement. The unit today is the
-  client-month, because that is what a bookkeeper's own price list looks like.
+- Whether a customer stays on `plan.pilot` or moves to `plan.firm`. The plan is a
+  price, not an entitlement check; the operator chooses it from the delivered count,
+  and `planInvoiceLines` refuses a plan it cannot price.
 - Which provider is contracted. The code is ready for Midtrans in rupiah (QRIS only
   below Rp 100.000, the provider's list above), and the callback is drilled with a
   signed notification. There is no Midtrans account yet, so `MIDTRANS_SERVER_KEY` is
@@ -172,4 +202,4 @@ it carries, not by a field the provider never sends.
   to choose the row by the customer's currency. Until then `snapPaymentMethods`
   refuses a non-rupiah invoice instead of sending dollars to a rupiah-only provider.
 - The foreign price and its minimum: a USD price with a monthly minimum around $20,
-  because Paddle's $0.50 fixed fee is larger than the whole Rp 5.000 unit.
+  because Paddle's $0.50 fixed fee is larger than the whole Rp 99.000 pilot unit.

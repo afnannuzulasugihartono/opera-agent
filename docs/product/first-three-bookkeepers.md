@@ -1,181 +1,158 @@
-@last-edited: 2026-10-21 UTC+7.
-@related: [statements job](../jobs/statements.md) - [AGENTS.md](../../AGENTS.md)
+@last-edited: 2026-10-22 UTC+7.
+@related: [monetization](monetization.md) - [billing](billing.md) - [statements job](../jobs/statements.md) - [AGENTS.md](../../AGENTS.md)
 
-# Tiga bookkeeper pertama
+# Tiga firma pertama
 
-Pilot, bukan iklan: tiga orang, satu klien, satu bulan, gratis. Yang dicari bukan
-pendapat, tapi satu sesi nyata di portal yang mereka pakai sendiri.
+Tiga firma, satu bulan, satu batch. Bukan iklan: satu percakapan, satu sesi 20 menit, satu batch yang bisa diperiksa. Harga sudah diputuskan dan sudah ada di price list; yang belum ada adalah tiga nama.
+
+## Tawaran yang dikirim
+
+**Pilot satu bulan: Rp 99.000, sampai 15 client-month. Bayar setelah batch pertama Anda setujui. Kalau batch gagal, Rp 0.**
+
+Satu **client-month** adalah satu klien, di satu portal, untuk satu bulan. Klien dengan dua bank adalah dua client-month. Ini definisi yang dipakai invoice, jadi sebutkan di percakapan pertama.
+
+Setelah pilot: **Rp 249.000/bulan sampai 50 client-month**, dan **Rp 10.000 per client-month di atasnya**. Tidak ada biaya setup. Harga pilot terkunci untuk tiga firma pertama.
+
+Yang pembeli dapat:
+
+- statement tiap klien, nama file `klien-bank-tahun-bulan.pdf`, di folder yang mereka tentukan;
+- satu baris bukti per file: ukuran, jenis file dari isinya, jumlah halaman, saldo akhir yang tertulis di portal, dan nama bank;
+- daftar apa yang gagal dan kenapa, bukan "ok" kosong;
+- batch pertama diperiksa bersama; invoice hanya keluar setelah mereka bilang diterima.
+
+Yang tidak dilakukan: minta password/OTP, login ke akun mereka, mengubah apa pun di portal, mengirim file ke server. Browser dan file tetap di komputer mereka.
+
+Kalau portal pertama belum bisa: sebutkan yang gagal, tidak ada tagihan, dan sesi berhenti di situ.
 
 ## Aturan sebelum menempel apa pun
 
-- Jangan sebut nama bank tertentu sebagai "sudah bisa". Yang sudah terbukti baru portal
-  fixture; portal asli belum. Kalimat yang jujur: "saya cari 3 orang untuk uji".
-- Jangan pernah minta password, kode OTP, atau akses ke akun bank. Yang mengetik login
-  selalu pemilik akun, di browsernya sendiri.
-- Jangan pakai angka hasil yang belum diukur. Angka yang boleh disebut: ukuran file,
-  jumlah halaman, waktu download — dan itu pun hanya setelah sesi itu selesai.
-- Satu ajakan saja: 20 menit, layar dibagikan, satu klien, satu bulan.
-- Kalau gagal, sebut sebabnya dan langkah berikutnya. Gratis, tanpa syarat.
+- Jangan sebut bank tertentu "sudah bisa". Yang terbukti baru portal fixture; portal asli belum. Kalimat jujur: "saya cari 3 firma untuk uji di portal yang Anda pakai."
+- Jangan pernah minta password, kode OTP, atau akses akun.
+- Jangan pakai angka hasil yang belum diukur.
+- Satu ajakan: 20 menit, layar dibagikan, satu klien, satu bulan.
+- Kalau gagal: sebut sebab dan langkah berikutnya; Rp 0.
 
-## Lembar tawaran (kirim setelah mereka bilang ya)
+## 1. WhatsApp atau DM pertama
 
-Yang Anda dapat: satu e-statement klien untuk satu bulan, tersimpan sebagai
-`nama-klien-bank-2026-09.pdf`, plus catatan bukti berisi ukuran file, jumlah halaman,
-saldo akhir yang tertulis di halaman portal, dan nama banknya. Kalau ada bulan lain,
-file-nya masuk ke folder yang sama dan catatannya bertambah.
+Kirim satu per satu, bukan broadcast. Ganti `{nama}` dan `{hari}`.
 
-Yang saya butuh: 20 menit, layar dibagikan, Anda pilih satu klien dan satu portal, Anda
-login sendiri. Saya yang menjalankan alatnya, Anda yang memegang browser.
+Halo {nama}, saya {nama}, sedang membangun meja statement untuk firma pembukuan. Saya ambil e-statement klien dari portal bank yang sudah Anda login, simpan sebagai `klien-bank-2026-10.pdf`, dan catat buktinya: ukuran file, jumlah halaman, saldo akhir dari halaman portal.
 
-Yang saya tidak lakukan: menyimpan atau melihat password, menjawab kode OTP, mengubah
-apa pun di akun Anda. File hanya ada di komputer Anda.
+Saya buka 3 slot pilot: satu bulan, sampai 15 client-month (satu klien di satu portal), Rp 99.000. Bayar setelah batch pertama Anda setujui; kalau gagal, Rp 0. Sesi 20 menit, Anda login sendiri, password/OTP tidak pernah saya sentuh.
 
-Kalau portalnya belum bisa: saya bilang terus terang apa yang gagal, tidak ada tagihan,
-dan bulan pertama tetap gratis walau nanti sudah jalan.
+Mau saya tunjukkan satu klien dulu minggu ini?
 
-## 1. WhatsApp atau DM (Indonesia, pendek)
+## 2. Follow-up setelah 48 jam
 
-Halo {nama}, saya sedang membangun alat bantu untuk bookkeeper: ambil e-statement klien
-dari portal bank yang sudah Anda login, lalu simpan rapi sebagai
-`klien-bank-2026-09.pdf` beserta catatan bukti (ukuran file, jumlah halaman, saldo
-akhir). Saya cari 3 bookkeeper pertama untuk coba gratis 1 klien 1 bulan.
+Halo {nama}, menambahkan: kalau portalnya ternyata belum bisa, saya bilang apa adanya dan tidak ada tagihan. Yang saya butuhkan cuma 20 menit dan satu klien. Cocok kalau saya kirim slot {hari}?
 
-Bentuknya 20 menit screen-share: Anda pilih klien dan portalnya, Anda login sendiri,
-saya yang jalankan alatnya. Password tidak pernah saya lihat atau simpan. Kalau portal
-Anda ternyata belum bisa, saya bilang apa adanya dan tidak ada biaya.
+## 3. Grup Facebook atau WhatsApp
 
-Mau coba minggu ini?
+Posting satu pertanyaan, tanpa link. Kalau grup melarang promosi, tanya admin dulu atau jawab thread yang sudah ada.
 
-## 2. Grup Facebook / WhatsApp jasa pembukuan (Indonesia)
+Bookkeeper di sini masih download e-statement klien satu per satu tiap bulan? Saya sedang uji meja statement: ambil dari browser yang sudah login (login tetap di tangan Anda), simpan `klien-bank-bulan.pdf`, catat ukuran, halaman, dan saldo akhir dari portal.
 
-Posting satu pertanyaan, tanpa link. Kalau grup melarang promosi, tanya admin dulu atau
-jawab thread yang sudah ada.
+Saya cari 3 firma untuk pilot 1 bulan, sampai 15 client-month, Rp 99.000 — bayar setelah batch pertama Anda setujui, Rp 0 kalau gagal. 20 menit screen-share, satu klien. Yang tertarik boleh DM.
 
-Bookkeeper di sini masih download e-statement klien manual tiap bulan? Saya sedang uji
-alat yang mengambil statement dari browser yang sudah login (login tetap di tangan Anda,
-password tidak pernah disentuh), lalu menamai file `klien-bank-bulan.pdf` dan mencatat
-bukti: ukuran file, jumlah halaman, saldo akhir dari halaman portal.
+## 4. Fastwork atau Sribu
 
-Saya cari 3 orang untuk coba gratis 1 klien 1 bulan, 20 menit screen-share. Kalau
-portalnya belum bisa, saya bilang dan tidak ada biaya. Yang tertarik boleh komentar atau
-DM, nanti saya jelaskan.
-
-## 3. Fastwork / Sribu (Indonesia, deskripsi jasa)
-
-Judul: Ambil e-statement klien dari portal bank (1 klien / bulan).
+Judul: Ambil e-statement klien dari portal bank (pilot 1 bulan, 15 client-month).
 
 Deskripsi:
 
-Anda tidak perlu lagi download statement klien satu per satu. Saya ambil e-statement
-satu klien untuk satu bulan dari portal yang sudah Anda login, lalu serahkan:
+Anda tidak perlu download statement klien satu per satu. Saya ambil e-statement dari portal yang sudah Anda login, lalu serahkan file `nama-klien-bank-tahun-bulan.pdf` plus catatan bukti (ukuran, jumlah halaman, saldo akhir dari portal).
 
-- file bernama `nama-klien-bank-tahun-bulan.pdf`
-- catatan bukti: ukuran file, jumlah halaman, saldo akhir yang tampil di portal, nama bank
-- bulan berikutnya masuk ke folder yang sama, catatannya bertambah
+Pilot 1 bulan sampai 15 client-month: Rp 99.000, dibayar setelah batch pertama Anda setujui; kalau gagal, Rp 0. Sesi 20 menit, Anda login sendiri; password/OTP tidak pernah saya lihat.
 
-Cara kerja: sesi 20 menit, layar dibagikan, Anda login sendiri di browser Anda. Saya
-tidak pernah melihat atau menyimpan password dan tidak menjawab kode OTP.
+Tidak termasuk: klien tanpa akses portal, portal dengan token perangkat baru, rekap atau jurnal.
 
-Belum termasuk: klien tanpa akses portal, portal yang memakai token perangkat baru,
-rekap atau jurnal — ini hanya pengambilan statement dan buktinya.
+## 5. Jawaban keberatan
 
-Kalau portal Anda belum bisa, pekerjaan dibatalkan dan tidak ada tagihan.
+- **"Mahal."** → "Rp 99.000 untuk satu bulan dan sampai 15 client-month; batch yang gagal tidak ditagih. Bandingkan dengan jam yang Anda habiskan."
+- **"Aman?"** → "Login Anda, browser Anda. Saya tidak minta password/OTP dan file tidak diunggah. Saya hanya bekerja di halaman yang Anda buka."
+- **"Bank saya belum tentu bisa."** → "Itu yang pilot ini uji. Kalau portalnya belum bisa, saya sebutkan dan Rp 0."
+- **"Nanti saja."** → "Slot pilot tinggal {n}; saya butuh 20 menit minggu ini untuk memastikan portal Anda masuk atau tidak."
+- **"Bisa buat jurnal juga?"** → "Pilot ini hanya statement dan buktinya. Rekap atau jurnal belum; saya tidak mau menjanjikan yang belum diuji."
 
-## 4. r/Bookkeeping (Inggris, minta pendapat bukan jualan)
+## 6. Sepuluh nama, satu tabel
 
-Banyak subreddit melarang promosi dan riset pasar. Baca aturan sub dulu; kalau survei
-dilarang, jangan posting — jawab thread yang sudah ada soal statement download.
+Isi sebelum mengirim. Jangan pakai data pribadi hasil scraping; sumbernya kontak hangat, grup, marketplace, atau referral.
 
-Judul: How much time do you lose pulling client statements every month?
+| # | Nama | Firma | Sumber | Dikirim | Balasan | Slot |
+|---|---|---|---|---|---|---|
+| 1 |  |  |  |  |  |  |
+| 2 |  |  |  |  |  |  |
+| 3 |  |  |  |  |  |  |
+| 4 |  |  |  |  |  |  |
+| 5 |  |  |  |  |  |  |
+| 6 |  |  |  |  |  |  |
+| 7 |  |  |  |  |  |  |
+| 8 |  |  |  |  |  |  |
+| 9 |  |  |  |  |  |  |
+| 10 |  |  |  |  |  |  |
 
-Isi:
+## 7. Setelah mereka bilang ya
 
-I bookkeep for a few small clients and the monthly statement pull is the part that never
-gets easier: log in to each portal, find the right month, download whatever name the bank
-gives it, then rename it so it matches the client folder. Ten minutes per client if the
-portal behaves, an afternoon if one of them changes its layout.
+1. 20 menit: pilih satu klien dan satu portal; mereka login; jalankan statement job; tunjukkan file dan buktinya.
+2. Kalau lolos: minta daftar klien (nama dan portal, bukan password), lalu jalankan batch sampai 15 client-month.
+3. Kirim hasil dan daftar yang gagal. Minta mereka membalas "diterima".
+4. Baru buat invoice `plan.pilot` untuk periode berjalan.
+5. Kirim link invoice. Transfer masuk: tandai lunas dengan catatan.
+6. Bulan berikutnya: invoice `plan.firm` kalau pindah ke 50, atau `plan.pilot` lagi kalau tetap 15.
 
-I am building a small tool that does the pulling in the browser you are already signed
-in to, and hands back a correctly named file plus a proof line (bytes, page count, closing
-balance as the portal showed it). No password is stored, nothing is uploaded.
+## 8. Perintah operator
 
-Before I take it further I want to know whether this is a real problem for you or just a
-minor annoyance:
+Jalankan di shell sendiri. Jangan pernah menaruh nilai token di repo, chat, atau dokumen ini.
 
-- How many clients and how many different portals do you pull from each month?
-- Do the statements arrive as PDF or as Excel/CSV?
-- What do you do with them after download — rename by hand, drop into a folder, forward
-  to the client?
+```powershell
+$env:OPERA_BILLING_TOKEN = "..."   # token operator, bukan password bank
+```
 
-I am looking for three bookkeepers to try it free on one client-month, on a 20 minute
-screen share, in their own browser. I will say plainly if your portal does not work yet.
-Reply here or DM me.
+Buat invoice pilot. Edge function menghitung nominal dari price list; plan tanpa delivery ditolak.
 
-## 5. r/taxpros (Inggris, tanya moderator dulu)
+```powershell
+$body = @{
+  action = 'invoice'
+  customer_id = 'Firma Contoh'
+  period = '2026-10'
+  plan = 'pilot'
+  deliveries = @(
+    @{ client = 'Klien A'; period = '2026-10'; portal = 'BCA' },
+    @{ client = 'Klien B'; period = '2026-10'; portal = 'Mandiri' }
+  )
+} | ConvertTo-Json -Depth 5
+Invoke-RestMethod -Method Post `
+  -Uri 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-billing' `
+  -Headers @{ authorization = "Bearer $env:OPERA_BILLING_TOKEN" } `
+  -ContentType 'application/json' -Body $body
+```
 
-Sub ini untuk profesional dan biasanya menolak promosi. Kirim satu pesan ke moderator:
+Respons berisi `url`; itu link yang dikirim ke pembeli. Setelah transfer masuk:
 
-Hi mods — I am building a browser tool that pulls client statements from portals the
-bookkeeper is already signed in to, and returns a named file plus a proof line. I would
-like to ask the community whether this is a real pain point, without linking or selling
-anything. Is a single feedback post acceptable here, and is there a flair you would
-prefer?
+```powershell
+$body = @{
+  action = 'settle-manual'
+  invoice_id = 'Firma Contoh:2026-10'
+  amount_cents = 9900000
+  note = 'BCA 22/10/2026 Rp 99.000, dikonfirmasi pemilik'
+} | ConvertTo-Json
+Invoke-RestMethod -Method Post `
+  -Uri 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-billing' `
+  -Headers @{ authorization = "Bearer $env:OPERA_BILLING_TOKEN" } `
+  -ContentType 'application/json' -Body $body
+```
 
-Kalau moderator tidak membalas dalam beberapa hari, lewati kanal ini.
+Pakai nominal yang tertulis di invoice; overage bisa membuatnya lebih dari Rp 99.000. Aksi ini menolak invoice yang sudah lunas, nominal yang tidak sama, dan catatan kosong.
 
-## 6. Balasan saat mereka bilang ya (Indonesia)
+Set baris rekening sekali supaya setiap invoice menunjukkan ke mana transfer:
 
-Siap. Tiga hal sebelum sesi:
+```powershell
+npx supabase secrets set BILLING_BANK="BCA 1234567890 a.n. Nama Pemilik" --project-ref nenmkmtvjremqphfqnfw
+npx supabase functions deploy opera-agent-billing --project-ref nenmkmtvjremqphfqnfw --no-verify-jwt
+```
 
-1. Nama klien dan bank yang mau diambil, plus bulan yang sudah terbit (misal September
-   2026).
-2. Satu komputer dengan Chrome yang biasa Anda pakai untuk portal itu.
-3. 20 menit, layar dibagikan. Anda yang login, saya yang jalankan.
+Kalau `OPERA_BILLING_TOKEN` tidak ada di shell, buat yang baru dengan nilai acak panjang, set sebagai secret, deploy ulang, dan simpan di password manager. Jangan memintanya dari agen.
 
-Setelah sesi Anda dapat file dan catatan buktinya. Kalau ada yang gagal, saya tulis
-sebabnya dan kita putuskan langkah berikutnya — tanpa biaya.
+## 9. Satu tindakan
 
-## 7. Tiga pertanyaan penyaring (sebelum sesi)
-
-1. Berapa klien aktif, dan berapa portal berbeda yang harus dibuka tiap bulan?
-2. Statement-nya datang sebagai PDF atau Excel?
-3. Sekarang siapa yang download, dan berapa menit per klien?
-
-Jawaban nomor 1 menentukan apakah masalahnya cukup besar; nomor 2 menentukan apakah
-`statement_delivered` mencatat PDF atau workbook; nomor 3 menjadi angka pembanding
-sesudah sesi.
-
-## 8. Kalau gagal di portalnya
-
-Sebut apa yang terlihat, bukan dugaan:
-
-"Portal {bank} belum bisa saya selesaikan. Yang gagal: {halaman login meminta token /
-tombol unduh membuka viewer / statement hanya tersedia 3 bulan terakhir}. Tidak ada
-tagihan untuk sesi ini. Kalau Anda mau, saya coba lagi setelah {perbaikan}, dan bulan
-pertama tetap gratis."
-
-## 9. Papan pelacakan
-
-| # | Nama | Kanal | Klien / portal | Hasil | Sebab kalau gagal |
-|---|---|---|---|---|---|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-
-## Batas yang harus disebut kalau ditanya
-
-- Ini pilot: belum ada portal bank asli yang terbukti, hanya portal uji.
-- Saldo akhir dicatat dari halaman portal, bukan dibaca dari dalam PDF.
-- Jumlah halaman dihitung dari struktur file; PDF yang memadatkan objeknya bisa
-  dilaporkan tidak diketahui, dan itu ditulis apa adanya.
-- File dan catatan bukti tinggal di komputer pemilik akun.
-
-## Catatan internal (jangan dikirim ke calon)
-
-- Harga belum diputuskan. Tetapkan satu angka sebelum bulan kedua, jangan mengarang di
-  depan calon. Anchor yang masuk akal: Rp 5.000 per klien-bulan di Indonesia, atau
-  US$1.50 untuk pasar Inggris.
-- Jalan remote belum terbukti. Kalau tunnel ke Chrome mereka gagal, pakai remote desktop:
-  mereka tetap yang mengetik password, dan alat tetap jalan di mesin mereka.
-- Satu sesi = satu klien. Jangan menggabungkan tiga klien dalam satu panggilan; angka
-  waktunya jadi tidak bisa dibandingkan.
+Kirim pesan pertama ke 10 nama hari ini. Mesinnya sudah siap: harga ada di database, invoice bisa dibuat, transfer bisa dicatat. Yang belum ada hanya pembeli, dan itu tidak bisa dikirim oleh agen atas nama pemilik.

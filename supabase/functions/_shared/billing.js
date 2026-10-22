@@ -206,6 +206,31 @@ export function manualSettlement(invoice, { amountCents = null, note = '' } = {}
   return { ok: true };
 }
 
+// WHY A PLAN IS A PRICE AND NOT A DISCOUNT APPLIED AFTERWARDS.
+// The offer is one number a firm compares with the hours it saves, so the plan is its own kind of line.
+// The clients the plan includes are not lines at all, and only the clients above the cap are: a discount line would make the invoice say two numbers for one agreement, and the customer would have to trust the arithmetic.
+
+export const PLAN_INCLUDED = { 'plan.pilot': 15, 'plan.firm': 50 };
+
+export function planInvoiceLines(deliveries, plan, period) {
+  const included = PLAN_INCLUDED[plan];
+  if (!included) {
+    return { lines: [], refused: [{ reason: `no plan named ${plan || 'nothing'} in the price list` }] };
+  }
+  const derived = linesFromDeliveries(deliveries);
+  if (derived.refused.length) return { lines: [], refused: derived.refused };
+  const label = plan === 'plan.pilot' ? 'Pilot' : 'Firm';
+  const lines = [{
+    kind: plan,
+    quantity: 1,
+    description: `${label} — up to ${included} client-months, ${period}`
+  }];
+  for (const row of derived.lines.slice(included)) {
+    lines.push({ ...row, kind: 'statement.client_month', description: `${row.description} (above plan)` });
+  }
+  return { lines, refused: [], included: Math.min(derived.lines.length, included) };
+}
+
 export function notificationSignatureValid(notification, serverKey) {
   if (!notification || !serverKey) return false;
   const orderId = String(notification.order_id || '');
