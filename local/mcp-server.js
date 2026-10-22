@@ -265,14 +265,14 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'wait_for',
-    description: 'Wait until a tab shows a text, then return the page as it now stands. Polls the same read an agent would do — including the document on a Google Doc — so the wait ends on the same evidence. Returns found:false with the current page instead of failing when the budget runs out.',
+    description: 'Wait until a tab shows a text, then return the page as it now stands. Polls the same page state a read would show — including the document on a Google Doc — so the wait ends on the same evidence, without paying a full two-sample read on every check. Returns found:false with the current page instead of failing when the budget runs out.',
     inputSchema: {
       type: 'object',
       properties: {
         tabId: tabArg,
         text: stringArg('text to wait for'),
         timeoutMs: { type: 'number', description: 'budget, default 8000, capped at 30000' },
-        intervalMs: { type: 'number', description: 'gap between checks, default 250' }
+        intervalMs: { type: 'number', description: 'gap between checks, default 100, capped at 5000' }
       },
       required: ['text']
     }
@@ -301,7 +301,7 @@ export const TOOLS = Object.freeze([
         name: stringArg('row name, matched exactly first and as a substring after'),
         absent: { type: 'boolean', description: 'wait for the row to go away instead of to arrive' },
         timeoutMs: { type: 'number', description: 'budget, default 10000' },
-        intervalMs: { type: 'number', description: 'gap between checks, default 150' }
+        intervalMs: { type: 'number', description: 'gap between checks, default 50' }
       },
       required: ['role', 'name']
     }
@@ -582,9 +582,9 @@ const budgetOf = (value, fallback) => {
   return Number.isFinite(asked) ? Math.min(30000, Math.max(500, asked)) : fallback;
 };
 
-const gapOf = (value, fallback) => {
+const gapOf = (value, fallback, min = 100) => {
   const asked = Number(value ?? fallback);
-  return Number.isFinite(asked) ? Math.min(5000, Math.max(100, asked)) : fallback;
+  return Number.isFinite(asked) ? Math.min(5000, Math.max(min, asked)) : fallback;
 };
 
 
@@ -862,18 +862,10 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         const started = Date.now();
         const rawTimeout = Number(args.timeoutMs ?? 8000);
         const timeoutMs = Number.isFinite(rawTimeout) ? Math.min(30000, Math.max(500, rawTimeout)) : 8000;
-        const rawGap = Number(args.intervalMs ?? 250);
-        const intervalMs = Number.isFinite(rawGap) ? Math.min(5000, Math.max(100, rawGap)) : 250;
-        for (;;) {
-          const state = await driver.read();
-          if ((state.text || '').includes(args.text)) {
-            return afterAction(driver, { found: true, ms: Date.now() - started });
-          }
-          if (Date.now() - started >= timeoutMs) {
-            return afterAction(driver, { found: false, ms: Date.now() - started });
-          }
-          await new Promise((r) => setTimeout(r, intervalMs));
-        }
+        const rawGap = Number(args.intervalMs ?? 100);
+        const intervalMs = Number.isFinite(rawGap) ? Math.min(5000, Math.max(50, rawGap)) : 100;
+        const state = await driver.waitForText(args.text, { timeoutMs, intervalMs });
+        return afterAction(driver, { found: (state.text || '').includes(args.text), ms: Date.now() - started });
       }
       case 'ask_page': {
         const method = String(args.method ?? '');
@@ -888,7 +880,7 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
           name: args.name,
           absent: args.absent === true,
           timeoutMs: budgetOf(args.timeoutMs, 10000),
-          intervalMs: gapOf(args.intervalMs, 150)
+          intervalMs: gapOf(args.intervalMs, 50, 50)
         }));
       case 'wait_still':
         return afterAction(driver, await driver.waitForStill({
