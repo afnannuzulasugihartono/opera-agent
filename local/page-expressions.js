@@ -800,12 +800,10 @@ export const EDIT_SIGNATURE_EXPRESSION = `(() => {
 export const EDIT_POLL_MS = 150;
 export const EDIT_POLLS = 12;
 
-// WHY A READ TAKES TWO SAMPLES A BEAT APART.
+// WHY A READ TAKES TWO SAMPLES, BUT NOT A FIXED BEAT APART.
 // Measured live on YouTube: readyState said "complete" at 1.9s with 871 characters of text, and the text reached 8,478 by 2.4s.
 // readyState is about the network, not about a page that renders itself afterwards, so an agent that read once had a tenth of the page and no way to know it.
-// 100ms is the gap that caught every growth step in that trace (871 -> 4,008 -> 8,428 -> 8,478), and on a settled page it costs one extra read and nothing else.
-
-export const READ_SETTLE_MS = 100;
+// The second sample is what turns that into a fact, but the gap between the samples is now the settle below: 32ms of quiet on a settled page, 120ms when the page keeps moving, and no hidden-tab timer to clamp.
 
 // WHY THE SETTLE IS POLLED FROM NODE INSTEAD OF WAITING IN THE PAGE.
 // The first shape installed a MutationObserver and resolved from a page-side setTimeout(120).

@@ -86,7 +86,6 @@ import {
   MENU_HOVER_GAP_MS,
   MENU_OPEN_GAP_MS,
   MENU_OPEN_POLL_MS,
-  READ_SETTLE_MS,
   SETTLE_ARM_EXPRESSION,
   SETTLE_DISARM_EXPRESSION,
   SETTLE_MAX_MS,
@@ -410,7 +409,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async read() {
       const state = await readState();
       if (!isDocsDocument(state.url)) {
-        await sleep(READ_SETTLE_MS);
+        await primitives.settle();
         const again = await readState();
         return {
           title: again.title,

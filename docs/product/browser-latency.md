@@ -1,8 +1,8 @@
 # Browser latency: architecture and measured bottlenecks
 
-Status: investigation, then implemented. The local burst and the Node-polled settle
-are in the tree and gated by tests. `read_page`'s 100 ms second read, the 50 ms key
-beat, and the OS focus tail are unchanged.
+Status: investigation, then implemented. The local burst, the Node-polled settle,
+and the read second-sample settle are in the tree and gated by tests. The 50 ms key
+beat and the OS focus tail are unchanged.
 
 Measured: 2026-10-22, Windows, Node 22.22.2, headless Chrome 153, local CDP.
 The fixture is a synthetic page with 100 rows; a 5,000-row page is used for scaling.
@@ -21,13 +21,14 @@ them:
   itself measured **p50 1.4 ms**. It now polls a Node settle: **p50 46.3 ms** on
   the same job and machine, with the page watching itself through a
   `MutationObserver`.
-- `read_page()` always sleeps `READ_SETTLE_MS = 100` ms for a second read. It
-  measured **p50 107.1 ms** on the small page and **p50 151.9 ms** on the
-  5,000-row page.
+- `read_page()` used to always sleep 100 ms for a second read. It measured
+  **p50 106.77 ms** on the small page before, and **p50 45.34 ms** after the
+  second sample began waiting on the same Node-polled settle.
 - Every chord pays `KEY_BEAT_MS = 50` ms. `Ctrl+A` measured **p50 61.5 ms**.
-- `wait_for` calls the 100 ms `read()` and then `afterAction`; even when the
-  text is already present it measured **p50 230.4 ms**. When the text is not
-  present, each poll is ~107 ms plus the 250 ms interval.
+- `wait_for` calls `read()` and then `afterAction`; even when the text is
+  already present it measured **p50 230.4 ms** before the settle change. The
+  read inside each poll is now a settle rather than a fixed 100 ms sleep, but
+  the wait itself still polls on a timer.
 - `wait_still` has a 400 ms quiet window plus 120 ms polling; it measured
   **p50 512 ms** directly and **p50 632.6 ms** through MCP.
 - When the page reports no focus, the OS window query measured **p50 1.14 s**
@@ -142,13 +143,13 @@ the current tree. The three-call job is `click_row` -> `press_key Tab` -> `hover
 
 | Operation | Before p50 | Before p95 | After p50 | After p95 | What changed |
 |---|---:|---:|---:|---:|---|
-| `driver.settle()` | n/a | n/a | 46.47 ms | 49.64 ms | Node polls a `MutationObserver`; 32 ms quiet, 120 ms cap |
-| MCP `click` | 136.82 ms | 139.34 ms | 46.26 ms | 47.32 ms | one settle instead of `sleep(120)` |
-| MCP `click_row` | 137.78 ms | 139.13 ms | 46.06 ms | 46.83 ms | same |
-| MCP `press_key` | 182.97 ms | 185.45 ms | 107.98 ms | 109.29 ms | 50 ms key beat still pays; settle no longer does |
-| MCP `read_page` | 106.77 ms | 108.18 ms | 107.72 ms | 109.15 ms | unchanged, by design |
-| three dependent MCP calls | 456.94 ms | 463.65 ms | 200.97 ms | 202.02 ms | each call now settles once |
-| one `browser_burst` of those three steps | n/a | n/a | 108.01 ms | 109.56 ms | one settle and one page look at the end |
+| `driver.settle()` | n/a | n/a | 46.06 ms | 47.53 ms | Node polls a `MutationObserver`; 32 ms quiet, 120 ms cap |
+| MCP `click` | 136.82 ms | 139.34 ms | 45.73 ms | 47.40 ms | one settle instead of `sleep(120)` |
+| MCP `click_row` | 137.78 ms | 139.13 ms | 46.04 ms | 47.20 ms | same |
+| MCP `press_key` | 182.97 ms | 185.45 ms | 106.85 ms | 108.89 ms | 50 ms key beat still pays; settle no longer does |
+| MCP `read_page` | 106.77 ms | 108.18 ms | 45.34 ms | 47.06 ms | second sample waits on settle, not `sleep(100)` |
+| three dependent MCP calls | 456.94 ms | 463.65 ms | 198.98 ms | 201.52 ms | each call now settles once |
+| one `browser_burst` of those three steps | n/a | n/a | 107.87 ms | 109.14 ms | one settle and one page look at the end |
 
 A read-only `browser_burst` also passed on the real, already-open Google Docs
 and Google Sheets tabs (debugging port 9450, no click, no key, no navigation):
@@ -221,19 +222,19 @@ a hidden Google Doc clamped it to **p50 998.93 ms**. The shipped shape keeps the
 observer in the page but reads it from Node; the same hidden Doc settles at
 **p50 45.78 ms**. Any future settle must keep its clock off the page.
 
-### 2. `read_page` always pays 100 ms
+### 2. `read_page` always pays 100 ms — fixed
 
-`read()` reads the page, sleeps `READ_SETTLE_MS = 100`
-(`local/primitives.js:404-408`, constant at
-`local/page-expressions.js:808`), then reads again to say `settled` and
-`grewBy`. On the 5,000-row page this becomes ~152 ms.
+`read()` used to read the page, sleep 100 ms, then read again to say `settled`
+and `grewBy`. The second sample is still there, because `readyState` is not a
+signal that a page finished rendering itself — measured live on YouTube, 871
+characters at `complete` and 8,478 two seconds later. The fixed sleep is gone:
+the second sample now waits on the same Node-polled settle, so a settled page
+pays one beat instead of a hundred milliseconds.
 
-The second read is honest, but it makes every read a wait. The caller could get
-one read with `settled: null` and call `wait_still` explicitly, or the read
-could end on a mutation/`requestAnimationFrame` signal instead of a fixed
-sleep.
-
-**Expected saving:** 100 ms per read on small pages, more on large ones.
+Measured on the same fixture and machine: MCP `read_page` fell from **p50
+106.77 ms / p95 108.18 ms** to **p50 45.34 ms / p95 47.06 ms**. The Google Docs
+path still reports `settled: null`, because a second selection copy would move
+the caret twice; that is a correctness cost, not a latency one.
 
 ### 3. Key chords pay 50 ms each
 
@@ -248,11 +249,13 @@ be reducible to one frame or ~10 ms, with a Docs/Sheets regression test.
 
 **Expected saving:** ~50 ms per chord; ~1 s per 20-chord menu walk.
 
-### 4. Polling waits and a 100 ms read inside each poll
+### 4. Polling waits and a read inside each poll
 
 `wait_for` (`local/mcp-server.js:794-809`) loops over `driver.read()` with a
-default 250 ms interval. Each read includes the 100 ms sleep. A condition that
-is already true still measured 230 ms because `afterAction` runs afterwards.
+default 250 ms interval. Each read still takes two samples, but the gap between
+them is now the settle rather than a fixed 100 ms sleep. A condition that is
+already true still measured 230 ms before the settle change because
+`afterAction` runs afterwards.
 `wait_for_row` polls a snapshot every 150 ms
 (`local/mcp-server.js:818-825`), and `wait_still` polls every 120 ms with a
 400 ms quiet window (`local/mcp-server.js:826-831`).
@@ -325,8 +328,10 @@ audit, not for the hot loop.
 3. **Local watch/wait:** one in-page wait that resolves on a mutation or
    lifecycle event, with `wait_for`, `wait_for_row`, and `wait_still` built on
    it.
-4. **Read without the 100 ms second read:** return one read and make `settled`
-   explicit/optional; keep the two-read check for the caller that asks for it.
+4. **Read second-sample settle — done.** `read()` still takes two samples, but
+   the gap between them is the settle, not a fixed 100 ms sleep. A caller that
+   wants one read can still take `ax_snapshot` or `read_page` and read the
+   `settled` field it is given.
 5. **Reduce the key beat** to one frame or ~10 ms, with Docs/Sheets tests.
 6. **Focus cache / `Browser.getWindowBounds`**, only after the above.
 7. **Bridge trust window during a burst**, and pass the resolved tab once.
