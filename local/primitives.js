@@ -108,7 +108,7 @@ import {
 } from './page-expressions.js';
 import { filePrimitives } from './primitives-file.js';
 
-export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
+export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath, now = Date.now } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
 
   const readRows = async (limit) => {
@@ -1022,26 +1022,34 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     // Every other wait here is for something named in advance; most of what an agent waits for is not named — it is a menu that is still animating, a list still filling, a save still running.
     // Two identical reads in a row is the honest signal that the page has stopped moving, and it ends on evidence rather than on a number somebody picked.
     // Measured: an upload needed a dozen hand-rolled sleep loops before this existed; it now returns in one call.
-    async waitForStill({ timeoutMs = 8000, quietMs = 400, intervalMs = 120, limit = 120 } = {}) {
-      const deadline = Date.now() + timeoutMs;
+    async waitForStill({ timeoutMs = 8000, quietMs = 120, intervalMs = 60, limit = 120 } = {}) {
+      // WHY STILLNESS WAITS ON THE PAGE, NOT ON A TIMER.
+      // The old loop slept a fixed interval between snapshots, so a settled page still paid the whole quiet window in sleeps.
+      // The MutationObserver settle already knows when the DOM has been quiet, so the wait now settles first and spends its snapshots proving the rows an agent acts on are stable.
+      // Two identical reads is still the verdict; the quiet window is measured by the same Node clock the settle uses, so a hidden tab cannot clamp it.
+      const started = now();
+      const deadline = started + timeoutMs;
       let previous = null;
-      let unchangedSince = Date.now();
+      let unchangedSince = started;
       let checks = 0;
       for (;;) {
         const rows = await readRows(limit);
         const shape = JSON.stringify(rows.map(({ role, name, x, y }) => [role, name, x, y]));
         checks += 1;
-        if (shape === previous && Date.now() - unchangedSince >= quietMs) {
-          return { still: true, ms: Date.now() - (deadline - timeoutMs), checks };
+        if (shape === previous && now() - unchangedSince >= quietMs) {
+          return { still: true, ms: now() - started, checks };
         }
         if (shape !== previous) {
           previous = shape;
-          unchangedSince = Date.now();
+          unchangedSince = now();
         }
-        if (Date.now() >= deadline) {
-          return { still: false, ms: Date.now() - (deadline - timeoutMs), checks };
+        if (now() >= deadline) {
+          return { still: false, ms: now() - started, checks };
         }
-        await sleep(intervalMs);
+        await primitives.settle();
+        if (now() >= deadline) {
+          return { still: false, ms: now() - started, checks };
+        }
       }
     }
   };
