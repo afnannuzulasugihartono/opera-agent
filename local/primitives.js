@@ -984,7 +984,11 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
-        const state = await readState();
+        // WHY A DOC IS READ THROUGH read() AND NOT THROUGH body.innerText.
+        // A Google Doc's text lives in a canvas, so the cheap page-state read cannot see it; the wait used to pay a full read on every poll for exactly this reason.
+        // The cheap read stays for every ordinary page, and the document read is spent only where the words actually are.
+        const probe = await readState();
+        const state = isDocsDocument(probe.url) ? await primitives.read() : probe;
         if (state.text.includes(text) !== absent) return state;
         if (Date.now() >= deadline) return state;
         await sleep(intervalMs);

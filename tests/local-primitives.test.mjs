@@ -1325,6 +1325,17 @@ test('a read on a page still filling in says so, and answers with the later samp
   assert.equal(out.text.length, 8478, 'the answer is the later sample, not the one already stale');
 });
 
+test('a text wait on a Doc reads the document, not the canvas chrome', async () => {
+  const cdp = docsCdp([{ result: { value: 'First line\nSecond line' } }]);
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForText('Second line', { timeoutMs: 100, intervalMs: 10 });
+
+  assert.match(out.text, /Second line/, 'the wait ends on the words in the document');
+  assert.ok(cdp.calls.some((c) => c.method === 'Runtime.evaluate' && c.params.expression.includes('texteventtarget')),
+    'and it pays the document copy rather than trusting body.innerText');
+});
+
 test('a read on a Google Doc borrows the selection and returns the document', async () => {
   const slept = [];
   const cdp = docsCdp([{ result: { value: 'First line\nSecond line' } }]);

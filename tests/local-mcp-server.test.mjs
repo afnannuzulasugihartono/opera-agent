@@ -658,11 +658,17 @@ test('a wait ends on the same evidence a read would show', async () => {
 
   assert.equal(payload.action.found, true);
   assert.ok(payload.page && payload.changed, 'the page state comes back with the verdict');
+  assert.equal(c.driver.calls.filter(([name]) => name === 'waitForText').length, 1, 'the wait asks the wait primitive, not a full read');
+  assert.ok(!c.driver.calls.some(([name]) => name === 'read'), 'and it does not pay a second read before the page state');
 });
 
 test('a wait that runs out of budget reports instead of failing', async () => {
   const c = ctx();
-  c.driver.read = async () => ({ url: 'https://x/', title: 't', text: 'never the text' });
+  c.driver.waitForText = async (text, options) => {
+    c.driver.calls.push(['waitForText', text, options]);
+    await new Promise((r) => setTimeout(r, options.timeoutMs));
+    return { url: 'https://x/', title: 't', text: 'never the text' };
+  };
   const server = createMcpServer(c);
 
   const res = await server.handle({ jsonrpc: '2.0', id: 21, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 500, intervalMs: 100 } } });
@@ -675,14 +681,14 @@ test('a wait that runs out of budget reports instead of failing', async () => {
 
 test('a wait with nothing to wait for is refused before the first read', async () => {
   const c = ctx();
-  let reads = 0;
-  c.driver.read = async () => { reads += 1; return { url: 'u', title: 't', text: '' }; };
+  let waits = 0;
+  c.driver.waitForText = async () => { waits += 1; return { url: 'u', title: 't', text: '' }; };
   const server = createMcpServer(c);
 
   const res = await server.handle({ jsonrpc: '2.0', id: 22, method: 'tools/call', params: { name: 'wait_for', arguments: {} } });
 
   assert.ok(res.error);
-  assert.equal(reads, 0, 'a refused wait touches nothing');
+  assert.equal(waits, 0, 'a refused wait touches nothing');
 });
 
 test('every call reports how long the browser took', async () => {
