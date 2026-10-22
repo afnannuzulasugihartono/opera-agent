@@ -560,16 +560,18 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       let chords = 0;
       let chars = 0;
       let run = [];
-      const reportMoved = async () => (await waitForEdit(before)).moved;
+      // WHY A CHORD-ONLY STREAM DOES NOT POLL FOR TEXT.
+      // A menu or style chord moves no text signature, so the twelve-poll edit wait could only ever report moved:false — after 1.8 s of waiting for a mirror that was never coming.
+      // Text still gets the slow-mirror budget, because that lag is real; a chord gets one settle and one honest signature instead.
+      const reportMoved = async () => (chars > 0
+        ? (await waitForEdit(before)).moved
+        : (await primitives.settle(), moved(before, await editSignature())));
 
       const flush = async () => {
         for (const job of run) {
           const out = await job.go();
           if (job.kind === 'text') chars += out.chars;
-          else {
-            chords += 1;
-            await sleep(KEY_BEAT_MS);
-          }
+          else chords += 1;
         }
         run = [];
       };
