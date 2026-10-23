@@ -19,6 +19,7 @@
     "dialog.js",
     "driver.js",
     "focus-guard.js",
+    "input.js",
     "mcp-server.js",
     "menu-tree.js",
     "page-expressions.js",
