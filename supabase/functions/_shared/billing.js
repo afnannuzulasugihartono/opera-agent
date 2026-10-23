@@ -189,6 +189,48 @@ export function linesFromDeliveries(deliveries, kind = 'statement.client_month')
   return { lines, refused };
 }
 
+// WHY A TRANSFER IS THE FIRST ROAD AND NOT A SPECIAL CASE.
+// The first customer pays before a provider account exists, and an invoice that cannot record that money is a page that lies.
+// So a transfer follows the same rules the provider does: only an open invoice, only the amount it says, and a note that names who confirmed it, because the ledger has to be checkable a year later.
+
+export function manualSettlement(invoice, { amountCents = null, note = '' } = {}) {
+  if (!invoice) return { ok: false, why: 'no invoice to settle' };
+  const status = String(invoice.status || '').toLowerCase();
+  if (status === 'paid') return { ok: false, why: 'this invoice is already paid, and a paid invoice is terminal' };
+  if (status !== 'open') return { ok: false, why: `only an open invoice can be settled, and this one is ${status || 'stateless'}` };
+  if (amountCents !== null && amountCents !== undefined && Number(amountCents) !== Number(invoice.amount_cents)) {
+    return { ok: false, why: `the amount does not match the invoice: expected ${invoice.amount_cents}, got ${amountCents}` };
+  }
+  const text = String(note || '').trim();
+  if (text.length < 3) return { ok: false, why: 'a manual settlement needs a note, so the ledger can be checked later' };
+  return { ok: true };
+}
+
+// WHY A PLAN IS A PRICE AND NOT A DISCOUNT APPLIED AFTERWARDS.
+// The offer is one number a firm compares with the hours it saves, so the plan is its own kind of line.
+// The clients the plan includes are not lines at all, and only the clients above the cap are: a discount line would make the invoice say two numbers for one agreement, and the customer would have to trust the arithmetic.
+
+export const PLAN_INCLUDED = { 'plan.pilot': 15, 'plan.firm': 50 };
+
+export function planInvoiceLines(deliveries, plan, period) {
+  const included = PLAN_INCLUDED[plan];
+  if (!included) {
+    return { lines: [], refused: [{ reason: `no plan named ${plan || 'nothing'} in the price list` }] };
+  }
+  const derived = linesFromDeliveries(deliveries);
+  if (derived.refused.length) return { lines: [], refused: derived.refused };
+  const label = plan === 'plan.pilot' ? 'Pilot' : 'Firm';
+  const lines = [{
+    kind: plan,
+    quantity: 1,
+    description: `${label} — up to ${included} client-months, ${period}`
+  }];
+  for (const row of derived.lines.slice(included)) {
+    lines.push({ ...row, kind: 'statement.client_month', description: `${row.description} (above plan)` });
+  }
+  return { lines, refused: [], included: Math.min(derived.lines.length, included) };
+}
+
 export function notificationSignatureValid(notification, serverKey) {
   if (!notification || !serverKey) return false;
   const orderId = String(notification.order_id || '');

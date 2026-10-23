@@ -38,7 +38,7 @@ export function findOn(page, query) {
 // The exact row is tried first; the substring stays as the fallback it always was.
 
 import { guide } from './agent-guide.js';
-import { ensureFront } from './focus-guard.js';
+import { createFocusGuard } from './focus-guard.js';
 
 // WHY THE CLICK'S OWN ANSWER IS PASSED THROUGH RATHER THAN REBUILT.
 // The row is what the caller asked for; the proof of what the click hit belongs to the click.
@@ -46,16 +46,25 @@ import { ensureFront } from './focus-guard.js';
 // Anything the click measured now travels with the row it was aimed at.
 
 export function asDriver(session) {
+  // WHY THE GUARD IS PER SESSION NOW.
+  // The machine read used to be one OS shell for the whole process.
+  // A CDP session can answer the same question in under a millisecond, so the guard is built over this session's window methods and the OS shell stays only as the fallback inside them.
+  const focusGuard = createFocusGuard({
+    read: () => session.windowState(),
+    focus: (match) => session.focusWindow(match)
+  });
+
   return {
     read: () => session.read(),
     evaluate: (expression) => session.evaluate(expression),
+    settle: () => session.settle(),
     ask: (method, params) => session.ask(method, params),
     find: (query) => findOn(session, query),
     click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
     resolve: (role, name) => session.resolveRow({ role, name }),
     clickFraction: (at) => session.clickFraction(at),
     hasFocus: () => session.hasFocus(),
-    ensureFront: (options) => ensureFront({ ...(options ?? {}), hasFocus: () => session.hasFocus() }),
+    ensureFront: (options) => focusGuard({ ...(options ?? {}), hasFocus: () => session.hasFocus() }),
     captureSized: (options) => session.captureSized(options ?? {}),
     navigate: (url) => session.navigate(url),
     guide: async (topic) => guide(topic),
@@ -86,6 +95,7 @@ export function asDriver(session) {
     dialogType: (text) => session.dialogType(text),
     dialogPress: (name) => session.dialogPress(name),
     waitForRow: (options) => session.waitForRow(options),
+    waitForText: (text, options) => session.waitForText(text, options),
     waitForStill: (options) => session.waitForStill(options),
     upload: (options) => session.upload(options),
     dropFile: (options) => session.dropFile(options),

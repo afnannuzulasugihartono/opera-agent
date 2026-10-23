@@ -37,7 +37,7 @@ A private, local-browser control bridge.
 | Protocol | `1` |
 | Browser primitives | **31** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) plus device-local `watch.*`/`loop.*` async methods |
 | Cloud MCP surface | **34** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
-| Local MCP surface | **36** tools ([`local/mcp-server.js`](local/mcp-server.js)) - the operator's own signed-in Chrome, no cloud hop |
+| Local MCP surface | **38** tools ([`local/mcp-server.js`](local/mcp-server.js)) - the operator's own signed-in Chrome, no cloud hop |
 | Distribution | Signed CRX3 self-updates from the update service |
 
 Every number in that table is measured, not typed: `tests/readme.test.mjs` reads the
@@ -75,6 +75,7 @@ Local green is not acceptance. The acceptance rule is in [`AGENTS.md`](AGENTS.md
 
 | Question | Answer |
 | --- | --- |
+| Where is the code map for agents and reviewers? | [`docs/agent-map.md`](docs/agent-map.md) |
 | What are the rules that bind every task? | [`AGENTS.md`](AGENTS.md) |
 | What does a change have to look like, and how is it reviewed? | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | What is true right now, and what is next? | [`docs/handoff.md`](docs/handoff.md) |

@@ -49,6 +49,11 @@ export const RECIPES = Object.freeze([
     note: 'Submenus need the pointer to leave and come back. Wait for the row, never for a guessed number of milliseconds.'
   },
   {
+    task: 'Do several dependent moves in one call',
+    do: ['browser_burst'],
+    note: 'Up to eight steps on one tab, in order. The first failure stops the burst and keeps the steps that finished; the page is settled and read once at the end instead of after every move. A refFromStep carries a handle from an earlier resolve into a later click.'
+  },
+  {
     task: 'Wait for something to arrive or to go',
     do: ['wait_for_row'],
     note: 'Add absent:true to wait for a row to leave. Returns found:false with the page rather than hanging.'
@@ -120,6 +125,7 @@ export const SIDE_EFFECTS = Object.freeze({
 
 
   stream_keys: ['sends a key sequence to whatever is focused'],
+  browser_burst: ['runs every step in order and stops at the first failure', 'settles and reads the page once at the end, not after each step'],
   wait_for: [],
   ask_page: [],
   wait_for_row: [],
@@ -131,6 +137,7 @@ export const SIDE_EFFECTS = Object.freeze({
   download: ['brings the tab to front, clicks, and writes a file into the download folder it names'],
   statement_card: [],
   statement_delivered: ['writes the client-month into the manifest on disk, replacing the record only when asked'],
+  report_build: ['writes a checked report file beside the source; no page is touched'],
   capture_page: [],
   ax_snapshot: []
 });

@@ -398,26 +398,21 @@ export const UPLOAD_FIND_GAP_MS = 400;
     // this machine's browser window: the viewport went 1144x714 to 1186x670 while the device scale stayed at 1.25, so the same CSS pixel stopped meaning the same place.
     // A fraction is resolved against the viewport as it is at the moment of the click, which survives that, and the answer says which pixels it became and in what space - so a caller that meant a fixed pixel still gets the truth about the space it landed in.
 
-export const CARET_RESTORE_GAP_MS = 180;
 export const CARET_TOLERANCE_PX = 12;
 
 // WHY THE VIEW IS PUT BACK TWICE AND THE CLICK WAITS FOR THE SECOND.
 // Measured live: the read scrolls the document to the caret, and the page finishes that scroll on its own frame — after the first write.
 // A click that goes out in between lands on whatever happens to be under it, and on the thesis document that was an image: the caret was restored onto a picture.
-// So the scroll is written, the page is given a beat to argue, and the click only goes out once a second write held.
+// So the scroll is written, the page is given the settle to argue, and the click only goes out once a second write held.
 
-export const CARET_SCROLL_SETTLE_MS = 120;
 export const CARET_SCROLL_ATTEMPTS = 3;
 export const SCROLL_MARK = 'data-opera-scroll';
-export const MENU_HOVER_GAP_MS = 90;
-
-export const MENU_OPEN_GAP_MS = 260;
 
 // WHY A MENU IS POLLED UNTIL IT IS DRAWN.
 // Measured live, the Insert dropdown was still absent five seconds after the click; a fixed gap of any honest size is either slow on a good machine or early on a slow one.
 // Polling the tree until the children are there costs nothing when they arrive immediately and is the only thing that works when they do not.
+// The gap between those polls is the settle, not a number picked here.
 
-export const MENU_OPEN_POLL_MS = 150;
 export const DROP_PHASE_GAP_MS = 120;
 export const DROP_FRONT_SETTLE_MS = 700;
 export const DROP_SETTLE_MS = 900;
@@ -486,9 +481,7 @@ export function isDocsDocument(url) {
 // WHY READING A LINE SELECTS IT FIRST.
 // The mirror a copy reads from only holds what a selection put there: measured live as an empty line beside a perfectly visible caret.
 // So the read selects its own line — Home, Shift+End — copies, and collapses back to the line end, which is the documented end state: the caret moves within its line and never past it.
-// Steps breathe between them because injected keys land late; without the beats the copy runs before the selection exists.
-
-export const CARET_LINE_GAP_MS = 300;
+// The steps wait on the settle between them, because injected keys land late and the copy must not run before the selection exists.
 
 export const SELECTION_TEXT_EXPRESSION = `(() => {
   try {
@@ -523,10 +516,11 @@ export function splitText(text, size) {
 // A promise pushed into a run is work already begun: awaiting those in order afterwards ordered nothing, measured as a chord's keyUp landing after the next event's keyDown.
 // So a run holds what to do and each event only starts when reached; the overlap given up was three milliseconds a key on loopback against twenty seconds each over the relay, which is why it existed at all.
 // Order is only half of it: Docs drops edges that land in the same tick — three Enter presses vanished while typed characters beside them all survived — and the trust window hides this by spacing early calls with proof round trips while trusted ones fire back-to-back.
-// So a key holds its down edge fifty milliseconds before the up, and chords in a stream breathe the same between them.
-// Fifty is past any coalescing window and a sixtieth of one model turn.
+// So a key holds its down edge one frame before the up, and a stream does not pay that beat a second time.
+// Sixteen milliseconds is a 60 Hz frame: past Chrome's per-frame coalescing, and a fraction of the old fifty.
+// The reliability tax is real, so it stays; the doubling inside a stream was not.
 
-export const KEY_BEAT_MS = 50;
+export const KEY_BEAT_MS = 16;
 
 // WHY THE PICKER IS INTERCEPTED, NOT CLICKED THROUGH.
 // The file input only exists once the upload flow starts it — measured live as inputFound:false on a page whose Upload menu item works fine — and starting that flow opens the native picker, which is OS chrome no CDP call can dismiss.
@@ -800,15 +794,58 @@ export const EDIT_SIGNATURE_EXPRESSION = `(() => {
 export const EDIT_POLL_MS = 150;
 export const EDIT_POLLS = 12;
 
-// WHY A READ TAKES TWO SAMPLES A BEAT APART.
+// WHY A READ TAKES TWO SAMPLES, BUT NOT A FIXED BEAT APART.
 // Measured live on YouTube: readyState said "complete" at 1.9s with 871 characters of text, and the text reached 8,478 by 2.4s.
 // readyState is about the network, not about a page that renders itself afterwards, so an agent that read once had a tenth of the page and no way to know it.
-// 100ms is the gap that caught every growth step in that trace (871 -> 4,008 -> 8,428 -> 8,478), and on a settled page it costs one extra read and nothing else.
+// The second sample is what turns that into a fact, but the gap between the samples is now the settle below: 32ms of quiet on a settled page, 120ms when the page keeps moving, and no hidden-tab timer to clamp.
 
-export const READ_SETTLE_MS = 100;
+// WHY THE SETTLE IS POLLED FROM NODE INSTEAD OF WAITING IN THE PAGE.
+// The first shape installed a MutationObserver and resolved from a page-side setTimeout(120).
+// Measured live on a hidden Google Docs tab, that timer was clamped by background-tab throttling: the call took 304ms, and repeated runs reached 1,009ms, while a snapshot of the same page took 4ms.
+// The observer still belongs to the page, but the clock that decides "quiet" now belongs to Node, whose timers are not throttled.
+// The page installs only the watcher; Node waits 8ms, asks the watcher how long the page has been still, and stops after 32ms of quiet or 120ms total.
+// Fifteen asks is the worst case, and four is the common one; no page-side timer is left for a hidden tab to clamp.
 
-// WHY THE APPEND WAITS A BEAT AFTER THE END KEY.
+export const SETTLE_QUIET_MS = 32;
+export const SETTLE_MAX_MS = 120;
+export const SETTLE_POLL_MS = 8;
+
+export const SETTLE_ARM_EXPRESSION = `(() => {
+  const key = '__operaSettle';
+  const old = window[key];
+  if (old?.observer) { try { old.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
+  const started = performance.now();
+  const state = { started, lastChange: started, changes: 0, observer: null };
+  state.observer = new MutationObserver(() => {
+    state.changes += 1;
+    state.lastChange = performance.now();
+  });
+  try {
+    state.observer.observe(document.documentElement || document, { subtree: true, childList: true, attributes: true, characterData: true });
+  } catch { /* settling a page that refuses observation is still cheaper than not looking */ }
+  window[key] = state;
+  return true;
+})() /*opera-settle-arm*/`;
+
+export const SETTLE_READ_EXPRESSION = `(() => {
+  const state = window.__operaSettle;
+  if (!state) return { missing: true };
+  const now = performance.now();
+  return {
+    changes: state.changes,
+    quietMs: Math.max(0, Math.round(now - state.lastChange)),
+    elapsedMs: Math.max(0, Math.round(now - state.started)),
+    visibility: document.visibilityState
+  };
+})() /*opera-settle-read*/`;
+
+export const SETTLE_DISARM_EXPRESSION = `(() => {
+  const state = window.__operaSettle;
+  if (state?.observer) { try { state.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
+  try { delete window.__operaSettle; } catch { /* a page that froze its globals still loses the observer */ }
+  return true;
+})() /*opera-settle-disarm*/`;
+
+// WHY THE APPEND WAITS AFTER THE END KEY.
 // The end key asks the editor to move its caret and scroll to it; a document that scrolls answers the next insert before the view has caught up, and text lands where the caret used to be.
-// One beat is the cheapest way to let the view arrive, and it costs nothing when the view already has.
-
-export const APPEND_SETTLE_MS = 120;
+// The wait is the settle, so the view arriving is measured instead of assumed and a settled page pays one beat rather than a fixed 120 ms.

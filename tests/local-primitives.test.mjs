@@ -30,11 +30,15 @@ import {
   UPLOAD_INPUT_EXPRESSION,
   dragMimeType,
   isDocsDocument,
+  KEY_BEAT_MS,
   modifierMask,
+  SETTLE_MAX_MS,
+  SETTLE_POLL_MS,
   snapshotExpression,
   splitText
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
+import { createWaits } from '../local/waits.js';
 
   // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED.
   // The runtime asks the page what it
@@ -76,6 +80,11 @@ function recordingCdp() {
           } } };
         }
         if (params.expression.includes('isContentEditable')) return { result: { value: { ...page } } };
+        if (params.expression.includes('opera-settle-arm')) return { result: { value: { ok: true } } };
+        if (params.expression.includes('opera-settle-read')) {
+          return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'hidden' } } };
+        }
+        if (params.expression.includes('opera-settle-disarm')) return { result: { value: true } };
         if (params.expression.includes('opera-hit')) {
           return { result: { value: { tag: 'BUTTON', role: 'button', name: 'Bold' } } };
         }
@@ -94,6 +103,45 @@ test('long text is chunked, because one oversized insert can be dropped without 
   assert.deepEqual(splitText('abcdef', 4), ['abcd', 'ef']);
   assert.deepEqual(splitText('', 4), []);
   assert.deepEqual(splitText('ab', 10), ['ab']);
+});
+
+test('settle watches the page from Node, so a hidden tab cannot clamp its timer', async () => {
+  const cdp = recordingCdp();
+  const slept = [];
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
+
+  const calls = cdp.calls.filter((call) => call.method === 'Runtime.evaluate');
+  const arm = calls.find((call) => call.params.expression.includes('opera-settle-arm'));
+  const read = calls.find((call) => call.params.expression.includes('opera-settle-read'));
+  const disarm = calls.find((call) => call.params.expression.includes('opera-settle-disarm'));
+
+  assert.ok(arm, 'settle installs a mutation watcher');
+  assert.match(arm.params.expression, /MutationObserver/);
+  assert.equal(arm.params.awaitPromise, undefined, 'no page-side promise waits on a throttled timer');
+  assert.ok(read, 'settle asks the watcher how quiet the page is');
+  assert.match(read.params.expression, /__operaSettle/);
+  assert.ok(disarm, 'settle removes its watcher');
+  assert.equal(out.why, 'quiet');
+  assert.equal(out.changes, 1);
+  assert.equal(out.maxMs, SETTLE_MAX_MS);
+  assert.deepEqual(slept, [SETTLE_POLL_MS]);
+});
+
+test('settle stops at the cap when the page never goes quiet', async () => {
+  const cdp = recordingCdp();
+  cdp.send = async (method, params = {}) => {
+    cdp.calls.push({ method, params });
+    if (params.expression.includes('opera-settle-read')) {
+      return { result: { value: { changes: 0, quietMs: 0, elapsedMs: 0, visibility: 'visible' } } };
+    }
+    return { result: { value: true } };
+  };
+  const slept = [];
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
+
+  assert.equal(out.why, 'deadline');
+  assert.equal(slept.length, SETTLE_MAX_MS / SETTLE_POLL_MS);
+  assert.ok(slept.every((ms) => ms === SETTLE_POLL_MS));
 });
 
 test('a newline is sent through untouched, because it is what produces a real paragraph break', async () => {
@@ -258,6 +306,16 @@ test('append puts the text at the end and proves nothing follows it', async () =
   const endKey = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.ok(endKey.length >= 2, 'the caret is asked for the end before anything is typed');
   assert.match(cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent').params.key, /End/);
+});
+
+test('append waits for the page to be quiet, not for a fixed beat', async () => {
+  const slept = [];
+  const cdp = recordingCdp();
+
+  await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).append('tail text');
+
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'the end key is followed by a settle');
+  assert.ok(!slept.includes(120), 'and not by the old fixed 120 ms beat');
 });
 
 test('append says so when text follows it, because "at the end" is a claim to prove', async () => {
@@ -612,6 +670,45 @@ test('a named key like Enter is dispatched with its virtual key code', async () 
   assert.equal(down.params.code, 'Enter');
 });
 
+test('the window state asks the browser, not the operating system, when it can', async () => {
+  const calls = [];
+  const cdp = {
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Browser.getWindowForTarget') {
+        return { windowId: 44, bounds: { windowState: 'minimized' } };
+      }
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).windowState();
+
+  assert.deepEqual(calls.map((c) => c.method), ['Browser.getWindowForTarget']);
+  assert.deepEqual(out.minimized, ['the browser window'], 'a minimized window is the one case that needs the machine');
+  assert.equal(out.platform, process.platform);
+});
+
+test('focusing a minimized window uses the browser bounds, not a shell', async () => {
+  const calls = [];
+  const cdp = {
+    send: async (method, params = {}) => {
+      calls.push({ method, params });
+      if (method === 'Browser.getWindowForTarget') return { windowId: 44, bounds: { windowState: 'minimized' } };
+      if (method === 'Browser.setWindowBounds') return {};
+      if (method === 'Browser.getWindowBounds') return { bounds: { windowState: 'normal' } };
+      return {};
+    }
+  };
+
+  const out = await createPrimitives(cdp).focusWindow('Paper');
+
+  assert.deepEqual(calls.map((c) => c.method), ['Browser.getWindowForTarget', 'Browser.setWindowBounds', 'Browser.getWindowBounds']);
+  assert.deepEqual(calls[1].params, { windowId: 44, bounds: { windowState: 'normal' } });
+  assert.equal(out.focused, true);
+  assert.equal(out.title, 'the browser window');
+});
+
 test('front brings the tab forward so the watcher sees where the agent is', async () => {
   const cdp = recordingCdp();
 
@@ -646,12 +743,12 @@ test('a stream preserves order, counts its work, and refuses what it cannot carr
   assert.equal(out.chords, 2);
   assert.equal(out.chars, 2);
   assert.ok(out.execMs >= 0);
-  assert.deepEqual(slept, [50, 50, 50, 50, 50],
-    'each chord keeps its beat twice — inside the key and after it in the stream — then the asked gap');
+  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, 50],
+    'each chord keeps its beat once, inside the key; then the asked gap');
   assert.deepEqual(
     cdp.calls.map((c) => c.method),
-    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Runtime.evaluate'],
-    'the run is what was written, bracketed by the two questions that prove the text landed'
+    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Runtime.evaluate', 'Runtime.evaluate'],
+    'the run is what was written, bracketed by the signature before and the focus-plus-signature after'
   );
   await assert.rejects(() => p.keys([]), /non-empty/);
   await assert.rejects(() => p.keys(new Array(101).fill({ key: 'a' })), /at most 100/);
@@ -907,6 +1004,7 @@ test('a run reaches the wire in the order it was written', async () => {
       'Input.insertText:',
       'Input.dispatchKeyEvent:keyDown',
       'Input.dispatchKeyEvent:keyUp',
+      'Runtime.evaluate:',
       'Runtime.evaluate:'
     ],
     'a chord closes before the next event starts, and the text lands between them'
@@ -1214,10 +1312,57 @@ function docsCdp(copyAnswers, caret = null) {
   };
 }
 
+test('a text wait settles the page between checks instead of sleeping a fixed gap', async () => {
+  const texts = ['not yet', 'Heading is here'];
+  let ask = 0;
+  const slept = [];
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
+        return { result: { value: { title: 't', url: 'u', text: texts[Math.min(ask++, texts.length - 1)], ready: 'complete' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
+      return { result: {} };
+    }
+  };
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.waitForText('Heading', { timeoutMs: 200, intervalMs: 100 });
+
+  assert.equal(out.text, 'Heading is here');
+  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
+  assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
+});
+
+test('a row wait settles the page between checks instead of sleeping a fixed gap', async () => {
+  const slept = [];
+  const cdp = rowsCdp([[], [{ role: 'menuitem', name: 'Upload', x: 1, y: 1, node: 0 }]]);
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.waitForRow({ role: 'menuitem', name: 'Upload', timeoutMs: 200, intervalMs: 100 });
+
+  assert.equal(out.found, true);
+  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
+  assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
+});
+
 test('a read on a settled page takes two samples and says the text stood still', async () => {
   const cdp = recordingCdp();
+  const slept = [];
 
-  const out = await createPrimitives(cdp).read();
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).read();
 
   assert.deepEqual(out, {
     title: 't',
@@ -1231,8 +1376,10 @@ test('a read on a settled page takes two samples and says the text stood still',
     viewRestored: true,
     caretWhy: ''
   });
-  assert.deepEqual(cdp.calls.map((c) => c.method), ['Runtime.evaluate', 'Runtime.evaluate'],
-    'two cheap samples, not a guess');
+  const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate').map((c) => c.params.expression);
+  assert.ok(asks.some((expression) => expression.includes('opera-settle-arm')), 'the read settles before its second sample');
+  assert.ok(asks.some((expression) => expression.includes('opera-settle-read')), 'and asks the page how quiet it is');
+  assert.deepEqual(slept, [SETTLE_POLL_MS], 'the settle is a beat, not a hundred milliseconds');
 });
 
 // WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS.
@@ -1253,16 +1400,36 @@ test('a read on a page still filling in says so, and answers with the later samp
       if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
         return { result: { value: samples[Math.min(ask++, samples.length - 1)] } };
       }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 1, quietMs: 0, elapsedMs: 8, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
       return { result: {} };
     }
   };
 
-  const out = await createPrimitives(cdp).read();
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).read();
 
   assert.equal(out.ready, 'complete', 'readyState said complete, and that is exactly why it cannot be the only signal');
   assert.equal(out.settled, false, 'the page had not stopped moving');
   assert.equal(out.grewBy, 7607, 'and it says by how much');
   assert.equal(out.text.length, 8478, 'the answer is the later sample, not the one already stale');
+});
+
+test('a text wait on a Doc reads the document, not the canvas chrome', async () => {
+  const cdp = docsCdp([{ result: { value: 'First line\nSecond line' } }]);
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForText('Second line', { timeoutMs: 100, intervalMs: 10 });
+
+  assert.match(out.text, /Second line/, 'the wait ends on the words in the document');
+  assert.ok(cdp.calls.some((c) => c.method === 'Runtime.evaluate' && c.params.expression.includes('texteventtarget')),
+    'and it pays the document copy rather than trusting body.innerText');
 });
 
 test('a read on a Google Doc borrows the selection and returns the document', async () => {
@@ -1292,7 +1459,7 @@ test('a read on a Google Doc borrows the selection and returns the document', as
   const keys = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.deepEqual(keys.map((k) => k.params.modifiers), [2, 2, 0, 0],
     'the select-all carries Control on both edges and the collapse carries none');
-  assert.deepEqual(slept, [50, 150, 50],
+  assert.deepEqual(slept, [KEY_BEAT_MS, 150, KEY_BEAT_MS],
     'each borrowed key keeps its beat, and the selection settles before the copy forces it out');
 });
 
@@ -1449,7 +1616,7 @@ test('the text caret rides the snapshot so the next keystroke lands knowingly', 
 });
 
 // WHY THE BEAT IS PINNED, NOT THE TIMING.
-// Docs drops a keyDown and keyUp that land in the same tick — three Enter presses vanished live while typed characters beside them survived — so a key holds its down edge fifty milliseconds before the up, and chords in a stream breathe the same between them.
+// Docs drops a keyDown and keyUp that land in the same tick — three Enter presses vanished live while typed characters beside them survived — so a key holds its down edge one frame before the up, and a stream does not pay that beat twice.
 // Fake sleep makes the beats observable without waiting for them.
 
 test('a key holds its down edge a beat before the up', async () => {
@@ -1458,18 +1625,92 @@ test('a key holds its down edge a beat before the up', async () => {
     const cdp = recordingCdp();
     await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).key('a', modifiers);
 
-    assert.deepEqual(slept, [50], 'down, beat, up — chord and bare key alike');
+    assert.deepEqual(slept, [KEY_BEAT_MS], 'down, beat, up — chord and bare key alike');
   }
 });
 
-test('chords in a stream breathe between them, texts do not need to', async () => {
+test('chords in a stream keep one beat, not two', async () => {
   const slept = [];
   const cdp = recordingCdp();
   const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
 
   await p.keys([{ key: 'a', modifiers: ['Control'] }, { text: 'hi' }, { key: 'b', modifiers: ['Control'] }]);
 
-  assert.deepEqual(slept, [50, 50, 50, 50], 'each chord beats inside and after; the text passes through');
+  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS], 'the beat lives inside key(); the stream adds no second beat');
+});
+
+test('a chord-only stream settles once instead of polling for an edit that never comes', async () => {
+  const slept = [];
+  const cdp = recordingCdp();
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.keys([{ key: 'a', modifiers: ['Control'] }, { key: 'b', modifiers: ['Control'] }]);
+
+  assert.equal(out.moved, false, 'a menu chord does not move the text signature');
+  assert.equal(out.settled, true, 'and it says it already settled, so the page look does not pay twice');
+  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, SETTLE_POLL_MS], 'two key beats, then one settle — not twelve 150 ms polls');
+});
+
+test('a text stream with nothing focused fails fast instead of polling for text that cannot land', async () => {
+  const slept = [];
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('shadowRoot')) {
+        return { result: { value: { trail: 'button', tag: 'BUTTON', editable: false } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('document.body')) {
+        return { result: { value: { body: '9:body text', value: '', holds: true } } };
+      }
+      return {};
+    }
+  };
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.keys([{ text: 'abc' }]);
+
+  assert.equal(out.moved, false, 'text sent to a button moves no signature');
+  assert.deepEqual(slept, [], 'no edit poll runs when nothing can receive the text');
+});
+
+test('waitForMutation uses the page settle between reads instead of a fixed gap', async () => {
+  const slept = [];
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) return { result: { value: true } };
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) return { result: { value: true } };
+      return { result: { value: { value: 'wait' } } };
+    }
+  };
+  let asks = 0;
+  const read = async () => {
+    asks += 1;
+    if (asks < 2) return { value: 'wait' };
+    return { value: 'go' };
+  };
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.waitForMutation(read, (state) => state.value === 'go', { timeoutMs: 200, intervalMs: 100 });
+
+  assert.equal(out.value, 'go');
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'the wait waits on the page settle');
+  assert.ok(!slept.includes(100), 'and not on a fixed gap');
+});
+
+test('createWaits assembles the shared waits in one place', () => {
+  const methods = createWaits({
+    readState: async () => ({}),
+    readRows: async () => [],
+    isDocsDocument: () => false,
+    read: async () => ({}),
+    primitives: { settle: async () => ({ why: 'quiet' }) }
+  });
+
+  assert.deepEqual(Object.keys(methods).sort(), ['waitForMutation', 'waitForRow', 'waitForStill', 'waitForText']);
 });
 
 // WHY ALL FOUR ARROWS ARE PINNED.
@@ -1504,7 +1745,8 @@ test('a caret line on a Doc selects, copies, and ends at the line end', async ()
   assert.deepEqual(keys.map((k) => [k.params.key, k.params.modifiers ?? 0]), [
     ['Home', 0], ['Home', 0], ['End', 8], ['End', 8], ['End', 0], ['End', 0]
   ], 'home, shift-end, copy between, then collapse');
-  assert.deepEqual(slept.filter((ms) => ms === 300).length, 2, 'a beat after each move');
+  assert.ok(slept.filter((ms) => ms === SETTLE_POLL_MS).length >= 2, 'a settle after each selection move and restore step, not a fixed beat');
+  assert.ok(!slept.some((ms) => ms === 120 || ms === 180), 'and not the old scroll/restore gaps');
 });
 
 test('a caret line outside Docs reads the selection instead of the mirror', async () => {
@@ -1935,6 +2177,15 @@ function rowsCdp(reads) {
     calls,
     send: async (method, params = {}) => {
       calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
       const next = queue.length > 1 ? queue.shift() : queue[0];
       return { result: { value: next } };
     }
@@ -1964,7 +2215,7 @@ test('a row wait can wait for a row to go away', async () => {
 
 test('a row wait that runs out says so and hands back the page', async () => {
   const cdp = rowsCdp([[{ role: 'menuitem', name: 'Other', x: 1, y: 1, node: 0 }]]);
-  const p = createPrimitives(cdp, { sleep: async () => {}, now: () => clock });
+  const p = createPrimitives(cdp, { sleep: async (ms) => { clock += ms; }, now: () => clock });
 
   let clock = 0;
   const result = await p.waitForRow({ role: 'menuitem', name: 'Upload', timeoutMs: 200, intervalMs: 100 });
@@ -1977,12 +2228,16 @@ test('a row wait that runs out says so and hands back the page', async () => {
 test('stillness ends on two identical reads and names how long it took', async () => {
   const still = [{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }];
   const cdp = rowsCdp([[{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }], still, still]);
-  const p = createPrimitives(cdp, { sleep: async () => {} });
+  const slept = [];
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
 
-  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1, timeoutMs: 5000 });
+  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1000, timeoutMs: 5000 });
 
   assert.equal(out.still, true);
+  assert.equal(out.settled, true, 'the wait already settled, so the page look does not pay twice');
   assert.ok(out.checks >= 2, 'one matching pair is what stillness means');
+  assert.ok(slept.every((ms) => ms === SETTLE_POLL_MS), 'the wait settles on the page instead of sleeping a fixed interval');
+  assert.ok(slept.length > 0, 'and it did wait for the page to be quiet');
 });
 
 // WHY THE CLOCK MOVES INSTEAD OF THE SLEEP.
@@ -1994,16 +2249,26 @@ test('a page that never settles says so instead of pretending', async () => {
     calls: [],
     send: async (method, params = {}) => {
       cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 1, quietMs: 0, elapsedMs: 8, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
       tick += 1;
       return { result: { value: [{ role: 'menuitem', name: 'Image', x: tick, y: 4, node: 0 }] } };
     }
   };
   let at = 1000;
   const p = createPrimitives(cdp, {
-    sleep: async (ms) => { at += ms; }
+    sleep: async (ms) => { at += ms; },
+    now: () => at
   });
 
-  const out = await p.waitForStill({ quietMs: 50, intervalMs: 10, timeoutMs: 100 });
+  const out = await p.waitForStill({ quietMs: 50, intervalMs: 10, timeoutMs: 1000 });
 
   assert.equal(out.still, false);
   assert.ok(out.checks >= 5, `a page moving every read is not still (read ${out.checks} times)`);

@@ -14,6 +14,9 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createMcpServer, TOOLS } from '../local/mcp-server.js';
 
 // WHY every method here is async.
@@ -29,12 +32,17 @@ function fakeDriver() {
     close: async (tabId) => { calls.push(['close', tabId]); return { id: tabId, closed: true }; },
     read: async () => ({ url: 'https://docs.google.com/document/d/1', title: 'Paper', text: 'canvas text' }),
     find: async () => [{ ref: 'r1', text: 'Click to add title', x: 482, y: 396 }],
-    click: async (x, y) => { calls.push(['click', x, y]); return { x, y }; },
+    click: async (x, y, handle = null) => { calls.push(['click', x, y, handle]); return { x, y, handle }; },
     hover: async (x, y) => { calls.push(['hover', x, y]); return { x, y }; },
     clickRow: async (role, name) => { calls.push(['clickRow', role, name]); return { role, name, x: 1, y: 2 }; },
     key: async (name, mods) => { calls.push(['key', name, mods]); return { key: name }; },
     type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
     keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
+    settle: async (options) => { calls.push(['settle', options]); return { waitedMs: 1, why: 'quiet' }; },
+    waitForText: async (text, options) => {
+      calls.push(['waitForText', text, options]);
+      return { url: 'https://docs.google.com/document/d/1', title: 'Paper', text: `the ${text} is here` };
+    },
     snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
     pageState: async () => ({ url: 'https://docs.google.com/document/d/1', title: 'Paper', textChars: 11, focus: null }),
     caretLine: async () => ({ line: 'Kajian pustaka mencakup', caretMoved: true, caretRestored: true }),
@@ -90,8 +98,43 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot', 'browser_burst']) {
     assert.ok(names.includes(required), `missing ${required}`);
+  }
+});
+
+// WHY THIS ONE IS DRIVEN WITHOUT A BROWSER.
+// A report that needs the browser open fails exactly when a bookkeeper wants it: at month end, on a laptop with no tab.
+// The tool answers from the file, so the test proves the server does not reach for a driver it does not need.
+
+test('report_build turns an exported sheet into a checked report without a browser', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-report-tool-'));
+  const source = path.join(dir, 'penjualan-2026-09.csv');
+  fs.writeFileSync(source, 'Tanggal,Kategori,Penjualan\r\n2026-09-01,Retail,1250000\r\n2026-09-02,Grosir,2000000\r\n');
+  try {
+    const server = createMcpServer(ctx());
+    const res = await server.handle({
+      jsonrpc: '2.0', id: 7, method: 'tools/call',
+      params: {
+        name: 'report_build',
+        arguments: {
+          source,
+          client: 'Toko Sinar Jaya',
+          title: 'Laporan Penjualan',
+          period: '2026-09',
+          periodColumn: 'Tanggal',
+          groupBy: 'Kategori',
+          valueColumn: 'Penjualan'
+        }
+      }
+    });
+    assert.equal(res.result.isError, undefined);
+    const payload = JSON.parse(res.result.content[0].text);
+    assert.equal(payload.verified.ok, true);
+    assert.equal(payload.report.figures.find((figure) => figure.id === 'total').cents, 325000000);
+    assert.ok(fs.existsSync(payload.out), 'the report file is written beside the source');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -218,7 +261,7 @@ test('a stream reaches the driver as one call with its events intact', async () 
   });
 
   assert.match(res.result.content[0].text, /"events": 2/);
-  assert.deepEqual(c.driver.calls.filter(([name]) => name !== 'ensureFront'), [['keys', events]]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => !['ensureFront', 'settle'].includes(name)), [['keys', events]]);
 });
 
 test('a snapshot reaches the driver and comes back as readable text', async () => {
@@ -441,7 +484,7 @@ test('a row click resolves and clicks in one call', async () => {
   });
 
   assert.match(res.result.content[0].text, /Insert/);
-  assert.deepEqual(c.driver.calls.filter(([name]) => name !== 'ensureFront'), [['clickRow', 'menuitem', 'Insert']]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => !['ensureFront', 'settle'].includes(name)), [['clickRow', 'menuitem', 'Insert']]);
 });
 
 test('a hover reaches the driver without pressing anything', async () => {
@@ -453,7 +496,7 @@ test('a hover reaches the driver without pressing anything', async () => {
   });
 
   assert.match(res.result.content[0].text, /10/);
-  assert.deepEqual(c.driver.calls.filter(([name]) => name !== 'ensureFront'), [['hover', 10, 20]]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => !['ensureFront', 'settle'].includes(name)), [['hover', 10, 20]]);
 });
 
 test('closing a tab drives the browser and drops the cached session', async () => {
@@ -615,11 +658,17 @@ test('a wait ends on the same evidence a read would show', async () => {
 
   assert.equal(payload.action.found, true);
   assert.ok(payload.page && payload.changed, 'the page state comes back with the verdict');
+  assert.equal(c.driver.calls.filter(([name]) => name === 'waitForText').length, 1, 'the wait asks the wait primitive, not a full read');
+  assert.ok(!c.driver.calls.some(([name]) => name === 'read'), 'and it does not pay a second read before the page state');
 });
 
 test('a wait that runs out of budget reports instead of failing', async () => {
   const c = ctx();
-  c.driver.read = async () => ({ url: 'https://x/', title: 't', text: 'never the text' });
+  c.driver.waitForText = async (text, options) => {
+    c.driver.calls.push(['waitForText', text, options]);
+    await new Promise((r) => setTimeout(r, options.timeoutMs));
+    return { url: 'https://x/', title: 't', text: 'never the text' };
+  };
   const server = createMcpServer(c);
 
   const res = await server.handle({ jsonrpc: '2.0', id: 21, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 500, intervalMs: 100 } } });
@@ -632,14 +681,14 @@ test('a wait that runs out of budget reports instead of failing', async () => {
 
 test('a wait with nothing to wait for is refused before the first read', async () => {
   const c = ctx();
-  let reads = 0;
-  c.driver.read = async () => { reads += 1; return { url: 'u', title: 't', text: '' }; };
+  let waits = 0;
+  c.driver.waitForText = async () => { waits += 1; return { url: 'u', title: 't', text: '' }; };
   const server = createMcpServer(c);
 
   const res = await server.handle({ jsonrpc: '2.0', id: 22, method: 'tools/call', params: { name: 'wait_for', arguments: {} } });
 
   assert.ok(res.error);
-  assert.equal(reads, 0, 'a refused wait touches nothing');
+  assert.equal(waits, 0, 'a refused wait touches nothing');
 });
 
 test('every call reports how long the browser took', async () => {
@@ -747,16 +796,118 @@ test('a replaced page says reshaped instead of listing sixty new rows', async ()
   assert.equal(out.page.rows, 2, 'the count says what the page holds now');
 });
 
-// WHY THE FLOOR IS ASSERTED, NOT THE CEILING.
-// setTimeout fires at or after its delay, never before, so "took at least a hundred" cannot flake under load — and it is the floor that matters, because the point is the page getting its beat before the snapshot, not the call being fast.
+// WHY THE SETTLE IS ASSERTED BY ORDER, NOT BY A FLOOR.
+// The old lock said the call took at least a hundred milliseconds, which only proved the timer existed.
+// The page is now settled by watching it, so the proof is that the driver's settle ran once before the snapshot - not that the process was made to wait.
 
-test('an action lets the page stand before looking at it', async () => {
-  const server = createMcpServer(ctx());
+test('an action that already settled does not pay for a second settle', async () => {
+  const c = ctx();
+  c.driver.keys = async () => {
+    c.driver.calls.push(['keys']);
+    return { events: 1, chords: 1, chars: 0, moved: false, settled: true };
+  };
+  const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 31, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
-  const ms = Number(res.result.content.at(-1).text.replace(' ms', ''));
+  await server.handle({ jsonrpc: '2.0', id: 36, method: 'tools/call', params: { name: 'stream_keys', arguments: { events: [{ key: 'a', modifiers: ['Control'] }] } } });
 
-  assert.ok(ms >= 100, `the page gets its beat before the snapshot (took ${ms} ms)`);
+  assert.equal(c.driver.calls.filter(([name]) => name === 'settle').length, 0, 'the action settled once, and the page look trusts it');
+});
+
+test('an action settles on the page before looking, not on a timer', async () => {
+  const c = ctx();
+  const order = [];
+  c.driver.settle = async () => { order.push('settle'); return { waitedMs: 1, why: 'quiet' }; };
+  c.driver.snapshot = async () => { order.push('snapshot'); return []; };
+  const server = createMcpServer(c);
+
+  await server.handle({ jsonrpc: '2.0', id: 31, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+
+  assert.deepEqual(order.slice(0, 2), ['settle', 'snapshot']);
+});
+
+test('a burst runs dependent steps in one call and looks at the page once', async () => {
+  const c = ctx();
+  c.driver.resolve = async (role, name) => {
+    c.driver.calls.push(['resolve', role, name]);
+    return { role, name, x: 10, y: 20, handle: 'opera-9' };
+  };
+  let snapshots = 0;
+  c.driver.snapshot = async () => { snapshots += 1; return [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }]; };
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 32, method: 'tools/call',
+    params: {
+      name: 'browser_burst',
+      arguments: {
+        steps: [
+          { action: 'resolve', role: 'menuitem', name: 'Insert' },
+          { action: 'click', refFromStep: 0 },
+          { action: 'type', text: 'hello' }
+        ]
+      }
+    }
+  });
+
+  const out = JSON.parse(res.result.content[0].text);
+
+  assert.equal(out.action.ok, true);
+  assert.equal(out.action.completedSteps, 3);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'click'), [['click', null, null, 'opera-9']]);
+  assert.equal(c.driver.calls.filter(([name]) => name === 'settle').length, 1, 'the burst settles once');
+  assert.equal(snapshots, 1, 'the burst looks once');
+  assert.ok(out.page, 'the one look rides along with the burst');
+});
+
+test('a burst that fails keeps its finished steps and still reports the page', async () => {
+  const c = ctx();
+  c.driver.clickRow = async () => { throw new Error('menu is gone'); };
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 33, method: 'tools/call',
+    params: {
+      name: 'browser_burst',
+      arguments: { steps: [{ action: 'click_row', role: 'menuitem', name: 'Insert' }, { action: 'type', text: 'no' }] }
+    }
+  });
+
+  const out = JSON.parse(res.result.content[0].text);
+
+  assert.equal(out.action.ok, false);
+  assert.equal(out.action.failedAt, 0);
+  assert.match(out.action.error.message, /menu is gone/);
+  assert.ok(!c.driver.calls.some(([name]) => name === 'type'), 'the failed burst did not type');
+  assert.ok(out.page, 'the page is still reported after the failure');
+});
+
+test('a read-only burst does not take the window away from the person', async () => {
+  const c = ctx();
+  c.driver.resolve = async (role, name) => {
+    c.driver.calls.push(['resolve', role, name]);
+    return { role, name, x: 10, y: 20, handle: 'opera-9' };
+  };
+  const server = createMcpServer(c);
+
+  await server.handle({
+    jsonrpc: '2.0', id: 34, method: 'tools/call',
+    params: { name: 'browser_burst', arguments: { steps: [{ action: 'resolve', role: 'menuitem', name: 'Insert' }] } }
+  });
+
+  assert.ok(!c.driver.calls.some(([name]) => name === 'ensureFront'));
+});
+
+test('an invalid burst is refused before the browser is touched', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 35, method: 'tools/call',
+    params: { name: 'browser_burst', arguments: { steps: [] } }
+  });
+
+  assert.match(res.error.message, /1-8 steps/);
+  assert.deepEqual(c.driver.calls, []);
 });
 
 test('caret_line reports the line without moving past it', async () => {

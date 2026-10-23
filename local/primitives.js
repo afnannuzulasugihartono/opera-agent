@@ -69,11 +69,7 @@ import nodePath from 'node:path';
 
 import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from './menu-tree.js';
 import {
-  APPEND_SETTLE_MS,
-  CARET_LINE_GAP_MS,
-  CARET_RESTORE_GAP_MS,
   CARET_SCROLL_ATTEMPTS,
-  CARET_SCROLL_SETTLE_MS,
   CARET_TOLERANCE_PX,
   DOCS_COPY_EXPRESSION,
   EDIT_POLLS,
@@ -83,10 +79,12 @@ import {
   HANDLE_PREFIX,
   KEY_BEAT_MS,
   LOCAL_CARET_EXPRESSION,
-  MENU_HOVER_GAP_MS,
-  MENU_OPEN_GAP_MS,
-  MENU_OPEN_POLL_MS,
-  READ_SETTLE_MS,
+  SETTLE_ARM_EXPRESSION,
+  SETTLE_DISARM_EXPRESSION,
+  SETTLE_MAX_MS,
+  SETTLE_POLL_MS,
+  SETTLE_QUIET_MS,
+  SETTLE_READ_EXPRESSION,
   SCROLL_MARK,
   SELECTION_TEXT_EXPRESSION,
   centreOf,
@@ -102,8 +100,10 @@ import {
   splitText
 } from './page-expressions.js';
 import { filePrimitives } from './primitives-file.js';
+import { createWaits } from './waits.js';
+import { windowState as osWindowState, focusWindow as osFocusWindow } from './window-focus.js';
 
-export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath } = {}) {
+export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath, now = Date.now } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
 
   const readRows = async (limit) => {
@@ -207,10 +207,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       })()`);
       if (point?.why) return lost(point.why);
       if (attempt > 1 && point.settled) break;
-      await sleep(CARET_SCROLL_SETTLE_MS);
+      await primitives.settle();
     }
     if (point.settled) await primitives.clickAt(point.x, point.y).catch(() => null);
-    await sleep(CARET_RESTORE_GAP_MS);
+    await primitives.settle();
     const seen = await primitives.evaluate(`(() => {
       const chain = (() => { ${markedChainExpression} })();
       const want = ${pairs};
@@ -404,7 +404,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async read() {
       const state = await readState();
       if (!isDocsDocument(state.url)) {
-        await sleep(READ_SETTLE_MS);
+        await primitives.settle();
         const again = await readState();
         return {
           title: again.title,
@@ -441,9 +441,9 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const { url } = await readState();
       const mark = await rememberCaret();
       await primitives.key('Home');
-      await sleep(CARET_LINE_GAP_MS);
+      await primitives.settle();
       await primitives.key('End', ['Shift']);
-      await sleep(CARET_LINE_GAP_MS);
+      await primitives.settle();
       const line = isDocsDocument(url) ? await copyDocsText() : await primitives.evaluate(SELECTION_TEXT_EXPRESSION);
       await primitives.key('End').catch(() => null);
       const back = await putCaretBack(mark);
@@ -492,7 +492,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async append(text) {
       const chars = String(text ?? '').length;
       await primitives.key('End', ['Control']);
-      await sleep(APPEND_SETTLE_MS);
+      await primitives.settle();
       const typed = await primitives.type(text);
       const atEnd = typed.placed.found && String(typed.placed.after ?? '').trim() === '';
       return {
@@ -554,17 +554,28 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const before = await editSignature();
       let chords = 0;
       let chars = 0;
+      let settled = false;
       let run = [];
-      const reportMoved = async () => (await waitForEdit(before)).moved;
+      // WHY A CHORD-ONLY STREAM DOES NOT POLL FOR TEXT.
+      // A menu or style chord moves no text signature, so the twelve-poll edit wait could only ever report moved:false — after 1.8 s of waiting for a mirror that was never coming.
+      // Text still gets the slow-mirror budget, because that lag is real; a chord gets one settle and one honest signature instead.
+      // A text stream with nothing focused gets neither: text sent to a button cannot land, so one focus read is cheaper than a poll budget that can only report moved:false.
+      const reportMoved = async () => {
+        if (chars === 0) {
+          await primitives.settle();
+          settled = true;
+          return moved(before, await editSignature());
+        }
+        const focus = await focusNow();
+        if (focus && focus.editable === false) return false;
+        return (await waitForEdit(before)).moved;
+      };
 
       const flush = async () => {
         for (const job of run) {
           const out = await job.go();
           if (job.kind === 'text') chars += out.chars;
-          else {
-            chords += 1;
-            await sleep(KEY_BEAT_MS);
-          }
+          else chords += 1;
         }
         run = [];
       };
@@ -577,7 +588,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         }
       }
       await flush();
-      return { events: events.length, chords, chars, moved: await reportMoved(), execMs: Date.now() - started };
+      return { events: events.length, chords, chars, moved: await reportMoved(), settled, execMs: Date.now() - started };
     },
 
     // WHY A CLICK TAKES A FRACTION AS WELL AS A PIXEL.
@@ -693,12 +704,12 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     // Measured live: a submenu that would not open on hover opened once the pointer was sent somewhere else first and came back.
     // A menu that has never seen the pointer arrive from outside does not treat the hover as entering it, so the away-and-back is not politeness, it is the enter transition the menu is waiting for.
     async hoverRow(row) {
-      const away = row.y > 200 ? { x: row.x, y: Math.max(2, row.y - 160) } : { x: row.x, y: row.y + 160 };
+      const away = { x: Math.max(2, row.x - 80), y: Math.max(2, row.y - 80) };
       await primitives.hover(away.x, away.y);
-      await sleep(MENU_HOVER_GAP_MS);
+      await primitives.settle();
       const here = await primitives.handleBox(row.handle);
       await primitives.hover(here.x, here.y);
-      await sleep(MENU_OPEN_GAP_MS);
+      await primitives.settle();
       return here;
     },
 
@@ -765,7 +776,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
             rows = await primitives.menuTree({ limit });
             if (rows.some((found) => found.depth === index + 1) || Date.now() >= childDeadline) break;
             if (hoverAgain) await primitives.hoverRow(row);
-            await sleep(MENU_OPEN_POLL_MS);
+            await primitives.settle();
           }
         } else {
           rows = await primitives.menuTree({ limit });
@@ -802,6 +813,44 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         returnByValue: true
       });
       return result?.value === true;
+    },
+
+    // WHY THE WINDOW IS ASKED THROUGH THE BROWSER FIRST.
+    // Measured on this machine: the OS read is a PowerShell enumeration and costs p50 1.14s, while Browser.getWindowForTarget on the same session costs p50 0.35ms and already answers the only question the focus guard has - is the window minimized.
+    // The OS read stays as the fallback for a browser or bridge that refuses the Browser domain, because a wrong "background" answer is how text goes nowhere.
+    async windowState() {
+      try {
+        const { bounds } = await cdp.send('Browser.getWindowForTarget', {});
+        return {
+          platform: process.platform,
+          foreground: '',
+          windows: [],
+          minimized: bounds?.windowState === 'minimized' ? ['the browser window'] : []
+        };
+      } catch {
+        return osWindowState();
+      }
+    },
+
+    async focusWindow(match = '') {
+      try {
+        const { windowId } = await cdp.send('Browser.getWindowForTarget', {});
+        await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'normal' } });
+        const { bounds } = await cdp.send('Browser.getWindowBounds', { windowId });
+        const focused = bounds?.windowState !== 'minimized';
+        return {
+          platform: process.platform,
+          match: String(match ?? ''),
+          focused,
+          title: focused ? 'the browser window' : '',
+          foreground: '',
+          windows: [],
+          minimized: focused ? [] : ['the browser window'],
+          why: focused ? '' : 'the browser would not leave the taskbar'
+        };
+      } catch {
+        return osFocusWindow(match);
+      }
     },
 
     async viewport() {
@@ -915,6 +964,51 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
     pageState,
 
+    // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
+    // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
+    // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
+    async settle() {
+      const started = Date.now();
+      let armed = false;
+      let last = null;
+      try {
+        await cdp.send('Runtime.evaluate', { expression: SETTLE_ARM_EXPRESSION, returnByValue: true });
+        armed = true;
+        const polls = Math.ceil(SETTLE_MAX_MS / SETTLE_POLL_MS);
+        for (let poll = 0; poll < polls; poll += 1) {
+          await sleep(SETTLE_POLL_MS);
+          const { result } = await cdp.send('Runtime.evaluate', { expression: SETTLE_READ_EXPRESSION, returnByValue: true });
+          const state = result?.value;
+          if (!state || state.missing) {
+            return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: 'the page lost the settle watcher' };
+          }
+          last = state;
+          if (state.quietMs >= SETTLE_QUIET_MS) {
+            return {
+              waitedMs: Date.now() - started,
+              quietMs: state.quietMs,
+              maxMs: SETTLE_MAX_MS,
+              changes: state.changes,
+              why: 'quiet',
+              visibility: state.visibility
+            };
+          }
+        }
+        return {
+          waitedMs: Date.now() - started,
+          quietMs: last?.quietMs ?? 0,
+          maxMs: SETTLE_MAX_MS,
+          changes: last?.changes ?? 0,
+          why: 'deadline',
+          visibility: last?.visibility ?? null
+        };
+      } catch (error) {
+        return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: error?.message || String(error) };
+      } finally {
+        if (armed) await cdp.send('Runtime.evaluate', { expression: SETTLE_DISARM_EXPRESSION, returnByValue: true }).catch(() => null);
+      }
+    },
+
     async waitForIdle({ timeoutMs = 10000, intervalMs = 100, readyState = 'complete' } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
@@ -925,66 +1019,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       }
     },
 
-    async waitForText(text, { timeoutMs = 10000, intervalMs = 100 } = {}) {
-      const deadline = Date.now() + timeoutMs;
-      for (;;) {
-        const state = await readState();
-        if (state.text.includes(text)) return state;
-        if (Date.now() >= deadline) return state;
-        await sleep(intervalMs);
-      }
-    },
-
-    // WHY WAITING FOR A ROW AND NOT FOR TEXT.
-    // Half of what an agent waits for is not text: a menu row that has to appear, a button that has to go away, a dialog that has to be dismissed.
-    // Reading the page and searching a string cannot see any of it, so an agent polls a snapshot by hand — which is how today was spent: a loop of sleeps and snapshots, guessing when to stop.
-    async waitForRow({ role, name, timeoutMs = 10000, intervalMs = 150, absent = false } = {}) {
-      const want = String(name ?? '').toLowerCase();
-      const deadline = Date.now() + timeoutMs;
-      const seen = [];
-      for (;;) {
-        const rows = await readRows(120);
-        const hit = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
-          ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
-        const present = Boolean(hit);
-        if (present !== absent) {
-          return { found: absent ? true : present, role, name, row: hit ?? null, checks: seen.length + 1 };
-        }
-        seen.push(hit?.name ?? null);
-        if (Date.now() >= deadline) {
-          return { found: false, role, name, row: null, checks: seen.length };
-        }
-        await sleep(intervalMs);
-      }
-    },
-
-    // WHY STILLNESS IS THE WAIT AN AGENT CAN TRUST.
-    // Every other wait here is for something named in advance; most of what an agent waits for is not named — it is a menu that is still animating, a list still filling, a save still running.
-    // Two identical reads in a row is the honest signal that the page has stopped moving, and it ends on evidence rather than on a number somebody picked.
-    // Measured: an upload needed a dozen hand-rolled sleep loops before this existed; it now returns in one call.
-    async waitForStill({ timeoutMs = 8000, quietMs = 400, intervalMs = 120, limit = 120 } = {}) {
-      const deadline = Date.now() + timeoutMs;
-      let previous = null;
-      let unchangedSince = Date.now();
-      let checks = 0;
-      for (;;) {
-        const rows = await readRows(limit);
-        const shape = JSON.stringify(rows.map(({ role, name, x, y }) => [role, name, x, y]));
-        checks += 1;
-        if (shape === previous && Date.now() - unchangedSince >= quietMs) {
-          return { still: true, ms: Date.now() - (deadline - timeoutMs), checks };
-        }
-        if (shape !== previous) {
-          previous = shape;
-          unchangedSince = Date.now();
-        }
-        if (Date.now() >= deadline) {
-          return { still: false, ms: Date.now() - (deadline - timeoutMs), checks };
-        }
-        await sleep(intervalMs);
-      }
-    }
   };
+
+  const waits = createWaits({ readState, readRows, isDocsDocument, read: () => primitives.read(), primitives, now });
+  Object.assign(primitives, waits);
 
   const copyDocsText = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {

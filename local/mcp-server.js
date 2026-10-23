@@ -28,13 +28,15 @@ const PROTOCOL_VERSION = '2024-11-05';
 // For the same reason those two calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
 
 import { statementCard, statementDelivered } from './statements.js';
+import { reportFromFile } from './reports.js';
+import { BURST_ACTIONS, BURST_INPUT_ACTIONS, BURST_MAX_STEPS, normalizeBurst, runLocalBurst } from './burst.js';
 
 const stringArg = (name) => ({ type: 'string', description: name });
 const numberArg = (name) => ({ type: 'number', description: name });
 
 // The surface is only what the driver does well.
-// There is no run_browser_burst and no reusable element refs here: those are the cloud server's affordances, and pretending a local stdio process has them would advertise something it cannot honour.
-// Coordinates and a fresh read per action are honest and sufficient.
+// It has a local burst for dependent moves on one tab, but no reusable element refs beyond a handle that a resolve step hands to a later step, and no cross-tab steps: those are the cloud server's affordances, and pretending a local stdio process has them would advertise something it cannot honour.
+// Coordinates and a fresh read per action stay honest; the burst is the one call that spends its page read once, at the end, instead of after every step.
 
 const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes. A chrome:// page (extensions, settings) refuses every move - name a tab the bridge can drive instead.' };
 
@@ -223,15 +225,54 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'browser_burst',
+    description: 'Run 1-8 dependent steps on one tab in a single call: click, click_row, hover, press_key, type, append, scroll, stream_keys, resolve, or wait. Steps run in order and the first failure stops the burst, keeping the steps that finished. The page is settled and read once at the end, not after every step, so a menu walk costs one page look instead of four. refFromStep carries a handle from an earlier resolve into a later click, or a point into a later hover; there is no cross-tab step, no navigation, and no script. Use the named tools for upload, download, open_url, or anything that changes which page this is.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        timeoutMs: { type: 'number', description: 'budget for the whole burst, default 12000, capped at 12000' },
+        steps: {
+          type: 'array',
+          minItems: 1,
+          maxItems: BURST_MAX_STEPS,
+          description: 'dependent steps, in order; the first failure stops the burst',
+          items: {
+            type: 'object',
+            properties: {
+              action: { type: 'string', enum: [...BURST_ACTIONS], description: 'what this step does' },
+              x: { type: 'number', description: 'viewport x for click or hover' },
+              y: { type: 'number', description: 'viewport y for click or hover' },
+              handle: { type: 'string', description: 'element handle for click, instead of x/y' },
+              refFromStep: { type: 'number', description: 'earlier step whose handle or point this step uses' },
+              role: { type: 'string', description: 'row role for click_row, resolve, or a row wait' },
+              name: { type: 'string', description: 'row name for click_row, resolve, or a row wait' },
+              key: { type: 'string', description: 'key for press_key' },
+              modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] } },
+              text: { type: 'string', description: 'text for type or append, or the text a wait looks for' },
+              events: { type: 'array', items: { type: 'object' }, description: 'events for stream_keys' },
+              end: { type: 'boolean', description: 'scroll to the end' },
+              selector: { type: 'string', description: 'scroll this selector into view' },
+              absent: { type: 'boolean', description: 'wait for the text or row to leave' },
+              intervalMs: { type: 'number', description: 'gap between wait checks' }
+            },
+            required: ['action']
+          }
+        }
+      },
+      required: ['steps']
+    }
+  },
+  {
     name: 'wait_for',
-    description: 'Wait until a tab shows a text, then return the page as it now stands. Polls the same read an agent would do — including the document on a Google Doc — so the wait ends on the same evidence. Returns found:false with the current page instead of failing when the budget runs out.',
+    description: 'Wait until a tab shows a text, then return the page as it now stands. Polls the same page state a read would show — including the document on a Google Doc — so the wait ends on the same evidence, without paying a full two-sample read on every check. Returns found:false with the current page instead of failing when the budget runs out.',
     inputSchema: {
       type: 'object',
       properties: {
         tabId: tabArg,
         text: stringArg('text to wait for'),
         timeoutMs: { type: 'number', description: 'budget, default 8000, capped at 30000' },
-        intervalMs: { type: 'number', description: 'gap between checks, default 250' }
+        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
       },
       required: ['text']
     }
@@ -260,7 +301,7 @@ export const TOOLS = Object.freeze([
         name: stringArg('row name, matched exactly first and as a substring after'),
         absent: { type: 'boolean', description: 'wait for the row to go away instead of to arrive' },
         timeoutMs: { type: 'number', description: 'budget, default 10000' },
-        intervalMs: { type: 'number', description: 'gap between checks, default 150' }
+        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
       },
       required: ['role', 'name']
     }
@@ -273,8 +314,8 @@ export const TOOLS = Object.freeze([
       properties: {
         tabId: tabArg,
         timeoutMs: { type: 'number', description: 'budget, default 8000' },
-        quietMs: { type: 'number', description: 'how long the page must hold still, default 400' },
-        intervalMs: { type: 'number', description: 'gap between reads, default 120' }
+        quietMs: { type: 'number', description: 'how long the page must hold still, default 120' },
+        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
       }
     }
   },
@@ -415,6 +456,24 @@ export const TOOLS = Object.freeze([
       },
       required: ['client', 'portal', 'period', 'path']
     }
+  },
+  {
+    name: 'report_build',
+    description: 'Turn a sheet exported to CSV into a report plan whose every figure names the column and the exact rows it came from, recheck the plan against those rows, and write it beside the source. Refuses a row outside the requested period, a value that is not money, a missing column, and a figure that disagrees with its source - so a wrong number stops the report instead of reaching a client. No browser is touched: month-end reports must not depend on a tab being open.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: stringArg('the CSV file exported from the workbook'),
+        client: stringArg('the client the report is for'),
+        title: stringArg('the report title, as the person wants it read'),
+        period: stringArg('the month the report covers, YYYY-MM'),
+        periodColumn: stringArg('the column that holds each row\'s date, when the sheet has one'),
+        groupBy: stringArg('the column whose values become the report lines'),
+        valueColumn: stringArg('the money column that is summed'),
+        out: stringArg('where to write the report; defaults beside the source')
+      },
+      required: ['source', 'client', 'title', 'period', 'groupBy', 'valueColumn']
+    }
   }
 ]);
 
@@ -445,7 +504,12 @@ function asText(value) {
 
 const AUTO_PAGE_LIMIT = 60;
 const AUTO_ROWS = 8;
-const SETTLE_MS = 120;
+
+// WHY THE FALLBACK STILL EXISTS.
+// Every driver made by this tree has settle(), but a caller can hand the server its own driver, and a snapshot taken before a menu opened is a wrong answer.
+// The fallback is the old fixed beat, used only when the driver cannot watch the page; the real path is the Node-polled settle in primitives, which ends after 32ms of quiet instead of always spending 120ms.
+
+const SETTLE_FALLBACK_MS = 120;
 
 // WHY AN ACTION REPORTS THE PAGE IT LEFT BEHIND.
 // An agent that has to ask for the page after every action spends two round trips on one decision — act, then look — and the look is the half that costs.
@@ -458,9 +522,12 @@ const SETTLE_MS = 120;
 // Only the first eight added or moved rows ride along: they are the ones worth acting on, and the count says what was held back.
 // Keyed by driver object in a WeakMap, so a closed tab's last look is garbage instead of a leak.
 
-// WHY THE LOOK WAITS A BEAT FIRST.
+// WHY THE LOOK SETTLES FIRST.
 // The snapshot used to run the instant the action's reply landed — and a menu that opens a frame later was already missed: proven live, the auto-page after clicking Insert held no menu rows while a snapshot a moment later held fifteen.
-// A hundred and twenty milliseconds is frames, not networks — seven of them, enough for any handler to place its DOM — and twenty-five times less than one model turn, so the tax framing is wrong: settling is part of seeing, and a page read before it stands is a page misread.
+// The fix used to be 120ms of sleep because no cheaper signal existed.
+// The page now watches itself with a MutationObserver, but the clock that reads that watcher lives in Node: a hidden tab clamps a page-side timer to seconds, measured 304ms to 1,009ms on a Google Doc, while a snapshot of the same page took 4ms.
+// Node waits 8ms, asks how quiet the page has been, and stops after 32ms of quiet or 120ms total, so a background tab cannot turn the settle into a multi-second stall.
+// Settling is still part of seeing, but it is measured instead of assumed.
 
 function diffElements(prev, curr) {
   const key = (r) => `${r.role}|${r.name}|${r.x}|${r.y}`;
@@ -515,15 +582,32 @@ const budgetOf = (value, fallback) => {
   return Number.isFinite(asked) ? Math.min(30000, Math.max(500, asked)) : fallback;
 };
 
-const gapOf = (value, fallback) => {
+const gapOf = (value, fallback, min = 100) => {
   const asked = Number(value ?? fallback);
-  return Number.isFinite(asked) ? Math.min(5000, Math.max(100, asked)) : fallback;
+  return Number.isFinite(asked) ? Math.min(5000, Math.max(min, asked)) : fallback;
+};
+
+const quietOf = (value, fallback) => {
+  const asked = Number(value ?? fallback);
+  return Number.isFinite(asked) ? Math.min(5000, Math.max(50, asked)) : fallback;
 };
 
 
 
+const settleForLook = async (driver) => {
+  if (typeof driver.settle === 'function') {
+    const settled = await driver.settle().catch(() => null);
+    if (settled && settled.why !== 'failed' && settled.why !== 'no answer') return;
+  }
+  await new Promise((r) => setTimeout(r, SETTLE_FALLBACK_MS));
+};
+
+// WHY AN ACTION CAN SAY IT ALREADY SETTLED.
+// A wait or a chord-only stream has already watched the page go quiet, so settling again before the snapshot is the same 32ms paid twice.
+// The action's own verdict is the evidence; the page look trusts it.
+
 const afterAction = async (driver, action, limit) => {
-  await new Promise((r) => setTimeout(r, SETTLE_MS));
+  if (!action?.settled) await settleForLook(driver);
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
   const state = typeof driver.pageState === 'function'
     ? await driver.pageState().catch(() => null)
@@ -669,6 +753,9 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
   const run = async (name, args) => {
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
 
+    // The burst is checked before a tab is resolved, so a malformed step list cannot touch a browser, and a caller learns which step was wrong before any page is changed.
+    const burst = name === 'browser_burst' ? normalizeBurst(args) : null;
+
     if (name === 'statement_card') {
       return asText(statementCard({
         client: args.client,
@@ -690,10 +777,24 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         replace: args.replace === true
       }));
     }
+    if (name === 'report_build') {
+      return asText(reportFromFile({
+        source: args.source,
+        client: args.client,
+        title: args.title,
+        period: args.period,
+        periodColumn: args.periodColumn ?? null,
+        groupBy: args.groupBy,
+        valueColumn: args.valueColumn,
+        out: args.out ?? null
+      }));
+    }
 
     const tab = name === 'close_tab' ? null : await resolvedTab(args?.tabId);
     const driver = name === 'close_tab' ? fallback : await driverFor(tab ? tab.id : args?.tabId);
-    const front = INPUT_TOOLS.has(name) && typeof driver.ensureFront === 'function'
+    const wantsFront = INPUT_TOOLS.has(name)
+      || (burst?.steps.some((step) => BURST_INPUT_ACTIONS.includes(step.action)) ?? false);
+    const front = wantsFront && typeof driver.ensureFront === 'function'
       ? await driver.ensureFront({ match: windowMatch(tab) })
       : null;
     windowSaid.set(driver, front);
@@ -760,22 +861,20 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         }));
       case 'stream_keys':
         return afterAction(driver, await driver.keys(args.events));
+      case 'browser_burst':
+        return afterAction(driver, await runLocalBurst({
+          driver,
+          steps: burst.steps,
+          timeoutMs: burst.timeoutMs
+        }));
       case 'wait_for': {
         const started = Date.now();
         const rawTimeout = Number(args.timeoutMs ?? 8000);
         const timeoutMs = Number.isFinite(rawTimeout) ? Math.min(30000, Math.max(500, rawTimeout)) : 8000;
-        const rawGap = Number(args.intervalMs ?? 250);
-        const intervalMs = Number.isFinite(rawGap) ? Math.min(5000, Math.max(100, rawGap)) : 250;
-        for (;;) {
-          const state = await driver.read();
-          if ((state.text || '').includes(args.text)) {
-            return afterAction(driver, { found: true, ms: Date.now() - started });
-          }
-          if (Date.now() - started >= timeoutMs) {
-            return afterAction(driver, { found: false, ms: Date.now() - started });
-          }
-          await new Promise((r) => setTimeout(r, intervalMs));
-        }
+        const rawGap = Number(args.intervalMs ?? 100);
+        const intervalMs = Number.isFinite(rawGap) ? Math.min(5000, Math.max(50, rawGap)) : 100;
+        const state = await driver.waitForText(args.text, { timeoutMs, intervalMs });
+        return afterAction(driver, { found: (state.text || '').includes(args.text), ms: Date.now() - started });
       }
       case 'ask_page': {
         const method = String(args.method ?? '');
@@ -790,13 +889,12 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
           name: args.name,
           absent: args.absent === true,
           timeoutMs: budgetOf(args.timeoutMs, 10000),
-          intervalMs: gapOf(args.intervalMs, 150)
+          intervalMs: gapOf(args.intervalMs, 50, 50)
         }));
       case 'wait_still':
         return afterAction(driver, await driver.waitForStill({
           timeoutMs: budgetOf(args.timeoutMs, 8000),
-          quietMs: budgetOf(args.quietMs, 400),
-          intervalMs: gapOf(args.intervalMs, 120)
+          quietMs: quietOf(args.quietMs, 120)
         }));
       case 'guide':
         return asText(await driver.guide(args.topic));

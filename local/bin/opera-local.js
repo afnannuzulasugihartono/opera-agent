@@ -23,7 +23,6 @@ import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
 import { windowState, focusWindow } from '../window-focus.js';
 import { dialogState, dialogType, dialogPress } from '../dialog.js';
-import { ensureFront } from '../focus-guard.js';
 import { createSessionStore } from '../sessions.js';
 import { listPageWebSockets, openTab, closeTab } from '../transport.js';
 import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
@@ -102,6 +101,10 @@ const driver = {
     return (await attach()).read();
   },
 
+  async settle() {
+    return (await attach()).settle();
+  },
+
   async find(query) {
     return (await attach()).find(query);
   },
@@ -155,7 +158,7 @@ const driver = {
   },
 
   async ensureFront(options) {
-    return ensureFront({ ...(options ?? {}), hasFocus: async () => (await attach()).hasFocus() });
+    return (await attach()).ensureFront(options);
   },
 
   async captureSized(options) {
@@ -176,6 +179,10 @@ const driver = {
 
   async waitForRow(options) {
     return (await attach()).waitForRow(options);
+  },
+
+  async waitForText(text, options) {
+    return (await attach()).waitForText(text, options);
   },
 
   async waitForStill(options) {
