@@ -39,6 +39,7 @@ import {
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createWaits } from '../local/waits.js';
+import { createCanvasMethods } from '../local/canvas.js';
 
   // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED.
   // The runtime asks the page what it
@@ -1711,6 +1712,17 @@ test('createWaits assembles the shared waits in one place', () => {
   });
 
   assert.deepEqual(Object.keys(methods).sort(), ['waitForMutation', 'waitForRow', 'waitForStill', 'waitForText']);
+});
+
+test('createCanvasMethods exposes read and caretLine', () => {
+  const methods = createCanvasMethods({
+    cdp: { send: async () => ({}) },
+    primitives: { evaluate: async () => null, key: async () => ({}), settle: async () => ({}), clickAt: async () => ({}), viewport: async () => ({ width: 1 }) },
+    sleep: async () => {},
+    readState: async () => ({ url: 'https://example.com', title: '', text: '' })
+  });
+
+  assert.deepEqual(Object.keys(methods).sort(), ['caretLine', 'read']);
 });
 
 // WHY ALL FOUR ARROWS ARE PINNED.
