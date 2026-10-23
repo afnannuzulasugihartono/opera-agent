@@ -40,6 +40,7 @@ import {
 import { createPrimitives } from '../local/primitives.js';
 import { createWaits } from '../local/waits.js';
 import { createCanvasMethods } from '../local/canvas.js';
+import { createInputMethods } from '../local/input.js';
 
   // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED.
   // The runtime asks the page what it
@@ -1723,6 +1724,17 @@ test('createCanvasMethods exposes read and caretLine', () => {
   });
 
   assert.deepEqual(Object.keys(methods).sort(), ['caretLine', 'read']);
+});
+
+test('createInputMethods exposes the typing and key verbs', () => {
+  const methods = createInputMethods({
+    cdp: { send: async () => ({}) },
+    primitives: { key: async () => ({}), settle: async () => ({}), type: async () => ({}) },
+    sleep: async () => {},
+    chunkSize: 2000
+  });
+
+  assert.deepEqual(Object.keys(methods).sort(), ['append', 'clear', 'key', 'keys', 'selectAll', 'type']);
 });
 
 // WHY ALL FOUR ARROWS ARE PINNED.
