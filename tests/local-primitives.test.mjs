@@ -1673,6 +1673,33 @@ test('a text stream with nothing focused fails fast instead of polling for text 
   assert.deepEqual(slept, [], 'no edit poll runs when nothing can receive the text');
 });
 
+test('waitForMutation uses the page settle between reads instead of a fixed gap', async () => {
+  const slept = [];
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) return { result: { value: true } };
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) return { result: { value: true } };
+      return { result: { value: { value: 'wait' } } };
+    }
+  };
+  let asks = 0;
+  const read = async () => {
+    asks += 1;
+    if (asks < 2) return { value: 'wait' };
+    return { value: 'go' };
+  };
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.waitForMutation(read, (state) => state.value === 'go', { timeoutMs: 200, intervalMs: 100 });
+
+  assert.equal(out.value, 'go');
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'the wait waits on the page settle');
+  assert.ok(!slept.includes(100), 'and not on a fixed gap');
+});
+
 // WHY ALL FOUR ARROWS ARE PINNED.
 // The table grid in Google Docs expands right and down; with only Up and Down known, a drive that needed Right died on an "Unknown key" in the middle of a live thesis.
 // Directions come in fours.
