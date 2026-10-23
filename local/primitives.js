@@ -1024,15 +1024,34 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     // WHY THE WAIT SETTLES INSTEAD OF SLEEPING.
     // A fixed interval cannot know when the page has moved, so it either waits for a change that already happened or misses one that is still settling.
     // The mutation settle ends as soon as the page is quiet, which is the earliest safe moment to ask again.
-    async waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false } = {}) {
+    // WHY ONE WAIT INSTEAD OF THREE.
+    // Text, row and stillness all need the same thing: ask, decide, and when the page has not answered yet, wait for it to go quiet instead of guessing a delay.
+    // Keeping that loop in one place means a timer bug is fixed once and the read, the predicate and the deadline stay together.
+    async waitForMutation(read, predicate, { timeoutMs = 10000 } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
-        const probe = await readState();
-        const state = isDocsDocument(probe.url) ? await primitives.read() : probe;
-        if (state.text.includes(text) !== absent) return state;
+        const state = await read();
+        if (predicate(state)) return state;
         if (Date.now() >= deadline) return state;
         await primitives.settle();
       }
+    },
+
+    // WHY A DOC IS READ THROUGH read() AND NOT THROUGH body.innerText.
+    // A Google Doc's text lives in a canvas, so the cheap page-state read cannot see it; the wait used to pay a full read on every poll for exactly this reason.
+    // The cheap read stays for every ordinary page, and the document read is spent only where the words actually are.
+    // WHY THE WAIT SETTLES INSTEAD OF SLEEPING.
+    // A fixed interval cannot know when the page has moved, so it either waits for a change that already happened or misses one that is still settling.
+    // The mutation settle ends as soon as the page is quiet, which is the earliest safe moment to ask again.
+    async waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false } = {}) {
+      return primitives.waitForMutation(
+        async () => {
+          const probe = await readState();
+          return isDocsDocument(probe.url) ? await primitives.read() : probe;
+        },
+        (state) => state.text.includes(text) !== absent,
+        { timeoutMs }
+      );
     },
 
     // WHY WAITING FOR A ROW AND NOT FOR TEXT.
@@ -1043,59 +1062,55 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     // The mutation settle ends on the page's own quiet signal, which is the earliest safe moment to read the rows again.
     async waitForRow({ role, name, timeoutMs = 10000, intervalMs = 150, absent = false } = {}) {
       const want = String(name ?? '').toLowerCase();
-      const deadline = Date.now() + timeoutMs;
       const seen = [];
-      for (;;) {
-        const rows = await readRows(120);
-        const hit = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
-          ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
-        const present = Boolean(hit);
-        if (present !== absent) {
-          return { found: absent ? true : present, role, name, row: hit ?? null, checks: seen.length + 1 };
-        }
-        seen.push(hit?.name ?? null);
-        if (Date.now() >= deadline) {
-          return { found: false, role, name, row: null, checks: seen.length };
-        }
-        await primitives.settle();
-      }
+      const state = await primitives.waitForMutation(
+        async () => {
+          const rows = await readRows(120);
+          const hit = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
+            ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
+          seen.push(hit?.name ?? null);
+          return { role, name, row: hit ?? null, present: Boolean(hit), checks: seen.length };
+        },
+        (state) => state.present !== absent,
+        { timeoutMs }
+      );
+      return {
+        found: absent ? state.present === false ? true : false : state.present,
+        role,
+        name,
+        row: state.row ?? null,
+        checks: state.checks
+      };
     },
 
     // WHY STILLNESS IS THE WAIT AN AGENT CAN TRUST.
     // Every other wait here is for something named in advance; most of what an agent waits for is not named — it is a menu that is still animating, a list still filling, a save still running.
     // Two identical reads in a row is the honest signal that the page has stopped moving, and it ends on evidence rather than on a number somebody picked.
     // Measured: an upload needed a dozen hand-rolled sleep loops before this existed; it now returns in one call.
+    // WHY STILLNESS IS ONE READ IN THE SHARED WAIT.
+    // The wait is still two identical row reads, but the shared mutation wait owns the clock and the settle between them.
+    // The quiet window stays two identical reads; the page only pays the settle while it is still moving.
     async waitForStill({ timeoutMs = 8000, quietMs = 120, intervalMs = 60, limit = 120 } = {}) {
-      // WHY STILLNESS WAITS ON THE PAGE, NOT ON A TIMER.
-      // The old loop slept a fixed interval between snapshots, so a settled page still paid the whole quiet window in sleeps.
-      // The MutationObserver settle already knows when the DOM has been quiet, so the wait now settles first and spends its snapshots proving the rows an agent acts on are stable.
-      // Two identical reads is still the verdict; the quiet window is measured by the same Node clock the settle uses, so a hidden tab cannot clamp it.
       const started = now();
-      const deadline = started + timeoutMs;
       let previous = null;
       let unchangedSince = started;
       let checks = 0;
-      let settled = false;
-      for (;;) {
-        const rows = await readRows(limit);
-        const shape = JSON.stringify(rows.map(({ role, name, x, y }) => [role, name, x, y]));
-        checks += 1;
-        if (shape === previous && now() - unchangedSince >= quietMs) {
-          return { still: true, ms: now() - started, checks, settled };
-        }
-        if (shape !== previous) {
-          previous = shape;
-          unchangedSince = now();
-        }
-        if (now() >= deadline) {
-          return { still: false, ms: now() - started, checks, settled };
-        }
-        await primitives.settle();
-        settled = true;
-        if (now() >= deadline) {
-          return { still: false, ms: now() - started, checks, settled };
-        }
-      }
+      const out = await primitives.waitForMutation(
+        async () => {
+          const rows = await readRows(limit);
+          const shape = JSON.stringify(rows.map(({ role, name, x, y }) => [role, name, x, y]));
+          checks += 1;
+          const stable = shape === previous && now() - unchangedSince >= quietMs;
+          if (shape !== previous) {
+            previous = shape;
+            unchangedSince = now();
+          }
+          return { still: stable, ms: now() - started, checks };
+        },
+        (state) => state.still,
+        { timeoutMs }
+      );
+      return { still: out.still, ms: out.ms, checks: out.checks, settled: out.checks > 1 };
     }
   };
 
