@@ -307,6 +307,16 @@ test('append puts the text at the end and proves nothing follows it', async () =
   assert.match(cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent').params.key, /End/);
 });
 
+test('append waits for the page to be quiet, not for a fixed beat', async () => {
+  const slept = [];
+  const cdp = recordingCdp();
+
+  await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).append('tail text');
+
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'the end key is followed by a settle');
+  assert.ok(!slept.includes(120), 'and not by the old fixed 120 ms beat');
+});
+
 test('append says so when text follows it, because "at the end" is a claim to prove', async () => {
   const cdp = recordingCdp();
   cdp.page.tail = 'text the page already held after it';
@@ -1590,6 +1600,7 @@ test('a chord-only stream settles once instead of polling for an edit that never
   const out = await p.keys([{ key: 'a', modifiers: ['Control'] }, { key: 'b', modifiers: ['Control'] }]);
 
   assert.equal(out.moved, false, 'a menu chord does not move the text signature');
+  assert.equal(out.settled, true, 'and it says it already settled, so the page look does not pay twice');
   assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, SETTLE_POLL_MS], 'two key beats, then one settle — not twelve 150 ms polls');
 });
 
@@ -1648,7 +1659,8 @@ test('a caret line on a Doc selects, copies, and ends at the line end', async ()
   assert.deepEqual(keys.map((k) => [k.params.key, k.params.modifiers ?? 0]), [
     ['Home', 0], ['Home', 0], ['End', 8], ['End', 8], ['End', 0], ['End', 0]
   ], 'home, shift-end, copy between, then collapse');
-  assert.deepEqual(slept.filter((ms) => ms === 300).length, 2, 'a beat after each move');
+  assert.ok(slept.filter((ms) => ms === SETTLE_POLL_MS).length >= 2, 'a settle after each selection move and restore step, not a fixed beat');
+  assert.ok(!slept.some((ms) => ms === 120 || ms === 180), 'and not the old scroll/restore gaps');
 });
 
 test('a caret line outside Docs reads the selection instead of the mirror', async () => {
@@ -2136,6 +2148,7 @@ test('stillness ends on two identical reads and names how long it took', async (
   const out = await p.waitForStill({ quietMs: 0, intervalMs: 1000, timeoutMs: 5000 });
 
   assert.equal(out.still, true);
+  assert.equal(out.settled, true, 'the wait already settled, so the page look does not pay twice');
   assert.ok(out.checks >= 2, 'one matching pair is what stillness means');
   assert.ok(slept.every((ms) => ms === SETTLE_POLL_MS), 'the wait settles on the page instead of sleeping a fixed interval');
   assert.ok(slept.length > 0, 'and it did wait for the page to be quiet');
