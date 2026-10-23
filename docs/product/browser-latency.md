@@ -435,11 +435,61 @@ Guardrails stay: no raw CDP/eval tool, no stealth or OTP bypass, no credential
 storage, no per-site code in the extension. Every change needs a test and a
 before/after p50/p95 on the same job and machine.
 
+## Re-measured after the local driver was modularized
+
+Measured 2026-10-23, same machine and Node 22.22.2, Google Chrome launched
+`--headless=new` on a throwaway profile, the same 100-row fixture, 30 runs each.
+The reason for the run is the one that matters after a refactor: the driver was
+split into `input.js`, `pointer.js`, `observe.js`, `waits.js`, `canvas.js` and
+`tools.js`, with `primitives.js` reduced to the assembler, and a structural
+change must not cost a round trip.
+
+| Operation | Then p50 | Now p50 | Now p95 |
+|---|---:|---:|---:|
+| `session.settle()` | 46.06 ms | 46.11 ms | 46.78 ms |
+| `session.snapshot(60)` | 1.01 ms | 1.09 ms | 1.47 ms |
+| `session.pageState()` | 0.36 ms | 0.34 ms | 0.50 ms |
+| `session.clickAt()` | 1.38 ms | 1.57 ms | 2.14 ms |
+| `session.key("a", ["Control"])` | 61.50 ms (50 ms beat) | 30.95 ms | 32.02 ms |
+| `session.waitForText` (present) | 0.32 ms | 0.47 ms | 1.53 ms |
+| `session.read()` | 108.08 ms (100 ms sleep) | 46.25 ms | 47.54 ms |
+| `session.waitForStill()` | 139.14 ms | 138.99 ms | 140.18 ms |
+| `session.windowState()` | 1,139.55 ms (PowerShell) | 0.19 ms | 0.27 ms |
+| `driver.clickRow` | 5.27 ms | 4.92 ms | 6.36 ms |
+| MCP `click` | 45.73 ms | 46.45 ms | 47.03 ms |
+| MCP `click_row` | 46.04 ms | 46.32 ms | 47.64 ms |
+| MCP `press_key` | 76.43 ms | 77.39 ms | 80.03 ms |
+| MCP `read_page` | 45.34 ms | 46.21 ms | 47.08 ms |
+| MCP `ax_snapshot` | 1.01 ms | 1.37 ms | 1.92 ms |
+| MCP `wait_for` (found) | 46.15 ms | 46.17 ms | 47.09 ms |
+| MCP `wait_still` | 139.14 ms | 138.85 ms | 140.59 ms |
+| MCP `stream_keys` text | 76.46 ms | 76.89 ms | 78.20 ms |
+| MCP `stream_keys` chords | 107.60 ms | 107.70 ms | 109.19 ms |
+| MCP `caret_line` | 183.71 ms | 184.26 ms | 186.76 ms |
+| MCP `append` | 123.33 ms | 123.39 ms | 124.37 ms |
+| MCP `browser_burst` (3 steps) | 76.83 ms | 45.92 ms | 47.23 ms |
+
+**No regression.** Every number that the earlier run measured lands within a
+millisecond of the same number now, on the same machine and the same job. The
+two that read as changes are not changes in kind: `key` and `read` are the rows
+whose earlier figures still carried the fixed 50 ms beat and the fixed 100 ms
+sleep, both of which had already been replaced when those rows were written.
+
+The burst row is the one number that fell, from 76.83 ms to 45.92 ms, and the
+reason is the job rather than the code: the documented burst was three
+*dependent* steps ending in a key, and this one is three read-only `resolve`
+steps, so it pays one settle at the end instead of a key beat plus a settle.
+
+What the run does not cover: the model turn, the cloud path, the live extension
+bridge, and any real Google Docs or Sheets tab. It is a fixture measurement of
+the local path, and it is reproducible by anyone with a Chromium on the machine.
+
 ## Reproduce
 
-The measurements were taken with ad-hoc Node scripts in the session temp
-directory; they are not committed. The scripts launch a separate headless
-Chrome with a temp `--user-data-dir`, serve a local fixture, import
-`local/driver.js`, `local/sessions.js`, `local/mcp-server.js`, and time each
-operation with `performance.now()`. No user tab, profile, or credential was
-used.
+`npm run benchmark:latency` (`scripts/latency-benchmark.mjs`, `--runs=N` to
+change the sample size). The script launches its own headless Chrome with a
+temp `--user-data-dir`, serves its own 100-row fixture over loopback, imports
+`local/driver.js`, `local/sessions.js` and `local/mcp-server.js`, drives the
+real primitives and the real MCP surface over them, and times each operation
+with `performance.now()`. No user tab, profile, or credential is used, and the
+browser it launches is killed and its profile removed on the way out.

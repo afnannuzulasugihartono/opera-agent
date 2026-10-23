@@ -13,6 +13,7 @@
     "benchmark:semantic": "node scripts/semantic-baseline.mjs --runs=3",
     "benchmark:ledger": "node scripts/goal-ledger-benchmark.mjs --runs=3 --iterations=1000",
     "benchmark:proof": "node scripts/proof-engine-benchmark.mjs --runs=30",
+    "benchmark:latency": "node scripts/latency-benchmark.mjs --runs=30",
     "diagnose:mcp": "node scripts/mcp-connection-diagnostics.mjs",
     "migrate": "node scripts/apply-migrations.mjs",
     "store": "python scripts/build-store-package.py",
