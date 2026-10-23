@@ -89,7 +89,9 @@ Adopted consequences, in priority order:
    a desktop harness we do not have.
 5. Queued design (not build): execute(graph) — ad-hoc intent graphs with
    constraints and verification, closing the gap between linear bursts and
-   named workflows. Plus a generic-first grounding cascade (generic text
+   named workflows. The local-surface half now has a design:
+   [`superpowers/specs/2026-10-23-local-run-task-design.md`](superpowers/specs/2026-10-23-local-run-task-design.md).
+   Plus a generic-first grounding cascade (generic text
    find, site selectors as fallback) as a standing refinement rule.
 
 Non-goals restated: no Fara competitor, no training cluster, no scores table
