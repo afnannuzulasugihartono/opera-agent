@@ -19,7 +19,7 @@ directory is not listed here, it is generated state, user data, or an archive.
 | Cloud backend | `supabase/functions/*/index.ts`, `_shared/*.js` | Auth, billing, bridge, gateway, MCP, runner, update, VM | `tests/mcp-surface.test.mjs`, live Supabase tests |
 | Local MCP | `local/bin/opera-local.js`, `local/mcp-server.js` | CDP driver behind an MCP stdio server | `tests/local-*-*.test.mjs` |
 | Local primitives | `local/primitives.js`, `local/page-expressions.js` | Generic page actions and expressions | `tests/local-primitives.test.mjs` |
-| Local waits | `local/primitives.js`, `local/page-expressions.js` | Mutation-based text/row/stillness waits | `tests/local-primitives.test.mjs` |
+| Local waits | `local/waits.js`, `local/primitives.js`, `local/page-expressions.js` | Shared mutation wait plus text, row and stillness | `tests/local-primitives.test.mjs` |
 | Local burst | `local/burst.js`, `local/mcp-server.js` | One call for 1-8 dependent single-tab steps | `tests/local-burst.test.mjs`, `tests/local-mcp-server.test.mjs` |
 | Window focus | `local/window-focus.js`, `local/focus-guard.js`, `local/sessions.js` | Page-first focus, CDP window state, OS fallback | `tests/window-focus.test.mjs`, `tests/local-sessions.test.mjs` |
 | Statements/reports | `local/statements.js`, `local/reports.js` | CSV-to-report pipeline and delivery | `tests/*statement*.test.mjs`, `tests/*report*.test.mjs` |
