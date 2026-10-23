@@ -27,6 +27,7 @@
     "sessions.js",
     "statements.js",
     "transport.js",
+    "waits.js",
     "window-focus.js",
     "ws-server.js"
   ],

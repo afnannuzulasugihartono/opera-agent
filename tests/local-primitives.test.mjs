@@ -38,6 +38,7 @@ import {
   splitText
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
+import { createWaits } from '../local/waits.js';
 
   // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED.
   // The runtime asks the page what it
@@ -1700,6 +1701,18 @@ test('waitForMutation uses the page settle between reads instead of a fixed gap'
   assert.ok(!slept.includes(100), 'and not on a fixed gap');
 });
 
+test('createWaits assembles the shared waits in one place', () => {
+  const methods = createWaits({
+    readState: async () => ({}),
+    readRows: async () => [],
+    isDocsDocument: () => false,
+    read: async () => ({}),
+    primitives: { settle: async () => ({ why: 'quiet' }) }
+  });
+
+  assert.deepEqual(Object.keys(methods).sort(), ['waitForMutation', 'waitForRow', 'waitForStill', 'waitForText']);
+});
+
 // WHY ALL FOUR ARROWS ARE PINNED.
 // The table grid in Google Docs expands right and down; with only Up and Down known, a drive that needed Right died on an "Unknown key" in the middle of a live thesis.
 // Directions come in fours.
@@ -2202,7 +2215,7 @@ test('a row wait can wait for a row to go away', async () => {
 
 test('a row wait that runs out says so and hands back the page', async () => {
   const cdp = rowsCdp([[{ role: 'menuitem', name: 'Other', x: 1, y: 1, node: 0 }]]);
-  const p = createPrimitives(cdp, { sleep: async () => {}, now: () => clock });
+  const p = createPrimitives(cdp, { sleep: async (ms) => { clock += ms; }, now: () => clock });
 
   let clock = 0;
   const result = await p.waitForRow({ role: 'menuitem', name: 'Upload', timeoutMs: 200, intervalMs: 100 });
