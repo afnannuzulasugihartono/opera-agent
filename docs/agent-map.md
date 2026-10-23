@@ -9,6 +9,7 @@ directory is not listed here, it is generated state, user data, or an archive.
 - [`README.md`](../README.md): product, layout, commands, contract numbers.
 - [`docs/handoff.md`](handoff.md): current state and next move.
 - [`docs/security.md`](security.md): trust boundary.
+- [`docs/naming.md`](naming.md): which name space a name belongs to, and the shape it takes.
 
 ## Runtime areas
 
