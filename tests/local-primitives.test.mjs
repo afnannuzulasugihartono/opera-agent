@@ -41,6 +41,7 @@ import { createPrimitives } from '../local/primitives.js';
 import { createWaits } from '../local/waits.js';
 import { createCanvasMethods } from '../local/canvas.js';
 import { createInputMethods } from '../local/input.js';
+import { createPointerMethods } from '../local/pointer.js';
 
   // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED.
   // The runtime asks the page what it
@@ -1735,6 +1736,16 @@ test('createInputMethods exposes the typing and key verbs', () => {
   });
 
   assert.deepEqual(Object.keys(methods).sort(), ['append', 'clear', 'key', 'keys', 'selectAll', 'type']);
+});
+
+test('createPointerMethods exposes the clicks, the hovers and the handles', () => {
+  const methods = createPointerMethods({
+    cdp: { send: async () => ({}) },
+    primitives: { viewport: async () => ({ width: 1, height: 1 }), settle: async () => ({}), handleBox: async () => ({}) }
+  });
+
+  assert.deepEqual(Object.keys(methods).sort(),
+    ['clickAt', 'clickFraction', 'clickHandle', 'handleBox', 'hover', 'hoverRow', 'resolveHandle']);
 });
 
 // WHY ALL FOUR ARROWS ARE PINNED.

@@ -23,6 +23,7 @@
     "mcp-server.js",
     "menu-tree.js",
     "page-expressions.js",
+    "pointer.js",
     "primitives-file.js",
     "primitives.js",
     "reports.js",
