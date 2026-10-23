@@ -30,6 +30,7 @@
     "reports.js",
     "sessions.js",
     "statements.js",
+    "tools.js",
     "transport.js",
     "waits.js",
     "window-focus.js",

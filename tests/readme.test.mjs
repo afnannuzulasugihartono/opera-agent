@@ -31,7 +31,7 @@ const contract = JSON.parse(read('tests/fixtures/mcp-contract-v1.json'));
 // The local tools: what the local server registers.
 
 const localServer = read('local/mcp-server.js');
-const localTools = new Set([...localServer.matchAll(/name:\s*'([a-z_]+)'/g)].map((m) => m[1]));
+const localTools = new Set([...read('local/tools.js').matchAll(/name:\s*'([a-z_]+)'/g)].map((m) => m[1]));
 
 // The edge functions: the directories that hold an entrypoint.
 
