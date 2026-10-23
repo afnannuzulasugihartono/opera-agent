@@ -3,8 +3,9 @@
 Status: investigation, then implemented. The local burst, the Node-polled settle,
 the read second-sample settle, the shorter key beat, the cheaper text wait, the
 event-driven stillness wait, the CDP window state, the no-double-settle contract,
-and the settle-based append/caret/menu gaps are in the tree and gated by tests.
-The OS PowerShell path remains only as a fallback; model-turn time is unchanged.
+the settle-based append/caret/menu gaps, and the settle-based text/row waits are
+in the tree and gated by tests. The OS PowerShell path remains only as a
+fallback; model-turn time is unchanged.
 
 Measured: 2026-10-22, Windows, Node 22.22.2, headless Chrome 153, local CDP.
 The fixture is a synthetic page with 100 rows; a 5,000-row page is used for scaling.
@@ -320,10 +321,13 @@ fell from **p50 92.09 ms** to **p50 46.15 ms**. On a real Google Doc it still
 pays the document copy — 660 ms for `References` — because the words live in a
 canvas; on Google Sheets it found the text immediately.
 
-`wait_for_row` now polls every 50 ms instead of 150 ms, because a snapshot is
-about 1 ms and a menu can appear late. Its found case was already one snapshot
-plus the final settle, so the gain is in the absent case, which was not measured
-here.
+`wait_for_row` now waits on the mutation settle between checks instead of
+sleeping a fixed interval. Its found case was already one snapshot plus the final
+settle, so the gain is in the absent case, which was not measured here.
+
+`wait_for` and `wait_for_row` now share the same settle-based polling shape; the
+remaining fixed-delay wait is the 400 ms quiet window in `wait_still`'s default
+contract, reduced to 120 ms for a settled page.
 
 The double settle is gone: a chord-only `stream_keys` and `wait_still` now report
 `settled: true`, and `afterAction` trusts that instead of watching the page a
@@ -411,10 +415,10 @@ audit, not for the hot loop.
 2. **Event-driven settle — done.** The 120 ms sleep is replaced by a Node-polled
    `MutationObserver` settle. The clock must stay in Node; a hidden tab clamps a
    page-side timer.
-3. **Local watch/wait — mostly done.** `wait_for` uses the text-wait primitive,
-   `wait_for_row` polls every 50 ms, and `wait_still` settles on mutations before
-   proving row stability. They are still per-primitive waits, not one shared
-   in-page watch, and the OS focus tail is unchanged.
+3. **Local watch/wait - mostly done.** `wait_for` and `wait_for_row` now wait on
+   the mutation settle instead of a fixed gap, and `wait_still` settles between
+   row reads. They are still per-primitive waits, not one shared in-page watch,
+   and the OS focus tail is unchanged.
 4. **Read second-sample settle — done.** `read()` still takes two samples, but
    the gap between them is the settle, not a fixed 100 ms sleep. A caller that
    wants one read can still take `ax_snapshot` or `read_page` and read the

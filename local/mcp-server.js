@@ -272,7 +272,7 @@ export const TOOLS = Object.freeze([
         tabId: tabArg,
         text: stringArg('text to wait for'),
         timeoutMs: { type: 'number', description: 'budget, default 8000, capped at 30000' },
-        intervalMs: { type: 'number', description: 'gap between checks, default 100, capped at 5000' }
+        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
       },
       required: ['text']
     }
@@ -301,7 +301,7 @@ export const TOOLS = Object.freeze([
         name: stringArg('row name, matched exactly first and as a substring after'),
         absent: { type: 'boolean', description: 'wait for the row to go away instead of to arrive' },
         timeoutMs: { type: 'number', description: 'budget, default 10000' },
-        intervalMs: { type: 'number', description: 'gap between checks, default 50' }
+        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
       },
       required: ['role', 'name']
     }
