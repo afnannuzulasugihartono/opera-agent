@@ -398,26 +398,21 @@ export const UPLOAD_FIND_GAP_MS = 400;
     // this machine's browser window: the viewport went 1144x714 to 1186x670 while the device scale stayed at 1.25, so the same CSS pixel stopped meaning the same place.
     // A fraction is resolved against the viewport as it is at the moment of the click, which survives that, and the answer says which pixels it became and in what space - so a caller that meant a fixed pixel still gets the truth about the space it landed in.
 
-export const CARET_RESTORE_GAP_MS = 180;
 export const CARET_TOLERANCE_PX = 12;
 
 // WHY THE VIEW IS PUT BACK TWICE AND THE CLICK WAITS FOR THE SECOND.
 // Measured live: the read scrolls the document to the caret, and the page finishes that scroll on its own frame — after the first write.
 // A click that goes out in between lands on whatever happens to be under it, and on the thesis document that was an image: the caret was restored onto a picture.
-// So the scroll is written, the page is given a beat to argue, and the click only goes out once a second write held.
+// So the scroll is written, the page is given the settle to argue, and the click only goes out once a second write held.
 
-export const CARET_SCROLL_SETTLE_MS = 120;
 export const CARET_SCROLL_ATTEMPTS = 3;
 export const SCROLL_MARK = 'data-opera-scroll';
-export const MENU_HOVER_GAP_MS = 90;
-
-export const MENU_OPEN_GAP_MS = 260;
 
 // WHY A MENU IS POLLED UNTIL IT IS DRAWN.
 // Measured live, the Insert dropdown was still absent five seconds after the click; a fixed gap of any honest size is either slow on a good machine or early on a slow one.
 // Polling the tree until the children are there costs nothing when they arrive immediately and is the only thing that works when they do not.
+// The gap between those polls is the settle, not a number picked here.
 
-export const MENU_OPEN_POLL_MS = 150;
 export const DROP_PHASE_GAP_MS = 120;
 export const DROP_FRONT_SETTLE_MS = 700;
 export const DROP_SETTLE_MS = 900;
@@ -486,9 +481,7 @@ export function isDocsDocument(url) {
 // WHY READING A LINE SELECTS IT FIRST.
 // The mirror a copy reads from only holds what a selection put there: measured live as an empty line beside a perfectly visible caret.
 // So the read selects its own line — Home, Shift+End — copies, and collapses back to the line end, which is the documented end state: the caret moves within its line and never past it.
-// Steps breathe between them because injected keys land late; without the beats the copy runs before the selection exists.
-
-export const CARET_LINE_GAP_MS = 300;
+// The steps wait on the settle between them, because injected keys land late and the copy must not run before the selection exists.
 
 export const SELECTION_TEXT_EXPRESSION = `(() => {
   try {
@@ -853,8 +846,6 @@ export const SETTLE_DISARM_EXPRESSION = `(() => {
   return true;
 })() /*opera-settle-disarm*/`;
 
-// WHY THE APPEND WAITS A BEAT AFTER THE END KEY.
+// WHY THE APPEND WAITS AFTER THE END KEY.
 // The end key asks the editor to move its caret and scroll to it; a document that scrolls answers the next insert before the view has caught up, and text lands where the caret used to be.
-// One beat is the cheapest way to let the view arrive, and it costs nothing when the view already has.
-
-export const APPEND_SETTLE_MS = 120;
+// The wait is the settle, so the view arriving is measured instead of assumed and a settled page pays one beat rather than a fixed 120 ms.

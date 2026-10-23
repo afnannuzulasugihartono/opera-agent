@@ -69,11 +69,7 @@ import nodePath from 'node:path';
 
 import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from './menu-tree.js';
 import {
-  APPEND_SETTLE_MS,
-  CARET_LINE_GAP_MS,
-  CARET_RESTORE_GAP_MS,
   CARET_SCROLL_ATTEMPTS,
-  CARET_SCROLL_SETTLE_MS,
   CARET_TOLERANCE_PX,
   DOCS_COPY_EXPRESSION,
   EDIT_POLLS,
@@ -83,9 +79,6 @@ import {
   HANDLE_PREFIX,
   KEY_BEAT_MS,
   LOCAL_CARET_EXPRESSION,
-  MENU_HOVER_GAP_MS,
-  MENU_OPEN_GAP_MS,
-  MENU_OPEN_POLL_MS,
   SETTLE_ARM_EXPRESSION,
   SETTLE_DISARM_EXPRESSION,
   SETTLE_MAX_MS,
@@ -213,10 +206,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       })()`);
       if (point?.why) return lost(point.why);
       if (attempt > 1 && point.settled) break;
-      await sleep(CARET_SCROLL_SETTLE_MS);
+      await primitives.settle();
     }
     if (point.settled) await primitives.clickAt(point.x, point.y).catch(() => null);
-    await sleep(CARET_RESTORE_GAP_MS);
+    await primitives.settle();
     const seen = await primitives.evaluate(`(() => {
       const chain = (() => { ${markedChainExpression} })();
       const want = ${pairs};
@@ -447,9 +440,9 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const { url } = await readState();
       const mark = await rememberCaret();
       await primitives.key('Home');
-      await sleep(CARET_LINE_GAP_MS);
+      await primitives.settle();
       await primitives.key('End', ['Shift']);
-      await sleep(CARET_LINE_GAP_MS);
+      await primitives.settle();
       const line = isDocsDocument(url) ? await copyDocsText() : await primitives.evaluate(SELECTION_TEXT_EXPRESSION);
       await primitives.key('End').catch(() => null);
       const back = await putCaretBack(mark);
@@ -498,7 +491,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async append(text) {
       const chars = String(text ?? '').length;
       await primitives.key('End', ['Control']);
-      await sleep(APPEND_SETTLE_MS);
+      await primitives.settle();
       const typed = await primitives.type(text);
       const atEnd = typed.placed.found && String(typed.placed.after ?? '').trim() === '';
       return {
@@ -560,13 +553,18 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       const before = await editSignature();
       let chords = 0;
       let chars = 0;
+      let settled = false;
       let run = [];
       // WHY A CHORD-ONLY STREAM DOES NOT POLL FOR TEXT.
       // A menu or style chord moves no text signature, so the twelve-poll edit wait could only ever report moved:false — after 1.8 s of waiting for a mirror that was never coming.
       // Text still gets the slow-mirror budget, because that lag is real; a chord gets one settle and one honest signature instead.
       // A text stream with nothing focused gets neither: text sent to a button cannot land, so one focus read is cheaper than a poll budget that can only report moved:false.
       const reportMoved = async () => {
-        if (chars === 0) return (await primitives.settle(), moved(before, await editSignature()));
+        if (chars === 0) {
+          await primitives.settle();
+          settled = true;
+          return moved(before, await editSignature());
+        }
         const focus = await focusNow();
         if (focus && focus.editable === false) return false;
         return (await waitForEdit(before)).moved;
@@ -589,7 +587,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         }
       }
       await flush();
-      return { events: events.length, chords, chars, moved: await reportMoved(), execMs: Date.now() - started };
+      return { events: events.length, chords, chars, moved: await reportMoved(), settled, execMs: Date.now() - started };
     },
 
     // WHY A CLICK TAKES A FRACTION AS WELL AS A PIXEL.
@@ -707,10 +705,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     async hoverRow(row) {
       const away = row.y > 200 ? { x: row.x, y: Math.max(2, row.y - 160) } : { x: row.x, y: row.y + 160 };
       await primitives.hover(away.x, away.y);
-      await sleep(MENU_HOVER_GAP_MS);
+      await primitives.settle();
       const here = await primitives.handleBox(row.handle);
       await primitives.hover(here.x, here.y);
-      await sleep(MENU_OPEN_GAP_MS);
+      await primitives.settle();
       return here;
     },
 
@@ -777,7 +775,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
             rows = await primitives.menuTree({ limit });
             if (rows.some((found) => found.depth === index + 1) || Date.now() >= childDeadline) break;
             if (hoverAgain) await primitives.hoverRow(row);
-            await sleep(MENU_OPEN_POLL_MS);
+            await primitives.settle();
           }
         } else {
           rows = await primitives.menuTree({ limit });
@@ -1071,23 +1069,25 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       let previous = null;
       let unchangedSince = started;
       let checks = 0;
+      let settled = false;
       for (;;) {
         const rows = await readRows(limit);
         const shape = JSON.stringify(rows.map(({ role, name, x, y }) => [role, name, x, y]));
         checks += 1;
         if (shape === previous && now() - unchangedSince >= quietMs) {
-          return { still: true, ms: now() - started, checks };
+          return { still: true, ms: now() - started, checks, settled };
         }
         if (shape !== previous) {
           previous = shape;
           unchangedSince = now();
         }
         if (now() >= deadline) {
-          return { still: false, ms: now() - started, checks };
+          return { still: false, ms: now() - started, checks, settled };
         }
         await primitives.settle();
+        settled = true;
         if (now() >= deadline) {
-          return { still: false, ms: now() - started, checks };
+          return { still: false, ms: now() - started, checks, settled };
         }
       }
     }

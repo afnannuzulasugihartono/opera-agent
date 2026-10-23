@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createPrimitives } from '../local/primitives.js';
+import { SETTLE_POLL_MS } from '../local/page-expressions.js';
 
 // WHY THESE CLAIMS EXIST.
 // Measured live on Google Docs: a walk for ["Insert", "Image", "Upload from computer"] opened the two menus and then clicked the leaf on the way, which opened the operating system's own file dialog - a window nothing inside the browser can close again - and the answer still said acted: false.
@@ -103,6 +104,16 @@ test('a branch below the bar is opened by hovering it, because hovering activate
   const hovered = moves(cdp).map((c) => [c.params.x, c.params.y]);
   assert.ok(hovered.some(([x, y]) => x === 460 && y === 120), 'the pointer went onto Image');
   assert.ok(hovered.length >= 3, 'and came from somewhere else first, which is the enter the menu waits for');
+});
+
+test('a menu walk settles between pointer moves instead of sleeping fixed gaps', async () => {
+  const cdp = menuCdp();
+  const slept = [];
+
+  await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).openMenu({ path: ['Insert', 'Image'], timeoutMs: 1000 });
+
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'the walk waits on the page settle');
+  assert.ok(!slept.some((ms) => ms === 120 || ms === 260 || ms === 90), 'and not on the old fixed hover/open/poll gaps');
 });
 
 test('a walk that reaches nothing says where it stopped and what was there', async () => {

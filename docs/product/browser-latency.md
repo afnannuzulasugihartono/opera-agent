@@ -2,9 +2,9 @@
 
 Status: investigation, then implemented. The local burst, the Node-polled settle,
 the read second-sample settle, the shorter key beat, the cheaper text wait, the
-event-driven stillness wait, and the CDP window state are in the tree and gated
-by tests. The OS PowerShell path remains only as a fallback; model-turn time is
-unchanged.
+event-driven stillness wait, the CDP window state, the no-double-settle contract,
+and the settle-based append/caret/menu gaps are in the tree and gated by tests.
+The OS PowerShell path remains only as a fallback; model-turn time is unchanged.
 
 Measured: 2026-10-22, Windows, Node 22.22.2, headless Chrome 153, local CDP.
 The fixture is a synthetic page with 100 rows; a 5,000-row page is used for scaling.
@@ -26,6 +26,11 @@ them:
 - `read_page()` used to always sleep 100 ms for a second read. It measured
   **p50 106.77 ms** on the small page before, and **p50 45.34 ms** after the
   second sample began waiting on the same Node-polled settle.
+- `append`, `caret_line`, and menu walks used fixed 120/300/260/90 ms gaps. Those
+  gaps are now the same Node-polled settle: fixture `caret_line` fell from
+  **p50 708.17 ms** to **p50 183.71 ms**, and `append` from **p50 199.73 ms** to
+  **p50 123.33 ms**. Real Docs/Sheets `caret_line` completed in 276/275 ms with
+  text unchanged.
 - Every chord used to pay `KEY_BEAT_MS = 50` ms. `Ctrl+A` measured **p50 61.5 ms**.
   The beat is now one 60 Hz frame, **16 ms**, because Docs drops edges that land in
   the same tick and a frame is enough to separate them.
@@ -38,9 +43,12 @@ them:
   immediately.
 - `wait_still` used to sleep a fixed 120 ms between snapshots and hold a 400 ms
   quiet window, so even a settled page paid the whole window in sleeps. It now
-  settles on the page's own `MutationObserver` and proves row stability with a
-  120 ms quiet window: **p50 182.62 ms** on the fixture, down from **p50 584.33
-  ms** on the same requested job.
+  settles on the page's own `MutationObserver`, proves row stability with a 120 ms
+  quiet window, and tells the page look it already settled: **p50 139.14 ms** on
+  the fixture, down from **p50 584.33 ms** on the same requested job.
+- A chord-only `stream_keys` used to settle inside the stream and then settle
+  again in `afterAction`. It now reports `settled: true`, so the page look trusts
+  it: **p50 107.60 ms**, down from **p50 153.90 ms**.
 - When the page reports no focus, the OS window query used to measure **p50
   1.14 s** (n=3, p95 1.74 s). The input path now asks the browser instead:
   `Browser.getWindowForTarget` on the real Chrome measured **p50 0.35 ms / p95
@@ -164,11 +172,13 @@ text-stream job clicks the Run button first, so nothing can receive the text.
 | MCP `click_row` | 137.78 ms | 139.13 ms | 46.04 ms | 47.20 ms | same |
 | MCP `press_key` | 107.24 ms | 108.39 ms | 76.43 ms | 77.88 ms | key beat is one frame, not fifty milliseconds |
 | MCP `stream_keys` text | 168.55 ms | 172.02 ms | 76.46 ms | 77.58 ms | one beat per chord, and the text wait ends on the first moved signature |
-| MCP `stream_keys` chords | 1,987.43 ms | 1,996.89 ms | 152.83 ms | 155.22 ms | a chord-only stream settles once instead of polling twelve times for text |
+| MCP `stream_keys` chords | 153.90 ms | 157.19 ms | 107.60 ms | 109.38 ms | the stream reports `settled: true`, so `afterAction` does not settle twice |
 | MCP `stream_keys` text unfocused | 1,857.97 ms | 1,867.83 ms | 76.22 ms | 79.69 ms | text sent to a non-editable focus fails fast instead of polling for a signature |
 | MCP `read_page` | 106.77 ms | 108.18 ms | 45.34 ms | 47.06 ms | second sample waits on settle, not `sleep(100)` |
 | MCP `wait_for` (found) | 92.09 ms | 94.15 ms | 46.15 ms | 47.01 ms | one cheap page read plus the final settle, not a full read per poll |
-| MCP `wait_still` | 584.33 ms | 587.48 ms | 182.62 ms | 184.15 ms | settle on mutations, then prove row stability, instead of fixed sleeps |
+| MCP `wait_still` | 183.83 ms | 187.17 ms | 139.14 ms | 141.92 ms | settle on mutations, prove row stability, and skip the second settle |
+| MCP `caret_line` | 708.17 ms | 716.70 ms | 183.71 ms | 186.95 ms | selection and restore steps settle instead of 300/120/180 ms gaps |
+| MCP `append` | 199.73 ms | 202.12 ms | 123.33 ms | 124.95 ms | the end key is followed by a settle, not a fixed 120 ms beat |
 | `driver.windowState()` | 1,139.55 ms | 1,740.17 ms | 0.35 ms | 3.19 ms | CDP `Browser.getWindowForTarget`, not PowerShell; real Chrome, n=20 |
 | three dependent MCP calls | 456.94 ms | 463.65 ms | 169.03 ms | 170.39 ms | each call now settles once, and the key step is shorter |
 | one `browser_burst` of those three steps | n/a | n/a | 76.83 ms | 78.78 ms | one settle and one page look at the end |
@@ -198,6 +208,12 @@ on the first check; Sheets `wait_for` found `Sum: 34,974.00` immediately and the
 row wait also succeeded on the first check. The new `wait_still` returned
 `still:true` in 143 ms on Docs and 144 ms on Sheets. Both pages read back with
 unchanged text.
+
+The settle-based caret path was driven on the already-open real tabs, with no
+text edited: Docs `caret_line` completed in 276 ms and Sheets in 275 ms, both
+with `caretRestored: true` and unchanged page text. A real Docs `open_menu` walk
+to `Insert` -> `Image` also succeeded without clicking the leaf, but its wall
+time was 3,925 ms, so the menu speed gain is **[UNVERIFIED]** on a real page.
 
 The hidden-tab trap is recorded because it cost real time: the first settle
 shape waited in the page with `setTimeout(120)`, and a hidden Google Doc clamped
@@ -308,6 +324,12 @@ canvas; on Google Sheets it found the text immediately.
 about 1 ms and a menu can appear late. Its found case was already one snapshot
 plus the final settle, so the gain is in the absent case, which was not measured
 here.
+
+The double settle is gone: a chord-only `stream_keys` and `wait_still` now report
+`settled: true`, and `afterAction` trusts that instead of watching the page a
+second time. On the same requested job, `stream_keys` chords fell from **p50
+153.90 ms** to **p50 107.60 ms**, and `wait_still` from **p50 183.83 ms** to
+**p50 139.14 ms**.
 
 `wait_still` used to sleep a fixed 120 ms between snapshots and hold a 400 ms
 quiet window, so a settled page paid the whole window in sleeps. It now settles
