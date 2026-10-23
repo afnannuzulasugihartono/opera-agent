@@ -56,7 +56,14 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   standard file, a pull request that skips CI, a CRLF file, or a document naming a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 177 runtime safety files, 1369 unit tests, green.
+- Gates: `npm test`, `npm run check` - 31 primitives, 178 runtime safety files, 1424 unit tests, green.
+- **The local driver is modular, and its tests are too.** `local/primitives.js` is a 126-line
+  assembler: navigation, focus, and the raw escape hatch, with every verb assigned from the module
+  that owns it - `input.js` (typing and keys), `pointer.js` (clicks, hovers, handles), `observe.js`
+  (snapshot, scroll, computed, capture), `waits.js` (the settle and the waits on it), `canvas.js`
+  (the Docs read), `primitives-file.js` (upload, drop, download) - and `tools.js` holds the MCP tool
+  surface as data. The 2,021-line test file became one file per module over a shared fake page in
+  `tests/helpers/local-page.mjs`. Every move was verified by `npm test` and `npm run check`.
 - Production, measured against the live database rather than the tree: 76 `opera_*`
   functions (65 `SECURITY DEFINER`), 20 `opera_*` tables, **9 deployed edge functions** -
   bridge 64, update 43, runner 46, mcp 95, auth 39, vm 37, gateway 19, listen 14,
