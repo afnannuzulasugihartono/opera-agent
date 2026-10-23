@@ -75,6 +75,7 @@ Local green is not acceptance. The acceptance rule is in [`AGENTS.md`](AGENTS.md
 
 | Question | Answer |
 | --- | --- |
+| Where is the code map for agents and reviewers? | [`docs/agent-map.md`](docs/agent-map.md) |
 | What are the rules that bind every task? | [`AGENTS.md`](AGENTS.md) |
 | What does a change have to look like, and how is it reviewed? | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | What is true right now, and what is next? | [`docs/handoff.md`](docs/handoff.md) |
