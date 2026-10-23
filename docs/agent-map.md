@@ -19,11 +19,13 @@ directory is not listed here, it is generated state, user data, or an archive.
 | Cloud backend | `supabase/functions/*/index.ts`, `_shared/*.js` | Auth, billing, bridge, gateway, MCP, runner, update, VM | `tests/mcp-surface.test.mjs`, live Supabase tests |
 | Local MCP | `local/bin/opera-local.js`, `local/mcp-server.js` | CDP driver behind an MCP stdio server | `tests/local-*-*.test.mjs` |
 | Local primitives | `local/primitives.js` | The driver assembled: navigation, focus, and one verb per module below | `tests/local-primitives.test.mjs` |
-| Local typing | `local/input.js` | type, append, key, keys, selectAll, clear, and the edit signature that proves the page moved | `tests/local-primitives.test.mjs` |
-| Local pointer | `local/pointer.js` | clickAt, clickFraction, hover, hoverRow, clickHandle, handleBox, resolveHandle | `tests/local-primitives.test.mjs` |
-| Local reads | `local/observe.js` | snapshot, resolveRow, menuTree, openMenu, computed, scroll, viewport, capture | `tests/local-primitives.test.mjs` |
-| Local waits | `local/waits.js` | The page settle, waitForIdle, and the text, row and stillness waits on it | `tests/local-primitives.test.mjs` |
-| Local canvas read | `local/canvas.js` | A Google Doc read through its own copy path, with the caret put back | `tests/local-primitives.test.mjs` |
+| Local typing | `local/input.js` | type, append, key, keys, selectAll, clear, and the edit signature that proves the page moved | `tests/local-input.test.mjs` |
+| Local pointer | `local/pointer.js` | clickAt, clickFraction, hover, hoverRow, clickHandle, handleBox, resolveHandle | `tests/local-pointer.test.mjs` |
+| Local reads | `local/observe.js` | snapshot, resolveRow, menuTree, openMenu, computed, scroll, viewport, capture | `tests/local-observe.test.mjs` |
+| Local waits | `local/waits.js` | The page settle, waitForIdle, and the text, row and stillness waits on it | `tests/local-waits.test.mjs` |
+| Local canvas read | `local/canvas.js` | A Google Doc read through its own copy path, with the caret put back | `tests/local-canvas.test.mjs` |
+| Local file verbs | `local/primitives-file.js` | Upload, drop and download, proven by the bytes on disk | `tests/local-file.test.mjs` |
+| Local MCP tools | `local/tools.js` | The advertised tool surface, its descriptions and its schemas | `tests/advice.test.mjs`, `tests/local-mcp-server.test.mjs` |
 | Local burst | `local/burst.js`, `local/mcp-server.js` | One call for 1-8 dependent single-tab steps | `tests/local-burst.test.mjs`, `tests/local-mcp-server.test.mjs` |
 | Window focus | `local/window-focus.js`, `local/focus-guard.js`, `local/sessions.js` | Page-first focus, CDP window state, OS fallback | `tests/window-focus.test.mjs`, `tests/local-sessions.test.mjs` |
 | Statements/reports | `local/statements.js`, `local/reports.js` | CSV-to-report pipeline and delivery | `tests/*statement*.test.mjs`, `tests/*report*.test.mjs` |
@@ -35,6 +37,7 @@ directory is not listed here, it is generated state, user data, or an archive.
 - Structural gate: `npm run check`.
 - Live gate: `py tests/browser_extension_test.py`.
 - Rule: every exported function in `local/` must be named by at least one test.
+- Rule: one test file per module, sharing the fakes in `tests/helpers/local-page.mjs`.
 
 ## Commands
 
