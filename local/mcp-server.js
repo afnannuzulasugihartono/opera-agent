@@ -602,8 +602,12 @@ const settleForLook = async (driver) => {
   await new Promise((r) => setTimeout(r, SETTLE_FALLBACK_MS));
 };
 
+// WHY AN ACTION CAN SAY IT ALREADY SETTLED.
+// A wait or a chord-only stream has already watched the page go quiet, so settling again before the snapshot is the same 32ms paid twice.
+// The action's own verdict is the evidence; the page look trusts it.
+
 const afterAction = async (driver, action, limit) => {
-  await settleForLook(driver);
+  if (!action?.settled) await settleForLook(driver);
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
   const state = typeof driver.pageState === 'function'
     ? await driver.pageState().catch(() => null)
