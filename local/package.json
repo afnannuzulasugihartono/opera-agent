@@ -14,6 +14,7 @@
     "bridge.js",
     "browsers.js",
     "burst.js",
+    "canvas.js",
     "cdp.js",
     "dialog.js",
     "driver.js",
