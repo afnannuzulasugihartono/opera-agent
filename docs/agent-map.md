@@ -18,8 +18,12 @@ directory is not listed here, it is generated state, user data, or an archive.
 | Shared pure modules | `lib/*.js` | Expressions, focus, protocol, working state | `tests/*semantic*.test.mjs`, `tests/*working-state*.test.mjs` |
 | Cloud backend | `supabase/functions/*/index.ts`, `_shared/*.js` | Auth, billing, bridge, gateway, MCP, runner, update, VM | `tests/mcp-surface.test.mjs`, live Supabase tests |
 | Local MCP | `local/bin/opera-local.js`, `local/mcp-server.js` | CDP driver behind an MCP stdio server | `tests/local-*-*.test.mjs` |
-| Local primitives | `local/primitives.js`, `local/page-expressions.js` | Generic page actions and expressions | `tests/local-primitives.test.mjs` |
-| Local waits | `local/waits.js`, `local/primitives.js`, `local/page-expressions.js` | Shared mutation wait plus text, row and stillness | `tests/local-primitives.test.mjs` |
+| Local primitives | `local/primitives.js` | The driver assembled: navigation, focus, and one verb per module below | `tests/local-primitives.test.mjs` |
+| Local typing | `local/input.js` | type, append, key, keys, selectAll, clear, and the edit signature that proves the page moved | `tests/local-primitives.test.mjs` |
+| Local pointer | `local/pointer.js` | clickAt, clickFraction, hover, hoverRow, clickHandle, handleBox, resolveHandle | `tests/local-primitives.test.mjs` |
+| Local reads | `local/observe.js` | snapshot, resolveRow, menuTree, openMenu, computed, scroll, viewport, capture | `tests/local-primitives.test.mjs` |
+| Local waits | `local/waits.js` | The page settle, waitForIdle, and the text, row and stillness waits on it | `tests/local-primitives.test.mjs` |
+| Local canvas read | `local/canvas.js` | A Google Doc read through its own copy path, with the caret put back | `tests/local-primitives.test.mjs` |
 | Local burst | `local/burst.js`, `local/mcp-server.js` | One call for 1-8 dependent single-tab steps | `tests/local-burst.test.mjs`, `tests/local-mcp-server.test.mjs` |
 | Window focus | `local/window-focus.js`, `local/focus-guard.js`, `local/sessions.js` | Page-first focus, CDP window state, OS fallback | `tests/window-focus.test.mjs`, `tests/local-sessions.test.mjs` |
 | Statements/reports | `local/statements.js`, `local/reports.js` | CSV-to-report pipeline and delivery | `tests/*statement*.test.mjs`, `tests/*report*.test.mjs` |
@@ -44,9 +48,10 @@ node scripts/format-comments.mjs --write   # canonical comment form
 
 - One file answers one question.
 - Pure expressions stay in `page-expressions.js`.
-- IO and CDP stay in `primitives.js`.
+- A verb and the read that proves it took stay together: `input.js`, `pointer.js`, `observe.js`.
+- `primitives.js` assembles them and holds only navigation, focus and the raw escape hatch.
 - MCP protocol stays in `mcp-server.js`.
 - Fixed gaps and dead code are not allowed; replace waits with measured waits.
 - Prefer splitting a growing file by job, not by line count.
-- Keep barrel exports explicit and tested.
+- A module takes `cdp`, `primitives` and `sleep`, and is assigned onto the object it belongs to.
 - Run `npm test` and `npm run check` after every structural change.
