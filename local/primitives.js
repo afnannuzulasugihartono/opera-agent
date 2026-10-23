@@ -703,7 +703,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     // Measured live: a submenu that would not open on hover opened once the pointer was sent somewhere else first and came back.
     // A menu that has never seen the pointer arrive from outside does not treat the hover as entering it, so the away-and-back is not politeness, it is the enter transition the menu is waiting for.
     async hoverRow(row) {
-      const away = row.y > 200 ? { x: row.x, y: Math.max(2, row.y - 160) } : { x: row.x, y: row.y + 160 };
+      const away = { x: Math.max(2, row.x - 80), y: Math.max(2, row.y - 80) };
       await primitives.hover(away.x, away.y);
       await primitives.settle();
       const here = await primitives.handleBox(row.handle);
@@ -1018,23 +1018,29 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       }
     },
 
+    // WHY A DOC IS READ THROUGH read() AND NOT THROUGH body.innerText.
+    // A Google Doc's text lives in a canvas, so the cheap page-state read cannot see it; the wait used to pay a full read on every poll for exactly this reason.
+    // The cheap read stays for every ordinary page, and the document read is spent only where the words actually are.
+    // WHY THE WAIT SETTLES INSTEAD OF SLEEPING.
+    // A fixed interval cannot know when the page has moved, so it either waits for a change that already happened or misses one that is still settling.
+    // The mutation settle ends as soon as the page is quiet, which is the earliest safe moment to ask again.
     async waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false } = {}) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
-        // WHY A DOC IS READ THROUGH read() AND NOT THROUGH body.innerText.
-        // A Google Doc's text lives in a canvas, so the cheap page-state read cannot see it; the wait used to pay a full read on every poll for exactly this reason.
-        // The cheap read stays for every ordinary page, and the document read is spent only where the words actually are.
         const probe = await readState();
         const state = isDocsDocument(probe.url) ? await primitives.read() : probe;
         if (state.text.includes(text) !== absent) return state;
         if (Date.now() >= deadline) return state;
-        await sleep(intervalMs);
+        await primitives.settle();
       }
     },
 
     // WHY WAITING FOR A ROW AND NOT FOR TEXT.
     // Half of what an agent waits for is not text: a menu row that has to appear, a button that has to go away, a dialog that has to be dismissed.
     // Reading the page and searching a string cannot see any of it, so an agent polls a snapshot by hand — which is how today was spent: a loop of sleeps and snapshots, guessing when to stop.
+    // WHY THE WAIT SETTLES INSTEAD OF SLEEPING.
+    // A fixed interval cannot know when the row has appeared, so it either polls a page that has not moved or sleeps through a change that already happened.
+    // The mutation settle ends on the page's own quiet signal, which is the earliest safe moment to read the rows again.
     async waitForRow({ role, name, timeoutMs = 10000, intervalMs = 150, absent = false } = {}) {
       const want = String(name ?? '').toLowerCase();
       const deadline = Date.now() + timeoutMs;
@@ -1051,7 +1057,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         if (Date.now() >= deadline) {
           return { found: false, role, name, row: null, checks: seen.length };
         }
-        await sleep(intervalMs);
+        await primitives.settle();
       }
     },
 

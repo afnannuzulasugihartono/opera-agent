@@ -800,6 +800,19 @@ test('a replaced page says reshaped instead of listing sixty new rows', async ()
 // The old lock said the call took at least a hundred milliseconds, which only proved the timer existed.
 // The page is now settled by watching it, so the proof is that the driver's settle ran once before the snapshot - not that the process was made to wait.
 
+test('an action that already settled does not pay for a second settle', async () => {
+  const c = ctx();
+  c.driver.keys = async () => {
+    c.driver.calls.push(['keys']);
+    return { events: 1, chords: 1, chars: 0, moved: false, settled: true };
+  };
+  const server = createMcpServer(c);
+
+  await server.handle({ jsonrpc: '2.0', id: 36, method: 'tools/call', params: { name: 'stream_keys', arguments: { events: [{ key: 'a', modifiers: ['Control'] }] } } });
+
+  assert.equal(c.driver.calls.filter(([name]) => name === 'settle').length, 0, 'the action settled once, and the page look trusts it');
+});
+
 test('an action settles on the page before looking, not on a timer', async () => {
   const c = ctx();
   const order = [];

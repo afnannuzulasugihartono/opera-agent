@@ -1311,6 +1311,52 @@ function docsCdp(copyAnswers, caret = null) {
   };
 }
 
+test('a text wait settles the page between checks instead of sleeping a fixed gap', async () => {
+  const texts = ['not yet', 'Heading is here'];
+  let ask = 0;
+  const slept = [];
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
+        return { result: { value: { title: 't', url: 'u', text: texts[Math.min(ask++, texts.length - 1)], ready: 'complete' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+        return { result: { value: true } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      }
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
+        return { result: { value: true } };
+      }
+      return { result: {} };
+    }
+  };
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.waitForText('Heading', { timeoutMs: 200, intervalMs: 100 });
+
+  assert.equal(out.text, 'Heading is here');
+  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
+  assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
+});
+
+test('a row wait settles the page between checks instead of sleeping a fixed gap', async () => {
+  const slept = [];
+  const cdp = rowsCdp([[], [{ role: 'menuitem', name: 'Upload', x: 1, y: 1, node: 0 }]]);
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.waitForRow({ role: 'menuitem', name: 'Upload', timeoutMs: 200, intervalMs: 100 });
+
+  assert.equal(out.found, true);
+  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
+  assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
+  assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
+});
+
 test('a read on a settled page takes two samples and says the text stood still', async () => {
   const cdp = recordingCdp();
   const slept = [];
