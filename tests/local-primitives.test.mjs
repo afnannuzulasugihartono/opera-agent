@@ -42,6 +42,7 @@ import { createWaits } from '../local/waits.js';
 import { createCanvasMethods } from '../local/canvas.js';
 import { createInputMethods } from '../local/input.js';
 import { createPointerMethods } from '../local/pointer.js';
+import { createObserveMethods } from '../local/observe.js';
 
   // WHY THE FAKE PAGE REMEMBERS WHAT WAS TYPED.
   // The runtime asks the page what it
@@ -1704,16 +1705,30 @@ test('waitForMutation uses the page settle between reads instead of a fixed gap'
   assert.ok(!slept.includes(100), 'and not on a fixed gap');
 });
 
-test('createWaits assembles the shared waits in one place', () => {
+test('createWaits assembles the settle and the shared waits in one place', () => {
   const methods = createWaits({
+    cdp: { send: async () => ({ result: { value: { quietMs: 40, changes: 0, visibility: 'visible' } } }) },
+    sleep: async () => {},
     readState: async () => ({}),
     readRows: async () => [],
     isDocsDocument: () => false,
     read: async () => ({}),
-    primitives: { settle: async () => ({ why: 'quiet' }) }
+    primitives: { settle: async () => ({ why: 'quiet' }), evaluate: async () => 'complete' }
   });
 
-  assert.deepEqual(Object.keys(methods).sort(), ['waitForMutation', 'waitForRow', 'waitForStill', 'waitForText']);
+  assert.deepEqual(Object.keys(methods).sort(),
+    ['settle', 'waitForIdle', 'waitForMutation', 'waitForRow', 'waitForStill', 'waitForText']);
+});
+
+test('createObserveMethods exposes the reads of the page', () => {
+  const methods = createObserveMethods({
+    cdp: { send: async () => ({ result: { value: [] } }) },
+    primitives: { waitForRow: async () => ({}), resolveHandle: async () => ({}), clickAt: async () => ({}), hoverRow: async () => ({}), settle: async () => ({}) },
+    capped: (limit) => limit
+  });
+
+  assert.deepEqual(Object.keys(methods).sort(),
+    ['capture', 'captureSized', 'computed', 'menuTree', 'openMenu', 'pageState', 'readRows', 'readState', 'resolveRow', 'scroll', 'snapshot', 'viewport']);
 });
 
 test('createCanvasMethods exposes read and caretLine', () => {
