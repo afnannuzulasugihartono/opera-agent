@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-15 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: agent-guide — what an agent can do here, written as tasks instead of a tool list.
 // @state: recipes, side effects, honesty locks between them and the tools.
 // @dependencies: none.
@@ -6,7 +6,7 @@
 // WHY THIS FILE EXISTS
 
 // An agent arriving cold does not know what to call first.
-// Twenty-three tool descriptions answer "what does this do" and never answer "I want to attach a file, what do I do" — so an agent reads all of them, in order, every session, and picks.
+// Every tool description answers "what does this do" and never answer "I want to attach a file, what do I do" — so an agent reads all of them, in order, every session, and picks.
 // Measured on this product's own author: an image upload took a dozen calls and a submenu twenty seconds of polling because the road was never written down anywhere the agent could read it.
 
 // WHY THE RECIPES ARE DATA AND THE CHECKS ARE TESTS.

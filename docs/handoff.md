@@ -56,7 +56,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   standard file, a pull request that skips CI, a CRLF file, or a document naming a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 178 runtime safety files, 1424 unit tests, green.
+- Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1453 unit tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` is a 126-line
   assembler: navigation, focus, and the raw escape hatch, with every verb assigned from the module
   that owns it - `input.js` (typing and keys), `pointer.js` (clicks, hovers, handles), `observe.js`

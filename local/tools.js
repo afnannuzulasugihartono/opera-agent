@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: tools — the MCP tool surface of the local driver, with the schema each call is answered against.
 // @state: every tool name, its description and its input schema, frozen in one table.
 // @dependencies: ./burst.js.

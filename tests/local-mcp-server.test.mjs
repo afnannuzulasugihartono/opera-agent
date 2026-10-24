@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-11 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: local-mcp-server — the stdio MCP surface, driven against a fake browser rather than a process.
 // @state: 8 locks; the protocol handshake, the advertised tools, and the ways a call can fail.
 // @dependencies: node:test, strict, ../local/mcp-server.js.
