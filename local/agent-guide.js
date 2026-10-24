@@ -138,6 +138,7 @@ export const SIDE_EFFECTS = Object.freeze({
   statement_card: [],
   statement_delivered: ['writes the client-month into the manifest on disk, replacing the record only when asked'],
   report_build: ['writes a checked report file beside the source; no page is touched'],
+  document_build: ['writes a checked document file beside the source; no page is touched'],
   capture_page: [],
   ax_snapshot: []
 });

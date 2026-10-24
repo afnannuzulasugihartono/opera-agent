@@ -442,6 +442,18 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'document_build',
+    description: 'Turn a paper described as JSON (title, sections with tables, images and graphs) into a document plan whose every graph names the section and rows it came from, recheck the plan against those, and write it beside the source. Refuses a missing title, a section without a heading, a table with bad cells, an image without alt text, a graph with no data, and a graph that disagrees with its tables - so a wrong number stops the paper instead of reaching a reader. No browser is touched: papers are planned on disk before they reach a page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: stringArg('the JSON file describing the paper'),
+        out: stringArg('where to write the document; defaults beside the source')
+      },
+      required: ['source']
+    }
+  },
+  {
     name: 'report_build',
     description: 'Turn a sheet exported to CSV into a report plan whose every figure names the column and the exact rows it came from, recheck the plan against those rows, and write it beside the source. Refuses a row outside the requested period, a value that is not money, a missing column, and a figure that disagrees with its source - so a wrong number stops the report instead of reaching a client. No browser is touched: month-end reports must not depend on a tab being open.',
     inputSchema: {
