@@ -100,7 +100,7 @@ Point a client at it:
 
 ## Tools
 
-The server advertises 38 tools; `guide()` returns them as tasks rather than a list.
+The server advertises 39 tools; `guide()` returns them as tasks rather than a list.
 
 `browser_status`, `focus_window`, `dialog_state`, `dialog_type`, `dialog_press`,
 `list_tabs`, `open_url`, `close_tab`, `read_page`, `find_elements`, `click`,
@@ -108,7 +108,7 @@ The server advertises 38 tools; `guide()` returns them as tasks rather than a li
 `append`, `stream_keys`, `browser_burst`, `wait_for`, `ask_page`, `wait_for_row`,
 `wait_still`, `caret_line`, `upload`, `drop_file`, `intercept_file_chooser`, `download`,
 `list_menus`, `open_menu`, `guide`, `capture_page`, `ax_snapshot`, `statement_card`,
-`statement_delivered`, `report_build`.
+`statement_delivered`, `report_build`, `document_build`.
 
 `browser_burst` runs 1-8 dependent steps on one tab in a single call and reads the page
 once at the end; the first failure stops the burst and keeps the steps that finished.
