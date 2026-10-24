@@ -53,9 +53,14 @@ export function createFocusGuard({
 
     const { state, asked } = await machine();
     const wanted = String(match ?? '').trim().toLowerCase();
-    const minimized = (state?.minimized ?? []).find((title) => !wanted || title.toLowerCase().includes(wanted))
-      ?? state?.minimized?.[0]
-      ?? '';
+
+    // WHY NO BLIND FALLBACK TO THE FIRST MINIMIZED WINDOW.
+    // Measured live on this machine: a read-only burst on a page that was merely behind another application brought a minimized Settings window to the front, because nothing named the browser and the guard took whatever was on the taskbar.
+    // A drive that types after that would type into Settings.
+    // So a window is restored only when the caller named a piece of its title, and the driver names the tab it is about to drive.
+    const minimized = wanted
+      ? (state?.minimized ?? []).find((title) => title.toLowerCase().includes(wanted)) ?? ''
+      : '';
     if (minimized) {
       const out = await focus(minimized);
       seen = { at: clock(), state: null };
