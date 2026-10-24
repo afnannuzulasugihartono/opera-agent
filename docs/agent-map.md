@@ -30,6 +30,7 @@ directory is not listed here, it is generated state, user data, or an archive.
 | Local burst | `local/burst.js`, `local/mcp-server.js` | One call for 1-8 dependent single-tab steps | `tests/local-burst.test.mjs`, `tests/local-mcp-server.test.mjs` |
 | Window focus | `local/window-focus.js`, `local/focus-guard.js`, `local/sessions.js` | Page-first focus, CDP window state, OS fallback | `tests/window-focus.test.mjs`, `tests/local-sessions.test.mjs` |
 | Statements/reports | `local/statements.js`, `local/reports.js` | CSV-to-report pipeline and delivery | `tests/*statement*.test.mjs`, `tests/*report*.test.mjs` |
+| Documents | `local/documents.js` | JSON paper to a checked document plan, with every graph recomputed from its named table | `tests/document-job.test.mjs` |
 | Landing | `landing/*.html`, `landing/*.js` | Public site and OAuth helpers | `tests/landing-*.test.mjs` |
 
 ## Tests
