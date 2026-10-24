@@ -364,6 +364,30 @@ test('an input action brings the window forward and says so', async () => {
   assert.equal(out.window.window, 'the page hears input', 'and the answer says what it found');
 });
 
+// WHY A DEAF PAGE IS A FAILURE AND NOT AN ANSWER.
+// Measured live on this machine: two windows can carry the same page title, so the one that comes forward is not always the one holding the tab.
+// The guard confirms the page hears input after a restore; when it does not, a keystroke sent anyway disappears without a word, which is the one failure this product must never report as success.
+
+test('an input action is refused when the window came forward but the page is still deaf', async () => {
+  const c = ctx();
+  c.driver.ensureFront = async () => ({
+    window: 'brought Paper - Google Chrome back from the taskbar, but the page still cannot hear input',
+    checked: 'machine',
+    focused: false,
+    blocked: true
+  });
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 97, method: 'tools/call',
+    params: { name: 'type', arguments: { text: 'hello' } }
+  });
+
+  assert.match(res.error.message, /refused: brought Paper - Google Chrome back from the taskbar, but the page still cannot hear input/);
+  assert.match(res.error.message, /Nothing was sent/);
+  assert.ok(!c.driver.calls.some(([name]) => name === 'type'), 'and not one character was typed into a window that cannot hear it');
+});
+
 test('a read pays nothing for the window, because it changes nothing about it', async () => {
   const c = ctx();
   const server = createMcpServer(c);
