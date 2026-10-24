@@ -36,6 +36,26 @@ test('focusing names the window it brought and whether the machine allowed it', 
   }
 });
 
+test('focus_window with no match reads the machine and moves nothing', async () => {
+  const calls = [];
+  const exec = async (command, args) => {
+    calls.push([command, args[args.length - 1]]);
+    return { stdout: 'FOREGROUND OpenCode\nPaper - Google Chrome\n' };
+  };
+
+  const out = await focusWindow('', { platform: 'win32', exec });
+
+  assert.equal(calls.length, 1, 'the machine is read once');
+  assert.match(calls[0][1], /^\[OperaWindow\]::Read\(\)$/m, 'and only the read path is invoked');
+  assert.doesNotMatch(calls[0][1], /^\[OperaWindow\]::Focus\(/m, 'no window is brought forward');
+  assert.equal(out.match, '');
+  assert.equal(out.focused, false);
+  assert.equal(out.title, '');
+  assert.equal(out.foreground, 'OpenCode');
+  assert.deepEqual(out.windows, ['Paper - Google Chrome']);
+  assert.match(out.why, /no match given/);
+});
+
 test('a platform with no implementation refuses in words rather than answering false', async () => {
   const state = await windowState({ platform: 'sunos' });
 
@@ -122,6 +142,23 @@ test('a window on the taskbar is brought back, because that is where text goes t
 
   assert.deepEqual(wanted, ['Paper - Google Chrome'], 'the window that was minimized is the one named');
   assert.equal(out.window, 'brought Paper - Google Chrome back from the taskbar');
+});
+
+// WHY THE GUARD NAMES THE TASKBAR WINDOW ITSELF.
+// An empty match now means "ask, do not move", so a guard that forwarded the caller's empty match would stop bringing back the very window it had just found on the taskbar.
+// The guard therefore passes the title it found; this test is the one that notices if that is ever undone.
+
+test('a taskbar window is named even when the caller gave no match', async () => {
+  const wanted = [];
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    read: async () => ({ foreground: 'OpenCode', windows: [], minimized: ['Paper - Google Chrome'] }),
+    focus: async (match) => { wanted.push(match); return { focused: true, title: 'Paper - Google Chrome' }; }
+  });
+
+  await ensure({ hasFocus: async () => false });
+
+  assert.deepEqual(wanted, ['Paper - Google Chrome'], 'the minimized window is named, not the empty match');
 });
 
 test('a taskbar window the machine will not bring back says what it said', async () => {

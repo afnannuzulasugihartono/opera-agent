@@ -164,6 +164,19 @@ export async function windowState({ platform = process.platform, exec = run } = 
 
 export async function focusWindow(match = '', { platform = process.platform, exec = run } = {}) {
   const wanted = String(match ?? '').trim();
+  if (wanted === '') {
+    const state = await windowState({ platform, exec });
+    return {
+      platform: state.platform ?? platform,
+      match: '',
+      focused: false,
+      title: '',
+      foreground: state.foreground ?? '',
+      windows: state.windows ?? [],
+      minimized: state.minimized ?? [],
+      why: 'no match given; pass a piece of the window title to bring forward (e.g. "Google Chrome", "Google Docs")'
+    };
+  }
   try {
     const out = platform === 'win32'
       ? await exec('powershell', ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_SCRIPT(wanted)])
