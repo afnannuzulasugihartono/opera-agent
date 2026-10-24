@@ -30,6 +30,12 @@ const MAX_MANIFEST_ROWS = 500;
 const DOWNLOAD_POLL_MS = 250;
 const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30000;
 
+// WHY THE SORT IS EXPLICIT.
+// The client and period lists are text, and the default comparison is text too, but an unstated one reads like an accident and would sort a future numeric field as text.
+// So the comparison is written down, and the order is intended rather than inherited.
+
+const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
 // WHY THE FILE NAME IS CHECKED HERE. The name comes from the caller, and a name with a
 // folder in it would write outside the download folder - which is the one place the
 // device may write. The rule is the operating system's, said out loud. The double
@@ -74,8 +80,8 @@ export async function statementManifest() {
     ok: true,
     rows: manifest.rows,
     delivered: manifest.rows.length,
-    clients: [...new Set(manifest.rows.map((row) => row.client))].sort(),
-    periods: [...new Set(manifest.rows.map((row) => row.period))].sort()
+    clients: [...new Set(manifest.rows.map((row) => row.client))].sort(byText),
+    periods: [...new Set(manifest.rows.map((row) => row.period))].sort(byText)
   };
 }
 
@@ -193,8 +199,8 @@ export async function statementDownload(params = {}) {
     row,
     manifest: {
       delivered: saved.rows.length,
-      clients: [...new Set(saved.rows.map((entry) => entry.client))].sort(),
-      periods: [...new Set(saved.rows.map((entry) => entry.period))].sort()
+      clients: [...new Set(saved.rows.map((entry) => entry.client))].sort(byText),
+      periods: [...new Set(saved.rows.map((entry) => entry.period))].sort(byText)
     }
   };
 }
