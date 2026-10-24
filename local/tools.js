@@ -67,7 +67,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'focus_window',
-    description: 'Bring a browser window to the front of the machine, so the page can take clicks and keys. Give the piece of the window title to bring forward ("Google Docs", "Google Chrome") - with two browser windows open, no match brings an arbitrary one forward. Answers the title it brought, and whether the operating system let it.',
+    description: 'Bring a browser window to the front of the machine, so the page can take clicks and keys. Give the piece of the window title to bring forward ("Google Docs", "Google Chrome"). With no match, this answers the window state without moving anything — pass a piece of the title to bring one forward. Answers the title it brought, and whether the operating system let it.',
     inputSchema: { type: 'object', properties: { match: stringArg('piece of the window title to bring forward') } }
   },
   {
