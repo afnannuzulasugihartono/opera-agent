@@ -144,21 +144,38 @@ test('a window on the taskbar is brought back, because that is where text goes t
   assert.equal(out.window, 'brought Paper - Google Chrome back from the taskbar');
 });
 
-// WHY THE GUARD NAMES THE TASKBAR WINDOW ITSELF.
-// An empty match now means "ask, do not move", so a guard that forwarded the caller's empty match would stop bringing back the very window it had just found on the taskbar.
-// The guard therefore passes the title it found; this test is the one that notices if that is ever undone.
+// WHY THE GUARD NEVER TAKES WHATEVER IS ON THE TASKBAR.
+// Measured live on this machine: a read-only burst on a page that was merely behind another application brought a minimized Settings window to the front, because nothing had named the browser and the guard took the first taskbar window it found.
+// The next drive that typed would have typed into Settings.
+// A window is restored only when the caller names a piece of it.
 
-test('a taskbar window is named even when the caller gave no match', async () => {
+test('a minimized window the caller did not name stays on the taskbar', async () => {
   const wanted = [];
   const ensure = createFocusGuard({
     clock: () => 0,
-    read: async () => ({ foreground: 'OpenCode', windows: [], minimized: ['Paper - Google Chrome'] }),
-    focus: async (match) => { wanted.push(match); return { focused: true, title: 'Paper - Google Chrome' }; }
+    read: async () => ({ foreground: 'OpenCode', windows: [], minimized: ['Settings', 'Paper - Google Chrome'] }),
+    focus: async (match) => { wanted.push(match); return { focused: true, title: 'Settings' }; }
   });
 
-  await ensure({ hasFocus: async () => false });
+  const out = await ensure({ hasFocus: async () => false });
 
-  assert.deepEqual(wanted, ['Paper - Google Chrome'], 'the minimized window is named, not the empty match');
+  assert.deepEqual(wanted, [], 'no window is touched without a name');
+  assert.match(out.window, /in the background and hears input anyway/);
+  assert.match(out.window, /OpenCode is in front/);
+});
+
+test('a minimized window that does not fit the name stays on the taskbar', async () => {
+  const wanted = [];
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    read: async () => ({ foreground: 'Settings', windows: [], minimized: ['Settings'] }),
+    focus: async (match) => { wanted.push(match); return { focused: true, title: 'Settings' }; }
+  });
+
+  const out = await ensure({ hasFocus: async () => false, match: 'Paper' });
+
+  assert.deepEqual(wanted, [], 'a different window is never brought forward');
+  assert.match(out.window, /Settings is in front/);
 });
 
 test('a taskbar window the machine will not bring back says what it said', async () => {
@@ -168,7 +185,7 @@ test('a taskbar window the machine will not bring back says what it said', async
     focus: async () => ({ focused: false, why: 'something is taking the focus back' })
   });
 
-  const out = await ensure({ hasFocus: async () => false });
+  const out = await ensure({ hasFocus: async () => false, match: 'Paper' });
 
   assert.match(out.window, /on the taskbar and the machine would not bring .* back: something is taking the focus back/);
 });
