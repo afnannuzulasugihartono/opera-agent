@@ -249,17 +249,16 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // The page is perfectly reachable; it simply has no input to fill.
 // So it fails, names that, and carries the drop with it.
 
-      // WHY A NAMED TAB IS NAVIGATED AND NOT OPENED.
-      // Measured live on this machine: `open_url` with a tabId answered "driver.open is not a function", because a per-tab driver has no way to open anything - and a caller who names a tab means "this tab goes here", not "open one more".
-      // So a named tab is navigated and says which tab it moved.
+// WHY A NAMED TAB IS NAVIGATED AND NOT OPENED.
+// Measured live on this machine: `open_url` with a tabId answered "driver.open is not a function", because a per-tab driver has no way to open anything - and a caller who names a tab means "this tab goes here", not "open one more".
+// So a named tab is navigated and says which tab it moved.
 
 // WHY THESE TOOLS CHECK THE WINDOW AND THE OTHERS DO NOT.
 // A click, a key, text typed, a file dropped and a menu walked all have to reach a page that is listening, and a page behind another window is not listening - measured live, with Google Docs taking the keys and dropping them while every answer said the click was delivered.
 // Reading, capturing and asking change nothing about where the machine's attention is, so they do not pay for the check, and a drive that is only looking never steals the human's focus.
 
-  // WHY THE WINDOW THAT GETS BROUGHT FORWARD IS THE ONE HOLDING THE TAB.
-  // With two
-// browser windows open, a check that brings an arbitrary one forward leaves the tab in the same place as before and the answer says it fixed something.
+// WHY THE WINDOW THAT GETS BROUGHT FORWARD IS THE ONE HOLDING THE TAB.
+// With two browser windows open, a check that brings an arbitrary one forward leaves the tab in the same place as before and the answer says it fixed something.
 // The tab's own title is the piece that identifies its window, and the call is best-effort: a driver that cannot see windows says so and the action still goes out.
 
 // WHY A TAB MAY BE NAMED AS WELL AS NUMBERED.
