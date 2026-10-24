@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-15 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: agent-guide — the roads are honest, and honesty is a build failure when they are not.
 // @state: recipe-to-tool locks, side-effect coverage, topic filtering.
 // @dependencies: node:test, strict, ../local/agent-guide.js, ../local/mcp-server.js.

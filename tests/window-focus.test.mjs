@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-15 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: window-focus \u2014 a drive can tell that the window it is typing into is behind something.
 // @state: the three platforms, the refusals, the tool that answers it.
 // @dependencies: node:test, assert, ../local/window-focus.js, ../local/mcp-server.js.

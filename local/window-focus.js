@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-15 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: window-focus \u2014 whether the browser window is in front, and how to put it there.
 // @state: one read from the operating system, one write, honest answers on every platform.
 // @dependencies: node:child_process, node:util.

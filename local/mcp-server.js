@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-11 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: mcp-server — the stdio MCP surface over the local driver.
 // @state: 8 locks; the handshake, the advertised tools, and every way a call can fail without killing the server.
 // @dependencies: ./driver.js.
@@ -25,7 +25,7 @@ const PROTOCOL_VERSION = '2024-11-05';
 // WHY THE STATEMENT JOB IS IMPORTED HERE AND NOT ROUTED THROUGH A DRIVER.
 // A card and a manifest are disk work: they open no tab, read no page and need no browser to be running.
 // Asking a driver for them would mean a statement job fails on a machine where the browser is closed, which is exactly when a bookkeeper wants to see what was delivered last month.
-// For the same reason those two calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
+// For the same reason the statement, report and document calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
 
 import { statementCard, statementDelivered } from './statements.js';
 import { reportFromFile } from './reports.js';
