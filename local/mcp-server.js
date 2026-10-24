@@ -308,9 +308,16 @@ const resolvedTab = async (tabId) => {
   return hit ? { id: String(hit.id), title: String(hit.title ?? ''), named: true } : null;
 };
 
-// The tab title is what the guard names to the machine: a minimized browser window carries its page title, so a tab outside the taskbar can still bring its own window back, while an unnamed window is never touched.
+// WHY THE WINDOW MATCH HAS TO BE TEXT.
+// Measured through this server on this machine: the guard turns the match into text to pick a window off the taskbar, and a promise sent as the match became "[object Promise]", so a minimized browser was never brought back.
+// The tab's title is the piece its window carries, and a call that names no tab drives the tab the driver is attached to, whose page knows its own title.
 
-const windowMatch = async (tab) => String(tab?.title ?? '');
+const pageTitle = async (driver) => {
+  const state = await driver.pageState().catch(() => null);
+  return String(state?.title ?? '');
+};
+
+const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : pageTitle(driver));
 
   const run = async (name, args) => {
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
@@ -363,7 +370,7 @@ const windowMatch = async (tab) => String(tab?.title ?? '');
     const wantsFront = INPUT_TOOLS.has(name)
       || (burst?.steps.some((step) => BURST_INPUT_ACTIONS.includes(step.action)) ?? false);
     const front = wantsFront && typeof driver.ensureFront === 'function'
-      ? await driver.ensureFront({ match: windowMatch(tab) })
+      ? await driver.ensureFront({ match: await windowMatch(tab, driver) })
       : null;
     windowSaid.set(driver, front);
     tabSaid.set(driver, tab);

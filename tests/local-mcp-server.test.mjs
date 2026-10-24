@@ -494,6 +494,37 @@ test('a number that is a tab is used as itself and says nothing about names', as
   assert.deepEqual(out.tab, { id: '333', title: 'Notes - Google Docs', named: false });
 });
 
+// WHY THE WINDOW MATCH HAS TO BE THE TAB'S TITLE, AS A STRING.
+// The guard turns the match into text to pick a window off the taskbar, and a promise sent as the match becomes "[object Promise]" - so a minimized browser is never brought back and the drive types into nothing while the answer says the window was checked.
+// Measured live on this machine through the MCP surface: the guard received a promise, which is why the taskbar path only ever worked when a person named the window by hand.
+
+test('a tab known by its id still names its window to the guard', async () => {
+  const c = namedCtx(PAGES);
+
+  await clickOn(c, '333');
+
+  const front = c.driver.calls.find(([name]) => name === 'ensureFront');
+  assert.deepEqual(front[1], { match: 'Notes - Google Docs' }, 'the title travels as text, not as a promise');
+});
+
+test('a tab named by its title names the same window', async () => {
+  const c = namedCtx(PAGES);
+
+  await clickOn(c, 'Thesis');
+
+  const front = c.driver.calls.find(([name]) => name === 'ensureFront');
+  assert.deepEqual(front[1], { match: 'Thesis - Google Docs' });
+});
+
+test('a call that names no tab names the window the driver is attached to', async () => {
+  const c = namedCtx(PAGES);
+
+  await clickOn(c, undefined);
+
+  const front = c.driver.calls.find(([name]) => name === 'ensureFront');
+  assert.deepEqual(front[1], { match: 'Paper' }, 'the page the driver is on is the one its window carries');
+});
+
 // WHY A NAMED TAB IS NAVIGATED.
 // Measured live on this machine: `open_url` with a tabId answered "driver.open is not a function", because a per-tab driver cannot open anything - and a caller who names a tab means "this tab goes here", not "open one more".
 // So a named tab is navigated in place and the answer names the tab it moved.
