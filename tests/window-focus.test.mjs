@@ -136,30 +136,55 @@ test('a page that cannot hear asks the machine once and says what it found', asy
 
 test('a window the session owns is brought back without a name', async () => {
   const wanted = [];
+  let restored = false;
   const ensure = createFocusGuard({
     clock: () => 0,
+    sleep: async () => {},
     read: async () => ({ platform: 'win32', ownWindow: true, foreground: '', windows: [], minimized: ['the browser window'] }),
-    focus: async (match) => { wanted.push(match); return { focused: true, title: 'the browser window' }; }
+    focus: async (match) => { wanted.push(match); restored = true; return { focused: true, title: 'the browser window' }; }
   });
 
-  const out = await ensure({ hasFocus: async () => false, match: 'Notes - Google Docs' });
+  const out = await ensure({ hasFocus: async () => restored, match: 'Notes - Google Docs' });
 
   assert.deepEqual(wanted, ['the browser window'], 'the session\'s own window is the one restored');
+  assert.equal(out.focused, true, 'and the page confirmed it hears input again');
+  assert.equal(out.blocked, undefined);
   assert.match(out.window, /brought the browser window back from the taskbar/);
 });
 
 test('a window on the taskbar is brought back, because that is where text goes to die', async () => {
   const wanted = [];
+  let restored = false;
   const ensure = createFocusGuard({
     clock: () => 0,
+    sleep: async () => {},
     read: async () => ({ foreground: 'OpenCode', windows: [], minimized: ['Paper - Google Chrome'] }),
-    focus: async (match) => { wanted.push(match); return { focused: true, title: 'Paper - Google Chrome', foreground: 'Paper - Google Chrome' }; }
+    focus: async (match) => { wanted.push(match); restored = true; return { focused: true, title: 'Paper - Google Chrome', foreground: 'Paper - Google Chrome' }; }
+  });
+
+  const out = await ensure({ hasFocus: async () => restored, match: 'Paper' });
+
+  assert.deepEqual(wanted, ['Paper - Google Chrome'], 'the window that was minimized is the one named');
+  assert.equal(out.window, 'brought Paper - Google Chrome back from the taskbar');
+});
+
+// WHY A WINDOW THAT CAME FORWARD IS NOT ENOUGH.
+// Measured live on this machine: two Chrome windows held the same page title, and the machine brought forward the one that was awake while the minimized one stayed on the taskbar.
+// The answer said a window was back, the page was still deaf, and the drive would have typed into nothing - so the page is asked again, and a deaf page blocks the action.
+
+test('a window that comes forward but leaves the page deaf is blocked, not promised', async () => {
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    sleep: async () => {},
+    read: async () => ({ foreground: 'OpenCode', windows: [], minimized: ['Paper - Google Chrome'] }),
+    focus: async () => ({ focused: true, title: 'Paper - Google Chrome', foreground: 'Paper - Google Chrome' })
   });
 
   const out = await ensure({ hasFocus: async () => false, match: 'Paper' });
 
-  assert.deepEqual(wanted, ['Paper - Google Chrome'], 'the window that was minimized is the one named');
-  assert.equal(out.window, 'brought Paper - Google Chrome back from the taskbar');
+  assert.equal(out.focused, false);
+  assert.equal(out.blocked, true, 'and the caller is told not to send input');
+  assert.match(out.window, /brought Paper - Google Chrome back from the taskbar, but the page still cannot hear input/);
 });
 
 // WHY THE GUARD NEVER TAKES WHATEVER IS ON THE TASKBAR.

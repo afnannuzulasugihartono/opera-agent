@@ -32,6 +32,8 @@ export function createFocusGuard({
   focus = focusWindow,
   read = windowState,
   machineTtlMs = 1500,
+  settleMs = 120,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   clock = () => Date.now()
 } = {}) {
   let seen = { at: 0, state: null };
@@ -66,15 +68,33 @@ export function createFocusGuard({
     const minimized = own || (wanted
       ? (state?.minimized ?? []).find((title) => title.toLowerCase().includes(wanted)) ?? ''
       : '');
+
+    // WHY A RESTORE IS NOT THE END OF THE CHECK.
+    // A title can name two windows at once: measured live on this machine, two Chrome windows both held "Untitled document - Google Docs - Google Chrome", the machine brought forward the one that was awake, and the minimized one stayed on the taskbar.
+    // The answer said it had brought a window back while the page still could not hear input, so the page is asked again before the drive is allowed to send anything.
     if (minimized) {
       const out = await focus(minimized);
       seen = { at: clock(), state: null };
+      if (!out?.focused) {
+        return {
+          window: `the window is on the taskbar and the machine would not bring ${minimized} back: ${out?.why ?? 'it said nothing'}`,
+          checked: 'machine',
+          foreground: out?.foreground ?? state?.foreground ?? '',
+          focused: false,
+          blocked: true
+        };
+      }
+
+      await sleep(settleMs).catch(() => null);
+      const heard = await hasFocus().catch(() => false);
       return {
-        window: out?.focused
+        window: heard
           ? `brought ${out.title} back from the taskbar`
-          : `the window is on the taskbar and the machine would not bring ${minimized} back: ${out?.why ?? 'it said nothing'}`,
+          : `brought ${out.title} back from the taskbar, but the page still cannot hear input`,
         checked: 'machine',
-        foreground: out?.foreground ?? state?.foreground ?? ''
+        foreground: out?.foreground ?? state?.foreground ?? '',
+        focused: heard,
+        ...(heard ? {} : { blocked: true })
       };
     }
     return {
