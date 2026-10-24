@@ -39,15 +39,14 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   document, its route or the extension epoch, so the drive re-finds what it clicks.
 - Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1464 unit
   tests, green.
-- **The local driver is modular, and its tests are too.** `local/primitives.js` is a
-  126-line assembler over six modules; `tools.js` holds the MCP surface as data; the tests
-  are one file per module over `tests/helpers/local-page.mjs`.
+- **The local driver is modular, and its tests are too.** `local/primitives.js` assembles six
+  modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
   `SECURITY DEFINER`), 20 `opera_*` tables, and **9 deployed edge functions**.
 - **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows
   from `opera_price_list`, writes one invoice per customer per month, and returns a signed
-  link. A small invoice opens into QRIS, a larger one offers the provider's list; the key
-  is unset, so Snap is `[UNVERIFIED]`. Drill and fees: [`product/billing.md`](product/billing.md).
+  link; QRIS covers a small invoice, the provider's list a large one, and Snap stays
+  `[UNVERIFIED]` until the key is set ([`product/billing.md`](product/billing.md)).
 - **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge`
   runs the whole MCP surface over it.
 - **The statement job is the first product, and it is local.** `statement_card` names the
@@ -57,9 +56,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   the download landed renamed in 464 ms ([`jobs/statements.md`](jobs/statements.md)).
 - **The device delivers a statement without a person watching.** `statement.download`
   downloads under the card's name, waits until the file is whole, reads the kind and page
-  count from the bytes, and writes one manifest line in browser storage; the cloud exposes
-  `statement_deliver` and `statement_manifest`. Driven in a real Chromium: 266 bytes, 2
-  pages, 388.9 ms, the card's name on disk, a second delivery refused.
+  count from the bytes, and writes one manifest line in browser storage; `statement_deliver`
+  and `statement_manifest` expose it. The drill is in [`jobs/statements.md`](jobs/statements.md).
 - **The pilot needs three bookkeepers, not more code.** The offer and checklist are in
   [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md) and
   [`product/pilot-runbook.md`](product/pilot-runbook.md); only a fixture bank portal is
@@ -75,8 +73,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`,
   `lastInputMs` - so the model can tell whether the person is looking. Fails open.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
-  device runs it locally; [`extension/lib/goal-plan.js`](../extension/lib/goal-plan.js) is
-  the gate that shares the allowlist.
+  device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**,
   and `vercel.app` stays in the CORS allowlist.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
@@ -129,12 +126,14 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     not serve the `Browser` domain and `chrome.tabs.update` leaves a minimized window
     minimized; the guard refuses rather than typing into nothing. The fix is an extension
     `chrome.windows.update({ focused: true, state: 'normal' })` call, which needs a reload.
+14. **#96 and #100 exceed SonarCloud's duplication gate.** New-code duplication is 3.2%
+    and 9.3% against a 3% cap; the sort failures on #91, #98 and #99 are fixed.
 
 ## CI
 
 - Three gates on `ubuntu-24.04`, Node pinned to `22.20.0`: unit, secret-scan, browser
-  (headed under `xvfb-run`). The concurrency group cancels an in-flight run when a newer one
-  queues, so push, then wait. Every pull request runs them, whatever it targets.
+  (headed under `xvfb-run`); a newer push cancels the in-flight run, so push, then wait.
+  Every pull request runs them here; the lower stack filters on `main` until #105.
 - [`.gitleaks.toml`](../.gitleaks.toml) names paths and symbols that must exist. Re-point
   the allowlist when a file is renamed, never edit the fixture to dodge the scanner, and
   reproduce gitleaks 8.24.0 locally before a push.
