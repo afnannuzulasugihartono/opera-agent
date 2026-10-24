@@ -57,7 +57,7 @@ export function createFocusGuard({
       ?? state?.minimized?.[0]
       ?? '';
     if (minimized) {
-      const out = await focus(wanted ? minimized : '');
+      const out = await focus(minimized);
       seen = { at: clock(), state: null };
       return {
         window: out?.focused
