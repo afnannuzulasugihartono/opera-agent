@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: document-job — a paper is planned on disk with tables, images and graphs, and a plan that cannot be checked is refused.
 // @state: the parser, the validators, the docplan and the recheck, each pinned by one behaviour.
 // @dependencies: node:test, strict, ../local/documents.js.
@@ -61,6 +61,9 @@ test('a table with the wrong number of cells is refused', () => {
   assert.throws(() => buildDocument({ doc: bad }), /cells/);
 });
 
+// WHY THE GRAPH DATA HERE IS OUT OF TABLE ORDER.
+// The artifact must carry the rows it recomputed, not the caller's array; keeping the fixture reversed makes the difference visible to the test below.
+
 const SUM_DOC = {
   title: 'Revenue',
   sections: [{
@@ -70,7 +73,7 @@ const SUM_DOC = {
       kind: 'bar',
       title: 'Revenue',
       source: { table: 0, labelColumn: 'Item', valueColumn: 'Amount', aggregate: 'sum' },
-      data: [{ label: 'A', value: 10 }, { label: 'B', value: 20 }]
+      data: [{ label: 'B', value: 20 }, { label: 'A', value: 10 }]
     }]
   }]
 };
@@ -121,6 +124,27 @@ test('verify catches a graph that lost a source row', () => {
   const out = verifyDocument({ document: forged, doc: SUM_DOC });
   assert.equal(out.ok, false);
   assert.equal(out.mismatches.length, 1);
+});
+
+test('verify catches a graph that was deleted from the plan', () => {
+  const built = buildDocument({ doc: SUM_DOC });
+  const forged = structuredClone(built);
+  forged.figures = [];
+  forged.docplan.totals.graphs = 0;
+  const out = verifyDocument({ document: forged, doc: SUM_DOC });
+  assert.equal(out.ok, false);
+  assert.match(out.mismatches[0].why, /every graph/);
+});
+
+test('verify catches a title that was changed after the build', () => {
+  const built = buildDocument({ doc: SUM_DOC });
+  const forged = structuredClone(built);
+  forged.title = 'Other paper';
+  forged.docplan.title = 'Other paper';
+  const out = verifyDocument({ document: forged, doc: SUM_DOC });
+  assert.equal(out.ok, false);
+  assert.equal(out.mismatches.length, 1);
+  assert.match(out.mismatches[0].why, /title/);
 });
 
 test('every graph carries the section and rows that produced it', () => {
@@ -179,4 +203,11 @@ test('a missing source file is refused by name, not reported as an empty documen
     () => documentFromFile({ source: path.join(os.tmpdir(), 'no-such-document-source.json') }),
     /no file at/
   );
+});
+
+test('the shipped paper fixture verifies against its own tables', () => {
+  const source = JSON.parse(fs.readFileSync(new URL('../docs/paper-all-menus.json', import.meta.url), 'utf8'));
+  const built = buildDocument({ doc: source });
+  assert.ok(built.figures.length > 0, 'the fixture still carries graphs');
+  assert.equal(verifyDocument({ document: built, doc: source }).ok, true);
 });
