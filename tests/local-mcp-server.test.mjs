@@ -138,6 +138,73 @@ test('report_build turns an exported sheet into a checked report without a brows
   }
 });
 
+test('document_build turns a JSON paper into a checked document without a browser', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-tool-'));
+  const source = path.join(dir, 'paper.json');
+  fs.writeFileSync(source, JSON.stringify({
+    title: 'Menu inventory',
+    sections: [{
+      heading: 'Insert menu',
+      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
+      graphs: [{
+        kind: 'count',
+        title: 'Items',
+        source: { table: 0, labelColumn: 'Item', aggregate: 'count' },
+        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+      }]
+    }]
+  }));
+  try {
+    const server = createMcpServer(ctx());
+    const res = await server.handle({
+      jsonrpc: '2.0', id: 71, method: 'tools/call',
+      params: {
+        name: 'document_build',
+        arguments: { source }
+      }
+    });
+    assert.equal(res.result.isError, undefined);
+    const payload = JSON.parse(res.result.content[0].text);
+    assert.equal(payload.verified.ok, true);
+    assert.deepEqual(payload.document.figures[0].source.rows, [0, 1]);
+    assert.ok(fs.existsSync(payload.out), 'the document file is written beside the source');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('document_build refuses a graph with no source and writes nothing', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-invalid-'));
+  const source = path.join(dir, 'bad.json');
+  fs.writeFileSync(source, JSON.stringify({
+    title: 'Menu inventory',
+    sections: [{
+      heading: 'Insert menu',
+      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
+      graphs: [{
+        kind: 'count',
+        title: 'Items',
+        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+      }]
+    }]
+  }));
+  try {
+    const server = createMcpServer(ctx());
+    const res = await server.handle({
+      jsonrpc: '2.0', id: 72, method: 'tools/call',
+      params: {
+        name: 'document_build',
+        arguments: { source }
+      }
+    });
+    assert.ok(res.error, 'an invalid paper is a JSON-RPC error, not a result');
+    assert.match(res.error.message, /source/);
+    assert.ok(!fs.existsSync(path.join(dir, 'bad.document.json')), 'no artifact is written for an invalid paper');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // WHY THE CAPTURE SAYS WHAT IT CANNOT DO.
 // Measured live on a Google Doc: fullPage answered 2000x937 pixels for an 18-page document - one viewport, not the page - while its own note claimed the whole document.
 // An agent that reads that note plans a one-shot review of a thesis and gets a screenshot of page one.
