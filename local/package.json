@@ -27,6 +27,7 @@
     "pointer.js",
     "primitives-file.js",
     "primitives.js",
+    "documents.js",
     "reports.js",
     "sessions.js",
     "statements.js",

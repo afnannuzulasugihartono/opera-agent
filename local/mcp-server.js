@@ -29,6 +29,7 @@ const PROTOCOL_VERSION = '2024-11-05';
 
 import { statementCard, statementDelivered } from './statements.js';
 import { reportFromFile } from './reports.js';
+import { documentFromFile } from './documents.js';
 import { BURST_ACTIONS, BURST_INPUT_ACTIONS, BURST_MAX_STEPS, normalizeBurst, runLocalBurst } from './burst.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
 
@@ -334,6 +335,12 @@ const windowMatch = async (tab) => (tab?.named ? tab.title : '');
         balance: args.balance ?? null,
         manifest: args.manifest ?? null,
         replace: args.replace === true
+      }));
+    }
+    if (name === 'document_build') {
+      return asText(documentFromFile({
+        source: args.source,
+        out: args.out ?? null
       }));
     }
     if (name === 'report_build') {
