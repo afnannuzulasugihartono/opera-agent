@@ -89,9 +89,24 @@ export const RECIPES = Object.freeze([
     note: 'Frames, the node behind a row, a frame document, a selector, a box, a screenshot as png. Reads only — anything that acts stays a named tool.'
   },
   {
+    task: 'Build a report from an exported sheet',
+    do: ['report_build'],
+    note: 'CSV in, a checked report out, written beside the source. No browser is touched: month-end reports must not depend on a tab being open. Every figure names the column and the exact rows it came from, and the plan is rechecked against those rows before the file exists.'
+  },
+  {
+    task: 'Build a paper from JSON tables, images, and graphs',
+    do: ['document_build'],
+    note: 'JSON in, a checked document plan out, written beside the source. No browser is touched. Every graph names its table and columns, and the graph is recomputed from those rows before the file exists — a graph without a source, or one whose number disagrees with the table, stops the paper instead of reaching a reader.'
+  },
+  {
     task: 'Prove it worked',
     do: ['capture_page', 'read_page'],
     note: 'A picture and the text, compared against what you expected. A tool saying it succeeded is not proof; the page saying so is.'
+  },
+  {
+    task: 'Bring a window forward',
+    do: ['browser_status', 'focus_window'],
+    note: 'browser_status names the browser in front and whether it is ours; focus_window takes a piece of the window title. With no match, focus_window answers the state without moving anything — pass a piece of the title to bring one forward. Never an empty match: that used to bring an arbitrary window forward.'
   }
 ]);
 
@@ -159,7 +174,9 @@ export function guide(topic) {
       'A native operating-system dialog cannot be opened, closed or filled from here — it is outside the browser.',
       'ask_page refuses anything that could change the page; the list is in its description.',
       'A tool that reports success is not proof. The page saying so is.',
-      'A page cannot see whether the window in front of it is the one the machine has in front. Clicks and keys go nowhere while browser_status says the window is not focused.'
+      'A page cannot see whether the window in front of it is the one the machine has in front. Clicks and keys go nowhere while browser_status says the window is not focused.',
+      'focus_window with no match answers the state without moving anything — pass a piece of the window title. An empty match used to bring an arbitrary window forward.',
+      'A complex document or report is built as a plan on disk (report_build, document_build) before it reaches a page, not by driving cells one by one.'
     ]
   };
 }
