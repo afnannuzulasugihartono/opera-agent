@@ -22,6 +22,12 @@ import path from 'node:path';
 const PERIOD_SHAPE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const EXT_SHAPE = /^[a-z0-9]{2,5}$/;
 
+// WHY THE SORT IS EXPLICIT.
+// The periods and clients are text, and the default comparison is text too, but an unstated one reads like an accident and would sort a future numeric field as text.
+// So the comparison is written down, and the order is intended rather than inherited.
+
+const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
 // WHY THE NAME IS DERIVED AND NOT TYPED. A person typing file names produces
 // "BCA Sept'26 (2).pdf" once and then never again the same way, and a manifest full of
 // near-duplicates cannot be billed. The slug keeps the client's own words, lowercased
@@ -225,8 +231,8 @@ export function statementDelivered({
     manifest: {
       path: where2,
       delivered: next.length,
-      periods: [...new Set(next.map((row) => row.period))].sort(),
-      clients: [...new Set(next.map((row) => row.client))].sort()
+      periods: [...new Set(next.map((row) => row.period))].sort(byText),
+      clients: [...new Set(next.map((row) => row.client))].sort(byText)
     }
   };
 }
