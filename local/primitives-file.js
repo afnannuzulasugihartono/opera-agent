@@ -35,35 +35,45 @@ import {
 } from './page-expressions.js';
 
 export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }) {
+
+  // WHY THE FILE IS PREPARED IN ONE PLACE. Upload and drop take the same two inputs - a
+  // base64 payload or a path - and must answer the same three questions: where the bytes
+  // are, how many there are, and how to remove the temporary copy. Two copies of that
+  // answer drift the moment one gains a guard the other lacks, so it lives here.
+
+  const materialize = ({ data, filePath, filename, verb, prefix }) => {
+    const hasData = data !== null && data !== undefined;
+    const hasPath = filePath !== null && filePath !== undefined;
+    if (hasData === hasPath) throw new Error(`${verb} needs exactly one of data or path.`);
+    if (hasPath) {
+      if (!fs.existsSync(filePath)) throw new Error(`${verb}: no such file ${JSON.stringify(filePath)}`);
+      return { target: filePath, bytes: fs.statSync(filePath).size, cleanup: null };
+    }
+    const decoded = Buffer.from(String(data), 'base64');
+    if (decoded.length === 0) throw new Error(`${verb}: data carries no bytes.`);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+    const target = path.join(dir, path.basename(filename));
+    fs.writeFileSync(target, decoded);
+    return {
+      target,
+      bytes: decoded.length,
+      cleanup: () => {
+        try {
+          fs.unlinkSync(target);
+        } catch {}
+        try {
+          fs.rmdirSync(dir);
+        } catch {}
+      }
+    };
+  };
+
   return {
     async upload({ filename, data = null, path: filePath = null } = {}) {
       if (!filename || typeof filename !== 'string') throw new Error('upload needs a filename.');
-      const hasData = data !== null && data !== undefined;
-      const hasPath = filePath !== null && filePath !== undefined;
-      if (hasData === hasPath) throw new Error('upload needs exactly one of data or path.');
-      let target;
-      let bytes;
-      let cleanup = null;
-      if (hasPath) {
-        if (!fs.existsSync(filePath)) throw new Error(`upload: no such file ${JSON.stringify(filePath)}`);
-        target = filePath;
-        bytes = fs.statSync(target).size;
-      } else {
-        const decoded = Buffer.from(String(data), 'base64');
-        if (decoded.length === 0) throw new Error('upload: data carries no bytes.');
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-upload-'));
-        target = path.join(dir, path.basename(filename));
-        fs.writeFileSync(target, decoded);
-        bytes = decoded.length;
-        cleanup = () => {
-          try {
-            fs.unlinkSync(target);
-          } catch {}
-          try {
-            fs.rmdirSync(dir);
-          } catch {}
-        };
-      }
+      const { target, bytes, cleanup } = materialize({
+        data, filePath, filename, verb: 'upload', prefix: 'opera-upload-'
+      });
 
       // WHY THE FINDER ASKS CDP BEFORE ASKING THE PAGE, AND SWEEPS THE FRAMES.
       // A page script can only walk shadow roots it is allowed to see, and
@@ -145,32 +155,9 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
         throw new Error('drop_file needs x and y in the viewport.');
       }
       if (!filename || typeof filename !== 'string') throw new Error('drop_file needs a filename.');
-      const hasData = data !== null && data !== undefined;
-      const hasPath = filePath !== null && filePath !== undefined;
-      if (hasData === hasPath) throw new Error('drop_file needs exactly one of data or path.');
-      let target;
-      let bytes;
-      let cleanup = null;
-      if (hasPath) {
-        if (!fs.existsSync(filePath)) throw new Error(`drop_file: no such file ${JSON.stringify(filePath)}`);
-        target = filePath;
-        bytes = fs.statSync(target).size;
-      } else {
-        const decoded = Buffer.from(String(data), 'base64');
-        if (decoded.length === 0) throw new Error('drop_file: data carries no bytes.');
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-drop-'));
-        target = path.join(dir, path.basename(filename));
-        fs.writeFileSync(target, decoded);
-        bytes = decoded.length;
-        cleanup = () => {
-          try {
-            fs.unlinkSync(target);
-          } catch {}
-          try {
-            fs.rmdirSync(dir);
-          } catch {}
-        };
-      }
+      const { target, bytes, cleanup } = materialize({
+        data, filePath, filename, verb: 'drop_file', prefix: 'opera-drop-'
+      });
       const mimeType = dragMimeType(filename);
       const payload = {
         items: [{ mimeType, title: filename, data: '' }],
