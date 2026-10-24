@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: documents — a paper is planned on disk with tables, images and graphs, and a plan that cannot be checked is refused.
 // @state: JSON in, a docplan with blocks and a figure ledger out, plus the recheck that catches an edited number.
 // @dependencies: node:fs, node:path.
@@ -280,6 +280,12 @@ export function verifyDocument({ document, doc } = {}) {
   const mismatches = [];
   const sections = Array.isArray(doc.sections) ? doc.sections : [];
 
+  // The count comes from the source, not from the artifact: a plan that dropped a figure cannot hide behind a totals line it also dropped.
+  const expectedGraphs = sections.reduce((count, section) => count + (Array.isArray(section.graphs) ? section.graphs.length : 0), 0);
+  if (document.figures.length !== expectedGraphs) {
+    mismatches.push({ id: null, expected: expectedGraphs, actual: document.figures.length, why: 'the document does not carry every graph its source defines' });
+  }
+
   for (const figure of document.figures) {
     try {
       const source = figure?.source;
@@ -314,6 +320,8 @@ export function verifyDocument({ document, doc } = {}) {
 
   if (!nonEmptyString(document?.docplan?.title)) {
     mismatches.push({ id: null, why: 'the document has no title' });
+  } else if (document.docplan.title !== String(doc.title ?? '').trim()) {
+    mismatches.push({ id: null, why: 'the document title does not match its source' });
   }
 
   return { ok: mismatches.length === 0, checked: document.figures.length, mismatches };
