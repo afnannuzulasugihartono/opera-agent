@@ -372,6 +372,13 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
     const front = wantsFront && typeof driver.ensureFront === 'function'
       ? await driver.ensureFront({ match: await windowMatch(tab, driver) })
       : null;
+
+    // WHY A DEAF PAGE STOPS THE ACTION.
+    // Measured live on this machine: two windows can carry one page title, and the window that comes forward may not be the one holding this tab.
+    // The guard now confirms the page hears input after a restore; when it does not, sending the keystroke anyway is the silent loss this product exists to remove.
+    if (front?.blocked) {
+      throw new Error(`refused: ${front.window}. Nothing was sent, because input into a window that cannot hear it is lost without a word. Bring the window back with focus_window, or name the tab, then try again.`);
+    }
     windowSaid.set(driver, front);
     tabSaid.set(driver, tab);
 
