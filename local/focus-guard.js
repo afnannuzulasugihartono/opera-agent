@@ -58,9 +58,14 @@ export function createFocusGuard({
     // Measured live on this machine: a read-only burst on a page that was merely behind another application brought a minimized Settings window to the front, because nothing named the browser and the guard took whatever was on the taskbar.
     // A drive that types after that would type into Settings.
     // So a window is restored only when the caller named a piece of its title, and the driver names the tab it is about to drive.
-    const minimized = wanted
+
+    // WHY THE SESSION'S OWN WINDOW IS THE EXCEPTION.
+    // Browser.getWindowForTarget says whether the window this session is attached to is minimized, and it carries no title because there is nothing to tell apart: that window is the one and only answer.
+    // So it is restored on the session's word, while the OS list - which holds every application on the machine - still needs a name.
+    const own = state?.ownWindow === true ? (state?.minimized ?? [])[0] ?? '' : '';
+    const minimized = own || (wanted
       ? (state?.minimized ?? []).find((title) => title.toLowerCase().includes(wanted)) ?? ''
-      : '';
+      : '');
     if (minimized) {
       const out = await focus(minimized);
       seen = { at: clock(), state: null };
