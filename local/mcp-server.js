@@ -308,7 +308,9 @@ const resolvedTab = async (tabId) => {
   return hit ? { id: String(hit.id), title: String(hit.title ?? ''), named: true } : null;
 };
 
-const windowMatch = async (tab) => (tab?.named ? tab.title : '');
+// The tab title is what the guard names to the machine: a minimized browser window carries its page title, so a tab outside the taskbar can still bring its own window back, while an unnamed window is never touched.
+
+const windowMatch = async (tab) => String(tab?.title ?? '');
 
   const run = async (name, args) => {
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
