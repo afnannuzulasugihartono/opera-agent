@@ -10,9 +10,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 ## State
 
-- `main` = `origin/main`, and it is the sole remote branch again. Nine stale branches were
-  removed on 2026-10-10 after each was measured: `main` was 1 to 277 commits ahead of every
-  one, and none held a file `main` lacks. Every merge `--ff-only`.
+- `main` = `origin/main`. The remote branches beyond it are the pull-request stack below,
+  not parked work: each is the base of the next, and every merge is `--ff-only`.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth. [`check.mjs`](../scripts/check.mjs) also asserts the version the MCP server
   reports, the store form's version, and that no module redeclares the secret regex.
@@ -22,13 +21,9 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   GitHub Release carries the extension zip, the source zip, the CRX and SHA256SUMS. Pull
   request #86 passed every gate and is `blocked` by the base-branch policy: it needs an
   owner approval, which an agent cannot give itself.
-- **Seventeen pull requests are stacked and all wait for that one approval.** #87
-  `handoff-bridge` -> #89 `download-clean` -> #90 `payload-trim` -> #91 `statement-job` ->
-  #92 `first-bookkeepers` -> #94 `pilot-runbook` -> #95 `audit-tree-truth` -> #96
-  `code-standard` -> #97 `monetization` -> #98 `device-delivery` -> #99 `money-path` ->
-  #100 `comment-structure` -> #101 `dead-code` -> #102 `file-headers` -> #103 `one-home` ->
-  #104 `comment-claims` -> #105 `repo-standard`. Each is green; #93 `audit-dead-code` is
-  closed and #88 `research-agent-surface` stands apart.
+- **Nineteen pull requests are stacked and all wait for that one approval.** The stack runs
+  from #87 `handoff-bridge` to #107 `report-job`, each green; #93 is closed and #88
+  `research-agent-surface` stands apart.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` measures four
   things: no source file over 1,200 lines (one named exception, the content script Chrome
   loads as a unit), no leftover markers, no twelve-line block repeated inside one file, and
@@ -56,7 +51,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   standard file, a pull request that skips CI, a CRLF file, or a document naming a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1453 unit tests, green.
+- Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1463 unit tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` is a 126-line
   assembler: navigation, focus, and the raw escape hatch, with every verb assigned from the module
   that owns it - `input.js` (typing and keys), `pointer.js` (clicks, hovers, handles), `observe.js`
