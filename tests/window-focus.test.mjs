@@ -130,6 +130,24 @@ test('a page that cannot hear asks the machine once and says what it found', asy
   assert.equal(out.checked, 'machine');
 });
 
+// WHY AN OWNED WINDOW NEEDS NO NAME.
+// A CDP session answers "is my window minimized" through Browser.getWindowForTarget, and it carries no title - only the fact that this is the window the session is attached to.
+// So the guard restores it on the session's own word; requiring a name there left a minimized browser on the taskbar for every drive that arrived through a debugging port.
+
+test('a window the session owns is brought back without a name', async () => {
+  const wanted = [];
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    read: async () => ({ platform: 'win32', ownWindow: true, foreground: '', windows: [], minimized: ['the browser window'] }),
+    focus: async (match) => { wanted.push(match); return { focused: true, title: 'the browser window' }; }
+  });
+
+  const out = await ensure({ hasFocus: async () => false, match: 'Notes - Google Docs' });
+
+  assert.deepEqual(wanted, ['the browser window'], 'the session\'s own window is the one restored');
+  assert.match(out.window, /brought the browser window back from the taskbar/);
+});
+
 test('a window on the taskbar is brought back, because that is where text goes to die', async () => {
   const wanted = [];
   const ensure = createFocusGuard({

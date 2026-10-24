@@ -74,7 +74,8 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
           platform: process.platform,
           foreground: '',
           windows: [],
-          minimized: bounds?.windowState === 'minimized' ? ['the browser window'] : []
+          minimized: bounds?.windowState === 'minimized' ? ['the browser window'] : [],
+          ownWindow: true
         };
       } catch {
         return osWindowState();

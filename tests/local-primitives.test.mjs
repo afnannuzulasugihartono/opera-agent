@@ -24,6 +24,7 @@ test('the window state asks the browser, not the operating system, when it can',
 
   assert.deepEqual(calls.map((c) => c.method), ['Browser.getWindowForTarget']);
   assert.deepEqual(out.minimized, ['the browser window'], 'a minimized window is the one case that needs the machine');
+  assert.equal(out.ownWindow, true, 'the session owns that window, so its name is never in question');
   assert.equal(out.platform, process.platform);
 });
 
