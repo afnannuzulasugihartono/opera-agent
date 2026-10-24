@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-22 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: professional — the files a repository is expected to carry, and the lines they must hold.
-// @state: five gates: the standard files exist, the README's numbers are measured, CI runs on every pull request, the tree is LF, and a live document names no file that is not there.
+// @state: six gates: the standard files exist, the README's numbers are measured, CI runs on every pull request, the tree is LF, a live document names no file that is not there, and the handoff keeps its stated line cap.
 // @dependencies: node:test, node:assert/strict, node:fs, node:path, node:child_process.
 
 // WHY THIS FILE EXISTS.
@@ -117,4 +117,17 @@ test('a live document names no file that is not in the tree', () => {
   }
   assert.deepEqual(dead, [],
     `a document that points at a file that is not there cannot be trusted:\n${dead.join('\n')}`);
+});
+
+// WHY THE HANDOFF'S OWN CAP IS A GATE.
+// The file states a cap, and it had drifted past it because nothing measured the number: a reader trusts a document that names its own limit, and a limit it breaks costs the rest of it credibility.
+// So the number the file states is the number this test holds, and raising the cap means editing both in one change.
+
+test('the handoff keeps the line cap it states', () => {
+  const body = read('docs/handoff.md');
+  const stated = /Cap (\d+) lines/.exec(body)?.[1];
+  assert.ok(stated, 'the handoff must state its cap, so the gate has a number to hold');
+  const lines = body.split('\n');
+  const content = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+  assert.ok(content <= Number(stated), `docs/handoff.md is ${content} lines; its cap says ${stated}`);
 });
