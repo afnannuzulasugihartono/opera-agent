@@ -1,0 +1,144 @@
+{
+  "title": "Opera Agent — every primitive, one paper",
+  "author": "Opera Agent",
+  "subtitle": "A verified plan of the 31 browser primitives the protocol allows, grouped by namespace.",
+  "sections": [
+    {
+      "heading": "Browser namespace",
+      "body": "The two primitives that talk to the browser as a whole: a liveness ping and a burst of independent reads.",
+      "tables": [
+        { "headers": ["Primitive", "Purpose"], "rows": [
+          ["browser.ping", "Confirm the extension is alive and paired."],
+          ["browser.burst", "Run several independent reads in one round trip."]
+        ] }
+      ],
+      "images": [
+        { "alt": "browser namespace menu screenshot", "caption": "Figure 1 — browser namespace" }
+      ],
+      "graphs": [
+        { "kind": "count", "source": { "table": 0, "labelColumn": "Primitive", "aggregate": "count" }, "title": "Primitives in the browser namespace", "data": [
+          { "label": "browser.ping", "value": 1 },
+          { "label": "browser.burst", "value": 1 }
+        ] }
+      ]
+    },
+    {
+      "heading": "Tabs namespace",
+      "body": "Eight primitives for listing, opening, activating, closing, navigating and reloading tabs.",
+      "tables": [
+        { "headers": ["Primitive", "Purpose"], "rows": [
+          ["tabs.list", "List every open tab."],
+          ["tabs.get", "Read one tab by id."],
+          ["tabs.find", "Find tabs by URL or title."],
+          ["tabs.open", "Open a new tab."],
+          ["tabs.activate", "Bring a tab to the front."],
+          ["tabs.close", "Close a tab."],
+          ["tabs.navigate", "Navigate a tab to a URL."],
+          ["tabs.reload", "Reload a tab."]
+        ] }
+      ],
+      "images": [
+        { "alt": "tabs namespace menu screenshot", "caption": "Figure 2 — tabs namespace" }
+      ],
+      "graphs": [
+        { "kind": "count", "source": { "table": 0, "labelColumn": "Primitive", "aggregate": "count" }, "title": "Primitives in the tabs namespace", "data": [
+          { "label": "tabs.list", "value": 1 },
+          { "label": "tabs.get", "value": 1 },
+          { "label": "tabs.find", "value": 1 },
+          { "label": "tabs.open", "value": 1 },
+          { "label": "tabs.activate", "value": 1 },
+          { "label": "tabs.close", "value": 1 },
+          { "label": "tabs.navigate", "value": 1 },
+          { "label": "tabs.reload", "value": 1 }
+        ] }
+      ]
+    },
+    {
+      "heading": "Page namespace",
+      "body": "Thirteen primitives for reading, querying, clicking, filling, scrolling, keying, streaming and waiting on a page.",
+      "tables": [
+        { "headers": ["Primitive", "Purpose"], "rows": [
+          ["page.read", "Read the page as text."],
+          ["page.query", "Query elements by selector."],
+          ["page.find", "Find text on the page."],
+          ["page.collect_links", "Collect every link."],
+          ["page.click", "Click an element."],
+          ["page.pointer", "Move the pointer."],
+          ["page.capture", "Capture a screenshot."],
+          ["page.fill", "Fill a field."],
+          ["page.focus", "Focus an element."],
+          ["page.scroll", "Scroll the page."],
+          ["page.key", "Send a key."],
+          ["page.stream", "Stream page changes."],
+          ["page.wait_for", "Wait for a condition."]
+        ] }
+      ],
+      "images": [
+        { "alt": "page namespace menu screenshot", "caption": "Figure 3 — page namespace" }
+      ],
+      "graphs": [
+        { "kind": "count", "source": { "table": 0, "labelColumn": "Primitive", "aggregate": "count" }, "title": "Primitives in the page namespace", "data": [
+          { "label": "page.read", "value": 1 },
+          { "label": "page.query", "value": 1 },
+          { "label": "page.find", "value": 1 },
+          { "label": "page.collect_links", "value": 1 },
+          { "label": "page.click", "value": 1 },
+          { "label": "page.pointer", "value": 1 },
+          { "label": "page.capture", "value": 1 },
+          { "label": "page.fill", "value": 1 },
+          { "label": "page.focus", "value": 1 },
+          { "label": "page.scroll", "value": 1 },
+          { "label": "page.key", "value": 1 },
+          { "label": "page.stream", "value": 1 },
+          { "label": "page.wait_for", "value": 1 }
+        ] }
+      ]
+    },
+    {
+      "heading": "Media namespace",
+      "body": "Six primitives for reading and controlling media playback, including streaming.",
+      "tables": [
+        { "headers": ["Primitive", "Purpose"], "rows": [
+          ["media.state", "Read media state."],
+          ["media.play", "Play media."],
+          ["media.pause", "Pause media."],
+          ["media.seek", "Seek to a position."],
+          ["media.stream_start", "Start a media stream."],
+          ["media.stream_stop", "Stop a media stream."]
+        ] }
+      ],
+      "images": [
+        { "alt": "media namespace menu screenshot", "caption": "Figure 4 — media namespace" }
+      ],
+      "graphs": [
+        { "kind": "count", "source": { "table": 0, "labelColumn": "Primitive", "aggregate": "count" }, "title": "Primitives in the media namespace", "data": [
+          { "label": "media.state", "value": 1 },
+          { "label": "media.play", "value": 1 },
+          { "label": "media.pause", "value": 1 },
+          { "label": "media.seek", "value": 1 },
+          { "label": "media.stream_start", "value": 1 },
+          { "label": "media.stream_stop", "value": 1 }
+        ] }
+      ]
+    },
+    {
+      "heading": "Statement namespace",
+      "body": "Two primitives for downloading and listing statements.",
+      "tables": [
+        { "headers": ["Primitive", "Purpose"], "rows": [
+          ["statement.download", "Download a statement."],
+          ["statement.manifest", "List available statements."]
+        ] }
+      ],
+      "images": [
+        { "alt": "statement namespace menu screenshot", "caption": "Figure 5 — statement namespace" }
+      ],
+      "graphs": [
+        { "kind": "count", "source": { "table": 0, "labelColumn": "Primitive", "aggregate": "count" }, "title": "Primitives in the statement namespace", "data": [
+          { "label": "statement.download", "value": 1 },
+          { "label": "statement.manifest", "value": 1 }
+        ] }
+      ]
+    }
+  ]
+}
