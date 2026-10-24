@@ -14,11 +14,11 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   not parked work: each is the base of the next, and every merge is `--ff-only`.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
-- **1.6.27 shipped on 2026-10-15; `main` has not taken it yet.** Tag `v1.6.27` is on
-  `c35b20c` (on `handoff-bridge`), the signed CRX answers 200 at the update endpoint, and
-  #86 is `blocked` by the base-branch policy, which needs owner approval.
-- **Nineteen pull requests are stacked and all wait for that one approval.** #87
-  `handoff-bridge` to #107 `report-job`, each green; #93 is closed, #88 stands apart.
+- **1.6.27 shipped on 2026-10-15, and `main` has taken it.** #86 merged as `e99bf5a`; the
+  CRX route answers 200 with `x-opera-sha256` equal to the bytes, and the release carries
+  both zips, the CRX and SHA256SUMS.
+- **Nineteen pull requests are stacked and wait for the owner's merge.** #87 is now based
+  on `main` and clean; the chain runs to #107 `report-job`. #93 is closed, #88 stands apart.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file
   over 1,200 lines (one exception), leftover markers, a repeated block, and an unexercised export.
 - **The comment rule is a formatter, not a scanner.** Column-zero blocks are section headers
@@ -37,7 +37,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1463 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1464 unit
   tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` is a
   126-line assembler over six modules; `tools.js` holds the MCP surface as data; the tests
@@ -142,7 +142,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 ## Blocked, needs the owner at the machine
 
 - Use `py`, not `python`, which hits the Microsoft Store shim; `py` is 3.13 with playwright.
-  The base-branch policy blocks every merge above until the owner approves #87.
+  The owner merges #87 and the chain; the agent does not merge pull requests on its own.
 
 ## Do not touch
 
