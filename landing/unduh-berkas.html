@@ -13,6 +13,7 @@
   <title data-i18n="meta.title">Unduh berkas — Opera Agent</title>
   <meta name="description" content="Unduh Opera Agent untuk Chrome, Edge, Brave, Opera, dan Vivaldi: arsip .zip manual atau CRX bertanda tangan untuk mesin enterprise." />
   <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/download.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -26,86 +27,6 @@
      */
 
 
-    h2 { margin: 30px 0 8px; font-size: 19px; }
-    p, li { color: var(--muted); }
-    p strong, li strong { color: var(--text); }
-
-    .btn {
-      display: inline-block;
-      padding: 12px 24px;
-      border-radius: 980px;
-      border: 1px solid var(--accent);
-      background: var(--accent);
-      color: #04211d;
-      text-decoration: none;
-      font-size: 15px;
-      font-weight: 600;
-      margin: 8px 0 4px;
-      transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
-    }
-
-    code, .hash {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12.5px;
-      /*
-       * WHY the wrap: the checksum command on this page is fifty-four characters with a path in the middle of it, and a reader on a phone should not have to scroll sideways to read the command they are about to paste.
-       */
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      padding: 2px 6px;
-      /*
-       * WHY no break-all: it snapped tokens mid-word even when the line had room.
-       * anywhere still wraps a 64-hex digest on a phone, but a short token like chrome://policy only breaks when it truly overflows — and both halves stay boxed.
-       */
-      box-decoration-break: clone;
-      -webkit-box-decoration-break: clone;
-    }
-
-    /*
-     * WHY pre-wrap and not just the wrap above: `pre` is white-space: pre, and that outranks the overflow-wrap on the code inside it, so the 118-character curl line ran 662px past a 320px screen and the reader could not reach the tail of the command they were told to paste.
-     * pre-wrap keeps the author's line breaks and adds one where the screen ends.
-     * The box keeps the command's own padding instead of inheriting the inline code pill.
-     */
-    pre {
-      margin: 0 0 14px;
-      padding: 12px 14px;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-    pre code { padding: 0; border: 0; background: none; }
-
-    ol.steps { margin: 0; padding-left: 20px; }
-    ol.steps li { margin: 0 0 12px; }
-
-    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
-    dl.facts dt { color: var(--text); font-weight: 600; }
-    dl.facts dd { margin: 0; }
-
-    /*
-     * WHY stacked under 420px: the label column is max-content and never shrinks, so on a phone the value is left in a sliver.
-     * Every settings page a reader already knows puts the value under its label at this width.
-     */
-    @media (max-width: 420px) {
-      dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
-      dl.facts dd { margin: 0 0 10px; }
-    }
-
-    /*
-     * WHY a table and not a list: the reader is asking one question per browser, and a table lets each answer sit in the same column so the shape of the answer is visible before any text is read.
-     */
-    table.support { width: 100%; border-collapse: collapse; margin: 14px 0 8px; font-size: 14px; }
-    table.support th, table.support td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
-    table.support th { color: var(--muted); font-weight: 600; font-size: 13px; }
-    table.support td.yes { color: var(--accent); }
-    table.support td.no { color: var(--muted); }
-    table.support tr:last-child td { border-bottom: 0; }
-    .meta { color: var(--muted); font-size: 13px; }
     /*
      * WHY one grid for five browsers: the reader asks "which one is mine", and the matching card answers before any prose is read.
      */
