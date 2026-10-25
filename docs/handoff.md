@@ -10,8 +10,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 ## State
 
-- `main` = `origin/main`. The remote branches beyond it are the pull-request stack below,
-  not parked work: each is the base of the next, and every merge is `--ff-only`.
+- `main` = `origin/main`. The branches beyond it are the pull-request stack, not parked
+  work: each is the base of the next, and every merge is `--ff-only` except #92.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15, and `main` has taken it.** #86 merged as `e99bf5a`; the
