@@ -24,72 +24,8 @@
      * WHY inline and single file: this site has no build step, no framework and no external origin.
      * A marketing page that needs a bundler is a page that breaks when the bundler changes.
      */
-    :root {
-      --bg: #0b0d10;
-      --surface: #16191e;
-      --surface-soft: #1d2127;
-      --line: rgba(255, 255, 255, .08);
-      --line-strong: rgba(255, 255, 255, .16);
-      --text: #f5f5f7;
-      --muted: #86868b;
-      --accent: #3ecf8e;
-      --accent-soft: rgba(62,207,142,.14);
-      --warn: #f59e0b;
-      --ease: cubic-bezier(.28, .11, .32, 1);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility;
-      font-kerning: normal;
-    }
-
-    ::selection { background: var(--accent-soft); }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-    /* Apple scrolls anchors; readers who asked for stillness keep the jump. */
-    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
-
-    a { color: var(--accent); }
 
     .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
-
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: rgba(11, 13, 16, .72);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      backdrop-filter: saturate(180%) blur(20px);
-      border-bottom: 1px solid rgba(255, 255, 255, .06);
-    }
-
-    nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
-    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
-    nav a:hover { color: var(--text); }
-
-    nav a[aria-current="page"] { color: var(--text); }
-
-    /*
-     * WHY the row scrolls at 800px and not at 390px: the ten nav children measure 748px together, and the container is the viewport minus 48, so the row stops fitting at 796px.
-     * The band used to read 640px, which left every window between 641 and 796 overflowing with no rule to catch it — a 155px dead band where the last item sat past the right edge.
-     * Measured, then rounded up.
-     * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
-     */
-    @media (max-width: 800px) {
-      nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
-        mask-image: linear-gradient(to right, #000 88%, transparent);
-        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
-      nav a { white-space: nowrap; }
-      nav .brand { margin-right: 6px; }
-    }
 
     .hero { padding: 128px 0 96px; background: radial-gradient(760px 360px at 62% -60px, rgba(62, 207, 142, .13), transparent 70%); }
     .hero h1 {
@@ -288,17 +224,7 @@
       dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
       dl.facts dd { margin: 0 0 10px; }
     }
-
-    footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
-    footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-    /*
-     * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
-     * A flex gap breaks between items wherever the line runs out.
-     */
-    footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
-    footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-    footer a:hover { color: var(--text); }
-  </style>
+</style>
 </head>
 <body>
   <header>
