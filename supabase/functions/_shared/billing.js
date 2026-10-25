@@ -161,6 +161,44 @@ export function snapPaymentMethods(amountCents, currency = 'IDR') {
   return { chargeable: true, enabled: null, why: 'the amount can carry a fixed fee, so the provider lists the methods' };
 }
 
+// WHY THE SNAP REQUEST IS A FUNCTION AND NOT AN INLINE FETCH.
+// The one step nobody had driven was the request itself, and the reason was that it was a fetch inside a Deno handler, so no test could reach it.
+// Building the request here means the shape - the legal order id, the whole rupiah, the QRIS-only list, the Basic header - is checkable against a provider that is stood up in a test, and only the network call stays in the function.
+// The provider is still Midtrans and the URL is still theirs: the function decides nothing this module did not decide first.
+
+export const SNAP_CHARGE_URL = 'https://app.midtrans.com/snap/v1/transactions';
+
+export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '' }) {
+  const gross = providerAmount(amountCents, currency);
+  if (gross === null) return null;
+  const request = {
+    transaction_details: { order_id: String(orderId), gross_amount: gross },
+    customer_details: { first_name: String(customerId || '').slice(0, 50) }
+  };
+  if (enabled) request.enabled_payments = enabled;
+  return {
+    url: SNAP_CHARGE_URL,
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${btoa(`${serverKey}:`)}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(request)
+  };
+}
+
+// WHY THE REDIRECT IS READ BY ONE RULE.
+// The provider answers with a redirect_url and a token, and either one missing means the charge was not opened even though the HTTP status said otherwise.
+// One function decides what a good answer is, so the function cannot accept a 200 that carries no way to pay.
+
+export function snapRedirect(response) {
+  if (!response || typeof response !== 'object') return null;
+  const url = typeof response.redirect_url === 'string' ? response.redirect_url : '';
+  const token = typeof response.token === 'string' ? response.token : '';
+  if (!url || !token) return null;
+  return { payUrl: url, token };
+}
+
 export function linesFromDeliveries(deliveries, kind = 'statement.client_month') {
   const seen = new Set();
   const lines = [];
