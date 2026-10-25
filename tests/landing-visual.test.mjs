@@ -6,7 +6,7 @@
 // Company grade is decided in five seconds on a phone: a hero that shows the product, copy without a broken sentence, and nothing spilling out of its box.
 // Military grade adds validity underneath it.
 // Measured in Chromium screenshots: the hero was text-only with "Sembilan dua tool", the FAQ section opened inside the privacy section without closing it, the seven-item nav wrapped into two ragged lines at 390px, a code pill crossed its card border, and unduh broke code mid-word with word-break:break-all.
-// A page is judged on the stylesheet it loads, so the nav, the current-item rule and the footer are read from landing/site.css together with the page.
+// A page is judged on the stylesheet it loads, so the nav, the current-item rule and the footer are read from the page's own links, landing/site.css and landing/download.css together with the page.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,8 +15,11 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
-const siteCss = () => read('site.css');
-const cssOf = (name) => `${read(name)}\n${siteCss()}`;
+const cssOf = (name) => {
+  const html = read(name);
+  const links = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="\/([^"]+)"/g)].map((match) => match[1]);
+  return `${html}\n${links.map((file) => read(file)).join('\n')}`;
+};
 const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
 
 test('the hero sells the product instead of apologizing for it', () => {
@@ -165,10 +168,10 @@ test('display type sets the page apart from its own dashboard', () => {
 test('buttons are pills on every surface that has them', () => {
 
   for (const page of ['beranda.html', 'akun.html', 'dashboard.html', 'unduh.html', 'oauth/consent.html']) {
-    const html = read(page);
+    const html = cssOf(page);
     assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
   }
-  const auth = read('index.html');
+  const auth = cssOf('index.html');
   assert.match(auth, /\.provider \{[^}]*border-radius: 980px/, 'provider entries match');
   assert.match(auth, /button \{[^}]*border-radius: 980px/, 'and so does the submit');
 });
