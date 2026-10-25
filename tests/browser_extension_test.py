@@ -723,11 +723,15 @@ async def activate_and_report_reuse(tab_id):
 # A headless runner cannot put a window on the taskbar at all, so the helper answers None there and the claim stays what it is: proved where the machine can minimize.
 
 async def activate_and_report_restore(worker, tab_id):
-    await worker.evaluate("""async () => {
-        const current = (await chrome.windows.getAll({windowTypes: ['normal']}))[0];
-        await chrome.windows.update(current.id, {focused: false});
-        await chrome.windows.update(current.id, {state: 'minimized'});
-    }""")
+    try:
+        await worker.evaluate("""async () => {
+            const current = (await chrome.windows.getAll({windowTypes: ['normal']}))[0];
+            await chrome.windows.update(current.id, {focused: false});
+            await chrome.windows.update(current.id, {state: 'minimized'});
+        }""")
+    except Exception as error:
+        print(f'[window-restore] this runner refuses to minimize a window ({error}); the live restore is proved on a desktop')
+        return None
     minimized = await worker.evaluate("""async () => {
         const current = (await chrome.windows.getAll({windowTypes: ['normal']}))[0];
         return {id: current.id, state: current.state, focused: current.focused};
