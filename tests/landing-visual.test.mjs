@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-13 UTC+7.
+// @last-edited: 2026-10-25 UTC+7.
 // @title: landing-visual — the site looks finished on every screen.
 // @state: red first: gibberish hero copy, nested sections, overflowing nav and code pills.
 // @dependencies: test, assert, fs.
@@ -6,6 +6,7 @@
 // Company grade is decided in five seconds on a phone: a hero that shows the product, copy without a broken sentence, and nothing spilling out of its box.
 // Military grade adds validity underneath it.
 // Measured in Chromium screenshots: the hero was text-only with "Sembilan dua tool", the FAQ section opened inside the privacy section without closing it, the seven-item nav wrapped into two ragged lines at 390px, a code pill crossed its card border, and unduh broke code mid-word with word-break:break-all.
+// A page is judged on the stylesheet it loads, so the nav, the current-item rule and the footer are read from landing/site.css together with the page.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,6 +15,8 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
+const siteCss = () => read('site.css');
+const cssOf = (name) => `${read(name)}\n${siteCss()}`;
 const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
 
 test('the hero sells the product instead of apologizing for it', () => {
@@ -55,10 +58,10 @@ test('every section closes before the next one opens', () => {
 
 test('the nav survives a 390px phone without wrapping ragged', () => {
   for (const page of pages) {
-    const css = read(page);
+    const css = cssOf(page);
     assert.match(css, /white-space:\s*nowrap/, `${page} keeps each nav item on one line`);
   }
-  const index = read('beranda.html');
+  const index = cssOf('beranda.html');
   assert.match(index, /overflow-x:\s*auto/, 'the row scrolls instead of wrapping');
 });
 
@@ -71,14 +74,14 @@ test('a code pill never crosses its card border or breaks mid-word', () => {
 
 test('the marked nav item is visible, not metadata only', () => {
   for (const page of ['beranda.html', 'akun.html', 'dashboard.html', 'unduh.html', 'privasi.html', '404.html']) {
-    assert.match(read(page), /a\[aria-current="page"\]/, `${page} styles the current item`);
+    assert.match(cssOf(page), /a\[aria-current="page"\]/, `${page} styles the current item`);
   }
 });
 
 test('the phone nav hints that it scrolls instead of clipping mid-word', () => {
 
   for (const page of pages) {
-    const html = read(page);
+    const html = cssOf(page);
     assert.match(html, /mask-image:\s*linear-gradient\(to right/, `${page} fades the nav edge on a phone`);
   }
 });
@@ -192,11 +195,11 @@ test('motion is an enhancement, never the content', () => {
 test('nothing spills out of a 320px screen', () => {
 
   for (const page of pages) {
-    const html = read(page);
+    const html = cssOf(page);
     assert.match(html, /\.doors\s*{[^}]*flex-wrap:\s*wrap/s, `${page}: the footer row wraps`);
     assert.doesNotMatch(html, /footer a \{[^}]*margin-right/s, `${page}: no margin, which cannot wrap`);
   }
-  const unduh = read('unduh.html');
+  const unduh = cssOf('unduh.html');
   assert.match(unduh, /pre\s*{[^}]*white-space:\s*pre-wrap/s,
     'the checksum command wraps inside its box instead of off the screen');
 });
