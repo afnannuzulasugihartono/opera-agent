@@ -66,9 +66,10 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   invoice, serves the invoice page, closes it from a signed notification, and records
   a transfer with the operator's note.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
-  agent that delivered the statements can hand the operator the bill for them. It
-  still bills per delivery; a plan invoice is sent to the function directly, with the
-  `plan` field, until that tool's frozen schema is reviewed.
+  agent that delivered the statements can hand the operator the bill for them. It is
+  the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
+  or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
+  month. There is no second path for an operator to learn.
 - `tests/billing.test.mjs` — the money rules, proved (25 tests).
 
 ## Measured live, in production
@@ -100,10 +101,12 @@ cents while Midtrans charges rupiah: the first version sent cents, so a Rp 5.000
 invoice would have asked the customer for Rp 500.000. The conversion is now a tested
 boundary in both directions, and the 100× notification is refused live.
 
-The one step still not driven is the Snap request itself: there is no Midtrans account,
-so the QRIS-only body and the derived order id are proved by unit tests and by a signed
-notification, not by a real payment. That step is `[UNVERIFIED]` until a server key
-exists.
+The Snap request itself is driven against a provider stood up in the test: the legal
+order id, the whole-rupiah amount, the QRIS-only list and the Basic header are sent over
+real HTTP to a server that parses them, and a redirect without a token is refused. What
+is still not driven is a real payment, because there is no Midtrans account: the server
+key is the one value only the owner can set. That step is `[UNVERIFIED]` until
+`MIDTRANS_SERVER_KEY` exists.
 
 The plan line and the positive manual settlement are proved by unit tests, not yet by
 a live invoice and a live transfer: the function is deployed and refuses an
@@ -181,11 +184,11 @@ it carries, not by a field the provider never sends.
 
 ## How a plan invoice is made
 
-The function accepts a `plan` field (`pilot` or `firm`) with the delivered rows. It
-prices one plan line and adds an overage line only for the rows above the cap; a plan
-with no delivered row is refused. The public MCP `invoice_create` tool does not expose
-`plan` yet, because its schema is frozen by the client contract, so the operator sends
-the plan invoice to the function directly. The command is in
+`invoice_create` takes a `plan` with the delivered rows, and it is the same door the
+per-delivery invoice goes through. It prices one plan line and adds an overage line
+only for the rows above the cap; a plan with no delivered row is refused. The value is
+the price-list kind (`plan.pilot` or `plan.firm`), so a plan nobody priced is refused
+rather than billed as zero. The command is in
 [`first-three-bookkeepers.md`](first-three-bookkeepers.md#8-perintah-operator).
 
 ## What is not decided
