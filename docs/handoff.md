@@ -48,8 +48,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   `SECURITY DEFINER`), 20 `opera_*` tables, and **9 deployed edge functions**.
 - **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows
   from `opera_price_list`, writes one invoice per customer per month, and returns a signed
-  link; QRIS covers a small invoice, the provider's list a large one, and Snap stays
-  `[UNVERIFIED]` until the key is set ([`product/billing.md`](product/billing.md)).
+  link; QRIS covers a small invoice, the provider's list a large one, and it is the one
+  door for both a per-delivery bill and a plan month.
 - **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge`
   runs the whole MCP surface over it.
 - **The statement job is the first product, and it is local.** `statement_card` names the
@@ -122,13 +122,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
 12. **The price is decided and applied.** `plan.pilot` is Rp 99.000 for up to 15
     client-months, `plan.firm` is Rp 249.000 for up to 50, and an extra client-month is
-    Rp 10.000; the invoice is issued after the first batch is accepted. The first three
-    transfers are the live proof; none has arrived. The public `invoice_create` still bills
-    per delivery, so a plan invoice goes to the function directly.
-13. **A bridged window on the taskbar cannot be restored by name.** `chrome.debugger` does
-    not serve the `Browser` domain and `chrome.tabs.update` leaves a minimized window
-    minimized; the guard refuses rather than typing into nothing. The fix is an extension
-    `chrome.windows.update({ focused: true, state: 'normal' })` call, which needs a reload.
+    Rp 10.000; the invoice is issued after the first batch is accepted, and none has arrived.
+13. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
+    window first and sends `state: 'normal'` with the focus ask when it is minimized, because
+    `focused: true` alone was measured to leave it there; the live suite proves the restore.
+14. **A real Snap payment has not moved.** The request and the Basic header are driven
+    against a provider stood up in `tests/billing.test.mjs`; the server key is the
+    owner's to set, so `MIDTRANS_SERVER_KEY` is still unset.
 
 ## CI
 

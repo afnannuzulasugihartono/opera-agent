@@ -97,8 +97,12 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   media_listen_read: '9834f1ca13dbeae9',
   statement_manifest: 'c8e06f753d58ad98',
   statement_deliver: '7a4a87bc8e59884b',
-  invoice_create: '17f9342a25c0c011',
+  invoice_create: '06cfef1148eed4af',
 });
+
+const PLAN_DOOR_CHANGED_TOOL = 'invoice_create';
+
+const PRE_PLAN_DOOR_INVOICE_CREATE_DIGEST = '17f9342a25c0c011';
 
 const R9B_CHANGED_TOOL = 'press_key';
 
@@ -321,6 +325,8 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
   assert.match(sql, /revoke execute on function public\.opera_client_name\(uuid\) from public, anon/);
 });
 
+// The one authorized change since the map was frozen is the plan door on invoice_create: the frozen map records the change and the digest it moved from, so a reader can tell a reviewed change from a drift.
+
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
   assert.equal(blocks.length, 34, 'the public tool count changes only by reviewed decision (loop tools removed)');
@@ -331,6 +337,17 @@ test('the frozen schema map matches the live file, and records the one authorize
 
   assert.notEqual(FROZEN_TOOL_SCHEMAS[R9B_CHANGED_TOOL], PRE_R9B_PRESS_KEY_DIGEST);
   assert.ok(FROZEN_TOOL_SCHEMAS[R9E_CHANGED_TOOL]);
+  assert.notEqual(FROZEN_TOOL_SCHEMAS[PLAN_DOOR_CHANGED_TOOL], PRE_PLAN_DOOR_INVOICE_CREATE_DIGEST);
+});
+
+test('the plan is billed through the same door as a delivery, so no operator path is left outside the tool', () => {
+  const invoice = toolBlocks().find((block) => block.name === 'invoice_create').schema;
+  assert.match(invoice, /plan: z\.enum\(\['plan\.pilot', 'plan\.firm'\]\)\.optional\(\)/,
+    'the plan is one of the price-list kinds, so a plan nobody priced is refused rather than billed as zero');
+  assert.match(source, /body: JSON\.stringify\(\{ action: "invoice", customer_id: customer, period, deliveries, \.\.\.\(plan \? \{ plan \} : \{\}\) \}\)/,
+    'the tool forwards the plan to the one function that already prices it');
+  assert.doesNotMatch(invoice, /amount_cents/,
+    'the amount is still computed from the price list, never taken from the call');
 });
 
 test('the shared burst step schema is pinned by its step set, not only by digest', () => {

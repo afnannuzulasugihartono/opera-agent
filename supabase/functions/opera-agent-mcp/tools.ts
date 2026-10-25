@@ -697,7 +697,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("invoice_create", {
     title: "Bill a customer for delivered client-months",
-    description: "Turn delivered client-months into an invoice for one customer and one billing month. Pass the manifest rows this invoice charges for, or the client and period of each delivery; the amount is computed from the price list, never from a number in the call, and a month that was not delivered cannot be on the invoice. Returns the invoice and the link the customer opens to pay it. Read statement_manifest first: its rows are the proof the invoice is checked against.",
+    description: "Turn delivered client-months into an invoice for one customer and one billing month. Pass the manifest rows this invoice charges for, or the client and period of each delivery; the amount is computed from the price list, never from a number in the call, and a month that was not delivered cannot be on the invoice. Pass plan to bill a plan month instead of per delivery: one plan line and a line only for each client-month above the cap. Returns the invoice and the link the customer opens to pay it. Read statement_manifest first: its rows are the proof the invoice is checked against.",
     inputSchema: {
       customer: z.string().min(1).max(200).describe("The customer being billed, as the operator names them."),
       period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The billing month, YYYY-MM."),
@@ -706,13 +706,15 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
         period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The statement month that was delivered, YYYY-MM."),
         portal: z.string().max(200).optional().describe("The bank or vendor the statement came from."),
         pages: z.number().int().nonnegative().optional().describe("The page count the proof recorded.")
-      }).passthrough()).min(1).max(500).describe("The deliveries this invoice charges for, one entry per delivered client-month.")
+      }).passthrough()).min(1).max(500).describe("The deliveries this invoice charges for, one entry per delivered client-month."),
+      plan: z.enum(['plan.pilot', 'plan.firm']).optional().describe("Bill a plan instead of per delivery: one plan line for the month, and one line only for each client-month above the plan's cap. The value is the price-list kind, so a plan nobody priced is refused rather than billed as zero.")
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, async ({ customer, period, deliveries }: {
+  }, async ({ customer, period, deliveries, plan }: {
     customer: string;
     period: string;
     deliveries: Array<{ client: string; period: string; portal?: string; pages?: number } & Record<string, unknown>>;
+    plan?: string;
   }) => {
     const response = await fetch(`${Deno.env.get("SUPABASE_URL") || ""}/functions/v1/opera-agent-billing`, {
       method: "POST",
@@ -720,7 +722,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
         authorization: `Bearer ${Deno.env.get("OPERA_BILLING_TOKEN") || ""}`,
         "content-type": "application/json"
       },
-      body: JSON.stringify({ action: "invoice", customer_id: customer, period, deliveries })
+      body: JSON.stringify({ action: "invoice", customer_id: customer, period, deliveries, ...(plan ? { plan } : {}) })
     });
     const body = await response.json().catch(() => ({})) as Record<string, unknown>;
     if (!response.ok) {
