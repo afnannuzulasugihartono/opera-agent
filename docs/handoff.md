@@ -126,8 +126,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     not serve the `Browser` domain and `chrome.tabs.update` leaves a minimized window
     minimized; the guard refuses rather than typing into nothing. The fix is an extension
     `chrome.windows.update({ focused: true, state: 'normal' })` call, which needs a reload.
-14. **#100 exceeds SonarCloud's duplication gate.** New-code duplication is 9.3% against a
-    3% cap in a comment-only rewrite of 281 files. #96 fell from 3.2% to 1.1% once upload
+14. **#100 exceeds SonarCloud's duplication gate.** New-code duplication is 9.2% against a
+    3% cap in a formatter rewrite across 281 files. #96 fell from 3.2% to 1.1% once upload
     and drop shared one `materialize`, and the sort failures on #91, #98 and #99 are fixed.
 
 ## CI
