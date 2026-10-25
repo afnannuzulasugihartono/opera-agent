@@ -42,7 +42,9 @@ import {
   planInvoiceLines,
   providerAmount,
   providerOrderId,
+  snapChargeRequest,
   snapPaymentMethods,
+  snapRedirect,
   verifyInvoiceToken
 } from "../_shared/billing.js";
 
@@ -164,23 +166,24 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
 
   if (MIDTRANS_SERVER_KEY && payment.chargeable && !pay_url) {
     const orderId = providerOrderId(id, out.amountCents, out.currency);
-    const gross = providerAmount(out.amountCents, out.currency);
-    const request: Record<string, unknown> = {
-      transaction_details: { order_id: orderId, gross_amount: gross },
-      customer_details: { first_name: String(customer_id).slice(0, 50) }
-    };
-    if (payment.enabled) request.enabled_payments = payment.enabled;
-    const response = await fetch("https://app.midtrans.com/snap/v1/transactions", {
-      method: "POST",
-      headers: { Authorization: `Basic ${btoa(`${MIDTRANS_SERVER_KEY}:`)}`, "Content-Type": "application/json" },
-      body: JSON.stringify(request)
+    const charge = snapChargeRequest({
+      orderId,
+      amountCents: out.amountCents,
+      currency: out.currency,
+      customerId,
+      enabled: payment.enabled,
+      serverKey: MIDTRANS_SERVER_KEY
     });
-    const body = await response.json().catch(() => ({}));
-    if (response.ok && body.redirect_url) {
-      pay_url = body.redirect_url;
-      provider = "midtrans";
-      provider_ref = body.token || orderId;
-      provider_order_id = orderId;
+    if (charge) {
+      const response = await fetch(charge.url, { method: charge.method, headers: charge.headers, body: charge.body });
+      const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+      const redirect = response.ok ? snapRedirect(body) : null;
+      if (redirect) {
+        pay_url = redirect.payUrl;
+        provider = "midtrans";
+        provider_ref = redirect.token || orderId;
+        provider_order_id = orderId;
+      }
     }
   }
   const { data, error } = await supabase.from("opera_invoices").upsert({
