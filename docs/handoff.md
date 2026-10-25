@@ -99,12 +99,12 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.
-2. **The migration ledger and the tree disagree on names, and the live schema proves the
-   tree is behind.** Measured 2026-10-25 against production: 111 applied versions, 106
-   tree files holding 105 versions, only 43 shared. `opera_invoices` and
-   `opera_price_list` exist in production while the file that creates them is tree-only,
-   so the SQL was applied under a CLI-generated version the tree never named. Renaming
-   would not fix that and could re-run SQL, so the drift is recorded, not papered over.
+2. **The migration ledger is mapped, and two files were applied outside it.** Measured
+   2026-10-26: 106 tree files against 112 applied versions, and
+   `supabase/migrations/ledger-map.json` names the version that applied each file with
+   its evidence — 102 proved, 2 with no ledger row, 2 applied outside the ledger (their
+   SQL is in the database and no ledger row carries it).
+   `tests/migration-ledger-map.test.mjs` fails when a file is added and the map is silent.
 3. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
    code exchanges for a one-hour token, and a tool call completes. Google sign-in is unverified.
 4. **MCP resolves one device per account and stamps the harness provider.**
