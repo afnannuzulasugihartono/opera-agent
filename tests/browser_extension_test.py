@@ -717,6 +717,32 @@ async def activate_and_report_reuse(tab_id):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
     return result
 
+# WHY A MINIMIZED WINDOW IS PUT ON THE TASKBAR FIRST.
+# The claim is about the one case that ever dropped text: the window is minimized, the page reports focus is gone, and nothing in the tree could bring it back.
+# chrome.windows.update with focused alone was measured live on this machine to leave the window minimized, so the activation has to carry state:'normal' and the proof is the window leaving the taskbar.
+# A headless runner cannot put a window on the taskbar at all, so the helper answers None there and the claim stays what it is: proved where the machine can minimize.
+
+async def activate_and_report_restore(worker, tab_id):
+    await worker.evaluate("""async () => {
+        const current = (await chrome.windows.getAll({windowTypes: ['normal']}))[0];
+        await chrome.windows.update(current.id, {focused: false});
+        await chrome.windows.update(current.id, {state: 'minimized'});
+    }""")
+    minimized = await worker.evaluate("""async () => {
+        const current = (await chrome.windows.getAll({windowTypes: ['normal']}))[0];
+        return {id: current.id, state: current.state, focused: current.focused};
+    }""")
+    if minimized['state'] != 'minimized':
+        print('[window-restore] this runner cannot minimize a window; the live restore is proved on a desktop')
+        return None
+    cid = STATE.push('tabs.activate', {'tabId': tab_id}, benchmark='tabs.activate.restore-minimized')
+    result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+    after = await worker.evaluate("""async () => {
+        const current = (await chrome.windows.getAll({windowTypes: ['normal']}))[0];
+        return {state: current.state, focused: current.focused};
+    }""")
+    return {'reused': result.get('reused'), 'windowUpdate': result.get('windowUpdate'), 'after': after}
+
 async def browser_focus_state(worker):
     return await worker.evaluate('''async () => {
         const windows = await chrome.windows.getAll({populate: true, windowTypes: ['normal']});
@@ -1028,6 +1054,13 @@ async def run(port, profile):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         tab_id = result['tab']['id']
         assert result['tab']['title'] == 'Opera Agent Test Page'
+
+        restore = await activate_and_report_restore(worker, tab_id)
+        if restore is not None:
+            assert restore['reused'] is False, restore
+            assert restore['windowUpdate'] == 'restored', restore
+            assert restore['after']['state'] != 'minimized', restore
+            assert restore['after']['focused'] is True, restore
 
         cid = STATE.push('page.read', {'tabId': tab_id, 'offset': 0, 'limit': 300, 'maxElements': 1}, benchmark='page.read.small')
         small_page = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']

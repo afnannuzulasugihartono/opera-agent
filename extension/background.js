@@ -17,6 +17,7 @@ const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRole
 
 import { log } from './lib/log.js';
 import { popupsSince } from './lib/popup-events.js';
+import { windowUpdateFor, windowUpdateCase } from './lib/window-restore.js';
 import { handleDebuggerDetach } from './lib/debugger-session.js';
 import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';
 import { mutateTabs, nowIso, getConfig } from './worker/utils.js';
@@ -155,14 +156,22 @@ export async function dispatch(method, params = {}, context = {}) {
         tab = await mutateTabs(() => chrome.tabs.update(tabId, { active: true }));
         reused = false;
       }
+      let windowUpdate = null;
       if (params.focusWindow !== false) {
         const window = await chrome.windows.get(tab.windowId);
-        if (!window.focused) {
-          await chrome.windows.update(tab.windowId, { focused: true });
+        const update = windowUpdateFor(window, { focus: params.focusWindow });
+
+        // WHY A MINIMIZED WINDOW IS RESTORED AND NOT ONLY FOCUSED.
+        // Measured live on this machine: chrome.windows.update with focused:true alone leaves a window on the taskbar minimized, and chrome.debugger serves no Browser domain on a bridge session, so nothing else in the tree can bring it back.
+        // A drive that typed after that went nowhere, which is the one failure the focus gate refuses rather than guessing about.
+        // state:'normal' is the only call that takes a window off the taskbar, so the rule is one pure decision and the window is read again to say what actually happened.
+        if (update) {
+          await chrome.windows.update(tab.windowId, update);
           reused = false;
         }
+        windowUpdate = windowUpdateCase(update);
       }
-      return { ok: true, tab: publicTab(tab), reused };
+      return { ok: true, tab: publicTab(tab), reused, windowUpdate };
     }
     case 'tabs.close': {
       const tabId = requireTabId(params.tabId);
