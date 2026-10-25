@@ -103,30 +103,28 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
    holds 111 applied rows; the tree holds 106 files but 105 versions (two share
    `20261007080000`), and only 43 versions are shared. Renamed files mean the tree cannot
    prove which SQL built the live schema. Owner decision: re-align, or accept the drift.
-3. **1.6.25 and 1.6.26 shipped to the update service but were never tagged**, never got a
-   GitHub Release, and have no note under `docs/releases/`.
-4. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
+3. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
    code exchanges for a one-hour token, and a tool call completes. Google sign-in is unverified.
-5. **MCP resolves one device per account and stamps the harness provider.**
+4. **MCP resolves one device per account and stamps the harness provider.**
    `X-Opera-Device` picks among the caller's devices. A real second account still wants a test.
-6. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands
+5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands
    is the device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms).
-7. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
+6. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
    delete; the compiler stays device-local and the key never leaves ([`security.md`](security.md)).
-8. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
-9. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with
+7. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
+8. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with
    total-stop CAPTCHA policy ([`unknown-site.md`](unknown-site.md)).
-10. **The console dashboard's table editor is read-only by decision.** It reads sixteen
+9. **The console dashboard's table editor is read-only by decision.** It reads sixteen
     tables through `SECURITY DEFINER` `opera_konsol_*` readers; a write side is next.
-11. **The update endpoint answers in a nested query string.** Ask with
+10. **The update endpoint answers in a nested query string.** Ask with
     `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
-12. **The price is decided and applied.** `plan.pilot` is Rp 99.000 for up to 15
+11. **The price is decided and applied.** `plan.pilot` is Rp 99.000 for up to 15
     client-months, `plan.firm` is Rp 249.000 for up to 50, and an extra client-month is
     Rp 10.000; the invoice is issued after the first batch is accepted, and none has arrived.
-13. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
+12. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
-14. **A real Snap payment has not moved.** The request and the Basic header are driven
+13. **A real Snap payment has not moved.** The request and the Basic header are driven
     against a provider stood up in `tests/billing.test.mjs`; the server key is the
     owner's to set, so `MIDTRANS_SERVER_KEY` is still unset.
 
