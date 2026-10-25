@@ -11,19 +11,22 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 ## State
 
 - `main` = `origin/main`. The branches beyond it are the pull-request stack, not parked
-  work: each is the base of the next, and every merge is `--ff-only` but #92 and its children.
+  work: each is the base of the next, and every merge is `--ff-only`.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15, and `main` has taken it.** #86 merged as `e99bf5a`; the
   CRX route answers 200 with `x-opera-sha256` equal to the bytes, and the release carries
   both zips, the CRX and SHA256SUMS.
-- **Nineteen pull requests are stacked and wait for the owner's merge.** #87 is now based
+- **Twenty pull requests are stacked and wait for the owner's merge.** #87 is now based
   on `main` and clean; the chain runs to #107 `report-job`. #93 is closed, #88 stands apart.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file
   over 1,200 lines (one exception), leftover markers, a repeated block, and an unexercised export.
 - **The comment rule is a formatter, not a scanner.** Column-zero blocks are section headers
   with a blank line around them; indented blocks document the code under them; a sentence
   is one line. The gate is `format(file) === file`, pinned by `tests/comment-format.test.mjs`.
+- **#100 is green, and the landing styles have one home.** New-code duplication fell from
+  9.2% to 2.0%: the comment corpus is one table, and the shared chrome, footer and download
+  rules live in `landing/site.css` and `landing/download.css`. Chromium agrees, style for style.
 - **The dead code is gone, and a gate holds it.** `tests/hygiene.test.mjs` fails when a
   module with its own code is reached by nothing but its own test.
 - **Every file says what it is.** All four header fields are on every walked source file;
@@ -126,9 +129,6 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     not serve the `Browser` domain and `chrome.tabs.update` leaves a minimized window
     minimized; the guard refuses rather than typing into nothing. The fix is an extension
     `chrome.windows.update({ focused: true, state: 'normal' })` call, which needs a reload.
-14. **#100 exceeds SonarCloud's duplication gate.** New-code duplication is 9.2% against a
-    3% cap in a formatter rewrite across 281 files. #96 fell from 3.2% to 1.1% once upload
-    and drop shared one `materialize`, and the sort failures on #91, #98 and #99 are fixed.
 
 ## CI
 
