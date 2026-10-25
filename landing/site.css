@@ -192,3 +192,14 @@ footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space
 footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
 footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 footer a:hover { color: var(--text); }
+
+/* ── the defaults every page starts from ────────────────────────────────────────── */
+
+/*
+ * WHY these and not the pages: ten pages want the same measure, the same first heading and the same top padding.
+ * A page that wants another value writes it inline, after this file, so its rule still wins.
+ */
+
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
+main { padding: 56px 0; }
