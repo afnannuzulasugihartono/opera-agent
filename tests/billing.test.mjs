@@ -10,6 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
+import http from 'node:http';
 
 import {
   amountFor,
@@ -23,10 +24,14 @@ import {
   priceFor,
   providerAmount,
   providerOrderId,
+  snapChargeRequest,
   snapPaymentMethods,
+  snapRedirect,
   SNAP_QRIS_ONLY_BELOW_CENTS,
   verifyInvoiceToken
 } from '../supabase/functions/_shared/billing.js';
+
+const seen = [];
 
 const PRICE_LIST = [
   { kind: 'statement.client_month', unit: 'delivered client-month', amount_cents: 500000, currency: 'IDR', active: true }
@@ -176,6 +181,73 @@ test('the ledger is cents and the provider is rupiah, so the boundary converts b
   assert.equal(paidAmountCents('500000.00', 'IDR'), 50000000, 'the 100x amount is not the invoice');
   assert.equal(paidAmountCents('nonsense', 'IDR'), null);
   assert.equal(snapPaymentMethods(50, 'IDR').chargeable, false, 'nothing to charge below one rupiah');
+});
+
+// WHY THE SNAP REQUEST IS DRIVEN AGAINST A PROVIDER THAT IS STOOD UP IN THE TEST.
+// The one step that was never proved was the request itself, because it lived inside a Deno handler and no test could reach it.
+// A real HTTP server in this test now carries the exact bytes the function would send, so the order id, the amount, the method list and the Basic header are checked by something that parses them the way Midtrans does.
+
+const SNAP_INVOICE = {
+  orderId: providerOrderId('Toko Sinar Jaya:2026-10', 9900000, 'IDR'),
+  amountCents: 9900000,
+  currency: 'IDR',
+  customerId: 'Firma Contoh'
+};
+
+test('the charge request carries a legal order id, whole rupiah and the QRIS-only list under the threshold', () => {
+  const request = snapChargeRequest({ ...SNAP_INVOICE, enabled: ['other_qris'], serverKey: 'server-key' });
+  assert.ok(request, 'a chargeable invoice produces a request');
+  const body = JSON.parse(request.body);
+  assert.match(body.transaction_details.order_id, /^[A-Za-z0-9._~-]{1,50}$/);
+  assert.equal(body.transaction_details.gross_amount, 99000, 'the ledger is cents and the provider is rupiah');
+  assert.equal(body.customer_details.first_name, 'Firma Contoh');
+  assert.deepEqual(body.enabled_payments, ['other_qris']);
+  assert.equal(request.headers['Content-Type'], 'application/json');
+  const expected = Buffer.from('server-key:').toString('base64');
+  assert.equal(request.headers.Authorization, `Basic ${expected}`);
+});
+
+test('an invoice the provider cannot charge produces no request at all', () => {
+  assert.equal(snapChargeRequest({ ...SNAP_INVOICE, amountCents: 50, enabled: ['other_qris'] }), null);
+  assert.equal(snapChargeRequest({ ...SNAP_INVOICE, currency: 'USD', enabled: ['other_qris'] }), null);
+});
+
+test('a redirect without a token is not a way to pay, and a good one is', () => {
+  assert.equal(snapRedirect({ redirect_url: 'https://pay.test/x' }), null);
+  assert.equal(snapRedirect({ token: 'tok' }), null);
+  assert.equal(snapRedirect(null), null);
+  assert.deepEqual(snapRedirect({ redirect_url: 'https://pay.test/x', token: 'tok' }), { payUrl: 'https://pay.test/x', token: 'tok' });
+});
+
+test('the request is answered by a provider that parses it the way Midtrans does', async () => {
+  const server = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      seen.push({ method: req.method, url: req.url, authorization: req.headers.authorization, body: Buffer.concat(chunks).toString('utf8') });
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ token: 'snap-token-1', redirect_url: 'https://app.midtrans.com/snap/v1/checkout/snap-token-1' }));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  try {
+    const request = snapChargeRequest({ ...SNAP_INVOICE, enabled: ['other_qris'], serverKey: 'server-key' });
+    const response = await fetch(`http://127.0.0.1:${port}/snap/v1/transactions`, {
+      method: request.method, headers: request.headers, body: request.body
+    });
+    const body = await response.json();
+    const redirect = snapRedirect(body);
+    assert.ok(redirect, 'a 200 with a redirect and a token is a charge that was opened');
+    assert.equal(redirect.token, 'snap-token-1');
+    assert.equal(redirect.payUrl, 'https://app.midtrans.com/snap/v1/checkout/snap-token-1');
+    assert.equal(seen.length, 1);
+    assert.equal(seen[0].method, 'POST');
+    assert.equal(seen[0].authorization, `Basic ${Buffer.from('server-key:').toString('base64')}`);
+    assert.equal(JSON.parse(seen[0].body).transaction_details.gross_amount, 99000);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test('the money rules run where Buffer does not exist, which is where they failed first', () => {
